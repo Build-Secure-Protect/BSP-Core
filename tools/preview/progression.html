@@ -1,0 +1,628 @@
+<title>Illyrium Progression Blueprint</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark workshop board. Flow lanes first, then machine stages, item sheet, recipes, balance table. */
+:root {
+  --bg: #0f1115; --panel: #171a21; --line: #2a2f3a; --fg: #e8eaf0; --muted: #9aa3b5;
+  --tet: #b49ce6; --ill: #19d3b0; --gold: #e3b341; --ore: #8f97a8; --ext: #6f7890; --warn: #ff8a3a;
+  --display: "Silkscreen", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f3f1ea; --panel: #ffffff; --line: #d9d4c7; --fg: #1a1b20; --muted: #5f6472; --tet: #6b4fa3; --ill: #0b8f78; --gold: #9a7410; --ore: #5f6472; --ext: #7a8296; --warn: #b85a12; color-scheme: light; } }
+:root[data-theme="light"] { --bg: #f3f1ea; --panel: #ffffff; --line: #d9d4c7; --fg: #1a1b20; --muted: #5f6472; --tet: #6b4fa3; --ill: #0b8f78; --gold: #9a7410; --ore: #5f6472; --ext: #7a8296; --warn: #b85a12; color-scheme: light; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-inline: 16px; display: flex; flex-direction: column; gap: 34px; }
+h1 { font-family: var(--display); font-size: clamp(20px, 3.4vw, 30px); letter-spacing: .02em; margin: 0 0 6px; text-wrap: balance; }
+h2 { font-family: var(--display); font-size: 17px; margin: 0 0 4px; }
+.lede, .sub { color: var(--muted); margin: 0; max-width: 70ch; line-height: 1.5; }
+.sub { font-size: 13.5px; margin-bottom: 14px; }
+canvas.ico { image-rendering: pixelated; width: 40px; height: 40px; display: block; flex: none; }
+
+/* flow */
+.lane { border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 6px; background: var(--panel); padding: 12px; margin-bottom: 10px; }
+.lane h3 { margin: 0 0 10px; font: 600 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: stretch; }
+.node { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 5px; padding: 6px 9px; min-width: 0; background: var(--bg); }
+.node.machine { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.node.ext { border-style: dashed; }
+.node.goal { border-color: var(--ill); box-shadow: inset 0 0 0 1px var(--ill); }
+.node .t { display: flex; flex-direction: column; min-width: 0; }
+.node b { font-size: 13px; font-weight: 600; }
+.node small { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+.node .tag { font: 600 9.5px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.node.ext .tag { color: var(--ext); }
+.arrow { align-self: center; color: var(--muted); font-size: 16px; padding: 0 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.legend i { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--line); border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* machines */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 700px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.stage h3 { font-family: var(--display); font-size: 15px; margin: 0; }
+.stage p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.view { position: relative; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; border-radius: 4px; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, #262b36 0%, #0c0e12 70%); cursor: grab; touch-action: none; }
+.view canvas { display: block; width: 100% !important; height: 100% !important; }
+.row { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.row select, .row input[type=range] { width: 100%; min-width: 0; }
+.row select { background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; font: 500 12px var(--body); }
+.row input[type=range] { accent-color: var(--ill); }
+.row output { font-variant-numeric: tabular-nums; color: var(--fg); min-width: 2.4em; text-align: right; }
+.row :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.feed { font-size: 12px; color: var(--muted); line-height: 1.45; margin: 0; padding-left: 16px; }
+
+/* item sheet + recipes */
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.item { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 5px; padding: 8px; background: var(--panel); min-width: 0; }
+.item span { font-size: 12.5px; line-height: 1.25; }
+.item small { display: block; color: var(--muted); font-size: 11px; }
+.recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.recipe { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.recipe b { font-size: 13px; }
+.recipe .rg { display: flex; align-items: center; gap: 10px; }
+.craft { display: grid; grid-template-columns: repeat(3, 34px); grid-auto-rows: 34px; gap: 2px; }
+.cell { background: var(--bg); border: 1px solid var(--line); border-radius: 3px; display: grid; place-items: center; font: 600 10px var(--body); color: var(--muted); }
+.cell canvas.ico { width: 28px; height: 28px; }
+.recipe small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.out { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
+
+/* multiblock parts + compass */
+.parts { font-size: 12px; color: var(--muted); line-height: 1.45; margin: 0; }
+.parts b { color: var(--fg); font-weight: 600; }
+.badge { display: inline-block; font: 600 10px var(--body); letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--ill); color: var(--ill); border-radius: 3px; padding: 1px 6px; margin-left: 8px; vertical-align: 2px; }
+.badge.single { border-color: var(--line); color: var(--muted); }
+th.pick, td.pick { color: var(--ill); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; align-items: start; }
+/* balance */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 640px; width: 100%; }
+th, td { text-align: right; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+thead th { color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+tr.total td { font-weight: 600; color: var(--fg); border-top: 2px solid var(--line); }
+td.grp { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding-top: 14px; }
+.note { font-size: 13px; color: var(--muted); line-height: 1.5; max-width: 72ch; margin: 10px 0 0; }
+</style>
+<div class="wrap">
+<header>
+  <h1>Illyrium Progression Blueprint</h1>
+  <p class="lede">The proposed BSP-Core resource chain from two new ores to the fully upgraded Shatter Totem. Second pass: vanilla-shaped ingots, nuggets and dusts, more detailed futuristic machines, the two Illyrium machines as multiblock structures, RF upgrade options and the Totem Compass. Nothing on this page is in the mod yet.</p>
+</header>
+
+<section>
+  <h2>Progression flow</h2>
+  <p class="sub">Read each lane left to right. Lanes feed each other: a chip under a step shows what it takes from, or sends to, another lane.</p>
+  <div class="legend">
+    <span><i style="border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)"></i>BSP machine</span>
+    <span><i style="border-style:dashed"></i>Any crusher from the pack</span>
+    <span><i></i>Item or ore</span>
+    <span><i style="border-color:var(--ill);box-shadow:inset 0 0 0 1px var(--ill)"></i>End game</span>
+  </div>
+  <div id="flow"></div>
+</section>
+
+<section>
+  <h2>Machines</h2>
+  <p class="sub">Animated cuboid mock-ups at Minecraft pixel scale. Drag to rotate. The two Tetrium-stage machines are single blocks. The two machines used only for Illyrium are 3&times;3 multiblock structures; faint lines on the floor mark the block grid.</p>
+  <div class="grid" id="machines"></div>
+</section>
+
+<section>
+  <h2>Ores and items</h2>
+  <p class="sub">16&times;16 sprites. Ingots follow the standard iron ingot shape, nuggets the iron nugget, and dusts the redstone pile, recoloured: violet for Tetrium, turquoise for Illyrium, murky green with rust flecks for the dirty stage.</p>
+  <div class="sheet" id="sheet"></div>
+</section>
+
+<section>
+  <h2>Proposed recipes</h2>
+  <p class="sub">Filters and the forge upgrade follow your notes exactly. Everything else is a suggestion that only uses things available at that point in the chain. The three RF upgrades are alternatives to choose between, or tiers if you want all three.</p>
+  <div class="recipes" id="recipes"></div>
+</section>
+
+<section>
+  <h2>Totem Compass</h2>
+  <p class="sub">Crafted from Tetrium and Illyrium. It always points to the nearest totem you own. Feeding it a Shatter Coin makes it track other players' totems for a short time.</p>
+  <div class="two">
+    <div class="recipes" id="compassRecipe" style="grid-template-columns:minmax(0,1fr)"></div>
+    <div class="tablewrap"><table style="min-width:0">
+      <thead><tr><th>Coin fed</th><th>Tracks rival totems for</th></tr></thead>
+      <tbody>
+        <tr><td>Copper</td><td>1 second</td></tr><tr><td>Gold</td><td>5 seconds</td></tr><tr><td>Diamond</td><td>10 seconds</td></tr>
+        <tr><td>Netherite</td><td>30 seconds (suggested)</td></tr><tr><td>Illyrium</td><td>60 seconds</td></tr>
+      </tbody></table></div>
+  </div>
+</section>
+
+<section>
+  <h2>Three balance levels</h2>
+  <p class="sub">What one Illyrium Ingot costs end to end, computed from the per-step numbers in each column. Standard is the chosen starting point.</p>
+  <div class="tablewrap"><table id="balance"></table></div>
+  <p class="note">Time is machine time for one of each machine running the whole chain in series, including the Tetrium that feeds it. Filter uses equal the pure dust refined: one Iron Filter per dust, a Diamond Filter lasts 20, Netherite 100, Illyrium 1000. The first seven Illyrium Ingots must be assembled by hand on a crafting table, because the Combination Forge needs them for its Illyrium upgrade.</p>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches || location.hash === '#still';
+
+  // ================================================================= sprites
+  const TET = { base: '#6B4FA3', light: '#B49CE6', dark: '#3B2A66', accent: '#F2A6FF' };
+  const ILL = { base: '#19D3B0', light: '#8CFFE6', dark: '#0B8F78', accent: '#FFFFFF' };
+  const DIRTY = { base: '#4F7A6A', light: '#7FA896', dark: '#2E4A40', accent: '#8A5A3A' };
+  const SLAG = { base: '#3A3340', light: '#5A5062', dark: '#221D27', accent: '#FF8A3A' };
+  const IRON = { base: '#C8CCD3', light: '#F2F4F7', dark: '#7F8794', accent: '#C8CCD3' };
+  const GOLD = { base: '#F2C12E', light: '#FFE27A', dark: '#B8860B', accent: '#F2C12E' };
+  const COPPER = { base: '#C8733A', light: '#E79A62', dark: '#8A4A22', accent: '#C8733A' };
+  const DIAMOND = { base: '#6FE7F2', light: '#C9FBFF', dark: '#2BA9B8', accent: '#FFFFFF' };
+  const NETH = { base: '#4B4247', light: '#6E6468', dark: '#2A2428', accent: '#4B4247' };
+  const RED = { base: '#C8241C', light: '#FF5A4A', dark: '#7A1410', accent: '#FF5A4A' };
+  const SILVER = { base: '#C9CED8', light: '#F4F6FA', dark: '#8A909C' };
+  const hash = (x, y, s) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+
+  // Shapes follow the vanilla iron ingot, iron nugget and redstone dust silhouettes. O outline, L light, M mid, D dark.
+  const INGOT = ['................','................','................','.........OOOO...','.......OOLLLLO..','.....OOLLLLLMMO.','...OOLLLLLMMMDO.','.OOLLLLLMMMDDO..','OLLLLLMMMDDOO...','OMLLMMMDDOO.....','ODMMMDDOO.......','.ODDDOO.........','..OOO...........','................','................','................'];
+  const NUGGET = ['................','................','................','................','................','......OOOO......','.....OLLLMO.....','....OLLLMMDO....','....OLMMMDDO....','....OMMDDDO.....','.....ODDOO......','......OO........','................','................','................','................'];
+  const DUST = ['................','................','................','................','................','.......M........','......LMM...M...','.....LMMMD......','..M.LLMMMDD.....','...LLMMMMDDD....','..LLMMMMMMDDD...','.LLMMMMMMMMDDD..','..DDDDDDDDDDD...','................','................','................'];
+  const shade = (hex, k) => '#' + new THREE.Color(hex).multiplyScalar(k).getHexString();
+  function fromMap(map, p, rough) {
+    return (x, y) => {
+      const ch = map[y][x];
+      if (ch === '.') return null;
+      if (ch === 'O') return shade(p.dark, 0.6);
+      if (rough && hash(x, y, rough) > 0.84) return p.accent;
+      return ch === 'L' ? p.light : ch === 'D' ? p.dark : p.base;
+    };
+  }
+  const bar = (p, mark) => fromMap(INGOT, p, mark === 'dirty' ? 3 : 0);
+  const nugget = p => fromMap(NUGGET, p, 0);
+  const dust = (p, seed) => fromMap(DUST, p, p === DIRTY ? seed : 0);
+  function slag() {
+    return (x, y) => {
+      const d = Math.hypot(x - 7.5, y - 8.2);
+      if (d > 4.6 + (hash(x, y, 5) - 0.5) * 2.6) return null;
+      const h = hash(x, y, 11);
+      return h > 0.92 ? SLAG.accent : h > 0.6 ? SLAG.light : h < 0.3 ? SLAG.dark : SLAG.base;
+    };
+  }
+  function filter(p) {
+    return (x, y) => {
+      if (x < 2 || x > 13 || y < 2 || y > 13) return null;
+      const edge = x <= 3 || x >= 12 || y <= 3 || y >= 12;
+      if (edge) return (x <= 2 || y <= 2) ? p.light : (x >= 13 || y >= 13) ? p.dark : p.base;
+      if (x === y || x + y === 15) return '#7C8594';
+      return (x + y) % 2 === 0 ? '#E8ECF2' : '#AEB6C2';
+    };
+  }
+  function upgrade() {
+    return (x, y) => {
+      if (x < 3 || x > 12 || y < 3 || y > 12) return (y === 2 || y === 13) && [5, 7, 8, 10].includes(x) ? '#9AA1AE' : null;
+      if (x === 3 || x === 12 || y === 3 || y === 12) return '#9AA1AE';
+      if (x >= 6 && x <= 9 && y >= 6 && y <= 9) return (x + y) % 2 ? ILL.light : ILL.base;
+      if ((x === 5 || x === 10) && (y === 5 || y === 10)) return '#E0322B';
+      return '#2B3038';
+    };
+  }
+  function disc(inner, ringPal, crack) {
+    const CR = new Set(['8,4', '8,5', '7,6', '7,7', '8,8', '9,9', '8,10', '8,11', '6,7', '10,9']);
+    return (x, y) => {
+      const dx = x - 7.5, dy = y - 7.5, d = Math.hypot(dx, dy);
+      if (d > 7.7) return null;
+      const lit = (-dx - dy) / 10;
+      if (d > 5.4) return lit > 0.25 ? ringPal.light : lit < -0.25 ? ringPal.dark : ringPal.base;
+      if (crack && CR.has(x + ',' + y)) return inner.dark;
+      return lit > 0.35 ? inner.light : inner.base;
+    };
+  }
+  function ore(hostBase, p, seed) {
+    const host = new THREE.Color(hostBase);
+    const spots = [[3, 3], [10, 2], [6, 8], [12, 9], [2, 12], [9, 13]];
+    return (x, y) => {
+      for (const [sx, sy] of spots) {
+        const d = Math.hypot(x - sx - hash(sx, sy, seed) * 2, y - sy - hash(sy, sx, seed) * 2);
+        if (d < 1.7) return hash(x, y, seed) > 0.6 ? p.light : hash(x, y, seed + 1) > 0.7 ? p.dark : p.base;
+      }
+      const k = 0.86 + hash(x, y, seed + 7) * 0.28;
+      return '#' + new THREE.Color(Math.min(1, host.r * k), Math.min(1, host.g * k), Math.min(1, host.b * k)).getHexString();
+    };
+  }
+  function gem(p) { return (x, y) => { const d = Math.abs(x - 7.5) + Math.abs(y - 7.5); if (d > 6) return null; return d > 4.6 ? p.dark : (x < 7.5 && y < 7.5) ? p.light : p.base; }; }
+  function web() { return (x, y) => (x === y || x + y === 15 || x === 7 || y === 7 || ((Math.abs(x - 7.5) + Math.abs(y - 7.5)) | 0) === 5) ? '#E8ECF2' : null; }
+  function diag(p) { return (x, y) => { const k = x + y; if (k < 11 || k > 19 || Math.abs(x - y) > 9) return null; if (k <= 12) return p.light; if (k >= 18) return p.dark; return (x - y) > 6 ? p.dark : p.base; }; }
+
+  function compass() {
+    const needle = { '8,7': ILL.light, '9,6': ILL.light, '10,5': ILL.light, '11,4': '#FFFFFF', '7,8': '#C8241C', '6,9': '#C8241C', '5,10': '#7A1410' };
+    return (x, y) => {
+      const dx = x - 7.5, dy = y - 7.5, d = Math.hypot(dx, dy);
+      if (d > 7.2) return null;
+      if (d > 5.6) return (-dx - dy) / 10 > 0.25 ? TET.light : (dx + dy) / 10 > 0.25 ? TET.dark : TET.base;
+      return needle[x + ',' + y] || ((x + y) % 5 === 0 ? '#232A33' : '#161B22');
+    };
+  }
+  function rfCoil() { return (x, y) => { if (x < 5 || x > 10 || y < 2 || y > 13) return null; if (y <= 3 || y >= 12) return x === 5 || x === 10 ? TET.dark : TET.base; return y % 2 ? (x < 7 ? COPPER.light : COPPER.base) : COPPER.dark; }; }
+  function rfCell() {
+    const bolt = new Set(['8,5', '7,6', '8,6', '6,7', '7,7', '8,7', '9,7', '7,8', '8,8', '9,8', '7,9', '8,9', '7,10']);
+    return (x, y) => { if (y === 2 && x >= 6 && x <= 9) return SILVER.base; if (x < 4 || x > 11 || y < 3 || y > 13) return null; if (x === 4 || x === 11 || y === 3 || y === 13) return TET.base; return bolt.has(x + ',' + y) ? '#FFD23A' : '#1B2027'; };
+  }
+  function rfCore() { return (x, y) => { const dx = x - 7.5, dy = y - 7.5, d = Math.hypot(dx, dy); if (d > 6.6) return null; if (d > 4.6) return (-dx - dy) / 10 > 0.2 ? COPPER.light : COPPER.base; if (d < 2.4) return (x + y) % 2 ? ILL.light : ILL.base; if (Math.abs(dx) < 0.8 || Math.abs(dy) < 0.8) return '#E0322B'; return '#1B2027'; }; }
+
+  const ICONS = {
+    totem_compass: compass(), rf_coil: rfCoil(), rf_cell: rfCell(), rf_core: rfCore(),
+    tetrium_ore: ore('#7D7D7D', TET, 1), deepslate_tetrium_ore: ore('#4A4A52', TET, 2),
+    illyrium_ore: ore('#4A4A52', ILL, 3), end_illyrium_ore: ore('#DADBA6', ILL, 4),
+    tetrium_slag: slag(), tetrium_nugget: nugget(TET), tetrium_ingot: bar(TET, 'dots'), tetrium_dust: dust(TET, 2),
+    dirty_illyrium_ingot: bar(DIRTY, 'dirty'), dirty_illyrium_dust: dust(DIRTY, 5), pure_illyrium_dust: dust(ILL, 8),
+    illyrium_nugget: nugget(ILL), illyrium_ingot: bar(ILL, 'wave'),
+    iron_filter: filter(IRON), diamond_filter: filter(DIAMOND), netherite_filter: filter(NETH), illyrium_filter: filter(ILL),
+    forge_upgrade: upgrade(), shatter_blank: disc({ base: '#7E69AE', light: '#A796CF', dark: '#3B2A66' }, TET, false),
+    illyrium_coin: disc(ILL, SILVER, true),
+    iron_ingot: fromMap(INGOT, IRON, 0), gold_ingot: fromMap(INGOT, GOLD, 0), copper_ingot: fromMap(INGOT, COPPER, 0), netherite_ingot: fromMap(INGOT, NETH, 0), diamond: gem(DIAMOND),
+    cobweb: web(), redstone: fromMap(DUST, RED, 0),
+  };
+  function icon(name, size) {
+    const c = document.createElement('canvas'); c.width = c.height = 16; c.className = 'ico';
+    if (size) { c.style.width = c.style.height = size + 'px'; }
+    const g = c.getContext('2d'), fn = ICONS[name];
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const col = fn(x, y); if (col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); } }
+    c.setAttribute('role', 'img'); c.setAttribute('aria-label', name.replace(/_/g, ' '));
+    return c;
+  }
+
+  // ================================================================= flow
+  const LANES = [
+    { title: 'Lane 1: Tetrium', c: 'var(--tet)', steps: [
+      { k: 'item', icon: 'tetrium_ore', n: 'Tetrium Ore', s: 'Common. Overworld and mining dimension stone layers' },
+      { k: 'machine', n: 'Tetrium Crucible', s: 'Burns coal, charcoal, lava buckets, any furnace fuel' },
+      { k: 'item', icon: 'tetrium_nugget', n: 'Tetrium Nuggets', s: 'plus Tetrium Slag (to lane 2)' },
+      { k: 'machine', n: 'Combination Forge', s: '9 nuggets per ingot. Crafting table also works' },
+      { k: 'item', icon: 'tetrium_ingot', n: 'Tetrium Ingot', s: 'Builds machines; to lane 4 for blanks' },
+      { k: 'ext', n: 'Any crusher', s: 'Mekanism, Create, Thermal...' },
+      { k: 'item', icon: 'tetrium_dust', n: 'Tetrium Dust', s: 'to lane 3' } ] },
+    { title: 'Lane 2: Illyrium, smelt and refine', c: 'var(--ill)', steps: [
+      { k: 'item', icon: 'illyrium_ore', n: 'Illyrium Ore', s: 'Rare and deep. Needs Tetrium Slag from lane 1' },
+      { k: 'machine', n: 'Illyrium Crucible', s: 'Lava or magma blocks only' },
+      { k: 'item', icon: 'dirty_illyrium_ingot', n: 'Dirty Illyrium Ingot' },
+      { k: 'ext', n: 'Any crusher' },
+      { k: 'item', icon: 'dirty_illyrium_dust', n: 'Dirty Illyrium Dust' },
+      { k: 'machine', n: 'Illyrium Refinery', s: 'Needs water and a filter: iron 1, diamond 20, netherite 100, illyrium 1000 uses' },
+      { k: 'item', icon: 'pure_illyrium_dust', n: 'Pure Illyrium Dust' } ] },
+    { title: 'Lane 3: Illyrium, alloy and forge', c: 'var(--ill)', steps: [
+      { k: 'item', icon: 'pure_illyrium_dust', n: 'Pure Illyrium Dust', s: 'plus Tetrium Dust from lane 1' },
+      { k: 'machine', n: 'Illyrium Crucible', s: 'Second job of the same machine' },
+      { k: 'item', icon: 'illyrium_nugget', n: 'Illyrium Nuggets' },
+      { k: 'machine', n: 'Combination Forge', s: 'Needs the Illyrium upgrade; first 7 ingots by hand' },
+      { k: 'item', icon: 'illyrium_ingot', n: 'Illyrium Ingot', s: 'Crushing one gives Pure Illyrium Dust back' } ] },
+    { title: 'Lane 4: Coins and the totem', c: 'var(--gold)', steps: [
+      { k: 'item', icon: 'tetrium_ingot', n: 'Tetrium Ingot', s: 'from lane 1' },
+      { k: 'item', icon: 'shatter_blank', n: 'Shatter Blank', s: 'plus copper, gold, diamond, netherite or Illyrium' },
+      { k: 'machine', n: 'Shatter Coin Factory', s: 'Already built. 12 hours to 7 days per coin' },
+      { k: 'item', icon: 'illyrium_coin', n: 'Shatter Coins', s: 'Copper, Gold, Diamond, Netherite, Illyrium' },
+      { k: 'goal', n: 'Totem upgrades', s: 'Buffs, Fortify, Healing Aura' },
+      { k: 'item', icon: 'totem_compass', n: 'Totem Compass', s: 'Tetrium + Illyrium. Coins let it track rival totems for a few seconds' },
+      { k: 'goal', n: 'The best Shatter Totem', s: 'End game' } ] },
+  ];
+  const flow = document.getElementById('flow');
+  LANES.forEach(l => {
+    const lane = document.createElement('div'); lane.className = 'lane'; lane.style.setProperty('--c', l.c);
+    lane.innerHTML = `<h3>${l.title}</h3><div class="steps"></div>`;
+    const steps = lane.querySelector('.steps');
+    l.steps.forEach((s, i) => {
+      if (i) { const a = document.createElement('span'); a.className = 'arrow'; a.innerHTML = '&rarr;'; a.setAttribute('aria-hidden', 'true'); steps.appendChild(a); }
+      const n = document.createElement('div'); n.className = 'node ' + (s.k === 'item' ? '' : s.k);
+      if (s.icon) n.appendChild(icon(s.icon, 32));
+      const t = document.createElement('div'); t.className = 't';
+      t.innerHTML = (s.k === 'machine' ? '<span class="tag">Machine</span>' : s.k === 'ext' ? '<span class="tag">Other mods</span>' : '') + `<b>${s.n}</b>` + (s.s ? `<small>${s.s}</small>` : '');
+      n.appendChild(t); steps.appendChild(n);
+    });
+    flow.appendChild(lane);
+  });
+
+  // ================================================================= item sheet
+  const SHEET = [
+    ['tetrium_ore', 'Tetrium Ore', 'stone'], ['deepslate_tetrium_ore', 'Deepslate Tetrium Ore', ''], ['illyrium_ore', 'Illyrium Ore', 'deepslate'], ['end_illyrium_ore', 'End Stone Illyrium Ore', 'mining dimension'],
+    ['tetrium_slag', 'Tetrium Slag', 'crucible by-product'], ['tetrium_nugget', 'Tetrium Nugget', 'iron nugget shape'], ['tetrium_ingot', 'Tetrium Ingot', 'iron ingot shape'], ['tetrium_dust', 'Tetrium Dust', 'redstone shape'],
+    ['dirty_illyrium_ingot', 'Dirty Illyrium Ingot', 'pitted, rust flecks'], ['dirty_illyrium_dust', 'Dirty Illyrium Dust', ''], ['pure_illyrium_dust', 'Pure Illyrium Dust', ''], ['illyrium_nugget', 'Illyrium Nugget', ''], ['illyrium_ingot', 'Illyrium Ingot', 'iron ingot shape'],
+    ['iron_filter', 'Iron Filter', '1 use'], ['diamond_filter', 'Diamond Filter', '20 uses'], ['netherite_filter', 'Netherite Filter', '100 uses'], ['illyrium_filter', 'Illyrium Filter', '1000 uses'],
+    ['forge_upgrade', 'Illyrium Forge Upgrade', ''], ['rf_coil', 'RF Upgrade A: Flux Coil', 'early game'], ['rf_cell', 'RF Upgrade B: Power Cell', 'mid game'], ['rf_core', 'RF Upgrade C: Induction Core', 'late game'],
+    ['totem_compass', 'Totem Compass', 'Tetrium rim, Illyrium needle'], ['shatter_blank', 'Shatter Blank', 'now Tetrium'], ['illyrium_coin', 'Illyrium Shatter Coin', 'was Etherium'],
+  ];
+  const sheet = document.getElementById('sheet');
+  SHEET.forEach(([id, name, note]) => {
+    const d = document.createElement('div'); d.className = 'item'; d.appendChild(icon(id, 48));
+    const s = document.createElement('span'); s.innerHTML = name + (note ? `<small>${note}</small>` : ''); d.appendChild(s); sheet.appendChild(d);
+  });
+
+  // ================================================================= recipes
+  const LABELS = { Rb: 'Redstone Block', Bk: 'Bricks', Fu: 'Furnace', Pi: 'Piston', An: 'Anvil', St: 'Smooth Stone', Bs: 'Polished Blackstone', Ca: 'Cauldron', Mg: 'Magma Block', Gl: 'Glass', Bu: 'Bucket' };
+  const RECIPES = [
+    { n: 'Iron Filter', g: ['iron_ingot', 'cobweb', 'iron_ingot', 'cobweb', 'cobweb', 'cobweb', 'iron_ingot', 'cobweb', 'iron_ingot'], o: 'iron_filter', note: 'From your notes: 4 material, 5 cobweb. Diamond, Netherite and Illyrium filters swap the corners.' },
+    { n: 'Illyrium Filter', g: ['illyrium_ingot', 'cobweb', 'illyrium_ingot', 'cobweb', 'cobweb', 'cobweb', 'illyrium_ingot', 'cobweb', 'illyrium_ingot'], o: 'illyrium_filter', note: '1000 refinements.' },
+    { n: 'Illyrium Forge Upgrade', g: ['illyrium_ingot', 'illyrium_ingot', 'illyrium_ingot', 'illyrium_ingot', 'redstone', 'illyrium_ingot', 'illyrium_ingot', 'iron_ingot', 'illyrium_ingot'], o: 'forge_upgrade', note: 'From your notes: 7 Illyrium, 1 iron, 1 redstone.' },
+    { n: 'Tetrium Crucible', g: ['Bk', 'Bk', 'Bk', 'Bk', 'Fu', 'Bk', 'iron_ingot', 'iron_ingot', 'iron_ingot'], o: null, note: 'Suggestion. Vanilla only, because it is the first machine.' },
+    { n: 'Combination Forge', g: ['tetrium_ingot', 'tetrium_ingot', 'tetrium_ingot', 'Pi', 'An', 'Pi', 'St', 'St', 'St'], o: null, note: 'Suggestion. The three Tetrium Ingots are hand-assembled from nuggets.' },
+    { n: 'Illyrium Crucible', g: ['tetrium_ingot', 'Bs', 'tetrium_ingot', 'tetrium_ingot', 'Ca', 'tetrium_ingot', 'Mg', 'Mg', 'Mg'], o: null, note: 'Suggestion. Needs Tetrium, as you asked.' },
+    { n: 'Illyrium Refinery', g: ['Gl', 'Gl', 'Gl', 'tetrium_ingot', 'iron_filter', 'tetrium_ingot', 'tetrium_ingot', 'Bu', 'tetrium_ingot'], o: null, note: 'Suggestion. Glass tank, bucket, a starter filter.' },
+    { n: 'Shatter Blank', g: [null, 'tetrium_ingot', null, 'tetrium_ingot', null, 'tetrium_ingot', null, 'tetrium_ingot', null], o: 'shatter_blank', note: 'Suggestion. 4 Tetrium Ingots give 2 blanks.' },
+    { n: 'RF Upgrade A: Flux Coil', g: ['copper_ingot', 'copper_ingot', 'copper_ingot', 'copper_ingot', 'Rb', 'copper_ingot', 'copper_ingot', 'tetrium_ingot', 'copper_ingot'], o: 'rf_coil', note: 'Cheapest. Available as soon as you have one Tetrium Ingot.' },
+    { n: 'RF Upgrade B: Power Cell', g: ['tetrium_ingot', 'gold_ingot', 'tetrium_ingot', 'tetrium_ingot', 'Rb', 'tetrium_ingot', 'tetrium_ingot', 'gold_ingot', 'tetrium_ingot'], o: 'rf_cell', note: 'Mid cost. Six Tetrium Ingots and gold.' },
+    { n: 'RF Upgrade C: Induction Core', g: ['tetrium_ingot', 'illyrium_nugget', 'tetrium_ingot', 'redstone', 'Rb', 'redstone', 'tetrium_ingot', 'illyrium_nugget', 'tetrium_ingot'], o: 'rf_core', note: 'Late game. Needs Illyrium Nuggets, so it only helps the Illyrium machines once you are already refining.' },
+  ];
+  const COMPASS = [{ n: 'Totem Compass', g: [null, 'tetrium_ingot', null, 'tetrium_ingot', 'illyrium_ingot', 'tetrium_ingot', null, 'tetrium_ingot', null], o: 'totem_compass', note: 'Suggestion. Four Tetrium Ingots around one Illyrium Ingot, like a vanilla compass.' }];
+  const renderRecipes = (list, rec) => list.forEach(r => {
+    const d = document.createElement('div'); d.className = 'recipe';
+    d.innerHTML = `<b>${r.n}</b><div class="rg"><div class="craft"></div><span class="arrow" aria-hidden="true">&rarr;</span><div class="out"></div></div><small></small>`;
+    const used = new Set();
+    r.g.forEach(c => {
+      const cell = document.createElement('div'); cell.className = 'cell';
+      if (c && ICONS[c]) cell.appendChild(icon(c)); else if (c) { cell.textContent = c; used.add(c); cell.title = LABELS[c]; }
+      d.querySelector('.craft').appendChild(cell);
+    });
+    const out = d.querySelector('.out');
+    if (r.o) out.appendChild(icon(r.o, 40)); else out.textContent = 'machine';
+    const key = [...used].map(k => `${k} = ${LABELS[k]}`).join(', ');
+    d.querySelector('small').textContent = r.note + (key ? ' ' + key + '.' : '');
+    rec.appendChild(d);
+  });
+  renderRecipes(RECIPES, document.getElementById('recipes'));
+  renderRecipes(COMPASS, document.getElementById('compassRecipe'));
+
+  // ================================================================= balance
+  const LV = [
+    { name: 'Relaxed', nug: 3, slagOut: 1, tCruc: 10, forge: 15, orePerDirty: 1, slagPerDirty: 1, iCruc: 30, refine: 60, water: 250, pureIn: 1, tdustIn: 1, nugOut: 3, alloy: 45 },
+    { name: 'Standard', nug: 2, slagOut: 1, tCruc: 20, forge: 30, orePerDirty: 1, slagPerDirty: 2, iCruc: 60, refine: 120, water: 500, pureIn: 1, tdustIn: 1, nugOut: 1, alloy: 90 },
+    { name: 'Hardcore', nug: 1, slagOut: 1, tCruc: 40, forge: 60, orePerDirty: 2, slagPerDirty: 4, iCruc: 120, refine: 300, water: 1000, pureIn: 2, tdustIn: 2, nugOut: 1, alloy: 180 },
+  ];
+  const calc = L => {
+    const ops = 9 / L.nugOut, pure = ops * L.pureIn, tdust = ops * L.tdustIn, dirty = pure;
+    const illOre = dirty * L.orePerDirty, slag = dirty * L.slagPerDirty;
+    const tetOre = Math.ceil(Math.max(tdust * 9 / L.nug, slag / L.slagOut));
+    const secs = dirty * L.iCruc + pure * L.refine + ops * L.alloy + tetOre * L.tCruc + (tdust + 1) * L.forge;
+    return { illOre, tetOre, pure, secs, water: pure * L.water / 1000 };
+  };
+  const dur = s => s >= 3600 ? (s / 3600).toFixed(1) + ' h' : Math.round(s / 60) + ' min';
+  const R = LV.map(calc);
+  const row = (label, f) => `<tr><td>${label}</td>${LV.map((L, i) => `<td>${f(L, R[i])}</td>`).join('')}</tr>`;
+  document.getElementById('balance').innerHTML =
+    `<thead><tr><th>Per step</th>${LV.map(L => `<th class="${L.name === 'Standard' ? 'pick' : ''}">${L.name}${L.name === 'Standard' ? ' (chosen)' : ''}</th>`).join('')}</tr></thead><tbody>` +
+    row('Tetrium Crucible: 1 ore gives', L => `${L.nug} nugget${L.nug > 1 ? 's' : ''} + ${L.slagOut} slag in ${L.tCruc} s`) +
+    row('Combination Forge: 9 nuggets to 1 ingot', L => `${L.forge} s`) +
+    row('Illyrium Crucible smelt: per Dirty Ingot', L => `${L.orePerDirty} ore + ${L.slagPerDirty} slag, ${L.iCruc} s`) +
+    row('Refinery: per Pure Dust', L => `${L.water} mB water, ${L.refine} s`) +
+    row('Illyrium Crucible alloy', L => `${L.pureIn} pure + ${L.tdustIn} Tetrium dust gives ${L.nugOut} nugget${L.nugOut > 1 ? 's' : ''}, ${L.alloy} s`) +
+    `<tr><td class="grp" colspan="4">One Illyrium Ingot costs</td></tr>` +
+    row('Illyrium Ore', (L, r) => r.illOre) + row('Tetrium Ore', (L, r) => r.tetOre) +
+    row('Filter uses', (L, r) => r.pure) + row('Water', (L, r) => r.water + ' buckets') +
+    `<tr class="total"><td>Machine time</td>${R.map(r => `<td>${dur(r.secs)}</td>`).join('')}</tr></tbody>`;
+
+  // ================================================================= machines (three.js)
+  const noiseCache = {};
+  function noiseTex(hex) {
+    if (noiseCache[hex]) return noiseCache[hex];
+    const c = document.createElement('canvas'); c.width = c.height = 16; const g = c.getContext('2d'); const b = new THREE.Color(hex);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const k = 0.9 + hash(x, y, hex.charCodeAt(2)) * 0.2; g.fillStyle = `rgb(${Math.min(255, b.r * 255 * k) | 0},${Math.min(255, b.g * 255 * k) | 0},${Math.min(255, b.b * 255 * k) | 0})`; g.fillRect(x, y, 1, 1); }
+    const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; return (noiseCache[hex] = t);
+  }
+  // box in model pixels, centred on (ox, oz)
+  function bx(from, to, color, o) {
+    o = o || {}; const w = to[0] - from[0], h = to[1] - from[1], d = to[2] - from[2];
+    const geo = new THREE.BoxGeometry(w, h, d), uv = geo.attributes.uv;
+    [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]].forEach(([fw, fh], f) => { const b = f * 4, U = fw / 16, V = fh / 16; uv.setXY(b, 0, V); uv.setXY(b + 1, U, V); uv.setXY(b + 2, 0, 0); uv.setXY(b + 3, U, 0); });
+    let mat;
+    if (o.glow) mat = new THREE.MeshBasicMaterial({ color, transparent: o.alpha != null, opacity: o.alpha == null ? 1 : o.alpha, depthWrite: o.alpha == null });
+    else if (o.alpha != null) mat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: o.alpha, depthWrite: false });
+    else mat = new THREE.MeshLambertMaterial({ map: noiseTex(color) });
+    const ox = o.ox == null ? 8 : o.ox, oz = o.oz == null ? 8 : o.oz;
+    const m = new THREE.Mesh(geo, mat); m.position.set((from[0] + to[0]) / 2 - ox, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2 - oz);
+    m.userData = { y0: from[1], h, baseY: m.position.y, baseX: m.position.x }; return m;
+  }
+  const level = (m, f) => { f = Math.max(0.001, f); m.scale.y = f; m.position.y = m.userData.y0 + m.userData.h * f / 2; };
+  const HULL = '#1E222B', HULL2 = '#2B313D', PANEL = '#C9CED8', MID = '#565C6B', TRIM = '#8A909C', VIO = '#B58CFF', TQ = '#19D3B0', LAVA = '#FF7A1A', RFY = '#FFD23A', OFF = '#2B3038', GLASS = '#BFE6FF';
+
+  // A kit: every helper adds to group g using centre o = {ox, oz}
+  function kit(g, o) {
+    const B = (f, t, c, x) => { const m = bx(f, t, c, Object.assign({}, o, x)); g.add(m); return m; };
+    const K = {
+      B,
+      // four walls of a hollow box
+      walls(x0, y0, z0, x1, y1, z1, t, c, x) { return [B([x0, y0, z0], [x1, y1, z0 + t], c, x), B([x0, y0, z1 - t], [x1, y1, z1], c, x), B([x0, y0, z0 + t], [x0 + t, y1, z1 - t], c, x), B([x1 - t, y0, z0 + t], [x1, y1, z1 - t], c, x)]; },
+      // raised plate on each of the four sides of a box, to break up flat faces
+      plates(x0, y0, z0, x1, y1, z1, inset, c) { const e = 0.45; B([x0 + inset, y0 + inset, z0 - e], [x1 - inset, y1 - inset, z0], c); B([x0 + inset, y0 + inset, z1], [x1 - inset, y1 - inset, z1 + e], c); B([x0 - e, y0 + inset, z0 + inset], [x0, y1 - inset, z1 - inset], c); B([x1, y0 + inset, z0 + inset], [x1 + e, y1 - inset, z1 - inset], c); },
+      // glowing vertical strips on the four corners
+      corners(x0, y0, z0, x1, y1, z1, c) { const e = 0.35, w = 0.9; return [[x0 - e, z0 - e], [x1 - w + e, z0 - e], [x0 - e, z1 - w + e], [x1 - w + e, z1 - w + e]].map(([x, z]) => B([x, y0, z], [x + w, y1, z + w], c, { glow: true })); },
+      // horizontal vent slats on the back (max z) face
+      vents(x0, x1, y0, n, z) { for (let i = 0; i < n; i++) B([x0, y0 + i * 1.4, z], [x1, y0 + i * 1.4 + 0.7, z + 0.5], HULL); },
+      bolts(list, c) { list.forEach(([x, y, z]) => B([x, y, z], [x + 0.8, y + 0.8, z + 0.8], c || TRIM)); },
+      leds(n, x0, y, z, step, w) { const a = []; for (let i = 0; i < n; i++) a.push(B([x0 + i * step, y, z], [x0 + i * step + w, y + 1.1, z + 0.5], OFF, { glow: true })); return a; },
+      pile(n, x0, y0, z0, color, glow) { const a = []; for (let i = 0; i < n; i++) { const x = x0 + (i % 3) * 1.5, z = z0 + (Math.floor(i / 3) % 2) * 1.6 + (i % 2) * 0.5, y = y0 + Math.floor(i / 6) * 1.1; a.push(B([x, y, z], [x + 1.2, y + 1.1, z + 1.2], color, { glow })); } return a; },
+      // square ring in its own group so it can spin about its centre
+      ring(cx, cz, half, y0, y1, t, c, glow) {
+        const r = new THREE.Group(); const R = (f, tt) => r.add(bx(f, tt, c, { ox: 0, oz: 0, glow }));
+        R([-half, y0, -half], [half, y1, -half + t]); R([-half, y0, half - t], [half, y1, half]); R([-half, y0, -half + t], [-half + t, y1, half - t]); R([half - t, y0, -half + t], [half, y1, half - t]);
+        r.position.set(cx - o.ox, 0, cz - o.oz); g.add(r); return r;
+      },
+      // RF upgrade module: a capacitor block with pulsing yellow bands
+      rf(x0, y0, z0, x1, y1, z1) { const body = B([x0, y0, z0], [x1, y1, z1], HULL2); const bands = [0.25, 0.5, 0.75].map(k => B([x0 - 0.2, y0 + (y1 - y0) * k - 0.4, z0 - 0.2], [x1 + 0.2, y0 + (y1 - y0) * k + 0.4, z1 + 0.2], RFY, { glow: true })); const cap = B([x0 + 0.6, y1, z0 + 0.6], [x1 - 0.6, y1 + 0.8, z1 - 0.6], TRIM); return [body, cap, ...bands]; },
+      grid(size) { for (const k of [16, 32]) { B([k - 0.15, 6.05, 0], [k + 0.15, 6.2, size], TQ, { glow: true, alpha: 0.35 }); B([0, 6.05, k - 0.15], [size, 6.2, k + 0.15], TQ, { glow: true, alpha: 0.35 }); } },
+    };
+    return K;
+  }
+  const pulse = (m, hex, t, sp, lo) => m.material.color.set(hex).multiplyScalar((lo || 0.6) + (1 - (lo || 0.6)) * (0.5 + 0.5 * Math.sin(t * sp)));
+  const setRF = (parts, on, t) => parts.forEach((m, i) => { m.visible = on; if (on && i > 1) pulse(m, RFY, t + i, 6, 0.5); });
+
+  function tetriumCrucible() {
+    const g = new THREE.Group(), K = kit(g, { ox: 8, oz: 8 }), B = K.B;
+    B([1, 0, 1], [15, 2, 15], HULL); B([0, 2, 0], [16, 8, 16], HULL2); K.plates(0, 2, 0, 16, 8, 16, 1.6, PANEL);
+    const corner = K.corners(0, 2, 0, 16, 8, 16, VIO);
+    B([4.4, 2.6, -0.9], [11.6, 7.4, -0.45], HULL); const fire = B([5, 3.2, -1.1], [11, 6.8, -0.8], LAVA, { glow: true });
+    K.vents(4, 12, 3, 3, 16.45); K.bolts([[1, 6.6, -0.6], [14.2, 6.6, -0.6], [1, 2.6, -0.6], [14.2, 2.6, -0.6]]);
+    B([2, 8, 2], [14, 9.5, 14], TRIM); const leds = K.leds(6, 3.4, 8.2, 1.55, 1.6, 1.1);
+    B([3.5, 9.5, 3.5], [12.5, 10.5, 12.5], MID); K.walls(3.5, 10.5, 3.5, 12.5, 17, 12.5, 1.3, PANEL); K.walls(2.8, 17, 2.8, 13.2, 18, 13.2, 1.6, TRIM);
+    const coils = [10.9, 12.6, 14.3, 16].map(y => K.ring(8, 8, 5.7, y, y + 0.8, 0.7, '#FF9A4A', true));
+    const melt = B([4.9, 10.6, 4.9], [11.1, 16.6, 11.1], '#D38BFF', { glow: true });
+    B([-3, 3, 5], [0, 4, 11], MID); B([-3, 4, 5], [-2.4, 5.4, 11], TRIM); B([-3, 3.9, 4.6], [0, 4.2, 5], VIO, { glow: true });
+    B([16, 3, 5], [19, 4, 11], MID); B([18.4, 4, 5], [19, 5.4, 11], TRIM); B([16, 3.9, 11], [19, 4.2, 11.4], VIO, { glow: true });
+    B([12.6, 9.5, 12.6], [14, 23, 14], TRIM); B([12.1, 19, 12.1], [14.5, 20, 14.5], MID); const tip = B([12.8, 23, 12.8], [13.8, 24.4, 13.8], VIO, { glow: true });
+    const plume = [0, 1, 2].map(() => B([7, 18, 7], [9, 19.6, 9], VIO, { glow: true, alpha: 0.45 }));
+    const slagP = K.pile(9, -2.7, 4, 5.6, '#3A3340'), nugP = K.pile(9, 16.2, 4, 5.6, TET.light);
+    const rf = K.rf(1.6, 9.5, 12.2, 4.4, 15, 14.6);
+    return { g, h: 22, r: 74, feed: ['Burner window glows while fuel (or RF) is feeding it', 'Induction coils light in sequence and the melt rises in the cup', 'Six lamps on the collar show progress; the mast tip blinks when a batch finishes', 'Slag tray on one side, nugget tray on the other, each filling as output builds up', 'RF upgrade appears as a capacitor on the collar'],
+      tick(t, p, s) { pulse(fire, s.rf ? RFY : LAVA, t, 9, 0.6); corner.forEach((m, i) => pulse(m, VIO, t + i, 2, 0.45));
+        coils.forEach((c, i) => c.children.forEach(m => m.material.color.set('#FF9A4A').multiplyScalar(0.35 + 0.65 * Math.max(0, Math.sin(t * 5 - i * 0.9)))));
+        level(melt, 0.12 + 0.88 * p); melt.material.color.set(p > 0.88 ? '#FFE0A0' : '#D38BFF');
+        leds.forEach((m, i) => m.material.color.set(i < Math.round(p * 6) ? VIO : OFF)); tip.material.color.set(p > 0.9 ? '#FFFFFF' : VIO);
+        plume.forEach((m, i) => { const k = (t * 0.4 + i / 3) % 1; m.position.y = m.userData.baseY + k * 8; m.material.opacity = 0.45 * (1 - k); m.scale.setScalar(1 - k * 0.5); });
+        slagP.forEach((m, i) => m.visible = i < s.out); nugP.forEach((m, i) => m.visible = i < s.out); setRF(rf, s.rf, t); } };
+  }
+
+  function combinationForge() {
+    const g = new THREE.Group(), K = kit(g, { ox: 8, oz: 8 }), B = K.B;
+    B([1, 0, 1], [15, 1.5, 15], HULL); B([0, 1.5, 0], [16, 6, 16], HULL2); K.plates(0, 1.5, 0, 16, 6, 16, 1.2, PANEL); const corner = K.corners(0, 1.5, 0, 16, 6, 16, VIO);
+    B([1, 6, 1], [15, 7, 15], PANEL); B([4.6, 7, 3.2], [11.4, 8.2, 9.8], MID); B([5.2, 8.2, 3.8], [10.8, 8.5, 9.2], HULL);
+    const nugs = []; for (let i = 0; i < 9; i++) nugs.push(B([5.6 + (i % 3) * 1.7, 8.5, 4.2 + Math.floor(i / 3) * 1.7], [6.9 + (i % 3) * 1.7, 9.6, 5.5 + Math.floor(i / 3) * 1.7], TET.light));
+    const ingot = B([5.8, 8.5, 5], [10.2, 9.9, 8], TET.base, { glow: true });
+    [[1, 3.6], [12.4, 15]].forEach(([x0, x1]) => { B([x0, 7, 10.2], [x1, 24, 13.8], HULL); B([x0 - 0.3, 7, 11], [x0, 24, 13], PANEL); B([x1, 7, 11], [x1 + 0.3, 24, 13], PANEL); });
+    const tracks = []; for (let i = 0; i < 7; i++) { tracks.push(B([3.6, 8.5 + i * 2.2, 11.4], [3.95, 9.7 + i * 2.2, 12.6], VIO, { glow: true })); tracks.push(B([12.05, 8.5 + i * 2.2, 11.4], [12.4, 9.7 + i * 2.2, 12.6], VIO, { glow: true })); }
+    B([1, 22, 10.2], [15, 25, 13.8], HULL2); B([5, 25, 10.8], [11, 26, 13.2], TRIM); const crown = B([7, 26, 11.4], [9, 27.6, 12.6], VIO, { glow: true });
+    K.vents(4, 12, 9, 6, 13.8);
+    const head = new THREE.Group(); g.add(head); const H = kit(head, { ox: 8, oz: 8 });
+    H.B([4.4, 13, 3], [11.6, 16, 10], PANEL); H.B([5, 12.5, 3.6], [11, 13, 9.4], HULL); H.B([3.6, 14, 10], [12.4, 15.4, 12.4], MID); const under = H.walls(4.6, 12.6, 3.2, 11.4, 12.9, 9.8, 0.5, VIO, { glow: true });
+    H.B([6.6, 16, 5], [9.4, 17, 8], TRIM);
+    const halo = K.ring(8, 6.5, 4.6, 19, 19.7, 0.7, VIO, true);
+    const leds = K.leds(5, 2, 6.2, -0.3, 1.5, 1);
+    B([2.6, 2.2, -0.7], [6.6, 5, -0.4], HULL); const illSock = B([3.1, 2.7, -0.95], [6.1, 4.5, -0.6], OFF, { glow: true });
+    B([9.4, 2.2, -0.7], [13.4, 5, -0.4], HULL); const rfSock = B([9.9, 2.7, -0.95], [12.9, 4.5, -0.6], OFF, { glow: true });
+    const rf = K.rf(12.8, 7, 2, 15, 12, 5);
+    return { g, h: 24, r: 76, feed: ['Nine nuggets sit in the mould and fuse into the glowing ingot as the head strikes', 'The press head hovers on lit rails and strikes faster near completion', 'Chase lights on both rails and five bed lamps show progress', 'Left socket lights turquoise with the Illyrium upgrade, right socket yellow with the RF upgrade', 'The halo above the head changes colour to match the metal being forged'],
+      tick(t, p, s) { const ill = s.metal === 1 && s.upgrade, pal = ill ? ILL : TET, glow = ill ? TQ : VIO;
+        corner.forEach((m, i) => pulse(m, glow, t + i, 2, 0.45));
+        nugs.forEach((m, i) => { m.visible = p < 0.9; m.scale.setScalar(Math.max(0.05, 1 - p * 1.1)); m.material.map = noiseTex(pal.light); });
+        ingot.visible = p > 0.1; ingot.scale.set(Math.max(0.05, p), Math.max(0.1, p), Math.max(0.05, p)); ingot.material.color.set(pal.base).lerp(new THREE.Color('#FFB060'), 0.55 * (1 - p));
+        const sp = 3 + p * 6; head.position.y = 1.6 - Math.pow(Math.abs(Math.sin(t * sp)), 0.5) * 2.6;
+        under.forEach(m => pulse(m, glow, t, sp * 2, 0.4)); halo.rotation.y = t * 1.5; halo.position.y = head.position.y; halo.children.forEach(m => m.material.color.set(glow));
+        tracks.forEach((m, i) => m.material.color.set(glow).multiplyScalar(((Math.floor(t * 8) + (i >> 1)) % 7 === 0) ? 1 : 0.3));
+        leds.forEach((m, i) => m.material.color.set(i < Math.round(p * 5) ? glow : OFF)); crown.material.color.set(glow);
+        illSock.material.color.set(s.upgrade ? TQ : OFF); rfSock.material.color.set(s.rf ? RFY : OFF); setRF(rf, s.rf, t); } };
+  }
+
+  function illyriumCrucible() {
+    const g = new THREE.Group(), o = { ox: 24, oz: 24 }, K = kit(g, o), B = K.B;
+    B([0, 0, 0], [48, 6, 48], HULL2); K.plates(0, 0.6, 0, 48, 5.4, 48, 1.4, MID); K.grid(48); K.corners(0, 0, 0, 48, 6, 48, TQ);
+    const lava = [];
+    [[1, 1], [38, 1], [1, 38], [38, 38]].forEach(([x, z]) => {
+      B([x, 6, z], [x + 9, 40, z + 9], HULL); B([x + 0.5, 40, z + 0.5], [x + 8.5, 42, z + 8.5], PANEL); B([x + 2.5, 42, z + 2.5], [x + 6.5, 43, z + 6.5], TQ, { glow: true });
+      const fx = x < 24 ? x - 0.5 : x + 9, fz = z < 24 ? z - 0.5 : z + 9;
+      B([x + 2.4, 8, fz], [x + 6.6, 38, fz + 0.5], HULL2); lava.push(B([x + 3, 8.6, z < 24 ? fz - 0.3 : fz + 0.3], [x + 6, 37.4, (z < 24 ? fz - 0.3 : fz + 0.3) + 0.5], LAVA, { glow: true }));
+      B([fx, 8, z + 2.4], [fx + 0.5, 38, z + 6.6], HULL2); lava.push(B([x < 24 ? fx - 0.3 : fx + 0.3, 8.6, z + 3], [(x < 24 ? fx - 0.3 : fx + 0.3) + 0.5, 37.4, z + 6], LAVA, { glow: true }));
+      for (const y of [14, 22, 30]) B([x - 0.3, y, z - 0.3], [x + 9.3, y + 1, z + 9.3], TRIM);
+    });
+    [[10, 22, 15, 26], [33, 22, 38, 26], [22, 10, 26, 15], [22, 33, 26, 38]].forEach(([x0, z0, x1, z1]) => B([x0, 6, z0], [x1, 9, z1], LAVA, { glow: true, alpha: 0.75 }));
+    [[15, 15], [31, 15], [15, 31], [31, 31]].forEach(([x, z]) => B([x, 6, z], [x + 2, 12, z + 2], TRIM));
+    B([14, 12, 14], [34, 14, 34], MID); K.walls(14, 14, 14, 34, 28, 34, 2, PANEL); for (const y of [16, 21, 26]) K.walls(13.5, y, 13.5, 34.5, y + 1.2, 34.5, 0.5, HULL);
+    const band = K.walls(13.3, 18.4, 13.3, 34.7, 19.2, 34.7, 0.4, TQ, { glow: true });
+    const melt = B([16.2, 14.2, 16.2], [31.8, 27.4, 31.8], DIRTY.base, { glow: true });
+    const containment = K.ring(24, 24, 13, 31, 32.2, 1.2, TQ, true), containment2 = K.ring(24, 24, 10.5, 34, 34.8, 0.8, TQ, true);
+    B([1, 43, 3], [47, 46, 7], HULL2); B([1, 43, 41], [47, 46, 45], HULL2); B([3, 43, 7], [7, 46, 41], HULL2); B([41, 43, 7], [45, 46, 41], HULL2); B([21, 43, 7], [27, 46, 41], HULL2); B([20, 46, 20], [28, 49, 28], TRIM); const beacon = B([22.5, 49, 22.5], [25.5, 51, 25.5], TQ, { glow: true });
+    const stir = new THREE.Group(); stir.position.set(0, 0, 0); g.add(stir); const S = kit(stir, { ox: 24, oz: 24 }); S.B([23, 17, 23], [25, 43, 25], TRIM); S.B([17.5, 17, 23.4], [30.5, 19.4, 24.6], MID); S.B([23.4, 17, 17.5], [24.6, 19.4, 30.5], MID);
+    B([17, 6, -2], [31, 18, 2.5], HULL); B([18, 7, -2.5], [30, 17, -2], PANEL); B([19, 9.5, -2.9], [29, 15.5, -2.5], '#0C1116', { glow: true }); const screen = B([19.6, 11.2, -3.1], [28.4, 13, -2.9], TQ, { glow: true });
+    const leds = K.leds(5, 19.6, 14, -3.1, 1.9, 1.2);
+    B([-3, 20, 18], [1, 28, 30], HULL2); B([-3.6, 27, 17.4], [1.6, 28.5, 30.6], TRIM); B([-2.4, 28.5, 19], [0.4, 29, 29], TQ, { glow: true, alpha: 0.6 });
+    B([47, 6, 18], [52, 9, 30], MID); B([51.4, 9, 18], [52, 11, 30], TRIM); B([47, 8.8, 17.5], [52, 9.1, 18], TQ, { glow: true });
+    const outP = K.pile(12, 47.4, 9, 20, DIRTY.light);
+    const rf = K.rf(32.5, 6, -1.5, 37, 15, 2.5);
+    return { g, h: 44, r: 150, feed: ['Lava level shows in the glass slits of all four pylons and in the floor conduits', 'Twin containment rings counter-rotate above the vessel; the stirring cross turns in the melt', 'Melt colour shows the job: murky green for smelting, bright turquoise for alloying', 'Controller screen at the front shows a progress bar and five status lamps', 'Input hatch on the left, output tray on the right filling with ingots or nuggets'],
+      parts: '<b>3 &times; 3 &times; 3 structure.</b> 9 Illyrium Casing (floor), 4 Lava Pylons each 2 blocks tall, 1 Crucible Vessel (centre), 8 Gantry Frame (top ring), 1 Controller, 1 Input Hatch, 1 Output Hatch.',
+      tick(t, p, s) { lava.forEach((m, i) => { level(m, s.fuel); pulse(m, s.rf ? RFY : LAVA, t + i, 3, 0.7); });
+        const alloy = s.mode === 1, col = alloy ? ILL.base : DIRTY.base; level(melt, 0.15 + 0.8 * p); pulse(melt, col, t, 3, 0.8);
+        const run = s.fuel > 0.02 || s.rf; stir.rotation.y = run ? t * 1.8 : 0; containment.rotation.y = run ? t * 0.9 : 0; containment2.rotation.y = run ? -t * 1.4 : 0; containment.position.y = Math.sin(t * 1.3) * 0.6;
+        band.forEach(m => pulse(m, TQ, t, 2, 0.4)); screen.scale.x = Math.max(0.02, p); screen.position.x = screen.userData.baseX - 4.4 * (1 - p);
+        leds.forEach((m, i) => m.material.color.set(i < Math.round(p * 5) ? TQ : OFF)); pulse(beacon, TQ, t, 4, 0.3);
+        outP.forEach((m, i) => { m.visible = i < s.out; m.material.map = noiseTex(alloy ? ILL.light : DIRTY.light); }); setRF(rf, s.rf, t); } };
+  }
+
+  function illyriumRefinery() {
+    const g = new THREE.Group(), o = { ox: 24, oz: 24 }, K = kit(g, o), B = K.B;
+    B([0, 0, 0], [48, 6, 48], HULL2); K.plates(0, 0.6, 0, 48, 5.4, 48, 1.4, MID); K.grid(48); K.corners(0, 0, 0, 48, 6, 48, TQ);
+    // filter chamber
+    B([14, 6, 14], [34, 20, 34], HULL); K.plates(14, 6, 14, 34, 20, 34, 2.2, PANEL); B([17, 9, 13.2], [31, 17, 13.6], '#0C1116', { glow: true });
+    const cart = B([18, 10, 12.9], [30, 16, 13.3], IRON.base, { glow: true }); for (let i = 0; i < 5; i++) B([19.6 + i * 2.2, 10, 12.7], [20, 16, 12.95], HULL);
+    const life = K.leds(5, 17.4, 18, 13.1, 2.8, 1.8);
+    B([13, 20, 13], [35, 22, 35], TRIM);
+    // tank
+    [[15, 15], [32, 15], [15, 32], [32, 32]].forEach(([x, z]) => B([x, 22, z], [x + 1, 48, z + 1], TRIM));
+    for (const y of [30, 39]) K.walls(14.8, y, 14.8, 33.2, y + 0.8, 33.2, 0.5, TRIM);
+    const water = B([16, 22.2, 16], [32, 47.6, 32], '#3A8BFF', { glow: true, alpha: 0.5 });
+    const stir = new THREE.Group(); g.add(stir); const S = kit(stir, o); S.B([23.2, 24, 23.2], [24.8, 50, 24.8], TRIM); S.B([18.5, 25, 23.5], [29.5, 27, 24.5], MID); S.B([23.5, 33, 18.5], [24.5, 35, 29.5], MID);
+    const glass = B([15.6, 22, 15.6], [32.4, 48, 32.4], GLASS, { alpha: 0.14 });
+    B([13, 48, 13], [35, 51, 35], HULL2); B([19, 51, 19], [29, 53, 29], TRIM); const beacon = B([22.5, 53, 22.5], [25.5, 55, 25.5], TQ, { glow: true });
+    const cent = K.ring(24, 24, 12.5, 34, 35.4, 1.4, PANEL, false); const nodes = [[-12.5, 0], [12.5, 0], [0, -12.5], [0, 12.5]].map(([x, z]) => { const m = bx([x - 1.2, 33.4, z - 1.2], [x + 1.2, 36, z + 1.2], TQ, { ox: 0, oz: 0, glow: true }); cent.add(m); return m; });
+    // pump module + riser pipe (left)
+    B([1, 6, 16], [11, 20, 32], HULL); K.plates(1, 6, 16, 11, 20, 32, 2, PANEL); const gauge = B([0.3, 9, 20], [0.8, 17, 28], '#3A8BFF', { glow: true }); B([0.2, 8.4, 19.4], [0.5, 17.6, 28.6], HULL2);
+    B([4.5, 20, 22.5], [7.5, 47, 25.5], TRIM); B([4.5, 47, 22.5], [16, 50, 25.5], TRIM); for (const y of [26, 34, 42]) B([4, y, 22], [8, y + 1.2, 26], MID);
+    const flow = [0, 1, 2, 3].map(() => B([5.4, 20, 22], [6.6, 21.6, 22.4], '#8CC8FF', { glow: true }));
+    // dust feeder (right) with conveyor
+    B([37, 6, 16], [47, 18, 32], HULL); K.plates(37, 6, 16, 47, 18, 32, 2, PANEL); B([38, 18, 17], [46, 22, 31], MID); B([39, 22, 18], [45, 23, 30], HULL); const hopperDust = B([39.6, 21.2, 18.6], [44.4, 22.6, 29.4], DIRTY.base, { glow: true });
+    B([34, 12, 21], [37, 14, 27], TRIM); const belt = [0, 1, 2].map(() => B([34, 14, 22.5], [35, 14.6, 25.5], DIRTY.light, { glow: true }));
+    // collection drawer + controller (front)
+    B([18, 6, 2], [30, 10, 14], MID); B([18, 10, 2], [30, 11, 2.8], TRIM); B([17.6, 9.6, 1.6], [30.4, 10, 2], TQ, { glow: true }); const dustP = K.pile(12, 21.5, 10, 6, ILL.light, true);
+    const drops = [0, 1, 2].map(i => B([21 + i * 2.6, 10, 12.6], [21.8 + i * 2.6, 11, 13.4], '#8CFFE6', { glow: true }));
+    B([35, 6, 1], [46, 18, 10], HULL); B([36, 8, 0.5], [45, 17, 1], PANEL); B([37, 10, 0.1], [44, 15.5, 0.5], '#0C1116', { glow: true }); const screen = B([37.6, 11.6, -0.1], [43.4, 13.2, 0.1], TQ, { glow: true });
+    K.vents(38, 44, 9, 4, 10);
+    const rf = K.rf(2.5, 6, 3, 8, 16, 9);
+    const FC = [IRON.base, DIAMOND.base, NETH.light, ILL.base];
+    return { g, h: 48, r: 158, feed: ['Water level is visible through the glass tank and in the pump gauge on the left', 'The filter cartridge shows through the chamber window, coloured by filter type', 'Five lamps above the window show remaining filter life', 'Centrifuge ring and paddles turn while refining; water pulses up the riser pipe', 'Dirty dust travels the conveyor on the right; pure dust piles up glowing in the front drawer'],
+      parts: '<b>3 &times; 3 &times; 3 structure.</b> 9 Illyrium Casing (floor), 1 Filter Chamber, 2 Glass Tank sections, 1 Tank Cap, 1 Pump (water in), 1 Dust Feeder (items in), 1 Collection Drawer (items out), 1 Controller.',
+      tick(t, p, s) { level(water, s.water); water.visible = s.water > 0.02; level(gauge, s.water); cart.material.color.set(FC[s.filter]);
+        const run = s.water > 0.02; stir.rotation.y = run ? t * 1.5 : 0; cent.rotation.y = run ? t * 2.4 : 0; nodes.forEach((m, i) => pulse(m, TQ, t + i, 5, 0.4));
+        flow.forEach((m, i) => { const k = (t * 0.6 + i / 4) % 1; m.visible = run; m.position.y = m.userData.baseY + k * 26; });
+        belt.forEach((m, i) => { const k = (t * 0.5 + i / 3) % 1; m.visible = run; m.position.x = m.userData.baseX + 2 - k * 2.6; });
+        drops.forEach((m, i) => { const k = (t * 0.9 + i / 3) % 1; m.visible = run; m.position.z = (12.6 - 24 + 0.4) - k * 5; m.position.y = m.userData.baseY - k * 0.6; });
+        dustP.forEach((m, i) => m.visible = i < s.out); level(hopperDust, 1 - p * 0.8);
+        life.forEach((m, i) => m.material.color.set(i < Math.ceil(s.life * 5) ? FC[s.filter] : OFF));
+        screen.scale.x = Math.max(0.02, p); screen.position.x = screen.userData.baseX - 2.9 * (1 - p); pulse(beacon, TQ, t, 4, 0.3); setRF(rf, s.rf, t); } };
+  }
+
+  const RFCTRL = { k: 'rf', label: 'RF upgrade', type: 'select', opts: ['Not fitted', 'Fitted'] };
+  const MACHINES = [
+    { id: 'tcruc', name: 'Tetrium Crucible', build: tetriumCrucible, multi: false, blurb: 'An induction crucible: a ceramic cup wrapped in heating coils over a fuel burner. Tetrium Ore in, nuggets and slag out to separate trays.', ctrls: [RFCTRL] },
+    { id: 'forge', name: 'Combination Forge', build: combinationForge, multi: false, blurb: 'A magnetic press. The head hovers on lit rails and hammers nine nuggets into one ingot. Makes Illyrium only with the upgrade fitted.',
+      ctrls: [{ k: 'metal', label: 'Forging', type: 'select', opts: ['Tetrium Ingot', 'Illyrium Ingot'] }, { k: 'upgrade', label: 'Illyrium upgrade', type: 'select', opts: ['Not fitted', 'Fitted'], v: 1 }, RFCTRL] },
+    { id: 'icruc', name: 'Illyrium Crucible', build: illyriumCrucible, multi: true, blurb: 'A containment crucible. Four lava pylons feed a central vessel under counter-rotating field rings. Two jobs: smelt ore with slag, or alloy pure dust with Tetrium dust.',
+      ctrls: [{ k: 'mode', label: 'Job', type: 'select', opts: ['Smelt: ore + slag', 'Alloy: pure dust + Tetrium dust'] }, { k: 'fuel', label: 'Lava', type: 'range', v: 70 }, RFCTRL] },
+    { id: 'refine', name: 'Illyrium Refinery', build: illyriumRefinery, multi: true, blurb: 'A filtration tower. A pump lifts water into the glass tank, a centrifuge spins it through the filter chamber, and pure dust collects in the front drawer.',
+      ctrls: [{ k: 'filter', label: 'Filter', type: 'select', opts: ['Iron (1 use)', 'Diamond (20)', 'Netherite (100)', 'Illyrium (1000)'], v: 1 }, { k: 'water', label: 'Water', type: 'range', v: 65 }, { k: 'life', label: 'Filter life', type: 'range', v: 80 }, RFCTRL] },
+  ];
+  MACHINES.forEach(M => {
+    const el = document.createElement('section'); el.className = 'stage';
+    el.innerHTML = `<h3>${M.name}<span class="badge ${M.multi ? '' : 'single'}">${M.multi ? 'Multiblock 3x3x3' : 'Single block'}</span></h3><p>${M.blurb}</p><div class="view" aria-label="${M.name} animated 3D mock-up"></div><div class="row"></div><p class="parts"></p><ul class="feed"></ul>`;
+    document.getElementById('machines').appendChild(el);
+    const state = { out: 0 }, row = el.querySelector('.row');
+    M.ctrls.forEach(c => {
+      const id = `${M.id}-${c.k}`; const lab = document.createElement('label'); lab.htmlFor = id; lab.textContent = c.label; row.appendChild(lab);
+      if (c.type === 'select') { const s = document.createElement('select'); s.id = id; c.opts.forEach((o, i) => s.add(new Option(o, i))); s.value = c.v || 0; state[c.k] = Number(s.value); s.addEventListener('change', () => state[c.k] = Number(s.value)); row.appendChild(s); row.appendChild(document.createElement('span')); }
+      else { const r = document.createElement('input'); r.type = 'range'; r.id = id; r.min = 0; r.max = 100; r.value = c.v; const o = document.createElement('output'); o.htmlFor = id; o.value = c.v + '%'; state[c.k] = c.v / 100; r.addEventListener('input', () => { state[c.k] = r.value / 100; o.value = r.value + '%'; }); row.appendChild(r); row.appendChild(o); }
+    });
+    const view = el.querySelector('.view'), rend = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    rend.setPixelRatio(Math.min(window.devicePixelRatio, 2)); view.appendChild(rend.domElement);
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, 1, 600);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.62)); const k = new THREE.DirectionalLight(0xffffff, 0.85); k.position.set(10, 22, -14); scene.add(k); const f = new THREE.DirectionalLight(0x9ab4ff, 0.35); f.position.set(-12, 6, 10); scene.add(f);
+    const m = M.build(); scene.add(m.g); m.feed.forEach(t => { const li = document.createElement('li'); li.textContent = t; el.querySelector('.feed').appendChild(li); });
+    const parts = el.querySelector('.parts'); if (m.parts) parts.innerHTML = m.parts; else parts.hidden = true;
+    let rotY = Math.PI - 0.62, rotX = 0.34, drag = false, lx = 0, ly = 0;
+    view.addEventListener('pointerdown', e => { drag = true; lx = e.clientX; ly = e.clientY; view.setPointerCapture(e.pointerId); });
+    view.addEventListener('pointermove', e => { if (!drag) return; rotY += (e.clientX - lx) * 0.01; rotX = Math.max(-0.1, Math.min(1.2, rotX + (e.clientY - ly) * 0.01)); lx = e.clientX; ly = e.clientY; });
+    view.addEventListener('pointerup', () => drag = false); view.addEventListener('pointercancel', () => drag = false);
+    const resize = () => { const w = view.clientWidth, h = view.clientHeight; if (!w || !h) return; rend.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
+    new ResizeObserver(resize).observe(view);
+    const start = performance.now();
+    (function frame(now) {
+      const t = reduce ? 2.2 : (now - start) / 1000, cyc = 7, p = reduce ? 0.6 : (t % cyc) / cyc;
+      state.out = reduce ? 6 : Math.floor(t / cyc) % 10;
+      m.tick(t, p, { out: state.out, metal: state.metal, upgrade: !!state.upgrade, mode: state.mode, fuel: state.fuel, filter: state.filter || 0, water: state.water, life: state.life, rf: !!state.rf });
+      const r = m.r || 70, ty = m.h / 2; cam.position.set(Math.sin(rotY) * r * Math.cos(rotX), ty + Math.sin(rotX) * r, Math.cos(rotY) * r * Math.cos(rotX)); cam.lookAt(0, ty, 0);
+      rend.render(scene, cam); requestAnimationFrame(frame);
+    })(start);
+    resize();
+  });
+})();
+</script>
