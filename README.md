@@ -49,12 +49,20 @@ Server config is generated at `<world>/serverconfig/bsp_core-server.toml`.
 | `upgrades.damageXpLevelCosts` | `[5, 10, 20, 35, 55]` | XP level cost of each Damage buff level. List length is the max level. |
 | `upgrades.resistanceXpLevelCosts` | `[5, 10, 20, 35, 55]` | Same for Resistance. |
 | `upgrades.miningSpeedXpLevelCosts` | `[5, 10, 20, 35, 55]` | Same for Mining Speed. |
-| `upgrades.fortifyCoinCosts` / `healingCoinCosts` | `[5, 10, 20, 40, 80]` | Shatter Coin cost per level of the placed-only upgrades. |
+| `upgrades.fortifyCoinCosts` / `healingCoinCosts` | `[5, 10, 20, 40, 80]` | Cost per level in coin value (copper units). |
 | `upgrades.fortifyRadius` | `[1, 3, 5, 7, 15]` | Fortify radius per level. |
 | `upgrades.fortifyBreakSpeedMultiplier` | `[0.6, 0.45, 0.3, 0.2, 0.1]` | Non-owner mining speed inside a Fortify aura. |
 | `upgrades.fortifyExplosionProtection` | `[0.3, 0.5, 0.7, 0.85, 1.0]` | Chance each block in range survives an explosion. |
 | `upgrades.healingRadius` | `[3, 5, 7, 10, 15]` | Healing Aura radius per level. |
 | `upgrades.healingPerSecond` | `[0.5, 1, 1.5, 2, 3]` | Health healed per second (2 = one heart). |
+| `coins.values` | `[1, 2, 4, 8, 16]` | Value of each coin tier in copper units. |
+| `factory.pressHours` | `[12, 24, 48, 96, 168]` | Real-time hours per coin by tier, before upgrades. |
+| `factory.energyPerCoin` | `[50k, 100k, 200k, 400k, 800k]` | RF taken when a press starts. |
+| `factory.energyCapacity` / `maxReceivePerTick` | `1,000,000` / `10,000` | Energy buffer and input rate. |
+| `factory.upgradeTimeReduction` | `[0.05, 0.15, 0.30]` | Time removed by Speed Gear Mk I / II / III; fitted gears add up. |
+| `factory.maxTotalReduction` | `0.75` | Cap on the combined reduction. |
+| `factory.maxPerPlayer` | `10` | Factories one player may own on a server. |
+| `visuals.auraSphereViewDistance` | `32` | Aura spheres are only drawn within this many blocks of the totem. |
 | `restrictions.allowedDimensions` | overworld, nether, end | Where the totem may be placed, dropped or auto-placed. |
 | `restrictions.groundSecondsBeforePlace` | `30` | How long a dropped totem waits before placing itself. |
 | `steal.stealSeconds` | `300` | Time a thief must stay near a totem. |

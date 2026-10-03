@@ -2,6 +2,7 @@ package com.mrgregles.bsp_core.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity;
 import com.mrgregles.bsp_core.totem.TotemUpgrades;
@@ -67,7 +68,12 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             }
         }
 
-        // --- aura spheres
+        // --- aura spheres, only when the viewer is close to the totem
+        int maxDist = BSPConfig.AURA_SPHERE_VIEW_DISTANCE.get();
+        net.minecraft.world.phys.Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        if (cam.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(totem.getBlockPos())) > (double) maxDist * maxDist) {
+            return;
+        }
         for (TotemUpgrades.Buff b : buffs) {
             if (!b.placedOnly) continue;
             int lvl = totem.getUpgradeLevel(b);
@@ -143,6 +149,6 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
 
     @Override
     public int getViewDistance() {
-        return 128;
+        return 64;
     }
 }

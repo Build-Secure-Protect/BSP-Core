@@ -34,6 +34,21 @@ Enable the grant on the test server: edit `run/<world>/serverconfig/bsp_core-ser
 - [ ] Press "Yes": you disconnect, and on rejoining the totem is a placed block next to where you stood, not in your inventory.
 - [ ] Repeat inside a Compact Machine or other non-allowed dimension: the totem is placed at your last Overworld position instead.
 
+## Shatter Coins and the factory
+Fast testing: in `serverconfig/bsp_core-server.toml` set `pressHours = [0.01, 0.02, 0.04, 0.08, 0.14]` (36 seconds for copper).
+- [ ] BSP creative tab shows the factory, five blanks, five coins and three Speed Gears. Coin tooltips show values 1, 2, 4, 8, 16.
+- [ ] Craft a Copper Coin Blank (8 iron nuggets around a copper ingot), then a Gold blank from it (4 gold ingots around the copper blank).
+- [ ] Place the factory: it faces you; the press head sits raised. Right-click opens the screen with your name and "1/10".
+- [ ] Put a blank in with no energy: status says idle. Feed RF (any mod's cable or a creative energy source): the red bar fills, the press starts, the head begins slamming, the blank shows on the die, and the timer counts down.
+- [ ] When the timer ends a coin appears in the output slot and the next blank starts.
+- [ ] Fit Speed Gears: sockets on the front light up (grey, gold, turquoise), the "Upgrades: -N% time" line updates, and the remaining time drops. Four Mk III gears show -75% (the cap).
+- [ ] Leave the area or stop the server for longer than a press, then return: the coin is already made.
+- [ ] Fill the output with 64 coins: status shows "Output full" and resumes when you take them.
+- [ ] Click a side button to cycle Off / In / Out / In+Out. A hopper on an In face inserts blanks; a hopper under an Out face pulls coins; neither works on an Off face. Try a Mekanism transporter and an AE2 bus the same way.
+- [ ] Break the factory: it drops itself and everything inside; your owned count goes down.
+- [ ] Place factories until the limit (set `maxPerPlayer = 2` to test quickly): the next placement is refused with a red message.
+- [ ] Buy a totem upgrade costing 5 with one Diamond coin (value 4) and one Gold (value 2): both are taken and one Copper comes back as change.
+
 ## Item basics
 - [ ] BSP creative tab shows a glinting Shatter Totem, tooltip "Unclaimed".
 - [ ] Tooltip shows "Owner: <name>" after `/bsp totem give`.

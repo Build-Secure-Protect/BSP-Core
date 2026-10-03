@@ -19,7 +19,11 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(ModItems.SHATTER_TOTEM.get()))
             .displayItems((params, output) -> {
                 output.accept(ModItems.SHATTER_TOTEM.get());
-                output.accept(ModItems.SHATTER_COIN.get());
+                output.accept(ModItems.COIN_FACTORY.get());
+                ModItems.BLANKS.values().forEach(i -> output.accept(i.get()));
+                ModItems.COINS.values().forEach(i -> output.accept(i.get()));
+                ModItems.SPEED_GEARS.forEach(i -> output.accept(i.get()));
+                output.accept(ModItems.ETHERIUM_SHARD.get());
             })
             .build());
 

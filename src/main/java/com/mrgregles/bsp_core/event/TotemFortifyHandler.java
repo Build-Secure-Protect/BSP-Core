@@ -4,15 +4,12 @@ import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.totem.TotemAuras;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.ExplosionEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-
-import java.util.UUID;
 
 /** The Fortify aura: blocks near a fortified totem are slower to mine and resist explosions. */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
@@ -36,10 +33,9 @@ public final class TotemFortifyHandler {
         if (!(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
-        Entity source = event.getExplosion().getIndirectSourceEntity();
-        UUID actor = source instanceof Player p ? p.getUUID() : null;
+        // Explosions are resisted no matter who set them off, the totem's owner included.
         event.getAffectedBlocks().removeIf(pos -> {
-            int lvl = TotemAuras.fortifyLevelAt(level, pos, actor);
+            int lvl = TotemAuras.fortifyLevelAt(level, pos, null);
             return lvl > 0 && level.random.nextDouble() < TotemAuras.explosionProtection(lvl);
         });
     }

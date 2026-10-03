@@ -24,7 +24,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import com.mrgregles.bsp_core.registry.ModItems;
+import com.mrgregles.bsp_core.coin.CoinWallet;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -340,14 +340,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.maxed").withStyle(ChatFormatting.YELLOW), true);
             return;
         }
-        if (!player.isCreative()) {
-            int have = player.getInventory().countItem(ModItems.SHATTER_COIN.get());
-            if (have < cost) {
-                player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_coins", cost).withStyle(ChatFormatting.RED), true);
-                return;
-            }
-            player.getInventory().clearOrCountMatchingItems(st -> st.is(ModItems.SHATTER_COIN.get()), cost, player.inventoryMenu.getCraftSlots());
-            player.inventoryMenu.broadcastChanges();
+        if (!player.isCreative() && !CoinWallet.pay(player, cost)) {
+            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_coins", cost).withStyle(ChatFormatting.RED), true);
+            return;
         }
         setUpgradeLevel(buff, lvl + 1);
         player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
@@ -411,14 +406,16 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     // ------------------------------------------------------------------ admin
 
     /** Operator: cancel any steal in progress. */
-    public void adminCancelSteal() {
+    public boolean adminCancelSteal() {
         if (level instanceof ServerLevel serverLevel && steal != null) {
             endSteal(serverLevel, StealStatusPacket.OUTCOME_FAILED, "message.bsp_core.steal.cancelled_admin");
+            return true;
         }
+        return false;
     }
 
     /** Operator: complete the steal in progress immediately. */
-    public void adminFinishSteal() {
+    public boolean adminFinishSteal() {
         if (level instanceof ServerLevel serverLevel && steal != null) {
             ServerPlayer thief = serverLevel.getServer().getPlayerList().getPlayer(steal.thief());
             if (thief != null) {
@@ -426,7 +423,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             } else {
                 endSteal(serverLevel, StealStatusPacket.OUTCOME_FAILED, "message.bsp_core.steal.failed_thief_gone");
             }
+            return true;
         }
+        return false;
     }
 
     /** Operator: set or clear the owner. Cancels any steal in progress first. */
@@ -474,6 +473,10 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
+        // An unclaimed totem with no upgrades and no steal writes nothing, and Minecraft drops update
+        // packets whose tag is empty. Without this marker the client would never learn that the owner,
+        // steal or upgrades were cleared.
+        tag.putBoolean("Synced", true);
         return tag;
     }
 

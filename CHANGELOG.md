@@ -5,12 +5,16 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 ## [Unreleased]
 
 ### Fixed
+- Operator buttons on the totem panel now update the panel immediately. Unclaim and Reset buffs could leave the panel showing the old owner or levels, because an empty update was being dropped before it reached the client.
 - Upgrade tree now shows the new level immediately after buying; the held totem is re-sent to the client because the upgrade menu has no slots of its own.
 
 ### Added
-- Shatter Coin item (no recipe yet; operators can give it).
-- Placed-only upgrades bought with Shatter Coins from the placed totem's panel: **Fortify** (non-owner mining in a 1/3/5/7/15 block radius is slowed and explosions there spare blocks with rising probability) and **Healing Aura** (heals the owner while they stand within 3/5/7/10/15 blocks). Costs, radii and strengths are all in the `upgrades` config section.
-- Translucent glowing spheres show each aura's radius; upgrade orbs around the base are now drawn by a block-entity renderer (five orbs, one per upgrade) and bob gently.
+- Five Shatter Coin tiers (Copper, Gold, Diamond, Netherite, Etherium), each worth double the last, with matching coin blanks. Blank recipes are provisional and cumulative: each blank is crafted around the previous tier's blank.
+- Shatter Coin Factory: a craftable-later machine (no recipe yet) that presses blanks into coins in real time (12 h, 24 h, 48 h, 4 d, 7 d by default), catching up when its chunk reloads or the server restarts. Needs Forge Energy (RF), taken per coin when a press starts. Four upgrade slots take Speed Gears Mk I / II / III (5%, 15%, 30% less time, additive, capped by `factory.maxTotalReduction`). Each face can be set to Off, In, Out or In+Out for hoppers, pipes and storage buses. Animated press head, coin on the die, and lit sockets for fitted gears. A player may own at most `factory.maxPerPlayer` (10).
+- Etherium Shard item, the material for Etherium coin blanks (how it is obtained comes later).
+- Totem upgrade costs are now in coin value and can be paid with any mix of coins; change is returned.
+- Placed-only upgrades bought with Shatter Coins from the placed totem's panel: **Fortify** (non-owner mining in a 1/3/5/7/15 block radius is slowed and explosions from any source, the owner's included, spare blocks there with rising probability) and **Healing Aura** (heals the owner while they stand within 3/5/7/10/15 blocks). Costs, radii and strengths are all in the `upgrades` config section.
+- Translucent glowing spheres show each aura's radius to viewers within `visuals.auraSphereViewDistance` (32) blocks; upgrade orbs around the base are now drawn by a block-entity renderer (five orbs, one per upgrade) and bob gently.
 - The placed totem faces the player who placed it; the item shows its face and orb in the inventory and in hand.
 - Logout protection: carried totems are placed next to the player when they log out (or at their last main-dimension spot). The pause menu warns before quitting with a totem.
 - Completed steals set off a harmless particle and sound blast at the totem and give the thief `steal.invincibilitySeconds` (15) of Resistance V and Fire Resistance.

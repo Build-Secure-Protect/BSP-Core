@@ -462,7 +462,6 @@ def write_assets(variant):
                 v["y"] = rot
             variants[f"facing={facing},glow={st}"] = v
     (ASSETS / "blockstates/shatter_totem.json").write_text(json.dumps({"variants": variants}, indent=2))
-    write_coin_icon(tex / "item/shatter_coin.png")
 
     for state, (make_frames, frametime) in STATES.items():
         frames = make_frames(8)

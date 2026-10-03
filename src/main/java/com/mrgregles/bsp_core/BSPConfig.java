@@ -53,6 +53,24 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue STEAL_INVINCIBILITY_SECONDS;
     public static final ForgeConfigSpec.IntValue STEAL_WARNING_SECONDS;
 
+    // ------------------------------------------------------------------ coins + factory
+
+    /** Value of each coin tier (Copper, Gold, Diamond, Netherite, Etherium) in copper-coin units. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COIN_VALUES;
+    /** Real-time hours to press one coin of each tier with no upgrades. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_PRESS_HOURS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FACTORY_ENERGY_PER_COIN;
+    public static final ForgeConfigSpec.IntValue FACTORY_ENERGY_CAPACITY;
+    public static final ForgeConfigSpec.IntValue FACTORY_MAX_RECEIVE;
+    /** Fraction of press time removed by each Speed Gear (Mk I, II, III); fitted gears add together. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_UPGRADE_REDUCTIONS;
+    public static final ForgeConfigSpec.DoubleValue FACTORY_MAX_REDUCTION;
+    public static final ForgeConfigSpec.IntValue FACTORY_MAX_PER_PLAYER;
+
+    // ------------------------------------------------------------------ visuals
+
+    public static final ForgeConfigSpec.IntValue AURA_SPHERE_VIEW_DISTANCE;
+
     public static final ForgeConfigSpec SPEC;
 
     static {
@@ -72,7 +90,7 @@ public final class BSPConfig {
         MINING_SPEED_XP_COSTS = BUILDER.comment("Mining speed buff").defineList("miningSpeedXpLevelCosts", defaults, BSPConfig::isPositiveInt);
 
         List<Integer> coinDefaults = List.of(5, 10, 20, 40, 80);
-        FORTIFY_COIN_COSTS = BUILDER.comment("Fortify (placed only): Shatter Coin cost per level")
+        FORTIFY_COIN_COSTS = BUILDER.comment("Fortify (placed only): cost per level in coin value (see coins.values)")
                 .defineList("fortifyCoinCosts", coinDefaults, BSPConfig::isPositiveInt);
         FORTIFY_RADIUS = BUILDER.comment("Fortify: protected radius in blocks per level")
                 .defineList("fortifyRadius", List.of(1, 3, 5, 7, 15), BSPConfig::isPositiveInt);
@@ -80,7 +98,7 @@ public final class BSPConfig {
                 .defineList("fortifyBreakSpeedMultiplier", List.of(0.6, 0.45, 0.3, 0.2, 0.1), BSPConfig::isFraction);
         FORTIFY_EXPLOSION_PROTECTION = BUILDER.comment("Fortify: chance (0-1) that each block in range survives an explosion, per level")
                 .defineList("fortifyExplosionProtection", List.of(0.3, 0.5, 0.7, 0.85, 1.0), BSPConfig::isFraction);
-        HEALING_COIN_COSTS = BUILDER.comment("Healing Aura (placed only): Shatter Coin cost per level")
+        HEALING_COIN_COSTS = BUILDER.comment("Healing Aura (placed only): cost per level in coin value")
                 .defineList("healingCoinCosts", coinDefaults, BSPConfig::isPositiveInt);
         HEALING_RADIUS = BUILDER.comment("Healing Aura: radius in blocks per level")
                 .defineList("healingRadius", List.of(3, 5, 7, 10, 15), BSPConfig::isPositiveInt);
@@ -114,6 +132,34 @@ public final class BSPConfig {
                 .defineInRange("warningSeconds", 30, 0, 86400);
         BUILDER.pop();
 
+        BUILDER.comment("Shatter Coins").push("coins");
+        COIN_VALUES = BUILDER.comment("Value of Copper, Gold, Diamond, Netherite, Etherium coins in copper units. Totem upgrade costs are in these units.")
+                .defineList("values", List.of(1, 2, 4, 8, 16), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
+        BUILDER.comment("Shatter Coin Factory").push("factory");
+        FACTORY_PRESS_HOURS = BUILDER.comment("Real-time hours to press one Copper, Gold, Diamond, Netherite, Etherium coin without upgrades.",
+                        "Time keeps running while the chunk is unloaded or the server is off.")
+                .defineList("pressHours", List.of(12.0, 24.0, 48.0, 96.0, 168.0), o -> o instanceof Number n && n.doubleValue() > 0);
+        FACTORY_ENERGY_PER_COIN = BUILDER.comment("Forge Energy (RF) used per coin, taken when a press starts.")
+                .defineList("energyPerCoin", List.of(50_000, 100_000, 200_000, 400_000, 800_000), o -> o instanceof Integer i && i >= 0);
+        FACTORY_ENERGY_CAPACITY = BUILDER.comment("Energy buffer of the factory.")
+                .defineInRange("energyCapacity", 1_000_000, 1, Integer.MAX_VALUE);
+        FACTORY_MAX_RECEIVE = BUILDER.comment("Maximum energy accepted per tick.")
+                .defineInRange("maxReceivePerTick", 10_000, 1, Integer.MAX_VALUE);
+        FACTORY_UPGRADE_REDUCTIONS = BUILDER.comment("Fraction of press time removed by a Speed Gear Mk I, Mk II, Mk III. Fitted gears add together.")
+                .defineList("upgradeTimeReduction", List.of(0.05, 0.15, 0.30), o -> o instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() < 1);
+        FACTORY_MAX_REDUCTION = BUILDER.comment("Upper limit on the combined reduction, so time can never reach zero (four Mk III gears add up to 1.2).")
+                .defineInRange("maxTotalReduction", 0.75, 0.0, 0.99);
+        FACTORY_MAX_PER_PLAYER = BUILDER.comment("How many factories one player may own on this server.")
+                .defineInRange("maxPerPlayer", 10, 0, 10_000);
+        BUILDER.pop();
+
+        BUILDER.comment("How the totem is drawn").push("visuals");
+        AURA_SPHERE_VIEW_DISTANCE = BUILDER.comment("Aura radius spheres are only drawn when the viewer is within this many blocks of the totem.")
+                .defineInRange("auraSphereViewDistance", 32, 1, 256);
+        BUILDER.pop();
+
         SPEC = BUILDER.build();
     }
 
@@ -123,6 +169,15 @@ public final class BSPConfig {
 
     private static boolean isFraction(Object o) {
         return o instanceof Double d && d >= 0 && d <= 1;
+    }
+
+    /** Reads a config value, or the fallback if the config is not loaded yet (e.g. a tooltip on the title screen). */
+    public static <T> T getOr(ForgeConfigSpec.ConfigValue<T> value, T fallback) {
+        try {
+            return value.get();
+        } catch (IllegalStateException notLoaded) {
+            return fallback;
+        }
     }
 
     /** Value of a per-level list for a 1-based level, or the fallback when the list is shorter. */

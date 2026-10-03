@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "bsp_core:item/shatter_coin"
+    "layer0": "bsp_core:item/copper_shatter_coin"
   }
 }

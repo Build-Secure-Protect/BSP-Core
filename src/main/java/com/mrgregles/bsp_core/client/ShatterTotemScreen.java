@@ -4,7 +4,7 @@ import com.mrgregles.bsp_core.menu.ShatterTotemMenu;
 import com.mrgregles.bsp_core.network.AdminTotemActionPacket;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.PlacedUpgradeRequestPacket;
-import com.mrgregles.bsp_core.registry.ModItems;
+import com.mrgregles.bsp_core.coin.CoinWallet;
 import com.mrgregles.bsp_core.network.StealRequestPacket;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity;
 import com.mrgregles.bsp_core.totem.StealState;
@@ -143,7 +143,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
 
         boolean owner = totem != null && totem.isOwner(minecraft.player.getUUID());
         boolean creative = minecraft.player.isCreative();
-        int coins = minecraft.player.getInventory().countItem(ModItems.SHATTER_COIN.get());
+        int coins = CoinWallet.totalValue(minecraft.player);
         for (var e : placedButtons.entrySet()) {
             Button b = e.getValue();
             b.visible = owner || admin;
@@ -249,7 +249,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             row++;
         }
         if (totem.isOwner(minecraft.player.getUUID()) || admin) {
-            int coins = minecraft.player.getInventory().countItem(ModItems.SHATTER_COIN.get());
+            int coins = CoinWallet.totalValue(minecraft.player);
             g.drawString(font, Component.translatable("gui.bsp_core.shatter_totem.your_coins", coins).withStyle(ChatFormatting.GOLD),
                     10, PLACED_ROW_Y + PLACED_ROW_H * PLACED_BUFFS.length + 2, 0xFFFFFF);
         }

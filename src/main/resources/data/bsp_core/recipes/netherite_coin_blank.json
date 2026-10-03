@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "SBS",
+    " S "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:netherite_scrap"
+    },
+    "B": {
+      "item": "bsp_core:diamond_coin_blank"
+    }
+  },
+  "result": {
+    "item": "bsp_core:netherite_coin_blank"
+  }
+}

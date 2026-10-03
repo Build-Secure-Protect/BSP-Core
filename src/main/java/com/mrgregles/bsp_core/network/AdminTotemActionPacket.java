@@ -49,6 +49,7 @@ public record AdminTotemActionPacket(BlockPos pos, Action action, String text, i
             case ASSIGN_OWNER -> {
                 String name = msg.text.trim();
                 if (name.isEmpty()) {
+                    feedback(admin, "message.bsp_core.admin.need_name");
                     return;
                 }
                 TotemOwner owner = resolveOwner(admin.server, name);
@@ -56,12 +57,10 @@ public record AdminTotemActionPacket(BlockPos pos, Action action, String text, i
                 feedback(admin, "message.bsp_core.admin.assigned", owner.name());
             }
             case CANCEL_STEAL -> {
-                totem.adminCancelSteal();
-                feedback(admin, "message.bsp_core.admin.steal_cancelled");
+                feedback(admin, totem.adminCancelSteal() ? "message.bsp_core.admin.steal_cancelled" : "message.bsp_core.admin.no_steal");
             }
             case FINISH_STEAL -> {
-                totem.adminFinishSteal();
-                feedback(admin, "message.bsp_core.admin.steal_finished");
+                feedback(admin, totem.adminFinishSteal() ? "message.bsp_core.admin.steal_finished" : "message.bsp_core.admin.no_steal");
             }
             case RESET_BUFFS -> {
                 totem.resetUpgrades();

@@ -1,0 +1,343 @@
+<title>Shatter Coin Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark workshop board; three concept columns, each a factory stage over an item tray. */
+:root {
+  --bg: #0f1115; --panel: #171a21; --line: #2a2f3a; --fg: #e8eaf0; --muted: #9aa3b5;
+  --gold: #e3b341; --turq: #2ec4b6; --copper: #c8733a; --silver: #c9ced8;
+  --display: "Silkscreen", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f3f1ea; --panel: #ffffff; --line: #d9d4c7; --fg: #1a1b20; --muted: #5f6472; color-scheme: light; } }
+:root[data-theme="light"] { --bg: #f3f1ea; --panel: #ffffff; --line: #d9d4c7; --fg: #1a1b20; --muted: #5f6472; color-scheme: light; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 40px; padding-inline: 16px; }
+header h1 { font-family: var(--display); font-size: clamp(20px, 3.4vw, 30px); letter-spacing: .02em; margin: 0 0 6px; text-wrap: balance; }
+header p { color: var(--muted); margin: 0; max-width: 66ch; line-height: 1.5; }
+.times { margin: 18px 0 22px; overflow-x: auto; }
+.times table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 420px; }
+.times th, .times td { text-align: left; padding: 5px 16px 5px 0; border-bottom: 1px solid var(--line); }
+.times th { color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+.times .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; background: var(--c); box-shadow: 0 0 0 2px var(--silver); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.stage h2 { font-family: var(--display); font-size: 16px; margin: 0; }
+.stage p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.45; min-height: 5.8em; }
+.stage h3 { margin: 4px 0 0; font: 600 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.view { position: relative; width: 100%; max-width: 100%; border-radius: 4px; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, #262b36 0%, #0c0e12 70%); touch-action: none; }
+.view.factory { aspect-ratio: 1 / 1; cursor: grab; }
+.view.tray { aspect-ratio: 2.6 / 1; }
+.view canvas { display: block; width: 100% !important; height: 100% !important; }
+.row { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.row select, .row input[type=range] { width: 100%; min-width: 0; }
+.row select { background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; font: 500 12px var(--body); }
+.row input[type=range] { accent-color: var(--turq); }
+.row output { font-variant-numeric: tabular-nums; color: var(--fg); min-width: 1.2em; text-align: right; }
+.row select:focus-visible, .row input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.cap { font-size: 12px; color: var(--muted); line-height: 1.4; }
+footer { margin-top: 26px; color: var(--muted); font-size: 13px; line-height: 1.5; max-width: 72ch; }
+</style>
+<div class="wrap">
+<header>
+  <h1>Shatter Coin Concepts</h1>
+  <p>Three directions for the Shatter Coin Factory, its coins and its speed upgrades. Every factory is built from Minecraft-scale cuboids inside one block, and every coin and upgrade is a 16&times;16 pixel sprite shown extruded the way the game draws held items. Drag a factory to rotate it.</p>
+</header>
+<div class="times">
+  <table>
+    <thead><tr><th>Coin</th><th>Inner</th><th>Press time, no upgrades</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="--c:#c8733a"></span>Copper</td><td>copper</td><td>12 hours</td></tr>
+      <tr><td><span class="sw" style="--c:#f2c12e"></span>Gold</td><td>gold</td><td>24 hours</td></tr>
+      <tr><td><span class="sw" style="--c:#6fe7f2"></span>Diamond</td><td>diamond blue</td><td>48 hours</td></tr>
+      <tr><td><span class="sw" style="--c:#4b4247"></span>Netherite</td><td>netherite</td><td>4 days</td></tr>
+      <tr><td><span class="sw" style="--c:#19d3b0"></span>Etherium</td><td>turquoise, pulsing</td><td>7 days</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="grid" id="grid"></div>
+<footer>All coins share the silver outer ring and differ only by inner colour and emblem style per concept. The press animation here loops in seconds so it can be judged; in game one strike plays as each coin finishes and the machine idles between strikes. Installed upgrades light the sockets on the casing. How much each upgrade shortens the press time is still to be decided.</footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = location.hash === '#still';
+
+  // ---------------------------------------------------------------- palettes
+  const SILVER = { base: '#C9CED8', light: '#F4F6FA', dark: '#8A909C' };
+  const TIERS = [
+    { id: 'copper', name: 'Copper', base: '#C8733A', light: '#E79A62', dark: '#8A4A22' },
+    { id: 'gold', name: 'Gold', base: '#F2C12E', light: '#FFE27A', dark: '#B8860B' },
+    { id: 'diamond', name: 'Diamond', base: '#6FE7F2', light: '#C9FBFF', dark: '#2BA9B8' },
+    { id: 'netherite', name: 'Netherite', base: '#4B4247', light: '#6E6468', dark: '#2A2428' },
+    { id: 'etherium', name: 'Etherium', base: '#19D3B0', light: '#8CFFE6', dark: '#0B8F78', glow: true },
+  ];
+  const MK = [
+    { name: 'Mk I', base: '#9AA1AE', light: '#D5DAE3', dark: '#5E6470' },
+    { name: 'Mk II', base: '#F2C12E', light: '#FFE27A', dark: '#B8860B' },
+    { name: 'Mk III', base: '#19D3B0', light: '#8CFFE6', dark: '#0B8F78' },
+  ];
+
+  // ---------------------------------------------------------------- 16x16 sprites as pixel lists
+  const EMBLEMS = {
+    crack: [[8,4],[8,5],[7,6],[7,7],[8,8],[9,9],[8,10],[8,11],[6,7],[10,9]],
+    creeper: [[5,5],[6,5],[5,6],[6,6],[9,5],[10,5],[9,6],[10,6],[7,7],[8,7],[6,8],[7,8],[8,8],[9,8],[6,9],[9,9]],
+    orb: [[7,5],[8,5],[6,6],[9,6],[5,7],[10,7],[5,8],[10,8],[6,9],[9,9],[7,10],[8,10],[7,7]],
+  };
+  function coinSprite(tier, emblem) {
+    const px = [];
+    const em = new Set((tier ? EMBLEMS[emblem] : []).map(p => p[0] + ',' + p[1]));
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const dx = x - 7.5, dy = y - 7.5, d = Math.hypot(dx, dy);
+      if (d > 7.7) continue;
+      const lit = (-dx - dy) / 10; // light from top-left
+      let c;
+      if (d > 5.4) c = lit > 0.25 ? SILVER.light : lit < -0.25 ? SILVER.dark : SILVER.base;
+      else if (!tier) c = lit > 0.3 ? SILVER.light : SILVER.base;
+      else if (em.has(x + ',' + y)) c = tier.dark;
+      else c = lit > 0.35 ? tier.light : tier.base;
+      px.push({ x, y, c, inner: d <= 5.4 });
+    }
+    return px;
+  }
+  function gearSprite(p) {
+    const px = [];
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const dx = x - 7.5, dy = y - 7.5, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+      const tooth = r > 5.0 && r <= 7.4 && Math.cos(a * 8) > 0.25;
+      const body = r <= 5.0 && r >= 1.7;
+      if (!tooth && !body) continue;
+      px.push({ x, y, c: r < 2.6 ? p.dark : (-dx - dy) / 10 > 0.3 ? p.light : tooth ? p.dark : p.base });
+    }
+    return px;
+  }
+  function flywheelSprite(p) {
+    const px = [];
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const dx = x - 7.5, dy = y - 7.5, r = Math.hypot(dx, dy);
+      const rim = r > 5.4 && r <= 7.5, hub = r <= 2.1;
+      const spoke = r <= 5.4 && (Math.abs(dx) < 0.9 || Math.abs(dy) < 0.9);
+      if (!rim && !hub && !spoke) continue;
+      px.push({ x, y, c: hub ? p.dark : rim ? ((-dx - dy) / 10 > 0.3 ? p.light : p.base) : p.dark });
+    }
+    return px;
+  }
+  function chipSprite(p) {
+    const px = [];
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const inBody = x >= 3 && x <= 12 && y >= 3 && y <= 12;
+      const pinCols = [4, 6, 9, 11];
+      const pin = (pinCols.includes(x) && (y <= 2 && y >= 1 || y >= 13 && y <= 14)) || (pinCols.includes(y) && (x <= 2 && x >= 1 || x >= 13 && x <= 14));
+      if (!inBody && !pin) continue;
+      let c = '#1B2027';
+      if (pin) c = SILVER.base;
+      else if (x >= 6 && x <= 9 && y >= 6 && y <= 9) c = (x + y) % 2 ? p.light : p.base;
+      else if (x === 3 || y === 3) c = '#2C333D';
+      else if ((x === 5 && y >= 5 && y <= 10) || (y === 10 && x >= 5 && x <= 10)) c = p.dark;
+      px.push({ x, y, c, glow: x >= 6 && x <= 9 && y >= 6 && y <= 9 });
+    }
+    return px;
+  }
+
+  // extruded sprite as one InstancedMesh
+  const unit = new THREE.BoxGeometry(1, 1, 1.4);
+  function spriteMesh(px) {
+    const mat = new THREE.MeshLambertMaterial();
+    const mesh = new THREE.InstancedMesh(unit, mat, px.length);
+    const m = new THREE.Matrix4(), col = new THREE.Color();
+    px.forEach((p, i) => {
+      m.makeTranslation(p.x - 7.5, 7.5 - p.y, 0);
+      mesh.setMatrixAt(i, m);
+      mesh.setColorAt(i, col.set(p.c));
+    });
+    mesh.instanceColor.needsUpdate = true;
+    mesh.userData.px = px;
+    return mesh;
+  }
+
+  // ---------------------------------------------------------------- cuboid factories
+  const noiseCache = {};
+  function noiseTexture(hex) {
+    if (noiseCache[hex]) return noiseCache[hex];
+    const c = document.createElement('canvas'); c.width = c.height = 16;
+    const g = c.getContext('2d'); const base = new THREE.Color(hex);
+    let seed = 0; for (const ch of hex) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const k = 0.9 + rnd() * 0.2;
+      g.fillStyle = `rgb(${Math.min(255, base.r * 255 * k) | 0},${Math.min(255, base.g * 255 * k) | 0},${Math.min(255, base.b * 255 * k) | 0})`;
+      g.fillRect(x, y, 1, 1);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = t.minFilter = THREE.NearestFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return (noiseCache[hex] = t);
+  }
+  function box(from, to, color, opts) {
+    opts = opts || {};
+    const w = to[0] - from[0], h = to[1] - from[1], d = to[2] - from[2];
+    const geo = new THREE.BoxGeometry(w, h, d);
+    // 1 texel per model pixel on every face
+    const uv = geo.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+    dims.forEach(([fw, fh], f) => {
+      const b = f * 4, U = fw / 16, V = fh / 16;
+      uv.setXY(b, 0, V); uv.setXY(b + 1, U, V); uv.setXY(b + 2, 0, 0); uv.setXY(b + 3, U, 0);
+    });
+    const mat = opts.glow ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ map: noiseTexture(color) });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set((from[0] + to[0]) / 2 - 8, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2 - 8);
+    return mesh;
+  }
+  const IRON = '#3A3F4B', PLATE = '#565C6B', STEEL = '#8A909C', BRASS = '#B8860B', WOOD = '#6B4A2B', DARK = '#22262E', TURQ = '#19D3B0', OFF = '#2B3038';
+
+  // Each concept returns { root, parts, sockets[], coin, animate(phase 0..1, upgrades) }
+  function stampPress() {
+    const root = new THREE.Group(), head = new THREE.Group();
+    [box([0,0,0],[16,4,16],IRON), box([1,4,1],[15,5,15],PLATE), box([5,5,5],[11,7,11],STEEL),
+     box([1,5,6],[3,15,10],PLATE), box([13,5,6],[15,15,10],PLATE), box([1,13,5],[15,16,11],IRON),
+     box([12,5,12],[14,9,14],BRASS), box([12.5,9,12.5],[13.5,11,13.5],STEEL)].forEach(m => root.add(m));
+    [box([7,11,7],[9,14,9],STEEL), box([5,9,5],[11,11,11],PLATE), box([6,8.5,6],[10,9,10],STEEL)].forEach(m => head.add(m));
+    root.add(head);
+    const sockets = [0,1,2,3].map(i => { const s = box([2.5+3*i,1,-0.4],[4.5+3*i,3,0.4],OFF,{glow:true}); root.add(s); return s; });
+    const coin = box([6,7,6],[10,7.6,10],SILVER.base,{glow:true}); root.add(coin);
+    return { root, sockets, coin, animate(p) {
+      const down = p < 0.5 ? 0 : p < 0.6 ? (p - 0.5) / 0.1 : p < 0.7 ? 1 : p < 0.85 ? 1 - (p - 0.7) / 0.15 : 0;
+      head.position.y = 1.5 - down * 2.4;
+    } };
+  }
+  function screwMint() {
+    const root = new THREE.Group(), screw = new THREE.Group(), wheel = new THREE.Group();
+    [box([1,0,1],[15,3,15],WOOD), box([0,0,0],[16,1,16],IRON), box([5,3,5],[11,5,11],STEEL),
+     box([2,3,6],[4,12,10],BRASS), box([12,3,6],[14,12,10],BRASS), box([2,12,6],[14,14,10],BRASS),
+     box([6,14,6],[10,15,10],IRON)].forEach(m => root.add(m));
+    [box([7,7,7],[9,16,9],STEEL), box([5.5,6,5.5],[10.5,7,10.5],PLATE)].forEach(m => screw.add(m));
+    [box([1,15.2,7.2],[15,16.2,8.8],IRON), box([0,14.4,6.4],[2.4,17,9.6],STEEL), box([13.6,14.4,6.4],[16,17,9.6],STEEL)].forEach(m => wheel.add(m));
+    wheel.children.forEach(m => { m.position.x -= 0; });
+    root.add(screw); root.add(wheel);
+    const sockets = [0,1,2,3].map(i => { const s = box([2.5+3*i,1.2,-0.4],[4.5+3*i,2.6,0.4],OFF,{glow:true}); root.add(s); return s; });
+    const coin = box([6,5,6],[10,5.6,10],SILVER.base,{glow:true}); root.add(coin);
+    return { root, sockets, coin, animate(p) {
+      const down = p < 0.35 ? 0 : p < 0.6 ? (p - 0.35) / 0.25 : p < 0.7 ? 1 : p < 0.95 ? 1 - (p - 0.7) / 0.25 : 0;
+      screw.position.y = 1.2 - down * 1.6; wheel.position.y = 1.2 - down * 1.6;
+      wheel.rotation.y = down * Math.PI * 1.5; screw.rotation.y = down * Math.PI * 1.5;
+    } };
+  }
+  function arcForge() {
+    const root = new THREE.Group(), hl = new THREE.Group(), hr = new THREE.Group();
+    [box([0,0,0],[16,5,16],DARK), box([0,5,12],[16,16,16],DARK), box([0,5,2],[4,13,12],IRON), box([12,5,2],[16,13,12],IRON),
+     box([0,14,2],[16,16,12],DARK), box([5,5,5],[11,5.6,11],PLATE)].forEach(m => root.add(m));
+    const trim = [box([-0.1,2,-0.1],[16.1,2.8,16.1],TURQ,{glow:true}), box([6,6,11.4],[10,12,12.1],TURQ,{glow:true})];
+    trim.forEach(m => root.add(m));
+    [box([4,7,6],[6.6,10,10],STEEL), box([6.6,7.6,6.8],[7.3,9.4,9.2],PLATE)].forEach(m => hl.add(m));
+    [box([9.4,7,6],[12,10,10],STEEL), box([8.7,7.6,6.8],[9.4,9.4,9.2],PLATE)].forEach(m => hr.add(m));
+    root.add(hl); root.add(hr);
+    const sockets = [0,1,2,3].map(i => { const s = box([2.5+3*i,14.4,1.6],[4.5+3*i,15.6,2.4],OFF,{glow:true}); root.add(s); return s; });
+    const coin = box([7.7,6.5,6.2],[8.3,10.5,9.8],SILVER.base,{glow:true}); root.add(coin);
+    return { root, sockets, coin, trim, animate(p, t) {
+      const hit = p < 0.5 ? 0 : p < 0.58 ? (p - 0.5) / 0.08 : p < 0.68 ? 1 : p < 0.85 ? 1 - (p - 0.68) / 0.17 : 0;
+      hl.position.x = -1.2 + hit * 1.6; hr.position.x = 1.2 - hit * 1.6;
+      coin.position.y = 8.5 + Math.sin(t * 2) * 0.25; coin.rotation.y = hit > 0 ? 0 : t * 1.5;
+      const k = 0.65 + 0.35 * Math.sin(t * 3);
+      trim.forEach(m => m.material.color.set(TURQ).multiplyScalar(k));
+    } };
+  }
+
+  const CONCEPTS = [
+    { id: 'press', name: 'Stamp Press', emblem: 'crack', upgrade: 'Speed Gear', sprite: gearSprite, build: stampPress,
+      blurb: 'A heavy iron drop press. The head slams down onto the die and lifts to reveal the struck coin. Coins carry the shatter crack. Upgrades are gears.' },
+    { id: 'screw', name: 'Screw Mint', emblem: 'creeper', upgrade: 'Flywheel', sprite: flywheelSprite, build: screwMint,
+      blurb: 'A brass and timber screw press. The weighted flywheel spins as the screw drives the ram down. Coins carry the Guardian face. Upgrades are flywheels.' },
+    { id: 'arc', name: 'Arc Forge', emblem: 'orb', upgrade: 'Overclock Chip', sprite: chipSprite, build: arcForge,
+      blurb: 'A tech casing with a glowing core. Twin pistons strike a hovering blank from both sides. Coins carry the orb. Upgrades are overclock chips.' },
+  ];
+
+  function makeConcept(c) {
+    const el = document.createElement('section'); el.className = 'stage';
+    el.innerHTML = `
+      <h2>${c.name}</h2>
+      <p>${c.blurb}</p>
+      <div class="view factory" aria-label="${c.name} factory, animated 3D preview"></div>
+      <div class="row">
+        <label for="${c.id}-tier">Pressing</label>
+        <select id="${c.id}-tier">${TIERS.map((t, i) => `<option value="${i}">${t.name} coin</option>`).join('')}</select><span></span>
+        <label for="${c.id}-upg">Upgrades fitted</label>
+        <input type="range" id="${c.id}-upg" min="0" max="4" step="1" value="2"><output for="${c.id}-upg">2</output>
+      </div>
+      <h3>Coins and upgrades</h3>
+      <div class="view tray" aria-label="${c.name} coin and upgrade sprites"></div>
+      <div class="cap">Top row: coin blank, then Copper, Gold, Diamond, Netherite, Etherium. Bottom row: ${c.upgrade} Mk I, Mk II, Mk III.</div>`;
+    document.getElementById('grid').appendChild(el);
+
+    // ---- factory view
+    const fview = el.querySelector('.view.factory');
+    const fr = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    fr.setPixelRatio(Math.min(window.devicePixelRatio, 2)); fview.appendChild(fr.domElement);
+    const fscene = new THREE.Scene(), fcam = new THREE.PerspectiveCamera(30, 1, 1, 200);
+    fscene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const key = new THREE.DirectionalLight(0xffffff, 0.8); key.position.set(10, 20, -12); fscene.add(key);
+    const fill = new THREE.DirectionalLight(0x9ab4ff, 0.3); fill.position.set(-12, 6, 8); fscene.add(fill);
+    const f = c.build(); fscene.add(f.root);
+    let tier = 0, upgrades = 2, rotY = Math.PI - 0.6, rotX = 0.32, dragging = false, lx = 0, ly = 0;
+    const tierSel = el.querySelector('select'), upg = el.querySelector('input[type=range]'), out = el.querySelector('output');
+    tierSel.addEventListener('change', () => { tier = Number(tierSel.value); });
+    upg.addEventListener('input', () => { upgrades = Number(upg.value); out.value = upg.value; });
+    fview.addEventListener('pointerdown', e => { dragging = true; lx = e.clientX; ly = e.clientY; fview.setPointerCapture(e.pointerId); });
+    fview.addEventListener('pointermove', e => { if (!dragging) return; rotY += (e.clientX - lx) * 0.01; rotX = Math.max(-0.1, Math.min(1.2, rotX + (e.clientY - ly) * 0.01)); lx = e.clientX; ly = e.clientY; });
+    fview.addEventListener('pointerup', () => dragging = false); fview.addEventListener('pointercancel', () => dragging = false);
+
+    // ---- tray view
+    const tview = el.querySelector('.view.tray');
+    const tr = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    tr.setPixelRatio(Math.min(window.devicePixelRatio, 2)); tview.appendChild(tr.domElement);
+    const tscene = new THREE.Scene(), tcam = new THREE.OrthographicCamera(-66, 66, 25.4, -25.4, 1, 200);
+    tcam.position.set(0, 0, 100);
+    tscene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const tl = new THREE.DirectionalLight(0xffffff, 0.6); tl.position.set(-6, 10, 20); tscene.add(tl);
+    const items = [];
+    [null, ...TIERS].forEach((t, i) => {
+      const m = spriteMesh(coinSprite(t, c.emblem)); m.position.set((i - 2.5) * 21, 12, 0); m.userData.tier = t; tscene.add(m); items.push(m);
+    });
+    MK.forEach((p, i) => { const m = spriteMesh(c.sprite(p)); m.position.set((i - 1) * 21, -12, 0); tscene.add(m); items.push(m); });
+
+    function resize() {
+      [[fview, fr, fcam], [tview, tr, null]].forEach(([v, r, cam]) => {
+        const w = v.clientWidth, h = v.clientHeight; if (!w || !h) return;
+        r.setSize(w, h, false); if (cam) { cam.aspect = w / h; cam.updateProjectionMatrix(); }
+      });
+    }
+    new ResizeObserver(resize).observe(fview); new ResizeObserver(resize).observe(tview);
+
+    const col = new THREE.Color(), start = performance.now();
+    let phaseT = 0, last = start;
+    function frame(now) {
+      const t = (now - start) / 1000, dt = (now - last) / 1000; last = now;
+      const period = 3.6 / (1 + upgrades * 0.45);
+      if (!reduce && !still) phaseT = (phaseT + dt / period) % 1; else phaseT = 0.9;
+      const p = phaseT;
+      f.animate(p, reduce || still ? 0 : t);
+      f.sockets.forEach((s, i) => s.material.color.set(i < upgrades ? TURQ : OFF));
+      const struck = p >= 0.6;
+      const tc = TIERS[tier];
+      f.coin.material.color.set(struck ? tc.base : SILVER.base);
+      if (struck && tc.glow) f.coin.material.color.multiplyScalar(0.8 + 0.2 * Math.sin(t * 4));
+      const r = 60; fcam.position.set(Math.sin(rotY) * r * Math.cos(rotX), 8 + Math.sin(rotX) * r, Math.cos(rotY) * r * Math.cos(rotX)); fcam.lookAt(0, 8, 0);
+      fr.render(fscene, fcam);
+
+      items.forEach((m, i) => {
+        m.rotation.y = reduce || still ? 0.5 : t * 0.9 + i * 0.5;
+        const tierData = m.userData.tier;
+        if (tierData && tierData.glow) {
+          const k = 0.8 + 0.25 * Math.sin(t * 3);
+          m.userData.px.forEach((q, j) => { if (q.inner) m.setColorAt(j, col.set(q.c).multiplyScalar(k)); });
+          m.instanceColor.needsUpdate = true;
+        }
+      });
+      tr.render(tscene, tcam);
+      requestAnimationFrame(frame);
+    }
+    resize(); requestAnimationFrame(frame);
+  }
+  CONCEPTS.forEach(makeConcept);
+})();
+</script>

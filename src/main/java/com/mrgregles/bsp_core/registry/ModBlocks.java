@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.registry;
 
 import com.mrgregles.bsp_core.BSPCore;
+import com.mrgregles.bsp_core.coin.CoinFactoryBlock;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.DeferredRegister;
@@ -12,6 +13,9 @@ public final class ModBlocks {
 
     public static final RegistryObject<ShatterTotemBlock> SHATTER_TOTEM =
             BLOCKS.register("shatter_totem", ShatterTotemBlock::new);
+
+    public static final RegistryObject<CoinFactoryBlock> COIN_FACTORY =
+            BLOCKS.register("shatter_coin_factory", CoinFactoryBlock::new);
 
     private ModBlocks() {}
 }

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " G ",
+    "GBG",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "B": {
+      "item": "bsp_core:copper_coin_blank"
+    }
+  },
+  "result": {
+    "item": "bsp_core:gold_coin_blank"
+  }
+}

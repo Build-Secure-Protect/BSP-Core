@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " E ",
+    "EBE",
+    " E "
+  ],
+  "key": {
+    "E": {
+      "item": "bsp_core:etherium_shard"
+    },
+    "B": {
+      "item": "bsp_core:netherite_coin_blank"
+    }
+  },
+  "result": {
+    "item": "bsp_core:etherium_coin_blank"
+  }
+}
