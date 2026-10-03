@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "bsp_core:block/illyrium_casing",
+    "side": "bsp_core:block/illyrium_casing",
+    "front": "bsp_core:block/illyrium_refinery_front"
+  }
+}

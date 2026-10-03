@@ -1,12 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " S ",
-    "SBS",
-    " S "
+    " M ",
+    "MBM",
+    " M "
   ],
   "key": {
-    "S": {
+    "M": {
       "item": "minecraft:netherite_scrap"
     },
     "B": {

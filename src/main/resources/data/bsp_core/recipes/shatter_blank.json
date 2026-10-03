@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " T ",
+    "T T",
+    " T "
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:shatter_blank",
+    "count": 2
+  }
+}

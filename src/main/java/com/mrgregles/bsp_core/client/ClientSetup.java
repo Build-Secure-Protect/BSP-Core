@@ -25,6 +25,12 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.SHATTER_TOTEM.get(), ShatterTotemScreen::new);
             MenuScreens.register(ModMenus.TOTEM_UPGRADES.get(), TotemUpgradeScreen::new);
             MenuScreens.register(ModMenus.COIN_FACTORY.get(), CoinFactoryScreen::new);
+            MenuScreens.register(ModMenus.MACHINE.get(), MachineScreen::new);
+            MenuScreens.register(ModMenus.TOTEM_COMPASS.get(), TotemCompassScreen::new);
+            // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack
+            net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
+                    new net.minecraft.resources.ResourceLocation("angle"),
+                    new net.minecraft.client.renderer.item.CompassItemPropertyFunction((level, stack, entity) -> com.mrgregles.bsp_core.compass.TotemCompassItem.target(stack)));
         });
     }
 
@@ -33,6 +39,8 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ItemEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SHATTER_TOTEM.get(), ShatterTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), MultiblockGhostRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_REFINERY.get(), MultiblockGhostRenderer::new);
     }
 
     /** The press head is drawn by the renderer, so its model must be baked even though no block state uses it. */

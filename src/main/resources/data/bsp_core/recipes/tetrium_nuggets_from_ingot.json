@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "bsp_core:tetrium_ingot"
+    }
+  ],
+  "result": {
+    "item": "bsp_core:tetrium_nugget",
+    "count": 9
+  }
+}

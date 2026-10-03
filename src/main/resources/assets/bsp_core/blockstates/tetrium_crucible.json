@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/tetrium_crucible"
+    },
+    "facing=east": {
+      "model": "bsp_core:block/tetrium_crucible",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "bsp_core:block/tetrium_crucible",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "bsp_core:block/tetrium_crucible",
+      "y": 270
+    }
+  }
+}

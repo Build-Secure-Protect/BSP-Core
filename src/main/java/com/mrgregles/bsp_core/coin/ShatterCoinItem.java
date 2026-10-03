@@ -22,7 +22,7 @@ public class ShatterCoinItem extends Item {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return tier == CoinTier.ETHERIUM;
+        return tier == CoinTier.ILLYRIUM;
     }
 
     @Override

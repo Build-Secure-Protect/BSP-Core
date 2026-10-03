@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "III",
+    "IRI",
+    "IFI"
+  ],
+  "key": {
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "F": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:illyrium_forge_upgrade"
+  }
+}

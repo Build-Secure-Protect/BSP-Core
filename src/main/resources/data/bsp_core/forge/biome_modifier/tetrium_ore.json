@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "bsp_core:tetrium_ore",
+  "step": "underground_ores"
+}

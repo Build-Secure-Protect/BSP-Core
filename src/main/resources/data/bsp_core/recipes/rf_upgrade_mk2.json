@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TGT",
+    "TRT",
+    "TGT"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_ingot"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    }
+  },
+  "result": {
+    "item": "bsp_core:rf_upgrade_mk2"
+  }
+}

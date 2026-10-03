@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/combination_forge"
+    },
+    "facing=east": {
+      "model": "bsp_core:block/combination_forge",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "bsp_core:block/combination_forge",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "bsp_core:block/combination_forge",
+      "y": 270
+    }
+  }
+}

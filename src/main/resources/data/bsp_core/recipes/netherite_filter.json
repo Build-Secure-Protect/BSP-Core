@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "MWM",
+    "WWW",
+    "MWM"
+  ],
+  "key": {
+    "M": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "W": {
+      "item": "minecraft:cobweb"
+    }
+  },
+  "result": {
+    "item": "bsp_core:netherite_filter"
+  }
+}

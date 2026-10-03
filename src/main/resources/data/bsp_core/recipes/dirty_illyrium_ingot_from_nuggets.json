@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "NNN",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:dirty_illyrium_nugget"
+    }
+  },
+  "result": {
+    "item": "bsp_core:dirty_illyrium_ingot"
+  }
+}

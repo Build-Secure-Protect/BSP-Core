@@ -85,6 +85,11 @@ public class TotemLedger extends SavedData {
         }
     }
 
+    /** Every placed totem on this server, by owner. */
+    public Map<UUID, Set<GlobalPos>> allPlaced() {
+        return Collections.unmodifiableMap(placed);
+    }
+
     public Set<GlobalPos> placedFor(UUID owner) {
         return Collections.unmodifiableSet(placed.getOrDefault(owner, Set.of()));
     }

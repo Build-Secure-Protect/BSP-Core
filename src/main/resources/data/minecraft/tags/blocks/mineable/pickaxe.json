@@ -1,4 +1,20 @@
 {
   "replace": false,
-  "values": ["bsp_core:shatter_coin_factory"]
+  "values": [
+    "bsp_core:shatter_coin_factory",
+    "bsp_core:tetrium_ore",
+    "bsp_core:deepslate_tetrium_ore",
+    "bsp_core:illyrium_ore",
+    "bsp_core:deepslate_illyrium_ore",
+    "bsp_core:end_stone_illyrium_ore",
+    "bsp_core:tetrium_crucible",
+    "bsp_core:combination_forge",
+    "bsp_core:illyrium_casing",
+    "bsp_core:illyrium_glass",
+    "bsp_core:illyrium_crucible",
+    "bsp_core:illyrium_refinery",
+    "bsp_core:lava_pylon",
+    "bsp_core:refinery_pump",
+    "bsp_core:item_hatch"
+  ]
 }

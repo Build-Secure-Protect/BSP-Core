@@ -55,7 +55,7 @@ public final class BSPConfig {
 
     // ------------------------------------------------------------------ coins + factory
 
-    /** Value of each coin tier (Copper, Gold, Diamond, Netherite, Etherium) in copper-coin units. */
+    /** Value of each coin tier (Copper, Gold, Diamond, Netherite, Illyrium) in copper-coin units. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COIN_VALUES;
     /** Real-time hours to press one coin of each tier with no upgrades. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_PRESS_HOURS;
@@ -66,6 +66,30 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_UPGRADE_REDUCTIONS;
     public static final ForgeConfigSpec.DoubleValue FACTORY_MAX_REDUCTION;
     public static final ForgeConfigSpec.IntValue FACTORY_MAX_PER_PLAYER;
+
+    // ------------------------------------------------------------------ machines
+
+    public static final ForgeConfigSpec.IntValue TCRUC_NUGGETS, TCRUC_SLAG, TCRUC_TICKS, FORGE_TICKS;
+    /** Speed gain and lava saving of RF Upgrade Mk I, II, III while powered. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> RF_BONUS;
+    public static final ForgeConfigSpec.IntValue RF_PER_TICK, RF_CAPACITY;
+    public static final ForgeConfigSpec.DoubleValue FORGE_RF_MULTIPLIER;
+    public static final ForgeConfigSpec.IntValue ICRUC_ORE_IN, ICRUC_SLAG_IN, ICRUC_SMELT_TICKS, ICRUC_PURE_IN, ICRUC_TDUST_IN, ICRUC_NUGGETS_OUT, ICRUC_ALLOY_TICKS,
+            ICRUC_LAVA_PER_JOB, ICRUC_LAVA_PER_MAGMA, ICRUC_TANK, REFINERY_WATER, REFINERY_TICKS, REFINERY_TANK;
+
+    /** Refinements a filter lasts: Iron, Diamond, Netherite, Illyrium. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FILTER_USES;
+
+    // ------------------------------------------------------------------ hand crushing
+
+    public static final ForgeConfigSpec.DoubleValue CRUSH_TETRIUM_CHANCE, CRUSH_DIRTY_CHANCE;
+    public static final ForgeConfigSpec.IntValue CRUSH_TETRIUM_NUGGETS, CRUSH_DIRTY_NUGGETS;
+
+    // ------------------------------------------------------------------ totem compass
+
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_SECONDS_PER_COIN;
+    public static final ForgeConfigSpec.IntValue COMPASS_COOLDOWN, COMPASS_MIN_COOLDOWN, COMPASS_COOLDOWN_STEP;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_UPGRADE_COSTS;
 
     // ------------------------------------------------------------------ visuals
 
@@ -133,12 +157,12 @@ public final class BSPConfig {
         BUILDER.pop();
 
         BUILDER.comment("Shatter Coins").push("coins");
-        COIN_VALUES = BUILDER.comment("Value of Copper, Gold, Diamond, Netherite, Etherium coins in copper units. Totem upgrade costs are in these units.")
+        COIN_VALUES = BUILDER.comment("Value of Copper, Gold, Diamond, Netherite, Illyrium coins in copper units. Totem upgrade costs are in these units.")
                 .defineList("values", List.of(1, 2, 4, 8, 16), BSPConfig::isPositiveInt);
         BUILDER.pop();
 
         BUILDER.comment("Shatter Coin Factory").push("factory");
-        FACTORY_PRESS_HOURS = BUILDER.comment("Real-time hours to press one Copper, Gold, Diamond, Netherite, Etherium coin without upgrades.",
+        FACTORY_PRESS_HOURS = BUILDER.comment("Real-time hours to press one Copper, Gold, Diamond, Netherite, Illyrium coin without upgrades.",
                         "Time keeps running while the chunk is unloaded or the server is off.")
                 .defineList("pressHours", List.of(12.0, 24.0, 48.0, 96.0, 168.0), o -> o instanceof Number n && n.doubleValue() > 0);
         FACTORY_ENERGY_PER_COIN = BUILDER.comment("Forge Energy (RF) used per coin, taken when a press starts.")
@@ -153,6 +177,63 @@ public final class BSPConfig {
                 .defineInRange("maxTotalReduction", 0.75, 0.0, 0.99);
         FACTORY_MAX_PER_PLAYER = BUILDER.comment("How many factories one player may own on this server.")
                 .defineInRange("maxPerPlayer", 10, 0, 10_000);
+        BUILDER.pop();
+
+        BUILDER.comment("RF upgrades for the processing machines").push("rf_upgrade");
+        RF_BONUS = BUILDER.comment("Speed gain of RF Upgrade Mk I, Mk II, Mk III while powered. The same share of lava is saved.")
+                .defineList("bonus", List.of(0.05, 0.10, 0.30), o -> o instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() < 1);
+        RF_PER_TICK = BUILDER.comment("RF used per working tick by a machine with an RF upgrade.").defineInRange("rfPerTick", 40, 0, 1_000_000);
+        RF_CAPACITY = BUILDER.comment("RF buffer of a machine with an RF upgrade.").defineInRange("capacity", 100_000, 1000, Integer.MAX_VALUE);
+        BUILDER.pop();
+
+        BUILDER.comment("Tetrium Crucible").push("tetrium_crucible");
+        TCRUC_NUGGETS = BUILDER.comment("Tetrium Nuggets from one ore.").defineInRange("nuggetsPerOre", 2, 0, 64);
+        TCRUC_SLAG = BUILDER.comment("Tetrium Slag from one ore.").defineInRange("slagPerOre", 1, 0, 64);
+        TCRUC_TICKS = BUILDER.comment("Ticks to process one ore (20 ticks = 1 second).").defineInRange("ticksPerOre", 400, 1, 1_000_000);
+        BUILDER.pop();
+
+        BUILDER.comment("Combination Forge").push("combination_forge");
+        FORGE_TICKS = BUILDER.comment("Ticks to forge nine nuggets into one ingot when burning coal or other furnace fuel.").defineInRange("ticksPerIngot", 600, 1, 1_000_000);
+        FORGE_RF_MULTIPLIER = BUILDER.comment("How many times faster the forge runs on RF than on fuel (2 = coal is 100% slower).").defineInRange("rfSpeedMultiplier", 2.0, 1.0, 100.0);
+        BUILDER.pop();
+
+        BUILDER.comment("Illyrium Crucible (multiblock). Runs on lava only.").push("illyrium_crucible");
+        ICRUC_ORE_IN = BUILDER.comment("Smelting: Illyrium Ore per Dirty Illyrium Ingot.").defineInRange("smeltOre", 1, 1, 64);
+        ICRUC_SLAG_IN = BUILDER.comment("Smelting: Tetrium Slag per Dirty Illyrium Ingot.").defineInRange("smeltSlag", 2, 0, 64);
+        ICRUC_SMELT_TICKS = BUILDER.comment("Smelting: ticks per Dirty Illyrium Ingot.").defineInRange("smeltTicks", 1200, 1, 1_000_000);
+        ICRUC_PURE_IN = BUILDER.comment("Alloying: Pure Illyrium Dust per job.").defineInRange("alloyPureDust", 1, 1, 64);
+        ICRUC_TDUST_IN = BUILDER.comment("Alloying: Tetrium Dust per job.").defineInRange("alloyTetriumDust", 1, 0, 64);
+        ICRUC_NUGGETS_OUT = BUILDER.comment("Alloying: Illyrium Nuggets per job.").defineInRange("alloyNuggets", 1, 1, 64);
+        ICRUC_ALLOY_TICKS = BUILDER.comment("Alloying: ticks per job.").defineInRange("alloyTicks", 1800, 1, 1_000_000);
+        ICRUC_LAVA_PER_JOB = BUILDER.comment("Lava used per job, in millibuckets.").defineInRange("lavaPerJob", 250, 0, 100_000);
+        ICRUC_LAVA_PER_MAGMA = BUILDER.comment("Lava a Magma Block is worth, in millibuckets.").defineInRange("lavaPerMagmaBlock", 250, 1, 100_000);
+        ICRUC_TANK = BUILDER.comment("Lava tank size in millibuckets.").defineInRange("lavaTank", 8000, 1000, 1_000_000);
+        BUILDER.pop();
+
+        BUILDER.comment("Illyrium Refinery").push("refinery");
+        REFINERY_WATER = BUILDER.comment("Water per Pure Illyrium Dust, in millibuckets.").defineInRange("waterPerDust", 500, 0, 100_000);
+        REFINERY_TICKS = BUILDER.comment("Ticks per Pure Illyrium Dust.").defineInRange("ticksPerDust", 2400, 1, 1_000_000);
+        REFINERY_TANK = BUILDER.comment("Water tank size in millibuckets.").defineInRange("waterTank", 8000, 1000, 1_000_000);
+        FILTER_USES = BUILDER.comment("Pure Illyrium Dust a filter can refine before it is used up: Iron, Diamond, Netherite, Illyrium.")
+                .defineList("filterUses", List.of(1, 20, 100, 1000), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
+        BUILDER.comment("Crushing an ingot with a pickaxe on a crafting table, for packs without a crusher").push("hand_crushing");
+        CRUSH_TETRIUM_CHANCE = BUILDER.comment("Chance a Tetrium Ingot becomes Tetrium Dust.").defineInRange("tetriumDustChance", 1.0 / 3.0, 0.0, 1.0);
+        CRUSH_TETRIUM_NUGGETS = BUILDER.comment("Tetrium Nuggets returned when it does not.").defineInRange("tetriumNuggetsOnFail", 3, 0, 64);
+        CRUSH_DIRTY_CHANCE = BUILDER.comment("Chance a Dirty Illyrium Ingot becomes Dirty Illyrium Dust.").defineInRange("dirtyIllyriumDustChance", 1.0 / 6.0, 0.0, 1.0);
+        CRUSH_DIRTY_NUGGETS = BUILDER.comment("Dirty Illyrium Nuggets returned when it does not. Nine craft back into a Dirty Illyrium Ingot.")
+                .defineInRange("dirtyIllyriumNuggetsOnFail", 3, 0, 64);
+        BUILDER.pop();
+
+        BUILDER.comment("Totem Compass").push("compass");
+        COMPASS_SECONDS_PER_COIN = BUILDER.comment("Seconds of rival-totem tracking a Copper, Gold, Diamond, Netherite, Illyrium coin adds.")
+                .defineList("secondsPerCoin", List.of(1, 5, 10, 30, 60), BSPConfig::isPositiveInt);
+        COMPASS_COOLDOWN = BUILDER.comment("Cooldown in seconds after tracking ends.").defineInRange("cooldownSeconds", 600, 0, 86400);
+        COMPASS_MIN_COOLDOWN = BUILDER.comment("Shortest cooldown reachable with upgrades.").defineInRange("minCooldownSeconds", 180, 0, 86400);
+        COMPASS_COOLDOWN_STEP = BUILDER.comment("Seconds removed from the cooldown per upgrade level.").defineInRange("cooldownStepSeconds", 60, 1, 86400);
+        COMPASS_UPGRADE_COSTS = BUILDER.comment("Coin value cost of each cooldown upgrade level.")
+                .defineList("cooldownUpgradeCosts", List.of(8, 16, 32, 64, 128, 256, 512), BSPConfig::isPositiveInt);
         BUILDER.pop();
 
         BUILDER.comment("How the totem is drawn").push("visuals");

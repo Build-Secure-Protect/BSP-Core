@@ -1,0 +1,19 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "thermal"
+    }
+  ],
+  "type": "thermal:pulverizer",
+  "ingredient": {
+    "item": "bsp_core:illyrium_ingot"
+  },
+  "result": [
+    {
+      "item": "bsp_core:pure_illyrium_dust",
+      "count": 1
+    }
+  ],
+  "energy": 4000
+}

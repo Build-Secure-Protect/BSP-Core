@@ -51,7 +51,7 @@ TIERS = {
     "gold": {"base": hexc("#F2C12E"), "light": hexc("#FFE27A"), "dark": hexc("#B8860B")},
     "diamond": {"base": hexc("#6FE7F2"), "light": hexc("#C9FBFF"), "dark": hexc("#2BA9B8")},
     "netherite": {"base": hexc("#4B4247"), "light": hexc("#6E6468"), "dark": hexc("#2A2428")},
-    "etherium": {"base": hexc("#19D3B0"), "light": hexc("#8CFFE6"), "dark": hexc("#0B8F78")},
+    "illyrium": {"base": hexc("#19D3B0"), "light": hexc("#8CFFE6"), "dark": hexc("#0B8F78")},
 }
 MK = {
     "mk1": {"base": hexc("#9AA1AE"), "light": hexc("#D5DAE3"), "dark": hexc("#5E6470")},
@@ -117,7 +117,7 @@ SHARD = """
 
 
 def shard_pixel():
-    pal = {".": CLEAR, "L": TIERS["etherium"]["light"], "B": TIERS["etherium"]["base"], "D": TIERS["etherium"]["dark"]}
+    pal = {".": CLEAR, "L": TIERS["illyrium"]["light"], "B": TIERS["illyrium"]["base"], "D": TIERS["illyrium"]["dark"]}
     rows = SHARD.strip("\n").splitlines()
     return lambda x, y: pal[rows[y][x]]
 
@@ -207,9 +207,6 @@ def main():
     for mk, pal in MK.items():
         write_png(ASSETS / f"textures/item/speed_gear_{mk}.png", 16, 16, gear_pixel(pal))
         item_model(f"speed_gear_{mk}")
-
-    write_png(ASSETS / "textures/item/etherium_shard.png", 16, 16, shard_pixel())
-    item_model("etherium_shard")
 
     write_png(ASSETS / "textures/block/shatter_coin_factory.png", ATLAS, ATLAS, atlas_pixel())
     models = ASSETS / "models/block"

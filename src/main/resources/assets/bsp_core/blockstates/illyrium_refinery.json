@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/illyrium_refinery"
+    },
+    "facing=east": {
+      "model": "bsp_core:block/illyrium_refinery",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "bsp_core:block/illyrium_refinery",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "bsp_core:block/illyrium_refinery",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "bsp_core:illyrium_ingot"
+    }
+  ],
+  "result": {
+    "item": "bsp_core:illyrium_nugget",
+    "count": 9
+  }
+}

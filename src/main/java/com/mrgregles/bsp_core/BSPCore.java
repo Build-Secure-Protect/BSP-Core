@@ -39,6 +39,7 @@ public class BSPCore {
         ModEntities.ENTITIES.register(modEventBus);
         ModCreativeTabs.TABS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        com.mrgregles.bsp_core.registry.ModRecipes.SERIALIZERS.register(modEventBus);
 
         // Server config: lives in <world>/serverconfig/bsp_core-server.toml and syncs to clients.
         context.registerConfig(ModConfig.Type.SERVER, BSPConfig.SPEC);

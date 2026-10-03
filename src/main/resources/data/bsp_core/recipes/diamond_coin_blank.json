@@ -1,12 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " D ",
-    "DBD",
-    " D "
+    " M ",
+    "MBM",
+    " M "
   ],
   "key": {
-    "D": {
+    "M": {
       "item": "minecraft:diamond"
     },
     "B": {

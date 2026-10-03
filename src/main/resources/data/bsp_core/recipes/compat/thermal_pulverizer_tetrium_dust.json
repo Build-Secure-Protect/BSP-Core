@@ -1,0 +1,19 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "thermal"
+    }
+  ],
+  "type": "thermal:pulverizer",
+  "ingredient": {
+    "item": "bsp_core:tetrium_ingot"
+  },
+  "result": [
+    {
+      "item": "bsp_core:tetrium_dust",
+      "count": 1
+    }
+  ],
+  "energy": 4000
+}

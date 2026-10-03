@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#bsp_core:atm_mining",
+  "features": "bsp_core:tetrium_ore_mining",
+  "step": "underground_ores"
+}

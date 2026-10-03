@@ -5,13 +5,27 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 ## [Unreleased]
 
 ### Fixed
+- Creating a world no longer crashes when AllTheModium is not installed. The mining-dimension ore files referenced its biome directly; they now use an optional biome tag.
 - Operator buttons on the totem panel now update the panel immediately. Unclaim and Reset buffs could leave the panel showing the old owner or levels, because an empty update was being dropped before it reached the client.
 - Upgrade tree now shows the new level immediately after buying; the held totem is re-sent to the client because the upgrade menu has no slots of its own.
 
 ### Added
-- Five Shatter Coin tiers (Copper, Gold, Diamond, Netherite, Etherium), each worth double the last, with matching coin blanks. Blank recipes are provisional and cumulative: each blank is crafted around the previous tier's blank.
+- **Crushing by hand**: a pickaxe and a Tetrium Ingot or Dirty Illyrium Ingot on a crafting table. The pickaxe is kept and loses one durability. One in three Tetrium Ingots becomes Tetrium Dust and one in six Dirty Illyrium Ingots becomes Dirty Illyrium Dust; otherwise the ingot gives back three nuggets: Tetrium Nuggets, or Dirty Illyrium Nuggets, nine of which craft back into a Dirty Illyrium Ingot. All four numbers are in the `hand_crushing` config section.
+- **RF Upgrades** Mk I, II, III (Flux Coil, Power Cell, Induction Core): fitted to a machine they let it take RF, run 5%, 10% or 30% faster, and use the same share less lava.
+- The **Combination Forge** now burns furnace fuel, or runs on RF at twice the speed with an RF upgrade.
+- **Lava Pylon, Refinery Pump and Item Hatch** blocks join the multiblocks and pass pipes through to the controller.
+- **Totem Compass**: points to your nearest own totem; load Shatter Coins and start tracking to follow the nearest rival totem for the loaded time, followed by a cooldown that upgrades can shorten from 10 minutes to 3.
+- **Illyrium progression.** Two ores (Tetrium, Illyrium, each with deepslate variants and an End Stone Illyrium Ore) generating in the Overworld and, when AllTheModium is installed, in its mining dimension. New materials: Tetrium Slag, Nuggets, Ingots and Dust; Dirty Illyrium Ingots and Dust; Pure Illyrium Dust; Illyrium Nuggets and Ingots. Ingots, nuggets and dusts are recolours of the vanilla shapes.
+- **Tetrium Crucible** (single block): Tetrium Ore plus furnace fuel gives nuggets and slag in two outputs.
+- **Combination Forge** (single block): nine nuggets into one ingot; forges Illyrium only with the Illyrium Forge Upgrade fitted.
+- **Illyrium Crucible** and **Illyrium Refinery** (3x3x3 multiblocks built from Illyrium Casing and Illyrium Tank Glass around a controller that checks the structure). The crucible runs on lava and either smelts ore with slag or alloys pure dust with Tetrium dust. The refinery uses water and a filter to purify dirty dust.
+- Filters (Iron, Diamond, Netherite, Illyrium) lasting 1, 20, 100 and 1000 refinements.
+- All four machines have per-face item input and output settings; the multiblocks also accept their fluid by pipe.
+- Crushing recipes for Mekanism, Create and Thermal turn the ingots into their dusts.
+- Shatter Blanks are now made from Tetrium Ingots and each coin tier's blank is built on the previous one. Etherium is renamed Illyrium throughout.
+- Five Shatter Coin tiers (Copper, Gold, Diamond, Netherite, Illyrium), each worth double the last, with matching coin blanks. Blank recipes are provisional and cumulative: each blank is crafted around the previous tier's blank.
 - Shatter Coin Factory: a craftable-later machine (no recipe yet) that presses blanks into coins in real time (12 h, 24 h, 48 h, 4 d, 7 d by default), catching up when its chunk reloads or the server restarts. Needs Forge Energy (RF), taken per coin when a press starts. Four upgrade slots take Speed Gears Mk I / II / III (5%, 15%, 30% less time, additive, capped by `factory.maxTotalReduction`). Each face can be set to Off, In, Out or In+Out for hoppers, pipes and storage buses. Animated press head, coin on the die, and lit sockets for fitted gears. A player may own at most `factory.maxPerPlayer` (10).
-- Etherium Shard item, the material for Etherium coin blanks (how it is obtained comes later).
+- Illyrium Shard item, the material for Illyrium coin blanks (how it is obtained comes later).
 - Totem upgrade costs are now in coin value and can be paid with any mix of coins; change is returned.
 - Placed-only upgrades bought with Shatter Coins from the placed totem's panel: **Fortify** (non-owner mining in a 1/3/5/7/15 block radius is slowed and explosions from any source, the owner's included, spare blocks there with rising probability) and **Healing Aura** (heals the owner while they stand within 3/5/7/10/15 blocks). Costs, radii and strengths are all in the `upgrades` config section.
 - Translucent glowing spheres show each aura's radius to viewers within `visuals.auraSphereViewDistance` (32) blocks; upgrade orbs around the base are now drawn by a block-entity renderer (five orbs, one per upgrade) and bob gently.

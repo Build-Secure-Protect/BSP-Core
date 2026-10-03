@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 
 /** The five Shatter Coin tiers, cheapest first. Values, press times and energy come from config. */
 public enum CoinTier {
-    COPPER("copper"), GOLD("gold"), DIAMOND("diamond"), NETHERITE("netherite"), ETHERIUM("etherium");
+    COPPER("copper"), GOLD("gold"), DIAMOND("diamond"), NETHERITE("netherite"), ILLYRIUM("illyrium");
 
     public final String key;
 

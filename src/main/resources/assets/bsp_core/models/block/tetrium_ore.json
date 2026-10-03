@@ -1,0 +1,7 @@
+{
+  "parent": "bsp_core:block/ore_overlay",
+  "textures": {
+    "base": "minecraft:block/stone",
+    "overlay": "bsp_core:block/tetrium_ore_overlay"
+  }
+}

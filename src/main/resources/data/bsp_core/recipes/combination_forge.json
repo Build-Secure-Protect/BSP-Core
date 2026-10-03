@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TTT",
+    "PAP",
+    "SSS"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_ingot"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone"
+    }
+  },
+  "result": {
+    "item": "bsp_core:combination_forge"
+  }
+}

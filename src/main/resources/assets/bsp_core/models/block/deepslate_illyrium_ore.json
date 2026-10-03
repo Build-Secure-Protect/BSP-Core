@@ -1,0 +1,7 @@
+{
+  "parent": "bsp_core:block/ore_overlay",
+  "textures": {
+    "base": "minecraft:block/deepslate",
+    "overlay": "bsp_core:block/illyrium_ore_overlay"
+  }
+}

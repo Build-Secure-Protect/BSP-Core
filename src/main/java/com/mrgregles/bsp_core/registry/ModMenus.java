@@ -2,6 +2,7 @@ package com.mrgregles.bsp_core.registry;
 
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.coin.CoinFactoryMenu;
+import com.mrgregles.bsp_core.machine.MachineMenu;
 import com.mrgregles.bsp_core.menu.ShatterTotemMenu;
 import com.mrgregles.bsp_core.menu.TotemUpgradeMenu;
 import net.minecraft.world.InteractionHand;
@@ -22,6 +23,12 @@ public final class ModMenus {
 
     public static final RegistryObject<MenuType<CoinFactoryMenu>> COIN_FACTORY = MENUS.register("shatter_coin_factory",
             () -> IForgeMenuType.create((id, inv, buf) -> new CoinFactoryMenu(id, inv, buf.readBlockPos())));
+
+    public static final RegistryObject<MenuType<MachineMenu>> MACHINE = MENUS.register("machine",
+            () -> IForgeMenuType.create((id, inv, buf) -> new MachineMenu(id, inv, buf.readBlockPos())));
+
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.compass.TotemCompassMenu>> TOTEM_COMPASS = MENUS.register("totem_compass",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.compass.TotemCompassMenu(id, inv, buf.readEnum(InteractionHand.class))));
 
     private ModMenus() {}
 }

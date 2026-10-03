@@ -34,6 +34,48 @@ Enable the grant on the test server: edit `run/<world>/serverconfig/bsp_core-ser
 - [ ] Press "Yes": you disconnect, and on rejoining the totem is a placed block next to where you stood, not in your inventory.
 - [ ] Repeat inside a Compact Machine or other non-allowed dimension: the totem is placed at your last Overworld position instead.
 
+## Illyrium progression
+Speed up testing in `serverconfig/bsp_core-server.toml`: set `ticksPerOre`, `ticksPerIngot`, `smeltTicks`, `alloyTicks` and `ticksPerDust` to 40.
+- [ ] A new world loads without errors (world generation files are valid). `/locate` is not available for ores, so dig or use spectator: Tetrium Ore is common between y -32 and 80; Illyrium Ore is rare below y -16.
+- [ ] Ores need an iron pickaxe (Tetrium) or diamond pickaxe (Illyrium) and drop themselves.
+- [ ] Ingots, nuggets and dusts look like recoloured vanilla iron ingots, iron nuggets and redstone.
+- [ ] Tetrium Crucible: ore in the top-left slot, coal below it. The flame gauge lights, the bar fills, and 2 nuggets plus 1 slag appear. A lava bucket as fuel leaves an empty bucket.
+- [ ] Combination Forge: 9 Tetrium Nuggets plus coal in the lower-left slot give 1 ingot in 30 seconds. With no fuel and no RF it does nothing. 9 Illyrium Nuggets do nothing until an Illyrium Forge Upgrade is in the bottom slot.
+- [ ] Crafting table: 9 nuggets make an ingot and an ingot makes 9 nuggets, for both metals.
+- [ ] Crush a Tetrium Ingot in a Mekanism Crusher, Create crushing wheels or millstone, and a Thermal Pulverizer: each gives Tetrium Dust.
+- [ ] Illyrium Crucible: place the controller alone and open it: "Structure incomplete". Build it, looking at the controller's front:
+  - Bottom layer: 3x3 Illyrium Casing.
+  - Middle layer: Lava Pylons on the four corners, an Item Hatch in the middle of the left and right edges, the controller in the middle of the front edge, centre and back-middle empty.
+  - Top layer: Lava Pylons on the four corners, Illyrium Casing in the middle of each edge, centre empty.
+  The warning clears within a second.
+- [ ] Crucible smelting: Illyrium Ore + 2 Tetrium Slag + a lava bucket or magma blocks gives a Dirty Illyrium Ingot. The orange gauge shows lava.
+- [ ] Illyrium Refinery, looking at the controller's front: 3x3 casing floor; middle layer has Illyrium Tank Glass in the centre, casing behind it, a Refinery Pump on its left, an Item Hatch on its right, and the controller in front; one more glass on top of the centre.
+- [ ] Hoppers and item pipes on an Item Hatch, and fluid pipes on a Lava Pylon or Refinery Pump, reach the controller's inventory and tank.
+- [ ] Refinery: Dirty Illyrium Dust + water bucket + an Iron Filter gives one Pure Illyrium Dust and uses up the filter. A Diamond Filter shows a wear bar and lasts 20.
+- [ ] Crucible alloying: Pure Illyrium Dust + Tetrium Dust + lava gives an Illyrium Nugget.
+- [ ] Side buttons, hoppers and pipes work on all four machines; fluid pipes fill the two multiblock controllers.
+- [ ] Blanks: 4 Tetrium Ingots give 2 Shatter Blanks; Shatter Blank + 4 copper gives a Copper Coin Blank; and so on up to Netherite Blank + Illyrium Ingot.
+- [ ] With AllTheModium installed, its mining dimension contains Tetrium Ore in the stone and deepslate layers and End Stone Illyrium Ore in the bottom layer.
+
+## Crushing by hand
+- [ ] Pickaxe + Tetrium Ingot anywhere in a crafting grid shows a Crushed Tetrium Ingot. Taking it leaves the pickaxe in the grid with one less durability and removes the ingot.
+- [ ] The crushed item turns at once into either 1 Tetrium Dust (about 1 in 3) or 3 Tetrium Nuggets, with a message. Shift-click a stack of ingots with a pickaxe: each ingot is rolled separately.
+- [ ] Same with a Dirty Illyrium Ingot: about 1 in 6 gives Dirty Illyrium Dust, otherwise 3 Dirty Illyrium Nuggets. Nine Dirty Illyrium Nuggets craft into one Dirty Illyrium Ingot.
+- [ ] A pickaxe on its last durability point breaks after the craft.
+
+## RF upgrades
+- [ ] Put an RF Upgrade in the bottom-right slot of any machine: a yellow gauge appears and the machine now accepts RF from cables. Without the upgrade it accepts none.
+- [ ] With RF stored, a Tetrium Crucible job is about 5%, 10% or 30% quicker for Mk I, II, III.
+- [ ] Combination Forge with an RF upgrade and RF: works with no coal and takes about half the time, or less with higher marks.
+- [ ] Illyrium Crucible with RF Upgrade Mk III and RF: each job drains about 175 mB of lava where it drained 250.
+
+## Totem Compass
+- [ ] Craft it (4 Tetrium Ingots around 1 Illyrium Ingot) or take it from the BSP tab. Holding it, the needle points toward your nearest placed totem and turns as you turn. Check it points the right way, not mirrored.
+- [ ] Right-click: the screen shows "Pointing to your nearest totem". Click a coin button: one coin of that tier leaves your inventory and "Loaded" rises by 1, 5, 10, 30 or 60 seconds.
+- [ ] Press Start tracking: the needle swings to the nearest totem owned by someone else (assign a second totem to a dummy name as an operator to test). The timer counts down.
+- [ ] When tracking ends the screen shows a 10:00 cooldown, during which Start tracking is disabled and the needle points to your own totem again.
+- [ ] Buy a cooldown upgrade: coin value is taken and the cooldown length drops by one minute, down to 3:00 after seven levels.
+
 ## Shatter Coins and the factory
 Fast testing: in `serverconfig/bsp_core-server.toml` set `pressHours = [0.01, 0.02, 0.04, 0.08, 0.14]` (36 seconds for copper).
 - [ ] BSP creative tab shows the factory, five blanks, five coins and three Speed Gears. Coin tooltips show values 1, 2, 4, 8, 16.
