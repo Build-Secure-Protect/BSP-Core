@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,glow=owned": {
+      "model": "bsp_core:block/shatter_totem_owned"
+    },
+    "facing=east,glow=owned": {
+      "model": "bsp_core:block/shatter_totem_owned",
+      "y": 90
+    },
+    "facing=south,glow=owned": {
+      "model": "bsp_core:block/shatter_totem_owned",
+      "y": 180
+    },
+    "facing=west,glow=owned": {
+      "model": "bsp_core:block/shatter_totem_owned",
+      "y": 270
+    },
+    "facing=north,glow=unclaimed": {
+      "model": "bsp_core:block/shatter_totem_unclaimed"
+    },
+    "facing=east,glow=unclaimed": {
+      "model": "bsp_core:block/shatter_totem_unclaimed",
+      "y": 90
+    },
+    "facing=south,glow=unclaimed": {
+      "model": "bsp_core:block/shatter_totem_unclaimed",
+      "y": 180
+    },
+    "facing=west,glow=unclaimed": {
+      "model": "bsp_core:block/shatter_totem_unclaimed",
+      "y": 270
+    },
+    "facing=north,glow=stealing": {
+      "model": "bsp_core:block/shatter_totem_stealing"
+    },
+    "facing=east,glow=stealing": {
+      "model": "bsp_core:block/shatter_totem_stealing",
+      "y": 90
+    },
+    "facing=south,glow=stealing": {
+      "model": "bsp_core:block/shatter_totem_stealing",
+      "y": 180
+    },
+    "facing=west,glow=stealing": {
+      "model": "bsp_core:block/shatter_totem_stealing",
+      "y": 270
+    }
+  }
+}

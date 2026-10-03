@@ -1,0 +1,7 @@
+{
+  "parent": "bsp_core:block/shatter_totem_geometry",
+  "textures": {
+    "atlas": "bsp_core:block/shatter_totem_stealing",
+    "particle": "bsp_core:block/shatter_totem_stealing"
+  }
+}

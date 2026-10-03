@@ -1,0 +1,63 @@
+package com.mrgregles.bsp_core.event;
+
+import com.mrgregles.bsp_core.BSPConfig;
+import com.mrgregles.bsp_core.BSPCore;
+import com.mrgregles.bsp_core.data.PlayerPersistent;
+import com.mrgregles.bsp_core.data.TotemLedger;
+import com.mrgregles.bsp_core.registry.ModItems;
+import com.mrgregles.bsp_core.totem.TotemOwner;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * Hands every player exactly one Shatter Totem the first time they join a server that has
+ * {@code first_join.grantTotemOnFirstJoin} enabled (the Spawn Hub).
+ *
+ * <p>Two records guard against double grants: the player's persisted NBT (travels with the player
+ * file) and the {@link TotemLedger} (travels with the world). Either one being set blocks a grant.
+ */
+@Mod.EventBusSubscriber(modid = BSPCore.MODID)
+public final class FirstJoinHandler {
+    private FirstJoinHandler() {}
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        if (!BSPConfig.GRANT_TOTEM_ON_FIRST_JOIN.get()) {
+            return;
+        }
+        TotemLedger ledger = TotemLedger.get(player.server);
+        if (ledger.hasBeenGranted(player.getUUID()) || PlayerPersistent.isTotemGranted(player)) {
+            return;
+        }
+        grant(player, ledger);
+    }
+
+    /** Creates an owned totem for {@code player} and records the grant. Also used by admin commands. */
+    public static void grant(ServerPlayer player, TotemLedger ledger) {
+        ItemStack totem = new ItemStack(ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(totem);
+
+        if (!player.getInventory().add(totem)) {
+            // Inventory full: drop at the player's feet. The item form cannot despawn or be destroyed.
+            ItemEntity drop = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), totem);
+            drop.setNoPickUpDelay();
+            player.level().addFreshEntity(drop);
+        }
+
+        ledger.markGranted(player.getUUID());
+        PlayerPersistent.setTotemGranted(player, true);
+
+        player.displayClientMessage(
+                Component.translatable("message.bsp_core.shatter_totem.granted").withStyle(ChatFormatting.GOLD), false);
+        BSPCore.LOGGER.info("Granted a Shatter Totem to {} ({})", player.getGameProfile().getName(), player.getUUID());
+    }
+}

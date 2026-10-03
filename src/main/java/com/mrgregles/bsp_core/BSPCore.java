@@ -1,6 +1,13 @@
 package com.mrgregles.bsp_core;
 
 import com.mojang.logging.LogUtils;
+import com.mrgregles.bsp_core.registry.ModBlockEntities;
+import com.mrgregles.bsp_core.registry.ModBlocks;
+import com.mrgregles.bsp_core.registry.ModCreativeTabs;
+import com.mrgregles.bsp_core.registry.ModEntities;
+import com.mrgregles.bsp_core.registry.ModItems;
+import com.mrgregles.bsp_core.registry.ModMenus;
+import com.mrgregles.bsp_core.network.BSPNetwork;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -25,6 +32,14 @@ public class BSPCore {
 
         modEventBus.addListener(this::commonSetup);
 
+        // Registration order matters: items and block entities reference blocks.
+        ModBlocks.BLOCKS.register(modEventBus);
+        ModItems.ITEMS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        ModEntities.ENTITIES.register(modEventBus);
+        ModCreativeTabs.TABS.register(modEventBus);
+        ModMenus.MENUS.register(modEventBus);
+
         // Server config: lives in <world>/serverconfig/bsp_core-server.toml and syncs to clients.
         context.registerConfig(ModConfig.Type.SERVER, BSPConfig.SPEC);
 
@@ -32,6 +47,7 @@ public class BSPCore {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(BSPNetwork::register);
         LOGGER.info("BSP Core loaded");
     }
 }
