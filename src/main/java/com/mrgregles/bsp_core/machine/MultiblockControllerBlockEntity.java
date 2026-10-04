@@ -26,7 +26,7 @@ import java.util.List;
  *
  * <p>The structure is described by three layers of three strings, bottom layer first, each string a
  * row from the back of the structure to the front as seen from the controller's facing. The
- * controller sits at the middle of the front face on the middle layer. Characters are mapped to
+ * controller is wherever the pattern has an 'X' (bottom layer, middle of the front edge). Characters are mapped to
  * blocks by {@link #blockFor(char)}; a space means "anything". The shape is re-checked once a second
  * and the machine only runs while it is complete.
  *
@@ -115,6 +115,7 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
             boolean ok = checkStructure(level);
             if (ok != formed) {
                 formed = ok;
+                showParts(ok);
                 setChanged();
                 level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             }
@@ -129,6 +130,29 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
 
     /** Called once a second while formed: move fluid from container items into the tank. */
     protected abstract void refill();
+
+    /** Whether a formed structure hides its part blocks so the controller can draw the whole machine. */
+    protected boolean hidesParts() {
+        return false;
+    }
+
+    /** Marks every part block (and the controller) as formed or not, which switches their cube models off or on. */
+    public void showParts(boolean formedNow) {
+        if (level == null || level.isClientSide || !hidesParts()) {
+            return;
+        }
+        java.util.List<BlockPos> all = new java.util.ArrayList<>();
+        for (Part part : parts()) {
+            all.add(part.pos());
+        }
+        all.add(worldPosition);
+        for (BlockPos pos : all) {
+            BlockState st = level.getBlockState(pos);
+            if (st.hasProperty(StructurePartBlock.FORMED) && st.getValue(StructurePartBlock.FORMED) != formedNow) {
+                level.setBlock(pos, st.setValue(StructurePartBlock.FORMED, formedNow), 3);
+            }
+        }
+    }
 
     /** A block the structure needs and where it goes. */
     public record Part(BlockPos pos, Block block) {}
@@ -192,13 +216,76 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
         return new net.minecraft.world.phys.AABB(worldPosition).inflate(3);
     }
 
+    /**
+     * A multiblock is only reachable through its designated ports. The controller and casing give
+     * pipes and hoppers nothing; {@code side == null} is the machine's own internal access.
+     */
     @Nonnull
     @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
+        if (side != null) {
+            return LazyOptional.empty();
+        }
         if (cap == ForgeCapabilities.FLUID_HANDLER) {
             return fluidCap.cast();
         }
-        return super.getCapability(cap, side);
+        return super.getCapability(cap, null);
+    }
+
+    /** Whether a part block is an item port (as opposed to a fluid and energy port). */
+    protected abstract boolean isItemPort(Block block);
+
+    /** Item ports in a fixed order: left to right as seen from the front. Port {@code i} uses mode slot {@code i}. */
+    public java.util.List<BlockPos> itemPorts() {
+        java.util.List<BlockPos> out = new java.util.ArrayList<>();
+        for (Part part : parts()) {
+            if (isItemPort(part.block())) {
+                out.add(part.pos());
+            }
+        }
+        return out;
+    }
+
+    public int itemPortCount() {
+        int n = 0;
+        for (Part part : parts()) {
+            if (isItemPort(part.block())) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** Name of item port {@code i} for the screen. */
+    public abstract String itemPortKey(int i);
+
+    /** Name of the fluid port(s) for the screen, e.g. the Lava Pylons. */
+    public abstract String fluidPortKey();
+
+    /**
+     * What a port block exposes. Item Hatches carry items according to that hatch's own mode; pylons
+     * and the pump carry the machine's fluid and, with an RF upgrade, energy.
+     */
+    public <T> LazyOptional<T> portCapability(Capability<T> cap, BlockPos port, Block block) {
+        if (isItemPort(block)) {
+            int index = itemPorts().indexOf(port);
+            return cap == ForgeCapabilities.ITEM_HANDLER && index >= 0 && index < 6
+                    ? super.getCapability(cap, Direction.from3DDataValue(index)) : LazyOptional.empty();
+        }
+        if (cap == ForgeCapabilities.FLUID_HANDLER) {
+            return portTakesFluid(port) ? fluidCap.cast() : LazyOptional.empty();
+        }
+        return cap == ForgeCapabilities.ENERGY && portTakesEnergy(port) ? super.getCapability(cap, null) : LazyOptional.empty();
+    }
+
+    /** Whether the fluid port block at this position accepts the machine's fluid. */
+    protected boolean portTakesFluid(BlockPos port) {
+        return true;
+    }
+
+    /** Whether the fluid port block at this position accepts RF. */
+    protected boolean portTakesEnergy(BlockPos port) {
+        return true;
     }
 
     @Override

@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 
 /** One menu for every {@link MachineBlockEntity}; the machine's layout decides the slots. */
 public class MachineMenu extends AbstractContainerMenu {
-    public static final int INV_Y = 118;
+    public static final int INV_Y = 152, INV_X = 82, IN_X = 14, OUT_X = 152, PIPE_Y = 30, FUEL_X = 152, FUEL_Y = 74, UP_X = 196, UP_Y = 124, BTN_POWER = 6;
 
     @Nullable
     private final MachineBlockEntity machine;
@@ -41,10 +41,20 @@ public class MachineMenu extends AbstractContainerMenu {
         this.pos = pos;
         int n = 0;
         if (machine != null) {
+            // Slots are placed by role for the HUD layout: inputs on the left of the pipeline, outputs on the right,
+            // the fuel or fluid container under the outputs, upgrades in their own row.
+            int ins = 0, outs = 0, ups = 0;
             for (int i = 0; i < machine.layout().size(); i++) {
                 MachineBlockEntity.Slot s = machine.layout().get(i);
                 final boolean output = s.role() == MachineBlockEntity.Role.OUTPUT;
-                addSlot(new SlotItemHandler(machine.getItems(), i, s.x(), s.y()) {
+                int sx, sy;
+                switch (s.role()) {
+                    case INPUT -> { sx = IN_X + 20 * ins++; sy = PIPE_Y; }
+                    case OUTPUT -> { sx = OUT_X + 20 * outs++; sy = PIPE_Y; }
+                    case FUEL -> { sx = FUEL_X; sy = FUEL_Y; }
+                    default -> { sx = UP_X + 20 * ups++; sy = UP_Y; }
+                }
+                addSlot(new SlotItemHandler(machine.getItems(), i, sx, sy) {
                     @Override
                     public boolean mayPlace(ItemStack stack) {
                         return !output && super.mayPlace(stack);
@@ -56,11 +66,11 @@ public class MachineMenu extends AbstractContainerMenu {
         this.machineSlots = n;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, INV_Y + row * 18));
+                addSlot(new Slot(inv, col + row * 9 + 9, INV_X + col * 18, INV_Y + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(inv, col, 8 + col * 18, INV_Y + 58));
+            addSlot(new Slot(inv, col, INV_X + col * 18, INV_Y + 58));
         }
         addDataSlots(data);
     }
@@ -99,6 +109,10 @@ public class MachineMenu extends AbstractContainerMenu {
         return (short) data.get(15);
     }
 
+    public boolean enabled() {
+        return data.get(16) != 0;
+    }
+
     public boolean formed() {
         return data.get(14) != 0;
     }
@@ -111,6 +125,10 @@ public class MachineMenu extends AbstractContainerMenu {
     public boolean clickMenuButton(Player player, int id) {
         if (machine != null && id >= 0 && id < 6) {
             machine.cycleSide(Direction.from3DDataValue(id));
+            return true;
+        }
+        if (machine != null && id == BTN_POWER) {
+            machine.toggleEnabled();
             return true;
         }
         return false;

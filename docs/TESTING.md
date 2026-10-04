@@ -43,13 +43,13 @@ Speed up testing in `serverconfig/bsp_core-server.toml`: set `ticksPerOre`, `tic
 - [ ] Combination Forge: 9 Tetrium Nuggets plus coal in the lower-left slot give 1 ingot in 30 seconds. With no fuel and no RF it does nothing. 9 Illyrium Nuggets do nothing until an Illyrium Forge Upgrade is in the bottom slot.
 - [ ] Crafting table: 9 nuggets make an ingot and an ingot makes 9 nuggets, for both metals.
 - [ ] Crush a Tetrium Ingot in a Mekanism Crusher, Create crushing wheels or millstone, and a Thermal Pulverizer: each gives Tetrium Dust.
-- [ ] Illyrium Crucible: place the controller alone and open it: "Structure incomplete". Build it, looking at the controller's front:
-  - Bottom layer: 3x3 Illyrium Casing.
-  - Middle layer: Lava Pylons on the four corners, an Item Hatch in the middle of the left and right edges, the controller in the middle of the front edge, centre and back-middle empty.
+- [ ] Illyrium Crucible: place the controller on the ground and open it: "Structure incomplete", and small ghost blocks show every missing part. The controller is the middle of the front edge of the bottom layer; the structure goes back and up from it:
+  - Bottom layer: Illyrium Casing everywhere except the controller.
+  - Middle layer: Lava Pylons on the four corners, Item Hatches in the middle of the left and right edges, Illyrium Core in the centre, front-middle and back-middle empty.
   - Top layer: Lava Pylons on the four corners, Illyrium Casing in the middle of each edge, centre empty.
-  The warning clears within a second.
+  Totals: 12 casing, 8 pylons, 2 hatches, 1 core. The warning clears within a second of the last block.
 - [ ] Crucible smelting: Illyrium Ore + 2 Tetrium Slag + a lava bucket or magma blocks gives a Dirty Illyrium Ingot. The orange gauge shows lava.
-- [ ] Illyrium Refinery, looking at the controller's front: 3x3 casing floor; middle layer has Illyrium Tank Glass in the centre, casing behind it, a Refinery Pump on its left, an Item Hatch on its right, and the controller in front; one more glass on top of the centre.
+- [ ] Illyrium Refinery: controller on the ground at the middle of the front edge. Bottom layer: Illyrium Core in the centre, casing in the other seven spots. Middle layer: Illyrium Tank Glass in the centre, casing behind it, Item Hatch on its left, Refinery Pump on its right. Top layer: one more glass on the centre. Totals: 8 casing, 1 core, 2 glass, 1 pump, 1 hatch.
 - [ ] Hoppers and item pipes on an Item Hatch, and fluid pipes on a Lava Pylon or Refinery Pump, reach the controller's inventory and tank.
 - [ ] Refinery: Dirty Illyrium Dust + water bucket + an Iron Filter gives one Pure Illyrium Dust and uses up the filter. A Diamond Filter shows a wear bar and lasts 20.
 - [ ] Crucible alloying: Pure Illyrium Dust + Tetrium Dust + lava gives an Illyrium Nugget.
@@ -145,3 +145,13 @@ a placed totem: a purple "Operator" column appears on the left.
 ## Commands (operator)
 - [ ] `/bsp totem locate <player>` lists placed totem positions, and stops listing them once mined.
 - [ ] `/bsp totem reset <player>` followed by relogging on a grant-enabled server gives a new totem.
+
+## Port sockets (multiblocks)
+- [ ] Form an Illyrium Crucible. The four pylons stand in the centre of their blocks. Each has an orange socket (lower pylon block) and a yellow socket (upper pylon block) on both outward faces, reaching out to the block face. Each Item Hatch shows one framed socket flush with its outward face.
+- [ ] A pipe or cable run to any of those faces meets the socket dead centre, with no gap and no overlap, on all four facings of the controller.
+- [ ] Form an Illyrium Refinery. The Item Hatch side shows an item socket; the Refinery Pump side shows a blue water socket with a yellow RF one above it.
+- [ ] Crucible: a lava pipe fills the tank only through a lower pylon block (orange); an RF cable charges only through an upper pylon block (yellow). The wrong one does not connect.
+- [ ] The yellow RF sockets are dim without an RF upgrade and pulse once one is fitted.
+- [ ] Open the screen and cycle a hatch's mode in PORTS: the socket on the machine changes colour straight away (blue in, orange out, turquoise both, grey off).
+- [ ] PORTS lists each hatch with "Items: <mode>", the fluid row with what it accepts, and an RF row that reads "No RF upgrade" or "RF in". No text overlaps the STATUS column or the UPGRADES label.
+- [ ] Pipes and cables connect at the socketed blocks: items at hatches, lava/water and RF at pylons/pump.

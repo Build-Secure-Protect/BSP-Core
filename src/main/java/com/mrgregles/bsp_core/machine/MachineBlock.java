@@ -37,12 +37,12 @@ public class MachineBlock extends BaseEntityBlock {
     public MachineBlock(BlockEntityType.BlockEntitySupplier<? extends MachineBlockEntity> factory) {
         super(Properties.of().mapColor(MapColor.METAL).strength(3.5F, 6.0F).sound(SoundType.METAL).noOcclusion());
         this.factory = factory;
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(StructurePartBlock.FORMED, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, StructurePartBlock.FORMED);
     }
 
     @Nullable
@@ -53,7 +53,7 @@ public class MachineBlock extends BaseEntityBlock {
 
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
+        return state.getValue(StructurePartBlock.FORMED) ? RenderShape.INVISIBLE : RenderShape.MODEL;
     }
 
     @Nullable
@@ -78,6 +78,9 @@ public class MachineBlock extends BaseEntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof MultiblockControllerBlockEntity multi) {
+            multi.showParts(false); // the controller is going away: make the part blocks visible again
+        }
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof MachineBlockEntity machine) {
             for (int i = 0; i < machine.getItems().getSlots(); i++) {
                 Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), machine.getItems().getStackInSlot(i));

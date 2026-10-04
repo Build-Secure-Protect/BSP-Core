@@ -67,6 +67,47 @@ public class TetriumCrucibleBlockEntity extends MachineBlockEntity {
     }
 
     @Override
+    public List<Need> missing(int fluidMb, boolean burning) {
+        List<Need> out = new java.util.ArrayList<>();
+        if (!items.getStackInSlot(ORE).is(TETRIUM_ORES)) {
+            out.add(need(com.mrgregles.bsp_core.registry.ModBlocks.TETRIUM_ORE.get(), "need.bsp_core.tetrium_ore"));
+        }
+        if (!burning && ForgeHooks.getBurnTime(items.getStackInSlot(FUEL), null) <= 0) {
+            out.add(need(net.minecraft.world.item.Items.COAL, "need.bsp_core.fuel"));
+        }
+        if (!fits(NUGGETS, nuggets()) || !fits(SLAG, slag())) {
+            out.add(need(ModItems.TETRIUM_NUGGET.get(), "need.bsp_core.output_full"));
+        }
+        return out;
+    }
+
+    @Override
+    public ItemStack slotIcon(int slot) {
+        if (isRfSlot(slot)) {
+            return new ItemStack(ModItems.RF_UPGRADES.get(0).get());
+        }
+        return switch (slot) {
+            case ORE -> new ItemStack(com.mrgregles.bsp_core.registry.ModBlocks.TETRIUM_ORE.get());
+            case FUEL -> new ItemStack(net.minecraft.world.item.Items.COAL);
+            case NUGGETS -> new ItemStack(ModItems.TETRIUM_NUGGET.get());
+            default -> new ItemStack(ModItems.TETRIUM_SLAG.get());
+        };
+    }
+
+    @Override
+    public net.minecraft.network.chat.Component slotHint(int slot) {
+        if (isRfSlot(slot)) {
+            return net.minecraft.network.chat.Component.translatable("hint.bsp_core.rf");
+        }
+        return net.minecraft.network.chat.Component.translatable(switch (slot) {
+            case ORE -> "hint.bsp_core.tetrium_ore";
+            case FUEL -> "hint.bsp_core.fuel";
+            case NUGGETS -> "hint.bsp_core.out_nuggets";
+            default -> "hint.bsp_core.out_slag";
+        });
+    }
+
+    @Override
     public String titleKey() {
         return "block.bsp_core.tetrium_crucible";
     }

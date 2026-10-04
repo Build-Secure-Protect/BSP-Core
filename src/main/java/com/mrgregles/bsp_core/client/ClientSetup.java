@@ -39,8 +39,8 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ItemEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SHATTER_TOTEM.get(), ShatterTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
-        event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), MultiblockGhostRenderer::new);
-        event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_REFINERY.get(), MultiblockGhostRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), IllyriumCrucibleRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_REFINERY.get(), IllyriumRefineryRenderer::new);
     }
 
     /** The press head is drawn by the renderer, so its model must be baked even though no block state uses it. */

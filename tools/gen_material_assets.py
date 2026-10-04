@@ -395,6 +395,19 @@ def main():
     for kind in ("lava_pylon", "refinery_pump", "item_hatch"):
         write_png(ASSETS / f"textures/block/{kind}.png", 16, 16, port(kind))
 
+    def core(x, y):
+        d = math.hypot(x - 7.5, y - 7.5)
+        if x in (0, 15) or y in (0, 15):
+            return hexc("#8A909C")
+        if d < 2.6:
+            return hexc("#EFFFFB")
+        if d < 4.6:
+            return ILL["light"] if (x + y) % 2 else ILL["base"]
+        if d < 6.2:
+            return ILL["dark"]
+        return hexc("#1E222B")
+    write_png(ASSETS / "textures/block/illyrium_core.png", 16, 16, core)
+
     def rf_pixel(mark):
         copper = {"l": hexc("#E79A62"), "b": hexc("#C8733A"), "d": hexc("#8A4A22")}
         bolt = {(8, 5), (7, 6), (8, 6), (6, 7), (7, 7), (8, 7), (9, 7), (7, 8), (8, 8), (9, 8), (7, 9), (8, 9), (7, 10)}
@@ -458,7 +471,7 @@ def main():
         write_png(ASSETS / f"textures/item/rf_upgrade_mk{mark}.png", 16, 16, rf_pixel(mark))
         item_model(f"rf_upgrade_mk{mark}")
 
-    for name in ("illyrium_casing", "illyrium_glass", "lava_pylon", "refinery_pump", "item_hatch"):
+    for name in ("illyrium_casing", "illyrium_glass", "illyrium_core", "lava_pylon", "refinery_pump", "item_hatch"):
         m = {"parent": "minecraft:block/cube_all", "textures": {"all": f"bsp_core:block/{name}"}}
         if name == "illyrium_glass":
             m["render_type"] = "minecraft:translucent"

@@ -42,7 +42,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
     /** One inventory slot: where it is drawn and what it is for. */
     public record Slot(Role role, int x, int y) {}
 
-    public static final int DATA_COUNT = 16;
+    public static final int DATA_COUNT = 17;
 
     protected final ItemStackHandler items;
     private final List<Slot> layout;
@@ -51,6 +51,8 @@ public abstract class MachineBlockEntity extends BlockEntity {
     protected int burnTime;
     protected int burnTotal;
     private boolean wasWorking;
+    /** The on/off switch in the screen. A machine that is switched off does not start or continue jobs. */
+    private boolean enabled = true;
     private double speedCarry;
     private final MachineEnergy energy = new MachineEnergy();
     private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energy);
@@ -108,6 +110,29 @@ public abstract class MachineBlockEntity extends BlockEntity {
     }
 
     public abstract String titleKey();
+
+    /** Something the machine still needs before it can run: an icon and a sentence for the screen's status column. */
+    public record Need(ItemStack icon, net.minecraft.network.chat.Component text) {}
+
+    protected static Need need(net.minecraft.world.level.ItemLike icon, String key, Object... args) {
+        return new Need(new ItemStack(icon), net.minecraft.network.chat.Component.translatable(key, args));
+    }
+
+    /**
+     * What is stopping the machine right now, worked out on the client from the open screen:
+     * {@code fluidMb} and {@code burning} come from the synced menu data, items from the slots.
+     */
+    public abstract List<Need> missing(int fluidMb, boolean burning);
+
+    /** Example item shown faintly in an empty slot, and the tooltip explaining what belongs there. */
+    public abstract ItemStack slotIcon(int slot);
+
+    public abstract net.minecraft.network.chat.Component slotHint(int slot);
+
+    /** Icon and hint for the RF upgrade slot, shared by every machine. */
+    protected boolean isRfSlot(int slot) {
+        return slot >= 0 && slot < layout.size() && layout.get(slot).role() == Role.RF;
+    }
 
     // ------------------------------------------------------------------ RF upgrade
 
@@ -178,13 +203,30 @@ public abstract class MachineBlockEntity extends BlockEntity {
         return Math.min(1f, progress / (float) Math.max(1, workTime()));
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void toggleEnabled() {
+        enabled = !enabled;
+        setChanged();
+    }
+
     public SideMode getSide(Direction d) {
         return sides[d.get3DDataValue()];
+    }
+
+    /** Lets a machine set its own default for a face or, in a multiblock, for a numbered port. */
+    protected void setSideMode(int index, SideMode mode) {
+        sides[index] = mode;
     }
 
     public void cycleSide(Direction d) {
         sides[d.get3DDataValue()] = sides[d.get3DDataValue()].next();
         setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
     protected int slotOf(Role role, int nth) {
@@ -217,7 +259,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
     // ------------------------------------------------------------------ ticking
 
     public void serverTick(ServerLevel level) {
-        boolean work = canWork();
+        boolean work = enabled && canWork();
         if (work && usesFuel() && burnTime <= 0) {
             work = tryIgnite();
         }
@@ -243,6 +285,9 @@ public abstract class MachineBlockEntity extends BlockEntity {
             progress = Math.max(0, progress - 2); // cools down, as a furnace does
         }
         boolean working = work || burnTime > 0;
+        if (working && level.getGameTime() % 20 == 0) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
         if (working != wasWorking) {
             wasWorking = working;
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
@@ -285,6 +330,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
                 case 12 -> fluidCapacity() & 0xFFFF;
                 case 13 -> (fluidCapacity() >>> 16) & 0xFFFF;
                 case 14 -> isFormed() ? 1 : 0;
+                case 16 -> enabled ? 1 : 0;
                 case 15 -> hasRfUpgrade() ? (int) (1000L * energy.getEnergyStored() / Math.max(1, energy.getMaxEnergyStored())) : -1;
                 default -> 0;
             };
@@ -431,6 +477,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         tag.putInt("BurnTime", burnTime);
         tag.putInt("BurnTotal", burnTotal);
         tag.putInt("Energy", energy.getEnergyStored());
+        tag.putBoolean("Enabled", enabled);
         int[] modes = new int[6];
         for (int i = 0; i < 6; i++) modes[i] = sides[i].ordinal();
         tag.putIntArray("Sides", modes);
@@ -446,6 +493,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         burnTime = tag.getInt("BurnTime");
         burnTotal = tag.getInt("BurnTotal");
         energy.set(tag.getInt("Energy"));
+        enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
         int[] modes = tag.getIntArray("Sides");
         for (int i = 0; i < 6 && i < modes.length; i++) {
             sides[i] = SideMode.values()[Math.floorMod(modes[i], SideMode.values().length)];

@@ -84,6 +84,51 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
     }
 
     @Override
+    public List<Need> missing(int fluidMb, boolean burning) {
+        List<Need> out = new java.util.ArrayList<>();
+        ItemStack in = items.getStackInSlot(IN);
+        if (in.getCount() < NUGGETS_PER_INGOT) {
+            out.add(need(ModItems.TETRIUM_NUGGET.get(), "need.bsp_core.nine_nuggets"));
+        } else if (in.is(ModItems.ILLYRIUM_NUGGET.get()) && !hasIllyriumUpgrade()) {
+            out.add(need(ModItems.ILLYRIUM_FORGE_UPGRADE.get(), "need.bsp_core.forge_upgrade"));
+        }
+        if (!rfActive() && !burning && net.minecraftforge.common.ForgeHooks.getBurnTime(items.getStackInSlot(FUEL), null) <= 0) {
+            out.add(need(net.minecraft.world.item.Items.COAL, "need.bsp_core.fuel_or_rf"));
+        }
+        ItemStack result = result();
+        if (!result.isEmpty() && !fits(OUT, result)) {
+            out.add(need(ModItems.TETRIUM_INGOT.get(), "need.bsp_core.output_full"));
+        }
+        return out;
+    }
+
+    @Override
+    public ItemStack slotIcon(int slot) {
+        if (isRfSlot(slot)) {
+            return new ItemStack(ModItems.RF_UPGRADES.get(0).get());
+        }
+        return switch (slot) {
+            case IN -> new ItemStack(ModItems.TETRIUM_NUGGET.get(), 9);
+            case OUT -> new ItemStack(ModItems.TETRIUM_INGOT.get());
+            case UPGRADE -> new ItemStack(ModItems.ILLYRIUM_FORGE_UPGRADE.get());
+            default -> new ItemStack(net.minecraft.world.item.Items.COAL);
+        };
+    }
+
+    @Override
+    public net.minecraft.network.chat.Component slotHint(int slot) {
+        if (isRfSlot(slot)) {
+            return net.minecraft.network.chat.Component.translatable("hint.bsp_core.rf");
+        }
+        return net.minecraft.network.chat.Component.translatable(switch (slot) {
+            case IN -> "hint.bsp_core.nuggets";
+            case OUT -> "hint.bsp_core.out_ingot";
+            case UPGRADE -> "hint.bsp_core.forge_upgrade";
+            default -> "hint.bsp_core.fuel";
+        });
+    }
+
+    @Override
     public String titleKey() {
         return "block.bsp_core.combination_forge";
     }

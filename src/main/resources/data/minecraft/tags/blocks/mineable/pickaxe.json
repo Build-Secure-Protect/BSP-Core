@@ -15,6 +15,7 @@
     "bsp_core:illyrium_refinery",
     "bsp_core:lava_pylon",
     "bsp_core:refinery_pump",
-    "bsp_core:item_hatch"
+    "bsp_core:item_hatch",
+    "bsp_core:illyrium_core"
   ]
 }

@@ -101,7 +101,7 @@ public final class ModItems {
 
     static {
         for (var block : List.of(ModBlocks.ILLYRIUM_CRUCIBLE, ModBlocks.ILLYRIUM_REFINERY, ModBlocks.ILLYRIUM_CASING, ModBlocks.ILLYRIUM_GLASS,
-                ModBlocks.LAVA_PYLON, ModBlocks.REFINERY_PUMP, ModBlocks.ITEM_HATCH)) {
+                ModBlocks.ILLYRIUM_CORE, ModBlocks.LAVA_PYLON, ModBlocks.REFINERY_PUMP, ModBlocks.ITEM_HATCH)) {
             MULTIBLOCK_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
         }
     }

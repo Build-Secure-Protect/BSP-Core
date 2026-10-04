@@ -24,15 +24,16 @@ public class IllyriumRefineryBlockEntity extends MultiblockControllerBlockEntity
     private static final int IN = 0, WATER = 1, FILTER = 2, OUT = 3;
     private static final List<Slot> LAYOUT = List.of(
             new Slot(Role.INPUT, 44, 22), new Slot(Role.FUEL, 44, 58), new Slot(Role.UPGRADE, 80, 58), new Slot(Role.OUTPUT, 120, 34), new Slot(Role.RF, 152, 60));
-    // bottom: casing floor. middle: glass tank core with casing behind, Refinery Pump on the left, Item Hatch on the right,
-    // controller in front. top: glass tank cap.
+    // bottom: casing floor with the Illyrium Core in the centre and the controller in the middle of the front edge.
+    // middle: glass tank with casing behind, Item Hatch on the left, Refinery Pump on the right (as seen from the front). top: glass tank cap.
     private static final String[][] PATTERN = {
-            {"CCC", "CCC", "CCC"},
-            {" C ", "UGH", " X "},
+            {"CCC", "COC", "CXC"},
+            {" C ", "HGU", "   "},
             {"   ", " G ", "   "}};
 
     public IllyriumRefineryBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ILLYRIUM_REFINERY.get(), pos, state, LAYOUT, Fluids.WATER);
+        setSideMode(0, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.SideMode.BOTH); // the single Item Hatch
     }
 
     @Override
@@ -44,7 +45,27 @@ public class IllyriumRefineryBlockEntity extends MultiblockControllerBlockEntity
     @Override
     protected Block blockFor(char c) {
         return c == 'C' ? ModBlocks.ILLYRIUM_CASING.get() : c == 'G' ? ModBlocks.ILLYRIUM_GLASS.get()
-                : c == 'U' ? ModBlocks.REFINERY_PUMP.get() : c == 'H' ? ModBlocks.ITEM_HATCH.get() : null;
+                : c == 'U' ? ModBlocks.REFINERY_PUMP.get() : c == 'H' ? ModBlocks.ITEM_HATCH.get() : c == 'O' ? ModBlocks.ILLYRIUM_CORE.get() : null;
+    }
+
+    @Override
+    protected boolean isItemPort(Block block) {
+        return block == ModBlocks.ITEM_HATCH.get();
+    }
+
+    @Override
+    public String itemPortKey(int i) {
+        return "gui.bsp_core.port.hatch";
+    }
+
+    @Override
+    public String fluidPortKey() {
+        return "gui.bsp_core.port.pump";
+    }
+
+    @Override
+    protected boolean hidesParts() {
+        return true;
     }
 
     @Override
@@ -65,6 +86,16 @@ public class IllyriumRefineryBlockEntity extends MultiblockControllerBlockEntity
             case FILTER -> stack.getItem() instanceof FilterItem;
             default -> false;
         };
+    }
+
+    /** Pure dust waiting in the output slot. Used by the renderer for the drawer pile. */
+    public int outputCount() {
+        return items.getStackInSlot(OUT).getCount();
+    }
+
+    /** The filter currently loaded, or EMPTY. Used by the renderer. */
+    public ItemStack filterStack() {
+        return items.getStackInSlot(FILTER);
     }
 
     private ItemStack result() {
@@ -100,6 +131,54 @@ public class IllyriumRefineryBlockEntity extends MultiblockControllerBlockEntity
     @Override
     protected void refill() {
         fillFrom(WATER, new ItemStack(Items.WATER_BUCKET), bucket(), 1000);
+    }
+
+    @Override
+    public List<Need> missing(int fluidMb, boolean burning) {
+        List<Need> out = new java.util.ArrayList<>();
+        if (!isFormed()) {
+            out.add(need(ModBlocks.ILLYRIUM_CASING.get(), "need.bsp_core.structure"));
+        }
+        if (!items.getStackInSlot(IN).is(ModItems.DIRTY_ILLYRIUM_DUST.get())) {
+            out.add(need(ModItems.DIRTY_ILLYRIUM_DUST.get(), "need.bsp_core.dirty_dust"));
+        }
+        ItemStack filter = items.getStackInSlot(FILTER);
+        if (!(filter.getItem() instanceof FilterItem f) || f.usesLeft(filter) <= 0) {
+            out.add(need(ModItems.FILTERS.get(FilterItem.Tier.IRON).get(), "need.bsp_core.filter"));
+        }
+        if (fluidMb < BSPConfig.REFINERY_WATER.get()) {
+            out.add(need(Items.WATER_BUCKET, "need.bsp_core.water"));
+        }
+        if (!fits(OUT, result())) {
+            out.add(need(ModItems.PURE_ILLYRIUM_DUST.get(), "need.bsp_core.output_full"));
+        }
+        return out;
+    }
+
+    @Override
+    public ItemStack slotIcon(int slot) {
+        if (isRfSlot(slot)) {
+            return new ItemStack(ModItems.RF_UPGRADES.get(0).get());
+        }
+        return switch (slot) {
+            case IN -> new ItemStack(ModItems.DIRTY_ILLYRIUM_DUST.get());
+            case WATER -> new ItemStack(Items.WATER_BUCKET);
+            case FILTER -> new ItemStack(ModItems.FILTERS.get(FilterItem.Tier.IRON).get());
+            default -> new ItemStack(ModItems.PURE_ILLYRIUM_DUST.get());
+        };
+    }
+
+    @Override
+    public net.minecraft.network.chat.Component slotHint(int slot) {
+        if (isRfSlot(slot)) {
+            return net.minecraft.network.chat.Component.translatable("hint.bsp_core.rf");
+        }
+        return net.minecraft.network.chat.Component.translatable(switch (slot) {
+            case IN -> "hint.bsp_core.dirty_dust";
+            case WATER -> "hint.bsp_core.water";
+            case FILTER -> "hint.bsp_core.filter";
+            default -> "hint.bsp_core.out_pure";
+        });
     }
 
     @Override

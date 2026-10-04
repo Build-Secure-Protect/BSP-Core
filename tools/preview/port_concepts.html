@@ -1,0 +1,98 @@
+<title>Port Marking Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board, three columns. Each: rotating crucible with one port style, then the matching PORTS panel mock. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --item:#3a8bff; --fluid:#ff7a1a; --rf:#ffd23a; --off:#565c6b; --out:#ff8a3a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 48px; padding-inline:16px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0 0 6px; text-wrap:balance; }
+.lede{ color:var(--muted); margin:0 0 14px; max-width:72ch; line-height:1.5; }
+.key{ display:flex; flex-wrap:wrap; gap:8px 18px; font-size:12.5px; color:var(--muted); margin-bottom:20px; }
+.key i{ display:inline-block; width:10px; height:10px; margin-right:6px; vertical-align:-1px; background:var(--c); }
+.grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card h2{ font-family:var(--display); font-size:15px; margin:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; min-height:5.8em; }
+.view{ width:100%; aspect-ratio:1/1; border-radius:4px; overflow:hidden; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+h3{ margin:4px 0 0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+/* mock PORTS panel: always dark like the game */
+.hud{ background:#10151c; border:2px solid var(--tq); border-radius:3px; padding:10px; font-family:var(--display); font-size:11px; color:#e8eaf0; display:flex; flex-direction:column; gap:7px; }
+.hud .ttl{ color:var(--tq); }
+.rowp{ display:grid; grid-template-columns:18px 1fr auto; gap:8px; align-items:center; }
+.ic{ width:18px; height:18px; display:grid; place-items:center; color:#0b0d11; font-size:10px; background:var(--c); }
+.rowp small{ display:block; color:#9aa3b5; font-size:9.5px; }
+.md{ padding:2px 6px; color:#0b0d11; background:var(--c); }
+.plan{ display:grid; grid-template-columns:repeat(3,28px); grid-auto-rows:28px; gap:2px; justify-content:start; }
+.plan div{ background:#2b313d; position:relative; }
+.plan b{ position:absolute; width:10px; height:10px; background:var(--c); }
+table{ border-collapse:collapse; width:100%; font-size:10.5px; } th,td{ text-align:left; padding:3px 6px 3px 0; border-bottom:1px solid #2a2f3a; } th{ color:#9aa3b5; font-weight:400; }
+</style>
+<div class="wrap">
+<h1>Port Marking Concepts</h1>
+<p class="lede">Three ways to show where pipes and cables attach on the multiblock machines, shown on the Illyrium Crucible, each with the matching PORTS panel. The refinery would get the same treatment on its hatch and pump. Drag to rotate.</p>
+<div class="key"><span><i style="--c:var(--item)"></i>Items</span><span><i style="--c:var(--fluid)"></i>Lava or water</span><span><i style="--c:var(--rf)"></i>RF</span><span><i style="--c:var(--out)"></i>Output direction</span></div>
+<div class="grid" id="grid"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || location.hash==='#still';
+  const ITEM=0x3a8bff, FLUID=0xff7a1a, RF=0xffd23a, OUT=0xff8a3a, TQ=0x19d3b0, HULL=0x1e222b, HULL2=0x2b313d, PANEL=0xc9ced8, TRIM=0x8a909c, MID=0x565c6b;
+  function bx(g,f,t,c,glow){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c})); m.position.set((f[0]+t[0])/2-24,(f[1]+t[1])/2,(f[2]+t[2])/2-24); g.add(m); return m; }
+  function crucible(g){
+    bx(g,[0,0,0],[48,6,48],HULL2);
+    [[1,1],[38,1],[1,38],[38,38]].forEach(([x,z])=>{ bx(g,[x,6,z],[x+9,40,z+9],HULL); bx(g,[x+.5,40,z+.5],[x+8.5,42,z+8.5],PANEL); [14,22,30].forEach(y=>bx(g,[x-.3,y,z-.3],[x+9.3,y+1,z+9.3],TRIM)); });
+    bx(g,[14,12,14],[34,28,34],PANEL); bx(g,[16,27,16],[32,28.2,32],0x4f7a6a,true);
+    bx(g,[1,43,3],[47,46,7],HULL2); bx(g,[1,43,41],[47,46,45],HULL2); bx(g,[3,43,7],[7,46,41],HULL2); bx(g,[41,43,7],[45,46,41],HULL2);
+    bx(g,[17,6,-2],[31,18,2.5],HULL); bx(g,[19,9.5,-2.9],[29,15.5,-2.5],0x0c1116,true);
+    bx(g,[-3,20,18],[1,28,30],HULL2); bx(g,[47,6,18],[52,9,30],MID); bx(g,[47,9,18],[51,28,30],HULL2);
+  }
+  // outward faces of the four pylons: [x,z of face centre, axis ('x' or 'z'), outward sign]
+  const PY=[[5.5,1,'z',-1],[42.5,1,'z',-1],[5.5,47,'z',1],[42.5,47,'z',1],[1,5.5,'x',-1],[1,42.5,'x',-1],[47,5.5,'x',1],[47,42.5,'x',1]];
+  const HATCH=[[-3,24,'x',-1,ITEM,'in'],[52,24,'x',1,OUT,'out']]; // right hopper = in, left tray = out
+  function plate(g,cx,cy,cz,axis,s,w,h,d,c,glow){ const f=axis==='z'?[cx-w/2,cy-h/2,s>0?cz:cz-d]:[s>0?cx:cx-d,cy-h/2,cz-w/2], t=axis==='z'?[cx+w/2,cy+h/2,s>0?cz+d:cz]:[s>0?cx+d:cx,cy+h/2,cz+w/2]; return bx(g,f,t,c,glow); }
+  function label(g,text,x,y,z,col){ const c=document.createElement('canvas'); c.width=256; c.height=64; const k=c.getContext('2d'); k.fillStyle='rgba(16,21,28,.85)'; k.fillRect(0,0,256,64); k.strokeStyle=col; k.lineWidth=4; k.strokeRect(2,2,252,60); k.fillStyle=col; k.font='bold 26px monospace'; k.textAlign='center'; k.textBaseline='middle'; k.fillText(text,128,34);
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false})); s.scale.set(16,4,1); s.position.set(x-24,y,z-24); g.add(s); return s; }
+  const hex=c=>'#'+c.toString(16).padStart(6,'0');
+  const STYLES={
+    a(g){ const pulse=[]; PY.forEach(([x,z,ax,s])=>{ plate(g,x,20,z,ax,s,7,7,.6,TRIM); pulse.push(plate(g,x,20,z,ax,s,4.6,4.6,.9,FLUID,true)); plate(g,x,27,z,ax,s,5,3.4,.6,TRIM); pulse.push(plate(g,x,27,z,ax,s,3,1.8,.9,RF,true)); });
+      HATCH.forEach(([x,z,ax,s,c])=>{ plate(g,x,24,z,ax,s,9,7,.6,TRIM); pulse.push(plate(g,x,24,z,ax,s,6.4,4.6,.9,c===OUT?ITEM:c,true)); });
+      return t=>pulse.forEach((m,i)=>m.material.color.setHex(m.userData.c??(m.userData.c=m.material.color.getHex())).multiplyScalar(.7+.3*Math.sin(t*3+i))); },
+    b(g){ const ch=[]; PY.forEach(([x,z,ax,s])=>{ plate(g,x,20,z,ax,s,5,5,3,MID); plate(g,x,20,ax==='z'?z+s*1.2:z,ax,s,6,6,.8,FLUID,true); if(ax==='x') plate(g,x+s*1.2,20,z,ax,s,6,6,.8,FLUID,true); plate(g,x,20,ax==='z'?z+s*3:z,ax,s,5.6,5.6,.6,TRIM); if(ax==='x') plate(g,x+s*3,20,z,ax,s,5.6,5.6,.6,TRIM);
+        plate(g,x,28,z,ax,s,3,3,2.4,MID); plate(g,x,28,ax==='z'?z+s*2.4:z,ax,s,3.6,3.6,.6,RF,true); if(ax==='x') plate(g,x+s*2.4,28,z,ax,s,3.6,3.6,.6,RF,true); });
+      HATCH.forEach(([x,z,ax,s,c,dir])=>{ plate(g,x,24,z,ax,s,8,6,3,MID); plate(g,x+s*3,24,z,ax,s,8.6,6.6,.6,TRIM); for(let i=0;i<3;i++){ const m=plate(g,x+s*(0.4+i),30,z,ax,s,3,1,.8,c,true); m.userData={i,dir}; ch.push(m);} });
+      return t=>ch.forEach(m=>{ const k=Math.floor(t*4)%3; const idx=m.userData.dir==='in'?2-m.userData.i:m.userData.i; m.material.color.setHex(idx===k?0xffffff:(m.userData.dir==='in'?ITEM:OUT)); }); },
+    c(g){ PY.forEach(([x,z,ax,s],i)=>{ plate(g,x,20,z,ax,s,6,6,.4,TRIM); plate(g,x,20,z,ax,s,4.4,4.4,.6,0x0c1116,true); if(i%4===0||i===2||i===6) label(g,'LAVA IN + RF', ax==='z'?x:x+s*6, 31, ax==='z'?z+s*6:z, hex(FLUID)); });
+      HATCH.forEach(([x,z,ax,s,c,dir])=>{ plate(g,x,24,z,ax,s,8,6,.4,TRIM); plate(g,x,24,z,ax,s,6.4,4.4,.6,0x0c1116,true); label(g, dir==='in'?'ITEMS IN':'ITEMS OUT', x+s*7, 33, z, hex(dir==='in'?ITEM:OUT)); });
+      const decals=[[24,-4],[24,52],[-4,24],[52,24]].map(([x,z])=>bx(g,[x-3,.1,z-3],[x+3,.3,z+3],TQ,true)); decals.forEach(m=>m.visible=false);
+      return ()=>{}; },
+  };
+  const P=(c,i,name,sub,mode,mc)=>`<div class="rowp"><span class="ic" style="--c:${c}">${i}</span><span>${name}<small>${sub}</small></span><span class="md" style="--c:${mc}">${mode}</span></div>`;
+  const CARDS=[
+    {id:'a',name:'A. Colour-coded sockets',text:'Every port gets a framed socket on its outward face with a glowing colour: blue for items, orange for lava or water, yellow for RF. Flush with the model, so the machine keeps its shape. The panel lists each port with the same colour and symbol.',
+      hud:`<span class="ttl">PORTS</span>${P('var(--item)','&#9632;','Right hatch','Items','IN','var(--item)')}${P('var(--item)','&#9632;','Left hatch','Items','OUT','var(--out)')}${P('var(--fluid)','&#9679;','Lava pylons','Lava, 8 sockets','IN','var(--item)')}${P('var(--rf)','&#9889;','Pylon RF sockets','RF, needs RF upgrade','IN','var(--item)')}`},
+    {id:'b',name:'B. Docking collars',text:'Each port grows a short pipe collar that sticks out of the machine, banded in its colour, so a pipe visibly plugs into something. Hatches carry running arrows that show items flowing in or out. The panel is a top-down plan with the collars marked where they sit.',
+      hud:`<span class="ttl">PORTS</span><div style="display:flex;gap:12px;align-items:flex-start"><div class="plan">${[0,1,2,3,4,5,6,7,8].map(i=>{ const m={0:'left:-4px;top:9px;--c:var(--fluid)',2:'right:-4px;top:9px;--c:var(--fluid)',6:'left:-4px;top:9px;--c:var(--fluid)',8:'right:-4px;top:9px;--c:var(--fluid)',3:'left:-4px;top:9px;--c:var(--out)',5:'right:-4px;top:9px;--c:var(--item)'}[i]; return `<div>${m?`<b style="${m}"></b>`:''}</div>`; }).join('')}</div><div style="display:flex;flex-direction:column;gap:6px">${P('var(--item)','&#9654;','Right hatch','Items','IN','var(--item)')}${P('var(--out)','&#9664;','Left hatch','Items','OUT','var(--out)')}${P('var(--fluid)','&#9679;','Pylon collars','Lava + RF','IN','var(--item)')}</div></div>`},
+    {id:'c',name:'C. Holo tags',text:'Ports stay as small dark recesses, and a floating label appears over each one saying what it takes. In game the labels would only show while you hold a pipe, cable or wrench, or look at the machine up close. The panel is a plain table of port, what it accepts, and mode.',
+      hud:`<span class="ttl">PORTS</span><table><tr><th>Port</th><th>Accepts</th><th>Mode</th></tr><tr><td>Right hatch</td><td>Items</td><td><span class="md" style="--c:var(--item)">IN</span></td></tr><tr><td>Left hatch</td><td>Items</td><td><span class="md" style="--c:var(--out)">OUT</span></td></tr><tr><td>Lava pylons</td><td>Lava, RF</td><td><span class="md" style="--c:var(--item)">IN</span></td></tr></table>`},
+  ];
+  CARDS.forEach(C=>{
+    const el=document.createElement('section'); el.className='card';
+    el.innerHTML=`<h2>${C.name}</h2><p>${C.text}</p><div class="view" aria-label="${C.name} 3D preview"></div><h3>Port configurator</h3><div class="hud">${C.hud}</div>`;
+    document.getElementById('grid').appendChild(el);
+    const view=el.querySelector('.view'), r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,1,600); scene.add(new THREE.AmbientLight(0xffffff,.65)); const d=new THREE.DirectionalLight(0xffffff,.8); d.position.set(10,22,-14); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); crucible(g); const tick=STYLES[C.id](g);
+    let ry=Math.PI-.9, rx=.3, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.1,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.0015; tick(t); cam.position.set(Math.sin(ry)*150*Math.cos(rx),22+Math.sin(rx)*150,Math.cos(ry)*150*Math.cos(rx)); cam.lookAt(0,22,0); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+  });
+})();
+</script>

@@ -38,7 +38,7 @@ public class MachinePortBlockEntity extends BlockEntity {
     @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
         if (controller != null && level != null && level.getBlockEntity(controller) instanceof MultiblockControllerBlockEntity c && c.isFormed()) {
-            return c.getCapability(cap, null);
+            return c.portCapability(cap, worldPosition, getBlockState().getBlock());
         }
         return super.getCapability(cap, side);
     }

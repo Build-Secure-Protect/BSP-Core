@@ -112,6 +112,8 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    // Mekanism's own Maven: used only so the dev client has an RF source to test the machines with
+    maven { url = 'https://modmaven.dev/' }
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
@@ -129,6 +131,9 @@ dependencies {
     // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // Dev-only: loads Mekanism in runClient / runServer for testing RF, pipes and crushers.
+    runtimeOnly fg.deobf("mekanism:Mekanism:1.20.1-10.4.16.80")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

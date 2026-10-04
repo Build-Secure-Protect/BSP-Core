@@ -32,15 +32,18 @@ public final class ModBlocks {
             BLOCKS.register("combination_forge", () -> new MachineBlock(CombinationForgeBlockEntity::new));
 
     // --- multiblock parts and controllers
-    public static final RegistryObject<Block> ILLYRIUM_CASING = BLOCKS.register("illyrium_casing", () -> new Block(BlockBehaviour.Properties.of()
-            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(4.0F, 8.0F).sound(SoundType.METAL)));
-    public static final RegistryObject<Block> ILLYRIUM_GLASS = BLOCKS.register("illyrium_glass", () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
-            .strength(1.5F, 6.0F).sound(SoundType.GLASS).noOcclusion().isViewBlocking((s, l, p) -> false).isSuffocating((s, l, p) -> false)));
+    public static final RegistryObject<Block> ILLYRIUM_CASING = BLOCKS.register("illyrium_casing", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(4.0F, 8.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> ILLYRIUM_GLASS = BLOCKS.register("illyrium_glass", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .strength(1.5F, 6.0F).sound(SoundType.GLASS).noOcclusion().isViewBlocking((st, l, pos) -> false).isSuffocating((st, l, pos) -> false)));
     public static final RegistryObject<MachineBlock> ILLYRIUM_CRUCIBLE =
             BLOCKS.register("illyrium_crucible", () -> new MachineBlock(IllyriumCrucibleBlockEntity::new));
     public static final RegistryObject<MachineBlock> ILLYRIUM_REFINERY =
             BLOCKS.register("illyrium_refinery", () -> new MachineBlock(IllyriumRefineryBlockEntity::new));
 
+    /** Heart of both multiblocks: centre of the crucible, bottom centre of the refinery. */
+    public static final RegistryObject<Block> ILLYRIUM_CORE = BLOCKS.register("illyrium_core", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.DIAMOND).requiresCorrectToolForDrops().strength(5.0F, 9.0F).sound(SoundType.METAL).lightLevel(s -> 9).noOcclusion()));
     public static final RegistryObject<Block> LAVA_PYLON = BLOCKS.register("lava_pylon", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
     public static final RegistryObject<Block> REFINERY_PUMP = BLOCKS.register("refinery_pump", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
     public static final RegistryObject<Block> ITEM_HATCH = BLOCKS.register("item_hatch", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
