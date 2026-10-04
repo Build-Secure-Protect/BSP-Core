@@ -46,6 +46,8 @@ import java.util.UUID;
  */
 public class ShatterTotemItem extends BlockItem {
     private static final UUID DAMAGE_MODIFIER_ID = UUID.fromString("5c3c2b86-5a4e-4a3b-9d6f-0b0b2c4e1f10");
+    private static final UUID SWIFTNESS_MODIFIER_ID = UUID.fromString("5c3c2b86-5a4e-4a3b-9d6f-0b0b2c4e1f11");
+    private static final UUID VITALITY_MODIFIER_ID = UUID.fromString("5c3c2b86-5a4e-4a3b-9d6f-0b0b2c4e1f12");
     public static final double DAMAGE_PER_LEVEL = 1.0;
     public static final float MINING_SPEED_PER_LEVEL = 0.25F;
 
@@ -144,12 +146,23 @@ public class ShatterTotemItem extends BlockItem {
         if (slot != EquipmentSlot.OFFHAND) {
             return super.getAttributeModifiers(slot, stack);
         }
+        ImmutableMultimap.Builder<Attribute, AttributeModifier> mods = ImmutableMultimap.builder();
         int level = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.DAMAGE);
-        if (level <= 0) {
-            return super.getAttributeModifiers(slot, stack);
+        if (level > 0) {
+            mods.put(Attributes.ATTACK_DAMAGE,
+                    new AttributeModifier(DAMAGE_MODIFIER_ID, "Shatter Totem damage", DAMAGE_PER_LEVEL * level, AttributeModifier.Operation.ADDITION));
         }
-        return ImmutableMultimap.of(Attributes.ATTACK_DAMAGE,
-                new AttributeModifier(DAMAGE_MODIFIER_ID, "Shatter Totem damage", DAMAGE_PER_LEVEL * level, AttributeModifier.Operation.ADDITION));
+        int swift = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.SWIFTNESS);
+        if (swift > 0) {
+            double bonus = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.SWIFTNESS_BONUS, List.<Double>of()), swift, 0.0);
+            mods.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(SWIFTNESS_MODIFIER_ID, "Shatter Totem swiftness", bonus, AttributeModifier.Operation.MULTIPLY_TOTAL));
+        }
+        int vitality = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.VITALITY);
+        if (vitality > 0) {
+            int health = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.VITALITY_HEALTH, List.<Integer>of()), vitality, 0);
+            mods.put(Attributes.MAX_HEALTH, new AttributeModifier(VITALITY_MODIFIER_ID, "Shatter Totem vitality", health, AttributeModifier.Operation.ADDITION));
+        }
+        return mods.build();
     }
 
     @Override
@@ -163,6 +176,10 @@ public class ShatterTotemItem extends BlockItem {
         int resistance = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.RESISTANCE);
         if (resistance > 0) {
             player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 50, resistance - 1, true, false, true));
+        }
+        if (TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.NIGHT_SIGHT) > 0) {
+            // long enough that the vanilla "running out" flicker (under 10 seconds) never shows while held
+            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false, true));
         }
     }
 

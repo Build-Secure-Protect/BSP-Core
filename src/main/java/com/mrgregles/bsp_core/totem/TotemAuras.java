@@ -61,8 +61,34 @@ public final class TotemAuras {
         return best;
     }
 
+    /** Never below {@code limits.minIntruderMiningSpeed}: blocks around a totem must always stay breakable. */
     public static double breakSpeedMultiplier(int fortifyLevel) {
-        return BSPConfig.levelValue(BSPConfig.FORTIFY_BREAK_SPEED.get(), fortifyLevel, 1.0);
+        return Math.max(BSPConfig.MIN_INTRUDER_MINING_SPEED.get(), BSPConfig.levelValue(BSPConfig.FORTIFY_BREAK_SPEED.get(), fortifyLevel, 1.0));
+    }
+
+    /** Highest level of a ranged base upgrade (Sanctuary, Overclock, ...) whose reach covers {@code pos}; 0 if none. */
+    public static int levelInReach(ServerLevel level, BlockPos pos, TotemUpgrades.Buff buff) {
+        Map<BlockPos, ShatterTotemBlockEntity> map = LOADED.get(level.dimension());
+        if (map == null || map.isEmpty()) {
+            return 0;
+        }
+        int best = 0;
+        for (ShatterTotemBlockEntity totem : map.values()) {
+            int lvl = totem.isRemoved() ? 0 : totem.getUpgradeLevel(buff);
+            if (lvl > best) {
+                int r = buff.reach(lvl);
+                if (pos.distSqr(totem.getBlockPos()) <= (double) r * r) {
+                    best = lvl;
+                }
+            }
+        }
+        return best;
+    }
+
+    /** Speed multiplier for a BSP-Core machine at {@code pos} from any Overclock aura covering it; 1.0 if none. */
+    public static double overclock(ServerLevel level, BlockPos pos) {
+        int lvl = levelInReach(level, pos, TotemUpgrades.Buff.OVERCLOCK);
+        return lvl <= 0 ? 1.0 : 1.0 + BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), lvl, 0.0);
     }
 
     public static double explosionProtection(int fortifyLevel) {

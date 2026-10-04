@@ -1,0 +1,12 @@
+{
+  "name": "Dust and Crushing",
+  "category": "bsp_core:materials",
+  "icon": "bsp_core:tetrium_dust",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Several recipes need metal dust. A crusher from another mod (Mekanism, Create, Thermal) turns an ingot into dust every time.$(br2)With no crusher, put any pickaxe and one ingot in a crafting grid. The pickaxe loses a little durability, and you get either dust or a few nuggets back, by chance."
+    }
+  ]
+}

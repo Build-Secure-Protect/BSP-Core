@@ -1,0 +1,28 @@
+{
+  "name": "Tetrium",
+  "category": "bsp_core:materials",
+  "icon": "bsp_core:tetrium_ingot",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. The ore block itself is what the machines take, so do not smelt it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tetrium_crucible",
+      "text": "The $(item)Tetrium Crucible$() burns furnace fuel and turns each ore into Tetrium Nuggets and Tetrium Slag."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tetrium_ingot_from_nuggets",
+      "recipe2": "bsp_core:combination_forge",
+      "text": "Nine nuggets make an ingot by hand. The $(item)Combination Forge$() does the same job for you and also presses plates."
+    },
+    {
+      "type": "patchouli:smelting",
+      "recipe": "bsp_core:slag_brick_from_smelting",
+      "text": "Keep your slag. Smelted into $(item)Slag Bricks$() it goes into almost every machine part."
+    }
+  ]
+}

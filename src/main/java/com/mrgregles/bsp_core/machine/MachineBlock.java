@@ -64,6 +64,14 @@ public class MachineBlock extends BaseEntityBlock {
 
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        // sneak + right-click on an unfinished multiblock controller opens the Assembly Guide instead of the machine
+        if (player.isShiftKeyDown() && level.getBlockEntity(pos) instanceof MultiblockControllerBlockEntity unfinished && !unfinished.missingParts().isEmpty()) {
+            if (level.isClientSide) {
+                net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                        () -> () -> com.mrgregles.bsp_core.client.AssemblyGuideScreen.open(pos));
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (player instanceof ServerPlayer sp && level.getBlockEntity(pos) instanceof MultiblockControllerBlockEntity multi && !multi.missingParts().isEmpty()) {
             sp.displayClientMessage(Component.translatable("message.bsp_core.multiblock.missing", multi.missingParts().size())
                     .withStyle(net.minecraft.ChatFormatting.YELLOW), true);

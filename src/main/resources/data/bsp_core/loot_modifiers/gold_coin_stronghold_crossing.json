@@ -1,0 +1,12 @@
+{
+  "type": "bsp_core:add_item",
+  "conditions": [
+    {
+      "condition": "forge:loot_table_id",
+      "loot_table_id": "minecraft:chests/stronghold_crossing"
+    }
+  ],
+  "item": "bsp_core:gold_shatter_coin",
+  "chance": 0.1,
+  "max": 1
+}

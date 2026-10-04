@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BBB",
+    "MMM",
+    "BBB"
+  ],
+  "key": {
+    "B": {
+      "item": "bsp_core:slag_brick"
+    },
+    "M": {
+      "item": "minecraft:magma_block"
+    }
+  },
+  "result": {
+    "item": "bsp_core:thermal_lining",
+    "count": 4
+  }
+}

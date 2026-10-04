@@ -1,0 +1,17 @@
+{
+  "name": "The Totem Compass",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:totem_compass",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:totem_compass",
+      "text": "Points to your own nearest totem. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:totem_compass"
+    }
+  ]
+}

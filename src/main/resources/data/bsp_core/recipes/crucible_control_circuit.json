@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ZDZ",
+    "DKD",
+    "ZDZ"
+  ],
+  "key": {
+    "Z": {
+      "item": "minecraft:blaze_powder"
+    },
+    "D": {
+      "item": "bsp_core:tetrium_dust"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    }
+  },
+  "result": {
+    "item": "bsp_core:crucible_control_circuit"
+  }
+}

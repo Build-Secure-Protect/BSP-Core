@@ -23,7 +23,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.COIN_FACTORY.get());
                 ModItems.BLANKS.values().forEach(i -> output.accept(i.get()));
                 ModItems.COINS.values().forEach(i -> output.accept(i.get()));
-                ModItems.SPEED_GEARS.forEach(i -> output.accept(i.get()));
+                ModItems.FACTORY_ITEMS.forEach(i -> output.accept(i.get()));
                 output.accept(ModItems.TETRIUM_CRUCIBLE.get());
                 output.accept(ModItems.COMBINATION_FORGE.get());
                 ModItems.MULTIBLOCK_ITEMS.forEach(i -> output.accept(i.get()));
@@ -35,6 +35,7 @@ public final class ModCreativeTabs {
                     output.accept(item.get());
                 }
                 ModItems.FILTERS.values().forEach(i -> output.accept(i.get()));
+                ModItems.COMPONENTS.values().forEach(i -> output.accept(i.get()));
             })
             .build());
 

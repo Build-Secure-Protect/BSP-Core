@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "KKK",
+    "NMN"
+  ],
+  "key": {
+    "K": {
+      "item": "minecraft:dried_kelp"
+    },
+    "N": {
+      "item": "bsp_core:tetrium_nugget"
+    },
+    "M": {
+      "item": "bsp_core:drive_motor"
+    }
+  },
+  "result": {
+    "item": "bsp_core:conveyor_belt",
+    "count": 3
+  }
+}

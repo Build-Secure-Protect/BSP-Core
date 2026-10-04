@@ -113,6 +113,11 @@ public class MachineMenu extends AbstractContainerMenu {
         return data.get(16) != 0;
     }
 
+    /** Switched on, but held paused by a redstone signal. */
+    public boolean redstonePaused() {
+        return data.get(16) == 2;
+    }
+
     public boolean formed() {
         return data.get(14) != 0;
     }

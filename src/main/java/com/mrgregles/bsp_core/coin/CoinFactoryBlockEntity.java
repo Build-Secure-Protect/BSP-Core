@@ -2,7 +2,9 @@ package com.mrgregles.bsp_core.coin;
 
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.data.FactoryLedger;
+import com.mrgregles.bsp_core.machine.StructurePartBlock;
 import com.mrgregles.bsp_core.registry.ModBlockEntities;
+import com.mrgregles.bsp_core.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -12,37 +14,38 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.EnergyStorage;
-import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.items.IItemHandler;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
- * The Shatter Coin Factory: presses coin blanks into Shatter Coins.
+ * One slice of the Shatter Coin Factory, held by its controller block.
  *
+ * <p><b>Structure</b>: 1 wide, 2 high, 3 long. Bottom row from the front: controller, Factory Frame,
+ * Blank Hatch. Top row: Factory Frame, Factory Press, Power Port. Up to three Motivators sit on top.
+ * <p><b>Joining</b>: complete slices side by side with the same facing and owner form one machine
+ * of up to {@link #MAX_SLICES}. Each slice keeps its own blanks, press and coin tray and starts its
+ * own presses; energy and the power switch are shared.
  * <p><b>Time</b> is real time. A press takes {@code factory.pressHours} per tier and keeps counting
- * while the chunk is unloaded or the server is off; on load the factory catches up, finishing the
- * running press and any further presses its buffered energy and blanks allow.
- * <p><b>Energy</b> (Forge Energy / RF) is taken in full when a press starts.
- * <p><b>Upgrades</b>: four slots of Speed Gears whose reductions add up, capped by
- * {@code factory.maxTotalReduction}.
- * <p><b>Automation</b>: each face is NONE, INPUT (blanks in), OUTPUT (coins out) or BOTH.
+ * while the chunk is unloaded or the server is off, as long as the machine was switched on.
+ * <p><b>Energy</b> is taken in full from the shared pool when a press starts. Every slice adds
+ * {@code factory.energyCapacity} to the pool.
+ * <p><b>No output</b>: nothing can be piped out. Coins are taken from the tray by hand.
  */
 public class CoinFactoryBlockEntity extends BlockEntity {
-    public static final int SLOT_INPUT = 0, SLOT_OUTPUT = 1, SLOT_UPGRADE_START = 2, UPGRADE_SLOTS = 4;
-    public static final int SLOTS = SLOT_UPGRADE_START + UPGRADE_SLOTS;
-    public static final int DATA_COUNT = 16;
+    public static final int SLOT_INPUT = 0, SLOT_OUTPUT = 1, SLOTS = 2, MAX_SLICES = 10, MOTIVATOR_CELLS = 3;
+    /** Slice state shown on the screen. */
+    public static final int STATE_NEEDS_BLANK = 0, STATE_PRESSING = 1, STATE_TRAY_FULL = 2, STATE_NEEDS_RF = 3, STATE_REDSTONE = 4;
 
     public enum SideMode {
         NONE, INPUT, OUTPUT, BOTH;
@@ -60,6 +63,9 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         }
     }
 
+    public record Part(BlockPos pos, Block block) {
+    }
+
     private final ItemStackHandler items = new ItemStackHandler(SLOTS) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -69,42 +75,37 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            if (slot == SLOT_INPUT) return stack.getItem() instanceof CoinBlankItem;
-            if (slot == SLOT_OUTPUT) return stack.getItem() instanceof ShatterCoinItem;
-            return stack.getItem() instanceof SpeedGearItem;
-        }
-
-        @Override
-        public int getSlotLimit(int slot) {
-            return slot >= SLOT_UPGRADE_START ? 1 : 64;
+            return slot == SLOT_INPUT ? stack.getItem() instanceof CoinBlankItem : stack.getItem() instanceof ShatterCoinItem;
         }
     };
 
-    private final FactoryEnergy energy = new FactoryEnergy();
-    private final SideMode[] sides = new SideMode[6];
+    /** This slice's share of the machine's energy pool. */
+    private int energy;
     @Nullable
     private UUID owner;
     private String ownerName = "";
+    private boolean enabled = true;
+    private boolean formed;
+    /** True while a redstone signal at the controller is holding this slice paused. */
+    private boolean powered;
+    /** Speed multiplier from a nearby totem's Overclock aura. Server side. */
+    private double overclock = 1.0;
+    /** Bit i set = a Motivator sits on top cell i (0 = front). */
+    private int motivatorMask;
 
     /** Tier being pressed, or -1 when idle. */
     private int jobTier = -1;
-    /** Progress of the current press in base (un-upgraded) milliseconds. */
+    /** Progress of the current press in base (un-motivated) milliseconds. */
     private double progressMs;
     /** Wall-clock time the progress was last brought up to date. */
     private long lastUpdateMs;
     private int lastVisualHash;
-
-    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energy);
-    @SuppressWarnings("unchecked")
-    private final LazyOptional<IItemHandler>[] sideCaps = new LazyOptional[6];
-    private final LazyOptional<IItemHandler> unsidedCap = LazyOptional.of(() -> new SidedView(null));
+    /** Energy taken in through this slice's Power Port since the last one-second check, and the rate that gave. */
+    private long intakeAcc;
+    private int intakeRate;
 
     public CoinFactoryBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.COIN_FACTORY.get(), pos, state);
-        for (Direction d : Direction.values()) {
-            sides[d.get3DDataValue()] = d == Direction.UP ? SideMode.INPUT : d == Direction.DOWN ? SideMode.OUTPUT : SideMode.BOTH;
-            sideCaps[d.get3DDataValue()] = LazyOptional.of(() -> new SidedView(d));
-        }
     }
 
     // ------------------------------------------------------------------ accessors
@@ -113,13 +114,8 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         return items;
     }
 
-    public SideMode getSide(Direction d) {
-        return sides[d.get3DDataValue()];
-    }
-
-    public void cycleSide(Direction d) {
-        sides[d.get3DDataValue()] = sides[d.get3DDataValue()].next();
-        setChanged();
+    public Direction facing() {
+        return getBlockState().hasProperty(CoinFactoryBlock.FACING) ? getBlockState().getValue(CoinFactoryBlock.FACING) : Direction.NORTH;
     }
 
     @Nullable
@@ -140,8 +136,17 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         }
     }
 
+    public boolean isFormed() {
+        return formed;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    /** True while a blank is on the line and the machine is running. */
     public boolean isWorking() {
-        return jobTier >= 0;
+        return formed && enabled && !powered && jobTier >= 0 && progressFraction() < 1f;
     }
 
     @Nullable
@@ -149,33 +154,32 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         return CoinTier.byOrdinal(jobTier);
     }
 
-    /** Mark (1-3) of the gear in upgrade slot {@code i}, or 0. */
-    public int upgradeMark(int i) {
-        ItemStack stack = items.getStackInSlot(SLOT_UPGRADE_START + i);
-        return stack.getItem() instanceof SpeedGearItem gear ? gear.mark : 0;
+    public int motivatorMask() {
+        return motivatorMask;
     }
 
-    public int fittedUpgrades() {
-        int n = 0;
-        for (int i = 0; i < UPGRADE_SLOTS; i++) {
-            if (upgradeMark(i) > 0) n++;
-        }
-        return n;
+    public int motivators() {
+        return Integer.bitCount(motivatorMask);
     }
 
-    /** Combined time reduction of the fitted gears, capped by config. */
+    public boolean hasCoins() {
+        return !items.getStackInSlot(SLOT_OUTPUT).isEmpty();
+    }
+
+    /** Tier of the coins lying in the tray, or null. */
+    @Nullable
+    public CoinTier trayTier() {
+        return items.getStackInSlot(SLOT_OUTPUT).getItem() instanceof ShatterCoinItem c ? c.tier : null;
+    }
+
+    /** Share of the press time removed by this slice's Motivators. */
     public double totalReduction() {
-        double sum = 0;
-        for (int i = 0; i < UPGRADE_SLOTS; i++) {
-            if (items.getStackInSlot(SLOT_UPGRADE_START + i).getItem() instanceof SpeedGearItem gear) {
-                sum += gear.reduction();
-            }
-        }
-        return Math.min(sum, BSPConfig.FACTORY_MAX_REDUCTION.get());
+        Number r = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.FACTORY_MOTIVATOR_REDUCTIONS, List.<Number>of()), motivators(), (Number) 0.0);
+        return Math.min(r.doubleValue(), BSPConfig.getOr(BSPConfig.FACTORY_MAX_REDUCTION, 0.75));
     }
 
     private double speed() {
-        return 1.0 / (1.0 - totalReduction());
+        return overclock / (1.0 - totalReduction());
     }
 
     /** Real seconds until the current press finishes, or 0 when idle. */
@@ -192,18 +196,261 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         return tier == null ? 0f : (float) Math.min(1.0, progressMs / tier.pressMillis());
     }
 
-    // ------------------------------------------------------------------ pressing
+    public int stateCode() {
+        if (powered) {
+            return STATE_REDSTONE;
+        }
+        CoinTier tier = getJobTier();
+        if (tier != null) {
+            return progressFraction() >= 1f ? STATE_TRAY_FULL : STATE_PRESSING;
+        }
+        if (!(items.getStackInSlot(SLOT_INPUT).getItem() instanceof CoinBlankItem blank)) {
+            return STATE_NEEDS_BLANK;
+        }
+        if (!canOutput(blank.tier)) {
+            return STATE_TRAY_FULL;
+        }
+        return poolStored() < blank.tier.energyPerCoin() ? STATE_NEEDS_RF : STATE_PRESSING;
+    }
 
-    public void serverTick(ServerLevel level) {
-        if (level.getGameTime() % 20 == 0) {
-            advance(System.currentTimeMillis());
+    /** RF per tick that came in through this slice's Power Port over the last second. */
+    public int intakeRate() {
+        return intakeRate;
+    }
+
+    // ------------------------------------------------------------------ structure
+
+    private Direction back() {
+        return facing().getOpposite();
+    }
+
+    /** The five blocks that, with the controller, make a slice. */
+    public List<Part> parts() {
+        Direction b = back();
+        BlockPos p = worldPosition, up = p.above();
+        return List.of(new Part(p.relative(b), ModBlocks.FACTORY_FRAME.get()), new Part(p.relative(b, 2), ModBlocks.FACTORY_BLANK_HATCH.get()),
+                new Part(up, ModBlocks.FACTORY_FRAME.get()), new Part(up.relative(b), ModBlocks.FACTORY_PRESS.get()),
+                new Part(up.relative(b, 2), ModBlocks.FACTORY_POWER_PORT.get()));
+    }
+
+    public List<Part> missingParts() {
+        List<Part> missing = new ArrayList<>();
+        if (level != null) {
+            for (Part part : parts()) {
+                if (!level.getBlockState(part.pos()).is(part.block())) {
+                    missing.add(part);
+                }
+            }
+        }
+        return missing;
+    }
+
+    public BlockPos motivatorPos(int cell) {
+        return worldPosition.above(2).relative(back(), cell);
+    }
+
+    /** Re-reads the structure, hides or shows its blocks and counts the Motivators on top. */
+    public void checkStructure() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        boolean ok = missingParts().isEmpty();
+        int mask = 0;
+        if (ok) {
+            for (int i = 0; i < MOTIVATOR_CELLS; i++) {
+                if (level.getBlockState(motivatorPos(i)).is(ModBlocks.FACTORY_MOTIVATOR.get())) {
+                    mask |= 1 << i;
+                }
+            }
+        }
+        showParts(!ok);
+        if (ok) {
+            for (Part part : parts()) {
+                if (level.getBlockEntity(part.pos()) instanceof FactoryPortBlockEntity port) {
+                    port.link(worldPosition);
+                }
+            }
+        }
+        if (ok != formed || mask != motivatorMask) {
+            formed = ok;
+            motivatorMask = mask;
+            setChanged();
+        }
+        BlockState state = getBlockState();
+        if (state.hasProperty(StructurePartBlock.FORMED) && state.getValue(StructurePartBlock.FORMED) != ok) {
+            level.setBlock(worldPosition, state.setValue(StructurePartBlock.FORMED, ok), 3);
+        }
+        syncIfVisualChanged();
+    }
+
+    /** Shows the slice's blocks as ordinary cubes ({@code true}) or hides them behind the machine model. */
+    public void showParts(boolean show) {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        List<BlockPos> all = new ArrayList<>();
+        parts().forEach(p -> all.add(p.pos()));
+        for (int i = 0; i < MOTIVATOR_CELLS; i++) {
+            all.add(motivatorPos(i));
+        }
+        for (BlockPos pos : all) {
+            BlockState state = level.getBlockState(pos);
+            if (state.hasProperty(StructurePartBlock.FORMED) && state.getValue(StructurePartBlock.FORMED) == show
+                    && (state.getBlock() instanceof FactoryPortBlock || state.is(ModBlocks.FACTORY_FRAME.get()) || state.is(ModBlocks.FACTORY_PRESS.get())
+                    || state.is(ModBlocks.FACTORY_MOTIVATOR.get()))) {
+                level.setBlock(pos, state.setValue(StructurePartBlock.FORMED, !show), 3);
+            }
         }
     }
 
-    /** Brings the factory up to date with the wall clock, finishing and starting presses as needed. */
+    // ------------------------------------------------------------------ joined machine
+
+    /** Whether {@code other} is part of the same machine when it stands next to this slice. */
+    public boolean joins(@Nullable CoinFactoryBlockEntity other) {
+        return other != null && formed && other.formed && facing() == other.facing() && Objects.equals(owner, other.owner);
+    }
+
+    /** Model +x: the slice to the left of someone looking at the front. */
+    public Direction rowDirection() {
+        return facing().getClockWise();
+    }
+
+    @Nullable
+    private CoinFactoryBlockEntity neighbour(Direction dir, int steps) {
+        return level != null && level.getBlockEntity(worldPosition.relative(dir, steps)) instanceof CoinFactoryBlockEntity f ? f : null;
+    }
+
+    /** Every slice of the machine this slice belongs to, in row order. Always contains this slice. */
+    public List<CoinFactoryBlockEntity> group() {
+        List<CoinFactoryBlockEntity> out = new ArrayList<>();
+        out.add(this);
+        if (!formed) {
+            return out;
+        }
+        Direction row = rowDirection();
+        CoinFactoryBlockEntity prev = this;
+        for (int i = 1; out.size() < MAX_SLICES; i++) {
+            CoinFactoryBlockEntity n = neighbour(row.getOpposite(), i);
+            if (!prev.joins(n)) {
+                break;
+            }
+            out.add(0, n);
+            prev = n;
+        }
+        prev = this;
+        for (int i = 1; out.size() < MAX_SLICES; i++) {
+            CoinFactoryBlockEntity n = neighbour(row, i);
+            if (!prev.joins(n)) {
+                break;
+            }
+            out.add(n);
+            prev = n;
+        }
+        return out;
+    }
+
+    public int sliceCapacity() {
+        return BSPConfig.getOr(BSPConfig.FACTORY_ENERGY_CAPACITY, 1_000_000);
+    }
+
+    public int poolStored() {
+        long sum = 0;
+        for (CoinFactoryBlockEntity f : group()) {
+            sum += f.energy;
+        }
+        return (int) Math.min(Integer.MAX_VALUE, sum);
+    }
+
+    public int poolCapacity() {
+        return (int) Math.min(Integer.MAX_VALUE, (long) group().size() * sliceCapacity());
+    }
+
+    /** Adds energy to the pool through this slice's Power Port; returns what was accepted. */
+    public int poolReceive(int amount, boolean simulate) {
+        int left = Math.max(0, amount);
+        for (CoinFactoryBlockEntity f : group()) {
+            int room = Math.max(0, f.sliceCapacity() - f.energy);
+            int put = Math.min(room, left);
+            if (put > 0 && !simulate) {
+                f.energy += put;
+                f.setChanged();
+            }
+            left -= put;
+            if (left <= 0) {
+                break;
+            }
+        }
+        int accepted = Math.max(0, amount) - left;
+        if (!simulate) {
+            intakeAcc += accepted;
+        }
+        return accepted;
+    }
+
+    private boolean poolConsume(int amount) {
+        List<CoinFactoryBlockEntity> group = group();
+        long sum = 0;
+        for (CoinFactoryBlockEntity f : group) {
+            sum += f.energy;
+        }
+        if (sum < amount) {
+            return false;
+        }
+        int left = amount;
+        for (CoinFactoryBlockEntity f : group) {
+            int take = Math.min(f.energy, left);
+            f.energy -= take;
+            left -= take;
+            f.setChanged();
+        }
+        return true;
+    }
+
+    /** The power switch: applies to the whole machine. */
+    public void toggleEnabled() {
+        boolean on = !enabled;
+        long now = System.currentTimeMillis();
+        for (CoinFactoryBlockEntity f : group()) {
+            f.advance(now);
+            f.enabled = on;
+            f.setChanged();
+            f.syncIfVisualChanged();
+        }
+    }
+
+    // ------------------------------------------------------------------ pressing
+
+    public void serverTick(ServerLevel level) {
+        // each slice works on its own tick offset, so joined slices never act in step
+        long phase = level.getGameTime() + worldPosition.asLong();
+        if (Math.floorMod(phase, 5L) == 0) {
+            checkStructure(); // four times a second, so a broken block shows the rest of the slice again almost at once
+        }
+        if (Math.floorMod(phase, 20L) != 0) {
+            return;
+        }
+        intakeRate = (int) (intakeAcc / 20);
+        intakeAcc = 0;
+        double aura = com.mrgregles.bsp_core.totem.TotemAuras.overclock(level, worldPosition);
+        if (aura != overclock) {
+            advance(System.currentTimeMillis()); // settle progress at the old speed first
+            overclock = aura;
+        }
+        boolean signal = level.hasNeighborSignal(worldPosition);
+        if (signal != powered) {
+            advance(System.currentTimeMillis()); // settle progress under the old state before pausing or resuming
+            powered = signal;
+            setChanged();
+        }
+        advance(System.currentTimeMillis());
+    }
+
+    /** Brings the slice up to date with the wall clock, finishing and starting presses as needed. */
     public void advance(long now) {
-        if (lastUpdateMs <= 0 || now < lastUpdateMs) {
-            lastUpdateMs = now; // first run, or the clock moved backwards
+        if (lastUpdateMs <= 0 || now < lastUpdateMs || !formed || !enabled || powered) {
+            lastUpdateMs = now; // first run, clock moved backwards, or the line is stopped
+            syncIfVisualChanged();
+            return;
         }
         for (int guard = 0; guard < 256; guard++) {
             CoinTier tier = getJobTier();
@@ -217,7 +464,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
                     break;
                 }
                 if (!canOutput(tier)) {
-                    // finished but the output is blocked: hold at 100% until there is room
+                    // finished but the tray is full: hold at 100% until coins are taken
                     progressMs = tier.pressMillis();
                     lastUpdateMs = now;
                     break;
@@ -243,10 +490,9 @@ public class CoinFactoryBlockEntity extends BlockEntity {
             return false;
         }
         CoinTier tier = blank.tier;
-        if (!canOutput(tier) || energy.getEnergyStored() < tier.energyPerCoin()) {
+        if (!canOutput(tier) || !poolConsume(tier.energyPerCoin())) {
             return false;
         }
-        energy.consume(tier.energyPerCoin());
         items.setStackInSlot(SLOT_INPUT, in.copyWithCount(in.getCount() - 1));
         jobTier = tier.ordinal();
         progressMs = 0;
@@ -258,164 +504,27 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         return out.isEmpty() || (out.is(tier.coin()) && out.getCount() < out.getMaxStackSize());
     }
 
-    // ------------------------------------------------------------------ menu data
-
-    /** Values the open screen needs; ints are sent as shorts, so large numbers are split in two. */
-    public final ContainerData data = new ContainerData() {
-        @Override
-        public int get(int i) {
-            long rem = remainingSeconds();
-            return switch (i) {
-                case 0 -> energy.getEnergyStored() & 0xFFFF;
-                case 1 -> (energy.getEnergyStored() >>> 16) & 0xFFFF;
-                case 2 -> energy.getMaxEnergyStored() & 0xFFFF;
-                case 3 -> (energy.getMaxEnergyStored() >>> 16) & 0xFFFF;
-                case 4 -> Math.round(progressFraction() * 1000);
-                case 5 -> (int) (rem & 0xFFFF);
-                case 6 -> (int) ((rem >>> 16) & 0xFFFF);
-                case 7 -> jobTier + 1;
-                case 8, 9, 10, 11, 12, 13 -> sides[i - 8].ordinal();
-                case 14 -> (int) Math.round(totalReduction() * 1000);
-                case 15 -> level instanceof ServerLevel sl && owner != null ? FactoryLedger.get(sl.getServer()).count(owner) : 0;
-                default -> 0;
-            };
-        }
-
-        @Override
-        public void set(int i, int value) {}
-
-        @Override
-        public int getCount() {
-            return DATA_COUNT;
-        }
-    };
-
-    // ------------------------------------------------------------------ capabilities
-
-    @Nonnull
-    @Override
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        if (cap == ForgeCapabilities.ITEM_HANDLER) {
-            return (side == null ? unsidedCap : sideCaps[side.get3DDataValue()]).cast();
-        }
-        return super.getCapability(cap, side);
-    }
-
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
-        unsidedCap.invalidate();
-        for (LazyOptional<IItemHandler> c : sideCaps) {
-            c.invalidate();
-        }
-    }
-
-    /** What pipes, hoppers and storage buses see: slot 0 = blanks in, slot 1 = coins out, gated by the face's mode. */
-    private class SidedView implements IItemHandler {
-        @Nullable
-        private final Direction side;
-
-        SidedView(@Nullable Direction side) {
-            this.side = side;
-        }
-
-        private SideMode mode() {
-            return side == null ? SideMode.BOTH : sides[side.get3DDataValue()];
-        }
-
-        @Override
-        public int getSlots() {
-            return 2;
-        }
-
-        @Nonnull
-        @Override
-        public ItemStack getStackInSlot(int slot) {
-            return items.getStackInSlot(slot);
-        }
-
-        @Nonnull
-        @Override
-        public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-            if (slot != SLOT_INPUT || !mode().allowsInput()) {
-                return stack;
-            }
-            return items.insertItem(SLOT_INPUT, stack, simulate);
-        }
-
-        @Nonnull
-        @Override
-        public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (slot != SLOT_OUTPUT || !mode().allowsOutput()) {
-                return ItemStack.EMPTY;
-            }
-            return items.extractItem(SLOT_OUTPUT, amount, simulate);
-        }
-
-        @Override
-        public int getSlotLimit(int slot) {
-            return items.getSlotLimit(slot);
-        }
-
-        @Override
-        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return slot == SLOT_INPUT && items.isItemValid(SLOT_INPUT, stack);
-        }
-    }
-
-    /** Energy buffer sized from config; accepts from any face, never gives energy out. */
-    private class FactoryEnergy extends EnergyStorage {
-        FactoryEnergy() {
-            super(1_000_000, 10_000, 0);
-        }
-
-        @Override
-        public int getMaxEnergyStored() {
-            return BSPConfig.FACTORY_ENERGY_CAPACITY.get();
-        }
-
-        @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int accepted = Math.max(0, Math.min(getMaxEnergyStored() - energy, Math.min(BSPConfig.FACTORY_MAX_RECEIVE.get(), maxReceive)));
-            if (!simulate && accepted > 0) {
-                energy += accepted;
-                setChanged();
-            }
-            return accepted;
-        }
-
-        @Override
-        public boolean canReceive() {
-            return true;
-        }
-
-        void consume(int amount) {
-            energy = Math.max(0, energy - amount);
-        }
-
-        void set(int amount) {
-            energy = amount;
-        }
-    }
-
     // ------------------------------------------------------------------ persistence + sync
+
+    /** The model reaches past the controller's own block, so it must not be culled with it. */
+    @Override
+    public AABB getRenderBoundingBox() {
+        return new AABB(worldPosition).inflate(4);
+    }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.put("Items", items.serializeNBT());
-        tag.putInt("Energy", energy.getEnergyStored());
-        int[] modes = new int[6];
-        for (int i = 0; i < 6; i++) modes[i] = sides[i].ordinal();
-        tag.putIntArray("Sides", modes);
+        tag.putInt("Energy", energy);
         if (owner != null) {
             tag.putUUID("Owner", owner);
             tag.putString("OwnerName", ownerName);
         }
+        tag.putBoolean("Enabled", enabled);
+        tag.putBoolean("Formed", formed);
+        tag.putBoolean("Powered", powered);
+        tag.putInt("Motivators", motivatorMask);
         tag.putInt("JobTier", jobTier);
         tag.putDouble("ProgressMs", progressMs);
         tag.putLong("LastUpdateMs", lastUpdateMs);
@@ -425,28 +534,32 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         if (tag.contains("Items")) {
-            items.deserializeNBT(tag.getCompound("Items"));
+            CompoundTag saved = tag.getCompound("Items");
+            saved.putInt("Size", SLOTS); // older saves had upgrade slots
+            items.deserializeNBT(saved);
         }
-        energy.set(tag.getInt("Energy"));
-        int[] modes = tag.getIntArray("Sides");
-        for (int i = 0; i < 6 && i < modes.length; i++) {
-            sides[i] = SideMode.values()[Math.floorMod(modes[i], SideMode.values().length)];
-        }
+        energy = tag.getInt("Energy");
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");
+        enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
+        formed = tag.getBoolean("Formed");
+        powered = tag.getBoolean("Powered");
+        motivatorMask = tag.getInt("Motivators");
         jobTier = tag.contains("JobTier") ? tag.getInt("JobTier") : -1;
         progressMs = tag.getDouble("ProgressMs");
         lastUpdateMs = tag.getLong("LastUpdateMs");
     }
 
-    /** What the renderer shows: working or not, tier on the die, which sockets are lit. */
+    /** What the renderer shows: formed, running, tier on the line, coins in the tray, Motivators. */
     private int visualHash() {
         int h = jobTier + 1;
-        ItemStack in = items.getStackInSlot(SLOT_INPUT);
-        h = h * 31 + (in.getItem() instanceof CoinBlankItem b ? b.tier.ordinal() + 1 : 0);
-        for (int i = 0; i < UPGRADE_SLOTS; i++) {
-            h = h * 7 + upgradeMark(i);
-        }
+        h = h * 31 + (items.getStackInSlot(SLOT_INPUT).getItem() instanceof CoinBlankItem b ? b.tier.ordinal() + 1 : 0);
+        CoinTier tray = trayTier();
+        h = h * 31 + (tray == null ? 0 : tray.ordinal() + 1);
+        h = h * 31 + motivatorMask;
+        h = h * 2 + (formed ? 1 : 0);
+        h = h * 2 + (enabled ? 1 : 0);
+        h = h * 2 + (isWorking() ? 1 : 0);
         return h;
     }
 

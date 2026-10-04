@@ -8,7 +8,6 @@ import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.ItemEntityRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -39,14 +38,10 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ItemEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SHATTER_TOTEM.get(), ShatterTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TETRIUM_CRUCIBLE.get(), TetriumCrucibleRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.COMBINATION_FORGE.get(), CombinationForgeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), IllyriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_REFINERY.get(), IllyriumRefineryRenderer::new);
-    }
-
-    /** The press head is drawn by the renderer, so its model must be baked even though no block state uses it. */
-    @SubscribeEvent
-    public static void onRegisterModels(ModelEvent.RegisterAdditional event) {
-        event.register(CoinFactoryRenderer.HEAD_MODEL);
     }
 
     @SubscribeEvent

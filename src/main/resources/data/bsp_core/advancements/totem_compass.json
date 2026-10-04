@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:totem_compass"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.totem_compass"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.totem_compass.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:totem_compass"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:root"
+}

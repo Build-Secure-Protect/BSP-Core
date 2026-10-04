@@ -1,0 +1,22 @@
+{
+  "name": "Motivators",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:factory_motivator",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:factory_motivator",
+      "text": "Place up to three on top of a complete factory slice. One, two or three cut that slice's press time by 15%, 30% or 50%.$(br2)They pulse faster the more a slice has, and link up with their neighbours."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:resonance_crystal",
+      "recipe2": "bsp_core:illyrium_processor"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:factory_motivator"
+    }
+  ]
+}

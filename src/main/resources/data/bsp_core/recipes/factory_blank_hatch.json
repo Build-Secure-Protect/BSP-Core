@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " H ",
+    "VCV",
+    " P "
+  ],
+  "key": {
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "V": {
+      "item": "bsp_core:conveyor_belt"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:factory_blank_hatch"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "AUA",
+    " A "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "U": {
+      "item": "bsp_core:pure_illyrium_dust"
+    }
+  },
+  "result": {
+    "item": "bsp_core:resonance_crystal"
+  }
+}

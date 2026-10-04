@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PLP",
+    "LCL",
+    "PLP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "L": {
+      "item": "bsp_core:thermal_lining"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:lava_pylon",
+    "count": 2
+  }
+}

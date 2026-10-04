@@ -2,15 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "III",
-    "IRI",
+    "IZI",
     "IFI"
   ],
   "key": {
     "I": {
       "item": "bsp_core:illyrium_ingot"
     },
-    "R": {
-      "item": "minecraft:redstone"
+    "Z": {
+      "item": "bsp_core:illyrium_processor"
     },
     "F": {
       "item": "minecraft:iron_ingot"

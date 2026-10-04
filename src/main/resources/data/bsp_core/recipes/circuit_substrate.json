@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "BBB"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:tetrium_nugget"
+    },
+    "B": {
+      "item": "bsp_core:slag_brick"
+    }
+  },
+  "result": {
+    "item": "bsp_core:circuit_substrate",
+    "count": 3
+  }
+}

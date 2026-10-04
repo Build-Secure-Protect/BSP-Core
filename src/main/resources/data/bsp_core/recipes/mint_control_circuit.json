@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ADA",
+    "DKD",
+    "ADA"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:gold_ingot"
+    },
+    "D": {
+      "item": "bsp_core:tetrium_dust"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    }
+  },
+  "result": {
+    "item": "bsp_core:mint_control_circuit"
+  }
+}

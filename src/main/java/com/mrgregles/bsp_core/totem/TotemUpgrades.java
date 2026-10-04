@@ -14,6 +14,8 @@ public final class TotemUpgrades {
 
     public enum Currency { XP, COINS }
 
+    public enum Branch { CARRIED, BASE, RAID }
+
     public enum Buff {
         // hand-held buffs, bought with XP from the upgrade tree; active while the totem is in the offhand
         DAMAGE("damage", Currency.XP, false, () -> BSPConfig.DAMAGE_XP_COSTS),
@@ -21,7 +23,21 @@ public final class TotemUpgrades {
         MINING_SPEED("mining_speed", Currency.XP, false, () -> BSPConfig.MINING_SPEED_XP_COSTS),
         // placed-only auras, bought with Shatter Coins from the placed totem's panel
         FORTIFY("fortify", Currency.COINS, true, () -> BSPConfig.FORTIFY_COIN_COSTS),
-        HEALING("healing", Currency.COINS, true, () -> BSPConfig.HEALING_COIN_COSTS);
+        HEALING("healing", Currency.COINS, true, () -> BSPConfig.HEALING_COIN_COSTS),
+        // more carried upgrades (XP)
+        SWIFTNESS("swiftness", Currency.XP, false, () -> BSPConfig.SWIFTNESS_XP_COSTS),
+        VITALITY("vitality", Currency.XP, false, () -> BSPConfig.VITALITY_XP_COSTS),
+        FEATHERFALL("featherfall", Currency.XP, false, () -> BSPConfig.FEATHERFALL_XP_COSTS),
+        NIGHT_SIGHT("night_sight", Currency.XP, false, () -> BSPConfig.NIGHT_SIGHT_XP_COSTS),
+        // more base upgrades (coins, placed only)
+        WARD("ward", Currency.COINS, true, () -> BSPConfig.WARD_COIN_COSTS),
+        ALARM("alarm", Currency.COINS, true, () -> BSPConfig.ALARM_COIN_COSTS),
+        SANCTUARY("sanctuary", Currency.COINS, true, () -> BSPConfig.SANCTUARY_COIN_COSTS),
+        DEADLOCK("deadlock", Currency.COINS, true, () -> BSPConfig.DEADLOCK_COIN_COSTS),
+        OVERCLOCK("overclock", Currency.COINS, true, () -> BSPConfig.OVERCLOCK_COIN_COSTS),
+        // raid upgrades (coins): apply to the thief while this totem is in their offhand
+        LOCKPICK("lockpick", Currency.COINS, false, () -> BSPConfig.LOCKPICK_COIN_COSTS),
+        SHROUD("shroud", Currency.COINS, false, () -> BSPConfig.SHROUD_COIN_COSTS);
 
         public final String key;
         public final Currency currency;
@@ -57,6 +73,28 @@ public final class TotemUpgrades {
             return switch (this) {
                 case FORTIFY -> BSPConfig.levelValue(BSPConfig.FORTIFY_RADIUS.get(), level, 0);
                 case HEALING -> BSPConfig.levelValue(BSPConfig.HEALING_RADIUS.get(), level, 0);
+                default -> 0;
+            };
+        }
+
+        /** The three branches of the upgrade tree. */
+        public Branch branch() {
+            return placedOnly ? Branch.BASE : currency == Currency.XP ? Branch.CARRIED : Branch.RAID;
+        }
+
+        /**
+         * How far a newer base upgrade reaches at {@code level}, in blocks; 0 if it has no range. Kept apart
+         * from {@link #radius(int)} so these do not each draw an aura sphere.
+         */
+        public int reach(int level) {
+            if (level <= 0) {
+                return 0;
+            }
+            return switch (this) {
+                case WARD -> BSPConfig.levelValue(BSPConfig.WARD_RADIUS.get(), level, 0);
+                case ALARM -> BSPConfig.levelValue(BSPConfig.ALARM_RADIUS.get(), level, 0);
+                case SANCTUARY -> BSPConfig.levelValue(BSPConfig.SANCTUARY_RADIUS.get(), level, 0);
+                case OVERCLOCK -> BSPConfig.levelValue(BSPConfig.OVERCLOCK_RADIUS.get(), level, 0);
                 default -> 0;
             };
         }

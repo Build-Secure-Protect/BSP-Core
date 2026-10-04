@@ -1,13 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "CCC",
-    "CRC",
+    "CWC",
+    "WRW",
     "CTC"
   ],
   "key": {
     "C": {
       "item": "minecraft:copper_ingot"
+    },
+    "W": {
+      "item": "bsp_core:tetrium_coil"
     },
     "R": {
       "item": "minecraft:redstone_block"

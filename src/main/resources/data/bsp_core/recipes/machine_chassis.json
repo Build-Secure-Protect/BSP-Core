@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PBP",
+    "B B",
+    "PBP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "B": {
+      "item": "bsp_core:slag_brick"
+    }
+  },
+  "result": {
+    "item": "bsp_core:machine_chassis",
+    "count": 2
+  }
+}

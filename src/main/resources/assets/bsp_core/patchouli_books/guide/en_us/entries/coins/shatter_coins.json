@@ -1,0 +1,23 @@
+{
+  "name": "Blanks and Coins",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:copper_shatter_coin",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "There are five coins: Copper, Gold, Diamond, Netherite and Illyrium. Each is worth twice the one before.$(br2)A coin starts as a $(item)Shatter Blank$(), is built up into a tier's coin blank, and is then pressed in the $(l:coins/factory)Shatter Coin Factory$()."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:shatter_blank",
+      "recipe2": "bsp_core:copper_coin_blank",
+      "text": "Each tier's blank is crafted around the blank of the tier below it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:gold_coin_blank",
+      "recipe2": "bsp_core:diamond_coin_blank"
+    }
+  ]
+}

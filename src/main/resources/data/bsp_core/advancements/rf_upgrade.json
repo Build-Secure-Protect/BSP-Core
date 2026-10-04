@@ -1,0 +1,34 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:rf_upgrade_mk1"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.rf_upgrade"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.rf_upgrade.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:rf_upgrade_mk1",
+              "bsp_core:rf_upgrade_mk2",
+              "bsp_core:rf_upgrade_mk3"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:machine_chassis"
+}

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.illyrium_ingot"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.illyrium_ingot.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:illyrium_ingot"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:pure_illyrium_dust"
+}

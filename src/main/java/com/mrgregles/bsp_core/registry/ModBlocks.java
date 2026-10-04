@@ -26,6 +26,15 @@ public final class ModBlocks {
     public static final RegistryObject<CoinFactoryBlock> COIN_FACTORY =
             BLOCKS.register("shatter_coin_factory", CoinFactoryBlock::new);
 
+    // --- factory slice parts: used by the Shatter Coin Factory only
+    public static final RegistryObject<Block> FACTORY_FRAME = BLOCKS.register("factory_frame", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.5F, 6.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> FACTORY_PRESS = BLOCKS.register("factory_press", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.5F, 6.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> FACTORY_BLANK_HATCH = BLOCKS.register("factory_blank_hatch", com.mrgregles.bsp_core.coin.FactoryPortBlock::new);
+    public static final RegistryObject<Block> FACTORY_POWER_PORT = BLOCKS.register("factory_power_port", com.mrgregles.bsp_core.coin.FactoryPortBlock::new);
+    public static final RegistryObject<Block> FACTORY_MOTIVATOR = BLOCKS.register("factory_motivator", com.mrgregles.bsp_core.coin.MotivatorBlock::new);
+
     public static final RegistryObject<MachineBlock> TETRIUM_CRUCIBLE =
             BLOCKS.register("tetrium_crucible", () -> new MachineBlock(TetriumCrucibleBlockEntity::new));
     public static final RegistryObject<MachineBlock> COMBINATION_FORGE =

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:illyrium_crucible"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.illyrium_crucible"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.illyrium_crucible.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:illyrium_crucible"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:basic_control_circuit"
+}

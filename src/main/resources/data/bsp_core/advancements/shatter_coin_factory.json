@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:shatter_coin_factory"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.shatter_coin_factory"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.shatter_coin_factory.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:shatter_coin_factory"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:dirty_illyrium_ingot"
+}

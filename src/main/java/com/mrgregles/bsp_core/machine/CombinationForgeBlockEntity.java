@@ -10,8 +10,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.List;
 
 /**
- * Nine nuggets in, one ingot out. Forges Tetrium as built; Illyrium only once an Illyrium Forge
- * Upgrade sits in the upgrade slot. Burns furnace fuel, or runs on RF at twice the speed with an RF upgrade.
+ * Nine nuggets in, one ingot out; or one Tetrium Ingot in, one Tetrium Plate out. Forges Tetrium as
+ * built; Illyrium only once an Illyrium Forge Upgrade sits in the upgrade slot. Burns furnace fuel, or runs on RF at twice the speed with an RF upgrade.
  */
 public class CombinationForgeBlockEntity extends MachineBlockEntity {
     public static final int NUGGETS_PER_INGOT = 9;
@@ -30,16 +30,24 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
     @Override
     protected boolean isItemValid(int slot, ItemStack stack) {
         return switch (slot) {
-            case IN -> stack.is(ModItems.TETRIUM_NUGGET.get()) || stack.is(ModItems.ILLYRIUM_NUGGET.get());
+            case IN -> stack.is(ModItems.TETRIUM_NUGGET.get()) || stack.is(ModItems.ILLYRIUM_NUGGET.get()) || stack.is(ModItems.TETRIUM_INGOT.get());
             case UPGRADE -> stack.is(ModItems.ILLYRIUM_FORGE_UPGRADE.get());
             case FUEL -> net.minecraftforge.common.ForgeHooks.getBurnTime(stack, null) > 0;
             default -> false;
         };
     }
 
-    /** The ingot the current input would make, or EMPTY if it cannot be forged right now. */
+    /** How many of the input one job uses: one ingot for a plate, nine nuggets for an ingot. */
+    private int inputCost() {
+        return items.getStackInSlot(IN).is(ModItems.TETRIUM_INGOT.get()) ? 1 : NUGGETS_PER_INGOT;
+    }
+
+    /** What the current input would make, or EMPTY if it cannot be forged right now. */
     private ItemStack result() {
         ItemStack in = items.getStackInSlot(IN);
+        if (in.is(ModItems.TETRIUM_INGOT.get())) {
+            return new ItemStack(ModItems.TETRIUM_PLATE.get());
+        }
         if (in.getCount() < NUGGETS_PER_INGOT) {
             return ItemStack.EMPTY;
         }
@@ -67,7 +75,7 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
     protected void finishJob() {
         ItemStack result = result();
         ItemStack in = items.getStackInSlot(IN);
-        items.setStackInSlot(IN, in.copyWithCount(in.getCount() - NUGGETS_PER_INGOT));
+        items.setStackInSlot(IN, in.copyWithCount(in.getCount() - inputCost()));
         addOutput(OUT, result);
     }
 
@@ -87,7 +95,7 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
     public List<Need> missing(int fluidMb, boolean burning) {
         List<Need> out = new java.util.ArrayList<>();
         ItemStack in = items.getStackInSlot(IN);
-        if (in.getCount() < NUGGETS_PER_INGOT) {
+        if (in.getCount() < inputCost()) {
             out.add(need(ModItems.TETRIUM_NUGGET.get(), "need.bsp_core.nine_nuggets"));
         } else if (in.is(ModItems.ILLYRIUM_NUGGET.get()) && !hasIllyriumUpgrade()) {
             out.add(need(ModItems.ILLYRIUM_FORGE_UPGRADE.get(), "need.bsp_core.forge_upgrade"));

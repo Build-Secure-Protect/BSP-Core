@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LDL",
+    "DKD",
+    "LDL"
+  ],
+  "key": {
+    "L": {
+      "item": "minecraft:lapis_lazuli"
+    },
+    "D": {
+      "item": "bsp_core:dirty_illyrium_dust"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    }
+  },
+  "result": {
+    "item": "bsp_core:refinery_control_circuit"
+  }
+}

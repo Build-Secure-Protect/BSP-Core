@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " P ",
+    "PCP",
+    " P "
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:illyrium_casing",
+    "count": 4
+  }
+}

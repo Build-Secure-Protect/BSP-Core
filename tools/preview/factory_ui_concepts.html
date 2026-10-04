@@ -1,0 +1,110 @@
+<title>Factory Screen Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One slider (slices joined), then three stacked cards, each a
+   full-size mock of the in-game screen at 2x GUI scale. The mocks keep the game's own dark Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-in:#3a8bff; --h-out:#ff8a3a; --h-rf:#ffd23a; --h-vio:#b58cff; --h-bad:#d63b2f; --h-off:#565c6b;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; }
+.wrap{ max-width:900px; margin:0 auto; padding-block:28px 48px; padding-inline:16px; display:flex; flex-direction:column; gap:18px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:72ch; line-height:1.5; }
+.ctl{ display:flex; flex-wrap:wrap; gap:12px 28px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:12px 14px; }
+.ctl label{ display:flex; align-items:center; gap:10px; font-size:13px; flex-wrap:wrap; }
+.ctl output{ font-family:var(--display); color:var(--tq); min-width:2ch; }
+.ctl input[type=range]{ accent-color:var(--tq); width:min(220px,50vw); }
+.ctl input:focus-visible, .hud button:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card h2{ font-family:var(--display); font-size:15px; margin:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; max-width:75ch; }
+.scroll{ overflow-x:auto; }
+/* ---- the in-game screen ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:16px 18px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:12px; margin:0 auto; }
+.hud .top{ display:flex; justify-content:space-between; gap:12px; color:var(--h-tq); font-size:13px; }
+.hud .top .st{ color:var(--h-tq); } .hud .top .st.bad{ color:#ff6b5c; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.slot{ width:32px; height:32px; background:var(--h-slot); border:2px solid var(--c,#3a3f4b); position:relative; flex:none; display:grid; place-items:center; }
+.slot img{ width:28px; height:28px; image-rendering:pixelated; }
+.slot b{ position:absolute; right:1px; bottom:-1px; font-weight:400; font-size:11px; color:#fff; text-shadow:1px 1px 0 #000; }
+.slot.ghost img{ opacity:.25; }
+.pips{ display:flex; gap:3px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-vio); }
+.bar{ height:12px; background:var(--h-dim); position:relative; } .bar i{ position:absolute; inset:0 auto 0 0; background:var(--h-tq); }
+.state{ font-size:10px; } .s-press{ color:var(--h-tq); } .s-wait{ color:#ff6b5c; } .s-full{ color:var(--h-out); }
+.foot{ display:grid; grid-template-columns:1fr auto; gap:10px 24px; align-items:center; border-top:2px solid var(--h-dim); padding-top:12px; }
+.seg{ display:flex; gap:3px; align-items:center; } .seg i{ width:14px; height:14px; background:var(--h-dim); } .seg i.on{ background:var(--h-rf); } .seg span{ margin-right:8px; color:var(--h-muted); }
+.pw{ display:flex; align-items:center; gap:10px; } .sw{ width:72px; height:28px; border:2px solid var(--h-tq); background:var(--h-slot); position:relative; }
+.sw::before{ content:""; position:absolute; left:8px; right:8px; top:10px; height:4px; background:var(--h-tq); } .sw::after{ content:""; position:absolute; right:4px; top:3px; width:22px; height:18px; background:#8a909c; border:2px solid #c9ced8; box-sizing:border-box; }
+.inv{ display:grid; grid-template-columns:repeat(9,36px); gap:0; justify-content:center; } .inv .slot{ border-color:#3a3f4b; margin:0; }
+.inv .gap{ grid-column:1/-1; height:6px; }
+/* A: line board */
+.rows{ display:grid; grid-template-columns:repeat(var(--cols),1fr); grid-auto-flow:column; grid-template-rows:repeat(var(--rws),auto); gap:6px 22px; }
+.row{ display:grid; grid-template-columns:18px 36px 1fr 36px; gap:8px; align-items:center; min-width:0; }
+.row .mid{ display:flex; flex-direction:column; gap:3px; min-width:0; } .row .l1{ display:flex; justify-content:space-between; gap:6px; white-space:nowrap; }
+/* B: selector and detail */
+.tabs{ display:grid; grid-template-columns:repeat(10,1fr); gap:5px; }
+.tab{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 2px 5px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; }
+.tab[aria-pressed="true"]{ border-color:var(--h-tq); } .tab img{ width:20px; height:20px; image-rendering:pixelated; } .tab .bar{ width:100%; height:5px; } .tab.empty{ opacity:.3; cursor:default; }
+.detail{ display:grid; grid-template-columns:auto 1fr; gap:14px 26px; align-items:center; }
+.pipe{ display:flex; align-items:center; gap:14px; } .chev{ color:var(--h-tq); letter-spacing:2px; }
+.dial{ width:68px; height:68px; border-radius:50%; background:conic-gradient(var(--h-tq) calc(var(--p)*1%), var(--h-dim) 0); display:grid; place-items:center; position:relative; }
+.dial::before{ content:""; position:absolute; inset:7px; border-radius:50%; background:var(--h-bg); } .dial span{ position:relative; color:var(--h-tq); font-size:13px; }
+.info{ display:flex; flex-direction:column; gap:6px; }
+/* C: floor plan */
+.lanes{ display:flex; justify-content:center; gap:6px; }
+.lane{ width:56px; display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 0 6px; }
+.lane.wait{ border-color:var(--h-bad); } .lane.full{ border-color:var(--h-out); }
+.beltv{ width:20px; height:84px; background:var(--h-dim); position:relative; } .beltv i{ position:absolute; inset:0 0 auto 0; background:var(--h-tq); }
+.beltv img{ position:absolute; left:-4px; width:28px; height:28px; image-rendering:pixelated; }
+.cap{ display:flex; justify-content:space-between; color:var(--h-muted); font-size:10px; padding-inline:2px; }
+</style>
+<div class="wrap">
+<h1>Factory Screen Concepts</h1>
+<p class="lede">Three layouts for the Shatter Coin Factory screen when slices are joined. Every slice has its own blank slot, press and coin tray. RF, the power switch and the owner line are shared. The sample data is made up, and each press starts on its own time, as you asked.</p>
+<div class="ctl"><label for="slices">Slices joined <input id="slices" type="range" min="1" max="10" value="7"> <output id="slicesOut">7</output></label></div>
+<section class="card"><h2>A. Line Board</h2><p>One row per slice, all on screen at once in two columns. Each row reads left to right like the machine: blank slot, progress with time left, coin tray, with Motivator pips and the state above the bar. Best for seeing everything at a glance; rows get busy at ten slices.</p><div class="scroll"><div class="hud" id="hudA"></div></div></section>
+<section class="card"><h2>B. Selector and Detail</h2><p>A strip of slice tiles across the top, each with its coin and a small progress bar. Click one to open it below in the same pipeline layout as the other machines: blank, dial, tray. Cleanest and most like the existing screens; you see slots for one slice at a time.</p><div class="scroll"><div class="hud" id="hudB"></div></div></section>
+<section class="card"><h2>C. Floor Plan</h2><p>The machine seen from above. Each lane is a slice in the same left-to-right order as the blocks: blank slot at the back, a belt that fills toward the front as the coin is pressed, tray at the front. Easiest to match a lane to the real slice; text per lane is short.</p><div class="scroll"><div class="hud" id="hudC"></div></div></section>
+</div>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TEX={"copper_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmp/PSkLBJ4qtwBhmAIYh+DR3eSnBDUA2pGvCnP8YBmCzGd0AsBhQM9wAXLbj0oxsANgQbAbANJNlAIZiPF7AMACbbdhcg2IAcjjg0ow3EGEGwKKHkAEYtsMAciLB6RVcmtENQVaIDePNDxRpxmcQLnUA0xAmUVmGyD8AAAAASUVORK5CYII=", "copper_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAf0lEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvfN60bBaxrSwBhmAIYhxGhGN6Rrwpz/GAYQ0gzDIM1wA3DZjkszsgFgQ7AZgE8zQQMIacZrADGaMQxADgdSDUCJBVj0kGw7DCAnEpI1oxuCrBAbxpsfKNKMzyBc6gAfsjN9+QXKAAAAAABJRU5ErkJggg==", "gold_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmv8/qkLBnw7qgTHMAAxD8Gne0cYNNwDZkK4Jc/5jGIDNZnQDQBikGW4ALttxaUY2AGwINgNgmskyAF0xPi9gGIDNNmyuQTEAORxwacYbiDADYNFDyAAM22EAOZHg8gpOzeiGICvEhvHmB4o04zMIlzoAvTpLT298i8sAAAAASUVORK5CYII=", "gold_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCms/va0PBh1cngDHMAAxDiNGMbkjXhDn/MQwgpBmGQZrhBuCyHZdmZAPAhmAzAJ9mggYQ0ozXAGI0YxiAHA6kGoASC7DoIdl2GEBOJCRrRjcEWSE2jDc/UKQZn0G41AEABoVG/TVwIQUAAAAASUVORK5CYII=", "diamond_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmk/+/o+C859/AmOYARiG4NOsvXIH3ABkQ7omzPmPYQA2m9ENAGGQZrgBuGzHpRnZALAh2AyAaSbLAHTF+LyAYQA227C5BsUA5HDApRlvIMIMgEUPIQMwbIcB5ESCyys4NaMbgqwQG8abHyjSjM8gXOoAuN9tYffehokAAAAASUVORK5CYII=", "diamond_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmmeeu46Cqw+cBmOYARiGEKMZ3ZCuCXP+YxhASDMMgzTDDcBlOy7NyAaADcFmAD7NBA0gpBmvAcRoxjAAORxINQAlFmDRQ7LtMICcSEjWjG4IskJsGG9+oEgzPoNwqQMAcV1ZU+ckBnQAAAAASUVORK5CYII=", "netherite_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvNSMlCwt5M7GMMMwDAEn2YtFQ24AciGdE2Y8x/DAGw2oxsAwiDNcANw2Y5LM7IBYEOwGQDTTJYB6IrxeQHDAGy2YXMNigHI4YBLM95AhBkAix5CBmDYDgPIiQSXV3BqRjcEWSE2jDc/UKQZn0G41AEAI0XvpJldWt4AAAAASUVORK5CYII=", "netherite_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAf0lEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmrs6J6Dg9NRcMIYZgGEIMZrRDemaMOc/hgGENMMwSDPcAFy249KMbADYEGwG4NNM0ABCmvEaQIxmDAOQw4FUA1BiARY9JNsOA8iJhGTN6IYgK8SG8eYHijTjMwiXOgDZ+xZfLOC4QQAAAABJRU5ErkJggg==", "illyrium_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmnv+P0PBkpc3gDHMAAxD8Gnm7q+AG4BsSNeEOf8xDMBmM7oBIAzSDDcAl+24NCMbADYEmwEwzWQZgK4YnxcwDMBmGzbXoBiAHA64NOMNRJgBsOghZACG7TCAnEhweQWnZnRDkBViw3jzA0Wa8RmESx0AsTo6iVRgTJ4AAAAASUVORK5CYII=", "illyrium_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmsuO7kHBPluXgzHMAAxDiNGMbkjXhDn/MQwgpBmGQZrhBuCyHZdmZAPAhmAzAJ9mggYQ0ozXAGI0YxiAHA6kGoASC7DoIdl2GEBOJCRrRjcEWSE2jDc/UKQZn0G41AEAJKw6oQ6//90AAAAASUVORK5CYII="};
+  const TIER=['copper','gold','diamond','netherite','illyrium'], NAME=['Copper','Gold','Diamond','Netherite','Illyrium'], HOURS=[12,24,48,96,168];
+  // sample slices: tier, progress 0..1, blanks waiting, coins in tray, motivators, state
+  const S=[[1,.42,12,3,3,'press'],[1,.08,9,5,3,'press'],[0,.77,30,11,2,'press'],[2,.31,4,1,2,'press'],[4,.12,2,0,3,'press'],[0,0,0,7,1,'wait'],[3,.64,6,2,0,'press'],[2,1,3,64,1,'full'],[1,.55,14,8,2,'press'],[0,.9,21,16,3,'press']]
+    .map(a=>({t:a[0],p:a[1],blanks:a[2],coins:a[3],m:a[4],s:a[5]}));
+  let n=7, sel=0;
+  const img=(k)=>'<img alt="" src="'+TEX[k]+'">';
+  const slot=(key,count,col,ghost)=>'<span class="slot'+(ghost?' ghost':'')+'" style="--c:'+col+'">'+(key?img(key):'')+(count>1?'<b>'+count+'</b>':'')+'</span>';
+  const blankSlot=s=>slot(TIER[s.blanks?s.t:0]+'_coin_blank',s.blanks,'var(--h-in)',!s.blanks);
+  const traySlot=s=>slot(s.coins?TIER[s.t]+'_shatter_coin':'',s.coins,'var(--h-out)');
+  const pips=s=>'<span class="pips" title="Motivators">'+[0,1,2].map(i=>'<i class="'+(i<s.m?'on':'')+'"></i>').join('')+'</span>';
+  const left=s=>{ const h=HOURS[s.t]*(1-[0,.15,.3,.5][s.m])*(1-s.p); return h>=24?Math.floor(h/24)+'d '+Math.round(h%24)+'h':Math.floor(h)+'h '+Math.round(h%1*60)+'m'; };
+  const stateTxt=s=>s.s==='press'?'<span class="state s-press">'+left(s)+' left</span>':s.s==='wait'?'<span class="state s-wait">Needs blank</span>':'<span class="state s-full">Tray full</span>';
+  const pct=s=>Math.round(s.p*100);
+  function head(){ const bad=S.slice(0,n).some(s=>s.s!=='press'); return '<div class="top"><span>SHATTER COIN FACTORY</span><span class="st'+(bad?' bad':'')+'">'+(bad?'ATTENTION':'WORKING')+'</span></div>'; }
+  function foot(){ let inv=''; for(let i=0;i<36;i++){ if(i===27) inv+='<span class="gap"></span>'; inv+='<span class="slot"></span>'; }
+    return '<div class="foot"><div><div class="seg"><span>RF</span>'+Array.from({length:12},(_,i)=>'<i class="'+(i<8?'on':'')+'"></i>').join('')+'</div><small>2,640,000 / 4,000,000 RF &nbsp; in: 9,600 RF/t from 3 cables</small></div>'
+      +'<div class="pw"><span><small>POWER</small></span><span class="sw"></span><span style="color:var(--h-tq)">ON</span></div>'
+      +'<div><small>Owner: Mrgregles &nbsp; Slices: '+n+' / 10 &nbsp; Motivators: '+S.slice(0,n).reduce((a,s)=>a+s.m,0)+'</small></div><div></div></div>'
+      +'<div><small>Inventory</small><div class="inv">'+inv+'</div></div>'; }
+  function drawA(){ const cols=n>5?2:1, rws=cols===2?Math.ceil(n/2):n;
+    const rows=S.slice(0,n).map((s,i)=>'<div class="row"><span>'+(i+1)+'</span>'+blankSlot(s)+'<span class="mid"><span class="l1"><span>'+NAME[s.t]+' '+pips(s)+'</span>'+stateTxt(s)+'</span><span class="bar"><i style="width:'+pct(s)+'%"></i></span></span>'+traySlot(s)+'</div>').join('');
+    document.getElementById('hudA').innerHTML=head()+'<div class="rows" style="--cols:'+cols+';--rws:'+rws+'">'+rows+'</div>'+foot(); }
+  function drawB(){ if(sel>=n) sel=0; const s=S[sel];
+    const tabs=S.map((t,i)=>i<n?'<button type="button" class="tab" id="tab'+i+'" data-i="'+i+'" aria-pressed="'+(i===sel)+'" aria-label="Slice '+(i+1)+'"><span>'+(i+1)+'</span>'+img(TIER[t.t]+'_shatter_coin')+'<span class="bar"><i style="width:'+pct(t)+'%;background:'+(t.s==='wait'?'var(--h-bad)':t.s==='full'?'var(--h-out)':'var(--h-tq)')+'"></i></span></button>':'<span class="tab empty"><span>'+(i+1)+'</span><span style="height:20px"></span><span class="bar"></span></span>').join('');
+    document.getElementById('hudB').innerHTML=head()+'<div class="tabs">'+tabs+'</div><div class="detail"><div class="pipe">'+blankSlot(s)+'<span class="chev">&gt;&gt;&gt;</span><span class="dial" style="--p:'+pct(s)+'"><span>'+pct(s)+'%</span></span><span class="chev">&gt;&gt;&gt;</span>'+traySlot(s)+'</div>'
+      +'<div class="info"><span>SLICE '+(sel+1)+' &nbsp; '+NAME[s.t]+' coin</span><span>'+stateTxt(s)+'</span><span><small>Motivators</small> '+pips(s)+' <small>-'+[0,15,30,50][s.m]+'% press time</small></span><span><small>Tray: '+s.coins+' / 64, taken by hand</small></span></div></div>'+foot();
+    document.querySelectorAll('#hudB .tab[data-i]').forEach(b=>b.addEventListener('click',()=>{ sel=+b.dataset.i; drawB(); document.getElementById('tab'+sel).focus(); })); }
+  function drawC(){ const lanes=S.slice(0,n).map((s,i)=>'<div class="lane '+(s.s==='wait'?'wait':s.s==='full'?'full':'')+'" title="Slice '+(i+1)+': '+NAME[s.t]+', '+(s.s==='press'?left(s)+' left':s.s==='wait'?'needs a blank':'tray full')+'"><span>'+(i+1)+'</span>'+blankSlot(s)+'<span class="beltv"><i style="height:'+pct(s)+'%"></i>'+(s.s==='press'?'<img alt="" src="'+TEX[TIER[s.t]+(s.p>.5?'_shatter_coin':'_coin_blank')]+'" style="top:'+(s.p*56)+'px">':'')+'</span>'+traySlot(s)+pips(s)+'<small>'+(s.s==='press'?pct(s)+'%':s.s==='wait'?'BLANK':'FULL')+'</small></div>').join('');
+    document.getElementById('hudC').innerHTML=head()+'<div><div class="cap" style="width:'+(n*62-6)+'px;margin:0 auto 4px"><span>BACK: blanks in</span><span>hover a lane for time left</span></div><div class="lanes">'+lanes+'</div><div class="cap" style="width:'+(n*62-6)+'px;margin:4px auto 0"><span>FRONT: coin trays</span><span></span></div></div>'+foot(); }
+  function draw(keepB){ drawA(); if(!keepB) drawB(); drawC(); }
+  const inp=document.getElementById('slices'); inp.addEventListener('input',()=>{ n=+inp.value; document.getElementById('slicesOut').textContent=n; draw(); });
+  draw();
+  if(!reduce) setInterval(()=>{ S.forEach((s,i)=>{ if(s.s==='press'){ s.p+=.004+i*.0007; if(s.p>=1){ s.p=0; s.coins=Math.min(64,s.coins+1); s.blanks=Math.max(0,s.blanks-1); } } });
+    const a=document.activeElement, inB=a&&a.closest&&a.closest('#hudB'); draw(inB); }, 400);
+})();
+</script>

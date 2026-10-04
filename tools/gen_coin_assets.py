@@ -204,26 +204,7 @@ def main():
         write_png(ASSETS / f"textures/item/{tier}_coin_blank.png", 16, 16, coin_pixel(pal, True))
         item_model(f"{tier}_shatter_coin")
         item_model(f"{tier}_coin_blank")
-    for mk, pal in MK.items():
-        write_png(ASSETS / f"textures/item/speed_gear_{mk}.png", 16, 16, gear_pixel(pal))
-        item_model(f"speed_gear_{mk}")
-
-    write_png(ASSETS / "textures/block/shatter_coin_factory.png", ATLAS, ATLAS, atlas_pixel())
-    models = ASSETS / "models/block"
-    models.mkdir(parents=True, exist_ok=True)
-    (models / "shatter_coin_factory.json").write_text(json.dumps(block_model(STATIC, True), indent=2))
-    (models / "shatter_coin_factory_head.json").write_text(json.dumps(block_model(HEAD, False), indent=2))
-    # inventory icon shows the head too
-    (ASSETS / "models/item/shatter_coin_factory.json").write_text(json.dumps(block_model(STATIC + HEAD, True), indent=2))
-
-    variants = {}
-    for facing, rot in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
-        v = {"model": "bsp_core:block/shatter_coin_factory"}
-        if rot:
-            v["y"] = rot
-        variants[f"facing={facing}"] = v
-    (ASSETS / "blockstates").mkdir(parents=True, exist_ok=True)
-    (ASSETS / "blockstates/shatter_coin_factory.json").write_text(json.dumps({"variants": variants}, indent=2))
+    # Speed Gears and the single-block factory were removed; the multiblock factory's assets come from gen_factory_assets.py
 
     # the single placeholder coin is superseded by the five tiers
     for stale in ("textures/item/shatter_coin.png", "models/item/shatter_coin.json"):

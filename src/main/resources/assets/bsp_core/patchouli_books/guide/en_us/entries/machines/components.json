@@ -1,0 +1,27 @@
+{
+  "name": "Machine Parts",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:machine_chassis",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Every machine block is built from the same few parts. Make these first:$(br2)$(li)$(item)Slag Brick$(): smelt Tetrium Slag.$(li)$(item)Tetrium Plate$(): put a Tetrium Ingot in the Combination Forge.$(li)$(item)Machine Chassis$(), $(item)Tetrium Coil$(), $(item)Drive Motor$() and the $(item)Basic Control Circuit$(): see the next pages."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:machine_chassis",
+      "recipe2": "bsp_core:tetrium_coil"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:drive_motor",
+      "recipe2": "bsp_core:circuit_substrate"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:basic_control_circuit",
+      "text": "Each controller needs this circuit upgraded for its job: Crucible, Refinery or Mint."
+    }
+  ]
+}

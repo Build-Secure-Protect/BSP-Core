@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NRN",
+    "RKR",
+    "NRN"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:illyrium_nugget"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    }
+  },
+  "result": {
+    "item": "bsp_core:illyrium_processor"
+  }
+}

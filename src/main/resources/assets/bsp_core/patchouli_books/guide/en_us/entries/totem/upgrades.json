@@ -1,0 +1,27 @@
+{
+  "name": "The Upgrade Tree",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:experience_bottle",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Right-click with the totem in your hand, or right-click your placed totem, to open its upgrade tree. Upgrades belong to the totem, so they move with it if it is stolen.$(br2)The tree has three branches. Click any upgrade to see what it does and what the next level costs."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Work while the totem is in your $(l)offhand$(). Paid in experience levels.$(br2)$(li)Damage, Resistance, Mining Speed$(li)Swiftness: move faster$(li)Vitality: extra hearts$(li)Featherfall: less fall damage$(li)Night Sight: see in the dark",
+      "title": "Carried"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Healing Aura: heals you nearby$(li)Ward: weakens intruders$(li)Alarm: outlines intruders and warns you$(li)Sanctuary: no hostile spawns$(li)Deadlock: your totem takes longer to steal$(li)Overclock: machines nearby work faster",
+      "title": "Base"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.$(br2)$(li)Lockpick: your steals take less time$(li)Shroud: the owner is warned late$(br2)No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.",
+      "title": "Raid"
+    }
+  ]
+}

@@ -199,6 +199,11 @@ public abstract class MachineBlockEntity extends BlockEntity {
         return progress > 0;
     }
 
+    /** True while fuel is burning. Synced to the client with the rest of the machine's state. */
+    public boolean isBurning() {
+        return burnTime > 0;
+    }
+
     public float progressFraction() {
         return Math.min(1f, progress / (float) Math.max(1, workTime()));
     }
@@ -258,8 +263,17 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     // ------------------------------------------------------------------ ticking
 
+    /** True while a redstone signal is holding the machine paused. Server side. */
+    private boolean powered;
+    /** Speed multiplier from a nearby totem's Overclock aura, refreshed every few seconds. Server side. */
+    private double overclock = 1.0;
+
     public void serverTick(ServerLevel level) {
-        boolean work = enabled && canWork();
+        powered = level.hasNeighborSignal(worldPosition); // a redstone signal pauses the machine
+        if (level.getGameTime() % 100 == 0) {
+            overclock = com.mrgregles.bsp_core.totem.TotemAuras.overclock(level, worldPosition);
+        }
+        boolean work = enabled && !powered && canWork();
         if (work && usesFuel() && burnTime <= 0) {
             work = tryIgnite();
         }
@@ -267,11 +281,9 @@ public abstract class MachineBlockEntity extends BlockEntity {
             burnTime--;
         }
         if (work) {
+            speedCarry += speed() * overclock;
             if (rfActive()) {
-                speedCarry += speed();
                 energy.use(BSPConfig.RF_PER_TICK.get());
-            } else {
-                speedCarry += speed();
             }
             int step = (int) speedCarry;
             speedCarry -= step;
@@ -330,7 +342,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
                 case 12 -> fluidCapacity() & 0xFFFF;
                 case 13 -> (fluidCapacity() >>> 16) & 0xFFFF;
                 case 14 -> isFormed() ? 1 : 0;
-                case 16 -> enabled ? 1 : 0;
+                case 16 -> !enabled ? 0 : powered ? 2 : 1; // 2 = switched on but paused by redstone
                 case 15 -> hasRfUpgrade() ? (int) (1000L * energy.getEnergyStored() / Math.max(1, energy.getMaxEnergyStored())) : -1;
                 default -> 0;
             };

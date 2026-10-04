@@ -1,112 +1,199 @@
 package com.mrgregles.bsp_core.coin;
 
-import com.mrgregles.bsp_core.registry.ModBlocks;
+import com.mrgregles.bsp_core.data.FactoryLedger;
 import com.mrgregles.bsp_core.registry.ModMenus;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
+/**
+ * Menu of a whole joined factory: one lane per slice, laid out left to right in the order the
+ * slices stand when seen from the front. Each lane has a blank slot and a coin tray; energy, the
+ * power switch and the owner line are shared.
+ */
 public class CoinFactoryMenu extends AbstractContainerMenu {
-    public static final int INPUT_X = 44, OUTPUT_X = 116, IO_Y = 36, UPGRADE_X = 53, UPGRADE_Y = 62, INV_Y = 118;
+    public static final int WIDTH = 326, LANE_W = 30, BLANK_Y = 31, TRAY_Y = 75, INV_X = 82, INV_Y = 144, BTN_POWER = 0;
+    /** Per slice: tier + 1, progress in thousandths, seconds left (two shorts), Motivators, state. */
+    private static final int PER = 6, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
 
     @Nullable
-    private final CoinFactoryBlockEntity factory;
+    private final CoinFactoryBlockEntity origin;
     private final ContainerData data;
-    private final ContainerLevelAccess access;
+    private final int sliceCount;
 
-    /** Client side: the block entity comes from the client world; values arrive through the data slots. */
-    public CoinFactoryMenu(int id, Inventory inv, BlockPos pos) {
-        this(id, inv, inv.player.level().getBlockEntity(pos) instanceof CoinFactoryBlockEntity f ? f : null,
-                new SimpleContainerData(CoinFactoryBlockEntity.DATA_COUNT), pos);
+    /** Client side: slot contents and values arrive from the server. */
+    public CoinFactoryMenu(int id, Inventory inv, BlockPos pos, int slices) {
+        this(id, inv, inv.player.level().getBlockEntity(pos) instanceof CoinFactoryBlockEntity f ? f : null, null,
+                Math.max(1, Math.min(CoinFactoryBlockEntity.MAX_SLICES, slices)), new SimpleContainerData(DATA_COUNT));
     }
 
-    public CoinFactoryMenu(int id, Inventory inv, CoinFactoryBlockEntity factory, ContainerData data) {
-        this(id, inv, factory, data, factory.getBlockPos());
+    public CoinFactoryMenu(int id, Inventory inv, CoinFactoryBlockEntity origin, List<CoinFactoryBlockEntity> slices) {
+        this(id, inv, origin, slices, slices.size(), serverData(origin, slices));
     }
 
-    private CoinFactoryMenu(int id, Inventory inv, @Nullable CoinFactoryBlockEntity factory, ContainerData data, BlockPos pos) {
+    private CoinFactoryMenu(int id, Inventory inv, @Nullable CoinFactoryBlockEntity origin, @Nullable List<CoinFactoryBlockEntity> slices, int count, ContainerData data) {
         super(ModMenus.COIN_FACTORY.get(), id);
-        this.factory = factory;
+        this.origin = origin;
         this.data = data;
-        this.access = ContainerLevelAccess.create(inv.player.level(), pos);
-        if (factory != null) {
-            addSlot(new SlotItemHandler(factory.getItems(), CoinFactoryBlockEntity.SLOT_INPUT, INPUT_X, IO_Y));
-            addSlot(new SlotItemHandler(factory.getItems(), CoinFactoryBlockEntity.SLOT_OUTPUT, OUTPUT_X, IO_Y) {
+        this.sliceCount = count;
+        for (int i = 0; i < count; i++) {
+            // screen left = the slice on the viewer's left, which is the far end of the row order
+            ItemStackHandler handler = slices == null ? new ItemStackHandler(CoinFactoryBlockEntity.SLOTS) : slices.get(count - 1 - i).getItems();
+            addSlot(new SlotItemHandler(handler, CoinFactoryBlockEntity.SLOT_INPUT, laneX(i, count), BLANK_Y) {
+                @Override
+                public boolean mayPlace(ItemStack stack) {
+                    return stack.getItem() instanceof CoinBlankItem;
+                }
+            });
+            addSlot(new SlotItemHandler(handler, CoinFactoryBlockEntity.SLOT_OUTPUT, laneX(i, count), TRAY_Y) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
                     return false;
                 }
             });
-            for (int i = 0; i < CoinFactoryBlockEntity.UPGRADE_SLOTS; i++) {
-                addSlot(new SlotItemHandler(factory.getItems(), CoinFactoryBlockEntity.SLOT_UPGRADE_START + i, UPGRADE_X + i * 18, UPGRADE_Y));
-            }
         }
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, INV_Y + row * 18));
+                addSlot(new Slot(inv, col + row * 9 + 9, INV_X + col * 18, INV_Y + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(inv, col, 8 + col * 18, INV_Y + 58));
+            addSlot(new Slot(inv, col, INV_X + col * 18, INV_Y + 58));
         }
         addDataSlots(data);
     }
 
+    /** Left edge of the slots in lane {@code i} of {@code n}, lanes centred on the screen. */
+    public static int laneX(int i, int n) {
+        return (WIDTH - n * LANE_W) / 2 + i * LANE_W + 7;
+    }
+
+    private static ContainerData serverData(CoinFactoryBlockEntity origin, List<CoinFactoryBlockEntity> slices) {
+        int n = slices.size();
+        return new ContainerData() {
+            @Override
+            public int get(int i) {
+                if (i < SHARED) {
+                    int lane = i / PER;
+                    if (lane >= n) {
+                        return 0;
+                    }
+                    CoinFactoryBlockEntity s = slices.get(n - 1 - lane);
+                    long rem = s.remainingSeconds();
+                    return switch (i % PER) {
+                        case 0 -> s.getJobTier() == null ? 0 : s.getJobTier().ordinal() + 1;
+                        case 1 -> Math.round(s.progressFraction() * 1000);
+                        case 2 -> (int) (rem & 0xFFFF);
+                        case 3 -> (int) ((rem >>> 16) & 0xFFFF);
+                        case 4 -> s.motivators();
+                        default -> s.stateCode();
+                    };
+                }
+                int stored = origin.poolStored(), cap = origin.poolCapacity(), intake = 0, cables = 0;
+                for (CoinFactoryBlockEntity s : slices) {
+                    intake += s.intakeRate();
+                    cables += s.intakeRate() > 0 ? 1 : 0;
+                }
+                return switch (i - SHARED) {
+                    case 0 -> stored & 0xFFFF;
+                    case 1 -> (stored >>> 16) & 0xFFFF;
+                    case 2 -> cap & 0xFFFF;
+                    case 3 -> (cap >>> 16) & 0xFFFF;
+                    case 4 -> origin.isEnabled() ? 1 : 0;
+                    case 5 -> intake & 0xFFFF;
+                    case 6 -> (intake >>> 16) & 0xFFFF;
+                    case 7 -> cables;
+                    default -> origin.getLevel() instanceof ServerLevel sl && origin.getOwner() != null ? FactoryLedger.get(sl.getServer()).count(origin.getOwner()) : 0;
+                };
+            }
+
+            @Override
+            public void set(int i, int value) {}
+
+            @Override
+            public int getCount() {
+                return DATA_COUNT;
+            }
+        };
+    }
+
     // --- synced values ---
 
-    public int energy() {
-        return (data.get(0) & 0xFFFF) | ((data.get(1) & 0xFFFF) << 16);
-    }
-
-    public int energyCapacity() {
-        return Math.max(1, (data.get(2) & 0xFFFF) | ((data.get(3) & 0xFFFF) << 16));
-    }
-
-    public float progress() {
-        return data.get(4) / 1000f;
-    }
-
-    public long remainingSeconds() {
-        return (data.get(5) & 0xFFFFL) | ((data.get(6) & 0xFFFFL) << 16);
+    public int sliceCount() {
+        return sliceCount;
     }
 
     @Nullable
-    public CoinTier jobTier() {
-        return CoinTier.byOrdinal(data.get(7) - 1);
+    public CoinTier jobTier(int lane) {
+        return CoinTier.byOrdinal(data.get(lane * PER) - 1);
     }
 
-    public CoinFactoryBlockEntity.SideMode side(Direction d) {
-        return CoinFactoryBlockEntity.SideMode.values()[Math.floorMod(data.get(8 + d.get3DDataValue()), 4)];
+    public float progress(int lane) {
+        return data.get(lane * PER + 1) / 1000f;
     }
 
-    public float reduction() {
-        return data.get(14) / 1000f;
+    public long remainingSeconds(int lane) {
+        return (data.get(lane * PER + 2) & 0xFFFFL) | ((data.get(lane * PER + 3) & 0xFFFFL) << 16);
+    }
+
+    public int motivators(int lane) {
+        return data.get(lane * PER + 4);
+    }
+
+    public int state(int lane) {
+        return data.get(lane * PER + 5);
+    }
+
+    private int wide(int lo) {
+        return (data.get(SHARED + lo) & 0xFFFF) | ((data.get(SHARED + lo + 1) & 0xFFFF) << 16);
+    }
+
+    public int energy() {
+        return wide(0);
+    }
+
+    public int energyCapacity() {
+        return Math.max(1, wide(2));
+    }
+
+    public boolean enabled() {
+        return data.get(SHARED + 4) != 0;
+    }
+
+    /** RF per tick coming in over the last second, and how many Power Ports it came through. */
+    public int intake() {
+        return wide(5);
+    }
+
+    public int cables() {
+        return data.get(SHARED + 7);
     }
 
     public int ownedCount() {
-        return data.get(15);
+        return data.get(SHARED + 8);
     }
 
     @Nullable
     public CoinFactoryBlockEntity getFactory() {
-        return factory;
+        return origin;
     }
 
-    /** Buttons 0-5 cycle the mode of the face with that 3D data value. Runs on the server. */
+    /** Runs on the server. */
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        if (factory != null && id >= 0 && id < 6) {
-            factory.cycleSide(Direction.from3DDataValue(id));
+        if (origin != null && id == BTN_POWER) {
+            origin.toggleEnabled();
             return true;
         }
         return false;
@@ -120,18 +207,16 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
         }
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
-        int machineSlots = factory == null ? 0 : CoinFactoryBlockEntity.SLOTS;
-        int end = slots.size();
+        int machineSlots = sliceCount * 2;
         if (index < machineSlots) {
-            if (!moveItemStackTo(stack, machineSlots, end, true)) {
+            if (!moveItemStackTo(stack, machineSlots, slots.size(), true)) {
                 return ItemStack.EMPTY;
             }
         } else if (stack.getItem() instanceof CoinBlankItem) {
-            if (!moveItemStackTo(stack, 0, 1, false)) {
-                return ItemStack.EMPTY;
+            for (int lane = 0; lane < sliceCount && !stack.isEmpty(); lane++) {
+                moveItemStackTo(stack, lane * 2, lane * 2 + 1, false);
             }
-        } else if (stack.getItem() instanceof SpeedGearItem) {
-            if (!moveItemStackTo(stack, 2, machineSlots, false)) {
+            if (stack.getCount() == original.getCount()) {
                 return ItemStack.EMPTY;
             }
         } else {
@@ -147,6 +232,12 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(access, player, ModBlocks.COIN_FACTORY.get());
+        if (origin == null || origin.isRemoved()) {
+            return false;
+        }
+        if (!player.level().isClientSide && origin.group().size() != sliceCount) {
+            return false; // a slice was added or removed: reopen to get the new layout
+        }
+        return player.distanceToSqr(origin.getBlockPos().getCenter()) <= 144.0;
     }
 }

@@ -74,6 +74,10 @@ minecraft {
             // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
             property 'forge.logging.console.level', 'debug'
 
+            // Mods that use mixins (Patchouli, JEI) ship obfuscated names; in a dev run their reference maps must be remapped.
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
             mods {
                 "${mod_id}" {
                     source sourceSets.main
@@ -114,6 +118,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     // Mekanism's own Maven: used only so the dev client has an RF source to test the machines with
     maven { url = 'https://modmaven.dev/' }
+    maven { url = 'https://maven.blamejared.com/' }
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
@@ -134,6 +139,14 @@ dependencies {
 
     // Dev-only: loads Mekanism in runClient / runServer for testing RF, pipes and crushers.
     runtimeOnly fg.deobf("mekanism:Mekanism:1.20.1-10.4.16.80")
+
+    // JEI: the API is compile-only, so BSP-Core runs without JEI; the full mod is loaded in dev runs only.
+    compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.20.0.112")
+    compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.20.0.112")
+    runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
+
+    // Patchouli: the guide book is data only, so there is no compile dependency; loaded in dev runs to read the book.
+    runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-84.1-FORGE")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

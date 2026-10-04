@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": {
+    "item": "bsp_core:tetrium_slag"
+  },
+  "result": "bsp_core:slag_brick",
+  "experience": 0.1,
+  "cookingtime": 200
+}

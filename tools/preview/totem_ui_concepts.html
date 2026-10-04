@@ -1,0 +1,140 @@
+<title>Totem Upgrade System Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. The proposed upgrade catalogue first (three branches),
+   then three stacked cards, each a working mock of one way to present the whole system in game.
+   The mocks keep the game's Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --new:#b58cff;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-out:#ff8a3a; --h-gold:#ffd23a; --h-xp:#8fe04a; --h-bad:#ff6b5c; --h-in:#3a8bff;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --new:#6b45c4; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --new:#6b45c4; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; }
+.wrap{ max-width:940px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:20px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:74ch; line-height:1.5; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; max-width:76ch; }
+.cat{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+.cat h3{ margin:0 0 6px; font:600 12px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--tq); }
+.cat ul{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.4; }
+.cat small{ display:block; color:var(--muted); }
+.nw{ font:600 10px var(--body); letter-spacing:.06em; color:var(--on); background:var(--new); padding:0 5px; border-radius:3px; vertical-align:1px; }
+.scroll{ overflow-x:auto; }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+/* ---- the in-game screen ---- */
+.hud{ width:652px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; gap:12px; color:var(--h-tq); font-size:12px; }
+.wallet{ display:flex; gap:14px; } .xp{ color:var(--h-xp); } .coin{ color:var(--h-gold); }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 9px; cursor:pointer; }
+.hb[aria-pressed="true"]{ border-color:var(--h-tq); color:var(--h-tq); } .hb:disabled{ opacity:.4; cursor:default; }
+.buy{ border-color:var(--h-tq); color:var(--h-tq); }
+.ic{ width:28px; height:28px; flex:none; display:grid; place-items:center; background:var(--h-slot); border:2px solid var(--c); color:var(--c); font-size:10px; }
+.pips{ display:flex; gap:2px; } .pips i{ width:8px; height:8px; background:var(--h-dim); } .pips i.on{ background:var(--c,var(--h-tq)); }
+.tag{ color:var(--h-vio); }
+/* A: constellation */
+.sky{ position:relative; width:380px; height:330px; flex:none; background:radial-gradient(circle at 50% 50%,#1b2330 0%,#0c0e12 75%); }
+.sky svg{ position:absolute; inset:0; }
+.node{ position:absolute; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:50%; font:inherit; font-size:9px; cursor:pointer; background:var(--h-slot); border:2px solid var(--h-dim); color:var(--h-muted); display:grid; place-items:center; padding:0; }
+.node.has{ border-color:var(--c); color:var(--c); } .node.max{ background:var(--c); color:#0b0d11; } .node[aria-pressed="true"]{ box-shadow:0 0 0 2px var(--h-bg),0 0 0 4px #fff; }
+.core{ position:absolute; left:190px; top:165px; width:44px; height:44px; margin:-22px 0 0 -22px; background:var(--h-tq); color:#0b0d11; display:grid; place-items:center; transform:rotate(45deg); } .core span{ transform:rotate(-45deg); }
+.bl{ position:absolute; color:var(--h-muted); font-size:10px; }
+.two{ display:flex; gap:12px; } .detail{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+/* B: console */
+.tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+.rows{ display:flex; flex-direction:column; gap:6px; }
+.rw{ display:grid; grid-template-columns:28px 150px 72px 1fr auto; gap:10px; align-items:center; background:var(--h-slot); padding:5px 8px; }
+.over{ display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-bad); }
+/* C: loadout */
+.cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; flex:1; align-content:start; }
+.cd{ font:inherit; text-align:left; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:4px; min-height:62px; }
+.cd.lock{ opacity:.45; } .cd.slotted{ border-color:var(--c); } .cd[aria-pressed="true"]{ box-shadow:0 0 0 2px #fff; }
+.load{ width:200px; flex:none; display:flex; flex-direction:column; gap:8px; }
+.sock{ display:flex; gap:6px; flex-wrap:wrap; } .sk{ width:34px; height:34px; display:grid; place-items:center; border:2px dashed var(--c); color:var(--c); font-size:10px; } .sk.full{ border-style:solid; background:var(--h-slot); }
+</style>
+<div class="wrap">
+<h1>Totem Upgrade System Concepts</h1>
+<p class="lede">Two things to decide here. First, which new power-ups the Shatter Totem should get. Second, how one screen should present all of them. The three mock-ups below are working: click upgrades and buy levels with the sample XP and coins. The numbers are placeholders.</p>
+
+<section class="card"><h2>Proposed upgrade catalogue</h2>
+<p>Sixteen upgrades in three branches. Five exist today; eleven are new ideas marked <span class="nw">NEW</span>. Carried upgrades work while you hold the totem and cost XP. Base upgrades only work while the totem is placed and cost Shatter Coins. Raid upgrades help you take other totems.</p>
+<div class="cat" id="cat"></div></section>
+
+<section class="card"><h2>A. Constellation</h2><p>A skill tree. The totem sits in the centre and each branch fans out from it; a node fills in as you level it. Click a node to see what it does and buy the next level. Feels the most like a game progression screen, and shows the whole system at a glance, but node labels are short and it needs the side panel for detail.</p>
+<div class="scroll"><div class="hud" id="hudA"></div></div></section>
+<section class="card"><h2>B. Console</h2><p>The Holo HUD of the machines, with tabs: Overview, Carried, Base, Raid. Each upgrade is a row with its level, what it gives now and next, and a buy button. The plainest and the easiest to extend: a new upgrade is one more row, a new branch is one more tab.</p>
+<div class="scroll"><div class="hud" id="hudB"></div></div></section>
+<section class="card"><h2>C. Loadout</h2><p>Adds a choice. You still buy levels, but the totem only has a few sockets (three carried, three base, one raid), so you pick which upgrades are active. Click a card to select it, then slot or unslot it. This makes builds and counters part of PvP, at the cost of being a new rule to learn and balance.</p>
+<div class="scroll"><div class="hud" id="hudC"></div></div></section>
+</div>
+<script>
+(function(){
+  // b: branch, n: name, a: 2-letter icon, t: effect text, v: value per level, c: cost per level, l: sample level, nw: new idea
+  const UP=[
+    {id:'damage',b:'carried',n:'Damage',a:'DM',t:'+{v}% melee damage',v:[5,10,15,20,25],c:[5,10,15,20,30],l:2},
+    {id:'resist',b:'carried',n:'Resistance',a:'RS',t:'-{v}% damage taken',v:[4,8,12,16,20],c:[5,10,15,20,30],l:1},
+    {id:'mining',b:'carried',n:'Mining Speed',a:'MN',t:'+{v}% mining speed',v:[10,20,30,40,50],c:[5,10,15,20,30],l:3},
+    {id:'swift',b:'carried',n:'Swiftness',a:'SW',t:'+{v}% movement speed',v:[5,10,15],c:[8,16,24],l:0,nw:1},
+    {id:'vital',b:'carried',n:'Vitality',a:'VT',t:'+{v} extra hearts',v:[1,2,3,4],c:[10,20,30,40],l:0,nw:1},
+    {id:'feather',b:'carried',n:'Featherfall',a:'FF',t:'-{v}% fall damage',v:[25,50,75,100],c:[6,12,18,24],l:0,nw:1},
+    {id:'night',b:'carried',n:'Night Sight',a:'NS',t:'Night vision while held',v:[''],c:[12],l:0,nw:1},
+    {id:'fortify',b:'base',n:'Fortify',a:'FO',t:'{v}% of blocks survive explosions',v:[30,50,70,85,100],c:[4,8,16,32,64],l:2},
+    {id:'healing',b:'base',n:'Healing Aura',a:'HL',t:'Heals {v} health a second nearby',v:[0.5,1,1.5,2,3],c:[4,8,16,32,64],l:1},
+    {id:'ward',b:'base',n:'Ward',a:'WD',t:'Intruders mine {v}% slower nearby',v:[30,60,90],c:[16,32,64],l:0,nw:1},
+    {id:'alarm',b:'base',n:'Alarm',a:'AL',t:'Warns you and outlines intruders within {v} blocks',v:[8,16,24],c:[8,16,32],l:0,nw:1},
+    {id:'sanct',b:'base',n:'Sanctuary',a:'SC',t:'No hostile mobs spawn within {v} blocks',v:[8,16,32],c:[8,16,32],l:0,nw:1},
+    {id:'dead',b:'base',n:'Deadlock',a:'DL',t:'Stealing this totem takes {v}s longer',v:[30,60,120],c:[16,48,128],l:0,nw:1},
+    {id:'over',b:'base',n:'Overclock',a:'OC',t:'Your machines nearby work {v}% faster',v:[5,10,15],c:[32,64,128],l:0,nw:1},
+    {id:'pick',b:'raid',n:'Lockpick',a:'LP',t:'Your steals finish {v}s sooner',v:[15,30,60],c:[16,48,128],l:0,nw:1},
+    {id:'shroud',b:'raid',n:'Shroud',a:'SH',t:'The owner is warned {v}s late',v:[5,10,20],c:[16,32,64],l:0,nw:1},
+  ];
+  const BR={carried:{n:'Carried',cur:'xp',col:'var(--h-xp)',note:'Active while you hold the totem. Paid in XP levels.',slots:3},
+            base:{n:'Base',cur:'coin',col:'var(--h-gold)',note:'Active only while the totem is placed. Paid in Shatter Coin value.',slots:3},
+            raid:{n:'Raid',cur:'coin',col:'var(--h-bad)',note:'Help you take other players\' totems. Paid in Shatter Coin value.',slots:1}};
+  const S={xp:42,coin:186,selA:'damage',tab:'carried',selC:'fortify',slotted:{damage:1,mining:1,fortify:1,healing:1}};
+  const eff=(u,l)=>l<1?'Not bought':u.t.replace('{v}',u.v[l-1]);
+  const cost=u=>u.l>=u.v.length?null:u.c[u.l];
+  const money=u=>BR[u.b].cur==='xp'?'<span class="xp">'+cost(u)+' XP</span>':'<span class="coin">'+cost(u)+' coin</span>';
+  const can=u=>cost(u)!==null&&S[BR[u.b].cur]>=cost(u);
+  const pips=u=>'<span class="pips" style="--c:'+BR[u.b].col+'">'+u.v.map((_,i)=>'<i class="'+(i<u.l?'on':'')+'"></i>').join('')+'</span>';
+  const nw=u=>u.nw?' <span class="tag">new</span>':'';
+  const head=t=>'<div class="top"><span>'+t+'</span><span class="wallet"><span class="xp">XP '+S.xp+'</span><span class="coin">COINS '+S.coin+'</span></span></div>';
+  const buyBtn=(u,id)=>cost(u)===null?'<button type="button" class="hb" disabled>MAX</button>':'<button type="button" class="hb buy" id="'+id+'" data-buy="'+u.id+'"'+(can(u)?'':' disabled')+'>Buy '+money(u)+'</button>';
+  const detail=(u,pre)=>'<div><span style="color:'+BR[u.b].col+'">'+u.n+'</span>'+nw(u)+' <small>'+BR[u.b].n+' upgrade</small></div>'+pips(u)+'<div><small>Now</small><br>'+eff(u,u.l)+'</div>'+(cost(u)===null?'':'<div><small>Next</small><br>'+eff(u,u.l+1)+'</div>')+'<div>'+buyBtn(u,pre+'buy')+'</div>';
+
+  // catalogue
+  document.getElementById('cat').innerHTML=Object.keys(BR).map(b=>'<div><h3>'+BR[b].n+'</h3><ul>'+UP.filter(u=>u.b===b).map(u=>'<li><b>'+u.n+'</b>'+(u.nw?' <span class="nw">NEW</span>':'')+'<small>'+u.t.replace('{v}',u.v[0]+(u.v.length>1?' to '+u.v[u.v.length-1]:''))+'</small></li>').join('')+'</ul></div>').join('');
+
+  function drawA(){ const cx=190, cy=165, centre={carried:-90,base:30,raid:178}; let nodes='', lines='';
+    Object.keys(BR).forEach(b=>{ const list=UP.filter(u=>u.b===b), spread=b==='raid'?50:150;
+      const lx=cx+Math.cos(centre[b]*Math.PI/180)*150, ly=cy+Math.sin(centre[b]*Math.PI/180)*150;
+      nodes+='<span class="bl" style="left:'+Math.max(4,Math.min(310,lx-28))+'px;top:'+Math.max(4,Math.min(312,ly-6))+'px;color:'+BR[b].col+'">'+BR[b].n.toUpperCase()+'</span>';
+      list.forEach((u,i)=>{ const ang=(centre[b]+(list.length>1?(i/(list.length-1)-.5)*spread:0))*Math.PI/180, r=i%2?118:78, x=cx+Math.cos(ang)*r, y=cy+Math.sin(ang)*r;
+        lines+='<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" stroke="'+(u.l?'#19d3b0':'#2a2f3a')+'" stroke-width="2"/>';
+        nodes+='<button type="button" class="node '+(u.l?'has ':'')+(cost(u)===null?'max':'')+'" id="a-'+u.id+'" data-a="'+u.id+'" aria-pressed="'+(S.selA===u.id)+'" aria-label="'+u.n+'" style="left:'+x+'px;top:'+y+'px;--c:'+BR[b].col+'">'+u.a+'</button>'; }); });
+    const u=UP.find(x=>x.id===S.selA);
+    document.getElementById('hudA').innerHTML=head('SHATTER TOTEM')+'<div class="two"><div class="sky"><svg width="380" height="330" fill="none">'+lines+'</svg>'+nodes+'<span class="core"><span>T</span></span></div><div class="detail">'+detail(u,'a')+'<small>Owner: Mrgregles<br>Placed. Not under attack.</small></div></div>'; }
+  function drawB(){ const tabs=[['overview','Overview'],['carried','Carried'],['base','Base'],['raid','Raid']];
+    let body='';
+    if(S.tab==='overview'){ const own=b=>UP.filter(u=>u.b===b&&u.l).length+' / '+UP.filter(u=>u.b===b).length;
+      body='<div class="over"><div><small>OWNER</small><br>Mrgregles</div><div><small>STATE</small><br>Placed at 124, 68, -310</div><div><small>STEAL STATUS</small><br><span style="color:var(--h-tq)">Safe</span></div><div><small>STEAL TIME</small><br>5:00</div>'
+        +'<div><small>CARRIED UPGRADES</small><br>'+own('carried')+'</div><div><small>BASE UPGRADES</small><br>'+own('base')+'</div><div><small>RAID UPGRADES</small><br>'+own('raid')+'</div><div><button type="button" class="hb" disabled>Pick up totem</button></div></div>'; }
+    else body='<small>'+BR[S.tab].note+'</small><div class="rows">'+UP.filter(u=>u.b===S.tab).map(u=>'<div class="rw"><span class="ic" style="--c:'+BR[u.b].col+'">'+u.a+'</span><span>'+u.n+nw(u)+'</span>'+pips(u)+'<small>'+eff(u,u.l)+(cost(u)===null?'':'<br>Next: '+eff(u,u.l+1))+'</small>'+buyBtn(u,'b-'+u.id)+'</div>').join('')+'</div>';
+    document.getElementById('hudB').innerHTML=head('SHATTER TOTEM')+'<div class="tabs">'+tabs.map(t=>'<button type="button" class="hb" id="tab-'+t[0]+'" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>').join('')+'</div>'+body; }
+  function drawC(){ const u=UP.find(x=>x.id===S.selC), used=b=>UP.filter(x=>x.b===b&&S.slotted[x.id]).length;
+    const cards=UP.map(x=>'<button type="button" class="cd '+(x.l?'':'lock ')+(S.slotted[x.id]?'slotted':'')+'" id="c-'+x.id+'" data-c="'+x.id+'" aria-pressed="'+(S.selC===x.id)+'" style="--c:'+BR[x.b].col+'"><span style="color:'+BR[x.b].col+'">'+x.a+'</span><span>'+x.n+'</span>'+pips(x)+'</button>').join('');
+    const socks=Object.keys(BR).map(b=>{ const inb=UP.filter(x=>x.b===b&&S.slotted[x.id]); return '<div><small>'+BR[b].n.toUpperCase()+' '+inb.length+' / '+BR[b].slots+'</small><div class="sock" style="--c:'+BR[b].col+'">'+Array.from({length:BR[b].slots},(_,i)=>'<span class="sk '+(inb[i]?'full':'')+'">'+(inb[i]?inb[i].a:'')+'</span>').join('')+'</div></div>'; }).join('');
+    const slotBtn=!u.l?'<small>Buy a level to unlock</small>':S.slotted[u.id]?'<button type="button" class="hb" id="c-slot" data-slot="'+u.id+'">Unslot</button>':'<button type="button" class="hb" id="c-slot" data-slot="'+u.id+'"'+(used(u.b)>=BR[u.b].slots?' disabled':'')+'>Slot it</button>';
+    document.getElementById('hudC').innerHTML=head('SHATTER TOTEM LOADOUT')+'<div class="two"><div class="cards">'+cards+'</div><div class="load">'+socks+'<div class="detail" style="border-top:2px solid var(--h-dim);padding-top:8px">'+detail(u,'c')+slotBtn+'</div></div></div>'; }
+  function draw(){ drawA(); drawB(); drawC(); }
+  document.addEventListener('click',e=>{ const t=e.target.closest('button'); if(!t) return; let focus=t.id;
+    if(t.dataset.buy){ const u=UP.find(x=>x.id===t.dataset.buy); if(can(u)){ S[BR[u.b].cur]-=cost(u); u.l++; } }
+    else if(t.dataset.a) S.selA=t.dataset.a; else if(t.dataset.tab) S.tab=t.dataset.tab; else if(t.dataset.c) S.selC=t.dataset.c;
+    else if(t.dataset.slot){ S.slotted[t.dataset.slot]=!S.slotted[t.dataset.slot]; } else return;
+    draw(); const el=focus&&document.getElementById(focus); if(el) el.focus(); });
+  draw();
+})();
+</script>

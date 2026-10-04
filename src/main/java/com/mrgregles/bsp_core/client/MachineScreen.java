@@ -213,9 +213,9 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         MachineBlockEntity machine = menu.getMachine();
-        boolean working = menu.working() && menu.enabled() && menu.formed();
+        boolean working = menu.working() && menu.enabled() && menu.formed() && !menu.redstonePaused();
         g.drawString(font, title.getString().toUpperCase(Locale.ROOT), 10, 8, TQ & 0xFFFFFF, false);
-        String state = !menu.enabled() ? "off" : !menu.formed() ? "unformed" : working ? "working" : needs().isEmpty() ? "ready" : "blocked";
+        String state = !menu.enabled() ? "off" : menu.redstonePaused() ? "redstone" : !menu.formed() ? "unformed" : working ? "working" : needs().isEmpty() ? "ready" : "blocked";
         Component st = Component.translatable("gui.bsp_core.hud." + state);
         g.drawString(font, st, imageWidth - 10 - font.width(st), 8, state.equals("working") || state.equals("ready") ? TQ & 0xFFFFFF : 0xFF6B5C, false);
 

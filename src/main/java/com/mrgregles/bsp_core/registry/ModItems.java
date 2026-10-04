@@ -5,7 +5,6 @@ import com.mrgregles.bsp_core.coin.CoinBlankItem;
 import com.mrgregles.bsp_core.coin.CoinFactoryBlockItem;
 import com.mrgregles.bsp_core.coin.CoinTier;
 import com.mrgregles.bsp_core.coin.ShatterCoinItem;
-import com.mrgregles.bsp_core.coin.SpeedGearItem;
 import com.mrgregles.bsp_core.material.FilterItem;
 import com.mrgregles.bsp_core.totem.ShatterTotemItem;
 import net.minecraft.world.item.Item;
@@ -28,17 +27,11 @@ public final class ModItems {
     public static final Map<CoinTier, RegistryObject<ShatterCoinItem>> COINS = new EnumMap<>(CoinTier.class);
     /** bsp_core:<tier>_coin_blank */
     public static final Map<CoinTier, RegistryObject<CoinBlankItem>> BLANKS = new EnumMap<>(CoinTier.class);
-    /** bsp_core:speed_gear_mk1..3, index 0 = Mk I */
-    public static final List<RegistryObject<SpeedGearItem>> SPEED_GEARS = new ArrayList<>();
 
     static {
         for (CoinTier tier : CoinTier.values()) {
             COINS.put(tier, ITEMS.register(tier.key + "_shatter_coin", () -> new ShatterCoinItem(tier)));
             BLANKS.put(tier, ITEMS.register(tier.key + "_coin_blank", () -> new CoinBlankItem(tier)));
-        }
-        for (int mark = 1; mark <= 3; mark++) {
-            final int m = mark;
-            SPEED_GEARS.add(ITEMS.register("speed_gear_mk" + m, () -> new SpeedGearItem(m)));
         }
     }
 
@@ -108,6 +101,29 @@ public final class ModItems {
 
     private static RegistryObject<Item> simple(String name) {
         return ITEMS.register(name, () -> new Item(new Item.Properties()));
+    }
+
+    /** Machine components: crafted parts that the machine blocks are built from. Order = creative tab order. */
+    public static final Map<String, RegistryObject<Item>> COMPONENTS = new java.util.LinkedHashMap<>();
+
+    static {
+        for (String name : List.of("slag_brick", "tetrium_plate", "machine_chassis", "tetrium_coil", "drive_motor", "circuit_substrate", "basic_control_circuit",
+                "crucible_control_circuit", "refinery_control_circuit", "mint_control_circuit", "thermal_lining", "conveyor_belt", "press_die",
+                "resonance_crystal", "illyrium_processor")) {
+            COMPONENTS.put(name, simple(name));
+        }
+    }
+
+    /** Pressed from a Tetrium Ingot in the Combination Forge. */
+    public static final RegistryObject<Item> TETRIUM_PLATE = COMPONENTS.get("tetrium_plate");
+
+    /** The blocks a factory slice is built from, and the Motivator that goes on top. */
+    public static final List<RegistryObject<Item>> FACTORY_ITEMS = new ArrayList<>();
+
+    static {
+        for (var block : List.of(ModBlocks.FACTORY_FRAME, ModBlocks.FACTORY_PRESS, ModBlocks.FACTORY_BLANK_HATCH, ModBlocks.FACTORY_POWER_PORT, ModBlocks.FACTORY_MOTIVATOR)) {
+            FACTORY_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
+        }
     }
 
     public static final RegistryObject<CoinFactoryBlockItem> COIN_FACTORY =

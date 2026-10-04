@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PMP",
+    "BCB",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "M": {
+      "item": "bsp_core:drive_motor"
+    },
+    "B": {
+      "item": "minecraft:bucket"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:refinery_pump"
+  }
+}

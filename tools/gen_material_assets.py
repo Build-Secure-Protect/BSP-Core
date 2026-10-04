@@ -276,39 +276,49 @@ def m_corners(x0, y0, z0, x1, y1, z1, mat):
     return [mbox([x, y0, z], [x + w, y1, z + w], mat) for x, z in ((x0 - e, z0 - e), (x1 - w + e, z0 - e), (x0 - e, z1 - w + e), (x1 - w + e, z1 - w + e))]
 
 
-def tetrium_crucible_elements():
+def tetrium_crucible_elements(full=False):
     e = [mbox([1, 0, 1], [15, 2, 15], "hull"), mbox([0, 2, 0], [16, 8, 16], "hull2")]
     e += m_plates(0, 2, 0, 16, 8, 16, 1.6, "panel") + m_corners(0, 2, 0, 16, 8, 16, "violet")
-    e += [mbox([4.4, 2.6, -0.9], [11.6, 7.4, -0.45], "hull"), mbox([5, 3.2, -1.1], [11, 6.8, -0.8], "orange"),
+    # the burner window, coils, melt and mast tip light up and move, so TetriumCrucibleRenderer draws them
+    e += [mbox([4.4, 2.6, -0.9], [11.6, 7.4, -0.45], "hull"),
           mbox([2, 8, 2], [14, 9.5, 14], "trim"), mbox([3.5, 9.5, 3.5], [12.5, 10.5, 12.5], "mid")]
     e += m_walls(3.5, 10.5, 3.5, 12.5, 17, 12.5, 1.3, "panel") + m_walls(2.8, 17, 2.8, 13.2, 18, 13.2, 1.6, "trim")
-    for y in (10.9, 12.6, 14.3, 16):
-        e += m_walls(2.3, y, 2.3, 13.7, y + 0.8, 13.7, 0.7, "orange")
-    e += [mbox([4.9, 10.6, 4.9], [11.1, 13, 11.1], "violet"),
-          mbox([-3, 3, 5], [0, 4, 11], "mid"), mbox([-3, 4, 5], [-2.4, 5.4, 11], "trim"), mbox([16, 3, 5], [19, 4, 11], "mid"), mbox([18.4, 4, 5], [19, 5.4, 11], "trim"),
-          mbox([12.6, 9.5, 12.6], [14, 23, 14], "trim"), mbox([12.1, 19, 12.1], [14.5, 20, 14.5], "mid"), mbox([12.8, 23, 12.8], [13.8, 24.4, 13.8], "violet")]
+    e += [mbox([-3, 3, 5], [0, 4, 11], "mid"), mbox([-3, 4, 5], [-2.4, 5.4, 11], "trim"), mbox([16, 3, 5], [19, 4, 11], "mid"), mbox([18.4, 4, 5], [19, 5.4, 11], "trim"),
+          mbox([12.6, 9.5, 12.6], [14, 23, 14], "trim"), mbox([12.1, 19, 12.1], [14.5, 20, 14.5], "mid")]
+    if full:  # the inventory icon has no renderer, so it carries the lit parts itself
+        e += [mbox([5, 3.2, -1.1], [11, 6.8, -0.8], "orange"), mbox([4.9, 10.6, 4.9], [11.1, 13, 11.1], "violet"), mbox([12.8, 23, 12.8], [13.8, 24.4, 13.8], "violet")]
+        for y in (10.9, 12.6, 14.3, 16):
+            e += m_walls(2.3, y, 2.3, 13.7, y + 0.8, 13.7, 0.7, "orange")
     return e
 
 
-def combination_forge_elements():
+def combination_forge_elements(full=False):
     e = [mbox([1, 0, 1], [15, 1.5, 15], "hull"), mbox([0, 1.5, 0], [16, 6, 16], "hull2")]
     e += m_plates(0, 1.5, 0, 16, 6, 16, 1.2, "panel") + m_corners(0, 1.5, 0, 16, 6, 16, "violet")
     e += [mbox([1, 6, 1], [15, 7, 15], "panel"), mbox([4.6, 7, 3.2], [11.4, 8.2, 9.8], "mid"), mbox([5.2, 8.2, 3.8], [10.8, 8.5, 9.2], "hull"),
           mbox([1, 7, 10.2], [3.6, 24, 13.8], "hull"), mbox([12.4, 7, 10.2], [15, 24, 13.8], "hull"),
-          mbox([3.6, 8, 11.4], [3.95, 23, 12.6], "violet"), mbox([12.05, 8, 11.4], [12.4, 23, 12.6], "violet"),
-          mbox([1, 22, 10.2], [15, 25, 13.8], "hull2"), mbox([5, 25, 10.8], [11, 26, 13.2], "trim"), mbox([7, 26, 11.4], [9, 27.6, 12.6], "violet"),
-          mbox([4.4, 14.5, 3], [11.6, 17.5, 10], "panel"), mbox([5, 14, 3.6], [11, 14.5, 9.4], "hull"), mbox([3.6, 15.5, 10], [12.4, 16.9, 12.4], "mid"),
+          # the press head, rail lights and crown move or light up, so CombinationForgeRenderer draws them
+          mbox([1, 22, 10.2], [15, 25, 13.8], "hull2"), mbox([5, 25, 10.8], [11, 26, 13.2], "trim"),
           mbox([2.6, 2.2, -0.7], [6.6, 5, -0.4], "hull"), mbox([9.4, 2.2, -0.7], [13.4, 5, -0.4], "hull")]
+    if full:  # the inventory icon has no renderer, so it carries the press head, rail lights and crown itself
+        e += [mbox([3.6, 8, 11.4], [3.95, 23, 12.6], "violet"), mbox([12.05, 8, 11.4], [12.4, 23, 12.6], "violet"), mbox([7, 26, 11.4], [9, 27.6, 12.6], "violet"),
+              mbox([4.4, 14.5, 3], [11.6, 17.5, 10], "panel"), mbox([5, 14, 3.6], [11, 14.5, 9.4], "hull"), mbox([3.6, 15.5, 10], [12.4, 16.9, 12.4], "mid")]
     return e
 
 
-def write_machine(name, elements):
+def write_machine(name, elements, item_elements=None):
     models = ASSETS / "models/block"
     (models / f"{name}.json").write_text(json.dumps({
         "parent": "minecraft:block/block", "render_type": "minecraft:cutout", "ambientocclusion": False,
         "textures": {"atlas": "bsp_core:block/machine_atlas", "particle": "bsp_core:block/machine_atlas"}, "elements": elements,
         "display": {"gui": {"rotation": [30, 225, 0], "translation": [0, -2.5, 0], "scale": [0.5, 0.5, 0.5]}}}, indent=1))
-    (ASSETS / f"models/item/{name}.json").write_text(json.dumps({"parent": f"bsp_core:block/{name}"}, indent=2))
+    if item_elements is None:
+        (ASSETS / f"models/item/{name}.json").write_text(json.dumps({"parent": f"bsp_core:block/{name}"}, indent=2))
+    else:
+        (ASSETS / f"models/item/{name}.json").write_text(json.dumps({
+            "parent": "minecraft:block/block", "render_type": "minecraft:cutout", "ambientocclusion": False,
+            "textures": {"atlas": "bsp_core:block/machine_atlas", "particle": "bsp_core:block/machine_atlas"}, "elements": item_elements,
+            "display": {"gui": {"rotation": [30, 225, 0], "translation": [0, -2.5, 0], "scale": [0.5, 0.5, 0.5]}}}, indent=1))
     variants = {}
     for facing, rot in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
         v = {"model": f"bsp_core:block/{name}"}
@@ -352,8 +362,8 @@ def main():
         (ASSETS / f"models/item/{block}.json").write_text(json.dumps({"parent": f"bsp_core:block/{block}"}, indent=2))
         (ASSETS / f"blockstates/{block}.json").write_text(json.dumps({"variants": {"": {"model": f"bsp_core:block/{block}"}}}, indent=2))
     write_png(ASSETS / "textures/block/machine_atlas.png", ATLAS, ATLAS, machine_atlas)
-    write_machine("tetrium_crucible", tetrium_crucible_elements())
-    write_machine("combination_forge", combination_forge_elements())
+    write_machine("tetrium_crucible", tetrium_crucible_elements(), tetrium_crucible_elements(True))
+    write_machine("combination_forge", combination_forge_elements(), combination_forge_elements(True))
     # multiblock parts: casing and glass tiles, controller faces
     def casing(x, y):
         edge = x in (0, 15) or y in (0, 15)

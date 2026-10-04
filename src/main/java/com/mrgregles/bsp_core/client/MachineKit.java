@@ -35,7 +35,12 @@ public final class MachineKit {
     }
 
     private static final ResourceLocation ATLAS = new ResourceLocation(BSPCore.MODID, "block/machine_atlas");
-    private final VertexConsumer vc;
+    /**
+     * The shared buffer source. The cutout buffer is asked for again on every box: it is not one of the
+     * renderer's fixed buffers, so drawing glass or an item in between closes it, and a consumer kept
+     * from before would write into the wrong batch or into a buffer that is no longer open.
+     */
+    private final MultiBufferSource buffers;
     private final TextureAtlasSprite sprite;
     private final PoseStack pose;
     private final int light;
@@ -43,7 +48,7 @@ public final class MachineKit {
     public MachineKit(PoseStack pose, MultiBufferSource buffers, int light) {
         this.pose = pose;
         this.light = light;
-        this.vc = buffers.getBuffer(RenderType.cutout());
+        this.buffers = buffers;
         this.sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS);
     }
 
@@ -57,13 +62,18 @@ public final class MachineKit {
         quads(x0, y0, z0, x1, y1, z1, Mat.VIOLET, (r << 16) | (g << 8) | b, LightTexture.FULL_BRIGHT, true);
     }
 
-    /** A see-through box (glass, water). Drawn on the translucent layer. */
+    private static final net.minecraft.resources.ResourceLocation WHITE = new net.minecraft.resources.ResourceLocation("minecraft", "textures/misc/white.png");
+
+    /**
+     * A see-through box (glass, water). Uses the beacon-beam layer, which blends but does not write
+     * depth, so parts of the machine drawn after the glass still show through it.
+     */
     public void translucent(MultiBufferSource buffers, float x0, float y0, float z0, float x1, float y1, float z1, int rgb, float alpha) {
-        VertexConsumer tv = buffers.getBuffer(RenderType.translucent());
+        VertexConsumer tv = buffers.getBuffer(RenderType.beaconBeam(WHITE, true));
         Matrix4f m = pose.last().pose();
         Matrix3f nm = pose.last().normal();
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF, a = Math.round(alpha * 255);
-        float u = sprite.getU((Mat.VIOLET.ox + 7) / 4f), v = sprite.getV((Mat.VIOLET.oy + 7) / 4f);
+        float u = 0.5f, v = 0.5f;
         float[][] faces = {
                 {x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0, 0, 0, -1}, {x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1, 0, 0, 1},
                 {x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0, -1, 0, 0}, {x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1, 1, 0, 0},
@@ -112,6 +122,7 @@ public final class MachineKit {
     }
 
     private void quads(float x0, float y0, float z0, float x1, float y1, float z1, Mat mat, int rgb, int lightmap, boolean flat) {
+        VertexConsumer vc = buffers.getBuffer(RenderType.cutout());
         Matrix4f m = pose.last().pose();
         Matrix3f nm = pose.last().normal();
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;

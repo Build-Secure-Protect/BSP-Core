@@ -134,6 +134,17 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         int grace = BSPConfig.STEAL_GRACE_SECONDS.get() * 20;
         int seconds = owner == null ? BSPConfig.UNCLAIMED_STEAL_SECONDS.get() : BSPConfig.STEAL_SECONDS.get();
+        net.minecraft.world.item.ItemStack raidTotem = thief.getOffhandItem();
+        boolean raiding = TotemInventories.isTotem(raidTotem);
+        if (owner != null) {
+            // Deadlock on this totem adds time; Lockpick on the thief's offhand totem takes time off; limits keep every totem stealable
+            seconds += BSPConfig.levelValue(BSPConfig.DEADLOCK_SECONDS.get(), getUpgradeLevel(TotemUpgrades.Buff.DEADLOCK), 0);
+            if (raiding) {
+                seconds -= BSPConfig.levelValue(BSPConfig.LOCKPICK_SECONDS.get(), TotemUpgrades.getLevel(raidTotem, TotemUpgrades.Buff.LOCKPICK), 0);
+            }
+            seconds = Math.max(BSPConfig.MIN_STEAL_SECONDS.get(), Math.min(BSPConfig.MAX_STEAL_SECONDS.get(), seconds));
+        }
+        int shroud = raiding ? BSPConfig.levelValue(BSPConfig.SHROUD_SECONDS.get(), TotemUpgrades.getLevel(raidTotem, TotemUpgrades.Buff.SHROUD), 0) : 0;
         steal = new StealState(thief.getUUID(), thief.getGameProfile().getName(), seconds * 20, seconds * 20, grace, false);
         setChanged();
         sync();
@@ -141,18 +152,65 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         BSPCore.LOGGER.info("{} started stealing {}'s totem at {}", steal.thiefName(), ownerName(), worldPosition);
 
         thief.displayClientMessage(Component.translatable("message.bsp_core.steal.started", ownerName(), seconds).withStyle(ChatFormatting.GOLD), false);
-        ServerPlayer ownerPlayer = owner == null ? null : serverLevel.getServer().getPlayerList().getPlayer(owner.uuid());
+        warnDelay = Math.min(shroud, seconds - 1) * 20;
+        if (warnDelay <= 0) {
+            warnOwner(serverLevel);
+        }
+        sendStatus(serverLevel, StealStatusPacket.OUTCOME_ACTIVE);
+    }
+
+    /** Ticks until the owner is told about the running steal; above 0 only while a thief's Shroud is hiding it. */
+    private int warnDelay;
+    /** Intruders the Alarm has already reported, so the owner is told once per visit. */
+    private final java.util.Set<UUID> alarmed = new java.util.HashSet<>();
+
+    private void warnOwner(ServerLevel serverLevel) {
+        ServerPlayer ownerPlayer = owner == null || steal == null ? null : serverLevel.getServer().getPlayerList().getPlayer(owner.uuid());
         if (ownerPlayer != null) {
             ownerPlayer.displayClientMessage(Component.translatable("message.bsp_core.steal.warning", steal.thiefName(),
                     worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.RED, ChatFormatting.BOLD), false);
         }
-        sendStatus(serverLevel, StealStatusPacket.OUTCOME_ACTIVE);
+    }
+
+    /** Ward weakens intruders near the totem; Alarm outlines them and tells the owner. Runs once a second. */
+    private void intruderTick(ServerLevel level) {
+        int ward = getUpgradeLevel(TotemUpgrades.Buff.WARD), alarm = getUpgradeLevel(TotemUpgrades.Buff.ALARM);
+        if ((ward <= 0 && alarm <= 0) || owner == null) {
+            return;
+        }
+        double wardR = TotemUpgrades.Buff.WARD.reach(ward), alarmR = TotemUpgrades.Buff.ALARM.reach(alarm);
+        java.util.Set<UUID> inside = new java.util.HashSet<>();
+        for (ServerPlayer p : level.players()) {
+            if (isOwner(p.getUUID()) || p.isSpectator() || p.isCreative()) {
+                continue;
+            }
+            double d = p.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5);
+            if (ward > 0 && d <= wardR * wardR) {
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 60, ward - 1, true, false, true));
+            }
+            if (alarm > 0 && d <= alarmR * alarmR) {
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 60, 0, true, false, true));
+                inside.add(p.getUUID());
+                if (alarmed.add(p.getUUID())) {
+                    ServerPlayer ownerPlayer = level.getServer().getPlayerList().getPlayer(owner.uuid());
+                    if (ownerPlayer != null) {
+                        ownerPlayer.displayClientMessage(Component.translatable("message.bsp_core.alarm", p.getGameProfile().getName(),
+                                worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.YELLOW), false);
+                    }
+                }
+            }
+        }
+        alarmed.retainAll(inside);
     }
 
     /** Server tick, registered by the block. */
     public void serverTick(ServerLevel level) {
         if (level.getGameTime() % 20 == 0) {
             healingTick(level);
+            intruderTick(level);
+        }
+        if (steal != null && warnDelay > 0 && --warnDelay == 0) {
+            warnOwner(level); // Shroud ran out: the owner now hears about the steal
         }
         if (steal == null) {
             return;
@@ -327,9 +385,6 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     /** Owner (or operator) buys the next level of a placed-only upgrade with Shatter Coins. */
     public void tryBuyPlacedUpgrade(ServerPlayer player, TotemUpgrades.Buff buff) {
-        if (!buff.placedOnly) {
-            return;
-        }
         if (!isOwner(player.getUUID()) && !player.hasPermissions(2)) {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_owner").withStyle(ChatFormatting.RED), true);
             return;
@@ -340,7 +395,15 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.maxed").withStyle(ChatFormatting.YELLOW), true);
             return;
         }
-        if (!player.isCreative() && !CoinWallet.pay(player, cost)) {
+        if (buff.currency == TotemUpgrades.Currency.XP) {
+            if (!player.isCreative() && player.experienceLevel < cost) {
+                player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_xp", cost).withStyle(ChatFormatting.RED), true);
+                return;
+            }
+            if (!player.isCreative()) {
+                player.giveExperienceLevels(-cost);
+            }
+        } else if (!player.isCreative() && !CoinWallet.pay(player, cost)) {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_coins", cost).withStyle(ChatFormatting.RED), true);
             return;
         }

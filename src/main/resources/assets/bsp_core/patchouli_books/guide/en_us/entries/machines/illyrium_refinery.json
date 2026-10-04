@@ -1,0 +1,55 @@
+{
+  "name": "Illyrium Refinery",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:illyrium_refinery",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Washes Dirty Illyrium Dust into Pure Illyrium Dust using water and a filter.$(br2)The Refinery Pump takes water (blue socket) and RF (yellow socket). The Item Hatch takes dust in and gives pure dust out.$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "Illyrium Refinery",
+      "multiblock": {
+        "pattern": [
+          [
+            "___",
+            "_G_",
+            "___"
+          ],
+          [
+            "_U_",
+            "_GC",
+            "_H_"
+          ],
+          [
+            "CCC",
+            "0OC",
+            "CCC"
+          ]
+        ],
+        "mapping": {
+          "C": "bsp_core:illyrium_casing",
+          "G": "bsp_core:illyrium_glass",
+          "H": "bsp_core:item_hatch",
+          "O": "bsp_core:illyrium_core",
+          "U": "bsp_core:refinery_pump",
+          "0": "bsp_core:illyrium_refinery[facing=north]"
+        },
+        "symmetrical": false
+      },
+      "text": "Controller at the bottom front centre. 8 Casing, 1 Core, 2 Tank Glass, 1 Item Hatch, 1 Pump."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:refinery_control_circuit",
+      "recipe2": "bsp_core:illyrium_glass"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:refinery_pump",
+      "recipe2": "bsp_core:illyrium_refinery"
+    }
+  ]
+}

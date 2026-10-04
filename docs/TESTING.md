@@ -76,20 +76,48 @@ Speed up testing in `serverconfig/bsp_core-server.toml`: set `ticksPerOre`, `tic
 - [ ] When tracking ends the screen shows a 10:00 cooldown, during which Start tracking is disabled and the needle points to your own totem again.
 - [ ] Buy a cooldown upgrade: coin value is taken and the cooldown length drops by one minute, down to 3:00 after seven levels.
 
-## Shatter Coins and the factory
-Fast testing: in `serverconfig/bsp_core-server.toml` set `pressHours = [0.01, 0.02, 0.04, 0.08, 0.14]` (36 seconds for copper).
-- [ ] BSP creative tab shows the factory, five blanks, five coins and three Speed Gears. Coin tooltips show values 1, 2, 4, 8, 16.
-- [ ] Craft a Copper Coin Blank (8 iron nuggets around a copper ingot), then a Gold blank from it (4 gold ingots around the copper blank).
-- [ ] Place the factory: it faces you; the press head sits raised. Right-click opens the screen with your name and "1/10".
-- [ ] Put a blank in with no energy: status says idle. Feed RF (any mod's cable or a creative energy source): the red bar fills, the press starts, the head begins slamming, the blank shows on the die, and the timer counts down.
-- [ ] When the timer ends a coin appears in the output slot and the next blank starts.
-- [ ] Fit Speed Gears: sockets on the front light up (grey, gold, turquoise), the "Upgrades: -N% time" line updates, and the remaining time drops. Four Mk III gears show -75% (the cap).
-- [ ] Leave the area or stop the server for longer than a press, then return: the coin is already made.
-- [ ] Fill the output with 64 coins: status shows "Output full" and resumes when you take them.
-- [ ] Click a side button to cycle Off / In / Out / In+Out. A hopper on an In face inserts blanks; a hopper under an Out face pulls coins; neither works on an Off face. Try a Mekanism transporter and an AE2 bus the same way.
-- [ ] Break the factory: it drops itself and everything inside; your owned count goes down.
-- [ ] Place factories until the limit (set `maxPerPlayer = 2` to test quickly): the next placement is refused with a red message.
-- [ ] Buy a totem upgrade costing 5 with one Diamond coin (value 4) and one Gold (value 2): both are taken and one Copper comes back as change.
+## Shatter Coins and the factory (multiblock slices)
+Blocks: Shatter Coin Factory Controller, Factory Frame x2, Factory Press, Factory Blank Hatch, Factory Power Port, Motivator. All in the BSP creative tab.
+
+**Building one slice (1 wide, 2 high, 3 long)**
+- [ ] BSP creative tab shows the controller, the four factory blocks, the Motivator, five blanks and five coins. No Speed Gears anywhere. Coin tooltips show values 1, 2, 4, 8, 16.
+- [ ] Place the controller: ghost blocks show the five missing parts behind and above it. Bottom row from the front: controller, Frame, Blank Hatch. Top row: Frame, Press, Power Port.
+- [ ] Right-clicking an incomplete controller says how many blocks are missing and does not open the screen.
+- [ ] Place the last part: within a second the blocks vanish and the Cascade Mill model appears: three belts stepping down, press over the middle belt, machinery under the belts, glass on both sides and in the roof, tray in front, screen on the front block.
+- [ ] Blue socket on the lower back block, yellow socket on the upper back block.
+- [ ] Break any part: the slice turns back into plain blocks and the ghost returns. The controller drops its blanks and coins when broken.
+- [ ] All four facings look right (front always toward you when placed).
+
+**Pressing**
+- [ ] Put blanks in the lane's blank slot and feed RF into the Power Port (Mekanism cable). A press starts: belts run, the press hammers, blanks ride down from the back and turn into coins of the same tier after the press.
+- [ ] Change the blank tier: the items on the belt and in the tray match the tier being pressed.
+- [ ] The finished coin appears in the tray slot and as a pile in the tray on the model. Coins can only be taken by hand in the screen.
+- [ ] A hopper or pipe on the Blank Hatch inserts blanks. Nothing can pull coins or blanks out of any block of the factory.
+- [ ] Tray full (64): the lane turns orange and holds at 100% until coins are taken.
+- [ ] Log out and back in, and restart the world: the press carries on and catches up with real time.
+
+**Joining slices**
+- [ ] Build a second slice directly beside the first, facing the same way: the wall between them disappears, a slim rib and glowing couplings appear, the tray and roof run through, and a podium screen appears centred in front. Glass stays only on the two outer ends.
+- [ ] Add slices up to 10: the podium stays centred. The 11th controller is refused with the limit message.
+- [ ] Right-click any controller of the row: the same screen opens with one lane per slice, in the same left-to-right order as the slices seen from the front.
+- [ ] Each slice starts and finishes its own presses at its own time.
+- [ ] RF is shared: one cable on one Power Port fills the whole machine. Add cables to more Power Ports: the "+N RF/t from N cables" line rises.
+- [ ] A slice placed beside a row but facing another way, or owned by another player, does not join.
+- [ ] Break one slice in the middle of a row: the row splits into two machines, each with its own screen position.
+
+**Motivators**
+- [ ] Place a Motivator on top of a slice (three top cells). On a complete slice it becomes the pulsing half-height pylon; elsewhere it stays a plain small block.
+- [ ] 1, 2, 3 Motivators cut that slice's time by 15%, 30%, 50% (lane tooltip and time left), and the pulse gets faster.
+- [ ] Neighbouring Motivators link with a base conduit and a beam between cores, along a slice and across joined slices.
+
+**Screen (Floor Plan)**
+- [ ] One lane per slice: number, blank slot (blue), a bar filling downward, tray slot (orange), three Motivator pips. No coins move along the bars.
+- [ ] A lane with no blank or not enough RF is framed red; a full tray is framed orange. Header reads WORKING, ATTENTION or SWITCHED OFF.
+- [ ] Hovering a lane shows slice number, coin and time left or what it needs, and its Motivators.
+- [ ] Shift-clicking blanks from the inventory fills the lanes from the left.
+- [ ] Power switch stops and restarts the whole machine; while off no time is counted and the model stops and its screen lines turn red.
+- [ ] With 10 slices nothing overlaps; the screen fits at GUI scale 3 and 4.
+- [ ] Add or remove a slice while the screen is open: it closes, and reopening shows the new layout.
 
 ## Item basics
 - [ ] BSP creative tab shows a glinting Shatter Totem, tooltip "Unclaimed".
@@ -155,3 +183,110 @@ a placed totem: a purple "Operator" column appears on the left.
 - [ ] Open the screen and cycle a hatch's mode in PORTS: the socket on the machine changes colour straight away (blue in, orange out, turquoise both, grey off).
 - [ ] PORTS lists each hatch with "Items: <mode>", the fluid row with what it accepts, and an RF row that reads "No RF upgrade" or "RF in". No text overlaps the STATUS column or the UPGRADES label.
 - [ ] Pipes and cables connect at the socketed blocks: items at hatches, lava/water and RF at pylons/pump.
+
+## Recipes and machine components
+Full list with grids: `tools/preview/recipe_plan.html` (regenerate with `python3 tools/gen_recipe_plan.py`).
+- [ ] BSP creative tab shows the 15 components, each with its own icon and name.
+- [ ] Furnace or blast furnace: Tetrium Slag smelts into a Slag Brick.
+- [ ] Combination Forge: one Tetrium Ingot gives one Tetrium Plate; nine nuggets still give an ingot. The empty input slot tooltip mentions both.
+- [ ] Shared parts craft: Machine Chassis (x2), Tetrium Coil (x2), Drive Motor, Circuit Substrate (x3), Basic Control Circuit.
+- [ ] Illyrium Crucible parts craft: Thermal Lining (x4), Crucible Control Circuit, Illyrium Casing (x4), Illyrium Core (any Illyrium Ore in the centre), Lava Pylon (x2), Item Hatch, controller.
+- [ ] Illyrium Refinery parts craft: Refinery Control Circuit, Illyrium Tank Glass (x4), Refinery Pump, controller.
+- [ ] Factory parts craft: Mint Control Circuit, Conveyor Belt (x3), Press Die, Factory Frame (x2), Factory Press, Blank Hatch, Power Port, controller.
+- [ ] Motivator crafts from a Resonance Crystal, Illyrium Processor, two Tetrium Coils and three Tetrium Plates.
+- [ ] RF Upgrades Mk I to III and the Illyrium Forge Upgrade use their new recipes; the old ones no longer work.
+- [ ] A full survival run is possible in order: Tetrium Crucible, Combination Forge, Illyrium Crucible, Illyrium Refinery, factory slice, Motivator.
+
+## JEI
+JEI is loaded in dev runs (`./gradlew runClient`).
+- [ ] The game starts with JEI and the item list shows all BSP-Core items.
+- [ ] Pressing R on a Tetrium Nugget shows the Tetrium Crucible page (ore in, nuggets and slag out, time, fuel note) and the "9 nuggets from an ingot" crafting recipe.
+- [ ] Combination Forge page has three jobs: 9 Tetrium Nuggets to an ingot, 1 Tetrium Ingot to a plate, 9 Illyrium Nuggets to an ingot with the Illyrium Forge Upgrade shown as a fitted part.
+- [ ] Illyrium Crucible page has two jobs (ore + slag + lava; Pure Illyrium Dust + Tetrium Dust + lava) and shows the lava amount on hover.
+- [ ] Illyrium Refinery page shows Dirty Illyrium Dust, water and the filters cycling as the fitted part.
+- [ ] Shatter Coin Factory page has five jobs, one per tier, with real time and RF per coin.
+- [ ] Crushing by Hand page shows pickaxe + ingot giving dust and nuggets, each with its chance on hover.
+- [ ] Pressing U on a machine block shows what it makes. Pressing R on any multiblock block, the Motivator, the Shatter Totem or a Tetrium Plate shows an Information page.
+- [ ] Numbers on the pages match the config after changing it and rejoining the world.
+- [ ] Text on every page fits inside the page.
+
+## Assembly Guide
+- [ ] Place an Illyrium Crucible controller, empty your hand, sneak + right-click it: the Assembly Guide opens. The same on a Refinery controller and a factory controller.
+- [ ] Plain right-click still behaves as before, and its message mentions the guide.
+- [ ] The controller in the guide faces you by default, whichever way the real one faces. Dragging turns and tilts the model.
+- [ ] Next / Back and the arrow keys change step; Play runs through the steps and stops at the end.
+- [ ] Earlier steps are full blocks, the current step pulses, later steps are faint see-through blocks that do not distract.
+- [ ] Part names in the list are not cut off; the controller is listed as "Controller".
+- [ ] The caption names the layer, the count and the block, with a tip underneath; nothing overlaps or runs off the panel.
+- [ ] The parts list shows each block with placed / total; the current block is orange, finished ones turquoise.
+- [ ] Positions in the guide match the in-world ghost blocks exactly (left and right not mirrored).
+- [ ] Factory guide ends with two optional steps: a second slice beside the first, then Motivators on both.
+- [ ] Sneak + right-click on a finished machine does not open the guide.
+- [ ] E or Escape closes it.
+
+## Guide book (Patchouli is loaded in dev runs)
+- [ ] The game starts with Patchouli and no errors about the book `bsp_core:guide` in the log.
+- [ ] A Book plus a Tetrium Nugget crafts the BSP Field Guide. It is also in the BSP creative tab.
+- [ ] A brand-new player gets the guide along with the Shatter Totem on first join (where first-join grants are on).
+- [ ] The book opens with four chapters: The Shatter Totem, Tetrium and Illyrium, Machines, Shatter Coins. Every entry opens; no page says a recipe is missing.
+- [ ] Links between entries work (for example Fortify, Illyrium Crucible, Shatter Coin Factory).
+- [ ] Build pages for the Illyrium Crucible, Illyrium Refinery and factory slice show the right blocks, with the Item Hatch left and the Pump right on the Refinery, matching the in-world ghosts. "Visualize" projects the structure in the world.
+- [ ] Text fits on every page.
+- [ ] In JEI (item list, bookmarks or a recipe page), hovering any multiblock block shows "Hold [Shift] for the Assembly Guide". Holding Shift fills a short bar and opens the guide for that machine; closing it returns to where you were.
+- [ ] Casing, Core and Item Hatch open the Illyrium Crucible guide; Tank Glass and Pump the Refinery; factory blocks and the Motivator the factory.
+- [ ] Holding Shift over the same blocks in your own inventory or a chest does not open the guide.
+
+## Advancements
+- [ ] The advancements screen has a BSP-Core tab whose first entry is earned by holding a Shatter Totem.
+- [ ] Picking up or crafting each item in the chain earns its advancement with a toast: Tetrium Ore, Tetrium Crucible, Tetrium Ingot, Slag Brick, Combination Forge, Tetrium Plate, Machine Chassis, Basic Control Circuit, RF Upgrade, both Illyrium controllers, Dirty Illyrium Ingot, Pure Illyrium Dust, Illyrium Ingot, factory controller, first coin, Illyrium coin, Motivator, Totem Compass.
+- [ ] Goal and challenge advancements are announced in chat; ordinary ones are not.
+- [ ] The tree reads left to right without crossed lines.
+
+## JEI click area
+- [ ] On each of the four machine screens, hovering the progress dial shows "Show Recipes" and clicking it opens that machine's JEI page.
+
+## Redstone control
+- [ ] A lever or redstone torch next to a working Tetrium Crucible or Combination Forge pauses it; the header reads PAUSED BY REDSTONE. Removing the signal resumes it.
+- [ ] The same at the controller block of the Illyrium Crucible and Illyrium Refinery.
+- [ ] A signal at one factory slice's controller pauses only that slice: its lane is framed red, the tooltip says it is paused by redstone, and its belts stop. Other slices keep pressing. No press time is counted while paused.
+
+## Coin loot
+- [ ] `/loot give @s loot minecraft:chests/simple_dungeon` run many times sometimes gives Copper (1 to 2) and Gold Shatter Coins; the same for abandoned_mineshaft and the three stronghold tables.
+- [ ] `minecraft:chests/end_city_treasure` and `minecraft:chests/ancient_city` occasionally give a Diamond Shatter Coin.
+- [ ] No table ever gives a Netherite or Illyrium Shatter Coin.
+
+## Totem upgrade tree and new upgrades
+**Screen**
+- [ ] Right-click with the totem in the main hand: the tree opens with CARRIED (green), BASE (gold) and RAID (red) branches around the totem. Clicking a node selects it and the panel shows name, level pips, NOW and NEXT LEVEL effects and the buy button.
+- [ ] Carried upgrades cost XP levels, Raid upgrades cost coin value; Base upgrades say "Place the totem to buy Base upgrades". A bought node lights up; a maxed node fills in. The level updates immediately.
+- [ ] Right-click your placed totem: the same tree, and every upgrade can be bought there. Owner, steal status and wallet show under it. Nothing overlaps.
+- [ ] Another player's placed totem: levels are visible, buying is refused, and the Steal button shows.
+- [ ] As an operator: TOTEM and OPERATOR tabs. On OPERATOR the bar under the panel lowers (left half) or raises (right half) the selected upgrade, and Assign, Unclaim, Cancel steal, Finish steal and Reset buffs work.
+
+**Carried (totem in the offhand)**
+- [ ] Swiftness: you move faster. Vitality: extra hearts appear and go when the totem leaves the offhand. Featherfall: less fall damage, none at level 4. Night Sight: steady night vision with no flicker.
+
+**Base (totem placed; test with a second player or `/gamemode survival` on a second account)**
+- [ ] Ward: an intruder within range gets Weakness. The owner does not.
+- [ ] Alarm: an intruder is outlined and the owner gets one chat line per visit.
+- [ ] Sanctuary: no hostile mobs spawn naturally in range at night; spawn eggs and spawners still work.
+- [ ] Deadlock: the steal timer starts higher by the configured seconds.
+- [ ] Overclock: a BSP-Core machine in range finishes jobs faster (give it up to 5 seconds to notice).
+
+**Raid (in the thief's offhand while starting a steal)**
+- [ ] Lockpick shortens the steal; Shroud delays the owner's warning message by the configured seconds.
+- [ ] With maximum Deadlock against no Lockpick the steal is never longer than 600 s; with maximum Lockpick it is never shorter than 60 s.
+
+**Always stealable**
+- [ ] At Fortify 5 an intruder can still mine blocks next to the totem, at one fifth speed. Explosions break nothing there, by design.
+
+## Animated single-block machines
+- [ ] Tetrium Crucible, idle: dim burner window, dark coils, low melt, tip glowing. Working: burner glows orange (yellow on RF), coils light in sequence, the melt rises and turns pale near the end, six collar lamps fill, the tip flashes white at the end.
+- [ ] Slag piles up in one tray and nuggets in the other as output collects, and empty again when taken. An RF Upgrade shows as a capacitor on the collar.
+- [ ] Combination Forge, idle: press head parked high. Working: the head strikes, faster near the end; the nuggets shrink as a glowing ingot grows; rail lights chase; five bed lamps fill. Illyrium jobs glow turquoise.
+- [ ] The left front socket lights turquoise with the Illyrium Forge Upgrade, the right one yellow with an RF Upgrade.
+- [ ] Both look right in all four facings, and their inventory icons still show the complete machine.
+
+## Totem Compass screen
+- [ ] Five coin tiles with the tracking time each adds; clicking one spends a coin and raises STORED. Start and the upgrade button grey out when they cannot be used. Header shows READY, TRACKING or COOLDOWN with a clock.
+

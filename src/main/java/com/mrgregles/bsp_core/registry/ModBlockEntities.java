@@ -53,5 +53,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("machine_port", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.machine.MachinePortBlockEntity::new, ModBlocks.LAVA_PYLON.get(), ModBlocks.REFINERY_PUMP.get(), ModBlocks.ITEM_HATCH.get()).build(null));
 
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.coin.FactoryPortBlockEntity>> FACTORY_PORT =
+            BLOCK_ENTITIES.register("factory_port", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.coin.FactoryPortBlockEntity::new, ModBlocks.FACTORY_BLANK_HATCH.get(), ModBlocks.FACTORY_POWER_PORT.get()).build(null));
+
     private ModBlockEntities() {}
 }

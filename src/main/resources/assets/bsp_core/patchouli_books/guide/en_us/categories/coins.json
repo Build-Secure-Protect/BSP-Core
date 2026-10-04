@@ -1,0 +1,6 @@
+{
+  "name": "Shatter Coins",
+  "description": "Coins pay for the strongest totem upgrades. You press them yourself.",
+  "icon": "bsp_core:gold_shatter_coin",
+  "sortnum": 3
+}

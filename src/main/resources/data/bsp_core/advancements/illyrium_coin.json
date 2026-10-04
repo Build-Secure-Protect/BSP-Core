@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:illyrium_shatter_coin"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.illyrium_coin"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.illyrium_coin.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:illyrium_shatter_coin"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:first_coin"
+}

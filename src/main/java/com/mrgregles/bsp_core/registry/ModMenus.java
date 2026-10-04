@@ -22,7 +22,7 @@ public final class ModMenus {
             () -> IForgeMenuType.create((id, inv, buf) -> new TotemUpgradeMenu(id, inv, buf.readEnum(InteractionHand.class))));
 
     public static final RegistryObject<MenuType<CoinFactoryMenu>> COIN_FACTORY = MENUS.register("shatter_coin_factory",
-            () -> IForgeMenuType.create((id, inv, buf) -> new CoinFactoryMenu(id, inv, buf.readBlockPos())));
+            () -> IForgeMenuType.create((id, inv, buf) -> new CoinFactoryMenu(id, inv, buf.readBlockPos(), buf.readVarInt())));
 
     public static final RegistryObject<MenuType<MachineMenu>> MACHINE = MENUS.register("machine",
             () -> IForgeMenuType.create((id, inv, buf) -> new MachineMenu(id, inv, buf.readBlockPos())));

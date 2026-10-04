@@ -1,0 +1,60 @@
+{
+  "name": "The Shatter Coin Factory",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:shatter_coin_factory",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "An end-game machine built in slices. One slice is 1 wide, 2 high and 3 long. Put blanks in the Blank Hatch and RF in the Power Port, both at the back.$(br2)Pressing takes real time, from hours to days by tier, and carries on while you are offline. Coins collect in the tray and must be taken by hand.$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "Factory slice",
+      "multiblock": {
+        "pattern": [
+          [
+            "FSR"
+          ],
+          [
+            "0FB"
+          ]
+        ],
+        "mapping": {
+          "B": "bsp_core:factory_blank_hatch",
+          "F": "bsp_core:factory_frame",
+          "R": "bsp_core:factory_power_port",
+          "S": "bsp_core:factory_press",
+          "0": "bsp_core:shatter_coin_factory[facing=north]"
+        },
+        "symmetrical": false
+      },
+      "text": "Bottom from the front: Controller, Frame, Blank Hatch. Top: Frame, Press, Power Port."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Build slices side by side, facing the same way, and they join into one machine with one screen. You may own up to 10 slices.$(br2)Each slice presses its own blanks. RF is shared, and cabling more Power Ports charges the machine faster.",
+      "title": "Joining slices"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:mint_control_circuit",
+      "recipe2": "bsp_core:conveyor_belt"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:press_die",
+      "recipe2": "bsp_core:factory_frame"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:factory_press",
+      "recipe2": "bsp_core:factory_blank_hatch"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:factory_power_port",
+      "recipe2": "bsp_core:shatter_coin_factory"
+    }
+  ]
+}

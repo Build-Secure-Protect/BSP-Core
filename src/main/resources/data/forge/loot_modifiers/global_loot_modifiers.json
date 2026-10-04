@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "entries": [
+    "bsp_core:copper_coin_simple_dungeon",
+    "bsp_core:gold_coin_simple_dungeon",
+    "bsp_core:copper_coin_abandoned_mineshaft",
+    "bsp_core:gold_coin_abandoned_mineshaft",
+    "bsp_core:copper_coin_stronghold_corridor",
+    "bsp_core:gold_coin_stronghold_corridor",
+    "bsp_core:copper_coin_stronghold_crossing",
+    "bsp_core:gold_coin_stronghold_crossing",
+    "bsp_core:copper_coin_stronghold_library",
+    "bsp_core:gold_coin_stronghold_library",
+    "bsp_core:diamond_coin_end_city_treasure",
+    "bsp_core:diamond_coin_ancient_city"
+  ]
+}

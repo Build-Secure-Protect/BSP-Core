@@ -1,0 +1,6 @@
+{
+  "name": "Machines",
+  "description": "The parts every machine is made of, and how to build the two Illyrium multiblocks.",
+  "icon": "bsp_core:illyrium_crucible",
+  "sortnum": 2
+}

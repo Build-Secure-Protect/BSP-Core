@@ -1,0 +1,12 @@
+{
+  "name": "BSP Field Guide",
+  "landing_text": "Build. Secure. Protect. Everything BSP-Core adds, from your first Shatter Totem to a ten-slice coin factory.",
+  "version": 1,
+  "model": "patchouli:book_cyan",
+  "book_texture": "patchouli:textures/gui/book_cyan.png",
+  "subtitle": "BSP-Core",
+  "creative_tab": "bsp_core:bsp",
+  "show_progress": false,
+  "use_resource_pack": true,
+  "i18n": false
+}

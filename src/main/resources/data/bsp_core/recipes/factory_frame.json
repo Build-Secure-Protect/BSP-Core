@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PGP",
+    "VCV",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "V": {
+      "item": "bsp_core:conveyor_belt"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:factory_frame",
+    "count": 2
+  }
+}

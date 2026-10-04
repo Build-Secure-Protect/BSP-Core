@@ -36,6 +36,17 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> HEALING_RADIUS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> HEALING_PER_SECOND;
 
+    /** Costs of the newer upgrades: XP levels for carried ones, coin value for base and raid ones. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> SWIFTNESS_XP_COSTS, VITALITY_XP_COSTS, FEATHERFALL_XP_COSTS, NIGHT_SIGHT_XP_COSTS,
+            WARD_COIN_COSTS, ALARM_COIN_COSTS, SANCTUARY_COIN_COSTS, DEADLOCK_COIN_COSTS, OVERCLOCK_COIN_COSTS, LOCKPICK_COIN_COSTS, SHROUD_COIN_COSTS;
+    /** Their effect per level. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> VITALITY_HEALTH, WARD_RADIUS, ALARM_RADIUS, SANCTUARY_RADIUS, DEADLOCK_SECONDS,
+            OVERCLOCK_RADIUS, LOCKPICK_SECONDS, SHROUD_SECONDS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> SWIFTNESS_BONUS, FEATHERFALL_REDUCTION, OVERCLOCK_BONUS;
+    /** Guarantees that a totem can always be reached and stolen. */
+    public static final ForgeConfigSpec.DoubleValue MIN_INTRUDER_MINING_SPEED;
+    public static final ForgeConfigSpec.IntValue MIN_STEAL_SECONDS, MAX_STEAL_SECONDS;
+
     // ------------------------------------------------------------------ restrictions
 
     /** Dimensions in which a Shatter Totem may be placed, dropped or auto-placed. */
@@ -63,7 +74,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue FACTORY_ENERGY_CAPACITY;
     public static final ForgeConfigSpec.IntValue FACTORY_MAX_RECEIVE;
     /** Fraction of press time removed by each Speed Gear (Mk I, II, III); fitted gears add together. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_UPGRADE_REDUCTIONS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_MOTIVATOR_REDUCTIONS;
     public static final ForgeConfigSpec.DoubleValue FACTORY_MAX_REDUCTION;
     public static final ForgeConfigSpec.IntValue FACTORY_MAX_PER_PLAYER;
 
@@ -100,9 +111,10 @@ public final class BSPConfig {
     static {
         BUILDER.comment("BSP Core server configuration").push("first_join");
         GRANT_TOTEM_ON_FIRST_JOIN = BUILDER
-                .comment("Give new players a Shatter Totem on their first join.",
-                         "Enable ONLY on the Spawn Hub server of the network.")
-                .define("grantTotemOnFirstJoin", false);
+                .comment("Give new players a Shatter Totem (and the guide book, if Patchouli is installed) on their first join.",
+                         "On by default so a single server or single-player world works out of the box.",
+                         "On a network, leave it on for the Spawn Hub only and turn it off on every other server.")
+                .define("grantTotemOnFirstJoin", true);
         BUILDER.pop();
 
         BUILDER.comment("Shatter Totem buff upgrade costs, in experience levels.",
@@ -128,6 +140,55 @@ public final class BSPConfig {
                 .defineList("healingRadius", List.of(3, 5, 7, 10, 15), BSPConfig::isPositiveInt);
         HEALING_PER_SECOND = BUILDER.comment("Healing Aura: health points healed per second per level (2 = one heart)")
                 .defineList("healingPerSecond", List.of(0.5, 1.0, 1.5, 2.0, 3.0), o -> o instanceof Double d && d > 0);
+
+        BUILDER.comment("Carried upgrades (work while the totem is in the offhand), paid in XP levels.").push("carried");
+        SWIFTNESS_XP_COSTS = BUILDER.defineList("swiftnessXpLevelCosts", List.of(8, 16, 24), BSPConfig::isPositiveInt);
+        SWIFTNESS_BONUS = BUILDER.comment("Swiftness: movement speed added per level, as a fraction (0.05 = 5%)")
+                .defineList("swiftnessSpeedBonus", List.of(0.05, 0.10, 0.15), BSPConfig::isFraction);
+        VITALITY_XP_COSTS = BUILDER.defineList("vitalityXpLevelCosts", List.of(10, 20, 30, 40), BSPConfig::isPositiveInt);
+        VITALITY_HEALTH = BUILDER.comment("Vitality: extra health points per level (2 = one heart)")
+                .defineList("vitalityHealth", List.of(2, 4, 6, 8), BSPConfig::isPositiveInt);
+        FEATHERFALL_XP_COSTS = BUILDER.defineList("featherfallXpLevelCosts", List.of(6, 12, 18, 24), BSPConfig::isPositiveInt);
+        FEATHERFALL_REDUCTION = BUILDER.comment("Featherfall: share of fall damage removed per level")
+                .defineList("featherfallReduction", List.of(0.25, 0.5, 0.75, 1.0), BSPConfig::isFraction);
+        NIGHT_SIGHT_XP_COSTS = BUILDER.defineList("nightSightXpLevelCosts", List.of(12), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
+        BUILDER.comment("Base upgrades (work only while the totem is placed), paid in coin value.").push("base");
+        WARD_COIN_COSTS = BUILDER.defineList("wardCoinCosts", List.of(16, 32, 64), BSPConfig::isPositiveInt);
+        WARD_RADIUS = BUILDER.comment("Ward: intruders within this many blocks are weakened (Weakness I, II, III by level)")
+                .defineList("wardRadius", List.of(6, 10, 14), BSPConfig::isPositiveInt);
+        ALARM_COIN_COSTS = BUILDER.defineList("alarmCoinCosts", List.of(8, 16, 32), BSPConfig::isPositiveInt);
+        ALARM_RADIUS = BUILDER.comment("Alarm: intruders within this many blocks are outlined and the owner is told")
+                .defineList("alarmRadius", List.of(8, 16, 24), BSPConfig::isPositiveInt);
+        SANCTUARY_COIN_COSTS = BUILDER.defineList("sanctuaryCoinCosts", List.of(8, 16, 32), BSPConfig::isPositiveInt);
+        SANCTUARY_RADIUS = BUILDER.comment("Sanctuary: hostile mobs do not spawn naturally within this many blocks")
+                .defineList("sanctuaryRadius", List.of(8, 16, 32), BSPConfig::isPositiveInt);
+        DEADLOCK_COIN_COSTS = BUILDER.defineList("deadlockCoinCosts", List.of(16, 48, 128), BSPConfig::isPositiveInt);
+        DEADLOCK_SECONDS = BUILDER.comment("Deadlock: seconds added to the time needed to steal this totem")
+                .defineList("deadlockSeconds", List.of(30, 60, 120), BSPConfig::isPositiveInt);
+        OVERCLOCK_COIN_COSTS = BUILDER.defineList("overclockCoinCosts", List.of(32, 64, 128), BSPConfig::isPositiveInt);
+        OVERCLOCK_RADIUS = BUILDER.comment("Overclock: BSP-Core machines within this many blocks work faster")
+                .defineList("overclockRadius", List.of(8, 12, 16), BSPConfig::isPositiveInt);
+        OVERCLOCK_BONUS = BUILDER.comment("Overclock: speed added per level, as a fraction")
+                .defineList("overclockSpeedBonus", List.of(0.05, 0.10, 0.15), BSPConfig::isFraction);
+        BUILDER.pop();
+
+        BUILDER.comment("Raid upgrades (apply when the totem carrying them is in the thief's offhand), paid in coin value.").push("raid");
+        LOCKPICK_COIN_COSTS = BUILDER.defineList("lockpickCoinCosts", List.of(16, 48, 128), BSPConfig::isPositiveInt);
+        LOCKPICK_SECONDS = BUILDER.comment("Lockpick: seconds taken off the time you need to steal a totem")
+                .defineList("lockpickSeconds", List.of(15, 30, 60), BSPConfig::isPositiveInt);
+        SHROUD_COIN_COSTS = BUILDER.defineList("shroudCoinCosts", List.of(16, 32, 64), BSPConfig::isPositiveInt);
+        SHROUD_SECONDS = BUILDER.comment("Shroud: seconds before the owner is warned that you are stealing")
+                .defineList("shroudSeconds", List.of(5, 10, 20), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
+        BUILDER.comment("Limits that keep every totem stealable, whatever upgrades it has.").push("limits");
+        MIN_INTRUDER_MINING_SPEED = BUILDER.comment("Lowest mining speed multiplier an intruder can be reduced to near a totem. Never 0: blocks must stay breakable.")
+                .defineInRange("minIntruderMiningSpeed", 0.2, 0.05, 1.0);
+        MIN_STEAL_SECONDS = BUILDER.comment("A steal can never be made shorter than this.").defineInRange("minStealSeconds", 60, 1, 86400);
+        MAX_STEAL_SECONDS = BUILDER.comment("A steal can never be made longer than this.").defineInRange("maxStealSeconds", 600, 1, 86400);
+        BUILDER.pop();
         BUILDER.pop();
 
         BUILDER.comment("Where and how the Shatter Totem may exist in the world").push("restrictions");
@@ -167,15 +228,15 @@ public final class BSPConfig {
                 .defineList("pressHours", List.of(12.0, 24.0, 48.0, 96.0, 168.0), o -> o instanceof Number n && n.doubleValue() > 0);
         FACTORY_ENERGY_PER_COIN = BUILDER.comment("Forge Energy (RF) used per coin, taken when a press starts.")
                 .defineList("energyPerCoin", List.of(50_000, 100_000, 200_000, 400_000, 800_000), o -> o instanceof Integer i && i >= 0);
-        FACTORY_ENERGY_CAPACITY = BUILDER.comment("Energy buffer of the factory.")
+        FACTORY_ENERGY_CAPACITY = BUILDER.comment("Energy each slice adds to the machine's shared buffer.")
                 .defineInRange("energyCapacity", 1_000_000, 1, Integer.MAX_VALUE);
-        FACTORY_MAX_RECEIVE = BUILDER.comment("Maximum energy accepted per tick.")
+        FACTORY_MAX_RECEIVE = BUILDER.comment("Maximum energy accepted per tick through one Power Port. Feeding more ports of a joined machine charges it faster.")
                 .defineInRange("maxReceivePerTick", 10_000, 1, Integer.MAX_VALUE);
-        FACTORY_UPGRADE_REDUCTIONS = BUILDER.comment("Fraction of press time removed by a Speed Gear Mk I, Mk II, Mk III. Fitted gears add together.")
-                .defineList("upgradeTimeReduction", List.of(0.05, 0.15, 0.30), o -> o instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() < 1);
-        FACTORY_MAX_REDUCTION = BUILDER.comment("Upper limit on the combined reduction, so time can never reach zero (four Mk III gears add up to 1.2).")
+        FACTORY_MOTIVATOR_REDUCTIONS = BUILDER.comment("Fraction of a slice's press time removed by one, two and three Motivators on top of it.")
+                .defineList("motivatorTimeReduction", List.of(0.15, 0.30, 0.50), o -> o instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() < 1);
+        FACTORY_MAX_REDUCTION = BUILDER.comment("Upper limit on the combined reduction, so time can never reach zero.")
                 .defineInRange("maxTotalReduction", 0.75, 0.0, 0.99);
-        FACTORY_MAX_PER_PLAYER = BUILDER.comment("How many factories one player may own on this server.")
+        FACTORY_MAX_PER_PLAYER = BUILDER.comment("How many factory slices (controllers) one player may own on this server. A joined machine holds at most 10.")
                 .defineInRange("maxPerPlayer", 10, 0, 10_000);
         BUILDER.pop();
 

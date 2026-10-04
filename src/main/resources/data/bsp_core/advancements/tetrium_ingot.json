@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:tetrium_ingot"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.tetrium_ingot"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.tetrium_ingot.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:tetrium_ingot"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:tetrium_crucible"
+}

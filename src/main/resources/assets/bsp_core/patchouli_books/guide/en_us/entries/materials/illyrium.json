@@ -1,0 +1,24 @@
+{
+  "name": "Illyrium",
+  "category": "bsp_core:materials",
+  "icon": "bsp_core:illyrium_ingot",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(item)Illyrium Ore$() is rarer and needs a diamond pickaxe. Refining it takes four steps:$(br2)$(li)$(l:machines/illyrium_crucible)Illyrium Crucible$(): ore and slag become a Dirty Illyrium Ingot.$(li)Crush it into Dirty Illyrium Dust.$(li)$(l:machines/illyrium_refinery)Illyrium Refinery$(): dust, water and a filter give Pure Illyrium Dust.$(li)Back in the Crucible: Pure Illyrium Dust and Tetrium Dust alloy into Illyrium Nuggets."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:illyrium_ingot_from_nuggets",
+      "recipe2": "bsp_core:illyrium_forge_upgrade",
+      "text": "Nine nuggets make an ingot by hand. To forge Illyrium in the Combination Forge, fit the $(item)Illyrium Forge Upgrade$()."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:iron_filter",
+      "recipe2": "bsp_core:diamond_filter",
+      "text": "Filters wear out. Better filters refine far more dust before they are used up."
+    }
+  ]
+}

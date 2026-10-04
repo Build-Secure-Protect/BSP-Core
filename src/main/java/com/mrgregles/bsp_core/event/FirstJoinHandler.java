@@ -39,6 +39,20 @@ public final class FirstJoinHandler {
             return;
         }
         grant(player, ledger);
+        giveGuideBook(player);
+    }
+
+    /** Hands over the BSP Field Guide, if Patchouli is installed. */
+    private static void giveGuideBook(ServerPlayer player) {
+        var item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation("patchouli", "guide_book"));
+        if (item == null || item == net.minecraft.world.item.Items.AIR) {
+            return;
+        }
+        ItemStack book = new ItemStack(item);
+        book.getOrCreateTag().putString("patchouli:book", BSPCore.MODID + ":guide");
+        if (!player.getInventory().add(book)) {
+            player.drop(book, false);
+        }
     }
 
     /** Creates an owned totem for {@code player} and records the grant. Also used by admin commands. */

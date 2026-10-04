@@ -1,0 +1,197 @@
+<title>Shatter Coin Factory Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Controls on top (slices, motivators, coin tier), one wide
+   view of the joined machine, two close-ups (single slice, Motivators), then what changed and what is fixed. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --item:#3a8bff; --rf:#ffd23a; --coin:#e3b341; --vio:#b58cff; --on:#0b0d11;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --item:#1f63c8; --rf:#a37a00; --coin:#9a6f0c; --vio:#6b45c4; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --item:#1f63c8; --rf:#a37a00; --coin:#9a6f0c; --vio:#6b45c4; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 48px; padding-inline:16px; display:flex; flex-direction:column; gap:18px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:72ch; line-height:1.5; }
+.key{ display:flex; flex-wrap:wrap; gap:8px 18px; font-size:12.5px; color:var(--muted); }
+.key i{ display:inline-block; width:10px; height:10px; margin-right:6px; vertical-align:-1px; background:var(--c); }
+.ctl{ display:flex; flex-wrap:wrap; gap:12px 28px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:12px 14px; }
+.ctl label, .ctl .grp{ display:flex; align-items:center; gap:10px; font-size:13px; flex-wrap:wrap; }
+.ctl output{ font-family:var(--display); color:var(--tq); min-width:2ch; font-variant-numeric:tabular-nums; }
+.ctl input[type=range]{ accent-color:var(--tq); width:min(200px,50vw); }
+.ctl input:focus-visible, .ctl button:focus-visible{ outline:2px solid var(--tq); outline-offset:3px; }
+.ctl button{ font:500 12.5px var(--body); color:var(--fg); background:transparent; border:1px solid var(--line); border-radius:4px; padding:5px 10px; cursor:pointer; }
+.ctl button[aria-pressed="true"]{ background:var(--tq); border-color:var(--tq); color:var(--on); }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card h2{ font-family:var(--display); font-size:15px; margin:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; }
+.view{ width:100%; max-width:100%; aspect-ratio:16/9; border-radius:4px; overflow:hidden; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; }
+.view.sq{ aspect-ratio:4/3; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+h3{ margin:8px 0 0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.rules{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px 28px; margin:0; padding:0; list-style:none; font-size:13px; line-height:1.5; }
+.rules b{ color:var(--tq); font-weight:600; }
+</style>
+<div class="wrap">
+<h1>Shatter Coin Factory Concepts</h1>
+<p class="lede">Round two: the Cascade Mill with Motivator A, reworked from your eight notes. Drag a model to turn it. The controls change every view.</p>
+<div class="ctl">
+  <label for="slices">Slices joined <input id="slices" type="range" min="1" max="10" value="4"> <output id="slicesOut">4</output></label>
+  <label for="motiv">Motivators per slice <input id="motiv" type="range" min="0" max="3" value="3"> <output id="motivOut">3</output></label>
+  <div class="grp" role="group" aria-label="Coin being pressed"><span>Coin</span><span id="tiers"></span></div>
+</div>
+<div class="key"><span><i style="--c:var(--item)"></i>Blank input socket (back, lower block)</span><span><i style="--c:var(--rf)"></i>RF socket (back, upper block)</span><span><i style="--c:var(--tq)"></i>Screen, trim and couplings between slices</span><span><i style="--c:var(--vio)"></i>Motivator pulse and links</span></div>
+<section class="card"><h2>Joined machine</h2><p>Glass only on the two outer ends. Between slices the walls are gone: one roof, one tray, one drive shaft with a glowing coupling at every join, and the podium screen centred on the front.</p><div id="vMain"></div></section>
+<div class="grid">
+  <section class="card"><h2>Single slice</h2><p>Glass on both sides, the screen on the front block, machinery under every belt: motor and flywheel at the back, press anvil and gear train in the middle, drive rollers at the front.</p><div id="vOne"></div></section>
+  <section class="card"><h2>Motivators</h2><p>Half a block high. Neighbours link with a conduit at the base and an energy beam between cores, along a slice and across slices. More Motivators on a slice means a faster pulse.</p><div id="vMot"></div></section>
+</div>
+<h3>Your eight notes</h3>
+<ul class="rules">
+  <li><b>1. Glass sides:</b> framed glass panes on every outside wall, plus a glass strip in the roof.</li>
+  <li><b>2. Machinery:</b> motor, flywheel, gear train, press anvil, pumps, pipes and a drive shaft fill the space under the belts.</li>
+  <li><b>3. Joined slices:</b> inner walls drop away, slices share one rib, and the shaft, roof rail and tray run straight through with a coupling at each join.</li>
+  <li><b>4. Motivator height:</b> half a block.</li>
+  <li><b>5. Motivator links:</b> base conduits and core beams join neighbours in both directions.</li>
+  <li><b>6. Coin colour:</b> the blank and the coin on the belt follow the tier being pressed. Use the Coin buttons.</li>
+  <li><b>7. Coin models:</b> the belt, die and tray show the mod's own blank and Shatter Coin item sprites.</li>
+  <li><b>8. Detail:</b> plating, vents, bolts, rollers, chutes, hydraulic lines and lamps throughout.</li>
+</ul>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || location.hash==='#still';
+  const TEX={"copper_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmp/PSkLBJ4qtwBhmAIYh+DR3eSnBDUA2pGvCnP8YBmCzGd0AsBhQM9wAXLbj0oxsANgQbAbANJNlAIZiPF7AMACbbdhcg2IAcjjg0ow3EGEGwKKHkAEYtsMAciLB6RVcmtENQVaIDePNDxRpxmcQLnUA0xAmUVmGyD8AAAAASUVORK5CYII=", "copper_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAf0lEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvfN60bBaxrSwBhmAIYhxGhGN6Rrwpz/GAYQ0gzDIM1wA3DZjkszsgFgQ7AZgE8zQQMIacZrADGaMQxADgdSDUCJBVj0kGw7DCAnEpI1oxuCrBAbxpsfKNKMzyBc6gAfsjN9+QXKAAAAAABJRU5ErkJggg==", "gold_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmv8/qkLBnw7qgTHMAAxD8Gne0cYNNwDZkK4Jc/5jGIDNZnQDQBikGW4ALttxaUY2AGwINgNgmskyAF0xPi9gGIDNNmyuQTEAORxwacYbiDADYNFDyAAM22EAOZHg8gpOzeiGICvEhvHmB4o04zMIlzoAvTpLT298i8sAAAAASUVORK5CYII=", "gold_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCms/va0PBh1cngDHMAAxDiNGMbkjXhDn/MQwgpBmGQZrhBuCyHZdmZAPAhmAzAJ9mggYQ0ozXAGI0YxiAHA6kGoASC7DoIdl2GEBOJCRrRjcEWSE2jDc/UKQZn0G41AEABoVG/TVwIQUAAAAASUVORK5CYII=", "diamond_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmk/+/o+C859/AmOYARiG4NOsvXIH3ABkQ7omzPmPYQA2m9ENAGGQZrgBuGzHpRnZALAh2AyAaSbLAHTF+LyAYQA227C5BsUA5HDApRlvIMIMgEUPIQMwbIcB5ESCyys4NaMbgqwQG8abHyjSjM8gXOoAuN9tYffehokAAAAASUVORK5CYII=", "diamond_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmmeeu46Cqw+cBmOYARiGEKMZ3ZCuCXP+YxhASDMMgzTDDcBlOy7NyAaADcFmAD7NBA0gpBmvAcRoxjAAORxINQAlFmDRQ7LtMICcSEjWjG4IskJsGG9+oEgzPoNwqQMAcV1ZU+ckBnQAAAAASUVORK5CYII=", "netherite_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvNSMlCwt5M7GMMMwDAEn2YtFQ24AciGdE2Y8x/DAGw2oxsAwiDNcANw2Y5LM7IBYEOwGQDTTJYB6IrxeQHDAGy2YXMNigHI4YBLM95AhBkAix5CBmDYDgPIiQSXV3BqRjcEWSE2jDc/UKQZn0G41AEAI0XvpJldWt4AAAAASUVORK5CYII=", "netherite_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAf0lEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmrs6J6Dg9NRcMIYZgGEIMZrRDemaMOc/hgGENMMwSDPcAFy249KMbADYEGwG4NNM0ABCmvEaQIxmDAOQw4FUA1BiARY9JNsOA8iJhGTN6IYgK8SG8eYHijTjMwiXOgDZ+xZfLOC4QQAAAABJRU5ErkJggg==", "illyrium_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmnv+P0PBkpc3gDHMAAxD8Gnm7q+AG4BsSNeEOf8xDMBmM7oBIAzSDDcAl+24NCMbADYEmwEwzWQZgK4YnxcwDMBmGzbXoBiAHA64NOMNRJgBsOghZACG7TCAnEhweQWnZnRDkBViw3jzA0Wa8RmESx0AsTo6iVRgTJ4AAAAASUVORK5CYII=", "illyrium_coin_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmsuO7kHBPluXgzHMAAxDiNGMbkjXhDn/MQwgpBmGQZrhBuCyHZdmZAPAhmAzAJ9mggYQ0ozXAGI0YxiAHA6kGoASC7DoIdl2GEBOJCRrRjcEWSE2jDc/UKQZn0G41AEAJKw6oQ6//90AAAAASUVORK5CYII="};
+  const TIERS=['copper','gold','diamond','netherite','illyrium'];
+  const ITEM=0x3a8bff, RF=0xffd23a, TQ=0x19d3b0, VIO=0xb58cff, HULL=0x1e222b, HULL2=0x2b313d, PANEL=0xc9ced8, TRIM=0x8a909c, MID=0x565c6b, BELT=0x14171d, SCREEN=0x0c1116, GLASS=0xbfe6ff, WARN=0xe3b341;
+  const lam={}, L=c=>lam[c]||(lam[c]=new THREE.MeshLambertMaterial({color:c}));
+  const glassM=new THREE.MeshLambertMaterial({color:GLASS,transparent:true,opacity:.18,depthWrite:false});
+  function bx(g,f,t,c,glow){ // glow boxes get their own material so they can pulse
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), c==='glass'?glassM:glow?new THREE.MeshBasicMaterial({color:c}):L(c));
+    m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  const texCache={};
+  function tex(name){ if(!texCache[name]){ const t=new THREE.TextureLoader().load(TEX[name],()=>views.forEach(v=>v.still&&v.still())); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; texCache[name]=new THREE.MeshBasicMaterial({map:t,transparent:true,alphaTest:.5,side:THREE.DoubleSide}); } return texCache[name]; }
+  const plane=new THREE.PlaneGeometry(5,5);
+  function sprite(name){ const s=new THREE.Group(); for(let i=0;i<3;i++){ const m=new THREE.Mesh(plane,tex(name)); m.rotation.x=-Math.PI/2; m.position.y=.1+i*.22; s.add(m); } return s; } // three layers stand in for the item's thickness
+  function riders(g,x,path,pressZ,count,phase,tier){
+    const len=[]; let total=0; for(let i=1;i<path.length;i++){ const d=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]); len.push(d); total+=d; }
+    const ms=[]; for(let i=0;i<count;i++){ const o=new THREE.Group(), b=sprite(tier+'_coin_blank'), c=sprite(tier+'_shatter_coin'); o.add(b); o.add(c); g.add(o); ms.push({o,b,c}); }
+    return t=>ms.forEach((m,i)=>{ let u=((t*.08+phase+i/count)%1)*total, k=0; while(k<len.length-1&&u>len[k]){ u-=len[k]; k++; }
+      const a=path[k], b=path[k+1], q=Math.min(1,u/len[k]); const z=a[0]+(b[0]-a[0])*q, y=a[1]+(b[1]-a[1])*q;
+      m.o.position.set(x,y,z); m.b.visible=z>=pressZ; m.c.visible=z<pressZ; });
+  }
+  function belt(g,x,z0,z1,y,rolls){
+    bx(g,[x+4,y-1.2,z0],[x+12,y,z1],BELT); bx(g,[x+3.2,y-1.8,z0-.4],[x+4,y+.5,z1+.4],TRIM); bx(g,[x+12,y-1.8,z0-.4],[x+12.8,y+.5,z1+.4],TRIM);
+    bx(g,[x+3,y-1,z0-.2],[x+13,y-.2,z0+.8],PANEL); bx(g,[x+3,y-1,z1-.8],[x+13,y-.2,z1+.2],PANEL);                    // end rollers
+    for(let z=z0+3;z<z1-1;z+=4){ bx(g,[x+3.4,y-3.4,z],[x+4,y-1.8,z+.8],MID); bx(g,[x+12,y-3.4,z],[x+12.6,y-1.8,z+.8],MID); } // hangers
+    bx(g,[x+3.2,y+.5,z0],[x+3.5,y+.75,z1],TQ,true); bx(g,[x+12.5,y+.5,z0],[x+12.8,y+.75,z1],TQ,true);                    // lit rails
+    const r=[]; for(let z=z0+1;z<z1-1;z+=3) r.push(bx(g,[x+4.2,y,z],[x+11.8,y+.08,z+.5],0x2a2f3a)); rolls.push({r,z0,z1}); }
+  function sidewall(g,x0,x1){ // an outside wall: frame, vents, glass
+    bx(g,[x0,3,0],[x1,7,40],HULL); bx(g,[x0,27,0],[x1,30,40],HULL);
+    [[0,2],[19,21],[38,40]].forEach(([a,b])=>bx(g,[x0-.2,3,a],[x1+.2,30,b],HULL2));
+    const out=x0<8?x0-.25:x1; [[4,9],[11,16],[23,28],[30,35]].forEach(([a,b])=>{ bx(g,[out,4,a],[out+.25,6,b],SCREEN); for(let z=a+.6;z<b;z+=1.2) bx(g,[out-.02,4.4,z],[out+.27,5.6,z+.4],TQ,true); });
+    bx(g,[x0+.3,7,2],[x1-.3,27,19],'glass'); bx(g,[x0+.3,7,21],[x1-.3,27,38],'glass');
+    bx(g,[out,27.6,2],[out+.25,28.2,38],TQ,true);
+    [[1,8],[1,26],[20,8],[20,26],[39,8],[39,26]].forEach(([z,y])=>bx(g,[out-.1,y,z-.4],[out+.35,y+.8,z+.4],TRIM)); }
+  function slice(g,i,n,tier){ const x=i*16, first=i===0, last=i===n-1, rolls=[], spin=[], bob=[], lamps=[];
+    // deck with plating and a pipe run
+    bx(g,[x,0,0],[x+16,3,48],HULL2); bx(g,[x+.5,3,.5],[x+15.5,3.3,15.5],MID); bx(g,[x+.5,3,16.5],[x+15.5,3.3,31.5],MID); bx(g,[x+.5,3,32.5],[x+15.5,3.3,39.5],MID);
+    bx(g,[x,1,-.2],[x+16,1.6,0],WARN,true);
+    // back blocks: hull, hopper mouth, sockets
+    bx(g,[x,3,40],[x+16,30,48],HULL); bx(g,[x+1,6,39.6],[x+15,8,40],TRIM); bx(g,[x+1,26,39.6],[x+15,27,40],TRIM); bx(g,[x+4.5,22,39.5],[x+11.5,28,40],SCREEN); bx(g,[x+5,22.4,39.3],[x+11,23,39.5],ITEM,true);
+    bx(g,[x+2,10,39.6],[x+14,20,40],HULL2); for(let y=11;y<20;y+=2) bx(g,[x+3,y,39.4],[x+13,y+.8,39.6],MID);
+    bx(g,[x+4.5,4.5,48],[x+11.5,11.5,48.6],TRIM); bx(g,[x+5.7,5.7,48.6],[x+10.3,10.3,48.9],ITEM,true);
+    bx(g,[x+4.5,20.5,48],[x+11.5,27.5,48.6],TRIM); bx(g,[x+5.7,21.7,48.6],[x+10.3,26.3,48.9],RF,true);
+    [[2,14],[2,17],[14,14],[14,17]].forEach(([px,py])=>bx(g,[x+px-.5,py-.5,48],[x+px+.5,py+.5,48.3],TRIM));
+    // roof: rails, cross beams, glass strip, light bar
+    bx(g,[x,30,0],[x+16,32,2],HULL2); bx(g,[x,30,15],[x+16,32,17],HULL2); bx(g,[x,30,31],[x+16,32,33],HULL2); bx(g,[x,30,40],[x+16,32,48],HULL2);
+    bx(g,[x,30,2],[x+3,32,40],HULL2); bx(g,[x+13,30,2],[x+16,32,40],HULL2); bx(g,[x+3,30.6,2],[x+13,31.2,40],'glass');
+    bx(g,[x,29.4,.2],[x+16,30,.6],TQ,true);
+    // walls: glass on the outside, a shared slim rib and couplings on a join
+    if(first) sidewall(g,x,x+1);
+    if(last) sidewall(g,x+15,x+16);
+    if(!first){ [[0,2],[38,40]].forEach(([a,b])=>bx(g,[x-.6,3,a],[x+.6,30,b],HULL2));
+      bx(g,[x-1.2,4.6,15.6],[x+1.2,7.4,18.4],TRIM); lamps.push(bx(g,[x-.5,4.3,15.3],[x+.5,7.7,18.7],TQ,true));          // shaft coupling
+      bx(g,[x-1.5,31.6,6],[x+1.5,32.6,10],TRIM); lamps.push(bx(g,[x-1,32.6,7],[x+1,32.9,9],TQ,true));                   // roof clamps
+      bx(g,[x-1.5,31.6,22],[x+1.5,32.6,26],TRIM); lamps.push(bx(g,[x-1,32.6,23],[x+1,32.9,25],TQ,true));
+      lamps.push(bx(g,[x-.3,8,.0],[x+.3,28,.3],TQ,true)); }
+    // belts and drop chutes
+    belt(g,x,28,40,25,rolls); belt(g,x,14,30,17,rolls); belt(g,x,1,16,9,rolls);
+    bx(g,[x+4,18,27.2],[x+12,24,27.6],MID); bx(g,[x+4,10,13.2],[x+12,16,13.6],MID); bx(g,[x+4,4,.2],[x+12,8,.6],MID);
+    // press: gantry, guide rails, hydraulics, moving head and die, anvil
+    bx(g,[x+2.2,17,18.5],[x+4,30,25.5],MID); bx(g,[x+12,17,18.5],[x+13.8,30,25.5],MID); bx(g,[x+2.2,28,18.5],[x+13.8,30,25.5],HULL);
+    bx(g,[x+4,18,19.4],[x+4.4,28,19.9],PANEL); bx(g,[x+4,18,24.1],[x+4.4,28,24.6],PANEL); bx(g,[x+11.6,18,19.4],[x+12,28,19.9],PANEL); bx(g,[x+11.6,18,24.1],[x+12,28,24.6],PANEL);
+    bx(g,[x+1.6,19,21.4],[x+2.2,29,22.6],TRIM); bx(g,[x+13.8,19,21.4],[x+14.4,29,22.6],TRIM);
+    const ram=bx(g,[x+6.5,0,20.5],[x+9.5,5,23.5],PANEL), head=bx(g,[x+4.6,0,19.5],[x+11.4,3,24.5],HULL2), die=bx(g,[x+5.6,0,20.5],[x+10.4,.5,23.5],TQ,true);
+    lamps.push(bx(g,[x+5,28.4,18.2],[x+11,29.2,18.5],TQ,true));
+    // machinery under belt 1: motor with fins and flywheel, feed pipe
+    bx(g,[x+3,3.3,31],[x+13,15,39],HULL); for(let z=32;z<39;z+=1.6) bx(g,[x+2.6,5,z],[x+13.4,14,z+.7],MID);
+    bx(g,[x+4,15,32],[x+12,16.5,38],HULL2); bx(g,[x+5,16.5,33.5],[x+7,23,35.5],TRIM); bx(g,[x+9,16.5,33.5],[x+11,23,35.5],TRIM); bx(g,[x+5,19,35.5],[x+11,20.4,36.6],MID);
+    spin.push(bx(g,[x+6.2,6,29.6],[x+9.8,13,30.6],PANEL)); bx(g,[x+7.2,8.5,29.2],[x+8.8,10.5,31],TRIM); lamps.push(bx(g,[x+4,15.1,31.4],[x+12,15.5,31.8],WARN,true));
+    // under belt 2: press anvil, gear train, pumps
+    bx(g,[x+5,3.3,19],[x+11,15.6,25],MID); [6,10,13.4].forEach(y=>bx(g,[x+4.6,y,18.6],[x+11.4,y+.8,25.4],TRIM)); bx(g,[x+4.2,3.3,18.2],[x+11.8,5,25.8],HULL);
+    bx(g,[x+2,3.3,25.6],[x+14,11,29.2],HULL2); bx(g,[x+3,11,26.2],[x+13,12,28.6],TRIM);
+    spin.push(bx(g,[x+2.4,5.5,26.2],[x+3.2,9.5,29],PANEL)); spin.push(bx(g,[x+12.8,5.5,26.2],[x+13.6,9.5,29],PANEL));
+    [[2.6,14.6],[11.6,14.6]].forEach(([px,pz])=>{ bx(g,[x+px,3.3,pz],[x+px+2,8,pz+2.4],HULL); bob.push(bx(g,[x+px+.5,8,pz+.6],[x+px+1.5,12,pz+1.8],PANEL)); });
+    // under belt 3: drive rollers and chain
+    for(let z=3;z<13;z+=3.2) spin.push(bx(g,[x+4.4,4.2,z],[x+11.6,6.6,z+2.2],MID));
+    bx(g,[x+3.4,3.3,2],[x+4.2,7.4,14],HULL); bx(g,[x+11.8,3.3,2],[x+12.6,7.4,14],HULL); lamps.push(bx(g,[x+3.2,5.4,2],[x+3.4,5.8,14],TQ,true));
+    // drive shaft through the whole machine, pipes along the deck
+    const shaft=bx(g,[x,5.2,16.2],[x+16,6.8,17.8],PANEL); bx(g,[x+7,3.3,15.6],[x+9,7.6,18.4],HULL);
+    bx(g,[x,3.3,36.6],[x+16,4.5,37.8],TRIM); bx(g,[x,3.3,29.6],[x+16,4.3,30.4],MID); bx(g,[x,26,38.6],[x+16,27,39.4],TRIM);
+    // tray: one continuous trough, closed only at the outer ends
+    bx(g,[x,1.6,-6],[x+16,2.6,0],MID); bx(g,[x,2.6,-6],[x+16,4.6,-5.4],TRIM); if(first) bx(g,[x,2.6,-6],[x+.6,4.6,0],TRIM); if(last) bx(g,[x+15.4,2.6,-6],[x+16,4.6,0],TRIM);
+    [[5,-3,.3],[9,-2.2,.9],[10.5,-3.6,.1],[7,-2.9,1.6]].forEach(([px,pz,ry],k)=>{ const s=sprite(tier+'_shatter_coin'); s.position.set(x+px,2.6+k*.25,pz); s.rotation.y=ry; g.add(s); });
+    const ride=riders(g,x+8,[[39,25],[29,25],[28,17],[15,17],[14,9],[2,9],[-2.5,3.4]],22,7,i*.137,tier);
+    return t=>{ ride(t); const s=Math.abs(Math.sin(t*2.6+i*.8)); ram.position.y=24.5+s*4; head.position.y=20.2+s*4; die.position.y=18.4+s*4;
+      spin.forEach((m,k)=>m.rotation.x=t*(k%2?3:-3)); shaft.rotation.x=t*3; bob.forEach((m,k)=>m.position.y=10+Math.sin(t*4+k*2)*1.2);
+      lamps.forEach(m=>m.material.color.setHex(m.userData.c??(m.userData.c=m.material.color.getHex())).multiplyScalar(.7+.3*Math.sin(t*3)));
+      rolls.forEach(o=>o.r.forEach((m,k)=>{ const span=o.z1-o.z0-2; m.position.z=o.z0+1+((k*3-t*5)%span+span)%span; })); };
+  }
+  // Motivator A, half a block high, base at (x,y,z). Returns its glowing parts.
+  function motivator(g,x,y,z){ const p=[]; bx(g,[x+3,y,z+3],[x+13,y+1.4,z+13],HULL2); bx(g,[x+6,y+1.4,z+6],[x+10,y+6,z+10],HULL);
+    [[3.4,3.4],[11.6,3.4],[3.4,11.6],[11.6,11.6]].forEach(([a,b])=>bx(g,[x+a,y+1.4,z+b],[x+a+1,y+1.9,z+b+1],TRIM));
+    [2.2,4.2].forEach(h=>{ bx(g,[x+4,y+h,z+4],[x+12,y+h+.6,z+12],TRIM); p.push(bx(g,[x+3.6,y+h+.6,z+3.6],[x+12.4,y+h+1,z+12.4],VIO,true)); });
+    p.push(bx(g,[x+6.5,y+6,z+6.5],[x+9.5,y+8,z+9.5],VIO,true)); return p; }
+  function motivators(g,n,m,y){ const p=[];
+    for(let i=0;i<n;i++) for(let k=0;k<m;k++){ const x=i*16, z=k*16; p.push(...motivator(g,x,y,z));
+      if(k<m-1){ bx(g,[x+6.4,y,z+13],[x+9.6,y+1.2,z+19],TRIM); p.push(bx(g,[x+7.2,y+1.2,z+13],[x+8.8,y+1.5,z+19],VIO,true)); p.push(bx(g,[x+7.6,y+6.7,z+9.5],[x+8.4,y+7.3,z+22.5],VIO,true)); } // along the slice
+      if(i<n-1){ bx(g,[x+13,y,z+6.4],[x+19,y+1.2,z+9.6],TRIM); p.push(bx(g,[x+13,y+1.2,z+7.2],[x+19,y+1.5,z+8.8],VIO,true)); p.push(bx(g,[x+9.5,y+6.7,z+7.6],[x+22.5,y+7.3,z+8.4],VIO,true)); } }   // across slices
+    return p; }
+  function podium(g,n){ const cx=n*8; bx(g,[cx-8,0,-16],[cx+8,2,-6],HULL2); bx(g,[cx-8,2,-16],[cx+8,2.4,-15.6],WARN,true); bx(g,[cx-2.5,2,-12.5],[cx+2.5,11,-9],HULL); bx(g,[cx-2,4,-12.8],[cx+2,9,-12.5],MID);
+    bx(g,[cx-7,10.5,-13.5],[cx+7,19.5,-11],HULL); bx(g,[cx-7.4,10.1,-13.2],[cx+7.4,10.6,-11.2],TRIM); bx(g,[cx-6,11.5,-13.9],[cx+6,18.5,-13.5],SCREEN,true);
+    bx(g,[cx-5,12.5,-14.1],[cx+1,13.4,-13.9],TQ,true); bx(g,[cx-5,14.6,-14.1],[cx+5,15.3,-13.9],TQ,true); bx(g,[cx-5,16.4,-14.1],[cx-1,17.1,-13.9],WARN,true); bx(g,[cx+3,12.5,-14.1],[cx+5,13.4,-13.9],RF,true);
+    bx(g,[cx-.8,2,-9],[cx+.8,3,-6],TRIM); }
+  function single(g){ bx(g,[2.5,10.4,-.8],[13.5,16.4,.2],HULL); bx(g,[3.3,11,-1.1],[12.7,15.8,-.8],SCREEN,true); bx(g,[4,11.8,-1.3],[9,12.6,-1.1],TQ,true); bx(g,[4,13.8,-1.3],[12,14.5,-1.1],TQ,true); bx(g,[10.5,11.8,-1.3],[12,12.6,-1.1],RF,true); }
+
+  const state={n:4,m:3,tier:'gold'}, views=[];
+  function makeView(id,sq,build){
+    const view=document.createElement('div'); view.className='view'+(sq?' sq':''); document.getElementById(id).appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,1,2000); scene.add(new THREE.AmbientLight(0xffffff,.65));
+    const d=new THREE.DirectionalLight(0xffffff,.8); d.position.set(-10,22,-16); scene.add(d);
+    let g=null, tick=()=>{}, target=[0,0,0], dist=150, ry=Math.PI+.8, rx=.3, drag=false, lx=0, ly=0;
+    const place=()=>{ cam.position.set(target[0]+Math.sin(ry)*dist*Math.cos(rx),target[1]+Math.sin(rx)*dist,target[2]+Math.cos(ry)*dist*Math.cos(rx)); cam.lookAt(target[0],target[1],target[2]); r.render(scene,cam); };
+    const v={ rebuild(){ if(g) scene.remove(g); g=new THREE.Group(); scene.add(g); const o=build(g); tick=o.tick; target=o.target; dist=o.dist; } };
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.1,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; if(reduce) place(); });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); if(reduce) place(); }; new ResizeObserver(rs).observe(view);
+    if(reduce) v.still=()=>{ tick(1.3); place(); };
+    views.push(v); v.rebuild(); rs();
+    const t0=performance.now(); if(reduce) v.still(); else (function f(now){ if(!drag) ry+=.0012; tick((now-t0)/1000); place(); requestAnimationFrame(f); })(t0);
+    return v; }
+  const pulse=(list,t,count)=>list.forEach((m,k)=>m.material.color.setHex(VIO).multiplyScalar(.35+.65*(.5+.5*Math.sin(t*(1.5+2.2*count)-m.position.z*.12-m.position.x*.05))));
+  function machine(n){ return g=>{ const ticks=[]; for(let i=0;i<n;i++) ticks.push(slice(g,i,n,state.tier)); const glows=motivators(g,n,state.m,32); if(n>1) podium(g,n); else single(g);
+    return { tick:t=>{ ticks.forEach(f=>f(t)); pulse(glows,t,state.m); }, target:[n*8,17,20], dist:n>1?100+n*16:120 }; }; }
+  makeView('vMain',false,g=>machine(state.n)(g));
+  makeView('vOne',true,g=>machine(1)(g));
+  makeView('vMot',true,g=>{ bx(g,[0,-2,0],[32,0,48],HULL2); bx(g,[3,-.6,2],[13,0,40],'glass'); bx(g,[19,-.6,2],[29,0,40],'glass'); const glows=motivators(g,2,Math.max(1,state.m),0);
+    return { tick:t=>pulse(glows,t,Math.max(1,state.m)), target:[16,3,22], dist:105 }; });
+  const refresh=()=>views.forEach(v=>{ v.rebuild(); if(v.still) v.still(); });
+  [['slices','n'],['motiv','m']].forEach(([id,key])=>{ const inp=document.getElementById(id), out=document.getElementById(id+'Out');
+    inp.addEventListener('input',()=>{ state[key]=+inp.value; out.textContent=inp.value; refresh(); }); });
+  const tb=document.getElementById('tiers'); TIERS.forEach(t=>{ const b=document.createElement('button'); b.type='button'; b.id='tier-'+t; b.textContent=t[0].toUpperCase()+t.slice(1); b.setAttribute('aria-pressed',t===state.tier);
+    b.addEventListener('click',()=>{ state.tier=t; tb.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',o===b)); refresh(); }); tb.appendChild(b); tb.appendChild(document.createTextNode(' ')); });
+})();
+</script>

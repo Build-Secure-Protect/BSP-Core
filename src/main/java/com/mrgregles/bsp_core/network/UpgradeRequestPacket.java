@@ -46,12 +46,19 @@ public record UpgradeRequestPacket(InteractionHand hand, int buffOrdinal) {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.maxed").withStyle(ChatFormatting.YELLOW), true);
             return;
         }
-        if (!player.isCreative() && player.experienceLevel < cost) {
-            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_xp", cost).withStyle(ChatFormatting.RED), true);
-            return;
-        }
-        if (!player.isCreative()) {
-            player.giveExperienceLevels(-cost);
+        if (buff.currency == TotemUpgrades.Currency.COINS) {
+            if (!player.isCreative() && !com.mrgregles.bsp_core.coin.CoinWallet.pay(player, cost)) {
+                player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_coins", cost).withStyle(ChatFormatting.RED), true);
+                return;
+            }
+        } else {
+            if (!player.isCreative() && player.experienceLevel < cost) {
+                player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_xp", cost).withStyle(ChatFormatting.RED), true);
+                return;
+            }
+            if (!player.isCreative()) {
+                player.giveExperienceLevels(-cost);
+            }
         }
         TotemUpgrades.setLevel(totem, buff, level + 1);
         // The upgrade menu has no slots, so the open container never re-sends the hand slot. Push it directly.

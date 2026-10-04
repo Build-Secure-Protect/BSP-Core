@@ -45,7 +45,7 @@ Server config is generated at `<world>/serverconfig/bsp_core-server.toml`.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `first_join.grantTotemOnFirstJoin` | `false` | Give a Shatter Totem on first join. Enable only on the Spawn Hub server. |
+| `first_join.grantTotemOnFirstJoin` | `true` | Give a Shatter Totem and the guide book on first join. On a network, keep it on for the Spawn Hub only. |
 | `upgrades.damageXpLevelCosts` | `[5, 10, 20, 35, 55]` | XP level cost of each Damage buff level. List length is the max level. |
 | `upgrades.resistanceXpLevelCosts` | `[5, 10, 20, 35, 55]` | Same for Resistance. |
 | `upgrades.miningSpeedXpLevelCosts` | `[5, 10, 20, 35, 55]` | Same for Mining Speed. |
@@ -59,7 +59,7 @@ Server config is generated at `<world>/serverconfig/bsp_core-server.toml`.
 | `factory.pressHours` | `[12, 24, 48, 96, 168]` | Real-time hours per coin by tier, before upgrades. |
 | `factory.energyPerCoin` | `[50k, 100k, 200k, 400k, 800k]` | RF taken when a press starts. |
 | `factory.energyCapacity` / `maxReceivePerTick` | `1,000,000` / `10,000` | Energy buffer and input rate. |
-| `factory.upgradeTimeReduction` | `[0.05, 0.15, 0.30]` | Time removed by Speed Gear Mk I / II / III; fitted gears add up. |
+| `factory.motivatorTimeReduction` | `[0.15, 0.30, 0.50]` | Share of a slice's press time removed by one, two, three Motivators on top of it. |
 | `factory.maxTotalReduction` | `0.75` | Cap on the combined reduction. |
 | `factory.maxPerPlayer` | `10` | Factories one player may own on a server. |
 | `visuals.auraSphereViewDistance` | `32` | Aura spheres are only drawn within this many blocks of the totem. |

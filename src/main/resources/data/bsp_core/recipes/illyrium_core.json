@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PDP",
+    "DOD",
+    "PDP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "O": {
+      "tag": "bsp_core:illyrium_ores"
+    }
+  },
+  "result": {
+    "item": "bsp_core:illyrium_core"
+  }
+}

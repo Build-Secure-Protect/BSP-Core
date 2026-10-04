@@ -1,0 +1,21 @@
+{
+  "name": "RF Upgrades",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:rf_upgrade_mk1",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on the Crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.$(br2)The Combination Forge runs on RF alone with an upgrade, at twice its coal speed."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:rf_upgrade_mk1",
+      "recipe2": "bsp_core:rf_upgrade_mk2"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:rf_upgrade_mk3"
+    }
+  ]
+}

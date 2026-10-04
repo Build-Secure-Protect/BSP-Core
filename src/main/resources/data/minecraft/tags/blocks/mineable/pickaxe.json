@@ -16,6 +16,11 @@
     "bsp_core:lava_pylon",
     "bsp_core:refinery_pump",
     "bsp_core:item_hatch",
-    "bsp_core:illyrium_core"
+    "bsp_core:illyrium_core",
+    "bsp_core:factory_frame",
+    "bsp_core:factory_press",
+    "bsp_core:factory_blank_hatch",
+    "bsp_core:factory_power_port",
+    "bsp_core:factory_motivator"
   ]
 }

@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "TIT",
-    "DRD",
+    "WRW",
     "TIT"
   ],
   "key": {
@@ -12,8 +12,8 @@
     "I": {
       "item": "bsp_core:illyrium_nugget"
     },
-    "D": {
-      "item": "minecraft:redstone"
+    "W": {
+      "item": "bsp_core:tetrium_coil"
     },
     "R": {
       "item": "minecraft:redstone_block"

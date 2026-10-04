@@ -1,0 +1,142 @@
+<title>Assembly Guide Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. A machine picker on top, then three stacked cards, each a
+   working mock of the in-game Assembly Guide screen in the game's own Holo HUD colours (same in both themes). */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-out:#ff8a3a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; }
+.wrap{ max-width:900px; margin:0 auto; padding-block:28px 48px; padding-inline:16px; display:flex; flex-direction:column; gap:18px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:72ch; line-height:1.5; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:12px 14px; font-size:13px; }
+.ctl button{ font:500 12.5px var(--body); color:var(--fg); background:transparent; border:1px solid var(--line); border-radius:4px; padding:5px 10px; cursor:pointer; }
+.ctl button[aria-pressed="true"]{ background:var(--tq); border-color:var(--tq); color:var(--on); }
+button:focus-visible, input:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card h2{ font-family:var(--display); font-size:15px; margin:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; max-width:75ch; }
+/* ---- the in-game screen ---- */
+.hud{ background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.hud .top{ display:flex; justify-content:space-between; gap:12px; color:var(--h-tq); font-size:12px; flex-wrap:wrap; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.view{ width:100%; aspect-ratio:16/10; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; position:relative; overflow:hidden; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 10px; cursor:pointer; }
+.hb[aria-pressed="true"], .hb.on{ border-color:var(--h-tq); color:var(--h-tq); }
+.row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.cap{ min-height:2.6em; line-height:1.5; }
+.split{ display:grid; grid-template-columns:minmax(0,1fr) 190px; gap:12px; }
+@media (max-width:620px){ .split{ grid-template-columns:1fr; } }
+.parts{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; list-style:none; }
+.parts li{ display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; }
+.parts img, .sw{ width:20px; height:20px; image-rendering:pixelated; background:var(--h-vio); }
+.parts .done{ color:var(--h-tq); } .parts .now{ color:var(--h-out); }
+.bubble{ position:absolute; left:10px; right:10px; bottom:10px; background:rgba(16,21,28,.9); border:2px solid var(--h-tq); padding:8px 10px; line-height:1.5; pointer-events:none; }
+input[type=range]{ accent-color:#19d3b0; flex:1; min-width:120px; }
+</style>
+<div class="wrap">
+<h1>Assembly Guide Concepts</h1>
+<p class="lede">Three ways the in-game Assembly Guide could show how a multiblock goes together. All three are working mock-ups: pick a machine, press the buttons, drag a model to turn it. In game this would open from an unfinished controller and from the guide book.</p>
+<div class="ctl" role="group" aria-label="Machine"><span>Machine</span><span id="machines"></span></div>
+<section class="card"><h2>A. Step Builder</h2><p>One step at a time: the blocks for the current step pulse, earlier ones are solid, later ones are faint ghosts. A parts list on the right counts what you have placed so far. The closest to a checklist; good for building along with it open.</p>
+<div class="hud"><div class="top"><span>ASSEMBLY GUIDE</span><span id="aName"></span></div>
+<div class="split"><div><div class="view" id="aView"></div></div><ul class="parts" id="aParts"></ul></div>
+<div class="cap" id="aCap"></div>
+<div class="row"><button class="hb" id="aPrev" type="button">&lt; Back</button><button class="hb" id="aPlay" type="button">Play</button><button class="hb" id="aNext" type="button">Next &gt;</button><small id="aStep"></small></div></div></section>
+<section class="card"><h2>B. Exploded Layers</h2><p>The whole machine at once, pulled apart into its layers. Pick a layer to light it up and list exactly what goes on it. Fastest to read if you already know roughly what you are building; nothing animates unless you move the slider.</p>
+<div class="hud"><div class="top"><span>ASSEMBLY GUIDE</span><span id="bName"></span></div>
+<div class="split"><div><div class="view" id="bView"></div></div><ul class="parts" id="bParts"></ul></div>
+<div class="row" id="bLayers"></div>
+<div class="row"><small>Spread</small><input id="bSpread" type="range" min="0" max="100" value="70" aria-label="Spread layers apart"></div></div></section>
+<section class="card"><h2>C. Ponder Scene</h2><p>The Create approach: a short scene plays, blocks drop into place group by group, and a caption explains each one. A scrubber lets you jump around. The most fun to watch and the clearest for a first-time builder; least useful as a checklist.</p>
+<div class="hud"><div class="top"><span>ASSEMBLY GUIDE</span><span id="cName"></span></div>
+<div class="view" id="cView"><div class="bubble" id="cCap"></div></div>
+<div class="row"><button class="hb" id="cPlay" type="button">Pause</button><input id="cScrub" type="range" min="0" max="1" value="0" aria-label="Scene position"><small id="cStep"></small></div></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TEX={"illyrium_casing": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB00lEQVR42o2T6VITURCF72v4AiRIJmFVWSQgr6VWEQUDJCRMNhK2UgS3P76LD9T2d2Y6VvmLH13Tt7tv9znn9qTx9Q8bzr5ZJ781/Letjr1rdS2fPthJ78r6k3s7OpvY0enYzi5uFDs8zu20f626hPN8eceq9U1rbBz4d8vP27bY2LalldeKLza25BOrrTblZ2tNNU0Dn05Rtr6ni/X1fU/uzWO66E2J1zfeKFbU7ghFOvyUq2hpZdee/fn9JGMAaKCe8ssHNaAjyUr2Sn5AzkDkxgByUUNMCBDv/wY15wdsNVgraFRqL+c1xKgbueip1R4U3DxIEq6aUOrApYXaCzXDYgiCdwd3lngWEgs+IRrEBKbigwj1o4Z6mqsBFEg0HAXJ4B8ayESneMqiptCmN/pi6cPJUJd414CHURzU2A1iQYEGnI87l5Z4irhEspptzhcIk6iruzLO1OBDb3j13dL7jz0dAt6/yU3BjCbQqJQahMDop0UKUZ66SCEwd9OFLxIKA4vOTIZGvECIWtBo6hyIe6PP/i9MH5UAYtU7A58CvuJaTquWWuiJOXv9YPYIgq/6ddFicvPT7Zd2nC079wmsa398X/7yd/ql292p4LfPZ/YXbVn+quW5fBgAAAAASUVORK5CYII=", "lava_pylon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABvElEQVR42o1TyVLCQBCdb/CmB4+CkoAglLIIqH9lqVWgIHsgYV+kFMHt4r/4QW2/hqGsJAcPU+mZ1/P69UuP6k8/qDt+o4b9RIhvig26LTbJHi2pak2oPVhQqT6gUq1P9c5Mzgplm2rtqeQpBEfHGQqGkxRJXPE3xfs0pfZ3iK73ZCEORc/pMJImI5aT2DzJCalyuDoum/G8XAzHLxjMewhwHk5cSt46NyMqVOHRFsZQNEu7P9/b5Sb4i6EA1KB1ZQ+XQgBGgAHzTGJvC1nBdI7JikQBzHMTGNyfmyBgnG5zoAB5PTZdFSvOujc+BIheAboJIBlLF4HhTWdOCr8FwAFX0AR+JsJ9nYN8GC8EaAFAhFUAhEy05FWQkvN1Tlo8sHovpO6rXbmE/6rl+bWAM90CCLAvN4ak8Cv0JYBBM+mrwIhlRTZyEMPU7uSd1N2DJRstD1+Y6mmBJzSw8QAegQz+ySBpU/47SKKYyXBXdXiQ4DBkgRleoA2/FpAHv7Riq/fMb2G0EgASg8wM+UhwEwDTRYDj0TnjFRS8ytOFF4PZJ68vmXFMWYsrYFzb/cXmyc/lSVeaI5FfaY3pF1lLDWC/vwmRAAAAAElFTkSuQmCC", "item_hatch": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABnElEQVR42pVTyU4CQRDtD/DixcQfEBCGEYQoiyz6W2oCCg7rwAz7GkVwu/gbXrx48W/KegXjwRjTHirdVV316tXSqjd5os7ogerOjHA/L9bpotggZ7ikij2mVn9BpVqfStUe1dpTsRXKDlVbE/FTuOwfpMkfTpAZP+MzyXqKAmaKgpETsQfMpNxhC0WzcjcOswKqXM4OJyOWk8BwLM+PuW+bBDIo7OH4qdjWvmlhoQo3jjgFIxna/XjVEiQAG5SunMFSAICIx7f3zz8FPj7jmFnk1wzQvJ8AW9s7v4oHAAYA6XLTVdFy17WxURcAwWh4w52TwlhQz17oSBsA/miyAKAEBJvMQhcA00IP7O4dqatKR+rHXP8DgDLK9QEpjAIKRBcgFM2Qj1l3xo+kLq9tUTAJ3TF6i4b+ySJ5TdFdJGHMSRGr2rxI2G/QAjJ64TcS4gAd/QE7vMMPusfY7t7yXxiu5AH77mdk7AQccEqtm2x485KIzv7uaAUG9/J10Yv+9JnlRXYcW9bkDFjXVm+x+fJz+dJWYyj0reaIvgCREiSvh7o0YAAAAABJRU5ErkJggg==", "illyrium_core": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAfklEQVR42mPomjDnPyWYAUTIKWmThXEawN1fgRUTZQCyBsnLG/73/H+G0xAMA2CKQJpgmpFpdENQDMCm+f3/32CMyxCsBqBrRjcErwG4NGMzBKsBMGfiMgDZGwTDAJ9mosIA2RDkgMVpAC5DcGkmKiGhO5tgQqJKUiYrM1GCATwtXCnZbc9FAAAAAElFTkSuQmCC", "illyrium_glass": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAARElEQVR42mPomjDnPyWYAUTsf/bfDR3///9/GjZxZDmcBhCjGacBxGrGagApmjEMIFUzigHkaMYbiMR6aTQah1c0UoIBU7DwL9nMMhQAAAAASUVORK5CYII=", "refinery_pump": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABr0lEQVR42o1TyVICQQztX/DozZOswwhCKYuA+ltqFSjIMsPADPsipQhuF//FD4p5gba0SnQOXd1JXicvr9OqP32h7viJLPeOcL4oW3RZtskdLanuTKg9WFClOaBKo0/Nzkx8papLjfZUcAqH8EGOgrE0malz3jNsZylkZikSPxF/yMzIGb5ooiBn47AgSZXH1QEykkW5GEuecrD45ZOLnBT+WOpMfGtsTlio0q0roEg8T7sf774WCoANWlfucCkJkBHBgHFMO3vhXxdiGmMwI2EA8fwm0BgwAK7HoqtyzVv3xk4E0SvAmSb9WPCBti4CwW1vTgrPgsB+9OjfBBoDPESWBGgBAZNZIAia2xKg1TUmKxo4vQdS1/WuXMK7ftfgrxaQALiqNSSFp4ChFQ4a6a0igjYw0USeAsy6O3kmdXXjiKHpYd/6jBsN9KBBPxkkLYrfQRLGnAx3VYcHCfMNWsgMLdAGALChD1ghDhxszdjp3fNfGK0kgHkPcmbMBADYpddNNcR0EbEZ741XYPAoXxdaDGavvN5kxjFlLa6AcW33F5svP5cvXbNHQr/WGtMnlrcKKYsfCbAAAAAASUVORK5CYII=", "factory_frame": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACE0lEQVR42k1U2VIiQRDs/3BVvBmZGbwXvMXfEg0cQRSHG0YM8D5C/ZJ92ef9m9rKbNvwoaKnqruyKrOrx5TO23JSbkq5lkip0pZW8iyt62c5jupyWu1I8TSW47MG/fb1i0QXXanWbySqdukbBLzspiwEOcks74i/sqf+lqSDvGTXDyVY3Wd8cWmbllnZ5Vl8FxXUXLXveOjP33+aUJBQzV/dk2BtnwAE939zRVI6zPPsvMZQ3KAdHEbACzdtdT2ETpAYrh3o3gaBM8u7XAONYQV1U4xitohqSEAVJPnaKsAAim/skZ76ltIW9TLlWp+to23LPUd0aMBVu0EC1rQmo7r9zkuj9ygmGX0w0XIusAroAMBRchpAq+9vPV+5SsQ0+o/fQo1NLtB+pdIyPrUoqdmQ31gnpjMa82Q85REI1rl5E9MZvLIy2kTy5ExAQxJAxibmmczYXFYBPYoJXfrDDzFHOii4W3AHL4qlejiezkANbYMSREbBy+ZQTNy5owNz6mNQeAu4gS+w8Kc+6uO24u495mBAdTk8ygsHcaU/rwxm58NOLDTDfrP/ZAcJirvBgSHBjTY7I2iBBewN5eifxwMdJNUArWM8IQ7ArCYWlPMPQD9HAFDDWcTRvb6FW92wPEHDDY17RA7EPSD4rivoZ6BkrTXicwan6KLHjXr3QXrDdzlTPxl9MoYzeOKlSotPGr+C//9i3CoAYb/XAAAAAElFTkSuQmCC", "factory_blank_hatch": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB3klEQVR42o1UyU4CQRDtD/DixYsaPQnIDMiisigg/pZgYFiFYRmWAQKiiBrxS7x49m/KejUZEhMjHio9VV39qur161GFqkW35Q6VGzYVKhZ17SV1R0vKGy0q1nqUK5qUL7XFt0bPZNT7VGtNyKj1xVcI+IIJ8ugx8ocuSQun2U+SV49T8PSa9EhG4scnF2L+cEpy8Z1jUNW05pL08fnFB7IUYNMiadKjGQEQcO1cVhzyBuKSe8QxFFdoB8kI+AIJpzonoRMcDESveO9MgP2hlKw6x7BidJUzTGkR1XDgrjP901DEGSkpfKlyYyito21UR9LW9s6vhj1UR4ew9mBByp6t5KAzc3YNkGjQD3MBXD6QX2napNrDxZqo3QPPRoD9Q5+QDutNXkn1xi9SGXP9B2CPAUCmxtc5nK5I3bBQcLdevlvMtQkA4+JmUBC+MntzcWDY2EQirhuFoAmz/wAdjDmQcMTDc226RqgQnEEnneGTIyTI1hUODN240pbOmCPwhALSAe/Br5pjFhJzgNYhT5ADMIcTB1T0D0AtJgAgD7mIo3t+C/e8kXbkyyuS8e0+IhfEfUDw3a7An8Jcje5MnjNmMuoD2Wj1H2kwfaMS+/bsXWLIwRMvVLrypPEr+AYyIwmAPahNbwAAAABJRU5ErkJggg==", "factory_power_port": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB30lEQVR42o1UyU4CQRDtD/DixYsaPQnIDMiiAiog/pZgYFiFYRmWAQKiiBrxS7x48OTflPVqMiQmRjxUeqq6+lXV69ej8hWLbkptKtVtypct6tgL6gwXlDOaVKh2KVswKVdsiW8Nn8io9ajaHJNR7YmvEPAFE+TRY+QPXZAWTrF/Rl49TsHjK9IjaYkfHp2L+cNJycV3lkFVw5pJ0vvHFx/IUIBNi6RIj6YFQMC1U1lxyBuIS+4Bx1BcoR0kI+ALJJzqnIROcDAQveS9EwH2h5Ky6hzDitFV1jClRVTDgdv25E9DEWekM+FLleoDaR1tozqSNja3fjXsoTo6hLX6c1L2dCkHnZkzKwD6TPwwF8DlA/nlhk2qNZiviNre86wF2N33Cemw7viFVHf0LJUx138AdhgAZGp8nYPJktQ1CwV36+W7xVzrADAubgYF4SuzOxMHho11JOK6UQiaMHv30MGIAwlHPDzXumuECsEZdNIePDpCgmxd4cDQjStt6Yw5Ak8oIB3wHvyKOWIhMQdoHfIEOQBzOHFARf8A1GICAPKQizi657dwxxspR768Ihnf7iNyQdwHBN/tCvwpzFXvTOU5Yyaj1peNZu+B+pNXKrJvT98khhw88Xy5I08av4JvUQIN8Pn9x24AAAAASUVORK5CYII=", "factory_press": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACmUlEQVR42o1US0+TURD9/oZRAsZoW2mLAsYCCqh7giIPUYlEUaOY6MKdxUB5WlrogxYIiCJqxI0rX4iIQgUEKqUgCUXBROJCf8NxzjTdu5j0m7nzOOfcuTUa2/y429KNFncYja1++MIj8PWOoMHlRVN7AM4mDxqau9T39z6GqyOIdm8/XO1B9Q0GLFn5MNkcyDx4FNbsIvELYLblIevQCdhyijW+/8ARtczsQs3lt1OaGp3+IU2aXVyTguOwi03PxbG6vo1o/DvWNn5jcjqKl2NTWmS252nuPuthRWMQji23WAMWe75OZ4Pxj/N4PR7B/NI6FpY3MDW7LEgKdYAt95j+krrhdHkUIuGapAmnTEwtapO3EzOIfdtC4udfRL7Ek/RkSJJSgepltLhDCt2ak+LuwNeVTSS2/ihUpZPYVgRmKeZ00qB19QzDCA+OaiFpaCOZ8urdtBaS/0Isof5kJKpaESVFZ35rZxhGV2g4eQtysDPdpPZ5fkVoLOCNaMBi2nvRJG23BWkZFm1EC/Q/hRHoe6KTyYvF6XtsGPswh6XVTaHyAyvrvxARNKSUsTcLu6QBxbTKdYYGRmHckUXh3ZI7eRFJVAo/zcRUTCIhHX4TNunaRQcOvNc9AMMTGFKHVn3hJirOXUdN3W2UnbmqfuX5epScrsWpqssorbik5xzE2/IEH3AP+lRd3kJp+UWUn72GkrJaVNfekuR6KbyisZOVddqwquaGakaxu0OPkovEtWVgx/KL/zLSpW5tnj5ZJNGAnHjnFIfNkpokm+r+Cz2T1aHKUzzmMk708hbuy0GR8iINJvM79YhSTVIPiD7jXGXqZ1BJt29QnzM5uTp69MAbfIiegWdoFj88+FxjzOETb2z16ZPmX8E/nE9KD73UcyUAAAAASUVORK5CYII=", "illyrium_crucible_front": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABt0lEQVR42pVTyU4CQRDtD/DCxURPnmQdRhCiLAroXxk1AQXZB2bYF4kiuF38Fz+orFfQhERi8FDp7qrqV69eV6vO6J1ag1eq2o+E/XWuSje5Gtn9GZWsITW6U8pXupQvd6jSHIsvW7Cp3BhJnsLGd5QkTzBGZvSS1zifE+Q1E+QPnYnfa8ZlD18gnJK9cZwSUOVwdSQZkbRcDEYyHEyvfHKRQeEPRi/Et8hNCguVfbAlyR86p73vr60MBcAGrSu7NxMAICLoNk5lrykbYMSGAojpHPiEAcRbB9hx7f5pmgFA2iy6yhWdRW/s1ACuA99G0wC4DMFrzoQUngVUDwMnKwC62v9l6wDIh8gCgBZw2WQW2zLAa0EDq/1M6q7Ukv7xrv8BQBuFao8UngIHrfA2IgbC/CLMujV8I3V7b8kBL4Eg1oWoKaGJXgGOYXIvddKDBv1kkLQoelAg2qZVmzBmMNxVTR4kzDdoARmVPUZMEnDWQ4U48nDWjK32E/+F/lwCoOhhZNBHAlbpdVkNMV1EzpzvDOZg8CJfF1p0xx9snzLjmLI6V8C4NjrT5ZefyJcu1vpCv1gf0A/Q4fYKbbRhdAAAAABJRU5ErkJggg==", "illyrium_refinery_front": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABtklEQVR42pVTyU4CQRDtD/DCxcSbJ1mHEYQoiwL6W2oCCrIPzLAOIFEEt4v/4geV9QqakEgMHirdXVX96tXratUbv1PHfaW6/UjYXxfqdFNokD2cU8UaUas/o2KtT8Vqj2rtifjyJZuqrbHkKWwCx2nyhRNkxq94TfI5RX4zRcHIufj9ZlL28IWiGdkbJxkBVQ5XR5IRy8rFcCzHwezaJxcZFP5w/FJ8y9y0sFD5B1uSgpELOvj+2slQAGzQurIHcwEAIoJe40z2mrIBRmwogJjOgU8YQLxNgD3P/p+mGQCky6KrQtlZ9sZODeA5DGw1DYDLELzhTEnhWUD1KHS6BkjW6JdtAiAfIgsAWsBlk1nsygCvBQ2s7jOpu0pH+se7/gcAbZTqA1J4Chy0wruIGIryizDrzuiN1O29JQe8BIJYl6JmhCZ6BTiGybvSSQ8a9JNB0qLoQYFo21ZtwpjBcFe1eZAw36AFZFT2GQlJwFkPFeLIw1kztrpP/BeGCwmAoo+RQR8JWKXXVTXEdBE5c77jLsDgRb4utOhPPtg+ZcYxZU2ugHFt9WarLz+VL11uDIV+uenSD1r395IAKJNSAAAAAElFTkSuQmCC", "shatter_coin_factory_front": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAByUlEQVR42pVUy04CUQy9H+DGjYk/oCAMysMHoID4W4KB4SkMb2aAgCiiRtyY+BVuXOjGvR9Sezq5bEwILpo77e1tT9vTUblyh66KLSrWHMqVOtR25tQezClrNihf6VImb1G20BS9M3ggs9qjSmNEZqUnuoLBux+jXeOEfMEz8oeSrMfJY0Rp//CCjHBK7HsHpyK+UEJ88Z3hoKremYrT+8c3P0hTgMUfTpIRSUkACe4/lhOPPIGo+O6wDckV4MAZBm8g5mZnJyDBw0DknO+OJLAvmJDTYBtOlK4ypiUQke26NV5L3JLi0i9VrNkCHbBxubG5tVLgA4SQZn9GypksBDbK0AG2v17/CH3GlgHQD/iX6g6ppj1bNmpdBGg6pDt6ItUdPkoJqGsVAogOgGb6eZz2eEHqkomC2Xp4tusiwGR0QmV1p6JowzqCBoITVu8WPBiyIeaSh+vCfDFSYSTbdXCXHy5j0TPct+x7l0igrSYOBA80tSFu0LQkAOFQLvSyNWQicQ9Q08/b/wQlAD3vwg1HTrr05RMZ8a2XCMjgrBcIukaF/ik0pdaeyDqjJrPal4tG747642cqsO5MXsQGH6x4rtSWlcav4Be4nA7J2HVqPgAAAABJRU5ErkJggg=="};
+  const NAMES={C:'Illyrium Casing',P:'Lava Pylon',H:'Item Hatch',O:'Illyrium Core',G:'Illyrium Tank Glass',U:'Refinery Pump',F:'Factory Frame',B:'Factory Blank Hatch',R:'Factory Power Port',S:'Factory Press',M:'Motivator',X:'Controller'};
+  const TEXKEY={C:'illyrium_casing',P:'lava_pylon',H:'item_hatch',O:'illyrium_core',G:'illyrium_glass',U:'refinery_pump',F:'factory_frame',B:'factory_blank_hatch',R:'factory_power_port',S:'factory_press'};
+  // layers bottom to top, rows back to front, X = controller
+  const MACHINES={
+    crucible:{name:'ILLYRIUM CRUCIBLE',ctl:'illyrium_crucible_front',layers:[['CCC','CCC','CXC'],['P P','HOH','P P'],['PCP','C C','PCP']],
+      tips:{'0X':'Start with the controller, screen facing you.','0C':'Ring the controller with Illyrium Casing to finish the floor.','1P':'A Lava Pylon in each corner. These lower pylons take lava.','1H':'An Item Hatch on the left and on the right.','1O':'The Illyrium Core goes in the very centre.','2P':'Four more Lava Pylons on top. These upper pylons take RF.','2C':'Close the top with Illyrium Casing on the four sides. The centre stays open.'}},
+    refinery:{name:'ILLYRIUM REFINERY',ctl:'illyrium_refinery_front',layers:[['CCC','COC','CXC'],[' C ','HGU','   '],['   ',' G ','   ']],
+      tips:{'0X':'Start with the controller, screen facing you.','0O':'The Illyrium Core sits in the centre of the floor.','0C':'Fill the rest of the floor with Illyrium Casing.','1G':'Illyrium Tank Glass on top of the core.','1C':'One Illyrium Casing behind the glass.','1H':'Item Hatch on the left of the glass.','1U':'Refinery Pump on the right. It takes water and RF.','2G':'A second Tank Glass caps the tank.'}},
+    factory:{name:'SHATTER COIN FACTORY SLICE',ctl:'shatter_coin_factory_front',layers:[['B','F','X'],['R','S','F'],['M','M','M']],
+      tips:{'0X':'Start with the controller, screen facing you.','0F':'A Factory Frame behind the controller.','0B':'The Blank Hatch at the back. Blanks go in here.','1F':'A Factory Frame on top of the controller.','1S':'The Factory Press in the middle.','1R':'The Power Port at the top back. RF goes in here.','2M':'Optional: up to three Motivators on top to speed the slice up.'}},
+  };
+  const ORDER={X:0,O:1,C:2,G:3,P:4,H:5,U:6,F:7,S:8,B:9,R:10,M:11};
+  function build(id){ const m=MACHINES[id], blocks=[], steps=[];
+    m.layers.forEach((rows,l)=>{ const keys={}; rows.forEach((row,r)=>[...row].forEach((k,c)=>{ if(k===' ') return; (keys[k]=keys[k]||[]).push({k,l,x:c-(row.length-1)/2,z:r-(rows.length-1)/2}); }));
+      Object.keys(keys).sort((a,b)=>ORDER[a]-ORDER[b]).forEach(k=>{ const s=steps.length; keys[k].forEach(b=>{ b.s=s; blocks.push(b); }); steps.push({k,l,n:keys[k].length,tip:m.tips[l+k]||''}); }); });
+    return {id,m,blocks,steps,layers:m.layers.length}; }
+  const loader=new THREE.TextureLoader(), texCache={};
+  const tex=k=>{ if(!texCache[k]){ const t=loader.load(TEX[k]); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; texCache[k]=t; } return texCache[k]; };
+  const icon=(k,m)=>k==='M'?'<span class="sw"></span>':'<img alt="" src="'+TEX[k==='X'?m.ctl:TEXKEY[k]]+'">';
+  const label=(k,m)=>k==='X'?'Controller':NAMES[k];
+  const LAYER=['Bottom layer','Middle layer','Top layer'];
+
+  function makeView(el,update){
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); el.insertBefore(r.domElement,el.firstChild);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.1,100); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(4,8,6); scene.add(d);
+    let g=null, meshes=[], ry=.7, rx=.45, drag=false, lx=0, ly=0, cy=1;
+    const v={ meshes:()=>meshes, set(data){ if(g) scene.remove(g); g=new THREE.Group(); scene.add(g); meshes=data.blocks.map(b=>{
+        const mat=b.k==='M'?new THREE.MeshLambertMaterial({color:0xb58cff,transparent:true}):new THREE.MeshLambertMaterial({map:tex(b.k==='X'?data.m.ctl:TEXKEY[b.k]),transparent:true});
+        const me=new THREE.Mesh(b.k==='M'?new THREE.BoxGeometry(.62,.5,.62):new THREE.BoxGeometry(.98,.98,.98),mat); me.userData=b; g.add(me); return me; }); cy=(data.layers-1)/2; } };
+    el.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;el.setPointerCapture(e.pointerId);});
+    el.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.1,Math.min(1.3,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    el.addEventListener('pointerup',()=>drag=false); el.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=el.clientWidth,h=el.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(el); rs();
+    const t0=performance.now(); (function f(now){ const t=(now-t0)/1000; const extra=update(meshes,t)||0; const dist=8.5+extra;
+      cam.position.set(Math.sin(ry)*dist*Math.cos(rx),cy+extra*.3+Math.sin(rx)*dist,Math.cos(ry)*dist*Math.cos(rx)); cam.lookAt(0,cy+extra*.3,0); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return v; }
+  const place=(me,dy,op,sc)=>{ const b=me.userData; me.visible=op>0.01; me.position.set(b.x,b.l+(b.k==='M'?-.25:0)+dy,b.z); me.material.opacity=op; me.material.depthWrite=op>.9; me.scale.setScalar(sc||1); };
+
+  let data=build('crucible');
+  // ---- A: step builder
+  const A={step:0,play:false,last:0};
+  const aView=makeView(document.getElementById('aView'),(ms,t)=>{ if(A.play&&t-A.last>1.6){ A.last=t; if(A.step<data.steps.length-1){ A.step++; drawA(); } else { A.play=false; drawA(); } }
+    ms.forEach(me=>{ const s=me.userData.s; if(s<A.step) place(me,0,1); else if(s===A.step) place(me,0,1,reduce?1:1+.05*Math.sin(t*6)); else place(me,0,.12); }); });
+  function drawA(){ const st=data.steps[A.step]; document.getElementById('aName').textContent=data.m.name;
+    document.getElementById('aCap').innerHTML='<span style="color:var(--h-out)">'+LAYER[st.l]+':</span> place '+st.n+' x '+label(st.k,data.m)+'.<br><small>'+st.tip+'</small>';
+    document.getElementById('aStep').textContent='Step '+(A.step+1)+' of '+data.steps.length; document.getElementById('aPlay').textContent=A.play?'Pause':'Play';
+    const tot={}, done={}; data.steps.forEach((s,i)=>{ tot[s.k]=(tot[s.k]||0)+s.n; done[s.k]=(done[s.k]||0)+(i<=A.step?s.n:0); });
+    document.getElementById('aParts').innerHTML=Object.keys(tot).sort((a,b)=>ORDER[a]-ORDER[b]).map(k=>'<li class="'+(k===st.k?'now':done[k]===tot[k]?'done':'')+'">'+icon(k,data.m)+'<span>'+label(k,data.m)+'</span><span>'+done[k]+'/'+tot[k]+'</span></li>').join(''); }
+  document.getElementById('aPrev').addEventListener('click',()=>{ A.play=false; A.step=Math.max(0,A.step-1); drawA(); });
+  document.getElementById('aNext').addEventListener('click',()=>{ A.play=false; A.step=Math.min(data.steps.length-1,A.step+1); drawA(); });
+  document.getElementById('aPlay').addEventListener('click',()=>{ A.play=!A.play; if(A.play&&A.step===data.steps.length-1) A.step=0; A.last=-99; drawA(); });
+  // ---- B: exploded layers
+  const B={layer:0,spread:.7};
+  const bView=makeView(document.getElementById('bView'),ms=>{ const e=B.spread*1.4; ms.forEach(me=>place(me,me.userData.l*e,me.userData.l===B.layer?1:.28)); return e*(data.layers-1)*.9; });
+  function drawB(){ document.getElementById('bName').textContent=data.m.name;
+    document.getElementById('bLayers').innerHTML=Array.from({length:data.layers},(_,l)=>'<button type="button" class="hb" id="bL'+l+'" data-l="'+l+'" aria-pressed="'+(l===B.layer)+'">'+LAYER[l]+'</button>').join('');
+    document.querySelectorAll('#bLayers button').forEach(b=>b.addEventListener('click',()=>{ B.layer=+b.dataset.l; drawB(); document.getElementById('bL'+B.layer).focus(); }));
+    document.getElementById('bParts').innerHTML=data.steps.filter(s=>s.l===B.layer).map(s=>'<li>'+icon(s.k,data.m)+'<span>'+label(s.k,data.m)+'</span><span>x'+s.n+'</span></li>').join(''); }
+  document.getElementById('bSpread').addEventListener('input',e=>{ B.spread=e.target.value/100; });
+  // ---- C: ponder scene
+  const C={pos:0,play:!reduce,prev:0,shown:-1};
+  const scrub=document.getElementById('cScrub');
+  const cView=makeView(document.getElementById('cView'),(ms,t)=>{ const dt=Math.min(.1,t-C.prev); C.prev=t; const n=data.steps.length;
+    if(C.play){ C.pos+=dt/1.8; if(C.pos>=n+.8){ C.pos=0; } scrub.value=Math.min(n,C.pos); }
+    const cur=Math.min(n-1,Math.floor(C.pos)); if(cur!==C.shown){ C.shown=cur; drawC(cur); }
+    ms.forEach(me=>{ const s=me.userData.s; if(s<cur) place(me,0,1); else if(s===cur){ const p=Math.min(1,(C.pos-cur)*2.2), e=1-Math.pow(1-p,3); place(me,(1-e)*3,p); } else place(me,0,0); }); });
+  function drawC(cur){ const st=data.steps[cur]; document.getElementById('cName').textContent=data.m.name;
+    document.getElementById('cCap').innerHTML='<span style="color:var(--h-out)">'+st.n+' x '+label(st.k,data.m)+'</span><br>'+st.tip; document.getElementById('cStep').textContent=(cur+1)+' / '+data.steps.length; }
+  scrub.addEventListener('input',()=>{ C.play=false; C.pos=+scrub.value; document.getElementById('cPlay').textContent='Play'; });
+  document.getElementById('cPlay').addEventListener('click',e=>{ C.play=!C.play; e.target.textContent=C.play?'Pause':'Play'; });
+  document.getElementById('cPlay').textContent=C.play?'Pause':'Play';
+
+  function load(id){ data=build(id); [aView,bView,cView].forEach(v=>v.set(data)); A.step=0; A.play=false; B.layer=0; C.pos=0; C.shown=-1; scrub.max=data.steps.length; scrub.step=.01; drawA(); drawB(); }
+  const mb=document.getElementById('machines'); [['crucible','Illyrium Crucible'],['refinery','Illyrium Refinery'],['factory','Factory slice']].forEach(([id,n],i)=>{ const b=document.createElement('button'); b.type='button'; b.id='m-'+id; b.textContent=n; b.setAttribute('aria-pressed',i===0);
+    b.addEventListener('click',()=>{ mb.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',o===b)); load(id); }); mb.appendChild(b); mb.appendChild(document.createTextNode(' ')); });
+  load('crucible');
+})();
+</script>

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " Y ",
+    "WZW",
+    "PPP"
+  ],
+  "key": {
+    "Y": {
+      "item": "bsp_core:resonance_crystal"
+    },
+    "W": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "Z": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:factory_motivator"
+  }
+}

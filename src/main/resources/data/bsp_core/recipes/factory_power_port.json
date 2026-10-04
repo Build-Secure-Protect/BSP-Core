@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PWP",
+    "WCW",
+    "PRP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "W": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    }
+  },
+  "result": {
+    "item": "bsp_core:factory_power_port"
+  }
+}

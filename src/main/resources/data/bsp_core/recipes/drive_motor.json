@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " W ",
+    "WIW",
+    " R "
+  ],
+  "key": {
+    "W": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "result": {
+    "item": "bsp_core:drive_motor"
+  }
+}

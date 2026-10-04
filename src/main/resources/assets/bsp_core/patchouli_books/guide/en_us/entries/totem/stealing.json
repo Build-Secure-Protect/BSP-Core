@@ -1,0 +1,17 @@
+{
+  "name": "Stealing and Defending",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:iron_sword",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Right-click another player's placed totem and choose to steal it. A timer starts, and the owner is warned.$(br2)Stay close to the totem until the timer runs out and it is yours, with every upgrade on it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The steal is cancelled if the thief is killed, or stays too far from the totem for too long.$(br2)So defend in person, and make the room around your totem hard to stand in. The $(l:totem/upgrades)Fortify$() upgrade helps your walls survive explosions.",
+      "title": "Stopping a thief"
+    }
+  ]
+}
