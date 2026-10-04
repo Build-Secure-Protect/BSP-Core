@@ -86,6 +86,12 @@ ENTRIES = [
         text("Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Healing Aura: heals you nearby$(li)Ward: weakens intruders$(li)Alarm: outlines intruders and warns you$(li)Sanctuary: no hostile spawns$(li)Deadlock: your totem takes longer to steal$(li)Overclock: machines nearby work faster", "Base"),
         text("Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.$(br2)$(li)Lockpick: your steals take less time$(li)Shroud: the owner is warned late$(br2)No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.", "Raid"),
     ]),
+    ("totem", "scoring", "Scores and the Leaderboard", "minecraft:gold_block", 4, [
+        text("Every totem you own scores points by its tier:$(br2)$(li)Tier I: 1 point$(li)Tier II: 2 points$(li)Tier III: 4 points$(li)Tier IV: 7 points$(li)Tier V: 10 points$(br2)Your score is the total for all your totems, so stealing totems and upgrading them both move you up."),
+        craft("score_screen", None, "$(item)Score Screen$() panels placed side by side and above each other, facing the same way, join into one display of up to 8 wide and 6 high. It shows the leaderboard, these scoring rules, or the season's prizes."),
+        text("The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.$(br2)A Score Screen set to Prizes shows what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.", "Seasons and Prizes"),
+        text("A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. Score Screens show the current leaderboard, and on a network it covers every server.", "How it is counted"),
+    ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
         spot("bsp_core:totem_compass", "Points to your own nearest totem. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
         craft("totem_compass"),
@@ -142,6 +148,13 @@ ENTRIES = [
         craft("press_die", "factory_frame"),
         craft("factory_press", "factory_blank_hatch"),
         craft("factory_power_port", "shatter_coin_factory"),
+    ]),
+    ("coins", "vault", "The Coin Vault", "bsp_core:coin_vault", 3, [
+        spot("bsp_core:coin_vault", "A safe that holds only Shatter Coins, 27 stacks of 12 per block. Nothing can pipe coins in or out.$(br2)Vault blocks of yours that touch join into one vault, up to 3 x 3 x 3. You may own 27 vault blocks."),
+        craft("coin_vault", None, "The block keeps its lock and alarm when you break it and place it again."),
+        text("On the $(l)Access$() tab, add the players who may open the vault. They must be online when you add them. They can move coins but cannot change the settings.$(br2)On the $(l)Security$() tab, buy up to three lock levels and an Alarm with coins. The Alarm warns everyone with access the moment someone starts picking the lock.", "Access and Security"),
+        text("Anyone without access can pick the lock: 2 minutes, plus 1 minute for each lock level, staying within 4 blocks. If they finish, they take a quarter of the coins, chosen at random. Illyrium coins are safe while the vault holds 3 or fewer.$(br2)Breaking a vault that is not yours gives no coins: they are kept for the owner, who collects them by opening any vault of theirs.", "Lockpicking"),
+        text("Coins in your vaults earn interest: XP levels and Tetrium Ingots for every 50 coin value stored, counted across all your vaults. With a Netherite or Illyrium coin stored you also earn up to 2 Illyrium Ingots every 3 days.$(br2)Interest builds up while you are offline, but stops at 3 days' worth. Press $(l)Redeem$() on the Storage tab to collect it and start it building again.", "Interest"),
     ]),
     ("coins", "motivators", "Motivators", "bsp_core:factory_motivator", 2, [
         spot("bsp_core:factory_motivator", "Place up to three on top of a complete factory slice. One, two or three cut that slice's press time by 15%, 30% or 50%.$(br2)They pulse faster the more a slice has, and link up with their neighbours."),

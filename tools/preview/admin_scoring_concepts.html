@@ -1,0 +1,230 @@
+<title>BSP Admin And Scoring Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<div class="wrap">
+<section><h1>BSP Admin And Scoring Concepts</h1>
+<p class="lede">Four new features, three options for each. The 3D blocks turn when dragged, and the screens are working mock-ups with made-up players. Nothing here is in the mod yet.</p></section>
+
+<section><h2>1. Admin block and Admin UI</h2>
+<p class="lede">An operator-only block that opens the admin panel: every player's totems and levels, their Coin Vault balance, where their totems stand, and season controls.</p>
+<h4>The admin block</h4><div class="grid3" id="adminBlocks"></div>
+<h4>The admin panel</h4>
+<div class="card"><h3>A. Roster Table</h3><p>One sortable table with a row per player and action buttons on the row. Season controls sit in a bar on top. Densest view; best when you manage many players.</p><div class="scroll"><div class="hud" style="--c:var(--h-vio)" id="adA"></div></div></div>
+<div class="card"><h3>B. Player Cards</h3><p>A card per player with their totems as tier pips and the coin breakdown. Easier to scan than a table, but shows fewer players at once.</p><div class="scroll"><div class="hud" style="--c:var(--h-vio)" id="adB"></div></div></div>
+<div class="card"><h3>C. List And Detail</h3><p>Players on the left, everything about the selected player on the right, including each totem's server and coordinates. Season tools are a second tab. Most room for future features.</p><div class="scroll"><div class="hud" style="--c:var(--h-vio)" id="adC"></div></div></div>
+</section>
+
+<section><h2>2. Coin Vault</h2>
+<p class="lede">A safe for Shatter Coins. Coins stored in it earn interest, the owner chooses who may open it, and anyone else has to lockpick it, much like stealing a totem.</p>
+<h4>The vault block</h4><div class="grid3" id="vaultBlocks"></div>
+<h4>The vault screen</h4>
+<div class="card"><h3>A. Safe Inventory</h3><p>A normal storage grid that only takes Shatter Coins, with interest, access and security in a side panel. The most familiar to players.</p><div class="scroll"><div class="hud" style="--c:var(--h-gold)" id="vaA"></div></div></div>
+<div class="card"><h3>B. Coin Ledger</h3><p>No slots: one column per coin with deposit and withdraw buttons and a running total. Holds any amount, and reads like a bank balance, which suits the banking system you plan.</p><div class="scroll"><div class="hud" style="--c:var(--h-gold)" id="vaB"></div></div></div>
+<div class="card"><h3>C. Tabbed Vault</h3><p>Storage, Access and Security on separate tabs, with room for more later. Press "View as intruder" to see the lockpick screen a non-owner gets.</p><div class="scroll"><div class="hud" style="--c:var(--h-gold)" id="vaC"></div></div></div>
+</section>
+
+<section><h2>3. Score Screen</h2>
+<p class="lede">Screen blocks that join into one display, up to 8 wide and 6 high, showing the live leaderboard. An admin sets the layout, font, size and scroll speed. Use the controls to try the three layouts at any size.</p>
+<div class="card">
+<div class="ctl">
+  <label for="sw">Width <input id="sw" type="range" min="1" max="8" value="5"><output id="swO">5</output></label>
+  <label for="sh">Height <input id="sh" type="range" min="1" max="6" value="3"><output id="shO">3</output></label>
+  <label for="sl">Layout <select id="sl"><option value="a">A. Ranked list</option><option value="b">B. Podium and ticker</option><option value="c">C. Spotlight</option></select></label>
+  <label for="sf">Font <select id="sf"><option value="Silkscreen">Pixel</option><option value="IBM Plex Sans">Clean</option><option value="Courier New">Terminal</option></select></label>
+  <label for="ss">Text size <input id="ss" type="range" min="60" max="160" value="100"></label>
+  <label for="sp">Scroll speed <input id="sp" type="range" min="0" max="100" value="40"></label>
+  <label for="st">Title <input id="st" type="text" value="TOTEM LEADERBOARD" maxlength="28"></label>
+</div>
+<div class="view wide" id="screenView"></div>
+<p>These controls are the admin's settings (sneak + right-click the screen). <b>A</b> is a ranked list that scrolls when there are more players than rows. <b>B</b> shows the top three on a podium with everyone else on a ticker. <b>C</b> spotlights one player at a time in large type, best for tall or small screens.</p>
+</div></section>
+
+<section><h2>4. Scoring system</h2>
+<p class="lede">The back end behind all three. Scores come from this server's own records on a single server, and from the shared MySQL database on a network. Three ways to turn totems into a score, shown on the same made-up players:</p>
+<div class="scroll"><table class="t" id="scoreT"></table></div>
+<div class="flow">
+<div class="card"><h3>A. Totem Count</h3><ol><li><b>Score = totems owned.</b></li><li>Ties broken by the highest totem tier.</li><li>Simplest to understand. Upgrading only matters in a tie.</li></ol></div>
+<div class="card"><h3>B. Weighted Points</h3><ol><li><b>Each totem scores by its tier:</b> I = 1, II = 2, III = 4, IV = 7, V = 10.</li><li>Rewards upgrading as well as stealing.</li><li>A stolen high-tier totem is a big swing.</li></ol></div>
+<div class="card"><h3>C. Season Points</h3><ol><li><b>Points build up over the season:</b> each totem earns its tier in points per day held, plus a bonus for every successful steal.</li><li>Rewards holding totems, not just having them on the last day.</li><li>Needs a history table; the season reset clears it.</li></ol></div>
+</div>
+<div class="flow">
+<div class="card"><h3>Single server</h3><ol><li>Totems, tiers and vault balances are read from the world's own records.</li><li>Scores are recalculated when a totem changes hands, tier or owner, and cached.</li><li>Screens and the admin panel read the cache.</li></ol></div>
+<div class="card"><h3>Network with MySQL</h3><ol><li>Each server writes its totems (with tier) and vault balances to the shared database.</li><li>Each server reads the combined leaderboard on a timer, for example every 30 seconds.</li><li>Screens and the admin panel show all servers; the panel names the server each totem is on.</li></ol></div>
+<div class="card"><h3>Seasons and rewards</h3><ol><li>"End season" stores the final standings, pays rewards, and resets totem upgrades.</li><li>"Reward holders" pays everyone who holds a totem now.</li><li>On a network one server runs it and the others pick it up from the database.</li></ol></div>
+</div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TEX={"copper": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmp/PSkLBJ4qtwBhmAIYh+DR3eSnBDUA2pGvCnP8YBmCzGd0AsBhQM9wAXLbj0oxsANgQbAbANJNlAIZiPF7AMACbbdhcg2IAcjjg0ow3EGEGwKKHkAEYtsMAciLB6RVcmtENQVaIDePNDxRpxmcQLnUA0xAmUVmGyD8AAAAASUVORK5CYII=", "gold": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmv8/qkLBnw7qgTHMAAxD8Gne0cYNNwDZkK4Jc/5jGIDNZnQDQBikGW4ALttxaUY2AGwINgNgmskyAF0xPi9gGIDNNmyuQTEAORxwacYbiDADYNFDyAAM22EAOZHg8gpOzeiGICvEhvHmB4o04zMIlzoAvTpLT298i8sAAAAASUVORK5CYII=", "diamond": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmk/+/o+C859/AmOYARiG4NOsvXIH3ABkQ7omzPmPYQA2m9ENAGGQZrgBuGzHpRnZALAh2AyAaSbLAHTF+LyAYQA227C5BsUA5HDApRlvIMIMgEUPIQMwbIcB5ESCyys4NaMbgqwQG8abHyjSjM8gXOoAuN9tYffehokAAAAASUVORK5CYII=", "netherite": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvNSMlCwt5M7GMMMwDAEn2YtFQ24AciGdE2Y8x/DAGw2oxsAwiDNcANw2Y5LM7IBYEOwGQDTTJYB6IrxeQHDAGy2YXMNigHI4YBLM95AhBkAix5CBmDYDgPIiQSXV3BqRjcEWSE2jDc/UKQZn0G41AEAI0XvpJldWt4AAAAASUVORK5CYII=", "illyrium": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmnv+P0PBkpc3gDHMAAxD8Gnm7q+AG4BsSNeEOf8xDMBmM7oBIAzSDDcAl+24NCMbADYEmwEwzWQZgK4YnxcwDMBmGzbXoBiAHA64NOMNRJgBsOghZACG7TCAnEhweQWnZnRDkBViw3jzA0Wa8RmESx0AsTo6iVRgTJ4AAAAASUVORK5CYII="}, COINS=['copper','gold','diamond','netherite','illyrium'], CN=['Copper','Gold','Diamond','Netherite','Illyrium'], VAL=[1,2,4,8,16], RO=['I','II','III','IV','V'];
+  // made-up players: totem tiers they hold (0 = I), vault coins by tier, where their first totem stands, season points
+  const P=[{n:'Mrgregles',t:[4,3,1,0],v:[12,8,5,2,1],s:'survival-1',p:[124,68,-310],sp:412},{n:'Astra_Nox',t:[3,3,2],v:[40,10,2,0,0],s:'survival-2',p:[-880,71,95],sp:377},
+    {n:'Korvin',t:[4,0],v:[3,3,3,3,2],s:'survival-1',p:[2040,64,-77],sp:290},{n:'PixelMoth',t:[2,1],v:[20,6,1,0,0],s:'survival-1',p:[-15,80,640],sp:198},
+    {n:'Hale_and_Ash',t:[1,0,0],v:[9,2,0,0,0],s:'survival-2',p:[330,62,330],sp:120},{n:'Dunework',t:[2],v:[0,4,2,0,0],s:'survival-1',p:[-1200,90,-48],sp:96},
+    {n:'Ysolde',t:[0],v:[5,0,0,0,0],s:'hub',p:[8,70,8],sp:31},{n:'Brannock',t:[],v:[2,1,0,0,0],s:'survival-2',p:[0,0,0],sp:12}];
+  const W8=[1,2,4,7,10], best=p=>p.t.length?Math.max(...p.t):-1, vault=p=>p.v.reduce((a,n,i)=>a+n*VAL[i],0);
+  const scoreA=p=>p.t.length, scoreB=p=>p.t.reduce((a,t)=>a+W8[t],0), scoreC=p=>p.sp;
+  const img=k=>'<img class="ci" alt="'+k+'" src="'+TEX[k]+'">';
+  const tp=p=>'<span class="pips">'+p.t.slice().sort((a,b)=>b-a).map(t=>'<i class="on" title="Tier '+RO[t]+'" style="opacity:'+(.35+.16*t)+'"></i>').join('')+'</span>';
+  const coins=p=>p.v.map((n,i)=>n?img(COINS[i])+n:'').join(' ');
+  const say=(el,t)=>{ const o=document.getElementById(el); if(o) o.textContent=t; };
+
+  // ------------------------------------------------------------------ 3D helpers
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,VIO=0xb58cff,GOLD=0xffd23a,SCREEN=0x0c1116,GLASS=0xbfe6ff;
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(op){ m.material.transparent=true; m.material.opacity=op; m.material.depthWrite=false; } m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function makeView(el,build,dist,target,wide){ const view=document.createElement('div'); view.className='view'+(wide?' wide':''); el.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.7)); const d=new THREE.DirectionalLight(0xffffff,.8); d.position.set(6,14,10); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let o=build(g), ry=wide?0:Math.PI+.7, rx=wide?.08:.35, drag=false, lx=0, ly=0;
+    const v={ rebuild(){ scene.remove(g); g=new THREE.Group(); scene.add(g); o=build(g); } };
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag&&!wide) ry+=.003; if(o.tick) o.tick(t); const D=o.dist||dist, T=o.target||target;
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return v; }
+  function blockCard(host,name,text,build){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; document.getElementById(host).appendChild(c); makeView(c,build,58,[8,8,8]); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); }
+
+  // ------------------------------------------------------------------ admin blocks
+  blockCard('adminBlocks','A. Command Console','A desk console with an angled screen and a lit keypad. Reads clearly as "an admin terminal".',g=>{
+    bx(g,[1,0,1],[15,3,15],HULL2); bx(g,[2,3,3],[14,7,14],HULL); bx(g,[2,7,9],[14,15,13],HULL); const s=bx(g,[3,8,8.6],[13,14,9],SCREEN,true);
+    const l=[bx(g,[4,12,8.3],[9,12.8,8.6],VIO,true),bx(g,[4,10.4,8.3],[12,11.2,8.6],VIO,true),bx(g,[4,8.8,8.3],[7,9.6,8.6],TQ,true)];
+    for(let i=0;i<4;i++) for(let j=0;j<2;j++) bx(g,[3.5+i*2.4,7,4+j*2.2],[5.3+i*2.4,7.5,5.6+j*2.2],(i+j)%3?MID:VIO,(i+j)%3===0); [[1,1],[14,1],[1,14],[14,14]].forEach(([x,z])=>bx(g,[x-.3,0,z-.3],[x+.6,3.4,z+.6],VIO,true));
+    return {tick:t=>l.forEach((m,i)=>m.material.color.setHex(i<2?VIO:TQ).multiplyScalar(.6+.4*Math.sin(t*3+i)))}; });
+  blockCard('adminBlocks','B. Watch Beacon','A pedestal with a floating crystal and turning rings. More of a landmark; fits a spawn hub.',g=>{
+    bx(g,[2,0,2],[14,2,14],HULL2); bx(g,[4,2,4],[12,5,12],HULL); bx(g,[5,5,5],[11,6,11],TRIM); const c=bx(g,[6,8.5,6],[10,13.5,10],VIO,true); c.rotation.z=Math.PI/4;
+    const r1=new THREE.Group(), r2=new THREE.Group(); [r1,r2].forEach((r,k)=>{ r.position.set(8,11,8); g.add(r); const h=k?5.2:6.6; [[-h,-h,h,-h+.6],[-h,h-.6,h,h],[-h,-h,-h+.6,h],[h-.6,-h,h,h]].forEach(([a,b,c2,d])=>bx(r,[a,-.3,b],[c2,.3,d],k?TQ:VIO,true)); });
+    return {tick:t=>{ c.rotation.y=t; c.position.y=11+Math.sin(t*2)*.5; r1.rotation.y=t*.8; r2.rotation.y=-t*1.3; r2.rotation.x=.5; }}; });
+  blockCard('adminBlocks','C. Server Rack','A full-height cabinet with rows of status lamps. Suits the "this runs the server" idea and sits flush against a wall.',g=>{
+    bx(g,[1,0,2],[15,16,14],HULL); bx(g,[1,0,1.4],[15,1,2],TRIM); bx(g,[1,15,1.4],[15,16,2],TRIM); const leds=[];
+    for(let r=0;r<5;r++){ bx(g,[2,1.6+r*2.8,1.6],[14,3.8+r*2.8,2],HULL2); for(let i=0;i<6;i++) leds.push(bx(g,[3+i*1.7,2.3+r*2.8,1.3],[4+i*1.7,3.1+r*2.8,1.6],VIO,true)); bx(g,[12.6,2.1+r*2.8,1.3],[13.6,3.3+r*2.8,1.6],MID); }
+    return {tick:t=>leds.forEach((m,i)=>m.material.color.setHex(i%7===3?TQ:VIO).multiplyScalar(Math.sin(t*4+i*1.7)>0?.95:.25))}; });
+
+  // ------------------------------------------------------------------ vault blocks
+  function coinStack(g,x,z,n,c){ const a=[]; for(let i=0;i<n;i++) a.push(bx(g,[x-1.6,0,z-1.6],[x+1.6,.5,z+1.6],c)); return a; }
+  blockCard('vaultBlocks','A. Classic Safe','A heavy safe with a turning dial, handle and hinges. Instantly readable as "valuables inside".',g=>{
+    bx(g,[1,0,1],[15,16,15],HULL); bx(g,[2,1,.4],[14,15,1],HULL2); bx(g,[2.6,1.6,.2],[13.4,14.4,.4],MID); [[3,3],[12,3],[3,12.2],[12,12.2]].forEach(([x,y])=>bx(g,[x,y,0],[x+1,y+1,.3],TRIM));
+    const dial=new THREE.Group(); dial.position.set(8,9,0); g.add(dial); bx(dial,[-2.4,-2.4,-.5],[2.4,2.4,0],PANEL); bx(dial,[-1.4,-1.4,-.9],[1.4,1.4,-.5],TRIM); bx(dial,[-.3,1.2,-1],[.3,2.2,-.9],GOLD,true);
+    bx(g,[6,4,-.6],[10,5,0],TRIM); bx(g,[7.5,4,-1.2],[8.5,5,-.6],PANEL); bx(g,[14,3,.2],[14.6,6,.9],TRIM); bx(g,[14,10,.2],[14.6,13,.9],TRIM); const lamp=bx(g,[3,13,-.1],[5,13.8,.2],GOLD,true);
+    return {tick:t=>{ dial.rotation.z=Math.sin(t*.9)*2.2; lamp.material.color.setHex(GOLD).multiplyScalar(.6+.4*Math.sin(t*3)); }}; });
+  blockCard('vaultBlocks','B. Strongbox','A low banded chest with a glowing coin slot on top and three lock bars across the front.',g=>{
+    bx(g,[1,0,2],[15,9,14],HULL2); bx(g,[.6,9,1.6],[15.4,12,14.4],HULL); [3,7.5,12].forEach(x=>bx(g,[x-.5,0,1.7],[x+.5,12.2,14.3],TRIM));
+    const bars=[4,6.5].map(y=>bx(g,[2,y,1.4],[14,y+1,2],PANEL)); const slot=bx(g,[5.5,12,7.3],[10.5,12.3,8.7],GOLD,true); const lock=bx(g,[7,8,1.1],[9,10.5,1.7],GOLD,true); const coin=bx(g,[7,13,7.6],[9,15,8.4],GOLD);
+    return {tick:t=>{ slot.material.color.setHex(GOLD).multiplyScalar(.6+.4*Math.sin(t*4)); const k=(t*.6)%1; coin.position.y=15.5-k*3.4; coin.visible=k<.9; coin.rotation.y=t*4; lock.material.color.setHex(GOLD).multiplyScalar(.7+.3*Math.sin(t*2)); }}; });
+  blockCard('vaultBlocks','C. Holo Vault','A pedestal with a glass column. Your stored coins float inside as stacks, so you can see how full it is.',g=>{
+    bx(g,[1,0,1],[15,3,15],HULL2); bx(g,[2,3,2],[14,4,14],TRIM); bx(g,[3,4,3],[13,14,13],GLASS,false,.16); bx(g,[2,14,2],[14,16,14],HULL); const ring=bx(g,[2.4,3.6,2.4],[13.6,4,13.6],GOLD,true);
+    const st=[coinStack(g,6,6,9,0xd9773b),coinStack(g,10,6,6,GOLD),coinStack(g,6,10,4,0x6fe7f2),coinStack(g,10,10,2,0x4b4247)];
+    return {tick:t=>{ ring.material.color.setHex(GOLD).multiplyScalar(.6+.4*Math.sin(t*3)); st.forEach((a,k)=>a.forEach((m,i)=>{ m.position.y=4.6+i*.7+Math.sin(t*1.5+k)*.25; m.rotation.y=t*.6+k; })); }}; });
+
+  // ------------------------------------------------------------------ admin UI
+  const rank=P.slice().sort((a,b)=>scoreB(b)-scoreB(a)); let selP=rank[0].n, adTab='player';
+  const acts=(p,pre)=>'<button type="button" class="hb go" id="'+pre+'tp-'+p.n+'" data-msg="Teleport to '+p.n+'\'s totem at '+p.p.join(', ')+' on '+p.s+'">TP</button> <button type="button" class="hb" id="'+pre+'co-'+p.n+'" data-msg="'+p.n+': totem at '+p.p.join(', ')+' on '+p.s+'">Coords</button> <button type="button" class="hb warn" id="'+pre+'rs-'+p.n+'" data-msg="Reset '+p.n+'\'s totem upgrades (asks to confirm)">Reset</button>';
+  const season=pre=>'<div class="row"><button type="button" class="hb warn" id="'+pre+'end" data-msg="End season: store standings, pay rewards, reset totems (asks to confirm)">End season</button><button type="button" class="hb go" id="'+pre+'rew" data-msg="Reward every player who holds a totem now">Reward holders</button><small>Season 1, day 23</small></div>';
+  function drawAdmin(){
+    document.getElementById('adA').innerHTML='<div class="top"><span>BSP ADMIN</span><span>'+P.length+' PLAYERS</span></div>'+season('aa')+'<table class="ht"><tr><th>#</th><th>Player</th><th>Totems</th><th>Best</th><th>Vault</th><th>Server</th><th></th></tr>'
+      +rank.map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+p.n+'</td><td>'+p.t.length+' '+tp(p)+'</td><td>'+(best(p)<0?'-':RO[best(p)])+'</td><td>'+vault(p)+'</td><td><small>'+p.s+'</small></td><td>'+acts(p,'a')+'</td></tr>').join('')+'</table><div class="note" id="adAmsg">&nbsp;</div>';
+    document.getElementById('adB').innerHTML='<div class="top"><span>BSP ADMIN</span><span>SEASON 1</span></div>'+season('ab')+'<div class="cards">'+rank.slice(0,6).map((p,i)=>'<div class="pc"><div class="row" style="justify-content:space-between"><span>#'+(i+1)+' '+p.n+'</span></div><div>'+p.t.length+' totems '+tp(p)+'</div><div><small>'+coins(p)+'</small></div><div class="row">'+acts(p,'b')+'</div></div>').join('')+'</div><small>Showing 6 of '+P.length+'. Page 1 of 2.</small><div class="note" id="adBmsg">&nbsp;</div>';
+    const p=P.find(x=>x.n===selP);
+    const right=adTab==='player'?'<div><span style="color:var(--h-vio)">'+p.n+'</span> <small>last seen on '+p.s+'</small></div><div>Totems: '+p.t.length+' '+tp(p)+'</div>'
+      +'<table class="ht"><tr><th>Totem</th><th>Tier</th><th>Server</th><th>Coordinates</th></tr>'+p.t.map((t,i)=>'<tr><td>'+(i+1)+'</td><td>'+RO[t]+'</td><td>'+p.s+'</td><td>'+(p.p[0]+i*37)+', '+p.p[1]+', '+(p.p[2]-i*21)+'</td></tr>').join('')+'</table>'
+      +'<div>Coin Vault: '+coins(p)+' <small>(value '+vault(p)+')</small></div><div class="row">'+acts(p,'c')+'</div>'
+      :'<div style="color:var(--h-vio)">SEASON 1, DAY 23</div>'+season('ac')+'<small>End season stores the standings, pays the configured rewards and resets every totem. Reward holders pays without resetting.</small><div><small>FUTURE</small><br>Reward tables, bans, announcements</div>';
+    document.getElementById('adC').innerHTML='<div class="top"><span>BSP ADMIN</span><span class="row"><button type="button" class="hb" id="tabP" data-tab="player" aria-pressed="'+(adTab==='player')+'">Players</button><button type="button" class="hb" id="tabS" data-tab="season" aria-pressed="'+(adTab==='season')+'">Season</button></span></div><div class="two"><div style="display:flex;flex-direction:column;gap:4px;width:210px">'
+      +rank.map((q,i)=>'<button type="button" class="li" id="sel-'+q.n+'" data-sel="'+q.n+'" aria-pressed="'+(q.n===selP)+'"><span>'+(i+1)+'. '+q.n+'</span><span>'+q.t.length+'</span></button>').join('')+'</div><div class="grow" style="display:flex;flex-direction:column;gap:8px">'+right+'<div class="note" id="adCmsg">&nbsp;</div></div></div>'; }
+  // ------------------------------------------------------------------ vault UI
+  const V={c:[12,8,5,2,1],tab:'storage',intruder:false,pick:0};
+  const total=()=>V.c.reduce((a,n,i)=>a+n*VAL[i],0);
+  const side='<div style="width:200px;display:flex;flex-direction:column;gap:8px"><div><small>INTEREST</small><div class="bar"><i style="width:62%"></i></div><small>Next payout in 4h 10m: 6 XP levels, 2 Tetrium Ingots</small></div><div><small>ACCESS</small><br>Mrgregles (owner)<br>Astra_Nox <button type="button" class="hb" id="rm1" data-vmsg="Astra_Nox removed">x</button><br><button type="button" class="hb go" id="add1" data-vmsg="Type a player name to add">+ Add player</button></div><div><small>SECURITY</small><br>Reinforced lock <span class="pips"><i class="on"></i><i class="on"></i><i></i></span><br>Alarm <span class="pips"><i class="on"></i><i></i><i></i></span></div></div>';
+  function drawVault(){ let slots=''; const flat=[]; V.c.forEach((n,i)=>{ let left=n; while(left>0){ flat.push([i,Math.min(64,left)]); left-=64; } });
+    for(let i=0;i<27;i++) slots+='<span class="sl">'+(flat[i]?'<img alt="" src="'+TEX[COINS[flat[i][0]]]+'"><b>'+flat[i][1]+'</b>':'')+'</span>';
+    document.getElementById('vaA').innerHTML='<div class="top"><span>COIN VAULT</span><span>VALUE '+total()+'</span></div><div class="two"><div class="grow"><div class="slots">'+slots+'</div><small>Only Shatter Coins fit. Your inventory sits below, as on a chest.</small></div>'+side+'</div><div class="note" id="vaAmsg">&nbsp;</div>';
+    document.getElementById('vaB').innerHTML='<div class="top"><span>COIN VAULT</span><span>TOTAL VALUE '+total()+'</span></div><div class="col5">'+COINS.map((k,i)=>'<div class="cc"><img alt="" src="'+TEX[k]+'"><span>'+CN[i]+'</span><span class="n">'+V.c[i]+'</span><span class="row"><button type="button" class="hb" id="wd'+i+'" data-coin="'+i+'" data-d="-1" aria-label="Withdraw one '+CN[i]+'">-</button><button type="button" class="hb go" id="dp'+i+'" data-coin="'+i+'" data-d="1" aria-label="Deposit one '+CN[i]+'">+</button></span></div>').join('')+'</div>'
+      +'<div><small>INTEREST: grows with the value stored</small><div class="bar"><i style="width:'+Math.min(100,total()/1.2)+'%"></i></div><small>At this balance: about '+Math.max(1,Math.round(total()/12))+' XP levels and '+Math.round(total()/40)+' Tetrium Ingots a day</small></div><div class="row"><small>ACCESS: 2 players</small><small>LOCK: level 2 of 3</small></div>';
+    const tabs=['storage','access','security'].map(t=>'<button type="button" class="hb" id="vt-'+t+'" data-vtab="'+t+'" aria-pressed="'+(V.tab===t&&!V.intruder)+'">'+t[0].toUpperCase()+t.slice(1)+'</button>').join('');
+    let body;
+    if(V.intruder) body='<div style="color:var(--h-bad)">LOCKED: this vault belongs to Mrgregles</div><div><small>LOCKPICK: stay within 4 blocks. The owner is warned.</small><div class="bar" style="--c:var(--h-bad)"><i style="width:'+V.pick+'%"></i></div><small>'+(V.pick>=100?'Open. You can take the coins.':'2:00 to open at lock level 2. '+V.pick+'% done.')+'</small></div><div class="row"><button type="button" class="hb warn" id="pick" data-pick="1">'+(V.pick?'Keep picking':'Start lockpicking')+'</button></div>';
+    else if(V.tab==='storage') body='<div class="slots">'+slots+'</div><div><small>INTEREST</small><div class="bar"><i style="width:62%"></i></div><small>Next payout in 4h 10m</small></div>';
+    else if(V.tab==='access') body='<div>Mrgregles <small>owner</small></div><div>Astra_Nox <small>can open and take</small></div><div>Korvin <small>can deposit only</small></div><div class="row"><button type="button" class="hb go" id="add2" data-vmsg="Type a player name to add">+ Add player</button></div>';
+    else body='<div>Reinforced lock <span class="pips"><i class="on"></i><i class="on"></i><i></i></span> <small>lockpicking takes 2:00</small> <button type="button" class="hb go" id="up1" data-vmsg="Costs 4 Diamond coins">Upgrade</button></div><div>Alarm <span class="pips"><i class="on"></i><i></i><i></i></span> <small>warns you when someone starts</small> <button type="button" class="hb go" id="up2" data-vmsg="Costs 4 Gold coins">Upgrade</button></div><div>Decoy tray <span class="pips"><i></i><i></i><i></i></span> <small>a thief only gets part of the coins</small> <button type="button" class="hb go" id="up3" data-vmsg="Costs 4 Copper coins">Upgrade</button></div>';
+    document.getElementById('vaC').innerHTML='<div class="top"><span>COIN VAULT</span><span class="row">'+tabs+'<button type="button" class="hb" id="intr" data-intr="1" aria-pressed="'+V.intruder+'">View as intruder</button></span></div>'+body+'<div class="note" id="vaCmsg">&nbsp;</div>'; }
+  document.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const id=b.id; let msg=null, where=null;
+    if(b.dataset.msg){ msg=b.dataset.msg; where=b.closest('.hud').id+'msg'; }
+    else if(b.dataset.sel){ selP=b.dataset.sel; drawAdmin(); } else if(b.dataset.tab){ adTab=b.dataset.tab; drawAdmin(); }
+    else if(b.dataset.coin){ const i=+b.dataset.coin; V.c[i]=Math.max(0,V.c[i]+(+b.dataset.d)); drawVault(); }
+    else if(b.dataset.vtab){ V.tab=b.dataset.vtab; V.intruder=false; drawVault(); } else if(b.dataset.intr){ V.intruder=!V.intruder; V.pick=0; drawVault(); }
+    else if(b.dataset.pick){ V.pick=Math.min(100,V.pick+25); drawVault(); } else if(b.dataset.vmsg){ msg=b.dataset.vmsg; where=b.closest('.hud').id+'msg'; } else return;
+    if(msg) say(where,msg); const el=id&&document.getElementById(id); if(el) el.focus(); });
+  drawAdmin(); drawVault();
+
+  // ------------------------------------------------------------------ score screen
+  const cfg={w:5,h:3,layout:'a',font:'Silkscreen',size:1,speed:.4,title:'TOTEM LEADERBOARD'}; const cv=document.createElement('canvas'), cx=cv.getContext('2d'); let texS=null;
+  const board=P.filter(p=>p.t.length).sort((a,b)=>scoreB(b)-scoreB(a));
+  function paint(t){ const W=cv.width, H=cv.height, u=Math.min(W/5,H/2.2)/64*cfg.size, f=(px,b)=>cx.font=(b?'700 ':'')+Math.max(8,px*u)+'px "'+cfg.font+'", monospace';
+    cx.fillStyle='#070a0e'; cx.fillRect(0,0,W,H); cx.fillStyle='#19d3b0'; cx.textBaseline='middle'; cx.textAlign='center'; const th=22*u; f(14,true); cx.fillText(cfg.title,W/2,th/2+4); cx.fillRect(0,th+4,W,2);
+    const top=th+10, area=H-top-4;
+    if(cfg.layout==='a'){ const rh=18*u, fit=Math.max(1,Math.floor(area/rh)), over=board.length>fit, off=over?(t*cfg.speed*rh*1.5)%(board.length*rh):0; cx.save(); cx.beginPath(); cx.rect(0,top,W,area); cx.clip(); f(12);
+      for(let k=0;k<board.length*(over?2:1);k++){ const p=board[k%board.length], y=top+k*rh-off+rh/2; if(y<top-rh||y>H+rh) continue; cx.textAlign='left'; cx.fillStyle=k%board.length<3?'#ffd23a':'#e8eaf0'; cx.fillText((k%board.length+1)+'. '+p.n,W*.05,y); cx.textAlign='right'; cx.fillText(scoreB(p)+' PTS',W*.95,y); } cx.restore(); }
+    else if(cfg.layout==='b'){ const tk=16*u, ph=area-tk-6, bw=W/4.2, hs=[.62,1,.45], ord=[1,0,2]; ord.forEach((r,i)=>{ const p=board[r]; if(!p) return; const x=W/2+(i-1)*bw*1.15, bh=ph*.62*hs[i]; cx.fillStyle=r===0?'#ffd23a':'#8a909c'; cx.fillRect(x-bw/2,top+ph-bh,bw,bh);
+        cx.fillStyle='#0b0d11'; f(16,true); cx.textAlign='center'; cx.fillText('#'+(r+1),x,top+ph-bh/2); cx.fillStyle='#e8eaf0'; f(10); cx.fillText(p.n,x,top+ph-bh-18*u); cx.fillStyle='#19d3b0'; cx.fillText(scoreB(p)+' PTS',x,top+ph-bh-7*u); });
+      cx.fillStyle='#10151c'; cx.fillRect(0,H-tk-4,W,tk+4); const s=board.slice(3).map((p,i)=>(i+4)+'. '+p.n+'  '+scoreB(p)+' PTS').join('      ')||'NO OTHER PLAYERS'; f(10); cx.textAlign='left'; const tw=cx.measureText(s).width+W*.3, x0=W-((t*cfg.speed*90*u)%(tw+W)); cx.fillStyle='#9aa3b5'; cx.fillText(s,x0,H-tk/2-2); }
+    else { const dur=Math.max(1.2,5-cfg.speed*4), i=Math.floor(t/dur)%board.length, k=(t/dur)%1, p=board[i], slide=k<.12?(1-k/.12):k>.9?-(k-.9)/.1:0; cx.save(); cx.translate(slide*W,0); cx.textAlign='center';
+      cx.fillStyle=i<3?'#ffd23a':'#19d3b0'; f(30,true); cx.fillText('#'+(i+1),W/2,top+area*.22); cx.fillStyle='#e8eaf0'; f(20,true); cx.fillText(p.n,W/2,top+area*.52); cx.fillStyle='#9aa3b5'; f(11); cx.fillText(p.t.length+' TOTEMS   '+scoreB(p)+' PTS',W/2,top+area*.8); cx.restore(); }
+    if(texS) texS.needsUpdate=true; }
+  const sv=makeView(document.getElementById('screenView').parentNode,g=>{ const w=cfg.w*16, h=cfg.h*16; cv.width=cfg.w*96; cv.height=cfg.h*96; texS=new THREE.CanvasTexture(cv); texS.magFilter=THREE.NearestFilter;
+    bx(g,[0,0,-3],[w,h,0],HULL); bx(g,[-.6,-.6,-.4],[w+.6,0,.4],TRIM); bx(g,[-.6,h,-.4],[w+.6,h+.6,.4],TRIM); bx(g,[-.6,0,-.4],[0,h,.4],TRIM); bx(g,[w,0,-.4],[w+.6,h,.4],TRIM);
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(w-1,h-1),new THREE.MeshBasicMaterial({map:texS})); m.position.set(w/2,h/2,.2); g.add(m);
+    for(let i=1;i<cfg.w;i++) bx(g,[i*16-.1,0,-3.05],[i*16+.1,h,-3],MID); bx(g,[-12,-1,-10],[w+12,-.6,14],0x20242c);
+    return {tick:paint,dist:Math.max(w*1.9,h*3.1)+20,target:[w/2,h/2,0]}; },100,[0,0,0],true);
+  document.getElementById('screenView').remove();
+  const bind=(id,fn,rb)=>document.getElementById(id).addEventListener('input',e=>{ fn(e.target.value); const o=document.getElementById(id+'O'); if(o) o.textContent=e.target.value; if(rb) sv.rebuild(); });
+  bind('sw',v=>cfg.w=+v,true); bind('sh',v=>cfg.h=+v,true); bind('sl',v=>cfg.layout=v); bind('sf',v=>cfg.font=v); bind('ss',v=>cfg.size=v/100); bind('sp',v=>cfg.speed=v/100); bind('st',v=>cfg.title=v.toUpperCase());
+
+  // ------------------------------------------------------------------ scoring table
+  const rk=fn=>{ const o=P.slice().sort((a,b)=>fn(b)-fn(a)||best(b)-best(a)); return p=>o.indexOf(p)+1; }, ra=rk(scoreA), rb=rk(scoreB), rc=rk(scoreC);
+  document.getElementById('scoreT').innerHTML='<tr><th>Player</th><th>Totems held (tiers)</th><th>A. Count</th><th>B. Weighted</th><th>C. Season</th></tr>'+P.map(p=>'<tr><td>'+p.n+'</td><td>'+(p.t.map(t=>RO[t]).join(', ')||'none')+'</td><td class="num">'+scoreA(p)+' <small>(#'+ra(p)+')</small></td><td class="num">'+scoreB(p)+' <small>(#'+rb(p)+')</small></td><td class="num">'+scoreC(p)+' <small>(#'+rc(p)+')</small></td></tr>').join('');
+})();
+</script>

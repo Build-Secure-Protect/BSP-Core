@@ -26,6 +26,8 @@ import net.minecraftforge.fml.common.Mod;
  * /bsp totem reset &lt;player&gt;    forget that the player was granted, so first join grants again
  * /bsp totem locate &lt;player&gt;   list where that player's placed totems stand
  * /bsp totem owner              show the owner of the totem in your main hand
+ * /bsp admin                    open the admin panel (admins and moderators; no Admin Rack needed)
+ * /bsp score top                the top ten of the leaderboard
  * /bsp storage status           where records are kept
  * /bsp storage test             try the MySQL connection from the config
  * /bsp storage migrate [force]  copy this server's local records into the MySQL database
@@ -42,8 +44,12 @@ public final class BSPCommands {
 
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("bsp")
-                .requires(src -> src.hasPermission(2))
-                .then(Commands.literal("totem")
+                .requires(src -> src.hasPermission(2) || src.getEntity() instanceof ServerPlayer p && com.mrgregles.bsp_core.admin.Admins.isModerator(p))
+                .then(Commands.literal("admin").executes(ctx -> {
+                    com.mrgregles.bsp_core.admin.AdminService.open(ctx.getSource().getPlayerOrException());
+                    return 1;
+                }))
+                .then(Commands.literal("totem").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("give")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::give)))
@@ -55,7 +61,23 @@ public final class BSPCommands {
                                         .executes(BSPCommands::locate)))
                         .then(Commands.literal("owner")
                                 .executes(BSPCommands::owner)))
-                .then(Commands.literal("storage")
+                .then(Commands.literal("score")
+                        .then(Commands.literal("top").executes(ctx -> {
+                            CommandSourceStack src = ctx.getSource();
+                            com.mrgregles.bsp_core.score.ScoreService.refresh(src.getServer());
+                            var board = com.mrgregles.bsp_core.score.ScoreService.board();
+                            if (board.isEmpty()) {
+                                src.sendSuccess(() -> Component.literal("No totems are owned yet."), false);
+                            }
+                            for (int i = 0; i < Math.min(10, board.size()); i++) {
+                                var e = board.get(i);
+                                String line = (i + 1) + ". " + e.name() + ": " + e.points() + " points, " + e.totems() + " totems, best tier "
+                                        + com.mrgregles.bsp_core.totem.TotemUpgrades.roman(e.bestTier());
+                                src.sendSuccess(() -> Component.literal(line), false);
+                            }
+                            return board.size();
+                        })))
+                .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(com.mrgregles.bsp_core.storage.NetworkStorage.status()), false);
                             return 1;

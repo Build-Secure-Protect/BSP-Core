@@ -30,9 +30,10 @@ import java.util.function.IntConsumer;
 /**
  * Optional network-wide storage. BSP-Core always keeps its records in the world (the ledgers), so
  * a single server needs nothing more. With {@code storage.mode = "mysql"} the same records are also
- * written to a MySQL database shared by every server of the network, which makes three things
- * network-wide: one first-join totem per player, the factory slice limit, and a list of every
- * placed totem.
+ * written to a MySQL database shared by every server of the network, which makes these things
+ * network-wide: one first-join totem per player, the factory slice limit, the list of placed
+ * totems, the leaderboard, Coin Vault totals and the vault block limit, seasons and full resets,
+ * the season prizes and holder reward, and the delivery of items owed to a player.
  *
  * <p>All database work happens on one background thread. Nothing here blocks the server thread;
  * answers come back through callbacks that run on the server thread. If the database cannot be
@@ -50,6 +51,9 @@ public final class NetworkStorage {
     @Nullable
     private static MinecraftServer server;
     private static final Map<UUID, Integer> slicesElsewhere = new ConcurrentHashMap<>();
+    /** What each player keeps in Coin Vaults on the other servers, as last read: five coin counts, blocks, and the Illyrium-interest flag. */
+    private static volatile Map<UUID, int[]> vaultsElsewhere = Map.of();
+    private static final int[] NO_VAULTS = new int[7];
 
     private NetworkStorage() {}
 
@@ -141,6 +145,7 @@ public final class NetworkStorage {
             w.shutdown();
         }
         slicesElsewhere.clear();
+        vaultsElsewhere = Map.of();
         server = null;
     }
 
@@ -232,6 +237,140 @@ public final class NetworkStorage {
                 onServer(() -> then.accept(n));
             } catch (SQLException | RuntimeException e) {
                 BSPCore.LOGGER.error("BSP-Core storage: could not count factory slices for {}: {}", owner, e.toString());
+            }
+        });
+    }
+
+    /**
+     * Publishes this server's score rows and hands the whole network's board to {@code then} on the
+     * server thread. If the database cannot be reached, {@code then} gets this server's own rows.
+     */
+    public static void syncScores(List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine, Consumer<List<com.mrgregles.bsp_core.score.ScoreService.Entry>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(mine);
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.score.ScoreService.Entry> result;
+            try {
+                result = s.syncScores(mine);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not sync the leaderboard: {}", e.toString());
+                result = mine;
+            }
+            List<com.mrgregles.bsp_core.score.ScoreService.Entry> out = result;
+            onServer(() -> then.accept(out));
+        });
+    }
+
+    // ------------------------------------------------------------------ coin vaults
+
+    /** Publishes this server's vault totals, refreshes what is known of the other servers, then runs {@code then} on the server thread. */
+    public static void syncVaults(Map<UUID, int[]> mine, Runnable then) {
+        MySqlStore s = store;
+        if (s == null) {
+            return;
+        }
+        worker().execute(() -> {
+            try {
+                vaultsElsewhere = Map.copyOf(s.syncVaults(mine));
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not sync Coin Vault totals: {}", e.toString());
+            }
+            onServer(then);
+        });
+    }
+
+    /**
+     * Writes one player's vault totals for this server to the database at once, so the other
+     * servers see a vault block the moment it is placed or broken. If {@code then} is given it
+     * hears, on the server thread, how many vault blocks the player owns on the other servers.
+     */
+    public static void putVaultRow(UUID owner, int[] row, @Nullable IntConsumer then) {
+        int[] copy = row.clone();
+        async("write Coin Vault totals", s -> {
+            int elsewhere = s.putVaultRow(owner, copy);
+            if (then != null) {
+                onServer(() -> then.accept(elsewhere));
+            }
+        });
+    }
+
+    /** Coins of each tier the player keeps in vaults on other servers (zeros when storage is local). */
+    public static int[] vaultCoinsElsewhere(UUID owner) {
+        return vaultsElsewhere.getOrDefault(owner, NO_VAULTS);
+    }
+
+    public static int vaultBlocksElsewhere(UUID owner) {
+        return vaultsElsewhere.getOrDefault(owner, NO_VAULTS)[5];
+    }
+
+    /** True if another server is the one that pays this player's Illyrium interest, so that it is only paid once on the network. */
+    public static boolean illyriumPaidElsewhere(UUID owner) {
+        return vaultsElsewhere.getOrDefault(owner, NO_VAULTS)[6] != 0;
+    }
+
+    // ------------------------------------------------------------------ seasons
+
+    /**
+     * Asks the network whether {@code player} should be given their fresh totem for {@code season}
+     * here. {@code then} runs on the server thread with {@link #CLAIM_OK}, {@link
+     * #CLAIM_GRANTED_ELSEWHERE} (already given, or the player has never had a totem) or {@link #CLAIM_FAILED}.
+     */
+    public static void claimSeason(int season, UUID player, IntConsumer then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(CLAIM_FAILED);
+            return;
+        }
+        worker().execute(() -> {
+            int result;
+            try {
+                result = s.claimSeason(season, player) ? CLAIM_OK : CLAIM_GRANTED_ELSEWHERE;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not check the season totem for {}: {}", player, e.toString());
+                result = CLAIM_FAILED;
+            }
+            int r = result;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    public static void putState(Map<String, String> values, boolean onlyIfAbsent) {
+        Map<String, String> copy = new java.util.LinkedHashMap<>(values);
+        async("write the season state", s -> s.putState(copy, onlyIfAbsent));
+    }
+
+    /** Reads the shared season state and hands it to {@code then} on the server thread. Nothing happens if the database cannot be reached. */
+    public static void readState(Consumer<Map<String, String>> then) {
+        async("read the season state", s -> {
+            Map<String, String> state = s.readState();
+            onServer(() -> then.accept(state));
+        });
+    }
+
+    /** Changes a state key from {@code expected} to {@code value}; {@code then} hears whether this server was the one to do it. */
+    public static void casState(String key, String expected, String value, Consumer<Boolean> then) {
+        async("update the season state", s -> {
+            boolean won = s.casState(key, expected, value);
+            onServer(() -> then.accept(won));
+        });
+    }
+
+    /** Leaves items (as SNBT) for a player to be handed over on whichever server they are on or next join. */
+    public static void addPending(UUID player, List<String> items) {
+        List<String> copy = List.copyOf(items);
+        async("store items owed to a player", s -> s.addPending(player, copy));
+    }
+
+    /** Takes whatever is waiting for the given players and hands it to {@code then} on the server thread. */
+    public static void takePending(List<UUID> players, Consumer<Map<UUID, List<String>>> then) {
+        List<UUID> copy = List.copyOf(players);
+        async("collect items owed to players", s -> {
+            Map<UUID, List<String>> owed = s.takePending(copy);
+            if (!owed.isEmpty()) {
+                onServer(() -> then.accept(owed));
             }
         });
     }

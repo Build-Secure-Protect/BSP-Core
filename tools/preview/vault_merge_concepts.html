@@ -1,0 +1,110 @@
+<title>Vault Merge Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<div class="wrap">
+<section><h1>Vault Merge Concepts</h1>
+<p class="lede">How Coin Vault blocks could look once they join into one vault. Three options, all shown at the size set below, from a single block up to 3 x 3 x 3. Drag a view to turn it. Nothing here is in the mod yet.</p>
+<div class="card"><div class="ctl">
+  <label for="mw">Width <input id="mw" type="range" min="1" max="3" value="3"><output id="mwO">3</output></label>
+  <label for="mh">Height <input id="mh" type="range" min="1" max="3" value="3"><output id="mhO">3</output></label>
+  <label for="md">Depth <input id="md" type="range" min="1" max="3" value="2"><output id="mdO">2</output></label>
+</div></div></section>
+<section><div class="grid3" id="views"></div></section>
+<section><h2>What stays the same</h2>
+<div class="card"><p>Storage, access, upgrades and lockpicking do not change: this is only the look. The single block keeps the Classic Safe. A group that is not a full box (an L shape, a missing corner) would be drawn as the largest full box plus separate safes for the leftover blocks. The door is drawn on the side the vault blocks face.</p></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STEEL=0x3a4150,STEEL2=0x2b313d,EDGE=0x8a909c,PANEL=0xc9ced8,DARK=0x0c1116,GOLD=0xffd23a,GOLD2=0xb8922a,TQ=0x19d3b0;
+  function bx(g,f,t,c,glow){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function cyl(g,x,y,z,r,len,c,glow,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,seg||28), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    m.rotation.x=Math.PI/2; m.position.set(x,y,z); g.add(m); return m; }
+  const size=()=>[+mw.value,+mh.value,+md.value];
+  function makeView(el,build){ const view=document.createElement('div'); view.className='view'; el.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.7)); const d=new THREE.DirectionalLight(0xffffff,.8); d.position.set(-10,24,-30); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let o=build(g)||{}, ry=Math.PI+.6, rx=.3, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(o.tick) o.tick(t); const s=size(), D=40+Math.max(s[0],s[1],s[2])*42, T=[s[0]*8,s[1]*8,s[2]*8];
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return { rebuild(){ scene.remove(g); g=new THREE.Group(); scene.add(g); o=build(g)||{}; } }; }
+  // steel body shared by all three: plating, bright edge bands, rivets on the side seams
+  function body(g,W,H,D){ bx(g,[0,0,0.6],[W,H,D],STEEL);
+    for(const x of [0,W-1]) for(const y of [0,H-1]) bx(g,[x,y,0.4],[x+1,y+1,D+.1],EDGE);
+    for(const x of [0,W-1]){ bx(g,[x,0,0.4],[x+1,H,1.4],EDGE); bx(g,[x,0,D-.9],[x+1,H,D+.1],EDGE); }
+    for(const y of [0,H-1]){ bx(g,[0,y,0.4],[W,y+1,1.4],EDGE); bx(g,[0,y,D-.9],[W,y+1,D+.1],EDGE); }
+    for(let z=16;z<D;z+=16){ bx(g,[-.1,1,z-.3],[W+.1,H-1,z+.3],STEEL2); } for(let y=16;y<H;y+=16){ bx(g,[-.1,y-.3,1.4],[W+.1,y+.3,D-.9],STEEL2); }
+    bx(g,[2,H,2],[W-2,H+.3,D-2],GOLD2); bx(g,[3,H,3],[W-3,H+.4,D-3],STEEL2); }
+  const cards=[
+   ['A. One Big Door','The whole front becomes a single square safe door that grows with the vault: one dial, one bar handle, heavy hinges. Closest to the Classic Safe you picked.',(g)=>{ const [w,h,d]=size(), W=w*16,H=h*16,D=d*16, k=Math.min(W,H)/16; body(g,W,H,D);
+      bx(g,[2,2,-.4],[W-2,H-2,.6],GOLD2); bx(g,[3,3,-1],[W-3,H-3,.6],STEEL2);
+      const cx=W*.42, cy=H/2; cyl(g,cx,cy,-1.4,3.6*k,1,GOLD); const dial=cyl(g,cx,cy,-1.9,2.9*k,1,PANEL,false,12); cyl(g,cx,cy,-2.4,1.2*k,1,GOLD);
+      bx(g,[W-3-3.2*k,cy-3*k,-2.2],[W-3-1.6*k,cy+3*k,-1],PANEL);
+      for(const y of [H*.25,H*.75]) bx(g,[1,y-1.5*k,-1.6],[4,y+1.5*k,.6],PANEL);
+      return { tick(t){ dial.rotation.y=Math.sin(t*.8)*1.2; } }; }],
+   ['B. Deposit Box Wall','One steel body, and the front is a gold-framed wall of deposit boxes, four drawers for every vault block on the front, each with a lit keyhole. Shows the size of the vault at a glance.',(g)=>{ const [w,h,d]=size(), W=w*16,H=h*16,D=d*16; body(g,W,H,D);
+      bx(g,[1.5,1.5,-.2],[W-1.5,H-1.5,.6],GOLD2); const lights=[];
+      for(let i=0;i<w;i++) for(let j=0;j<h;j++) for(let a=0;a<2;a++) for(let b=0;b<2;b++){ const x=3+i*(W-6)/w+a*(W-6)/w/2, y=3+j*(H-6)/h+b*(H-6)/h/2, cw=(W-6)/w/2, ch=(H-6)/h/2;
+        bx(g,[x+.4,y+.4,-1],[x+cw-.4,y+ch-.4,.6],(i+j+a+b)%2?STEEL2:STEEL); bx(g,[x+cw/2-1.2,y+ch-2.2,-1.5],[x+cw/2+1.2,y+ch-1.4,-1],PANEL); lights.push(bx(g,[x+cw/2-.5,y+1.4,-1.3],[x+cw/2+.5,y+2.4,-1],TQ,true)); }
+      return { tick(t){ lights.forEach((l,i)=>l.visible=Math.sin(t*2+i*1.7)>-.6); } }; }],
+   ['C. Round Bank Door','A round bank-vault door set in a square collar, with a spoked wheel that turns and locking bolts around the rim. The most dramatic, and it reads as "the big vault" from across a base.',(g)=>{ const [w,h,d]=size(), W=w*16,H=h*16,D=d*16, R=Math.min(W,H)/2-2, cx=W/2, cy=H/2; body(g,W,H,D);
+      bx(g,[1.5,1.5,-.2],[W-1.5,H-1.5,.6],STEEL2); cyl(g,cx,cy,-.6,R,1.6,GOLD2,false,40); cyl(g,cx,cy,-1.4,R-1,1.6,STEEL,false,40); cyl(g,cx,cy,-2,R*.55,1,STEEL2,false,40);
+      for(let i=0;i<8;i++){ const a=i*Math.PI/4, r=R-.2; bx(g,[cx+Math.cos(a)*r-1,cy+Math.sin(a)*r-1,-2.2],[cx+Math.cos(a)*r+1,cy+Math.sin(a)*r+1,-.6],PANEL); }
+      const wheel=new THREE.Group(); wheel.position.set(cx,cy,-3); g.add(wheel); const L=R*.5;
+      for(let i=0;i<3;i++){ const s=new THREE.Mesh(new THREE.BoxGeometry(L*2,Math.max(.8,R*.09),1),new THREE.MeshLambertMaterial({color:PANEL})); s.rotation.z=i*Math.PI/3; wheel.add(s); }
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(R*.14,R*.14,1.6,20),new THREE.MeshLambertMaterial({color:GOLD})); hub.rotation.x=Math.PI/2; wheel.add(hub);
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(L,Math.max(.5,R*.06),8,32),new THREE.MeshLambertMaterial({color:PANEL})); wheel.add(ring);
+      if(W>H) for(const x of [3,W-3-Math.max(2,(W-H)/2-3)]) bx(g,[x,H*.2,-.8],[x+Math.max(2,(W-H)/2-3),H*.8,.6],STEEL);
+      return { tick(t){ wheel.rotation.z=Math.sin(t*.6)*1.5; } }; }]];
+  const host=document.getElementById('views'), views=[];
+  for(const [name,text,build] of cards){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; host.appendChild(c); views.push(makeView(c,build)); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); }
+  for(const id of ['mw','mh','md']) document.getElementById(id).addEventListener('input',e=>{ document.getElementById(id+'O').textContent=e.target.value; views.forEach(v=>v.rebuild()); });
+})();
+</script>

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PAP",
+    "PKP",
+    "PCP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "A": {
+      "item": "minecraft:gold_ingot"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    },
+    "C": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:coin_vault"
+  }
+}

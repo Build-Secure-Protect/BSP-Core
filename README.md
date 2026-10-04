@@ -38,6 +38,8 @@ Other useful tasks: `./gradlew runClient`, `./gradlew runServer`, `./gradlew run
 | `/bsp totem reset <player>` | Forget the first-join grant so the player is granted again |
 | `/bsp totem locate <player>` | List where that player's placed totems stand |
 | `/bsp totem owner` | Show the owner of the totem in your main hand |
+| `/bsp admin` | Open the admin panel (admins and moderators from the `admin` config section; no Admin Rack needed) |
+| `/bsp score top` | Show the top ten of the leaderboard |
 | `/bsp storage status` | Show whether records are local only or also in MySQL |
 | `/bsp storage test` | Try the MySQL connection from the config and create the tables |
 | `/bsp storage migrate` | Copy this server's local records into the MySQL database (add `force` to run it again) |
@@ -79,7 +81,18 @@ Server config is generated at `<world>/serverconfig/bsp_core-server.toml`.
 
 A single server needs none of this: BSP-Core keeps its records in the world.
 
-For a network, every server can share one MySQL or MariaDB database so that each player gets only one first-join totem and the factory slice limit counts slices on all servers. You provide the database and an account; BSP-Core connects with those credentials and only creates its own tables (`bsp_grants`, `bsp_totems`, `bsp_factory_slices`, `bsp_meta` with the default prefix).
+For a network, every server can share one MySQL or MariaDB database. You provide the database and an account; BSP-Core connects with those credentials and only creates its own tables (`bsp_grants`, `bsp_totems`, `bsp_factory_slices`, `bsp_scores`, `bsp_meta`, `bsp_vault_totals`, `bsp_state`, `bsp_season_claims`, `bsp_pending_items` with the default prefix).
+
+What becomes network-wide:
+
+- one first-join totem per player, and one fresh totem per season
+- the factory slice limit and the Coin Vault block limit
+- the leaderboard, and the vault figures in the admin panel
+- seasons and full resets: ending one on any server is picked up by the others within `scoring.refreshSeconds`
+- the season prizes, the holder reward and its interval
+- delivery of prizes and rewards to a player who is offline or on another server
+
+Vault interest is still earned and redeemed on the server where the coins are stored. A server that connects with a lower season number than the database has its totems removed, as if it had missed a season end.
 
 On each server, in `serverconfig/bsp_core-server.toml` under `[storage]`:
 

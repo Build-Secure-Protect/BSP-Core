@@ -27,6 +27,7 @@ ADV = [
     ("tetrium_plate", "combination_forge", "bsp_core:tetrium_plate", "Flat Out", "Press a Tetrium Plate in the Combination Forge", ["bsp_core:tetrium_plate"], "task"),
     ("machine_chassis", "tetrium_plate", "bsp_core:machine_chassis", "Empty Shell", "Craft a Machine Chassis, the start of every machine block", ["bsp_core:machine_chassis"], "task"),
     ("basic_control_circuit", "machine_chassis", "bsp_core:basic_control_circuit", "Thinking Parts", "Craft a Basic Control Circuit", ["bsp_core:basic_control_circuit"], "task"),
+    ("coin_vault", "basic_control_circuit", "bsp_core:coin_vault", "Safe Keeping", "Craft a Coin Vault. Coins kept in it earn interest", ["bsp_core:coin_vault"], "task"),
     ("rf_upgrade", "machine_chassis", "bsp_core:rf_upgrade_mk1", "Plugged In", "Craft an RF Upgrade", ["bsp_core:rf_upgrade_mk1", "bsp_core:rf_upgrade_mk2", "bsp_core:rf_upgrade_mk3"], "task"),
     ("illyrium_crucible", "basic_control_circuit", "bsp_core:illyrium_crucible", "Playing With Lava", "Craft the Illyrium Crucible Controller. Sneak + right-click it for the Assembly Guide", ["bsp_core:illyrium_crucible"], "goal"),
     ("dirty_illyrium_ingot", "illyrium_crucible", "bsp_core:dirty_illyrium_ingot", "Needs a Wash", "Smelt a Dirty Illyrium Ingot in the Illyrium Crucible", ["bsp_core:dirty_illyrium_ingot"], "task"),

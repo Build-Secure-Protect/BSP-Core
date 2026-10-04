@@ -1,0 +1,33 @@
+{
+  "name": "The Coin Vault",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:coin_vault",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:coin_vault",
+      "text": "A safe that holds only Shatter Coins, 27 stacks of 12 per block. Nothing can pipe coins in or out.$(br2)Vault blocks of yours that touch join into one vault, up to 3 x 3 x 3. You may own 27 vault blocks."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:coin_vault",
+      "text": "The block keeps its lock and alarm when you break it and place it again."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "On the $(l)Access$() tab, add the players who may open the vault. They must be online when you add them. They can move coins but cannot change the settings.$(br2)On the $(l)Security$() tab, buy up to three lock levels and an Alarm with coins. The Alarm warns everyone with access the moment someone starts picking the lock.",
+      "title": "Access and Security"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Anyone without access can pick the lock: 2 minutes, plus 1 minute for each lock level, staying within 4 blocks. If they finish, they take a quarter of the coins, chosen at random. Illyrium coins are safe while the vault holds 3 or fewer.$(br2)Breaking a vault that is not yours gives no coins: they are kept for the owner, who collects them by opening any vault of theirs.",
+      "title": "Lockpicking"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Coins in your vaults earn interest: XP levels and Tetrium Ingots for every 50 coin value stored, counted across all your vaults. With a Netherite or Illyrium coin stored you also earn up to 2 Illyrium Ingots every 3 days.$(br2)Interest builds up while you are offline, but stops at 3 days' worth. Press $(l)Redeem$() on the Storage tab to collect it and start it building again.",
+      "title": "Interest"
+    }
+  ]
+}

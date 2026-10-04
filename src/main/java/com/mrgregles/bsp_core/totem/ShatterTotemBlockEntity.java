@@ -73,7 +73,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             TotemLedger ledger = TotemLedger.get(serverLevel.getServer());
             GlobalPos here = GlobalPos.of(serverLevel.dimension(), worldPosition);
             if (owner != null) {
-                ledger.recordPlaced(owner.uuid(), here);
+                ledger.recordPlaced(owner.uuid(), here, getTier());
             } else {
                 ledger.recordRemoved(here);
             }
@@ -337,6 +337,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         super.onLoad();
         if (level instanceof ServerLevel serverLevel) {
             TotemAuras.register(serverLevel, this);
+            recordInLedger(serverLevel);
         }
     }
 
@@ -424,6 +425,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         BSPCore.LOGGER.info("{} bought {} level {} at {}", player.getGameProfile().getName(), buff.key, lvl + 1, worldPosition);
     }
 
+    /** Keeps the ledger's owner and tier for this totem current; scores are worked out from the ledger. */
+    private void recordInLedger(ServerLevel serverLevel) {
+        if (owner != null) {
+            TotemLedger.get(serverLevel.getServer()).recordPlaced(owner.uuid(), GlobalPos.of(serverLevel.dimension(), worldPosition), getTier());
+        }
+    }
+
     /** Totem tier, 0 (I) to 4 (V). */
     public int getTier() {
         return Math.max(0, Math.min(TotemUpgrades.MAX_TIER, upgrades.getInt(TotemUpgrades.TAG_TIER)));
@@ -431,6 +439,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     public void setTier(int tier) {
         TotemUpgrades.stamp(upgrades).putInt(TotemUpgrades.TAG_TIER, Math.max(0, Math.min(TotemUpgrades.MAX_TIER, tier)));
+        if (level instanceof ServerLevel serverLevel) {
+            recordInLedger(serverLevel);
+        }
         setChanged();
         sync();
         updateBlockState();

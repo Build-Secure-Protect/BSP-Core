@@ -159,6 +159,9 @@ public class BspJeiPlugin implements IModPlugin {
         info(reg, "jei.bsp_core.info.shared_parts", "illyrium_casing", "illyrium_core", "item_hatch");
         info(reg, "jei.bsp_core.info.factory", "shatter_coin_factory", "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port");
         info(reg, "jei.bsp_core.info.motivator", "factory_motivator");
+        info(reg, "jei.bsp_core.info.vault", "coin_vault");
+        info(reg, "jei.bsp_core.info.score_screen", "score_screen");
+        info(reg, "jei.bsp_core.info.admin_rack", "admin_rack");
         info(reg, "jei.bsp_core.info.totem", "shatter_totem");
         info(reg, "jei.bsp_core.info.plate", "tetrium_plate");
     }

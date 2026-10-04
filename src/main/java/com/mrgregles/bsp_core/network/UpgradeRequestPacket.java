@@ -54,6 +54,7 @@ public record UpgradeRequestPacket(InteractionHand hand, int buffOrdinal) {
             }
             TotemUpgrades.pay(player, price);
             TotemUpgrades.setTier(totem, tier + 1);
+            com.mrgregles.bsp_core.score.ScoreService.markDirty();
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(tier + 1)).withStyle(ChatFormatting.GOLD), true);
             BSPCore.LOGGER.info("{} raised a held totem to tier {}", player.getGameProfile().getName(), tier + 2);
         } else {

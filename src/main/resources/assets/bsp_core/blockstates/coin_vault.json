@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,formed=false": {
+      "model": "bsp_core:block/coin_vault"
+    },
+    "facing=north,formed=true": {
+      "model": "bsp_core:block/coin_vault"
+    },
+    "facing=east,formed=false": {
+      "model": "bsp_core:block/coin_vault",
+      "y": 90
+    },
+    "facing=east,formed=true": {
+      "model": "bsp_core:block/coin_vault",
+      "y": 90
+    },
+    "facing=south,formed=false": {
+      "model": "bsp_core:block/coin_vault",
+      "y": 180
+    },
+    "facing=south,formed=true": {
+      "model": "bsp_core:block/coin_vault",
+      "y": 180
+    },
+    "facing=west,formed=false": {
+      "model": "bsp_core:block/coin_vault",
+      "y": 270
+    },
+    "facing=west,formed=true": {
+      "model": "bsp_core:block/coin_vault",
+      "y": 270
+    }
+  }
+}

@@ -26,6 +26,8 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.COIN_FACTORY.get(), CoinFactoryScreen::new);
             MenuScreens.register(ModMenus.MACHINE.get(), MachineScreen::new);
             MenuScreens.register(ModMenus.TOTEM_COMPASS.get(), TotemCompassScreen::new);
+            MenuScreens.register(ModMenus.COIN_VAULT.get(), CoinVaultScreen::new);
+            MenuScreens.register(ModMenus.SEASON_REWARDS.get(), SeasonRewardsScreen::new);
             // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
                     new net.minecraft.resources.ResourceLocation("angle"),
@@ -38,6 +40,8 @@ public final class ClientSetup {
         event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ItemEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SHATTER_TOTEM.get(), ShatterTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.SCORE_SCREEN.get(), ScoreScreenRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.COIN_VAULT.get(), CoinVaultRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TETRIUM_CRUCIBLE.get(), TetriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMBINATION_FORGE.get(), CombinationForgeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), IllyriumCrucibleRenderer::new);

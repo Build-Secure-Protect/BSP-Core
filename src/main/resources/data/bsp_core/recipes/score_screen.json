@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "WKW",
+    "PPP"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "W": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:score_screen",
+    "count": 2
+  }
+}

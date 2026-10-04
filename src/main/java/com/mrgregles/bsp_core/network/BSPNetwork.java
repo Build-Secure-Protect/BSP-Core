@@ -29,6 +29,27 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(PlacedUpgradeRequestPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(PlacedUpgradeRequestPacket::encode).decoder(PlacedUpgradeRequestPacket::decode)
                 .consumerMainThread(PlacedUpgradeRequestPacket::handle).add();
+        CHANNEL.messageBuilder(ScoreScreenOpenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScoreScreenOpenPacket::encode).decoder(ScoreScreenOpenPacket::decode)
+                .consumerMainThread(ScoreScreenOpenPacket::handle).add();
+        CHANNEL.messageBuilder(ScoreScreenConfigPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ScoreScreenConfigPacket::encode).decoder(ScoreScreenConfigPacket::decode)
+                .consumerMainThread(ScoreScreenConfigPacket::handle).add();
+        CHANNEL.messageBuilder(AdminDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(AdminDataPacket::encode).decoder(AdminDataPacket::decode)
+                .consumerMainThread(AdminDataPacket::handle).add();
+        CHANNEL.messageBuilder(AdminActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AdminActionPacket::encode).decoder(AdminActionPacket::decode)
+                .consumerMainThread(AdminActionPacket::handle).add();
+        CHANNEL.messageBuilder(PrizeSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PrizeSyncPacket::encode).decoder(PrizeSyncPacket::decode)
+                .consumerMainThread(PrizeSyncPacket::handle).add();
+        CHANNEL.messageBuilder(VaultAccessPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(VaultAccessPacket::encode).decoder(VaultAccessPacket::decode)
+                .consumerMainThread(VaultAccessPacket::handle).add();
+        CHANNEL.messageBuilder(ScoreSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScoreSyncPacket::encode).decoder(ScoreSyncPacket::decode)
+                .consumerMainThread(ScoreSyncPacket::handle).add();
         CHANNEL.messageBuilder(StealStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(StealStatusPacket::encode).decoder(StealStatusPacket::decode)
                 .consumerMainThread(StealStatusPacket::handle).add();

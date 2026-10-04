@@ -90,6 +90,8 @@ public final class FirstJoinHandler {
 
         ledger.markGranted(player.getUUID());
         PlayerPersistent.setTotemGranted(player, true);
+        // this totem is their totem for the season in progress
+        PlayerPersistent.setSeasonSeen(player, com.mrgregles.bsp_core.admin.SeasonData.get(player.server).number);
 
         player.displayClientMessage(
                 Component.translatable("message.bsp_core.shatter_totem.granted").withStyle(ChatFormatting.GOLD), false);

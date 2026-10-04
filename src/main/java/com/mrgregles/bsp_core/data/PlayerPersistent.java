@@ -36,6 +36,23 @@ public final class PlayerPersistent {
         get(player).putBoolean(TAG_TOTEM_GRANTED, granted);
     }
 
+    /** The last season this player was brought into (given their fresh totem for, or first joined in). */
+    public static int seasonSeen(Player player) {
+        return get(player).getInt(BSPCore.MODID + ":SeasonSeen");
+    }
+
+    public static void setSeasonSeen(Player player, int season) {
+        get(player).putInt(BSPCore.MODID + ":SeasonSeen", season);
+    }
+
+    public static int coinEpoch(Player player) {
+        return get(player).getInt(BSPCore.MODID + ":CoinEpoch");
+    }
+
+    public static void setCoinEpoch(Player player, int epoch) {
+        get(player).putInt(BSPCore.MODID + ":CoinEpoch", epoch);
+    }
+
     /** Records where the player last stood in a dimension that may hold a totem. */
     public static void setLastMainPosition(Player player, ResourceKey<Level> dimension, BlockPos pos) {
         CompoundTag tag = get(player);

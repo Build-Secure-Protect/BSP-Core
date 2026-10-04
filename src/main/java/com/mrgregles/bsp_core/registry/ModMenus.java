@@ -30,5 +30,11 @@ public final class ModMenus {
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.compass.TotemCompassMenu>> TOTEM_COMPASS = MENUS.register("totem_compass",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.compass.TotemCompassMenu(id, inv, buf.readEnum(InteractionHand.class))));
 
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.vault.CoinVaultMenu>> COIN_VAULT = MENUS.register("coin_vault",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.vault.CoinVaultMenu(id, inv, buf.readBlockPos(), buf.readBoolean(), buf.readVarInt(), buf.readVarInt())));
+
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.admin.SeasonRewardsMenu>> SEASON_REWARDS = MENUS.register("season_rewards",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.admin.SeasonRewardsMenu(id, inv, buf.readBoolean())));
+
     private ModMenus() {}
 }

@@ -24,6 +24,9 @@ public final class ModCreativeTabs {
                 ModItems.BLANKS.values().forEach(i -> output.accept(i.get()));
                 ModItems.COINS.values().forEach(i -> output.accept(i.get()));
                 ModItems.FACTORY_ITEMS.forEach(i -> output.accept(i.get()));
+                output.accept(ModItems.COIN_VAULT.get());
+                output.accept(ModItems.SCORE_SCREEN.get());
+                output.accept(ModItems.ADMIN_RACK.get());
                 output.accept(ModItems.TETRIUM_CRUCIBLE.get());
                 output.accept(ModItems.COMBINATION_FORGE.get());
                 ModItems.MULTIBLOCK_ITEMS.forEach(i -> output.accept(i.get()));

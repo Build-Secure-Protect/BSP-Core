@@ -35,6 +35,12 @@ public final class ModBlocks {
     public static final RegistryObject<Block> FACTORY_POWER_PORT = BLOCKS.register("factory_power_port", com.mrgregles.bsp_core.coin.FactoryPortBlock::new);
     public static final RegistryObject<Block> FACTORY_MOTIVATOR = BLOCKS.register("factory_motivator", com.mrgregles.bsp_core.coin.MotivatorBlock::new);
 
+    public static final RegistryObject<Block> ADMIN_RACK = BLOCKS.register("admin_rack", com.mrgregles.bsp_core.admin.AdminRackBlock::new);
+
+    public static final RegistryObject<Block> COIN_VAULT = BLOCKS.register("coin_vault", com.mrgregles.bsp_core.vault.CoinVaultBlock::new);
+
+    public static final RegistryObject<Block> SCORE_SCREEN = BLOCKS.register("score_screen", com.mrgregles.bsp_core.score.ScoreScreenBlock::new);
+
     public static final RegistryObject<MachineBlock> TETRIUM_CRUCIBLE =
             BLOCKS.register("tetrium_crucible", () -> new MachineBlock(TetriumCrucibleBlockEntity::new));
     public static final RegistryObject<MachineBlock> COMBINATION_FORGE =

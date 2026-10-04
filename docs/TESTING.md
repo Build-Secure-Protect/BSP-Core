@@ -325,7 +325,95 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 **Release jar**
 - [ ] On a plain Forge server with only `bsp-core-<version>.jar` (not `-slim`), `/bsp storage test` connects: the bundled driver is found.
 
+### Vaults, seasons and prizes across two servers (same database)
+- [ ] After a restart on the new build, the four new tables exist: `vault_totals`, `state`, `season_claims`, `pending_items`. The first server to connect fills `state`.
+- [ ] Vault limit: place vault blocks on server A, then straight away (no waiting) on server B the same player can only reach the network total of 27: a block over the limit is placed for a moment, then removed and returned with a red message, keeping any lock and alarm it carried. Breaking a block on A frees a place on B at once.
+- [ ] The admin panel on either server shows a player's vault coins and block count added up across both.
+- [ ] A player with a Netherite coin in a vault on both servers earns the Illyrium Ingot interest on one of them only.
+- [ ] Put prizes in on server A: within a refresh, "Prizes and rewards" and a Prizes Score Screen on server B show the same rows. The holder reward hours set on A show on B.
+- [ ] End the season on A with a player online on B: within a refresh B announces it, B's totems are gone and that player gets one fresh totem. A player who then moves from B to A does not get a second one.
+- [ ] A player who was offline gets exactly one fresh totem at their next login, on whichever server that is.
+- [ ] A prize winner who is on server B (or offline) when A ends the season receives the prize on B within a refresh (or at login anywhere).
+- [ ] Full reset on A removes coins on B too (vaults, trays, online players; offline players at login).
+- [ ] With an automatic holder reward set, each payout happens once, not once per server.
+- [ ] A server that joins the network with a lower season number than the database has its totems removed, as if it had missed a season end. Check this is what you want before connecting an old world.
+
 ## Aura spheres and other models
 - [ ] Stand outside a Fortify or Healing sphere and look through it at a machine, a factory, another totem, a chest and an item frame on the far side: all of them stay visible, tinted by the sphere. The same from inside the sphere looking out.
 - [ ] The sphere itself still looks the same: a faint coloured bubble that pulses gently.
 
+## Scoring and coin stacks
+- [ ] Shatter Coins stack to 12 everywhere; a factory tray stops at 12 and shows as full.
+- [ ] `/bsp score top` lists players with points, totem count and best tier. One Tier I totem is 1 point; raising it to Tier II makes it 2, Tier III 4, Tier IV 7, Tier V 10.
+- [ ] A carried totem counts for the carrier; placing it keeps the score; a stolen totem moves its points to the thief within a second or two.
+- [ ] A totem in an unloaded chunk, and one whose owner is offline, still count.
+- [ ] The guide book's "Scores and the Leaderboard" entry matches the numbers in the config.
+
+## Score Screen
+- [ ] The Score Screen is in the BSP creative tab. One panel placed on its own shows the leaderboard title and rows on its front face, readable, the right way round, in all four facings.
+- [ ] Panels placed beside and above it (same facing) join into one display: try 2 x 1, 5 x 3 and 8 x 6. A ninth column or seventh row starts a separate screen. Breaking a panel re-splits the screen sensibly.
+- [ ] An L-shaped or ragged group shows a screen over the largest full rectangle from its bottom-left corner.
+- [ ] As an admin, right-click any panel: the settings open. A non-admin gets nothing.
+- [ ] Each setting changes the screen in the world at once: Scoreboard or Scoring rules; Ranked list, Podium, Spotlight; Pixel, Clean, Bold; text size 60% to 160%; scroll speed 0% to 100%; the title text.
+- [ ] Ranked list: the top three are gold; with more players than rows it scrolls and loops. Podium: top three on bars, the rest on a ticker. Spotlight: one player at a time.
+- [ ] Scoring rules: five tier lines with their points and three notes, matching `scoring.tierPoints`.
+- [ ] The screen changes within a second or two when a totem is placed, stolen or raised a tier.
+- [ ] Settings survive a restart, and the text stays bright at night.
+- [ ] Nothing behind or beside the screen disappears when looking past it.
+
+
+## Coin Vault
+- [ ] The Coin Vault is in the BSP creative tab, faces the player when placed in all four directions, and needs an iron pickaxe or better for its owner.
+- [ ] The owner's right-click opens the tabbed screen. Only Shatter Coins go into the 27 slots (shift-click works both ways); other items are refused. Hoppers and pipes cannot move coins in or out.
+- [ ] A second vault placed touching the first joins it: the Storage tab shows "VAULT BLOCK 1 OF 2" with arrows. Build 3 x 3 x 3; a block that would make it 4 long starts a separate vault. Another player's vault next to it never joins.
+- [ ] Access tab: type an online player's name and Add. That player can now open the vault and move coins but cannot change Access or Security. The x removes them and closes their screen. An offline name, a duplicate and a ninth name each show a red message.
+- [ ] Security tab: lock upgrades cost 4 Gold, then 4 Diamond, then 4 Netherite coins and raise the pick time from 2:00 to 3:00, 4:00, 5:00. The Alarm costs 4 Gold coins. Prices show "Free" in creative. Upgrades apply to every block of a joined vault.
+- [ ] A player without access gets the LOCKED view, never the contents. "Pick the lock" starts a countdown on the screen and above the hotbar; it carries on with the screen closed.
+- [ ] Walking more than 4 blocks away, dying or logging out fails the pick. A second thief is told someone is already picking.
+- [ ] Success: the thief receives about 25% of the coins, a random mix. With 3 or fewer Illyrium coins in the vault none are taken; with 4 or more they can be.
+- [ ] With the Alarm fitted, the owner and everyone with access get a red warning with the coordinates when picking starts. The owner is told when coins are taken either way.
+- [ ] Interest: with coins stored, the Storage tab's interest line rises over time (for a quick test set `vault.interest` rates very high). The bar fills toward the cap and turns red when full. Redeem gives XP levels and ingots and only works for the owner.
+- [ ] Interest counts all of the owner's vaults together, and Illyrium Ingots only build up while a Netherite or Illyrium coin is stored.
+- [ ] The owner breaking a vault block drops its coins. Anyone else takes 30 seconds with any tool, gets the vault block but no coins; the owner is told, and receives the coins on next opening any vault of theirs.
+- [ ] Explosions and pistons do not move or destroy a vault. Contents, access and upgrades survive a restart.
+- [ ] A 28th vault block cannot be placed: a red message shows and the item stays in the hand. Breaking one allows another.
+- [ ] The owner breaking an upgraded vault gets an item whose tooltip shows the lock level and alarm; placed again it has them. Placed next to an existing vault, the whole vault takes the higher levels. A vault block broken by someone else drops with no upgrades.
+- [ ] Joined look: two vault blocks side by side become one body with a wall of deposit drawers (four per block on the door side) and blinking keyhole lights. Try 2 x 1 x 1, 3 x 3 x 1, 3 x 3 x 3 and a tower 1 x 3 x 1, with the first block facing each of the four directions: the drawers are always on the side the first block faced.
+- [ ] An L shape of three blocks shows a two-block vault plus one single safe; all three still share storage pages. Breaking a block of a joined vault re-forms the rest at once, and a lone block turns back into the Classic Safe.
+- [ ] The joined vault is lit like its surroundings (not black), is visible from every side with no gaps, does not flicker, and nothing nearby disappears when looking past it. It survives a restart.
+
+## Admin Rack and admin panel
+- [ ] The Admin Rack is in the BSP creative tab, faces the player when placed, cannot be mined in survival and can be removed in creative.
+- [ ] With `admin.admins` empty, an operator's right-click (or `/bsp admin`) opens the panel; a non-operator gets a red message and the command is not available to them.
+- [ ] A name in `admin.moderators` (not an operator) opens the panel with a READ ONLY tag: every action button is grey and nothing happens when clicked.
+- [ ] With names in `admin.admins`, only those players have full control, even if others are operators.
+- [ ] The list shows every player who was granted a totem, owns one, has a vault or is online, ordered by score, offline names dimmer; it scrolls with the mouse wheel past 14 names.
+- [ ] Selecting a player shows each totem's tier and coordinates (placed) or "held" with the carrier's position, and the vault's coins by type, value and block count. Compare against the world.
+- [ ] TP beside a totem and "Go to player" move the admin there, including across dimensions. "Go to player" is grey for offline players.
+- [ ] "Reset totems" needs a second click, then puts every totem of that player (placed and carried) back to Tier I with no upgrades; the score updates after Refresh.
+- [ ] Season tab: "End season" needs a second click. After it: no totem blocks, carried totems or dropped totems remain; every online player has exactly one fresh Tier I totem; the chat announces the winner; the season number goes up and the day returns to 1.
+- [ ] A player who was offline at the season end gets one fresh totem, with a message, when they log in, and only once.
+- [ ] "Reward holders" gives each holder one Gold Shatter Coin per totem held (change `season.holderRewardItem` to test another item); an offline holder gets theirs at next login.
+- [ ] Coin Vaults, coins and factories are unchanged by a season end.
+- [ ] "Season prizes" (admins only) opens three rows of ten slots labelled 1ST, 2ND, 3RD. Items placed there are still there after closing, reopening and a restart.
+- [ ] End a season with three or more scoring players: first, second and third each receive exactly their row (an offline one at next login, with a message), and the rows are empty afterwards. With only one scoring player, the 2ND and 3RD rows stay filled.
+- [ ] "Full reset" is grey until RESET is typed in the box beside it, then needs a second click. After it: everything End season does, plus every Coin Vault is empty and interest shows zero. Switching tabs clears the typed word.
+- [ ] A moderator cannot open Season prizes or use Full reset.
+- [ ] Full reset also removes every Shatter Coin from online players' inventories, cursor and ender chests, from every Coin Vault and from factory coin trays. A player who was offline loses theirs at next login. Coin blanks and other items are untouched. (Coins in ordinary chests are expected to remain.)
+- [ ] A moderator can open Season prizes from the Season tab: it shows READ ONLY and no item can be taken out or put in, including by shift-click.
+- [ ] Score Screen settings have a third "Prizes" option. The screen then shows "SEASON n PRIZES" and three rows (1ST, 2ND, 3RD) with each prize item as a flat icon and its count; an empty row says "Not set yet". Check on a small (2 x 1) and a large (8 x 6) screen, in all four facings, that icons are the right way up, not mirrored, bright at night, and do not poke out of or sink into the screen.
+- [ ] Changing a prize in the admin panel updates every Prizes screen within a second, and ending a season moves the title to the next season number.
+
+## Step 5: recipes, guide and JEI for the new blocks
+- [ ] The Coin Vault and Score Screen (gives 2) can be crafted in survival with the recipes JEI shows. The Admin Rack has no recipe.
+- [ ] JEI shows an information page for the Coin Vault, Score Screen and Admin Rack.
+- [ ] The guide book has "The Coin Vault" under Shatter Coins with five pages, and "Scores and the Leaderboard" now has the Score Screen recipe and a "Seasons and Prizes" page. Recipes on the pages draw correctly.
+- [ ] The Admin Rack's lamps blink in the world and on the item, violet with a few turquoise, and stay bright at night.
+
+## Holder reward and vault advancement
+- [ ] "Prizes and rewards" shows four rows: 1ST, 2ND, 3RD and HOLD. Items put in HOLD stay there after a payout.
+- [ ] "Reward holders now" (second click to confirm) gives every totem holder one copy of the HOLD row for each totem they hold (two totems, two copies); a player with no totem gets nothing; an offline holder gets theirs at next login. With HOLD empty it says so and pays nothing.
+- [ ] Typing a number of hours in the box on the Season tab and pressing Set (or Enter) sets the automatic holder reward; only digits are accepted; 0 or empty turns it off; the "next" time counts down after Refresh. Set 1 hour and confirm a payout happens by itself (within a minute of the hour), and that the setting survives a restart.
+- [ ] A Score Screen set to Prizes shows a fourth HOLD row only while the HOLD row has items.
+- [ ] Crafting a Coin Vault grants the "Safe Keeping" advancement. Ending a season grants no advancement.
+- [ ] The Mods screen's link for BSP-Core opens the CurseForge mod page.

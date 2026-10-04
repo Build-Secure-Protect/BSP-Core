@@ -95,6 +95,19 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_UPGRADE_COSTS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_UPGRADE_TIERS;
 
+    // ------------------------------------------------------------------ admin
+
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ADMINS, MODERATORS;
+    public static final ForgeConfigSpec.IntValue VAULT_LOCKPICK_SECONDS, VAULT_LOCK_LEVEL_SECONDS, VAULT_LOCKPICK_RADIUS, VAULT_ILLYRIUM_SAFE, VAULT_ALARM_COINS,
+            VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS;
+    public static final ForgeConfigSpec.DoubleValue VAULT_LOCKPICK_SHARE, VAULT_XP_RATE, VAULT_TETRIUM_RATE, VAULT_CAP_DAYS, VAULT_ILLYRIUM_PERIOD_DAYS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> VAULT_LOCK_COINS;
+
+    // ------------------------------------------------------------------ scoring
+
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> SCORE_TIER_POINTS;
+    public static final ForgeConfigSpec.IntValue SCORE_REFRESH_SECONDS;
+
     // ------------------------------------------------------------------ storage
 
     public static final ForgeConfigSpec.ConfigValue<String> STORAGE_MODE, STORAGE_SERVER_ID, STORAGE_HOST, STORAGE_DATABASE, STORAGE_USER, STORAGE_PASSWORD,
@@ -302,6 +315,50 @@ public final class BSPConfig {
                         "One entry per level, matching cooldownUpgradeCoins. A short list repeats its last entry.")
                 .defineList("cooldownUpgradeCoinTiers", List.of("copper", "gold", "diamond", "netherite", "illyrium", "illyrium", "illyrium"),
                         o -> o instanceof String str && java.util.Arrays.stream(com.mrgregles.bsp_core.coin.CoinTier.values()).anyMatch(t -> t.key.equals(str)));
+        BUILDER.pop();
+
+        BUILDER.comment("Who may use BSP-Core's admin tools (admin block, Score Screen settings, season controls).").push("admin");
+        ADMINS = BUILDER.comment("Player names with full control. If this list is empty, every server operator is an admin.")
+                .defineListAllowEmpty(List.of("admins"), List::of, o -> o instanceof String);
+        MODERATORS = BUILDER.comment("Player names who may open the admin panel to look, but cannot change or reset anything.")
+                .defineListAllowEmpty(List.of("moderators"), List::of, o -> o instanceof String);
+        BUILDER.pop();
+
+        BUILDER.comment("The Coin Vault: a safe for Shatter Coins. Vault blocks of one owner that touch join into one vault of up to 3 x 3 x 3.").push("vault");
+        VAULT_LOCKPICK_SECONDS = BUILDER.comment("Seconds a player without access needs to pick the lock of a vault with no lock upgrade.")
+                .defineInRange("lockpickSeconds", 120, 5, 3600);
+        VAULT_LOCK_LEVEL_SECONDS = BUILDER.comment("Extra seconds each lock level (up to 3) adds to that.").defineInRange("lockpickSecondsPerLockLevel", 60, 0, 3600);
+        VAULT_LOCKPICK_RADIUS = BUILDER.comment("The thief must stay within this many blocks of the vault while picking.").defineInRange("lockpickRadius", 4, 1, 32);
+        VAULT_LOCKPICK_SHARE = BUILDER.comment("Share of the coins in the vault a successful pick takes. Which coins is random.").defineInRange("lockpickShare", 0.25, 0.0, 1.0);
+        VAULT_ILLYRIUM_SAFE = BUILDER.comment("No Illyrium coins are taken while the vault holds this many or fewer.").defineInRange("illyriumSafeCount", 3, 0, 10000);
+        VAULT_LOCK_COINS = BUILDER.comment("Coins lock level 1, 2, 3 costs. Level 1 is paid in Gold coins, 2 in Diamond, 3 in Netherite.")
+                .defineList("lockCoins", List.of(4, 4, 4), BSPConfig::isPositiveInt);
+        VAULT_ALARM_COINS = BUILDER.comment("Gold coins the Alarm costs. It warns everyone with access when someone starts picking the lock.")
+                .defineInRange("alarmCoins", 4, 1, 64);
+        VAULT_INTRUDER_BREAK_SECONDS = BUILDER.comment("Seconds anyone but the owner needs to mine a vault block, with any tool. They get no coins: those are kept for the owner.",
+                        "Keep this short: a vault must never be a way to wall a totem in.")
+                .defineInRange("intruderBreakSeconds", 30, 1, 600);
+        VAULT_MAX_BLOCKS = BUILDER.comment("Most vault blocks one player may own on this server. 27 is one full 3 x 3 x 3 vault.").defineInRange("maxBlocksPerPlayer", 27, 1, 1000);
+        BUILDER.comment("Interest, worked out on everything a player keeps in all their vaults together. It builds up while they are offline too,",
+                "stops at the cap, and has to be redeemed at a vault.").push("interest");
+        VAULT_INTEREST_UNIT = BUILDER.comment("The amount of stored coin value the two rates below are paid for (Copper 1, Gold 2, Diamond 4, Netherite 8, Illyrium 16 by default).")
+                .defineInRange("coinValuePerUnit", 50, 1, 1000000);
+        VAULT_XP_RATE = BUILDER.comment("XP levels earned per day for every coinValuePerUnit of coin value stored.")
+                .defineInRange("xpLevelsPerDayPerUnit", 1.0, 0.0, 1000.0);
+        VAULT_TETRIUM_RATE = BUILDER.comment("Tetrium Ingots earned per day for every coinValuePerUnit of coin value stored.").defineInRange("tetriumPerDayPerUnit", 0.5, 0.0, 1000.0);
+        VAULT_CAP_DAYS = BUILDER.comment("Unredeemed XP and Tetrium stop building up at this many days' worth.").defineInRange("capDays", 3.0, 0.1, 365.0);
+        VAULT_ILLYRIUM_PER_PERIOD = BUILDER.comment("Illyrium Ingots earned per period while the vaults hold at least one Netherite or Illyrium coin. This is also the most that can wait unredeemed.")
+                .defineInRange("illyriumIngotsPerPeriod", 2, 0, 64);
+        VAULT_ILLYRIUM_PERIOD_DAYS = BUILDER.comment("Length of that period in days.").defineInRange("illyriumPeriodDays", 3.0, 0.1, 365.0);
+        BUILDER.pop();
+        BUILDER.pop();
+
+        BUILDER.comment("The leaderboard. A player's score is the sum of the tier points of every totem they own.").push("scoring");
+        SCORE_TIER_POINTS = BUILDER.comment("Points a totem is worth at tier I, II, III, IV, V.")
+                .defineList("tierPoints", List.of(1, 2, 4, 7, 10), BSPConfig::isPositiveInt);
+        SCORE_REFRESH_SECONDS = BUILDER.comment("How often the leaderboard is rebuilt and sent to players. On a single server a change also shows within a second.",
+                        "On a network this is how often the shared database is read.")
+                .defineInRange("refreshSeconds", 30, 5, 3600);
         BUILDER.pop();
 
         BUILDER.comment("Where BSP-Core keeps its records.",

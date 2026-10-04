@@ -58,5 +58,15 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("factory_port", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.coin.FactoryPortBlockEntity::new, ModBlocks.FACTORY_BLANK_HATCH.get(), ModBlocks.FACTORY_POWER_PORT.get()).build(null));
 
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.score.ScoreScreenBlockEntity>> SCORE_SCREEN =
+            BLOCK_ENTITIES.register("score_screen", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.score.ScoreScreenBlockEntity::new, ModBlocks.SCORE_SCREEN.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.vault.CoinVaultBlockEntity>> COIN_VAULT =
+            BLOCK_ENTITIES.register("coin_vault", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.vault.CoinVaultBlockEntity::new, ModBlocks.COIN_VAULT.get()).build(null));
+
     private ModBlockEntities() {}
 }

@@ -45,6 +45,7 @@ ITEMS = {
     "factory_frame": ("Factory Frame", "b", "FF", "block/factory_frame.png"), "factory_press": ("Factory Press", "b", "FP", "block/factory_press.png"),
     "factory_blank_hatch": ("Factory Blank Hatch", "b", "BH", "block/factory_blank_hatch.png"),
     "factory_power_port": ("Factory Power Port", "b", "PP", "block/factory_power_port.png"), "factory_motivator": ("Motivator", "b", "Mo"),
+    "coin_vault": ("Coin Vault", "b", "CV", "block/coin_vault_front.png"), "score_screen": ("Score Screen", "b", "SS", "block/score_screen_front.png"),
     # proposed new component items
     "slag_brick": ("Slag Brick", "n", "SB"), "tetrium_plate": ("Tetrium Plate", "n", "TP"), "machine_chassis": ("Machine Chassis", "n", "MC"),
     "tetrium_coil": ("Tetrium Coil", "n", "TC"), "drive_motor": ("Drive Motor", "n", "DM"), "circuit_substrate": ("Circuit Substrate", "n", "CS"),
@@ -89,6 +90,9 @@ R = {
     "resonance_crystal": (1, [" A ", "AUA", " A "], {"A": "amethyst_shard", "U": "pure_illyrium_dust"}, "Crafting"),
     "illyrium_processor": (1, ["NRN", "RKR", "NRN"], {"N": "illyrium_nugget", "R": "redstone", "K": "basic_control_circuit"}, "Crafting"),
     "factory_motivator": (1, [" Y ", "WZW", "PPP"], {"Y": "resonance_crystal", "W": "tetrium_coil", "Z": "illyrium_processor", "P": "tetrium_plate"}, "Crafting"),
+    # --- base blocks
+    "coin_vault": (1, ["PAP", "PKP", "PCP"], {"P": "tetrium_plate", "A": "gold_ingot", "K": "basic_control_circuit", "C": "machine_chassis"}, "Crafting"),
+    "score_screen": (2, ["GGG", "WKW", "PPP"], {"G": "glass_pane", "W": "tetrium_coil", "K": "basic_control_circuit", "P": "tetrium_plate"}, "Crafting"),
     # --- existing items, reworked to use the new parts
     "rf_upgrade_mk1": (1, ["CWC", "WRW", "CTC"], {"C": "copper_ingot", "W": "tetrium_coil", "R": "redstone_block", "T": "tetrium_ingot"}, "Crafting"),
     "rf_upgrade_mk2": (1, ["TGT", "WRW", "TGT"], {"T": "tetrium_ingot", "G": "gold_ingot", "W": "tetrium_coil", "R": "redstone_block"}, "Crafting"),
@@ -110,6 +114,8 @@ GROUPS = [
      ["factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "shatter_coin_factory"]),
     ("Motivator", "Top tier: the only part that needs refined Illyrium, so speeding a factory up is the reward for finishing the whole chain.",
      ["resonance_crystal", "illyrium_processor", "factory_motivator"], ["factory_motivator"]),
+    ("Base blocks", "Early tier: Tetrium parts only, so a first Coin Vault and a Score Screen are within reach as soon as the Combination Forge is running. The Admin Rack has no recipe.",
+     ["coin_vault", "score_screen"], ["coin_vault", "score_screen"]),
     ("Reworked existing recipes", "The RF Upgrades now use Tetrium Coils and the Illyrium Forge Upgrade an Illyrium Processor.",
      ["rf_upgrade_mk1", "rf_upgrade_mk2", "rf_upgrade_mk3", "illyrium_forge_upgrade"], ["rf_upgrade_mk1", "rf_upgrade_mk2", "rf_upgrade_mk3", "illyrium_forge_upgrade"]),
 ]
@@ -118,6 +124,8 @@ BUILDS = [
     ("Illyrium Refinery (14 blocks)", {"illyrium_casing": 8, "illyrium_core": 1, "item_hatch": 1, "illyrium_glass": 2, "refinery_pump": 1, "illyrium_refinery": 1}),
     ("One factory slice (6 blocks)", {"factory_frame": 2, "factory_press": 1, "factory_blank_hatch": 1, "factory_power_port": 1, "shatter_coin_factory": 1}),
     ("One Motivator", {"factory_motivator": 1}),
+    ("A full 3 x 3 x 3 Coin Vault (27 blocks)", {"coin_vault": 27}),
+    ("A 5 x 3 Score Screen (15 panels)", {"score_screen": 15}),
 ]
 
 # what exists today: (name, type, how you get it, status). status: ok = crafting recipe, mach = made in a machine, world = found or given, none = no recipe yet

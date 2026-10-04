@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "bsp_core:block/coin_vault_top",
+    "side": "bsp_core:block/coin_vault_side",
+    "front": "bsp_core:block/coin_vault_front"
+  }
+}

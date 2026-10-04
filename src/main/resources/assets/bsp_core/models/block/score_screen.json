@@ -1,0 +1,98 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "frame": "bsp_core:block/factory_frame",
+  "screen": "bsp_core:block/score_screen_front",
+  "particle": "bsp_core:block/factory_frame"
+ },
+ "elements": [
+  {
+   "from": [
+    0,
+    0,
+    13
+   ],
+   "to": [
+    16,
+    16,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#screen"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame",
+     "cullface": "south"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      3,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "west": {
+     "uv": [
+      13,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "up": {
+     "uv": [
+      0,
+      13,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      3
+     ],
+     "texture": "#frame"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    45,
+    0
+   ],
+   "translation": [
+    2,
+    0,
+    0
+   ],
+   "scale": [
+    0.625,
+    0.625,
+    0.625
+   ]
+  }
+ }
+}

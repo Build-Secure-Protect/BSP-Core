@@ -11,12 +11,16 @@ import net.minecraft.world.level.Level;
 import javax.annotation.Nullable;
 import java.util.List;
 
-/** A Shatter Coin of one tier. Spent on placed-totem upgrades by value. */
+/**
+ * A Shatter Coin of one tier. Coins stack to {@link #STACK} only, so a hoard takes real space and
+ * a Coin Vault's size matters.
+ */
 public class ShatterCoinItem extends Item {
+    public static final int STACK = 12;
     public final CoinTier tier;
 
     public ShatterCoinItem(CoinTier tier) {
-        super(new Properties().stacksTo(64).rarity(tier.ordinal() >= 3 ? Rarity.EPIC : tier.ordinal() >= 1 ? Rarity.RARE : Rarity.UNCOMMON));
+        super(new Properties().stacksTo(STACK).rarity(tier.ordinal() >= 3 ? Rarity.EPIC : tier.ordinal() >= 1 ? Rarity.RARE : Rarity.UNCOMMON));
         this.tier = tier;
     }
 

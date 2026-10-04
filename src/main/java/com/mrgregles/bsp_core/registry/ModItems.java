@@ -117,6 +117,15 @@ public final class ModItems {
     /** Pressed from a Tetrium Ingot in the Combination Forge. */
     public static final RegistryObject<Item> TETRIUM_PLATE = COMPONENTS.get("tetrium_plate");
 
+    public static final RegistryObject<Item> ADMIN_RACK = ITEMS.register("admin_rack",
+            () -> new net.minecraft.world.item.BlockItem(ModBlocks.ADMIN_RACK.get(), new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
+
+    public static final RegistryObject<Item> COIN_VAULT = ITEMS.register("coin_vault",
+            () -> new com.mrgregles.bsp_core.vault.CoinVaultBlockItem(ModBlocks.COIN_VAULT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> SCORE_SCREEN = ITEMS.register("score_screen",
+            () -> new net.minecraft.world.item.BlockItem(ModBlocks.SCORE_SCREEN.get(), new Item.Properties()));
+
     /** The blocks a factory slice is built from, and the Motivator that goes on top. */
     public static final List<RegistryObject<Item>> FACTORY_ITEMS = new ArrayList<>();
 

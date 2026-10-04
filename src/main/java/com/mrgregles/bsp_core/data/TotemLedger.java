@@ -36,6 +36,8 @@ public class TotemLedger extends SavedData {
 
     private final Set<UUID> granted = new HashSet<>();
     private final Map<UUID, Set<GlobalPos>> placed = new HashMap<>();
+    /** Tier (0 = I) of each placed totem, so scores can be worked out while its chunk is unloaded. */
+    private final Map<GlobalPos, Integer> tiers = new HashMap<>();
 
     public static TotemLedger get(MinecraftServer server) {
         ServerLevel overworld = server.getLevel(Level.OVERWORLD);
@@ -74,7 +76,21 @@ public class TotemLedger extends SavedData {
     // --- placed totems ---
 
     public void recordPlaced(UUID owner, GlobalPos pos) {
+        recordPlaced(owner, pos, tierAt(pos));
+    }
+
+    /** Tier of the placed totem at {@code pos}, 0 (I) if unknown. */
+    public int tierAt(GlobalPos pos) {
+        return tiers.getOrDefault(pos, 0);
+    }
+
+    public void recordPlaced(UUID owner, GlobalPos pos, int tier) {
+        if (placedFor(owner).contains(pos) && tierAt(pos) == tier) {
+            return; // nothing changed
+        }
         recordRemoved(pos);
+        tiers.put(pos, tier);
+        com.mrgregles.bsp_core.score.ScoreService.markDirty();
         placed.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
         setDirty();
         com.mrgregles.bsp_core.storage.NetworkStorage.totemPlaced(owner, pos);
@@ -87,6 +103,8 @@ public class TotemLedger extends SavedData {
         }
         placed.values().removeIf(Set::isEmpty);
         if (changed) {
+            tiers.remove(pos);
+            com.mrgregles.bsp_core.score.ScoreService.markDirty();
             setDirty();
             com.mrgregles.bsp_core.storage.NetworkStorage.totemRemoved(pos);
         }
@@ -117,6 +135,7 @@ public class TotemLedger extends SavedData {
             entry.putUUID("Owner", owner);
             entry.putString("Dim", pos.dimension().location().toString());
             entry.putLong("Pos", pos.pos().asLong());
+            entry.putInt("Tier", tierAt(pos));
             placedList.add(entry);
         }));
         tag.put(TAG_PLACED, placedList);
@@ -136,6 +155,7 @@ public class TotemLedger extends SavedData {
             }
             GlobalPos pos = GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(entry.getLong("Pos")));
             ledger.placed.computeIfAbsent(entry.getUUID("Owner"), k -> new HashSet<>()).add(pos);
+            ledger.tiers.put(pos, entry.getInt("Tier"));
         }
         return ledger;
     }

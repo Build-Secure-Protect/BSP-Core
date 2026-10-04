@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/score_screen"
+    },
+    "facing=east": {
+      "model": "bsp_core:block/score_screen",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "bsp_core:block/score_screen",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "bsp_core:block/score_screen",
+      "y": 270
+    }
+  }
+}
