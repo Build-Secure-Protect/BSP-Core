@@ -25,6 +25,20 @@ public final class TotemBuffHandler {
         }
     }
 
+    /** Resistance: the totem in the offhand takes a share of every hit away. A percentage, so it can never make the holder immune. */
+    @SubscribeEvent
+    public static void onHurt(net.minecraftforge.event.entity.living.LivingHurtEvent event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
+            net.minecraft.world.item.ItemStack offhand = player.getOffhandItem();
+            int lvl = com.mrgregles.bsp_core.totem.TotemInventories.isTotem(offhand)
+                    ? com.mrgregles.bsp_core.totem.TotemUpgrades.getLevel(offhand, com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.RESISTANCE) : 0;
+            if (lvl > 0) {
+                double cut = Math.min(0.9, com.mrgregles.bsp_core.BSPConfig.RESISTANCE_PER_LEVEL.get() * lvl);
+                event.setAmount((float) (event.getAmount() * (1.0 - cut)));
+            }
+        }
+    }
+
     /** Sanctuary: hostile mobs do not spawn naturally near a placed totem that has it. */
     @SubscribeEvent
     public static void onMobSpawn(net.minecraftforge.event.entity.living.MobSpawnEvent.FinalizeSpawn event) {

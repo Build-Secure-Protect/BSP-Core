@@ -1,0 +1,117 @@
+<h1>BSP-Core 0.1.0: first release</h1>
+<p>The companion mod for the Build Secure Protect (BSP) modpack. Build a base, protect your Shatter Totem, and raid other players for theirs.</p>
+<p>This is an early test release. Expect bugs and balance changes.</p>
+<h2>Requirements</h2>
+<ul><li>Minecraft 1.20.1
+</li><li>Forge 47 or newer
+</li><li>Java 17
+</li><li>Needed on both the client and the server
+</li></ul>
+<p><strong>Optional, the mod works without them:</strong></p>
+<ul><li>JEI: recipe pages for every machine, and "hold Shift" on a multiblock block for its Assembly Guide
+</li><li>Patchouli: the in-game guide book, the BSP Field Guide
+</li><li>Mekanism, Create or Thermal Expansion: crushing recipes for the new metals
+</li><li>AllTheModium: the new ores also generate in its Mining dimension
+</li><li>Any Forge Energy (RF) mod: to power RF Upgrades and the Shatter Coin Factory
+</li></ul>
+<h2>The Shatter Totem</h2>
+<ul><li>Every player is given one Shatter Totem on first join. It cannot be crafted or destroyed.
+</li><li>Carry it, or place it in your base. Placed, it shows its owner and its upgrades.
+</li><li>Other players can steal a placed totem: start the steal at the totem, stay close until the timer runs out, and it becomes yours with all its upgrades. The owner is warned. Killing the thief, or the thief leaving the area, cancels it.
+</li><li>Dying to another player while carrying your totem places it where you fell. Logging out places a carried totem.
+</li><li>A totem can never be made impossible to steal. Blocks near it can always be mined, and every steal has a time limit.
+</li></ul>
+<h3>Totem tiers and upgrades</h3>
+<ul><li>The totem has five tiers, I to V. Each tier uses its own Shatter Coin: Copper, Gold, Diamond, Netherite, Illyrium.
+</li><li>Raising the totem a tier costs coins of the current tier plus XP levels.
+</li><li>16 upgrades on five paths. Each one unlocks the next on its path, and each totem tier adds two more levels.
+<ul><li><strong>Carried</strong> (totem in your offhand): Mining Speed, Swiftness, Featherfall, Night Sight, Damage, Resistance, Vitality
+</li><li><strong>Base</strong> (totem placed): Fortify, Alarm, Ward, Deadlock, Healing Aura, Sanctuary, Overclock
+</li><li><strong>Raid</strong> (in the thief's offhand): Lockpick, Shroud
+</li></ul>
+</li><li>Every level is paid for with a specific coin and XP levels, shown on the upgrade tree screen.
+</li></ul>
+<h3>Totem Compass</h3>
+<ul><li>Points to your own nearest totem.
+</li><li>Load it with Shatter Coins to track the nearest rival totem for a while, followed by a cooldown that upgrades can shorten.
+</li></ul>
+<h2>Ores and materials</h2>
+<p><strong>Ores</strong></p>
+<ul><li>Tetrium Ore, Deepslate Tetrium Ore (iron pickaxe or better)
+</li><li>Illyrium Ore, Deepslate Illyrium Ore, End Stone Illyrium Ore (diamond pickaxe or better)
+</li><li>Both generate in the Overworld, and in the AllTheModium Mining dimension when that mod is installed.
+</li></ul>
+<p><strong>Tetrium</strong></p>
+<ul><li>Tetrium Nugget, Tetrium Ingot, Tetrium Dust, Tetrium Slag
+</li></ul>
+<p><strong>Illyrium</strong></p>
+<ul><li>Dirty Illyrium Ingot, Dirty Illyrium Nugget, Dirty Illyrium Dust
+</li><li>Pure Illyrium Dust, Illyrium Nugget, Illyrium Ingot
+</li></ul>
+<p><strong>Crushing by hand:</strong> a pickaxe and an ingot on a crafting table gives dust or nuggets by chance, for packs with no crusher.</p>
+<h2>Machines</h2>
+<p><strong>Single block</strong></p>
+<ul><li><strong>Tetrium Crucible:</strong> smelts Tetrium Ore into nuggets and slag. Burns furnace fuel.
+</li><li><strong>Combination Forge:</strong> nine nuggets into an ingot, and Tetrium Ingots into Tetrium Plates. Runs on fuel, or on RF with an RF Upgrade.
+</li></ul>
+<p><strong>Multiblock</strong></p>
+<ul><li><strong>Illyrium Crucible</strong> (3 x 3 x 3): runs on lava. Smelts Illyrium Ore, and alloys Pure Illyrium Dust into Illyrium Nuggets.
+</li><li><strong>Illyrium Refinery:</strong> washes Dirty Illyrium Dust into Pure Illyrium Dust with water and a filter.
+</li><li><strong>Shatter Coin Factory:</strong> built in slices, 1 wide, 2 high and 3 long. Up to 10 slices side by side join into one machine.
+</li></ul>
+<p><strong>Multiblock blocks</strong></p>
+<ul><li>Illyrium Crucible Controller, Illyrium Refinery Controller
+</li><li>Illyrium Casing, Illyrium Tank Glass, Illyrium Core
+</li><li>Lava Pylon, Refinery Pump, Item Hatch
+</li><li>Shatter Coin Factory Controller, Factory Frame, Factory Press, Factory Blank Hatch, Factory Power Port
+</li><li>Motivator: sits on top of a factory slice and shortens its press time
+</li></ul>
+<p><strong>Machine features</strong></p>
+<ul><li>Animated models on every machine
+</li><li>A shared screen style with a progress dial, gauges, a list of what is missing, and a power switch
+</li><li>Per-side or per-port input and output settings, with colour-coded sockets on the multiblocks
+</li><li>A redstone signal pauses a machine
+</li><li>Ghost blocks show where each part of an unfinished multiblock goes
+</li><li>Assembly Guide: sneak + right-click an unfinished controller for a step-by-step 3D build guide
+</li></ul>
+<p><strong>Upgrades and consumables</strong></p>
+<ul><li>RF Upgrade Mk I, Mk II, Mk III: let a machine run on RF, faster
+</li><li>Illyrium Forge Upgrade: lets the Combination Forge make Illyrium Ingots
+</li><li>Iron, Diamond, Netherite and Illyrium Filters for the Refinery
+</li></ul>
+<h2>Machine components</h2>
+<p>Crafted parts that the machine blocks are built from:</p>
+<ul><li>Slag Brick, Tetrium Plate, Machine Chassis, Tetrium Coil, Drive Motor
+</li><li>Circuit Substrate, Basic Control Circuit
+</li><li>Crucible Control Circuit, Refinery Control Circuit, Mint Control Circuit
+</li><li>Thermal Lining, Conveyor Belt, Press Die
+</li><li>Resonance Crystal, Illyrium Processor
+</li></ul>
+<p>Every block and item above has a crafting or machine recipe, except the ores and the Shatter Totem.</p>
+<h2>Shatter Coins</h2>
+<ul><li>Five coins: Copper, Gold, Diamond, Netherite, Illyrium.
+</li><li>Each starts as a Shatter Blank, is built up into that tier's Coin Blank, and is pressed in the Shatter Coin Factory.
+</li><li>Pressing takes real time, from 12 hours for Copper to 7 days for Illyrium by default, and carries on while you are offline.
+</li><li>The factory needs RF. Coins are collected from its tray by hand and cannot be piped out.
+</li><li>Copper and Gold coins can be found rarely in dungeon, mineshaft and stronghold chests, and Diamond coins in End City and Ancient City chests.
+</li></ul>
+<h2>Progression help</h2>
+<ul><li><strong>BSP Field Guide:</strong> a guide book given on first join and craftable from a Book and a Tetrium Nugget (needs Patchouli).
+</li><li><strong>Advancements:</strong> a BSP-Core tab with 20 advancements from your first totem to your first Motivator.
+</li><li><strong>JEI pages</strong> for every machine, coin pressing and hand crushing.
+</li></ul>
+<h2>For server owners</h2>
+<ul><li><strong>Config:</strong> <code>serverconfig/bsp_core-server.toml</code>. Costs, times, radii, limits and prices are all configurable.
+</li><li><strong>First-join totem:</strong> on by default. On a network, leave it on for the hub only.
+</li><li><strong>Operator commands:</strong> <code>/bsp totem give</code>, <code>reset</code>, <code>locate</code>, <code>owner</code>, and <code>/bsp storage status</code>, <code>test</code>, <code>migrate</code>.
+</li><li><strong>Operator tools in game:</strong> an operator tab on the totem screen, and a demo switch on every machine that plays its working animation with nothing in it.
+</li><li><strong>Network storage (experimental):</strong> optional MySQL or MariaDB support so that first-join totems and the factory limit apply across several servers. Off by default. It has not been tested on a live database yet.
+</li><li>Each player may own up to 10 factory slices.
+</li></ul>
+<h2>Known limitations</h2>
+<ul><li>This is the first public build and has had limited testing.
+</li><li>MySQL storage is untested.
+</li><li>Steal warnings and compass tracking do not cross servers yet.
+</li><li>Land-claim mods may interfere with stealing; this is not handled yet.
+</li></ul>
+<p>Please report problems at <a href="https://github.com/Mrgregles/BSP-Core/issues">https://github.com/Mrgregles/BSP-Core/issues</a></p>

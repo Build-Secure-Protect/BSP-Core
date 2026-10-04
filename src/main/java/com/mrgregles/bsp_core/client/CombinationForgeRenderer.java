@@ -27,7 +27,7 @@ public class CombinationForgeRenderer extends SingleMachineRenderer<CombinationF
 
         k.corners(0, 1.5f, 0, 16, 6, 16, glow, 0.55f + 0.45f * Mth.sin(t * 2));
         // the charge in the mould shrinks as the ingot grows
-        if (!in.isEmpty() && p < 0.9f) {
+        if ((m.isDemo() || !in.isEmpty()) && p < 0.9f) {
             float s = Math.max(0.05f, 1 - p * 1.1f) * 0.65f;
             for (int i = 0; i < 9; i++) {
                 float cx = 6.25f + (i % 3) * 1.7f, cz = 4.85f + (i / 3) * 1.7f;

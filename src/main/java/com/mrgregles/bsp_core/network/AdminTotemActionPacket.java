@@ -67,6 +67,11 @@ public record AdminTotemActionPacket(BlockPos pos, Action action, String text, i
                 feedback(admin, "message.bsp_core.admin.buffs_reset");
             }
             case SET_BUFF -> {
+                if (msg.value < 0) { // the tier itself
+                    totem.setTier(totem.getTier() + (msg.text.equals("-") ? -1 : 1));
+                    feedback(admin, "message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(totem.getTier()));
+                    return;
+                }
                 TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(msg.value);
                 if (buff == null) {
                     return;

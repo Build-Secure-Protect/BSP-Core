@@ -22,27 +22,19 @@ public final class BSPConfig {
 
     // ------------------------------------------------------------------ upgrades
 
-    /** XP level cost of each buff level, index 0 = level 1. List length = max level. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> DAMAGE_XP_COSTS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> RESISTANCE_XP_COSTS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> MINING_SPEED_XP_COSTS;
-
-    /** Placed-only upgrades, paid in Shatter Coins. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FORTIFY_COIN_COSTS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> HEALING_COIN_COSTS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FORTIFY_RADIUS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> FORTIFY_BREAK_SPEED;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> FORTIFY_EXPLOSION_PROTECTION;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> HEALING_RADIUS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> HEALING_PER_SECOND;
-
-    /** Costs of the newer upgrades: XP levels for carried ones, coin value for base and raid ones. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> SWIFTNESS_XP_COSTS, VITALITY_XP_COSTS, FEATHERFALL_XP_COSTS, NIGHT_SIGHT_XP_COSTS,
-            WARD_COIN_COSTS, ALARM_COIN_COSTS, SANCTUARY_COIN_COSTS, DEADLOCK_COIN_COSTS, OVERCLOCK_COIN_COSTS, LOCKPICK_COIN_COSTS, SHROUD_COIN_COSTS;
-    /** Their effect per level. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> VITALITY_HEALTH, WARD_RADIUS, ALARM_RADIUS, SANCTUARY_RADIUS, DEADLOCK_SECONDS,
-            OVERCLOCK_RADIUS, LOCKPICK_SECONDS, SHROUD_SECONDS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> SWIFTNESS_BONUS, FEATHERFALL_REDUCTION, OVERCLOCK_BONUS;
+    /** Totem tiers: coins (of the tier being left) and XP levels to raise the totem from tier I, II, III, IV. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> TIER_GATE_COINS, TIER_GATE_XP;
+    /** Cost of the first and second level bought within a tier, per branch. XP is multiplied by the tier number. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CARRIED_LEVEL_COINS, CARRIED_LEVEL_XP, BASE_LEVEL_COINS, BASE_LEVEL_XP,
+            RAID_LEVEL_COINS, RAID_LEVEL_XP;
+    /** Level the previous upgrade on a path must reach before the next one opens. */
+    public static final ForgeConfigSpec.IntValue UNLOCK_LEVEL;
+    /** Effect per level (one entry per level; a short list repeats its last value). */
+    public static final ForgeConfigSpec.DoubleValue DAMAGE_PER_LEVEL, RESISTANCE_PER_LEVEL, MINING_SPEED_PER_LEVEL;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FORTIFY_RADIUS, HEALING_RADIUS, VITALITY_HEALTH, WARD_RADIUS, ALARM_RADIUS,
+            SANCTUARY_RADIUS, DEADLOCK_SECONDS, OVERCLOCK_RADIUS, LOCKPICK_SECONDS, SHROUD_SECONDS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> FORTIFY_BREAK_SPEED, FORTIFY_EXPLOSION_PROTECTION, HEALING_PER_SECOND,
+            SWIFTNESS_BONUS, FEATHERFALL_REDUCTION, OVERCLOCK_BONUS;
     /** Guarantees that a totem can always be reached and stolen. */
     public static final ForgeConfigSpec.DoubleValue MIN_INTRUDER_MINING_SPEED;
     public static final ForgeConfigSpec.IntValue MIN_STEAL_SECONDS, MAX_STEAL_SECONDS;
@@ -101,6 +93,14 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_SECONDS_PER_COIN;
     public static final ForgeConfigSpec.IntValue COMPASS_COOLDOWN, COMPASS_MIN_COOLDOWN, COMPASS_COOLDOWN_STEP;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_UPGRADE_COSTS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_UPGRADE_TIERS;
+
+    // ------------------------------------------------------------------ storage
+
+    public static final ForgeConfigSpec.ConfigValue<String> STORAGE_MODE, STORAGE_SERVER_ID, STORAGE_HOST, STORAGE_DATABASE, STORAGE_USER, STORAGE_PASSWORD,
+            STORAGE_TABLE_PREFIX;
+    public static final ForgeConfigSpec.IntValue STORAGE_PORT;
+    public static final ForgeConfigSpec.BooleanValue STORAGE_SSL;
 
     // ------------------------------------------------------------------ visuals
 
@@ -117,70 +117,73 @@ public final class BSPConfig {
                 .define("grantTotemOnFirstJoin", true);
         BUILDER.pop();
 
-        BUILDER.comment("Shatter Totem buff upgrade costs, in experience levels.",
-                        "One entry per buff level; the number of entries is the maximum level.")
+        BUILDER.comment("Shatter Totem upgrades.",
+                        "The totem has five tiers, I to V, each with its own coin: Copper, Gold, Diamond, Netherite, Illyrium.",
+                        "An upgrade gains two levels per totem tier from the tier it appears at, and each level costs the coin of the tier it is bought at.")
                .push("upgrades");
-        List<Integer> defaults = List.of(5, 10, 20, 35, 55);
-        DAMAGE_XP_COSTS = BUILDER.comment("Damage buff").defineList("damageXpLevelCosts", defaults, BSPConfig::isPositiveInt);
-        RESISTANCE_XP_COSTS = BUILDER.comment("Resistance buff").defineList("resistanceXpLevelCosts", defaults, BSPConfig::isPositiveInt);
-        MINING_SPEED_XP_COSTS = BUILDER.comment("Mining speed buff").defineList("miningSpeedXpLevelCosts", defaults, BSPConfig::isPositiveInt);
 
-        List<Integer> coinDefaults = List.of(5, 10, 20, 40, 80);
-        FORTIFY_COIN_COSTS = BUILDER.comment("Fortify (placed only): cost per level in coin value (see coins.values)")
-                .defineList("fortifyCoinCosts", coinDefaults, BSPConfig::isPositiveInt);
-        FORTIFY_RADIUS = BUILDER.comment("Fortify: protected radius in blocks per level")
-                .defineList("fortifyRadius", List.of(1, 3, 5, 7, 15), BSPConfig::isPositiveInt);
-        FORTIFY_BREAK_SPEED = BUILDER.comment("Fortify: non-owner mining speed multiplier per level (lower = harder)")
-                .defineList("fortifyBreakSpeedMultiplier", List.of(0.6, 0.45, 0.3, 0.2, 0.1), BSPConfig::isFraction);
+        BUILDER.comment("Prices. Every price is a number of one specific Shatter Coin plus XP levels.").push("costs");
+        TIER_GATE_COINS = BUILDER.comment("Coins to raise the totem from tier I, II, III, IV. They are coins of the tier being left: Copper, Gold, Diamond, Netherite.")
+                .defineList("tierGateCoins", List.of(4, 4, 4, 4), BSPConfig::isPositiveInt);
+        TIER_GATE_XP = BUILDER.comment("XP levels to raise the totem from tier I, II, III, IV.")
+                .defineList("tierGateXpLevels", List.of(15, 25, 35, 50), BSPConfig::isPositiveInt);
+        CARRIED_LEVEL_COINS = BUILDER.comment("Carried upgrades: coins for the first and second level bought within a tier.")
+                .defineList("carriedLevelCoins", List.of(1, 1), BSPConfig::isPositiveInt);
+        CARRIED_LEVEL_XP = BUILDER.comment("Carried upgrades: XP levels for the first and second level within a tier, multiplied by the tier number (I = 1 ... V = 5).")
+                .defineList("carriedLevelXp", List.of(4, 6), BSPConfig::isPositiveInt);
+        BASE_LEVEL_COINS = BUILDER.comment("Base upgrades: coins for the first and second level within a tier.")
+                .defineList("baseLevelCoins", List.of(1, 2), BSPConfig::isPositiveInt);
+        BASE_LEVEL_XP = BUILDER.comment("Base upgrades: XP levels, multiplied by the tier number.")
+                .defineList("baseLevelXp", List.of(2, 3), BSPConfig::isPositiveInt);
+        RAID_LEVEL_COINS = BUILDER.comment("Raid upgrades: coins for the first and second level within a tier.")
+                .defineList("raidLevelCoins", List.of(2, 3), BSPConfig::isPositiveInt);
+        RAID_LEVEL_XP = BUILDER.comment("Raid upgrades: XP levels, multiplied by the tier number.")
+                .defineList("raidLevelXp", List.of(3, 4), BSPConfig::isPositiveInt);
+        UNLOCK_LEVEL = BUILDER.comment("Level an upgrade must reach before the next one on its path opens.").defineInRange("unlockLevel", 2, 1, 10);
+        BUILDER.pop();
+
+        BUILDER.comment("Carried upgrades (work while the totem is in the offhand).").push("carried");
+        DAMAGE_PER_LEVEL = BUILDER.comment("Damage: attack damage added per level (10 levels).").defineInRange("damagePerLevel", 0.5, 0.0, 100.0);
+        RESISTANCE_PER_LEVEL = BUILDER.comment("Resistance: share of incoming damage removed per level (8 levels).").defineInRange("resistancePerLevel", 0.03, 0.0, 0.12);
+        MINING_SPEED_PER_LEVEL = BUILDER.comment("Mining Speed: mining speed added per level, as a fraction (10 levels).").defineInRange("miningSpeedPerLevel", 0.10, 0.0, 10.0);
+        SWIFTNESS_BONUS = BUILDER.comment("Swiftness: movement speed added, as a fraction, per level (8 levels).")
+                .defineList("swiftnessSpeedBonus", List.of(0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16), BSPConfig::isFraction);
+        VITALITY_HEALTH = BUILDER.comment("Vitality: extra health points per level (2 = one heart; 6 levels).")
+                .defineList("vitalityHealth", List.of(2, 4, 6, 8, 10, 12), BSPConfig::isPositiveInt);
+        FEATHERFALL_REDUCTION = BUILDER.comment("Featherfall: share of fall damage removed per level (6 levels).")
+                .defineList("featherfallReduction", List.of(0.16, 0.32, 0.48, 0.64, 0.80, 0.96), BSPConfig::isFraction);
+        BUILDER.pop();
+
+        BUILDER.comment("Base upgrades (work only while the totem is placed).").push("base");
+        FORTIFY_RADIUS = BUILDER.comment("Fortify: protected radius in blocks per level (10 levels)")
+                .defineList("fortifyRadius", List.of(1, 2, 3, 4, 5, 6, 7, 9, 12, 15), BSPConfig::isPositiveInt);
+        FORTIFY_BREAK_SPEED = BUILDER.comment("Fortify: non-owner mining speed multiplier per level (lower = harder; never below limits.minIntruderMiningSpeed)")
+                .defineList("fortifyBreakSpeedMultiplier", List.of(0.8, 0.7, 0.6, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2), BSPConfig::isFraction);
         FORTIFY_EXPLOSION_PROTECTION = BUILDER.comment("Fortify: chance (0-1) that each block in range survives an explosion, per level")
-                .defineList("fortifyExplosionProtection", List.of(0.3, 0.5, 0.7, 0.85, 1.0), BSPConfig::isFraction);
-        HEALING_COIN_COSTS = BUILDER.comment("Healing Aura (placed only): cost per level in coin value")
-                .defineList("healingCoinCosts", coinDefaults, BSPConfig::isPositiveInt);
-        HEALING_RADIUS = BUILDER.comment("Healing Aura: radius in blocks per level")
-                .defineList("healingRadius", List.of(3, 5, 7, 10, 15), BSPConfig::isPositiveInt);
+                .defineList("fortifyExplosionProtection", List.of(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0), BSPConfig::isFraction);
+        HEALING_RADIUS = BUILDER.comment("Healing Aura: radius in blocks per level (10 levels)")
+                .defineList("healingRadius", List.of(3, 4, 5, 6, 7, 8, 9, 10, 12, 15), BSPConfig::isPositiveInt);
         HEALING_PER_SECOND = BUILDER.comment("Healing Aura: health points healed per second per level (2 = one heart)")
-                .defineList("healingPerSecond", List.of(0.5, 1.0, 1.5, 2.0, 3.0), o -> o instanceof Double d && d > 0);
-
-        BUILDER.comment("Carried upgrades (work while the totem is in the offhand), paid in XP levels.").push("carried");
-        SWIFTNESS_XP_COSTS = BUILDER.defineList("swiftnessXpLevelCosts", List.of(8, 16, 24), BSPConfig::isPositiveInt);
-        SWIFTNESS_BONUS = BUILDER.comment("Swiftness: movement speed added per level, as a fraction (0.05 = 5%)")
-                .defineList("swiftnessSpeedBonus", List.of(0.05, 0.10, 0.15), BSPConfig::isFraction);
-        VITALITY_XP_COSTS = BUILDER.defineList("vitalityXpLevelCosts", List.of(10, 20, 30, 40), BSPConfig::isPositiveInt);
-        VITALITY_HEALTH = BUILDER.comment("Vitality: extra health points per level (2 = one heart)")
-                .defineList("vitalityHealth", List.of(2, 4, 6, 8), BSPConfig::isPositiveInt);
-        FEATHERFALL_XP_COSTS = BUILDER.defineList("featherfallXpLevelCosts", List.of(6, 12, 18, 24), BSPConfig::isPositiveInt);
-        FEATHERFALL_REDUCTION = BUILDER.comment("Featherfall: share of fall damage removed per level")
-                .defineList("featherfallReduction", List.of(0.25, 0.5, 0.75, 1.0), BSPConfig::isFraction);
-        NIGHT_SIGHT_XP_COSTS = BUILDER.defineList("nightSightXpLevelCosts", List.of(12), BSPConfig::isPositiveInt);
-        BUILDER.pop();
-
-        BUILDER.comment("Base upgrades (work only while the totem is placed), paid in coin value.").push("base");
-        WARD_COIN_COSTS = BUILDER.defineList("wardCoinCosts", List.of(16, 32, 64), BSPConfig::isPositiveInt);
-        WARD_RADIUS = BUILDER.comment("Ward: intruders within this many blocks are weakened (Weakness I, II, III by level)")
-                .defineList("wardRadius", List.of(6, 10, 14), BSPConfig::isPositiveInt);
-        ALARM_COIN_COSTS = BUILDER.defineList("alarmCoinCosts", List.of(8, 16, 32), BSPConfig::isPositiveInt);
-        ALARM_RADIUS = BUILDER.comment("Alarm: intruders within this many blocks are outlined and the owner is told")
-                .defineList("alarmRadius", List.of(8, 16, 24), BSPConfig::isPositiveInt);
-        SANCTUARY_COIN_COSTS = BUILDER.defineList("sanctuaryCoinCosts", List.of(8, 16, 32), BSPConfig::isPositiveInt);
-        SANCTUARY_RADIUS = BUILDER.comment("Sanctuary: hostile mobs do not spawn naturally within this many blocks")
-                .defineList("sanctuaryRadius", List.of(8, 16, 32), BSPConfig::isPositiveInt);
-        DEADLOCK_COIN_COSTS = BUILDER.defineList("deadlockCoinCosts", List.of(16, 48, 128), BSPConfig::isPositiveInt);
-        DEADLOCK_SECONDS = BUILDER.comment("Deadlock: seconds added to the time needed to steal this totem")
-                .defineList("deadlockSeconds", List.of(30, 60, 120), BSPConfig::isPositiveInt);
-        OVERCLOCK_COIN_COSTS = BUILDER.defineList("overclockCoinCosts", List.of(32, 64, 128), BSPConfig::isPositiveInt);
-        OVERCLOCK_RADIUS = BUILDER.comment("Overclock: BSP-Core machines within this many blocks work faster")
-                .defineList("overclockRadius", List.of(8, 12, 16), BSPConfig::isPositiveInt);
+                .defineList("healingPerSecond", List.of(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0), o -> o instanceof Double d && d > 0);
+        ALARM_RADIUS = BUILDER.comment("Alarm: intruders within this many blocks are outlined and the owner is told (8 levels)")
+                .defineList("alarmRadius", List.of(4, 8, 12, 16, 20, 24, 28, 32), BSPConfig::isPositiveInt);
+        SANCTUARY_RADIUS = BUILDER.comment("Sanctuary: hostile mobs do not spawn naturally within this many blocks (8 levels)")
+                .defineList("sanctuaryRadius", List.of(6, 12, 18, 24, 30, 36, 42, 48), BSPConfig::isPositiveInt);
+        WARD_RADIUS = BUILDER.comment("Ward: intruders within this many blocks are weakened (6 levels; Weakness I at levels 1-2, II at 3-4, III at 5-6)")
+                .defineList("wardRadius", List.of(3, 6, 9, 12, 15, 18), BSPConfig::isPositiveInt);
+        DEADLOCK_SECONDS = BUILDER.comment("Deadlock: seconds added to the time needed to steal this totem (4 levels)")
+                .defineList("deadlockSeconds", List.of(30, 60, 90, 120), BSPConfig::isPositiveInt);
+        OVERCLOCK_RADIUS = BUILDER.comment("Overclock: BSP-Core machines within this many blocks work faster (4 levels)")
+                .defineList("overclockRadius", List.of(8, 10, 12, 16), BSPConfig::isPositiveInt);
         OVERCLOCK_BONUS = BUILDER.comment("Overclock: speed added per level, as a fraction")
-                .defineList("overclockSpeedBonus", List.of(0.05, 0.10, 0.15), BSPConfig::isFraction);
+                .defineList("overclockSpeedBonus", List.of(0.04, 0.08, 0.12, 0.16), BSPConfig::isFraction);
         BUILDER.pop();
 
-        BUILDER.comment("Raid upgrades (apply when the totem carrying them is in the thief's offhand), paid in coin value.").push("raid");
-        LOCKPICK_COIN_COSTS = BUILDER.defineList("lockpickCoinCosts", List.of(16, 48, 128), BSPConfig::isPositiveInt);
-        LOCKPICK_SECONDS = BUILDER.comment("Lockpick: seconds taken off the time you need to steal a totem")
-                .defineList("lockpickSeconds", List.of(15, 30, 60), BSPConfig::isPositiveInt);
-        SHROUD_COIN_COSTS = BUILDER.defineList("shroudCoinCosts", List.of(16, 32, 64), BSPConfig::isPositiveInt);
-        SHROUD_SECONDS = BUILDER.comment("Shroud: seconds before the owner is warned that you are stealing")
-                .defineList("shroudSeconds", List.of(5, 10, 20), BSPConfig::isPositiveInt);
+        BUILDER.comment("Raid upgrades (apply when the totem carrying them is in the thief's offhand).").push("raid");
+        LOCKPICK_SECONDS = BUILDER.comment("Lockpick: seconds taken off the time you need to steal a totem (8 levels)")
+                .defineList("lockpickSeconds", List.of(10, 20, 30, 40, 50, 60, 70, 80), BSPConfig::isPositiveInt);
+        SHROUD_SECONDS = BUILDER.comment("Shroud: seconds before the owner is warned that you are stealing (6 levels)")
+                .defineList("shroudSeconds", List.of(4, 8, 12, 16, 20, 24), BSPConfig::isPositiveInt);
         BUILDER.pop();
 
         BUILDER.comment("Limits that keep every totem stealable, whatever upgrades it has.").push("limits");
@@ -293,8 +296,31 @@ public final class BSPConfig {
         COMPASS_COOLDOWN = BUILDER.comment("Cooldown in seconds after tracking ends.").defineInRange("cooldownSeconds", 600, 0, 86400);
         COMPASS_MIN_COOLDOWN = BUILDER.comment("Shortest cooldown reachable with upgrades.").defineInRange("minCooldownSeconds", 180, 0, 86400);
         COMPASS_COOLDOWN_STEP = BUILDER.comment("Seconds removed from the cooldown per upgrade level.").defineInRange("cooldownStepSeconds", 60, 1, 86400);
-        COMPASS_UPGRADE_COSTS = BUILDER.comment("Coin value cost of each cooldown upgrade level.")
-                .defineList("cooldownUpgradeCosts", List.of(8, 16, 32, 64, 128, 256, 512), BSPConfig::isPositiveInt);
+        COMPASS_UPGRADE_COSTS = BUILDER.comment("How many coins each cooldown upgrade level costs. The kind of coin is set in cooldownUpgradeCoinTiers.")
+                .defineList("cooldownUpgradeCoins", List.of(4, 4, 4, 4, 2, 4, 8), BSPConfig::isPositiveInt);
+        COMPASS_UPGRADE_TIERS = BUILDER.comment("Which Shatter Coin each cooldown upgrade level is paid in: copper, gold, diamond, netherite or illyrium.",
+                        "One entry per level, matching cooldownUpgradeCoins. A short list repeats its last entry.")
+                .defineList("cooldownUpgradeCoinTiers", List.of("copper", "gold", "diamond", "netherite", "illyrium", "illyrium", "illyrium"),
+                        o -> o instanceof String str && java.util.Arrays.stream(com.mrgregles.bsp_core.coin.CoinTier.values()).anyMatch(t -> t.key.equals(str)));
+        BUILDER.pop();
+
+        BUILDER.comment("Where BSP-Core keeps its records.",
+                        "\"local\": in this world only. Nothing to set up; right for a single server.",
+                        "\"mysql\": also in a MySQL or MariaDB database shared by every server of a network, so first-join totems and the",
+                        "factory slice limit apply across the whole network. You provide the database and an account; BSP-Core only creates",
+                        "its own tables in it. Fill in the details below, run /bsp storage test, then /bsp storage migrate, then set mode to",
+                        "\"mysql\" and restart.")
+               .push("storage");
+        STORAGE_MODE = BUILDER.comment("\"local\" or \"mysql\".").define("mode", "local");
+        STORAGE_SERVER_ID = BUILDER.comment("A short name for this server, different on every server of the network (for example \"hub\", \"survival-1\").")
+                .define("serverId", "server-1");
+        STORAGE_HOST = BUILDER.comment("Database host name or address.").define("host", "localhost");
+        STORAGE_PORT = BUILDER.comment("Database port.").defineInRange("port", 3306, 1, 65535);
+        STORAGE_DATABASE = BUILDER.comment("Name of the existing database (schema) to use.").define("database", "bsp");
+        STORAGE_USER = BUILDER.comment("Database user. It needs CREATE, SELECT, INSERT, UPDATE and DELETE on that database.").define("user", "bsp");
+        STORAGE_PASSWORD = BUILDER.comment("Database password. This file is plain text: keep it private.").define("password", "");
+        STORAGE_TABLE_PREFIX = BUILDER.comment("Prefix for BSP-Core's table names (letters, digits and underscores).").define("tablePrefix", "bsp_");
+        STORAGE_SSL = BUILDER.comment("Connect with SSL/TLS.").define("useSsl", false);
         BUILDER.pop();
 
         BUILDER.comment("How the totem is drawn").push("visuals");

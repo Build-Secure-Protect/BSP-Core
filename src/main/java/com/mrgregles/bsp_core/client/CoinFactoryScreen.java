@@ -31,6 +31,8 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
     private static final int LANE_TOP = 20, LANE_BOTTOM = 102, BAR_TOP = 50, BAR_H = 22, PIP_Y = 95, GAUGE_X = 14, GAUGE_Y = 108, POWER_X = 274, POWER_Y = 104, POWER_W = 38, POWER_H = 16;
     /** 0 = off, 1 = on; eased toward the real state every frame so the knob slides. */
     private float powerAnim = -1f;
+    /** Operator-only demo switch, in the free space left of the player inventory. */
+    private static final int DEMO_X = 10, DEMO_Y = CoinFactoryMenu.INV_Y + 2;
 
     public CoinFactoryScreen(CoinFactoryMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -61,6 +63,10 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
     public boolean mouseClicked(double mx, double my, int button) {
         if (over(mx, my, leftPos + POWER_X, topPos + POWER_Y, POWER_W, POWER_H)) {
             minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CoinFactoryMenu.BTN_POWER);
+            return true;
+        }
+        if (OperatorDemo.over(mx, my, leftPos + DEMO_X, topPos + DEMO_Y)) {
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CoinFactoryMenu.BTN_DEMO);
             return true;
         }
         return super.mouseClicked(mx, my, button);
@@ -117,6 +123,7 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         g.fill(kx, py + 2, kx + 12, py + POWER_H - 2, 0xFFC9CED8);
         g.fill(kx + 1, py + 3, kx + 11, py + POWER_H - 3, 0xFF8A909C);
         g.fill(kx + 5, py + 4, kx + 7, py + POWER_H - 4, colour);
+        OperatorDemo.draw(g, font, x + DEMO_X, y + DEMO_Y, menu.getFactory() != null && menu.getFactory().isDemo(), mouseX, mouseY);
     }
 
     private void small(GuiGraphics g, Component text, int x, int y, int colour) {
@@ -204,6 +211,9 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         }
         if (over(mouseX, mouseY, x + POWER_X, y + POWER_Y, POWER_W, POWER_H)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.hud.power_tip"), mouseX, mouseY);
+        }
+        if (OperatorDemo.over(mouseX, mouseY, x + DEMO_X, y + DEMO_Y)) {
+            g.renderTooltip(font, Component.translatable("gui.bsp_core.demo.tip"), mouseX, mouseY);
         }
     }
 

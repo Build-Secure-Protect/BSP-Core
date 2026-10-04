@@ -2,7 +2,6 @@ package com.mrgregles.bsp_core.compass;
 
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.coin.CoinTier;
-import com.mrgregles.bsp_core.coin.CoinWallet;
 import com.mrgregles.bsp_core.data.TotemLedger;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -71,10 +70,21 @@ public class TotemCompassItem extends Item {
         return Math.max(BSPConfig.COMPASS_MIN_COOLDOWN.get(), BSPConfig.COMPASS_COOLDOWN.get() - level(s) * BSPConfig.COMPASS_COOLDOWN_STEP.get());
     }
 
-    /** Coin value of the next cooldown upgrade, or -1 if fully upgraded. */
+    /** How many coins the next cooldown upgrade costs, or -1 if fully upgraded. The coin is {@link #upgradeCoin(int)}. */
     public static int upgradeCost(ItemStack s) {
         int lvl = level(s);
         return lvl >= maxLevel() ? -1 : BSPConfig.COMPASS_UPGRADE_COSTS.get().get(lvl);
+    }
+
+    /** The Shatter Coin that pays for the upgrade from {@code level} to the next. */
+    public static CoinTier upgradeCoin(int level) {
+        String key = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.COMPASS_UPGRADE_TIERS, java.util.List.<String>of()), level + 1, "copper");
+        for (CoinTier tier : CoinTier.values()) {
+            if (tier.key.equals(key)) {
+                return tier;
+            }
+        }
+        return CoinTier.COPPER;
     }
 
     // ------------------------------------------------------------------ actions (server)
@@ -104,8 +114,15 @@ public class TotemCompassItem extends Item {
 
     public static void buyUpgrade(ServerPlayer player, ItemStack compass) {
         int cost = upgradeCost(compass);
-        if (cost < 0 || (!player.isCreative() && !CoinWallet.pay(player, cost))) {
+        if (cost < 0) {
             return;
+        }
+        if (!player.isCreative()) {
+            net.minecraft.world.item.Item coin = upgradeCoin(level(compass)).coin();
+            if (player.getInventory().countItem(coin) < cost) {
+                return;
+            }
+            player.getInventory().clearOrCountMatchingItems(st -> st.is(coin), cost, player.inventoryMenu.getCraftSlots());
         }
         compass.getOrCreateTag().putInt(LEVEL, level(compass) + 1);
     }

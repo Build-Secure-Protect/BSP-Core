@@ -12,6 +12,9 @@ base {
     archivesName = mod_archive_name
 }
 
+// The MySQL driver is shipped inside the mod jar (jar-in-jar), so servers need nothing extra installed.
+jarJar.enable()
+
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
@@ -145,6 +148,10 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.20.0.112")
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
 
+    // MySQL driver for the optional network storage: on the classpath in dev runs, and bundled into the released jar.
+    minecraftLibrary('com.mysql:mysql-connector-j:8.4.0') { transitive = false }
+    jarJar(group: 'com.mysql', name: 'mysql-connector-j', version: '[8.4.0,9.0)') { transitive = false }
+
     // Patchouli: the guide book is data only, so there is no compile dependency; loaded in dev runs to read the book.
     runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-84.1-FORGE")
 
@@ -223,3 +230,10 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+// The jar with the bundled driver is the one to release (no classifier); the plain jar is kept as "-slim".
+tasks.named('jar') { archiveClassifier = 'slim' }
+tasks.named('jarJar') { archiveClassifier = '' }
+reobf { jarJar { } }
+tasks.named('jarJar') { finalizedBy 'reobfJarJar' }
+tasks.named('assemble') { dependsOn 'jarJar' }

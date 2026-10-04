@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 
 /** One menu for every {@link MachineBlockEntity}; the machine's layout decides the slots. */
 public class MachineMenu extends AbstractContainerMenu {
-    public static final int INV_Y = 152, INV_X = 82, IN_X = 14, OUT_X = 152, PIPE_Y = 30, FUEL_X = 152, FUEL_Y = 74, UP_X = 196, UP_Y = 124, BTN_POWER = 6;
+    public static final int INV_Y = 152, INV_X = 82, IN_X = 14, OUT_X = 152, PIPE_Y = 30, FUEL_X = 152, FUEL_Y = 74, UP_X = 196, UP_Y = 124, BTN_POWER = 6, BTN_DEMO = 7;
 
     @Nullable
     private final MachineBlockEntity machine;
@@ -134,6 +134,10 @@ public class MachineMenu extends AbstractContainerMenu {
         }
         if (machine != null && id == BTN_POWER) {
             machine.toggleEnabled();
+            return true;
+        }
+        if (machine != null && id == BTN_DEMO && player.hasPermissions(2)) {
+            machine.toggleDemo();
             return true;
         }
         return false;

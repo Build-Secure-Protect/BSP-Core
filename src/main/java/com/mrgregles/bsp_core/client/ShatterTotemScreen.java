@@ -1,11 +1,11 @@
 package com.mrgregles.bsp_core.client;
 
-import com.mrgregles.bsp_core.coin.CoinWallet;
 import com.mrgregles.bsp_core.menu.ShatterTotemMenu;
 import com.mrgregles.bsp_core.network.AdminTotemActionPacket;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.PlacedUpgradeRequestPacket;
 import com.mrgregles.bsp_core.network.StealRequestPacket;
+import com.mrgregles.bsp_core.network.UpgradeRequestPacket;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity;
 import com.mrgregles.bsp_core.totem.StealState;
 import com.mrgregles.bsp_core.totem.TotemUpgrades;
@@ -32,7 +32,7 @@ import java.util.Locale;
  */
 public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu> {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, VIO = 0xFFB58CFF, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5;
-    private static final int TREE_X = 10, TREE_Y = 22, DETAIL_X = 208, DETAIL_Y = 26, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 50;
+    private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 50;
 
     private final TotemTree tree = new TotemTree();
     private Button stealButton;
@@ -43,7 +43,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     public ShatterTotemScreen(ShatterTotemMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = 326;
-        this.imageHeight = STATUS_Y + 46;
+        this.imageHeight = STATUS_Y + 48;
     }
 
     @Override
@@ -53,11 +53,11 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         stealButton = Button.builder(Component.translatable("gui.bsp_core.shatter_totem.steal"), b -> {
             BSPNetwork.CHANNEL.sendToServer(new StealRequestPacket(menu.getPos()));
             onClose();
-        }).bounds(leftPos + DETAIL_X, topPos + STATUS_Y + 18, TotemTree.DETAIL_W, 20).build();
+        }).bounds(leftPos + 214, topPos + STATUS_Y + 16, 102, 20).build();
         addRenderableWidget(stealButton);
         adminButtons.clear();
         if (admin) {
-            int x = leftPos + 10, y = topPos + STATUS_Y + 2;
+            int x = leftPos + 10, y = topPos + STATUS_Y + 6;
             ownerBox = new EditBox(font, x, y + 1, 110, 16, Component.translatable("gui.bsp_core.admin.owner_name"));
             ownerBox.setMaxLength(16);
             ownerBox.setHint(Component.translatable("gui.bsp_core.admin.owner_name").withStyle(ChatFormatting.DARK_GRAY));
@@ -114,30 +114,33 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         return totem == null ? 0 : totem.getUpgradeLevel(b);
     }
 
+    private int tier() {
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        return totem == null ? 0 : totem.getTier();
+    }
+
     /** Why the selected upgrade cannot be bought right now, or null if it can. */
     @Nullable
     private Component blocked(Buff b) {
-        int cost = b.costToUpgrade(level(b));
-        if (cost < 0) {
-            return null;
-        }
         if (!isOwner() && !admin) {
-            return Component.translatable("gui.bsp_core.tree.not_yours");
+            return level(b) >= b.maxLevel() ? null : Component.translatable("gui.bsp_core.tree.not_yours");
         }
-        if (minecraft.player.isCreative()) {
-            return null;
-        }
-        if (b.currency == TotemUpgrades.Currency.XP) {
-            return minecraft.player.experienceLevel >= cost ? null : Component.translatable("gui.bsp_core.tree.need_xp", cost);
-        }
-        return CoinWallet.totalValue(minecraft.player) >= cost ? null : Component.translatable("gui.bsp_core.tree.need_coins", cost);
+        return TotemUpgrades.whyNot(b, this::level, tier(), minecraft.player);
+    }
+
+    private boolean canBuy(Buff b) {
+        return level(b) < b.maxLevel() && blocked(b) == null;
+    }
+
+    private boolean canRaise() {
+        return (isOwner() || admin) && tier() < TotemUpgrades.MAX_TIER && TotemUpgrades.whyNotGate(tier(), minecraft.player) == null;
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int x = leftPos, y = topPos;
-        if (admin && my >= y + 5 && my < y + 18) {
-            if (mx >= x + TAB_X && mx < x + TAB_X + TAB_W) {
+        if (admin && my >= y + 3 && my < y + 16) {
+            if (mx >= x + TAB_X && mx < x + TAB_X + TAB_W) { // tabs sit in the header
                 operatorTab = false;
                 refresh();
                 return true;
@@ -154,14 +157,22 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             return true;
         }
         Buff b = tree.selected;
+        boolean buy = TotemTree.overBuy(mx, my, x + DETAIL_X, y + DETAIL_Y), gate = TotemTree.overGate(mx, my, x + DETAIL_X, y + DETAIL_Y);
         if (operatorTab) {
-            // the action bar becomes two halves: lower the level, raise the level
-            if (TotemTree.over(mx, my, x + DETAIL_X, y + DETAIL_Y)) {
+            // both bars become two halves: lower on the left, raise on the right
+            if (buy) {
                 send(AdminTotemActionPacket.Action.SET_BUFF, mx < x + DETAIL_X + TotemTree.DETAIL_W / 2.0 ? "-" : "+", b.ordinal());
                 return true;
             }
-        } else if (TotemTree.over(mx, my, x + DETAIL_X, y + DETAIL_Y) && b.costToUpgrade(level(b)) >= 0 && blocked(b) == null) {
+            if (gate) {
+                send(AdminTotemActionPacket.Action.SET_BUFF, mx < x + DETAIL_X + TotemTree.GATE_BTN_X + TotemTree.GATE_BTN_W / 2.0 ? "-" : "+", UpgradeRequestPacket.RAISE_TIER);
+                return true;
+            }
+        } else if (buy && canBuy(b)) {
             BSPNetwork.CHANNEL.sendToServer(new PlacedUpgradeRequestPacket(menu.getPos(), b.ordinal()));
+            return true;
+        } else if (gate && canRaise()) {
+            BSPNetwork.CHANNEL.sendToServer(new PlacedUpgradeRequestPacket(menu.getPos(), UpgradeRequestPacket.RAISE_TIER));
             return true;
         }
         return super.mouseClicked(mx, my, button);
@@ -203,17 +214,21 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             for (int i = 0; i < 2; i++) {
                 int tx = x + TAB_X + i * (TAB_W + 2);
                 boolean on = (i == 1) == operatorTab;
-                g.fill(tx, y + 5, tx + TAB_W, y + 18, on ? (i == 1 ? VIO : TQ) : DIM);
-                g.fill(tx + 1, y + 6, tx + TAB_W - 1, y + 17, SLOT_BG);
+                g.fill(tx, y + 3, tx + TAB_W, y + 16, on ? (i == 1 ? VIO : TQ) : DIM);
+                g.fill(tx + 1, y + 4, tx + TAB_W - 1, y + 15, SLOT_BG);
             }
         }
-        tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, mouseX, mouseY);
+        TotemTree.wallet(g, font, x + 10, y + WALLET_Y, minecraft.player);
+        tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, tier());
         Buff b = tree.selected;
         if (operatorTab) {
-            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), null, Component.translatable("gui.bsp_core.tree.set_level"), true, mouseX, mouseY);
+            Component set = Component.translatable("gui.bsp_core.tree.set_level");
+            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), null, set, true, mouseX, mouseY);
+            tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, Math.min(tier(), TotemUpgrades.MAX_TIER - 1), Component.literal("-  +"), true, mouseX, mouseY);
         } else {
-            Component blocked = blocked(b);
-            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), blocked, TotemTree.buyLabel(b, level(b)), blocked == null && b.costToUpgrade(level(b)) >= 0, mouseX, mouseY);
+            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), blocked(b),
+                    Component.translatable(level(b) >= b.maxLevel() ? "gui.bsp_core.upgrades.maxed" : "gui.bsp_core.tree.buy"), canBuy(b), mouseX, mouseY);
+            tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, tier(), Component.translatable("gui.bsp_core.tree.raise"), canRaise(), mouseX, mouseY);
         }
     }
 
@@ -227,16 +242,12 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawString(font, title.getString().toUpperCase(Locale.ROOT), 10, 8, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
-        if (!operatorTab) {
-            // beside the status lines, clear of the operator tabs in the header
-            g.drawString(font, Component.translatable("gui.bsp_core.tree.wallet", minecraft.player.experienceLevel, CoinWallet.totalValue(minecraft.player)),
-                    DETAIL_X, STATUS_Y, 0xFFD23A, false);
-        }
+        g.drawString(font, title.getString().toUpperCase(Locale.ROOT) + "  " + Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier())).getString(),
+                10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
         if (admin) {
             Component a = Component.translatable("gui.bsp_core.tree.tab.totem"), o = Component.translatable("gui.bsp_core.tree.tab.operator");
-            small(g, a, TAB_X + TAB_W / 2 - font.width(a) * 3 / 8, 9, operatorTab ? MUTED : TQ & 0xFFFFFF);
-            small(g, o, TAB_X + TAB_W + 2 + TAB_W / 2 - font.width(o) * 3 / 8, 9, operatorTab ? VIO & 0xFFFFFF : MUTED);
+            small(g, a, TAB_X + TAB_W / 2 - font.width(a) * 3 / 8, 7, operatorTab ? MUTED : TQ & 0xFFFFFF);
+            small(g, o, TAB_X + TAB_W + 2 + TAB_W / 2 - font.width(o) * 3 / 8, 7, operatorTab ? VIO & 0xFFFFFF : MUTED);
         }
         ShatterTotemBlockEntity totem = menu.getTotem();
         if (totem == null || operatorTab) {

@@ -48,8 +48,6 @@ public class ShatterTotemItem extends BlockItem {
     private static final UUID DAMAGE_MODIFIER_ID = UUID.fromString("5c3c2b86-5a4e-4a3b-9d6f-0b0b2c4e1f10");
     private static final UUID SWIFTNESS_MODIFIER_ID = UUID.fromString("5c3c2b86-5a4e-4a3b-9d6f-0b0b2c4e1f11");
     private static final UUID VITALITY_MODIFIER_ID = UUID.fromString("5c3c2b86-5a4e-4a3b-9d6f-0b0b2c4e1f12");
-    public static final double DAMAGE_PER_LEVEL = 1.0;
-    public static final float MINING_SPEED_PER_LEVEL = 0.25F;
 
     public ShatterTotemItem(Block block) {
         super(block, new Properties()
@@ -150,7 +148,7 @@ public class ShatterTotemItem extends BlockItem {
         int level = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.DAMAGE);
         if (level > 0) {
             mods.put(Attributes.ATTACK_DAMAGE,
-                    new AttributeModifier(DAMAGE_MODIFIER_ID, "Shatter Totem damage", DAMAGE_PER_LEVEL * level, AttributeModifier.Operation.ADDITION));
+                    new AttributeModifier(DAMAGE_MODIFIER_ID, "Shatter Totem damage", BSPConfig.getOr(BSPConfig.DAMAGE_PER_LEVEL, 0.5) * level, AttributeModifier.Operation.ADDITION));
         }
         int swift = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.SWIFTNESS);
         if (swift > 0) {
@@ -170,12 +168,9 @@ public class ShatterTotemItem extends BlockItem {
         if (level.isClientSide || level.getGameTime() % 20 != 0 || !(entity instanceof Player player)) {
             return;
         }
+        TotemUpgrades.migrate(stack); // a totem upgraded under the old flat system starts again at Tier I
         if (player.getOffhandItem() != stack) {
             return;
-        }
-        int resistance = TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.RESISTANCE);
-        if (resistance > 0) {
-            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 50, resistance - 1, true, false, true));
         }
         if (TotemUpgrades.getLevel(stack, TotemUpgrades.Buff.NIGHT_SIGHT) > 0) {
             // long enough that the vanilla "running out" flicker (under 10 seconds) never shows while held
@@ -189,7 +184,7 @@ public class ShatterTotemItem extends BlockItem {
         if (!TotemInventories.isTotem(offhand)) {
             return 1.0F;
         }
-        return 1.0F + MINING_SPEED_PER_LEVEL * TotemUpgrades.getLevel(offhand, TotemUpgrades.Buff.MINING_SPEED);
+        return 1.0F + (float) (BSPConfig.getOr(BSPConfig.MINING_SPEED_PER_LEVEL, 0.10) * TotemUpgrades.getLevel(offhand, TotemUpgrades.Buff.MINING_SPEED));
     }
 
     @Override
@@ -200,6 +195,7 @@ public class ShatterTotemItem extends BlockItem {
                         .withStyle(ChatFormatting.GOLD))
                 .orElse(Component.translatable("tooltip.bsp_core.shatter_totem.unowned")
                         .withStyle(ChatFormatting.GRAY)));
+        tooltip.add(Component.translatable("tooltip.bsp_core.shatter_totem.tier", TotemUpgrades.roman(TotemUpgrades.getTier(stack))).withStyle(ChatFormatting.AQUA));
         for (TotemUpgrades.Buff buff : TotemUpgrades.Buff.values()) {
             int lvl = TotemUpgrades.getLevel(stack, buff);
             if (lvl > 0) {

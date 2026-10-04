@@ -1,6 +1,5 @@
 package com.mrgregles.bsp_core.client;
 
-import com.mrgregles.bsp_core.coin.CoinWallet;
 import com.mrgregles.bsp_core.menu.TotemUpgradeMenu;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.UpgradeRequestPacket;
@@ -10,18 +9,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 import java.util.Locale;
 
 /**
- * Upgrade tree of the totem in your hand. Carried and Raid upgrades can be bought here; Base
- * upgrades are shown with their levels but can only be bought once the totem is placed.
+ * Upgrade tree of the totem in your hand. Carried and Raid upgrades and the totem's tier can be
+ * bought here; Base upgrades are shown with their levels but are bought at the placed totem.
  */
 public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu> {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, MUTED = 0x9AA3B5;
-    private static final int TREE_X = 10, TREE_Y = 22, DETAIL_X = 208, DETAIL_Y = 26;
+    private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40;
     private final TotemTree tree = new TotemTree();
 
     public TotemUpgradeScreen(TotemUpgradeMenu menu, Inventory inventory, Component title) {
@@ -34,23 +32,25 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         return TotemUpgrades.getLevel(menu.getTotem(), b);
     }
 
+    private int tier() {
+        return TotemUpgrades.getTier(menu.getTotem());
+    }
+
     /** Why the selected upgrade cannot be bought right now, or null if it can. */
     @Nullable
     private Component blocked(Buff b) {
-        int cost = b.costToUpgrade(level(b));
-        if (cost < 0) {
-            return null;
-        }
-        if (b.placedOnly) {
+        if (b.placedOnly && TotemUpgrades.unlocked(b, this::level, tier()) && level(b) < b.maxLevel()) {
             return Component.translatable("gui.bsp_core.tree.place_first");
         }
-        if (minecraft.player.isCreative()) {
-            return null;
-        }
-        if (b.currency == TotemUpgrades.Currency.XP) {
-            return minecraft.player.experienceLevel >= cost ? null : Component.translatable("gui.bsp_core.tree.need_xp", cost);
-        }
-        return CoinWallet.totalValue(minecraft.player) >= cost ? null : Component.translatable("gui.bsp_core.tree.need_coins", cost);
+        return TotemUpgrades.whyNot(b, this::level, tier(), minecraft.player);
+    }
+
+    private boolean canBuy(Buff b) {
+        return level(b) < b.maxLevel() && blocked(b) == null;
+    }
+
+    private boolean canRaise() {
+        return tier() < TotemUpgrades.MAX_TIER && TotemUpgrades.whyNotGate(tier(), minecraft.player) == null;
     }
 
     @Override
@@ -60,9 +60,12 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
             tree.selected = node;
             return true;
         }
-        Buff b = tree.selected;
-        if (TotemTree.over(mx, my, leftPos + DETAIL_X, topPos + DETAIL_Y) && b.costToUpgrade(level(b)) >= 0 && blocked(b) == null) {
-            BSPNetwork.CHANNEL.sendToServer(new UpgradeRequestPacket(menu.getHand(), b.ordinal()));
+        if (TotemTree.overBuy(mx, my, leftPos + DETAIL_X, topPos + DETAIL_Y) && canBuy(tree.selected)) {
+            BSPNetwork.CHANNEL.sendToServer(new UpgradeRequestPacket(menu.getHand(), tree.selected.ordinal()));
+            return true;
+        }
+        if (TotemTree.overGate(mx, my, leftPos + DETAIL_X, topPos + DETAIL_Y) && canRaise()) {
+            BSPNetwork.CHANNEL.sendToServer(new UpgradeRequestPacket(menu.getHand(), UpgradeRequestPacket.RAISE_TIER));
             return true;
         }
         return super.mouseClicked(mx, my, button);
@@ -83,18 +86,24 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         int x = leftPos, y = topPos;
         g.fill(x - 1, y - 1, x + imageWidth + 1, y + imageHeight + 1, TQ);
         g.fill(x, y, x + imageWidth, y + imageHeight, BG);
-        tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, mouseX, mouseY);
+        TotemTree.wallet(g, font, x + 10, y + WALLET_Y, minecraft.player);
+        tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, tier());
         Buff b = tree.selected;
-        Component blocked = blocked(b);
-        tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), blocked, TotemTree.buyLabel(b, level(b)), blocked == null && b.costToUpgrade(level(b)) >= 0, mouseX, mouseY);
+        tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), blocked(b),
+                Component.translatable(level(b) >= b.maxLevel() ? "gui.bsp_core.upgrades.maxed" : "gui.bsp_core.tree.buy"), canBuy(b), mouseX, mouseY);
+        tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, tier(), Component.translatable("gui.bsp_core.tree.raise"), canRaise(), mouseX, mouseY);
     }
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawString(font, title.getString().toUpperCase(Locale.ROOT), 10, 8, TQ & 0xFFFFFF, false);
-        Component wallet = Component.translatable("gui.bsp_core.tree.wallet", minecraft.player.experienceLevel, CoinWallet.totalValue(minecraft.player));
-        g.drawString(font, wallet, imageWidth - 10 - font.width(wallet), 8, 0xFFD23A, false);
-        ItemStack totem = menu.getTotem();
-        g.drawString(font, Component.translatable(totem.isEmpty() ? "gui.bsp_core.tree.no_totem" : "gui.bsp_core.tree.carried_hint"), 10, TREE_Y + TotemTree.H + 6, MUTED, false);
+        g.drawString(font, title.getString().toUpperCase(Locale.ROOT), 10, 7, TQ & 0xFFFFFF, false);
+        Component t = Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier()));
+        g.drawString(font, t, imageWidth - 10 - font.width(t), 7, TQ & 0xFFFFFF, false);
+        // small type, so it stays clear of the tier box beside it
+        g.pose().pushPose();
+        g.pose().translate(10, TREE_Y + TotemTree.H + 8, 0);
+        g.pose().scale(0.75f, 0.75f, 1f);
+        g.drawString(font, Component.translatable(menu.getTotem().isEmpty() ? "gui.bsp_core.tree.no_totem" : "gui.bsp_core.tree.carried_hint"), 0, 0, MUTED, false);
+        g.pose().popPose();
     }
 }

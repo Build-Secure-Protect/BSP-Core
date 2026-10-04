@@ -88,6 +88,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     private boolean formed;
     /** True while a redstone signal at the controller is holding this slice paused. */
     private boolean powered;
+    private boolean demo;
     /** Speed multiplier from a nearby totem's Overclock aura. Server side. */
     private double overclock = 1.0;
     /** Bit i set = a Motivator sits on top cell i (0 = front). */
@@ -146,7 +147,31 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
     /** True while a blank is on the line and the machine is running. */
     public boolean isWorking() {
-        return formed && enabled && !powered && jobTier >= 0 && progressFraction() < 1f;
+        return formed && (demo || (enabled && !powered && jobTier >= 0 && progressFraction() < 1f));
+    }
+
+    /** Demo mode: an operator has set this slice to play its working animation with nothing in it. */
+    public boolean isDemo() {
+        return demo;
+    }
+
+    /** Switches demo mode for the whole joined machine. */
+    public void toggleDemo() {
+        boolean on = !demo;
+        for (CoinFactoryBlockEntity f : group()) {
+            f.demo = on;
+            f.setChanged();
+            f.syncIfVisualChanged();
+        }
+    }
+
+    /** The coin tier the model shows on its belts: the real job, or in demo mode each tier in turn. */
+    @Nullable
+    public CoinTier visualTier() {
+        if (demo && level != null) {
+            return CoinTier.values()[(int) (level.getGameTime() / 200 % CoinTier.values().length)];
+        }
+        return getJobTier();
     }
 
     @Nullable
@@ -524,6 +549,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         tag.putBoolean("Enabled", enabled);
         tag.putBoolean("Formed", formed);
         tag.putBoolean("Powered", powered);
+        tag.putBoolean("Demo", demo);
         tag.putInt("Motivators", motivatorMask);
         tag.putInt("JobTier", jobTier);
         tag.putDouble("ProgressMs", progressMs);
@@ -544,6 +570,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
         formed = tag.getBoolean("Formed");
         powered = tag.getBoolean("Powered");
+        demo = tag.getBoolean("Demo");
         motivatorMask = tag.getInt("Motivators");
         jobTier = tag.contains("JobTier") ? tag.getInt("JobTier") : -1;
         progressMs = tag.getDouble("ProgressMs");
@@ -559,6 +586,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         h = h * 31 + motivatorMask;
         h = h * 2 + (formed ? 1 : 0);
         h = h * 2 + (enabled ? 1 : 0);
+        h = h * 2 + (demo ? 1 : 0);
         h = h * 2 + (isWorking() ? 1 : 0);
         return h;
     }

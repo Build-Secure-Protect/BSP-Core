@@ -38,6 +38,9 @@ Other useful tasks: `./gradlew runClient`, `./gradlew runServer`, `./gradlew run
 | `/bsp totem reset <player>` | Forget the first-join grant so the player is granted again |
 | `/bsp totem locate <player>` | List where that player's placed totems stand |
 | `/bsp totem owner` | Show the owner of the totem in your main hand |
+| `/bsp storage status` | Show whether records are local only or also in MySQL |
+| `/bsp storage test` | Try the MySQL connection from the config and create the tables |
+| `/bsp storage migrate` | Copy this server's local records into the MySQL database (add `force` to run it again) |
 
 ## Config
 
@@ -71,3 +74,19 @@ Server config is generated at `<world>/serverconfig/bsp_core-server.toml`.
 | `steal.unclaimedStealSeconds` | `60` | Time needed to claim a placed totem that has no owner. |
 | `steal.invincibilitySeconds` | `15` | Invincibility given to the thief when a steal completes. |
 | `steal.warningSeconds` | `30` | Remaining time at which the steal timer and bar pulse red. |
+
+## Network storage (optional MySQL)
+
+A single server needs none of this: BSP-Core keeps its records in the world.
+
+For a network, every server can share one MySQL or MariaDB database so that each player gets only one first-join totem and the factory slice limit counts slices on all servers. You provide the database and an account; BSP-Core connects with those credentials and only creates its own tables (`bsp_grants`, `bsp_totems`, `bsp_factory_slices`, `bsp_meta` with the default prefix).
+
+On each server, in `serverconfig/bsp_core-server.toml` under `[storage]`:
+
+1. Set `serverId` to a name unique to that server, and fill in `host`, `port`, `database`, `user`, `password`. Leave `mode = "local"` for now.
+2. Restart, then run `/bsp storage test`. It should report "Connected".
+3. Run `/bsp storage migrate`. It reports what was copied. Local records are not changed.
+4. Set `mode = "mysql"` and restart. `/bsp storage status` should now show MySQL.
+
+The account needs CREATE, SELECT, INSERT, UPDATE and DELETE on that database. The password is stored in plain text in the config file. Leave `first_join.grantTotemOnFirstJoin` on only where players should receive their totem (usually the hub).
+

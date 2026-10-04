@@ -32,7 +32,29 @@ public class CoinFactoryBlockItem extends BlockItem {
                 return InteractionResult.FAIL;
             }
         }
-        return super.place(ctx);
+        InteractionResult result = super.place(ctx);
+        if (result.consumesAction() && ctx.getPlayer() instanceof ServerPlayer player && com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
+            // On a network the quick check above used the count from the player's login. Ask the database again now,
+            // and take the slice back if slices placed on other servers since then put the player over the limit.
+            net.minecraft.core.BlockPos pos = ctx.getClickedPos();
+            net.minecraft.server.level.ServerLevel level = player.serverLevel();
+            int limit = BSPConfig.FACTORY_MAX_PER_PLAYER.get();
+            com.mrgregles.bsp_core.storage.NetworkStorage.countSlicesElsewhere(player.getUUID(), elsewhere -> {
+                if (FactoryLedger.get(player.server).localCount(player.getUUID()) + elsewhere <= limit
+                        || !(level.getBlockEntity(pos) instanceof CoinFactoryBlockEntity factory) || !player.getUUID().equals(factory.getOwner())) {
+                    return;
+                }
+                level.removeBlock(pos, false);
+                if (!player.isCreative()) {
+                    ItemStack back = new ItemStack(this);
+                    if (!player.getInventory().add(back)) {
+                        player.drop(back, false);
+                    }
+                }
+                player.displayClientMessage(Component.translatable("message.bsp_core.factory.limit", limit).withStyle(ChatFormatting.RED), false);
+            });
+        }
+        return result;
     }
 
     @Override

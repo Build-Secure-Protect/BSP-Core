@@ -24,11 +24,21 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
     public TotemCompassScreen(TotemCompassMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = 236;
-        this.imageHeight = 146;
+        this.imageHeight = 158;
     }
 
     private void press(int id) {
         minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
+    }
+
+    /** The specific coin and count the next cooldown upgrade costs. */
+    private CoinTier upgradeCoin() {
+        return com.mrgregles.bsp_core.compass.TotemCompassItem.upgradeCoin(menu.level());
+    }
+
+    private boolean canUpgrade() {
+        int cost = menu.upgradeCost();
+        return cost >= 0 && (minecraft.player.isCreative() || minecraft.player.getInventory().countItem(upgradeCoin().coin()) >= cost);
     }
 
     private boolean canStart() {
@@ -52,7 +62,7 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
             press(TotemCompassMenu.BTN_START);
             return true;
         }
-        if (over(mx, my, x + 120, y + BTN_Y, BTN_W, BTN_H) && menu.upgradeCost() >= 0) {
+        if (over(mx, my, x + 120, y + BTN_Y, BTN_W, BTN_H) && canUpgrade()) {
             press(TotemCompassMenu.BTN_UPGRADE);
             return true;
         }
@@ -70,6 +80,9 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
+        if (over(mouseX, mouseY, leftPos + 120, topPos + BTN_Y, BTN_W, BTN_H) && menu.upgradeCost() >= 0) {
+            g.renderTooltip(font, Component.translatable("gui.bsp_core.compass.upgrade_tip", clock(BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN_STEP, 60))), mouseX, mouseY);
+        }
         for (CoinTier tier : CoinTier.values()) {
             if (over(mouseX, mouseY, leftPos + TILE_X + tier.ordinal() * (TILE_W + TILE_GAP), topPos + TILE_Y, TILE_W, TILE_H)) {
                 g.renderTooltip(font, Component.translatable("gui.bsp_core.compass.tile", Component.translatable("tier.bsp_core." + tier.key), clock(seconds(tier))), mouseX, mouseY);
@@ -95,7 +108,11 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
         }
         int cost = menu.upgradeCost();
         button(g, x + 10, y + BTN_Y, Component.translatable("gui.bsp_core.compass.start"), canStart(), mouseX, mouseY);
-        button(g, x + 120, y + BTN_Y, cost < 0 ? Component.translatable("gui.bsp_core.upgrades.maxed") : Component.translatable("gui.bsp_core.compass.upgrade", cost), cost >= 0, mouseX, mouseY);
+        button(g, x + 120, y + BTN_Y, Component.translatable(cost < 0 ? "gui.bsp_core.upgrades.maxed" : "gui.bsp_core.compass.upgrade"), canUpgrade(), mouseX, mouseY);
+        if (cost >= 0 && !minecraft.player.isCreative()) {
+            // the price sits under the button: the exact coin and how many
+            g.renderItem(new ItemStack(upgradeCoin().coin()), x + 120, y + BTN_Y + BTN_H + 3);
+        }
     }
 
     @Override
@@ -120,7 +137,14 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
             g.drawString(font, add, TILE_X + tier.ordinal() * (TILE_W + TILE_GAP) + TILE_W / 2 - font.width(add) / 2, TILE_Y + 22, 0xE8EAF0, false);
         }
         g.drawString(font, Component.translatable("gui.bsp_core.compass.stored", clock(menu.stored())), 10, 80, GOLD & 0xFFFFFF, false);
-        g.drawString(font, Component.translatable("gui.bsp_core.compass.cooldown_len", clock(menu.cooldownSeconds()), menu.level()), 10, 124, MUTED, false);
+        int cost = menu.upgradeCost();
+        if (cost >= 0 && minecraft.player.isCreative()) {
+            g.drawString(font, Component.translatable("gui.bsp_core.tree.free"), 120, BTN_Y + BTN_H + 8, 0x8FE04A, false);
+        } else if (cost >= 0) {
+            g.drawString(font, Component.translatable("gui.bsp_core.compass.upgrade_price", cost, Component.translatable("tier.bsp_core." + upgradeCoin().key)),
+                    138, BTN_Y + BTN_H + 8, canUpgrade() ? 0xE8EAF0 : BAD & 0xFFFFFF, false);
+        }
+        g.drawString(font, Component.translatable("gui.bsp_core.compass.cooldown_len", clock(menu.cooldownSeconds()), menu.level()), 10, 142, MUTED, false);
     }
 
     private static String clock(int seconds) {

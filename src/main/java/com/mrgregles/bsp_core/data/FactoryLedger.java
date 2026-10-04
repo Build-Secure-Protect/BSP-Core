@@ -27,14 +27,26 @@ public class FactoryLedger extends SavedData {
         return server.overworld().getDataStorage().computeIfAbsent(FactoryLedger::load, FactoryLedger::new, DATA_NAME);
     }
 
+    /** Slices the player owns: those on this server plus, with network storage on, those on every other server. */
     public int count(UUID owner) {
+        return owned.getOrDefault(owner, Set.of()).size() + com.mrgregles.bsp_core.storage.NetworkStorage.slicesElsewhere(owner);
+    }
+
+    /** Slices the player owns on this server only. */
+    public int localCount(UUID owner) {
         return owned.getOrDefault(owner, Set.of()).size();
+    }
+
+    /** Every factory slice on this server, by owner. */
+    public Map<UUID, Set<GlobalPos>> all() {
+        return java.util.Collections.unmodifiableMap(owned);
     }
 
     public void add(UUID owner, GlobalPos pos) {
         remove(pos);
         owned.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
         setDirty();
+        com.mrgregles.bsp_core.storage.NetworkStorage.sliceAdded(owner, pos);
     }
 
     public void remove(GlobalPos pos) {
@@ -45,6 +57,7 @@ public class FactoryLedger extends SavedData {
         owned.values().removeIf(Set::isEmpty);
         if (changed) {
             setDirty();
+            com.mrgregles.bsp_core.storage.NetworkStorage.sliceRemoved(pos);
         }
     }
 

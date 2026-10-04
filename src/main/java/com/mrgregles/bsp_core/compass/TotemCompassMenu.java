@@ -80,7 +80,7 @@ public class TotemCompassMenu extends AbstractContainerMenu {
         } else {
             return false;
         }
-        sp.inventoryMenu.broadcastChanges();
+        sp.inventoryMenu.sendAllDataToRemote(); // this menu has no slots, so the client would not see coins leave otherwise
         return true;
     }
 

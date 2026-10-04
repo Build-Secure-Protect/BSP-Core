@@ -186,7 +186,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             }
             double d = p.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5);
             if (ward > 0 && d <= wardR * wardR) {
-                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 60, ward - 1, true, false, true));
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 60, (ward - 1) / 2, true, false, true));
             }
             if (alarm > 0 && d <= alarmR * alarmR) {
                 p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 60, 0, true, false, true));
@@ -383,34 +383,57 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         return new AABB(worldPosition).inflate(r);
     }
 
-    /** Owner (or operator) buys the next level of a placed-only upgrade with Shatter Coins. */
-    public void tryBuyPlacedUpgrade(ServerPlayer player, TotemUpgrades.Buff buff) {
+    /**
+     * The owner (or an operator) buys the next level of the upgrade with this ordinal, or raises the
+     * totem's tier when the ordinal is {@link com.mrgregles.bsp_core.network.UpgradeRequestPacket#RAISE_TIER}.
+     */
+    public void tryBuy(ServerPlayer player, int ordinal) {
         if (!isOwner(player.getUUID()) && !player.hasPermissions(2)) {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_owner").withStyle(ChatFormatting.RED), true);
             return;
         }
-        int lvl = getUpgradeLevel(buff);
-        int cost = buff.costToUpgrade(lvl);
-        if (cost < 0) {
-            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.maxed").withStyle(ChatFormatting.YELLOW), true);
-            return;
-        }
-        if (buff.currency == TotemUpgrades.Currency.XP) {
-            if (!player.isCreative() && player.experienceLevel < cost) {
-                player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_xp", cost).withStyle(ChatFormatting.RED), true);
+        int tier = getTier();
+        if (ordinal == com.mrgregles.bsp_core.network.UpgradeRequestPacket.RAISE_TIER) {
+            TotemUpgrades.Price price = TotemUpgrades.gatePrice(tier);
+            Component why = TotemUpgrades.whyNotGate(tier, player);
+            if (price == null || why != null) {
+                player.displayClientMessage((why == null ? Component.translatable("gui.bsp_core.tree.gate.max") : why).copy().withStyle(ChatFormatting.RED), true);
                 return;
             }
-            if (!player.isCreative()) {
-                player.giveExperienceLevels(-cost);
-            }
-        } else if (!player.isCreative() && !CoinWallet.pay(player, cost)) {
-            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_enough_coins", cost).withStyle(ChatFormatting.RED), true);
+            TotemUpgrades.pay(player, price);
+            setTier(tier + 1);
+            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(tier + 1)).withStyle(ChatFormatting.GOLD), true);
+            BSPCore.LOGGER.info("{} raised the totem at {} to tier {}", player.getGameProfile().getName(), worldPosition, tier + 2);
             return;
         }
+        TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(ordinal);
+        if (buff == null) {
+            return;
+        }
+        int lvl = getUpgradeLevel(buff);
+        TotemUpgrades.Price price = TotemUpgrades.price(buff, lvl);
+        Component why = TotemUpgrades.whyNot(buff, this::getUpgradeLevel, tier, player);
+        if (price == null || why != null) {
+            player.displayClientMessage((why == null ? Component.translatable("message.bsp_core.upgrade.maxed") : why).copy().withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        TotemUpgrades.pay(player, price);
         setUpgradeLevel(buff, lvl + 1);
         player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
                 Component.translatable(buff.translationKey()), lvl + 1).withStyle(ChatFormatting.GOLD), true);
-        BSPCore.LOGGER.info("{} bought placed upgrade {} level {} for {} coins at {}", player.getGameProfile().getName(), buff.key, lvl + 1, cost, worldPosition);
+        BSPCore.LOGGER.info("{} bought {} level {} at {}", player.getGameProfile().getName(), buff.key, lvl + 1, worldPosition);
+    }
+
+    /** Totem tier, 0 (I) to 4 (V). */
+    public int getTier() {
+        return Math.max(0, Math.min(TotemUpgrades.MAX_TIER, upgrades.getInt(TotemUpgrades.TAG_TIER)));
+    }
+
+    public void setTier(int tier) {
+        TotemUpgrades.stamp(upgrades).putInt(TotemUpgrades.TAG_TIER, Math.max(0, Math.min(TotemUpgrades.MAX_TIER, tier)));
+        setChanged();
+        sync();
+        updateBlockState();
     }
 
     // ------------------------------------------------------------------ upgrades
@@ -424,7 +447,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     }
 
     public void setUpgradeLevel(TotemUpgrades.Buff buff, int level) {
-        upgrades.putInt(buff.key, Math.max(0, Math.min(level, buff.maxLevel())));
+        TotemUpgrades.stamp(upgrades).putInt(buff.key, Math.max(0, Math.min(level, buff.maxLevel())));
         setChanged();
         sync();
         updateBlockState();
@@ -529,7 +552,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         super.load(tag);
         owner = TotemOwner.load(tag).orElse(null);
         steal = StealState.load(tag);
-        upgrades = tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy();
+        upgrades = TotemUpgrades.current(tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy());
     }
 
     @Override

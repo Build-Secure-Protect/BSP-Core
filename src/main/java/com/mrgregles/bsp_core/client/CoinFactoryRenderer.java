@@ -113,7 +113,7 @@ public class CoinFactoryRenderer implements BlockEntityRenderer<CoinFactoryBlock
         this.pose = pose;
         this.buffers = buffers;
         float t = (level.getGameTime() + partialTick) / 20f;
-        boolean working = f.isWorking(), on = f.isEnabled();
+        boolean working = f.isWorking(), on = f.isEnabled() || f.isDemo();
         float run = working ? t : 0, lamp = on ? 0.7f + 0.3f * Mth.sin(t * 3) : 0.25f;
         float phase = (f.getBlockPos().asLong() & 7) * 0.8f;
         Direction row = f.rowDirection();
@@ -282,7 +282,7 @@ public class CoinFactoryRenderer implements BlockEntityRenderer<CoinFactoryBlock
         }
 
         // the real items: coins in the tray, blanks and coins of the tier being pressed on the belts
-        CoinTier tray = f.trayTier();
+        CoinTier tray = f.isDemo() ? f.visualTier() : f.trayTier();
         if (tray != null) {
             ItemStack coin = new ItemStack(tray.coin());
             float[][] pile = {{7, -3, .3f}, {8.6f, -2.6f, .9f}, {9.4f, -3.4f, .1f}, {7.8f, -2.2f, 1.6f}, {6.4f, -3.8f, 2.2f}, {8.2f, -3.3f, .6f}};
@@ -290,7 +290,7 @@ public class CoinFactoryRenderer implements BlockEntityRenderer<CoinFactoryBlock
                 item(coin, level, light, pile[i][0], 2.6f + (i / 3) * .13f, pile[i][1], pile[i][2]);
             }
         }
-        CoinTier job = f.getJobTier();
+        CoinTier job = f.visualTier();
         if (working && job != null) {
             ItemStack blank = new ItemStack(job.blank()), coin = new ItemStack(job.coin());
             float total = 0;

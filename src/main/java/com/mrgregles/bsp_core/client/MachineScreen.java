@@ -33,6 +33,8 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
     private static final int DIAL_X = 105, DIAL_Y = 39, DIAL_R = 15, GAUGE_X = 14, GAUGE_Y = 76, PORT_X = 196, PORT_Y = 32, STATUS_X = 284, POWER_X = 14, POWER_Y = 118, POWER_W = 38, POWER_H = 16;
     /** 0 = off, 1 = on; eased toward the real state every frame so the knob slides. */
     private float powerAnim = -1f;
+    /** Operator-only demo switch, in the free space left of the player inventory. */
+    private static final int DEMO_X = 10, DEMO_Y = MachineMenu.INV_Y + 2;
     /** Row height of the named-port list shown for multiblocks. */
     private static final int PROW = 17;
     /** Unfolded cube: column, row, face key. */
@@ -103,6 +105,10 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         }
         if (over(mx, my, x + POWER_X, y + POWER_Y, POWER_W, POWER_H)) {
             minecraft.gameMode.handleInventoryButtonClick(menu.containerId, MachineMenu.BTN_POWER);
+            return true;
+        }
+        if (OperatorDemo.over(mx, my, x + DEMO_X, y + DEMO_Y)) {
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, MachineMenu.BTN_DEMO);
             return true;
         }
         return super.mouseClicked(mx, my, button);
@@ -208,6 +214,7 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         g.fill(kx, py + 2, kx + 12, py + POWER_H - 2, 0xFFC9CED8);
         g.fill(kx + 1, py + 3, kx + 11, py + POWER_H - 3, 0xFF8A909C);
         g.fill(kx + 5, py + 4, kx + 7, py + POWER_H - 4, colour);                    // indicator stripe on the knob
+        OperatorDemo.draw(g, font, x + DEMO_X, y + DEMO_Y, machine != null && machine.isDemo(), mouseX, mouseY);
     }
 
     @Override
@@ -302,6 +309,9 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         }
         if (over(mouseX, mouseY, x + POWER_X, y + POWER_Y, POWER_W, POWER_H)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.hud.power_tip"), mouseX, mouseY);
+        }
+        if (OperatorDemo.over(mouseX, mouseY, x + DEMO_X, y + DEMO_Y)) {
+            g.renderTooltip(font, Component.translatable("gui.bsp_core.demo.tip"), mouseX, mouseY);
         }
         if (menu.fluidCapacity() > 0 && over(mouseX, mouseY, x + GAUGE_X, y + GAUGE_Y - 2, 140, 40)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.machine.tank", String.format("%,d", menu.fluid()), String.format("%,d", menu.fluidCapacity())), mouseX, mouseY);

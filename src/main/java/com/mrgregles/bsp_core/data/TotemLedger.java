@@ -57,6 +57,11 @@ public class TotemLedger extends SavedData {
         }
     }
 
+    /** Every player this server has recorded a grant for. */
+    public Set<UUID> allGranted() {
+        return Collections.unmodifiableSet(granted);
+    }
+
     /** Admin use: allow a player to be granted again. */
     public boolean clearGranted(UUID player) {
         boolean removed = granted.remove(player);
@@ -72,6 +77,7 @@ public class TotemLedger extends SavedData {
         recordRemoved(pos);
         placed.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
         setDirty();
+        com.mrgregles.bsp_core.storage.NetworkStorage.totemPlaced(owner, pos);
     }
 
     public void recordRemoved(GlobalPos pos) {
@@ -82,6 +88,7 @@ public class TotemLedger extends SavedData {
         placed.values().removeIf(Set::isEmpty);
         if (changed) {
             setDirty();
+            com.mrgregles.bsp_core.storage.NetworkStorage.totemRemoved(pos);
         }
     }
 

@@ -46,7 +46,7 @@ public class IllyriumRefineryRenderer extends MultiblockGhostRenderer<IllyriumRe
         float t = (r.getLevel().getGameTime() + partialTick) / 20f;
         boolean working = r.isWorking();
         float p = r.progressFraction();
-        float water = r.fluidCapacity() <= 0 ? 0 : Math.min(1f, r.fluidAmount() / (float) r.fluidCapacity());
+        float water = r.isDemo() ? 0.75f : r.fluidCapacity() <= 0 ? 0 : Math.min(1f, r.fluidAmount() / (float) r.fluidCapacity());
         ItemStack fs = r.filterStack();
         FilterItem fi = fs.getItem() instanceof FilterItem f ? f : null;
         int fc = fi == null ? OFF : FILTER[fi.tier.ordinal()];

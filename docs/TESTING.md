@@ -255,30 +255,36 @@ JEI is loaded in dev runs (`./gradlew runClient`).
 - [ ] `minecraft:chests/end_city_treasure` and `minecraft:chests/ancient_city` occasionally give a Diamond Shatter Coin.
 - [ ] No table ever gives a Netherite or Illyrium Shatter Coin.
 
-## Totem upgrade tree and new upgrades
-**Screen**
-- [ ] Right-click with the totem in the main hand: the tree opens with CARRIED (green), BASE (gold) and RAID (red) branches around the totem. Clicking a node selects it and the panel shows name, level pips, NOW and NEXT LEVEL effects and the buy button.
-- [ ] Carried upgrades cost XP levels, Raid upgrades cost coin value; Base upgrades say "Place the totem to buy Base upgrades". A bought node lights up; a maxed node fills in. The level updates immediately.
-- [ ] Right-click your placed totem: the same tree, and every upgrade can be bought there. Owner, steal status and wallet show under it. Nothing overlaps.
-- [ ] Another player's placed totem: levels are visible, buying is refused, and the Steal button shows.
-- [ ] As an operator: TOTEM and OPERATOR tabs. On OPERATOR the bar under the panel lowers (left half) or raises (right half) the selected upgrade, and Assign, Unclaim, Cancel steal, Finish steal and Reset buffs work.
+## Totem tiers and the upgrade tree
+Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the new level lists are used.
+
+**Tree and tiers**
+- [ ] In survival, buying a level or raising the tier lowers the XP number and the right coin count in the wallet row straight away, including coins kept outside the hotbar. In creative the wallet row reads "CREATIVE: everything is free" and every price reads "Free in creative", on the totem screens and the compass.
+- [ ] No two nodes on the tree touch or overlap, including the four around the centre.
+- [ ] A totem upgraded before this change (in hand or placed) shows Tier I with no levels after loading; a totem upgraded under the new system keeps everything across relog, pick-up and placing.
+- [ ] Right-click with the totem in hand: rings I to IV around the totem, five spokes. At Tier I only Mining Speed, Damage, Fortify and Healing Aura are outlined; everything else is dark. The wallet row shows XP and a count for each of the five coins.
+- [ ] The panel shows the selected upgrade's level, NOW and NEXT, and the price as a coin icon with a count plus XP. A Tier I level costs Copper coins.
+- [ ] After two levels the panel says the Tier I limit is reached. "Raise" costs 4 Copper coins and 15 XP levels; afterwards the centre reads II, ring II lights, and levels 3 and 4 cost Gold coins.
+- [ ] Swiftness opens only once Mining Speed is level 2 and the totem is Tier II; before that the panel says what is needed. The same along every path.
+- [ ] With too few of the right coin the reason names the coin and number; other coins are not accepted in its place.
+- [ ] Base upgrades in hand say "Place the totem to buy Base upgrades". At the placed totem the owner can buy everything and raise the tier; tier and levels survive picking up, placing and stealing.
+- [ ] Another player's placed totem: levels visible, buying refused, Steal button shown. Nothing overlaps in any state.
+- [ ] Operator tab: the bar under the panel lowers or raises the selected level, the small bar in the tier box lowers or raises the tier, and Assign, Unclaim, Cancel steal, Finish steal and Reset buffs work.
+- [ ] Changing a cost in `upgrades.costs` and rejoining changes the prices shown.
 
 **Carried (totem in the offhand)**
-- [ ] Swiftness: you move faster. Vitality: extra hearts appear and go when the totem leaves the offhand. Featherfall: less fall damage, none at level 4. Night Sight: steady night vision with no flicker.
+- [ ] Mining Speed, Damage, Swiftness, Vitality (hearts appear and go with the offhand), Featherfall, Night Sight (steady, no flicker).
+- [ ] Resistance removes a share of damage; even at level 8 you still take damage.
 
-**Base (totem placed; test with a second player or `/gamemode survival` on a second account)**
-- [ ] Ward: an intruder within range gets Weakness. The owner does not.
-- [ ] Alarm: an intruder is outlined and the owner gets one chat line per visit.
-- [ ] Sanctuary: no hostile mobs spawn naturally in range at night; spawn eggs and spawners still work.
-- [ ] Deadlock: the steal timer starts higher by the configured seconds.
-- [ ] Overclock: a BSP-Core machine in range finishes jobs faster (give it up to 5 seconds to notice).
+**Base (totem placed; test with a second player)**
+- [ ] Fortify, Healing Aura, Ward (Weakness on intruders), Alarm (outline plus one chat line per visit), Sanctuary (no natural hostile spawns), Deadlock (longer steal), Overclock (machines in range are faster within 5 seconds).
 
-**Raid (in the thief's offhand while starting a steal)**
-- [ ] Lockpick shortens the steal; Shroud delays the owner's warning message by the configured seconds.
-- [ ] With maximum Deadlock against no Lockpick the steal is never longer than 600 s; with maximum Lockpick it is never shorter than 60 s.
+**Raid (in the thief's offhand when the steal starts)**
+- [ ] Lockpick shortens the steal; Shroud delays the owner's warning.
+- [ ] A steal is never longer than 600 s or shorter than 60 s.
 
 **Always stealable**
-- [ ] At Fortify 5 an intruder can still mine blocks next to the totem, at one fifth speed. Explosions break nothing there, by design.
+- [ ] At Fortify 10 an intruder can still mine blocks next to the totem, at one fifth speed.
 
 ## Animated single-block machines
 - [ ] Tetrium Crucible, idle: dim burner window, dark coils, low melt, tip glowing. Working: burner glows orange (yellow on RF), coils light in sequence, the melt rises and turns pale near the end, six collar lamps fill, the tip flashes white at the end.
@@ -288,5 +294,38 @@ JEI is loaded in dev runs (`./gradlew runClient`).
 - [ ] Both look right in all four facings, and their inventory icons still show the complete machine.
 
 ## Totem Compass screen
+- [ ] The right-hand button reads "Shorten cooldown" and fits inside its frame. Under it is the price as a coin icon and "x4 Copper" (red when you do not have enough). Buying takes exactly those coins and nothing else; the next level asks for Gold.
 - [ ] Five coin tiles with the tracking time each adds; clicking one spends a coin and raises STORED. Start and the upgrade button grey out when they cannot be used. Header shows READY, TRACKING or COOLDOWN with a clock.
+
+## Demo mode (operators)
+- [ ] As an operator, every machine screen shows an OPERATOR box with DEMO OFF to the left of the inventory. A non-operator sees no box.
+- [ ] Switch it on with the machine empty: Tetrium Crucible (burner, coils, melt rising, lamps), Combination Forge (head striking, charge fusing), Illyrium Crucible (melt, stirring cross, rings, lava gauges part full), Illyrium Refinery (water, agitator, centrifuge), all looping.
+- [ ] Shatter Coin Factory: demo on any controller sets the whole joined machine going: belts, press, blanks turning into coins, changing coin every ten seconds. Unformed slices show nothing.
+- [ ] Nothing is produced or consumed in demo mode; a real job still runs normally with demo on or off.
+- [ ] Demo stays on after leaving and rejoining the world, and switches off cleanly.
+- [ ] A non-operator cannot switch demo, even by clicking where the button would be.
+
+## Network storage (needs a MySQL or MariaDB database)
+Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, DELETE on it.
+
+**Setup on one server**
+- [ ] With `storage.mode = "local"`, `/bsp storage status` says records are kept in this world only, and everything behaves as before.
+- [ ] Fill in host, port, database, user, password and a `serverId`; restart; `/bsp storage test` reports "Connected" and the four `bsp_` tables exist in the database. With a wrong password it reports that it could not connect, with the reason.
+- [ ] `/bsp storage migrate` reports grants added, totems and slices written; the rows are in the database; the world's own records are unchanged. Running it again refuses; `/bsp storage migrate force` runs again.
+- [ ] Set `mode = "mysql"`, restart: the log says it connected, and `/bsp storage status` shows MySQL.
+- [ ] Place and break a totem and a factory controller: rows appear in and disappear from `bsp_totems` and `bsp_factory_slices` with this server's id.
+- [ ] Stop the database while the server runs: the game keeps working, errors appear in the log, and it recovers when the database is back.
+
+**Across two servers sharing the database (different `serverId`)**
+- [ ] A new player joins server A and gets a totem and book; joining server B gives nothing. `/bsp totem reset <player>` on either lets them be granted again.
+- [ ] A player with slices on server A sees them counted on server B: the screen's "you own" count includes them (after rejoining B), and the limit of 10 is enforced across both.
+- [ ] Without logging out of server B, have slices added for the same player on server A (second client or direct database row), then place a controller on B that takes the total over 10: it is removed a moment later, returned to the inventory, and the limit message shows.
+- [ ] Migrating server B merges: players already granted in the database are reported as "already in the database".
+
+**Release jar**
+- [ ] On a plain Forge server with only `bsp-core-<version>.jar` (not `-slim`), `/bsp storage test` connects: the bundled driver is found.
+
+## Aura spheres and other models
+- [ ] Stand outside a Fortify or Healing sphere and look through it at a machine, a factory, another totem, a chest and an item frame on the far side: all of them stay visible, tinted by the sphere. The same from inside the sphere looking out.
+- [ ] The sphere itself still looks the same: a faint coloured bubble that pulses gently.
 

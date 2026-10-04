@@ -1,0 +1,161 @@
+<title>Totem Tier Tree Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. First the rules of the proposed tier system and its cost
+   tables, then three stacked cards, each a working mock of a tree layout for it, in the game's Holo HUD colours. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-gold:#ffd23a; --h-xp:#8fe04a; --h-bad:#ff6b5c;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:960px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:20px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:15px; margin:0; }
+h3{ margin:6px 0 0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:74ch; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p, .card li{ font-size:13px; color:var(--muted); max-width:78ch; } .card p{ margin:0; } .card ol{ margin:0; padding-left:20px; } .card b{ color:var(--fg); }
+.scroll{ overflow-x:auto; }
+table{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; }
+th,td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:middle; }
+th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+td.num{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; margin-right:2px; }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+/* ---- the in-game screen ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; gap:12px; color:var(--h-tq); font-size:12px; flex-wrap:wrap; }
+.wal{ display:flex; gap:10px; align-items:center; color:var(--h-fg); font-size:11px; } .wal .xp{ color:var(--h-xp); }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 9px; cursor:pointer; }
+.hb[aria-pressed="true"]{ border-color:var(--h-tq); color:var(--h-tq); } .hb:disabled{ opacity:.45; cursor:default; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); }
+.gate{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--h-slot); padding:6px 8px; flex-wrap:wrap; }
+.nd{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); cursor:pointer; padding:0; position:absolute; display:grid; place-items:center; }
+.nd.has{ border-color:var(--c); color:var(--c); } .nd.max{ background:var(--c); color:#0b0d11; } .nd.lock{ opacity:.38; } .nd.open{ border-color:var(--c); border-style:dashed; color:var(--c); }
+.nd[aria-pressed="true"]{ box-shadow:0 0 0 2px var(--h-bg),0 0 0 4px #fff; }
+.pips{ display:flex; gap:2px; flex-wrap:wrap; } .pips i{ width:6px; height:6px; background:var(--h-dim); } .pips i.on{ background:var(--c); } .pips i.cap{ outline:1px solid var(--h-muted); outline-offset:-1px; }
+.det{ display:flex; flex-direction:column; gap:7px; min-width:0; } .req{ color:var(--h-bad); } .cost{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.two{ display:flex; gap:14px; }
+/* A rings */
+.sky{ position:relative; width:400px; height:400px; flex:none; background:radial-gradient(circle,#1b2330 0%,#0c0e12 75%); }
+.ring{ position:absolute; border:2px solid var(--h-dim); border-radius:50%; } .ring.on{ border-color:#27566b; } .ring span{ position:absolute; left:50%; top:-8px; transform:translateX(-50%); background:var(--h-bg); padding:0 4px; color:var(--h-muted); font-size:9px; }
+.core{ position:absolute; left:200px; top:200px; width:34px; height:34px; margin:-17px; background:var(--h-tq); color:#0b0d11; display:grid; place-items:center; }
+/* B lanes */
+.lanes{ position:relative; height:262px; } .colh{ position:absolute; top:0; height:262px; width:118px; border-left:2px dashed var(--h-dim); box-sizing:border-box; padding:2px 6px; color:var(--h-muted); font-size:10px; } .colh.lockc{ background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(255,255,255,.03) 6px 12px); }
+.rowl{ position:absolute; left:0; font-size:9px; width:44px; }
+.ln{ position:absolute; height:2px; background:var(--h-dim); } .ln.on{ background:var(--h-tq); }
+.nb > span:first-child{ font-size:10px; white-space:nowrap; }
+.nb{ width:104px; height:36px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:3px; padding:0 6px; text-align:left; }
+/* C tabs */
+.tabs{ display:flex; gap:6px; flex-wrap:wrap; } .bands{ position:relative; width:400px; flex:none; }
+.band{ height:72px; border-top:2px dashed var(--h-dim); box-sizing:border-box; padding:2px 4px; color:var(--h-muted); font-size:9px; } .band.lockc{ background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(255,255,255,.03) 6px 12px); }
+.vl{ position:absolute; width:2px; background:var(--h-dim); } .vl.on{ background:var(--h-tq); }
+.big{ width:150px; height:44px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:4px; padding:0 8px; text-align:left; }
+</style>
+<div class="wrap">
+<h1>Totem Tier Tree Concepts</h1>
+<p class="lede">A longer upgrade path for the Shatter Totem. The totem itself now has five tiers, each paid for with a specific Shatter Coin; upgrades unlock each other along paths; and every price names the exact coin and how many. All numbers are a first proposal for you to change.</p>
+
+<section class="card"><h2>How the proposed system works</h2>
+<ol>
+<li><b>The totem has five tiers, I to V.</b> Each tier has its own coin: Copper, Gold, Diamond, Netherite, Illyrium. Raising the totem a tier costs coins of the tier you are leaving, plus XP levels.</li>
+<li><b>Upgrades appear at a tier.</b> Only four are available at Tier I. The rest appear at Tiers II, III and IV.</li>
+<li><b>Upgrades unlock each other.</b> Each sits on a path. The next one on the path opens when the one before it reaches level 2 and the totem is at the right tier.</li>
+<li><b>Each tier adds two levels.</b> An upgrade can gain two levels per totem tier from the tier it appears at, so a Tier I upgrade goes to level 10 and a Tier IV upgrade to level 4.</li>
+<li><b>Every level costs that tier's coin and XP.</b> Levels bought at Tier II cost Gold coins, at Tier III Diamond coins, and so on. Carried upgrades lean on XP; Base and Raid upgrades lean on coins.</li>
+</ol>
+<h3>Raising the totem's tier</h3><div class="scroll"><table id="tGate"></table></div>
+<h3>Cost of each level, by the tier it is bought at</h3><div class="scroll"><table id="tLevel"></table></div>
+<h3>Every upgrade</h3><div class="scroll"><table id="tUp"></table></div>
+<h3>Coins needed to max everything a tier offers</h3><div class="scroll"><table id="tTot"></table></div>
+</section>
+
+<section class="card"><h2>A. Tier Rings</h2><p>The totem in the centre and one ring per tier. Each path is a straight spoke, so nothing overlaps; an upgrade sits on the ring of the tier it appears at. Locked rings are dim. Closest to the tree you picked before, and shows the whole system at once, but names only appear in the side panel.</p>
+<div class="scroll"><div class="hud" id="hudA"></div></div></section>
+<section class="card"><h2>B. Tier Lanes</h2><p>A left-to-right tree. Columns are the totem's tiers, rows are the five paths, and each node shows its name and levels. Locked tiers are hatched. The easiest to read and to follow a path along; less of a centrepiece than the rings.</p>
+<div class="scroll"><div class="hud" id="hudB"></div></div></section>
+<section class="card"><h2>C. Branch Trees</h2><p>One branch at a time on a tab (Carried, Base, Raid), growing downward through tier bands. Nodes are large, with the name, level bar and next price on the node itself. The most detail per upgrade, but you only see one branch at once.</p>
+<div class="scroll"><div class="hud" id="hudC"></div></div></section>
+</div>
+<script>
+(function(){
+  const TEX={"copper": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmp/PSkLBJ4qtwBhmAIYh+DR3eSnBDUA2pGvCnP8YBmCzGd0AsBhQM9wAXLbj0oxsANgQbAbANJNlAIZiPF7AMACbbdhcg2IAcjjg0ow3EGEGwKKHkAEYtsMAciLB6RVcmtENQVaIDePNDxRpxmcQLnUA0xAmUVmGyD8AAAAASUVORK5CYII=", "gold": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmv8/qkLBnw7qgTHMAAxD8Gne0cYNNwDZkK4Jc/5jGIDNZnQDQBikGW4ALttxaUY2AGwINgNgmskyAF0xPi9gGIDNNmyuQTEAORxwacYbiDADYNFDyAAM22EAOZHg8gpOzeiGICvEhvHmB4o04zMIlzoAvTpLT298i8sAAAAASUVORK5CYII=", "diamond": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmk/+/o+C859/AmOYARiG4NOsvXIH3ABkQ7omzPmPYQA2m9ENAGGQZrgBuGzHpRnZALAh2AyAaSbLAHTF+LyAYQA227C5BsUA5HDApRlvIMIMgEUPIQMwbIcB5ESCyys4NaMbgqwQG8abHyjSjM8gXOoAuN9tYffehokAAAAASUVORK5CYII=", "netherite": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvNSMlCwt5M7GMMMwDAEn2YtFQ24AciGdE2Y8x/DAGw2oxsAwiDNcANw2Y5LM7IBYEOwGQDTTJYB6IrxeQHDAGy2YXMNigHI4YBLM95AhBkAix5CBmDYDgPIiQSXV3BqRjcEWSE2jDc/UKQZn0G41AEAI0XvpJldWt4AAAAASUVORK5CYII=", "illyrium": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmnv+P0PBkpc3gDHMAAxD8Gnm7q+AG4BsSNeEOf8xDMBmM7oBIAzSDDcAl+24NCMbADYEmwEwzWQZgK4YnxcwDMBmGzbXoBiAHA64NOMNRJgBsOghZACG7TCAnEhweQWnZnRDkBViw3jzA0Wa8RmESx0AsTo6iVRgTJ4AAAAASUVORK5CYII="};
+  const TIER=[{n:'I',coin:'copper',cn:'Copper'},{n:'II',coin:'gold',cn:'Gold'},{n:'III',coin:'diamond',cn:'Diamond'},{n:'IV',coin:'netherite',cn:'Netherite'},{n:'V',coin:'illyrium',cn:'Illyrium'}];
+  const GATE=[{n:4,xp:15},{n:4,xp:25},{n:4,xp:35},{n:4,xp:50}];           // to leave tier i: coins of tier i, XP levels
+  const COST={carried:{c:[1,1],xp:[4,6]},base:{c:[1,2],xp:[2,3]},raid:{c:[2,3],xp:[3,4]}}; // 1st and 2nd level bought in a tier; XP is multiplied by the tier number
+  const BR={carried:{n:'Carried',col:'#8fe04a'},base:{n:'Base',col:'#ffd23a'},raid:{n:'Raid',col:'#ff6b5c'}};
+  // p: path index (row / spoke), t: tier it appears at (0 = I), par: parent on the path, per: effect per level
+  const UP=[
+    {id:'mining',b:'carried',p:0,t:0,n:'Mining Speed',a:'MN',tx:'+{v}% mining speed',per:10,l:3},
+    {id:'swift',b:'carried',p:0,t:1,par:'mining',n:'Swiftness',a:'SW',tx:'+{v}% movement speed',per:2,l:1},
+    {id:'feather',b:'carried',p:0,t:2,par:'swift',n:'Featherfall',a:'FF',tx:'-{v}% fall damage',per:16,l:0},
+    {id:'night',b:'carried',p:0,t:3,par:'feather',n:'Night Sight',a:'NS',tx:'Night vision while held',per:0,l:0,max:1},
+    {id:'damage',b:'carried',p:1,t:0,n:'Damage',a:'DM',tx:'+{v}% melee damage',per:3,l:2},
+    {id:'resist',b:'carried',p:1,t:1,par:'damage',n:'Resistance',a:'RS',tx:'-{v}% damage taken',per:3,l:0},
+    {id:'vital',b:'carried',p:1,t:2,par:'resist',n:'Vitality',a:'VT',tx:'+{v} extra hearts',per:1,l:0},
+    {id:'fortify',b:'base',p:2,t:0,n:'Fortify',a:'FO',tx:'{v}% of blocks survive explosions',per:10,l:2},
+    {id:'alarm',b:'base',p:2,t:1,par:'fortify',n:'Alarm',a:'AL',tx:'Outlines intruders within {v} blocks',per:4,l:0},
+    {id:'ward',b:'base',p:2,t:2,par:'alarm',n:'Ward',a:'WD',tx:'Weakens intruders within {v} blocks',per:3,l:0},
+    {id:'dead',b:'base',p:2,t:3,par:'ward',n:'Deadlock',a:'DL',tx:'Steals take {v}s longer',per:30,l:0},
+    {id:'healing',b:'base',p:3,t:0,n:'Healing Aura',a:'HL',tx:'Heals {v} health a second',per:.5,l:1},
+    {id:'sanct',b:'base',p:3,t:1,par:'healing',n:'Sanctuary',a:'SC',tx:'No hostile spawns within {v} blocks',per:6,l:0},
+    {id:'over',b:'base',p:3,t:3,par:'sanct',n:'Overclock',a:'OC',tx:'Machines nearby {v}% faster',per:4,l:0},
+    {id:'pick',b:'raid',p:4,t:1,n:'Lockpick',a:'LP',tx:'Your steals take {v}s less',per:10,l:0},
+    {id:'shroud',b:'raid',p:4,t:2,par:'pick',n:'Shroud',a:'SH',tx:'Owner warned {v}s late',per:4,l:0},
+  ];
+  const PATHS=['Dig','Fight','Walls','Home','Raid'];
+  const S={tier:1,xp:40,w:{copper:9,gold:5,diamond:2,netherite:0,illyrium:0},sel:'swift',tab:'carried'};
+  const by=id=>UP.find(u=>u.id===id);
+  const max=u=>u.max||2*(5-u.t);
+  const cap=u=>S.tier<u.t?0:Math.min(max(u),u.max||2*(S.tier-u.t+1));           // highest level the current totem tier allows
+  const lvTier=(u,l)=>u.max?u.t:u.t+Math.floor(l/2);                           // tier at which level l+1 is bought
+  const cost=(u,l)=>{ if(l>=max(u)) return null; const t=lvTier(u,l), i=u.max?0:l%2; return {t,coin:TIER[t].coin,n:COST[u.b].c[i],xp:COST[u.b].xp[i]*(t+1)}; };
+  const open=u=>S.tier>=u.t&&(!u.par||by(u.par).l>=2);
+  const why=u=>{ if(S.tier<u.t) return 'Needs Totem Tier '+TIER[u.t].n; if(u.par&&by(u.par).l<2) return 'Needs '+by(u.par).n+' level 2'; const c=cost(u,u.l); if(!c) return null;
+    if(c.t>S.tier) return 'Level cap for Tier '+TIER[S.tier].n+'. Raise the totem to Tier '+TIER[c.t].n; if(S.w[c.coin]<c.n) return 'Needs '+c.n+' '+TIER[c.t].cn+' coin'+(c.n>1?'s':''); if(S.xp<c.xp) return 'Needs '+c.xp+' XP levels'; return null; };
+  const coin=(k,n)=>'<span><img class="ci" alt="'+k+' coin" src="'+TEX[k]+'">'+(n===''?'':'x'+n)+'</span>';
+  const eff=(u,l)=>l<1?'Not bought':u.tx.replace('{v}',+(u.per*l).toFixed(1));
+  const pips=u=>'<span class="pips" style="--c:'+BR[u.b].col+'">'+Array.from({length:max(u)},(_,i)=>'<i class="'+(i<u.l?'on':'')+(i===cap(u)-1&&cap(u)<max(u)?' cap':'')+'"></i>').join('')+'</span>';
+  const cls=u=>(open(u)?'':'lock ')+(u.l?'has ':open(u)?'open ':'')+(u.l>=max(u)?'max':'');
+  const head=()=>'<div class="top"><span>SHATTER TOTEM &nbsp; TIER '+TIER[S.tier].n+'</span><span class="wal"><span class="xp">XP '+S.xp+'</span>'+TIER.map(t=>coin(t.coin,S.w[t.coin])).join('')+'</span></div>';
+  function gate(pre){ if(S.tier>=4) return '<div class="gate"><span>Totem is at the top tier</span></div>'; const g=GATE[S.tier], k=TIER[S.tier].coin, ok=S.w[k]>=g.n&&S.xp>=g.xp;
+    return '<div class="gate"><span>Raise totem to Tier '+TIER[S.tier+1].n+' <small>opens the next tier and two more levels per upgrade</small></span><span class="cost">'+coin(k,g.n)+'<span class="xp" style="color:var(--h-xp)">'+g.xp+' XP</span><button type="button" class="hb go" id="'+pre+'gate" data-gate="1"'+(ok?'':' disabled')+'>Raise</button></span></div>'; }
+  function detail(pre){ const u=by(S.sel), c=cost(u,u.l), w=why(u);
+    return '<div class="det"><div><span style="color:'+BR[u.b].col+'">'+u.n+'</span> <small>'+BR[u.b].n+', appears at Tier '+TIER[u.t].n+'</small></div>'+pips(u)+'<small>Level '+u.l+' of '+max(u)+(cap(u)<max(u)&&open(u)?', up to '+cap(u)+' at this tier':'')+'</small>'
+      +'<div><small>NOW</small><br>'+eff(u,u.l)+'</div>'+(c?'<div><small>NEXT</small><br>'+eff(u,u.l+1)+'</div><div class="cost">'+coin(c.coin,c.n)+'<span style="color:var(--h-xp)">'+c.xp+' XP</span><button type="button" class="hb go" id="'+pre+'buy" data-buy="'+u.id+'"'+(w?' disabled':'')+'>Buy level</button></div>':'<div>MAXED</div>')
+      +(w?'<div class="req">'+w+'</div>':'')+'</div>'; }
+
+  function drawA(){ const cx=200, cy=200, R=[52,96,140,184], ANG=[-112,-68,22,68,180]; let h='';
+    R.forEach((r,i)=>h+='<span class="ring '+(S.tier>=i?'on':'')+'" style="left:'+(cx-r)+'px;top:'+(cy-r)+'px;width:'+(2*r-4)+'px;height:'+(2*r-4)+'px"><span>TIER '+TIER[i].n+'</span></span>');
+    let svg=''; UP.forEach(u=>{ const a=ANG[u.p]*Math.PI/180, r=R[u.t], x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; const pr=u.par?R[by(u.par).t]:0, px=cx+Math.cos(a)*pr, py=cy+Math.sin(a)*pr;
+      svg+='<line x1="'+px+'" y1="'+py+'" x2="'+x+'" y2="'+y+'" stroke="'+(u.l?'#19d3b0':'#2a2f3a')+'" stroke-width="2"/>';
+      h+='<button type="button" class="nd '+cls(u)+'" id="a-'+u.id+'" data-sel="'+u.id+'" aria-pressed="'+(S.sel===u.id)+'" aria-label="'+u.n+'" style="left:'+(x-15)+'px;top:'+(y-15)+'px;width:30px;height:30px;border-radius:50%;--c:'+BR[u.b].col+'">'+u.a+'</button>'; });
+    document.getElementById('hudA').innerHTML=head()+gate('a')+'<div class="two"><div class="sky"><svg width="400" height="400" style="position:absolute;inset:0" fill="none">'+svg+'</svg>'+h+'<span class="core">T</span></div>'+detail('a')+'</div>'; }
+  function drawB(){ const X0=48, CW=118, Y0=22, RH=48; let h='';
+    TIER.forEach((t,i)=>h+='<div class="colh '+(S.tier<i?'lockc':'')+'" style="left:'+(X0+i*CW)+'px">TIER '+t.n+(S.tier<i?' <span style="color:var(--h-bad)">locked</span>':'')+'</div>');
+    PATHS.forEach((p,i)=>h+='<span class="rowl" style="top:'+(Y0+i*RH+12)+'px;color:'+BR[UP.find(u=>u.p===i).b].col+'">'+p.toUpperCase()+'</span>');
+    UP.forEach(u=>{ const x=X0+u.t*CW+7, y=Y0+u.p*RH; if(u.par){ const px=X0+by(u.par).t*CW+7+104; h+='<span class="ln '+(u.l?'on':'')+'" style="left:'+px+'px;top:'+(y+17)+'px;width:'+(x-px)+'px"></span>'; }
+      h+='<button type="button" class="nd nb '+cls(u)+'" id="b-'+u.id+'" data-sel="'+u.id+'" aria-pressed="'+(S.sel===u.id)+'" style="left:'+x+'px;top:'+y+'px;--c:'+BR[u.b].col+'"><span>'+u.n+'</span>'+pips(u)+'</button>'; });
+    document.getElementById('hudB').innerHTML=head()+gate('b')+'<div class="lanes">'+h+'</div>'+detail('b'); }
+  function drawC(){ const list=UP.filter(u=>u.b===S.tab), paths=[...new Set(list.map(u=>u.p))]; let h='';
+    TIER.forEach((t,i)=>h+='<div class="band '+(S.tier<i?'lockc':'')+'">TIER '+t.n+' &nbsp; '+t.cn+' coins'+(S.tier<i?' &nbsp; <span style="color:var(--h-bad)">locked</span>':'')+'</div>');
+    list.forEach(u=>{ const x=70+paths.indexOf(u.p)*170, y=u.t*72+20; if(u.par){ const py=by(u.par).t*72+20+44; h+='<span class="vl '+(u.l?'on':'')+'" style="left:'+(x+74)+'px;top:'+py+'px;height:'+(y-py)+'px"></span>'; }
+      const c=cost(u,u.l); h+='<button type="button" class="nd big '+cls(u)+'" id="c-'+u.id+'" data-sel="'+u.id+'" aria-pressed="'+(S.sel===u.id)+'" style="left:'+x+'px;top:'+y+'px;--c:'+BR[u.b].col+'"><span>'+u.n+'</span>'+pips(u)+'</button>'; });
+    document.getElementById('hudC').innerHTML=head()+gate('c')+'<div class="tabs">'+Object.keys(BR).map(b=>'<button type="button" class="hb" id="tab-'+b+'" data-tab="'+b+'" aria-pressed="'+(S.tab===b)+'">'+BR[b].n+'</button>').join('')+'</div><div class="two"><div class="bands">'+h+'</div>'+detail('c')+'</div>'; }
+  function draw(){ drawA(); drawB(); drawC(); }
+  document.addEventListener('click',e=>{ const t=e.target.closest('button'); if(!t) return; const id=t.id;
+    if(t.dataset.sel){ S.sel=t.dataset.sel; } else if(t.dataset.tab){ S.tab=t.dataset.tab; const f=UP.find(u=>u.b===S.tab); if(by(S.sel).b!==S.tab) S.sel=f.id; }
+    else if(t.dataset.gate){ const g=GATE[S.tier]; S.w[TIER[S.tier].coin]-=g.n; S.xp-=g.xp; S.tier++; }
+    else if(t.dataset.buy){ const u=by(t.dataset.buy), c=cost(u,u.l); if(c&&!why(u)){ S.w[c.coin]-=c.n; S.xp-=c.xp; u.l++; } } else return;
+    draw(); const el=id&&document.getElementById(id); if(el) el.focus(); });
+
+  // ---- breakdown tables
+  document.getElementById('tGate').innerHTML='<tr><th>Step</th><th>Coins</th><th>XP levels</th><th>What it opens</th></tr>'+GATE.map((g,i)=>'<tr><td>Tier '+TIER[i].n+' to '+TIER[i+1].n+'</td><td class="num">'+coin(TIER[i].coin,g.n)+' '+TIER[i].cn+'</td><td class="num">'+g.xp+'</td><td>'+(UP.filter(u=>u.t===i+1).map(u=>u.n).join(', ')||'No new upgrades')+'; two more levels on everything already open</td></tr>').join('');
+  document.getElementById('tLevel').innerHTML='<tr><th>Bought at</th><th>Coin</th>'+Object.keys(BR).map(b=>'<th>'+BR[b].n+': 1st / 2nd level</th>').join('')+'</tr>'+TIER.map((t,i)=>'<tr><td>Tier '+t.n+'</td><td>'+coin(t.coin,'')+t.cn+'</td>'+Object.keys(BR).map(b=>'<td class="num">'+[0,1].map(k=>COST[b].c[k]+' coin + '+COST[b].xp[k]*(i+1)+' XP').join(' &nbsp;/&nbsp; ')+'</td>').join('')+'</tr>').join('');
+  document.getElementById('tUp').innerHTML='<tr><th>Upgrade</th><th>Branch</th><th>Appears at</th><th>Needs first</th><th>Levels</th><th>At max level</th></tr>'+UP.map(u=>'<tr><td>'+u.n+'</td><td>'+BR[u.b].n+'</td><td>Tier '+TIER[u.t].n+'</td><td>'+(u.par?by(u.par).n+' level 2':'Nothing')+'</td><td class="num">'+max(u)+'</td><td>'+eff(u,max(u))+'</td></tr>').join('');
+  const tot=TIER.map(()=>({c:0,xp:0})); UP.forEach(u=>{ for(let l=0;l<max(u);l++){ const c=cost(u,l); tot[c.t].c+=c.n; tot[c.t].xp+=c.xp; } });
+  document.getElementById('tTot').innerHTML='<tr><th>Tier</th><th>Coins for all levels</th><th>Coins to leave the tier</th><th>XP levels in total</th></tr>'+TIER.map((t,i)=>'<tr><td>Tier '+t.n+'</td><td class="num">'+coin(t.coin,tot[i].c)+' '+t.cn+'</td><td class="num">'+(GATE[i]?coin(t.coin,GATE[i].n):'none')+'</td><td class="num">'+(tot[i].xp+(GATE[i]?GATE[i].xp:0))+'</td></tr>').join('');
+  draw();
+})();
+</script>

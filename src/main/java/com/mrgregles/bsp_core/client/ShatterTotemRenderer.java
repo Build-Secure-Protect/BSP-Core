@@ -79,7 +79,9 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             int lvl = totem.getUpgradeLevel(b);
             int r = b.radius(lvl);
             if (r <= 0) continue;
-            VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
+            // The emissive translucent layer blends without writing depth. The ordinary translucent layer does write depth,
+            // which made the sphere hide machines and anything else drawn after it that stood behind its surface.
+            VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS));
             int rgb = UpgradeOrbColors.auraColor(b);
             float alpha = 0.10f + 0.04f * Mth.sin(time * 0.05f + b.ordinal());
             pose.pushPose();

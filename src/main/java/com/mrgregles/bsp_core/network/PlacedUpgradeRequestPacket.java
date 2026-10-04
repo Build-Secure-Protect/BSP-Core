@@ -22,11 +22,10 @@ public record PlacedUpgradeRequestPacket(BlockPos pos, int buffOrdinal) {
 
     public static void handle(PlacedUpgradeRequestPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
-        TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(msg.buffOrdinal);
-        if (player != null && buff != null
+        if (player != null
                 && player.distanceToSqr(msg.pos.getX() + 0.5, msg.pos.getY() + 0.5, msg.pos.getZ() + 0.5) <= 64
                 && player.level().getBlockEntity(msg.pos) instanceof ShatterTotemBlockEntity totem) {
-            totem.tryBuyPlacedUpgrade(player, buff);
+            totem.tryBuy(player, msg.buffOrdinal);
         }
         ctx.get().setPacketHandled(true);
     }

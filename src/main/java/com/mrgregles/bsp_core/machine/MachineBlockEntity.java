@@ -196,15 +196,31 @@ public abstract class MachineBlockEntity extends BlockEntity {
     }
 
     public boolean isWorking() {
-        return progress > 0;
+        return demo || progress > 0;
+    }
+
+    /** Demo mode: an operator has set the machine to play its working animation, whatever is in it. */
+    public boolean isDemo() {
+        return demo;
+    }
+
+    public void toggleDemo() {
+        demo = !demo;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
     /** True while fuel is burning. Synced to the client with the rest of the machine's state. */
     public boolean isBurning() {
-        return burnTime > 0;
+        return demo || burnTime > 0;
     }
 
     public float progressFraction() {
+        if (demo && level != null) {
+            return (level.getGameTime() % 160) / 160f; // an eight-second job, over and over
+        }
         return Math.min(1f, progress / (float) Math.max(1, workTime()));
     }
 
@@ -265,6 +281,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     /** True while a redstone signal is holding the machine paused. Server side. */
     private boolean powered;
+    private boolean demo;
     /** Speed multiplier from a nearby totem's Overclock aura, refreshed every few seconds. Server side. */
     private double overclock = 1.0;
 
@@ -490,6 +507,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         tag.putInt("BurnTotal", burnTotal);
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putBoolean("Enabled", enabled);
+        tag.putBoolean("Demo", demo);
         int[] modes = new int[6];
         for (int i = 0; i < 6; i++) modes[i] = sides[i].ordinal();
         tag.putIntArray("Sides", modes);
@@ -506,6 +524,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         burnTotal = tag.getInt("BurnTotal");
         energy.set(tag.getInt("Energy"));
         enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
+        demo = tag.getBoolean("Demo");
         int[] modes = tag.getIntArray("Sides");
         for (int i = 0; i < 6 && i < modes.length; i++) {
             sides[i] = SideMode.values()[Math.floorMod(modes[i], SideMode.values().length)];

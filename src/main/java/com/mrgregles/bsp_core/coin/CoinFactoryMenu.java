@@ -23,7 +23,7 @@ import java.util.List;
  * power switch and the owner line are shared.
  */
 public class CoinFactoryMenu extends AbstractContainerMenu {
-    public static final int WIDTH = 326, LANE_W = 30, BLANK_Y = 31, TRAY_Y = 75, INV_X = 82, INV_Y = 144, BTN_POWER = 0;
+    public static final int WIDTH = 326, LANE_W = 30, BLANK_Y = 31, TRAY_Y = 75, INV_X = 82, INV_Y = 144, BTN_POWER = 0, BTN_DEMO = 1;
     /** Per slice: tier + 1, progress in thousandths, seconds left (two shorts), Motivators, state. */
     private static final int PER = 6, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
 
@@ -194,6 +194,10 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
     public boolean clickMenuButton(Player player, int id) {
         if (origin != null && id == BTN_POWER) {
             origin.toggleEnabled();
+            return true;
+        }
+        if (origin != null && id == BTN_DEMO && player.hasPermissions(2)) {
+            origin.toggleDemo();
             return true;
         }
         return false;

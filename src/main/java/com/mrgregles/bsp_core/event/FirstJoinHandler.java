@@ -38,8 +38,29 @@ public final class FirstJoinHandler {
         if (ledger.hasBeenGranted(player.getUUID()) || PlayerPersistent.isTotemGranted(player)) {
             return;
         }
-        grant(player, ledger);
-        giveGuideBook(player);
+        if (!com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
+            grant(player, ledger);
+            giveGuideBook(player);
+            return;
+        }
+        // On a network the database decides: only the first server to record the player hands out a totem.
+        java.util.UUID id = player.getUUID();
+        com.mrgregles.bsp_core.storage.NetworkStorage.claimGrant(id, result -> {
+            if (result == com.mrgregles.bsp_core.storage.NetworkStorage.CLAIM_FAILED) {
+                return; // database unreachable: nothing recorded, so the next join tries again
+            }
+            if (result == com.mrgregles.bsp_core.storage.NetworkStorage.CLAIM_GRANTED_ELSEWHERE) {
+                ledger.markGranted(id); // remember locally, so this server does not ask again
+                PlayerPersistent.setTotemGranted(player, true);
+                return;
+            }
+            if (player.hasDisconnected()) {
+                com.mrgregles.bsp_core.storage.NetworkStorage.clearGrant(id); // left before it could be given: undo the record
+                return;
+            }
+            grant(player, ledger);
+            giveGuideBook(player);
+        });
     }
 
     /** Hands over the BSP Field Guide, if Patchouli is installed. */
