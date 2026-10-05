@@ -91,6 +91,12 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
         }
     }
 
+    /** Draws one aura sphere about the current origin, the way a totem's own are drawn. Used by the Totem Projector too. */
+    public static void auraSphere(MultiBufferSource buffers, PoseStack pose, float radius, int rgb, float alpha) {
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS_TEX);
+        sphere(buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS)), pose, sprite, radius, rgb, alpha);
+    }
+
     private static void cube(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float size, int rgb) {
         Matrix4f m = pose.last().pose();
         Matrix3f nm = pose.last().normal();

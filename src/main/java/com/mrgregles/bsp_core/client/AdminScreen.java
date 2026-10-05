@@ -27,7 +27,7 @@ public class AdminScreen extends Screen {
     private static final int W = 344, H = 210, BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, VIO = 0xFFB58CFF, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F,
             GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A2140;
     private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 12, ROWS = 14, DX = 130, TOTEM_Y = 62, TOTEM_H = 11, TOTEM_ROWS = 6,
-            BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 58, TAB_H = 13;
+            BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 46, TAB_H = 13;
     private static final long CONFIRM_MS = 4000;
 
     private AdminDataPacket data;
@@ -166,17 +166,28 @@ public class AdminScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int x = left(), y = top();
-        for (int i = 0; i < 2; i++) {
-            if (over(mx, my, x + W - 10 - (2 - i) * (TAB_W + 3) + 3, y + 6, TAB_W, TAB_H)) {
+        for (int i = 0; i < 3; i++) {
+            if (over(mx, my, x + W - 10 - (3 - i) * (TAB_W + 3) + 3, y + 6, TAB_W, TAB_H)) {
                 setTab(i);
                 return true;
             }
         }
-        if (over(mx, my, x + W - 10 - 2 * (TAB_W + 3) - 50, y + 6, 46, TAB_H)) {
+        if (over(mx, my, x + W - 10 - 3 * (TAB_W + 3) - 50, y + 6, 46, TAB_H)) {
             send(new AdminActionPacket(AdminActionPacket.REFRESH));
             return true;
         }
         boolean edit = data.canEdit();
+        if (tab == 2) {
+            for (int i = 0; i < data.decoyRanges().length && edit; i++) {
+                for (int k = 0; k < RANGE_STEPS.length; k++) {
+                    if (over(mx, my, x + rangeStepX(k), y + 60 + i * 20, 24, 16)) {
+                        send(new AdminActionPacket(AdminActionPacket.SET_DECOY_RANGE, new UUID(0, 0), "", new net.minecraft.core.BlockPos(i, data.decoyRanges()[i] + RANGE_STEPS[k], 0)));
+                        return true;
+                    }
+                }
+            }
+            return super.mouseClicked(mx, my, button);
+        }
         if (tab == 1) {
             if (edit && over(mx, my, x + LIST_X, y + 112, 150, BTN_H) && confirmed(AdminActionPacket.END_SEASON)) {
                 send(new AdminActionPacket(AdminActionPacket.END_SEASON));
@@ -280,20 +291,44 @@ public class AdminScreen extends Screen {
         if (!edit) {
             small(g, tr("read_only"), x + 14 + font.width(title), y + 11, GOLD & 0xFFFFFF);
         }
-        button(g, x + W - 10 - 2 * (TAB_W + 3) - 50, y + 6, 46, TAB_H, tr("refresh"), true, TQ, mouseX, mouseY);
-        for (int i = 0; i < 2; i++) {
-            int tx = x + W - 10 - (2 - i) * (TAB_W + 3) + 3;
+        button(g, x + W - 10 - 3 * (TAB_W + 3) - 50, y + 6, 46, TAB_H, tr("refresh"), true, TQ, mouseX, mouseY);
+        for (int i = 0; i < 3; i++) {
+            int tx = x + W - 10 - (3 - i) * (TAB_W + 3) + 3;
             g.fill(tx, y + 6, tx + TAB_W, y + 6 + TAB_H, tab == i ? VIO : DIM);
             g.fill(tx + 1, y + 7, tx + TAB_W - 1, y + 5 + TAB_H, tab == i ? BG : SLOT_BG);
-            Component label = tr(i == 0 ? "tab.players" : "tab.season");
+            Component label = tr(i == 0 ? "tab.players" : i == 1 ? "tab.season" : "tab.settings");
             small(g, label, tx + TAB_W / 2 - Math.round(font.width(label) * 0.375f), y + 10, tab == i ? VIO & 0xFFFFFF : MUTED);
         }
         if (tab == 1) {
             season(g, x, y, edit, mouseX, mouseY);
+        } else if (tab == 2) {
+            settings(g, x, y, edit, mouseX, mouseY);
         } else {
             players(g, x, y, edit, mouseX, mouseY);
         }
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    private static final int[] RANGE_STEPS = {-8, -1, 1, 8};
+
+    private static int rangeStepX(int k) {
+        return 150 + (k < 2 ? k * 26 : 52 + 34 + (k - 2) * 26);
+    }
+
+    /** Server settings an admin can change without editing the config file. */
+    private void settings(GuiGraphics g, int x, int y, boolean edit, int mouseX, int mouseY) {
+        g.drawString(font, tr("settings.decoy"), x + LIST_X, y + 30, VIO & 0xFFFFFF, false);
+        small(g, tr("settings.decoy_help"), x + LIST_X, y + 44, MUTED);
+        for (int i = 0; i < data.decoyRanges().length; i++) {
+            int ry = y + 60 + i * 20;
+            g.drawString(font, tr("settings.coils", i), x + LIST_X, ry + 4, TEXT, false);
+            for (int k = 0; k < RANGE_STEPS.length; k++) {
+                button(g, x + rangeStepX(k), ry, 24, 16, Component.literal((RANGE_STEPS[k] > 0 ? "+" : "") + RANGE_STEPS[k]), edit, TQ, mouseX, mouseY);
+            }
+            String v = Integer.toString(data.decoyRanges()[i]);
+            g.drawString(font, v, x + 150 + 52 + 17 - font.width(v) / 2, ry + 4, GOLD & 0xFFFFFF, false);
+        }
+        small(g, tr("settings.saved"), x + LIST_X, y + 146, MUTED);
     }
 
     private void season(GuiGraphics g, int x, int y, boolean edit, int mouseX, int mouseY) {

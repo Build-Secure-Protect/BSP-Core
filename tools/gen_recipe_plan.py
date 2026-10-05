@@ -45,6 +45,8 @@ ITEMS = {
     "factory_frame": ("Factory Frame", "b", "FF", "block/factory_frame.png"), "factory_press": ("Factory Press", "b", "FP", "block/factory_press.png"),
     "factory_blank_hatch": ("Factory Blank Hatch", "b", "BH", "block/factory_blank_hatch.png"),
     "factory_power_port": ("Factory Power Port", "b", "PP", "block/factory_power_port.png"), "factory_motivator": ("Motivator", "b", "Mo"),
+    "magnetic_centrifuge": ("Magnetic Centrifuge Controller", "b", "MC", "block/magnetic_centrifuge_front.png"), "centrifuge_casing": ("Centrifuge Casing", "b", "CC", "block/centrifuge_casing.png"),
+    "centrifuge_rotor": ("Centrifuge Rotor", "b", "CR", "block/centrifuge_rotor.png"), "centrifuge_power_port": ("Centrifuge Power Port", "b", "CP", "block/centrifuge_power_port.png"),
     "coin_vault": ("Coin Vault", "b", "CV", "block/coin_vault_front.png"), "score_screen": ("Score Screen", "b", "SS", "block/score_screen_front.png"),
     # proposed new component items
     "slag_brick": ("Slag Brick", "n", "SB"), "tetrium_plate": ("Tetrium Plate", "n", "TP"), "machine_chassis": ("Machine Chassis", "n", "MC"),
@@ -90,6 +92,11 @@ R = {
     "resonance_crystal": (1, [" A ", "AUA", " A "], {"A": "amethyst_shard", "U": "pure_illyrium_dust"}, "Crafting"),
     "illyrium_processor": (1, ["NRN", "RKR", "NRN"], {"N": "illyrium_nugget", "R": "redstone", "K": "basic_control_circuit"}, "Crafting"),
     "factory_motivator": (1, [" Y ", "WZW", "PPP"], {"Y": "resonance_crystal", "W": "tetrium_coil", "Z": "illyrium_processor", "P": "tetrium_plate"}, "Crafting"),
+    # --- Magnetic Centrifuge (nothing here may need Magnatite or Carbon Dust: the first centrifuge is what makes them)
+    "centrifuge_casing": (4, ["PIP", "ICI", "PIP"], {"P": "tetrium_plate", "I": "iron_ingot", "C": "machine_chassis"}, "Crafting"),
+    "centrifuge_rotor": (1, ["WIW", "IMI", "WIW"], {"W": "tetrium_coil", "I": "dirty_illyrium_ingot", "M": "drive_motor"}, "Crafting"),
+    "centrifuge_power_port": (1, ["PWP", "ACA", "PRP"], {"P": "tetrium_plate", "W": "tetrium_coil", "A": "gold_ingot", "C": "machine_chassis", "R": "redstone_block"}, "Crafting"),
+    "magnetic_centrifuge": (1, ["PGP", "MKM", "PDP"], {"P": "tetrium_plate", "G": "glass_pane", "M": "drive_motor", "K": "basic_control_circuit", "D": "diamond"}, "Crafting"),
     # --- base blocks
     "coin_vault": (1, ["PAP", "PKP", "PCP"], {"P": "tetrium_plate", "A": "gold_ingot", "K": "basic_control_circuit", "C": "machine_chassis"}, "Crafting"),
     "score_screen": (2, ["GGG", "WKW", "PPP"], {"G": "glass_pane", "W": "tetrium_coil", "K": "basic_control_circuit", "P": "tetrium_plate"}, "Crafting"),
@@ -114,6 +121,8 @@ GROUPS = [
      ["factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "shatter_coin_factory"]),
     ("Motivator", "Top tier: the only part that needs refined Illyrium, so speeding a factory up is the reward for finishing the whole chain.",
      ["resonance_crystal", "illyrium_processor", "factory_motivator"], ["factory_motivator"]),
+    ("Magnetic Centrifuge", "Mid tier: Tetrium parts, and a Rotor that needs Dirty Illyrium Ingots, so it comes after the Illyrium Crucible. Each stacked layer needs another Rotor and eight Casing.",
+     ["centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port", "magnetic_centrifuge"], ["centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port", "magnetic_centrifuge"]),
     ("Base blocks", "Early tier: Tetrium parts only, so a first Coin Vault and a Score Screen are within reach as soon as the Combination Forge is running. The Admin Rack has no recipe.",
      ["coin_vault", "score_screen"], ["coin_vault", "score_screen"]),
     ("Reworked existing recipes", "The RF Upgrades now use Tetrium Coils and the Illyrium Forge Upgrade an Illyrium Processor.",
@@ -124,6 +133,8 @@ BUILDS = [
     ("Illyrium Refinery (14 blocks)", {"illyrium_casing": 8, "illyrium_core": 1, "item_hatch": 1, "illyrium_glass": 2, "refinery_pump": 1, "illyrium_refinery": 1}),
     ("One factory slice (6 blocks)", {"factory_frame": 2, "factory_press": 1, "factory_blank_hatch": 1, "factory_power_port": 1, "shatter_coin_factory": 1}),
     ("One Motivator", {"factory_motivator": 1}),
+    ("Magnetic Centrifuge, one layer (9 blocks)", {"centrifuge_casing": 5, "centrifuge_rotor": 1, "item_hatch": 1, "centrifuge_power_port": 1, "magnetic_centrifuge": 1}),
+    ("Each extra centrifuge layer (9 blocks)", {"centrifuge_casing": 8, "centrifuge_rotor": 1}),
     ("A full 3 x 3 x 3 Coin Vault (27 blocks)", {"coin_vault": 27}),
     ("A 5 x 3 Score Screen (15 panels)", {"score_screen": 15}),
 ]

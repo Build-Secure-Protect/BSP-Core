@@ -452,10 +452,7 @@ public class CoinVaultBlockEntity extends BlockEntity {
     }
 
     private void tell(ServerLevel sl, UUID id, Component message) {
-        ServerPlayer p = sl.getServer().getPlayerList().getPlayer(id);
-        if (p != null) {
-            p.displayClientMessage(message, false);
-        }
+        com.mrgregles.bsp_core.storage.NetworkStorage.tell(sl.getServer(), id, message); // follows them to another server of the network
     }
 
     /** Tells the owner and everyone on the access list. */

@@ -38,6 +38,10 @@ public final class TotemDeathHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
+        if (com.mrgregles.bsp_core.zone.ZoneHandler.inTotemZone(player)) {
+            com.mrgregles.bsp_core.zone.ZoneHandler.holdTotems(player); // in an Anti Totem zone the player keeps them through the death
+            return;
+        }
         List<ItemStack> totems = TotemInventories.removeAll(player);
         if (totems.isEmpty()) {
             return;

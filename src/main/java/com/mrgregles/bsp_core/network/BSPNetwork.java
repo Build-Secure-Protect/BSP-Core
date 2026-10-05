@@ -44,6 +44,24 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(PrizeSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(PrizeSyncPacket::encode).decoder(PrizeSyncPacket::decode)
                 .consumerMainThread(PrizeSyncPacket::handle).add();
+        CHANNEL.messageBuilder(ZoneOpenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ZoneOpenPacket::encode).decoder(ZoneOpenPacket::decode)
+                .consumerMainThread(ZoneOpenPacket::handle).add();
+        CHANNEL.messageBuilder(ZoneConfigPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ZoneConfigPacket::encode).decoder(ZoneConfigPacket::decode)
+                .consumerMainThread(ZoneConfigPacket::handle).add();
+        CHANNEL.messageBuilder(DecoyFakeOpenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DecoyFakeOpenPacket::encode).decoder(DecoyFakeOpenPacket::decode)
+                .consumerMainThread(DecoyFakeOpenPacket::handle).add();
+        CHANNEL.messageBuilder(DecoyStealPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DecoyStealPacket::encode).decoder(DecoyStealPacket::decode)
+                .consumerMainThread(DecoyStealPacket::handle).add();
+        CHANNEL.messageBuilder(GeneratorArrayPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GeneratorArrayPacket::encode).decoder(GeneratorArrayPacket::decode)
+                .consumerMainThread(GeneratorArrayPacket::handle).add();
+        CHANNEL.messageBuilder(GeneratorOpenPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(GeneratorOpenPacket::encode).decoder(GeneratorOpenPacket::decode)
+                .consumerMainThread(GeneratorOpenPacket::handle).add();
         CHANNEL.messageBuilder(VaultAccessPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(VaultAccessPacket::encode).decoder(VaultAccessPacket::decode)
                 .consumerMainThread(VaultAccessPacket::handle).add();

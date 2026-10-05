@@ -165,10 +165,10 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     private final java.util.Set<UUID> alarmed = new java.util.HashSet<>();
 
     private void warnOwner(ServerLevel serverLevel) {
-        ServerPlayer ownerPlayer = owner == null || steal == null ? null : serverLevel.getServer().getPlayerList().getPlayer(owner.uuid());
-        if (ownerPlayer != null) {
-            ownerPlayer.displayClientMessage(Component.translatable("message.bsp_core.steal.warning", steal.thiefName(),
-                    worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.RED, ChatFormatting.BOLD), false);
+        if (owner != null && steal != null) {
+            // reaches the owner on whichever server of the network they are on
+            com.mrgregles.bsp_core.storage.NetworkStorage.tell(serverLevel.getServer(), owner.uuid(), Component.translatable("message.bsp_core.steal.warning", steal.thiefName(),
+                    worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
         }
     }
 
@@ -192,11 +192,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 60, 0, true, false, true));
                 inside.add(p.getUUID());
                 if (alarmed.add(p.getUUID())) {
-                    ServerPlayer ownerPlayer = level.getServer().getPlayerList().getPlayer(owner.uuid());
-                    if (ownerPlayer != null) {
-                        ownerPlayer.displayClientMessage(Component.translatable("message.bsp_core.alarm", p.getGameProfile().getName(),
-                                worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.YELLOW), false);
-                    }
+                    com.mrgregles.bsp_core.storage.NetworkStorage.tell(level.getServer(), owner.uuid(), Component.translatable("message.bsp_core.alarm",
+                            p.getGameProfile().getName(), worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.YELLOW));
                 }
             }
         }
@@ -258,10 +255,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         blast(level, thief);
         thief.displayClientMessage(Component.translatable("message.bsp_core.steal.success", previous == null ? "?" : previous.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), false);
         if (previous != null) {
-            ServerPlayer prevPlayer = level.getServer().getPlayerList().getPlayer(previous.uuid());
-            if (prevPlayer != null) {
-                prevPlayer.displayClientMessage(Component.translatable("message.bsp_core.steal.lost", finished.thiefName()).withStyle(ChatFormatting.RED, ChatFormatting.BOLD), false);
-            }
+            com.mrgregles.bsp_core.storage.NetworkStorage.tell(level.getServer(), previous.uuid(),
+                    Component.translatable("message.bsp_core.steal.lost", finished.thiefName()).withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
         }
         BSPCore.LOGGER.info("{} stole {}'s totem at {}", finished.thiefName(), previous == null ? "nobody" : previous.name(), worldPosition);
     }
@@ -295,10 +290,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             thief.displayClientMessage(Component.translatable(reasonKey).withStyle(ChatFormatting.RED), false);
         }
         if (owner != null) {
-            ServerPlayer ownerPlayer = level.getServer().getPlayerList().getPlayer(owner.uuid());
-            if (ownerPlayer != null) {
-                ownerPlayer.displayClientMessage(Component.translatable("message.bsp_core.steal.defended", steal.thiefName()).withStyle(ChatFormatting.GREEN), false);
-            }
+            com.mrgregles.bsp_core.storage.NetworkStorage.tell(level.getServer(), owner.uuid(),
+                    Component.translatable("message.bsp_core.steal.defended", steal.thiefName()).withStyle(ChatFormatting.GREEN));
         }
         BSPCore.LOGGER.info("Steal of totem at {} by {} ended: {}", worldPosition, steal.thiefName(), reasonKey);
         steal = null;

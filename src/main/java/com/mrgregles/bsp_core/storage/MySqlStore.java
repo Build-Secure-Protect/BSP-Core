@@ -28,7 +28,8 @@ import java.util.UUID;
  * row per server that has migrated), {@code vault_totals} (what each player keeps in Coin Vaults,
  * by server), {@code state} (the shared season state, as keys and values), {@code season_claims}
  * (who has been given their fresh totem for which season) and {@code pending_items} (prize and
- * reward items waiting for a player to log in somewhere).
+ * reward items waiting for a player to log in somewhere) and {@code notices} (chat messages for a
+ * player who is on another server, such as a steal warning; dropped if not collected in 15 minutes).
  */
 final class MySqlStore implements AutoCloseable {
     private final String host, database, user, password, prefix, serverId;
@@ -120,6 +121,8 @@ final class MySqlStore implements AutoCloseable {
                     + "PRIMARY KEY (server_id, uuid), INDEX (uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("state") + " (k VARCHAR(64) NOT NULL PRIMARY KEY, v MEDIUMTEXT NOT NULL)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("season_claims") + " (season INT NOT NULL, uuid CHAR(36) NOT NULL, PRIMARY KEY (season, uuid))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("notices") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, "
+                    + "message MEDIUMTEXT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX (uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("pending_items") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, "
                     + "item MEDIUMTEXT NOT NULL, INDEX (uuid))");
         }
@@ -232,6 +235,60 @@ final class MySqlStore implements AutoCloseable {
                 }
             }
             try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("pending_items") + " WHERE id = ?")) {
+                for (long id : ids) {
+                    ps.setLong(1, id);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            c.commit();
+            return out;
+        } catch (SQLException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    // ------------------------------------------------------------------ messages for players on other servers
+
+    void addNotice(UUID player, String messageJson) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("notices") + " (uuid, message) VALUES (?, ?)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, messageJson);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Takes out, and returns, the messages waiting for the given players, and drops messages nobody collected in 15 minutes. */
+    Map<UUID, java.util.List<String>> takeNotices(Collection<UUID> players) throws SQLException {
+        Map<UUID, java.util.List<String>> out = new java.util.HashMap<>();
+        try (Statement st = conn().createStatement()) {
+            st.executeUpdate("DELETE FROM " + t("notices") + " WHERE created_at < NOW() - INTERVAL 15 MINUTE");
+        }
+        if (players.isEmpty()) {
+            return out;
+        }
+        String marks = String.join(",", java.util.Collections.nCopies(players.size(), "?"));
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            java.util.List<Long> ids = new java.util.ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement("SELECT id, uuid, message FROM " + t("notices") + " WHERE uuid IN (" + marks + ") ORDER BY id FOR UPDATE")) {
+                int i = 1;
+                for (UUID p : players) {
+                    ps.setString(i++, p.toString());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ids.add(rs.getLong(1));
+                        out.computeIfAbsent(UUID.fromString(rs.getString(2)), k -> new java.util.ArrayList<>()).add(rs.getString(3));
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("notices") + " WHERE id = ?")) {
                 for (long id : ids) {
                     ps.setLong(1, id);
                     ps.addBatch();

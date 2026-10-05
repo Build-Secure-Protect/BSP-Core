@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/magnetic_centrifuge"
+    },
+    "facing=east": {
+      "model": "bsp_core:block/magnetic_centrifuge",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "bsp_core:block/magnetic_centrifuge",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "bsp_core:block/magnetic_centrifuge",
+      "y": 270
+    }
+  }
+}

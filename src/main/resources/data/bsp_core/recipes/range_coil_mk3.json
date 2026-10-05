@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LCL",
+    "CKC",
+    "LDL"
+  ],
+  "key": {
+    "L": {
+      "item": "bsp_core:illyrium_nugget"
+    },
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "K": {
+      "item": "bsp_core:range_coil_mk2"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    }
+  },
+  "result": {
+    "item": "bsp_core:range_coil_mk3"
+  }
+}

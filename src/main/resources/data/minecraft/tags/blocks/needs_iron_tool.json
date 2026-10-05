@@ -3,6 +3,13 @@
   "values": [
     "bsp_core:tetrium_ore",
     "bsp_core:deepslate_tetrium_ore",
-    "bsp_core:coin_vault"
+    "bsp_core:coin_vault",
+    "bsp_core:magnetic_centrifuge",
+    "bsp_core:centrifuge_casing",
+    "bsp_core:centrifuge_rotor",
+    "bsp_core:centrifuge_power_port",
+    "bsp_core:decoy_power_base",
+    "bsp_core:totem_generator",
+    "bsp_core:totem_projector"
   ]
 }

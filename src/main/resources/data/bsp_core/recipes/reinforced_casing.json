@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PIP",
+    "ICI",
+    "PIP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "I": {
+      "item": "bsp_core:magnatite_ingot"
+    },
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:reinforced_casing"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "DMD",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:magnatite_nugget"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "M": {
+      "item": "bsp_core:magnatite_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:magnatite_core_cable",
+    "count": 8
+  }
+}

@@ -1,0 +1,79 @@
+{
+ "multipart": [
+  {
+   "apply": {
+    "model": "bsp_core:block/totem_generator"
+   }
+  },
+  {
+   "when": {
+    "north": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_join"
+   }
+  },
+  {
+   "when": {
+    "north": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_ports"
+   }
+  },
+  {
+   "when": {
+    "east": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_join",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "east": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_ports",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "south": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_join",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "south": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_ports",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "west": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_join",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "west": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/totem_generator_ports",
+    "y": 270
+   }
+  }
+ ]
+}

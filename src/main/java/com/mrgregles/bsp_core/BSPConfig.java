@@ -99,7 +99,14 @@ public final class BSPConfig {
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ADMINS, MODERATORS;
     public static final ForgeConfigSpec.IntValue VAULT_LOCKPICK_SECONDS, VAULT_LOCK_LEVEL_SECONDS, VAULT_LOCKPICK_RADIUS, VAULT_ILLYRIUM_SAFE, VAULT_ALARM_COINS,
-            VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS;
+            VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, STORAGE_NOTICE_SECONDS,
+            CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING,
+            DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
+            GENERATOR_RF, PROJECTOR_RF, GENERATOR_CHANNELS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, GENERATOR_REACH;
+    public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> DECOY_RANGES;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CENT_NUGGETS_MIN, CENT_NUGGETS_MAX, CENT_CHARGE_ODDS;
     public static final ForgeConfigSpec.DoubleValue VAULT_LOCKPICK_SHARE, VAULT_XP_RATE, VAULT_TETRIUM_RATE, VAULT_CAP_DAYS, VAULT_ILLYRIUM_PERIOD_DAYS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> VAULT_LOCK_COINS;
 
@@ -324,6 +331,39 @@ public final class BSPConfig {
                 .defineListAllowEmpty(List.of("moderators"), List::of, o -> o instanceof String);
         BUILDER.pop();
 
+        BUILDER.comment("The Magnetic Centrifuge. Lists have one entry for each number of stacked layers, 1 to 6.").push("centrifuge");
+        CENT_SEPARATE_TICKS = BUILDER.comment("Ticks to separate one Magnatite Ore (20 ticks = 1 second).").defineInRange("separateTicks", 900, 1, 1_000_000);
+        CENT_NUGGETS_MIN = BUILDER.comment("Fewest Magnatite Nuggets from one ore, by layers.").defineList("nuggetsMin", List.of(3, 3, 4, 5, 6, 7), BSPConfig::isPositiveInt);
+        CENT_NUGGETS_MAX = BUILDER.comment("Most Magnatite Nuggets from one ore, by layers.").defineList("nuggetsMax", List.of(3, 4, 5, 6, 7, 9), BSPConfig::isPositiveInt);
+        CENT_CHARGE_TICKS = BUILDER.comment("Ticks for one try at charging a Magnatite Ingot.").defineInRange("chargeTicks", 900, 1, 1_000_000);
+        CENT_CHARGE_TICKS_FULL = BUILDER.comment("Ticks for one try with all six layers.").defineInRange("chargeTicksFullStack", 500, 1, 1_000_000);
+        CENT_CHARGE_ODDS = BUILDER.comment("A try succeeds one time in this many, by layers.").defineList("chargeOdds", List.of(6, 5, 4, 3, 2, 2), BSPConfig::isPositiveInt);
+        CENT_RF_SEPARATING = BUILDER.comment("RF per tick, per layer, while separating ore.").defineInRange("rfPerTickSeparating", 60, 0, 1_000_000);
+        CENT_RF_CHARGING = BUILDER.comment("RF per tick, per layer, while charging.").defineInRange("rfPerTickCharging", 240, 0, 1_000_000);
+        BUILDER.pop();
+
+        BUILDER.comment("Decoy Totems: fake totems that mislead Totem Compasses.").push("decoy");
+        DECOY_RANGES = BUILDER.comment("Blocks within which a rival-tracking compass is fooled, with 0, 1, 2 and 3 Range Coils fitted. Also editable in the admin panel.")
+                .defineList("ranges", List.of(24, 40, 64, 96), BSPConfig::isPositiveInt);
+        DECOY_RF = BUILDER.comment("RF per tick a decoy draws from its Decoy Power Base. Decoys are meant to be costly to run.").defineInRange("rfPerTick", 100, 0, 1_000_000);
+        DECOY_MAX = BUILDER.comment("Most decoys a player may have placed at once.").defineInRange("maxPerPlayer", 5, 1, 100);
+        DECOY_REPAIR_INGOTS = BUILDER.comment("Magnatite Ingots it costs the owner to repair a broken decoy.").defineInRange("repairIngots", 2, 0, 64);
+        DECOY_EFFECT_SECONDS = BUILDER.comment("How long the Hex, Poison and Fatigue traps last.").defineInRange("effectSeconds", 30, 1, 3600);
+        DECOY_BLAST_POWER = BUILDER.comment("Strength of the Blast trap (TNT is 4). It never breaks blocks.").defineInRange("blastPower", 3.0, 0.0, 16.0);
+        DECOY_WARP_DISTANCE = BUILDER.comment("Furthest the Warp trap throws a thief, in blocks.").defineInRange("warpDistance", 30, 4, 256);
+        BUILDER.pop();
+
+        BUILDER.comment("Totem Generators, Totem Projectors and Totem Cables.").push("projector");
+        GENERATOR_RF = BUILDER.comment("RF per tick a Totem Generator uses while sending.").defineInRange("generatorRfPerTick", 200, 0, 1_000_000);
+        PROJECTOR_RF = BUILDER.comment("RF per tick a Totem Projector uses while projecting.").defineInRange("projectorRfPerTick", 100, 0, 1_000_000);
+        GENERATOR_CHANNELS = BUILDER.comment("How many of the totem's powers a generator sends at once. The Channel Expander adds one.").defineInRange("channels", 2, 1, 6);
+        GENERATOR_REACH = BUILDER.comment("How far a generator can push, in cable blocks, with 0, 1, 2 and 3 Reach Amplifiers.")
+                .defineList("generatorReach", List.of(15, 25, 40, 80), BSPConfig::isPositiveInt);
+        CABLE_REACH = BUILDER.comment("The longest run each cable carries: Tetrium Core, Magnatite Core, Illyrium Core, Charged Illyrium Core.",
+                        "A run works only if it is within both the generator's reach and the reach of the weakest cable in it.")
+                .defineList("cableReach", List.of(15, 25, 40, 80), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
         BUILDER.comment("The Coin Vault: a safe for Shatter Coins. Vault blocks of one owner that touch join into one vault of up to 3 x 3 x 3.").push("vault");
         VAULT_LOCKPICK_SECONDS = BUILDER.comment("Seconds a player without access needs to pick the lock of a vault with no lock upgrade.")
                 .defineInRange("lockpickSeconds", 120, 5, 3600);
@@ -378,6 +418,9 @@ public final class BSPConfig {
         STORAGE_PASSWORD = BUILDER.comment("Database password. This file is plain text: keep it private.").define("password", "");
         STORAGE_TABLE_PREFIX = BUILDER.comment("Prefix for BSP-Core's table names (letters, digits and underscores).").define("tablePrefix", "bsp_");
         STORAGE_SSL = BUILDER.comment("Connect with SSL/TLS.").define("useSsl", false);
+        STORAGE_NOTICE_SECONDS = BUILDER.comment("How often this server collects messages left for its players by other servers, such as \"your totem is being stolen\".",
+                        "Lower is quicker to warn but asks the database more often.")
+                .defineInRange("noticeSeconds", 3, 1, 60);
         BUILDER.pop();
 
         BUILDER.comment("How the totem is drawn").push("visuals");

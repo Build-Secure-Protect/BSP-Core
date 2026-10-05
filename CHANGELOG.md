@@ -4,7 +4,15 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.0] - 2026-10-04
+
+This section also holds everything that was in 0.1.0. The changes since the 0.1.0 jar are listed separately in `docs/CURSEFORGE_CHANGELOG_0.2.0.md`.
+
 ### Fixed
+- A multiblock with the wrong block in one of its places (for example a Factory Power Port where the Magnetic Centrifuge needs a Centrifuge Power Port) used to look complete but never form, with nothing to say why. The wrong block is now boxed in red with the right block floating above it, and right-clicking the controller names the wrong block, its position and the block it should be.
+- A Totem Projector that is linked to a generator but has no RF of its own now glows amber instead of staying dark, and right-clicking any projector says what it is doing: no signal, no power, or which powers it is projecting.
 - Creating a world no longer crashes when AllTheModium is not installed. The mining-dimension ore files referenced its biome directly; they now use an optional biome tag.
 - Operator buttons on the totem panel now update the panel immediately. Unclaim and Reset buffs could leave the panel showing the old owner or levels, because an empty update was being dropped before it reached the client.
 - Upgrade tree now shows the new level immediately after buying; the held totem is re-sent to the client because the upgrade menu has no slots of its own.
@@ -28,6 +36,38 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 - Per-face side configuration on the factory.
 
 ### Added
+- **Totem Generator, Totem Projector and Totem Cables.**
+  - **Totem Generator** ("Siphon Plinth"): goes under a placed Shatter Totem, or beside a generator already connected, up to nine in a three by three with the totem on the middle one. Joined generators merge into one slab with three cable ports on every outer edge, and a ring of light rises around the totem, widening with the array. Right-clicking a joined array shows a three by three grid; clicking a generator opens its own screen.
+  - Each generator sends two of the totem's base powers (Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock), or three with a **Channel Expander**, to its own projector. "Power List" screen with a switch per power and the level that arrives.
+  - **Totem Projector** ("Totem Obelisk"): recreates those powers as a second aura for the totem's current owner, including the Fortify and Healing spheres. It is not a totem and cannot be stolen.
+  - **Totem Cables** ("Linked Segments") in four kinds with a longest run each: Tetrium Core 15 blocks, Magnatite Core 25, Illyrium Core 40, Charged Illyrium Core 80. Kinds can be mixed; the weakest in the run sets the limit. Cables plug into a generator's sides and bottom and any face of a projector.
+  - A generator pushes 15 blocks, or 25, 40 and 80 with **Reach Amplifiers** Mk I, II and III. A run works when it is within both the generator's reach and the cable's. Strength falls from full at the generator to half at the end of the working length; levels round down, never below 1.
+  - Both blocks need RF: 200 per tick for a generator and 100 for a projector by default. Joined generators share their RF, so one cable into any of them powers them all if it can deliver enough. The ring only shows while the generators have power.
+  - Only the totem's owner (after a steal, the thief) can open the generators connected to it.
+  - Every recipe uses Carbon Dust. Guide book entry "Generators and Projectors", JEI information pages, an advancement, and config section `projector`.
+- **Decoy Totems.** A craftable fake totem ("Hollow Idol") that stands on a **Decoy Power Base** ("Coil Plinth") and draws 100 RF per tick from it.
+  - While powered, a Totem Compass that is tracking rivals within the decoy's range points at the decoy instead of a real totem. The owner's own compass is never fooled.
+  - Everyone but the owner sees an ordinary Shatter Totem, with a totem-style panel and Steal button on right-click. The owner sees the idol with a faint ghost of the totem around it. Without power, or broken, everyone sees the bare idol.
+  - Pressing Steal on a decoy sets off its trap charges (which are used up) and counts as a hit. It breaks when it has taken more hits than it has Reinforced Casings, and does nothing until its owner repairs it with 2 Magnatite Ingots. The owner is told, on any server of a network.
+  - Socket Tree screen with crafted parts: Range Coil Mk I, II, III (24 blocks, then 40, 64, 96); Blast, Hex, Poison, Fatigue and Warp Charges; a Trap Amplifier that opens a second charge socket; two Reinforced Casings.
+  - Five decoys per player. Only the owner can mine a working decoy; anyone can mine a broken or unpowered one.
+  - New items: Magnet Core and the ten socket parts, all craftable. Guide book entry "Decoy Totems", JEI information pages and an advancement. Config section `decoy`.
+- The admin panel has a third tab, Settings, where an admin changes the four Decoy Totem compass ranges; changes are written to the server config at once.
+- **Magnetic Centrifuge** ("Armoured Spin Drum"). A multiblock one block high and three by three: Magnetic Centrifuge Controller, Centrifuge Rotor, five Centrifuge Casing, an Item Hatch and a Centrifuge Power Port. Up to five more layers (a Rotor ringed by eight Casing) stack on top.
+  - It always needs RF: 60 RF per tick per layer while separating and 240 per layer while charging by default.
+  - Separating: one Magnatite Ore becomes Magnatite Nuggets and one Carbon Dust in 45 seconds. Nuggets per ore by layers: 3, 3 to 4, 4 to 5, 5 to 6, 6 to 7, and 7 to 9 with six.
+  - Charging, with a Copper Tetrium Coil fitted: a Magnatite Ingot has a 1 in 6 chance per 45 second try to become a Charged Magnatite Ingot, improving to 1 in 5, 4, 3 and 2 with two to five layers; with six layers the chance stays 1 in 2 and a try takes 25 seconds. A failed try keeps the ingot.
+  - Ghost blocks, the Assembly Guide, a JEI category with both jobs, information pages, guide book entries ("Magnatite", "Magnetic Centrifuge"), crafting recipes for all four blocks and three advancements. All numbers are in the `centrifuge` config section.
+- Machines can now be built to require RF outright (used by the centrifuge), and a machine's screen can show one extra status line.
+- **Magnatite.** A new metal between Tetrium and Illyrium. Magnatite Ore and Deepslate Magnatite Ore generate deep in the Overworld (Y -64 to 8, a little more common than diamond; also in the AllTheModium Mining dimension) and need a diamond pickaxe. New items: Magnatite Nugget, Magnatite Ingot, Charged Magnatite Ingot, Carbon Dust and the Copper Tetrium Coil. Nine nuggets make an ingot by hand or in the Combination Forge. The ore is processed in the Magnetic Centrifuge. Assets and data come from `tools/gen_magnatite_assets.py`.
+- **Anti Totem Block** (admin only, creative tab, "Warden Cube" look). Keeps Shatter Totems and chosen BSP blocks out of a box around it. Only an admin can place it, open its settings or remove it; it cannot be mined, pushed or blown up.
+  - Settings ("Rule List"): a Rules tab listing "Shatter Totem: placing", "Shatter Totem: dropping" and every BSP block by name, each allowed or blocked on its own, with a switch per group; and a Zone tab with six distances (north, south, east, west, up, down, 0 to 256 blocks each), a map from above, and nine outline colours.
+  - A newly placed block keeps out totems and all machines until changed. Blocks already in the zone are left alone. Admins are never restricted. Overlapping zones add up.
+  - Players can carry a totem through a zone. Dying in a zone that blocks totems, the player keeps the totem and has it again on respawn. Logging out inside, or a totem that would place itself inside, puts the totem at the nearest spot outside the zone.
+  - An admin holding an Anti Totem Block in the main hand sees every zone's outline in its own colour.
+- **Warnings that follow the owner across servers** (needs network storage). A steal warning, "your totem was stolen", "steal failed", the totem Alarm and the Coin Vault alarm and robbery messages now reach a player who is on another server of the network, marked with the name of the server they came from. Each server collects messages for its players every `storage.noticeSeconds` (3 by default). A message nobody collects within 15 minutes is dropped. New table `notices`.
+- `docs/GUIDE_BOOK_TEXT.md`: all of the guide book's wording in one file for review, rebuilt by `tools/gen_guide_book.py`.
+- Guide book pictures: `tools/make_book_images.py` turns screenshots in `docs/book_screenshots/` into picture pages of the finished multiblocks. A machine with no picture yet keeps its block layout page.
 - **Network storage now also covers vaults, seasons and prizes** (experimental, never run against a live database). With `storage.mode = "mysql"`:
   - Coin Vault totals are published by each server. The 27-block vault limit and the admin panel's vault figures cover the whole network. Every vault block placed or broken is written to the database at once, and each placement is checked against it: a block that would put the player over the limit is taken back. Interest is still earned and redeemed on the server where the coins are; the Illyrium Ingot allowance is paid by one server only.
   - The season number, last winner, prize rows, holder reward row and its interval are shared. Ending a season or running a full reset on one server is picked up by the others within `scoring.refreshSeconds`: they remove their own totems (and coins, for a full reset).

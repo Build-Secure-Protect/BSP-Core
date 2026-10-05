@@ -30,6 +30,26 @@ public final class TotemAuras {
 
     public static void clear() {
         LOADED.clear();
+        PROJECTORS.clear();
+    }
+
+    /** Loaded Totem Projectors: while one is projecting, it answers the same questions a placed totem does. */
+    private static final Map<ResourceKey<Level>, Map<BlockPos, com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity>> PROJECTORS = new ConcurrentHashMap<>();
+
+    public static void register(ServerLevel level, com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity projector) {
+        PROJECTORS.computeIfAbsent(level.dimension(), k -> new ConcurrentHashMap<>()).put(projector.getBlockPos().immutable(), projector);
+    }
+
+    public static void unregisterProjector(ServerLevel level, BlockPos pos) {
+        var map = PROJECTORS.get(level.dimension());
+        if (map != null) {
+            map.remove(pos);
+        }
+    }
+
+    private static java.util.Collection<com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity> projectors(ServerLevel level) {
+        var map = PROJECTORS.get(level.dimension());
+        return map == null ? java.util.List.of() : map.values();
     }
 
     /**
@@ -37,11 +57,17 @@ public final class TotemAuras {
      * (owners may work on their own base). 0 if none.
      */
     public static int fortifyLevelAt(ServerLevel level, BlockPos pos, @Nullable UUID actor) {
-        Map<BlockPos, ShatterTotemBlockEntity> map = LOADED.get(level.dimension());
-        if (map == null || map.isEmpty()) {
-            return 0;
-        }
+        Map<BlockPos, ShatterTotemBlockEntity> map = LOADED.getOrDefault(level.dimension(), Map.of());
         int best = 0;
+        for (var projector : projectors(level)) {
+            int lvl = projector.isRemoved() ? 0 : projector.level(TotemUpgrades.Buff.FORTIFY);
+            if (lvl > best && !(actor != null && projector.isOwner(actor))) {
+                int r = TotemUpgrades.Buff.FORTIFY.radius(lvl);
+                if (pos.distSqr(projector.getBlockPos()) <= (double) r * r) {
+                    best = lvl;
+                }
+            }
+        }
         for (ShatterTotemBlockEntity totem : map.values()) {
             if (totem.isRemoved()) {
                 continue;
@@ -68,11 +94,17 @@ public final class TotemAuras {
 
     /** Highest level of a ranged base upgrade (Sanctuary, Overclock, ...) whose reach covers {@code pos}; 0 if none. */
     public static int levelInReach(ServerLevel level, BlockPos pos, TotemUpgrades.Buff buff) {
-        Map<BlockPos, ShatterTotemBlockEntity> map = LOADED.get(level.dimension());
-        if (map == null || map.isEmpty()) {
-            return 0;
-        }
+        Map<BlockPos, ShatterTotemBlockEntity> map = LOADED.getOrDefault(level.dimension(), Map.of());
         int best = 0;
+        for (var projector : projectors(level)) {
+            int lvl = projector.isRemoved() ? 0 : projector.level(buff);
+            if (lvl > best) {
+                int r = buff.reach(lvl);
+                if (pos.distSqr(projector.getBlockPos()) <= (double) r * r) {
+                    best = lvl;
+                }
+            }
+        }
         for (ShatterTotemBlockEntity totem : map.values()) {
             int lvl = totem.isRemoved() ? 0 : totem.getUpgradeLevel(buff);
             if (lvl > best) {

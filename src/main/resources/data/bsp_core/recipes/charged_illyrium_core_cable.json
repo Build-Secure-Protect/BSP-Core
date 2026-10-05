@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CDC",
+    "DID",
+    "CDC"
+  ],
+  "key": {
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:charged_illyrium_core_cable",
+    "count": 4
+  }
+}

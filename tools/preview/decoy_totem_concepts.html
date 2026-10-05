@@ -1,0 +1,145 @@
+<title>Decoy Totem Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<style>
+.slotrow{ display:flex; gap:4px; } .us{ width:40px; height:40px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; display:grid; place-items:center; font-size:9px; text-align:center; color:var(--h-muted); cursor:pointer; }
+.us.on{ border-color:var(--c); color:var(--c); } .ring{ width:120px; height:120px; border-radius:50%; border:2px solid var(--h-dim); position:relative; flex:none; }
+.node{ position:absolute; width:26px; height:26px; margin:-13px; box-sizing:border-box; border:2px solid var(--h-dim); background:var(--h-slot); display:grid; place-items:center; font-size:9px; cursor:pointer; color:var(--h-muted); } .node.on{ border-color:var(--c); color:var(--c); }
+</style>
+<div class="wrap">
+<section><h1>Decoy Totem Concepts</h1>
+<p class="lede">A fake totem you craft and place to mislead Totem Compasses. It needs power from below, can be trapped, and breaks when an enemy tries to steal it. Three looks for the block and three layouts for its screen. Drag the 3D views to turn them. Nothing here is in the mod yet.</p>
+<div class="card"><div class="ctl"><label class="chk" for="broken"><input id="broken" type="checkbox"> Show the broken state (after a steal attempt, until repaired)</label>
+<label class="chk" for="unpowered"><input id="unpowered" type="checkbox"> Show it without power</label></div></div></section>
+
+<section><h2>1. The block</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. The screen</h2>
+<p class="lede">What the owner sees on right-click. The main difference between the three is how upgrades are added.</p>
+<div class="card"><h3>A. Status Card</h3><p>One small panel: power, compass range, trap and a Repair button. Upgrades are bought here with Shatter Coins, one button each. Simple, but there is little room to grow.</p><div class="scroll"><div class="hud" style="--c:#7fb3ff;width:520px" id="sA"></div></div></div>
+<div class="card"><h3>B. Trap Bench</h3><p>Upgrades are crafted items put into three slots, like RF Upgrades in a machine: a range coil, a trap charge and a casing. Take them out to move them to another decoy. Fits the "hard to craft" idea best, and gives the new Magnatite parts more uses.</p><div class="scroll"><div class="hud" style="--c:#7fb3ff;width:600px" id="sB"></div></div></div>
+<div class="card"><h3>C. Mini Tree</h3><p>A small version of the totem's upgrade tree: three short paths (Range, Trap, Toughness) bought with Shatter Coins and XP. Familiar, and it makes a decoy an investment, but an upgraded decoy cannot hand its upgrades to another.</p><div class="scroll"><div class="hud" style="--c:#7fb3ff;width:600px" id="sC"></div></div></div>
+</section>
+
+<section><h2>How a decoy would work</h2>
+<div class="flow">
+<div class="card"><h3>Fooling compasses</h3><ol><li>A Totem Compass <b>tracking rivals</b> that comes within the decoy's range points at the decoy instead of a real totem.</li><li>The owner's own compass is never fooled by their own decoys.</li><li>Once the decoy is broken or loses power, compasses go back to real totems.</li></ol></div>
+<div class="card"><h3>Power and limits</h3><ol><li>Needs <b>RF fed in from the block below</b>; with none it goes dark and fools nobody.</li><li><b>5 decoys</b> per player.</li><li>Cannot be stolen. It gives no score and no buffs.</li></ol></div>
+<div class="card"><h3>Steal attempts and traps</h3><ol><li>An enemy who tries to steal it finds out it is fake: the decoy <b>breaks</b>.</li><li>A trapped decoy also <b>explodes</b> or <b>curses</b> the thief (a debuff) as it breaks.</li><li>A broken decoy does nothing until its owner <b>repairs</b> it with materials.</li></ol></div>
+</div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,GOLD=0xe3b341,MAG=0x4a6fa5,MAG2=0x7fb3ff,RED=0xff4b3c,DARK=0x0c1116;
+  const flags=()=>({broken:document.getElementById('broken').checked, off:document.getElementById('unpowered').checked});
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(op){ m.material.transparent=true; m.material.opacity=op; m.material.depthWrite=false; } m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function makeView(el,build){ const view=document.createElement('div'); view.className='view'; el.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.7)); const d=new THREE.DirectionalLight(0xffffff,.8); d.position.set(6,14,-10); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let o=build(g)||{}, ry=Math.PI+.7, rx=.3, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.003; if(o.tick) o.tick(t); const D=74, T=[8,6,8];
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return { rebuild(){ scene.remove(g); g=new THREE.Group(); scene.add(g); o=build(g)||{}; } }; }
+  // the power block underneath, shared by all three: a cable socket that lights when RF arrives
+  function feed(g,off){ bx(g,[0,-16,0],[16,0,16],HULL2); bx(g,[1,-15,-.2],[15,-1,0],HULL); bx(g,[5,-11,-.5],[11,-5,-.2],TRIM); bx(g,[6.5,-9.5,-.7],[9.5,-6.5,-.5],off?DARK:GOLD,!off); bx(g,[6,-1,6],[10,0.4,10],off?MID:GOLD,!off); }
+  // a simple stand-in for the real Shatter Totem's kneeling figure, to compare silhouettes
+  function figure(g,c,eye,glow){ const p=[]; p.push(bx(g,[3,0,3],[13,2,13],HULL2)); p.push(bx(g,[5,2,5],[11,9,11],c)); p.push(bx(g,[4.2,5,4.6],[5.4,9.5,11.4],c)); p.push(bx(g,[10.6,5,4.6],[11.8,9.5,11.4],c));
+    p.push(bx(g,[5.5,9,5.5],[10.5,13.5,10.5],c)); p.push(bx(g,[6.3,10.6,5.2],[7.4,11.6,5.5],eye,glow)); p.push(bx(g,[8.6,10.6,5.2],[9.7,11.6,5.5],eye,glow)); p.push(bx(g,[6.6,5,3.6],[9.4,7.8,5],eye,glow)); return p; }
+  const builds={
+   a(g){ const f=flags(); feed(g,f.off); const live=!f.broken&&!f.off; bx(g,[3,0,3],[13,2,13],HULL2);
+     // an open cage in the outline of a totem, with the magnet core hanging where the orb would be
+     for(const [x,z] of [[5,5],[10.2,5],[5,10.2],[10.2,10.2]]) bx(g,[x,2,z],[x+.8,f.broken?7:13,z+.8],TRIM);
+     for(const y of f.broken?[4.5]:[4.5,8.5,12.2]){ bx(g,[5,y,5],[11,y+.6,5.6],MAG); bx(g,[5,y,10.4],[11,y+.6,11],MAG); bx(g,[5,y,5],[5.6,y+.6,11],MAG); bx(g,[10.4,y,5],[11,y+.6,11],MAG); }
+     if(f.broken){ bx(g,[9,2,11],[14,2.8,12],TRIM); bx(g,[2,2,6],[3,2.8,11],MAG); }
+     const core=new THREE.Group(); core.position.set(8,f.broken?3.2:8,8); g.add(core); const c1=bx(core,[-1.6,-1.6,-1.6],[1.6,1.6,1.6],live?MAG2:MID,live);
+     return {tick(t){ if(live){ core.rotation.y=t*1.4; core.rotation.x=t*.9; core.position.y=8+Math.sin(t*2)*.5; c1.material.color.setHex(MAG2).multiplyScalar(.7+.3*Math.sin(t*4)); } }}; },
+   b(g){ const f=flags(); feed(g,f.off); const live=!f.broken&&!f.off; bx(g,[2,0,2],[14,2,14],HULL2); bx(g,[4,2,4],[12,3,12],TRIM); bx(g,[6.5,3,6.5],[9.5,f.broken?6:11,9.5],HULL);
+     const top=new THREE.Group(); top.position.set(8,f.broken?3.4:12.5,f.broken?3:8); if(f.broken) top.rotation.x=1.2; g.add(top);
+     // a horseshoe magnet: two poles and a bridge
+     bx(top,[-3.2,0,-1],[-1.4,4,1],live?RED:MID,live); bx(top,[1.4,0,-1],[3.2,4,1],live?MAG2:MID,live); bx(top,[-3.2,-1.6,-1],[3.2,0,1],PANEL);
+     const arcs=[]; if(live) for(let i=0;i<3;i++){ const a=new THREE.Mesh(new THREE.TorusGeometry(2.3+i*1.3,.14,6,24,Math.PI),new THREE.MeshBasicMaterial({color:MAG2,transparent:true})); a.position.set(0,4,0); top.add(a); arcs.push(a); }
+     return {tick(t){ if(live){ top.rotation.y=t*.7; arcs.forEach((a,i)=>a.material.opacity=.25+.75*Math.max(0,Math.sin(t*3-i*.9))); } }}; },
+   c(g){ const f=flags(); feed(g,f.off); const live=!f.broken&&!f.off; const parts=figure(g,live?GOLD:MID,live?TQ:DARK,live);
+     if(f.broken){ parts[4].position.set(13,1.5,4); parts[4].rotation.z=.9; parts[5].visible=parts[6].visible=false; bx(g,[6,9,6],[10,9.4,10],MAG,false); bx(g,[7,9.4,7],[9,10.6,9],MAG2,true); }
+     return {tick(t){ if(live){ const k=Math.sin(t*23)>.93||Math.sin(t*7.3)>.985; parts.slice(1,5).forEach(m=>m.material.color.setHex(k?MAG:GOLD)); } }}; } };
+  const cards=[['A. Hollow Idol','An open metal cage in the rough outline of a totem, with the magnet core turning inside where the orb would be. Up close it is clearly a machine; from a distance the outline could pass.','a'],
+    ['B. Lodestone Spire','A pedestal with a horseshoe magnet turning on top, throwing off field lines. Makes no attempt to look like a totem: the trick is all in the compass.','b'],
+    ['C. Mirror Totem','A copy of the Shatter Totem that looks real, gold and all, except that it flickers to bare Magnatite grey now and then. Fools the eye as well as the compass, until someone looks closely or tries to steal it.','c']];
+  const host=document.getElementById('blocks'), views=[];
+  for(const [name,text,k] of cards){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; host.appendChild(c); views.push(makeView(c,builds[k])); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); }
+  for(const id of ['broken','unpowered']) document.getElementById(id).addEventListener('change',()=>{ views.forEach(v=>v.rebuild()); draw(); });
+
+  // ------------------------------------------------------------------ screens (working mock-ups)
+  const st={range:1,trap:0,tough:0,slots:[1,0,0]}, TRAPS=['None','Blast','Hex'], RANGE=[24,40,64,96];
+  const status=()=>{ const f=flags(); return f.broken?'<span style="color:var(--h-bad)">BROKEN</span>':f.off?'<span style="color:var(--h-gold)">NO POWER</span>':'<span style="color:var(--h-tq)">ACTIVE</span>'; };
+  const bar=p=>'<div class="bar" style="width:140px"><i style="width:'+p+'%"></i></div>';
+  function draw(){ const f=flags(), repair=f.broken?'<button type="button" class="hb go">Repair: 2 Magnatite Ingots</button>':'';
+    document.getElementById('sA').innerHTML='<div class="top"><span>DECOY TOTEM</span><span>'+status()+'</span></div>'
+      +'<div class="row">RF '+bar(f.off?0:72)+' <small>'+(f.off?'0':'20')+' RF/t from below</small></div>'
+      +'<div class="row">Compass range: '+RANGE[st.range]+' blocks <button type="button" class="hb" data-up="range">Upgrade: 4 Gold coins</button></div>'
+      +'<div class="row">Trap: '+TRAPS[st.trap]+' <button type="button" class="hb" data-up="trap">Change: 4 Diamond coins</button></div>'
+      +'<div class="row">'+repair+'<small>Decoys placed: 3 of 5</small></div>';
+    const SL=[['RANGE COIL',st.slots[0]],['TRAP CHARGE',st.slots[1]],['CASING',st.slots[2]]];
+    document.getElementById('sB').innerHTML='<div class="top"><span>DECOY TOTEM</span><span>'+status()+'</span></div><div class="two"><div class="grow" style="display:flex;flex-direction:column;gap:8px">'
+      +'<div class="row">RF '+bar(f.off?0:72)+'</div><div>Compass range: '+RANGE[st.slots[0]?2:0]+' blocks</div><div>Trap: '+(st.slots[1]?'Blast':'None')+'</div><div>Survives: '+(st.slots[2]?'2 steal attempts':'1 steal attempt')+'</div>'+repair+'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px"><small>UPGRADE SLOTS (click to fit or remove)</small><div class="slotrow">'+SL.map((s,i)=>'<button type="button" class="us'+(s[1]?' on':'')+'" data-slot="'+i+'" aria-pressed="'+!!s[1]+'">'+s[0]+'</button>').join('')+'</div>'
+      +'<small>Each is a crafted item:<br>Range Coil, Blast Charge or Hex Charge, Reinforced Casing.</small><small>Decoys placed: 3 of 5</small></div></div>';
+    const N=[['R1',75,66,'range',1],['R2',75,38,'range',2],['R3',75,12,'range',3],['BL',47,118,'trap',1],['HX',22,142,'trap',2],['T1',103,118,'tough',1],['T2',128,142,'tough',2]];
+    document.getElementById('sC').innerHTML='<div class="top"><span>DECOY TOTEM</span><span>'+status()+'</span></div><div class="two"><div style="position:relative;width:150px;height:170px;flex:none"><div class="node on" style="left:75px;top:94px;--c:#7fb3ff;width:34px;margin-left:-17px">CORE</div>'
+      +N.map(n=>'<button type="button" class="node'+((n[3]==='trap'?st.trap===n[4]:st[n[3]]>=n[4])?' on':'')+'" style="left:'+n[1]+'px;top:'+n[2]+'px" data-node="'+n[3]+':'+n[4]+'">'+n[0]+'</button>').join('')+'</div>'
+      +'<div class="grow" style="display:flex;flex-direction:column;gap:8px"><div class="row">RF '+bar(f.off?0:72)+'</div><div>Range path (up): '+RANGE[st.range]+' blocks</div><div>Trap path (left): '+TRAPS[st.trap]+'</div><div>Toughness path (right): survives '+(st.tough+1)+' attempt'+(st.tough?'s':'')+'</div>'
+      +'<small>Each step costs Shatter Coins and XP, like the totem tree.</small>'+repair+'<small>Decoys placed: 3 of 5</small></div></div>';
+    document.querySelectorAll('[data-up]').forEach(el=>el.onclick=()=>{ if(el.dataset.up==='range') st.range=(st.range+1)%4; else st.trap=(st.trap+1)%3; draw(); });
+    document.querySelectorAll('[data-slot]').forEach(el=>el.onclick=()=>{ st.slots[+el.dataset.slot]^=1; draw(); });
+    document.querySelectorAll('[data-node]').forEach(el=>el.onclick=()=>{ const [k,v]=el.dataset.node.split(':'); st[k]=st[k]===+v?+v-1:+v; if(k==='trap'&&st.trap<0) st.trap=0; draw(); }); }
+  draw();
+})();
+</script>

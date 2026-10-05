@@ -35,7 +35,7 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
 
     /** Order in which block types are placed within a layer. */
     private static final List<String> ORDER = List.of("illyrium_core", "illyrium_casing", "illyrium_glass", "lava_pylon", "item_hatch", "refinery_pump",
-            "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port");
+            "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "centrifuge_rotor", "centrifuge_casing", "centrifuge_power_port");
 
     private static String path(Block block) {
         var key = ForgeRegistries.BLOCKS.getKey(block);
@@ -67,6 +67,7 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
             case "illyrium_crucible", "illyrium_casing", "illyrium_core", "lava_pylon", "item_hatch" -> ModBlocks.ILLYRIUM_CRUCIBLE.get();
             case "illyrium_refinery", "illyrium_glass", "refinery_pump" -> ModBlocks.ILLYRIUM_REFINERY.get();
             case "shatter_coin_factory", "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "factory_motivator" -> ModBlocks.COIN_FACTORY.get();
+            case "magnetic_centrifuge", "centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port" -> ModBlocks.MAGNETIC_CENTRIFUGE.get();
             default -> null;
         };
         if (!(controller instanceof net.minecraft.world.level.block.EntityBlock entity)) {

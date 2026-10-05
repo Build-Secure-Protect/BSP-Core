@@ -226,6 +226,15 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         Component st = Component.translatable("gui.bsp_core.hud." + state);
         g.drawString(font, st, imageWidth - 10 - font.width(st), 8, state.equals("working") || state.equals("ready") ? TQ & 0xFFFFFF : 0xFF6B5C, false);
 
+        Component extra = machine == null ? null : machine.statusLine();
+        if (extra != null) {
+            g.pose().pushPose();
+            g.pose().translate(imageWidth - 10 - font.width(extra) * 0.75f, 18, 0);
+            g.pose().scale(0.75f, 0.75f, 1f);
+            g.drawString(font, extra, 0, 0, MUTED, false);
+            g.pose().popPose();
+        }
+
         // chevrons either side of the dial, running toward the output while working
         int phase = working ? (int) (System.currentTimeMillis() / 180 % 3) : -1;
         for (int i = 0; i < 3; i++) {

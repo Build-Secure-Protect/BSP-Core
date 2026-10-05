@@ -24,9 +24,15 @@ public final class ModCreativeTabs {
                 ModItems.BLANKS.values().forEach(i -> output.accept(i.get()));
                 ModItems.COINS.values().forEach(i -> output.accept(i.get()));
                 ModItems.FACTORY_ITEMS.forEach(i -> output.accept(i.get()));
+                output.accept(ModItems.DECOY_TOTEM.get());
+                output.accept(ModItems.DECOY_POWER_BASE.get());
+                output.accept(ModItems.MAGNET_CORE.get());
+                ModItems.DECOY_UPGRADES.values().forEach(i -> output.accept(i.get()));
+                ModItems.PROJECTOR_ITEMS.forEach(i -> output.accept(i.get()));
                 output.accept(ModItems.COIN_VAULT.get());
                 output.accept(ModItems.SCORE_SCREEN.get());
                 output.accept(ModItems.ADMIN_RACK.get());
+                output.accept(ModItems.ANTI_TOTEM.get());
                 output.accept(ModItems.TETRIUM_CRUCIBLE.get());
                 output.accept(ModItems.COMBINATION_FORGE.get());
                 ModItems.MULTIBLOCK_ITEMS.forEach(i -> output.accept(i.get()));
@@ -34,7 +40,8 @@ public final class ModCreativeTabs {
                 ModItems.ORE_ITEMS.forEach(i -> output.accept(i.get()));
                 for (var item : java.util.List.of(ModItems.TETRIUM_SLAG, ModItems.TETRIUM_NUGGET, ModItems.TETRIUM_INGOT, ModItems.TETRIUM_DUST,
                         ModItems.DIRTY_ILLYRIUM_INGOT, ModItems.DIRTY_ILLYRIUM_NUGGET, ModItems.DIRTY_ILLYRIUM_DUST, ModItems.PURE_ILLYRIUM_DUST, ModItems.ILLYRIUM_NUGGET,
-                        ModItems.ILLYRIUM_INGOT, ModItems.SHATTER_BLANK, ModItems.ILLYRIUM_FORGE_UPGRADE)) {
+                        ModItems.ILLYRIUM_INGOT, ModItems.MAGNATITE_NUGGET, ModItems.MAGNATITE_INGOT, ModItems.CHARGED_MAGNATITE_INGOT, ModItems.CARBON_DUST,
+                        ModItems.COPPER_TETRIUM_COIL, ModItems.SHATTER_BLANK, ModItems.ILLYRIUM_FORGE_UPGRADE)) {
                     output.accept(item.get());
                 }
                 ModItems.FILTERS.values().forEach(i -> output.accept(i.get()));

@@ -136,6 +136,13 @@ public class TotemCompassItem extends Item {
         }
         boolean rivals = trackingLeft(stack, level.getGameTime()) > 0;
         BlockPos best = nearest(player, rivals);
+        if (rivals) {
+            // a working Decoy Totem within its range takes over the needle
+            BlockPos decoy = com.mrgregles.bsp_core.decoy.DecoyLedger.get(player.server).fool(level.dimension(), player.blockPosition(), player.getUUID());
+            if (decoy != null) {
+                best = decoy;
+            }
+        }
         CompoundTag tag = stack.getOrCreateTag();
         if (best == null) {
             tag.remove(TARGET);

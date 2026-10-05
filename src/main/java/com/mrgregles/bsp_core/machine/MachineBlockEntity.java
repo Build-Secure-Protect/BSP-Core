@@ -147,6 +147,26 @@ public abstract class MachineBlockEntity extends BlockEntity {
         return slot >= 0 && items.getStackInSlot(slot).getItem() instanceof RfUpgradeItem;
     }
 
+    /** True for a machine that cannot run at all without RF (no upgrade item needed to accept it). */
+    protected boolean needsRf() {
+        return false;
+    }
+
+    /** RF such a machine uses on every working tick. */
+    protected int rfPerWorkTick() {
+        return 0;
+    }
+
+    public int energyStored() {
+        return energy.getEnergyStored();
+    }
+
+    /** One extra line for the machine's screen (for example how many layers a stack has), or null. */
+    @javax.annotation.Nullable
+    public net.minecraft.network.chat.Component statusLine() {
+        return null;
+    }
+
     /** True when an RF upgrade is fitted and there is enough energy for this tick. */
     public boolean rfActive() {
         return hasRfUpgrade() && energy.getEnergyStored() >= BSPConfig.RF_PER_TICK.get();
@@ -290,7 +310,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         if (level.getGameTime() % 100 == 0) {
             overclock = com.mrgregles.bsp_core.totem.TotemAuras.overclock(level, worldPosition);
         }
-        boolean work = enabled && !powered && canWork();
+        boolean work = enabled && !powered && canWork() && (!needsRf() || energy.getEnergyStored() >= rfPerWorkTick());
         if (work && usesFuel() && burnTime <= 0) {
             work = tryIgnite();
         }
@@ -301,6 +321,9 @@ public abstract class MachineBlockEntity extends BlockEntity {
             speedCarry += speed() * overclock;
             if (rfActive()) {
                 energy.use(BSPConfig.RF_PER_TICK.get());
+            }
+            if (needsRf()) {
+                energy.use(rfPerWorkTick());
             }
             int step = (int) speedCarry;
             speedCarry -= step;
@@ -360,7 +383,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
                 case 13 -> (fluidCapacity() >>> 16) & 0xFFFF;
                 case 14 -> isFormed() ? 1 : 0;
                 case 16 -> !enabled ? 0 : powered ? 2 : 1; // 2 = switched on but paused by redstone
-                case 15 -> hasRfUpgrade() ? (int) (1000L * energy.getEnergyStored() / Math.max(1, energy.getMaxEnergyStored())) : -1;
+                case 15 -> hasRfUpgrade() || needsRf() ? (int) (1000L * energy.getEnergyStored() / Math.max(1, energy.getMaxEnergyStored())) : -1;
                 default -> 0;
             };
         }
@@ -471,7 +494,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
-            if (!hasRfUpgrade()) {
+            if (!hasRfUpgrade() && !needsRf()) {
                 return 0;
             }
             int accepted = Math.max(0, Math.min(getMaxEnergyStored() - energy, Math.min(2_000, maxReceive)));
@@ -484,7 +507,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
         @Override
         public boolean canReceive() {
-            return hasRfUpgrade();
+            return hasRfUpgrade() || needsRf();
         }
 
         void use(int amount) {

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "bsp_core:block/centrifuge_casing",
+    "side": "bsp_core:block/centrifuge_casing",
+    "front": "bsp_core:block/magnetic_centrifuge_front"
+  }
+}

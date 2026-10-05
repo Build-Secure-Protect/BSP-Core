@@ -1,0 +1,178 @@
+<title>Decoy Totem Concepts 2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<style>
+.chk{ display:flex; gap:6px; align-items:center; cursor:pointer; } .chk input{ accent-color:#7fb3ff; }
+.sk{ font:inherit; min-width:58px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; color:var(--h-muted); font-size:9px; cursor:pointer; padding:2px 4px; line-height:1.2; }
+.sk.on{ border-color:#7fb3ff; color:#7fb3ff; } .sk.lock{ opacity:.4; cursor:not-allowed; } .sk.abs{ position:absolute; width:76px; margin:-17px 0 0 -38px; }
+.path{ display:flex; align-items:center; gap:4px; } .path span.a{ color:var(--h-dim); } .lbl{ width:70px; color:#7fb3ff; }
+.stats{ display:flex; flex-direction:column; gap:6px; min-width:190px; }
+</style>
+<div class="wrap">
+<section><h1>Decoy Totem Concepts 2</h1>
+<p class="lede">Second round, with your changes. The decoy is the Hollow Idol. To its owner it shows the idol with a ghost of a Shatter Totem around it; to everyone else it looks exactly like a real Shatter Totem. The totem here is the real in-game model and texture. It stands on a dedicated power block that needs 100 RF per tick. Nothing here is in the mod yet.</p>
+<div class="card"><div class="ctl">
+<label for="who">Seen by <select id="who"><option value="owner">its owner</option><option value="other">another player</option></select></label>
+<label class="chk" for="unpowered"><input id="unpowered" type="checkbox"> No power</label>
+<label class="chk" for="broken"><input id="broken" type="checkbox"> Broken (after a steal attempt)</label>
+</div><p>Without power, or once broken, the disguise drops and everyone sees the bare idol.</p></div></section>
+
+<section><h2>1. The ghost the owner sees</h2><p class="lede">Three ways to draw the ghost totem around the idol. Switch "Seen by" to another player and all three become the same ordinary-looking totem.</p><div class="grid3" id="ghosts"></div></section>
+
+<section><h2>2. The power block underneath</h2><p class="lede">A dedicated block the decoy must stand on. It takes RF from cables on its sides or bottom and feeds the decoy 100 RF per tick. Shown here with the decoy on top, as its owner sees it.</p><div class="grid3" id="bases"></div></section>
+
+<section><h2>3. The screen: upgrade items on a tree</h2>
+<p class="lede">The two ideas combined: upgrades are crafted items, and they go into sockets laid out as a tree, so a later socket only opens once the one before it is filled. Click sockets to fit and remove items; click the trap charge again to change its kind.</p>
+<div class="card"><h3>A. Socket Tree</h3><p>The magnet core in the middle with three branches growing out of it, like the totem's upgrade tree. Most like what you already know.</p><div class="scroll"><div class="hud" style="--c:#7fb3ff;width:640px" id="sA"></div></div></div>
+<div class="card"><h3>B. Bench Rows</h3><p>Three rows read left to right, one per path, with the numbers beside them. Clearest to read, least like a tree.</p><div class="scroll"><div class="hud" style="--c:#7fb3ff;width:640px" id="sB"></div></div></div>
+<div class="card"><h3>C. Core Rings</h3><p>Sockets on two rings around the core, like the totem's tier rings: the inner ring first, then the outer. Compact, and leaves room for a third ring later.</p><div class="scroll"><div class="hud" style="--c:#7fb3ff;width:640px" id="sC"></div></div></div>
+</section>
+
+<section><h2>The upgrade items</h2>
+<div class="scroll"><table class="t"><tr><th>Item</th><th>Path</th><th>What it does</th></tr>
+<tr><td>Range Coil Mk I, II, III</td><td>Range</td><td>Compass range 24 blocks with none, then 40, 64, 96. Fitted in order.</td></tr>
+<tr><td>Blast Charge</td><td>Trap</td><td>Explodes at the thief. Hurts players, breaks no blocks.</td></tr>
+<tr><td>Hex Charge</td><td>Trap</td><td>Slowness, Weakness and Glowing.</td></tr>
+<tr><td>Poison Charge</td><td>Trap</td><td>Poison.</td></tr>
+<tr><td>Fatigue Charge</td><td>Trap</td><td>Mining Fatigue.</td></tr>
+<tr><td>Warp Charge</td><td>Trap</td><td>Teleports the thief up to 30 blocks away in a random direction, never into blocks.</td></tr>
+<tr><td>Trap Amplifier</td><td>Trap</td><td>Opens a second charge socket, so two traps go off together.</td></tr>
+<tr><td>Reinforced Casing</td><td>Casing</td><td>The decoy survives one more steal attempt before it breaks.</td></tr>
+</table></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}], TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,GOLD=0xe3b341,COPPER=0xc87a3c,MAG=0x4a6fa5,MAG2=0x7fb3ff,DARK=0x0c1116;
+  const el=id=>document.getElementById(id), flags=()=>({owner:el('who').value==='owner', off:el('unpowered').checked, broken:el('broken').checked});
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  function bx(g,f,t,c,glow){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // the in-game Shatter Totem, built from its model file: same boxes, same texture, same rotations
+  function totem(g,mat){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); g.add(root);
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); }
+      else { m.position.set(c[0],c[1],c[2]); root.add(m); } }
+    return root; }
+  function idol(g,live,broken){ bx(g,[3,0,3],[13,2,13],HULL2);
+    for(const [x,z] of [[5,5],[10.2,5],[5,10.2],[10.2,10.2]]) bx(g,[x,2,z],[x+.8,broken?7:13,z+.8],TRIM);
+    for(const y of broken?[4.5]:[4.5,8.5,12.2]){ bx(g,[5,y,5],[11,y+.6,5.6],MAG); bx(g,[5,y,10.4],[11,y+.6,11],MAG); bx(g,[5,y,5],[5.6,y+.6,11],MAG); bx(g,[10.4,y,5],[11,y+.6,11],MAG); }
+    if(broken){ bx(g,[9,2,11],[14,2.8,12],TRIM); bx(g,[2,2,6],[3,2.8,11],MAG); }
+    const core=new THREE.Group(); core.position.set(8,broken?3.2:8,8); g.add(core); const c=bx(core,[-1.6,-1.6,-1.6],[1.6,1.6,1.6],live?MAG2:MID,live);
+    return t=>{ if(live){ core.rotation.y=t*1.4; core.rotation.x=t*.9; core.position.y=8+Math.sin(t*2)*.5; c.material.color.setHex(MAG2).multiplyScalar(.7+.3*Math.sin(t*4)); } }; }
+  const bases={
+   a(g,on){ bx(g,[0,-16,0],[16,-13,16],HULL2); bx(g,[0,-3,0],[16,0,16],HULL2); bx(g,[2,-13,2],[14,-3,14],HULL); const bands=[]; for(let i=0;i<4;i++) bands.push(bx(g,[1.4,-12.2+i*2.4,1.4],[14.6,-11+i*2.4,14.6],COPPER));
+     const cap=bx(g,[5,0,5],[11,.5,11],on?GOLD:MID,on); return t=>{ if(on) bands.forEach((b,i)=>b.material.color.setHex(COPPER).multiplyScalar(.75+.45*Math.max(0,Math.sin(t*4-i*.9)))); }; },
+   b(g,on){ bx(g,[0,-16,0],[16,-13,16],HULL2); bx(g,[0,-2,0],[16,0,16],HULL2); bx(g,[5,-13,5],[11,-2,11],HULL); const caps=[];
+     for(const [x,z] of [[2.5,2.5],[13.5,2.5],[2.5,13.5],[13.5,13.5]]){ const c=new THREE.Mesh(new THREE.CylinderGeometry(2,2,9,16),new THREE.MeshLambertMaterial({color:PANEL})); c.position.set(x,-8.5,z); g.add(c);
+       const r=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.1,1.2,16),new THREE.MeshBasicMaterial({color:on?GOLD:MID})); r.position.set(x,-5,z); g.add(r); caps.push(r); }
+     bx(g,[5,0,5],[11,.5,11],on?GOLD:MID,on); return t=>{ if(on) caps.forEach((c,i)=>c.material.color.setHex(GOLD).multiplyScalar(.5+.5*Math.max(0,Math.sin(t*5+i*1.6)))); }; },
+   c(g,on){ bx(g,[0,-16,0],[16,-14,16],HULL2); bx(g,[0,-2,0],[16,0,16],HULL2); for(const [x,z] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[x,-14,z],[x+2,-2,z+2],TRIM);
+     const rotor=new THREE.Group(); rotor.position.set(8,-8,8); g.add(rotor); bx(rotor,[-1,-5,-1],[1,5,1],MID); for(let i=0;i<4;i++){ const a=new THREE.Group(); a.rotation.y=i*Math.PI/2; rotor.add(a); bx(a,[1,-3.5,-.6],[5,3.5,.6],i%2?COPPER:MAG); }
+     bx(g,[5,0,5],[11,.5,11],on?GOLD:MID,on); return t=>{ if(on) rotor.rotation.y=t*3; }; } };
+  function makeView(card,build){ const view=document.createElement('div'); view.className='view'; card.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(6,14,-10); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let tick=build(g), ry=Math.PI+.6, rx=.25, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.003; tick(t); const D=88, T=[8,2,8];
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return ()=>{ scene.remove(g); g=new THREE.Group(); scene.add(g); tick=build(g); }; }
+  // the decoy as the current viewer sees it, standing on the given base
+  function decoy(g,ghost,base){ const f=flags(), live=!f.off&&!f.broken, tb=bases[base](g,!f.off);
+    if(live&&!f.owner){ totem(g,new THREE.MeshLambertMaterial({map:tex,alphaTest:.5})); return tb; }
+    const ti=idol(g,live,f.broken); if(!live) return t=>{ tb(t); ti(t); };
+    const mats={a:new THREE.MeshLambertMaterial({map:tex,transparent:true,opacity:.3,depthWrite:false,alphaTest:.05}),
+      b:new THREE.MeshBasicMaterial({map:tex,color:MAG2,transparent:true,opacity:.4,depthWrite:false,blending:THREE.AdditiveBlending,alphaTest:.05}),
+      c:new THREE.MeshLambertMaterial({map:tex,transparent:true,opacity:.3,depthWrite:false,alphaTest:.05})}, mat=mats[ghost]; totem(g,mat);
+    return t=>{ tb(t); ti(t); if(ghost==='c') mat.opacity=.08+.42*Math.pow(.5+.5*Math.sin(t*1.6),2); if(ghost==='b') mat.opacity=.3+.12*Math.sin(t*9); }; }
+  const rebuilds=[];
+  function cards(host,list,build){ for(const [name,text,k] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(host).appendChild(c); rebuilds.push(makeView(c,g=>build(g,k))); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('ghosts',[['A. Faint Ghost','The real totem, see-through and steady. Calm and easy to read: you can always see both the idol and what others see.','a'],
+    ['B. Hologram','The totem as a blue glowing projection with a slight shimmer. Makes it obvious at a glance that this one is a fake of yours.','b'],
+    ['C. Breathing Ghost','The see-through totem fades slowly in and out, so the idol shows clearly for a moment in each cycle.','c']],(g,k)=>decoy(g,k,'a'));
+  cards('bases',[['A. Coil Plinth','A solid plinth wrapped in copper bands that light in sequence while it has power. Plain and sturdy; easy to hide in a floor.','a'],
+    ['B. Capacitor Bank','Four capacitors at the corners that charge and flash. Reads clearly as "this needs a lot of power".','b'],
+    ['C. Field Dynamo','An open frame with a rotor spinning inside under the decoy. The liveliest, and shows at once whether it is running.','c']],(g,k)=>decoy(g,'a',k));
+  for(const id of ['who','unpowered','broken']) el(id).addEventListener('change',()=>{ rebuilds.forEach(r=>r()); draw(); });
+
+  // ------------------------------------------------------------------ the combined screen
+  const CH=['Blast','Hex','Poison','Fatigue','Warp'], RANGE=[24,40,64,96];
+  const st={r:1,c1:0,amp:0,c2:-1,cas:0}; // range coils fitted, charge 1 kind (-1 none), amplifier, charge 2 kind, casings
+  const S={r1:()=>['RANGE COIL I',st.r>=1,true],r2:()=>['RANGE COIL II',st.r>=2,st.r>=1],r3:()=>['RANGE COIL III',st.r>=3,st.r>=2],
+    c1:()=>[st.c1<0?'TRAP CHARGE':CH[st.c1].toUpperCase()+' CHARGE',st.c1>=0,true],amp:()=>['TRAP AMPLIFIER',!!st.amp,st.c1>=0],
+    c2:()=>[st.c2<0?'2ND CHARGE':CH[st.c2].toUpperCase()+' CHARGE',st.c2>=0,!!st.amp],k1:()=>['CASING I',st.cas>=1,true],k2:()=>['CASING II',st.cas>=2,st.cas>=1]};
+  function click(id){ const [,on,open]=S[id](); if(!open) return;
+    if(id[0]==='r'){ const n=+id[1]; st.r=on?n-1:n; } else if(id==='c1'){ st.c1=st.c1>=CH.length-1?-1:st.c1+1; if(st.c1<0){ st.amp=0; st.c2=-1; } }
+    else if(id==='amp'){ st.amp^=1; if(!st.amp) st.c2=-1; } else if(id==='c2'){ st.c2=st.c2>=CH.length-1?-1:st.c2+1; } else { const n=+id[1]; st.cas=on?n-1:n; } draw(); }
+  const sock=(id,abs)=>{ const [name,on,open]=S[id](); return '<button type="button" class="sk'+(on?' on':'')+(open?'':' lock')+(abs?' abs':'')+'" data-s="'+id+'" aria-pressed="'+on+'"'+(abs?' style="left:'+abs[0]+'px;top:'+abs[1]+'px"':'')+'>'+name+'</button>'; };
+  function stats(){ const f=flags(), state=f.broken?'<span style="color:var(--h-bad)">BROKEN</span>':f.off?'<span style="color:var(--h-gold)">NO POWER</span>':'<span style="color:var(--h-tq)">ACTIVE</span>';
+    const traps=[st.c1,st.c2].filter(v=>v>=0).map(v=>CH[v]).join(' + ')||'None';
+    return '<div class="stats"><div>'+state+'</div><div class="row">RF <div class="bar" style="width:110px"><i style="width:'+(f.off?0:80)+'%"></i></div></div><small>'+(f.off?'0':'100')+' RF/t from the power block</small>'
+      +'<div>Compass range: '+RANGE[st.r]+' blocks</div><div>Trap: '+traps+'</div><div>Survives: '+(st.cas+1)+' steal attempt'+(st.cas?'s':'')+'</div>'
+      +(f.broken?'<button type="button" class="hb go">Repair: 2 Magnatite Ingots</button>':'')+'<small>Decoys placed: 3 of 5</small></div>'; }
+  const head=()=>'<div class="top"><span>DECOY TOTEM</span><span>Mrgregles</span></div>';
+  function draw(){
+    el('sA').innerHTML=head()+'<div class="two"><div style="position:relative;width:390px;height:230px;flex:none"><svg width="390" height="230" style="position:absolute;inset:0" aria-hidden="true"><g stroke="#2a2f3a" stroke-width="2" fill="none">'
+      +'<path d="M195 150 V30"/><path d="M195 150 L70 195"/><path d="M195 150 L320 195"/><path d="M70 195 V105"/><path d="M320 195 V150"/></g></svg>'
+      +'<div class="sk on abs" style="left:195px;top:150px;display:grid;place-items:center;cursor:default">MAGNET CORE</div>'
+      +sock('r1',[195,108])+sock('r2',[195,68])+sock('r3',[195,28])+sock('c1',[70,195])+sock('amp',[70,150])+sock('c2',[70,105])+sock('k1',[320,195])+sock('k2',[320,150])+'</div>'+stats()+'</div>';
+    const arrow='<span class="a">&gt;</span>';
+    el('sB').innerHTML=head()+'<div class="two"><div class="grow" style="display:flex;flex-direction:column;gap:10px"><div class="path"><span class="lbl">RANGE</span>'+sock('r1')+arrow+sock('r2')+arrow+sock('r3')+'</div>'
+      +'<div class="path"><span class="lbl">TRAP</span>'+sock('c1')+arrow+sock('amp')+arrow+sock('c2')+'</div><div class="path"><span class="lbl">CASING</span>'+sock('k1')+arrow+sock('k2')+'</div>'
+      +'<small>A socket opens when the one to its left is filled.</small></div>'+stats()+'</div>';
+    el('sC').innerHTML=head()+'<div class="two"><div style="position:relative;width:390px;height:230px;flex:none"><svg width="390" height="230" style="position:absolute;inset:0" aria-hidden="true"><g stroke="#2a2f3a" stroke-width="2" fill="none"><ellipse cx="195" cy="115" rx="95" ry="52"/><ellipse cx="195" cy="115" rx="165" ry="98"/></g></svg>'
+      +'<div class="sk on abs" style="left:195px;top:115px;display:grid;place-items:center;cursor:default">MAGNET CORE</div>'
+      +sock('r1',[195,66])+sock('c1',[112,152])+sock('k1',[278,152])+sock('r2',[100,30])+sock('r3',[290,30])+sock('amp',[42,104])+sock('c2',[110,208])+sock('k2',[335,190])+'</div>'+stats()+'</div>';
+    document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>click(b.dataset.s)); }
+  draw();
+})();
+</script>

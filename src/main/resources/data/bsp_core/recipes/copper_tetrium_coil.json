@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CDC",
+    "WMW",
+    "CDC"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "W": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "M": {
+      "item": "bsp_core:magnatite_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:copper_tetrium_coil"
+  }
+}

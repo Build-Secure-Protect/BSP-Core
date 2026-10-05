@@ -51,7 +51,7 @@ public final class ModBlockEntities {
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.machine.MachinePortBlockEntity>> MACHINE_PORT =
             BLOCK_ENTITIES.register("machine_port", () -> BlockEntityType.Builder
-                    .of(com.mrgregles.bsp_core.machine.MachinePortBlockEntity::new, ModBlocks.LAVA_PYLON.get(), ModBlocks.REFINERY_PUMP.get(), ModBlocks.ITEM_HATCH.get()).build(null));
+                    .of(com.mrgregles.bsp_core.machine.MachinePortBlockEntity::new, ModBlocks.LAVA_PYLON.get(), ModBlocks.REFINERY_PUMP.get(), ModBlocks.ITEM_HATCH.get(), ModBlocks.CENTRIFUGE_POWER_PORT.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.coin.FactoryPortBlockEntity>> FACTORY_PORT =
@@ -67,6 +67,36 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.vault.CoinVaultBlockEntity>> COIN_VAULT =
             BLOCK_ENTITIES.register("coin_vault", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.vault.CoinVaultBlockEntity::new, ModBlocks.COIN_VAULT.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.zone.AntiTotemBlockEntity>> ANTI_TOTEM =
+            BLOCK_ENTITIES.register("anti_totem", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.zone.AntiTotemBlockEntity::new, ModBlocks.ANTI_TOTEM.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.machine.MagneticCentrifugeBlockEntity>> MAGNETIC_CENTRIFUGE =
+            BLOCK_ENTITIES.register("magnetic_centrifuge", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.machine.MagneticCentrifugeBlockEntity::new, ModBlocks.MAGNETIC_CENTRIFUGE.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.decoy.DecoyTotemBlockEntity>> DECOY_TOTEM =
+            BLOCK_ENTITIES.register("decoy_totem", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.decoy.DecoyTotemBlockEntity::new, ModBlocks.DECOY_TOTEM.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlockEntity>> DECOY_POWER_BASE =
+            BLOCK_ENTITIES.register("decoy_power_base", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlockEntity::new, ModBlocks.DECOY_POWER_BASE.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.TotemGeneratorBlockEntity>> TOTEM_GENERATOR =
+            BLOCK_ENTITIES.register("totem_generator", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.projector.TotemGeneratorBlockEntity::new, ModBlocks.TOTEM_GENERATOR.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity>> TOTEM_PROJECTOR =
+            BLOCK_ENTITIES.register("totem_projector", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity::new, ModBlocks.TOTEM_PROJECTOR.get()).build(null));
 
     private ModBlockEntities() {}
 }

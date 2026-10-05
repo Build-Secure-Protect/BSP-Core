@@ -1,0 +1,22 @@
+{
+  "name": "Magnatite",
+  "category": "bsp_core:materials",
+  "icon": "bsp_core:magnatite_ingot",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(item)Magnatite Ore$() lies deep underground, mostly in deepslate, and needs a diamond pickaxe. It is a little easier to find than diamond. As with the other ores, keep the ore block: the machine takes it as it is.$(br2)The $(l:machines/magnetic_centrifuge)Magnetic Centrifuge$() spins each ore into Magnatite Nuggets and one $(item)Carbon Dust$()."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:magnatite_ingot_from_nuggets",
+      "text": "Nine nuggets make a $(item)Magnatite Ingot$() by hand or in the Combination Forge."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:copper_tetrium_coil",
+      "text": "Fit the $(item)Copper Tetrium Coil$() to a centrifuge and it can magnetise ingots into $(item)Charged Magnatite Ingots$(). Each try may fail; a failed try keeps the ingot."
+    }
+  ]
+}

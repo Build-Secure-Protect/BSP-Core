@@ -16,10 +16,12 @@ BOOK = ROOT / "src/main/resources/data/bsp_core/patchouli_books/guide"
 CONTENT = ROOT / "src/main/resources/assets/bsp_core/patchouli_books/guide/en_us"
 
 BLOCKS = {"C": "bsp_core:illyrium_casing", "P": "bsp_core:lava_pylon", "H": "bsp_core:item_hatch", "O": "bsp_core:illyrium_core", "G": "bsp_core:illyrium_glass",
-          "U": "bsp_core:refinery_pump", "F": "bsp_core:factory_frame", "B": "bsp_core:factory_blank_hatch", "R": "bsp_core:factory_power_port", "S": "bsp_core:factory_press"}
+          "U": "bsp_core:refinery_pump", "F": "bsp_core:factory_frame", "B": "bsp_core:factory_blank_hatch", "R": "bsp_core:factory_power_port", "S": "bsp_core:factory_press",
+          "K": "bsp_core:centrifuge_casing", "T": "bsp_core:centrifuge_rotor", "W": "bsp_core:centrifuge_power_port"}
 CRUCIBLE = [["CCC", "CCC", "CXC"], ["P P", "HOH", "P P"], ["PCP", "C C", "PCP"]]
 REFINERY = [["CCC", "COC", "CXC"], [" C ", "HGU", "   "], ["   ", " G ", "   "]]
 FACTORY = [["B", "F", "X"], ["R", "S", "F"]]
+CENTRIFUGE = [["KKK", "HTW", "KXK"]]
 
 
 def multiblock(layers, controller):
@@ -58,6 +60,10 @@ def craft(first, second=None, body=None):
 
 
 def build(name, layers, controller, body):
+    """A picture of the finished machine if one has been made (see docs/book_screenshots), otherwise the turnable block layout."""
+    machine = controller.split(":")[1]
+    if (ROOT / f"src/main/resources/assets/bsp_core/textures/gui/book/{machine}.png").exists():
+        return {"type": "patchouli:image", "title": name, "images": [f"bsp_core:textures/gui/book/{machine}.png"], "border": True, "text": body}
     return {"type": "patchouli:multiblock", "name": name, "multiblock": multiblock(layers, controller), "text": body}
 
 
@@ -92,6 +98,29 @@ ENTRIES = [
         text("The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.$(br2)A Score Screen set to Prizes shows what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.", "Seasons and Prizes"),
         text("A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. Score Screens show the current leaderboard, and on a network it covers every server.", "How it is counted"),
     ]),
+    ("totem", "decoys", "Decoy Totems", "bsp_core:decoy_totem", 5, [
+        spot("bsp_core:decoy_totem", "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."),
+        craft("magnet_core", "decoy_totem", "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."),
+        craft("decoy_power_base", None, "A decoy must stand on a $(item)Decoy Power Base$(), fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol."),
+        text("An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.", "When someone takes the bait"),
+        text("Right-click your decoy to fit parts. A socket opens when the one before it is filled.$(br2)$(li)$(l)Range$(): Range Coils Mk I, II, III widen the compass range from 24 blocks to 40, 64 and 96.$(li)$(l)Traps$(): a charge, then a Trap Amplifier, then a second charge.$(li)$(l)Casing$(): each Reinforced Casing survives one more attempt.", "Sockets"),
+        text("Each charge is used up when it goes off.$(br2)$(li)Blast: an explosion that hurts the thief and breaks nothing.$(li)Hex: Slowness, Weakness and Glowing.$(li)Poison.$(li)Fatigue: Mining Fatigue.$(li)Warp: throws the thief up to 30 blocks away.", "Trap charges"),
+        craft("range_coil_mk1", "range_coil_mk2"),
+        craft("range_coil_mk3", "trap_amplifier"),
+        craft("blast_charge", "warp_charge", "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."),
+        craft("reinforced_casing"),
+    ]),
+    ("totem", "projectors", "Generators and Projectors", "bsp_core:totem_projector", 6, [
+        text("A $(item)Totem Generator$() under your placed totem draws off some of its base powers. A $(item)Totem Cable$() carries them to a $(item)Totem Projector$(), which recreates them as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."),
+        craft("totem_generator", "totem_projector", "Both need RF all the time: 200 a tick for the generator, 100 for the projector."),
+        text("Put the first generator directly under the totem. More can go beside it, side to side, up to nine in a three by three with the totem on the middle one. They join into one slab, and the ring of light around your totem widens.$(br2)Each generator has its own power, its own cable and its own projector. Right-click the slab and pick a generator from the grid.", "Up to nine"),
+        text("Each generator sends two of these at once (three with a $(item)Channel Expander$()):$(br2)$(li)Fortify$(li)Healing Aura$(li)Alarm$(li)Ward$(li)Sanctuary$(li)Overclock$(br2)Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.", "What can be sent"),
+        text("Cables plug into a generator's sides and bottom. Each kind has a longest run:$(br2)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)The generator must be able to push that far too: 15 blocks, or 25, 40 and 80 with $(item)Reach Amplifiers$() Mk I, II and III. A mixed run goes as far as its weakest cable.", "Cables and reach"),
+        craft("tetrium_core_cable", "magnatite_core_cable"),
+        craft("illyrium_core_cable", "charged_illyrium_core_cable"),
+        craft("reach_amplifier_mk1", "reach_amplifier_mk2"),
+        craft("reach_amplifier_mk3", "channel_expander"),
+    ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
         spot("bsp_core:totem_compass", "Points to your own nearest totem. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
         craft("totem_compass"),
@@ -109,6 +138,18 @@ ENTRIES = [
         text("$(item)Illyrium Ore$() is rarer and needs a diamond pickaxe. Refining it takes four steps:$(br2)$(li)$(l:machines/illyrium_crucible)Illyrium Crucible$(): ore and slag become a Dirty Illyrium Ingot.$(li)Crush it into Dirty Illyrium Dust.$(li)$(l:machines/illyrium_refinery)Illyrium Refinery$(): dust, water and a filter give Pure Illyrium Dust.$(li)Back in the Crucible: Pure Illyrium Dust and Tetrium Dust alloy into Illyrium Nuggets."),
         craft("illyrium_ingot_from_nuggets", "illyrium_forge_upgrade", "Nine nuggets make an ingot by hand. To forge Illyrium in the Combination Forge, fit the $(item)Illyrium Forge Upgrade$()."),
         craft("iron_filter", "diamond_filter", "Filters wear out. Better filters refine far more dust before they are used up."),
+    ]),
+    ("materials", "magnatite", "Magnatite", "bsp_core:magnatite_ingot", 3, [
+        text("$(item)Magnatite Ore$() lies deep underground, mostly in deepslate, and needs a diamond pickaxe. It is a little easier to find than diamond. As with the other ores, keep the ore block: the machine takes it as it is.$(br2)The $(l:machines/magnetic_centrifuge)Magnetic Centrifuge$() spins each ore into Magnatite Nuggets and one $(item)Carbon Dust$()."),
+        craft("magnatite_ingot_from_nuggets", None, "Nine nuggets make a $(item)Magnatite Ingot$() by hand or in the Combination Forge."),
+        craft("copper_tetrium_coil", None, "Fit the $(item)Copper Tetrium Coil$() to a centrifuge and it can magnetise ingots into $(item)Charged Magnatite Ingots$(). Each try may fail; a failed try keeps the ingot."),
+    ]),
+    ("machines", "magnetic_centrifuge", "Magnetic Centrifuge", "bsp_core:magnetic_centrifuge", 4, [
+        text("A multiblock one block high and three by three. It separates Magnatite Ore and, with a Copper Tetrium Coil, charges Magnatite Ingots. It always needs RF, fed into the Power Port (yellow socket); the Item Hatch (blue socket) takes items in and out." + GUIDE_TIP),
+        build("Magnetic Centrifuge", CENTRIFUGE, "bsp_core:magnetic_centrifuge", "Controller front centre, Rotor in the middle, Item Hatch left, Power Port right, 5 Casing."),
+        text("Put another Rotor on top of the first and ring it with eight Casing to add a layer, up to six layers.$(br2)$(li)More layers: more nuggets from each ore, up to 7 to 9 with six.$(li)More layers: a better chance to charge an ingot, from 1 in 6 up to 1 in 2 with five.$(li)Six layers: each charging try is much quicker.$(br2)Every layer draws power, and charging draws far more than separating.", "Stacking"),
+        craft("centrifuge_casing", "centrifuge_rotor"),
+        craft("centrifuge_power_port", "magnetic_centrifuge"),
     ]),
     ("machines", "components", "Machine Parts", "bsp_core:machine_chassis", 0, [
         text("Every machine block is built from the same few parts. Make these first:$(br2)$(li)$(item)Slag Brick$(): smelt Tetrium Slag.$(li)$(item)Tetrium Plate$(): put a Tetrium Ingot in the Combination Forge.$(li)$(item)Machine Chassis$(), $(item)Tetrium Coil$(), $(item)Drive Motor$() and the $(item)Basic Control Circuit$(): see the next pages."),
@@ -164,6 +205,41 @@ ENTRIES = [
 ]
 
 
+def plain(body):
+    """Patchouli's formatting codes as Markdown, so the text reads normally in an editor."""
+    import re
+    body = re.sub(r"\$\(l:[^)]*\)(.*?)\$\(/?l?\)", r"\1", body)      # links to other entries: keep the words
+    body = re.sub(r"\$\(item\)(.*?)\$\(\)", r"*\1*", body)            # item names
+    body = re.sub(r"\$\(l\)(.*?)\$\(\)", r"**\1**", body)             # bold
+    body = body.replace("$(br2)", "\n\n").replace("$(br)", "\n").replace("$(li)", "\n- ")
+    return re.sub(r"\$\([^)]*\)", "", body).strip()
+
+
+def write_review_copy():
+    """All of the book's wording in one Markdown file, for reading and rewording outside the game."""
+    out = ["# BSP Field Guide: text for review", "",
+           "Every page of the in-game guide book, in the order it appears. Reword anything you like and send the file back:",
+           "the changes are then copied into `tools/gen_guide_book.py`, which builds the book. Keep each page short: a book page",
+           "holds roughly 100 words, or about 60 next to a recipe or picture.", "",
+           "*Italics* are item names (shown in colour in the book) and **bold** is bold. Lines marked `[recipe]`, `[picture]` or",
+           "`[3D structure]` show what else is on that page and are not text you need to edit.", ""]
+    for cid, cname, cdesc, _ in CATEGORIES:
+        out += ["---", "", f"# {cname}", "", cdesc, ""]
+        for cat, eid, ename, _, sort, pages in sorted((e for e in ENTRIES if e[0] == cid), key=lambda e: e[4]):
+            out += [f"## {ename}", ""]
+            for n, page in enumerate(pages, 1):
+                kind = page["type"].split(":")[1]
+                extra = {"crafting": "[recipe] " + ", ".join(v.split(":")[1] for k, v in page.items() if k in ("recipe", "recipe2")),
+                         "smelting": "[recipe] " + page.get("recipe", "").split(":")[-1], "multiblock": "[3D structure] " + page.get("name", ""),
+                         "image": "[picture] " + page.get("title", ""), "spotlight": "[item shown] " + page.get("item", "").split(":")[-1]}.get(kind)
+                title = page.get("title")
+                out.append(f"**Page {n}" + (f": {title}" if title and kind != "image" else "") + "**" + (f"  `{extra}`" if extra else ""))
+                out.append("")
+                if page.get("text"):
+                    out += [plain(page["text"]), ""]
+    (ROOT / "docs/GUIDE_BOOK_TEXT.md").write_text("\n".join(out) + "\n")
+
+
 def main():
     for folder in (BOOK, CONTENT):
         if folder.exists():
@@ -185,6 +261,7 @@ def main():
     recipes = {p.stem for p in (ROOT / "src/main/resources/data/bsp_core/recipes").glob("*.json")}
     missing = sorted({v.split(":")[1] for _, _, _, _, _, pages in ENTRIES for p in pages for k, v in p.items() if k in ("recipe", "recipe2")} - recipes)
     assert not missing, missing
+    write_review_copy()
     print("guide book written:", len(CATEGORIES), "categories,", len(ENTRIES), "entries")
 
 

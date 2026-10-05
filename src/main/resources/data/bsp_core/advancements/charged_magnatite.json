@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.charged_magnatite"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.charged_magnatite.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:charged_magnatite_ingot"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:magnetic_centrifuge"
+}

@@ -1,0 +1,163 @@
+<title>Anti Totem Block Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<style>
+.chk{ display:flex; gap:6px; align-items:center; cursor:pointer; } .chk input{ accent-color:#ff6b5c; }
+.step{ display:inline-flex; align-items:center; gap:4px; } .step b{ min-width:26px; text-align:center; font-weight:400; }
+.map{ position:relative; width:150px; height:150px; background:var(--h-slot); border:2px solid var(--h-dim); flex:none; }
+.map i{ position:absolute; background:rgba(255,107,92,.25); border:2px solid var(--h-bad); box-sizing:border-box; } .map u{ position:absolute; width:8px; height:8px; background:var(--h-vio); left:71px; top:71px; }
+.rl{ display:grid; grid-template-columns:1fr auto; gap:4px 10px; align-items:center; max-height:190px; overflow:auto; padding-right:4px; }
+.hud input[type=range]{ accent-color:#ff6b5c; width:150px; }
+.hb.warn[aria-pressed="true"]{ border-color:var(--h-bad); color:var(--h-bad); }
+</style>
+<div class="wrap">
+<section><h1>Anti Totem Block Concepts</h1>
+<p class="lede">An admin-only block that keeps Shatter Totems and BSP machines out of an area, for spawn, hubs and event arenas. Only admins can place, set up or break it. Three looks for the block and three layouts for its settings screen. Drag the 3D views to turn them. Nothing here is in the mod yet.</p></section>
+
+<section><h2>1. The block</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. The protected zone</h2>
+<p class="lede">The zone is a box around the block. Admins holding the block's item, or looking at the block, would see its outline like this; players never see it. Change the size to see how it sits around the block.</p>
+<div class="card"><div class="ctl">
+<label for="zx">East-west <input id="zx" type="range" min="1" max="32" value="8"><output id="zxO">8</output></label>
+<label for="zy">Up-down <input id="zy" type="range" min="1" max="32" value="4"><output id="zyO">4</output></label>
+<label for="zz">North-south <input id="zz" type="range" min="1" max="32" value="8"><output id="zzO">8</output></label>
+</div><div class="view wide" id="zone"></div></div></section>
+
+<section><h2>3. The settings screen</h2>
+<p class="lede">What an admin sees on right-click. All three set the same two things: how big the zone is, and what is kept out of it.</p>
+<div class="card"><h3>A. Simple Panel</h3><p>One screen: three sliders for the size (the same distance each way from the block) and a tick box for each kind of thing to block. Quickest to use, but the zone is always centred on the block.</p><div class="scroll"><div class="hud" style="--c:var(--h-bad)" id="sA"></div></div></div>
+<div class="card"><h3>B. Box Editor</h3><p>Six distances, one for each direction, so the zone can be off-centre (for example mostly above ground, or along one side of a wall), with a map of the zone from above. Blocked things are grouped as switches.</p><div class="scroll"><div class="hud" style="--c:var(--h-bad)" id="sB"></div></div></div>
+<div class="card"><h3>C. Rule List</h3><p>Two tabs. Zone has the six distances. Rules lists every BSP block and machine by name, so each one can be allowed or blocked on its own, with a switch per group to set them all. Most control, and new machines appear in the list by themselves.</p><div class="scroll"><div class="hud" style="--c:var(--h-bad)" id="sC"></div></div></div>
+</section>
+
+<section><h2>What the block does, in all three</h2>
+<div class="flow">
+<div class="card"><h3>Totems</h3><ol><li><b>Placing</b> a totem in the zone is refused with a message.</li><li><b>Dropping</b> one puts it straight back in the inventory.</li><li>A totem carried in when its owner <b>dies or logs out</b> is placed at the nearest spot outside the zone.</li><li><b>Storing</b> is already impossible everywhere: totems cannot go in containers.</li></ol></div>
+<div class="card"><h3>Machines and blocks</h3><ol><li>Blocked BSP blocks cannot be <b>placed</b> in the zone.</li><li>Ones that were already there keep working until an admin removes them.</li><li>Admins are never restricted.</li></ol></div>
+<div class="card"><h3>The block itself</h3><ol><li>Creative tab only, no recipe.</li><li>Cannot be mined, pushed or blown up; only an admin in creative can remove it.</li><li>Zones can overlap; the strictest rule wins.</li></ol></div>
+</div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,VIO=0xb58cff,RED=0xff4b3c,DARK=0x0c1116,GRASS=0x3d5a3a;
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(op){ m.material.transparent=true; m.material.opacity=op; m.material.depthWrite=false; } m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function makeView(el,build,dist,target,wide){ const view=wide?el:document.createElement('div'); if(!wide){ view.className='view'; el.appendChild(view); }
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,5000); scene.add(new THREE.AmbientLight(0xffffff,.7)); const d=new THREE.DirectionalLight(0xffffff,.8); d.position.set(6,14,-10); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let o=build(g)||{}, ry=Math.PI+.7, rx=.35, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.003; if(o.tick) o.tick(t); const D=o.dist||dist, T=o.target||target;
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return { rebuild(){ scene.remove(g); g=new THREE.Group(); scene.add(g); o=build(g)||{}; } }; }
+  // a small crossed-out totem, used on all three so the block reads as "no totems here"
+  function noTotem(g,x,y,z,s){ const t=new THREE.Group(); t.position.set(x,y,z); g.add(t);
+    bx(t,[-1*s,0,-.6*s],[1*s,2.4*s,.6*s],MID); bx(t,[-.7*s,2.4*s,-.5*s],[.7*s,3.4*s,.5*s],MID); bx(t,[-.25*s,2.7*s,-.62*s],[.25*s,3.1*s,-.5*s],TQ,true);
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(4.6*s,.5*s,.3*s),new THREE.MeshBasicMaterial({color:RED})); bar.position.set(0,1.7*s,-.8*s); bar.rotation.z=.8; t.add(bar); return t; }
+  const builds={
+   a(g){ bx(g,[2,0,2],[14,2,14],HULL2); bx(g,[3,2,3],[13,3,13],TRIM); bx(g,[5,3,5],[11,13,11],HULL); for(const [x,z] of [[4.6,4.6],[10.6,4.6],[4.6,10.6],[10.6,10.6]]) bx(g,[x,3,z],[x+.8,13,z+.8],TRIM);
+     bx(g,[4.5,13,4.5],[11.5,14,11.5],TRIM); const core=bx(g,[6.5,14,6.5],[9.5,16,9.5],RED,true); noTotem(g,8,5,4.9,1.1);
+     const ring=new THREE.Mesh(new THREE.TorusGeometry(6.2,.35,8,40),new THREE.MeshBasicMaterial({color:RED})); ring.rotation.x=Math.PI/2; ring.position.set(8,9,8); g.add(ring);
+     return {tick(t){ ring.position.y=5+((t*2.2)%9); ring.material.opacity=1; core.material.color.setHex(RED).multiplyScalar(.7+.3*Math.sin(t*5)); }}; },
+   b(g){ bx(g,[1,0,1],[15,3,15],HULL2); bx(g,[2,3,2],[14,4,14],TRIM); bx(g,[6.5,4,6.5],[9.5,8,9.5],HULL);
+     const dish=new THREE.Mesh(new THREE.CylinderGeometry(6,2,3,24,1,true),new THREE.MeshLambertMaterial({color:PANEL,side:THREE.DoubleSide})); dish.position.set(8,9.5,8); g.add(dish);
+     const tip=bx(g,[7.3,9,7.3],[8.7,13,8.7],RED,true); const rings=[]; for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(3,.25,6,32),new THREE.MeshBasicMaterial({color:RED,transparent:true})); r.rotation.x=Math.PI/2; r.position.set(8,12,8); g.add(r); rings.push(r); }
+     for(let i=0;i<4;i++){ const a=i*Math.PI/2; bx(g,[8+Math.cos(a)*6-.5,3,8+Math.sin(a)*6-.5],[8+Math.cos(a)*6+.5,5,8+Math.sin(a)*6+.5],VIO,true); }
+     return {tick(t){ rings.forEach((r,i)=>{ const k=((t*.6+i/3)%1); r.scale.setScalar(.4+k*2.2); r.position.y=11+k*4; r.material.opacity=1-k; }); tip.material.color.setHex(RED).multiplyScalar(.6+.4*Math.sin(t*4)); }}; },
+   c(g){ bx(g,[1,0,1],[15,1.5,15],HULL2); bx(g,[1,14.5,1],[15,16,15],HULL2); for(const [x,z] of [[1,1],[14,1],[1,14],[14,14]]) bx(g,[x,1.5,z],[x+1,14.5,z+1],TRIM);
+     for(const y of [5,10.4]){ bx(g,[1,y,1],[15,y+.6,1.5],MID); bx(g,[1,y,14.5],[15,y+.6,15],MID); bx(g,[1,y,1],[1.5,y+.6,15],MID); bx(g,[14.5,y,1],[15,y+.6,15],MID); }
+     const cube=new THREE.Group(); cube.position.set(8,8,8); g.add(cube); bx(cube,[-2.6,-2.6,-2.6],[2.6,2.6,2.6],DARK); const glow=[]; for(const s of [-1,1]){ glow.push(bx(cube,[-2,-2,s*2.6-.1],[2,2,s*2.6+.1],RED,true)); glow.push(bx(cube,[s*2.6-.1,-2,-2],[s*2.6+.1,2,2],RED,true)); glow.push(bx(cube,[-2,s*2.6-.1,-2],[2,s*2.6+.1,2],RED,true)); }
+     bx(g,[6,1.5,6],[10,2.2,10],VIO,true); bx(g,[6,13.8,6],[10,14.5,10],VIO,true);
+     return {tick(t){ cube.rotation.y=t*.8; cube.rotation.x=t*.5; cube.position.y=8+Math.sin(t*1.5)*.6; glow.forEach(m=>m.material.color.setHex(RED).multiplyScalar(.6+.4*Math.sin(t*3))); }}; } };
+  const cards=[['A. Null Pylon','A dark pillar with a crossed-out totem on its face. A red ring climbs it again and again and the cap pulses. Reads clearly as a warning post.','a'],
+    ['B. Suppressor Dish','A low base with an upturned dish that sends out fading red rings, and violet admin lamps on the base. Looks like a jammer, which is what it is.','b'],
+    ['C. Warden Cube','A caged frame with a red-faced cube turning and bobbing inside, lit violet above and below. The most "admin machine" of the three and easy to spot from far away.','c']];
+  const host=document.getElementById('blocks');
+  for(const [name,text,k] of cards){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; host.appendChild(c); makeView(c,builds[k],58,[8,8,8]); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); }
+  // zone preview
+  const zv=makeView(document.getElementById('zone'),g=>{ const x=+zx.value,y=+zy.value,z=+zz.value, S=16; bx(g,[-x*S-64,-2,-z*S-64],[x*S+80,0,z*S+80],GRASS); builds.a(g);
+    bx(g,[-x*S,0.2,-z*S],[x*S+S,y*S+S,z*S+S],RED,true,.12); const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(x*2*S+S,y*S+S,z*2*S+S)),new THREE.LineBasicMaterial({color:RED})); e.position.set(8,(y*S+S)/2,8); g.add(e);
+    // a few things inside, to give scale: a house-sized block and a refused totem
+    bx(g,[40,0,30],[104,48,94],0x6b5a44); bx(g,[36,48,26],[108,56,98],0x8a3b2f); noTotem(g,-40,0,-30,4);
+    return {dist:Math.max(x,z,y)*16*5.2+160,target:[8,y*8,8]}; },400,[8,40,8],true);
+  for(const id of ['zx','zy','zz']) document.getElementById(id).addEventListener('input',e=>{ document.getElementById(id+'O').textContent=e.target.value; zv.rebuild(); });
+
+  // ------------------------------------------------------------------ settings screens (working mock-ups)
+  const KINDS=[['totem_place','Placing Shatter Totems',1],['totem_drop','Dropping Shatter Totems',1],['machines','BSP machines (crucibles, forge, refinery, factory)',1],['vault','Coin Vaults',0],['other','Other BSP blocks (Score Screen, Motivator)',0]];
+  const st={a:{x:8,y:4,z:8,k:KINDS.map(k=>k[2])}, b:{n:8,s:8,e:8,w:8,u:12,d:2,k:[1,1,1,0]}, c:{tab:'rules',n:8,s:8,e:8,w:8,u:12,d:2,r:{}}};
+  function drawA(){ const s=st.a; document.getElementById('sA').innerHTML='<div class="top"><span>ANTI TOTEM BLOCK</span><span>ZONE '+(s.x*2+1)+' x '+(s.y*2+1)+' x '+(s.z*2+1)+'</span></div>'
+    +'<div class="two"><div class="grow" style="display:flex;flex-direction:column;gap:8px"><small>ZONE SIZE (blocks each way from this block)</small>'
+    +['x','y','z'].map((a,i)=>'<label class="row">'+['East-west','Up-down','North-south'][i]+' <input type="range" min="0" max="64" value="'+s[a]+'" data-a="'+a+'" aria-label="'+a+' size"> <span>'+s[a]+'</span></label>').join('')+'</div>'
+    +'<div class="grow" style="display:flex;flex-direction:column;gap:6px"><small>KEEP OUT</small>'+KINDS.map((k,i)=>'<label class="chk"><input type="checkbox" data-k="'+i+'"'+(s.k[i]?' checked':'')+'> '+k[1]+'</label>').join('')+'</div></div>'
+    +'<div class="row"><button type="button" class="hb go" id="aShow">Show zone outline</button><small>Only admins see the outline.</small></div>';
+    document.querySelectorAll('#sA input[type=range]').forEach(el=>el.oninput=e=>{ s[e.target.dataset.a]=+e.target.value; e.target.nextElementSibling.textContent=e.target.value; document.querySelector('#sA .top span:last-child').textContent='ZONE '+(s.x*2+1)+' x '+(s.y*2+1)+' x '+(s.z*2+1); });
+    document.querySelectorAll('#sA input[type=checkbox]').forEach(el=>el.onchange=e=>{ s.k[+e.target.dataset.k]=e.target.checked?1:0; }); }
+  const DIRS=[['n','North'],['s','South'],['e','East'],['w','West'],['u','Up'],['d','Down']];
+  const stepper=(o,key,id)=>'<span class="step"><button type="button" class="hb" data-o="'+id+'" data-key="'+key+'" data-d="-1" aria-label="less '+key+'">-</button><b>'+o[key]+'</b><button type="button" class="hb" data-o="'+id+'" data-key="'+key+'" data-d="1" aria-label="more '+key+'">+</button></span>';
+  const mapOf=o=>{ const k=75/Math.max(8,o.n,o.s,o.e,o.w); return '<div class="map" role="img" aria-label="zone seen from above"><i style="left:'+(75-o.w*k)+'px;top:'+(75-o.n*k)+'px;width:'+((o.e+o.w)*k)+'px;height:'+((o.n+o.s)*k)+'px"></i><u></u></div>'; };
+  function drawB(){ const s=st.b, G=['Totems: place','Totems: drop','All BSP machines','Coin Vaults and other blocks'];
+    document.getElementById('sB').innerHTML='<div class="top"><span>ANTI TOTEM BLOCK</span><span>'+(s.e+s.w+1)+' x '+(s.u+s.d+1)+' x '+(s.n+s.s+1)+'</span></div><div class="two">'+mapOf(s)
+    +'<div class="grow" style="display:grid;grid-template-columns:auto auto;gap:6px 14px;align-content:start"><small style="grid-column:1/3">BLOCKS FROM THIS BLOCK</small>'+DIRS.map(d=>'<span>'+d[1]+'</span>'+stepper(s,d[0],'b')).join('')+'</div>'
+    +'<div class="grow" style="display:flex;flex-direction:column;gap:6px"><small>KEEP OUT</small>'+G.map((n,i)=>'<button type="button" class="hb'+(s.k[i]?' warn':'')+'" data-g="'+i+'" aria-pressed="'+!!s.k[i]+'">'+(s.k[i]?'BLOCKED':'allowed')+': '+n+'</button>').join('')+'</div></div><small>Map: north is up. Violet is this block, red is the zone.</small>';
+    document.querySelectorAll('#sB [data-g]').forEach(el=>el.onclick=()=>{ s.k[+el.dataset.g]^=1; drawB(); }); }
+  const RULES=[['Totems',['Shatter Totem: place','Shatter Totem: drop']],['Machines',['Tetrium Crucible','Combination Forge','Illyrium Crucible parts','Illyrium Refinery parts','Shatter Coin Factory parts','Motivator']],['Base blocks',['Coin Vault','Score Screen']]];
+  function drawC(){ const s=st.c; RULES.forEach(([g,list])=>list.forEach(n=>{ if(!(n in s.r)) s.r[n]=g!=='Base blocks'; }));
+    const body=s.tab==='zone'?'<div class="two">'+mapOf(s)+'<div class="grow" style="display:grid;grid-template-columns:auto auto;gap:6px 14px;align-content:start">'+DIRS.map(d=>'<span>'+d[1]+'</span>'+stepper(s,d[0],'c')).join('')+'</div></div>'
+      :'<div class="rl">'+RULES.map(([g,list])=>'<span style="color:var(--h-bad)">'+g.toUpperCase()+'</span><button type="button" class="hb" data-all="'+g+'">'+(list.every(n=>s.r[n])?'allow all':'block all')+'</button>'
+        +list.map(n=>'<span>'+n+'</span><button type="button" class="hb'+(s.r[n]?' warn':'')+'" data-r="'+n+'" aria-pressed="'+s.r[n]+'">'+(s.r[n]?'BLOCKED':'allowed')+'</button>').join('')).join('')+'</div>';
+    document.getElementById('sC').innerHTML='<div class="top"><span>ANTI TOTEM BLOCK</span><span class="row"><button type="button" class="hb" data-tab="rules" aria-pressed="'+(s.tab==='rules')+'">Rules</button><button type="button" class="hb" data-tab="zone" aria-pressed="'+(s.tab==='zone')+'">Zone</button></span></div>'+body
+      +'<small>'+Object.values(s.r).filter(Boolean).length+' things blocked in a '+(s.e+s.w+1)+' x '+(s.u+s.d+1)+' x '+(s.n+s.s+1)+' zone.</small>';
+    document.querySelectorAll('#sC [data-tab]').forEach(el=>el.onclick=()=>{ s.tab=el.dataset.tab; drawC(); });
+    document.querySelectorAll('#sC [data-r]').forEach(el=>el.onclick=()=>{ s.r[el.dataset.r]=!s.r[el.dataset.r]; drawC(); });
+    document.querySelectorAll('#sC [data-all]').forEach(el=>el.onclick=()=>{ const list=RULES.find(r=>r[0]===el.dataset.all)[1], to=!list.every(n=>s.r[n]); list.forEach(n=>s.r[n]=to); drawC(); }); }
+  document.addEventListener('click',e=>{ const b=e.target.closest('[data-key]'); if(!b) return; const o=st[b.dataset.o]; o[b.dataset.key]=Math.max(0,Math.min(64,o[b.dataset.key]+ +b.dataset.d)); (b.dataset.o==='b'?drawB:drawC)(); });
+  drawA(); drawB(); drawC();
+})();
+</script>

@@ -30,7 +30,8 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
     @Override
     protected boolean isItemValid(int slot, ItemStack stack) {
         return switch (slot) {
-            case IN -> stack.is(ModItems.TETRIUM_NUGGET.get()) || stack.is(ModItems.ILLYRIUM_NUGGET.get()) || stack.is(ModItems.TETRIUM_INGOT.get());
+            case IN -> stack.is(ModItems.TETRIUM_NUGGET.get()) || stack.is(ModItems.ILLYRIUM_NUGGET.get()) || stack.is(ModItems.MAGNATITE_NUGGET.get())
+                    || stack.is(ModItems.TETRIUM_INGOT.get());
             case UPGRADE -> stack.is(ModItems.ILLYRIUM_FORGE_UPGRADE.get());
             case FUEL -> net.minecraftforge.common.ForgeHooks.getBurnTime(stack, null) > 0;
             default -> false;
@@ -53,6 +54,9 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
         }
         if (in.is(ModItems.TETRIUM_NUGGET.get())) {
             return new ItemStack(ModItems.TETRIUM_INGOT.get());
+        }
+        if (in.is(ModItems.MAGNATITE_NUGGET.get())) {
+            return new ItemStack(ModItems.MAGNATITE_INGOT.get());
         }
         if (in.is(ModItems.ILLYRIUM_NUGGET.get()) && hasIllyriumUpgrade()) {
             return new ItemStack(ModItems.ILLYRIUM_INGOT.get());

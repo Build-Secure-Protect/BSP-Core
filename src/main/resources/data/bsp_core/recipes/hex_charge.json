@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DND",
+    "NXN",
+    "DND"
+  ],
+  "key": {
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "N": {
+      "item": "bsp_core:magnatite_nugget"
+    },
+    "X": {
+      "item": "minecraft:fermented_spider_eye"
+    }
+  },
+  "result": {
+    "item": "bsp_core:hex_charge"
+  }
+}

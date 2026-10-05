@@ -1,0 +1,215 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "atlas": "bsp_core:block/machine_atlas",
+  "particle": "bsp_core:block/machine_atlas"
+ },
+ "elements": [
+  {
+   "from": [
+    2,
+    0,
+    2
+   ],
+   "to": [
+    14,
+    2,
+    14
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4.0,
+      0.0,
+      7.0,
+      0.5
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      4.0,
+      0.0,
+      7.0,
+      0.5
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      4.0,
+      0.0,
+      7.0,
+      0.5
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      4.0,
+      0.0,
+      7.0,
+      0.5
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      4.0,
+      0.0,
+      7.0,
+      3.0
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      4.0,
+      0.0,
+      7.0,
+      3.0
+     ],
+     "texture": "#atlas"
+    }
+   }
+  },
+  {
+   "from": [
+    4,
+    2,
+    4
+   ],
+   "to": [
+    12,
+    4,
+    12
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      4.0,
+      2.0,
+      4.5
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      4.0,
+      2.0,
+      4.5
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      4.0,
+      2.0,
+      4.5
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      4.0,
+      2.0,
+      4.5
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      4.0,
+      2.0,
+      6.0
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      4.0,
+      2.0,
+      6.0
+     ],
+     "texture": "#atlas"
+    }
+   }
+  },
+  {
+   "from": [
+    6,
+    4,
+    6
+   ],
+   "to": [
+    10,
+    20,
+    10
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+     ],
+     "texture": "#atlas"
+    }
+   }
+  }
+ ]
+}

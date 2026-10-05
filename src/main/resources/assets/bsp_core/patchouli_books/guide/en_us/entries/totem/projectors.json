@@ -1,0 +1,53 @@
+{
+  "name": "Generators and Projectors",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:totem_projector",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Totem Generator$() under your placed totem draws off some of its base powers. A $(item)Totem Cable$() carries them to a $(item)Totem Projector$(), which recreates them as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:totem_generator",
+      "recipe2": "bsp_core:totem_projector",
+      "text": "Both need RF all the time: 200 a tick for the generator, 100 for the projector."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Put the first generator directly under the totem. More can go beside it, side to side, up to nine in a three by three with the totem on the middle one. They join into one slab, and the ring of light around your totem widens.$(br2)Each generator has its own power, its own cable and its own projector. Right-click the slab and pick a generator from the grid.",
+      "title": "Up to nine"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Each generator sends two of these at once (three with a $(item)Channel Expander$()):$(br2)$(li)Fortify$(li)Healing Aura$(li)Alarm$(li)Ward$(li)Sanctuary$(li)Overclock$(br2)Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.",
+      "title": "What can be sent"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Cables plug into a generator's sides and bottom. Each kind has a longest run:$(br2)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)The generator must be able to push that far too: 15 blocks, or 25, 40 and 80 with $(item)Reach Amplifiers$() Mk I, II and III. A mixed run goes as far as its weakest cable.",
+      "title": "Cables and reach"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tetrium_core_cable",
+      "recipe2": "bsp_core:magnatite_core_cable"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:illyrium_core_cable",
+      "recipe2": "bsp_core:charged_illyrium_core_cable"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:reach_amplifier_mk1",
+      "recipe2": "bsp_core:reach_amplifier_mk2"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:reach_amplifier_mk3",
+      "recipe2": "bsp_core:channel_expander"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:totem_projector"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.totem_projector"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.totem_projector.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:totem_projector"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:charged_magnatite"
+}

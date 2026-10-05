@@ -47,6 +47,20 @@ public final class ModItems {
     public static final RegistryObject<Item> PURE_ILLYRIUM_DUST = simple("pure_illyrium_dust");
     public static final RegistryObject<Item> ILLYRIUM_NUGGET = simple("illyrium_nugget");
     public static final RegistryObject<Item> ILLYRIUM_INGOT = simple("illyrium_ingot");
+    // --- Magnatite chain: ore, Magnetic Centrifuge, nuggets (and Carbon Dust), ingot, charged ingot
+    public static final RegistryObject<Item> MAGNATITE_NUGGET = simple("magnatite_nugget");
+    public static final RegistryObject<Item> MAGNATITE_INGOT = simple("magnatite_ingot");
+    /** A Magnatite Ingot magnetised in a Magnetic Centrifuge fitted with a Copper Tetrium Coil. */
+    public static final RegistryObject<Item> CHARGED_MAGNATITE_INGOT = ITEMS.register("charged_magnatite_ingot", () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.UNCOMMON)) {
+        @Override
+        public boolean isFoil(net.minecraft.world.item.ItemStack stack) {
+            return true;
+        }
+    });
+    /** What the centrifuge spins out of the ore besides metal. Goes into rotors and coil insulation. */
+    public static final RegistryObject<Item> CARBON_DUST = simple("carbon_dust");
+    /** Fitted to a Magnetic Centrifuge, lets it charge Magnatite Ingots. */
+    public static final RegistryObject<Item> COPPER_TETRIUM_COIL = ITEMS.register("copper_tetrium_coil", () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ILLYRIUM_FORGE_UPGRADE = ITEMS.register("illyrium_forge_upgrade", () -> new Item(new Item.Properties().stacksTo(1)));
     /** Results of crushing by pickaxe; they resolve into dust or nuggets on reaching an inventory. */
     public static final RegistryObject<Item> CRUSHED_TETRIUM = ITEMS.register("crushed_tetrium",
@@ -66,7 +80,8 @@ public final class ModItems {
             FILTERS.put(tier, ITEMS.register(tier.name().toLowerCase() + "_filter", () -> new FilterItem(tier)));
         }
         for (RegistryObject<net.minecraft.world.level.block.Block> ore : List.of(ModBlocks.TETRIUM_ORE, ModBlocks.DEEPSLATE_TETRIUM_ORE,
-                ModBlocks.ILLYRIUM_ORE, ModBlocks.DEEPSLATE_ILLYRIUM_ORE, ModBlocks.END_STONE_ILLYRIUM_ORE)) {
+                ModBlocks.ILLYRIUM_ORE, ModBlocks.DEEPSLATE_ILLYRIUM_ORE, ModBlocks.END_STONE_ILLYRIUM_ORE,
+                ModBlocks.MAGNATITE_ORE, ModBlocks.DEEPSLATE_MAGNATITE_ORE)) {
             ORE_ITEMS.add(ITEMS.register(ore.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(ore.get(), new Item.Properties())));
         }
     }
@@ -94,7 +109,8 @@ public final class ModItems {
 
     static {
         for (var block : List.of(ModBlocks.ILLYRIUM_CRUCIBLE, ModBlocks.ILLYRIUM_REFINERY, ModBlocks.ILLYRIUM_CASING, ModBlocks.ILLYRIUM_GLASS,
-                ModBlocks.ILLYRIUM_CORE, ModBlocks.LAVA_PYLON, ModBlocks.REFINERY_PUMP, ModBlocks.ITEM_HATCH)) {
+                ModBlocks.ILLYRIUM_CORE, ModBlocks.LAVA_PYLON, ModBlocks.REFINERY_PUMP, ModBlocks.ITEM_HATCH,
+                ModBlocks.MAGNETIC_CENTRIFUGE, ModBlocks.CENTRIFUGE_CASING, ModBlocks.CENTRIFUGE_ROTOR, ModBlocks.CENTRIFUGE_POWER_PORT)) {
             MULTIBLOCK_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
         }
     }
@@ -119,6 +135,40 @@ public final class ModItems {
 
     public static final RegistryObject<Item> ADMIN_RACK = ITEMS.register("admin_rack",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.ADMIN_RACK.get(), new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
+
+    public static final RegistryObject<Item> ANTI_TOTEM = ITEMS.register("anti_totem",
+            () -> new com.mrgregles.bsp_core.zone.AntiTotemBlockItem(ModBlocks.ANTI_TOTEM.get()));
+
+    public static final RegistryObject<Item> DECOY_TOTEM = ITEMS.register("decoy_totem", () -> new com.mrgregles.bsp_core.decoy.DecoyTotemBlockItem(ModBlocks.DECOY_TOTEM.get()));
+    public static final RegistryObject<Item> DECOY_POWER_BASE = ITEMS.register("decoy_power_base",
+            () -> new net.minecraft.world.item.BlockItem(ModBlocks.DECOY_POWER_BASE.get(), new Item.Properties()));
+    /** The hard-to-make heart of a Decoy Totem: Charged Magnatite around an Illyrium Processor. */
+    public static final RegistryObject<Item> MAGNET_CORE = ITEMS.register("magnet_core", () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
+    /** The parts that go into a Decoy Totem's sockets, in tree order. */
+    public static final Map<com.mrgregles.bsp_core.decoy.DecoyUpgradeItem.Kind, RegistryObject<Item>> DECOY_UPGRADES = new EnumMap<>(com.mrgregles.bsp_core.decoy.DecoyUpgradeItem.Kind.class);
+
+    static {
+        for (var kind : com.mrgregles.bsp_core.decoy.DecoyUpgradeItem.Kind.values()) {
+            DECOY_UPGRADES.put(kind, ITEMS.register(kind.id, () -> new com.mrgregles.bsp_core.decoy.DecoyUpgradeItem(kind)));
+        }
+    }
+
+    /** The Totem Generator, the Totem Projector, the four Totem Cables and the generator's socket parts, in creative-tab order. */
+    public static final List<RegistryObject<Item>> PROJECTOR_ITEMS = new ArrayList<>();
+    public static final Map<com.mrgregles.bsp_core.projector.GeneratorUpgradeItem.Kind, RegistryObject<Item>> GENERATOR_UPGRADES = new EnumMap<>(com.mrgregles.bsp_core.projector.GeneratorUpgradeItem.Kind.class);
+
+    static {
+        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.TOTEM_GENERATOR, ModBlocks.TOTEM_PROJECTOR));
+        blocks.addAll(ModBlocks.TOTEM_CABLES.values());
+        for (var block : blocks) {
+            PROJECTOR_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
+        }
+        for (var kind : com.mrgregles.bsp_core.projector.GeneratorUpgradeItem.Kind.values()) {
+            RegistryObject<Item> item = ITEMS.register(kind.id, () -> new com.mrgregles.bsp_core.projector.GeneratorUpgradeItem(kind));
+            GENERATOR_UPGRADES.put(kind, item);
+            PROJECTOR_ITEMS.add(item);
+        }
+    }
 
     public static final RegistryObject<Item> COIN_VAULT = ITEMS.register("coin_vault",
             () -> new com.mrgregles.bsp_core.vault.CoinVaultBlockItem(ModBlocks.COIN_VAULT.get(), new Item.Properties()));

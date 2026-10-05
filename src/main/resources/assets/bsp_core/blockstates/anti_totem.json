@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "bsp_core:block/anti_totem"
+    }
+  }
+}

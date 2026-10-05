@@ -185,8 +185,33 @@ public final class AdminService {
         }
         rows.sort(Comparator.comparingInt(AdminDataPacket.Row::points).reversed().thenComparing(AdminDataPacket.Row::name, String.CASE_INSENSITIVE_ORDER));
         SeasonData season = SeasonData.get(server);
-        return new AdminDataPacket(open, Admins.isAdmin(viewer), season.number, season.day(), season.lastWinner, season.lastWinnerPoints, season.holderHours, minutesToHolderReward(season),
+        return new AdminDataPacket(open, Admins.isAdmin(viewer), season.number, season.day(), season.lastWinner, season.lastWinnerPoints, season.holderHours, minutesToHolderReward(season), decoyRanges(),
                 rows.subList(0, Math.min(MAX_ROWS, rows.size())));
+    }
+
+    /** The four Decoy Totem compass ranges (0 to 3 Range Coils), from the config. */
+    public static int[] decoyRanges() {
+        List<? extends Integer> list = com.mrgregles.bsp_core.BSPConfig.DECOY_RANGES.get();
+        int[] out = new int[4];
+        for (int i = 0; i < 4; i++) {
+            out[i] = com.mrgregles.bsp_core.BSPConfig.levelValue(list, i + 1, 24);
+        }
+        return out;
+    }
+
+    /** Changes one of those ranges and writes it to the server config file. */
+    public static void setDecoyRange(int index, int blocks) {
+        int[] now = decoyRanges();
+        if (index < 0 || index >= now.length) {
+            return;
+        }
+        now[index] = Math.max(1, Math.min(512, blocks));
+        List<Integer> list = new ArrayList<>();
+        for (int v : now) {
+            list.add(v);
+        }
+        com.mrgregles.bsp_core.BSPConfig.DECOY_RANGES.set(list);
+        com.mrgregles.bsp_core.BSPConfig.DECOY_RANGES.save();
     }
 
     /** Opens the panel for a moderator or admin; tells anyone else they may not. */

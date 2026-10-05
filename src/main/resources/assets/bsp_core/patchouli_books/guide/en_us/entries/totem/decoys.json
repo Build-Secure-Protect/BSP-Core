@@ -1,0 +1,59 @@
+{
+  "name": "Decoy Totems",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:decoy_totem",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:decoy_totem",
+      "text": "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:magnet_core",
+      "recipe2": "bsp_core:decoy_totem",
+      "text": "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:decoy_power_base",
+      "text": "A decoy must stand on a $(item)Decoy Power Base$(), fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.",
+      "title": "When someone takes the bait"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Right-click your decoy to fit parts. A socket opens when the one before it is filled.$(br2)$(li)$(l)Range$(): Range Coils Mk I, II, III widen the compass range from 24 blocks to 40, 64 and 96.$(li)$(l)Traps$(): a charge, then a Trap Amplifier, then a second charge.$(li)$(l)Casing$(): each Reinforced Casing survives one more attempt.",
+      "title": "Sockets"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Each charge is used up when it goes off.$(br2)$(li)Blast: an explosion that hurts the thief and breaks nothing.$(li)Hex: Slowness, Weakness and Glowing.$(li)Poison.$(li)Fatigue: Mining Fatigue.$(li)Warp: throws the thief up to 30 blocks away.",
+      "title": "Trap charges"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:range_coil_mk1",
+      "recipe2": "bsp_core:range_coil_mk2"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:range_coil_mk3",
+      "recipe2": "bsp_core:trap_amplifier"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:blast_charge",
+      "recipe2": "bsp_core:warp_charge",
+      "text": "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:reinforced_casing"
+    }
+  ]
+}

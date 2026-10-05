@@ -23,6 +23,20 @@
     "bsp_core:factory_power_port",
     "bsp_core:factory_motivator",
     "bsp_core:score_screen",
-    "bsp_core:coin_vault"
+    "bsp_core:coin_vault",
+    "bsp_core:magnatite_ore",
+    "bsp_core:deepslate_magnatite_ore",
+    "bsp_core:magnetic_centrifuge",
+    "bsp_core:centrifuge_casing",
+    "bsp_core:centrifuge_rotor",
+    "bsp_core:centrifuge_power_port",
+    "bsp_core:decoy_totem",
+    "bsp_core:decoy_power_base",
+    "bsp_core:totem_generator",
+    "bsp_core:totem_projector",
+    "bsp_core:tetrium_core_cable",
+    "bsp_core:magnatite_core_cable",
+    "bsp_core:illyrium_core_cable",
+    "bsp_core:charged_illyrium_core_cable"
   ]
 }

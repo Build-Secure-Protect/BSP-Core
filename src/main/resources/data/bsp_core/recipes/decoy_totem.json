@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GMG",
+    "IKI",
+    "PHP"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "M": {
+      "item": "bsp_core:magnet_core"
+    },
+    "I": {
+      "item": "bsp_core:magnatite_ingot"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:decoy_totem"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/decoy_totem"
+    },
+    "facing=east": {
+      "model": "bsp_core:block/decoy_totem"
+    },
+    "facing=south": {
+      "model": "bsp_core:block/decoy_totem"
+    },
+    "facing=west": {
+      "model": "bsp_core:block/decoy_totem"
+    }
+  }
+}

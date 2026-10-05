@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:decoy_totem"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.decoy_totem"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.decoy_totem.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:decoy_totem"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:charged_magnatite"
+}

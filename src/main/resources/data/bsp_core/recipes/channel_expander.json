@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CBC",
+    "BKB",
+    "CDC"
+  ],
+  "key": {
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "B": {
+      "item": "bsp_core:basic_control_circuit"
+    },
+    "K": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    }
+  },
+  "result": {
+    "item": "bsp_core:channel_expander"
+  }
+}

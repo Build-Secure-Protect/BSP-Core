@@ -1,0 +1,177 @@
+<title>Totem Projector Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<style>
+.chk{ display:flex; gap:6px; align-items:center; cursor:pointer; } .chk input{ accent-color:#19d3b0; }
+.stage{ display:flex; align-items:stretch; gap:6px; } .stage > div{ flex:1; background:var(--h-slot); border:2px solid var(--h-dim); padding:6px; display:flex; flex-direction:column; gap:4px; min-width:0; } .stage > span{ align-self:center; color:var(--h-tq); }
+.bt{ font:inherit; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 6px; cursor:pointer; text-align:left; } .bt.on{ border-color:var(--h-tq); color:var(--h-tq); } .bt.na{ opacity:.4; cursor:not-allowed; }
+</style>
+<div class="wrap">
+<section><h1>Totem Projector Concepts</h1>
+<p class="lede">Three connected features: a Totem Generator that sits under a Shatter Totem and draws off some of its powers, a Totem Projector that recreates them as a second aura somewhere else, and the Totem Cable that joins the two. Three looks for each block, three cable styles and three screens. The totem shown is the real in-game model. Nothing here is in the mod yet.</p></section>
+
+<section><h2>1. Totem Generator</h2><p class="lede">Goes directly under a placed Shatter Totem. Needs RF.</p><div class="grid3" id="gens"></div></section>
+<section><h2>2. Totem Projector</h2><p class="lede">Placed anywhere a cable can reach. Makes an aura bubble like the totem's own. Needs RF.</p><div class="grid3" id="projs"></div></section>
+
+<section><h2>3. Totem Cable</h2>
+<p class="lede">Four cables, each with a longest run it can carry the totem's powers over. Pick a cable to see each style in its colour.</p>
+<div class="card"><div class="ctl"><label for="tier">Cable <select id="tier"><option value="0">Tetrium Core: 15 blocks</option><option value="1">Magnatite Core: 25 blocks</option><option value="2">Illyrium Core: 40 blocks</option><option value="3">Charged Illyrium Core: 80 blocks</option></select></label></div></div>
+<div class="grid3" id="cables"></div></section>
+
+<section><h2>4. The Generator screen</h2>
+<p class="lede">Where the owner chooses which of the totem's powers to send, and sees how much arrives. The made-up totem here is Tier III with Fortify 4, Healing Aura 3, Ward 2, Alarm 1 and Overclock 2; the cable run is set with the slider.</p>
+<div class="card"><div class="ctl"><label for="len">Cable length <input id="len" type="range" min="1" max="80" value="12"><output id="lenO">12</output> blocks</label></div></div>
+<div class="card"><h3>A. Power List</h3><p>A plain list of the totem's base powers with a switch each, and what level each arrives at. Simple; little sense of the cable.</p><div class="scroll"><div class="hud" style="width:600px" id="sA"></div></div></div>
+<div class="card"><h3>B. Channel Slots</h3><p>The generator has a fixed number of channels (two here). Click a channel to choose which power it carries. Makes "a set amount of the powers" very clear, and channels could be added by an upgrade later.</p><div class="scroll"><div class="hud" style="width:600px" id="sB"></div></div></div>
+<div class="card"><h3>C. Signal Path</h3><p>The whole chain drawn left to right: totem, generator, cable, projector, with the numbers at each stage and the powers underneath. Shows at a glance where strength is lost.</p><div class="scroll"><div class="hud" style="width:640px" id="sC"></div></div></div>
+</section>
+
+<section><h2>How it would work</h2>
+<div class="flow">
+<div class="card"><h3>What can be sent</h3><ol><li>Only the totem's <b>base</b> powers, the ones that work around a placed totem: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock.</li><li>Not Deadlock (it is about stealing that totem) and not carried or raid powers.</li><li>A generator sends <b>two</b> powers at once.</li></ol></div>
+<div class="card"><h3>Strength and distance</h3><ol><li>Full strength next to the generator, falling in a straight line to <b>half</b> at the cable's longest run. Levels round down, never below 1.</li><li>Past the cable's limit nothing arrives.</li><li>Cable types can be mixed; the shortest-reach type in the run sets the limit.</li></ol></div>
+<div class="card"><h3>Rules</h3><ol><li>The projector works for the <b>totem's owner</b>, like the totem's own aura. If the totem is stolen, it now works for the thief.</li><li>One projector per generator.</li><li>Both blocks need RF all the time. No power, no aura.</li><li>The projector is not a totem: it cannot be stolen and scores nothing.</li></ol></div>
+</div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, el=id=>document.getElementById(id);
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}], TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,GOLD=0xffd23a,COPPER=0xc87a3c,MAG2=0x7fb3ff,VIO=0xb58cff,DARK=0x0c1116;
+  const TIERS=[[0x6b4fa3,'Tetrium'],[0x5c6b85,'Magnatite'],[0x19d3b0,'Illyrium'],[0xbff6ff,'Charged Illyrium']];
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(op){ m.material.transparent=true; m.material.opacity=op; m.material.depthWrite=false; } m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function totem(g,y){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); root.position.y=y; g.add(root), mat=new THREE.MeshLambertMaterial({map:tex,alphaTest:.5});
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); } else { m.position.set(c[0],c[1],c[2]); root.add(m); } } }
+  function makeView(card,build,dist,target){ const view=document.createElement('div'); view.className='view'; card.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(6,14,-10); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let tick=build(g)||(()=>{}), ry=Math.PI+.6, rx=.3, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.2,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.003; tick(t);
+      cam.position.set(target[0]+Math.sin(ry)*dist*Math.cos(rx),target[1]+Math.sin(rx)*dist,target[2]+Math.cos(ry)*dist*Math.cos(rx)); cam.lookAt(target[0],target[1],target[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return ()=>{ scene.remove(g); g=new THREE.Group(); scene.add(g); tick=build(g)||(()=>{}); }; }
+  function cards(host,list,build,dist,target){ const out=[]; for(const [name,text,k] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(host).appendChild(c); out.push(makeView(c,g=>build(g,k),dist,target)); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } return out; }
+  const socket=(g,y)=>{ bx(g,[-.4,y,5],[0,y+6,11],TRIM); bx(g,[-.7,y+1.5,6.5],[-.4,y+4.5,9.5],TQ,true); };
+
+  // ------------------------------------------------------------------ generators (block from y -16 to 0, totem on top)
+  const gens={
+   a(g){ bx(g,[0,-16,0],[16,-13,16],HULL2); bx(g,[1,-13,1],[15,-3,15],HULL); bx(g,[0,-3,0],[16,0,16],HULL2); const prongs=[];
+     for(const [x,z] of [[0,0],[13,0],[0,13],[13,13]]){ bx(g,[x,0,z],[x+3,5,z+3],TRIM); prongs.push(bx(g,[x+.8,5,z+.8],[x+2.2,8,z+2.2],TQ,true)); }
+     for(let i=0;i<3;i++) bx(g,[.6,-11.5+i*3,.6],[15.4,-10.3+i*3,15.4],MID); socket(g,-11); totem(g,0);
+     return t=>prongs.forEach((p,i)=>p.material.color.setHex(TQ).multiplyScalar(.5+.5*Math.max(0,Math.sin(t*4-i*1.5)))); },
+   b(g){ bx(g,[0,-16,0],[16,-12,16],HULL2); bx(g,[2,-12,2],[14,-2,14],HULL); bx(g,[0,-2,0],[16,0,16],HULL2); for(const [x,z] of [[1,1],[13,1],[1,13],[13,13]]) bx(g,[x,-12,z],[x+2,-2,z+2],COPPER);
+     socket(g,-11); totem(g,0); const rings=[]; for(let i=0;i<2;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(9,.4,8,40),new THREE.MeshBasicMaterial({color:TQ,transparent:true})); r.rotation.x=Math.PI/2; r.position.set(8,2,8); g.add(r); rings.push(r); }
+     return t=>rings.forEach((r,i)=>{ const k=((t*.45+i*.5)%1); r.position.y=1+k*13; r.material.opacity=1-k; r.scale.setScalar(1-k*.35); }); },
+   c(g){ bx(g,[0,-16,0],[16,-14,16],HULL2); bx(g,[3,-14,3],[13,-4,13],HULL); bx(g,[0,-4,0],[16,0,16],HULL2); const tanks=[], cols=[0xe3b341,0xff6b5c,0x8fe04a,0x3a8bff];
+     [[.5,.5],[12.5,.5],[.5,12.5],[12.5,12.5]].forEach(([x,z],i)=>{ bx(g,[x,-14,z],[x+3,-4,z+3],PANEL,false,.25); tanks.push(bx(g,[x+.5,-13.5,z+.5],[x+2.5,-9,z+2.5],cols[i],true)); });
+     for(const [x,z,w,d] of [[1,6.5,2,3],[13,6.5,2,3],[6.5,1,3,2],[6.5,13,3,2]]) bx(g,[x,0,z],[x+w,3,z+d],TRIM); socket(g,-12); totem(g,0);
+     return t=>tanks.forEach((m,i)=>{ const h=2+2.5*(.5+.5*Math.sin(t*1.2+i*1.7)); m.scale.y=h/4.5; m.position.y=-13.5+h/2; }); } };
+  cards('gens',[['A. Siphon Plinth','A banded plinth with four prongs rising around the totem that light in turn, as if drawing power down. Compact and reads as part of the totem.','a'],
+    ['B. Resonance Base','A base with copper corner posts; rings of light rise from it up around the totem and fade. Easy to spot from a distance that the totem is being tapped.','b'],
+    ['C. Extractor Cradle','Clamps hold the totem and four glass tanks at the corners fill and drain in the colours of the powers being drawn off. The most mechanical of the three.','c']],(g,k)=>gens[k](g),86,[8,2,8]);
+
+  // ------------------------------------------------------------------ projectors
+  function bubble(g,y){ const s=new THREE.Mesh(new THREE.SphereGeometry(15,24,16),new THREE.MeshBasicMaterial({color:TQ,transparent:true,opacity:.07,depthWrite:false})); s.position.set(8,y,8); g.add(s);
+    const w=new THREE.Mesh(new THREE.SphereGeometry(15,12,8),new THREE.MeshBasicMaterial({color:TQ,wireframe:true,transparent:true,opacity:.18})); w.position.set(8,y,8); g.add(w); return w; }
+  const projs={
+   a(g){ bx(g,[1,0,1],[15,3,15],HULL2); bx(g,[5,3,5],[11,9,11],HULL); for(const [x,z] of [[2,2],[12,2],[2,12],[12,12]]) bx(g,[x,3,z],[x+2,7,z+2],TRIM); const lens=bx(g,[6,9,6],[10,11,10],TQ,true);
+     const beam=bx(g,[7.3,11,7.3],[8.7,30,8.7],TQ,true,.35); const w=bubble(g,12); socket(g,2); return t=>{ w.rotation.y=t*.2; beam.material.opacity=.2+.2*Math.sin(t*5); lens.material.color.setHex(TQ).multiplyScalar(.7+.3*Math.sin(t*5)); }; },
+   b(g){ bx(g,[1,0,1],[15,2,15],HULL2); bx(g,[6.5,2,6.5],[9.5,10,9.5],HULL); const head=new THREE.Group(); head.position.set(8,11,8); g.add(head);
+     for(let i=0;i<3;i++){ const a=new THREE.Group(); a.rotation.y=i*Math.PI*2/3; head.add(a); bx(a,[1,-.5,-.5],[5,.5,.5],TRIM); const d=new THREE.Mesh(new THREE.CylinderGeometry(3,1,2,16,1,true),new THREE.MeshLambertMaterial({color:PANEL,side:THREE.DoubleSide})); d.position.set(6,1.5,0); a.add(d); bx(a,[5.6,1,-.4],[6.4,3.4,.4],TQ,true); }
+     const w=bubble(g,12); socket(g,1); return t=>{ head.rotation.y=t*.9; w.rotation.y=-t*.2; }; },
+   c(g){ bx(g,[2,0,2],[14,2,14],HULL2); bx(g,[4,2,4],[12,4,12],TRIM); const ob=bx(g,[6,4,6],[10,20,10],HULL); const strips=[]; for(const [x,z,w,d] of [[5.8,7,.3,2],[9.9,7,.3,2],[7,5.8,2,.3],[7,9.9,2,.3]]) strips.push(bx(g,[x,5,z],[x+w,19,z+d],TQ,true));
+     const shards=[]; for(let i=0;i<4;i++){ const s=bx(g,[-.6,-1.2,-.6],[.6,1.2,.6],TQ,true); shards.push(s); } const cap=bx(g,[6.6,20,6.6],[9.4,22,9.4],TQ,true); const w=bubble(g,12); socket(g,1);
+     return t=>{ shards.forEach((s,i)=>{ const a=t*.8+i*Math.PI/2; s.position.set(8+Math.cos(a)*6,14+Math.sin(t*1.5+i)*2,8+Math.sin(a)*6); s.rotation.y=a; }); strips.forEach((s,i)=>s.material.color.setHex(TQ).multiplyScalar(.5+.5*Math.sin(t*3+i))); w.rotation.y=t*.15; }; } };
+  cards('projs',[['A. Beacon Emitter','A squat emitter with a lens that throws a beam straight up into the aura. Familiar: it reads like a beacon, so players will understand it at once.','a'],
+    ['B. Dish Array','A mast with three small dishes turning slowly. Looks like broadcasting equipment, which matches the idea of a signal sent down a cable.','b'],
+    ['C. Totem Obelisk','A tall dark pylon with glowing seams and shards circling it. The most totem-like, and striking as a centrepiece away from your base.','c']],(g,k)=>projs[k](g),112,[8,12,8]);
+
+  // ------------------------------------------------------------------ cables: an L-shaped run with a junction
+  const tierCol=()=>TIERS[+el('tier').value][0];
+  const cab={
+   a(g){ const c=tierCol(), run=(f,t)=>{ bx(g,f.map((v,i)=>v-(f[i]===t[i]?2:0)),t.map((v,i)=>v+(f[i]===t[i]?2:0)),HULL2); };
+     run([0,8,8],[40,8,8]); run([40,8,8],[40,8,40]); run([24,8,8],[24,30,8]); const strips=[bx(g,[0,10,7.4],[40,10.3,8.6],c,true),bx(g,[39.4,10,8],[40.6,10.3,40],c,true),bx(g,[21.7,8,7.4],[22,30,8.6],c,true)];
+     for(const x of [8,16,32]) bx(g,[x-.6,5.4,5.4],[x+.6,10.6,10.6],TRIM); for(const z of [16,24,32]) bx(g,[37.4,5.4,z-.6],[42.6,10.6,z+.6],TRIM); for(const y of [16,24]) bx(g,[21.4,y-.6,5.4],[26.6,y+.6,10.6],TRIM);
+     for(const q of [[40,8,8],[24,8,8]]) bx(g,[q[0]-3,q[1]-3,q[2]-3],[q[0]+3,q[1]+3,q[2]+3],TRIM);
+     return t=>strips.forEach(s=>s.material.color.setHex(c).multiplyScalar(.7+.3*Math.sin(t*4))); },
+   b(g){ const c=tierCol(), cores=[]; const run=(f,t)=>{ bx(g,f.map((v,i)=>v-(f[i]===t[i]?2.5:0)),t.map((v,i)=>v+(f[i]===t[i]?2.5:0)),0xbfe6ff,false,.22); cores.push(bx(g,f.map((v,i)=>v-(f[i]===t[i]?.9:0)),t.map((v,i)=>v+(f[i]===t[i]?.9:0)),c,true)); };
+     run([0,8,8],[40,8,8]); run([40,8,8],[40,8,40]); run([24,8,8],[24,30,8]); for(const p of [[40,8,8],[24,8,8]]) bx(g,[p[0]-3.2,p[1]-3.2,p[2]-3.2],[p[0]+3.2,p[1]+3.2,p[2]+3.2],TRIM);
+     const pulse=bx(g,[-1.4,-1.4,-1.4],[1.4,1.4,1.4],0xffffff,true); return t=>{ const k=(t*.35)%1; if(k<.55) pulse.position.set(k/.55*40,8,8); else pulse.position.set(40,8,8+(k-.55)/.45*32); cores.forEach(m=>m.material.color.setHex(c).multiplyScalar(.75+.25*Math.sin(t*5))); }; },
+   c(g){ const c=tierCol(), lit=[]; const seg=(p,ax)=>{ const h=[2.1,2.1,2.1], b=[2.6,2.6,2.6]; h[ax]=2.7; b[ax]=.5; bx(g,p.map((v,i)=>v-h[i]),p.map((v,i)=>v+h[i]),HULL); lit.push(bx(g,p.map((v,i)=>v-b[i]),p.map((v,i)=>v+b[i]),c,true)); };
+     for(let x=3;x<37;x+=6) seg([x,8,8],0); for(let z=14;z<40;z+=6) seg([40,8,z],2); for(let y=14;y<30;y+=6) seg([24,y,8],1); for(const q of [[40,8,8],[24,8,8]]) bx(g,[q[0]-3.4,q[1]-3.4,q[2]-3.4],[q[0]+3.4,q[1]+3.4,q[2]+3.4],TRIM);
+     return t=>lit.forEach((m,i)=>m.material.color.setHex(c).multiplyScalar(.35+.65*Math.max(0,Math.sin(t*5-i*.8)))); } };
+  const cableViews=cards('cables',[['A. Striped Conduit','A slim dark square pipe with a coloured stripe along the top and collars at each joint. Tidy and unobtrusive; easy to run along walls.','a'],
+    ['B. Glass Conduit','A clear tube with a glowing coloured core, and a bright pulse that travels from generator to projector. You can see it working and which way it runs.','b'],
+    ['C. Linked Segments','Chunky armoured links with a coloured band on each that lights in sequence. The heaviest look, closest to the factory machines.','c']],(g,k)=>cab[k](g),120,[22,14,22]);
+  el('tier').addEventListener('change',()=>cableViews.forEach(r=>r()));
+
+  // ------------------------------------------------------------------ generator screens
+  const P=[['Fortify',4],['Healing Aura',3],['Ward',2],['Alarm',1],['Overclock',2],['Sanctuary',0]], MAXCH=2, st={on:[0,1],ch:[0,1]};
+  function reach(){ const len=+el('len').value, tier=+el('tier').value, max=[15,25,40,80][tier]; return {len,max,ok:len<=max,k:len<=max?1-.5*len/max:0,name:TIERS[tier][1]}; }
+  const arrives=(lvl,r)=>r.ok?Math.max(1,Math.floor(lvl*r.k)):0;
+  function draw(){ const r=reach(); el('lenO').textContent=r.len;
+    const status=r.ok?'<span style="color:var(--h-tq)">LINKED</span>':'<span style="color:var(--h-bad)">CABLE TOO LONG</span>', pct=Math.round(r.k*100);
+    el('sA').innerHTML='<div class="top"><span>TOTEM GENERATOR</span><span>'+status+'</span></div><div class="row">RF <div class="bar" style="width:140px"><i style="width:70%"></i></div> <small>200 RF/t</small></div>'
+      +'<small>'+r.name+' Core cable, '+r.len+' of '+r.max+' blocks: '+pct+'% strength. Sending '+st.on.length+' of '+MAXCH+'.</small><table class="ht"><tr><th>Power</th><th>Totem</th><th>Arrives</th><th></th></tr>'
+      +P.map((p,i)=>'<tr><td>'+p[0]+'</td><td>'+(p[1]||'-')+'</td><td>'+(st.on.includes(i)&&p[1]?arrives(p[1],r):'-')+'</td><td><button type="button" class="hb'+(st.on.includes(i)?' go':'')+'" data-a="'+i+'"'+(p[1]?'':' disabled')+' aria-pressed="'+st.on.includes(i)+'">'+(p[1]?(st.on.includes(i)?'SENDING':'off'):'not unlocked')+'</button></td></tr>').join('')+'</table>';
+    el('sB').innerHTML='<div class="top"><span>TOTEM GENERATOR</span><span>'+status+'</span></div><div class="two"><div class="grow" style="display:flex;flex-direction:column;gap:8px"><small>CHANNELS (click to change the power)</small>'
+      +st.ch.map((p,c)=>'<button type="button" class="bt on" data-c="'+c+'">CHANNEL '+(c+1)+': '+P[p][0]+' '+P[p][1]+' &gt; arrives at '+arrives(P[p][1],r)+'</button>').join('')
+      +'<button type="button" class="bt na" disabled>CHANNEL 3: needs an upgrade</button></div><div style="display:flex;flex-direction:column;gap:6px;min-width:200px"><div class="row">RF <div class="bar" style="width:120px"><i style="width:70%"></i></div></div><small>200 RF/t</small><div>Cable: '+r.name+' Core</div><div>Run: '+r.len+' of '+r.max+' blocks</div><div>Strength: '+pct+'%</div></div></div>';
+    el('sC').innerHTML='<div class="top"><span>TOTEM GENERATOR</span><span>'+status+'</span></div><div class="stage"><div><small>TOTEM</small><span>Tier III</span><small>5 base powers</small></div><span>&gt;</span><div><small>GENERATOR</small><span>'+st.on.length+' of '+MAXCH+' sent</span><small>200 RF/t</small></div><span>&gt;</span>'
+      +'<div><small>CABLE</small><span>'+r.name+'</span><small>'+r.len+' / '+r.max+' blocks</small></div><span>&gt;</span><div><small>PROJECTOR</small><span>'+(r.ok?pct+'% strength':'no signal')+'</span><small>100 RF/t</small></div></div>'
+      +'<div class="row">'+P.map((p,i)=>'<button type="button" class="bt'+(st.on.includes(i)?' on':'')+(p[1]?'':' na')+'" data-a="'+i+'"'+(p[1]?'':' disabled')+'>'+p[0]+'<br>'+(p[1]?p[1]+' &gt; '+(st.on.includes(i)?arrives(p[1],r):'-'):'locked')+'</button>').join('')+'</div>';
+    document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.a; if(st.on.includes(i)) st.on=st.on.filter(v=>v!==i); else { st.on.push(i); if(st.on.length>MAXCH) st.on.shift(); } draw(); });
+    document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ const c=+b.dataset.c; do { st.ch[c]=(st.ch[c]+1)%5; } while(st.ch[c]===st.ch[1-c]); draw(); }); }
+  el('len').addEventListener('input',draw); el('tier').addEventListener('change',draw); draw();
+})();
+</script>

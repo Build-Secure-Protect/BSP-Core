@@ -1,0 +1,161 @@
+<title>Magnatite And Centrifuge Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Four numbered features, each a section: its 3D block
+   concepts in a row, then three stacked working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/10; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:120px; } .ctl select, .ctl input[type=text]{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.flow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; } .flow ol{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); } .flow b{ color:var(--fg); }
+/* ---- in-game screens ---- */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-tq)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .top{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-tq)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:4px 8px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb[aria-pressed="true"]{ border-color:var(--h-vio); color:var(--h-vio); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .two{ display:flex; gap:14px; } .grow{ flex:1; min-width:0; }
+.ht{ width:100%; border-collapse:collapse; } .ht th{ text-align:left; color:var(--h-muted); font-weight:400; padding:3px 6px 3px 0; } .ht td{ padding:4px 6px 4px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.ci{ width:16px; height:16px; image-rendering:pixelated; vertical-align:-3px; }
+.pips{ display:inline-flex; gap:2px; } .pips i{ width:7px; height:7px; background:var(--h-dim); } .pips i.on{ background:var(--h-tq); }
+.pc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px; display:flex; flex-direction:column; gap:6px; } .cards{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.li{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 8px; cursor:pointer; text-align:left; display:flex; justify-content:space-between; } .li[aria-pressed="true"]{ border-color:var(--h-vio); }
+.slots{ display:grid; grid-template-columns:repeat(9,34px); gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; position:relative; display:grid; place-items:center; } .sl img{ width:26px; height:26px; image-rendering:pixelated; } .sl b{ position:absolute; right:1px; bottom:-2px; font-weight:400; text-shadow:1px 1px 0 #000; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--c,var(--h-gold)); }
+.col5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; } .cc{ background:var(--h-slot); border:2px solid var(--h-dim); padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; } .cc img{ width:32px; height:32px; image-rendering:pixelated; } .cc .n{ font-size:16px; }
+.note{ color:var(--h-gold); }
+</style>
+<style>
+.sw{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; } .sw figure{ margin:0; display:flex; flex-direction:column; gap:4px; align-items:center; font-size:11px; color:var(--muted); }
+.sw canvas{ image-rendering:pixelated; width:72px; height:72px; background:#0c0e12; border:1px solid var(--line); } .sw canvas.it{ width:48px; height:48px; }
+.chk{ display:flex; gap:6px; align-items:center; cursor:pointer; } .chk input{ accent-color:#7fb3ff; }
+.chain{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:13px; } .chain b{ background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-weight:500; } .chain i{ color:var(--muted); font-style:normal; }
+</style>
+<div class="wrap">
+<section><h1>Magnatite And Centrifuge Concepts</h1>
+<p class="lede">A new metal and the machine that processes it. Magnatite sits between Tetrium and Illyrium: slower to make than Tetrium, far quicker than Illyrium, and its charged form is what Decoy Totems and later machines are built from. Three looks for the ore and items, three for the Magnetic Centrifuge. Nothing here is in the mod yet.</p></section>
+
+<section><h2>1. Magnatite ore and items</h2>
+<p class="lede">Each row shows the ore in stone and in deepslate, then the nugget, ingot, Charged Magnatite Ingot and Carbon Dust in that colour scheme, drawn at game size.</p>
+<div id="ores" style="display:flex;flex-direction:column;gap:14px"></div></section>
+
+<section><h2>2. The Magnetic Centrifuge</h2>
+<p class="lede">A multiblock one block high, three wide and three deep. More centrifuges can be stacked on top, up to six. Use the controls to stack them, run them, and fit the Copper Tetrium Coil that lets them charge ingots.</p>
+<div class="card"><div class="ctl">
+<label for="stack">Stacked <input id="stack" type="range" min="1" max="6" value="1"><output id="stackO">1</output></label>
+<label class="chk" for="run"><input id="run" type="checkbox" checked> Running</label>
+<label class="chk" for="coil"><input id="coil" type="checkbox"> Copper Tetrium Coil fitted (charging)</label>
+<output id="odds" style="color:var(--tq)"></output></div></div>
+<div class="grid3" id="machines"></div></section>
+
+<section><h2>3. How Magnatite is made, and how long it takes</h2>
+<div class="card"><h3>The chain</h3>
+<div class="chain"><b>Magnatite Ore</b><i>Centrifuge, 45 s</i><b>3 Magnatite Nuggets + 1 Carbon Dust</b><i>9 nuggets, Combination Forge, 30 s</i><b>Magnatite Ingot</b><i>Centrifuge with coil, 45 s a try, 1 in 6</i><b>Charged Magnatite Ingot</b></div>
+<p>For comparison, with one of each machine and no upgrades: a Tetrium Ingot takes about 2 minutes, and an Illyrium Ingot about 40 minutes.</p>
+<div class="scroll"><table class="t"><tr><th>Made</th><th>Machines used</th><th>Time for one</th></tr>
+<tr><td>Magnatite Ingot</td><td>Centrifuge (3 ores), Combination Forge</td><td class="num">about 3 minutes</td></tr>
+<tr><td>Charged Magnatite Ingot, 1 centrifuge</td><td>as above, then about 6 tries at 45 s</td><td class="num">about 7.5 minutes</td></tr>
+<tr><td>Charged Magnatite Ingot, 3 stacked (1 in 4)</td><td>about 4 tries</td><td class="num">about 6 minutes</td></tr>
+<tr><td>Charged Magnatite Ingot, 5 stacked (1 in 2)</td><td>about 2 tries</td><td class="num">about 4.5 minutes</td></tr>
+<tr><td>Charged Magnatite Ingot, 6 stacked (1 in 2, 25 s)</td><td>about 2 tries at 25 s</td><td class="num">about 4 minutes</td></tr>
+</table></div>
+<p>These times assume a failed try gives the plain ingot back to try again, so the cost of charging is time and power, not lost metal. Stacking mostly speeds up the charging step; the three minutes to make the ingot stay unless the stack also separates ore faster.</p></div>
+<div class="flow">
+<div class="card"><h3>Proposed blocks (9 per layer)</h3><ol><li><b>Centrifuge Controller</b>: front centre.</li><li><b>Centrifuge Rotor</b>: the middle block.</li><li><b>Centrifuge Casing</b> x 5, <b>Item Hatch</b> x 1 (the existing one), <b>Centrifuge Power Port</b> x 1.</li><li>A stacked layer needs a Rotor and 8 Casing only; the bottom layer has the controller and ports.</li></ol></div>
+<div class="card"><h3>Proposed new items</h3><ol><li>Magnatite Nugget, Magnatite Ingot, <b>Charged Magnatite Ingot</b>.</li><li><b>Carbon Dust</b>: by-product; used for the Rotor and the coil's insulation, so it is not waste.</li><li><b>Copper Tetrium Coil</b>: the upgrade that turns on charging. Tetrium Coils wound with copper around a Magnatite Ingot.</li></ol></div>
+<div class="card"><h3>Proposed cost</h3><ol><li>Casing: Tetrium Plates and a Machine Chassis.</li><li>Rotor: a Drive Motor, Dirty Illyrium Ingots and Carbon Dust, so the Illyrium Crucible has to come first.</li><li>Needs RF to run, more when charging.</li><li>The <b>Magnet Core</b> for a decoy would need several Charged Magnatite Ingots and an Illyrium Processor.</li></ol></div>
+</div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el=id=>document.getElementById(id);
+  function hsh(x,y,s){ let h=(x*374761393+y*668265263+s*2147483647)>>>0; h=Math.imul(h^(h>>>13),1274126177)>>>0; return ((h^(h>>>16))>>>0)/4294967296; }
+  const hex=c=>[(c>>16)&255,(c>>8)&255,c&255];
+  function canvas(px,item){ const c=document.createElement('canvas'); c.width=c.height=16; if(item) c.className='it'; const k=c.getContext('2d'), d=k.createImageData(16,16);
+    for(let y=0;y<16;y++) for(let x=0;x<16;x++){ const p=px(x,y), i=(y*16+x)*4; if(!p) continue; d.data[i]=p[0]; d.data[i+1]=p[1]; d.data[i+2]=p[2]; d.data[i+3]=255; } k.putImageData(d,0,0); return c; }
+  const stone=(x,y,deep)=>{ const b=deep?[72,72,78]:[125,125,125], n=(hsh(x>>1,y>>1,deep?4:2)-.5)*(deep?22:26); return b.map(v=>Math.max(0,Math.min(255,v+n))); };
+  // ore specks: a few blobs, coloured by the scheme's speck function
+  const SPOTS=[[3,3],[10,2],[6,8],[12,10],[2,12],[9,13]];
+  function ore(P,deep){ return canvas((x,y)=>{ for(const [sx,sy] of SPOTS){ const d=Math.hypot(x-sx-hsh(sx,sy,7)*2,y-sy-hsh(sy,sx,7)*2); if(d<1.8) return hex(P.speck(x,y,sx)); if(d<2.5&&hsh(x,y,3)>.55) return stone(x,y,deep).map(v=>v*.6); } return stone(x,y,deep); }); }
+  const shade=(c,k)=>hex(c).map(v=>Math.max(0,Math.min(255,Math.round(v*k))));
+  function ingot(c,glow){ return canvas((x,y)=>{ const t=y-4-((x-2)>>2); if(x<2||x>13||t<0||t>6) return null; if(glow&&(x+y)%5===0&&t>1&&t<5) return hex(glow); return shade(c,t===0?1.35:t===6||x===13?.6:x===2?1.15:1); },true); }
+  function nugget(c){ return canvas((x,y)=>{ const d=Math.hypot(x-7.5,y-8.5); if(d>4.3+(hsh(x,y,5)-.5)*1.6) return null; return shade(c,x+y<14?1.3:x+y>19?.65:1); },true); }
+  function dust(c){ return canvas((x,y)=>{ const d=Math.hypot(x-7.5,(y-10)*1.6); if(d>6.2+(hsh(x,y,9)-.5)*2||y>13) return null; return shade(c,.7+hsh(x,y,11)*.7); },true); }
+  const SCHEMES=[
+   {n:'A. Iron Blue',t:'Near-black metal with a cold blue sheen. Sits apart from purple Tetrium and turquoise Illyrium, and the charged ingot is the same metal crackling with bright blue.',base:0x39414f,glow:0x7fb3ff,speck:(x,y)=>hsh(x,y,1)>.62?0x7fb3ff:hsh(x,y,2)>.6?0x232831:0x39414f},
+   {n:'B. Lodestone Red',t:'Rust-red ore, like natural lodestone, refining to a dark red-brown metal. The charged ingot glows orange-red. Warmer, but closer to copper and to the lava machines.',base:0x7a3b2e,glow:0xff7a3a,speck:(x,y)=>hsh(x,y,1)>.62?0xc8643c:hsh(x,y,2)>.6?0x4a221a:0x7a3b2e},
+   {n:'C. Two Poles',t:'Each speck of ore is half red, half blue, like a bar magnet. The metal is steel grey and the charged ingot has a red end and a blue end. The most "magnet" of the three and the easiest to recognise.',base:0x8a909c,glow:0xff4b3c,glow2:0x3a8bff,speck:(x,y,sx)=>x<=sx?0xd63b2f:0x3a8bff}];
+  for(const P of SCHEMES){ const card=document.createElement('div'); card.className='card'; card.innerHTML='<h3>'+P.n+'</h3>'; const row=document.createElement('div'); row.className='sw';
+    const charged=P.glow2?canvas((x,y)=>{ const t=y-4-((x-2)>>2); if(x<2||x>13||t<0||t>6) return null; const c=x<8?P.glow:P.glow2; return shade(c,t===0?1.25:t===6?.6:1); },true):ingot(P.base,P.glow);
+    [['Ore',ore(P,false)],['Deepslate ore',ore(P,true)],['Nugget',nugget(P.base)],['Ingot',ingot(P.base)],['Charged ingot',charged],['Carbon Dust',dust(0x2a2c30)]].forEach(([n,c])=>{ const f=document.createElement('figure'); f.appendChild(c); const cap=document.createElement('figcaption'); cap.textContent=n; f.appendChild(cap); row.appendChild(f); });
+    card.appendChild(row); const p=document.createElement('p'); p.textContent=P.t; card.appendChild(p); el('ores').appendChild(card); }
+
+  // ------------------------------------------------------------------ centrifuges
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,MAG=0x39414f,MAG2=0x7fb3ff,COPPER=0xc87a3c,GOLD=0xffd23a,TQ=0x19d3b0;
+  const state=()=>({n:+el('stack').value,run:el('run').checked,coil:el('coil').checked});
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(op){ m.material.transparent=true; m.material.opacity=op; m.material.depthWrite=false; } m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  const cyl=(g,x,y,z,r,h,c,glow,seg)=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg||24),glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c})); m.position.set(x,y,z); g.add(m); return m; };
+  function makeView(card,build){ const view=document.createElement('div'); view.className='view'; card.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let tick=build(g), ry=Math.PI+.6, rx=.42, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.3,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.002; tick(t); const n=state().n, D=150+n*30, T=[24,n*8,24];
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return ()=>{ scene.remove(g); g=new THREE.Group(); scene.add(g); tick=build(g); }; }
+  // shared: the front controller screen and the port sockets on the bottom layer
+  function front(g,s){ bx(g,[18,3,-.5],[30,13,0],HULL); bx(g,[19.5,5,-.8],[28.5,11,-.5],s.run?(s.coil?MAG2:TQ):MID,s.run); bx(g,[-.5,5,20],[0,11,28],TRIM); bx(g,[-.8,6.5,22],[-.5,9.5,26],0x3a8bff,true); bx(g,[48,5,20],[48.5,11,28],TRIM); bx(g,[48.5,6.5,22],[48.8,9.5,26],GOLD,true); }
+  const builds={
+   a(g){ const s=state(), spin=[], lit=[]; for(let i=0;i<s.n;i++){ const y=i*16, L=new THREE.Group(); L.position.y=y; g.add(L);
+       bx(L,[0,0,0],[48,3,48],HULL2); bx(L,[0,14,0],[48,16,4],HULL2); bx(L,[0,14,44],[48,16,48],HULL2); bx(L,[0,14,4],[4,16,44],HULL2); bx(L,[44,14,4],[48,16,44],HULL2); for(const [x,z] of [[0,0],[44,0],[0,44],[44,44]]) bx(L,[x,3,z],[x+4,13,z+4],TRIM);
+       const drum=new THREE.Group(); drum.position.set(24,8,24); L.add(drum); const d=new THREE.Mesh(new THREE.CylinderGeometry(17,17,9,32),new THREE.MeshLambertMaterial({color:PANEL})); drum.add(d);
+       for(let k=0;k<8;k++){ const a=k*Math.PI/4; const b=new THREE.Mesh(new THREE.BoxGeometry(2,9.4,3),new THREE.MeshLambertMaterial({color:MAG})); b.position.set(Math.cos(a)*17,0,Math.sin(a)*17); b.rotation.y=-a; drum.add(b); } spin.push(drum);
+       if(s.coil){ const c=new THREE.Mesh(new THREE.TorusGeometry(20,1,8,40),new THREE.MeshBasicMaterial({color:COPPER})); c.rotation.x=Math.PI/2; c.position.set(24,8,24); L.add(c); lit.push(c); } }
+     front(g,s); return t=>{ if(s.run) spin.forEach((d,i)=>d.rotation.y=t*(6+s.n)*(i%2?-1:1)); lit.forEach((c,i)=>c.material.color.setHex(s.run?MAG2:COPPER).multiplyScalar(s.run?.6+.4*Math.sin(t*8+i):1)); }; },
+   b(g){ const s=state(), pods=[], lit=[]; for(let i=0;i<s.n;i++){ const y=i*16, L=new THREE.Group(); L.position.y=y; g.add(L);
+       bx(L,[0,0,0],[48,2,48],HULL2); bx(L,[0,14,0],[48,16,4],HULL2); bx(L,[0,14,44],[48,16,48],HULL2); bx(L,[0,14,4],[4,16,44],HULL2); bx(L,[44,14,4],[48,16,44],HULL2);
+       for(const [x,z] of [[0,0],[45,0],[0,45],[45,45]]) bx(L,[x,2,z],[x+3,16,z+3],TRIM);
+       const ring=new THREE.Mesh(new THREE.TorusGeometry(18,3,10,40),new THREE.MeshLambertMaterial({color:HULL})); ring.rotation.x=Math.PI/2; ring.position.set(24,8,24); L.add(ring);
+       cyl(L,24,8,24,5,12,MID); const core=cyl(L,24,8,24,3,13,s.coil?COPPER:PANEL,false); lit.push(core);
+       const orbit=new THREE.Group(); orbit.position.set(24,8,24); L.add(orbit); for(let k=0;k<3;k++){ const a=k*Math.PI*2/3; bx(orbit,[Math.cos(a)*18-2,-2,Math.sin(a)*18-2],[Math.cos(a)*18+2,2,Math.sin(a)*18+2],s.coil?MAG2:TQ,true); } pods.push(orbit); }
+     front(g,s); return t=>{ if(s.run) pods.forEach((o,i)=>o.rotation.y=t*(4+s.n)+(i*.7)); lit.forEach(c=>c.material.color.setHex(s.coil?COPPER:PANEL).multiplyScalar(s.run&&s.coil?.7+.5*Math.sin(t*10):1)); }; },
+   c(g){ const s=state(), arms=[], lit=[]; for(let i=0;i<s.n;i++){ const y=i*16, L=new THREE.Group(); L.position.y=y; g.add(L);
+       bx(L,[0,0,0],[48,4,48],HULL2); for(const [x,z] of [[0,0],[45,0],[0,45],[45,45]]) bx(L,[x,4,z],[x+3,16,z+3],TRIM); bx(L,[0,15,0],[48,16,3],TRIM); bx(L,[0,15,45],[48,16,48],TRIM); bx(L,[0,15,3],[3,16,45],TRIM); bx(L,[45,15,3],[48,16,45],TRIM);
+       const bowl=new THREE.Mesh(new THREE.CylinderGeometry(21,16,5,32,1,true),new THREE.MeshLambertMaterial({color:HULL,side:THREE.DoubleSide})); bowl.position.set(24,6.5,24); L.add(bowl);
+       cyl(L,24,9,24,2.5,10,PANEL); const rot=new THREE.Group(); rot.position.set(24,11,24); L.add(rot);
+       for(let k=0;k<4;k++){ const a=new THREE.Group(); a.rotation.y=k*Math.PI/2; rot.add(a); bx(a,[2,-.8,-1],[15,.8,1],TRIM); const b=bx(a,[13,-5,-2],[17,0,2],s.coil?MAG2:MAG,s.coil); b.userData.a=a; lit.push(b); } arms.push(rot);
+       if(s.coil) for(let k=0;k<3;k++){ const c=new THREE.Mesh(new THREE.TorusGeometry(3.4,.6,6,16),new THREE.MeshLambertMaterial({color:COPPER})); c.rotation.x=Math.PI/2; c.position.set(24,6+k*2.4,24); L.add(c); } }
+     front(g,s); return t=>{ if(s.run){ arms.forEach((r,i)=>r.rotation.y=t*(7+s.n)*(i%2?-1:1)); lit.forEach(b=>b.rotation.z=-.9); } else lit.forEach(b=>b.rotation.z=0); }; } };
+  const rebuilds=[];
+  for(const [name,text,k] of [['A. Spin Drum','A heavy ribbed drum spinning between two plates. Stacked, the drums line up into one tall column and turn opposite ways. With the coil, a copper ring around each drum glows blue. Solid and industrial.','a'],
+     ['B. Ring Accelerator','A magnetic ring around a central core, with three pods racing round it. Stacked layers open into one shaft. With the coil the core turns copper and the pods turn blue. The most sci-fi.','b'],
+     ['C. Rotor Arms','A lab centrifuge: a bowl with a spindle and four arms whose sample pots swing outward at speed. With the coil the spindle is wound in copper and the pots glow. The clearest "this is a centrifuge".','c']]){
+    const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el('machines').appendChild(c); rebuilds.push(makeView(c,builds[k])); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); }
+  const ODDS=[6,5,4,3,2,2];
+  function refresh(){ const s=state(); el('stackO').textContent=s.n; el('odds').textContent=s.coil?'Charge chance 1 in '+ODDS[s.n-1]+', '+(s.n>=6?25:45)+' s a try':'Separating ore only'; rebuilds.forEach(r=>r()); }
+  for(const id of ['stack','run','coil']) el(id).addEventListener('input',refresh); refresh();
+})();
+</script>

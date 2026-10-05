@@ -36,7 +36,21 @@ public class MultiblockGhostRenderer<T extends MultiblockControllerBlockEntity> 
         var renderer = Minecraft.getInstance().getBlockRenderer();
         for (MultiblockControllerBlockEntity.Part part : missing) {
             if (!controller.getLevel().getBlockState(part.pos()).canBeReplaced()) {
-                continue; // something else is in the way; the count in the message still includes it
+                // the wrong block stands here (for example another machine's port): box it in red and float the right block on top
+                double x = part.pos().getX() - origin.getX(), y = part.pos().getY() - origin.getY(), z = part.pos().getZ() - origin.getZ();
+                float pulse = 0.6f + 0.4f * Mth.sin(time * 0.3f);
+                net.minecraft.client.renderer.LevelRenderer.renderLineBox(pose, buffers.getBuffer(RenderType.lines()),
+                        new net.minecraft.world.phys.AABB(x, y, z, x + 1, y + 1, z + 1).inflate(0.02), 1f, 0.15f, 0.1f, pulse);
+                net.minecraft.client.renderer.LevelRenderer.renderLineBox(pose, buffers.getBuffer(RenderType.lines()),
+                        new net.minecraft.world.phys.AABB(x, y, z, x + 1, y + 1, z + 1).inflate(0.06), 1f, 0.15f, 0.1f, pulse);
+                pose.pushPose();
+                pose.translate(x + 0.5, y + 1.35 + 0.05 * Mth.sin(time * 0.15f), z + 0.5);
+                pose.scale(0.3f, 0.3f, 0.3f);
+                pose.translate(-0.5, -0.5, -0.5);
+                renderer.renderSingleBlock(part.block().defaultBlockState(), pose, buffers, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                        ModelData.EMPTY, RenderType.translucent());
+                pose.popPose();
+                continue;
             }
             pose.pushPose();
             pose.translate(part.pos().getX() - origin.getX() + 0.5, part.pos().getY() - origin.getY() + 0.5, part.pos().getZ() - origin.getZ() + 0.5);

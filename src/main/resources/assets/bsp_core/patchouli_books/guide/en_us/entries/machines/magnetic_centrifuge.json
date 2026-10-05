@@ -1,0 +1,49 @@
+{
+  "name": "Magnetic Centrifuge",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:magnetic_centrifuge",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A multiblock one block high and three by three. It separates Magnatite Ore and, with a Copper Tetrium Coil, charges Magnatite Ingots. It always needs RF, fed into the Power Port (yellow socket); the Item Hatch (blue socket) takes items in and out.$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "Magnetic Centrifuge",
+      "multiblock": {
+        "pattern": [
+          [
+            "KWK",
+            "0TK",
+            "KHK"
+          ]
+        ],
+        "mapping": {
+          "H": "bsp_core:item_hatch",
+          "K": "bsp_core:centrifuge_casing",
+          "T": "bsp_core:centrifuge_rotor",
+          "W": "bsp_core:centrifuge_power_port",
+          "0": "bsp_core:magnetic_centrifuge[facing=north]"
+        },
+        "symmetrical": false
+      },
+      "text": "Controller front centre, Rotor in the middle, Item Hatch left, Power Port right, 5 Casing."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Put another Rotor on top of the first and ring it with eight Casing to add a layer, up to six layers.$(br2)$(li)More layers: more nuggets from each ore, up to 7 to 9 with six.$(li)More layers: a better chance to charge an ingot, from 1 in 6 up to 1 in 2 with five.$(li)Six layers: each charging try is much quicker.$(br2)Every layer draws power, and charging draws far more than separating.",
+      "title": "Stacking"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:centrifuge_casing",
+      "recipe2": "bsp_core:centrifuge_rotor"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:centrifuge_power_port",
+      "recipe2": "bsp_core:magnetic_centrifuge"
+    }
+  ]
+}

@@ -31,6 +31,7 @@ public final class TotemLogoutHandler {
             return;
         }
         List<ItemStack> totems = TotemInventories.removeAll(player);
+        totems.addAll(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(player)); // left while dead in an Anti Totem zone
         if (totems.isEmpty()) {
             return;
         }

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "DTD",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:tetrium_nugget"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:tetrium_core_cable",
+    "count": 8
+  }
+}

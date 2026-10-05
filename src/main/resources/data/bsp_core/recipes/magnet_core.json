@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CDC",
+    "CZC",
+    "CDC"
+  ],
+  "key": {
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "Z": {
+      "item": "bsp_core:illyrium_processor"
+    }
+  },
+  "result": {
+    "item": "bsp_core:magnet_core"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:magnetic_centrifuge"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.magnetic_centrifuge"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.magnetic_centrifuge.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:magnetic_centrifuge"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:dirty_illyrium_ingot"
+}

@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DXD",
+    "WKW",
+    "PHP"
+  ],
+  "key": {
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "X": {
+      "item": "bsp_core:resonance_crystal"
+    },
+    "W": {
+      "item": "bsp_core:copper_tetrium_coil"
+    },
+    "K": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:totem_generator"
+  }
+}

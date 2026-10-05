@@ -32,6 +32,7 @@ public class BspJeiPlugin implements IModPlugin {
     public static final RecipeType<Process> TETRIUM_CRUCIBLE = RecipeType.create(BSPCore.MODID, "tetrium_crucible", Process.class);
     public static final RecipeType<Process> COMBINATION_FORGE = RecipeType.create(BSPCore.MODID, "combination_forge", Process.class);
     public static final RecipeType<Process> ILLYRIUM_CRUCIBLE = RecipeType.create(BSPCore.MODID, "illyrium_crucible", Process.class);
+    public static final RecipeType<Process> MAGNETIC_CENTRIFUGE = RecipeType.create(BSPCore.MODID, "magnetic_centrifuge", Process.class);
     public static final RecipeType<Process> ILLYRIUM_REFINERY = RecipeType.create(BSPCore.MODID, "illyrium_refinery", Process.class);
     public static final RecipeType<Process> COIN_PRESSING = RecipeType.create(BSPCore.MODID, "coin_pressing", Process.class);
     public static final RecipeType<Process> HAND_CRUSHING = RecipeType.create(BSPCore.MODID, "hand_crushing", Process.class);
@@ -55,6 +56,7 @@ public class BspJeiPlugin implements IModPlugin {
                 new ProcessCategory(gui, COMBINATION_FORGE, "block.bsp_core.combination_forge", new ItemStack(ModItems.COMBINATION_FORGE.get())),
                 new ProcessCategory(gui, ILLYRIUM_CRUCIBLE, "jei.bsp_core.illyrium_crucible", stack("illyrium_crucible")),
                 new ProcessCategory(gui, ILLYRIUM_REFINERY, "jei.bsp_core.illyrium_refinery", stack("illyrium_refinery")),
+                new ProcessCategory(gui, MAGNETIC_CENTRIFUGE, "jei.bsp_core.magnetic_centrifuge", stack("magnetic_centrifuge")),
                 new ProcessCategory(gui, COIN_PRESSING, "jei.bsp_core.coin_pressing", new ItemStack(ModItems.COIN_FACTORY.get())),
                 new ProcessCategory(gui, HAND_CRUSHING, "jei.bsp_core.hand_crushing", new ItemStack(Items.IRON_PICKAXE)));
     }
@@ -137,6 +139,14 @@ public class BspJeiPlugin implements IModPlugin {
                 List.of(new ItemStack(ModItems.PURE_ILLYRIUM_DUST.get())), List.of(),
                 List.of(seconds(cfg(BSPConfig.REFINERY_TICKS, 2400)), Component.translatable("jei.bsp_core.filter_note")))));
 
+        reg.addRecipes(MAGNETIC_CENTRIFUGE, List.of(
+                new Process(List.of(List.of(stack("magnatite_ore"), stack("deepslate_magnatite_ore"))), List.of(), null, 0,
+                        List.of(new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 3), new ItemStack(ModItems.CARBON_DUST.get())), List.of(),
+                        List.of(seconds(cfg(BSPConfig.CENT_SEPARATE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_stack_note"))),
+                new Process(List.of(one(ModItems.MAGNATITE_INGOT.get(), 1)), List.of(List.of(new ItemStack(ModItems.COPPER_TETRIUM_COIL.get()))), null, 0,
+                        List.of(new ItemStack(ModItems.CHARGED_MAGNATITE_INGOT.get())), List.of(),
+                        List.of(seconds(cfg(BSPConfig.CENT_CHARGE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_charge_note")))));
+
         List<Process> coins = new ArrayList<>();
         for (CoinTier tier : CoinTier.values()) {
             coins.add(new Process(List.of(one(tier.blank(), 1)), List.of(), null, 0, List.of(new ItemStack(tier.coin())), List.of(),
@@ -159,9 +169,18 @@ public class BspJeiPlugin implements IModPlugin {
         info(reg, "jei.bsp_core.info.shared_parts", "illyrium_casing", "illyrium_core", "item_hatch");
         info(reg, "jei.bsp_core.info.factory", "shatter_coin_factory", "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port");
         info(reg, "jei.bsp_core.info.motivator", "factory_motivator");
+        info(reg, "jei.bsp_core.info.centrifuge", "magnetic_centrifuge", "centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port");
+        info(reg, "jei.bsp_core.info.copper_coil", "copper_tetrium_coil");
+        info(reg, "jei.bsp_core.info.magnatite_ore", "magnatite_ore", "deepslate_magnatite_ore");
         info(reg, "jei.bsp_core.info.vault", "coin_vault");
+        info(reg, "jei.bsp_core.info.generator", "totem_generator", "reach_amplifier_mk1", "reach_amplifier_mk2", "reach_amplifier_mk3", "channel_expander");
+        info(reg, "jei.bsp_core.info.projector", "totem_projector");
+        info(reg, "jei.bsp_core.info.cable", "tetrium_core_cable", "magnatite_core_cable", "illyrium_core_cable", "charged_illyrium_core_cable");
+        info(reg, "jei.bsp_core.info.decoy", "decoy_totem", "magnet_core");
+        info(reg, "jei.bsp_core.info.decoy_base", "decoy_power_base");
         info(reg, "jei.bsp_core.info.score_screen", "score_screen");
         info(reg, "jei.bsp_core.info.admin_rack", "admin_rack");
+        info(reg, "jei.bsp_core.info.anti_totem", "anti_totem");
         info(reg, "jei.bsp_core.info.totem", "shatter_totem");
         info(reg, "jei.bsp_core.info.plate", "tetrium_plate");
     }
@@ -196,7 +215,8 @@ public class BspJeiPlugin implements IModPlugin {
                 RecipeType<Process> type = machine instanceof com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity ? TETRIUM_CRUCIBLE
                         : machine instanceof com.mrgregles.bsp_core.machine.CombinationForgeBlockEntity ? COMBINATION_FORGE
                         : machine instanceof com.mrgregles.bsp_core.machine.IllyriumCrucibleBlockEntity ? ILLYRIUM_CRUCIBLE
-                        : machine instanceof com.mrgregles.bsp_core.machine.IllyriumRefineryBlockEntity ? ILLYRIUM_REFINERY : null;
+                        : machine instanceof com.mrgregles.bsp_core.machine.IllyriumRefineryBlockEntity ? ILLYRIUM_REFINERY
+                        : machine instanceof com.mrgregles.bsp_core.machine.MagneticCentrifugeBlockEntity ? MAGNETIC_CENTRIFUGE : null;
                 return type == null ? List.of() : List.of(mezz.jei.api.gui.handlers.IGuiClickableArea.createBasic(90, 24, 31, 31, type));
             }
         });
@@ -208,6 +228,7 @@ public class BspJeiPlugin implements IModPlugin {
         reg.addRecipeCatalyst(new ItemStack(ModItems.COMBINATION_FORGE.get()), COMBINATION_FORGE);
         reg.addRecipeCatalyst(stack("illyrium_crucible"), ILLYRIUM_CRUCIBLE);
         reg.addRecipeCatalyst(stack("illyrium_refinery"), ILLYRIUM_REFINERY);
+        reg.addRecipeCatalyst(stack("magnetic_centrifuge"), MAGNETIC_CENTRIFUGE);
         reg.addRecipeCatalyst(new ItemStack(ModItems.COIN_FACTORY.get()), COIN_PRESSING);
         reg.addRecipeCatalyst(new ItemStack(Items.CRAFTING_TABLE), HAND_CRUSHING);
     }

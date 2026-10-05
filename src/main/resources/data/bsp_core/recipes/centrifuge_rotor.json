@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WIW",
+    "IMI",
+    "WIW"
+  ],
+  "key": {
+    "W": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "I": {
+      "item": "bsp_core:dirty_illyrium_ingot"
+    },
+    "M": {
+      "item": "bsp_core:drive_motor"
+    }
+  },
+  "result": {
+    "item": "bsp_core:centrifuge_rotor"
+  }
+}

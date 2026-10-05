@@ -28,7 +28,8 @@ public final class TotemPlacer {
      * @return true if the block was placed; false if no replaceable spot exists in range
      */
     public static boolean place(ServerLevel level, BlockPos around, ItemStack totem) {
-        BlockPos pos = findSpot(level, around);
+        // never inside an Anti Totem zone: the nearest spot outside it instead
+        BlockPos pos = findSpot(level, com.mrgregles.bsp_core.zone.ZoneLedger.get(level.getServer()).outside(level, around));
         if (pos == null) {
             return false;
         }

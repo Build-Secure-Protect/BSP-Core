@@ -264,6 +264,59 @@ public final class NetworkStorage {
         });
     }
 
+    // ------------------------------------------------------------------ messages that follow a player across servers
+
+    private static int noticeTicks;
+
+    /**
+     * Tells a player something wherever they are. If they are on this server they see it at once.
+     * If not, and network storage is on, the message is left in the database marked with this
+     * server's name, and the server they are on shows it within {@code storage.noticeSeconds}.
+     * Used for steal warnings and vault alarms, which matter most when the owner is elsewhere.
+     */
+    public static void tell(MinecraftServer srv, UUID player, net.minecraft.network.chat.Component message) {
+        ServerPlayer online = srv.getPlayerList().getPlayer(player);
+        if (online != null) {
+            online.displayClientMessage(message, false);
+            return;
+        }
+        if (store == null) {
+            return;
+        }
+        String json = net.minecraft.network.chat.Component.Serializer.toJson(
+                net.minecraft.network.chat.Component.translatable("message.bsp_core.network.from", BSPConfig.STORAGE_SERVER_ID.get(), message));
+        async("leave a message for a player", s -> s.addNotice(player, json));
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || store == null
+                || ++noticeTicks < Math.max(1, BSPConfig.getOr(BSPConfig.STORAGE_NOTICE_SECONDS, 3)) * 20) {
+            return;
+        }
+        noticeTicks = 0;
+        MinecraftServer srv = event.getServer();
+        List<UUID> online = new java.util.ArrayList<>();
+        srv.getPlayerList().getPlayers().forEach(p -> online.add(p.getUUID()));
+        if (online.isEmpty()) {
+            return;
+        }
+        async("collect messages for players", s -> {
+            Map<UUID, List<String>> notices = s.takeNotices(online);
+            if (!notices.isEmpty()) {
+                onServer(() -> notices.forEach((id, list) -> {
+                    ServerPlayer p = srv.getPlayerList().getPlayer(id);
+                    for (String json : list) {
+                        net.minecraft.network.chat.Component c = net.minecraft.network.chat.Component.Serializer.fromJson(json);
+                        if (p != null && c != null) {
+                            p.displayClientMessage(c, false);
+                        }
+                    }
+                }));
+            }
+        });
+    }
+
     // ------------------------------------------------------------------ coin vaults
 
     /** Publishes this server's vault totals, refreshes what is known of the other servers, then runs {@code then} on the server thread. */

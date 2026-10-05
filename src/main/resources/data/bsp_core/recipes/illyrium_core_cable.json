@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NDN",
+    "DID",
+    "NDN"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:magnatite_nugget"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:illyrium_core_cable",
+    "count": 6
+  }
+}

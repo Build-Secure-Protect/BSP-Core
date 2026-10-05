@@ -37,6 +37,22 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> ADMIN_RACK = BLOCKS.register("admin_rack", com.mrgregles.bsp_core.admin.AdminRackBlock::new);
 
+    public static final RegistryObject<Block> ANTI_TOTEM = BLOCKS.register("anti_totem", com.mrgregles.bsp_core.zone.AntiTotemBlock::new);
+
+    public static final RegistryObject<Block> DECOY_TOTEM = BLOCKS.register("decoy_totem", com.mrgregles.bsp_core.decoy.DecoyTotemBlock::new);
+    public static final RegistryObject<Block> DECOY_POWER_BASE = BLOCKS.register("decoy_power_base", com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlock::new);
+
+    public static final RegistryObject<Block> TOTEM_GENERATOR = BLOCKS.register("totem_generator", com.mrgregles.bsp_core.projector.TotemGeneratorBlock::new);
+    public static final RegistryObject<Block> TOTEM_PROJECTOR = BLOCKS.register("totem_projector", com.mrgregles.bsp_core.projector.TotemProjectorBlock::new);
+    /** bsp_core:tetrium_core_cable, magnatite_core_cable, illyrium_core_cable, charged_illyrium_core_cable */
+    public static final java.util.Map<com.mrgregles.bsp_core.projector.TotemCableBlock.Kind, RegistryObject<Block>> TOTEM_CABLES = new java.util.EnumMap<>(com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.class);
+
+    static {
+        for (var kind : com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.values()) {
+            TOTEM_CABLES.put(kind, BLOCKS.register(kind.name().toLowerCase(java.util.Locale.ROOT) + "_core_cable", () -> new com.mrgregles.bsp_core.projector.TotemCableBlock(kind)));
+        }
+    }
+
     public static final RegistryObject<Block> COIN_VAULT = BLOCKS.register("coin_vault", com.mrgregles.bsp_core.vault.CoinVaultBlock::new);
 
     public static final RegistryObject<Block> SCORE_SCREEN = BLOCKS.register("score_screen", com.mrgregles.bsp_core.score.ScoreScreenBlock::new);
@@ -68,6 +84,18 @@ public final class ModBlocks {
     public static final RegistryObject<Block> DEEPSLATE_TETRIUM_ORE = ore("deepslate_tetrium_ore", MapColor.DEEPSLATE, 4.5F, SoundType.DEEPSLATE);
     public static final RegistryObject<Block> ILLYRIUM_ORE = ore("illyrium_ore", MapColor.STONE, 3.0F, SoundType.STONE);
     public static final RegistryObject<Block> DEEPSLATE_ILLYRIUM_ORE = ore("deepslate_illyrium_ore", MapColor.DEEPSLATE, 4.5F, SoundType.DEEPSLATE);
+    // --- Magnetic Centrifuge: one layer is the controller, a Rotor, an Item Hatch, a Power Port and five Casing
+    public static final RegistryObject<MachineBlock> MAGNETIC_CENTRIFUGE =
+            BLOCKS.register("magnetic_centrifuge", () -> new MachineBlock(com.mrgregles.bsp_core.machine.MagneticCentrifugeBlockEntity::new));
+    public static final RegistryObject<Block> CENTRIFUGE_CASING = BLOCKS.register("centrifuge_casing", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.5F, 6.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> CENTRIFUGE_ROTOR = BLOCKS.register("centrifuge_rotor", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(3.5F, 6.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> CENTRIFUGE_POWER_PORT = BLOCKS.register("centrifuge_power_port", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
+
+    /** Deep Overworld ore, a little easier to find than diamond. Processed in the Magnetic Centrifuge. */
+    public static final RegistryObject<Block> MAGNATITE_ORE = ore("magnatite_ore", MapColor.STONE, 3.0F, SoundType.STONE);
+    public static final RegistryObject<Block> DEEPSLATE_MAGNATITE_ORE = ore("deepslate_magnatite_ore", MapColor.DEEPSLATE, 4.5F, SoundType.DEEPSLATE);
     public static final RegistryObject<Block> END_STONE_ILLYRIUM_ORE = ore("end_stone_illyrium_ore", MapColor.SAND, 3.0F, SoundType.STONE);
 
     private static RegistryObject<Block> ore(String name, MapColor color, float hardness, SoundType sound) {

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CRC",
+    "RKR",
+    "CDC"
+  ],
+  "key": {
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "K": {
+      "item": "bsp_core:basic_control_circuit"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    }
+  },
+  "result": {
+    "item": "bsp_core:trap_amplifier"
+  }
+}

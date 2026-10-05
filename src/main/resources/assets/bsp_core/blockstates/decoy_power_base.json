@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "bsp_core:block/decoy_power_base"
+    }
+  }
+}

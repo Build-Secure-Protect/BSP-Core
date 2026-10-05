@@ -75,6 +75,15 @@ public class MachineBlock extends BaseEntityBlock {
         if (player instanceof ServerPlayer sp && level.getBlockEntity(pos) instanceof MultiblockControllerBlockEntity multi && !multi.missingParts().isEmpty()) {
             sp.displayClientMessage(Component.translatable("message.bsp_core.multiblock.missing", multi.missingParts().size())
                     .withStyle(net.minecraft.ChatFormatting.YELLOW), true);
+            // name the first problem in chat: a wrong block is easy to miss, because no ghost can be drawn inside it
+            for (MultiblockControllerBlockEntity.Part part : multi.missingParts()) {
+                BlockState there = level.getBlockState(part.pos());
+                if (!there.canBeReplaced()) {
+                    sp.displayClientMessage(Component.translatable("message.bsp_core.multiblock.wrong", there.getBlock().getName(), part.pos().getX(), part.pos().getY(),
+                            part.pos().getZ(), part.block().getName()).withStyle(net.minecraft.ChatFormatting.RED), false);
+                    break;
+                }
+            }
         }
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof MachineBlockEntity machine) {
             NetworkHooks.openScreen(serverPlayer,

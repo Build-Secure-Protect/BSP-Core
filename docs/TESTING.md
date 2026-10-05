@@ -417,3 +417,84 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] A Score Screen set to Prizes shows a fourth HOLD row only while the HOLD row has items.
 - [ ] Crafting a Coin Vault grants the "Safe Keeping" advancement. Ending a season grants no advancement.
 - [ ] The Mods screen's link for BSP-Core opens the CurseForge mod page.
+
+## Cross-server warnings, compass and guide pictures
+- [ ] Two servers on one database: with the owner on server B, start stealing their totem on server A. Within a few seconds the owner sees the red warning on B, starting with A's server name in square brackets. The "stolen" and "steal failed" messages arrive the same way.
+- [ ] The same for a totem with the Alarm upgrade when an intruder walks in, and for a Coin Vault with an Alarm when its lock is picked.
+- [ ] With the owner on the same server, messages arrive instantly and without a server name, as before.
+- [ ] Totem Compass: with none of your totems placed on this server (or in this dimension) the needle spins. While tracking rivals with no rival totem on this server it also spins. It never points at a totem on another server.
+- [ ] After adding screenshots and running the two commands in `docs/book_screenshots/README.md`, the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory entries show the picture with a frame instead of the block layout.
+
+## Anti Totem Block
+- [ ] In the BSP creative tab. A non-admin cannot place it (red message, item stays), cannot open it, and cannot break it even in creative. An admin in creative can remove it. Pistons and TNT do nothing to it.
+- [ ] Placed, it shows a cage with a cube turning inside, glowing in the zone colour.
+- [ ] Admin right-click opens the settings. Rules tab: two totem rules, then Machines and Other blocks listing every BSP block by name; it scrolls; each line toggles between BLOCKED and allowed; "block all / allow all" sets a whole group. A fresh block has totems and machines blocked.
+- [ ] Zone tab: the -10, -1, +1, +10 buttons change each of the six distances between 0 and 256; the map shows the zone from above with north up and updates; the summary line at the bottom shows the size.
+- [ ] Holding an Anti Totem Block in the main hand, an admin sees the outline of each zone, matching the distances exactly, in the chosen colour; two zones with different colours can be told apart. With anything else in hand, or for a non-admin, there is no outline.
+- [ ] Inside the zone a non-admin cannot place a Shatter Totem or any blocked BSP block: red message above the hotbar, item kept, no ghost block. One block outside the zone it works. Allowed blocks can be placed inside. Admins can place anything.
+- [ ] A machine placed before the zone was set up keeps working.
+- [ ] Dropping a totem inside the zone returns it to the inventory with a message (when "dropping" is blocked).
+- [ ] Walking through the zone with a totem is fine. Killed inside the zone (by a player and by other causes), the player gets a gold message and has the totem again after respawning; nothing is placed or dropped at the body.
+- [ ] Logging out inside the zone with a totem: the totem is placed just outside the nearest side of the zone, on the surface.
+- [ ] A totem dropped just outside that slides or is thrown in places itself outside the zone when its timer runs out.
+- [ ] Settings and zones survive a restart, and still apply when the Anti Totem Block's own chunk is not loaded (test with a 200-block zone, standing far from the block).
+
+## Magnatite (materials only; the centrifuge comes next)
+- [ ] Magnatite Ore and Deepslate Magnatite Ore are in the BSP creative tab and show dark specks with a blue sheen on stone and deepslate. A diamond pickaxe drops the ore block; an iron pickaxe drops nothing.
+- [ ] In a new world the ore is found below Y 8, mostly in deepslate, somewhat more often than diamond.
+- [ ] Magnatite Nugget and Ingot have the vanilla iron shapes in dark blue-grey; the Charged Magnatite Ingot is bright blue and glints; Carbon Dust is a black powder; the Copper Tetrium Coil shows copper windings.
+- [ ] Nine nuggets craft into an ingot and back. The Combination Forge accepts nine Magnatite Nuggets and makes an ingot.
+- [ ] The Copper Tetrium Coil recipe (Copper Ingots, Carbon Dust, Tetrium Coils around a Magnatite Ingot) shows in JEI.
+
+## Magnetic Centrifuge
+- [ ] All four blocks are craftable and in the creative tab. Placing the controller shows ghost blocks for the other eight; sneak + right-click opens the Assembly Guide, and holding Shift over any of the blocks in JEI opens it too.
+- [ ] Built in all four facings (controller front centre, Rotor in the middle, Item Hatch left, Power Port right as seen from the front), the blocks hide and the Armoured Spin Drum appears: plated sides with slit windows, hazard stripes, lamps, the drum inside. Breaking any block brings the blocks back.
+- [ ] With no RF the screen lists "Needs 60 RF per tick" and nothing runs. With a cable on the Power Port the RF gauge fills and it runs; cables on the casing or controller do nothing. Hoppers and pipes work on the Item Hatch only.
+- [ ] One Magnatite Ore (either kind) takes 45 seconds and gives 3 nuggets and 1 Carbon Dust. The drum spins while working and the lamps turn green; a redstone signal pauses it.
+- [ ] A Magnatite Ingot with no coil does nothing and the screen says to fit a coil. With the Copper Tetrium Coil fitted it tries every 45 seconds; over many tries about 1 in 6 succeed, and a failed try leaves the ingot in the input slot. The copper band behind the windows glows blue while charging.
+- [ ] Stack a second layer (Rotor + 8 Casing): its blocks hide, a second drum appears turning the other way, and the status line at the top right of the screen shows the layers and the new numbers. Test up to six: nuggets rise to 7 to 9, the charge chance reaches 1 in 2 at five, and at six a try takes 25 seconds. A seventh layer is ignored.
+- [ ] Removing a block from a middle layer drops the layers above it back to ordinary blocks and the numbers fall.
+- [ ] Power use rises with layers (60 per layer separating, 240 per layer charging).
+- [ ] The status line does not overlap the title, the state text or the PORTS list on the machine screen.
+- [ ] The operator demo switch spins the drums with nothing in the machine.
+- [ ] JEI shows a Magnetic Centrifuge category with both jobs, opened by clicking the dial on the machine screen. The guide book has "Magnatite" and "Magnetic Centrifuge" entries. The three new advancements are granted.
+
+## Decoy Totems
+- [ ] The Decoy Totem, Decoy Power Base, Magnet Core and ten socket parts are in the creative tab, have recipes in JEI, and each part's tooltip says what it does.
+- [ ] A decoy placed on a Decoy Power Base with a cable on the base's side or bottom becomes ACTIVE; the base's buffer drains at 100 RF per tick. With no base, or no power, its screen says so.
+- [ ] As the owner: an active decoy shows the open cage with a blue cube turning inside, and a faint see-through Shatter Totem around it facing the way it was placed. Unpowered it shows the dark cage only.
+- [ ] As another player (a second account): an active decoy looks exactly like a real Tier I Shatter Totem placed beside it: same model, colour, outline and collision. Unpowered or broken, it shows the bare cage. (Known tell: the F3 screen and mods that name the block you look at.)
+- [ ] The other player's right-click on an active decoy opens a totem-style panel with the owner's name and a STEAL button. Compare it with a real totem's panel and report what differs.
+- [ ] Pressing STEAL: the thief gets a red "That was a decoy!" message, sparks and a clang; the owner gets a gold message with the coordinates. With no casing the decoy is now BROKEN, shows the collapsed cage to everyone and can be mined by anyone.
+- [ ] Each trap charge works and is used up: Blast (hurts, no blocks broken), Hex (Slowness, Weakness, Glowing), Poison, Fatigue (Mining Fatigue), Warp (thrown up to 30 blocks away, standing on the surface, never in a block). With the Trap Amplifier and a second charge, both go off.
+- [ ] With one Reinforced Casing the decoy survives the first attempt and breaks on the second; with two, on the third. The screen's "Attempts left" counts down.
+- [ ] Repair costs 2 Magnatite Ingots, only shows when broken, and returns the decoy to ACTIVE if it has power.
+- [ ] Sockets: Range Coil II is refused until Coil I is fitted, and so on along each branch; a part cannot be taken out while a later one on its branch is fitted; charges can always be taken out. Shift-click moves parts in and out. Breaking the decoy drops its parts.
+- [ ] Compass: a second player tracking rivals who walks within the decoy's range sees the needle swing to the decoy; outside the range, or with the decoy unpowered or broken, it points at the real totem. The owner's compass ignores their own decoys. Range grows 24, 40, 64, 96 with coils.
+- [ ] A sixth decoy cannot be placed. A working decoy cannot be mined by another player; the owner can mine it.
+- [ ] Admin panel, Settings tab: the four decoy ranges change with the -8, -1, +1, +8 buttons, survive a restart, and within a few seconds apply to decoys already placed. A moderator sees them but cannot change them.
+- [ ] An Anti Totem zone with machines blocked refuses a Decoy Totem.
+
+## Totem Generator, Projector and Cables
+- [ ] All blocks and the four socket parts are in the creative tab with recipes in JEI. Each cable kind has its own colour (purple, blue, turquoise, pale cyan).
+- [ ] A generator placed under a placed, owned totem and given RF: a turquoise ring rises around the totem again and again. With no RF there is no ring.
+- [ ] Nine joined generators with one RF cable into one of them all run (given about 1,800 RF per tick); with too little power some report NO POWER; a second cable into another generator adds throughput. The RF bar on every generator's screen shows the shared total.
+- [ ] Another player right-clicking the generators gets a red message and no screen. After stealing the totem, that player can open them and the previous owner cannot. An open screen closes when the totem changes hands. The generator shows three ports on each of its four sides.
+- [ ] Generators placed beside it join into one slab: the seam between them disappears, ports show only on outer edges, and the ring widens (wider with the four side ones, three blocks across with all nine). A generator that only touches the array diagonally, or lies outside the three by three, does not work (its screen says NO TOTEM).
+- [ ] Right-clicking a single generator opens its screen. Right-clicking any generator in a joined array opens a three by three grid (north up) with a lit square per generator, the clicked one outlined in gold; clicking a square opens that generator's screen.
+- [ ] Cables join to each other in all six directions, to a generator's sides and bottom (not its top), and to any face of a projector, with a link and lit band on each joined side.
+- [ ] With a cable run to a projector and RF on both: the screen says CHOOSE A POWER; switching on a power the totem has makes it SENDING and shows the level that arrives. A third power is refused without a Channel Expander. Powers the totem lacks are greyed "not unlocked".
+- [ ] Reach: with Tetrium Core cable a run of 15 works and 16 is OUT OF REACH. With Charged Illyrium Core cable and no amplifier, 16 is still out of reach; Mk I allows 25, Mk II 40, Mk III 80. A run with one Tetrium Core block in it is limited to 15. Amplifiers must be fitted in order.
+- [ ] Strength: next to the generator the powers arrive at full level; at the end of the working run at about half, never below 1. The screen's strength percentage matches.
+- [ ] The projector lights up, with shards circling, only while it is being fed and has RF. Fortify and Healing Aura show their spheres round the projector at the reduced level.
+- [ ] Each power works at the projector as it does at the totem: Fortify slows non-owner mining and resists explosions; Healing Aura heals the owner; Alarm makes intruders glow and tells the owner; Ward weakens intruders; Sanctuary stops mob spawns; Overclock speeds BSP machines nearby.
+- [ ] Two generators in one array with their own cables drive two projectors, each with its own two powers. Two generators whose cables meet do not share one projector: the second finds another or reports NO PROJECTOR.
+- [ ] Removing RF from either block, breaking a cable, or picking up the totem stops the aura within a few seconds. If the totem is stolen, the projector now works for the thief.
+- [ ] Breaking a generator drops its socket parts. Settings and stored RF survive a restart.
+
+## Wrong-block marker and projector status
+- [ ] Build a Magnetic Centrifuge with a Factory Power Port in place of the Centrifuge Power Port: the wrong block gets a pulsing red box with a small Centrifuge Power Port floating above it, and right-clicking the controller prints a red chat line naming both blocks and the position. Swapping in the right block forms the machine within a second.
+- [ ] The same marker appears on the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory when a wrong block is in a part's place.
+- [ ] A Totem Projector joined by cable to a sending generator, with no RF fed into the projector itself: its seams glow amber and right-click says it needs its own RF. Feed it RF: it turns turquoise, the shards appear, and with Fortify or Healing Aura being sent their spheres show around the projector, as they do around a totem.
+- [ ] A projector with no generator sending to it stays dark and right-click says "No signal".
+- [ ] Right-clicking a projecting projector lists the powers and their levels.
