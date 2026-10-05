@@ -2,6 +2,7 @@ package com.mrgregles.bsp_core.totem;
 
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
+import com.mrgregles.bsp_core.chunk.ChunkLoading;
 import com.mrgregles.bsp_core.data.TotemLedger;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.StealStatusPacket;
@@ -49,6 +50,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     @Nullable
     private StealState steal;
     private CompoundTag upgrades = new CompoundTag();
+    /** When the current owner got this totem (ms since 1970); 0 for totems from before chunk loading. */
+    private long ownedSince;
 
     public ShatterTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SHATTER_TOTEM.get(), pos, state);
@@ -64,7 +67,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         return owner != null && owner.uuid().equals(player);
     }
 
+    public long ownedSince() {
+        return ownedSince;
+    }
+
     public void setOwner(@Nullable TotemOwner owner) {
+        if (owner != null && (this.owner == null || !this.owner.uuid().equals(owner.uuid()))) {
+            ownedSince = System.currentTimeMillis();
+        }
         this.owner = owner;
         setChanged();
         if (level instanceof ServerLevel serverLevel) {
@@ -77,6 +87,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             } else {
                 ledger.recordRemoved(here);
             }
+            ChunkLoading.totemChanged(this);
         }
     }
 
@@ -84,21 +95,38 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public void loadFromStack(ItemStack stack) {
         upgrades = TotemUpgrades.copyFrom(stack);
         setOwner(TotemOwner.fromStack(stack).orElse(null));
+        CompoundTag tag = stack.getTag();
+        if (tag != null && owner != null && level instanceof ServerLevel serverLevel) {
+            // placing it is not a change of owner: keep the time the item carried, and its chunk choices
+            ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
+            setChanged();
+            ChunkLoading.totemChanged(this);
+            ChunkLoading.restore(serverLevel, worldPosition, tag.getIntArray(TAG_CHUNK_PATTERN));
+        }
     }
 
     /** Writes everything that must survive into the item when the block is picked up. */
     public void writeToStackTag(CompoundTag tag) {
         if (owner != null) {
             owner.save(tag);
+            tag.putLong(TotemOwner.TAG_OWNED_SINCE, ownedSince);
+            int[] pattern = level instanceof ServerLevel serverLevel ? ChunkLoading.pattern(serverLevel, worldPosition) : new int[0];
+            if (pattern.length > 0) {
+                tag.putIntArray(TAG_CHUNK_PATTERN, pattern);
+            }
         }
         if (!upgrades.isEmpty()) {
             tag.put(TotemUpgrades.TAG_UPGRADES, upgrades.copy());
         }
     }
 
+    /** Item tag: the chunks picked around the totem, as offsets, so a totem that is moved keeps its layout. */
+    public static final String TAG_CHUNK_PATTERN = "ChunkPattern";
+
     /** Called by the block when it is removed from the world. */
     public void onRemovedFromWorld() {
         if (level instanceof ServerLevel serverLevel) {
+            ChunkLoading.totemRemoved(serverLevel, worldPosition);
             if (steal != null) {
                 endSteal(serverLevel, StealStatusPacket.OUTCOME_FAILED, "message.bsp_core.steal.totem_gone");
             }
@@ -331,6 +359,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (level instanceof ServerLevel serverLevel) {
             TotemAuras.register(serverLevel, this);
             recordInLedger(serverLevel);
+            ChunkLoading.totemChanged(this);
         }
     }
 
@@ -405,6 +434,11 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             return;
         }
         int lvl = getUpgradeLevel(buff);
+        if ((buff == TotemUpgrades.Buff.ANCHOR && lvl >= 1 || buff == TotemUpgrades.Buff.SURVEY) && level instanceof ServerLevel sl && !ChunkLoading.isMain(sl, worldPosition)) {
+            // a player's second totem loads its own chunk and no more
+            player.displayClientMessage(Component.translatable("message.bsp_core.chunks.second_totem").withStyle(ChatFormatting.RED), true);
+            return;
+        }
         TotemUpgrades.Price price = TotemUpgrades.price(buff, lvl);
         Component why = TotemUpgrades.whyNot(buff, this::getUpgradeLevel, tier, player);
         if (price == null || why != null) {
@@ -455,6 +489,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         setChanged();
         sync();
         updateBlockState();
+        ChunkLoading.totemChanged(this);
     }
 
     public void resetUpgrades() {
@@ -462,6 +497,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         setChanged();
         sync();
         updateBlockState();
+        ChunkLoading.totemChanged(this);
     }
 
     // ------------------------------------------------------------------ block state (visuals)
@@ -542,6 +578,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         super.saveAdditional(tag);
         if (owner != null) {
             owner.save(tag);
+            tag.putLong(TotemOwner.TAG_OWNED_SINCE, ownedSince);
         }
         if (steal != null) {
             steal.save(tag);
@@ -555,6 +592,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         owner = TotemOwner.load(tag).orElse(null);
+        ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
         steal = StealState.load(tag);
         upgrades = TotemUpgrades.current(tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy());
     }

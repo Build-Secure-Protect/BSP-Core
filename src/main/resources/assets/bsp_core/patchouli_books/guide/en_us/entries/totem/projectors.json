@@ -21,7 +21,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Each generator sends two of these at once (three with a $(item)Channel Expander$()):$(br2)$(li)Fortify$(li)Healing Aura$(li)Alarm$(li)Ward$(li)Sanctuary$(li)Overclock$(br2)Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.",
+      "text": "Each generator sends two of these at once (three with a $(item)Channel Expander$()):$(br2)$(li)Fortify$(li)Healing Aura$(li)Alarm$(li)Ward$(li)Sanctuary$(li)Overclock$(li)Anchor$(br2)Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.",
       "title": "What can be sent"
     },
     {
@@ -48,6 +48,11 @@
       "type": "patchouli:crafting",
       "recipe": "bsp_core:reach_amplifier_mk3",
       "recipe2": "bsp_core:channel_expander"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Right-click a projector to see what it is doing: no signal, no power, or projecting. Under its RF bar is one chip for each power, lit with the level that reaches it. Hover over a chip for its name.$(br2)When $(l:totem/chunks)Anchor$() is one of the powers, a chunk map appears below.",
+      "title": "The projector screen"
     }
   ]
 }

@@ -50,6 +50,7 @@ public class BSPCore {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(BSPNetwork::register);
+        event.enqueueWork(com.mrgregles.bsp_core.chunk.ChunkLoading::init);
         LOGGER.info("BSP Core loaded");
     }
 }

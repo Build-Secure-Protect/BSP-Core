@@ -55,7 +55,11 @@ public final class TotemUpgrades {
         DEADLOCK("deadlock", Branch.BASE, 3, "ward", 2, false),
         OVERCLOCK("overclock", Branch.BASE, 3, "sanctuary", 3, false),
         LOCKPICK("lockpick", Branch.RAID, 1, null, 4, false),
-        SHROUD("shroud", Branch.RAID, 2, "lockpick", 4, false);
+        SHROUD("shroud", Branch.RAID, 2, "lockpick", 4, false),
+        /** Chunk loading: 1, 3 then 6 chunks. Its rules are in {@link com.mrgregles.bsp_core.chunk.ChunkLoading}. */
+        ANCHOR("anchor", Branch.BASE, 1, null, 5, false),
+        /** Widens the square of chunks Anchor may pick from. */
+        SURVEY("survey", Branch.BASE, 2, "anchor", 5, false);
 
         public final String key;
         private final Branch branch;
@@ -63,7 +67,7 @@ public final class TotemUpgrades {
         public final int tier;
         @Nullable
         private final String parentKey;
-        /** Which of the five paths it sits on: 0 Dig, 1 Fight, 2 Walls, 3 Home, 4 Raid. */
+        /** Which of the five paths it sits on: 0 Dig, 1 Fight, 2 Walls, 3 Home, 4 Raid, 5 Anchor. */
         public final int path;
         /** A single-level upgrade (Night Sight). */
         public final boolean single;
@@ -102,7 +106,8 @@ public final class TotemUpgrades {
         }
 
         public int maxLevel() {
-            return single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier);
+            // the two chunk upgrades are short: three sizes of allowance, two of range
+            return this == ANCHOR ? 3 : this == SURVEY ? 2 : single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier);
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */

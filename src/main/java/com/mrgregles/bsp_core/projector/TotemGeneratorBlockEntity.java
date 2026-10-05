@@ -53,7 +53,7 @@ import java.util.Set;
  * thief. A generator not connected to an owned totem can be opened by anyone.
  */
 public class TotemGeneratorBlockEntity extends BlockEntity {
-    public static final Buff[] SENDABLE = {Buff.FORTIFY, Buff.HEALING, Buff.ALARM, Buff.WARD, Buff.SANCTUARY, Buff.OVERCLOCK};
+    public static final Buff[] SENDABLE = {Buff.FORTIFY, Buff.HEALING, Buff.ALARM, Buff.WARD, Buff.SANCTUARY, Buff.OVERCLOCK, Buff.ANCHOR};
     public static final int AMP1 = 0, AMP3 = 2, EXPANDER = 3, SOCKETS = 4, CAPACITY = 50_000;
     public static final int NO_TOTEM = 0, NO_PROJECTOR = 1, TOO_FAR = 2, NO_POWER = 3, NOTHING_CHOSEN = 4, SENDING = 5;
     private static final int SEARCH_LIMIT = 600;
@@ -230,12 +230,55 @@ public class TotemGeneratorBlockEntity extends BlockEntity {
 
     // ------------------------------------------------------------------ the cable run
 
-    private record Found(TotemProjectorBlockEntity projector, int run, int cableReach) {
+    /** {@code projector} is null when the run is known from the last full check but the projector's chunk is not loaded right now. */
+    private record Found(@Nullable TotemProjectorBlockEntity projector, int run, int cableReach) {
     }
 
-    /** The nearest free projector along the cables leaving this generator's sides and bottom. */
+    /** The run found by the last search that reached a projector. Lets a run through unloaded chunks keep working between full checks. */
+    private record Route(BlockPos projector, int run, int cableReach) {
+    }
+
     @Nullable
-    private Found findProjector(ServerLevel sl) {
+    private Route route;
+    /** The last search stopped at a chunk that is not loaded, so it cannot say the run is broken. */
+    private boolean hitUnloaded;
+    /** A full check (one that loads the chunks along the cables) has been done since this generator loaded. */
+    private boolean checked;
+
+    /**
+     * The projector this generator is sending to. Every second the cables are followed through loaded
+     * chunks only. Every {@code projector.cableCheckSeconds} (and once when the generator loads) they are
+     * followed all the way, loading chunks along the run for a moment, so a long run through chunks
+     * nobody is in is still confirmed. Between those checks such a run is trusted from the last one.
+     */
+    @Nullable
+    private Found locate(ServerLevel sl) {
+        int every = Math.max(1, BSPConfig.CABLE_CHECK_SECONDS.get());
+        boolean full = !checked || (sl.getGameTime() / 20 + Math.floorMod(worldPosition.hashCode(), every)) % every == 0;
+        checked = true;
+        Found found = findProjector(sl, full);
+        if (found != null) {
+            route = new Route(found.projector.getBlockPos(), found.run, found.cableReach);
+            return found;
+        }
+        if (full || !hitUnloaded || route == null) {
+            route = null; // the whole run was looked at and there is no projector on it
+            return null;
+        }
+        if (!sl.isLoaded(route.projector)) {
+            return new Found(null, route.run, route.cableReach);
+        }
+        if (sl.getBlockEntity(route.projector) instanceof TotemProjectorBlockEntity projector && projector.accepts(worldPosition)) {
+            return new Found(projector, route.run, route.cableReach);
+        }
+        route = null;
+        return null;
+    }
+
+    /** The nearest free projector along the cables leaving this generator's sides and bottom. Unloaded chunks are entered only when {@code load} is set. */
+    @Nullable
+    private Found findProjector(ServerLevel sl, boolean load) {
+        hitUnloaded = false;
         record Node(BlockPos pos, int run, int reach) {
         }
         Set<BlockPos> seen = new HashSet<>();
@@ -250,6 +293,10 @@ public class TotemGeneratorBlockEntity extends BlockEntity {
             Node n = queue.poll();
             for (Direction d : Direction.values()) {
                 BlockPos p = n.pos.relative(d);
+                if (!load && !sl.isLoaded(p)) {
+                    hitUnloaded = true;
+                    continue;
+                }
                 if (sl.getBlockEntity(p) instanceof TotemProjectorBlockEntity projector && projector.accepts(worldPosition)) {
                     return new Found(projector, n.run, n.reach);
                 }
@@ -292,7 +339,7 @@ public class TotemGeneratorBlockEntity extends BlockEntity {
                 kept++;
             }
         }
-        Found found = totem == null ? null : findProjector(sl);
+        Found found = totem == null ? null : locate(sl);
         run = found == null ? 0 : found.run;
         cableReach = found == null ? 0 : found.cableReach;
         int limit = Math.min(reach(), cableReach), need = BSPConfig.GENERATOR_RF.get() * 20;
@@ -324,7 +371,9 @@ public class TotemGeneratorBlockEntity extends BlockEntity {
                     out[SENDABLE[i].ordinal()] = arriving[i];
                 }
             }
-            found.projector.feed(worldPosition, totem.getOwner().get().uuid(), out);
+            if (found.projector != null) {
+                found.projector.feed(worldPosition, totem.getOwner().get().uuid(), out, centre.above());
+            }
         }
         setChanged();
         if (wasLinked != linked || oldDx != centreDx || oldDz != centreDz || oldCount != arrayCount || oldState != state || wasPowered != powered) {

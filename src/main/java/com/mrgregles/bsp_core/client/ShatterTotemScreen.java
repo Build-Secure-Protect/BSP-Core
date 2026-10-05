@@ -3,6 +3,7 @@ package com.mrgregles.bsp_core.client;
 import com.mrgregles.bsp_core.menu.ShatterTotemMenu;
 import com.mrgregles.bsp_core.network.AdminTotemActionPacket;
 import com.mrgregles.bsp_core.network.BSPNetwork;
+import com.mrgregles.bsp_core.network.ChunkViewPacket;
 import com.mrgregles.bsp_core.network.PlacedUpgradeRequestPacket;
 import com.mrgregles.bsp_core.network.StealRequestPacket;
 import com.mrgregles.bsp_core.network.UpgradeRequestPacket;
@@ -84,6 +85,9 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     @Override
     protected void containerTick() {
         super.containerTick();
+        if (chunksTab && ++chunkTicks % 40 == 0) {
+            ChunkMap.request(menu.getPos());
+        }
         refresh();
     }
 
@@ -92,9 +96,45 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         return totem != null && totem.isOwner(minecraft.player.getUUID());
     }
 
+    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, MAP_TILE = 24;
+    private boolean chunksTab;
+    private int chunkTicks;
+
+    /** The CHUNKS tab is there for the owner (and admins) once the totem has the Anchor upgrade. */
+    private boolean chunksAvailable() {
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        return totem != null && totem.getUpgradeLevel(Buff.ANCHOR) > 0 && (isOwner() || admin);
+    }
+
+    /** The tabs in the header, left to right. With only the totem's own page there are none. */
+    private int[] tabs() {
+        boolean chunks = chunksAvailable();
+        return chunks && admin ? new int[]{T_TOTEM, T_CHUNKS, T_OPERATOR} : chunks ? new int[]{T_TOTEM, T_CHUNKS} : admin ? new int[]{T_TOTEM, T_OPERATOR} : new int[0];
+    }
+
+    private int tabX(int index, int count) {
+        return imageWidth - 10 - (count - index) * (TAB_W + 2) + 2;
+    }
+
+    private int currentTab() {
+        return operatorTab ? T_OPERATOR : chunksTab ? T_CHUNKS : T_TOTEM;
+    }
+
+    private void setTab(int tab) {
+        operatorTab = tab == T_OPERATOR;
+        chunksTab = tab == T_CHUNKS;
+        if (chunksTab) {
+            ChunkMap.request(menu.getPos());
+        }
+        refresh();
+    }
+
     private void refresh() {
         ShatterTotemBlockEntity totem = menu.getTotem();
-        boolean canSteal = !operatorTab && totem != null && !isOwner() && totem.getSteal().isEmpty();
+        if (chunksTab && !chunksAvailable()) {
+            chunksTab = false;
+        }
+        boolean canSteal = !operatorTab && !chunksTab && totem != null && !isOwner() && totem.getSteal().isEmpty();
         stealButton.visible = canSteal;
         stealButton.active = canSteal;
         for (Button b : adminButtons) {
@@ -139,17 +179,21 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int x = leftPos, y = topPos;
-        if (admin && my >= y + 3 && my < y + 16) {
-            if (mx >= x + TAB_X && mx < x + TAB_X + TAB_W) { // tabs sit in the header
-                operatorTab = false;
-                refresh();
+        int[] tabs = tabs();
+        if (my >= y + 3 && my < y + 16) { // tabs sit in the header
+            for (int i = 0; i < tabs.length; i++) {
+                if (mx >= x + tabX(i, tabs.length) && mx < x + tabX(i, tabs.length) + TAB_W) {
+                    setTab(tabs[i]);
+                    return true;
+                }
+            }
+        }
+        if (chunksTab) {
+            ChunkViewPacket view = ChunkMap.viewFor(menu.getPos());
+            if (view != null && ChunkMap.click(mx, my, x + TREE_X + 1, y + TREE_Y + 1, MAP_TILE, view)) {
                 return true;
             }
-            if (mx >= x + TAB_X + TAB_W + 2 && mx < x + TAB_X + TAB_W * 2 + 2) {
-                operatorTab = true;
-                refresh();
-                return true;
-            }
+            return super.mouseClicked(mx, my, button);
         }
         Buff node = tree.nodeAt(mx, my, x + TREE_X, y + TREE_Y);
         if (node != null) {
@@ -199,7 +243,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
-        Buff hover = tree.nodeAt(mouseX, mouseY, leftPos + TREE_X, topPos + TREE_Y);
+        Buff hover = chunksTab ? null : tree.nodeAt(mouseX, mouseY, leftPos + TREE_X, topPos + TREE_Y);
         if (hover != null) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.tree.node", Component.translatable(hover.translationKey()), level(hover), hover.maxLevel()), mouseX, mouseY);
         }
@@ -210,13 +254,15 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         int x = leftPos, y = topPos;
         g.fill(x - 1, y - 1, x + imageWidth + 1, y + imageHeight + 1, operatorTab ? VIO : TQ);
         g.fill(x, y, x + imageWidth, y + imageHeight, BG);
-        if (admin) {
-            for (int i = 0; i < 2; i++) {
-                int tx = x + TAB_X + i * (TAB_W + 2);
-                boolean on = (i == 1) == operatorTab;
-                g.fill(tx, y + 3, tx + TAB_W, y + 16, on ? (i == 1 ? VIO : TQ) : DIM);
-                g.fill(tx + 1, y + 4, tx + TAB_W - 1, y + 15, SLOT_BG);
-            }
+        int[] tabs = tabs();
+        for (int i = 0; i < tabs.length; i++) {
+            int tx = x + tabX(i, tabs.length);
+            g.fill(tx, y + 3, tx + TAB_W, y + 16, tabs[i] != currentTab() ? DIM : tabs[i] == T_OPERATOR ? VIO : TQ);
+            g.fill(tx + 1, y + 4, tx + TAB_W - 1, y + 15, SLOT_BG);
+        }
+        if (chunksTab) {
+            chunks(g, x, y, mouseX, mouseY);
+            return;
         }
         TotemTree.wallet(g, font, x + 10, y + WALLET_Y, minecraft.player);
         tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, tier());
@@ -232,6 +278,49 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         }
     }
 
+    /** The CHUNKS tab: the map where the tree is, and the allowance beside it. */
+    private void chunks(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
+        g.fill(x + TREE_X, y + TREE_Y, x + TREE_X + TotemTree.W, y + TREE_Y + TotemTree.H, SLOT_BG);
+        ChunkViewPacket v = ChunkMap.viewFor(menu.getPos());
+        if (v == null) {
+            return;
+        }
+        ChunkMap.draw(g, x + TREE_X + 1, y + TREE_Y + 1, MAP_TILE, v, mouseX, mouseY);
+        int dx = x + DETAIL_X, dy = y + DETAIL_Y, side = v.radius() * 2 + 1;
+        g.drawString(font, Component.translatable("gui.bsp_core.chunks.loaded", v.used(), v.slots()), dx, dy, 0xFFD23A, false);
+        ChunkMap.pips(g, dx, dy + 12, v);
+        g.drawString(font, Component.translatable("gui.bsp_core.chunks.range", side, side), dx, dy + 26, 0xE8EAF0, false);
+        int ly = dy + 42;
+        for (String key : new String[]{"help.0", "help.1", "help.2"}) {
+            small(g, Component.translatable("gui.bsp_core.chunks." + key), dx, ly, MUTED);
+            ly += 9;
+        }
+        ly += 5;
+        if (v.others().length > 0) {
+            small(g, Component.translatable("gui.bsp_core.chunks.projectors", v.others().length), dx, ly, VIO & 0xFFFFFF);
+            ly += 9;
+        }
+        if (!v.has(ChunkViewPacket.MAIN)) {
+            small(g, Component.translatable("gui.bsp_core.chunks.second.0"), dx, ly, 0xFF6B5C);
+            small(g, Component.translatable("gui.bsp_core.chunks.second.1"), dx, ly + 9, 0xFF6B5C);
+            ly += 18;
+        }
+        if (v.has(ChunkViewPacket.ONLINE_ONLY)) {
+            small(g, Component.translatable("gui.bsp_core.chunks.online_only"), dx, ly, 0xFFD23A);
+            ly += 9;
+        }
+        if (!v.has(ChunkViewPacket.ENABLED)) {
+            small(g, Component.translatable("gui.bsp_core.chunks.disabled"), dx, ly, 0xFF6B5C);
+        }
+        int legend = y + TREE_Y + TotemTree.H - 30;
+        String[] names = {"totem", "picked", "projector"};
+        int[] colours = {0xFFFFD23A, TQ, VIO};
+        for (int i = 0; i < names.length; i++) {
+            g.fill(dx, legend + i * 10, dx + 6, legend + i * 10 + 6, colours[i]);
+            small(g, Component.translatable("gui.bsp_core.chunks.legend." + names[i]), dx + 10, legend + i * 10, MUTED);
+        }
+    }
+
     private void small(GuiGraphics g, Component text, int x, int y, int colour) {
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
@@ -244,10 +333,11 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(font, title.getString().toUpperCase(Locale.ROOT) + "  " + Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier())).getString(),
                 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
-        if (admin) {
-            Component a = Component.translatable("gui.bsp_core.tree.tab.totem"), o = Component.translatable("gui.bsp_core.tree.tab.operator");
-            small(g, a, TAB_X + TAB_W / 2 - font.width(a) * 3 / 8, 7, operatorTab ? MUTED : TQ & 0xFFFFFF);
-            small(g, o, TAB_X + TAB_W + 2 + TAB_W / 2 - font.width(o) * 3 / 8, 7, operatorTab ? VIO & 0xFFFFFF : MUTED);
+        int[] tabs = tabs();
+        String[] tabKeys = {"totem", "chunks", "operator"};
+        for (int i = 0; i < tabs.length; i++) {
+            Component label = Component.translatable("gui.bsp_core.tree.tab." + tabKeys[tabs[i]]);
+            small(g, label, tabX(i, tabs.length) + TAB_W / 2 - font.width(label) * 3 / 8, 7, tabs[i] != currentTab() ? MUTED : (tabs[i] == T_OPERATOR ? VIO : TQ) & 0xFFFFFF);
         }
         ShatterTotemBlockEntity totem = menu.getTotem();
         if (totem == null || operatorTab) {

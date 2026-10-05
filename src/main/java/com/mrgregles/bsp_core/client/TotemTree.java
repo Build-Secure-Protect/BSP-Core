@@ -19,7 +19,7 @@ import java.util.function.ToIntFunction;
 
 /**
  * The totem's upgrade tree ("Tier Rings"): the totem in the centre, one ring per totem tier, and the
- * five paths as straight spokes. An upgrade sits on the ring of the tier it appears at; rings the
+ * six paths as straight spokes. An upgrade sits on the ring of the tier it appears at; rings the
  * totem has not reached are dim. A node is dark while locked, outlined once it can be bought, lit in
  * its branch colour when it has levels and filled when maxed. Beside the tree a panel shows the
  * selected upgrade (level, what it gives now and next, the exact coin and XP price) and, under it,
@@ -30,7 +30,7 @@ public final class TotemTree {
     private static final int CX = 85, CY = 85, NODE = 14;
     private static final int[] RING = {26, 44, 62, 80};
     /** Spokes are spread wide enough that neighbouring nodes on the innermost ring do not touch. */
-    private static final float[] SPOKE = {-128f, -52f, 12f, 78f, 180f};
+    private static final float[] SPOKE = {-128f, -52f, 12f, 78f, 180f, 129f};
     private static final int SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, RING_ON = 0xFF27566B, TQ = 0xFF19D3B0, XP = 0x8FE04A, MUTED = 0x9AA3B5, BAD = 0xFF6B5C;
     /** Branch colours: Carried (XP green), Base (coin gold), Raid (red). */
     private static final int[] COLOUR = {0xFF8FE04A, 0xFFFFD23A, 0xFFFF6B5C};
@@ -171,6 +171,8 @@ public final class TotemTree {
             case OVERCLOCK -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), level, 0.0)), b.reach(level));
             case LOCKPICK -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.LOCKPICK_SECONDS.get(), level, 0));
             case SHROUD -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.SHROUD_SECONDS.get(), level, 0));
+            case ANCHOR -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.chunksAt(level));
+            case SURVEY -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.radiusAt(level) * 2 + 1);
         };
     }
 

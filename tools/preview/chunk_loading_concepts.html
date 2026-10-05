@@ -1,0 +1,138 @@
+<title>Chunk Loading Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One control strip, then two features, each with three stacked
+   working mocks of its screen. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.scroll{ overflow-x:auto; }
+button:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; position:sticky; top:env(safe-area-inset-top,0px); z-index:2; }
+.ctl label{ display:flex; gap:8px; align-items:center; } .ctl select{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.tabs{ display:flex; gap:4px; } .tab{ font:inherit; font-size:10px; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 8px; cursor:pointer; } .tab.on{ color:var(--h-tq); border-color:var(--h-tq); }
+.two{ display:flex; gap:12px; align-items:flex-start; } .col{ display:flex; flex-direction:column; gap:8px; min-width:0; } .grow{ flex:1; }
+.pips{ display:inline-flex; gap:3px; } .pips i{ width:9px; height:9px; background:var(--h-slot); border:1px solid var(--h-dim); box-sizing:border-box; } .pips i.on{ background:var(--h-tq); border-color:var(--h-tq); } .pips i.free{ border-color:var(--h-tq); }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); }
+.g{ display:grid; grid-template-columns:repeat(7,var(--s,30px)); grid-auto-rows:var(--s,30px); gap:2px; background:var(--h-slot); padding:3px; border:2px solid var(--h-dim); width:max-content; }
+.g button{ all:unset; box-sizing:border-box; width:100%; height:100%; cursor:pointer; position:relative; font:inherit; font-size:9px; color:var(--h-muted); display:flex; align-items:center; justify-content:center; }
+.g button:focus-visible{ outline:2px solid #fff; outline-offset:-2px; }
+.g button.out{ cursor:default; }
+/* map tiles */
+.g.map button{ background-size:700% 700%; image-rendering:pixelated; } .g.map button.out{ filter:brightness(.3) saturate(.3); }
+.g.map button.on{ box-shadow:inset 0 0 0 2px var(--h-tq), inset 0 0 0 3px #0008; } .g.map button.on::after{ content:""; position:absolute; inset:2px; background:#19d3b033; }
+.g.map button.home::before{ content:""; position:absolute; width:8px; height:8px; background:var(--h-gold); border:1px solid #000; z-index:1; transform:rotate(45deg); }
+.g.map button.proj::before{ content:""; position:absolute; width:8px; height:8px; background:var(--h-vio); border:1px solid #000; z-index:1; }
+.g.map button:not(.out):not(.on):hover{ box-shadow:inset 0 0 0 1px #fff9; }
+/* blueprint */
+.g.blue button{ background:#131a24; border:1px solid var(--h-dim); } .g.blue button.out{ background:var(--h-slot); border-style:dotted; color:#3a4150; }
+.g.blue button.on{ background:#14362f; border:2px solid var(--h-tq); color:var(--h-fg); } .g.blue button.home{ color:var(--h-gold); } .g.blue button.proj{ color:var(--h-vio); }
+.g.blue button:not(.out):not(.on):hover{ border-color:var(--h-muted); }
+/* rings */
+.g.ring{ gap:3px; border:none; background:none; padding:0; } .g.ring button{ border:2px solid var(--h-dim); background:var(--h-slot); }
+.g.ring button.r1{ border-color:#27566b; } .g.ring button.r2{ border-color:#27566b; } .g.ring button.r3{ border-color:#27566b; }
+.g.ring button.out{ border-color:#1c2029; border-style:dashed; } .g.ring button.on{ background:var(--h-tq); border-color:var(--h-tq); color:#0b0d11; } .g.ring button.home{ background:var(--h-gold); border-color:var(--h-gold); color:#0b0d11; }
+.g.ring button:not(.out):not(.on):hover{ border-color:var(--h-tq); }
+.lst{ display:flex; flex-direction:column; gap:3px; } .lst div{ display:flex; justify-content:space-between; gap:8px; background:var(--h-slot); border:2px solid var(--h-dim); padding:3px 6px; white-space:nowrap; } .lst div.free{ border-style:dashed; color:var(--h-muted); } .lst div.lock{ color:#3a4150; }
+.lst button{ all:unset; cursor:pointer; color:var(--h-bad); padding:0 2px; }
+.pw{ width:100%; border-collapse:collapse; } .pw th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 2px 0; } .pw td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; } .pw tr.off td{ color:#566070; }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-bad); width:62%; }
+.chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ border:2px solid var(--k); color:var(--k); padding:2px 6px; background:var(--h-slot); } .chip.off{ --k:var(--h-dim); color:#566070; }
+.leg{ display:flex; flex-direction:column; gap:3px; color:var(--h-muted); font-size:10px; } .leg span::before{ content:""; display:inline-block; width:8px; height:8px; margin-right:6px; background:var(--k); }
+table.t{ border-collapse:collapse; width:100%; min-width:520px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+</style>
+<div class="wrap">
+<section><h1>Chunk Loading Concepts</h1>
+<p class="lede">Working mock-ups for the totem's chunk screen and the new Totem Projector screen. Use the two controls to step through the upgrade levels, and click chunks in any mock to load or unload them. All six mocks share the same selection.</p></section>
+
+<div class="card ctl">
+  <label for="slots">Chunk Loader level <select id="slots"><option value="1">Low: 1 chunk</option><option value="3" selected>Mid: 3 chunks</option><option value="6">High: 6 chunks</option></select></label>
+  <label for="range">Range upgrade <select id="range"><option value="1">None: 3 x 3</option><option value="2" selected>Level 1: 5 x 5</option><option value="3">Level 2: 7 x 7</option></select></label>
+</div>
+
+<section><h2>1. Totem chunk screen</h2>
+<p class="lede">Opened from a CHUNKS tab that appears in the totem panel's header once the Chunk Loader upgrade has a level. The gold marker is the totem; its chunk is always loaded and uses one of the chunk slots. North is up.</p>
+<div class="card"><h3>A. Map Tiles</h3><p>A small top-down map of the real terrain, one tile per chunk, so you can recognise your base. Loaded chunks get a turquoise frame; chunks outside your range are dark.</p><div class="scroll"><div class="hud" style="width:420px" id="tA"></div></div></div>
+<div class="card"><h3>B. Blueprint and List</h3><p>A plain schematic grid with a list beside it. Each grid square and each list row says what is in the chunk (machines, projectors), and the list names the chunk coordinates. Remove a chunk from the list or the grid.</p><div class="scroll"><div class="hud" style="width:470px" id="tB"></div></div></div>
+<div class="card"><h3>C. Range Rings</h3><p>Matches the Tier Rings upgrade tree: the totem in the middle, one square ring per range level. Rings you have not unlocked are dashed. Chunk slots sit along the top like sockets. The smallest of the three screens.</p><div class="scroll"><div class="hud" style="width:300px" id="tC"></div></div></div>
+</section>
+
+<section><h2>2. Totem Projector screen</h2>
+<p class="lede">Right-click a projector. It shows the powers arriving from the generator and, when Chunk Loading is one of them, a chunk picker centred on the projector (violet marker). The projector's chunk count comes from the level that arrives down the cable.</p>
+<div class="card"><h3>A. Side by Side</h3><p>Powers on the left, chunks on the right, everything visible at once.</p><div class="scroll"><div class="hud" style="width:520px" id="pA"></div></div></div>
+<div class="card"><h3>B. Two Tabs</h3><p>POWERS and CHUNKS tabs, like the Coin Vault. Each tab has more room; the CHUNKS tab only appears when Chunk Loading arrives. Click the tabs.</p><div class="scroll"><div class="hud" style="width:400px" id="pB"></div></div></div>
+<div class="card"><h3>C. Status Strip</h3><p>One column: a status line and RF bar, the arriving powers as coloured chips, and the chunk map underneath.</p><div class="scroll"><div class="hud" style="width:330px" id="pC"></div></div></div>
+</section>
+
+<section><h2>3. Where the upgrades sit</h2>
+<div class="card"><p>Proposed defaults, all adjustable in the config. Both are Base upgrades, so they only work while the totem is placed.</p>
+<div class="scroll"><table class="t"><thead><tr><th>Upgrade</th><th>Appears at</th><th>Levels</th><th>Gives</th></tr></thead><tbody>
+<tr><td>Anchor (chunk loader)</td><td>Tier II, new sixth path</td><td>3</td><td>1, 3, then 6 loaded chunks</td></tr>
+<tr><td>Survey (range)</td><td>Tier III, after Anchor</td><td>2</td><td>Pick within 5 x 5, then 7 x 7 (3 x 3 without it)</td></tr>
+</tbody></table></div></div>
+</section>
+</div>
+<script>
+const S={slots:3,range:2}, sel={t:new Set(['0,0','1,0']),p:new Set(['0,0','0,-1'])}, HOME={t:[12,-7],p:[15,-9]};
+const STUFF={t:{'0,0':'T','1,0':'M3','0,-1':'M1','-2,1':'P','2,2':'M2'},p:{'0,0':'P','0,-1':'M4','1,1':'M1'}};
+let pTab='powers';
+const POW=[['Fortify','FO',4,3,'#ffd23a'],['Healing Aura','HE',2,0,'#ffd23a'],['Alarm','AL',3,0,'#ffd23a'],['Ward','WA',0,0,'#ffd23a'],['Sanctuary','SA',2,2,'#ffd23a'],['Overclock','OV',0,0,'#ffd23a'],['Chunk Loading','CH',2,2,'#19d3b0']];
+/* terrain: deterministic value noise, 16 px per chunk */
+function terrain(seed){ const c=document.createElement('canvas'); c.width=c.height=112; const x=c.getContext('2d');
+  const h=(a,b)=>{ let n=Math.sin(a*127.1+b*311.7+seed*74.7)*43758.5453; return n-Math.floor(n); };
+  const sm=(a,b,s)=>{ const i=Math.floor(a/s), j=Math.floor(b/s), u=a/s-i, v=b/s-j, f=t=>t*t*(3-2*t); return h(i,j)*(1-f(u))*(1-f(v))+h(i+1,j)*f(u)*(1-f(v))+h(i,j+1)*(1-f(u))*f(v)+h(i+1,j+1)*f(u)*f(v); };
+  for(let a=0;a<112;a++) for(let b=0;b<112;b++){ const e=sm(a,b,34)*.65+sm(a,b,11)*.3+h(a,b)*.05, t=sm(a+300,b+90,20);
+    x.fillStyle=e<.36?'#2f5fa8':e<.4?'#3f77c2':e<.44?'#d8cf96':e>.72?'#8a8d92':t>.58?'#2f6b2a':(a+b)%2?'#5d9c3c':'#57953a'; x.fillRect(a,b,1,1); }
+  x.fillStyle='#6b5a44'; x.fillRect(50,52,12,10); x.fillStyle='#8c7a5c'; x.fillRect(52,54,8,6); return c.toDataURL(); }
+const MAP={t:terrain(3),p:terrain(8)};
+const can=(dx,dz)=>Math.max(Math.abs(dx),Math.abs(dz))<=S.range;
+function grid(k,style,size){ let h='<div class="g '+style+'" style="--s:'+size+'px">';
+  for(let dz=-3;dz<=3;dz++) for(let dx=-3;dx<=3;dx++){ const key=dx+','+dz, home=key==='0,0', st=STUFF[k][key]||'', ring=Math.max(Math.abs(dx),Math.abs(dz));
+    const cls=[can(dx,dz)?'':'out',sel[k].has(key)?'on':'',home?'home':'',st==='P'&&!home?'proj':'','r'+ring].join(' ');
+    const bg=style==='map'?' style="background-image:url('+MAP[k]+');background-position:'+((dx+3)/6*100)+'% '+((dz+3)/6*100)+'%"':'';
+    const label=style==='map'?'':style==='ring'?(home?(k==='t'?'T':'P'):''):st;
+    h+='<button type="button" data-k="'+k+'" data-key="'+key+'" class="'+cls+'"'+bg+' aria-pressed="'+sel[k].has(key)+'" aria-label="Chunk '+(HOME[k][0]+dx)+', '+(HOME[k][1]+dz)+'">'+label+'</button>'; }
+  return h+'</div>'; }
+function pips(k){ let h='<span class="pips">'; for(let i=0;i<6;i++) h+='<i class="'+(i<sel[k].size?'on':i<S.slots?'free':'')+'"></i>'; return h+'</span>'; }
+const count=k=>'<span class="gold">'+sel[k].size+' / '+S.slots+'</span>', side=()=>S.range*2+1;
+function list(k){ let h='<div class="lst">'; const keys=[...sel[k]];
+  for(let i=0;i<6;i++){ if(i<keys.length){ const [dx,dz]=keys[i].split(',').map(Number), st=STUFF[k][keys[i]]||'', what=keys[i]==='0,0'?(k==='t'?'totem':'projector'):st[0]==='M'?st.slice(1)+' machines':st==='P'?'projector':'';
+      h+='<div><span>'+(HOME[k][0]+dx)+', '+(HOME[k][1]+dz)+' <small>'+what+'</small></span>'+(keys[i]==='0,0'?'<small>fixed</small>':'<button type="button" data-k="'+k+'" data-key="'+keys[i]+'" aria-label="Unload">x</button>')+'</div>'; }
+    else h+=i<S.slots?'<div class="free"><span>free slot</span></div>':'<div class="lock"><span>locked</span></div>'; }
+  return h+'</div>'; }
+const head=(title,tabs,on)=>'<div class="top"><span>'+title+'</span><span class="tabs">'+tabs.map(t=>'<button type="button" class="tab'+(t===on?' on':'')+'" data-tab="'+t+'">'+t+'</button>').join('')+'</span></div>';
+const legend='<div class="leg"><span style="--k:#ffd23a">Totem</span><span style="--k:#b58cff">Projector</span><span style="--k:#19d3b0">Loaded</span><span style="--k:#2a2f3a">Out of range</span></div>';
+function powers(){ return '<table class="pw"><thead><tr><th>Power</th><th>Totem</th><th>Arrives</th></tr></thead><tbody>'+POW.map(p=>'<tr class="'+(p[3]?'':'off')+'"><td>'+p[0]+'</td><td>'+(p[2]||'-')+'</td><td class="'+(p[3]?'tq':'')+'">'+(p[3]||'-')+'</td></tr>').join('')+'</tbody></table>'; }
+const status='<div class="col"><span class="tq">PROJECTING</span><div class="bar"><i></i></div><small>31,000 / 50,000 RF</small></div>';
+function draw(){
+  el('tA').innerHTML=head('SHATTER TOTEM',['UPGRADES','CHUNKS'],'CHUNKS')+'<div class="two">'+grid('t','map',34)+'<div class="col grow"><span>LOADED '+count('t')+'</span>'+pips('t')+'<span>RANGE <span class="gold">'+side()+' x '+side()+'</span></span><small>Click a chunk to load it. The totem\'s own chunk is always loaded.</small>'+legend+'</div></div>';
+  el('tB').innerHTML=head('SHATTER TOTEM',['UPGRADES','CHUNKS'],'CHUNKS')+'<div class="two">'+grid('t','blue',32)+'<div class="col grow"><span>LOADED '+count('t')+' <small>RANGE '+side()+' x '+side()+'</small></span>'+list('t')+'<small>T totem, P projector, M machines</small></div></div>';
+  el('tC').innerHTML=head('CHUNKS',['UPGRADES','CHUNKS'],'CHUNKS')+'<div class="col" style="align-items:center"><span>SLOTS '+pips('t')+' '+count('t')+'</span>'+grid('t','ring',30)+'<small>RANGE '+side()+' x '+side()+(S.range<3?' - Survey widens it':' - maximum')+'</small></div>';
+  el('pA').innerHTML=head('TOTEM PROJECTOR',[],'')+'<div class="two"><div class="col grow">'+status+powers()+'</div><div class="col"><span>CHUNKS '+count('p')+'</span>'+grid('p','blue',28)+'<small>Range '+side()+' x '+side()+'</small></div></div>';
+  el('pB').innerHTML=head('TOTEM PROJECTOR',['POWERS','CHUNKS'],pTab==='powers'?'POWERS':'CHUNKS')+(pTab==='powers'?status+powers():'<div class="two">'+grid('p','map',32)+'<div class="col grow"><span>LOADED '+count('p')+'</span>'+pips('p')+'<small>Range '+side()+' x '+side()+'</small><small>Chunk Loading arrives at level 2.</small></div></div>');
+  el('pC').innerHTML=head('TOTEM PROJECTOR',[],'')+status+'<div class="chips">'+POW.map(p=>'<span class="chip'+(p[3]?'':' off')+'" style="--k:'+p[4]+'" title="'+p[0]+'">'+p[1]+' '+(p[3]||'-')+'</span>').join('')+'</div><div class="col" style="align-items:center"><span>CHUNKS '+pips('p')+' '+count('p')+'</span>'+grid('p','map',40)+'</div>';
+}
+function el(id){ return document.getElementById(id); }
+function prune(){ for(const k of ['t','p']){ for(const key of [...sel[k]]){ const [dx,dz]=key.split(',').map(Number); if(!can(dx,dz)) sel[k].delete(key); } while(sel[k].size>S.slots) sel[k].delete([...sel[k]].pop()); } }
+document.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.tab){ if(b.closest('#pB')){ pTab=b.dataset.tab==='POWERS'?'powers':'chunks'; draw(); } return; }
+  const k=b.dataset.k, key=b.dataset.key; if(!k||key==='0,0') return; const [dx,dz]=key.split(',').map(Number);
+  if(sel[k].has(key)) sel[k].delete(key); else if(sel[k].size<S.slots&&can(dx,dz)) sel[k].add(key); draw(); });
+el('slots').onchange=e=>{ S.slots=+e.target.value; prune(); draw(); }; el('range').onchange=e=>{ S.range=+e.target.value; prune(); draw(); };
+draw();
+</script>

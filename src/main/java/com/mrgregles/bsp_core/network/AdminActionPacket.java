@@ -21,7 +21,7 @@ import java.util.function.Supplier;
  * everything else needs a full admin. The server answers with fresh panel data.
  */
 public record AdminActionPacket(int action, UUID target, String dimension, BlockPos pos) {
-    public static final int REFRESH = 0, TP_PLAYER = 1, TP_POS = 2, RESET_TOTEMS = 3, END_SEASON = 4, REWARD_HOLDERS = 5, FULL_RESET = 6, OPEN_REWARDS = 7, SET_HOLDER_HOURS = 8, SET_DECOY_RANGE = 9;
+    public static final int REFRESH = 0, TP_PLAYER = 1, TP_POS = 2, RESET_TOTEMS = 3, END_SEASON = 4, REWARD_HOLDERS = 5, FULL_RESET = 6, OPEN_REWARDS = 7, SET_HOLDER_HOURS = 8, SET_DECOY_RANGE = 9, SET_CHUNKS_ONLINE = 10;
     private static final UUID NOBODY = new UUID(0, 0);
 
     public AdminActionPacket(int action) {
@@ -89,6 +89,7 @@ public record AdminActionPacket(int action, UUID target, String dimension, Block
                     say(player, "reward_done", paid);
                 }
             }
+            case SET_CHUNKS_ONLINE -> AdminService.setChunksOnlineOnly(player.server, msg.pos.getX() != 0);
             case SET_DECOY_RANGE -> AdminService.setDecoyRange(msg.pos.getX(), msg.pos.getY());
             case SET_HOLDER_HOURS -> AdminService.setHolderHours(player.server, msg.pos.getX());
             default -> {

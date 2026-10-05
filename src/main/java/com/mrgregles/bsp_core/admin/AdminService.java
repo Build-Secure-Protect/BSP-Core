@@ -186,6 +186,7 @@ public final class AdminService {
         rows.sort(Comparator.comparingInt(AdminDataPacket.Row::points).reversed().thenComparing(AdminDataPacket.Row::name, String.CASE_INSENSITIVE_ORDER));
         SeasonData season = SeasonData.get(server);
         return new AdminDataPacket(open, Admins.isAdmin(viewer), season.number, season.day(), season.lastWinner, season.lastWinnerPoints, season.holderHours, minutesToHolderReward(season), decoyRanges(),
+                com.mrgregles.bsp_core.BSPConfig.CHUNKS_OWNER_ONLINE.get(),
                 rows.subList(0, Math.min(MAX_ROWS, rows.size())));
     }
 
@@ -197,6 +198,13 @@ public final class AdminService {
             out[i] = com.mrgregles.bsp_core.BSPConfig.levelValue(list, i + 1, 24);
         }
         return out;
+    }
+
+    /** Chooses whether totems keep their chunks loaded while the owner is offline, and writes it to the server config file. */
+    public static void setChunksOnlineOnly(MinecraftServer server, boolean onlineOnly) {
+        com.mrgregles.bsp_core.BSPConfig.CHUNKS_OWNER_ONLINE.set(onlineOnly);
+        com.mrgregles.bsp_core.BSPConfig.CHUNKS_OWNER_ONLINE.save();
+        com.mrgregles.bsp_core.chunk.ChunkLoading.refresh(server);
     }
 
     /** Changes one of those ranges and writes it to the server config file. */

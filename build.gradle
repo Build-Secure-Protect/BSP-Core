@@ -122,6 +122,11 @@ repositories {
     // Mekanism's own Maven: used only so the dev client has an RF source to test the machines with
     maven { url = 'https://modmaven.dev/' }
     maven { url = 'https://maven.blamejared.com/' }
+    // Modrinth's Maven: Jade (the "what am I looking at" tooltip mod)
+    maven {
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
@@ -147,6 +152,10 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.20.0.112")
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.20.0.112")
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
+
+    // Jade: compile-only like JEI, so BSP-Core runs without it; the full mod is loaded in dev runs only.
+    compileOnly fg.deobf("maven.modrinth:jade:11.13.3+forge")
+    runtimeOnly fg.deobf("maven.modrinth:jade:11.13.3+forge")
 
     // MySQL driver for the optional network storage: on the classpath in dev runs, and bundled into the released jar.
     minecraftLibrary('com.mysql:mysql-connector-j:8.4.0') { transitive = false }

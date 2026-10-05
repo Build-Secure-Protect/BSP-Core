@@ -102,9 +102,12 @@ public final class BSPConfig {
             VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, STORAGE_NOTICE_SECONDS,
             CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
-            GENERATOR_RF, PROJECTOR_RF, GENERATOR_CHANNELS;
+            GENERATOR_RF, PROJECTOR_RF, GENERATOR_CHANNELS, CABLE_CHECK_SECONDS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, GENERATOR_REACH;
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
+    public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
+    public static final ForgeConfigSpec.IntValue CHUNKS_MAX_PER_PLAYER;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> DECOY_RANGES;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CENT_NUGGETS_MIN, CENT_NUGGETS_MAX, CENT_CHARGE_ODDS;
     public static final ForgeConfigSpec.DoubleValue VAULT_LOCKPICK_SHARE, VAULT_XP_RATE, VAULT_TETRIUM_RATE, VAULT_CAP_DAYS, VAULT_ILLYRIUM_PERIOD_DAYS;
@@ -356,7 +359,10 @@ public final class BSPConfig {
         BUILDER.comment("Totem Generators, Totem Projectors and Totem Cables.").push("projector");
         GENERATOR_RF = BUILDER.comment("RF per tick a Totem Generator uses while sending.").defineInRange("generatorRfPerTick", 200, 0, 1_000_000);
         PROJECTOR_RF = BUILDER.comment("RF per tick a Totem Projector uses while projecting.").defineInRange("projectorRfPerTick", 100, 0, 1_000_000);
-        GENERATOR_CHANNELS = BUILDER.comment("How many of the totem's powers a generator sends at once. The Channel Expander adds one.").defineInRange("channels", 2, 1, 6);
+        GENERATOR_CHANNELS = BUILDER.comment("How many of the totem's powers a generator sends at once. The Channel Expander adds one.").defineInRange("channels", 2, 1, 7);
+        CABLE_CHECK_SECONDS = BUILDER.comment("How often, in seconds, a generator follows its cables all the way to the projector, loading the chunks along the run for a moment to confirm it.",
+                        "In between it only looks at chunks that are already loaded and trusts the last full check for the rest. Lower is quicker to notice a cut cable far away; higher is lighter on the server.")
+                .defineInRange("cableCheckSeconds", 30, 5, 600);
         GENERATOR_REACH = BUILDER.comment("How far a generator can push, in cable blocks, with 0, 1, 2 and 3 Reach Amplifiers.")
                 .defineList("generatorReach", List.of(15, 25, 40, 80), BSPConfig::isPositiveInt);
         CABLE_REACH = BUILDER.comment("The longest run each cable carries: Tetrium Core, Magnatite Core, Illyrium Core, Charged Illyrium Core.",
@@ -421,6 +427,17 @@ public final class BSPConfig {
         STORAGE_NOTICE_SECONDS = BUILDER.comment("How often this server collects messages left for its players by other servers, such as \"your totem is being stolen\".",
                         "Lower is quicker to warn but asks the database more often.")
                 .defineInRange("noticeSeconds", 3, 1, 60);
+        BUILDER.pop();
+
+        BUILDER.comment("Chunk loading: the totem's Anchor and Survey upgrades.").push("chunks");
+        CHUNKS_ENABLED = BUILDER.comment("Master switch. When false no chunk is kept loaded by a totem or projector; choices players have made are kept.").define("enabled", true);
+        CHUNKS_PER_LEVEL = BUILDER.comment("Chunks a totem keeps loaded at Anchor level 1, 2 and 3. The totem's own chunk is always one of them.",
+                        "A player's second and later totems count as level 1 whatever they have bought.")
+                .defineList("chunksPerLevel", List.of(1, 3, 6), BSPConfig::isPositiveInt);
+        CHUNK_RANGE = BUILDER.comment("How many chunks either side of the totem (or projector) may be picked, with Survey at level 0, 1 and 2. 1 is a 3 x 3 square, 3 is 7 x 7 (the most).")
+                .defineList("rangePerLevel", List.of(1, 2, 3), BSPConfig::isPositiveInt);
+        CHUNKS_OWNER_ONLINE = BUILDER.comment("When true a totem's chunks are only kept loaded while its owner is online. Also a switch in the admin panel.").define("ownerMustBeOnline", false);
+        CHUNKS_MAX_PER_PLAYER = BUILDER.comment("Most chunks one player may keep loaded across all their totems. 0 means no limit beyond the upgrades.").defineInRange("maxPerPlayer", 0, 0, 10_000);
         BUILDER.pop();
 
         BUILDER.comment("How the totem is drawn").push("visuals");

@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.projector;
 
 import com.mrgregles.bsp_core.BSPConfig;
+import com.mrgregles.bsp_core.chunk.ChunkLoading;
 import com.mrgregles.bsp_core.registry.ModBlockEntities;
 import com.mrgregles.bsp_core.storage.NetworkStorage;
 import com.mrgregles.bsp_core.totem.TotemAuras;
@@ -73,6 +74,9 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     private BlockPos source;
     @Nullable
     private UUID owner;
+    /** The totem behind the generator feeding it; known only while fed, and used for chunk loading. */
+    @Nullable
+    private BlockPos totemPos;
     private long fedAt = -1000;
     private boolean active;
     /** A generator is feeding it. With a signal but no RF of its own it stands by: lit amber, projecting nothing. Synced. */
@@ -91,7 +95,8 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     }
 
     /** Called by the generator once a second while its totem, cable run and power are all good. */
-    public void feed(BlockPos generator, UUID totemOwner, int[] arriving) {
+    public void feed(BlockPos generator, UUID totemOwner, int[] arriving, BlockPos totem) {
+        totemPos = totem;
         boolean changed = !generator.equals(source) || !totemOwner.equals(owner) || !Arrays.equals(arriving, levels);
         source = generator;
         owner = totemOwner;
@@ -99,6 +104,11 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         fedAt = level == null ? 0 : level.getGameTime();
         if (changed) {
             sync();
+        }
+        // A projector whose chunk is only loaded for the generator's cable check does not tick, so it could never
+        // ask for its chunks back (after a power cut, say). Being fed with RF in store is enough to hold them again.
+        if (level instanceof ServerLevel sl && levels[Buff.ANCHOR.ordinal()] > 0 && energy.getEnergyStored() >= BSPConfig.PROJECTOR_RF.get() * 20) {
+            ChunkLoading.projector(sl, worldPosition, totem);
         }
     }
 
@@ -165,6 +175,12 @@ public class TotemProjectorBlockEntity extends BlockEntity {
             signal = fed;
             sync();
         }
+        ChunkLoading.projector(sl, worldPosition, now && levels[Buff.ANCHOR.ordinal()] > 0 ? totemPos : null);
+    }
+
+    /** Level of {@code buff} reaching the projector, whether or not it has the RF to project it. */
+    public int arriving(Buff buff) {
+        return signal ? levels[buff.ordinal()] : 0;
     }
 
     /** Healing Aura for the owner; Ward and Alarm for everyone else. The other powers are answered through TotemAuras. */
@@ -250,11 +266,17 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         }
     }
 
+    // fedAt and the totem are saved (not synced) so a restart does not look like a lost signal and drop the projector's chunks
+
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         write(tag);
         tag.put("Energy", energy.serializeNBT());
+        tag.putLong("FedAt", fedAt);
+        if (totemPos != null) {
+            tag.putLong("Totem", totemPos.asLong());
+        }
     }
 
     @Override
@@ -268,6 +290,10 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         signal = tag.getBoolean("Signal");
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         source = tag.contains("Source") ? BlockPos.of(tag.getLong("Source")) : null;
+        if (tag.contains("FedAt")) {
+            fedAt = tag.getLong("FedAt");
+            totemPos = tag.contains("Totem") ? BlockPos.of(tag.getLong("Totem")) : null;
+        }
         if (tag.contains("Energy")) {
             energy.deserializeNBT(tag.get("Energy"));
         }

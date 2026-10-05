@@ -1,0 +1,37 @@
+{
+  "name": "Chunk Loading",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:filled_map",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A placed totem can keep the land around it running while you are away: machines work and crops grow as if you were standing there.$(br2)Two base upgrades on the totem's tree do it. $(l)Anchor$() sets how many chunks stay loaded. $(l)Survey$() sets how far from the totem they can be."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Anchor$(), from Tier II:$(br)$(li)Level 1: 1 chunk$(li)Level 2: 3 chunks$(li)Level 3: 6 chunks$(br2)$(l)Survey$(), from Tier III, once Anchor is level 2:$(br)$(li)Without it: pick within 3 by 3 chunks$(li)Level 1: 5 by 5$(li)Level 2: 7 by 7$(br2)The chunk the totem stands in is always loaded and counts as one.",
+      "title": "Anchor and Survey"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Once Anchor has a level, your totem's panel gains a $(l)CHUNKS$() tab. It shows a map of the ground around the totem, one square for each chunk, north at the top.$(br2)Click a square to load that chunk. Click it again to let it go. Turquoise squares are loaded from here, violet ones from a projector, dark ones are out of range.",
+      "title": "Choosing chunks"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Send $(l)Anchor$() through a $(l:totem/projectors)Totem Generator$() and the projector at the far end gets a chunk map of its own, centred on the projector.$(br2)A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps using RF. Its chunks stay loaded while it has a signal and RF.",
+      "title": "Through a projector"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.$(br2)Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.",
+      "title": "More than one totem"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "When a totem is stolen, every chunk chosen for it is let go, at the totem and at its projectors. The thief keeps the upgrades and chooses again.$(br2)If you pick your own totem up and place it somewhere else, it remembers the layout.$(br2)The server may be set to load chunks only while you are online.",
+      "title": "Stolen and moved totems"
+    }
+  ]
+}

@@ -4,7 +4,18 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- Chunk loading. Two new Base upgrades on a sixth path of the totem's tree: **Anchor** (from Tier II, 3 levels: keeps 1, 3, then 6 chunks loaded) and **Survey** (from Tier III, 2 levels: widens the square the chunks are picked from, 3 x 3 to 5 x 5 to 7 x 7). The totem's own chunk is always loaded and counts as one.
+- CHUNKS tab on the placed totem's panel, shown to the owner once Anchor has a level: a top-down map of the terrain, one tile per chunk; click to load or unload.
+- Totem Projector screen (right-click): what the projector is doing, its RF, the powers reaching it from the generator, and, when Anchor is being sent to it, a chunk picker centred on the projector. Projectors add no chunks: whatever is left of the totem's allowance can be picked around the projector, in any order. The projector's own chunk is always one of them, so a projector holding chunks is always running and using RF. Anchor is a seventh power a generator can send.
+- A player's main totem is the one they have held longest. Their other totems load only the chunk they stand in, and cannot buy Anchor past level 1 or Survey. Lose the main totem and the next one takes its place.
+- When a totem is stolen every chunk picked for it (and at its projectors) is unloaded; the thief chooses again. An owner who picks their totem up and places it elsewhere keeps the layout.
+- Config section `chunks`: `enabled`, `chunksPerLevel`, `rangePerLevel`, `ownerMustBeOnline`, `maxPerPlayer`. The admin panel's Settings tab has a switch for loading always or only while the owner is online.
+- Guide book: a new Chunk Loading entry (six pages) and a page on the projector screen; Anchor added to the list of powers a generator can send.
+- Jade support (optional: BSP-Core still runs without Jade). Jade shows each block's name and RF as it does for any mod; BSP-Core adds no lines of its own. Every part of an assembled multiblock reads as the machine itself, and a working Decoy Totem reads as a Shatter Totem to everyone but its owner, so Jade cannot give a decoy away.
+
+### Changed
+- Totem Generators no longer load chunks every second while following their cables. Each second they look only at loaded chunks; every `projector.cableCheckSeconds` (default 30, and once when the generator loads) they follow the run all the way, loading the chunks along it for a moment. A run through chunks nobody is in is trusted between checks, so a far-off projector keeps its signal, and its chunk loading, without the cable's chunks being picked.
 
 ## [0.2.0] - 2026-10-04
 

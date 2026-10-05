@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * Server → client: everything the admin panel shows. {@code open} opens the panel; otherwise it
  * only refreshes a panel that is already showing. {@code canEdit} is false for moderators.
  */
-public record AdminDataPacket(boolean open, boolean canEdit, int season, int day, String lastWinner, int lastWinnerPoints, int holderHours, int holderMinutesLeft, int[] decoyRanges, List<Row> rows) {
+public record AdminDataPacket(boolean open, boolean canEdit, int season, int day, String lastWinner, int lastWinnerPoints, int holderHours, int holderMinutesLeft, int[] decoyRanges, boolean chunksOnlineOnly, List<Row> rows) {
     /** One totem: its tier (0 = I), whether it is carried, and where it (or its carrier) is. */
     public record Totem(int tier, boolean carried, String dimension, BlockPos pos) {
     }
@@ -34,6 +34,7 @@ public record AdminDataPacket(boolean open, boolean canEdit, int season, int day
         buf.writeVarInt(msg.holderHours);
         buf.writeVarInt(msg.holderMinutesLeft + 1);
         buf.writeVarIntArray(msg.decoyRanges);
+        buf.writeBoolean(msg.chunksOnlineOnly);
         buf.writeVarInt(msg.rows.size());
         for (Row r : msg.rows) {
             buf.writeUUID(r.id);
@@ -60,6 +61,7 @@ public record AdminDataPacket(boolean open, boolean canEdit, int season, int day
         String winner = buf.readUtf(32);
         int winnerPoints = buf.readVarInt(), holderHours = buf.readVarInt(), holderLeft = buf.readVarInt() - 1;
         int[] decoyRanges = buf.readVarIntArray(8);
+        boolean chunksOnlineOnly = buf.readBoolean();
         int n = buf.readVarInt();
         List<Row> rows = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
@@ -73,7 +75,7 @@ public record AdminDataPacket(boolean open, boolean canEdit, int season, int day
             }
             rows.add(new Row(id, name, online, points, count, totems, buf.readVarIntArray(16), buf.readVarInt(), buf.readVarInt()));
         }
-        return new AdminDataPacket(open, canEdit, season, day, winner, winnerPoints, holderHours, holderLeft, decoyRanges, rows);
+        return new AdminDataPacket(open, canEdit, season, day, winner, winnerPoints, holderHours, holderLeft, decoyRanges, chunksOnlineOnly, rows);
     }
 
     public static void handle(AdminDataPacket msg, Supplier<NetworkEvent.Context> ctx) {

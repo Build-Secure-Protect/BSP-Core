@@ -68,6 +68,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ScoreSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ScoreSyncPacket::encode).decoder(ScoreSyncPacket::decode)
                 .consumerMainThread(ScoreSyncPacket::handle).add();
+        CHANNEL.messageBuilder(ChunkViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ChunkViewPacket::encode).decoder(ChunkViewPacket::decode)
+                .consumerMainThread(ChunkViewPacket::handle).add();
+        CHANNEL.messageBuilder(ChunkActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ChunkActionPacket::encode).decoder(ChunkActionPacket::decode)
+                .consumerMainThread(ChunkActionPacket::handle).add();
         CHANNEL.messageBuilder(StealStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(StealStatusPacket::encode).decoder(StealStatusPacket::decode)
                 .consumerMainThread(StealStatusPacket::handle).add();

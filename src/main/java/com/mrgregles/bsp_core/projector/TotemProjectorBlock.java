@@ -43,12 +43,21 @@ public class TotemProjectorBlock extends BaseEntityBlock {
         return new TotemProjectorBlockEntity(pos, state);
     }
 
-    /** Right-click tells the player what the projector is doing: no signal, no power, or which powers it is projecting. */
+    /** A broken projector lets go of the chunks picked around it. */
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel sl) {
+            com.mrgregles.bsp_core.chunk.ChunkLoading.projectorRemoved(sl, pos);
+        }
+        super.onRemove(state, level, pos, newState, moving);
+    }
+
+    /** Right-click opens the projector's screen: what it is doing, the powers reaching it, and its chunk picker. */
     @Override
     public net.minecraft.world.InteractionResult use(BlockState state, Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
                                                      net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof TotemProjectorBlockEntity projector) {
-            player.displayClientMessage(projector.status(), true);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp && level.getBlockEntity(pos) instanceof TotemProjectorBlockEntity) {
+            com.mrgregles.bsp_core.chunk.ChunkLoading.sendView(sp, pos, true);
         }
         return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
     }

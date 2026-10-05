@@ -34,7 +34,13 @@ public record TotemOwner(UUID uuid, String name) {
         return load(stack.getTag());
     }
 
+    /** When the current owner got the totem, in ms; chunk loading treats the totem a player has held longest as their main one. */
+    public static final String TAG_OWNED_SINCE = "OwnedSince";
+
     public void applyTo(ItemStack stack) {
+        if (!fromStack(stack).map(o -> o.uuid().equals(uuid)).orElse(false)) {
+            stack.getOrCreateTag().putLong(TAG_OWNED_SINCE, System.currentTimeMillis());
+        }
         save(stack.getOrCreateTag());
     }
 

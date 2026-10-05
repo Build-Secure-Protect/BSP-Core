@@ -498,3 +498,27 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] A Totem Projector joined by cable to a sending generator, with no RF fed into the projector itself: its seams glow amber and right-click says it needs its own RF. Feed it RF: it turns turquoise, the shards appear, and with Fortify or Healing Aura being sent their spheres show around the projector, as they do around a totem.
 - [ ] A projector with no generator sending to it stays dark and right-click says "No signal".
 - [ ] Right-clicking a projecting projector lists the powers and their levels.
+
+## Jade tooltips (needs the Jade mod; it is loaded in `./gradlew runClient`)
+- [ ] With Jade installed, looking at any BSP-Core block shows its name and "BSP Core", with no extra description or status lines from BSP-Core. Blocks that hold RF show Jade's RF bar.
+- [ ] Decoy Totem, as its owner: reads "Decoy Totem". As another player, while it is powered: reads "Shatter Totem", the same as a real one. Unpowered or broken, it reads "Decoy Totem".
+- [ ] An assembled multiblock: looking at any part of it (casing, glass, rotor, ports) reads as the machine's name.
+- [ ] Without Jade installed the game starts and plays as before (also on a dedicated server).
+
+## Chunk loading (Anchor, Survey, CHUNKS tab, projector screen)
+- [ ] The totem tree shows a sixth path with Anchor (Tier II ring) and Survey (Tier III ring). Anchor has 3 levels, Survey 2; Survey opens once Anchor is level 2. The Totem Generator screen lists Anchor as a seventh power and its sockets and inventory still line up.
+- [ ] Buy Anchor 1 on a placed totem: a CHUNKS tab appears in the header (owner and admins only). It shows a terrain map, the totem's chunk framed in turquoise, LOADED 1 / 1, RANGE 3 x 3.
+- [ ] Anchor 2: LOADED 1 / 3. Click two chunks next to the totem: they frame turquoise and the count rises. A fourth click says no chunks are left. Clicking the totem's own chunk says it is always loaded. Clicking a dark (out of range) chunk says it is out of range.
+- [ ] Survey 1 and 2 widen the pickable square to 5 x 5 and 7 x 7. Anchor 3 gives 6 chunks.
+- [ ] Walk far away (beyond view distance): a machine in a picked chunk keeps working; one in an unpicked chunk stops. `/forge chunkforce` or F3 are not needed: check the machine's progress on return.
+- [ ] Restart the server: the picks are still shown and the chunks still load without anyone visiting.
+- [ ] Pick the totem up and place it elsewhere: the same layout appears around the new position. Have another player steal it: all picks are gone except the totem's own chunk, and the thief can choose again.
+- [ ] Projector: right-click opens the new screen for anyone, with status, RF bar and one chip per power (hover for the name). Without Anchor being sent it explains how to get chunk loading there.
+- [ ] Send Anchor from the generator to a powered projector: the projector screen shows a map centred on the projector. The projector's own chunk is picked automatically (if the totem has one left) and cannot be removed; any other chunk within range can be picked in any order while the totem has chunks left. With the totem's allowance already full the projector map shows nothing picked and clicks say no chunks are left. Picks made here use the totem's allowance: the totem's CHUNKS tab shows them in violet and counts them.
+- [ ] Cut the projector's RF or the generator's signal while you are near it: within a few seconds its chunks stop loading (the picks are kept and come back when it is fed again). Break the projector: its picks are freed.
+- [ ] Second totem: with two placed totems owned by one player, the newer one shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Remove the older totem: the newer one becomes the main totem and its full allowance returns.
+- [ ] Admin panel, Settings: the "Chunks: load always / owner online" button switches. With "owner online", the owner logging out unloads their chunks and logging in loads them again.
+- [ ] Config: `chunks.enabled = false` stops all loading and the tab says so; `chunks.maxPerPlayer = 2` limits a player to 2 chunks in total.
+- [ ] Long cable run: put a projector several chunks from the totem with Anchor sent to it, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
+- [ ] Restart the server with nobody near that projector: it is still loaded and projecting after the restart.
+- [ ] Guide book: The Shatter Totem has a Chunk Loading entry, and Generators and Projectors ends with a page on the projector screen.

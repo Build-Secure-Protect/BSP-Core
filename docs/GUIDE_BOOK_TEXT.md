@@ -211,6 +211,7 @@ Each generator sends two of these at once (three with a *Channel Expander*):
 - Ward
 - Sanctuary
 - Overclock
+- Anchor
 
 Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.
 
@@ -233,6 +234,62 @@ The generator must be able to push that far too: 15 blocks, or 25, 40 and 80 wit
 **Page 8**  `[recipe] reach_amplifier_mk1, reach_amplifier_mk2`
 
 **Page 9**  `[recipe] reach_amplifier_mk3, channel_expander`
+
+**Page 10: The projector screen**
+
+Right-click a projector to see what it is doing: no signal, no power, or projecting. Under its RF bar is one chip for each power, lit with the level that reaches it. Hover over a chip for its name.
+
+When Anchor is one of the powers, a chunk map appears below.
+
+## Chunk Loading
+
+**Page 1**
+
+A placed totem can keep the land around it running while you are away: machines work and crops grow as if you were standing there.
+
+Two base upgrades on the totem's tree do it. **Anchor** sets how many chunks stay loaded. **Survey** sets how far from the totem they can be.
+
+**Page 2: Anchor and Survey**
+
+**Anchor**, from Tier II:
+
+- Level 1: 1 chunk
+- Level 2: 3 chunks
+- Level 3: 6 chunks
+
+**Survey**, from Tier III, once Anchor is level 2:
+
+- Without it: pick within 3 by 3 chunks
+- Level 1: 5 by 5
+- Level 2: 7 by 7
+
+The chunk the totem stands in is always loaded and counts as one.
+
+**Page 3: Choosing chunks**
+
+Once Anchor has a level, your totem's panel gains a **CHUNKS** tab. It shows a map of the ground around the totem, one square for each chunk, north at the top.
+
+Click a square to load that chunk. Click it again to let it go. Turquoise squares are loaded from here, violet ones from a projector, dark ones are out of range.
+
+**Page 4: Through a projector**
+
+Send **Anchor** through a Totem Generator and the projector at the far end gets a chunk map of its own, centred on the projector.
+
+A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps using RF. Its chunks stay loaded while it has a signal and RF.
+
+**Page 5: More than one totem**
+
+Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.
+
+Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.
+
+**Page 6: Stolen and moved totems**
+
+When a totem is stolen, every chunk chosen for it is let go, at the totem and at its projectors. The thief keeps the upgrades and chooses again.
+
+If you pick your own totem up and place it somewhere else, it remembers the layout.
+
+The server may be set to load chunks only while you are online.
 
 ---
 

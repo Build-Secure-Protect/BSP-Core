@@ -14,7 +14,7 @@ import net.minecraftforge.items.SlotItemHandler;
 
 /** One Totem Generator's screen: the list of powers with a switch each, its upgrade sockets, and the state of its cable run. */
 public class GeneratorMenu extends AbstractContainerMenu {
-    public static final int WIDTH = 300, SOCKET_Y = 126, INV_X = 69, INV_Y = 158, HEIGHT = INV_Y + 82;
+    public static final int WIDTH = 300, SOCKET_Y = 140, INV_X = 69, INV_Y = 172, HEIGHT = INV_Y + 82;
     public static final int[] SOCKET_X = {12, 32, 52, 84};
     private static final int N = TotemGeneratorBlockEntity.SENDABLE.length, D_RF = 0, D_STATE = 1, D_RUN = 2, D_CABLE = 3, D_REACH = 4, D_CHANNELS = 5, D_CHOSEN = 6, D_LEVELS = 7,
             D_ARRIVING = D_LEVELS + N, DATA_COUNT = D_ARRIVING + N;

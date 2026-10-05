@@ -178,6 +178,10 @@ public class AdminScreen extends Screen {
         }
         boolean edit = data.canEdit();
         if (tab == 2) {
+            if (edit && over(mx, my, x + LIST_X, y + 162, 150, BTN_H)) {
+                send(new AdminActionPacket(AdminActionPacket.SET_CHUNKS_ONLINE, new UUID(0, 0), "", new net.minecraft.core.BlockPos(data.chunksOnlineOnly() ? 0 : 1, 0, 0)));
+                return true;
+            }
             for (int i = 0; i < data.decoyRanges().length && edit; i++) {
                 for (int k = 0; k < RANGE_STEPS.length; k++) {
                     if (over(mx, my, x + rangeStepX(k), y + 60 + i * 20, 24, 16)) {
@@ -329,6 +333,8 @@ public class AdminScreen extends Screen {
             g.drawString(font, v, x + 150 + 52 + 17 - font.width(v) / 2, ry + 4, GOLD & 0xFFFFFF, false);
         }
         small(g, tr("settings.saved"), x + LIST_X, y + 146, MUTED);
+        button(g, x + LIST_X, y + 162, 150, BTN_H, tr(data.chunksOnlineOnly() ? "settings.chunks_online" : "settings.chunks_always"), edit, TQ, mouseX, mouseY);
+        small(g, tr("settings.chunks_help"), x + LIST_X + 158, y + 162 + (BTN_H - 6) / 2, MUTED);
     }
 
     private void season(GuiGraphics g, int x, int y, boolean edit, int mouseX, int mouseY) {
