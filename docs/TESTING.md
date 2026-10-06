@@ -475,29 +475,25 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Admin panel, Settings tab: the four decoy ranges change with the -8, -1, +1, +8 buttons, survive a restart, and within a few seconds apply to decoys already placed. A moderator sees them but cannot change them.
 - [ ] An Anti Totem zone with machines blocked refuses a Decoy Totem.
 
-## Totem Generator, Projector and Cables
-- [ ] All blocks and the four socket parts are in the creative tab with recipes in JEI. Each cable kind has its own colour (purple, blue, turquoise, pale cyan).
-- [ ] A generator placed under a placed, owned totem and given RF: a turquoise ring rises around the totem again and again. With no RF there is no ring.
-- [ ] Nine joined generators with one RF cable into one of them all run (given about 1,800 RF per tick); with too little power some report NO POWER; a second cable into another generator adds throughput. The RF bar on every generator's screen shows the shared total.
-- [ ] Another player right-clicking the generators gets a red message and no screen. After stealing the totem, that player can open them and the previous owner cannot. An open screen closes when the totem changes hands. The generator shows three ports on each of its four sides.
-- [ ] Generators placed beside it join into one slab: the seam between them disappears, ports show only on outer edges, and the ring widens (wider with the four side ones, three blocks across with all nine). A generator that only touches the array diagonally, or lies outside the three by three, does not work (its screen says NO TOTEM).
-- [ ] Right-clicking a single generator opens its screen. Right-clicking any generator in a joined array opens a three by three grid (north up) with a lit square per generator, the clicked one outlined in gold; clicking a square opens that generator's screen.
-- [ ] Cables join to each other in all six directions, to a generator's sides and bottom (not its top), and to any face of a projector, with a link and lit band on each joined side.
-- [ ] With a cable run to a projector and RF on both: the screen says CHOOSE A POWER; switching on a power the totem has makes it SENDING and shows the level that arrives. A third power is refused without a Channel Expander. Powers the totem lacks are greyed "not unlocked".
-- [ ] Reach: with Tetrium Core cable a run of 15 works and 16 is OUT OF REACH. With Charged Illyrium Core cable and no amplifier, 16 is still out of reach; Mk I allows 25, Mk II 40, Mk III 80. A run with one Tetrium Core block in it is limited to 15. Amplifiers must be fitted in order.
-- [ ] Strength: next to the generator the powers arrive at full level; at the end of the working run at about half, never below 1. The screen's strength percentage matches.
-- [ ] The projector lights up, with shards circling, only while it is being fed and has RF. Fortify and Healing Aura show their spheres round the projector at the reduced level.
-- [ ] Each power works at the projector as it does at the totem: Fortify slows non-owner mining and resists explosions; Healing Aura heals the owner; Alarm makes intruders glow and tells the owner; Ward weakens intruders; Sanctuary stops mob spawns; Overclock speeds BSP machines nearby.
-- [ ] Two generators in one array with their own cables drive two projectors, each with its own two powers. Two generators whose cables meet do not share one projector: the second finds another or reports NO PROJECTOR.
-- [ ] Removing RF from either block, breaking a cable, or picking up the totem stops the aura within a few seconds. If the totem is stolen, the projector now works for the thief.
-- [ ] Breaking a generator drops its socket parts. Settings and stored RF survive a restart.
+## Wave Plasma chain (replaces the Totem Generator)
+- [ ] The totem tree's plasma path now starts with Output (Tier I ring, 6 levels), then Anchor, then Survey. Output's detail line reads "Gives off 100 mB/t of Wave Plasma" and rises per level (150, 200, 300, 400, 500, 600).
+- [ ] Plasma Extractor directly under a placed, owned totem: a drum with portholes showing moving ion-blue plasma. A second extractor under the first stacks. Wrong order (extractor above the totem, or a gap) does nothing.
+- [ ] Plasma Interface touching an extractor's side: cables plug into it. Place 13 touching interface blocks: the 13th shows a lit seam and is not part of the group. Touch a second, separate interface to a drum the first already serves: its seam lights.
+- [ ] Cables join to each other, to interfaces, to projectors and to a repeater's two ends (not its sides). Breaking a cable updates the neighbours' arms.
+- [ ] Projector on a cable run from the interface: right-click opens POWERS / CHUNKS / STATUS. POWERS lists Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Anchor with the totem's level under OFFERED; switching one to RECEIVING shows the same level under ARRIVES; a third switch is refused until a Channel Expander is fitted (right-click the projector holding one; sneak + right-click empty-handed takes it out).
+- [ ] STATUS: PROJECTING with the plasma bar full at 100 of 100 mB/t from a single Tier I totem with one extractor. With two extractors under the totem and the interface touching only one: LOW PRESSURE at 50 mB/t. Touching both: back to 100.
+- [ ] Repeater in the run: the plasma arriving drops to 90 mB/t and STATUS reads LOW PRESSURE; raising Output to level 1 (150 mB/t) cures it. With one power received it arrives at full level; with two, each arrives one level lower; a level-1 power behind one repeater shows 0 and a tooltip explaining why.
+- [ ] A cable run longer than the cable's reach (16 Tetrium Core cables) is not fed: NO SIGNAL. A repeater in the middle starts a fresh run and it is fed again.
+- [ ] The projector lights up with shards circling only while projecting. Fortify and Healing Aura now draw cubes (edges), not spheres; so does the totem. Each power works at the projector as at the totem, within the cube: Fortify slows non-owner mining and resists explosions; Healing heals the owner; Alarm makes intruders glow and tells the owner; Ward weakens; Sanctuary stops spawns; Overclock speeds machines.
+- [ ] Two projectors on one interface each pick their own powers. Breaking a cable, picking up the totem, or breaking the extractor stops the aura within a few seconds. A stolen totem keeps the chain working for the thief.
+- [ ] Another player right-clicking the projector sees the screen but the RECEIVE switches are dead and a note says only the owner can change it.
+- [ ] Settings (received powers, expander) and the extractor's tank survive a restart. Nothing in the chain accepts RF or other mods' fluid pipes.
 
 ## Wrong-block marker and projector status
 - [ ] Build a Magnetic Centrifuge with a Factory Power Port in place of the Centrifuge Power Port: the wrong block gets a pulsing red box with a small Centrifuge Power Port floating above it, and right-clicking the controller prints a red chat line naming both blocks and the position. Swapping in the right block forms the machine within a second.
 - [ ] The same marker appears on the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory when a wrong block is in a part's place.
-- [ ] A Totem Projector joined by cable to a sending generator, with no RF fed into the projector itself: its seams glow amber and right-click says it needs its own RF. Feed it RF: it turns turquoise, the shards appear, and with Fortify or Healing Aura being sent their spheres show around the projector, as they do around a totem.
-- [ ] A projector with no generator sending to it stays dark and right-click says "No signal".
-- [ ] Right-clicking a projecting projector lists the powers and their levels.
+- [ ] A Projector on an interface's cable but short of plasma: its seams glow amber and STATUS says LOW PRESSURE. With enough plasma it turns turquoise, the shards appear, and Fortify or Healing Aura draw their cubes around it.
+- [ ] A projector with no interface feeding it stays dark and STATUS says NO SIGNAL.
 
 ## Jade tooltips (needs the Jade mod; it is loaded in `./gradlew runClient`)
 - [ ] With Jade installed, looking at any BSP-Core block shows its name and "BSP Core", with no extra description or status lines from BSP-Core. Blocks that hold RF show Jade's RF bar.
@@ -506,19 +502,54 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Without Jade installed the game starts and plays as before (also on a dedicated server).
 
 ## Chunk loading (Anchor, Survey, CHUNKS tab, projector screen)
-- [ ] The totem tree shows a sixth path with Anchor (Tier II ring) and Survey (Tier III ring). Anchor has 3 levels, Survey 2; Survey opens once Anchor is level 2. The Totem Generator screen lists Anchor as a seventh power and its sockets and inventory still line up.
+- [ ] The totem tree shows a sixth path with Anchor (Tier II ring) and Survey (Tier III ring). Anchor has 3 levels, Survey 2; Survey opens once Anchor is level 2. The projector's POWERS tab lists Anchor as a seventh power.
 - [ ] Buy Anchor 1 on a placed totem: a CHUNKS tab appears in the header (owner and admins only). It shows a terrain map, the totem's chunk framed in turquoise, LOADED 1 / 1, RANGE 3 x 3.
 - [ ] Anchor 2: LOADED 1 / 3. Click two chunks next to the totem: they frame turquoise and the count rises. A fourth click says no chunks are left. Clicking the totem's own chunk says it is always loaded. Clicking a dark (out of range) chunk says it is out of range.
 - [ ] Survey 1 and 2 widen the pickable square to 5 x 5 and 7 x 7. Anchor 3 gives 6 chunks.
 - [ ] Walk far away (beyond view distance): a machine in a picked chunk keeps working; one in an unpicked chunk stops. `/forge chunkforce` or F3 are not needed: check the machine's progress on return.
 - [ ] Restart the server: the picks are still shown and the chunks still load without anyone visiting.
 - [ ] Pick the totem up and place it elsewhere: the same layout appears around the new position. Have another player steal it: all picks are gone except the totem's own chunk, and the thief can choose again.
-- [ ] Projector: right-click opens the new screen for anyone, with status, RF bar and one chip per power (hover for the name). Without Anchor being sent it explains how to get chunk loading there.
-- [ ] Send Anchor from the generator to a powered projector: the projector screen shows a map centred on the projector. The projector's own chunk is picked automatically (if the totem has one left) and cannot be removed; any other chunk within range can be picked in any order while the totem has chunks left. With the totem's allowance already full the projector map shows nothing picked and clicks say no chunks are left. Picks made here use the totem's allowance: the totem's CHUNKS tab shows them in violet and counts them.
-- [ ] Cut the projector's RF or the generator's signal while you are near it: within a few seconds its chunks stop loading (the picks are kept and come back when it is fed again). Break the projector: its picks are freed.
+- [ ] Projector: the CHUNKS tab explains how to get chunk loading there until Anchor is received.
+- [ ] Receive Anchor on a fed projector: the CHUNKS tab shows a map centred on the projector. The projector's own chunk is picked automatically (if the totem has one left) and cannot be removed; any other chunk within range can be picked in any order while the totem has chunks left. With the totem's allowance already full the projector map shows nothing picked and clicks say no chunks are left. Picks made here use the totem's allowance: the totem's CHUNKS tab shows them in violet and counts them.
+- [ ] Cut the projector's plasma (break the cable) while you are near it: within a few seconds its chunks stop loading (the picks are kept and come back when it is fed again). Break the projector: its picks are freed.
 - [ ] Second totem: with two placed totems owned by one player, the newer one shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Remove the older totem: the newer one becomes the main totem and its full allowance returns.
 - [ ] Admin panel, Settings: the "Chunks: load always / owner online" button switches. With "owner online", the owner logging out unloads their chunks and logging in loads them again.
 - [ ] Config: `chunks.enabled = false` stops all loading and the tab says so; `chunks.maxPerPlayer = 2` limits a player to 2 chunks in total.
-- [ ] Long cable run: put a projector several chunks from the totem with Anchor sent to it, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
+- [ ] Long cable run: put a projector several chunks from the totem receiving Anchor, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
 - [ ] Restart the server with nobody near that projector: it is still loaded and projecting after the restart.
-- [ ] Guide book: The Shatter Totem has a Chunk Loading entry, and Generators and Projectors ends with a page on the projector screen.
+- [ ] Guide book: The Shatter Totem has a Chunk Loading entry and a Wave Plasma and Projectors entry.
+
+## Aura cubes and the hide switch
+- [ ] Fortify and Healing Aura draw as cubes with glowing edges around totems and projectors. A player standing inside the cube still sees its edges.
+- [ ] The AURAS switch in the totem panel's header hides every aura cube for you only; another player still sees them. The setting survives a restart (`config/bsp_core-client.toml`), and the keybind (unbound by default, under BSP Core in Controls) does the same with an action-bar message.
+- [ ] Effects use the cube: a player just outside the sphere but inside the cube's corner is still warded/alarmed/healed.
+
+## Batteries, charger, cells, emitter
+- [ ] Magnetic Centrifuge: a Resonance Crystal in the input slot and Magnatite Nuggets in the upgrade slot make a Charged Resonance Crystal (30 s, 20 s with six layers). JEI shows the job.
+- [ ] Battery Charger on a cable from an interface: its screen reads FILLING once a battery is in the slot, the tank bar moves, the battery's bar fills. The STAMP switches list the interface's powers; a Tier I battery allows none, II two, III three, IV four. Stamped levels follow the totem's level while the battery sits in a fed charger.
+- [ ] A charged Tier II battery placed on a Plasma Extractor (lying on its side) feeds the interface at 100 mB/t with only its stamped powers; a projector on that interface lists only those; the battery item shows its bar draining and keeps its contents when mined.
+- [ ] Power Cells take Carried powers only (the charger's list changes to Damage, Resistance, Mining Speed, ...). The Wave Emitter: right-click with a cell in the other hand fits it; in the offhand, right-click switches it on; it gives the cell's powers (test Mining Speed and Swiftness), draws 20 mB/t, switches itself off when the cell is empty; sneak + right-click takes the cell out. It does nothing in the main hand.
+- [ ] Only the totem's owner (or a friend with Machines) can open a fed charger; others get a red message.
+
+## Friends and access
+- [ ] The totem panel's ACCESS tab (owner and admins only): type an online player's name and Add. The row shows four switches, all on; each toggles; x removes. A ninth name is refused.
+- [ ] A friend with Upgrades can buy upgrades on your placed totem, change its chunks and switch a projector's powers. Without it, those are refused.
+- [ ] A friend with Alarm walks into the Alarm cube without glowing or warning you; with Ward they are not weakened. Projectors honour the same switches.
+- [ ] The list survives pick-up and re-placing, and is empty after the totem is stolen.
+
+## Newer powers
+- [ ] The tree has five rings now (Tier V outermost). Bouncy sits beside Night Sight on the Dig path, X-ray on the outer ring; Cloaking beside Deadlock; Recall on the outer ring of Home; Recall Block after Shroud. Output starts the plasma path.
+- [ ] Bouncy: fall 3+ blocks and bounce back up, higher from a higher fall, with some forward speed; sneaking lands flat; fall damage reduced per level and no damage at level 4. Works from the emitter too.
+- [ ] X-ray: press X with X-ray carried. Ores show blue, block entities gold, spawners red through the walls within range, fading with depth; a small ring by the crosshair drains, then shows the recharge. Pressing X again switches it off early.
+- [ ] Recall: with Recall on a placed totem, have someone start stealing it while you stand far away: after the thief's Shroud and Recall Block delays a card appears above the hotbar with an arrow and distance; R teleports you to the surface at the level's distance from the totem facing it; N declines; the card runs out after 20 s. Recall then rests 10 minutes. No card appears when you are already within range.
+- [ ] Recall Block on the thief's offhand totem delays the card by its seconds.
+- [ ] Cloaking: buy it on a totem with a base built around it, then view from outside as a player not on the access list: the cube shows what was there when Cloaking came on (walk in and the real blocks appear; the owner always sees the real blocks). The totem's plasma output is 50 mB/t lower while cloaked. Known limits of this first version: the copy is of the moment it came on (not the land as generated), entities inside are not hidden, and block entities inside briefly lose their contents on the client after walking in until the chunk reloads.
+
+## Fix-ups 2026-10-06
+- [ ] Mining Tetrium, Illyrium or Magnatite ore drops a raw item (two or three with Fortune III); Silk Touch drops the block. The Tetrium Crucible, Illyrium Crucible and Magnetic Centrifuge take the raw items.
+- [ ] Buying Recall level 1 to 7 on a Tier V totem works and charges Illyrium coins.
+- [ ] Cables are glass pipes in the cable's colour with dark rails. A run carrying plasma shows the plasma inside: a level that rises with the flow (full at 100 mB/t, low behind repeaters or on a short supply) and bright pulses travelling toward the projector. Break the supply and the pipe empties within a second or two. Jade on a carrying cable reads "Wave Plasma: N mB/t", on an idle one "No plasma flowing".
+- [ ] A repeater placed while looking along the cable points that way (lit cap at the front). Plasma passes only front-ways: a repeater placed backwards leaves the projector with NO SIGNAL; right-click it empty-handed and it turns round and works.
+- [ ] `/bsp totem buff cloaking 2` while looking at a placed totem gives it Cloaking 2 (and `/bsp totem buff xray 3` while holding a totem gives the held one X-ray 3 for the X-ray test); `/bsp totem tier 5` raises the tier; `/bsp totem recloak` re-takes the cloak copy after building inside it.
+- [ ] Repeaters show turquoise arrows on their top and both sides pointing out of the lit front, in every one of the six facings (including up and down). Their five copper rings sit still when idle and swell and nudge forward one after another while plasma passes.
+- [ ] Wrench (two Tetrium Ingots over a Tetrium Ingot over a Stick): right-click a repeater steps it east, south, west, north, up, down; sneak + right-click turns it round. On a placed totem or a battery it turns them; on a plain block (stone) it does nothing. The cables re-join after the turn.

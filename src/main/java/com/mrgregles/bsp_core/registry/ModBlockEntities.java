@@ -89,9 +89,24 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlockEntity::new, ModBlocks.DECOY_POWER_BASE.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
-    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.TotemGeneratorBlockEntity>> TOTEM_GENERATOR =
-            BLOCK_ENTITIES.register("totem_generator", () -> BlockEntityType.Builder
-                    .of(com.mrgregles.bsp_core.projector.TotemGeneratorBlockEntity::new, ModBlocks.TOTEM_GENERATOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity>> PLASMA_EXTRACTOR =
+            BLOCK_ENTITIES.register("plasma_extractor", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity::new, ModBlocks.PLASMA_EXTRACTOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity>> PLASMA_INTERFACE =
+            BLOCK_ENTITIES.register("plasma_interface", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity::new, ModBlocks.PLASMA_INTERFACE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity>> PLASMA_CABLE =
+            BLOCK_ENTITIES.register("plasma_cable", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity::new, ModBlocks.TOTEM_CABLES.values().stream().map(RegistryObject::get).toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity>> PLASMA_REPEATER =
+            BLOCK_ENTITIES.register("plasma_repeater", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity::new, ModBlocks.PLASMA_REPEATER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaBatteryBlockEntity>> PLASMA_BATTERY =
+            BLOCK_ENTITIES.register("plasma_battery", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.PlasmaBatteryBlockEntity::new, ModBlocks.PLASMA_BATTERIES.stream().map(RegistryObject::get).toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.BatteryChargerBlockEntity>> BATTERY_CHARGER =
+            BLOCK_ENTITIES.register("battery_charger", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.BatteryChargerBlockEntity::new, ModBlocks.BATTERY_CHARGER.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity>> TOTEM_PROJECTOR =

@@ -28,8 +28,8 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.TOTEM_COMPASS.get(), TotemCompassScreen::new);
             MenuScreens.register(ModMenus.COIN_VAULT.get(), CoinVaultScreen::new);
             MenuScreens.register(ModMenus.DECOY.get(), DecoyScreen::new);
-            MenuScreens.register(ModMenus.GENERATOR.get(), GeneratorScreen::new);
             MenuScreens.register(ModMenus.SEASON_REWARDS.get(), SeasonRewardsScreen::new);
+            MenuScreens.register(ModMenus.BATTERY_CHARGER.get(), BatteryChargerScreen::new);
             // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
                     new net.minecraft.resources.ResourceLocation("angle"),
@@ -45,8 +45,9 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.SCORE_SCREEN.get(), ScoreScreenRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_VAULT.get(), CoinVaultRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DECOY_TOTEM.get(), DecoyTotemRenderer::new);
-        event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_GENERATOR.get(), TotemGeneratorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_PROJECTOR.get(), TotemProjectorRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_CABLE.get(), PlasmaCableRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_REPEATER.get(), PlasmaRepeaterRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ANTI_TOTEM.get(), AntiTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TETRIUM_CRUCIBLE.get(), TetriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMBINATION_FORGE.get(), CombinationForgeRenderer::new);
@@ -58,5 +59,7 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void onRegisterOverlays(RegisterGuiOverlaysEvent event) {
         event.registerAboveAll("steal_timer", StealHudOverlay.INSTANCE);
+        event.registerAboveAll("recall_offer", RecallHud.INSTANCE);
+        event.registerAboveAll("xray_ring", XrayClient.INSTANCE);
     }
 }

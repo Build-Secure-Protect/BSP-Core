@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "MRM",
+    "MBM",
+    "MQM"
+  ],
+  "key": {
+    "M": {
+      "item": "bsp_core:magnatite_ingot"
+    },
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "B": {
+      "item": "bsp_core:power_cell_1"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    }
+  },
+  "result": {
+    "item": "bsp_core:power_cell_2"
+  }
+}

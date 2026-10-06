@@ -5,6 +5,34 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 ## [Unreleased]
 
 ### Added
+- **Wave Plasma.** A placed totem now gives off a fluid, Wave Plasma (100 mB/t, raised by the new Base upgrade **Output** on the plasma path, up to 600 mB/t over six levels). It is drawn out by **Plasma Extractors** stacked under the totem (the flow split between them), routed by **Plasma Interfaces** (touching blocks join, up to 12; more, or an interface touching a drum another already serves, show a lit seam and do nothing), carried by Plasma Cables at full pressure for their whole run, and passed on by **Plasma Repeaters** that start a fresh run at the cost of a tenth of the pressure and, when two or more powers are received, one level per repeater.
+- **Projector screen.** Right-click a Projector: POWERS (what the interface offers, what arrives, a RECEIVE switch per power), CHUNKS (the picker), STATUS (plasma arriving against the 100 mB/t needed, the run, the Channel Expander). The Channel Expander is now fitted to the projector by right-clicking it with one.
+- Auras are cubes: a power with radius r covers the (2r+1)-block box around the totem or projector. (Drawing them as cubes comes with the next build.)
+- Config section `plasma` replaces `projector`: `outputPerLevel`, `extractorTank`, `interfaceMax`, `projectorNeed`, `projectorTank`, `channels`, `repeaterPressure`, `cableCheckSeconds`, `cableReach`.
+- Guide book: the Generators and Projectors entry is now Wave Plasma and Projectors; new entries Batteries, Cells and the Emitter; Letting Friends In; The Newer Powers.
+- **Aura cubes.** Fortify and Healing Aura draw as wire-edged cubes. An AURAS switch in the totem panel's header, a client config setting and a keybind hide them for you only.
+- **Batteries and cells.** Battery Charger (fed by cable; stamps powers into the item in it), Plasma Batteries I to IV (plasma tanks with Base powers; stood on an extractor they feed it like a totem), Power Cells I to III (Carried powers) and the **Wave Emitter** (offhand tricorder that runs on a cell and gives its powers). New centrifuge job: Resonance Crystal + Magnatite Nugget to Charged Resonance Crystal.
+- **Access list.** ACCESS tab on the placed totem: up to eight friends with Upgrades, Alarm, Ward and Machines switches; kept on pick-up, cleared on steal; honoured by projectors and chargers.
+- **New powers.** Bouncy (Carried), X-ray (Carried, first version marks ores, containers and spawners through blocks), Cloaking (Base, first version: outsiders see a copy of the cube taken when it came on), Recall (Base, Compass Card offer with R/N keys, 10-minute rest), Recall Block (Raid). The tree gains a fifth ring for Tier V. Config section `effects`.
+
+- **Raw ores.** Tetrium, Illyrium and Magnatite ores now drop Raw Tetrium, Raw Illyrium and Raw Magnatite (more with Fortune; the ore block with Silk Touch), like vanilla iron. The crucibles and the centrifuge take the raw items as they took the blocks.
+- **Cables are glass pipes.** The plasma inside shows through, at a level that rises with the flow, with pulses travelling the way it runs; an empty pipe shows nothing. Jade on a cable reads the mB/t flowing through it. Repeater rings pump while plasma passes.
+- **Repeaters are one-way** and point the way you look when placed: plasma goes in through the dark back and out of the lit front. Right-click with an empty hand to turn one round.
+- **Wrench.** Right-click a block to turn it in place: a Plasma Repeater steps through its six directions (sneak to turn it straight round), totems, batteries and machines with a facing turn a quarter. Repeaters carry direction arrows on their top and sides.
+- Testing commands for operators: `/bsp totem buff <power> <level>` and `/bsp totem tier <1-5>` set a power or the tier on the totem you hold (either hand) or, with none held, the placed one you look at; `/bsp totem recloak` takes a Cloaking snapshot again.
+
+### Fixed
+- Buying Recall (and any Tier V power with more than two levels) crashed the server: the price looked for a coin past the last tier.
+
+### Removed
+- The Totem Generator, its array screen and the Reach Amplifiers. Existing generators and amplifiers in a world disappear; the Totem Generator advancement is gone. Projectors no longer use RF.
+
+### Changed
+- Block names drop "Totem": Projector, Tetrium Core Plasma Cable, and so on.
+
+## [0.2.1] - 2026-10-04
+
+### Added
 - Chunk loading. Two new Base upgrades on a sixth path of the totem's tree: **Anchor** (from Tier II, 3 levels: keeps 1, 3, then 6 chunks loaded) and **Survey** (from Tier III, 2 levels: widens the square the chunks are picked from, 3 x 3 to 5 x 5 to 7 x 7). The totem's own chunk is always loaded and counts as one.
 - CHUNKS tab on the placed totem's panel, shown to the owner once Anchor has a level: a top-down map of the terrain, one tile per chunk; click to load or unload.
 - Totem Projector screen (right-click): what the projector is doing, its RF, the powers reaching it from the generator, and, when Anchor is being sent to it, a chunk picker centred on the projector. Projectors add no chunks: whatever is left of the totem's allowance can be picked around the projector, in any order. The projector's own chunk is always one of them, so a projector holding chunks is always running and using RF. Anchor is a seventh power a generator can send.

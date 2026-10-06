@@ -1,0 +1,17 @@
+{
+  "name": "Letting Friends In",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:name_tag",
+  "sortnum": 9,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Your placed totem's panel has an $(l)ACCESS$() tab. Type an online player's name and Add: they get four switches.$(br2)$(li)$(l)Upgrades$(): may buy upgrades and change chunks and projector settings.$(li)$(l)Alarm$(): does not set it off.$(li)$(l)Ward$(): is not weakened by it.$(li)$(l)Machines$(): may open the totem's chargers and see through its Cloaking."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.",
+      "title": "Rules"
+    }
+  ]
+}

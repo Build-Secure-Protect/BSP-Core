@@ -1,0 +1,26 @@
+{
+ "variants": {
+  "facing=east": {
+   "model": "bsp_core:block/plasma_repeater"
+  },
+  "facing=west": {
+   "model": "bsp_core:block/plasma_repeater",
+   "y": 180
+  },
+  "facing=south": {
+   "model": "bsp_core:block/plasma_repeater",
+   "y": 90
+  },
+  "facing=north": {
+   "model": "bsp_core:block/plasma_repeater",
+   "y": 270
+  },
+  "facing=up": {
+   "model": "bsp_core:block/plasma_repeater_up"
+  },
+  "facing=down": {
+   "model": "bsp_core:block/plasma_repeater_up",
+   "x": 180
+  }
+ }
+}

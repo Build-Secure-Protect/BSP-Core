@@ -84,6 +84,10 @@ public final class ModItems {
                 ModBlocks.MAGNATITE_ORE, ModBlocks.DEEPSLATE_MAGNATITE_ORE)) {
             ORE_ITEMS.add(ITEMS.register(ore.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(ore.get(), new Item.Properties())));
         }
+        // what the ores drop when mined without Silk Touch; the machines take them like the ore blocks
+        for (String raw : List.of("raw_tetrium", "raw_illyrium", "raw_magnatite")) {
+            ORE_ITEMS.add(ITEMS.register(raw, () -> new Item(new Item.Properties())));
+        }
     }
 
     public static final RegistryObject<Item> TETRIUM_CRUCIBLE = ITEMS.register("tetrium_crucible",
@@ -132,6 +136,7 @@ public final class ModItems {
 
     /** Pressed from a Tetrium Ingot in the Combination Forge. */
     public static final RegistryObject<Item> TETRIUM_PLATE = COMPONENTS.get("tetrium_plate");
+    public static final RegistryObject<Item> RESONANCE_CRYSTAL = COMPONENTS.get("resonance_crystal");
 
     public static final RegistryObject<Item> ADMIN_RACK = ITEMS.register("admin_rack",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.ADMIN_RACK.get(), new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
@@ -153,22 +158,31 @@ public final class ModItems {
         }
     }
 
-    /** The Totem Generator, the Totem Projector, the four Totem Cables and the generator's socket parts, in creative-tab order. */
+    /** The plasma chain: extractor, interface, repeater, projector, the four cables and the Channel Expander, in creative-tab order. */
     public static final List<RegistryObject<Item>> PROJECTOR_ITEMS = new ArrayList<>();
-    public static final Map<com.mrgregles.bsp_core.projector.GeneratorUpgradeItem.Kind, RegistryObject<Item>> GENERATOR_UPGRADES = new EnumMap<>(com.mrgregles.bsp_core.projector.GeneratorUpgradeItem.Kind.class);
+    public static final RegistryObject<Item> CHANNEL_EXPANDER;
 
     static {
-        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.TOTEM_GENERATOR, ModBlocks.TOTEM_PROJECTOR));
+        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.PLASMA_EXTRACTOR, ModBlocks.PLASMA_INTERFACE, ModBlocks.PLASMA_REPEATER, ModBlocks.TOTEM_PROJECTOR));
         blocks.addAll(ModBlocks.TOTEM_CABLES.values());
         for (var block : blocks) {
             PROJECTOR_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
         }
-        for (var kind : com.mrgregles.bsp_core.projector.GeneratorUpgradeItem.Kind.values()) {
-            RegistryObject<Item> item = ITEMS.register(kind.id, () -> new com.mrgregles.bsp_core.projector.GeneratorUpgradeItem(kind));
-            GENERATOR_UPGRADES.put(kind, item);
-            PROJECTOR_ITEMS.add(item);
+        CHANNEL_EXPANDER = ITEMS.register("channel_expander", com.mrgregles.bsp_core.plasma.ChannelExpanderItem::new);
+        PROJECTOR_ITEMS.add(CHANNEL_EXPANDER);
+        PROJECTOR_ITEMS.add(ITEMS.register("battery_charger", () -> new net.minecraft.world.item.BlockItem(ModBlocks.BATTERY_CHARGER.get(), new Item.Properties())));
+        for (var battery : ModBlocks.PLASMA_BATTERIES) {
+            PROJECTOR_ITEMS.add(ITEMS.register(battery.getId().getPath(), () -> new com.mrgregles.bsp_core.plasma.PlasmaBatteryBlock.Item(battery.get())));
         }
+        for (int tier = 0; tier < 3; tier++) {
+            int t = tier;
+            PROJECTOR_ITEMS.add(ITEMS.register("power_cell_" + (tier + 1), () -> new com.mrgregles.bsp_core.plasma.PowerCellItem(t)));
+        }
+        PROJECTOR_ITEMS.add(ITEMS.register("wave_emitter", com.mrgregles.bsp_core.plasma.WaveEmitterItem::new));
+        PROJECTOR_ITEMS.add(ITEMS.register("wrench", com.mrgregles.bsp_core.plasma.WrenchItem::new));
     }
+
+    public static final RegistryObject<Item> CHARGED_RESONANCE_CRYSTAL = ITEMS.register("charged_resonance_crystal", () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> COIN_VAULT = ITEMS.register("coin_vault",
             () -> new com.mrgregles.bsp_core.vault.CoinVaultBlockItem(ModBlocks.COIN_VAULT.get(), new Item.Properties()));

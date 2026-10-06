@@ -38,6 +38,8 @@ import java.util.List;
  *       chance, one in {@code centrifuge.chargeOdds} for the number of layers, to become a Charged
  *       Magnatite Ingot. A failed try leaves the ingot where it is, to be tried again. With six
  *       layers each try is quicker.</li>
+ *   <li><b>Magnetising</b> (needs Magnatite Nuggets in the upgrade slot): a Resonance Crystal and
+ *       one nugget become a Charged Resonance Crystal, the heart of every Plasma Battery and Power Cell.</li>
  * </ul>
  */
 public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEntity {
@@ -198,6 +200,10 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
         return items.getStackInSlot(IN).is(MAGNATITE_ORES);
     }
 
+    private boolean magnetising() {
+        return items.getStackInSlot(IN).is(ModItems.RESONANCE_CRYSTAL.get()) && items.getStackInSlot(COIL).is(ModItems.MAGNATITE_NUGGET.get());
+    }
+
     private static int at(List<? extends Integer> list, int layers, int fallback) {
         return BSPConfig.levelValue(list, layers, fallback);
     }
@@ -218,8 +224,8 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
     @Override
     protected boolean isItemValid(int slot, ItemStack stack) {
         return switch (slot) {
-            case IN -> stack.is(MAGNATITE_ORES) || stack.is(ModItems.MAGNATITE_INGOT.get());
-            case COIL -> stack.is(ModItems.COPPER_TETRIUM_COIL.get());
+            case IN -> stack.is(MAGNATITE_ORES) || stack.is(ModItems.MAGNATITE_INGOT.get()) || stack.is(ModItems.RESONANCE_CRYSTAL.get());
+            case COIL -> stack.is(ModItems.COPPER_TETRIUM_COIL.get()) || stack.is(ModItems.MAGNATITE_NUGGET.get());
             default -> false;
         };
     }
@@ -237,6 +243,9 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
 
     @Override
     protected boolean canWork() {
+        if (magnetising()) {
+            return fits(OUT, new ItemStack(ModItems.CHARGED_RESONANCE_CRYSTAL.get()));
+        }
         if (charging()) {
             return fits(OUT, new ItemStack(ModItems.CHARGED_MAGNATITE_INGOT.get()));
         }
@@ -245,6 +254,9 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
 
     @Override
     public int workTime() {
+        if (magnetising()) {
+            return layers >= MAX_LAYERS ? BSPConfig.getOr(BSPConfig.CENT_MAGNETISE_TICKS_FULL, 400) : BSPConfig.getOr(BSPConfig.CENT_MAGNETISE_TICKS, 600);
+        }
         if (charging()) {
             return layers >= MAX_LAYERS ? BSPConfig.getOr(BSPConfig.CENT_CHARGE_TICKS_FULL, 500) : BSPConfig.getOr(BSPConfig.CENT_CHARGE_TICKS, 900);
         }
@@ -255,6 +267,13 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
     protected void finishJob() {
         ItemStack in = items.getStackInSlot(IN);
         java.util.Random random = new java.util.Random();
+        if (magnetising()) {
+            items.setStackInSlot(IN, in.copyWithCount(in.getCount() - 1));
+            ItemStack nuggets = items.getStackInSlot(COIL);
+            items.setStackInSlot(COIL, nuggets.copyWithCount(nuggets.getCount() - 1));
+            addOutput(OUT, new ItemStack(ModItems.CHARGED_RESONANCE_CRYSTAL.get()));
+            return;
+        }
         if (charging()) {
             if (random.nextInt(chargeOdds()) == 0) {
                 items.setStackInSlot(IN, in.copyWithCount(in.getCount() - 1));
@@ -276,13 +295,15 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
         ItemStack in = items.getStackInSlot(IN);
         if (in.is(ModItems.MAGNATITE_INGOT.get()) && !hasCoil()) {
             out.add(need(ModItems.COPPER_TETRIUM_COIL.get(), "need.bsp_core.coil"));
-        } else if (!separating() && !charging()) {
+        } else if (in.is(ModItems.RESONANCE_CRYSTAL.get()) && !magnetising()) {
+            out.add(need(ModItems.MAGNATITE_NUGGET.get(), "need.bsp_core.nugget"));
+        } else if (!separating() && !charging() && !magnetising()) {
             out.add(need(ModBlocks.MAGNATITE_ORE.get(), "need.bsp_core.magnatite"));
         }
         if (energyStored() < rfPerWorkTick()) {
             out.add(need(ModBlocks.CENTRIFUGE_POWER_PORT.get(), "need.bsp_core.rf", rfPerWorkTick()));
         }
-        if ((separating() || charging()) && !canWork()) {
+        if ((separating() || charging() || magnetising()) && !canWork()) {
             out.add(need(ModItems.MAGNATITE_NUGGET.get(), "need.bsp_core.output_full"));
         }
         return out;

@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /** Client → server: the chunk picker of the totem or projector at {@code pos} wants fresh data, or a chunk in it was clicked. */
 public record ChunkActionPacket(BlockPos pos, int action, int chunkX, int chunkZ) {
-    public static final int VIEW = 0, TOGGLE = 1;
+    public static final int VIEW = 0, TOGGLE = 1, RECEIVE = 2;
 
     public static void encode(ChunkActionPacket msg, FriendlyByteBuf buf) {
         buf.writeBlockPos(msg.pos);
@@ -33,6 +33,8 @@ public record ChunkActionPacket(BlockPos pos, int action, int chunkX, int chunkZ
             if (be instanceof ShatterTotemBlockEntity || be instanceof TotemProjectorBlockEntity) {
                 if (msg.action == TOGGLE) {
                     ChunkLoading.toggle(player, msg.pos, msg.chunkX, msg.chunkZ);
+                } else if (msg.action == RECEIVE) {
+                    ChunkLoading.receive(player, msg.pos, msg.chunkX);
                 } else {
                     ChunkLoading.sendView(player, msg.pos, false);
                 }

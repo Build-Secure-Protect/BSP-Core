@@ -25,7 +25,7 @@ import java.util.List;
  * kind has a longest run ({@code projector.cableReach}); a run of mixed kinds is limited by the
  * shortest-reach kind in it.
  */
-public class TotemCableBlock extends Block {
+public class TotemCableBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
     public enum Kind {
         TETRIUM, MAGNATITE, ILLYRIUM, CHARGED_ILLYRIUM;
 
@@ -58,13 +58,19 @@ public class TotemCableBlock extends Block {
         builder.add(SIDES);
     }
 
+    @Override
+    public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new PlasmaCableBlockEntity(pos, state);
+    }
+
     /** Whether a cable at {@code pos} joins to whatever is in direction {@code dir}. */
     public static boolean joins(BlockGetter level, BlockPos pos, Direction dir) {
         Block other = level.getBlockState(pos.relative(dir)).getBlock();
-        if (other instanceof TotemCableBlock || other instanceof TotemProjectorBlock) {
+        if (other instanceof TotemCableBlock || other instanceof TotemProjectorBlock || other instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock) {
             return true;
         }
-        return other instanceof TotemGeneratorBlock && dir != Direction.DOWN; // a generator takes cables on its sides and bottom, never its top
+        // a repeater only takes cables at its two ends
+        return other instanceof com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock && com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock.joins(level.getBlockState(pos.relative(dir)), dir);
     }
 
     private BlockState connect(BlockGetter level, BlockPos pos) {

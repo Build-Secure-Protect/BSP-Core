@@ -68,10 +68,10 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             }
         }
 
-        // --- aura spheres, only when the viewer is close to the totem
+        // --- aura cubes, only when the viewer is close to the totem and has not hidden them
         int maxDist = BSPConfig.AURA_SPHERE_VIEW_DISTANCE.get();
         net.minecraft.world.phys.Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        if (cam.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(totem.getBlockPos())) > (double) maxDist * maxDist) {
+        if (!com.mrgregles.bsp_core.BSPClientConfig.showAuras() || cam.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(totem.getBlockPos())) > (double) maxDist * maxDist) {
             return;
         }
         for (TotemUpgrades.Buff b : buffs) {
@@ -81,20 +81,50 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             if (r <= 0) continue;
             // The emissive translucent layer blends without writing depth. The ordinary translucent layer does write depth,
             // which made the sphere hide machines and anything else drawn after it that stood behind its surface.
-            VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS));
-            int rgb = UpgradeOrbColors.auraColor(b);
-            float alpha = 0.10f + 0.04f * Mth.sin(time * 0.05f + b.ordinal());
             pose.pushPose();
             pose.translate(0.5, 0.5, 0.5);
-            sphere(vc, pose, sprite, r + 0.5f, rgb, alpha);
+            auraCube(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.55f + 0.25f * Mth.sin(time * 0.08f + b.ordinal()));
             pose.popPose();
         }
     }
 
-    /** Draws one aura sphere about the current origin, the way a totem's own are drawn. Used by the Totem Projector too. */
-    public static void auraSphere(MultiBufferSource buffers, PoseStack pose, float radius, int rgb, float alpha) {
+    /**
+     * Draws one aura cube ("Wire Edges") about the current origin: the twelve edges as thin lit bars and the
+     * faces almost clear, so the exact extent can be read while the view stays open. Used by the Projector too.
+     * {@code half} is the distance from the centre to each face; {@code edge} is the edges' brightness, 0 to 1.
+     */
+    public static void auraCube(MultiBufferSource buffers, PoseStack pose, float half, int rgb, float edge) {
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS_TEX);
-        sphere(buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS)), pose, sprite, radius, rgb, alpha);
+        // the emissive translucent layer blends without writing depth, so the cube never hides what stands behind its faces
+        VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS));
+        float u = sprite.getU(ORB_U0 + 0.5f), v = sprite.getV(ORB_V0 + 0.5f);
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+        Matrix4f m = pose.last().pose();
+        Matrix3f nm = pose.last().normal();
+        quadBox(vc, m, nm, -half, -half, -half, half, half, half, u, v, r, g, b, 14);
+        float t = Math.max(0.04f, half / 60f); // the bars thicken a little with the cube so they stay visible from afar
+        int a = Math.round(Mth.clamp(edge, 0f, 1f) * 255);
+        for (float[] e : new float[][]{
+                {-half, -half, -half, half, -half, -half}, {-half, -half, half, half, -half, half}, {-half, half, -half, half, half, -half}, {-half, half, half, half, half, half}, // along x
+                {-half, -half, -half, -half, half, -half}, {half, -half, -half, half, half, -half}, {-half, -half, half, -half, half, half}, {half, -half, half, half, half, half}, // along y
+                {-half, -half, -half, -half, -half, half}, {half, -half, -half, half, -half, half}, {-half, half, -half, -half, half, half}, {half, half, -half, half, half, half}}) { // along z
+            quadBox(vc, m, nm, Math.min(e[0], e[3]) - t, Math.min(e[1], e[4]) - t, Math.min(e[2], e[5]) - t, Math.max(e[0], e[3]) + t, Math.max(e[1], e[4]) + t, Math.max(e[2], e[5]) + t, u, v, r, g, b, a);
+        }
+    }
+
+    /** An axis-aligned box of six quads, one colour and alpha, drawn on both sides. */
+    private static void quadBox(VertexConsumer vc, Matrix4f m, Matrix3f nm, float x0, float y0, float z0, float x1, float y1, float z1, float u, float v, int r, int g, int b, int a) {
+        float[][] faces = {
+                {x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, 0, 0, 1}, {x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, 0, 0, -1},
+                {x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, 1, 0, 0}, {x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, -1, 0, 0},
+                {x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0, 0, 1, 0}, {x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, 0, -1, 0}};
+        for (float[] f : faces) {
+            for (int[] order : new int[][]{{0, 1, 2, 3}, {3, 2, 1, 0}}) {
+                for (int i : order) {
+                    vc.vertex(m, f[i * 3], f[i * 3 + 1], f[i * 3 + 2]).color(r, g, b, a).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(nm, f[12], f[13], f[14]).endVertex();
+                }
+            }
+        }
     }
 
     private static void cube(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float size, int rgb) {

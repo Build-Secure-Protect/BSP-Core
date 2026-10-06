@@ -52,6 +52,11 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     private CompoundTag upgrades = new CompoundTag();
     /** When the current owner got this totem (ms since 1970); 0 for totems from before chunk loading. */
     private long ownedSince;
+    /** Friends the owner has let in and what each may do. Cleared when the totem changes hands. */
+    private java.util.List<TotemAccess> access = new java.util.ArrayList<>();
+    /** The Cloaking cube's copy of the land, taken when Cloaking first came on; null while there is none. */
+    @Nullable
+    private CloakSnapshot cloak;
 
     public ShatterTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SHATTER_TOTEM.get(), pos, state);
@@ -74,6 +79,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public void setOwner(@Nullable TotemOwner owner) {
         if (owner != null && (this.owner == null || !this.owner.uuid().equals(owner.uuid()))) {
             ownedSince = System.currentTimeMillis();
+            access.clear(); // a new owner starts with nobody let in
         }
         this.owner = owner;
         setChanged();
@@ -97,8 +103,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         setOwner(TotemOwner.fromStack(stack).orElse(null));
         CompoundTag tag = stack.getTag();
         if (tag != null && owner != null && level instanceof ServerLevel serverLevel) {
-            // placing it is not a change of owner: keep the time the item carried, and its chunk choices
+            // placing it is not a change of owner: keep the time the item carried, its access list and its chunk choices
             ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
+            access = TotemAccess.load(tag);
             setChanged();
             ChunkLoading.totemChanged(this);
             ChunkLoading.restore(serverLevel, worldPosition, tag.getIntArray(TAG_CHUNK_PATTERN));
@@ -110,6 +117,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (owner != null) {
             owner.save(tag);
             tag.putLong(TotemOwner.TAG_OWNED_SINCE, ownedSince);
+            if (!access.isEmpty()) {
+                tag.put(TotemAccess.TAG, TotemAccess.save(access));
+            }
             int[] pattern = level instanceof ServerLevel serverLevel ? ChunkLoading.pattern(serverLevel, worldPosition) : new int[0];
             if (pattern.length > 0) {
                 tag.putIntArray(TAG_CHUNK_PATTERN, pattern);
@@ -184,11 +194,16 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (warnDelay <= 0) {
             warnOwner(serverLevel);
         }
+        // Recall: the owner is offered a teleport back, after the thief's Shroud and Recall Block have run out
+        int block = raiding ? BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.RECALL_BLOCK_SECONDS, java.util.List.<Integer>of()), TotemUpgrades.getLevel(raidTotem, TotemUpgrades.Buff.RECALL_BLOCK), 0) : 0;
+        recallDelay = getUpgradeLevel(TotemUpgrades.Buff.RECALL) > 0 && owner != null ? Math.max(1, Math.min(seconds - 1, Math.max(shroud, 0) + block) * 20) : 0;
         sendStatus(serverLevel, StealStatusPacket.OUTCOME_ACTIVE);
     }
 
     /** Ticks until the owner is told about the running steal; above 0 only while a thief's Shroud is hiding it. */
     private int warnDelay;
+    /** Ticks until the owner is offered a Recall; 0 when none is due. */
+    private int recallDelay;
     /** Intruders the Alarm has already reported, so the owner is told once per visit. */
     private final java.util.Set<UUID> alarmed = new java.util.HashSet<>();
 
@@ -206,17 +221,17 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if ((ward <= 0 && alarm <= 0) || owner == null) {
             return;
         }
-        double wardR = TotemUpgrades.Buff.WARD.reach(ward), alarmR = TotemUpgrades.Buff.ALARM.reach(alarm);
+        int wardR = TotemUpgrades.Buff.WARD.reach(ward), alarmR = TotemUpgrades.Buff.ALARM.reach(alarm);
+        double cx = worldPosition.getX() + 0.5, cy = worldPosition.getY() + 0.5, cz = worldPosition.getZ() + 0.5;
         java.util.Set<UUID> inside = new java.util.HashSet<>();
         for (ServerPlayer p : level.players()) {
             if (isOwner(p.getUUID()) || p.isSpectator() || p.isCreative()) {
                 continue;
             }
-            double d = p.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5);
-            if (ward > 0 && d <= wardR * wardR) {
+            if (ward > 0 && !hasAccess(p.getUUID(), TotemAccess.WARD) && TotemAuras.inCube(p, cx, cy, cz, wardR)) {
                 p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 60, (ward - 1) / 2, true, false, true));
             }
-            if (alarm > 0 && d <= alarmR * alarmR) {
+            if (alarm > 0 && !hasAccess(p.getUUID(), TotemAccess.ALARM) && TotemAuras.inCube(p, cx, cy, cz, alarmR)) {
                 p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 60, 0, true, false, true));
                 inside.add(p.getUUID());
                 if (alarmed.add(p.getUUID())) {
@@ -233,9 +248,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (level.getGameTime() % 20 == 0) {
             healingTick(level);
             intruderTick(level);
+            cloakTick(level);
         }
         if (steal != null && warnDelay > 0 && --warnDelay == 0) {
             warnOwner(level); // Shroud ran out: the owner now hears about the steal
+        }
+        if (steal != null && recallDelay > 0 && --recallDelay == 0 && owner != null) {
+            RecallService.offer(level, worldPosition, owner.uuid(), getUpgradeLevel(TotemUpgrades.Buff.RECALL));
         }
         if (steal == null) {
             return;
@@ -360,6 +379,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             TotemAuras.register(serverLevel, this);
             recordInLedger(serverLevel);
             ChunkLoading.totemChanged(this);
+        } else if (level != null && level.isClientSide) {
+            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> com.mrgregles.bsp_core.client.CloakClient.register(this));
         }
     }
 
@@ -368,6 +389,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         super.setRemoved();
         if (level instanceof ServerLevel serverLevel) {
             TotemAuras.unregister(serverLevel, worldPosition);
+        } else if (level != null && level.isClientSide) {
+            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> com.mrgregles.bsp_core.client.CloakClient.unregister(this));
         }
     }
 
@@ -381,12 +404,54 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (ownerPlayer == null || ownerPlayer.level() != level || ownerPlayer.getHealth() >= ownerPlayer.getMaxHealth()) {
             return;
         }
-        int r = TotemUpgrades.Buff.HEALING.radius(lvl);
-        if (ownerPlayer.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5) > (double) r * r) {
+        if (!TotemAuras.inCube(ownerPlayer, worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5, TotemUpgrades.Buff.HEALING.radius(lvl))) {
             return;
         }
         double amount = BSPConfig.levelValue(BSPConfig.HEALING_PER_SECOND.get(), lvl, 0.0);
         ownerPlayer.heal((float) amount);
+    }
+
+    // ------------------------------------------------------------------ cloaking
+
+    public int cloakRadius() {
+        int lvl = getUpgradeLevel(TotemUpgrades.Buff.CLOAKING);
+        return lvl <= 0 ? 0 : BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.CLOAK_RADIUS, java.util.List.<Integer>of()), lvl, 6);
+    }
+
+    @Nullable
+    public CloakSnapshot cloak() {
+        return cloak;
+    }
+
+    /** Whether {@code player} sees the real blocks inside the cloak: the owner, friends with Machines access, or an operator. */
+    public boolean seesThroughCloak(net.minecraft.world.entity.player.Player player) {
+        return isOwner(player.getUUID()) || player.hasPermissions(2) || hasAccess(player.getUUID(), TotemAccess.MACHINES);
+    }
+
+    /** Operator: take the Cloaking snapshot again now (for example after building the base that should be hidden). */
+    public void recloak() {
+        cloak = null;
+        if (level instanceof ServerLevel sl) {
+            cloakTick(sl);
+        }
+    }
+
+    /** Takes the snapshot the first time Cloaking is on (or its radius grew), and drops it when the upgrade is gone. */
+    private void cloakTick(ServerLevel level) {
+        int r = cloakRadius();
+        if (r <= 0) {
+            if (cloak != null) {
+                cloak = null;
+                setChanged();
+                sync();
+            }
+            return;
+        }
+        if (cloak == null || cloak.radius != r || owner == null) {
+            cloak = owner == null ? null : CloakSnapshot.capture(level, worldPosition, r);
+            setChanged();
+            sync();
+        }
     }
 
     /** Largest aura radius currently active, for render culling. */
@@ -411,7 +476,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
      * totem's tier when the ordinal is {@link com.mrgregles.bsp_core.network.UpgradeRequestPacket#RAISE_TIER}.
      */
     public void tryBuy(ServerPlayer player, int ordinal) {
-        if (!isOwner(player.getUUID()) && !player.hasPermissions(2)) {
+        if (!mayUpgrade(player)) {
             player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.not_owner").withStyle(ChatFormatting.RED), true);
             return;
         }
@@ -457,6 +522,65 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (owner != null) {
             TotemLedger.get(serverLevel.getServer()).recordPlaced(owner.uuid(), GlobalPos.of(serverLevel.dimension(), worldPosition), getTier());
         }
+    }
+
+    // ------------------------------------------------------------------ access list
+
+    public java.util.List<TotemAccess> access() {
+        return java.util.Collections.unmodifiableList(access);
+    }
+
+    public boolean hasAccess(UUID player, int flag) {
+        for (TotemAccess a : access) {
+            if (a.id().equals(player) && a.has(flag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The owner, an operator, or someone let in with Upgrades. */
+    public boolean mayUpgrade(net.minecraft.world.entity.player.Player player) {
+        return isOwner(player.getUUID()) || player.hasPermissions(2) || hasAccess(player.getUUID(), TotemAccess.UPGRADES);
+    }
+
+    /** Lets {@code id} in with every switch on. False if they are already in or the list is full. */
+    public boolean addAccess(UUID id, String name) {
+        for (TotemAccess a : access) {
+            if (a.id().equals(id)) {
+                return false;
+            }
+        }
+        if (access.size() >= TotemAccess.MAX) {
+            return false;
+        }
+        access.add(new TotemAccess(id, name, TotemAccess.ALL));
+        setChanged();
+        sync();
+        return true;
+    }
+
+    public void removeAccess(int index) {
+        if (index >= 0 && index < access.size()) {
+            access.remove(index);
+            setChanged();
+            sync();
+        }
+    }
+
+    public void toggleAccess(int index, int flag) {
+        if (index >= 0 && index < access.size()) {
+            TotemAccess a = access.get(index);
+            access.set(index, a.with(flag, !a.has(flag)));
+            setChanged();
+            sync();
+        }
+    }
+
+    /** Wave Plasma this totem gives off, in mB per tick, by its Output level (config {@code plasma.outputPerLevel}). */
+    public int plasmaOutput() {
+        int out = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.PLASMA_OUTPUT, java.util.List.<Integer>of()), getUpgradeLevel(TotemUpgrades.Buff.OUTPUT) + 1, 100);
+        return cloak != null ? Math.max(0, out - BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50)) : out; // Cloaking takes its share first
     }
 
     /** Totem tier, 0 (I) to 4 (V). */
@@ -580,6 +704,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             owner.save(tag);
             tag.putLong(TotemOwner.TAG_OWNED_SINCE, ownedSince);
         }
+        if (!access.isEmpty()) {
+            tag.put(TotemAccess.TAG, TotemAccess.save(access));
+        }
+        if (cloak != null) {
+            tag.put("Cloak", cloak.save());
+        }
         if (steal != null) {
             steal.save(tag);
         }
@@ -593,6 +723,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         super.load(tag);
         owner = TotemOwner.load(tag).orElse(null);
         ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
+        access = TotemAccess.load(tag);
+        cloak = tag.contains("Cloak") && level != null ? CloakSnapshot.load(tag.getCompound("Cloak"), CloakSnapshot.blocks(level)) : null;
         steal = StealState.load(tag);
         upgrades = TotemUpgrades.current(tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy());
     }

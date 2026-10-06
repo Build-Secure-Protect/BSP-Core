@@ -63,7 +63,7 @@ public final class TotemAuras {
             int lvl = projector.isRemoved() ? 0 : projector.level(TotemUpgrades.Buff.FORTIFY);
             if (lvl > best && !(actor != null && projector.isOwner(actor))) {
                 int r = TotemUpgrades.Buff.FORTIFY.radius(lvl);
-                if (pos.distSqr(projector.getBlockPos()) <= (double) r * r) {
+                if (inCube(pos, projector.getBlockPos(), r)) {
                     best = lvl;
                 }
             }
@@ -80,11 +80,21 @@ public final class TotemAuras {
                 continue;
             }
             int r = TotemUpgrades.Buff.FORTIFY.radius(lvl);
-            if (pos.distSqr(totem.getBlockPos()) <= (double) r * r) {
+            if (inCube(pos, totem.getBlockPos(), r)) {
                 best = lvl;
             }
         }
         return best;
+    }
+
+    /** Auras are cubes: {@code pos} is covered when it is within {@code r} blocks of the centre on every axis. */
+    public static boolean inCube(BlockPos pos, BlockPos centre, int r) {
+        return r > 0 && Math.abs(pos.getX() - centre.getX()) <= r && Math.abs(pos.getY() - centre.getY()) <= r && Math.abs(pos.getZ() - centre.getZ()) <= r;
+    }
+
+    /** The cube test for an entity, from the centre of the aura's block. */
+    public static boolean inCube(net.minecraft.world.entity.Entity e, double cx, double cy, double cz, int r) {
+        return r > 0 && Math.abs(e.getX() - cx) <= r + 0.5 && Math.abs(e.getY() - cy) <= r + 0.5 && Math.abs(e.getZ() - cz) <= r + 0.5;
     }
 
     /** Never below {@code limits.minIntruderMiningSpeed}: blocks around a totem must always stay breakable. */
@@ -100,7 +110,7 @@ public final class TotemAuras {
             int lvl = projector.isRemoved() ? 0 : projector.level(buff);
             if (lvl > best) {
                 int r = buff.reach(lvl);
-                if (pos.distSqr(projector.getBlockPos()) <= (double) r * r) {
+                if (inCube(pos, projector.getBlockPos(), r)) {
                     best = lvl;
                 }
             }
@@ -109,7 +119,7 @@ public final class TotemAuras {
             int lvl = totem.isRemoved() ? 0 : totem.getUpgradeLevel(buff);
             if (lvl > best) {
                 int r = buff.reach(lvl);
-                if (pos.distSqr(totem.getBlockPos()) <= (double) r * r) {
+                if (inCube(pos, totem.getBlockPos(), r)) {
                     best = lvl;
                 }
             }

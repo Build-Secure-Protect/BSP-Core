@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DRD",
+    "PLP",
+    " W "
+  ],
+  "key": {
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "L": {
+      "item": "minecraft:glass_bottle"
+    },
+    "W": {
+      "item": "bsp_core:copper_tetrium_coil"
+    }
+  },
+  "result": {
+    "item": "bsp_core:power_cell_1"
+  }
+}

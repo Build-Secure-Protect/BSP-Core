@@ -3,6 +3,7 @@
   "values": [
     "bsp_core:illyrium_ore",
     "bsp_core:deepslate_illyrium_ore",
-    "bsp_core:end_stone_illyrium_ore"
+    "bsp_core:end_stone_illyrium_ore",
+    "bsp_core:raw_illyrium"
   ]
 }

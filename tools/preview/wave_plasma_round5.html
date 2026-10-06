@@ -1,0 +1,224 @@
+<title>Wave Plasma Round 5</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Round 5: emitter and access applied, the new effects: tree placement, cloaking, x-ray, recall prompts, numbers. One WebGL context draws every view.
+   Each block gets three 3D concepts; the projector screen gets three working mocks. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/9; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl select{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.tabs{ display:flex; gap:4px; } .tab{ font:inherit; font-size:10px; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 8px; cursor:pointer; } .tab.on{ color:var(--h-tq); border-color:var(--h-tq); }
+.two{ display:flex; gap:12px; align-items:flex-start; } .col{ display:flex; flex-direction:column; gap:8px; min-width:0; } .grow{ flex:1; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); }
+.pw{ width:100%; border-collapse:collapse; } .pw th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 2px 0; } .pw td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; } .pw tr.off td{ color:#566070; }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb[disabled]{ color:#566070; cursor:default; }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-tq); }
+.g{ display:grid; grid-template-columns:repeat(7,var(--s,22px)); grid-auto-rows:var(--s,22px); gap:2px; background:var(--h-slot); padding:3px; border:2px solid var(--h-dim); width:max-content; }
+.g i{ background:#2f6b2a; border:1px solid #0006; } .g i:nth-child(3n){ background:#57953a; } .g i:nth-child(5n){ background:#3f77c2; } .g i.on{ box-shadow:inset 0 0 0 2px var(--h-tq); } .g i.c{ box-shadow:inset 0 0 0 2px var(--h-vio); } .g i.out{ filter:brightness(.3); }
+.pips{ display:inline-flex; gap:3px; } .pips i{ width:9px; height:9px; background:var(--h-slot); border:1px solid var(--h-dim); box-sizing:border-box; } .pips i.on{ background:var(--h-tq); border-color:var(--h-tq); } .pips i.free{ border-color:var(--h-tq); }
+.chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ border:2px solid var(--k); color:var(--k); padding:2px 6px; background:var(--h-slot); } .chip.off{ --k:var(--h-dim); color:#566070; }
+.sw{ display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:6px; border:1px solid #0008; }
+.slots{ display:grid; gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; display:grid; place-items:center; } .sl b{ color:var(--h-tq); font-size:11px; }
+.sock{ display:flex; gap:4px; } .sock i{ width:20px; height:20px; border:2px solid var(--h-dim); background:var(--h-slot); } .sock i.on{ border-color:var(--h-tq); }
+</style>
+<div class="wrap">
+<section><h1>Wave Plasma Round 5</h1>
+<p class="lede">Round 4 picks applied: the Slab emitter with the cartridge the other way up (contacts inside), and the ACCESS list with four separate switches. Then the last group: the new effects (Cloaking, Bouncy, Recall, Recall Block, X-ray), where they sit on the tree, their numbers, and how they look. Drag any 3D view to turn it.</p></section>
+
+<section><h2>1. Applied from Round 4</h2>
+<div class="grid3">
+<div class="card"><h3>Wave Emitter, Slab, cartridge turned</h3><div class="view" id="em"></div><p>The cartridge now goes in contacts-first: the copper connections sit inside the emitter and the tier cap shows at the bottom edge.</p></div>
+<div class="card" style="grid-column:span 2"><h3>ACCESS tab, four switches</h3><div class="scroll"><div class="hud" style="width:560px" id="ac"></div></div><p>Per player: <b>Upgrades</b> (buy upgrades, change chunks and projector settings), <b>Alarm</b> (does not set it off), <b>Ward</b> (not weakened by it), <b>Machines</b> (may open the totem's extractors, interfaces, projectors and chargers). Click the switches.</p></div>
+</div>
+</section>
+
+<section><h2>2. Where the new effects sit on the tree</h2>
+<p class="lede">The tree keeps its six paths. New nodes are outlined in white. Output starts the plasma path and Anchor now follows it. Recall and X-ray are Tier V, the top ring.</p>
+<div class="card"><div id="tree" class="scroll"></div>
+<div class="scroll"><table class="t"><thead><tr><th>Effect</th><th>Kind</th><th>Path, after</th><th>Appears at</th><th>Levels</th></tr></thead><tbody>
+<tr><td><b>Output</b></td><td>Base</td><td>Plasma, starts the path</td><td>Tier I</td><td class="num">6</td></tr>
+<tr><td><b>Bouncy</b></td><td>Carried</td><td>Dig, after Featherfall (beside Night Sight)</td><td>Tier III</td><td class="num">4</td></tr>
+<tr><td><b>X-ray</b></td><td>Carried</td><td>Dig, after Night Sight</td><td>Tier V</td><td class="num">5</td></tr>
+<tr><td><b>Cloaking</b></td><td>Base</td><td>Walls, after Deadlock</td><td>Tier IV</td><td class="num">4</td></tr>
+<tr><td><b>Recall</b></td><td>Base</td><td>Home, after Overclock</td><td>Tier V</td><td class="num">7</td></tr>
+<tr><td><b>Recall Block</b></td><td>Raid</td><td>Raid, after Shroud</td><td>Tier IV</td><td class="num">4</td></tr>
+</tbody></table></div><p>Carried effects work from the offhand totem or from a Power Cell in the Wave Emitter. Base effects work on the placed totem and can be sent to projectors (Cloaking and Recall included). Recall Block is a Raid effect: it works from the thief's offhand totem or emitter.</p></div>
+</section>
+
+<section><h2>3. Cloaking</h2>
+<p class="lede">The aura cube shows outsiders the land as it was, not what is inside. Shown: a base inside a cloak cube seen from outside, then the same from inside. Click to switch.</p>
+<div class="card"><div class="ctl"><button type="button" class="hb go" id="cloakBtn">Switch to inside view</button><span class="key" id="cloakNote">Outside: the cube renders the saved terrain; nothing inside is drawn.</span></div><div class="view wide" id="cloak"></div>
+<p><b>How it would work.</b> When Cloaking is first switched on, the server saves a copy of the natural terrain in the cube: it generates the chunks again from the world seed into a scratch copy and keeps the blocks inside the cube (so what is saved is the land as generated, not the base). Players outside the cube who are not on the access list see that copy drawn in place of the real blocks; from inside, or for trusted players, everything is normal. Entities inside are hidden from outside too. Cloaking draws <b>50 mB/t</b> of plasma from the totem while on, so a cloaked base needs Output. Levels raise the cube: radius 6, 9, 12, 16.</p></div>
+</section>
+
+<section><h2>4. X-ray</h2>
+<p class="lede">Blocks near the carrier turn to ghosts so ores, chests and tunnels show through. Three looks, each a wall with a chest and ore behind it.</p>
+<div class="grid3" id="xray"></div>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Level</th><th>Radius</th><th>See-through</th><th>Lasts</th><th>Recharge</th></tr></thead><tbody>
+<tr><td class="num">1</td><td class="num">4 blocks</td><td class="num">35%</td><td class="num">25 s</td><td class="num">120 s</td></tr>
+<tr><td class="num">2</td><td class="num">6</td><td class="num">45%</td><td class="num">30 s</td><td class="num">110 s</td></tr>
+<tr><td class="num">3</td><td class="num">8</td><td class="num">55%</td><td class="num">35 s</td><td class="num">100 s</td></tr>
+<tr><td class="num">4</td><td class="num">10</td><td class="num">65%</td><td class="num">40 s</td><td class="num">90 s</td></tr>
+<tr><td class="num">5</td><td class="num">12</td><td class="num">75%</td><td class="num">45 s</td><td class="num">80 s</td></tr>
+</tbody></table></div><p>Switched on with a keybind (default X). A small ring on the HUD shows time left, then the recharge. It does not work through a Cloaking cube.</p></div>
+</section>
+
+<section><h2>5. Recall</h2>
+<p class="lede">When your totem is being stolen, a prompt offers to bring you back near it. Three prompt designs; each counts down. Click Accept or Decline.</p>
+<div class="card"><h3>A. Banner</h3><p>A bar across the top of the screen with the countdown, like the steal HUD.</p><div class="scroll"><div class="hud" style="width:520px;border-color:var(--h-bad)" id="rcA"></div></div></div>
+<div class="card"><h3>B. Compass Card</h3><p>A small card above the hotbar with an arrow toward the totem, its distance, and the two keys.</p><div class="scroll"><div class="hud" style="width:300px;border-color:var(--h-bad)" id="rcB"></div></div></div>
+<div class="card"><h3>C. Centre Prompt</h3><p>A box in the middle of the screen that cannot be missed, with a thin ring draining as time runs out.</p><div class="scroll"><div class="hud" style="width:340px;border-color:var(--h-bad)" id="rcC"></div></div></div>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Level</th><th>Lands you within</th><th>Level</th><th>Lands you within</th></tr></thead><tbody>
+<tr><td class="num">1</td><td class="num">150 blocks</td><td class="num">5</td><td class="num">60 blocks</td></tr>
+<tr><td class="num">2</td><td class="num">120</td><td class="num">6</td><td class="num">40</td></tr>
+<tr><td class="num">3</td><td class="num">100</td><td class="num">7</td><td class="num">20</td></tr>
+<tr><td class="num">4</td><td class="num">80</td><td class="num"></td><td class="num"></td></tr>
+</tbody></table></div><p>The prompt appears when a steal starts (after the thief's Shroud and Recall Block delays), lasts <b>20 seconds</b>, and is not shown if you are already within the level's distance. Accepting lands you on the surface at the level's distance from the totem, on the side you came from, facing it. Once used, Recall rests for <b>10 minutes</b>. From another server it hands over to BSP-Teleport. Declining costs nothing.</p></div>
+</section>
+
+<section><h2>6. Bouncy and Recall Block</h2>
+<div class="card"><h3>Bouncy</h3><div class="scroll"><table class="t"><thead><tr><th>Level</th><th>Fall damage</th><th>Bounce</th><th>Forward push</th></tr></thead><tbody>
+<tr><td class="num">1</td><td class="num">-25%</td><td class="num">1 block</td><td class="num">slight</td></tr>
+<tr><td class="num">2</td><td class="num">-50%</td><td class="num">2 blocks</td><td class="num">more</td></tr>
+<tr><td class="num">3</td><td class="num">-75%</td><td class="num">3 blocks</td><td class="num">more</td></tr>
+<tr><td class="num">4</td><td class="num">-100%</td><td class="num">4 blocks</td><td class="num">full</td></tr>
+</tbody></table></div><p>Landing from a fall of 3 blocks or more bounces you up and, if you were moving, onward: a way to cross ground quickly by hopping. Sneaking while landing stops the bounce. Stacks with Featherfall: the reductions add up, capped at no damage.</p></div>
+<div class="card"><h3>Recall Block</h3><div class="scroll"><table class="t"><thead><tr><th>Level</th><th>Delays the owner's Recall prompt by</th></tr></thead><tbody>
+<tr><td class="num">1</td><td class="num">10 s</td></tr><tr><td class="num">2</td><td class="num">20 s</td></tr><tr><td class="num">3</td><td class="num">30 s</td></tr><tr><td class="num">4</td><td class="num">45 s</td></tr>
+</tbody></table></div><p>Works from the thief's offhand totem or emitter. Adds to Shroud's delay on the warning itself. The steal still takes the same time, so at high levels the owner may be told only when it is nearly done.</p></div>
+</section>
+
+<section><h2>7. Config and prices</h2>
+<div class="card"><p>Every number above goes in the config under <code>effects</code>, as per-level lists like the existing upgrades. Prices follow the existing Carried / Base / Raid price lists by tier; Recall and X-ray are Tier V so they cost Illyrium coins. The totem's Carried powers list, the emitter's cell and the generator-to-projector list all gain the new names.</p></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, el=id=>document.getElementById(id);
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}];
+  const TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,COPPER=0xc87a3c,GOLD=0xffd23a,GLASS=0x9fc5d8,ION=0x4fb8ff;
+  const TIER=[0x8a909c,0x6f5a7a,0x5fd0e8,0xbfe6ff];
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  // ---- the liquid: a 32x32 canvas redrawn each frame with layered value noise, ramped deep blue -> ion blue -> bright core
+  const LQ=32, lc=document.createElement('canvas'); lc.width=lc.height=LQ; const lx=lc.getContext('2d'), limg=lx.createImageData(LQ,LQ);
+  const liquid=new THREE.CanvasTexture(lc); liquid.magFilter=THREE.NearestFilter; liquid.minFilter=THREE.NearestFilter; liquid.wrapS=liquid.wrapT=THREE.RepeatWrapping;
+  const hash=(x,y,z)=>{ const n=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453; return n-Math.floor(n); };
+  function noise(x,y,z){ const i=Math.floor(x),j=Math.floor(y),k=Math.floor(z), u=x-i,v=y-j,w=z-k, f=t=>t*t*(3-2*t), fu=f(u),fv=f(v),fw=f(w);
+    const l=(a,b,t)=>a+(b-a)*t; return l(l(l(hash(i,j,k),hash(i+1,j,k),fu),l(hash(i,j+1,k),hash(i+1,j+1,k),fu),fv),l(l(hash(i,j,k+1),hash(i+1,j,k+1),fu),l(hash(i,j+1,k+1),hash(i+1,j+1,k+1),fu),fv),fw); }
+  const ramp=[[0x12,0x4f,0x9c],[0x4f,0xb8,0xff],[0xd8,0xf1,0xff]];
+  function drawLiquid(t){ const d=limg.data; for(let y=0;y<LQ;y++) for(let x=0;x<LQ;x++){ const nx=x/LQ*4, ny=y/LQ*4; const n=noise(nx,ny,t*.5)*.6+noise(nx*2.3+9,ny*2.3,t*.9)*.3+noise(nx*5,ny*5+3,t*1.6)*.1;
+      const v=Math.max(0,Math.min(.999,(n-.25)*1.9)); const s=v<.6?v/.6:(v-.6)/.4, a=v<.6?ramp[0]:ramp[1], b=v<.6?ramp[1]:ramp[2]; const i=(y*LQ+x)*4; d[i]=a[0]+(b[0]-a[0])*s; d[i+1]=a[1]+(b[1]-a[1])*s; d[i+2]=a[2]+(b[2]-a[2])*s; d[i+3]=255; }
+    lx.putImageData(limg,0,0); liquid.needsUpdate=true; }
+  const liqMat=(op)=>new THREE.MeshBasicMaterial({map:liquid,transparent:op!==undefined,opacity:op===undefined?1:op});
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function lq(g,f,t,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),liqMat(op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // a pipe from a to b (arrays), radius r; returns the mesh
+  function pipe(g,a,b,r,c,mat){ const A=new THREE.Vector3(...a), B=new THREE.Vector3(...b), d=B.clone().sub(A), len=d.length(); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,12),mat||new THREE.MeshLambertMaterial({color:c||TRIM}));
+    m.position.copy(A).add(B).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); g.add(m); return m; }
+  const flange=(g,p,axis,r,c)=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1,14),new THREE.MeshLambertMaterial({color:c||MID})); m.position.set(...p); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; };
+  const ring=(g,p,axis,R,r,c)=>{ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshLambertMaterial({color:c||COPPER})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; };
+  function totem(g,ox,oy,oz){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); root.position.set(ox||0,oy||0,oz||0); g.add(root); const mat=new THREE.MeshLambertMaterial({map:tex,alphaTest:.5});
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); } else { m.position.set(c[0],c[1],c[2]); root.add(m); } } }
+  function cable(g,x,y,z,sides){ bx(g,[x+5,y+5,z+5],[x+11,y+11,z+11],HULL2); for(const s of sides){ if(s==='w') bx(g,[x,y+5.5,z+5.5],[x+5,y+10.5,z+10.5],HULL2); if(s==='e') bx(g,[x+11,y+5.5,z+5.5],[x+16,y+10.5,z+10.5],HULL2); if(s==='n') bx(g,[x+5.5,y+5.5,z],[x+10.5,y+10.5,z+5],HULL2); if(s==='s') bx(g,[x+5.5,y+5.5,z+11],[x+10.5,y+10.5,z+16],HULL2); } lq(g,[x+6.5,y+6.5,z+6.5],[x+9.5,y+9.5,z+9.5]); }
+  // one WebGL context for the whole page (browsers allow only a handful): a fixed transparent canvas draws each view into its own rectangle
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,ry:opts.ry!==undefined?opts.ry:Math.PI+.6,rx:opts.rx!==undefined?opts.rx:.45,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now(); let frame=0;
+  (function loop(now){ const t=reduce?1:(now-t0)/1000; if(!reduce||frame===0) drawLiquid(t); frame++;
+    const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag&&!v.opts.still) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  function cartridgeDown(g,x,y,z,tier,fill){ // contacts at the top, cap at the bottom
+    bx(g,[x-3,y,z-2],[x+3,y+11,z+2],HULL); bx(g,[x-3.2,y,z-2.2],[x+3.2,y+2,z+2.2],TIER[tier]); for(const dx of [-2,0,2]) bx(g,[x+dx-.5,y+11,z-1],[x+dx+.5,y+12,z+1],COPPER); bx(g,[x-2,y+2.5,z-2.2],[x+2,y+10,z-1.8],GLASS,false,.3); const f=lq(g,[x-1.6,y+2.8,z-2.3],[x+1.6,y+9.7,z-1.7]); f.scale.y=fill; f.position.y=y+2.8+6.9*fill/2; return f; }
+  function screen(g,f,t){ bx(g,f,t,0x0c0e12); return lq(g,[f[0]+.4,f[1]+.4,f[2]+.4],[t[0]-.4,t[1]-.4,t[2]-.4],.9); }
+  function emitter(g){ bx(g,[3,0,6],[13,16,9],HULL); bx(g,[3,0,6],[13,16,6.4],TIER[0]); screen(g,[4,8.5,5.8],[12,15,6.2]); for(const x of [4,7.3,10.6]) bx(g,[x,5.5,5.7],[x+2.4,7.5,6.1],TRIM); const lamp=bx(g,[4,3,5.7],[6,4,6.1],ION,true);
+    cartridgeDown(g,8,-8,7.5,1,.7); bx(g,[4,-.5,6.2],[12,.5,8.8],HULL2); return t=>{ lamp.material.color.setHex(ION).multiplyScalar(.5+.5*Math.sin(t*3)); }; }
+  // ---------------- cloaking: a base (walls, a chest, a machine) inside a cube; outside view shows terrain, inside view shows the base
+  function cloak(g){ const terrain=new THREE.Group(), base=new THREE.Group(); g.add(terrain); g.add(base);
+    for(let x=-9;x<=9;x++) for(let z=-9;z<=9;z++){ const h=Math.round(1+Math.sin(x*.5)*Math.cos(z*.4)); for(let y=-3;y<=h;y++){ const c=y===h?0x57953a:y>h-2?0x6b5a44:0x8a8d92; const inside=Math.max(Math.abs(x),Math.abs(z))<=5; const m=bx(inside?terrain:g,[x-.5,y-.5,z-.5],[x+.5,y+.5,z+.5],c); if(inside&&y<=-2) { const r=bx(base,[x-.5,y-.5,z-.5],[x+.5,y+.5,z+.5],c); } } }
+    // the base: a stone floor, walls, a chest and a vault inside the cube
+    for(let x=-5;x<=5;x++) for(let z=-5;z<=5;z++) bx(base,[x-.5,-1.5,z-.5],[x+.5,-.5,z+.5],0x6e6e6e); for(let x=-5;x<=5;x++) for(let y=0;y<3;y++) for(const z of [-5,5]) bx(base,[x-.5,y-.5,z-.5],[x+.5,y+.5,z+.5],0x8a7f72); for(let z=-4;z<=4;z++) for(let y=0;y<3;y++) for(const x of [-5,5]) bx(base,[x-.5,y-.5,z-.5],[x+.5,y+.5,z+.5],0x8a7f72);
+    bx(base,[-2,-.5,-2],[-1,.5,-1],0x8a5a2b); bx(base,[1,-.5,1],[3,1.5,3],HULL); lq(base,[1.3,1.5,1.3],[2.7,2,2.7]); const tot=new THREE.Group(); tot.scale.setScalar(1/16); tot.position.set(-.5,-.5,-.5); base.add(tot); totem(tot,0,0,0);
+    const edges=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(11,8,11)),new THREE.LineBasicMaterial({color:0xffd23a,transparent:true,opacity:.7})); edges.position.set(0,0,0); g.add(edges);
+    let inside=false; const btn=el('cloakBtn'); btn.onclick=()=>{ inside=!inside; terrain.visible=!inside; base.visible=inside; btn.textContent=inside?'Switch to outside view':'Switch to inside view'; el('cloakNote').textContent=inside?'Inside (or trusted): the real base, the cloak only shown as an outline.':'Outside: the cube renders the saved terrain; nothing inside is drawn.'; }; base.visible=false;
+    return t=>{ edges.material.opacity=.5+.3*Math.sin(t*2); }; }
+  // ---------------- x-ray: a stone wall 7 wide 5 high 3 deep with a chest and two ores behind, drawn three ways
+  function wallScene(g,mode){ const blocks=[]; for(let x=0;x<7;x++) for(let y=0;y<5;y++) for(let z=0;z<3;z++){ const ore=(x===1&&y===1&&z===2)||(x===5&&y===3&&z===1); const chest=(x===3&&y===0&&z===2); if(chest){ bx(g,[x+.1,y,z+.1],[x+.9,y+.8,z+.9],0x8a5a2b); continue; } const c=ore?0x5fd0e8:(x+y+z)%2?0x6e6e6e:0x7a7a7a;
+      const op=mode==='a'?(ore?1:.28):mode==='c'?(ore?1:Math.max(.08,.6-z*.25)):1; if(mode==='b'&&!ore){ const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:0xbfe6ff,transparent:true,opacity:.5})); e.position.set(x+.5,y+.5,z+.5); g.add(e); continue; }
+      const m=bx(g,[x,y,z],[x+1,y+1,z+1],c,false,op===1?undefined:op); if(ore) blocks.push(m); }
+    bx(g,[-1,-1,-1],[8,0,4],0x4a5a3a); return t=>blocks.forEach((b,i)=>b.material.color.setHex(0x5fd0e8).multiplyScalar(.7+.3*Math.sin(t*3+i))); }
+  cards('xray',[['A. Ghost Shells','Every block within range drawn at a set see-through, ores and containers left solid and lit. Closest to "blocks as ghosts of themselves".',g=>wallScene(g,'a')],
+    ['B. Wireframe','Ordinary blocks collapse to their edges; ores and chests stay solid. Very clear, but it hides textures entirely, so it is more map than sight.',g=>wallScene(g,'b')],
+    ['C. Fading Depth','Blocks fade more the deeper they are from you, so near walls stay readable and far things show faintly. The level sets how deep the fade reaches.',g=>wallScene(g,'c')]],{dist:24,target:[3.5,2,1.5],rx:.3});
+  makeView(el('em'),emitter,{dist:62,target:[8,4,8],rx:.3});
+  makeView(el('cloak'),cloak,{wide:true,dist:46,target:[0,0,0],rx:.5});
+
+  // ---------------- the tree (SVG): six spokes, five rings, nodes by tier; new nodes outlined white
+  (function(){ const SPOKE=[-128,-52,12,78,180,129], RING=[26,44,62,80,98], C=120, NODES=[
+      ['MI',0,0,0],['SW',0,1,0],['FE',0,2,0],['NI',0,3,0],['BO',0,2,1,1],['XR',0,4,0,1],
+      ['DA',1,0,0],['RE',1,1,0],['VI',1,2,0],
+      ['FO',2,0,0],['AL',2,1,0],['WA',2,2,0],['DE',2,3,0],['CL',2,3,1,1],
+      ['HE',3,0,0],['SA',3,1,0],['OV',3,3,0],['RC',3,4,0,1],
+      ['LO',4,1,0],['SH',4,2,0],['RB',4,3,0,1],
+      ['OU',5,0,0,1],['AN',5,1,0],['SU',5,2,0]];
+    const COL=['#8fe04a','#8fe04a','#ffd23a','#ffd23a','#ff6b5c','#ffd23a']; let s='<svg viewBox="0 0 240 240" width="400" height="400" style="display:block;margin:0 auto;max-width:100%" role="img" aria-label="Upgrade tree with the new nodes">';
+    s+='<rect width="240" height="240" fill="#0c0e12"/>'; RING.forEach(r=>s+='<circle cx="'+C+'" cy="'+C+'" r="'+r+'" fill="none" stroke="#27566b" stroke-width="1" stroke-dasharray="2 3"/>');
+    for(const [k,p,tier,side,isNew] of NODES){ const a=(SPOKE[p]+side*14)*Math.PI/180, r=RING[tier], x=C+Math.cos(a)*r, y=C+Math.sin(a)*r; s+='<rect x="'+(x-7)+'" y="'+(y-7)+'" width="14" height="14" fill="#10151c" stroke="'+(isNew?'#ffffff':COL[p])+'" stroke-width="'+(isNew?2:1.2)+'"/><text x="'+x+'" y="'+(y+3)+'" text-anchor="middle" font-size="7" font-family="Silkscreen,monospace" fill="'+COL[p]+'">'+k+'</text>'; }
+    s+='<text x="120" y="123" text-anchor="middle" font-size="7" font-family="Silkscreen,monospace" fill="#19d3b0">TOTEM</text></svg>'; el('tree').innerHTML=s; })();
+
+  // ---------------- access tab with four switches
+  const PEOPLE=[['Steve',[true,true,true,true]],['Alex',[false,true,false,true]],['Kai',[true,false,false,false]]], KEYS=['Upgrades','Alarm','Ward','Machines'];
+  function drawAc(){ el('ac').innerHTML='<div class="top"><span>SHATTER TOTEM</span><span class="tabs"><button type="button" class="tab">TOTEM</button><button type="button" class="tab on">ACCESS</button><button type="button" class="tab">CHUNKS</button></span></div><div class="row" style="display:flex;gap:6px;align-items:center"><span class="hb" style="flex:1;color:#566070">Online player name</span><button type="button" class="hb go">Add</button></div><table class="pw"><thead><tr><th>Player</th>'+KEYS.map(k=>'<th>'+k+'</th>').join('')+'<th></th></tr></thead><tbody>'+PEOPLE.map((p,i)=>'<tr><td>'+p[0]+'</td>'+p[1].map((on,k)=>'<td><button type="button" class="hb'+(on?' go':'')+'" data-i="'+i+'" data-k="'+k+'">'+(on?'YES':'no')+'</button></td>').join('')+'<td><button type="button" class="hb" data-x="'+i+'">x</button></td></tr>').join('')+'</tbody></table><small>'+PEOPLE.length+' of 8. Alarm: does not set it off. Ward: not weakened. Machines: may open the plasma chain. Cleared if the totem is stolen.</small>';
+    document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const p=PEOPLE[+b.dataset.i]; p[1][+b.dataset.k]=!p[1][+b.dataset.k]; drawAc(); }); document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{ PEOPLE.splice(+b.dataset.x,1); drawAc(); }); }
+  drawAc();
+  // ---------------- recall prompts
+  let left=20, decided=''; const dial=k=>'<svg width="44" height="44" viewBox="0 0 44 44" style="display:block"><circle cx="22" cy="22" r="18" fill="none" stroke="#2a2f3a" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="#ff6b5c" stroke-width="4" stroke-dasharray="'+(113*k)+' 113" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle" font-size="11" fill="#e8eaf0" font-family="Silkscreen,monospace">'+Math.ceil(left)+'</text></svg>';
+  function drawRc(){ const btns='<button type="button" class="hb go" data-r="y">[R] RECALL</button> <button type="button" class="hb" data-r="n">[N] STAY</button>', done=decided?'<span class="'+(decided==='y'?'tq':'mut')+'">'+(decided==='y'?'Recalled: you land 100 blocks west of the totem.':'Declined.')+'</span>':'';
+    el('rcA').innerHTML='<div class="top" style="color:var(--h-bad)"><span>STEVE IS STEALING YOUR TOTEM</span><span>'+Math.ceil(left)+'s to decide</span></div><div class="bar"><i style="width:'+(left/20*100)+'%;background:#ff6b5c"></i></div><div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>Recall III: land within 100 blocks of it, 10 min rest after.</span>'+(decided?done:btns)+'</div>';
+    el('rcB').innerHTML='<div class="row" style="display:flex;gap:10px;align-items:center">'+dial(left/20)+'<div class="col"><span class="bad">TOTEM UNDER ATTACK</span><span>&#8598; 412 blocks away</span><small>Recall III lands within 100</small></div></div><div class="row" style="display:flex;gap:6px">'+(decided?done:btns)+'</div>';
+    el('rcC').innerHTML='<div class="col" style="align-items:center;gap:8px;text-align:center">'+dial(left/20)+'<span class="bad">YOUR TOTEM IS BEING STOLEN</span><span>Steve, 412 blocks away.</span><small>Recall III: land within 100 blocks. Rests 10 min after.</small><div class="row" style="display:flex;gap:6px">'+(decided?done:btns)+'</div></div>';
+    document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{ decided=b.dataset.r; drawRc(); }); }
+  drawRc(); if(!reduce) setInterval(()=>{ if(!decided){ left=Math.max(0,left-.5); if(left===0){ left=20; } drawRc(); } },500);
+})();
+</script>

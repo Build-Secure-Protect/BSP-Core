@@ -1,0 +1,10 @@
+{
+ "variants": {
+  "refused=false": {
+   "model": "bsp_core:block/plasma_interface"
+  },
+  "refused=true": {
+   "model": "bsp_core:block/plasma_interface_refused"
+  }
+ }
+}

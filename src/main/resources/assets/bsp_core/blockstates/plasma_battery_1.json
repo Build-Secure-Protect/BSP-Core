@@ -1,0 +1,11 @@
+{
+ "variants": {
+  "axis=x": {
+   "model": "bsp_core:block/plasma_battery_1"
+  },
+  "axis=z": {
+   "model": "bsp_core:block/plasma_battery_1",
+   "y": 90
+  }
+ }
+}

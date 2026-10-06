@@ -1,0 +1,216 @@
+<title>Resonance System Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Part 1 of the totem energy rework: the chain from totem to projector.
+   Each block gets three 3D concepts; the projector screen gets three working mocks. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/9; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl select{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.tabs{ display:flex; gap:4px; } .tab{ font:inherit; font-size:10px; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 8px; cursor:pointer; } .tab.on{ color:var(--h-tq); border-color:var(--h-tq); }
+.two{ display:flex; gap:12px; align-items:flex-start; } .col{ display:flex; flex-direction:column; gap:8px; min-width:0; } .grow{ flex:1; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); }
+.pw{ width:100%; border-collapse:collapse; } .pw th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 2px 0; } .pw td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; } .pw tr.off td{ color:#566070; }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb[disabled]{ color:#566070; cursor:default; }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-tq); }
+.g{ display:grid; grid-template-columns:repeat(7,var(--s,22px)); grid-auto-rows:var(--s,22px); gap:2px; background:var(--h-slot); padding:3px; border:2px solid var(--h-dim); width:max-content; }
+.g i{ background:#2f6b2a; border:1px solid #0006; } .g i:nth-child(3n){ background:#57953a; } .g i:nth-child(5n){ background:#3f77c2; } .g i.on{ box-shadow:inset 0 0 0 2px var(--h-tq); } .g i.c{ box-shadow:inset 0 0 0 2px var(--h-vio); } .g i.out{ filter:brightness(.3); }
+.pips{ display:inline-flex; gap:3px; } .pips i{ width:9px; height:9px; background:var(--h-slot); border:1px solid var(--h-dim); box-sizing:border-box; } .pips i.on{ background:var(--h-tq); border-color:var(--h-tq); } .pips i.free{ border-color:var(--h-tq); }
+.chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ border:2px solid var(--k); color:var(--k); padding:2px 6px; background:var(--h-slot); } .chip.off{ --k:var(--h-dim); color:#566070; }
+.sock{ display:flex; gap:4px; } .sock i{ width:20px; height:20px; border:2px solid var(--h-dim); background:var(--h-slot); } .sock i.on{ border-color:var(--h-tq); }
+</style>
+<div class="wrap">
+<section><h1>Resonance System Concepts</h1>
+<p class="lede">Part 1 of the totem energy rework: the chain from a totem to a projector. The energy needs a name, so this page uses <b>Resonance</b> as a working name (the Resonance Crystal is already in the mod and the batteries will be built from it). Every block below drops the word "Totem". Drag any 3D view to turn it.</p>
+<div class="card"><h3>Name for the energy</h3><div class="scroll"><table class="t"><thead><tr><th>Name</th><th>Unit</th><th>Block names would read</th><th>Note</th></tr></thead><tbody>
+<tr><td><b>Resonance</b> (suggested)</td><td>Rs, "100 Rs/t"</td><td>Resonance Extractor, Resonance Interface, Resonance Repeater, Resonance Battery, Resonance Cell, Resonance Emitter, Resonance Cable</td><td>Ties to the Resonance Crystal that already exists. Reads well in sentences: "the totem resonates".</td></tr>
+<tr><td>Shatter Flux</td><td>SF</td><td>Flux Extractor, Flux Interface, Flux Battery...</td><td>Ties to Shatter Totem and Shatter Coin. "Flux" is used by other mods for RF-like energy, which may confuse.</td></tr>
+<tr><td>Essence</td><td>Es</td><td>Essence Extractor, Essence Interface...</td><td>Simple, but generic and used by several magic mods.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>1. How the chain fits together</h2>
+<p class="lede">Totem on top, extractors stacked under it, an interface on an open face of an extractor, a cable from the interface, a repeater in the run, a projector at the end. Pulses show Resonance moving. The projector screen is where the player picks what to send.</p>
+<div class="card"><div class="view wide" id="flow"></div><p>Left to right: Shatter Totem, two Resonance Extractors (stacked), a two-block Resonance Interface, Resonance Cable, a Repeater, more cable, a Projector. Pulses are turquoise for energy and gold where a power rides with it.</p></div>
+</section>
+
+<section><h2>2. Resonance Extractor</h2>
+<p class="lede">Placed directly under the totem; more can stack below. The totem's output is split evenly between them. Any open face takes an interface. Shown here: two stacked under a totem.</p>
+<div class="grid3" id="extractors"></div>
+</section>
+
+<section><h2>3. Resonance Interface</h2>
+<p class="lede">Touches an open face of an extractor and is where cables plug in. Interfaces that touch join into one, up to twelve blocks in any shape, and carry the energy and powers of every extractor they touch. Shown here: a four-block interface on one extractor.</p>
+<div class="grid3" id="interfaces"></div>
+</section>
+
+<section><h2>4. Resonance Repeater</h2>
+<p class="lede">Sits in a cable run and starts a fresh run. No screen of its own: it only sets how much a projector at the end can take. Shown inline with cable on both sides.</p>
+<div class="grid3" id="repeaters"></div>
+</section>
+
+<section><h2>5. The Projector screen</h2>
+<p class="lede">The generator's screen moves to the projector: the player chooses what to project here. With repeaters in the run the choice narrows, so the mocks have a repeater count to try. Each is a working mock; click the switches.</p>
+<div class="card ctl"><label for="reps">Repeaters in the run <select id="reps"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></label><span class="key" id="repsum"></span></div>
+<div class="card"><h3>A. Three Tabs</h3><p>POWERS, CHUNKS and STATUS tabs like the Coin Vault. Each tab gets the whole panel; POWERS has the switch list with a column for what arrives after repeaters.</p><div class="scroll"><div class="hud" style="width:420px" id="pA"></div></div></div>
+<div class="card"><h3>B. Split Panel</h3><p>Status strip across the top, powers with switches on the left, the chunk map on the right. Everything at once, one screen.</p><div class="scroll"><div class="hud" style="width:640px" id="pB"></div></div></div>
+<div class="card"><h3>C. Single Column</h3><p>The current projector screen grown: status, RF, the powers as a switch list instead of chips, chunks underneath. Narrow, so it fits any window.</p><div class="scroll"><div class="hud" style="width:330px" id="pC"></div></div></div>
+</section>
+
+<section><h2>6. Rules and numbers (proposed)</h2>
+<div class="card"><h3>Totem output</h3><p>A placed totem makes a base <b>100 Rs/t</b> at Tier I. A new Base upgrade, <b>Output</b> (sixth path, next to Anchor), raises it: 100, 150, 200, 300, 400, 500 Rs/t over six levels. Extractors split it evenly: two extractors under a Tier I totem get 50 Rs/t each. A projector needs <b>100 Rs/t</b> to project (the RF it uses today is replaced by Resonance; the RF cap on the projector goes). The batteries and chargers in Part 2 draw from the same supply.</p></div>
+<div class="card"><h3>Interface limit</h3><p>Interfaces that touch join, up to <b>12</b>. A thirteenth that touches is not part of the interface and shows a red seam. An interface that touches an extractor already served by another interface is refused in the same way, with the first interface to connect keeping the extractor. So an interface cannot be used as a cable: twelve blocks is its longest reach.</p></div>
+<div class="card"><h3>Repeaters</h3><p>Cables carry their full run at full strength: the fall-off along the cable goes. A repeater starts a fresh run of the cable's length. Each repeater between the interface and a projector costs the projector a choice:</p>
+<div class="scroll"><table class="t"><thead><tr><th>Repeaters</th><th>Send one power</th><th>Send two or more</th></tr></thead><tbody>
+<tr><td class="num">0</td><td>Full level</td><td>Full level each, up to the channel count</td></tr>
+<tr><td class="num">1</td><td>Full level</td><td>Each power one level lower</td></tr>
+<tr><td class="num">2</td><td>Full level</td><td>Each power two levels lower</td></tr>
+<tr><td class="num">3</td><td>Full level</td><td>Each power three levels lower; a power at level 3 or below cannot be sent this way</td></tr>
+</tbody></table></div><p>Energy itself is never reduced by a repeater. A repeater with no projector after it only extends the run. The projector screen shows the arriving level for whatever is chosen, so the player sees the cost before switching.</p></div>
+<div class="card"><h3>What a projector can choose from</h3><p>Everything the interface carries: the powers of every totem on an extractor it touches, and, in Part 2, the powers stored in batteries on extractors. Chunk loading (Anchor) is one of the powers and is chosen on the projector like the others. The number of powers one projector sends at once stays at two, plus one with a Channel Expander fitted in the projector.</p></div>
+</section>
+
+<section><h2>7. Recipes (proposed)</h2>
+<p class="lede">Shaped, 3 x 3. Materials are the pack's own chain plus vanilla pieces from the overworld, the Nether and the End. Prices are first drafts for the recipe plan.</p>
+<div class="card"><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Resonance Crystal</i><i>Tetrium Plate</i><i>Carbon Dust</i><i>Machine Chassis</i><i>Carbon Dust</i><i>Slag Brick</i><i>Copper Tetrium Coil</i><i>Slag Brick</i></div><span class="arrow">&rarr;</span><span class="out">Resonance Extractor</span></div><p>The crystal is what draws Resonance out; slag bricks carry the heat; carbon dust lines it.</p></div>
+<div class="card"><div class="rec"><div class="rc"><i>Slag Brick</i><i>Tetrium Coil</i><i>Slag Brick</i><i>Tetrium Coil</i><i>Basic Control Circuit</i><i>Tetrium Coil</i><i>Slag Brick</i><i>Amethyst Shard</i><i>Slag Brick</i></div><span class="arrow">&rarr;</span><span class="out">Resonance Interface x2</span></div><p>Cheap enough to build twelve: coils for the bus, an amethyst shard to tune it. Two per craft.</p></div>
+<div class="card"><div class="rec"><div class="rc"><i>Carbon Dust</i><i>Charged Magnatite Ingot</i><i>Carbon Dust</i><i>Tetrium Core Cable</i><i>Resonance Crystal</i><i>Tetrium Core Cable</i><i>Blaze Powder</i><i>Illyrium Nugget</i><i>Blaze Powder</i></div><span class="arrow">&rarr;</span><span class="out">Resonance Repeater</span></div><p>A charged ingot to re-energise the signal, blaze powder from the Nether to drive it, an Illyrium nugget so it is not an early-game item.</p></div>
+<div class="card"><p>Cables keep their recipes and only change name (Tetrium Core Resonance Cable, and so on). The Projector's recipe gains a Resonance Crystal in place of one Tetrium Plate; the Totem Generator and its Reach Amplifiers are removed, and the Channel Expander moves to the projector.</p></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, el=id=>document.getElementById(id);
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}];
+  const TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,COPPER=0xc87a3c,GOLD=0xffd23a,VIO=0xb58cff,BAD=0xff6b5c,CRYSTAL=0x9fe8ff;
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function totem(g,ox,oy,oz){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); root.position.set(ox||0,oy||0,oz||0); g.add(root); const mat=new THREE.MeshLambertMaterial({map:tex,alphaTest:.5});
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); } else { m.position.set(c[0],c[1],c[2]); root.add(m); } } }
+  // simple cable (the picked in-game shape: 6 px core with arms) and projector (plinth + pillar)
+  function cable(g,x,y,z,sides){ bx(g,[x+5,y+5,z+5],[x+11,y+11,z+11],HULL2); for(const s of sides){ if(s==='w') bx(g,[x,y+5.5,z+5.5],[x+5,y+10.5,z+10.5],HULL2); if(s==='e') bx(g,[x+11,y+5.5,z+5.5],[x+16,y+10.5,z+10.5],HULL2); if(s==='d') bx(g,[x+5.5,y,z+5.5],[x+10.5,y+5,z+10.5],HULL2); if(s==='u') bx(g,[x+5.5,y+11,z+5.5],[x+10.5,y+16,z+10.5],HULL2); } bx(g,[x+6.5,y+6.5,z+6.5],[x+9.5,y+9.5,z+9.5],TQ,true); }
+  function projector(g,x,y,z){ bx(g,[x+2,y,z+2],[x+14,y+2,z+14],HULL2); bx(g,[x+4,y+2,z+4],[x+12,y+4,z+12],TRIM); bx(g,[x+6,y+4,z+6],[x+10,y+20,z+10],HULL); const strips=[]; for(const [sx,sz,w,d] of [[5.8,7,.3,2],[9.9,7,.3,2],[7,5.8,2,.3],[7,9.9,2,.3]]) strips.push(bx(g,[x+sx,y+5,z+sz],[x+sx+w,y+19,z+sz+d],TQ,true)); bx(g,[x+6.6,y+20,z+6.6],[x+9.4,y+22,z+9.4],TQ,true); return strips; }
+  // ---------------- extractor concepts: block from y=-16..0 (ox,oz = block origin); the group is stacked by the caller
+  const EX={
+    a(g,x,y,z,n){ // Drain Column: dark hull, a lit bore in the middle of each face, three bands
+      bx(g,[x,y,z],[x+16,y+16,z+16],HULL); for(const yy of [2,7,12]) bx(g,[x-.3,y+yy,z-.3],[x+16.3,y+yy+1.4,z+16.3],MID);
+      const lit=[]; for(const f of ['n','s','e','w']){ const r=f==='n'?[x+5,y+4,z-.2,x+11,y+12,z+.6]:f==='s'?[x+5,y+4,z+15.4,x+11,y+12,z+16.2]:f==='w'?[x-.2,y+4,z+5,x+.6,y+12,z+11]:[x+15.4,y+4,z+5,x+16.2,y+12,z+11];
+        bx(g,[r[0]-1,r[1]-1,r[2]-(f==='n'?0:0)],[r[3]+1,r[4]+1,r[5]],TRIM); lit.push(bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],TQ,true)); } return lit; },
+    b(g,x,y,z,n){ // Siphon Rings: a slimmer core with three rings that turn, corner posts
+      bx(g,[x+2,y,z+2],[x+14,y+16,z+14],HULL); for(const [px,pz] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[x+px,y,z+pz],[x+px+2,y+16,z+pz+2],TRIM);
+      const rings=[]; for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(8.2,.7,8,32),new THREE.MeshBasicMaterial({color:TQ})); r.rotation.x=Math.PI/2; r.position.set(x+8,y+3.5+i*4.5,z+8); g.add(r); rings.push(r); }
+      for(const f of ['n','s','e','w']){ const r=f==='n'?[x+6,y+6,z+1.4,x+10,y+10,z+2.2]:f==='s'?[x+6,y+6,z+13.8,x+10,y+10,z+14.6]:f==='w'?[x+1.4,y+6,z+6,x+2.2,y+10,z+10]:[x+13.8,y+6,z+6,x+14.6,y+10,z+10]; bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],COPPER); }
+      return rings; },
+    c(g,x,y,z,n){ // Press Plates: layered plates with lit seams, a crystal window on each face
+      for(let i=0;i<4;i++){ bx(g,[x,y+i*4,z],[x+16,y+i*4+3,z+16],i%2?HULL2:HULL); } const seams=[]; for(let i=1;i<4;i++) seams.push(bx(g,[x+.5,y+i*4-1,z+.5],[x+15.5,y+i*4,z+15.5],TQ,true));
+      for(const f of ['n','s','e','w']){ const r=f==='n'?[x+6,y+5,z-.2,x+10,y+11,z+.4]:f==='s'?[x+6,y+5,z+15.6,x+10,y+11,z+16.2]:f==='w'?[x-.2,y+5,z+6,x+.4,y+11,z+10]:[x+15.6,y+5,z+6,x+16.2,y+11,z+10]; bx(g,[r[0]-.8,r[1]-.8,r[2]],[r[3]+.8,r[4]+.8,r[5]],TRIM); seams.push(bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],CRYSTAL,true)); }
+      return seams; } };
+  const exBuild=k=>g=>{ const parts=[]; for(let i=0;i<2;i++) parts.push(EX[k](g,0,-16*(i+1),0,2)); totem(g,0,0,0);
+    return t=>{ parts.forEach((p,s)=>{ if(k==='b') p.forEach((r,i)=>{ r.rotation.z=t*(i%2?.6:-.6)+s; }); else p.forEach((m,i)=>m.material.color.setHex(k==='c'?CRYSTAL:TQ).multiplyScalar(.55+.45*Math.max(0,Math.sin(t*3-i*.8-s)))); }); }; };
+  // ---------------- interface concepts: a 2x2 block interface on the east face of one extractor (extractor at x -16..0)
+  const IF={
+    a(g){ // Node Lattice: each block a cube with a lit node and conduits to its neighbours
+      const cells=[[0,0],[1,0],[0,1],[1,1]], has=(x,z)=>cells.some(c=>c[0]===x&&c[1]===z), lit=[];
+      for(const [cx,cz] of cells){ const x=cx*16, z=cz*16; bx(g,[x+1,-15,z+1],[x+15,-1,z+15],HULL2); for(const [px,pz] of [[0,0],[13,0],[0,13],[13,13]]) bx(g,[x+px,-16,z+pz],[x+px+3,0,z+pz+3],TRIM);
+        lit.push(bx(g,[x+6,-10,z+6],[x+10,-6,z+10],TQ,true)); if(has(cx+1,cz)) lit.push(bx(g,[x+10,-8.6,z+7],[x+22,-7.4,z+9],TQ,true)); if(has(cx,cz+1)) lit.push(bx(g,[x+7,-8.6,z+10],[x+9,-7.4,z+22],TQ,true));
+        // a lit socket on every outer face where a cable may plug in
+        for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]) if(!has(cx+dx,cz+dz)){ const r=dx===1?[x+15,-10.5,z+5.5,x+16.2,-5.5,z+10.5]:dx===-1?[x-.2,-10.5,z+5.5,x+1,-5.5,z+10.5]:dz===1?[x+5.5,-10.5,z+15,x+10.5,-5.5,z+16.2]:[x+5.5,-10.5,z-.2,x+10.5,-5.5,z+1]; bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],MID); } }
+      return lit; },
+    b(g){ // Bus Bar: joined blocks merge into one smooth slab with a banded copper bus running through
+      bx(g,[0,-16,0],[32,0,32],HULL2); bx(g,[.5,-13,.5],[31.5,-3,31.5],HULL); for(const yy of [-11,-8,-5]) bx(g,[-.3,yy,-.3],[32.3,yy+1,32.3],COPPER);
+      const lit=[]; for(const [x,z] of [[0,0],[16,0],[0,16],[16,16]]){ lit.push(bx(g,[x+6,-.2,z+6],[x+10,.6,z+10],TQ,true)); for(const r of [[x-.2,-10,z+6,x+.6,-6,z+10],[x+15.4,-10,z+6,x+16.2,-6,z+10],[x+6,-10,z-.2,x+10,-6,z+.6],[x+6,-10,z+15.4,x+10,-6,z+16.2]]) if(r[0]<0||r[3]>32||r[2]<0||r[5]>32) lit.push(bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],TQ,true)); }
+      return lit; },
+    c(g){ // Crystal Hub: a frame with glass sides and a floating crystal in each block, crystals link up with a beam
+      const cr=[]; for(const [x,z] of [[0,0],[16,0],[0,16],[16,16]]){ for(const [px,pz] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[x+px,-16,z+pz],[x+px+2,0,z+pz+2],TRIM); bx(g,[x,-16,z],[x+16,-14,z+16],HULL2); bx(g,[x,-2,z],[x+16,0,z+16],HULL2);
+        bx(g,[x+2,-14,z+2],[x+14,-2,z+14],0x6fb7c9,false,.18); const c=bx(g,[x+6,-10,z+6],[x+10,-6,z+10],CRYSTAL,true); c.rotation.y=Math.PI/4; cr.push(c); }
+      bx(g,[8,-8.4,7.4],[24,-7.6,8.6],TQ,true); bx(g,[8,-8.4,23.4],[24,-7.6,24.6],TQ,true); bx(g,[7.4,-8.4,8],[8.6,-7.6,24],TQ,true); bx(g,[23.4,-8.4,8],[24.6,-7.6,24],TQ,true); return cr; } };
+  const ifBuild=k=>g=>{ EX.a(g,-16,-16,0,1); const parts=IF[k](g); return t=>{ if(k==='c') parts.forEach((c,i)=>{ c.rotation.y=t*.8+i; c.position.y=-8+Math.sin(t*2+i)*.8; }); else parts.forEach((m,i)=>m.material.color.setHex(TQ).multiplyScalar(.55+.45*Math.max(0,Math.sin(t*3-i*.4)))); }; };
+  // ---------------- repeater concepts: inline on a cable along x, block at x 0..16
+  const RP={
+    a(g){ // Inline Coil: a fat copper coil around the cable core, lit caps
+      cable(g,-16,0,0,['w','e']); cable(g,16,0,0,['w','e']); bx(g,[0,5,5],[16,11,11],HULL2); for(let i=0;i<6;i++) bx(g,[2+i*2.2,3.6,3.6],[3.4+i*2.2,12.4,12.4],COPPER); const caps=[bx(g,[0,4.5,4.5],[1.2,11.5,11.5],TQ,true),bx(g,[14.8,4.5,4.5],[16,11.5,11.5],TQ,true)]; return caps; },
+    b(g){ // Relay Node: a small boxed unit with a lamp on top and two sockets
+      cable(g,-16,0,0,['w','e']); cable(g,16,0,0,['w','e']); bx(g,[2,2,2],[14,14,14],HULL); bx(g,[1,1,1],[15,3,15],HULL2); bx(g,[1,13,1],[15,15,15],HULL2); bx(g,[-.5,5.5,5.5],[2,10.5,10.5],TRIM); bx(g,[14,5.5,5.5],[16.5,10.5,10.5],TRIM);
+      const lamp=bx(g,[6,15,6],[10,17.5,10],TQ,true), eye=bx(g,[7,6,1.4],[9,10,2.2],TQ,true); return [lamp,eye]; },
+    c(g){ // Amplifier Vanes: a core with four fins that glow at the edges, like a heat sink
+      cable(g,-16,0,0,['w','e']); cable(g,16,0,0,['w','e']); bx(g,[1,4,4],[15,12,12],HULL); const edges=[]; for(const [dy,dz] of [[1,0],[-1,0],[0,1],[0,-1]]) for(let i=0;i<4;i++){ const x=2+i*3.4; const f=dy?[x,dy>0?12:1.5,6.5,x+1.6,dy>0?14.5:4,9.5]:[x,6.5,dz>0?12:1.5,x+1.6,9.5,dz>0?14.5:4]; bx(g,[f[0],f[1],f[2]],[f[3],f[4],f[5]],TRIM); edges.push(bx(g,[f[0]+.2,dy>0?14.5:dy<0?1:f[1]+.2,dz>0?14.5:dz<0?1:f[2]+.2],[f[3]-.2,dy>0?15.2:dy<0?1.5:f[4]-.2,dz>0?15.2:dz<0?1.5:f[5]-.2],TQ,true)); } return edges; } };
+  const rpBuild=k=>g=>{ const parts=RP[k](g); return t=>parts.forEach((m,i)=>m.material.color.setHex(TQ).multiplyScalar(.5+.5*Math.max(0,Math.sin(t*4-i*.5)))); };
+  // ---------------- the whole chain
+  function flow(g){ EX.a(g,0,-16,0,2); EX.a(g,0,-32,0,2); totem(g,0,0,0); // interface on the east face of the top extractor: two blocks
+    const lit=[]; for(const x of [16,32]){ bx(g,[x+1,-15,1],[x+15,-1,15],HULL2); for(const [px,pz] of [[0,0],[13,0],[0,13],[13,13]]) bx(g,[x+px,-16,pz],[x+px+3,0,pz+3],TRIM); lit.push(bx(g,[x+6,-10,6],[x+10,-6,10],TQ,true)); } lit.push(bx(g,[26,-8.6,7],[38,-7.4,9],TQ,true));
+    for(let i=0;i<4;i++) cable(g,48+i*16,-16,0,['w','e']);
+    const rep=new THREE.Group(); g.add(rep); const r2=RP.b(rep); rep.position.set(112,-16,0);
+    for(let i=0;i<3;i++) cable(g,144+i*16,-16,0,['w','e']); const strips=projector(g,192,-16,0);
+    const pulses=[]; for(let i=0;i<8;i++){ const p=bx(g,[-1,-1,-1],[1,1,1],i%3===0?GOLD:TQ,true); pulses.push(p); }
+    return t=>{ pulses.forEach((p,i)=>{ const k=((t*.25+i/8)%1); p.position.set(44+k*150,-8+Math.sin(k*40)*.4,8); }); lit.forEach((m,i)=>m.material.color.setHex(TQ).multiplyScalar(.6+.4*Math.sin(t*3-i))); r2.forEach(m=>m.material.color.setHex(TQ).multiplyScalar(.6+.4*Math.sin(t*5))); strips.forEach((s,i)=>s.material.color.setHex(TQ).multiplyScalar(.5+.5*Math.sin(t*3+i))); }; }
+  function makeView(card,build,opts){ const view=document.createElement('div'); view.className='view'+(opts.wide?' wide':''); card.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); let ry=opts.ry!==undefined?opts.ry:Math.PI+.6, rx=.45, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.3,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag&&!opts.still) ry+=.003; tick(t); const D=opts.dist, T=opts.target;
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0); }
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); makeView(c,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  makeView(el('flow').parentElement,flow,{wide:true,dist:300,target:[100,-10,8],still:true,ry:-.5}); el('flow').remove();
+  cards('extractors',[['A. Drain Column','A dark column with a lit bore on every side where an interface can attach, and three bands so stacked extractors read as one shaft.',exBuild('a')],
+    ['B. Siphon Rings','A slimmer core with three rings turning around it, copper sockets on each face. Movement shows it working; stacks look like a drill string.',exBuild('b')],
+    ['C. Press Plates','Four plates with glowing seams between them and a crystal window on each face. Calm and solid; the seams pulse with the flow.',exBuild('c')]],{dist:110,target:[8,-12,8]});
+  cards('interfaces',[['A. Node Lattice','Each block keeps its shape; a lit node in each and conduits between neighbours show the joined blocks. Cable sockets appear on outer faces.',ifBuild('a')],
+    ['B. Bus Bar','Joined blocks merge into one slab with copper bus bands running right through, like the generator slab. Sockets light on the outside.',ifBuild('b')],
+    ['C. Crystal Hub','Glass-sided frames each with a floating Resonance Crystal; beams link the crystals of joined blocks. Clearly a different thing from a cable.',ifBuild('c')]],{dist:120,target:[12,-8,16]});
+  cards('repeaters',[['A. Inline Coil','Cable-sized, so a run stays tidy: a copper coil around the core with lit caps at each end.',rpBuild('a')],
+    ['B. Relay Node','A small boxed unit with a lamp on top. Easy to spot in a run and to count.',rpBuild('b')],
+    ['C. Amplifier Vanes','A finned core, the edges of the fins glowing. Reads as "boosts the signal".',rpBuild('c')]],{dist:70,target:[8,8,8]});
+
+  // ---------------- projector screen mocks
+  const POW=[['Fortify',4],['Healing Aura',3],['Alarm',2],['Ward',0],['Sanctuary',2],['Overclock',0],['Anchor',2]], st={on:[0,1],tab:'POWERS'}, CH=2;
+  const reps=()=>+el('reps').value;
+  function arrive(i){ const lvl=POW[i][1]; if(!lvl||!st.on.includes(i)) return 0; const r=reps(); if(r===0||st.on.length===1) return lvl; return Math.max(0,lvl-r); }
+  function rows(){ return '<table class="pw"><thead><tr><th>Power</th><th>Available</th><th>Arrives</th><th></th></tr></thead><tbody>'+POW.map((p,i)=>{ const on=st.on.includes(i), a=arrive(i), can=p[1]>0&&(on||st.on.length<CH);
+      return '<tr class="'+(p[1]?'':'off')+'"><td>'+p[0]+'</td><td class="gold">'+(p[1]||'-')+'</td><td class="'+(a?'tq':'bad')+'">'+(on?(a||'0'):'-')+'</td><td><button type="button" class="hb'+(on?' go':'')+'" data-p="'+i+'"'+(can?'':' disabled')+'>'+(p[1]?(on?'SENDING':'off'):'not unlocked')+'</button></td></tr>'; }).join('')+'</tbody></table>'; }
+  const grid=(s)=>'<div class="g" style="--s:'+(s||22)+'px">'+Array.from({length:49},(_,i)=>{ const dx=i%7-3, dz=Math.floor(i/7)-3, out=Math.max(Math.abs(dx),Math.abs(dz))>2; return '<i class="'+(out?'out':i===24?'on':i===23?'on':i===10?'c':'')+'"></i>'; }).join('')+'</div>';
+  const status=()=>'<div class="col"><span class="tq">PROJECTING</span><div class="bar"><i style="width:62%"></i></div><small>62 Rs stored, needs 100 Rs/t. Sending '+st.on.length+' of '+CH+'. '+reps()+' repeater'+(reps()===1?'':'s')+' in the run.</small></div>';
+  const pips='<span class="pips"><i class="on"></i><i class="on"></i><i class="free"></i><i class="free"></i><i></i><i></i></span>';
+  function draw(){ el('repsum').textContent=reps()===0?'No repeaters: every chosen power arrives at full level.':'With '+reps()+' repeater'+(reps()===1?'':'s')+': one power arrives at full level; two or more each lose '+reps()+' level'+(reps()===1?'':'s')+'.';
+    const head=t=>'<div class="top"><span>PROJECTOR</span><span class="tabs">'+['POWERS','CHUNKS','STATUS'].map(x=>'<button type="button" class="tab'+(x===t?' on':'')+'" data-tab="'+x+'">'+x+'</button>').join('')+'</span></div>';
+    el('pA').innerHTML=head(st.tab)+(st.tab==='POWERS'?rows():st.tab==='CHUNKS'?'<div class="two">'+grid()+'<div class="col grow"><span>LOADED <span class="gold">2 / 6</span></span>'+pips+'<small>Range 5 x 5. Click a chunk to load it.</small></div></div>':status()+'<small>Interface: 2 extractors, 1 totem (Tier III). Channel Expander: not fitted.</small><div class="sock"><i class="on"></i><i></i></div>');
+    el('pB').innerHTML='<div class="top"><span>PROJECTOR</span><span class="tq">PROJECTING</span></div><div class="row" style="display:flex;gap:8px;align-items:center"><div class="bar grow" style="flex:1"><i style="width:62%"></i></div><small>62 Rs, needs 100 Rs/t</small></div><div class="two"><div class="col grow">'+rows()+'<small>'+reps()+' repeater'+(reps()===1?'':'s')+' in the run</small></div><div class="col"><span>CHUNKS <span class="gold">2 / 6</span></span>'+grid(18)+'<small>Range 5 x 5</small></div></div>';
+    el('pC').innerHTML='<div class="top"><span>PROJECTOR</span></div>'+status()+rows()+'<div class="col" style="align-items:center"><span>CHUNKS '+pips+' <span class="gold">2 / 6</span></span>'+grid()+'</div>';
+    document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.p; st.on=st.on.includes(i)?st.on.filter(v=>v!==i):[...st.on,i]; draw(); });
+    document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ st.tab=b.dataset.tab; draw(); }); }
+  el('reps').onchange=draw; draw();
+})();
+</script>

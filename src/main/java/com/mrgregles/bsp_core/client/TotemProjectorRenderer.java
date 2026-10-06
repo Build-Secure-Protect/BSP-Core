@@ -16,7 +16,7 @@ import net.minecraft.world.phys.Vec3;
  * The lit parts of the Totem Projector ("Totem Obelisk"): glowing seams on its four faces, a cap,
  * and four shards circling it while it projects; amber when a generator is feeding it but it has no
  * RF of its own; dark when idle. While projecting Fortify or
- * Healing Aura it also draws their spheres, the same way a totem does.
+ * Healing Aura it also draws their cubes, the same way a totem does.
  */
 public class TotemProjectorRenderer implements BlockEntityRenderer<TotemProjectorBlockEntity> {
     private static final int TQ = 0x19D3B0, OFF = 0x2B3038, STANDBY = 0xFFB23A; // amber: it has a signal from a generator but no RF of its own
@@ -55,7 +55,7 @@ public class TotemProjectorRenderer implements BlockEntityRenderer<TotemProjecto
         }
         int maxDist = BSPConfig.AURA_SPHERE_VIEW_DISTANCE.get();
         Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        if (cam.distanceToSqr(Vec3.atCenterOf(projector.getBlockPos())) > (double) maxDist * maxDist) {
+        if (!com.mrgregles.bsp_core.BSPClientConfig.showAuras() || cam.distanceToSqr(Vec3.atCenterOf(projector.getBlockPos())) > (double) maxDist * maxDist) {
             return;
         }
         for (Buff b : new Buff[]{Buff.FORTIFY, Buff.HEALING}) {
@@ -63,7 +63,7 @@ public class TotemProjectorRenderer implements BlockEntityRenderer<TotemProjecto
             if (r > 0) {
                 pose.pushPose();
                 pose.translate(0.5, 0.5, 0.5);
-                ShatterTotemRenderer.auraSphere(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.10f + 0.04f * Mth.sin(t + b.ordinal()));
+                ShatterTotemRenderer.auraCube(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.55f + 0.25f * Mth.sin(t * 1.6f + b.ordinal()));
                 pose.popPose();
             }
         }

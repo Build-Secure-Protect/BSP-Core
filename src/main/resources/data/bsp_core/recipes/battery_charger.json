@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SWS",
+    "THT",
+    "PBP"
+  ],
+  "key": {
+    "S": {
+      "item": "bsp_core:slag_brick"
+    },
+    "W": {
+      "item": "bsp_core:copper_tetrium_coil"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_core_cable"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "B": {
+      "item": "bsp_core:basic_control_circuit"
+    }
+  },
+  "result": {
+    "item": "bsp_core:battery_charger"
+  }
+}

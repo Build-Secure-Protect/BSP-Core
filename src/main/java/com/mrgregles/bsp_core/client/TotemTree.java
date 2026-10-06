@@ -28,7 +28,7 @@ import java.util.function.ToIntFunction;
 public final class TotemTree {
     public static final int W = 170, H = 170, DETAIL_W = 128, BUY_Y = 108, BTN_H = 16, GATE_Y = 144, GATE_BTN_X = 78, GATE_BTN_W = 50, WALLET_H = 16;
     private static final int CX = 85, CY = 85, NODE = 14;
-    private static final int[] RING = {26, 44, 62, 80};
+    private static final int[] RING = {20, 35, 50, 65, 78};
     /** Spokes are spread wide enough that neighbouring nodes on the innermost ring do not touch. */
     private static final float[] SPOKE = {-128f, -52f, 12f, 78f, 180f, 129f};
     private static final int SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, RING_ON = 0xFF27566B, TQ = 0xFF19D3B0, XP = 0x8FE04A, MUTED = 0x9AA3B5, BAD = 0xFF6B5C;
@@ -38,7 +38,8 @@ public final class TotemTree {
 
     static {
         for (Buff b : Buff.values()) {
-            double a = Math.toRadians(SPOKE[b.path]);
+            // two nodes on one ring of one path sit either side of the spoke
+            double a = Math.toRadians(SPOKE[b.path] + (b == Buff.BOUNCY || b == Buff.CLOAKING ? 22 : b == Buff.NIGHT_SIGHT || b == Buff.DEADLOCK ? -14 : 0));
             int r = RING[Math.min(b.tier, RING.length - 1)];
             POS.put(b, new int[]{CX + (int) Math.round(Math.cos(a) * r), CY + (int) Math.round(Math.sin(a) * r)});
         }
@@ -173,6 +174,12 @@ public final class TotemTree {
             case SHROUD -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.SHROUD_SECONDS.get(), level, 0));
             case ANCHOR -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.chunksAt(level));
             case SURVEY -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.radiusAt(level) * 2 + 1);
+            case OUTPUT -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.PLASMA_OUTPUT, java.util.List.<Integer>of()), level + 1, 100));
+            case BOUNCY -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.BOUNCY_REDUCTION, java.util.List.<Double>of()), level, 0.0)), pct(BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.BOUNCY_BOUNCE, java.util.List.<Double>of()), level, 0.0)));
+            case XRAY -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.XRAY_RADIUS, java.util.List.<Integer>of()), level, 4), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.XRAY_SECONDS, java.util.List.<Integer>of()), level, 25), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.XRAY_RECHARGE, java.util.List.<Integer>of()), level, 120));
+            case CLOAKING -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.CLOAK_RADIUS, java.util.List.<Integer>of()), level, 6) * 2 + 1, BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50));
+            case RECALL -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.RECALL_RADIUS, java.util.List.<Integer>of()), level, 150));
+            case RECALL_BLOCK -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.RECALL_BLOCK_SECONDS, java.util.List.<Integer>of()), level, 10));
         };
     }
 

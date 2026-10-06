@@ -182,42 +182,34 @@ The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Pris
 
 **Page 10**  `[recipe] reinforced_casing`
 
-## Generators and Projectors
+## Wave Plasma and Projectors
 
 **Page 1**
 
-A *Totem Generator* under your placed totem draws off some of its base powers. A *Totem Cable* carries them to a *Totem Projector*, which recreates them as a second aura somewhere else: over a mine, a farm, or a second wall.
+A placed totem gives off **Wave Plasma**: 100 mB every tick, more with the **Output** upgrade. Drawn out and piped to a *Projector*, it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.
 
 The projector works for whoever owns the totem. If your totem is stolen, so is the aura.
 
-**Page 2**  `[recipe] totem_generator, totem_projector`
+**Page 2: How it joins up**
 
-Both need RF all the time: 200 a tick for the generator, 100 for the projector.
+The chain, in order:
 
-**Page 3: Up to nine**
+- *Plasma Extractor* directly under the totem. More stack below; the flow is split between them.
+- *Plasma Interface* touching an open face of an extractor. Cables plug into it.
+- *Plasma Cable* from the interface to the projector.
+- *Projector* at the end.
 
-Put the first generator directly under the totem. More can go beside it, side to side, up to nine in a three by three with the totem on the middle one. They join into one slab, and the ring of light around your totem widens.
+**Page 3**  `[recipe] plasma_extractor, plasma_interface`
 
-Each generator has its own power, its own cable and its own projector. Right-click the slab and pick a generator from the grid.
+Interfaces that touch join into one, up to twelve blocks in any shape. More than twelve, or one touching a drum another interface already serves, shows a lit seam and does nothing: an interface is not a cable.
 
-**Page 4: What can be sent**
+**Page 4**  `[recipe] totem_projector, channel_expander`
 
-Each generator sends two of these at once (three with a *Channel Expander*):
-
-
-- Fortify
-- Healing Aura
-- Alarm
-- Ward
-- Sanctuary
-- Overclock
-- Anchor
-
-Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.
+A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure. It receives two powers at once, three with a *Channel Expander* fitted by right-clicking it.
 
 **Page 5: Cables and reach**
 
-Cables plug into a generator's sides and bottom. Each kind has a longest run:
+A cable carries its whole run at full pressure. Each kind has a longest run:
 
 
 - Tetrium Core: 15 blocks
@@ -225,21 +217,21 @@ Cables plug into a generator's sides and bottom. Each kind has a longest run:
 - Illyrium Core: 40
 - Charged Illyrium Core: 80
 
-The generator must be able to push that far too: 15 blocks, or 25, 40 and 80 with *Reach Amplifiers* Mk I, II and III. A mixed run goes as far as its weakest cable.
+A mixed run goes as far as its weakest cable. A *Plasma Repeater* in the run starts a fresh one.
 
-**Page 6**  `[recipe] tetrium_core_cable, magnatite_core_cable`
+**Page 6**  `[recipe] plasma_repeater`
 
-**Page 7**  `[recipe] illyrium_core_cable, charged_illyrium_core_cable`
+Each repeater costs something: nine tenths of the plasma passes it, and a projector behind it receives one power at full level, or two or more each one level lower per repeater. The projector screen shows what arrives before you switch.
 
-**Page 8**  `[recipe] reach_amplifier_mk1, reach_amplifier_mk2`
+**Page 7**  `[recipe] tetrium_core_cable, magnatite_core_cable`
 
-**Page 9**  `[recipe] reach_amplifier_mk3, channel_expander`
+**Page 8**  `[recipe] illyrium_core_cable, charged_illyrium_core_cable`
 
-**Page 10: The projector screen**
+**Page 9: Powers and auras**
 
-Right-click a projector to see what it is doing: no signal, no power, or projecting. Under its RF bar is one chip for each power, lit with the level that reaches it. Hover over a chip for its name.
+What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock and Anchor, at the highest level any totem on the interface has.
 
-When Anchor is one of the powers, a chunk map appears below.
+Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.
 
 ## Chunk Loading
 
@@ -273,7 +265,7 @@ Click a square to load that chunk. Click it again to let it go. Turquoise square
 
 **Page 4: Through a projector**
 
-Send **Anchor** through a Totem Generator and the projector at the far end gets a chunk map of its own, centred on the projector.
+Receive **Anchor** on a Projector and it gets a chunk map of its own, centred on the projector.
 
 A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps using RF. Its chunks stay loaded while it has a signal and RF.
 
@@ -290,6 +282,72 @@ When a totem is stolen, every chunk chosen for it is let go, at the totem and at
 If you pick your own totem up and place it somewhere else, it remembers the layout.
 
 The server may be set to load chunks only while you are online.
+
+## Batteries, Cells and the Emitter
+
+**Page 1**
+
+Wave Plasma can be bottled. A *Battery Charger* on a Plasma Cable fills a *Plasma Battery* or *Power Cell* standing in it, and stamps powers from the interface into it, chosen on the charger's screen.
+
+Every battery and cell is built around a *Charged Resonance Crystal*: a Resonance Crystal magnetised in the Magnetic Centrifuge with a Magnatite Nugget in the upgrade slot.
+
+**Page 2**  `[recipe] battery_charger, plasma_battery_1`
+
+Tier I holds 40,000 mB of plasma and nothing else. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers, and each is built around the tier below.
+
+**Page 3**  `[recipe] plasma_battery_2, plasma_battery_3`
+
+**Page 4**  `[recipe] plasma_battery_4`
+
+Stand a charged battery on a Plasma Extractor instead of a totem: it feeds the extractor at 100 mB/t with its stamped powers until it runs dry. A spare for when your totem is stolen but you still want a projector running.
+
+**Page 5**  `[recipe] power_cell_1, wave_emitter`
+
+A *Power Cell* holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III. The *Wave Emitter* runs on one.
+
+**Page 6: The Wave Emitter**
+
+Hold a Power Cell in one hand and the emitter in the other and right-click: the cell clicks in. Put the emitter in your offhand and right-click to switch it on: you get the cell's powers as if you carried the totem, while it draws 20 mB/t. Sneak and right-click to take the cell out.
+
+So the totem can stay safe at home while you go out.
+
+## Letting Friends In
+
+**Page 1**
+
+Your placed totem's panel has an **ACCESS** tab. Type an online player's name and Add: they get four switches.
+
+
+- **Upgrades**: may buy upgrades and change chunks and projector settings.
+- **Alarm**: does not set it off.
+- **Ward**: is not weakened by it.
+- **Machines**: may open the totem's chargers and see through its Cloaking.
+
+**Page 2: Rules**
+
+Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.
+
+## The Newer Powers
+
+**Page 1**
+
+Five powers added with the plasma rework. Auras are now cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind.
+
+**Page 2: Carried**
+
+**Bouncy** (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.
+
+**X-ray** (Carried, after Night Sight, Tier V): press its key and ores, containers and spawners within range show through the blocks for a while, fading with depth; then it recharges.
+
+**Page 3: Base**
+
+**Cloaking** (Base, Walls path after Deadlock, Tier IV): outsiders see the land as it was when the cloak came on, not what is inside the cube. Uses 50 mB/t of the totem's plasma output.
+
+**Recall** (Base, Home path after Overclock, Tier V): when your totem is being stolen, a card above the hotbar offers to bring you back to within its distance of the totem. Twenty seconds to decide, ten minutes' rest after.
+
+**Page 4: Raid**
+
+**Recall Block** (Raid, after Shroud, Tier IV): with it on the totem in your offhand while you steal, the owner's Recall offer comes later, on top of Shroud.
 
 ---
 

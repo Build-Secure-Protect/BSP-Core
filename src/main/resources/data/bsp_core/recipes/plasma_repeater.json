@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DCD",
+    "TXT",
+    "BNB"
+  ],
+  "key": {
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_core_cable"
+    },
+    "X": {
+      "item": "bsp_core:resonance_crystal"
+    },
+    "B": {
+      "item": "minecraft:blaze_powder"
+    },
+    "N": {
+      "item": "bsp_core:illyrium_nugget"
+    }
+  },
+  "result": {
+    "item": "bsp_core:plasma_repeater"
+  }
+}

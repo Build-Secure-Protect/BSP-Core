@@ -100,12 +100,16 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ADMINS, MODERATORS;
     public static final ForgeConfigSpec.IntValue VAULT_LOCKPICK_SECONDS, VAULT_LOCK_LEVEL_SECONDS, VAULT_LOCKPICK_RADIUS, VAULT_ILLYRIUM_SAFE, VAULT_ALARM_COINS,
             VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, STORAGE_NOTICE_SECONDS,
-            CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING,
+            CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING, CENT_MAGNETISE_TICKS, CENT_MAGNETISE_TICKS_FULL,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
-            GENERATOR_RF, PROJECTOR_RF, GENERATOR_CHANNELS, CABLE_CHECK_SECONDS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, GENERATOR_REACH;
+            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, PLASMA_OUTPUT, BATTERY_CAPACITY, BATTERY_POWERS, CELL_CAPACITY, CELL_POWERS;
+    public static final ForgeConfigSpec.DoubleValue REPEATER_PRESSURE;
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
+    public static final ForgeConfigSpec.IntValue CLOAK_DRAW, RECALL_PROMPT_SECONDS, RECALL_COOLDOWN_MINUTES;
     public static final ForgeConfigSpec.IntValue CHUNKS_MAX_PER_PLAYER;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> DECOY_RANGES;
@@ -343,6 +347,8 @@ public final class BSPConfig {
         CENT_CHARGE_ODDS = BUILDER.comment("A try succeeds one time in this many, by layers.").defineList("chargeOdds", List.of(6, 5, 4, 3, 2, 2), BSPConfig::isPositiveInt);
         CENT_RF_SEPARATING = BUILDER.comment("RF per tick, per layer, while separating ore.").defineInRange("rfPerTickSeparating", 60, 0, 1_000_000);
         CENT_RF_CHARGING = BUILDER.comment("RF per tick, per layer, while charging.").defineInRange("rfPerTickCharging", 240, 0, 1_000_000);
+        CENT_MAGNETISE_TICKS = BUILDER.comment("Ticks to magnetise one Resonance Crystal (with a Magnatite Nugget in the upgrade slot).").defineInRange("magnetiseTicks", 600, 1, 1_000_000);
+        CENT_MAGNETISE_TICKS_FULL = BUILDER.comment("Ticks to magnetise with all six layers.").defineInRange("magnetiseTicksFullStack", 400, 1, 1_000_000);
         BUILDER.pop();
 
         BUILDER.comment("Decoy Totems: fake totems that mislead Totem Compasses.").push("decoy");
@@ -356,17 +362,27 @@ public final class BSPConfig {
         DECOY_WARP_DISTANCE = BUILDER.comment("Furthest the Warp trap throws a thief, in blocks.").defineInRange("warpDistance", 30, 4, 256);
         BUILDER.pop();
 
-        BUILDER.comment("Totem Generators, Totem Projectors and Totem Cables.").push("projector");
-        GENERATOR_RF = BUILDER.comment("RF per tick a Totem Generator uses while sending.").defineInRange("generatorRfPerTick", 200, 0, 1_000_000);
-        PROJECTOR_RF = BUILDER.comment("RF per tick a Totem Projector uses while projecting.").defineInRange("projectorRfPerTick", 100, 0, 1_000_000);
-        GENERATOR_CHANNELS = BUILDER.comment("How many of the totem's powers a generator sends at once. The Channel Expander adds one.").defineInRange("channels", 2, 1, 7);
-        CABLE_CHECK_SECONDS = BUILDER.comment("How often, in seconds, a generator follows its cables all the way to the projector, loading the chunks along the run for a moment to confirm it.",
+        BUILDER.comment("Wave Plasma: the fluid a placed totem gives off, and the extractors, interfaces, cables, repeaters and projectors that carry it.").push("plasma");
+        PLASMA_OUTPUT = BUILDER.comment("mB per tick a placed totem gives off with the Output upgrade at level 0 (none), 1, 2 ... Split evenly between the extractors stacked under it.")
+                .defineList("outputPerLevel", List.of(100, 150, 200, 300, 400, 500, 600), BSPConfig::isPositiveInt);
+        EXTRACTOR_TANK = BUILDER.comment("mB a Plasma Extractor holds.").defineInRange("extractorTank", 4000, 100, 1_000_000);
+        INTERFACE_MAX = BUILDER.comment("Most Plasma Interface blocks that may join into one. Any more show a red seam and do nothing, so interfaces cannot be used as cables.").defineInRange("interfaceMax", 12, 1, 64);
+        PROJECTOR_NEED = BUILDER.comment("mB per tick that must arrive at a Projector for it to project.").defineInRange("projectorNeed", 100, 1, 100_000);
+        PROJECTOR_TANK = BUILDER.comment("mB a Projector holds.").defineInRange("projectorTank", 2000, 100, 1_000_000);
+        PROJECTOR_CHANNELS = BUILDER.comment("How many powers a Projector receives at once. A fitted Channel Expander adds one.").defineInRange("channels", 2, 1, 7);
+        REPEATER_PRESSURE = BUILDER.comment("Share of the plasma that passes each Plasma Repeater (0.9 = a tenth is lost at every repeater). Power levels also drop one per repeater when two or more are received.")
+                .defineInRange("repeaterPressure", 0.9, 0.1, 1.0);
+        CABLE_CHECK_SECONDS = BUILDER.comment("How often, in seconds, an interface follows its cables all the way to the projectors, loading the chunks along the run for a moment to confirm it.",
                         "In between it only looks at chunks that are already loaded and trusts the last full check for the rest. Lower is quicker to notice a cut cable far away; higher is lighter on the server.")
                 .defineInRange("cableCheckSeconds", 30, 5, 600);
-        GENERATOR_REACH = BUILDER.comment("How far a generator can push, in cable blocks, with 0, 1, 2 and 3 Reach Amplifiers.")
-                .defineList("generatorReach", List.of(15, 25, 40, 80), BSPConfig::isPositiveInt);
-        CABLE_REACH = BUILDER.comment("The longest run each cable carries: Tetrium Core, Magnatite Core, Illyrium Core, Charged Illyrium Core.",
-                        "A run works only if it is within both the generator's reach and the reach of the weakest cable in it.")
+        CHARGER_TANK = BUILDER.comment("mB a Battery Charger holds while waiting to pour into the item in it.").defineInRange("chargerTank", 4000, 100, 1_000_000);
+        BATTERY_FEED = BUILDER.comment("mB per tick a Plasma Battery on an extractor stack gives, split between the stack like a totem's output.").defineInRange("batteryFeed", 100, 1, 100_000);
+        EMITTER_DRAW = BUILDER.comment("mB per tick a Wave Emitter draws from its Power Cell while switched on in the offhand.").defineInRange("emitterDraw", 20, 0, 100_000);
+        BATTERY_CAPACITY = BUILDER.comment("mB a Plasma Battery holds, tiers I to IV.").defineList("batteryCapacity", List.of(40_000, 200_000, 1_000_000, 5_000_000), BSPConfig::isPositiveInt);
+        BATTERY_POWERS = BUILDER.comment("Powers a Plasma Battery may hold, tiers I to IV (0 = plasma only).").defineList("batteryPowers", List.of(0, 2, 3, 4), o -> o instanceof Integer i && i >= 0);
+        CELL_CAPACITY = BUILDER.comment("mB a Power Cell holds, tiers I to III.").defineList("cellCapacity", List.of(8_000, 24_000, 60_000), BSPConfig::isPositiveInt);
+        CELL_POWERS = BUILDER.comment("Powers a Power Cell may hold, tiers I to III.").defineList("cellPowers", List.of(1, 2, 3), BSPConfig::isPositiveInt);
+        CABLE_REACH = BUILDER.comment("The longest run each cable carries at full pressure: Tetrium Core, Magnatite Core, Illyrium Core, Charged Illyrium Core. A repeater starts a fresh run.")
                 .defineList("cableReach", List.of(15, 25, 40, 80), BSPConfig::isPositiveInt);
         BUILDER.pop();
 
@@ -438,6 +454,23 @@ public final class BSPConfig {
                 .defineList("rangePerLevel", List.of(1, 2, 3), BSPConfig::isPositiveInt);
         CHUNKS_OWNER_ONLINE = BUILDER.comment("When true a totem's chunks are only kept loaded while its owner is online. Also a switch in the admin panel.").define("ownerMustBeOnline", false);
         CHUNKS_MAX_PER_PLAYER = BUILDER.comment("Most chunks one player may keep loaded across all their totems. 0 means no limit beyond the upgrades.").defineInRange("maxPerPlayer", 0, 0, 10_000);
+        BUILDER.pop();
+
+        BUILDER.comment("The newer totem powers: Bouncy, X-ray, Cloaking, Recall and Recall Block. Lists have one entry per level.").push("effects");
+        BOUNCY_REDUCTION = BUILDER.comment("Share of fall damage Bouncy takes away, by level.").defineList("bouncyFallReduction", List.of(0.25, 0.5, 0.75, 1.0), BSPConfig::isFraction);
+        BOUNCY_BOUNCE = BUILDER.comment("Share of the landing speed Bouncy throws you back up with, by level (like slime boots: a higher fall bounces higher). Sneak to land flat.")
+                .defineList("bouncyBounce", List.of(0.3, 0.45, 0.6, 0.75), BSPConfig::isFraction);
+        XRAY_RADIUS = BUILDER.comment("Blocks around the carrier X-ray shows ores and containers within, by level.").defineList("xrayRadius", List.of(4, 6, 8, 10, 12), BSPConfig::isPositiveInt);
+        XRAY_SECONDS = BUILDER.comment("Seconds X-ray lasts, by level.").defineList("xraySeconds", List.of(25, 30, 35, 40, 45), BSPConfig::isPositiveInt);
+        XRAY_RECHARGE = BUILDER.comment("Seconds X-ray needs to recharge after a use, by level.").defineList("xrayRecharge", List.of(120, 110, 100, 90, 80), BSPConfig::isPositiveInt);
+        XRAY_ALPHA = BUILDER.comment("How strongly X-ray marks show, 0 to 1, by level.").defineList("xrayStrength", List.of(0.35, 0.45, 0.55, 0.65, 0.75), BSPConfig::isFraction);
+        CLOAK_RADIUS = BUILDER.comment("Blocks either side of the totem a Cloaking cube reaches, by level.").defineList("cloakRadius", List.of(6, 9, 12, 16), BSPConfig::isPositiveInt);
+        CLOAK_DRAW = BUILDER.comment("mB per tick of the totem's Wave Plasma output that Cloaking uses while on.").defineInRange("cloakDraw", 50, 0, 100_000);
+        RECALL_RADIUS = BUILDER.comment("Recall lands the owner within this many blocks of the totem, by level. No offer is made when they are already that close.")
+                .defineList("recallRadius", List.of(150, 120, 100, 80, 60, 40, 20), BSPConfig::isPositiveInt);
+        RECALL_PROMPT_SECONDS = BUILDER.comment("Seconds the Recall offer stays open.").defineInRange("recallPromptSeconds", 20, 3, 300);
+        RECALL_COOLDOWN_MINUTES = BUILDER.comment("Minutes Recall rests after a use.").defineInRange("recallCooldownMinutes", 10, 0, 1440);
+        RECALL_BLOCK_SECONDS = BUILDER.comment("Seconds a thief's Recall Block delays the owner's Recall offer, by level, on top of Shroud.").defineList("recallBlockSeconds", List.of(10, 20, 30, 45), BSPConfig::isPositiveInt);
         BUILDER.pop();
 
         BUILDER.comment("How the totem is drawn").push("visuals");

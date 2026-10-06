@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "bsp_core:magnatite_ore",
-    "bsp_core:deepslate_magnatite_ore"
+    "bsp_core:deepslate_magnatite_ore",
+    "bsp_core:raw_magnatite"
   ]
 }

@@ -1,0 +1,39 @@
+{
+  "name": "Batteries, Cells and the Emitter",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:plasma_battery_2",
+  "sortnum": 8,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Wave Plasma can be bottled. A $(item)Battery Charger$() on a Plasma Cable fills a $(item)Plasma Battery$() or $(item)Power Cell$() standing in it, and stamps powers from the interface into it, chosen on the charger's screen.$(br2)Every battery and cell is built around a $(item)Charged Resonance Crystal$(): a Resonance Crystal magnetised in the Magnetic Centrifuge with a Magnatite Nugget in the upgrade slot."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:battery_charger",
+      "recipe2": "bsp_core:plasma_battery_1",
+      "text": "Tier I holds 40,000 mB of plasma and nothing else. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers, and each is built around the tier below."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:plasma_battery_2",
+      "recipe2": "bsp_core:plasma_battery_3"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:plasma_battery_4",
+      "text": "Stand a charged battery on a Plasma Extractor instead of a totem: it feeds the extractor at 100 mB/t with its stamped powers until it runs dry. A spare for when your totem is stolen but you still want a projector running."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:power_cell_1",
+      "recipe2": "bsp_core:wave_emitter",
+      "text": "A $(item)Power Cell$() holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III. The $(item)Wave Emitter$() runs on one."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Hold a Power Cell in one hand and the emitter in the other and right-click: the cell clicks in. Put the emitter in your offhand and right-click to switch it on: you get the cell's powers as if you carried the totem, while it draws 20 mB/t. Sneak and right-click to take the cell out.$(br2)So the totem can stay safe at home while you go out.",
+      "title": "The Wave Emitter"
+    }
+  ]
+}

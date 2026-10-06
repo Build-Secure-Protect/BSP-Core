@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SCS",
+    "CBC",
+    "SAS"
+  ],
+  "key": {
+    "S": {
+      "item": "bsp_core:slag_brick"
+    },
+    "C": {
+      "item": "bsp_core:tetrium_coil"
+    },
+    "B": {
+      "item": "bsp_core:basic_control_circuit"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    }
+  },
+  "result": {
+    "item": "bsp_core:plasma_interface",
+    "count": 2
+  }
+}

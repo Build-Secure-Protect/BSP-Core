@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Generates the Totem Generator, Totem Projector and Totem Cable assets and recipes for BSP-Core.
+"""Generates the Projector and Plasma Cable assets and the Channel Expander sprite for BSP-Core.
 
   python3 tools/gen_projector_assets.py
 
-Totem Generator ("Siphon Plinth", joined as "One Slab"): a multipart block state. The body is always
-drawn; on each side either a filler that runs the slab into the neighbouring generator, or three
-cable ports on an outer edge. Totem Projector ("Totem Obelisk"): the dark body; its lights are
-drawn by TotemProjectorRenderer. Totem Cables ("Linked Segments"): a core and one arm per joined
-side, in four colours. Also the generator's socket parts, loot tables, tags and recipes, all of
-which use Carbon Dust. Never hand-edit the outputs.
+Projector ("Totem Obelisk"): the dark body; its lights are drawn by TotemProjectorRenderer. Plasma
+Cables ("Linked Segments"): a core and one arm per joined side, in four colours. The cable recipes
+all use Carbon Dust. The rest of the plasma chain is in gen_plasma_assets.py. Never hand-edit the outputs.
 """
 import json
 
@@ -34,31 +31,6 @@ def model(elements, textures=None, gui=True):
     return out
 
 
-# ----------------------------------------------------------------------------- generator
-def gen_body():
-    """Top and bottom plates the full width, a dark core set in one pixel, three bands round it."""
-    e = [mbox([0, 0, 0], [16, 3, 16], "hull2"), mbox([0, 13, 0], [16, 16, 16], "hull2"), mbox([1, 3, 1], [15, 13, 15], "hull")]
-    for i in range(3):
-        e.append(mbox([0.6, 4.5 + i * 3, 0.6], [15.4, 5.7 + i * 3, 15.4], "mid"))
-    return e
-
-
-def gen_join():
-    """North side joined to another generator: the core and bands carry on to the block edge."""
-    e = [mbox([0, 3, 0], [16, 13, 1], "hull")]
-    for i in range(3):
-        e.append(mbox([0, 4.5 + i * 3, 0], [16, 5.7 + i * 3, 0.6], "mid"))
-    return e
-
-
-def gen_ports():
-    """North side open: three cable ports, each a trim ring with a lit centre."""
-    e = []
-    for x in (2.2, 6.6, 11):
-        e += [mbox([x, 6, 0.2], [x + 2.8, 10, 1], "trim"), mbox([x + 0.7, 6.8, 0], [x + 2.1, 9.2, 0.2], "turq")]
-    return e
-
-
 def turned(elements, quarter):
     """The same elements turned about the block's vertical axis by quarter turns, for the item model."""
     out = []
@@ -74,68 +46,69 @@ def turned(elements, quarter):
 
 # ----------------------------------------------------------------------------- cables
 def cable_texture(colour):
-    """Left half: dark armour with a seam. Right half: the cable's colour, for the lit band."""
+    """Left half: dark armour rails. Right half: the cable's colour as a thin, see-through glass, so the plasma inside shows."""
     def px(x, y):
         if x >= 8:
-            return hexc(colour)
+            c = hexc(colour)
+            k = 0.8 + hsh(x, y, 43) * 0.3
+            return tuple(min(255, int(v * k)) for v in c[:3]) + (70,)
         k = 0.85 + hsh(x, y, 41) * 0.3
         base = hexc("#8A909C") if x in (0, 7) or y in (0, 15) else hexc("#1E222B")
         return tuple(min(255, int(v * k)) for v in base[:3]) + (255,)
     return px
 
 
-def cbox(frm, to, lit=False):
-    uv = [8, 0, 16, 16] if lit else [0, 0, 8, 16]
+def cbox(frm, to, glass=False):
+    """A cable box: a solid armour rail, or a see-through glass panel in the cable's colour."""
+    uv = [8, 0, 16, 16] if glass else [0, 0, 8, 16]
     el = {"from": frm, "to": to, "faces": {f: {"uv": uv, "texture": "#cable"} for f in ("north", "south", "east", "west", "up", "down")}}
-    if lit:
+    if glass:
         el["shade"] = False
-        el["forge_data"] = {"block_light": 15, "sky_light": 15}
     return el
 
 
+def rails(x0, y0, z0, x1, y1, z1, t=0.8):
+    """The twelve edges of a box as thin rails, so the glass between them reads as a pipe."""
+    out = []
+    for (ax, ay, az, bx, by, bz) in ((x0, y0, z0, x1, y0, z0), (x0, y1, z0, x1, y1, z0), (x0, y0, z1, x1, y0, z1), (x0, y1, z1, x1, y1, z1),
+                                     (x0, y0, z0, x0, y1, z0), (x1, y0, z0, x1, y1, z0), (x0, y0, z1, x0, y1, z1), (x1, y0, z1, x1, y1, z1),
+                                     (x0, y0, z0, x0, y0, z1), (x1, y0, z0, x1, y0, z1), (x0, y1, z0, x0, y1, z1), (x1, y1, z0, x1, y1, z1)):
+        out.append(cbox([min(ax, bx) - (t / 2 if ax == bx else 0), min(ay, by) - (t / 2 if ay == by else 0), min(az, bz) - (t / 2 if az == bz else 0)],
+                        [max(ax, bx) + (t / 2 if ax == bx else 0), max(ay, by) + (t / 2 if ay == by else 0), max(az, bz) + (t / 2 if az == bz else 0)]))
+    return out
+
+
 def cable_core():
-    return [cbox([5, 5, 5], [11, 11, 11]), cbox([4.6, 7.4, 4.6], [11.4, 8.6, 11.4], True)]
+    return rails(5, 5, 5, 11, 11, 11) + [cbox([5.2, 5.2, 5.2], [10.8, 10.8, 10.8], True)]
 
 
 def cable_arm():
-    """One link reaching north from the core to the block edge, with its lit band."""
-    return [cbox([5.9, 5.9, 0], [10.1, 10.1, 5]), cbox([5.4, 5.4, 1.8], [10.6, 10.6, 2.8], True)]
+    """One link reaching north from the core to the block edge: four rails and the glass between them."""
+    return [cbox([5.2, 5.2, 0], [6, 6, 5.2]), cbox([10, 5.2, 0], [10.8, 6, 5.2]), cbox([5.2, 10, 0], [6, 10.8, 5.2]), cbox([10, 10, 0], [10.8, 10.8, 5.2]),
+            cbox([5.4, 5.4, 0], [10.6, 10.6, 5.2], True)]
 
 
 def cable(kind, colour):
     name = f"{kind}_core_cable"
     tex = {"cable": f"bsp_core:block/{name}", "particle": f"bsp_core:block/{name}"}
     write_png(ASSETS / f"textures/block/{name}.png", 16, 16, cable_texture(colour))
-    write(ASSETS / f"models/block/{name}_core.json", model(cable_core(), tex, False))
-    write(ASSETS / f"models/block/{name}_arm.json", model(cable_arm(), tex, False))
+    core, arm = model(cable_core(), tex, False), model(cable_arm(), tex, False)
+    core["render_type"] = arm["render_type"] = "minecraft:translucent"
+    write(ASSETS / f"models/block/{name}_core.json", core)
+    write(ASSETS / f"models/block/{name}_arm.json", arm)
     arms = [("north", {}), ("east", {"y": 90}), ("south", {"y": 180}), ("west", {"y": 270}), ("up", {"x": 270}), ("down", {"x": 90})]
     parts = [{"apply": {"model": f"bsp_core:block/{name}_core"}}]
     for side, rot in arms:
         parts.append({"when": {side: "true"}, "apply": dict({"model": f"bsp_core:block/{name}_arm"}, **rot)})
     write(ASSETS / f"blockstates/{name}.json", {"multipart": parts})
-    east = [cbox([11, 5.9, 5.9], [16, 10.1, 10.1]), cbox([13.2, 5.4, 5.4], [14.2, 10.6, 10.6], True)]
-    west = [cbox([0, 5.9, 5.9], [5, 10.1, 10.1]), cbox([1.8, 5.4, 5.4], [2.8, 10.6, 10.6], True)]
-    write(ASSETS / f"models/item/{name}.json", model(cable_core() + east + west, tex))
+    item = model(cable_core() + [cbox([11, 5.4, 5.4], [16, 10.6, 10.6], True), cbox([0, 5.4, 5.4], [5, 10.6, 10.6], True)], tex)
+    item["render_type"] = "minecraft:translucent"
+    write(ASSETS / f"models/item/{name}.json", item)
     loot(name)
     return name
 
 
 # ----------------------------------------------------------------------------- item sprites
-def amplifier(marks):
-    """A dish on a stem, with one to three turquoise marks for the level."""
-    def px(x, y):
-        if 7 <= x <= 8 and 8 <= y <= 13:
-            return hexc("#8A909C")
-        if y == 14 and 5 <= x <= 10:
-            return hexc("#565C6B")
-        if 3 <= y <= 7 and abs(x - 7.5) <= (y - 2) * 1.0 + 0.5:
-            return hexc("#C9CED8") if abs(x - 7.5) > (y - 3) * 1.0 else hexc("#39414F")
-        if y == 1 and x in [5, 7, 9][:marks]:
-            return hexc("#19D3B0")
-        return CLEAR
-    return px
-
-
 def expander(x, y):
     if 2 <= x <= 13 and 4 <= y <= 11:
         if x in (2, 13) or y in (4, 11):
@@ -160,19 +133,6 @@ def shaped(name, rows, key, count=1):
 
 
 def main():
-    # generator
-    write(ASSETS / "models/block/totem_generator.json", model(gen_body(), gui=False))
-    write(ASSETS / "models/block/totem_generator_join.json", model(gen_join(), gui=False))
-    write(ASSETS / "models/block/totem_generator_ports.json", model(gen_ports(), gui=False))
-    parts = [{"apply": {"model": "bsp_core:block/totem_generator"}}]
-    for side, rot in (("north", {}), ("east", {"y": 90}), ("south", {"y": 180}), ("west", {"y": 270})):
-        parts.append({"when": {side: "true"}, "apply": dict({"model": "bsp_core:block/totem_generator_join"}, **rot)})
-        parts.append({"when": {side: "false"}, "apply": dict({"model": "bsp_core:block/totem_generator_ports"}, **rot)})
-    write(ASSETS / "blockstates/totem_generator.json", {"multipart": parts})
-    icon = gen_body()
-    for q in range(4):
-        icon += turned(gen_ports(), q)
-    write(ASSETS / "models/item/totem_generator.json", model(icon))
     # projector: base, collar and the dark obelisk; seams, cap and shards are drawn by the renderer
     body = [mbox([2, 0, 2], [14, 2, 14], "hull2"), mbox([4, 2, 4], [12, 4, 12], "trim"), mbox([6, 4, 6], [10, 20, 10], "hull")]
     write(ASSETS / "models/block/totem_projector.json", model(body, gui=False))
@@ -182,15 +142,12 @@ def main():
     icon = model(body + lit)
     icon["display"]["gui"] = {"rotation": [30, 225, 0], "translation": [0, -2, 0], "scale": [0.5, 0.5, 0.5]}
     write(ASSETS / "models/item/totem_projector.json", icon)
-    loot("totem_generator")
     loot("totem_projector")
     names = [cable(kind, colour) for kind, colour in CABLES.items()]
+    write_png(ASSETS / "textures/item/channel_expander.png", 16, 16, expander)
+    item_model("channel_expander")
 
-    for name, px in {"reach_amplifier_mk1": amplifier(1), "reach_amplifier_mk2": amplifier(2), "reach_amplifier_mk3": amplifier(3), "channel_expander": expander}.items():
-        write_png(ASSETS / f"textures/item/{name}.png", 16, 16, px)
-        item_model(name)
-
-    for tag, blocks in (("mineable/pickaxe", ["totem_generator", "totem_projector"] + names), ("needs_iron_tool", ["totem_generator", "totem_projector"])):
+    for tag, blocks in (("mineable/pickaxe", ["totem_projector"] + names), ("needs_iron_tool", ["totem_projector"])):
         path = DATA / f"minecraft/tags/blocks/{tag}.json"
         data = json.loads(path.read_text())
         for b in blocks:
@@ -204,12 +161,6 @@ def main():
     shaped("magnatite_core_cable", ["NNN", "DMD", "NNN"], {"N": "magnatite_nugget", "D": D, "M": "magnatite_ingot"}, 8)
     shaped("illyrium_core_cable", ["NDN", "DID", "NDN"], {"N": "magnatite_nugget", "D": D, "I": I}, 6)
     shaped("charged_illyrium_core_cable", ["CDC", "DID", "CDC"], {"C": C, "D": D, "I": I}, 4)
-    shaped("totem_generator", ["DXD", "WKW", "PHP"], {"D": D, "X": "resonance_crystal", "W": "copper_tetrium_coil", "K": "illyrium_processor", "P": "tetrium_plate", "H": "machine_chassis"})
-    shaped("totem_projector", ["DXD", "CKC", "PHP"], {"D": D, "X": "resonance_crystal", "C": C, "K": "illyrium_processor", "P": "tetrium_plate", "H": "machine_chassis"})
-    shaped("reach_amplifier_mk1", [" D ", "WMW", " D "], {"D": D, "W": "tetrium_coil", "M": "magnatite_ingot"})
-    shaped("reach_amplifier_mk2", ["DCD", "CKC", "DCD"], {"D": D, "C": C, "K": "reach_amplifier_mk1"})
-    shaped("reach_amplifier_mk3", ["ICI", "CKC", "IDI"], {"I": I, "C": C, "K": "reach_amplifier_mk2", "D": D})
-    shaped("channel_expander", ["CBC", "BKB", "CDC"], {"C": C, "B": "basic_control_circuit", "K": "illyrium_processor", "D": D})
     print("projector assets written")
 
 

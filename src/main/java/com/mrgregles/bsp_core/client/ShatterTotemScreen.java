@@ -33,7 +33,7 @@ import java.util.Locale;
  */
 public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu> {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, VIO = 0xFFB58CFF, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5;
-    private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 50;
+    private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 44, AURAS_W = 36;
 
     private final TotemTree tree = new TotemTree();
     private Button stealButton;
@@ -56,6 +56,12 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             onClose();
         }).bounds(leftPos + 214, topPos + STATUS_Y + 16, 102, 20).build();
         addRenderableWidget(stealButton);
+        nameBox = new EditBox(font, leftPos + 10, topPos + TREE_Y + 1, 150, 16, Component.translatable("gui.bsp_core.access.name"));
+        nameBox.setMaxLength(16);
+        nameBox.setHint(Component.translatable("gui.bsp_core.access.name").withStyle(ChatFormatting.DARK_GRAY));
+        addRenderableWidget(nameBox);
+        addButton = Button.builder(Component.translatable("gui.bsp_core.access.add"), b -> addAccess()).bounds(leftPos + 164, topPos + TREE_Y, 50, 18).build();
+        addRenderableWidget(addButton);
         adminButtons.clear();
         if (admin) {
             int x = leftPos + 10, y = topPos + STATUS_Y + 6;
@@ -96,8 +102,11 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         return totem != null && totem.isOwner(minecraft.player.getUUID());
     }
 
-    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, MAP_TILE = 24;
-    private boolean chunksTab;
+    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, T_ACCESS = 3, MAP_TILE = 24, ACC_ROW = 18, ACC_Y = TREE_Y + 22, ACC_COL = 118, ACC_W = 40, ACC_GAP = 46;
+    private static final int[] ACC_FLAGS = {com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES, com.mrgregles.bsp_core.totem.TotemAccess.ALARM, com.mrgregles.bsp_core.totem.TotemAccess.WARD, com.mrgregles.bsp_core.totem.TotemAccess.MACHINES};
+    private boolean chunksTab, accessTab;
+    private EditBox nameBox;
+    private Button addButton;
     private int chunkTicks;
 
     /** The CHUNKS tab is there for the owner (and admins) once the totem has the Anchor upgrade. */
@@ -108,21 +117,42 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
 
     /** The tabs in the header, left to right. With only the totem's own page there are none. */
     private int[] tabs() {
-        boolean chunks = chunksAvailable();
-        return chunks && admin ? new int[]{T_TOTEM, T_CHUNKS, T_OPERATOR} : chunks ? new int[]{T_TOTEM, T_CHUNKS} : admin ? new int[]{T_TOTEM, T_OPERATOR} : new int[0];
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+        boolean mine = isOwner() || admin;
+        if (mine) {
+            out.add(T_TOTEM);
+            out.add(T_ACCESS);
+        }
+        if (chunksAvailable()) {
+            if (!mine) {
+                out.add(T_TOTEM);
+            }
+            out.add(T_CHUNKS);
+        }
+        if (admin) {
+            out.add(T_OPERATOR);
+        }
+        return out.size() == 1 ? new int[0] : out.stream().mapToInt(Integer::intValue).toArray();
     }
 
     private int tabX(int index, int count) {
         return imageWidth - 10 - (count - index) * (TAB_W + 2) + 2;
     }
 
+    /** The AURAS switch sits left of the tabs in the header. */
+    private int aurasX() {
+        int[] tabs = tabs();
+        return (tabs.length == 0 ? imageWidth - 10 + 2 : tabX(0, tabs.length)) - AURAS_W - 2;
+    }
+
     private int currentTab() {
-        return operatorTab ? T_OPERATOR : chunksTab ? T_CHUNKS : T_TOTEM;
+        return operatorTab ? T_OPERATOR : chunksTab ? T_CHUNKS : accessTab ? T_ACCESS : T_TOTEM;
     }
 
     private void setTab(int tab) {
         operatorTab = tab == T_OPERATOR;
         chunksTab = tab == T_CHUNKS;
+        accessTab = tab == T_ACCESS;
         if (chunksTab) {
             ChunkMap.request(menu.getPos());
         }
@@ -134,7 +164,18 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (chunksTab && !chunksAvailable()) {
             chunksTab = false;
         }
-        boolean canSteal = !operatorTab && !chunksTab && totem != null && !isOwner() && totem.getSteal().isEmpty();
+        if (accessTab && !(isOwner() || admin)) {
+            accessTab = false;
+        }
+        if (nameBox != null) {
+            nameBox.setVisible(accessTab);
+            addButton.visible = accessTab;
+            addButton.active = accessTab;
+            if (!accessTab) {
+                nameBox.setFocused(false);
+            }
+        }
+        boolean canSteal = !operatorTab && !chunksTab && !accessTab && totem != null && !isOwner() && totem.getSteal().isEmpty();
         stealButton.visible = canSteal;
         stealButton.active = canSteal;
         for (Button b : adminButtons) {
@@ -181,12 +222,35 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         int x = leftPos, y = topPos;
         int[] tabs = tabs();
         if (my >= y + 3 && my < y + 16) { // tabs sit in the header
+            if (mx >= x + aurasX() && mx < x + aurasX() + TAB_W) {
+                com.mrgregles.bsp_core.BSPClientConfig.toggleAuras();
+                return true;
+            }
             for (int i = 0; i < tabs.length; i++) {
                 if (mx >= x + tabX(i, tabs.length) && mx < x + tabX(i, tabs.length) + TAB_W) {
                     setTab(tabs[i]);
                     return true;
                 }
             }
+        }
+        if (accessTab) {
+            ShatterTotemBlockEntity totem = menu.getTotem();
+            if (totem != null) {
+                for (int i = 0; i < totem.access().size(); i++) {
+                    int ry = y + ACC_Y + i * ACC_ROW;
+                    for (int k = 0; k < ACC_FLAGS.length; k++) {
+                        if (mx >= x + ACC_COL + k * ACC_GAP && mx < x + ACC_COL + k * ACC_GAP + ACC_W && my >= ry && my < ry + 14) {
+                            BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.TotemAccessPacket(menu.getPos(), com.mrgregles.bsp_core.network.TotemAccessPacket.TOGGLE, "", i, ACC_FLAGS[k]));
+                            return true;
+                        }
+                    }
+                    if (mx >= x + ACC_COL + 4 * ACC_GAP && mx < x + ACC_COL + 4 * ACC_GAP + 14 && my >= ry && my < ry + 14) {
+                        BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.TotemAccessPacket(menu.getPos(), com.mrgregles.bsp_core.network.TotemAccessPacket.REMOVE, "", i, 0));
+                        return true;
+                    }
+                }
+            }
+            return super.mouseClicked(mx, my, button);
         }
         if (chunksTab) {
             ChunkViewPacket view = ChunkMap.viewFor(menu.getPos());
@@ -224,6 +288,18 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (nameBox != null && nameBox.isFocused()) {
+            if (key == GLFW.GLFW_KEY_ESCAPE) {
+                nameBox.setFocused(false);
+                return true;
+            }
+            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+                addAccess();
+                return true;
+            }
+            nameBox.keyPressed(key, scan, mods);
+            return true;
+        }
         if (ownerBox != null && ownerBox.isFocused()) {
             if (key == GLFW.GLFW_KEY_ESCAPE) {
                 ownerBox.setFocused(false);
@@ -243,7 +319,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
-        Buff hover = chunksTab ? null : tree.nodeAt(mouseX, mouseY, leftPos + TREE_X, topPos + TREE_Y);
+        Buff hover = chunksTab || accessTab ? null : tree.nodeAt(mouseX, mouseY, leftPos + TREE_X, topPos + TREE_Y);
         if (hover != null) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.tree.node", Component.translatable(hover.translationKey()), level(hover), hover.maxLevel()), mouseX, mouseY);
         }
@@ -260,6 +336,13 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             g.fill(tx, y + 3, tx + TAB_W, y + 16, tabs[i] != currentTab() ? DIM : tabs[i] == T_OPERATOR ? VIO : TQ);
             g.fill(tx + 1, y + 4, tx + TAB_W - 1, y + 15, SLOT_BG);
         }
+        int ax = x + aurasX();
+        g.fill(ax, y + 3, ax + AURAS_W, y + 16, DIM);
+        g.fill(ax + 1, y + 4, ax + AURAS_W - 1, y + 15, SLOT_BG);
+        if (accessTab) {
+            accessRows(g, x, y, mouseX, mouseY);
+            return;
+        }
         if (chunksTab) {
             chunks(g, x, y, mouseX, mouseY);
             return;
@@ -275,6 +358,47 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), blocked(b),
                     Component.translatable(level(b) >= b.maxLevel() ? "gui.bsp_core.upgrades.maxed" : "gui.bsp_core.tree.buy"), canBuy(b), mouseX, mouseY);
             tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, tier(), Component.translatable("gui.bsp_core.tree.raise"), canRaise(), mouseX, mouseY);
+        }
+    }
+
+    private void addAccess() {
+        if (nameBox != null && !nameBox.getValue().isBlank()) {
+            BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.TotemAccessPacket(menu.getPos(), com.mrgregles.bsp_core.network.TotemAccessPacket.ADD, nameBox.getValue().trim(), 0, 0));
+            nameBox.setValue("");
+        }
+    }
+
+    /** The ACCESS tab: one row per friend with four switches and a remove button; the name box and Add are widgets. */
+    private void accessRows(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        if (totem == null) {
+            return;
+        }
+        String[] cols = {"upgrades", "alarm", "ward", "machines"};
+        for (int k = 0; k < cols.length; k++) {
+            Component c = Component.translatable("gui.bsp_core.access.col." + cols[k]);
+            small(g, c, x + ACC_COL + k * ACC_GAP + ACC_W / 2 - font.width(c) * 3 / 8, y + ACC_Y - 10, MUTED);
+        }
+        java.util.List<com.mrgregles.bsp_core.totem.TotemAccess> list = totem.access();
+        for (int i = 0; i < list.size(); i++) {
+            int ry = y + ACC_Y + i * ACC_ROW;
+            g.drawString(font, list.get(i).name(), x + 10, ry + 3, 0xE6EAF2, false);
+            for (int k = 0; k < ACC_FLAGS.length; k++) {
+                int bx = x + ACC_COL + k * ACC_GAP;
+                boolean on = list.get(i).has(ACC_FLAGS[k]);
+                g.fill(bx, ry, bx + ACC_W, ry + 14, on ? TQ : DIM);
+                g.fill(bx + 1, ry + 1, bx + ACC_W - 1, ry + 13, mouseX >= bx && mouseX < bx + ACC_W && mouseY >= ry && mouseY < ry + 14 ? 0xFF14362F : SLOT_BG);
+                Component lab = Component.translatable(on ? "gui.bsp_core.access.yes" : "gui.bsp_core.access.no");
+                small(g, lab, bx + ACC_W / 2 - font.width(lab) * 3 / 8, ry + 4, on ? TQ & 0xFFFFFF : MUTED);
+            }
+            int rx = x + ACC_COL + 4 * ACC_GAP;
+            g.fill(rx, ry, rx + 14, ry + 14, DIM);
+            g.fill(rx + 1, ry + 1, rx + 13, ry + 13, SLOT_BG);
+            g.drawString(font, "x", rx + 4, ry + 3, 0xFF6B5C, false);
+        }
+        small(g, Component.translatable("gui.bsp_core.access.count", list.size(), com.mrgregles.bsp_core.totem.TotemAccess.MAX), x + 10, y + ACC_Y + list.size() * ACC_ROW + 4, MUTED);
+        for (int i = 0; i < 4; i++) {
+            small(g, Component.translatable("gui.bsp_core.access.help." + i), x + 10, y + STATUS_Y - 40 + i * 9, MUTED);
         }
     }
 
@@ -331,16 +455,23 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawString(font, title.getString().toUpperCase(Locale.ROOT) + "  " + Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier())).getString(),
-                10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
+        // the tier joins the title only while the header has room for it
+        String head = title.getString().toUpperCase(Locale.ROOT);
+        if (tabs().length < 2) {
+            head += "  " + Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier())).getString();
+        }
+        g.drawString(font, head, 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
+        boolean shown = com.mrgregles.bsp_core.BSPClientConfig.showAuras();
+        Component auras = Component.translatable(shown ? "gui.bsp_core.tree.auras.shown" : "gui.bsp_core.tree.auras.hidden");
+        small(g, auras, aurasX() + AURAS_W / 2 - font.width(auras) * 3 / 8, 7, shown ? TQ & 0xFFFFFF : MUTED);
         int[] tabs = tabs();
-        String[] tabKeys = {"totem", "chunks", "operator"};
+        String[] tabKeys = {"totem", "chunks", "operator", "access"};
         for (int i = 0; i < tabs.length; i++) {
             Component label = Component.translatable("gui.bsp_core.tree.tab." + tabKeys[tabs[i]]);
             small(g, label, tabX(i, tabs.length) + TAB_W / 2 - font.width(label) * 3 / 8, 7, tabs[i] != currentTab() ? MUTED : (tabs[i] == T_OPERATOR ? VIO : TQ) & 0xFFFFFF);
         }
         ShatterTotemBlockEntity totem = menu.getTotem();
-        if (totem == null || operatorTab) {
+        if (totem == null || operatorTab || accessTab) {
             return;
         }
         Component ownerLine = totem.getOwner()

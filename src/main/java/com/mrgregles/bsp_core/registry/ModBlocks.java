@@ -42,7 +42,19 @@ public final class ModBlocks {
     public static final RegistryObject<Block> DECOY_TOTEM = BLOCKS.register("decoy_totem", com.mrgregles.bsp_core.decoy.DecoyTotemBlock::new);
     public static final RegistryObject<Block> DECOY_POWER_BASE = BLOCKS.register("decoy_power_base", com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlock::new);
 
-    public static final RegistryObject<Block> TOTEM_GENERATOR = BLOCKS.register("totem_generator", com.mrgregles.bsp_core.projector.TotemGeneratorBlock::new);
+    public static final RegistryObject<Block> PLASMA_EXTRACTOR = BLOCKS.register("plasma_extractor", com.mrgregles.bsp_core.plasma.PlasmaExtractorBlock::new);
+    public static final RegistryObject<Block> PLASMA_INTERFACE = BLOCKS.register("plasma_interface", com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock::new);
+    public static final RegistryObject<Block> PLASMA_REPEATER = BLOCKS.register("plasma_repeater", com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock::new);
+    public static final RegistryObject<Block> BATTERY_CHARGER = BLOCKS.register("battery_charger", com.mrgregles.bsp_core.plasma.BatteryChargerBlock::new);
+    /** Plasma Batteries I to IV, by tier. */
+    public static final java.util.List<RegistryObject<com.mrgregles.bsp_core.plasma.PlasmaBatteryBlock>> PLASMA_BATTERIES = new java.util.ArrayList<>();
+
+    static {
+        for (int tier = 0; tier < 4; tier++) {
+            int t = tier;
+            PLASMA_BATTERIES.add(BLOCKS.register("plasma_battery_" + (tier + 1), () -> new com.mrgregles.bsp_core.plasma.PlasmaBatteryBlock(t)));
+        }
+    }
     public static final RegistryObject<Block> TOTEM_PROJECTOR = BLOCKS.register("totem_projector", com.mrgregles.bsp_core.projector.TotemProjectorBlock::new);
     /** bsp_core:tetrium_core_cable, magnatite_core_cable, illyrium_core_cable, charged_illyrium_core_cable */
     public static final java.util.Map<com.mrgregles.bsp_core.projector.TotemCableBlock.Kind, RegistryObject<Block>> TOTEM_CABLES = new java.util.EnumMap<>(com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.class);

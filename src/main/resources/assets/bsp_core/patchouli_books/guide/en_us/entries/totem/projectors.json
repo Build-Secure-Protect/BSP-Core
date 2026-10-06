@@ -1,33 +1,39 @@
 {
-  "name": "Generators and Projectors",
+  "name": "Wave Plasma and Projectors",
   "category": "bsp_core:totem",
   "icon": "bsp_core:totem_projector",
   "sortnum": 6,
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "A $(item)Totem Generator$() under your placed totem draws off some of its base powers. A $(item)Totem Cable$() carries them to a $(item)Totem Projector$(), which recreates them as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
+      "text": "A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, more with the $(l)Output$() upgrade. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into it.$(li)$(item)Plasma Cable$() from the interface to the projector.$(li)$(item)Projector$() at the end.",
+      "title": "How it joins up"
     },
     {
       "type": "patchouli:crafting",
-      "recipe": "bsp_core:totem_generator",
-      "recipe2": "bsp_core:totem_projector",
-      "text": "Both need RF all the time: 200 a tick for the generator, 100 for the projector."
+      "recipe": "bsp_core:plasma_extractor",
+      "recipe2": "bsp_core:plasma_interface",
+      "text": "Interfaces that touch join into one, up to twelve blocks in any shape. More than twelve, or one touching a drum another interface already serves, shows a lit seam and does nothing: an interface is not a cable."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:totem_projector",
+      "recipe2": "bsp_core:channel_expander",
+      "text": "A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure. It receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking it."
     },
     {
       "type": "patchouli:text",
-      "text": "Put the first generator directly under the totem. More can go beside it, side to side, up to nine in a three by three with the totem on the middle one. They join into one slab, and the ring of light around your totem widens.$(br2)Each generator has its own power, its own cable and its own projector. Right-click the slab and pick a generator from the grid.",
-      "title": "Up to nine"
-    },
-    {
-      "type": "patchouli:text",
-      "text": "Each generator sends two of these at once (three with a $(item)Channel Expander$()):$(br2)$(li)Fortify$(li)Healing Aura$(li)Alarm$(li)Ward$(li)Sanctuary$(li)Overclock$(li)Anchor$(br2)Powers lose strength along the cable: full at the generator, half at the end of the longest run that works.",
-      "title": "What can be sent"
-    },
-    {
-      "type": "patchouli:text",
-      "text": "Cables plug into a generator's sides and bottom. Each kind has a longest run:$(br2)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)The generator must be able to push that far too: 15 blocks, or 25, 40 and 80 with $(item)Reach Amplifiers$() Mk I, II and III. A mixed run goes as far as its weakest cable.",
+      "text": "A cable carries its whole run at full pressure. Each kind has a longest run:$(br2)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)A mixed run goes as far as its weakest cable. A $(item)Plasma Repeater$() in the run starts a fresh one.",
       "title": "Cables and reach"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:plasma_repeater",
+      "text": "Each repeater costs something: nine tenths of the plasma passes it, and a projector behind it receives one power at full level, or two or more each one level lower per repeater. The projector screen shows what arrives before you switch."
     },
     {
       "type": "patchouli:crafting",
@@ -40,19 +46,9 @@
       "recipe2": "bsp_core:charged_illyrium_core_cable"
     },
     {
-      "type": "patchouli:crafting",
-      "recipe": "bsp_core:reach_amplifier_mk1",
-      "recipe2": "bsp_core:reach_amplifier_mk2"
-    },
-    {
-      "type": "patchouli:crafting",
-      "recipe": "bsp_core:reach_amplifier_mk3",
-      "recipe2": "bsp_core:channel_expander"
-    },
-    {
       "type": "patchouli:text",
-      "text": "Right-click a projector to see what it is doing: no signal, no power, or projecting. Under its RF bar is one chip for each power, lit with the level that reaches it. Hover over a chip for its name.$(br2)When $(l:totem/chunks)Anchor$() is one of the powers, a chunk map appears below.",
-      "title": "The projector screen"
+      "text": "What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.",
+      "title": "Powers and auras"
     }
   ]
 }

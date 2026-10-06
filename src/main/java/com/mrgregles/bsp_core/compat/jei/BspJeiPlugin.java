@@ -145,7 +145,10 @@ public class BspJeiPlugin implements IModPlugin {
                         List.of(seconds(cfg(BSPConfig.CENT_SEPARATE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_stack_note"))),
                 new Process(List.of(one(ModItems.MAGNATITE_INGOT.get(), 1)), List.of(List.of(new ItemStack(ModItems.COPPER_TETRIUM_COIL.get()))), null, 0,
                         List.of(new ItemStack(ModItems.CHARGED_MAGNATITE_INGOT.get())), List.of(),
-                        List.of(seconds(cfg(BSPConfig.CENT_CHARGE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_charge_note")))));
+                        List.of(seconds(cfg(BSPConfig.CENT_CHARGE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_charge_note"))),
+                new Process(List.of(one(ModItems.RESONANCE_CRYSTAL.get(), 1)), List.of(List.of(new ItemStack(ModItems.MAGNATITE_NUGGET.get()))), null, 0,
+                        List.of(new ItemStack(ModItems.CHARGED_RESONANCE_CRYSTAL.get())), List.of(),
+                        List.of(seconds(cfg(BSPConfig.CENT_MAGNETISE_TICKS, 600)), Component.translatable("jei.bsp_core.centrifuge_magnetise_note")))));
 
         List<Process> coins = new ArrayList<>();
         for (CoinTier tier : CoinTier.values()) {
@@ -173,7 +176,16 @@ public class BspJeiPlugin implements IModPlugin {
         info(reg, "jei.bsp_core.info.copper_coil", "copper_tetrium_coil");
         info(reg, "jei.bsp_core.info.magnatite_ore", "magnatite_ore", "deepslate_magnatite_ore");
         info(reg, "jei.bsp_core.info.vault", "coin_vault");
-        info(reg, "jei.bsp_core.info.generator", "totem_generator", "reach_amplifier_mk1", "reach_amplifier_mk2", "reach_amplifier_mk3", "channel_expander");
+        info(reg, "jei.bsp_core.info.extractor", "plasma_extractor");
+        info(reg, "jei.bsp_core.info.interface", "plasma_interface");
+        info(reg, "jei.bsp_core.info.repeater", "plasma_repeater");
+        info(reg, "jei.bsp_core.info.expander", "channel_expander");
+        info(reg, "jei.bsp_core.info.charger", "battery_charger");
+        info(reg, "jei.bsp_core.info.battery", "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4");
+        info(reg, "jei.bsp_core.info.cell", "power_cell_1", "power_cell_2", "power_cell_3");
+        info(reg, "jei.bsp_core.info.charged_crystal", "charged_resonance_crystal");
+        info(reg, "jei.bsp_core.info.emitter", "wave_emitter");
+        info(reg, "jei.bsp_core.info.wrench", "wrench");
         info(reg, "jei.bsp_core.info.projector", "totem_projector");
         info(reg, "jei.bsp_core.info.cable", "tetrium_core_cable", "magnatite_core_cable", "illyrium_core_cable", "charged_illyrium_core_cable");
         info(reg, "jei.bsp_core.info.decoy", "decoy_totem", "magnet_core");

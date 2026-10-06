@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "bsp_core:item/reach_amplifier_mk2"
-  }
-}

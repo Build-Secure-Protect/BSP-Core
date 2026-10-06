@@ -9,7 +9,9 @@
     "bsp_core:centrifuge_rotor",
     "bsp_core:centrifuge_power_port",
     "bsp_core:decoy_power_base",
-    "bsp_core:totem_generator",
-    "bsp_core:totem_projector"
+    "bsp_core:totem_projector",
+    "bsp_core:plasma_extractor",
+    "bsp_core:plasma_interface",
+    "bsp_core:battery_charger"
   ]
 }

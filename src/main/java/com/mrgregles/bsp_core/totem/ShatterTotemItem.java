@@ -178,13 +178,9 @@ public class ShatterTotemItem extends BlockItem {
         }
     }
 
-    /** Mining speed multiplier granted to {@code player} by whatever totem is in their offhand. */
+    /** Mining speed multiplier granted to {@code player} by the totem or Wave Emitter in their offhand. */
     public static float miningSpeedMultiplier(Player player) {
-        ItemStack offhand = player.getOffhandItem();
-        if (!TotemInventories.isTotem(offhand)) {
-            return 1.0F;
-        }
-        return 1.0F + (float) (BSPConfig.getOr(BSPConfig.MINING_SPEED_PER_LEVEL, 0.10) * TotemUpgrades.getLevel(offhand, TotemUpgrades.Buff.MINING_SPEED));
+        return 1.0F + (float) (BSPConfig.getOr(BSPConfig.MINING_SPEED_PER_LEVEL, 0.10) * com.mrgregles.bsp_core.plasma.CarriedPowers.level(player, TotemUpgrades.Buff.MINING_SPEED));
     }
 
     @Override

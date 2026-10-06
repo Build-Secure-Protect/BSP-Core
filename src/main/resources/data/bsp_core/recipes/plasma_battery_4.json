@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CRC",
+    "GBG",
+    "NKN"
+  ],
+  "key": {
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "G": {
+      "item": "bsp_core:illyrium_glass"
+    },
+    "B": {
+      "item": "bsp_core:plasma_battery_3"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "K": {
+      "item": "minecraft:shulker_shell"
+    }
+  },
+  "result": {
+    "item": "bsp_core:plasma_battery_4"
+  }
+}

@@ -32,11 +32,18 @@
     "bsp_core:centrifuge_power_port",
     "bsp_core:decoy_totem",
     "bsp_core:decoy_power_base",
-    "bsp_core:totem_generator",
     "bsp_core:totem_projector",
     "bsp_core:tetrium_core_cable",
     "bsp_core:magnatite_core_cable",
     "bsp_core:illyrium_core_cable",
-    "bsp_core:charged_illyrium_core_cable"
+    "bsp_core:charged_illyrium_core_cable",
+    "bsp_core:plasma_extractor",
+    "bsp_core:plasma_interface",
+    "bsp_core:plasma_repeater",
+    "bsp_core:battery_charger",
+    "bsp_core:plasma_battery_1",
+    "bsp_core:plasma_battery_2",
+    "bsp_core:plasma_battery_3",
+    "bsp_core:plasma_battery_4"
   ]
 }

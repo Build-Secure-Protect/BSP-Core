@@ -56,12 +56,6 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(DecoyStealPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DecoyStealPacket::encode).decoder(DecoyStealPacket::decode)
                 .consumerMainThread(DecoyStealPacket::handle).add();
-        CHANNEL.messageBuilder(GeneratorArrayPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(GeneratorArrayPacket::encode).decoder(GeneratorArrayPacket::decode)
-                .consumerMainThread(GeneratorArrayPacket::handle).add();
-        CHANNEL.messageBuilder(GeneratorOpenPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(GeneratorOpenPacket::encode).decoder(GeneratorOpenPacket::decode)
-                .consumerMainThread(GeneratorOpenPacket::handle).add();
         CHANNEL.messageBuilder(VaultAccessPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(VaultAccessPacket::encode).decoder(VaultAccessPacket::decode)
                 .consumerMainThread(VaultAccessPacket::handle).add();
@@ -71,6 +65,15 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ChunkViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ChunkViewPacket::encode).decoder(ChunkViewPacket::decode)
                 .consumerMainThread(ChunkViewPacket::handle).add();
+        CHANNEL.messageBuilder(RecallOfferPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RecallOfferPacket::encode).decoder(RecallOfferPacket::decode)
+                .consumerMainThread(RecallOfferPacket::handle).add();
+        CHANNEL.messageBuilder(RecallAnswerPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RecallAnswerPacket::encode).decoder(RecallAnswerPacket::decode)
+                .consumerMainThread(RecallAnswerPacket::handle).add();
+        CHANNEL.messageBuilder(TotemAccessPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TotemAccessPacket::encode).decoder(TotemAccessPacket::decode)
+                .consumerMainThread(TotemAccessPacket::handle).add();
         CHANNEL.messageBuilder(ChunkActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(ChunkActionPacket::encode).decoder(ChunkActionPacket::decode)
                 .consumerMainThread(ChunkActionPacket::handle).add();

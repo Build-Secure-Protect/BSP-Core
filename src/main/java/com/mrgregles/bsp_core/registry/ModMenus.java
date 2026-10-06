@@ -39,8 +39,9 @@ public final class ModMenus {
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.decoy.DecoyMenu>> DECOY = MENUS.register("decoy_totem",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.decoy.DecoyMenu(id, inv, buf.readBlockPos())));
 
-    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.projector.GeneratorMenu>> GENERATOR = MENUS.register("totem_generator",
-            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.projector.GeneratorMenu(id, inv, buf.readBlockPos())));
+
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.plasma.BatteryChargerMenu>> BATTERY_CHARGER = MENUS.register("battery_charger",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.plasma.BatteryChargerMenu(id, inv, buf.readBlockPos())));
 
     private ModMenus() {}
 }

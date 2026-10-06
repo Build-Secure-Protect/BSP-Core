@@ -17,6 +17,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IWailaClientRegistration;
+import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 
@@ -34,8 +35,40 @@ import javax.annotation.Nullable;
 @WailaPlugin
 public class BspJadePlugin implements IWailaPlugin {
     @Override
+    public void register(IWailaCommonRegistration registration) {
+        registration.registerBlockDataProvider(CableFlow.INSTANCE, com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.class);
+    }
+
+    @Override
     public void registerClient(IWailaClientRegistration registration) {
+        registration.registerBlockComponent(CableFlow.INSTANCE, com.mrgregles.bsp_core.projector.TotemCableBlock.class);
         registration.addRayTraceCallback((hit, accessor, original) -> redirect(registration, accessor));
+    }
+
+    /** One line on a Plasma Cable: what is flowing through it, as the interface last reported. */
+    public enum CableFlow implements snownee.jade.api.IBlockComponentProvider, snownee.jade.api.IServerDataProvider<BlockAccessor> {
+        INSTANCE;
+
+        private static final net.minecraft.resources.ResourceLocation UID = new net.minecraft.resources.ResourceLocation(com.mrgregles.bsp_core.BSPCore.MODID, "cable_flow");
+
+        @Override
+        public void appendServerData(net.minecraft.nbt.CompoundTag data, BlockAccessor accessor) {
+            if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity cable) {
+                data.putInt("PlasmaFlow", cable.flow());
+            }
+        }
+
+        @Override
+        public void appendTooltip(snownee.jade.api.ITooltip tooltip, BlockAccessor accessor, snownee.jade.api.config.IPluginConfig config) {
+            int flow = accessor.getServerData().getInt("PlasmaFlow");
+            tooltip.add(net.minecraft.network.chat.Component.translatable(flow > 0 ? "jade.bsp_core.cable_flow" : "jade.bsp_core.cable_idle", flow)
+                    .withStyle(flow > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+        }
+
+        @Override
+        public net.minecraft.resources.ResourceLocation getUid() {
+            return UID;
+        }
     }
 
     private static Accessor<?> redirect(IWailaClientRegistration registration, @Nullable Accessor<?> accessor) {

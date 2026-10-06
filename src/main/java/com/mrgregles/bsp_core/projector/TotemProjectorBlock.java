@@ -56,8 +56,22 @@ public class TotemProjectorBlock extends BaseEntityBlock {
     @Override
     public net.minecraft.world.InteractionResult use(BlockState state, Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
                                                      net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
-        if (player instanceof net.minecraft.server.level.ServerPlayer sp && level.getBlockEntity(pos) instanceof TotemProjectorBlockEntity) {
-            com.mrgregles.bsp_core.chunk.ChunkLoading.sendView(sp, pos, true);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp && level.getBlockEntity(pos) instanceof TotemProjectorBlockEntity projector) {
+            net.minecraft.world.item.ItemStack held = player.getItemInHand(hand);
+            if (held.getItem() instanceof com.mrgregles.bsp_core.plasma.ChannelExpanderItem && !projector.hasExpander() && projector.mayEdit(player)) {
+                // a Channel Expander in hand is fitted; sneak + right-click with an empty hand takes it back out
+                projector.setExpander(true);
+                held.shrink(1);
+                player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.bsp_core.projector.expander_fitted"), true);
+            } else if (player.isShiftKeyDown() && held.isEmpty() && projector.hasExpander() && projector.mayEdit(player)) {
+                projector.setExpander(false);
+                net.minecraft.world.item.ItemStack back = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.CHANNEL_EXPANDER.get());
+                if (!player.getInventory().add(back)) {
+                    player.drop(back, false);
+                }
+            } else {
+                com.mrgregles.bsp_core.chunk.ChunkLoading.sendView(sp, pos, true);
+            }
         }
         return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
     }

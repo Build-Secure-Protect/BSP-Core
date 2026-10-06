@@ -1,0 +1,211 @@
+<title>Wave Plasma Round 4</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Round 4: charger and emitter redesigns, totem access, cube auras. One WebGL context draws every view.
+   Each block gets three 3D concepts; the projector screen gets three working mocks. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/9; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl select{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.tabs{ display:flex; gap:4px; } .tab{ font:inherit; font-size:10px; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 8px; cursor:pointer; } .tab.on{ color:var(--h-tq); border-color:var(--h-tq); }
+.two{ display:flex; gap:12px; align-items:flex-start; } .col{ display:flex; flex-direction:column; gap:8px; min-width:0; } .grow{ flex:1; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); }
+.pw{ width:100%; border-collapse:collapse; } .pw th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 2px 0; } .pw td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; } .pw tr.off td{ color:#566070; }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb[disabled]{ color:#566070; cursor:default; }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-tq); }
+.g{ display:grid; grid-template-columns:repeat(7,var(--s,22px)); grid-auto-rows:var(--s,22px); gap:2px; background:var(--h-slot); padding:3px; border:2px solid var(--h-dim); width:max-content; }
+.g i{ background:#2f6b2a; border:1px solid #0006; } .g i:nth-child(3n){ background:#57953a; } .g i:nth-child(5n){ background:#3f77c2; } .g i.on{ box-shadow:inset 0 0 0 2px var(--h-tq); } .g i.c{ box-shadow:inset 0 0 0 2px var(--h-vio); } .g i.out{ filter:brightness(.3); }
+.pips{ display:inline-flex; gap:3px; } .pips i{ width:9px; height:9px; background:var(--h-slot); border:1px solid var(--h-dim); box-sizing:border-box; } .pips i.on{ background:var(--h-tq); border-color:var(--h-tq); } .pips i.free{ border-color:var(--h-tq); }
+.chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ border:2px solid var(--k); color:var(--k); padding:2px 6px; background:var(--h-slot); } .chip.off{ --k:var(--h-dim); color:#566070; }
+.sw{ display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:6px; border:1px solid #0008; }
+.slots{ display:grid; gap:2px; } .sl{ width:34px; height:34px; box-sizing:border-box; background:var(--h-slot); border:2px solid #3a3f4b; display:grid; place-items:center; } .sl b{ color:var(--h-tq); font-size:11px; }
+.sock{ display:flex; gap:4px; } .sock i{ width:20px; height:20px; border:2px solid var(--h-dim); background:var(--h-slot); } .sock i.on{ border-color:var(--h-tq); }
+</style>
+<div class="wrap">
+<section><h1>Wave Plasma Round 4</h1>
+<p class="lede">Your Round 3 picks applied (Header Rack interface, Capsule batteries, Cartridge cells). Two redesigns: the Battery Charger with the item sitting inside it, in the spirit of the AE2 Charger, and the Wave Emitter as a tricorder with a slot for the cartridge. Then the next group: totem access permissions, and the aura as a cube with a way to hide it. Drag any 3D view to turn it.</p></section>
+
+<section><h2>1. Battery Charger, redesigned</h2>
+<p class="lede">Open designs where you see the battery or cell held inside and filling. Each is shown with a Capsule battery in it; the cartridge cell sits in the same cradle. The cable comes in from the left.</p>
+<div class="grid3" id="chargers"></div>
+</section>
+
+<section><h2>2. Wave Emitter, as a tricorder</h2>
+<p class="lede">A handheld with a display, held in the offhand like the totem, and a slot the Cartridge cell clicks into. Three takes; each is shown with a cell fitted and the lid open where there is one.</p>
+<div class="grid3" id="emitters"></div>
+</section>
+
+<section><h2>3. Totem access: letting friends in</h2>
+<p class="lede">A new ACCESS tab on the totem panel. Each person added gets two switches: <b>Upgrade</b> (may buy upgrades and change chunks and projector settings) and <b>Trusted</b> (does not set off Alarm, is not weakened by Ward, may open the totem's extractors, interfaces, projectors and chargers). Three ways to lay it out; each is a working mock.</p>
+<div class="card"><h3>A. One List</h3><p>Like the Coin Vault's access list: a name box, Add, and one row per player with the two switches. Up to 8 players.</p><div class="scroll"><div class="hud" style="width:420px" id="acA"></div></div></div>
+<div class="card"><h3>B. Two Columns</h3><p>UPGRADERS on the left, TRUSTED on the right; a player can be in both. Each column has its own Add. Reads as two separate permissions.</p><div class="scroll"><div class="hud" style="width:520px" id="acB"></div></div></div>
+<div class="card"><h3>C. Access Cards</h3><p>Nine card slots. You craft a Totem Access Card, right-click the totem with it to bind it to a player's name, and drop it in a slot; the card's row gets the two switches. Take the card out and the access goes with it. Cards can be handed over or stolen.</p><div class="scroll"><div class="hud" style="width:470px" id="acC"></div></div></div>
+<div class="card"><h3>Rules (proposed)</h3><p>Only the owner edits the list; it is kept when the totem is picked up and <b>cleared when it is stolen</b>. Access reaches everything on the totem's plasma chain and its projectors' chunk pickers. Trusted players are still not owners: they cannot steal-protect, cannot pick the totem up, and do not get the Carried powers. An admin sees and may clear any list.</p></div>
+</section>
+
+<section><h2>4. The aura as a cube</h2>
+<p class="lede">Auras become cubes: a power with radius <b>r</b> covers the cube from r blocks west to r blocks east, down and up, north and south of the totem, so a radius-5 Fortify is an 11 x 11 x 11 box that players can measure and build to. Projectors get the same. Three looks for the cube, each on a totem with two powers (Fortify 5, Healing 8).</p>
+<div class="grid3" id="auras"></div>
+<div class="card"><h3>Hiding the auras</h3><p>Two places, both proposed: a client setting <b>Show totem auras</b> (in the mod's config screen, and a keybind defaulting to unbound) that hides every aura for that player only; and a switch on the totem's panel header, <b>AURAS: SHOWN / HIDDEN</b>, which does the same thing from inside the game. Hiding is per player: it never changes what the aura does, and other players still see it unless they hide it too.</p>
+<div class="scroll"><div class="hud" style="width:420px" id="aur"></div></div></div>
+</section>
+
+<section><h2>5. Recipes (proposed)</h2>
+<div class="card"><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Circuit Substrate</i><i>Tetrium Plate</i><i>Copper Tetrium Coil</i><i>Resonance Crystal</i><i>Copper Tetrium Coil</i><i>Carbon Dust</i><i>Slag Brick</i><i>Carbon Dust</i></div><span class="arrow">&rarr;</span><span class="out">Totem Access Card x4</span></div><p>Cheap enough to hand out, hard enough that cards mean something. Four per craft.</p></div>
+<div class="card"><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Resonance Crystal</i><i>Tetrium Plate</i><i>Blaze Rod</i><i>Illyrium Processor</i><i>Blaze Rod</i><i>Carbon Dust</i><i>Charged Magnatite Ingot</i><i>Carbon Dust</i></div><span class="arrow">&rarr;</span><span class="out">Wave Emitter</span></div><p>Unchanged from Round 3; the tricorder shape does not change what it is made of. Say if the display should add a Glass Pane or an Amethyst Shard.</p></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, el=id=>document.getElementById(id);
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}];
+  const TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,COPPER=0xc87a3c,GOLD=0xffd23a,GLASS=0x9fc5d8,ION=0x4fb8ff;
+  const TIER=[0x8a909c,0x6f5a7a,0x5fd0e8,0xbfe6ff];
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  // ---- the liquid: a 32x32 canvas redrawn each frame with layered value noise, ramped deep blue -> ion blue -> bright core
+  const LQ=32, lc=document.createElement('canvas'); lc.width=lc.height=LQ; const lx=lc.getContext('2d'), limg=lx.createImageData(LQ,LQ);
+  const liquid=new THREE.CanvasTexture(lc); liquid.magFilter=THREE.NearestFilter; liquid.minFilter=THREE.NearestFilter; liquid.wrapS=liquid.wrapT=THREE.RepeatWrapping;
+  const hash=(x,y,z)=>{ const n=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453; return n-Math.floor(n); };
+  function noise(x,y,z){ const i=Math.floor(x),j=Math.floor(y),k=Math.floor(z), u=x-i,v=y-j,w=z-k, f=t=>t*t*(3-2*t), fu=f(u),fv=f(v),fw=f(w);
+    const l=(a,b,t)=>a+(b-a)*t; return l(l(l(hash(i,j,k),hash(i+1,j,k),fu),l(hash(i,j+1,k),hash(i+1,j+1,k),fu),fv),l(l(hash(i,j,k+1),hash(i+1,j,k+1),fu),l(hash(i,j+1,k+1),hash(i+1,j+1,k+1),fu),fv),fw); }
+  const ramp=[[0x12,0x4f,0x9c],[0x4f,0xb8,0xff],[0xd8,0xf1,0xff]];
+  function drawLiquid(t){ const d=limg.data; for(let y=0;y<LQ;y++) for(let x=0;x<LQ;x++){ const nx=x/LQ*4, ny=y/LQ*4; const n=noise(nx,ny,t*.5)*.6+noise(nx*2.3+9,ny*2.3,t*.9)*.3+noise(nx*5,ny*5+3,t*1.6)*.1;
+      const v=Math.max(0,Math.min(.999,(n-.25)*1.9)); const s=v<.6?v/.6:(v-.6)/.4, a=v<.6?ramp[0]:ramp[1], b=v<.6?ramp[1]:ramp[2]; const i=(y*LQ+x)*4; d[i]=a[0]+(b[0]-a[0])*s; d[i+1]=a[1]+(b[1]-a[1])*s; d[i+2]=a[2]+(b[2]-a[2])*s; d[i+3]=255; }
+    lx.putImageData(limg,0,0); liquid.needsUpdate=true; }
+  const liqMat=(op)=>new THREE.MeshBasicMaterial({map:liquid,transparent:op!==undefined,opacity:op===undefined?1:op});
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function lq(g,f,t,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),liqMat(op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // a pipe from a to b (arrays), radius r; returns the mesh
+  function pipe(g,a,b,r,c,mat){ const A=new THREE.Vector3(...a), B=new THREE.Vector3(...b), d=B.clone().sub(A), len=d.length(); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,12),mat||new THREE.MeshLambertMaterial({color:c||TRIM}));
+    m.position.copy(A).add(B).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); g.add(m); return m; }
+  const flange=(g,p,axis,r,c)=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1,14),new THREE.MeshLambertMaterial({color:c||MID})); m.position.set(...p); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; };
+  const ring=(g,p,axis,R,r,c)=>{ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshLambertMaterial({color:c||COPPER})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; };
+  function totem(g,ox,oy,oz){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); root.position.set(ox||0,oy||0,oz||0); g.add(root); const mat=new THREE.MeshLambertMaterial({map:tex,alphaTest:.5});
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); } else { m.position.set(c[0],c[1],c[2]); root.add(m); } } }
+  function cable(g,x,y,z,sides){ bx(g,[x+5,y+5,z+5],[x+11,y+11,z+11],HULL2); for(const s of sides){ if(s==='w') bx(g,[x,y+5.5,z+5.5],[x+5,y+10.5,z+10.5],HULL2); if(s==='e') bx(g,[x+11,y+5.5,z+5.5],[x+16,y+10.5,z+10.5],HULL2); if(s==='n') bx(g,[x+5.5,y+5.5,z],[x+10.5,y+10.5,z+5],HULL2); if(s==='s') bx(g,[x+5.5,y+5.5,z+11],[x+10.5,y+10.5,z+16],HULL2); } lq(g,[x+6.5,y+6.5,z+6.5],[x+9.5,y+9.5,z+9.5]); }
+  // one WebGL context for the whole page (browsers allow only a handful): a fixed transparent canvas draws each view into its own rectangle
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,ry:opts.ry!==undefined?opts.ry:Math.PI+.6,rx:opts.rx!==undefined?opts.rx:.45,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now(); let frame=0;
+  (function loop(now){ const t=reduce?1:(now-t0)/1000; if(!reduce||frame===0) drawLiquid(t); frame++;
+    const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag&&!v.opts.still) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  function battery(g,x,y,z,tier,fill,w,h,d){ // a canister battery used inside the chargers: frame colour by tier, a window with liquid
+    w=w||8; h=h||10; d=d||8; bx(g,[x,y,z],[x+w,y+h,z+d],HULL); bx(g,[x-.3,y,z-.3],[x+w+.3,y+1.2,z+d+.3],TIER[tier]); bx(g,[x-.3,y+h-1.2,z-.3],[x+w+.3,y+h,z+d+.3],TIER[tier]); bx(g,[x+1.5,y+1.5,z-.2],[x+w-1.5,y+h-1.5,z+.2],GLASS,false,.3); const f=lq(g,[x+1.8,y+1.8,z-.1],[x+w-1.8,y+h-1.8,z+.1]); f.scale.y=fill; f.position.y=y+1.8+(h-3.6)*fill/2; return f; }
+  // the Capsule battery (your pick) at x,y,z lying along x, 10 long; and the Cartridge cell (your pick)
+  function capsule(g,x,y,z,tier,fill){ const b=new THREE.Mesh(new THREE.CylinderGeometry(3,3,7,16),new THREE.MeshLambertMaterial({color:HULL})); b.position.set(x,y,z); b.rotation.z=Math.PI/2; g.add(b); for(const dx of [-3.5,3.5]){ const s=new THREE.Mesh(new THREE.SphereGeometry(3,16,12),new THREE.MeshLambertMaterial({color:TIER[tier]})); s.position.set(x+dx,y,z); g.add(s); }
+    for(let k=0;k<=tier;k++) ring(g,[x-2+k*(4/Math.max(1,tier)),y,z],'x',3.15,.25,TIER[tier]); bx(g,[x-2.8,y+2.4,z-1],[x+2.8,y+3.2,z+1],GLASS,false,.3); const f=lq(g,[x-2.6,y+2.5,z-.8],[x+2.6,y+3.1,z+.8]); f.scale.x=fill; f.position.x=x-2.6+5.2*fill/2; return f; }
+  function cartridge(g,x,y,z,tier,fill){ bx(g,[x-3,y,z-2],[x+3,y+11,z+2],HULL); bx(g,[x-3.2,y+9,z-2.2],[x+3.2,y+11,z+2.2],TIER[tier]); for(const dx of [-2,0,2]) bx(g,[x+dx-.5,y-1,z-1],[x+dx+.5,y,z+1],COPPER); bx(g,[x-2,y+1,z-2.2],[x+2,y+8.5,z-1.8],GLASS,false,.3); const f=lq(g,[x-1.6,y+1.3,z-2.3],[x+1.6,y+8.2,z-1.7]); f.scale.y=fill; f.position.y=y+1.3+6.9*fill/2; return f; }
+  // ---------------- 1. chargers: the item sits inside
+  const CH={
+    a(g){ // Open Cradle (AE2-like): a U-shaped frame open to the front and top; the capsule floats between two contact plates, a lit band on each
+      bx(g,[0,0,0],[16,2,16],HULL2); bx(g,[0,2,12],[16,16,16],HULL2); bx(g,[0,2,4],[3,11,16],HULL2); bx(g,[13,2,4],[16,11,16],HULL2); bx(g,[3,13,8],[13,15,14],HULL2); for(const x of [1,14]) bx(g,[x,11,8],[x+1,15,14],TRIM);
+      bx(g,[4,2,4],[12,3,12],TRIM); bx(g,[4,12,4],[12,13,12],TRIM); const bands=[bx(g,[4,3,4],[12,3.6,12],ION,true),bx(g,[4,11.4,4],[12,12,12],ION,true)];
+      cable(g,-16,0,0,['w','e']); flange(g,[.5,8,8],'x',2.2,TRIM); pipe(g,[0,8,8],[2.5,8,8],1.4,TRIM); for(const z of [5,11]) pipe(g,[1.5,8,z],[1.5,13,z],.7,COPPER); const f=capsule(g,8,7.5,8,2,.4);
+      return t=>{ const k=(t*.08)%1; f.scale.x=Math.max(.02,k); f.position.x=8-2.6+5.2*k/2; bands.forEach((b,i)=>b.material.color.setHex(ION).multiplyScalar(.4+.6*Math.max(0,Math.sin(t*3+i*Math.PI)))); }; },
+    b(g){ // Clamp Bay: a block with a recessed bay in its front; the capsule slides in and two clamps close on its ends; a window strip above the bay shows the fill
+      bx(g,[0,0,0],[16,16,16],HULL); bx(g,[2,3,-.2],[14,11,9],HULL2); bx(g,[2.5,3.5,-.4],[13.5,10.5,8.5],0x0c0e12); const clamps=[bx(g,[2.5,4,2],[4.5,10,8],TRIM),bx(g,[11.5,4,2],[13.5,10,8],TRIM)];
+      bx(g,[3,12,-.3],[13,13.5,.3],GLASS,false,.3); const strip=lq(g,[3.3,12.2,-.2],[12.7,13.3,.2]); cable(g,-16,0,0,['w','e']); flange(g,[.3,8,8],'x',2.2,TRIM); for(const [px,pz] of [[1,13],[14,13]]) bx(g,[px,1,pz],[px+1,15,pz+1],MID);
+      const f=capsule(g,8,7,4.5,2,.5); const lamp=bx(g,[13.6,13.6,-.3],[15,15,.1],ION,true);
+      return t=>{ const k=(t*.08)%1; f.scale.x=Math.max(.02,k); f.position.x=8-2.6+5.2*k/2; strip.scale.x=Math.max(.02,k); strip.position.x=3.3+9.4*k/2; const c=.8+.6*Math.max(0,Math.sin(t*1.5)); clamps[0].position.x=3.5+c; clamps[1].position.x=12.5-c; lamp.material.color.setHex(ION).multiplyScalar(.5+.5*Math.sin(t*4)); }; },
+    c(g){ // Coil Chamber: an open cage of four posts with a copper coil that spins slowly around the capsule; the plasma feed enters the base and rises through the coil
+      bx(g,[1,0,1],[15,2,15],HULL2); bx(g,[1,14,1],[15,16,15],HULL2); for(const [px,pz] of [[1,1],[13,1],[1,13],[13,13]]) bx(g,[px,2,pz],[px+2,14,pz+2],TRIM); cable(g,-16,0,0,['w','e']); flange(g,[.5,8,8],'x',2.2,TRIM); pipe(g,[0,8,8],[2,8,8],1.4,TRIM); pipe(g,[2,8,8],[2,2,8],1.4,TRIM);
+      const coil=new THREE.Group(); coil.position.set(8,8,8); g.add(coil); let prev=null; for(let i=0;i<=40;i++){ const a=i/40*Math.PI*6, p=[Math.cos(a)*5.2,-4+i*.2,Math.sin(a)*5.2]; if(prev) pipe(coil,prev,p,.45,COPPER); prev=p; }
+      const f=capsule(g,8,8,8,2,.6); const glow=[]; for(let i=0;i<3;i++) glow.push(bx(g,[-.5,-.5,-.5],[.5,.5,.5],0xd8f1ff,true));
+      return t=>{ coil.rotation.y=t*.6; const k=(t*.08)%1; f.scale.x=Math.max(.02,k); f.position.x=8-2.6+5.2*k/2; glow.forEach((s,i)=>{ const q=((t*.4+i/3)%1), a=q*Math.PI*6+t*.6; s.position.set(8+Math.cos(a)*5.2,4+q*8,8+Math.sin(a)*5.2); }); }; } };
+  // ---------------- 2. emitters: tricorders with a cartridge slot (item scale ~ 14 px tall)
+  function screen(g,f,t){ bx(g,f,t,0x0c0e12); const s=lq(g,[f[0]+.4,f[1]+.4,f[2]+.4],[t[0]-.4,t[1]-.4,t[2]-.4],.9); return s; }
+  const EM={
+    a(g){ // Flip-top: a rectangular body with a lid hinged at the back standing open, a display inside the lid, a dial grid on the body, the cartridge in a slot on the right side
+      bx(g,[2,0,5],[14,5,13],HULL); bx(g,[2,0,5],[14,.6,13],TIER[0]); for(const [x,z] of [[4,7],[7,7],[10,7],[4,10],[7,10]]) bx(g,[x,5,z],[x+2,5.8,z+2],TRIM); const lamp=bx(g,[10,5,10],[12,6,12],ION,true);
+      const lid=new THREE.Group(); lid.position.set(8,5,13); lid.rotation.x=-1.15; g.add(lid); bx(lid,[-6,0,-.8],[6,9,.8],HULL2); screen(lid,[-5,1,-1],[5,8,-.7]); const slot=bx(g,[13,.5,7],[14.4,4.6,11],HULL2); cartridge(g,15.2,.6,9,1,.7).parent.children.slice(-5).forEach(m=>{ m.rotation.z=0; }); // the cell standing in the side slot
+      return t=>{ lamp.material.color.setHex(ION).multiplyScalar(.5+.5*Math.sin(t*3)); }; },
+    b(g){ // Slab: a flat hand terminal held in the palm, a wide display across the top half, three pads below, the cartridge pushed into the bottom edge like a magazine
+      bx(g,[3,0,6],[13,16,9],HULL); bx(g,[3,0,6],[13,16,6.4],TIER[0]); screen(g,[4,8.5,5.8],[12,15,6.2]); for(const x of [4,7.3,10.6]) bx(g,[x,5.5,5.7],[x+2.4,7.5,6.1],TRIM); const lamp=bx(g,[4,3,5.7],[6,4,6.1],ION,true);
+      const cell=new THREE.Group(); cell.position.set(8,-7,7.5); g.add(cell); cartridge(cell,0,0,0,1,.7); bx(g,[4,-.5,6.2],[12,.5,8.8],HULL2); // the magazine lip
+      return t=>{ lamp.material.color.setHex(ION).multiplyScalar(.5+.5*Math.sin(t*3)); }; },
+    c(g){ // Grip: a pistol-grip scanner, the display on top facing the user, a sensor head at the front, the cartridge clipped into the grip from below
+      bx(g,[2,8,4],[14,12,12],HULL); bx(g,[2,8,4],[14,8.5,12],TIER[0]); screen(g,[3,12,5],[9,12.4,11]); const head=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,2,16),new THREE.MeshLambertMaterial({color:TRIM})); head.position.set(15,10,8); head.rotation.z=Math.PI/2; g.add(head); const eye=bx(g,[15.8,9,7],[16.4,11,9],ION,true);
+      bx(g,[5,1,6],[9,8,10],HULL2); bx(g,[9,5.5,6.5],[11,7,9.5],TRIM); const cell=new THREE.Group(); cell.position.set(7,-6,8); g.add(cell); cartridge(cell,0,0,0,1,.7);
+      return t=>{ eye.material.color.setHex(ION).multiplyScalar(.5+.5*Math.sin(t*3)); }; } };
+  // ---------------- 4. aura cubes: totem in the middle, Fortify radius 5 (11 wide) and Healing radius 8 (17 wide), in blocks (x16 here is too big; use 1 unit = 1 block at scale 4)
+  function auraTotem(g){ const s=new THREE.Group(); s.scale.setScalar(.25); g.add(s); totem(s,-8,0,-8); bx(g,[-.5,-1,-.5],[.5,0,.5],HULL2); }
+  const AU={
+    a(g){ // Wire Edges: the twelve edges of each cube as glowing lines, faces almost clear, a corner tick at each vertex
+      auraTotem(g); const out=[]; for(const [r,c] of [[5,0xffd23a],[8,0x19d3b0]]){ const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2*r+1,2*r+1,2*r+1)),new THREE.LineBasicMaterial({color:c,transparent:true,opacity:.9})); e.position.set(0,.5,0); g.add(e); const f=bx(g,[-r-.5,-r,-r-.5],[r+.5,r+1,r+.5],c,true,.05); out.push(e); }
+      return t=>out.forEach((e,i)=>e.material.opacity=.6+.4*Math.sin(t*2+i)); },
+    b(g){ // Face Grid: translucent faces with a one-block grid on them and corner posts, so distances can be counted on the wall
+      auraTotem(g); const grids=[]; for(const [r,c] of [[5,0xffd23a],[8,0x19d3b0]]){ const n=2*r+1; bx(g,[-r-.5,-r,-r-.5],[r+.5,r+1,r+.5],c,true,.07); const gh=new THREE.GridHelper(n,n,c,c); gh.material.transparent=true; gh.material.opacity=.35; for(const [rx,rz,px,py,pz] of [[0,0,0,-r,0],[0,0,0,r+1,0],[Math.PI/2,0,0,.5,-r-.5],[Math.PI/2,0,0,.5,r+.5],[0,Math.PI/2,-r-.5,.5,0],[0,Math.PI/2,r+.5,.5,0]]){ const h=gh.clone(); h.rotation.set(rx,0,rz); h.position.set(px,py,pz); g.add(h); grids.push(h); }
+        for(const [x,z] of [[-r-.5,-r-.5],[r+.5,-r-.5],[-r-.5,r+.5],[r+.5,r+.5]]) bx(g,[x-.15,-r,z-.15],[x+.15,r+1,z+.15],c,true,.8); }
+      return t=>grids.forEach((h,i)=>h.material.opacity=.25+.15*Math.sin(t*1.5+i*.3)); },
+    c(g){ // Ground Outline: only the footprint on the ground and four thin corner beams; the top is left open so the view stays clear
+      auraTotem(g); const beams=[]; for(const [r,c] of [[5,0xffd23a],[8,0x19d3b0]]){ const n=2*r+1; bx(g,[-r-.5,-r-.05,-r-.5],[r+.5,-r+.1,r+.5],c,true,.18); const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(n,n)),new THREE.LineBasicMaterial({color:c})); e.rotation.x=-Math.PI/2; e.position.set(0,-r+.12,0); g.add(e);
+        for(const [x,z] of [[-r-.5,-r-.5],[r+.5,-r-.5],[-r-.5,r+.5],[r+.5,r+.5]]) beams.push(bx(g,[x-.12,-r,z-.12],[x+.12,r+1,z+.12],c,true,.6)); }
+      return t=>beams.forEach((b,i)=>b.material.opacity=.35+.35*Math.max(0,Math.sin(t*2-i*.4))); } };
+  cards('chargers',[['A. Open Cradle','A U-shaped frame open at the front and top; the battery floats between two contact plates whose bands pulse as it fills. The AE2 feel: you see the item held in the machine.',CH.a],
+    ['B. Clamp Bay','A full block with a bay cut into its front; the battery slides in and two clamps close on its ends. A window strip above the bay shows the fill from a distance.',CH.b],
+    ['C. Coil Chamber','An open cage of four posts with a copper coil turning slowly around the battery; motes of plasma climb the coil as it charges.',CH.c]],{dist:70,target:[8,7,8],ry:Math.PI-.4,rx:.5});
+  cards('emitters',[['A. Flip-top','A body with a lid that stands open, the display in the lid, a row of dials on the body, and the cartridge standing in a slot on the right side.',EM.a],
+    ['B. Slab','A flat hand terminal: a wide display on the top half, three pads below, and the cartridge pushed into the bottom edge like a magazine into a grip.',EM.b],
+    ['C. Grip','A pistol-grip scanner with the display on top facing you and a sensor head at the front; the cartridge clips into the grip from below.',EM.c]],{dist:62,target:[8,6,8],rx:.3});
+  cards('auras',[['A. Wire Edges','The twelve edges of each cube drawn as glowing lines, faces almost clear. Lightest on the eye; the edges give the exact size.',AU.a],
+    ['B. Face Grid','Translucent faces with a one-block grid on every wall and corner posts, so a player can count blocks to the edge from inside.',AU.b],
+    ['C. Ground Outline','Only the footprint on the ground and four thin corner beams; the top stays open so the sky and the base stay visible.',AU.c]],{dist:70,target:[0,2,0],rx:.35});
+
+  // ---------------- 3. access tab mocks
+  const PEOPLE=[['Steve',true,true],['Alex',false,true],['Kai',true,false]];
+  const sw=(on,label,i,k)=>'<button type="button" class="hb'+(on?' go':'')+'" data-i="'+i+'" data-k="'+k+'">'+label+'</button>';
+  const head=t=>'<div class="top"><span>SHATTER TOTEM</span><span class="tabs"><button type="button" class="tab">TOTEM</button><button type="button" class="tab on">ACCESS</button><button type="button" class="tab">CHUNKS</button></span></div>';
+  function drawAc(){
+    el('acA').innerHTML=head()+'<div class="row" style="display:flex;gap:6px;align-items:center"><span class="hb" style="flex:1;color:#566070">Online player name</span><button type="button" class="hb go">Add</button></div><table class="pw"><thead><tr><th>Player</th><th>Upgrade</th><th>Trusted</th><th></th></tr></thead><tbody>'+PEOPLE.map((p,i)=>'<tr><td>'+p[0]+'</td><td>'+sw(p[1],p[1]?'YES':'no',i,1)+'</td><td>'+sw(p[2],p[2]?'YES':'no',i,2)+'</td><td><button type="button" class="hb" data-x="'+i+'">x</button></td></tr>').join('')+'</tbody></table><small>'+PEOPLE.length+' of 8. Cleared if the totem is stolen.</small>';
+    el('acB').innerHTML=head()+'<div class="two">'+[['UPGRADERS',1],['TRUSTED',2]].map(([title,k])=>'<div class="col grow"><small>'+title+'</small><div class="row" style="display:flex;gap:6px"><span class="hb" style="flex:1;color:#566070">name</span><button type="button" class="hb go">Add</button></div>'+PEOPLE.filter(p=>p[k]).map(p=>'<div class="row" style="display:flex;justify-content:space-between;border-top:2px solid var(--h-dim);padding-top:4px"><span>'+p[0]+'</span><button type="button" class="hb" data-x="'+PEOPLE.indexOf(p)+'" data-k="'+k+'">x</button></div>').join('')+'</div>').join('')+'</div><small>Upgraders buy upgrades and change chunks and projectors. Trusted players pass Alarm and Ward and open the plasma machines.</small>';
+    el('acC').innerHTML=head()+'<div class="two"><div class="slots" style="grid-template-columns:repeat(3,34px)">'+Array.from({length:9},(_,i)=>'<div class="sl">'+(i<PEOPLE.length?'<b>'+PEOPLE[i][0].slice(0,2).toUpperCase()+'</b>':'')+'</div>').join('')+'</div><div class="col grow"><table class="pw"><thead><tr><th>Card</th><th>Upgrade</th><th>Trusted</th></tr></thead><tbody>'+PEOPLE.map((p,i)=>'<tr><td>'+p[0]+'</td><td>'+sw(p[1],p[1]?'YES':'no',i,1)+'</td><td>'+sw(p[2],p[2]?'YES':'no',i,2)+'</td></tr>').join('')+'</tbody></table><small>Right-click the totem holding a blank card to bind it to a name, then drop it in a slot.</small></div></div>';
+    el('aur').innerHTML='<div class="top"><span>SHATTER TOTEM  TIER III</span><span class="tabs"><button type="button" class="tab" id="aurbtn">AURAS: '+(auras?'SHOWN':'HIDDEN')+'</button><button type="button" class="tab on">TOTEM</button><button type="button" class="tab">ACCESS</button></span></div><small>The switch sits in the header beside the tabs. It is a setting for you only; the same switch is in the mod\'s config screen, with a keybind.</small>';
+    document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const p=PEOPLE[+b.dataset.i]; p[+b.dataset.k]=!p[+b.dataset.k]; drawAc(); });
+    document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{ if(b.dataset.k){ PEOPLE[+b.dataset.x][+b.dataset.k]=false; } else PEOPLE.splice(+b.dataset.x,1); drawAc(); });
+    el('aurbtn').onclick=()=>{ auras=!auras; drawAc(); }; }
+  let auras=true; drawAc();
+})();
+</script>

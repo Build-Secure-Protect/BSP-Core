@@ -1,0 +1,27 @@
+{
+  "name": "The Newer Powers",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:ender_eye",
+  "sortnum": 10,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Five powers added with the plasma rework. Auras are now cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Bouncy$() (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.$(br2)$(l)X-ray$() (Carried, after Night Sight, Tier V): press its key and ores, containers and spawners within range show through the blocks for a while, fading with depth; then it recharges.",
+      "title": "Carried"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Cloaking$() (Base, Walls path after Deadlock, Tier IV): outsiders see the land as it was when the cloak came on, not what is inside the cube. Uses 50 mB/t of the totem's plasma output.$(br2)$(l)Recall$() (Base, Home path after Overclock, Tier V): when your totem is being stolen, a card above the hotbar offers to bring you back to within its distance of the totem. Twenty seconds to decide, ten minutes' rest after.",
+      "title": "Base"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Recall Block$() (Raid, after Shroud, Tier IV): with it on the totem in your offhand while you steal, the owner's Recall offer comes later, on top of Shroud.",
+      "title": "Raid"
+    }
+  ]
+}

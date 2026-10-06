@@ -1,0 +1,293 @@
+<title>Wave Plasma Round 3</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Round 3: liquid plasma, detailed drum, pipe interfaces, then chargers, batteries, cells and the emitter. One WebGL context draws every view.
+   Each block gets three 3D concepts; the projector screen gets three working mocks. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/9; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl select{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.tabs{ display:flex; gap:4px; } .tab{ font:inherit; font-size:10px; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 8px; cursor:pointer; } .tab.on{ color:var(--h-tq); border-color:var(--h-tq); }
+.two{ display:flex; gap:12px; align-items:flex-start; } .col{ display:flex; flex-direction:column; gap:8px; min-width:0; } .grow{ flex:1; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); }
+.pw{ width:100%; border-collapse:collapse; } .pw th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 2px 0; } .pw td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; } .pw tr.off td{ color:#566070; }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb[disabled]{ color:#566070; cursor:default; }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-tq); }
+.g{ display:grid; grid-template-columns:repeat(7,var(--s,22px)); grid-auto-rows:var(--s,22px); gap:2px; background:var(--h-slot); padding:3px; border:2px solid var(--h-dim); width:max-content; }
+.g i{ background:#2f6b2a; border:1px solid #0006; } .g i:nth-child(3n){ background:#57953a; } .g i:nth-child(5n){ background:#3f77c2; } .g i.on{ box-shadow:inset 0 0 0 2px var(--h-tq); } .g i.c{ box-shadow:inset 0 0 0 2px var(--h-vio); } .g i.out{ filter:brightness(.3); }
+.pips{ display:inline-flex; gap:3px; } .pips i{ width:9px; height:9px; background:var(--h-slot); border:1px solid var(--h-dim); box-sizing:border-box; } .pips i.on{ background:var(--h-tq); border-color:var(--h-tq); } .pips i.free{ border-color:var(--h-tq); }
+.chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ border:2px solid var(--k); color:var(--k); padding:2px 6px; background:var(--h-slot); } .chip.off{ --k:var(--h-dim); color:#566070; }
+.sw{ display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:6px; border:1px solid #0008; }
+.sock{ display:flex; gap:4px; } .sock i{ width:20px; height:20px; border:2px solid var(--h-dim); background:var(--h-slot); } .sock i.on{ border-color:var(--h-tq); }
+</style>
+<div class="wrap">
+<section><h1>Wave Plasma Round 3</h1>
+<p class="lede">Your picks applied: ion-blue plasma that moves like a liquid, the Vortex Drum extractor with windows, three new pipe-routing interfaces, a subtler pump. Then the next group: the Battery Charger, Plasma Batteries, Power Cells and the Wave Emitter, with their screen, numbers and recipes. Drag any 3D view to turn it.</p></section>
+
+<section><h2>1. The plasma itself</h2>
+<div class="card"><div class="view wide" id="liquid"></div><p>Ion blue, drawn as a moving liquid: a shifting pattern of deep blue, ion blue and a bright core, like water with light in it. In game this is an animated fluid texture (16 x 16, 32 frames) used in tanks, pipes, windows and screens. Left: a tank of it. Right: a cable carrying it.</p></div>
+</section>
+
+<section><h2>2. Plasma Extractor: Vortex Drum, detailed</h2>
+<p class="lede">The drum rebuilt with more going on: a bolted top collar with four intake pipes up to the totem, ribbed drum bands, four round portholes showing the plasma swirling, a gauge, outlet flanges with valve handles on each face, and a bottom manifold that the next drum's intakes meet. Two stacked under a totem.</p>
+<div class="card" style="max-width:520px"><div class="view" id="drum"></div><p>The swirl turns faster as the drum fills. The portholes are the fill gauge: the top one only lights when the drum is nearly full.</p></div>
+</section>
+
+<section><h2>3. Plasma Interface: three pipe-routing designs</h2>
+<p class="lede">Each block is a nest of pipes stepping down in size: a large trunk takes the plasma from the extractor, branches split it, and small nozzles on the outer faces are where cables plug in. Joined blocks share their trunks. Shown: four blocks on one extractor.</p>
+<div class="grid3" id="interfaces"></div>
+</section>
+
+<section><h2>4. Plasma Repeater: pump, subtler</h2>
+<div class="card" style="max-width:420px"><div class="view" id="rep"></div><p>The rings swell by a third as much as before and travel a little; the wave reads as pumping without jumping.</p></div>
+</section>
+
+<section><h2>5. Battery Charger</h2>
+<p class="lede">A block fed by Plasma Cable from an interface. A Plasma Battery or Power Cell goes in; it fills with plasma and is stamped with the powers chosen on the charger's screen, from those the interface offers. Three designs.</p>
+<div class="grid3" id="chargers"></div>
+</section>
+
+<section><h2>6. Plasma Batteries (four tiers)</h2>
+<p class="lede">A battery is a plasma tank that also holds powers. Placed on an extractor instead of a totem, it feeds the interface like a totem would, until it runs dry. Three design families, each shown in its four tiers: Tetrium, Magnatite, Illyrium, Charged Illyrium.</p>
+<div class="grid3" id="batteries"></div>
+</section>
+
+<section><h2>7. Power Cells and the Wave Emitter</h2>
+<p class="lede">A Power Cell is a small battery for carrying: charged the same way, it holds one, two or three powers by tier. The Wave Emitter is the held device that runs on a cell and gives its carrier those powers, as if they carried the totem. Three designs for each; the emitter is shown with a cell fitted.</p>
+<div class="grid3" id="cells"></div>
+<div class="grid3" id="emitters"></div>
+</section>
+
+<section><h2>8. The Battery Charger screen</h2>
+<p class="lede">One screen, in the Holo style. Click the powers to stamp them; the count allowed depends on what is in the slot.</p>
+<div class="card ctl"><label for="what">In the slot <select id="what"><option value="b1">Plasma Battery I (plasma only)</option><option value="b2" selected>Plasma Battery II (2 powers)</option><option value="b3">Plasma Battery III (3 powers)</option><option value="b4">Plasma Battery IV (4 powers)</option><option value="c1">Power Cell I (1 power)</option><option value="c3">Power Cell III (3 powers)</option></select></label></div>
+<div class="card"><div class="scroll"><div class="hud" style="width:540px" id="chg"></div></div><p>Left: the charger's own tank and the item filling. Right: the powers the interface offers, with a STAMP switch each, up to the item's limit. A stamped power is kept in the item until it is emptied and charged again.</p></div>
+</section>
+
+<section><h2>9. Numbers (proposed)</h2>
+<div class="card"><h3>Batteries</h3><div class="scroll"><table class="t"><thead><tr><th>Tier</th><th>Holds</th><th>Powers</th><th>Feeds an extractor at</th><th>Runs for</th></tr></thead><tbody>
+<tr><td>I Tetrium</td><td class="num">40,000 mB</td><td>plasma only</td><td class="num">100 mB/t</td><td class="num">20 s</td></tr>
+<tr><td>II Magnatite</td><td class="num">200,000 mB</td><td>2</td><td class="num">100 mB/t</td><td class="num">1 min 40 s</td></tr>
+<tr><td>III Illyrium</td><td class="num">1,000,000 mB</td><td>3</td><td class="num">100 mB/t</td><td class="num">8 min 20 s</td></tr>
+<tr><td>IV Charged Illyrium</td><td class="num">5,000,000 mB</td><td>4</td><td class="num">100 mB/t</td><td class="num">41 min</td></tr>
+</tbody></table></div><p>A battery feeds at the base totem rate, so a Tier IV keeps one projector running for most of an hour after a totem is stolen. Several batteries on several extractors add up. A battery keeps its stamped powers at the level the totem had when it was charged. Charging takes as long as the plasma takes to flow in: a Tier IV from one Tier I totem is 8 hours, so the Output upgrade matters here.</p></div>
+<div class="card"><h3>Power Cells and the Emitter</h3><div class="scroll"><table class="t"><thead><tr><th>Cell</th><th>Holds</th><th>Powers</th><th>Emitter runs for</th></tr></thead><tbody>
+<tr><td>I</td><td class="num">8,000 mB</td><td>1</td><td class="num">6 min 40 s</td></tr>
+<tr><td>II</td><td class="num">24,000 mB</td><td>2</td><td class="num">20 min</td></tr>
+<tr><td>III</td><td class="num">60,000 mB</td><td>3</td><td class="num">50 min</td></tr>
+</tbody></table></div><p>The emitter draws 20 mB/t while switched on (right-click to switch; it is off in the inventory, on in the offhand only). It gives its carrier the stamped powers at their stamped level, as the totem's Carried powers work today. A cell can only hold Carried powers (Damage, Resistance, Mining Speed, Swiftness, Vitality, Featherfall, Night Sight, and the new ones); Base powers stay with batteries.</p></div>
+<div class="card"><h3>Charged Resonance Crystal</h3><p>Every battery and cell needs Resonance Crystals magnetised in the Magnetic Centrifuge: a new job, one Resonance Crystal and one Magnatite Nugget in, one Charged Resonance Crystal out, 30 seconds a try, quicker with more layers like the other jobs.</p></div>
+</section>
+
+<section><h2>10. Recipes (proposed)</h2>
+<div class="card"><div class="rec"><div class="rc"><i>Slag Brick</i><i>Copper Tetrium Coil</i><i>Slag Brick</i><i>Tetrium Core Cable</i><i>Machine Chassis</i><i>Tetrium Core Cable</i><i>Tetrium Plate</i><i>Basic Control Circuit</i><i>Tetrium Plate</i></div><span class="arrow">&rarr;</span><span class="out">Battery Charger</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Illyrium Tank Glass</i><i>Tetrium Plate</i><i>Charged Resonance Crystal</i><i>Carbon Dust</i><i>Charged Resonance Crystal</i><i>Slag Brick</i><i>Copper Tetrium Coil</i><i>Slag Brick</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Battery I</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Magnatite Ingot</i><i>Charged Resonance Crystal</i><i>Magnatite Ingot</i><i>Illyrium Tank Glass</i><i>Plasma Battery I</i><i>Illyrium Tank Glass</i><i>Magnatite Ingot</i><i>Nether Quartz</i><i>Magnatite Ingot</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Battery II</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Illyrium Ingot</i><i>Charged Resonance Crystal</i><i>Illyrium Ingot</i><i>Illyrium Tank Glass</i><i>Plasma Battery II</i><i>Illyrium Tank Glass</i><i>Illyrium Ingot</i><i>Ender Pearl</i><i>Illyrium Ingot</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Battery III</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Charged Magnatite Ingot</i><i>Charged Resonance Crystal</i><i>Charged Magnatite Ingot</i><i>Illyrium Tank Glass</i><i>Plasma Battery III</i><i>Illyrium Tank Glass</i><i>Netherite Ingot</i><i>Shulker Shell</i><i>Netherite Ingot</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Battery IV</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Carbon Dust</i><i>Charged Resonance Crystal</i><i>Carbon Dust</i><i>Tetrium Plate</i><i>Glass Bottle</i><i>Tetrium Plate</i><i>-</i><i>Copper Tetrium Coil</i><i>-</i></div><span class="arrow">&rarr;</span><span class="out">Power Cell I</span></div><p>Cell II: Magnatite Ingots around a Cell I with a Nether Quartz below. Cell III: Illyrium Ingots around a Cell II with an Ender Pearl below. Same pattern as the batteries, so the ladder is easy to remember.</p></div>
+<div class="card"><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Resonance Crystal</i><i>Tetrium Plate</i><i>Blaze Rod</i><i>Illyrium Processor</i><i>Blaze Rod</i><i>Carbon Dust</i><i>Charged Magnatite Ingot</i><i>Carbon Dust</i></div><span class="arrow">&rarr;</span><span class="out">Wave Emitter</span></div></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, el=id=>document.getElementById(id);
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}];
+  const TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,COPPER=0xc87a3c,GOLD=0xffd23a,GLASS=0x9fc5d8,ION=0x4fb8ff;
+  const TIER=[0x8a909c,0x6f5a7a,0x5fd0e8,0xbfe6ff];
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  // ---- the liquid: a 32x32 canvas redrawn each frame with layered value noise, ramped deep blue -> ion blue -> bright core
+  const LQ=32, lc=document.createElement('canvas'); lc.width=lc.height=LQ; const lx=lc.getContext('2d'), limg=lx.createImageData(LQ,LQ);
+  const liquid=new THREE.CanvasTexture(lc); liquid.magFilter=THREE.NearestFilter; liquid.minFilter=THREE.NearestFilter; liquid.wrapS=liquid.wrapT=THREE.RepeatWrapping;
+  const hash=(x,y,z)=>{ const n=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453; return n-Math.floor(n); };
+  function noise(x,y,z){ const i=Math.floor(x),j=Math.floor(y),k=Math.floor(z), u=x-i,v=y-j,w=z-k, f=t=>t*t*(3-2*t), fu=f(u),fv=f(v),fw=f(w);
+    const l=(a,b,t)=>a+(b-a)*t; return l(l(l(hash(i,j,k),hash(i+1,j,k),fu),l(hash(i,j+1,k),hash(i+1,j+1,k),fu),fv),l(l(hash(i,j,k+1),hash(i+1,j,k+1),fu),l(hash(i,j+1,k+1),hash(i+1,j+1,k+1),fu),fv),fw); }
+  const ramp=[[0x12,0x4f,0x9c],[0x4f,0xb8,0xff],[0xd8,0xf1,0xff]];
+  function drawLiquid(t){ const d=limg.data; for(let y=0;y<LQ;y++) for(let x=0;x<LQ;x++){ const nx=x/LQ*4, ny=y/LQ*4; const n=noise(nx,ny,t*.5)*.6+noise(nx*2.3+9,ny*2.3,t*.9)*.3+noise(nx*5,ny*5+3,t*1.6)*.1;
+      const v=Math.max(0,Math.min(.999,(n-.25)*1.9)); const s=v<.6?v/.6:(v-.6)/.4, a=v<.6?ramp[0]:ramp[1], b=v<.6?ramp[1]:ramp[2]; const i=(y*LQ+x)*4; d[i]=a[0]+(b[0]-a[0])*s; d[i+1]=a[1]+(b[1]-a[1])*s; d[i+2]=a[2]+(b[2]-a[2])*s; d[i+3]=255; }
+    lx.putImageData(limg,0,0); liquid.needsUpdate=true; }
+  const liqMat=(op)=>new THREE.MeshBasicMaterial({map:liquid,transparent:op!==undefined,opacity:op===undefined?1:op});
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function lq(g,f,t,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),liqMat(op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // a pipe from a to b (arrays), radius r; returns the mesh
+  function pipe(g,a,b,r,c,mat){ const A=new THREE.Vector3(...a), B=new THREE.Vector3(...b), d=B.clone().sub(A), len=d.length(); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,12),mat||new THREE.MeshLambertMaterial({color:c||TRIM}));
+    m.position.copy(A).add(B).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); g.add(m); return m; }
+  const flange=(g,p,axis,r,c)=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,1,14),new THREE.MeshLambertMaterial({color:c||MID})); m.position.set(...p); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; };
+  const ring=(g,p,axis,R,r,c)=>{ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshLambertMaterial({color:c||COPPER})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; };
+  function totem(g,ox,oy,oz){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); root.position.set(ox||0,oy||0,oz||0); g.add(root); const mat=new THREE.MeshLambertMaterial({map:tex,alphaTest:.5});
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); } else { m.position.set(c[0],c[1],c[2]); root.add(m); } } }
+  function cable(g,x,y,z,sides){ bx(g,[x+5,y+5,z+5],[x+11,y+11,z+11],HULL2); for(const s of sides){ if(s==='w') bx(g,[x,y+5.5,z+5.5],[x+5,y+10.5,z+10.5],HULL2); if(s==='e') bx(g,[x+11,y+5.5,z+5.5],[x+16,y+10.5,z+10.5],HULL2); if(s==='n') bx(g,[x+5.5,y+5.5,z],[x+10.5,y+10.5,z+5],HULL2); if(s==='s') bx(g,[x+5.5,y+5.5,z+11],[x+10.5,y+10.5,z+16],HULL2); } lq(g,[x+6.5,y+6.5,z+6.5],[x+9.5,y+9.5,z+9.5]); }
+  // ---------------- 1. the plasma: a tank and a cable section
+  function liquidDemo(g){ for(const [px,pz] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[px,0,pz],[px+2,16,pz+2],TRIM); bx(g,[0,0,0],[16,2,16],HULL2); bx(g,[0,14,0],[16,16,16],HULL2); bx(g,[2,2,2],[14,14,14],GLASS,false,.18); const f=lq(g,[2.5,2.5,2.5],[13.5,11.5,13.5]);
+    for(let i=0;i<4;i++) cable(g,28+i*16,0,0,['w','e']); bx(g,[44,2,2],[60,14,14],HULL,false,0); // spacer
+    const open=bx(g,[52,4,4],[76,12,12],HULL2); lq(g,[52.5,5.5,5.5],[75.5,10.5,10.5]); open.visible=false; lq(g,[52,5.5,5.5],[76,10.5,10.5]);
+    return t=>{ f.scale.y=.95+.05*Math.sin(t*1.3); }; }
+  // ---------------- 2. the vortex drum, detailed (block x..x+16, y..y+16)
+  function drum(g,x,y,z,top){ const cx=x+8, cz=z+8; const body=new THREE.Mesh(new THREE.CylinderGeometry(7,7,12,28),new THREE.MeshLambertMaterial({color:HULL})); body.position.set(cx,y+8,cz); g.add(body);
+    for(const yy of [y+3.5,y+8,y+12.5]) ring(g,[cx,yy,cz],'y',7.1,.45,MID); // ribs
+    const inner=new THREE.Mesh(new THREE.CylinderGeometry(6.4,6.4,11,28),liqMat()); inner.position.set(cx,y+8,cz); g.add(inner); // the plasma, seen through the portholes
+    const vanes=new THREE.Group(); vanes.position.set(cx,y+8,cz); g.add(vanes); for(let i=0;i<3;i++){ const v=bx(vanes,[-.4,-5,-5.8],[.4,5,5.8],0xd8f1ff,true,.5); v.rotation.y=i*Math.PI/3; }
+    const ports=[]; for(let i=0;i<4;i++){ const a=i*Math.PI/2+Math.PI/4, px=cx+Math.cos(a)*7, pz=cz+Math.sin(a)*7; const fr=new THREE.Mesh(new THREE.TorusGeometry(2.1,.5,8,20),new THREE.MeshLambertMaterial({color:COPPER})); fr.position.set(px,y+8,pz); fr.rotation.y=-a; g.add(fr);
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,.6,16),new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:.35})); w.position.set(px,y+8,pz); w.rotation.z=Math.PI/2; w.rotation.y=-a; g.add(w); ports.push(w); }
+    // outlet flanges with valve handles on the four faces
+    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){ const fx=cx+dx*7.8, fz=cz+dz*7.8; flange(g,[fx,y+4.2,fz],dx?'x':'z',2.2,TRIM); flange(g,[cx+dx*7.5,y+4.2,cz+dz*7.5],dx?'x':'z',1.4,HULL2); const h=ring(g,[cx+dx*8.2,y+4.2,cz+dz*8.2],dx?'x':'z',1.1,.25,COPPER); }
+    // top collar, bolts, four intake pipes rising to the block above; bottom manifold
+    bx(g,[x+1,y+13,z+1],[x+15,y+15,z+15],HULL2); for(const [px,pz] of [[2,2],[13,2],[2,13],[13,13]]) bx(g,[x+px,y+15,z+pz],[x+px+1,y+15.6,z+pz+1],TRIM);
+    for(const [px,pz] of [[4,4],[12,4],[4,12],[12,12]]) pipe(g,[x+px,y+13,z+pz],[x+px,y+16,z+pz],1,TRIM); pipe(g,[cx,y+14,cz],[cx,y+16,cz],1.6,MID);
+    bx(g,[x+1,y+.6,z+1],[x+15,y+2.4,z+15],HULL2); for(const [px,pz] of [[4,4],[12,4],[4,12],[12,12]]) pipe(g,[x+px,y,z+pz],[x+px,y+2.4,z+pz],1,TRIM);
+    const dial=bx(g,[cx-1.6,y+10.2,z-.2],[cx+1.6,y+12.6,z+.3],0xe8eaf0,true); const needle=bx(g,[cx-.1,y+10.8,z-.4],[cx+.1,y+12.2,z-.1],0x10151c,true);
+    return {inner,vanes,ports,needle,y}; }
+  function drumBuild(g){ const d=[drum(g,0,-16,0,true),drum(g,0,-32,0,false)]; totem(g,0,0,0);
+    return t=>{ d.forEach((k,i)=>{ const fill=i===0?.85:.4+.05*Math.sin(t); k.inner.scale.y=fill; k.inner.position.y=k.y+2.5+5.5*fill; k.vanes.rotation.y=t*(.6+fill*1.5); k.vanes.scale.y=fill; k.vanes.position.y=k.y+2.5+5.5*fill; k.needle.rotation.z=-.8+1.2*fill+.05*Math.sin(t*6); k.ports.forEach(p=>p.material.opacity=.15+.45*fill); }); }; }
+  // ---------------- 3. interface pipe designs (2x2 on the east of an extractor at x -16..0)
+  function cageCorners(g,x,z){ for(const [px,pz] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[x+px,-16,z+pz],[x+px+2,0,z+pz+2],HULL2); bx(g,[x,-16,z],[x+16,-15,z+16],HULL2); bx(g,[x,-1,z],[x+16,0,z+16],HULL2); }
+  const cells=[[0,0],[16,0],[0,16],[16,16]], has=(x,z)=>cells.some(c=>c[0]===x&&c[1]===z);
+  function nozzles(g){ for(const [x,z] of cells) for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]) if(!has(x+dx*16,z+dz*16)){ const o=[x+8+dx*7.5,-8,z+8+dz*7.5]; flange(g,o,dx?'x':'z',1.8,TRIM); flange(g,[x+8+dx*7.9,-8,z+8+dz*7.9],dx?'x':'z',1.1,HULL); } }
+  const IF={
+    a(g){ // Trunk and Branches: one 5 px trunk runs through the joined blocks; 2.5 px branches tee off to the outer nozzles; flanges at every joint, a valve wheel per block
+      cells.forEach(([x,z])=>cageCorners(g,x,z)); const trunk=liqMat(); pipe(g,[-2,-8,8],[32,-8,8],2.6,0,trunk); pipe(g,[-2,-8,8],[32,-8,8],3,TRIM); pipe(g,[8,-8,8],[8,-8,24],3,TRIM); pipe(g,[24,-8,8],[24,-8,24],3,TRIM);
+      for(const p of [[8,-8,8],[24,-8,8],[8,-8,24],[24,-8,24]]) { const s=new THREE.Mesh(new THREE.SphereGeometry(3.6,14,10),new THREE.MeshLambertMaterial({color:MID})); s.position.set(...p); g.add(s); }
+      for(const [x,z] of cells){ const c=[x+8,-8,z+8]; for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]) if(!has(x+dx*16,z+dz*16)){ pipe(g,c,[c[0]+dx*7.5,-8,c[2]+dz*7.5],1.5,TRIM); flange(g,[c[0]+dx*4.5,-8,c[2]+dz*4.5],dx?'x':'z',2,MID); } }
+      const wheels=[]; for(const [x,z] of cells){ pipe(g,[x+8,-8,z+8],[x+8,-2.5,z+8],1.2,TRIM); wheels.push(ring(g,[x+8,-2,z+8],'y',2.2,.4,COPPER)); } nozzles(g);
+      return t=>wheels.forEach((w,i)=>w.rotation.z=t*.6+i); },
+    b(g){ // Header Rack: a thick header along each row of blocks, risers dropping to a bed of small pipes, nozzles fed from the bed
+      cells.forEach(([x,z])=>cageCorners(g,x,z)); const tr=liqMat(); for(const z of [8,24]){ pipe(g,[-2,-4,z],[32,-4,z],2.6,0,tr); pipe(g,[-2,-4,z],[32,-4,z],3,TRIM); for(const x of [4,12,20,28]){ pipe(g,[x,-4,z],[x,-11,z],1.1,TRIM); flange(g,[x,-7,z],'y',1.6,MID); } }
+      pipe(g,[8,-4,8],[8,-4,24],3,TRIM); pipe(g,[24,-4,8],[24,-4,24],3,TRIM); for(const z of [4,12,20,28]) pipe(g,[2,-11,z],[30,-11,z],.9,MID); for(const x of [4,12,20,28]) pipe(g,[x,-11,2],[x,-11,30],.9,MID);
+      const gauges=[]; for(const [x,z] of cells){ const d=bx(g,[x+6.6,-1.6,z+6.6],[x+9.4,-.6,z+9.4],0xe8eaf0,true); gauges.push(bx(g,[x+7.9,-.5,z+7],[x+8.1,-.3,z+8.6],0x10151c,true)); } nozzles(g);
+      return t=>gauges.forEach((n,i)=>n.rotation.y=.5*Math.sin(t*1.2+i)); },
+    c(g){ // Step-down Spiral: the trunk enters wide, coils down around a column narrowing as it goes, and the thin tail feeds a ring main that serves the nozzles
+      cells.forEach(([x,z])=>cageCorners(g,x,z)); pipe(g,[-2,-5,8],[8,-5,8],3,TRIM); pipe(g,[-2,-5,8],[8,-5,8],2.6,0,liqMat()); const turns=[]; for(const [x,z] of cells){ let prev=null; for(let i=0;i<=14;i++){ const a=i/14*Math.PI*2.4, r=5.5-i*.22, p=[x+8+Math.cos(a)*r,-4-i*.55,z+8+Math.sin(a)*r]; if(prev) pipe(g,prev,p,1.6-i*.06,i%2?TRIM:MID); prev=p; } pipe(g,[x+8,-3,z+8],[x+8,-13,z+8],1.4,HULL2); }
+      const main=liqMat(); pipe(g,[3,-13,3],[29,-13,3],1.2,0,main); pipe(g,[3,-13,29],[29,-13,29],1.2,0,main); pipe(g,[3,-13,3],[3,-13,29],1.2,0,main); pipe(g,[29,-13,3],[29,-13,29],1.2,0,main); nozzles(g); const drops=[]; for(let i=0;i<6;i++) drops.push(bx(g,[-.6,-.6,-.6],[.6,.6,.6],0xd8f1ff,true));
+      return t=>drops.forEach((d,i)=>{ const k=((t*.2+i/6)%1), c=cells[i%4], a=k*Math.PI*2.4, r=5.5-k*3; d.position.set(c[0]+8+Math.cos(a)*r,-4-k*7.7,c[1]+8+Math.sin(a)*r); }); } };
+  function extractorStub(g){ const d=drum(g,-16,-16,0,true); return t=>{ d.vanes.rotation.y=t; d.needle.rotation.z=.2; }; }
+  const ifBuild=k=>g=>{ const e=extractorStub(g); const tick=IF[k](g); return t=>{ e(t); tick(t); }; };
+  // ---------------- 4. repeater, subtle
+  function repeater(g,x,y,z){ cable(g,x-16,y,z,['w','e']); cable(g,x+16,y,z,['w','e']); bx(g,[x,y+5,z+5],[x+16,y+11,z+11],HULL2); const rings=[]; for(let i=0;i<6;i++) rings.push(bx(g,[x+2+i*2.2,y+3.6,z+3.6],[x+3.4+i*2.2,y+12.4,z+12.4],COPPER));
+    const caps=[lq(g,[x,y+4.5,z+4.5],[x+1.2,y+11.5,z+11.5]),lq(g,[x+14.8,y+4.5,z+4.5],[x+16,y+11.5,z+11.5])];
+    return t=>{ rings.forEach((r,i)=>{ const k=Math.max(0,Math.sin(t*2.5-i*.8)); r.scale.set(1,1+.12*k,1+.12*k); r.position.x=x+2.7+i*2.2+.2*Math.sin(t*2.5-i*.8); }); }; }
+  // ---------------- 5. chargers (block 0..16; cable from the west)
+  function battery(g,x,y,z,tier,fill,w,h,d){ // a canister battery used inside the chargers: frame colour by tier, a window with liquid
+    w=w||8; h=h||10; d=d||8; bx(g,[x,y,z],[x+w,y+h,z+d],HULL); bx(g,[x-.3,y,z-.3],[x+w+.3,y+1.2,z+d+.3],TIER[tier]); bx(g,[x-.3,y+h-1.2,z-.3],[x+w+.3,y+h,z+d+.3],TIER[tier]); bx(g,[x+1.5,y+1.5,z-.2],[x+w-1.5,y+h-1.5,z+.2],GLASS,false,.3); const f=lq(g,[x+1.8,y+1.8,z-.1],[x+w-1.8,y+h-1.8,z+.1]); f.scale.y=fill; f.position.y=y+1.8+(h-3.6)*fill/2; return f; }
+  const CH={
+    a(g){ // Dock: a low cradle; the battery stands on it in the open, a filler arm on top, cable socket on the side
+      bx(g,[1,0,1],[15,3,15],HULL2); bx(g,[3,3,3],[13,4,13],TRIM); cable(g,-16,0,0,['w','e']); flange(g,[.5,8,8],'x',2.2,TRIM); pipe(g,[0,8,8],[4,8,8],1.4,TRIM); pipe(g,[4,8,8],[4,15,8],1.4,TRIM); pipe(g,[4,15,8],[8,15,8],1.4,TRIM); pipe(g,[8,15,8],[8,13.5,8],1,COPPER);
+      const f=battery(g,4,4,4,1,.5); const lamp=bx(g,[12,3,12],[14,4.5,14],ION,true); return t=>{ const k=.3+.3*(1+Math.sin(t*.7))/2; f.scale.y=k; f.position.y=5.8+6.4*k/2; lamp.material.color.setHex(ION).multiplyScalar(.5+.5*Math.sin(t*4)); }; },
+    b(g){ // Cabinet: a full block with a windowed door, the battery inside, pipes along the back, a status dial
+      bx(g,[0,0,0],[16,16,16],HULL); bx(g,[1,1,-.2],[15,15,.6],HULL2); bx(g,[3,3,-.4],[13,13,.2],GLASS,false,.25); cable(g,-16,0,0,['w','e']); flange(g,[.3,8,8],'x',2.2,TRIM);
+      for(const z of [12,14]) pipe(g,[2,2,z],[2,14,z],.9,TRIM); pipe(g,[2,14,12],[8,14,12],.9,TRIM); const f=battery(g,4,3,3,2,.5,8,10,6); bx(g,[13.2,12.5,-.5],[15.5,14.5,-.2],0xe8eaf0,true); const n=bx(g,[14.3,12.8,-.7],[14.5,14.2,-.4],0x10151c,true);
+      return t=>{ const k=(t*.1)%1; f.scale.y=k; f.position.y=4.8+6.4*k/2; n.rotation.z=-.9+1.8*k; }; },
+    c(g){ // Ring Pedestal: the battery sits in a ring of six filler nozzles that light in turn as it charges
+      bx(g,[2,0,2],[14,2,14],HULL2); bx(g,[4,2,4],[12,3,12],TRIM); cable(g,-16,0,0,['w','e']); flange(g,[.5,8,8],'x',2.2,TRIM); pipe(g,[0,8,8],[2,8,8],1.4,TRIM); pipe(g,[2,8,8],[2,2,8],1.4,TRIM);
+      const r=ring(g,[8,2.6,8],'y',6.6,.6,MID); const noz=[]; for(let i=0;i<6;i++){ const a=i*Math.PI/3, p=[8+Math.cos(a)*6.6,2.6,8+Math.sin(a)*6.6]; pipe(g,p,[8+Math.cos(a)*4.6,6,8+Math.sin(a)*4.6],.6,COPPER); noz.push(bx(g,[p[0]-.7,3.2,p[2]-.7],[p[0]+.7,4.6,p[2]+.7],ION,true)); }
+      const f=battery(g,4,3,4,3,.6); return t=>{ noz.forEach((n,i)=>n.material.color.setHex(ION).multiplyScalar(.3+.7*Math.max(0,Math.sin(t*3-i)))); const k=.4+.2*Math.sin(t*.5); f.scale.y=k; f.position.y=4.8+6.4*k/2; }; } };
+  // ---------------- 6. battery families: four tiers side by side (x = 0,20,40,60)
+  const BT={
+    a(g){ // Canister: round tank with tier-coloured end caps and a tall sight glass
+      const fs=[]; for(let i=0;i<4;i++){ const x=i*20+8; const b=new THREE.Mesh(new THREE.CylinderGeometry(5.5,5.5,12,20),new THREE.MeshLambertMaterial({color:HULL})); b.position.set(x,8,8); g.add(b); for(const y of [2,14]){ const c=new THREE.Mesh(new THREE.CylinderGeometry(6,6,1.6,20),new THREE.MeshLambertMaterial({color:TIER[i]})); c.position.set(x,y,8); g.add(c); }
+        for(let k=0;k<=i;k++) ring(g,[x,4.5+k*(7/Math.max(1,i)),8],'y',5.7,.35,TIER[i]); bx(g,[x-1.6,3,2],[x+1.6,13,3.2],GLASS,false,.3); fs.push(lq(g,[x-1.2,3.3,2.2],[x+1.2,12.7,3])); }
+      return t=>fs.forEach((f,i)=>{ const k=.3+.15*i+.05*Math.sin(t+i); f.scale.y=k; f.position.y=3.3+9.4*k/2; }); },
+    b(g){ // Cube Cell: a cube in a tier-coloured frame with a liquid window on every side, like an energy cube
+      const fs=[]; for(let i=0;i<4;i++){ const x=i*20+2; for(const [px,py,pz] of [[0,0,0],[10,0,0],[0,0,10],[10,0,10]]) bx(g,[x+px,2,2+pz],[x+px+2,14,4+pz],TIER[i]); for(const y of [2,12]) for(const [a,b] of [[[0,0],[12,2]],[[0,10],[12,12]],[[0,0],[2,12]],[[10,0],[12,12]]]) bx(g,[x+a[0],y,2+a[1]],[x+b[0],y+2,2+b[1]],TIER[i]);
+        bx(g,[x+2,4,4],[x+10,12,12],HULL); for(const s of ['n','s','e','w']){ const r=s==='n'?[x+3,5,3.6,x+9,11,4.2]:s==='s'?[x+3,5,11.8,x+9,11,12.4]:s==='w'?[x+1.6,5,5,x+2.2,11,11]:[x+9.8,5,5,x+10.4,11,11]; fs.push(lq(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]])); } }
+      return t=>fs.forEach((f,i)=>{ const k=.35+.15*Math.floor(i/4)+.05*Math.sin(t+i); f.scale.y=k; f.position.y=5+6*k/2; }); },
+    c(g){ // Capsule: a horizontal pod with domed ends, tier-coloured bands and a long window along the top
+      const fs=[]; for(let i=0;i<4;i++){ const x=i*20+8; const b=new THREE.Mesh(new THREE.CylinderGeometry(4.5,4.5,10,20),new THREE.MeshLambertMaterial({color:HULL})); b.position.set(x,6,8); b.rotation.z=Math.PI/2; g.add(b); for(const dx of [-5,5]){ const s=new THREE.Mesh(new THREE.SphereGeometry(4.5,20,14),new THREE.MeshLambertMaterial({color:TIER[i]})); s.position.set(x+dx,6,8); g.add(s); }
+        for(let k=0;k<=i;k++){ const r=ring(g,[x-3+k*(6/Math.max(1,i)),6,8],'x',4.7,.3,TIER[i]); } bx(g,[x-4,9.6,6.6],[x+4,10.8,9.4],GLASS,false,.3); fs.push(lq(g,[x-3.8,9.8,6.8],[x+3.8,10.6,9.2])); bx(g,[x-3,1.5,5],[x+3,2.2,11],TRIM); }
+      return t=>fs.forEach((f,i)=>{ const k=.3+.17*i+.05*Math.sin(t+i); f.scale.x=k; f.position.x=i*20+8-3.8+7.6*k/2; }); } };
+  // ---------------- 7. cells (held items, ~12 px tall) and emitters (held devices)
+  const CL={
+    a(g){ // Vial: a glass tube in a tetrium frame with a tier cap; the plasma is most of what you see
+      for(let i=0;i<3;i++){ const x=i*16+8; bx(g,[x-2.5,0,5.5],[x+2.5,1.5,10.5],TIER[i]); bx(g,[x-2.5,11,5.5],[x+2.5,13,10.5],TIER[i]); for(const [dx,dz] of [[-2,-2],[2,-2],[-2,2],[2,2]]) bx(g,[x+dx-.4,1.5,8+dz-.4],[x+dx+.4,11,8+dz+.4],TRIM); bx(g,[x-1.8,1.5,6.2],[x+1.8,11,9.8],GLASS,false,.25); const f=lq(g,[x-1.4,1.8,6.6],[x+1.4,10.7,9.4]); f.scale.y=.7; f.position.y=1.8+8.9*.35; } return t=>{}; },
+    b(g){ // Cartridge: a flat magazine-like block with contacts on the bottom and a window strip
+      for(let i=0;i<3;i++){ const x=i*16+8; bx(g,[x-3,1,6],[x+3,12,10],HULL); bx(g,[x-3.2,10,5.8],[x+3.2,12,10.2],TIER[i]); for(const dx of [-2,0,2]) bx(g,[x+dx-.5,0,7],[x+dx+.5,1,9],COPPER); bx(g,[x-2,2,5.8],[x+2,9.5,6.2],GLASS,false,.3); const f=lq(g,[x-1.6,2.3,5.7],[x+1.6,9.2,6.3]); f.scale.y=.6; f.position.y=2.3+6.9*.3; } return t=>{}; },
+    c(g){ // Crystal Cell: a charged crystal clamped between two tier-coloured jaws, the plasma glowing in the crystal
+      const cr=[]; for(let i=0;i<3;i++){ const x=i*16+8; bx(g,[x-3,0,5],[x+3,2,11],TIER[i]); bx(g,[x-3,10,5],[x+3,12,11],TIER[i]); for(const dz of [-2.4,2.4]) bx(g,[x-.5,2,8+dz-.5],[x+.5,10,8+dz+.5],TRIM); const c=new THREE.Mesh(new THREE.OctahedronGeometry(3.2,0),liqMat()); c.position.set(x,6,8); c.scale.y=1.5; g.add(c); cr.push(c); } return t=>cr.forEach((c,i)=>c.rotation.y=t*.8+i); } };
+  const EM={
+    a(g){ // Lantern: a handheld lantern body with a grille, the cell slotted in its base, a lens on the front that glows while on
+      bx(g,[4,0,4],[12,2,12],TIER[0]); bx(g,[5,2,5],[11,12,11],HULL); for(const y of [4,7,10]) bx(g,[4.6,y,4.6],[11.4,y+.6,11.4],TRIM); bx(g,[6,12,6],[10,13.5,10],HULL2); ring(g,[8,14.5,8],'x',1.8,.3,TRIM);
+      bx(g,[6.5,3,3.8],[9.5,9,4.4],GLASS,false,.3); const f=lq(g,[6.8,3.3,3.7],[9.2,8.7,4.5]); bx(g,[6,-1.5,6],[10,.2,10],TIER[1]); // the cell in the base
+      return t=>{ f.material.opacity=1; }; },
+    b(g){ // Backpack Unit: a pack with two tanks and a short antenna; the cell clips on the side; worn, so the hands stay free
+      bx(g,[2,0,6],[14,13,11],HULL); for(const x of [3.5,9.5]) { const t=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,10,14),new THREE.MeshLambertMaterial({color:HULL2})); t.position.set(x+1.5,6.5,12); g.add(t); bx(g,[x+.6,2,13.2],[x+2.4,11,13.8],GLASS,false,.3); lq(g,[x+.9,2.3,13.3],[x+2.1,10.7,13.9]); }
+      pipe(g,[12,13,8],[12,18,8],.5,TRIM); bx(g,[11.3,18,7.3],[12.7,19,8.7],ION,true); bx(g,[-.5,3,7],[2,10,10],TIER[1]); bx(g,[.2,4,6.8],[1.3,9,7.2],GLASS,false,.3); lq(g,[.4,4.3,6.7],[1.1,8.7,7.3]); return t=>{}; },
+    c(g){ // Amulet: a disc on a chain with the cell set in the middle like a stone; small, worn in the offhand or the chest slot
+      const d=new THREE.Mesh(new THREE.CylinderGeometry(5,5,1.2,24),new THREE.MeshLambertMaterial({color:TIER[0]})); d.position.set(8,6,8); d.rotation.x=Math.PI/2; g.add(d); ring(g,[8,6,8],'z',5.2,.4,COPPER); const c=new THREE.Mesh(new THREE.OctahedronGeometry(2.6,0),liqMat()); c.position.set(8,6,8.8); g.add(c);
+      let prev=[8,11.5,8]; for(let i=1;i<=12;i++){ const a=Math.PI/2+i/12*Math.PI; const p=[8+Math.cos(a)*7,6+Math.sin(a)*7+.5,8]; pipe(g,prev,p,.35,TRIM); prev=p; } return t=>{ c.rotation.y=t; }; } };
+  // one WebGL context for the whole page (browsers allow only a handful): a fixed transparent canvas draws each view into its own rectangle
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,ry:opts.ry!==undefined?opts.ry:Math.PI+.6,rx:opts.rx!==undefined?opts.rx:.45,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now(); let frame=0;
+  (function loop(now){ const t=reduce?1:(now-t0)/1000; if(!reduce||frame===0) drawLiquid(t); frame++;
+    const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag&&!v.opts.still) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  makeView(el('liquid'),liquidDemo,{wide:true,dist:120,target:[38,8,8],still:true,ry:-.3,rx:.35});
+  makeView(el('drum'),drumBuild,{dist:110,target:[8,-12,8]});
+  cards('interfaces',[['A. Trunk and Branches','One wide trunk from the extractor runs straight through the joined blocks, with a sphere joint in each block. Branches tee off through a flange to each outer nozzle. A valve wheel on top of every block turns while plasma flows.',ifBuild('a')],
+    ['B. Header Rack','Two headers run across the rows, risers drop from them into a bed of small pipes criss-crossing the floor, and the nozzles draw from the bed. The busiest of the three, with a pressure dial on each block.',ifBuild('b')],
+    ['C. Step-down Spiral','The trunk enters wide and coils down around a column in each block, narrowing with every turn, into a thin ring main along the floor that serves the nozzles. Drops of plasma run down the coils.',ifBuild('c')]],{dist:120,target:[12,-8,16]});
+  makeView(el('rep'),g=>repeater(g,0,0,0),{dist:95,target:[8,8,8],ry:Math.PI/2+.7});
+  cards('chargers',[['A. Dock','A low cradle the battery stands on in the open, a filler arm bending down into its top. You can see the battery fill from across the room.',CH.a],
+    ['B. Cabinet','A full block with a windowed door; the battery sits inside with pipes down the back and a dial on the door. Tidy and safe-looking.',CH.b],
+    ['C. Ring Pedestal','The battery stands in a ring of six filler nozzles that light in turn as it charges, like a ritual circle.',CH.c]],{dist:70,target:[8,6,8]});
+  cards('batteries',[['A. Canister','A round tank with tier-coloured end caps, one band per tier, and a tall sight glass. Reads as "a tank of plasma" first.',BT.a],
+    ['B. Cube Cell','A cube in a tier-coloured frame with a liquid window on every face, the shape players know from energy cubes.',BT.b],
+    ['C. Capsule','A horizontal pod with domed tier-coloured ends and a long window along the top. Lies on its side on an extractor.',BT.c]],{dist:150,target:[36,7,8],rx:.3});
+  cards('cells',[['Cell A. Vial','A glass tube in a tetrium frame, the plasma most of what you see; the cap colour is the tier.',CL.a],
+    ['Cell B. Cartridge','A flat magazine with copper contacts along the bottom and a window strip. Looks like it clicks into a device.',CL.b],
+    ['Cell C. Crystal Cell','A Charged Resonance Crystal clamped between tier-coloured jaws, the plasma glowing inside the crystal.',CL.c]],{dist:70,target:[24,6,8],rx:.25});
+  cards('emitters',[['Emitter A. Lantern','A handheld lantern: grille body, lens on the front, the cell in its base. Held in the offhand like the totem.',EM.a],
+    ['Emitter B. Backpack Unit','Two tanks and an antenna on a pack, the cell clipped to the side. Worn in the chest slot, hands free.',EM.b],
+    ['Emitter C. Amulet','A disc on a chain with the cell set in it like a stone. Small, and could be worn or held.',EM.c]],{dist:60,target:[8,7,8],rx:.2});
+
+  // ---------------- 8. charger screen
+  const OFFER=[['Fortify',4,'base'],['Healing Aura',3,'base'],['Sanctuary',2,'base'],['Anchor',2,'base'],['Damage',3,'carried'],['Mining Speed',4,'carried'],['Swiftness',2,'carried'],['Night Sight',1,'carried']];
+  const LIMIT={b1:0,b2:2,b3:3,b4:4,c1:1,c3:3}; let stamped=[0,1];
+  function drawC(){ const what=el('what').value, cell=what[0]==='c', lim=LIMIT[what], name=el('what').selectedOptions[0].textContent.split(' (')[0]; stamped=stamped.filter(i=>(cell?OFFER[i][2]==='carried':OFFER[i][2]==='base')).slice(0,lim);
+    el('chg').innerHTML='<div class="top"><span>BATTERY CHARGER</span><span class="tq">FILLING</span></div><div class="two"><div class="col" style="min-width:150px"><small>CHARGER TANK</small><div class="bar"><i style="width:70%;background:#4fb8ff"></i></div><small>2,800 / 4,000 mB, +100 mB/t</small><small>IN THE SLOT</small><div class="sock"><i class="on"></i></div><span>'+name+'</span><div class="bar"><i style="width:38%;background:#4fb8ff"></i></div><small>76,000 / 200,000 mB</small><small>'+(lim?'Stamps '+stamped.length+' of '+lim+' powers':'Holds plasma only')+'</small></div>'
+      +'<div class="col grow"><small>POWERS ON THE INTERFACE</small><table class="pw"><thead><tr><th>Power</th><th>Level</th><th></th></tr></thead><tbody>'+OFFER.map((p,i)=>{ const ok=cell?p[2]==='carried':p[2]==='base', on=stamped.includes(i), can=ok&&(on||stamped.length<lim); return '<tr class="'+(ok?'':'off')+'"><td>'+p[0]+'</td><td class="gold">'+p[1]+'</td><td><button type="button" class="hb'+(on?' go':'')+'" data-s="'+i+'"'+(can?'':' disabled')+'>'+(!ok?(cell?'base only':'carried only'):on?'STAMPED':'stamp')+'</button></td></tr>'; }).join('')+'</tbody></table></div></div>';
+    document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.s; stamped=stamped.includes(i)?stamped.filter(v=>v!==i):[...stamped,i]; drawC(); }); }
+  el('what').onchange=drawC; drawC();
+})();
+</script>

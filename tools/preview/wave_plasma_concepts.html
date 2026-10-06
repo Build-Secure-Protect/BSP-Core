@@ -1,0 +1,211 @@
+<title>Wave Plasma Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Round 2 of the totem energy rework: Wave Plasma, a fluid drawn out of the totem.
+   Each block gets three 3D concepts; the projector screen gets three working mocks. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-xp:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/9; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, select:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; } .ctl select{ font:inherit; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.tabs{ display:flex; gap:4px; } .tab{ font:inherit; font-size:10px; color:var(--h-muted); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 8px; cursor:pointer; } .tab.on{ color:var(--h-tq); border-color:var(--h-tq); }
+.two{ display:flex; gap:12px; align-items:flex-start; } .col{ display:flex; flex-direction:column; gap:8px; min-width:0; } .grow{ flex:1; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); }
+.pw{ width:100%; border-collapse:collapse; } .pw th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 2px 0; } .pw td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; } .pw tr.off td{ color:#566070; }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb[disabled]{ color:#566070; cursor:default; }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-tq); }
+.g{ display:grid; grid-template-columns:repeat(7,var(--s,22px)); grid-auto-rows:var(--s,22px); gap:2px; background:var(--h-slot); padding:3px; border:2px solid var(--h-dim); width:max-content; }
+.g i{ background:#2f6b2a; border:1px solid #0006; } .g i:nth-child(3n){ background:#57953a; } .g i:nth-child(5n){ background:#3f77c2; } .g i.on{ box-shadow:inset 0 0 0 2px var(--h-tq); } .g i.c{ box-shadow:inset 0 0 0 2px var(--h-vio); } .g i.out{ filter:brightness(.3); }
+.pips{ display:inline-flex; gap:3px; } .pips i{ width:9px; height:9px; background:var(--h-slot); border:1px solid var(--h-dim); box-sizing:border-box; } .pips i.on{ background:var(--h-tq); border-color:var(--h-tq); } .pips i.free{ border-color:var(--h-tq); }
+.chips{ display:flex; flex-wrap:wrap; gap:4px; } .chip{ border:2px solid var(--k); color:var(--k); padding:2px 6px; background:var(--h-slot); } .chip.off{ --k:var(--h-dim); color:#566070; }
+.sw{ display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:6px; border:1px solid #0008; }
+.sock{ display:flex; gap:4px; } .sock i{ width:20px; height:20px; border:2px solid var(--h-dim); background:var(--h-slot); } .sock i.on{ border-color:var(--h-tq); }
+</style>
+<div class="wrap">
+<section><h1>Wave Plasma Concepts</h1>
+<p class="lede">Round 2 of the totem energy rework, with your picks applied. The energy is now <b>Wave Plasma</b>, a fluid the totem gives off: it is pumped, piped and stored like a liquid, measured in mB. Blocks: Plasma Extractor, Plasma Interface, Plasma Repeater, Plasma Cable, Wave Emitter, and later Plasma Tanks. Drag any 3D view to turn it.</p>
+<div class="card"><h3>What Wave Plasma looks like</h3><p>One colour for the fluid everywhere: in tanks, pipes, screens and the aura. The 3D views below use the first; say if another suits better.</p>
+<div class="scroll"><table class="t"><thead><tr><th>Option</th><th>Colour</th><th>Why</th></tr></thead><tbody>
+<tr><td><b>Violet plasma</b> (used below)</td><td><span class="sw" style="background:#c46bff"></span>#c46bff, bright core #efd9ff</td><td>The mod already uses violet for "the other side" of things (operator tab, projector picks). Stands apart from turquoise RF and gold coins.</td></tr>
+<tr><td>Ion blue</td><td><span class="sw" style="background:#4fb8ff"></span>#4fb8ff, core #d8f1ff</td><td>Reads as energy at once, but sits close to the turquoise already used for RF and lit parts.</td></tr>
+<tr><td>Ember pink</td><td><span class="sw" style="background:#ff5fa8"></span>#ff5fa8, core #ffd0e6</td><td>Hot and unusual; the strongest contrast against the dark machines.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>1. The chain, now with plasma</h2>
+<p class="lede">Totem on top, extractors (tanks) stacked under it, a two-block interface routing the plasma out, cable carrying it, a repeater pumping it on, a projector receiving it. Plasma shows in the tanks and moves along the cable.</p>
+<div class="card"><div class="view wide" id="flow"></div><p>Left to right: Shatter Totem, two Plasma Extractors, a two-block Plasma Interface, Plasma Cable, a Plasma Repeater, more cable, a Projector.</p></div>
+</section>
+
+<section><h2>2. Plasma Extractor: three tank designs</h2>
+<p class="lede">Each is a tank that pulls plasma out of the totem above it and fills visibly. More stack below and the totem's flow is split evenly. Any open face takes an interface. Shown: two stacked under a totem, one fuller than the other.</p>
+<div class="grid3" id="extractors"></div>
+</section>
+
+<section><h2>3. Plasma Interface: three routing designs (from Bus Bar)</h2>
+<p class="lede">The joined slab you liked, rethought as the block that routes the fluid: pipes, valves and outlets rather than a bus. Touching interfaces join up to twelve. Shown: four blocks on one extractor.</p>
+<div class="grid3" id="interfaces"></div>
+</section>
+
+<section><h2>4. Plasma Repeater: Inline Coil, pumping</h2>
+<p class="lede">Your pick, animated: the copper rings swell and travel along the core one after another, like a peristaltic pump pushing the plasma on.</p>
+<div class="card" style="max-width:420px"><div class="view" id="rep"></div><p>The rings move in a wave from the inlet to the outlet; the caps glow as each pulse passes.</p></div>
+</section>
+
+<section><h2>5. The Projector screen: Three Tabs, receiving</h2>
+<p class="lede">Your pick with the wording changed: a projector <b>receives</b>. Click the switches; change the repeater count to see the trade-off.</p>
+<div class="card ctl"><label for="reps">Repeaters in the run <select id="reps"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></label><span class="key" id="repsum"></span></div>
+<div class="card"><div class="scroll"><div class="hud" style="width:440px" id="pA"></div></div><p>POWERS: what the interface offers, what arrives, and a RECEIVE switch per power. CHUNKS: the chunk picker. STATUS: plasma pressure, what feeds this projector, and the Channel Expander socket.</p></div>
+</section>
+
+<section><h2>6. Rules and numbers (proposed, now in plasma)</h2>
+<div class="card"><h3>Totem output</h3><p>A placed totem gives off <b>100 mB/t</b> of Wave Plasma at Tier I. The new Base upgrade <b>Output</b> (sixth path, next to Anchor) raises it to 150, 200, 300, 400, 500 mB/t over six levels. Extractors split it evenly. A projector needs <b>100 mB/t</b> arriving to project, and no longer uses RF. An extractor holds 4,000 mB; a projector 2,000 mB.</p></div>
+<div class="card"><h3>Pressure</h3><p>A cable run carries its full length at full pressure, so the fall-off along the cable goes. Each repeater pumps the plasma into a fresh run but loses pressure doing it: <b>90% of the flow passes each repeater</b>. Powers lose levels as before.</p>
+<div class="scroll"><table class="t"><thead><tr><th>Repeaters</th><th>Plasma arriving (from 100 mB/t)</th><th>Receive one power</th><th>Receive two or more</th></tr></thead><tbody>
+<tr><td class="num">0</td><td class="num">100 mB/t</td><td>Full level</td><td>Full level each</td></tr>
+<tr><td class="num">1</td><td class="num">90 mB/t: not enough alone, so feed more</td><td>Full level</td><td>Each power one level lower</td></tr>
+<tr><td class="num">2</td><td class="num">81 mB/t</td><td>Full level</td><td>Each power two levels lower</td></tr>
+<tr><td class="num">3</td><td class="num">73 mB/t</td><td>Full level</td><td>Each power three levels lower</td></tr>
+</tbody></table></div><p>So a projector behind repeaters needs the Output upgrade or a second totem on the interface to reach 100 mB/t. The STATUS tab shows the pressure arriving so the player can see why a projector is short.</p></div>
+<div class="card"><h3>Interface limit</h3><p>Unchanged: up to 12 joined blocks; a thirteenth, or an interface touching an extractor another interface already routes, is refused and shows a red seam. Twelve blocks is its longest reach.</p></div>
+<div class="card"><h3>What a projector receives</h3><p>Everything on its interface: the powers of every totem on an extractor it touches, and (round 3) the powers held in Plasma Tanks on extractors. A projector receives two powers at once, three with a Channel Expander fitted in it.</p></div>
+<div class="card"><h3>Plasma as a fluid</h3><p>Wave Plasma is a real Forge fluid, so later a Plasma Tank block can store it, pipes from other mods could move it if you ever want that (off by default), and batteries are tanks: a charged battery is a tank of plasma that also remembers which powers were in the totem it was filled from.</p></div>
+</section>
+
+<section><h2>7. Recipes (approved, renamed)</h2>
+<div class="card"><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Resonance Crystal</i><i>Tetrium Plate</i><i>Carbon Dust</i><i>Machine Chassis</i><i>Carbon Dust</i><i>Slag Brick</i><i>Copper Tetrium Coil</i><i>Slag Brick</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Extractor</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Slag Brick</i><i>Tetrium Coil</i><i>Slag Brick</i><i>Tetrium Coil</i><i>Basic Control Circuit</i><i>Tetrium Coil</i><i>Slag Brick</i><i>Amethyst Shard</i><i>Slag Brick</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Interface x2</span></div></div>
+<div class="card"><div class="rec"><div class="rc"><i>Carbon Dust</i><i>Charged Magnatite Ingot</i><i>Carbon Dust</i><i>Tetrium Core Cable</i><i>Resonance Crystal</i><i>Tetrium Core Cable</i><i>Blaze Powder</i><i>Illyrium Nugget</i><i>Blaze Powder</i></div><span class="arrow">&rarr;</span><span class="out">Plasma Repeater</span></div></div>
+<div class="card"><p>Cables become Tetrium Core Plasma Cable and so on, same recipes. The Projector takes a Resonance Crystal in place of one Tetrium Plate. The Totem Generator and Reach Amplifiers go; the Channel Expander moves to the projector.</p></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, el=id=>document.getElementById(id);
+  const GEO=[{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}];
+  const TEX='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==';
+  const HULL=0x1e222b,HULL2=0x2b313d,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,COPPER=0xc87a3c,GOLD=0xffd23a,PL=0xc46bff,PLC=0xefd9ff,GLASS=0x9fc5d8;
+  const tex=new THREE.TextureLoader().load(TEX); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // a box of plasma whose top can be moved: returns a setter for the fill fraction
+  function fluid(g,f,t,op){ const m=bx(g,f,t,PL,true,op===undefined?.85:op); const h=t[1]-f[1]; return k=>{ m.scale.y=Math.max(.02,k); m.position.y=f[1]+h*Math.max(.02,k)/2; }; }
+  function totem(g,ox,oy,oz){ const order=['east','west','up','down','south','north'], root=new THREE.Group(); root.position.set(ox||0,oy||0,oz||0); g.add(root); const mat=new THREE.MeshLambertMaterial({map:tex,alphaTest:.5});
+    for(const e of GEO){ const s=[e.to[0]-e.from[0],e.to[1]-e.from[1],e.to[2]-e.from[2]], geo=new THREE.BoxGeometry(s[0],s[1],s[2]), uv=geo.attributes.uv;
+      order.forEach((face,i)=>{ const f=e.faces[face]; if(!f) return; const [u0,v0,u1,v1]=f.uv.map(v=>v/16); uv.setXY(i*4,u0,1-v0); uv.setXY(i*4+1,u1,1-v0); uv.setXY(i*4+2,u0,1-v1); uv.setXY(i*4+3,u1,1-v1); });
+      const m=new THREE.Mesh(geo,mat), c=[(e.from[0]+e.to[0])/2,(e.from[1]+e.to[1])/2,(e.from[2]+e.to[2])/2];
+      if(e.rotation){ const p=new THREE.Group(), o=e.rotation.origin; p.position.set(o[0],o[1],o[2]); p.rotation[e.rotation.axis]=e.rotation.angle*Math.PI/180; m.position.set(c[0]-o[0],c[1]-o[1],c[2]-o[2]); p.add(m); root.add(p); } else { m.position.set(c[0],c[1],c[2]); root.add(m); } } }
+  function cable(g,x,y,z,sides){ bx(g,[x+5,y+5,z+5],[x+11,y+11,z+11],HULL2); for(const s of sides){ if(s==='w') bx(g,[x,y+5.5,z+5.5],[x+5,y+10.5,z+10.5],HULL2); if(s==='e') bx(g,[x+11,y+5.5,z+5.5],[x+16,y+10.5,z+10.5],HULL2); } bx(g,[x+6.5,y+6.5,z+6.5],[x+9.5,y+9.5,z+9.5],PL,true); }
+  function projector(g,x,y,z){ bx(g,[x+2,y,z+2],[x+14,y+2,z+14],HULL2); bx(g,[x+4,y+2,z+4],[x+12,y+4,z+12],TRIM); bx(g,[x+6,y+4,z+6],[x+10,y+20,z+10],HULL); const strips=[]; for(const [sx,sz,w,d] of [[5.8,7,.3,2],[9.9,7,.3,2],[7,5.8,2,.3],[7,9.9,2,.3]]) strips.push(bx(g,[x+sx,y+5,z+sz],[x+sx+w,y+19,z+sz+d],PL,true)); bx(g,[x+6.6,y+20,z+6.6],[x+9.4,y+22,z+9.4],PL,true); return strips; }
+  // ---------------- extractor tanks (block y..y+16)
+  const EX={
+    a(g,x,y,z){ // Siphon Tank: glass-sided tank in a frame, intake funnel under the totem, a piston pump on one side
+      for(const [px,pz] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[x+px,y,z+pz],[x+px+2,y+16,z+pz+2],TRIM); bx(g,[x,y,z],[x+16,y+2,z+16],HULL2); bx(g,[x,y+14,z],[x+16,y+16,z+16],HULL2);
+      bx(g,[x+2,y+2,z+2],[x+14,y+14,z+14],GLASS,false,.22); const set=fluid(g,[x+2.6,y+2.4,z+2.6],[x+13.4,y+13.6,z+13.4]);
+      bx(g,[x+5,y+13.5,z+5],[x+11,y+15.9,z+11],HULL); // funnel neck
+      for(const f of ['n','s','e','w']){ const r=f==='n'?[x+6,y+6,z-.2,x+10,y+10,z+2]:f==='s'?[x+6,y+6,z+14,x+10,y+10,z+16.2]:f==='w'?[x-.2,y+6,z+6,x+2,y+10,z+10]:[x+14,y+6,z+6,x+16.2,y+10,z+10]; bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],COPPER); }
+      const pist=bx(g,[x+6.5,y+2,z+6.5],[x+9.5,y+4,z+9.5],HULL); return {set,tick:(t,s)=>{ pist.position.y=y+3+Math.max(0,Math.sin(t*3+s))*1.5; }}; },
+    b(g,x,y,z){ // Vortex Drum: a round drum with a window band, plasma swirling inside; outlet flanges
+      const d=new THREE.Mesh(new THREE.CylinderGeometry(7.5,7.5,16,24),new THREE.MeshLambertMaterial({color:HULL})); d.position.set(x+8,y+8,z+8); g.add(d);
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(7.7,7.7,7,24,1,true),new THREE.MeshLambertMaterial({color:GLASS,transparent:true,opacity:.25,side:THREE.DoubleSide})); w.position.set(x+8,y+8,z+8); g.add(w);
+      const pl=new THREE.Mesh(new THREE.CylinderGeometry(7,7,6.6,24),new THREE.MeshBasicMaterial({color:PL,transparent:true,opacity:.85})); pl.position.set(x+8,y+8,z+8); g.add(pl);
+      const vanes=new THREE.Group(); vanes.position.set(x+8,y+8,z+8); g.add(vanes); for(let i=0;i<3;i++){ const v=bx(vanes,[-.5,-3,-6],[.5,3,6],PLC,true); v.rotation.y=i*Math.PI/3; }
+      for(const [px,pz] of [[0,0],[14,0],[0,14],[14,14]]) bx(g,[x+px,y,z+pz],[x+px+2,y+16,z+pz+2],TRIM); bx(g,[x,y,z],[x+16,y+1.5,z+16],HULL2); bx(g,[x,y+14.5,z],[x+16,y+16,z+16],HULL2);
+      for(const f of ['n','s','e','w']){ const r=f==='n'?[x+5,y+5,z-.2,x+11,y+11,z+1]:f==='s'?[x+5,y+5,z+15,x+11,y+11,z+16.2]:f==='w'?[x-.2,y+5,z+5,x+1,y+11,z+11]:[x+15,y+5,z+5,x+16.2,y+11,z+11]; bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],COPPER); }
+      return {set:k=>{ pl.scale.y=Math.max(.05,k); pl.position.y=y+4.7+3.3*Math.max(.05,k); },tick:(t)=>{ vanes.rotation.y=t*1.5; }}; },
+    c(g,x,y,z){ // Bellows Column: a bellows that breathes in and out between two plates, a level gauge tube on each face
+      bx(g,[x,y,z],[x+16,y+2.5,z+16],HULL2); bx(g,[x,y+13.5,z],[x+16,y+16,z+16],HULL2); const folds=[]; for(let i=0;i<5;i++) folds.push(bx(g,[x+3,y+3+i*2.1,z+3],[x+13,y+4.4+i*2.1,z+13],i%2?HULL:MID));
+      const gauges=[]; for(const f of ['n','s','e','w']){ const r=f==='n'?[x+6.5,y+3,z+.5,x+9.5,y+13,z+1.5]:f==='s'?[x+6.5,y+3,z+14.5,x+9.5,y+13,z+15.5]:f==='w'?[x+.5,y+3,z+6.5,x+1.5,y+13,z+9.5]:[x+14.5,y+3,z+6.5,x+15.5,y+13,z+9.5]; bx(g,[r[0]-.4,r[1]-.4,r[2]-.4],[r[3]+.4,r[4]+.4,r[5]+.4],GLASS,false,.3); gauges.push(fluid(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]])); }
+      for(const [px,pz] of [[1,1],[13,1],[1,13],[13,13]]) bx(g,[x+px,y+2.5,z+pz],[x+px+2,y+13.5,z+pz+2],COPPER);
+      return {set:k=>gauges.forEach(s=>s(k)),tick:(t,s)=>{ const b=.9+.1*Math.sin(t*2.5+s); folds.forEach((f,i)=>{ f.position.y=y+8+(i-2)*2.1*b; }); }}; } };
+  const exBuild=k=>g=>{ const parts=[]; for(let i=0;i<2;i++) parts.push(EX[k](g,0,-16*(i+1),0)); totem(g,0,0,0); return t=>parts.forEach((p,s)=>{ p.set(s===0?.8:.35+.05*Math.sin(t)); p.tick(t,s); }); };
+  // ---------------- interface routers: 2x2 on the east face of an extractor (extractor at x -16..0)
+  function slab(g){ bx(g,[0,-16,0],[32,0,32],HULL2); bx(g,[.5,-13,.5],[31.5,-3,31.5],HULL); }
+  const IF={
+    a(g){ // Manifold: pipes on top joining every block, a valve wheel on each, flanged outlets on the outside
+      slab(g); const whs=[]; for(const [x,z] of [[0,0],[16,0],[0,16],[16,16]]){ bx(g,[x+5,0,z+5],[x+11,3,z+11],TRIM); const w=new THREE.Mesh(new THREE.TorusGeometry(2.6,.5,6,16),new THREE.MeshLambertMaterial({color:COPPER})); w.rotation.x=Math.PI/2; w.position.set(x+8,3.6,z+8); g.add(w); whs.push(w);
+        for(const r of [[x-.3,-10,z+5.5,x+.6,-5.5,z+10.5],[x+15.4,-10,z+5.5,x+16.3,-5.5,z+10.5],[x+5.5,-10,z-.3,x+10.5,-5.5,z+.6],[x+5.5,-10,z+15.4,x+10.5,-5.5,z+16.3]]) if(r[0]<0||r[3]>32||r[2]<0||r[5]>32){ bx(g,[r[0],r[1],r[2]],[r[3],r[4],r[5]],TRIM); } }
+      bx(g,[8,1,7],[24,2.6,9],HULL2); bx(g,[8,1,23],[24,2.6,25],HULL2); bx(g,[7,1,8],[9,2.6,24],HULL2); bx(g,[23,1,8],[25,2.6,24],HULL2);
+      const pl=[bx(g,[8,1.4,7.5],[24,2.2,8.5],PL,true),bx(g,[8,1.4,23.5],[24,2.2,24.5],PL,true),bx(g,[7.5,1.4,8],[8.5,2.2,24],PL,true),bx(g,[23.5,1.4,8],[24.5,2.2,24],PL,true)];
+      return t=>{ whs.forEach((w,i)=>w.rotation.z=t*.8+i); pl.forEach((m,i)=>m.material.color.setHex(PL).multiplyScalar(.6+.4*Math.sin(t*4-i))); }; },
+    b(g){ // Junction: clear channels set into the slab show the plasma running between joined blocks; round outlet ports on the outside
+      slab(g); bx(g,[2,-3,14],[30,-1,18],GLASS,false,.3); bx(g,[14,-3,2],[18,-1,30],GLASS,false,.3); const pulses=[];
+      for(let i=0;i<10;i++) pulses.push(bx(g,[-1,-2.6,-1],[1,-1.4,1],PLC,true)); for(const [x,z] of [[0,0],[16,0],[0,16],[16,16]]){ bx(g,[x+6,-1.2,z+6],[x+10,.4,z+10],TRIM); bx(g,[x+7,.4,z+7],[x+9,1,z+9],PL,true);
+        for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+dx*16, nz=z+dz*16; if(nx<0||nx>16||nz<0||nz>16){ const c=dx===1?[x+15.2,-8,z+8]:dx===-1?[x+.8,-8,z+8]:dz===1?[x+8,-8,z+15.2]:[x+8,-8,z+.8]; const p=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,1.6,16),new THREE.MeshLambertMaterial({color:TRIM})); p.position.set(c[0],c[1],c[2]); p.rotation.z=dx?Math.PI/2:0; p.rotation.x=dz?Math.PI/2:0; g.add(p); } } }
+      return t=>pulses.forEach((p,i)=>{ const k=(t*.3+i/10)%1; if(i%2) p.position.set(2+k*28,-2,16); else p.position.set(16,-2,2+k*28); }); },
+    c(g){ // Pressure vessels: a domed vessel on each block with a gauge, braced pipes between them, outlets with gauges on the outside
+      slab(g); const needles=[], lv=[]; for(const [x,z] of [[0,0],[16,0],[0,16],[16,16]]){ const v=new THREE.Mesh(new THREE.SphereGeometry(5.2,20,14,0,Math.PI*2,0,Math.PI/2),new THREE.MeshLambertMaterial({color:HULL2})); v.position.set(x+8,0,z+8); g.add(v);
+        const win=new THREE.Mesh(new THREE.SphereGeometry(4.6,20,14,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:PL,transparent:true,opacity:.6})); win.position.set(x+8,0,z+8); g.add(win); lv.push(win);
+        const dial=bx(g,[x+6.3,-9.5,z-.3],[x+9.7,-6,z+.4],0xe8eaf0,true); const n=bx(g,[x+7.9,-8,z-.5],[x+8.1,-6.4,z+.5],0x10151c,true); needles.push(n); }
+      bx(g,[8,-1,7],[24,1,9],TRIM); bx(g,[8,-1,23],[24,1,25],TRIM); bx(g,[7,-1,8],[9,1,24],TRIM); bx(g,[23,-1,8],[25,1,24],TRIM);
+      return t=>{ needles.forEach((n,i)=>{ n.rotation.z=-.9+.5*Math.sin(t*1.3+i); }); lv.forEach((w,i)=>{ w.scale.y=.6+.4*Math.abs(Math.sin(t*.8+i)); }); }; } };
+  const ifBuild=k=>g=>{ const ex=EX.a(g,-16,-16,0); ex.set(.7); const tick=IF[k](g); return t=>{ ex.tick(t,0); tick(t); }; };
+  // ---------------- repeater: inline coil, pumping
+  function repeater(g,x,y,z){ cable(g,x-16,y,z,['w','e']); cable(g,x+16,y,z,['w','e']); bx(g,[x,y+5,z+5],[x+16,y+11,z+11],HULL2); const rings=[]; for(let i=0;i<6;i++) rings.push(bx(g,[x+2+i*2.2,y+3.6,z+3.6],[x+3.4+i*2.2,y+12.4,z+12.4],COPPER));
+    const caps=[bx(g,[x,y+4.5,z+4.5],[x+1.2,y+11.5,z+11.5],PL,true),bx(g,[x+14.8,y+4.5,z+4.5],[x+16,y+11.5,z+11.5],PL,true)];
+    return t=>{ rings.forEach((r,i)=>{ const k=Math.max(0,Math.sin(t*4-i*.9)); r.scale.set(1,1+.35*k,1+.35*k); r.position.x=x+2.7+i*2.2+.5*Math.sin(t*4-i*.9); }); caps.forEach((c,i)=>c.material.color.setHex(PL).multiplyScalar(.5+.5*Math.max(0,Math.sin(t*4-(i?5.5:0))))); }; }
+  function flow(g){ const e1=EX.a(g,0,-16,0), e2=EX.a(g,0,-32,0); totem(g,0,0,0); e1.set(.8); e2.set(.45);
+    slab(g); g.children.slice(-2).forEach(m=>{ m.position.x+=16; m.scale.z=.5; m.position.z=8; }); // a two-block slab (hack: shrink the 2x2 slab)
+    const pl=[bx(g,[17,-8.6,7],[47,-7.4,9],PL,true)]; for(let i=0;i<4;i++) cable(g,48+i*16,-16,0,['w','e']); const rep=repeater(g,112,-16,0); for(let i=0;i<3;i++) cable(g,144+i*16,-16,0,['w','e']); const strips=projector(g,192,-16,0);
+    const pulses=[]; for(let i=0;i<10;i++) pulses.push(bx(g,[-1,-1,-1],[1,1,1],i%3===0?GOLD:PLC,true));
+    return t=>{ e1.tick(t,0); e2.tick(t,1); rep(t); pulses.forEach((p,i)=>{ const k=((t*.25+i/10)%1); p.position.set(44+k*150,-8,8); }); pl.forEach((m,i)=>m.material.color.setHex(PL).multiplyScalar(.6+.4*Math.sin(t*3-i))); strips.forEach((s,i)=>s.material.color.setHex(PL).multiplyScalar(.5+.5*Math.sin(t*3+i))); }; }
+  function makeView(view,build,opts){ const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); let ry=opts.ry!==undefined?opts.ry:Math.PI+.6, rx=.45, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.3,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag&&!opts.still) ry+=.003; tick(t); const D=opts.dist, T=opts.target;
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0); }
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  makeView(el('flow'),flow,{wide:true,dist:300,target:[100,-10,8],still:true,ry:-.5});
+  cards('extractors',[['A. Siphon Tank','A glass tank in a corner frame. Plasma pours in through the funnel under the totem and the level rises; a piston at the bottom pumps it out to the copper outlets on each face.',exBuild('a')],
+    ['B. Vortex Drum','A round drum with a window band: the plasma swirls inside, stirred by vanes. Reads as a centrifuge pulling the plasma out. Flanged outlets on each face.',exBuild('b')],
+    ['C. Bellows Column','A bellows that breathes between two plates, drawing on the totem, with a glass level gauge on every face. The gauges are the fill level, so a stack reads at a glance.',exBuild('c')]],{dist:110,target:[8,-12,8]});
+  cards('interfaces',[['A. Manifold','The slab with a pipe manifold on top: a valve wheel on every block, turning while plasma flows, and flanged outlets on the outer faces for cables.',ifBuild('a')],
+    ['B. Junction','Clear channels set into the top of the slab show the plasma running between the joined blocks. Round ports on the outer faces take the cables. The flow itself is the decoration.',ifBuild('b')],
+    ['C. Pressure Vessels','A domed vessel on every block with a gauge on its face, braced pipes between them. Gauges swing with the pressure, which is what the repeater rules are about.',ifBuild('c')]],{dist:120,target:[12,-8,16]});
+  makeView(el('rep'),g=>repeater(g,0,0,0),{dist:95,target:[8,8,8],ry:Math.PI/2+.7});
+
+  // ---------------- projector screen: three tabs, receiving
+  const POW=[['Fortify',4],['Healing Aura',3],['Alarm',2],['Ward',0],['Sanctuary',2],['Overclock',0],['Anchor',2]], st={on:[0,1],tab:'POWERS'}, CH=2;
+  const reps=()=>+el('reps').value, press=()=>Math.round(100*Math.pow(.9,reps()));
+  function arrive(i){ const lvl=POW[i][1]; if(!lvl||!st.on.includes(i)) return 0; const r=reps(); if(r===0||st.on.length===1) return lvl; return Math.max(0,lvl-r); }
+  function rows(){ return '<table class="pw"><thead><tr><th>Power</th><th>Offered</th><th>Arrives</th><th></th></tr></thead><tbody>'+POW.map((p,i)=>{ const on=st.on.includes(i), a=arrive(i), can=p[1]>0&&(on||st.on.length<CH);
+      return '<tr class="'+(p[1]?'':'off')+'"><td>'+p[0]+'</td><td class="gold">'+(p[1]||'-')+'</td><td class="'+(a?'tq':'bad')+'">'+(on?(a||'0'):'-')+'</td><td><button type="button" class="hb'+(on?' go':'')+'" data-p="'+i+'"'+(can?'':' disabled')+'>'+(p[1]?(on?'RECEIVING':'off'):'not unlocked')+'</button></td></tr>'; }).join('')+'</tbody></table>'; }
+  const grid=()=>'<div class="g">'+Array.from({length:49},(_,i)=>{ const dx=i%7-3, dz=Math.floor(i/7)-3, out=Math.max(Math.abs(dx),Math.abs(dz))>2; return '<i class="'+(out?'out':i===24||i===23?'on':i===10?'c':'')+'"></i>'; }).join('')+'</div>';
+  const pips='<span class="pips"><i class="on"></i><i class="on"></i><i class="free"></i><i class="free"></i><i></i><i></i></span>';
+  function draw(){ const p=press(); el('repsum').textContent=(reps()===0?'No repeaters: every chosen power arrives at full level and full pressure.':'With '+reps()+' repeater'+(reps()===1?'':'s')+': one power at full level, or two or more each '+reps()+' level'+(reps()===1?'':'s')+' lower; plasma arrives at '+p+'% pressure.');
+    const head='<div class="top"><span>PROJECTOR</span><span class="tabs">'+['POWERS','CHUNKS','STATUS'].map(x=>'<button type="button" class="tab'+(x===st.tab?' on':'')+'" data-tab="'+x+'">'+x+'</button>').join('')+'</span></div>';
+    const status='<div class="col"><span class="'+(p>=100?'tq':'bad')+'">'+(p>=100?'PROJECTING':'LOW PRESSURE')+'</span><div class="bar"><i style="width:'+Math.min(100,p)+'%;background:#c46bff"></i></div><small>Plasma arriving: '+p+' mB/t of the 100 needed. Receiving '+st.on.length+' of '+CH+' powers. '+reps()+' repeater'+(reps()===1?'':'s')+' in the run.</small></div>';
+    el('pA').innerHTML=head+(st.tab==='POWERS'?rows()+'<small>Offered: the highest level on the interface. Arrives: after repeaters.</small>':st.tab==='CHUNKS'?'<div class="two">'+grid()+'<div class="col grow"><span>LOADED <span class="gold">2 / 6</span></span>'+pips+'<small>Range 5 x 5. Click a chunk to load it.</small></div></div>':status+'<small>Interface: 2 extractors, 1 totem (Tier III). Tank: 1,400 / 2,000 mB.</small><small>CHANNEL EXPANDER</small><div class="sock"><i class="on"></i></div>');
+    document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.p; st.on=st.on.includes(i)?st.on.filter(v=>v!==i):[...st.on,i]; draw(); });
+    document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ st.tab=b.dataset.tab; draw(); }); }
+  el('reps').onchange=draw; draw();
+})();
+</script>

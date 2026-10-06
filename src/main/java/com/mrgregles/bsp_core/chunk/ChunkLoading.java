@@ -5,7 +5,6 @@ import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.admin.Admins;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.ChunkViewPacket;
-import com.mrgregles.bsp_core.projector.TotemGeneratorBlockEntity;
 import com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity;
 import com.mrgregles.bsp_core.totem.TotemUpgrades.Buff;
@@ -449,7 +448,7 @@ public final class ChunkLoading {
             if (isMain(ledger, totemPos, totem)) {
                 flags |= ChunkViewPacket.MAIN;
             }
-            if (totem.owner.equals(player.getUUID()) || Admins.isAdmin(player)) {
+            if (mayEdit(player, totemPos, totem)) {
                 flags |= ChunkViewPacket.EDIT;
             }
         }
@@ -459,16 +458,43 @@ public final class ChunkLoading {
         if (BSPConfig.getOr(BSPConfig.CHUNKS_OWNER_ONLINE, false)) {
             flags |= ChunkViewPacket.ONLINE_ONLY;
         }
-        int rf = 0;
-        int[] levels = new int[TotemGeneratorBlockEntity.SENDABLE.length];
+        int delivered = 0, chosen = 0, channels = 0, repeaters = 0, tank = 0;
+        int[] levels = new int[TotemProjectorBlockEntity.SENDABLE.length], offered = new int[TotemProjectorBlockEntity.SENDABLE.length];
         if (be instanceof TotemProjectorBlockEntity p) {
-            rf = p.stored();
+            delivered = p.delivered();
+            chosen = p.chosen();
+            channels = p.channels();
+            repeaters = p.repeaters();
+            tank = p.tank();
             for (int i = 0; i < levels.length; i++) {
-                levels[i] = p.arriving(TotemGeneratorBlockEntity.SENDABLE[i]);
+                offered[i] = p.offered(i);
+                levels[i] = p.hasSignal() ? p.arriving(i) : 0;
             }
-            flags |= (p.hasSignal() ? ChunkViewPacket.SIGNAL : 0) | (p.isActive() ? ChunkViewPacket.ACTIVE : 0) | (projector != null && projector.on ? ChunkViewPacket.LOADING : 0);
+            flags |= (p.hasSignal() ? ChunkViewPacket.SIGNAL : 0) | (p.isActive() ? ChunkViewPacket.ACTIVE : 0) | (projector != null && projector.on ? ChunkViewPacket.LOADING : 0)
+                    | (p.hasExpander() ? ChunkViewPacket.EXPANDER : 0) | (p.mayEdit(player) ? ChunkViewPacket.EDIT : 0);
         }
-        BSPNetwork.sendTo(player, new ChunkViewPacket(blockPos, isProjector, slots, used, radius, longs(mine), longs(others), flags, rf, levels));
+        BSPNetwork.sendTo(player, new ChunkViewPacket(blockPos, isProjector, slots, used, radius, longs(mine), longs(others), flags, delivered, levels, offered, chosen, channels, repeaters, tank));
+    }
+
+    /** The RECEIVE switch for {@link TotemProjectorBlockEntity#SENDABLE}[index] on the projector at {@code blockPos}. */
+    public static void receive(ServerPlayer player, BlockPos blockPos, int index) {
+        if (player.level().getBlockEntity(blockPos) instanceof TotemProjectorBlockEntity p) {
+            if (!p.mayEdit(player)) {
+                refuse(player, "not_owner");
+                return;
+            }
+            p.toggle(index);
+            sendView(player, blockPos, false);
+        }
+    }
+
+    /** The owner, an admin, or a friend the totem's access list lets upgrade (when the totem is loaded to ask). */
+    private static boolean mayEdit(ServerPlayer player, GlobalPos totemPos, ChunkLedger.Totem totem) {
+        if (totem.owner.equals(player.getUUID()) || Admins.isAdmin(player)) {
+            return true;
+        }
+        ServerLevel level = player.server.getLevel(totemPos.dimension());
+        return level != null && level.isLoaded(totemPos.pos()) && level.getBlockEntity(totemPos.pos()) instanceof ShatterTotemBlockEntity be && be.mayUpgrade(player);
     }
 
     private static void refuse(ServerPlayer player, String key) {
@@ -488,7 +514,7 @@ public final class ChunkLoading {
             refuse(player, "unavailable");
             return;
         }
-        if (!totem.owner.equals(player.getUUID()) && !Admins.isAdmin(player)) {
+        if (!mayEdit(player, totemPos, totem)) {
             refuse(player, "not_owner");
             return;
         }

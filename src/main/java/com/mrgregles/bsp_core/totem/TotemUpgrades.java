@@ -57,9 +57,21 @@ public final class TotemUpgrades {
         LOCKPICK("lockpick", Branch.RAID, 1, null, 4, false),
         SHROUD("shroud", Branch.RAID, 2, "lockpick", 4, false),
         /** Chunk loading: 1, 3 then 6 chunks. Its rules are in {@link com.mrgregles.bsp_core.chunk.ChunkLoading}. */
-        ANCHOR("anchor", Branch.BASE, 1, null, 5, false),
+        ANCHOR("anchor", Branch.BASE, 1, "output", 5, false),
         /** Widens the square of chunks Anchor may pick from. */
-        SURVEY("survey", Branch.BASE, 2, "anchor", 5, false);
+        SURVEY("survey", Branch.BASE, 2, "anchor", 5, false),
+        /** How much Wave Plasma the placed totem gives off. Starts the plasma path. */
+        OUTPUT("output", Branch.BASE, 0, null, 5, false),
+        /** Carried: bounce on landing, less fall damage. */
+        BOUNCY("bouncy", Branch.CARRIED, 2, "featherfall", 0, false),
+        /** Carried: ores and containers show through blocks for a while. */
+        XRAY("xray", Branch.CARRIED, 4, "night_sight", 0, false),
+        /** Base: outsiders see the land as it was. */
+        CLOAKING("cloaking", Branch.BASE, 3, "deadlock", 2, false),
+        /** Base: the owner may teleport back near the totem when it is being stolen. */
+        RECALL("recall", Branch.BASE, 4, "overclock", 3, false),
+        /** Raid: delays the owner's Recall offer. */
+        RECALL_BLOCK("recall_block", Branch.RAID, 3, "shroud", 4, false);
 
         public final String key;
         private final Branch branch;
@@ -107,7 +119,7 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
-            return this == ANCHOR ? 3 : this == SURVEY ? 2 : single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier);
+            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 6; case BOUNCY, CLOAKING, RECALL_BLOCK -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */
@@ -166,7 +178,8 @@ public final class TotemUpgrades {
         if (level >= buff.maxLevel()) {
             return null;
         }
-        int tier = buff.single ? buff.tier : buff.tier + level / LEVELS_PER_TIER, step = buff.single ? 0 : level % LEVELS_PER_TIER;
+        // powers with their own level counts (Recall, X-ray, Output, ...) never price past the top tier's coin
+        int tier = Math.min(MAX_TIER, buff.single ? buff.tier : buff.tier + level / LEVELS_PER_TIER), step = buff.single ? 0 : level % LEVELS_PER_TIER;
         var coins = switch (buff.branch()) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_COINS;
             case BASE -> BSPConfig.BASE_LEVEL_COINS;

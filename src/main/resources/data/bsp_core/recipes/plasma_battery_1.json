@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PGP",
+    "RDR",
+    "SWS"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "G": {
+      "item": "bsp_core:illyrium_glass"
+    },
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "S": {
+      "item": "bsp_core:slag_brick"
+    },
+    "W": {
+      "item": "bsp_core:copper_tetrium_coil"
+    }
+  },
+  "result": {
+    "item": "bsp_core:plasma_battery_1"
+  }
+}

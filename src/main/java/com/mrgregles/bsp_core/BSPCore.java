@@ -39,11 +39,13 @@ public class BSPCore {
         ModEntities.ENTITIES.register(modEventBus);
         ModCreativeTabs.TABS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        com.mrgregles.bsp_core.plasma.ModFluids.register(modEventBus);
         com.mrgregles.bsp_core.registry.ModRecipes.SERIALIZERS.register(modEventBus);
         com.mrgregles.bsp_core.loot.AddItemLootModifier.SERIALIZERS.register(modEventBus);
 
         // Server config: lives in <world>/serverconfig/bsp_core-server.toml and syncs to clients.
         context.registerConfig(ModConfig.Type.SERVER, BSPConfig.SPEC);
+        context.registerConfig(ModConfig.Type.CLIENT, BSPClientConfig.SPEC);
 
         MinecraftForge.EVENT_BUS.register(this);
     }

@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PXP",
+    "ZKZ",
+    "DCD"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "X": {
+      "item": "bsp_core:resonance_crystal"
+    },
+    "Z": {
+      "item": "minecraft:blaze_rod"
+    },
+    "K": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "D": {
+      "item": "bsp_core:carbon_dust"
+    },
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:wave_emitter"
+  }
+}

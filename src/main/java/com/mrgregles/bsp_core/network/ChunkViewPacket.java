@@ -14,10 +14,10 @@ import java.util.function.Supplier;
  * @param slots  chunks the totem may keep loaded; {@code used} of them are picked, here or elsewhere
  * @param radius chunks either side of the block that may be picked
  * @param mine   chunks picked at this block; {@code others} are the rest of the same totem's picks
- * @param rf     a projector's stored RF; {@code levels} are the powers reaching it, in generator order
+ * @param delivered a projector's plasma arriving, mB/t; {@code offered}, {@code levels} (arriving) and {@code chosen} follow the projector's SENDABLE order
  */
-public record ChunkViewPacket(BlockPos pos, boolean projector, int slots, int used, int radius, long[] mine, long[] others, int flags, int rf, int[] levels) {
-    public static final int OPEN = 1, EDIT = 2, MAIN = 4, ENABLED = 8, ONLINE_ONLY = 16, SIGNAL = 32, ACTIVE = 64, LOADING = 128;
+public record ChunkViewPacket(BlockPos pos, boolean projector, int slots, int used, int radius, long[] mine, long[] others, int flags, int delivered, int[] levels, int[] offered, int chosen, int channels, int repeaters, int tank) {
+    public static final int OPEN = 1, EDIT = 2, MAIN = 4, ENABLED = 8, ONLINE_ONLY = 16, SIGNAL = 32, ACTIVE = 64, LOADING = 128, EXPANDER = 256;
 
     public boolean has(int flag) {
         return (flags & flag) != 0;
@@ -32,13 +32,18 @@ public record ChunkViewPacket(BlockPos pos, boolean projector, int slots, int us
         buf.writeLongArray(msg.mine);
         buf.writeLongArray(msg.others);
         buf.writeVarInt(msg.flags);
-        buf.writeVarInt(msg.rf);
+        buf.writeVarInt(msg.delivered);
         buf.writeVarIntArray(msg.levels);
+        buf.writeVarIntArray(msg.offered);
+        buf.writeVarInt(msg.chosen);
+        buf.writeVarInt(msg.channels);
+        buf.writeVarInt(msg.repeaters);
+        buf.writeVarInt(msg.tank);
     }
 
     public static ChunkViewPacket decode(FriendlyByteBuf buf) {
         return new ChunkViewPacket(buf.readBlockPos(), buf.readBoolean(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readLongArray(null, 64), buf.readLongArray(null, 64), buf.readVarInt(), buf.readVarInt(), buf.readVarIntArray(32));
+                buf.readLongArray(null, 64), buf.readLongArray(null, 64), buf.readVarInt(), buf.readVarInt(), buf.readVarIntArray(32), buf.readVarIntArray(32), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
     }
 
     public static void handle(ChunkViewPacket msg, Supplier<NetworkEvent.Context> ctx) {
