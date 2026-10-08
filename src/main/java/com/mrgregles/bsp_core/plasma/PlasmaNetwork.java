@@ -251,35 +251,6 @@ public final class PlasmaNetwork {
         return sl.getBlockEntity(p) instanceof PlasmaValveBlockEntity v ? (v.open() ? v.limit() : 0) : Integer.MAX_VALUE;
     }
 
-    /** Shares {@code total} between runs, each taking no more than its cap, the rest going to the others (water filling). */
-    static int[] fill(int total, int[] caps) {
-        int n = caps.length, left = total, remaining = n;
-        int[] out = new int[n];
-        boolean[] done = new boolean[n];
-        while (remaining > 0) {
-            int each = left / remaining;
-            boolean any = false;
-            for (int i = 0; i < n; i++) {
-                if (!done[i] && caps[i] <= each) {
-                    out[i] = caps[i];
-                    left -= caps[i];
-                    done[i] = true;
-                    remaining--;
-                    any = true;
-                }
-            }
-            if (!any) {
-                for (int i = 0; i < n; i++) {
-                    if (!done[i]) {
-                        out[i] = each;
-                    }
-                }
-                break;
-            }
-        }
-        return out;
-    }
-
     /** Whether moving in direction {@code d} enters the repeater through its back (its input side). */
     private static boolean repeaterEntered(BlockState st, Direction d) {
         return st.getBlock() instanceof PlasmaRepeaterBlock && PlasmaRepeaterBlock.input(st) == d.getOpposite();

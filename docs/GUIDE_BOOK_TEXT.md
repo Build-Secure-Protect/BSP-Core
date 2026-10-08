@@ -275,7 +275,7 @@ A *Plasma Valve* sets the most that may pass it, from 0 to 1,000 mB/t. Right-cli
 
 The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.
 
-Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs keep drinking from what is left for a short while, then stop.
+Each extractor also keeps a reserve of 4,000 mB. Take the totem away and the runs keep drinking from it for a short while, then stop.
 
 **Page 8**  `[recipe] wrench`
 
@@ -308,11 +308,11 @@ Sneak and right-click the **core** of a cable to pick it up with its settings ke
 
 Wave Plasma can be kept in bulk. A *Plasma Tank* is a hollow box you build from three blocks: *Tank Casing* on every edge, *Tank Glass* or casing on the faces, and *Tank Ports* wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.
 
-Every block of the shell holds 5,000,000 mB. It holds plasma only, no powers.
+Every block of the shell holds 2,500,000 mB. It holds plasma only, no powers.
 
-**Page 2**  `[3D structure] A 4 x 3 x 4 tank`
+**Page 2**  `[3D structure] A 4 x 3 x 4 tank, formed`
 
-Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.
+Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.
 
 **Page 3**  `[recipe] tetrium_glass, tank_glass`
 
@@ -326,7 +326,7 @@ A port takes plasma from a run that comes from an interface, and gives plasma to
 
 Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.
 
-Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.
+When the tank forms, a sweep of light runs over it and the casing turns to glass with a lit outline along the edges; the four uprights glow as high as the plasma stands, so the level can be read from outside. Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.
 
 **Page 6: Breaking and rebuilding**
 

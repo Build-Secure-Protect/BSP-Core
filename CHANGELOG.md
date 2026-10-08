@@ -4,7 +4,18 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Added
+- A Plasma Tank changes when it forms: a sweep of light runs over the shell from the block that completed it, the casing turns to glass with a thin dark rail and a lit turquoise strip along every edge of the tank and a lit node at each corner, and the four uprights glow only as high as the plasma stands, so the level can be read from outside. Breaking a block puts the casing cubes back.
+
+### Fixed
+- A Plasma Extractor only ever handed out 4,000 mB a second (200 mB/t) however high the totem's Output was: its tank was that size and the network takes a second's worth at a time. Bases and chargers hid this because they want little; a Plasma Tank showed it. The extractor now holds one second of its flow on top of the 4,000 mB reserve, so a 6,000 mB/t totem really moves 6,000 mB/t.
+- A Plasma Tank with only a little plasma in it showed nothing but the stream: the layer was thinner than a pixel. It now draws a thin layer as soon as it holds anything, in the world and on its screen.
+- Right-clicking an unfinished Plasma Tank block no longer opens the tank screen, so the next block can be placed against it without sneaking. Jade shows "Tank unfinished" on any block that is not yet part of a formed tank.
+
 ### Changed
+- A Plasma Tank holds 2,500,000 mB per shell block (`plasma.tankPerBlock`, was 5,000,000). Existing worlds keep the old value in their config file until it is edited.
+- Cables now show an arm into a Tank Port they feed.
+- The plasma in a tank reaches half way into every shell block, so the walls look thin; the tank's screen matches.
 - Cable names lose the word "Core": Tetrium Plasma Cable, Magnatite Plasma Cable, Illyrium Plasma Cable, Charged Illyrium Plasma Cable. Block ids are unchanged, so nothing in a world moves.
 - Output has ten levels, 100 to 6,000 mB/t (`plasma.outputPerLevel`); the totem panel shows what the placed totem makes.
 - Each face of a Plasma Interface sends at most `plasma.interfaceSideMax` (1,000 mB/t) into its run, so a large totem needs a larger group.

@@ -1,0 +1,81 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "atlas": "bsp_core:block/machine_atlas",
+  "plasma": "bsp_core:block/plasma_still",
+  "particle": "bsp_core:block/tank_casing",
+  "casing": "bsp_core:block/tank_casing"
+ },
+ "elements": [
+  {
+   "from": [
+    0,
+    0,
+    0
+   ],
+   "to": [
+    3,
+    16,
+    3
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      0.75
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      0.75
+     ],
+     "texture": "#atlas"
+    }
+   }
+  }
+ ]
+}

@@ -14,9 +14,10 @@ import net.minecraft.util.Mth;
 import java.util.Map;
 
 /**
- * The plasma inside a Plasma Tank, drawn once by the master block as one body across the whole hollow: a level that glides toward
- * what the server last said, a stream falling from any port that is taking plasma in above the surface, with a ripple where it
- * lands, and the setting ring on every port.
+ * The plasma inside a Plasma Tank, drawn once by the master block as one body across the hollow and half of every shell block: a
+ * level that glides toward what the server last said, a stream falling from any port that is taking plasma in above the surface,
+ * with a ripple where it lands, the lit uprights that show the level from outside, the sweep of light when the tank forms, and the
+ * setting ring on every port.
  */
 public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
     private static final int TQ = 0x19D3B0, BLUE = 0x3AB3DA, ORANGE = 0xF9801D;
@@ -50,16 +51,21 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
         }
         part.shown += (target - part.shown) * 0.03f * (1f + partialTick);
         float frac = Mth.clamp(part.shown, 0f, 1f);
+        if (part.stored() > 0) {
+            frac = Math.max(frac, minFrac(part.h())); // a near-empty tank still shows a thin layer, so the plasma can be seen arriving
+        }
         TextureAtlasSprite sprite = PlasmaRender.sprite();
         VertexConsumer vc = PlasmaRender.buffer(buffers);
         pose.pushPose();
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
-        // the hollow: one block in from each face, in sixteenths of the master's block space
-        float x0 = 16.05f, y0 = 16.05f, z0 = 16.05f, x1 = (part.w() - 1) * 16 - 0.05f, y1 = (part.h() - 1) * 16 - 0.05f, z1 = (part.d() - 1) * 16 - 0.05f;
+        // the body of plasma: the hollow plus half of every shell block, in sixteenths of the master's block space, so the walls look thin
+        float x0 = 8.05f, y0 = 8.05f, z0 = 8.05f, x1 = (part.w() - 1) * 16 + 7.95f, y1 = (part.h() - 1) * 16 + 7.95f, z1 = (part.d() - 1) * 16 + 7.95f;
         PlasmaRender.tank(vc, pose, sprite, x0, y0, z0, x1, y1, z1, frac);
         float surface = y0 + (y1 - y0) * frac;
         float t = (part.getLevel().getGameTime() + partialTick) / 20f;
         BlockPos min = part.getBlockPos();
+        gauge(part, pose, buffers, light, surface, t);
+        sweep(part, pose, buffers, light, partialTick);
         for (Map.Entry<BlockPos, int[]> e : part.ports().entrySet()) {
             int in = e.getValue()[1];
             if (in <= 0 || frac >= 0.995f) {
@@ -95,6 +101,61 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
             PlasmaRender.box(vc, pose, sprite, sx + rr - 0.7f, surface + 0.1f, sz - rr, sx + rr, surface + 0.35f, sz + rr, a, 255);
         }
         pose.popPose();
+    }
+
+    /** The smallest fraction drawn while the tank holds anything: a layer 1.5 px thick. */
+    public static float minFrac(int h) {
+        return 1.5f / Math.max(1f, (h - 1) * 16f);
+    }
+
+    /**
+     * The lit strip on each of the four upright edges of a formed tank, from the bottom corner node up to the plasma's surface: the
+     * frame doubles as a level gauge. The horizontal rails and the corner nodes are lit in the block models.
+     */
+    private static void gauge(TankPartBlockEntity part, PoseStack pose, MultiBufferSource buffers, int light, float surface, float t) {
+        float top = Math.min(surface, part.h() * 16 - 4f);
+        if (top <= 4.2f) {
+            return;
+        }
+        MachineKit k = new MachineKit(pose, buffers, light);
+        float pulse = 0.8f + 0.2f * Mth.sin(t * 3f);
+        float xe = part.w() * 16, ze = part.d() * 16;
+        for (float[] c : new float[][]{{-0.3f, 0.9f, -0.3f, 0.9f}, {xe - 0.9f, xe + 0.3f, -0.3f, 0.9f}, {-0.3f, 0.9f, ze - 0.9f, ze + 0.3f}, {xe - 0.9f, xe + 0.3f, ze - 0.9f, ze + 0.3f}}) {
+            k.glow(c[0], 4f, c[2], c[1], top, c[3], TQ, pulse);
+        }
+    }
+
+    /**
+     * For a second after the tank forms, a band of turquoise light runs over the shell from the block that completed it, so the
+     * change to the formed look reads as a sweep. The blocks themselves switch at once.
+     */
+    private static void sweep(TankPartBlockEntity part, PoseStack pose, MultiBufferSource buffers, int light, float partialTick) {
+        BlockPos origin = part.origin();
+        float age = part.getLevel().getGameTime() - part.formedAt() + partialTick;
+        if (origin == null || age < 0 || age >= 24f) {
+            return;
+        }
+        float p = age / 24f;
+        BlockPos min = part.getBlockPos();
+        int ox = origin.getX() - min.getX(), oy = origin.getY() - min.getY(), oz = origin.getZ() - min.getZ();
+        int w = part.w(), h = part.h(), d = part.d();
+        int maxD = Math.max(1, Math.max(ox, w - 1 - ox) + Math.max(oy, h - 1 - oy) + Math.max(oz, d - 1 - oz));
+        MachineKit k = new MachineKit(pose, buffers, light);
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                for (int z = 0; z < d; z++) {
+                    if (x != 0 && y != 0 && z != 0 && x != w - 1 && y != h - 1 && z != d - 1) {
+                        continue;
+                    }
+                    float at = (Math.abs(x - ox) + Math.abs(y - oy) + Math.abs(z - oz)) / (float) maxD * 0.8f;
+                    float f = (p - at) / 0.3f;
+                    if (f < 0 || f >= 1) {
+                        continue;
+                    }
+                    k.translucent(buffers, x * 16 - 0.6f, y * 16 - 0.6f, z * 16 - 0.6f, x * 16 + 16.6f, y * 16 + 16.6f, z * 16 + 16.6f, TQ, (1f - f) * 0.6f);
+                }
+            }
+        }
     }
 
     /** The setting ring on a port's outer faces: turquoise for in and out, blue for input, orange for output; grey while not part of a tank. */

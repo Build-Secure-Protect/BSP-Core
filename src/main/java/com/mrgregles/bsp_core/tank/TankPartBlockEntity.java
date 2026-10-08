@@ -30,6 +30,10 @@ public class TankPartBlockEntity extends BlockEntity {
     protected long stored;
     /** Port position to {mode, in mB/t, out mB/t}, kept by the master for the screen and the streams. */
     protected final Map<BlockPos, int[]> ports = new LinkedHashMap<>();
+    /** Game time the tank last formed and the block that completed it: the renderer runs a sweep of light from there for a second. */
+    protected long formedAt = -1000;
+    @Nullable
+    protected BlockPos origin;
     /** Client: the level the renderer last showed, so it glides. */
     public float shown = -1;
     private long syncedStored = -1;
@@ -44,7 +48,7 @@ public class TankPartBlockEntity extends BlockEntity {
     }
 
     public static long perBlock() {
-        return BSPConfig.getOr(BSPConfig.TANK_PER_BLOCK, 5_000_000);
+        return BSPConfig.getOr(BSPConfig.TANK_PER_BLOCK, 2_500_000);
     }
 
     @Nullable
@@ -78,6 +82,20 @@ public class TankPartBlockEntity extends BlockEntity {
         this.h = h;
         this.d = d;
         sync();
+    }
+
+    void setFormed(long gameTime, BlockPos origin) {
+        formedAt = gameTime;
+        this.origin = origin.immutable();
+    }
+
+    public long formedAt() {
+        return formedAt;
+    }
+
+    @Nullable
+    public BlockPos origin() {
+        return origin;
     }
 
     public int w() {
@@ -183,6 +201,10 @@ public class TankPartBlockEntity extends BlockEntity {
         tag.putInt("H", h);
         tag.putInt("D", d);
         tag.putLong("Stored", stored);
+        tag.putLong("FormedAt", formedAt);
+        if (origin != null) {
+            tag.putLong("Origin", origin.asLong());
+        }
         ListTag list = new ListTag();
         ports.forEach((p, v) -> {
             CompoundTag t = new CompoundTag();
@@ -199,6 +221,8 @@ public class TankPartBlockEntity extends BlockEntity {
         h = tag.getInt("H");
         d = tag.getInt("D");
         stored = tag.getLong("Stored");
+        formedAt = tag.contains("FormedAt") ? tag.getLong("FormedAt") : -1000;
+        origin = tag.contains("Origin") ? BlockPos.of(tag.getLong("Origin")) : null;
         ports.clear();
         for (Tag t : tag.getList("Ports", Tag.TAG_COMPOUND)) {
             CompoundTag c = (CompoundTag) t;

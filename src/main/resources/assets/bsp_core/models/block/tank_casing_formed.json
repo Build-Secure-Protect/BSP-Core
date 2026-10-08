@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/cube_all",
+ "render_type": "minecraft:translucent",
+ "textures": {
+  "all": "bsp_core:block/tank_glass",
+  "particle": "bsp_core:block/tank_casing"
+ }
+}

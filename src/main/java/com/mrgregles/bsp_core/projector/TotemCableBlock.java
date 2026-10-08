@@ -123,6 +123,9 @@ public class TotemCableBlock extends Block implements net.minecraft.world.level.
         if (other instanceof com.mrgregles.bsp_core.plasma.ProjectorBaseBlock || other instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock) {
             return true;
         }
+        if (other instanceof com.mrgregles.bsp_core.tank.TankBlock tank) {
+            return tank.part == com.mrgregles.bsp_core.tank.TankBlock.Part.PORT; // a Tank Port takes a cable on any free face
+        }
         // a repeater or a valve only takes cables at its two ends
         if (other instanceof com.mrgregles.bsp_core.plasma.BatteryChargerBlock) {
             return com.mrgregles.bsp_core.plasma.BatteryChargerBlock.joins(level.getBlockState(pos.relative(dir)), dir);

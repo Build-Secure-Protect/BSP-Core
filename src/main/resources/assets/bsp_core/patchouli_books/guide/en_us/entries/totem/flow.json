@@ -35,7 +35,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs keep drinking from what is left for a short while, then stop.",
+      "text": "The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a reserve of 4,000 mB. Take the totem away and the runs keep drinking from it for a short while, then stop.",
       "title": "What you see"
     },
     {

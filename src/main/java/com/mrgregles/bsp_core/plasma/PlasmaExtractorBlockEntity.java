@@ -43,7 +43,12 @@ public class PlasmaExtractorBlockEntity extends BlockEntity implements PlasmaNet
         super(ModBlockEntities.PLASMA_EXTRACTOR.get(), pos, state);
     }
 
+    /** The reserve ({@code plasma.extractorTank}) plus one second of the flow: the network takes a second's worth at a time, so the tank must hold it. */
     public int capacity() {
+        return reserve() + flow * 20;
+    }
+
+    public static int reserve() {
         return BSPConfig.getOr(BSPConfig.EXTRACTOR_TANK, 4000);
     }
 
@@ -149,6 +154,9 @@ public class PlasmaExtractorBlockEntity extends BlockEntity implements PlasmaNet
             System.arraycopy(battery.powers(), 0, offered, 0, offered.length);
             tank = Math.min(capacity(), tank + took);
             owner = null;
+        }
+        if (flow == 0) {
+            tank = Math.min(tank, reserve()); // nothing feeding it: only the reserve is kept, so the runs stop after a short while
         }
         setChanged();
         if (oldFlow != flow || (oldOwner == null) != (owner == null)) {

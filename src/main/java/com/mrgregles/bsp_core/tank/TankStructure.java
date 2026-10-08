@@ -78,7 +78,7 @@ public final class TankStructure {
                     BlockPos min = new BlockPos(x[0], y[0], z[0]);
                     int w = x[1] - x[0] + 1, h = y[1] - y[0] + 1, d = z[1] - z[0] + 1;
                     if (valid(sl, min, w, h, d)) {
-                        form(sl, min, w, h, d);
+                        form(sl, min, w, h, d, p);
                         return;
                     }
                 }
@@ -120,11 +120,26 @@ public final class TankStructure {
         return true;
     }
 
-    static void form(ServerLevel sl, BlockPos min, int w, int h, int d) {
+    /** Forms the tank over {@code min..dims}; {@code origin} is the block that completed it, where the forming sweep starts. */
+    static void form(ServerLevel sl, BlockPos min, int w, int h, int d, BlockPos origin) {
         long remembered = TankLedger.get(sl).take(min, w, h, d);
+        int[] dims = {w, h, d};
         for (BlockPos q : shell(min, w, h, d)) {
-            BlockState st = sl.getBlockState(q);
-            sl.setBlock(q, st.setValue(TankBlock.FORMED, true), 3);
+            BlockState st = sl.getBlockState(q).setValue(TankBlock.FORMED, true);
+            if (((TankBlock) st.getBlock()).part == TankBlock.Part.CASING) {
+                // which axes the tank's edge runs along through this block, and which side of the block the edge lies on
+                int[] rel = {q.getX() - min.getX(), q.getY() - min.getY(), q.getZ() - min.getZ()};
+                boolean[] extreme = new boolean[3];
+                int edges = 0;
+                for (int i = 0; i < 3; i++) {
+                    extreme[i] = rel[i] == 0 || rel[i] == dims[i] - 1;
+                    edges += extreme[i] ? 1 : 0;
+                }
+                for (int i = 0; i < 3; i++) {
+                    st = st.setValue(TankBlock.ALONG[i], edges == 3 || edges == 2 && !extreme[i]).setValue(TankBlock.HI[i], rel[i] == dims[i] - 1);
+                }
+            }
+            sl.setBlock(q, st, 3);
             if (sl.getBlockEntity(q) instanceof TankPartBlockEntity part) {
                 part.setMaster(min);
             }
@@ -132,8 +147,18 @@ public final class TankStructure {
         if (sl.getBlockEntity(min) instanceof TankPartBlockEntity master) {
             master.setDims(w, h, d);
             master.setStored(remembered);
+            master.setFormed(sl.getGameTime(), origin);
             master.sync();
         }
+    }
+
+    /** A block's state with the formed look taken off. */
+    private static BlockState unformed(BlockState st) {
+        st = st.setValue(TankBlock.FORMED, false);
+        for (int i = 0; i < 3; i++) {
+            st = st.setValue(TankBlock.ALONG[i], false).setValue(TankBlock.HI[i], false);
+        }
+        return st;
     }
 
     /** Called from a tank block's onRemove: a formed tank goes dormant (its plasma remembered); a block of a dormant one counts down. */
@@ -160,7 +185,7 @@ public final class TankStructure {
                     other.setDims(0, 0, 0);
                     other.setStored(0);
                 }
-                sl.setBlock(q, st.setValue(TankBlock.FORMED, false), 3);
+                sl.setBlock(q, unformed(st), 3);
             }
         }
     }

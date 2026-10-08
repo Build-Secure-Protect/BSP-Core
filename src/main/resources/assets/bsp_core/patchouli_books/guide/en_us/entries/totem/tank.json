@@ -6,41 +6,60 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 5,000,000 mB. It holds plasma only, no powers."
+      "text": "Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 2,500,000 mB. It holds plasma only, no powers."
     },
     {
       "type": "patchouli:multiblock",
-      "name": "A 4 x 3 x 4 tank",
+      "name": "A 4 x 3 x 4 tank, formed",
       "multiblock": {
         "pattern": [
           [
-            "CCCC",
-            "CGGC",
-            "CGGC",
-            "CCCC"
+            "ABBC",
+            "DEFG",
+            "DEEG",
+            "HIIJ"
           ],
           [
-            "CGGC",
-            "G__G",
-            "G__P",
-            "CGGC"
+            "KEEL",
+            "E__E",
+            "E__F",
+            "MEEN"
           ],
           [
-            "CCCC",
-            "CGPC",
-            "CGGC",
-            "C0CC"
+            "OPPQ",
+            "REES",
+            "REES",
+            "0UUV"
           ]
         ],
         "mapping": {
-          "C": "bsp_core:tank_casing[formed=true]",
-          "G": "bsp_core:tank_glass[formed=true]",
-          "P": "bsp_core:tank_port[formed=true]",
-          "0": "bsp_core:tank_casing[formed=true]"
+          "A": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=true,hi_y=true,along_z=true,hi_z=false]",
+          "B": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=false,hi_y=true,along_z=false,hi_z=false]",
+          "C": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=true,along_y=true,hi_y=true,along_z=true,hi_z=false]",
+          "D": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=false,along_y=false,hi_y=true,along_z=true,hi_z=false]",
+          "E": "bsp_core:tank_glass[formed=true]",
+          "F": "bsp_core:tank_port[formed=true]",
+          "G": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=true,along_y=false,hi_y=true,along_z=true,hi_z=false]",
+          "H": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=true,hi_y=true,along_z=true,hi_z=true]",
+          "I": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=false,hi_y=true,along_z=false,hi_z=true]",
+          "J": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=true,along_y=true,hi_y=true,along_z=true,hi_z=true]",
+          "K": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=false,along_y=true,hi_y=false,along_z=false,hi_z=false]",
+          "L": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=true,along_y=true,hi_y=false,along_z=false,hi_z=false]",
+          "M": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=false,along_y=true,hi_y=false,along_z=false,hi_z=true]",
+          "N": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=true,along_y=true,hi_y=false,along_z=false,hi_z=true]",
+          "O": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=true,hi_y=false,along_z=true,hi_z=false]",
+          "P": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=false,hi_y=false,along_z=false,hi_z=false]",
+          "Q": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=true,along_y=true,hi_y=false,along_z=true,hi_z=false]",
+          "R": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=false,along_y=false,hi_y=false,along_z=true,hi_z=false]",
+          "S": "bsp_core:tank_casing[formed=true,along_x=false,hi_x=true,along_y=false,hi_y=false,along_z=true,hi_z=false]",
+          "T": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=true,hi_y=false,along_z=true,hi_z=true]",
+          "U": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=false,hi_y=false,along_z=false,hi_z=true]",
+          "V": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=true,along_y=true,hi_y=false,along_z=true,hi_z=true]",
+          "0": "bsp_core:tank_casing[formed=true,along_x=true,hi_x=false,along_y=true,hi_y=false,along_z=true,hi_z=true]"
         },
         "symmetrical": false
       },
-      "text": "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way."
+      "text": "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way."
     },
     {
       "type": "patchouli:crafting",
@@ -56,7 +75,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.$(br2)Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.",
+      "text": "Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.$(br2)When the tank forms, a sweep of light runs over it and the casing turns to glass with a lit outline along the edges; the four uprights glow as high as the plasma stands, so the level can be read from outside. Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.",
       "title": "Seeing it"
     },
     {

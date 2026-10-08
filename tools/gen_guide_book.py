@@ -79,9 +79,47 @@ BATTERY_FEED = scene("A battery instead of a totem", [["A   J", "     "], ["E0cc
                      "A charged battery standing on an extractor feeds it at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.")
 
 
-TANK_SCENE = scene("A 4 x 3 x 4 tank", [["CCCC", "CGGC", "CGGC", "CCCC"], ["CGGC", "G  G", "G  P", "CGGC"], ["CCCC", "CGPC", "CGGC", "C0CC"]],
-                   {"C": "bsp_core:tank_casing[formed=true]", "G": "bsp_core:tank_glass[formed=true]", "P": "bsp_core:tank_port[formed=true]", "0": "bsp_core:tank_casing[formed=true]"},
-                   "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.")
+def tank_scene(w, h, d, ports, name, body):
+    """A formed tank as the game shows it: every casing block carries the rail flags TankStructure.form sets (which axes its rail
+    runs along and which corner it sits on), so the scene shows the outline-and-glass look, not cubes."""
+    chars = iter("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+    mapping, by_state, layers = {}, {}, []
+    for y in reversed(range(h)):
+        rows = []
+        for z in range(d):
+            row = ""
+            for x in range(w):
+                ex, ey, ez = x in (0, w - 1), y in (0, h - 1), z in (0, d - 1)
+                edges = ex + ey + ez
+                if edges == 0:
+                    row += " "
+                    continue
+                if (x, y, z) in ports:
+                    state = "bsp_core:tank_port[formed=true]"
+                elif edges >= 2:
+                    props = ["formed=true"]
+                    for axis, (e, v, n) in zip("xyz", ((ex, x, w), (ey, y, h), (ez, z, d))):
+                        along = edges == 3 or not e
+                        props.append(f"along_{axis}={'true' if along else 'false'}")
+                        props.append(f"hi_{axis}={'true' if v == n - 1 else 'false'}")
+                    state = "bsp_core:tank_casing[" + ",".join(props) + "]"
+                else:
+                    state = "bsp_core:tank_glass[formed=true]"
+                if state not in by_state:
+                    by_state[state] = next(chars)
+                    mapping[by_state[state]] = state
+                row += by_state[state]
+            rows.append(row)
+        layers.append(rows)
+    # Patchouli wants one "0", the centre: the bottom layer's south-west corner block
+    bottom = layers[-1]
+    mapping["0"] = mapping[bottom[d - 1][0]]
+    bottom[d - 1] = "0" + bottom[d - 1][1:]
+    return scene(name, layers, mapping, body)
+
+
+TANK_SCENE = tank_scene(4, 3, 4, {(2, 2, 1), (3, 1, 2)}, "A 4 x 3 x 4 tank, formed",
+                        "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.")
 
 
 def build(name, layers, controller, body):
@@ -154,18 +192,18 @@ ENTRIES = [
         text("An interface shares what its extractors give $(l)equally$() between the runs leaving it. A run that can take less than its share, because a valve caps it or its end is full, leaves the rest to the others.$(br2)So two bases on one totem get 50 mB/t each; cap one at 20 and the other gets 80. The cables leaving the interface always add up to the supply.", "Sharing"),
         craft("plasma_repeater", None, "A $(item)Plasma Repeater$() ends one run and starts a fresh one, so the reach count begins again. Plasma goes in its dark back and out its lit front; placed pointing the way you look, the wrench turns it. It costs a tenth of the pressure, and a projector behind it receives one power at full level, or two or more each one level lower per repeater."),
         craft("plasma_valve", None, "A $(item)Plasma Valve$() sets the most that may pass it, from 0 to 1,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run."),
-        text("The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs keep drinking from what is left for a short while, then stop.", "What you see"),
+        text("The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a reserve of 4,000 mB. Take the totem away and the runs keep drinking from it for a short while, then stop.", "What you see"),
         craft("wrench", None, "The $(item)Wrench$() turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round."),
         craft("blue_illyrium_core_cable", None, "Magnatite, Illyrium and Charged Illyrium cables take any of the sixteen dyes: eight cables round a dye, and a coloured cable can be dyed again. A coloured cable joins only cables of its own colour, a plain one only plain ones, so two runs can cross without mixing. Machines take any colour."),
         text("Point the wrench at an end of a cable and right-click to set what that end does:$(br)$(li)$(l)Normal$(): plasma flows either way, as before.$(li)$(l)Output$(): plasma may only leave the cable here.$(li)$(l)Input$(): plasma may only enter here.$(li)$(l)Off$(): not joined.$(br2)Where another colour meets the end, the first click $(l)Links$() them. Sneak and right-click puts an end back to Normal.", "Cable ends"),
         text("While you hold the wrench a line above the crosshair names the end you point at and its setting. Output ends wear a copper collar with an arrow pointing out, Input ends an arrow pointing in, Off ends a dark plate, and Links a copper and white collar.$(br2)Sneak and right-click the $(l)core$() of a cable to pick it up with its settings kept on the item.", "What you see"),
     ]),
     ("totem", "tank", "The Plasma Tank", "bsp_core:tank_port", 8, [
-        text("Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 5,000,000 mB. It holds plasma only, no powers."),
+        text("Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 2,500,000 mB. It holds plasma only, no powers."),
         TANK_SCENE,
         craft("tetrium_glass", "tank_glass", "Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet."),
         craft("tank_casing", "tank_port", "A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks. Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face."),
-        text("Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.$(br2)Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.", "Seeing it"),
+        text("Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.$(br2)When the tank forms, a sweep of light runs over it and the casing turns to glass with a lit outline along the edges; the four uprights glow as high as the plasma stands, so the level can be read from outside. Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.", "Seeing it"),
         text("Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.", "Breaking and rebuilding"),
     ]),
     ("totem", "chunks", "Chunk Loading", "minecraft:filled_map", 9, [

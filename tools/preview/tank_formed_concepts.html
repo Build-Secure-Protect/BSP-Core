@@ -1,0 +1,140 @@
+<title>Tank Formed Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One WebGL context draws every view. Three looks for a formed tank, each with a playable transition from the built shell. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.view{ width:100%; max-width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/8; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.state{ font-family:var(--display); font-size:10px; color:var(--muted); } .state b{ color:var(--tq); font-weight:400; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+</style>
+<div class="wrap">
+<section><h1>Tank Formed Concepts</h1>
+<p class="lede">What a Plasma Tank should look like once the last block completes it. Today nothing changes but the port rings. The brief: the casing on the edges becomes a small outline of the tank and the rest of each casing block becomes glass, so a finished tank reads as finished from across the room. The same 5 x 4 x 5 tank in every view, with two ports and two casing blocks placed on faces (front and top) to show that face casing turns to glass as well. Press FORM to watch the last block go in; drag to turn.</p>
+<div class="card"><div class="ctl"><span class="key"><b>Transition:</b></span><button type="button" class="hb on" id="sweepBtn">Sweep</button><button type="button" class="hb" id="snapBtn">Snap</button><span class="key"><b>Fill:</b></span><label><input type="range" id="lvl" min="0" max="100" value="45"> <span id="lvlv">45%</span></label><button type="button" class="hb" id="allBtn">FORM ALL</button></div>
+<p>Sweep: a turquoise flash runs from the block that completed the tank along the shell, and each block changes as it passes (about a second). Snap: every block changes at once with one flash on the new frame.</p></div></section>
+
+<section><h2>1. Three looks</h2>
+<div class="grid3" id="looks"></div>
+</section>
+
+<section><h2>2. What changes, block by block</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Block</th><th>Built (today's look)</th><th>Formed</th></tr></thead><tbody>
+<tr><td><b>Casing on an edge</b></td><td>Full dark cube with pale rim and rivets.</td><td>A thin rail along the tank's edge; the rest of the block is glass, joined seamlessly to its neighbours.</td></tr>
+<tr><td><b>Casing at a corner</b></td><td>Same cube.</td><td>Three rails meet in a small corner node.</td></tr>
+<tr><td><b>Casing on a face</b></td><td>Same cube.</td><td>Glass, no rail. The outline is the edges only.</td></tr>
+<tr><td><b>Tank Glass</b></td><td>Seamless pane.</td><td>Unchanged.</td></tr>
+<tr><td><b>Tank Port</b></td><td>Casing cube with trim ring and lit window.</td><td>Unchanged; its setting ring lights turquoise as now.</td></tr>
+<tr><td><b>Broken tank</b></td><td></td><td>Every block goes back to the built look at once (rails become cubes again), the rings go grey, Jade says "Tank unfinished".</td></tr>
+</tbody></table></div>
+<p>In the mod: the casing already has a <b>formed</b> blockstate. Add six "rail" flags to it (one per direction, true where the tank's edge continues into the neighbour), set by the structure code when the tank forms, and a multipart blockstate draws a glass core plus one rail arm per flag. A face casing gets no flags and shows as glass only. Glass-against-glass face culling is extended to formed casing so the sheet stays seamless. All models and textures come from <code>gen_tank_assets.py</code>. The sweep is a light drawn by the tank's renderer for one second after forming (the blocks themselves switch at once, which the eye reads as the flash passing); Snap needs no renderer work.</p></div>
+</section>
+
+<section><h2>3. Decisions</h2>
+<div class="card"><ol>
+<li><b>Which look:</b> A Slim Rails (default), B Girder, or C Lit Rails.</li>
+<li><b>Transition:</b> Sweep from the completing block (default) or Snap.</li>
+<li><b>Rail colour:</b> the casing's pale rim grey (default) or the dark hull.</li>
+<li><b>Look C only:</b> the uprights glow up to the plasma level (default, a gauge you can read from outside) or stay fully lit.</li>
+</ol></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, ION=0x4cb2fa, TQ=0x19d3b0, TEAL=0x0c8f78, GLASS=0x9ec5e8;
+  const state={lvl:.45, sweep:true};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; mat.depthWrite=op>.5; } const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ring(g,p,axis,R,r,c){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshBasicMaterial({color:c})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  const plasmaMat=()=>new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:.92,depthWrite:true});
+  // ---- today's blocks (the approved Riveted Frame look)
+  const RIMS=[[[0,0,0],[16,2,2]],[[0,14,0],[16,16,2]],[[0,0,14],[16,2,16]],[[0,14,14],[16,16,16]],[[0,0,0],[2,16,2]],[[14,0,0],[16,16,2]],[[0,0,14],[2,16,16]],[[14,0,14],[16,16,16]],[[0,0,0],[2,2,16]],[[14,0,0],[16,2,16]],[[0,14,0],[2,16,16]],[[14,14,0],[16,16,16]]];
+  function builtCasing(g,o){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],HULL); for(const [f,t] of RIMS) bx(g,[x+f[0],y+f[1],z+f[2]],[x+t[0],y+t[1],z+t[2]],TRIM); for(const d of [[4,4],[11,4],[4,11],[11,11]]) bx(g,[x+d[0],y+d[1],z-.3],[x+d[0]+1,y+d[1]+1,z+16.3],MID); }
+  function glassBlock(g,o){ const [x,y,z]=o; bx(g,[x+.2,y+.2,z+.2],[x+15.8,y+15.8,z+15.8],GLASS,false,.16); }
+  function portBlock(g,o,face,lit){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],HULL); const grp=portFrame(g,o,face); bx(grp,[3,3,-1.2],[13,13,0],TRIM); bx(grp,[5,5,-1.4],[11,11,-1.1],ION,true); return ring(grp,[8,8,-1.6],'z',5.2,.45,lit?TQ:0x5a6270); }
+  function portFrame(g,o,face){ const grp=new THREE.Group(); grp.position.set(o[0]+8,o[1]+8,o[2]+8); grp.rotation.order='YXZ'; if(face==='s') grp.rotation.y=Math.PI; if(face==='e') grp.rotation.y=-Math.PI/2; if(face==='w') grp.rotation.y=Math.PI/2; if(face==='u') grp.rotation.x=-Math.PI/2; if(face==='d') grp.rotation.x=Math.PI/2; const inner=new THREE.Group(); inner.position.set(-8,-8,-8); grp.add(inner); g.add(grp); return inner; }
+  // ---- rails. arms: which of the six directions the tank's edge continues into (x-,x+,y-,y+,z-,z+). corner: the block's outer corner, as 0/1 per axis (which side of the block the edge lies on)
+  function railBox(o,axis,c,w,span){ // a rail of width w along an axis, hugging the block's outer corner, covering [span0,span1] along the axis
+    const f=[o[0],o[1],o[2]], t=[o[0],o[1],o[2]]; for(let i=0;i<3;i++){ if(i===axis){ f[i]+=span[0]; t[i]+=span[1]; } else { if(c[i]){ f[i]+=16-w; t[i]+=16; } else { t[i]+=w; } } } return [f,t]; }
+  function arms(ex,ey,ez,x,y,z,W,H,D){ // edge directions: an edge block lies on two extremal axes; the edge runs along the third. a corner lies on all three, so three edges run from it
+    const out=[]; const ax=[[ex,x,W],[ey,y,H],[ez,z,D]]; for(let i=0;i<3;i++){ if(ax[i][0]) continue; out.push([i,-1]); out.push([i,1]); } // not extremal on i: edge runs along i both ways
+    if(ex&&ey&&ez){ for(let i=0;i<3;i++){ out.push([i, ax[i][1]===0?1:-1]); } } return out; }
+  // look A: Slim Rails. 4px square rails on the edge line, 5px corner nodes, everything else glass
+  const lookA={ name:'A. Slim Rails', text:'A 4-pixel rail of the casing\'s pale rim colour traces every edge of the tank, with a slightly larger node at each corner. All the rest of the casing is glass, so a formed tank is a glass box drawn in outline. Quietest of the three, the plasma stays the main thing.',
+    formed(g,o,c,am){ glassBlock(g,o); const w=4; for(const [axis,dir] of am){ const span=dir<0?[0,8]:[8,16]; const [f,t]=railBox(o,axis,c,w,span); bx(g,f,t,TRIM); } if(am.length===3){ const [f,t]=railBox(o,0,c,5,[c[0]?11:0,c[0]?16:5]); bx(g,f,t,TRIM); } } };
+  // look B: Girder Frame. L-shaped girder on the two outer faces of each edge, rivet studs, bolted corner caps
+  const lookB={ name:'B. Girder Frame', text:'Each edge becomes an L-girder: two 6-pixel flanges lying flat on the tank\'s two outer faces, with rivets along them and a bolted cap at every corner. Heavier and more industrial, and it reads as a tank frame from far away. The inside of the block is glass as in A.',
+    formed(g,o,c,am){ glassBlock(g,o); for(const [axis,dir] of am){ const span=dir<0?[0,8]:[8,16]; const others=[0,1,2].filter(i=>i!==axis); for(const k of others){ // a flange: thin on axis k (2px), 6px wide on the other
+        const f=[o[0],o[1],o[2]], t=[o[0],o[1],o[2]]; const j=others.find(i=>i!==k); f[axis]+=span[0]; t[axis]+=span[1]; if(c[k]){ f[k]+=14; t[k]+=16.2; } else { f[k]-=.2; t[k]+=2; } if(c[j]){ f[j]+=10; t[j]+=16; } else { t[j]+=6; } bx(g,f,t,MID);
+        const r=[o[0],o[1],o[2]], s=[o[0],o[1],o[2]]; r[axis]+=dir<0?3:11; s[axis]=r[axis]+2; if(c[k]){ r[k]+=16.2; s[k]+=16.9; } else { r[k]-=.9; s[k]-=.2; } if(c[j]){ r[j]+=12; s[j]+=14; } else { r[j]+=2; s[j]+=4; } bx(g,r,s,TRIM); } }
+      if(am.length===3){ const f=[o[0],o[1],o[2]], t=[o[0],o[1],o[2]]; for(let i=0;i<3;i++){ if(c[i]){ f[i]+=9; t[i]+=16.3; } else { f[i]-=.3; t[i]+=7; } } bx(g,f,t,TRIM); } } };
+  // look C: Lit Rails. 3px dark rails with a turquoise strip along the outer edge; corner nodes glow; the uprights glow only up to the plasma level
+  const lookC={ name:'C. Lit Rails', text:'Thin dark rails with a lit turquoise strip on the outer edge and a glowing node at each corner, so the outline shows at night. The four vertical edges light up only as high as the plasma inside, a level gauge readable from outside. The rest is glass as in A.', lit:true,
+    formed(g,o,c,am,lits){ glassBlock(g,o); for(const [axis,dir] of am){ const span=dir<0?[0,8]:[8,16]; const [f,t]=railBox(o,axis,c,3,span); bx(g,f,t,HULL2); const [lf,lt]=railBox(o,axis,c,1.2,span); for(let i=0;i<3;i++){ if(i===axis) continue; if(c[i]){ lf[i]+=.2; lt[i]+=.3; } else { lf[i]-=.3; lt[i]-=.2; } } const m=bx(g,lf,lt,TQ,true); if(axis===1) lits.push({m,y:o[1]+span[0],h:8}); }
+      if(am.length===3){ const [f,t]=railBox(o,0,c,4,[c[0]?12:0,c[0]?16:4]); bx(g,f,t,TQ,true); } } };
+  // ---- the shell: both versions of every block, so the transition can flip them
+  const TANK=[5,4,5]; const PORTS={'2,3,2':'u','0,1,2':'w'}; const FACE_CASING=new Set(['2,1,0','1,3,1']); const ORIGIN=[4,3,2]; // the last block placed: a top edge casing at the far corner
+  function shell(g,look){ const [W,H,D]=TANK; const blocks=[]; const lits=[];
+    for(let x=0;x<W;x++) for(let y=0;y<H;y++) for(let z=0;z<D;z++){ const ex=x===0||x===W-1, ey=y===0||y===H-1, ez=z===0||z===D-1; if(!(ex||ey||ez)) continue; const edges=(ex?1:0)+(ey?1:0)+(ez?1:0); const o=[x*16,y*16,z*16]; const key=x+','+y+','+z; const face=ex?(x===0?'w':'e'):ey?(y===0?'d':'u'):(z===0?'n':'s');
+      const built=new THREE.Group(), formed=new THREE.Group(); g.add(built); g.add(formed); let ringM=null;
+      if(PORTS[key]){ portBlock(built,o,PORTS[key],false); ringM=portBlock(formed,o,PORTS[key],true); }
+      else if(edges>=2){ builtCasing(built,o); look.formed(formed,o,[x===W-1?1:0,y===H-1?1:0,z===D-1?1:0],arms(ex,ey,ez,x,y,z,W,H,D),lits); }
+      else if(FACE_CASING.has(key)){ builtCasing(built,o); glassBlock(formed,o); }
+      else { glassBlock(built,o); glassBlock(formed,o); }
+      formed.visible=false; const flash=bx(g,[o[0]-.6,o[1]-.6,o[2]-.6],[o[0]+16.6,o[1]+16.6,o[2]+16.6],TQ,true,0); flash.visible=false;
+      const dist=Math.abs(x-ORIGIN[0])+Math.abs(y-ORIGIN[1])+Math.abs(z-ORIGIN[2]); blocks.push({built,formed,flash,dist}); }
+    return {blocks,lits}; }
+  function plasmaFill(g){ const [W,H,D]=TANK; const m=new THREE.Mesh(new THREE.BoxGeometry((W-2)*16-1,1,(D-2)*16-1),plasmaMat()); m.position.set(W*8,16,D*8); g.add(m); return m; }
+  function setFill(m,f){ const H=TANK[1]; const h=Math.max(.01,(H-2)*16*f); m.scale.y=h; m.position.y=16+h/2; }
+  function ground(g){ bx(g,[-16,-6,-16],[TANK[0]*16+16,0,TANK[2]*16+16],0x3f5a30); }
+  // ---- views
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const v={view,scene,cam,opts,ry:opts.ry,rx:opts.rx,drag:false}; let lx=0,ly=0; v.g=new THREE.Group(); scene.add(v.g); v.tick=build(v.g,v);
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);}); view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; }); view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth,H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; if(v.tick) v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); } requestAnimationFrame(loop); })(t0);
+  // the transition: p runs 0..1 over 1.2 s (sweep) or 0.5 s (snap); a block flips when the wave reaches its distance; its flash fades after
+  function tankScene(look){ return (g,v)=>{ const {blocks,lits}=shell(g,look); const fill=plasmaFill(g); ground(g); const maxD=Math.max(...blocks.map(b=>b.dist)); v.formed=false; v.anim=null;
+      v.start=dir=>{ v.anim={dir,t0:performance.now()}; };
+      return t=>{ setFill(fill,state.lvl); fill.material.color.setHex(ION).multiplyScalar(.85+.15*Math.sin(t*2));
+        if(v.anim){ const dur=state.sweep&&!reduce?1.2:.5; const p=Math.min(1,(performance.now()-v.anim.t0)/1000/dur); const forming=v.anim.dir>0;
+          for(const b of blocks){ const at=state.sweep&&!reduce?b.dist/maxD*.8:0; const passed=p>=at; const show=forming?passed:!passed; b.formed.visible=show; b.built.visible=!show; const k=(p-at)/.3; const op=passed&&k<1?(1-k)*.75:0; b.flash.visible=op>0; b.flash.material.opacity=op; }
+          if(p>=1){ v.formed=forming; v.anim=null; for(const b of blocks){ b.flash.visible=false; } } }
+        if(look.lit){ const H=TANK[1]; const top=16+(H-2)*16*state.lvl; for(const l of lits){ const vis=v.formed||v.anim; const frac=Math.max(0,Math.min(1,(top-l.y)/l.h)); l.m.visible=!!vis&&frac>0.02; l.m.scale.y=Math.max(.02,frac); l.m.position.y=l.y+l.h*frac/2; l.m.material.color.setHex(TQ).multiplyScalar(.8+.2*Math.sin(t*3)); } }
+        v.stateEl.innerHTML=v.anim?'<b>forming...</b>':v.formed?'<b>FORMED</b> 130 blocks':'BUILT, last block missing'; }; }; }
+  for(const look of [lookA,lookB,lookC]){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+look.name+'</h3>'; el('looks').appendChild(c); const view=document.createElement('div'); view.className='view'; c.appendChild(view);
+    const v=makeView(view,tankScene(look),{dist:230,target:[40,32,40],ry:Math.PI*1.2,rx:.42}); const ctl=document.createElement('div'); ctl.className='ctl'; const b1=document.createElement('button'); b1.type='button'; b1.className='hb on'; b1.textContent='FORM'; const b2=document.createElement('button'); b2.type='button'; b2.className='hb'; b2.textContent='BREAK A BLOCK'; const st=document.createElement('span'); st.className='state'; ctl.append(b1,b2,st); c.appendChild(ctl); v.stateEl=st; v.formBtn=b1;
+    b1.onclick=()=>{ if(!v.formed&&!v.anim) v.start(1); }; b2.onclick=()=>{ if(v.formed&&!v.anim) v.start(-1); };
+    const p=document.createElement('p'); p.textContent=look.text; c.appendChild(p); }
+  el('allBtn').onclick=()=>{ for(const v of views){ if(!v.formed&&!v.anim) v.start(1); } };
+  el('sweepBtn').onclick=()=>{ state.sweep=true; el('sweepBtn').classList.add('on'); el('snapBtn').classList.remove('on'); };
+  el('snapBtn').onclick=()=>{ state.sweep=false; el('snapBtn').classList.add('on'); el('sweepBtn').classList.remove('on'); };
+  el('lvl').addEventListener('input',e=>{ state.lvl=e.target.value/100; el('lvlv').textContent=e.target.value+'%'; });
+  if(!reduce){ setTimeout(()=>{ for(const v of views) v.start(1); },1800); }
+})();
+</script>

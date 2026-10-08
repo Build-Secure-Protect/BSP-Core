@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Writes the Plasma Tank's assets: Tank Casing, Tank Glass, Tank Port and Tetrium Glass (textures, models, blockstates, items,
-loot, tags, recipes). The plasma inside, the streams and the port rings are drawn by TankRenderer.
+"""Writes the Plasma Tank's assets: Tank Casing (and its formed look: glass body, rails and corner nodes), Tank Glass, Tank Port and
+Tetrium Glass (textures, models, blockstates, items, loot, tags, recipes). The plasma inside, the streams, the lit uprights, the
+forming sweep and the port rings are drawn by TankRenderer.
 
   python3 tools/gen_tank_assets.py
 """
@@ -38,6 +39,65 @@ def tetrium_glass(x, y):
         return (110, 90, 160, 150)
     k = 0.9 + hsh(x, y, 83) * 0.2
     return (int(150 * k), int(120 * k), int(210 * k), 72)
+
+
+AXES = ("x", "y", "z")
+
+
+def rail_model(axis, hi):
+    """A formed casing's rail along one axis: a 3 px dark bar on the block's outer corner, the full length of the block. hi gives, for the
+    other two axes, whether the corner is on the positive side. Horizontal rails carry a lit strip on the outer edge; the vertical
+    ones do not, because TankRenderer draws their strip only as high as the plasma stands (the frame as a level gauge)."""
+    a = AXES.index(axis)
+    frm, to = [0, 0, 0], [16, 16, 16]
+    sf, st = [0, 0, 0], [16, 16, 16]
+    for i in range(3):
+        if i == a:
+            continue
+        if hi[i]:
+            frm[i], to[i] = 13, 16
+            sf[i], st[i] = 15.1, 16.3
+        else:
+            frm[i], to[i] = 0, 3
+            sf[i], st[i] = -0.3, 0.9
+    elements = [mbox(frm, to, "hull")]
+    if axis != "y":
+        elements.append(mbox(sf, st, "turq"))
+    return elements
+
+
+def node_model(hi):
+    """The lit corner node where three rails meet: a 4 px cube on the block's outer corner."""
+    frm = [12 if hi[i] else -0.3 for i in range(3)]
+    to = [16.3 if hi[i] else 4 for i in range(3)]
+    return [mbox(frm, to, "turq")]
+
+
+def hi_name(hi):
+    return "".join("1" if v else "0" for v in hi)
+
+
+def casing_blockstate():
+    """Unformed: the riveted cube. Formed: a glass body, a rail per flagged axis on the corner the HI flags give, a node at a corner."""
+    parts = [{"when": {"formed": "false"}, "apply": {"model": "bsp_core:block/tank_casing"}},
+             {"when": {"formed": "true"}, "apply": {"model": "bsp_core:block/tank_casing_formed"}}]
+    for axis in AXES:
+        others = [b for b in AXES if b != axis]
+        for p in range(2):
+            for q in range(2):
+                hi = {others[0]: bool(p), others[1]: bool(q)}
+                hi3 = [hi.get(b, False) for b in AXES]
+                when = {"formed": "true", f"along_{axis}": "true"}
+                for b in others:
+                    when[f"hi_{b}"] = "true" if hi[b] else "false"
+                parts.append({"when": when, "apply": {"model": f"bsp_core:block/tank_rail_{axis}_{hi_name(hi3)}"}})
+    for n in range(8):
+        hi = [bool(n >> i & 1) for i in range(3)]
+        when = {"formed": "true", "along_x": "true", "along_y": "true", "along_z": "true"}
+        for i, b in enumerate(AXES):
+            when[f"hi_{b}"] = "true" if hi[i] else "false"
+        parts.append({"when": when, "apply": {"model": f"bsp_core:block/tank_node_{hi_name(hi)}"}})
+    return {"multipart": parts}
 
 
 def port_model():
@@ -86,6 +146,19 @@ def main():
         write(ASSETS / f"models/item/{name}.json", {"parent": f"bsp_core:block/{name}"})
         write(ASSETS / f"blockstates/{name}.json", {"variants": {"": {"model": f"bsp_core:block/{name}"}}})
         loot(name)
+    # the formed look of the casing: glass body, rails and nodes (the blockstate is multipart; the item keeps the cube)
+    write(ASSETS / "models/block/tank_casing_formed.json", {"parent": "minecraft:block/cube_all", "render_type": "minecraft:translucent", "textures": {"all": "bsp_core:block/tank_glass", "particle": "bsp_core:block/tank_casing"}})
+    for axis in AXES:
+        for n in range(8):
+            hi = [bool(n >> i & 1) for i in range(3)]
+            if hi[AXES.index(axis)]:
+                continue  # the rail's own axis has no side
+            m = model(rail_model(axis, hi), PLASMA, gui=False)
+            write(ASSETS / f"models/block/tank_rail_{axis}_{hi_name(hi)}.json", m)
+    for n in range(8):
+        hi = [bool(n >> i & 1) for i in range(3)]
+        write(ASSETS / f"models/block/tank_node_{hi_name(hi)}.json", model(node_model(hi), PLASMA, gui=False))
+    write(ASSETS / "blockstates/tank_casing.json", casing_blockstate())
     port = model(port_model(), PLASMA, gui=False)
     port["render_type"] = "minecraft:cutout"
     write(ASSETS / "models/block/tank_port.json", port)

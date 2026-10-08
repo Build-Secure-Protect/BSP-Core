@@ -151,7 +151,7 @@ public class BspJadePlugin implements IWailaPlugin {
                     tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_level", String.format("%,d", d.getLong("TankStored")), String.format("%,d", d.getLong("TankCap")))
                             .withStyle(d.getLong("TankStored") > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
                 } else {
-                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_unformed").withStyle(net.minecraft.ChatFormatting.GRAY));
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_unformed").withStyle(net.minecraft.ChatFormatting.YELLOW));
                 }
                 if (d.contains("PortMode")) {
                     var mode = com.mrgregles.bsp_core.tank.TankPortBlockEntity.Mode.values()[Math.min(2, Math.max(0, d.getByte("PortMode")))];

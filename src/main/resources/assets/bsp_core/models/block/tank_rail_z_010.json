@@ -1,0 +1,154 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "atlas": "bsp_core:block/machine_atlas",
+  "plasma": "bsp_core:block/plasma_still",
+  "particle": "bsp_core:block/tank_casing",
+  "casing": "bsp_core:block/tank_casing"
+ },
+ "elements": [
+  {
+   "from": [
+    0,
+    13,
+    0
+   ],
+   "to": [
+    3,
+    16,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      0.75
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      0.75
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      0.0,
+      4.0,
+      0.75
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      0.0,
+      4.0,
+      0.75
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      4.0
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      0.0,
+      0.75,
+      4.0
+     ],
+     "texture": "#atlas"
+    }
+   }
+  },
+  {
+   "from": [
+    -0.3,
+    15.1,
+    0
+   ],
+   "to": [
+    0.9,
+    16.3,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      8.0,
+      4.0,
+      8.3,
+      4.300000000000001
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      8.0,
+      4.0,
+      8.3,
+      4.300000000000001
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      8.0,
+      4.0,
+      12.0,
+      4.300000000000001
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      8.0,
+      4.0,
+      12.0,
+      4.300000000000001
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      8.0,
+      4.0,
+      8.3,
+      8.0
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      8.0,
+      4.0,
+      8.3,
+      8.0
+     ],
+     "texture": "#atlas"
+    }
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   }
+  }
+ ]
+}

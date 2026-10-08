@@ -1,4 +1,6 @@
-# BSP-Core manual test checklist (v0.1.0)
+# BSP-Core manual test checklist
+
+Sections are grouped by feature; inside a group they run oldest to newest, so a later section may refine an earlier one (dated sections name the day they were added). Newest sections go at the end of their group.
 
 Run `./gradlew runClient` for single-player checks. For two-player checks run `./gradlew runServer`
 (accept the EULA in `run/eula.txt`, set `online-mode=false` in `run/server.properties`), then join
@@ -7,7 +9,25 @@ from two clients, or use one `runClient` and one external client.
 Enable the grant on the test server: edit `run/<world>/serverconfig/bsp_core-server.toml` and set
 `grantTotemOnFirstJoin = true`, or use `/bsp totem give <you>` as an operator.
 
+Contents:
+- Shatter Totem
+- Powers, auras and placed upgrades
+- Totem Compass
+- Materials, machines and progression
+- Shatter Coins, factory, vault, scoring and admin
+- Anti Totem Block and Decoy Totems
+- Wave Plasma network
+- Batteries, charger, cells and emitter
+- Plasma Tank
+- Chunk loading
+- JEI, Assembly Guide, guide book, advancements and Jade
+- Network storage and cross-server
+- Fix-up rounds (dated)
+
+# Shatter Totem
+
 ## Look (Guardian model)
+
 - [ ] In the inventory the totem is a small kneeling creeper statue whose body pulses turquoise to blue; the orb stays dark green.
 - [ ] Placed while owned: gold body, 1.5 blocks tall, face visible above the orb, glows in the dark.
 - [ ] Unclaim it as an operator: body turns turquoise. Start a steal: body flashes gold and red; ends: back to gold.
@@ -15,11 +35,132 @@ Enable the grant on the test server: edit `run/<world>/serverconfig/bsp_core-ser
 - [ ] Mine and re-place the totem: orbs and colour come back exactly as before.
 
 ## Orientation
+
 - [ ] In the hotbar and inventory the statue's face and orb are visible (not its back).
 - [ ] Held in first and third person the face is visible.
 - [ ] Placed from any direction, the statue faces you.
 
+## Item basics
+
+- [ ] BSP creative tab shows a glinting Shatter Totem, tooltip "Unclaimed".
+- [ ] Tooltip shows "Owner: <name>" after `/bsp totem give`.
+- [ ] Cannot stack two totems. Cannot put a totem in a shulker box or bundle.
+- [ ] Putting a totem in a chest pulls it straight back into your inventory with a red message.
+
+## Placing and mining
+
+- [ ] Sneak + right-click a block places a glowing gold figure on a plinth.
+- [ ] Right-click the placed block opens the panel showing the owner.
+- [ ] Mining your own placed totem gives it back, owner intact.
+- [ ] Another player mining it is refused with a red message. An operator can mine it.
+- [ ] TNT or a creeper next to it leaves it standing. A piston cannot push it.
+
+## Dropping
+
+- [ ] Q-drop in the Overworld: it lies on the ground, cannot be destroyed by lava or fire.
+- [ ] After 30 seconds on the ground it becomes a block where it fell.
+- [ ] Another player cannot pick it up while on the ground; the owner can.
+- [ ] Throw it into the void (End): it reappears instead of being lost.
+- [ ] In a non-allowed dimension (e.g. a Compact Machine, or set `allowedDimensions` to only the Nether and test in the Overworld): Q-drop and placement are refused and the totem stays in your slot.
+
+## Death
+
+- [ ] Die to a mob or fall while carrying it: it drops as the 30 second ground item, no grave contains it.
+- [ ] Die to another player: it is immediately placed as a block next to your body.
+- [ ] Die in a non-allowed dimension: it appears at your last position in an allowed dimension.
+
+## Logout protection
+
+- [ ] With a totem in your inventory, open the pause menu and press Disconnect / Save and Quit: a warning appears. "No" returns to the pause menu.
+- [ ] Press "Yes": you disconnect, and on rejoining the totem is a placed block next to where you stood, not in your inventory.
+- [ ] Repeat inside a Compact Machine or other non-allowed dimension: the totem is placed at your last Overworld position instead.
+
+## Stealing solo, as an operator
+
+Make yourself an operator (`/op <you>` in the server console, or single-player with cheats). Right-click
+a placed totem: a purple "Operator" column appears on the left.
+- [ ] Type any name (e.g. `Dummy`) in the box and press Assign: the panel shows "Owner: Dummy" and a Steal button appears for you.
+- [ ] Press Steal: HUD countdown appears. Walk 6+ blocks away: "Return to the totem! 15s" appears. Come back: it clears.
+- [ ] Press Cancel steal in the column: the HUD shows "Steal failed".
+- [ ] Press Steal again, then Finish steal: the panel shows you as the owner and the HUD shows "You stole Dummy's totem!".
+- [ ] Press Unclaim: the panel says the totem is unclaimed. Mining it is refused for non-operators. Steal takes 60 s (or `unclaimedStealSeconds`).
+- [ ] Press + on a buff: the level rises in the column. Mine the totem: the item tooltip lists that buff. Reset buffs clears them.
+
+## Stealing (two players)
+
+- [ ] Player B opens A's placed totem: a Steal button is shown. Player A sees no Steal button.
+- [ ] B presses Steal: B sees a countdown at the top of the screen; A sees a red warning and countdown.
+- [ ] B walks more than 5 blocks away: B sees "Return to the totem! 15s", A sees "Thief is out of range".
+- [ ] B stays away 15 s: the steal fails for both.
+- [ ] B stays near for the full time (set `stealSeconds = 20` in config for testing): B becomes the owner, B can mine it, A cannot.
+- [ ] A can steal it back with the same timer.
+- [ ] B dies or disconnects during a steal: the steal fails.
+
+## Upgrades
+
+- [ ] Right-click with the totem in the main hand (not sneaking) opens the upgrade tree.
+- [ ] Buying a level costs the configured XP levels; button is disabled when you cannot afford it.
+- [ ] Tooltip lists bought buffs. Place and pick up the totem: buffs are still there.
+- [ ] With the totem in the offhand: hit a mob for extra damage (Damage), see the Resistance effect icon (Resistance), mine stone faster (Mining Speed).
+- [ ] Buffs stop when the totem leaves the offhand.
+
+## Totem tiers and the upgrade tree
+
+Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the new level lists are used.
+
+**Tree and tiers**
+- [ ] In survival, buying a level or raising the tier lowers the XP number and the right coin count in the wallet row straight away, including coins kept outside the hotbar. In creative the wallet row reads "CREATIVE: everything is free" and every price reads "Free in creative", on the totem screens and the compass.
+- [ ] No two nodes on the tree touch or overlap, including the four around the centre.
+- [ ] A totem upgraded before this change (in hand or placed) shows Tier I with no levels after loading; a totem upgraded under the new system keeps everything across relog, pick-up and placing.
+- [ ] Right-click with the totem in hand: rings I to IV around the totem, five spokes. At Tier I only Mining Speed, Damage, Fortify and Healing Aura are outlined; everything else is dark. The wallet row shows XP and a count for each of the five coins.
+- [ ] The panel shows the selected upgrade's level, NOW and NEXT, and the price as a coin icon with a count plus XP. A Tier I level costs Copper coins.
+- [ ] After two levels the panel says the Tier I limit is reached. "Raise" costs 4 Copper coins and 15 XP levels; afterwards the centre reads II, ring II lights, and levels 3 and 4 cost Gold coins.
+- [ ] Swiftness opens only once Mining Speed is level 2 and the totem is Tier II; before that the panel says what is needed. The same along every path.
+- [ ] With too few of the right coin the reason names the coin and number; other coins are not accepted in its place.
+- [ ] Base upgrades in hand say "Place the totem to buy Base upgrades". At the placed totem the owner can buy everything and raise the tier; tier and levels survive picking up, placing and stealing.
+- [ ] Another player's placed totem: levels visible, buying refused, Steal button shown. Nothing overlaps in any state.
+- [ ] Operator tab: the bar under the panel lowers or raises the selected level, the small bar in the tier box lowers or raises the tier, and Assign, Unclaim, Cancel steal, Finish steal and Reset buffs work.
+- [ ] Changing a cost in `upgrades.costs` and rejoining changes the prices shown.
+
+**Carried (totem in the offhand)**
+- [ ] Mining Speed, Damage, Swiftness, Vitality (hearts appear and go with the offhand), Featherfall, Night Sight (steady, no flicker).
+- [ ] Resistance removes a share of damage; even at level 8 you still take damage.
+
+**Base (totem placed; test with a second player)**
+- [ ] Fortify, Healing Aura, Ward (Weakness on intruders), Alarm (outline plus one chat line per visit), Sanctuary (no natural hostile spawns), Deadlock (longer steal), Overclock (machines in range are faster within 5 seconds).
+
+**Raid (in the thief's offhand when the steal starts)**
+- [ ] Lockpick shortens the steal; Shroud delays the owner's warning.
+- [ ] A steal is never longer than 600 s or shorter than 60 s.
+
+**Always stealable**
+- [ ] At Fortify 10 an intruder can still mine blocks next to the totem, at one fifth speed.
+
+## Commands (operator)
+
+- [ ] `/bsp totem locate <player>` lists placed totem positions, and stops listing them once mined.
+- [ ] `/bsp totem reset <player>` followed by relogging on a grant-enabled server gives a new totem.
+
+## Demo mode (operators)
+
+- [ ] As an operator, every machine screen shows an OPERATOR box with DEMO OFF to the left of the inventory. A non-operator sees no box.
+- [ ] Switch it on with the machine empty: Tetrium Crucible (burner, coils, melt rising, lamps), Combination Forge (head striking, charge fusing), Illyrium Crucible (melt, stirring cross, rings, lava gauges part full), Illyrium Refinery (water, agitator, centrifuge), all looping.
+- [ ] Shatter Coin Factory: demo on any controller sets the whole joined machine going: belts, press, blanks turning into coins, changing coin every ten seconds. Unformed slices show nothing.
+- [ ] Nothing is produced or consumed in demo mode; a real job still runs normally with demo on or off.
+- [ ] Demo stays on after leaving and rejoining the world, and switches off cleanly.
+- [ ] A non-operator cannot switch demo, even by clicking where the button would be.
+
+## Friends and access
+
+- [ ] The totem panel's ACCESS tab (owner and admins only): type an online player's name and Add. The row shows four switches, all on; each toggles; x removes. A ninth name is refused.
+- [ ] A friend with Upgrades can buy upgrades on your placed totem, change its chunks and switch a projector's powers. Without it, those are refused.
+- [ ] A friend with Alarm walks into the Alarm cube without glowing or warning you; with Ward they are not weakened. Projectors honour the same switches.
+- [ ] The list survives pick-up and re-placing, and is empty after the totem is stolen.
+
+# Powers, auras and placed upgrades
+
 ## Placed upgrades and auras (needs Shatter Coins: `/give @s bsp_core:shatter_coin 64`)
+
 - [ ] Open your placed totem: Fortify and Healing Aura rows show "Not active" with an "Upgrade: 5 coins" button; "Your Shatter Coins" shows your count.
 - [ ] Buy Fortify level 1: 5 coins leave your inventory, the row shows level 1 / radius 1, a violet orb appears at the base, and a faint violet sphere of radius 1.5 surrounds the totem.
 - [ ] Raise Fortify to 3 (operator + button is fine): sphere grows to radius 5.5.
@@ -29,12 +170,45 @@ Enable the grant on the test server: edit `run/<world>/serverconfig/bsp_core-ser
 - [ ] Mine the totem and re-place it: both auras and their spheres are restored.
 - [ ] Walk 60 blocks away and back: spheres render from far away and disappear when the totem is removed.
 
-## Logout protection
-- [ ] With a totem in your inventory, open the pause menu and press Disconnect / Save and Quit: a warning appears. "No" returns to the pause menu.
-- [ ] Press "Yes": you disconnect, and on rejoining the totem is a placed block next to where you stood, not in your inventory.
-- [ ] Repeat inside a Compact Machine or other non-allowed dimension: the totem is placed at your last Overworld position instead.
+## Aura spheres and other models
+
+- [ ] Stand outside a Fortify or Healing sphere and look through it at a machine, a factory, another totem, a chest and an item frame on the far side: all of them stay visible, tinted by the sphere. The same from inside the sphere looking out.
+- [ ] The sphere itself still looks the same: a faint coloured bubble that pulses gently.
+
+## Aura cubes and the hide switch
+
+- [ ] Fortify and Healing Aura draw as cubes with glowing edges around totems and projectors. A player standing inside the cube still sees its edges.
+- [ ] The AURAS switch in the totem panel's header hides every aura cube for you only; another player still sees them. The setting survives a restart (`config/bsp_core-client.toml`), and the keybind (unbound by default, under BSP Core in Controls) does the same with an action-bar message.
+- [ ] Effects use the cube: a player just outside the sphere but inside the cube's corner is still warded/alarmed/healed.
+
+## Newer powers
+
+- [ ] The tree has five rings now (Tier V outermost). Bouncy sits beside Night Sight on the Dig path, X-ray on the outer ring; Cloaking beside Deadlock; Recall on the outer ring of Home; Recall Block after Shroud. Output starts the plasma path.
+- [ ] Bouncy: fall 3+ blocks and bounce back up, higher from a higher fall, with some forward speed; sneaking lands flat; fall damage reduced per level and no damage at level 4. Works from the emitter too.
+- [ ] X-ray: press X with X-ray carried. Ores show blue, block entities gold, spawners red through the walls within range, fading with depth; a small ring by the crosshair drains, then shows the recharge. Pressing X again switches it off early.
+- [ ] Recall: with Recall on a placed totem, have someone start stealing it while you stand far away: after the thief's Shroud and Recall Block delays a card appears above the hotbar with an arrow and distance; R teleports you to the surface at the level's distance from the totem facing it; N declines; the card runs out after 20 s. Recall then rests 10 minutes. No card appears when you are already within range.
+- [ ] Recall Block on the thief's offhand totem delays the card by its seconds.
+- [ ] Cloaking: buy it on a totem with a base built around it, then view from outside as a player not on the access list: the cube shows what was there when Cloaking came on (walk in and the real blocks appear; the owner always sees the real blocks). The totem's plasma output is 50 mB/t lower while cloaked. Known limits of this first version: the copy is of the moment it came on (not the land as generated), entities inside are not hidden, and block entities inside briefly lose their contents on the client after walking in until the chunk reloads.
+
+# Totem Compass
+
+## Totem Compass
+
+- [ ] Craft it (4 Tetrium Ingots around 1 Illyrium Ingot) or take it from the BSP tab. Holding it, the needle points toward your nearest placed totem and turns as you turn. Check it points the right way, not mirrored.
+- [ ] Right-click: the screen shows "Pointing to your nearest totem". Click a coin button: one coin of that tier leaves your inventory and "Loaded" rises by 1, 5, 10, 30 or 60 seconds.
+- [ ] Press Start tracking: the needle swings to the nearest totem owned by someone else (assign a second totem to a dummy name as an operator to test). The timer counts down.
+- [ ] When tracking ends the screen shows a 10:00 cooldown, during which Start tracking is disabled and the needle points to your own totem again.
+- [ ] Buy a cooldown upgrade: coin value is taken and the cooldown length drops by one minute, down to 3:00 after seven levels.
+
+## Totem Compass screen
+
+- [ ] The right-hand button reads "Shorten cooldown" and fits inside its frame. Under it is the price as a coin icon and "x4 Copper" (red when you do not have enough). Buying takes exactly those coins and nothing else; the next level asks for Gold.
+- [ ] Five coin tiles with the tracking time each adds; clicking one spends a coin and raises STORED. Start and the upgrade button grey out when they cannot be used. Header shows READY, TRACKING or COOLDOWN with a clock.
+
+# Materials, machines and progression
 
 ## Illyrium progression
+
 Speed up testing in `serverconfig/bsp_core-server.toml`: set `ticksPerOre`, `ticksPerIngot`, `smeltTicks`, `alloyTicks` and `ticksPerDust` to 40.
 - [ ] A new world loads without errors (world generation files are valid). `/locate` is not available for ores, so dig or use spectator: Tetrium Ore is common between y -32 and 80; Illyrium Ore is rare below y -16.
 - [ ] Ores need an iron pickaxe (Tetrium) or diamond pickaxe (Illyrium) and drop themselves.
@@ -58,25 +232,84 @@ Speed up testing in `serverconfig/bsp_core-server.toml`: set `ticksPerOre`, `tic
 - [ ] With AllTheModium installed, its mining dimension contains Tetrium Ore in the stone and deepslate layers and End Stone Illyrium Ore in the bottom layer.
 
 ## Crushing by hand
+
 - [ ] Pickaxe + Tetrium Ingot anywhere in a crafting grid shows a Crushed Tetrium Ingot. Taking it leaves the pickaxe in the grid with one less durability and removes the ingot.
 - [ ] The crushed item turns at once into either 1 Tetrium Dust (about 1 in 3) or 3 Tetrium Nuggets, with a message. Shift-click a stack of ingots with a pickaxe: each ingot is rolled separately.
 - [ ] Same with a Dirty Illyrium Ingot: about 1 in 6 gives Dirty Illyrium Dust, otherwise 3 Dirty Illyrium Nuggets. Nine Dirty Illyrium Nuggets craft into one Dirty Illyrium Ingot.
 - [ ] A pickaxe on its last durability point breaks after the craft.
 
 ## RF upgrades
+
 - [ ] Put an RF Upgrade in the bottom-right slot of any machine: a yellow gauge appears and the machine now accepts RF from cables. Without the upgrade it accepts none.
 - [ ] With RF stored, a Tetrium Crucible job is about 5%, 10% or 30% quicker for Mk I, II, III.
 - [ ] Combination Forge with an RF upgrade and RF: works with no coal and takes about half the time, or less with higher marks.
 - [ ] Illyrium Crucible with RF Upgrade Mk III and RF: each job drains about 175 mB of lava where it drained 250.
 
-## Totem Compass
-- [ ] Craft it (4 Tetrium Ingots around 1 Illyrium Ingot) or take it from the BSP tab. Holding it, the needle points toward your nearest placed totem and turns as you turn. Check it points the right way, not mirrored.
-- [ ] Right-click: the screen shows "Pointing to your nearest totem". Click a coin button: one coin of that tier leaves your inventory and "Loaded" rises by 1, 5, 10, 30 or 60 seconds.
-- [ ] Press Start tracking: the needle swings to the nearest totem owned by someone else (assign a second totem to a dummy name as an operator to test). The timer counts down.
-- [ ] When tracking ends the screen shows a 10:00 cooldown, during which Start tracking is disabled and the needle points to your own totem again.
-- [ ] Buy a cooldown upgrade: coin value is taken and the cooldown length drops by one minute, down to 3:00 after seven levels.
+## Port sockets (multiblocks)
+
+- [ ] Form an Illyrium Crucible. The four pylons stand in the centre of their blocks. Each has an orange socket (lower pylon block) and a yellow socket (upper pylon block) on both outward faces, reaching out to the block face. Each Item Hatch shows one framed socket flush with its outward face.
+- [ ] A pipe or cable run to any of those faces meets the socket dead centre, with no gap and no overlap, on all four facings of the controller.
+- [ ] Form an Illyrium Refinery. The Item Hatch side shows an item socket; the Refinery Pump side shows a blue water socket with a yellow RF one above it.
+- [ ] Crucible: a lava pipe fills the tank only through a lower pylon block (orange); an RF cable charges only through an upper pylon block (yellow). The wrong one does not connect.
+- [ ] The yellow RF sockets are dim without an RF upgrade and pulse once one is fitted.
+- [ ] Open the screen and cycle a hatch's mode in PORTS: the socket on the machine changes colour straight away (blue in, orange out, turquoise both, grey off).
+- [ ] PORTS lists each hatch with "Items: <mode>", the fluid row with what it accepts, and an RF row that reads "No RF upgrade" or "RF in". No text overlaps the STATUS column or the UPGRADES label.
+- [ ] Pipes and cables connect at the socketed blocks: items at hatches, lava/water and RF at pylons/pump.
+
+## Recipes and machine components
+
+Full list with grids: `tools/preview/recipe_plan.html` (regenerate with `python3 tools/gen_recipe_plan.py`).
+- [ ] BSP creative tab shows the 15 components, each with its own icon and name.
+- [ ] Furnace or blast furnace: Tetrium Slag smelts into a Slag Brick.
+- [ ] Combination Forge: one Tetrium Ingot gives one Tetrium Plate; nine nuggets still give an ingot. The empty input slot tooltip mentions both.
+- [ ] Shared parts craft: Machine Chassis (x2), Tetrium Coil (x2), Drive Motor, Circuit Substrate (x3), Basic Control Circuit.
+- [ ] Illyrium Crucible parts craft: Thermal Lining (x4), Crucible Control Circuit, Illyrium Casing (x4), Illyrium Core (any Illyrium Ore in the centre), Lava Pylon (x2), Item Hatch, controller.
+- [ ] Illyrium Refinery parts craft: Refinery Control Circuit, Illyrium Tank Glass (x4), Refinery Pump, controller.
+- [ ] Factory parts craft: Mint Control Circuit, Conveyor Belt (x3), Press Die, Factory Frame (x2), Factory Press, Blank Hatch, Power Port, controller.
+- [ ] Motivator crafts from a Resonance Crystal, Illyrium Processor, two Tetrium Coils and three Tetrium Plates.
+- [ ] RF Upgrades Mk I to III and the Illyrium Forge Upgrade use their new recipes; the old ones no longer work.
+- [ ] A full survival run is possible in order: Tetrium Crucible, Combination Forge, Illyrium Crucible, Illyrium Refinery, factory slice, Motivator.
+
+## Animated single-block machines
+
+- [ ] Tetrium Crucible, idle: dim burner window, dark coils, low melt, tip glowing. Working: burner glows orange (yellow on RF), coils light in sequence, the melt rises and turns pale near the end, six collar lamps fill, the tip flashes white at the end.
+- [ ] Slag piles up in one tray and nuggets in the other as output collects, and empty again when taken. An RF Upgrade shows as a capacitor on the collar.
+- [ ] Combination Forge, idle: press head parked high. Working: the head strikes, faster near the end; the nuggets shrink as a glowing ingot grows; rail lights chase; five bed lamps fill. Illyrium jobs glow turquoise.
+- [ ] The left front socket lights turquoise with the Illyrium Forge Upgrade, the right one yellow with an RF Upgrade.
+- [ ] Both look right in all four facings, and their inventory icons still show the complete machine.
+
+## Redstone control
+
+- [ ] A lever or redstone torch next to a working Tetrium Crucible or Combination Forge pauses it; the header reads PAUSED BY REDSTONE. Removing the signal resumes it.
+- [ ] The same at the controller block of the Illyrium Crucible and Illyrium Refinery.
+- [ ] A signal at one factory slice's controller pauses only that slice: its lane is framed red, the tooltip says it is paused by redstone, and its belts stop. Other slices keep pressing. No press time is counted while paused.
+
+## Magnatite (materials only; the centrifuge comes next)
+
+- [ ] Magnatite Ore and Deepslate Magnatite Ore are in the BSP creative tab and show dark specks with a blue sheen on stone and deepslate. A diamond pickaxe drops the ore block; an iron pickaxe drops nothing.
+- [ ] In a new world the ore is found below Y 8, mostly in deepslate, somewhat more often than diamond.
+- [ ] Magnatite Nugget and Ingot have the vanilla iron shapes in dark blue-grey; the Charged Magnatite Ingot is bright blue and glints; Carbon Dust is a black powder; the Copper Tetrium Coil shows copper windings.
+- [ ] Nine nuggets craft into an ingot and back. The Combination Forge accepts nine Magnatite Nuggets and makes an ingot.
+- [ ] The Copper Tetrium Coil recipe (Copper Ingots, Carbon Dust, Tetrium Coils around a Magnatite Ingot) shows in JEI.
+
+## Magnetic Centrifuge
+
+- [ ] All four blocks are craftable and in the creative tab. Placing the controller shows ghost blocks for the other eight; sneak + right-click opens the Assembly Guide, and holding Shift over any of the blocks in JEI opens it too.
+- [ ] Built in all four facings (controller front centre, Rotor in the middle, Item Hatch left, Power Port right as seen from the front), the blocks hide and the Armoured Spin Drum appears: plated sides with slit windows, hazard stripes, lamps, the extractor inside. Breaking any block brings the blocks back.
+- [ ] With no RF the screen lists "Needs 60 RF per tick" and nothing runs. With a cable on the Power Port the RF gauge fills and it runs; cables on the casing or controller do nothing. Hoppers and pipes work on the Item Hatch only.
+- [ ] One Magnatite Ore (either kind) takes 45 seconds and gives 3 nuggets and 1 Carbon Dust. The extractor spins while working and the lamps turn green; a redstone signal pauses it.
+- [ ] A Magnatite Ingot with no coil does nothing and the screen says to fit a coil. With the Copper Tetrium Coil fitted it tries every 45 seconds; over many tries about 1 in 6 succeed, and a failed try leaves the ingot in the input slot. The copper band behind the windows glows blue while charging.
+- [ ] Stack a second layer (Rotor + 8 Casing): its blocks hide, a second extractor appears turning the other way, and the status line at the top right of the screen shows the layers and the new numbers. Test up to six: nuggets rise to 7 to 9, the charge chance reaches 1 in 2 at five, and at six a try takes 25 seconds. A seventh layer is ignored.
+- [ ] Removing a block from a middle layer drops the layers above it back to ordinary blocks and the numbers fall.
+- [ ] Power use rises with layers (60 per layer separating, 240 per layer charging).
+- [ ] The status line does not overlap the title, the state text or the PORTS list on the machine screen.
+- [ ] The operator demo switch spins the extractors with nothing in the machine.
+- [ ] JEI shows a Magnetic Centrifuge category with both jobs, opened by clicking the dial on the machine screen. The guide book has "Magnatite" and "Magnetic Centrifuge" entries. The three new advancements are granted.
+
+# Shatter Coins, factory, vault, scoring and admin
 
 ## Shatter Coins and the factory (multiblock slices)
+
 Blocks: Shatter Coin Factory Controller, Factory Frame x2, Factory Press, Factory Blank Hatch, Factory Power Port, Motivator. All in the BSP creative tab.
 
 **Building one slice (1 wide, 2 high, 3 long)**
@@ -119,230 +352,14 @@ Blocks: Shatter Coin Factory Controller, Factory Frame x2, Factory Press, Factor
 - [ ] With 10 slices nothing overlaps; the screen fits at GUI scale 3 and 4.
 - [ ] Add or remove a slice while the screen is open: it closes, and reopening shows the new layout.
 
-## Item basics
-- [ ] BSP creative tab shows a glinting Shatter Totem, tooltip "Unclaimed".
-- [ ] Tooltip shows "Owner: <name>" after `/bsp totem give`.
-- [ ] Cannot stack two totems. Cannot put a totem in a shulker box or bundle.
-- [ ] Putting a totem in a chest pulls it straight back into your inventory with a red message.
-
-## Placing and mining
-- [ ] Sneak + right-click a block places a glowing gold figure on a plinth.
-- [ ] Right-click the placed block opens the panel showing the owner.
-- [ ] Mining your own placed totem gives it back, owner intact.
-- [ ] Another player mining it is refused with a red message. An operator can mine it.
-- [ ] TNT or a creeper next to it leaves it standing. A piston cannot push it.
-
-## Dropping
-- [ ] Q-drop in the Overworld: it lies on the ground, cannot be destroyed by lava or fire.
-- [ ] After 30 seconds on the ground it becomes a block where it fell.
-- [ ] Another player cannot pick it up while on the ground; the owner can.
-- [ ] Throw it into the void (End): it reappears instead of being lost.
-- [ ] In a non-allowed dimension (e.g. a Compact Machine, or set `allowedDimensions` to only the Nether and test in the Overworld): Q-drop and placement are refused and the totem stays in your slot.
-
-## Death
-- [ ] Die to a mob or fall while carrying it: it drops as the 30 second ground item, no grave contains it.
-- [ ] Die to another player: it is immediately placed as a block next to your body.
-- [ ] Die in a non-allowed dimension: it appears at your last position in an allowed dimension.
-
-## Stealing solo, as an operator
-Make yourself an operator (`/op <you>` in the server console, or single-player with cheats). Right-click
-a placed totem: a purple "Operator" column appears on the left.
-- [ ] Type any name (e.g. `Dummy`) in the box and press Assign: the panel shows "Owner: Dummy" and a Steal button appears for you.
-- [ ] Press Steal: HUD countdown appears. Walk 6+ blocks away: "Return to the totem! 15s" appears. Come back: it clears.
-- [ ] Press Cancel steal in the column: the HUD shows "Steal failed".
-- [ ] Press Steal again, then Finish steal: the panel shows you as the owner and the HUD shows "You stole Dummy's totem!".
-- [ ] Press Unclaim: the panel says the totem is unclaimed. Mining it is refused for non-operators. Steal takes 60 s (or `unclaimedStealSeconds`).
-- [ ] Press + on a buff: the level rises in the column. Mine the totem: the item tooltip lists that buff. Reset buffs clears them.
-
-## Stealing (two players)
-- [ ] Player B opens A's placed totem: a Steal button is shown. Player A sees no Steal button.
-- [ ] B presses Steal: B sees a countdown at the top of the screen; A sees a red warning and countdown.
-- [ ] B walks more than 5 blocks away: B sees "Return to the totem! 15s", A sees "Thief is out of range".
-- [ ] B stays away 15 s: the steal fails for both.
-- [ ] B stays near for the full time (set `stealSeconds = 20` in config for testing): B becomes the owner, B can mine it, A cannot.
-- [ ] A can steal it back with the same timer.
-- [ ] B dies or disconnects during a steal: the steal fails.
-
-## Upgrades
-- [ ] Right-click with the totem in the main hand (not sneaking) opens the upgrade tree.
-- [ ] Buying a level costs the configured XP levels; button is disabled when you cannot afford it.
-- [ ] Tooltip lists bought buffs. Place and pick up the totem: buffs are still there.
-- [ ] With the totem in the offhand: hit a mob for extra damage (Damage), see the Resistance effect icon (Resistance), mine stone faster (Mining Speed).
-- [ ] Buffs stop when the totem leaves the offhand.
-
-## Commands (operator)
-- [ ] `/bsp totem locate <player>` lists placed totem positions, and stops listing them once mined.
-- [ ] `/bsp totem reset <player>` followed by relogging on a grant-enabled server gives a new totem.
-
-## Port sockets (multiblocks)
-- [ ] Form an Illyrium Crucible. The four pylons stand in the centre of their blocks. Each has an orange socket (lower pylon block) and a yellow socket (upper pylon block) on both outward faces, reaching out to the block face. Each Item Hatch shows one framed socket flush with its outward face.
-- [ ] A pipe or cable run to any of those faces meets the socket dead centre, with no gap and no overlap, on all four facings of the controller.
-- [ ] Form an Illyrium Refinery. The Item Hatch side shows an item socket; the Refinery Pump side shows a blue water socket with a yellow RF one above it.
-- [ ] Crucible: a lava pipe fills the tank only through a lower pylon block (orange); an RF cable charges only through an upper pylon block (yellow). The wrong one does not connect.
-- [ ] The yellow RF sockets are dim without an RF upgrade and pulse once one is fitted.
-- [ ] Open the screen and cycle a hatch's mode in PORTS: the socket on the machine changes colour straight away (blue in, orange out, turquoise both, grey off).
-- [ ] PORTS lists each hatch with "Items: <mode>", the fluid row with what it accepts, and an RF row that reads "No RF upgrade" or "RF in". No text overlaps the STATUS column or the UPGRADES label.
-- [ ] Pipes and cables connect at the socketed blocks: items at hatches, lava/water and RF at pylons/pump.
-
-## Recipes and machine components
-Full list with grids: `tools/preview/recipe_plan.html` (regenerate with `python3 tools/gen_recipe_plan.py`).
-- [ ] BSP creative tab shows the 15 components, each with its own icon and name.
-- [ ] Furnace or blast furnace: Tetrium Slag smelts into a Slag Brick.
-- [ ] Combination Forge: one Tetrium Ingot gives one Tetrium Plate; nine nuggets still give an ingot. The empty input slot tooltip mentions both.
-- [ ] Shared parts craft: Machine Chassis (x2), Tetrium Coil (x2), Drive Motor, Circuit Substrate (x3), Basic Control Circuit.
-- [ ] Illyrium Crucible parts craft: Thermal Lining (x4), Crucible Control Circuit, Illyrium Casing (x4), Illyrium Core (any Illyrium Ore in the centre), Lava Pylon (x2), Item Hatch, controller.
-- [ ] Illyrium Refinery parts craft: Refinery Control Circuit, Illyrium Tank Glass (x4), Refinery Pump, controller.
-- [ ] Factory parts craft: Mint Control Circuit, Conveyor Belt (x3), Press Die, Factory Frame (x2), Factory Press, Blank Hatch, Power Port, controller.
-- [ ] Motivator crafts from a Resonance Crystal, Illyrium Processor, two Tetrium Coils and three Tetrium Plates.
-- [ ] RF Upgrades Mk I to III and the Illyrium Forge Upgrade use their new recipes; the old ones no longer work.
-- [ ] A full survival run is possible in order: Tetrium Crucible, Combination Forge, Illyrium Crucible, Illyrium Refinery, factory slice, Motivator.
-
-## JEI
-JEI is loaded in dev runs (`./gradlew runClient`).
-- [ ] The game starts with JEI and the item list shows all BSP-Core items.
-- [ ] Pressing R on a Tetrium Nugget shows the Tetrium Crucible page (ore in, nuggets and slag out, time, fuel note) and the "9 nuggets from an ingot" crafting recipe.
-- [ ] Combination Forge page has three jobs: 9 Tetrium Nuggets to an ingot, 1 Tetrium Ingot to a plate, 9 Illyrium Nuggets to an ingot with the Illyrium Forge Upgrade shown as a fitted part.
-- [ ] Illyrium Crucible page has two jobs (ore + slag + lava; Pure Illyrium Dust + Tetrium Dust + lava) and shows the lava amount on hover.
-- [ ] Illyrium Refinery page shows Dirty Illyrium Dust, water and the filters cycling as the fitted part.
-- [ ] Shatter Coin Factory page has five jobs, one per tier, with real time and RF per coin.
-- [ ] Crushing by Hand page shows pickaxe + ingot giving dust and nuggets, each with its chance on hover.
-- [ ] Pressing U on a machine block shows what it makes. Pressing R on any multiblock block, the Motivator, the Shatter Totem or a Tetrium Plate shows an Information page.
-- [ ] Numbers on the pages match the config after changing it and rejoining the world.
-- [ ] Text on every page fits inside the page.
-
-## Assembly Guide
-- [ ] Place an Illyrium Crucible controller, empty your hand, sneak + right-click it: the Assembly Guide opens. The same on a Refinery controller and a factory controller.
-- [ ] Plain right-click still behaves as before, and its message mentions the guide.
-- [ ] The controller in the guide faces you by default, whichever way the real one faces. Dragging turns and tilts the model.
-- [ ] Next / Back and the arrow keys change step; Play runs through the steps and stops at the end.
-- [ ] Earlier steps are full blocks, the current step pulses, later steps are faint see-through blocks that do not distract.
-- [ ] Part names in the list are not cut off; the controller is listed as "Controller".
-- [ ] The caption names the layer, the count and the block, with a tip underneath; nothing overlaps or runs off the panel.
-- [ ] The parts list shows each block with placed / total; the current block is orange, finished ones turquoise.
-- [ ] Positions in the guide match the in-world ghost blocks exactly (left and right not mirrored).
-- [ ] Factory guide ends with two optional steps: a second slice beside the first, then Motivators on both.
-- [ ] Sneak + right-click on a finished machine does not open the guide.
-- [ ] E or Escape closes it.
-
-## Guide book (Patchouli is loaded in dev runs)
-- [ ] The game starts with Patchouli and no errors about the book `bsp_core:guide` in the log.
-- [ ] A Book plus a Tetrium Nugget crafts the BSP Field Guide. It is also in the BSP creative tab.
-- [ ] A brand-new player gets the guide along with the Shatter Totem on first join (where first-join grants are on).
-- [ ] The book opens with four chapters: The Shatter Totem, Tetrium and Illyrium, Machines, Shatter Coins. Every entry opens; no page says a recipe is missing.
-- [ ] Links between entries work (for example Fortify, Illyrium Crucible, Shatter Coin Factory).
-- [ ] Build pages for the Illyrium Crucible, Illyrium Refinery and factory slice show the right blocks, with the Item Hatch left and the Pump right on the Refinery, matching the in-world ghosts. "Visualize" projects the structure in the world.
-- [ ] Text fits on every page.
-- [ ] In JEI (item list, bookmarks or a recipe page), hovering any multiblock block shows "Hold [Shift] for the Assembly Guide". Holding Shift fills a short bar and opens the guide for that machine; closing it returns to where you were.
-- [ ] Casing, Core and Item Hatch open the Illyrium Crucible guide; Tank Glass and Pump the Refinery; factory blocks and the Motivator the factory.
-- [ ] Holding Shift over the same blocks in your own inventory or a chest does not open the guide.
-
-## Advancements
-- [ ] The advancements screen has a BSP-Core tab whose first entry is earned by holding a Shatter Totem.
-- [ ] Picking up or crafting each item in the chain earns its advancement with a toast: Tetrium Ore, Tetrium Crucible, Tetrium Ingot, Slag Brick, Combination Forge, Tetrium Plate, Machine Chassis, Basic Control Circuit, RF Upgrade, both Illyrium controllers, Dirty Illyrium Ingot, Pure Illyrium Dust, Illyrium Ingot, factory controller, first coin, Illyrium coin, Motivator, Totem Compass.
-- [ ] Goal and challenge advancements are announced in chat; ordinary ones are not.
-- [ ] The tree reads left to right without crossed lines.
-
-## JEI click area
-- [ ] On each of the four machine screens, hovering the progress dial shows "Show Recipes" and clicking it opens that machine's JEI page.
-
-## Redstone control
-- [ ] A lever or redstone torch next to a working Tetrium Crucible or Combination Forge pauses it; the header reads PAUSED BY REDSTONE. Removing the signal resumes it.
-- [ ] The same at the controller block of the Illyrium Crucible and Illyrium Refinery.
-- [ ] A signal at one factory slice's controller pauses only that slice: its lane is framed red, the tooltip says it is paused by redstone, and its belts stop. Other slices keep pressing. No press time is counted while paused.
-
 ## Coin loot
+
 - [ ] `/loot give @s loot minecraft:chests/simple_dungeon` run many times sometimes gives Copper (1 to 2) and Gold Shatter Coins; the same for abandoned_mineshaft and the three stronghold tables.
 - [ ] `minecraft:chests/end_city_treasure` and `minecraft:chests/ancient_city` occasionally give a Diamond Shatter Coin.
 - [ ] No table ever gives a Netherite or Illyrium Shatter Coin.
 
-## Totem tiers and the upgrade tree
-Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the new level lists are used.
-
-**Tree and tiers**
-- [ ] In survival, buying a level or raising the tier lowers the XP number and the right coin count in the wallet row straight away, including coins kept outside the hotbar. In creative the wallet row reads "CREATIVE: everything is free" and every price reads "Free in creative", on the totem screens and the compass.
-- [ ] No two nodes on the tree touch or overlap, including the four around the centre.
-- [ ] A totem upgraded before this change (in hand or placed) shows Tier I with no levels after loading; a totem upgraded under the new system keeps everything across relog, pick-up and placing.
-- [ ] Right-click with the totem in hand: rings I to IV around the totem, five spokes. At Tier I only Mining Speed, Damage, Fortify and Healing Aura are outlined; everything else is dark. The wallet row shows XP and a count for each of the five coins.
-- [ ] The panel shows the selected upgrade's level, NOW and NEXT, and the price as a coin icon with a count plus XP. A Tier I level costs Copper coins.
-- [ ] After two levels the panel says the Tier I limit is reached. "Raise" costs 4 Copper coins and 15 XP levels; afterwards the centre reads II, ring II lights, and levels 3 and 4 cost Gold coins.
-- [ ] Swiftness opens only once Mining Speed is level 2 and the totem is Tier II; before that the panel says what is needed. The same along every path.
-- [ ] With too few of the right coin the reason names the coin and number; other coins are not accepted in its place.
-- [ ] Base upgrades in hand say "Place the totem to buy Base upgrades". At the placed totem the owner can buy everything and raise the tier; tier and levels survive picking up, placing and stealing.
-- [ ] Another player's placed totem: levels visible, buying refused, Steal button shown. Nothing overlaps in any state.
-- [ ] Operator tab: the bar under the panel lowers or raises the selected level, the small bar in the tier box lowers or raises the tier, and Assign, Unclaim, Cancel steal, Finish steal and Reset buffs work.
-- [ ] Changing a cost in `upgrades.costs` and rejoining changes the prices shown.
-
-**Carried (totem in the offhand)**
-- [ ] Mining Speed, Damage, Swiftness, Vitality (hearts appear and go with the offhand), Featherfall, Night Sight (steady, no flicker).
-- [ ] Resistance removes a share of damage; even at level 8 you still take damage.
-
-**Base (totem placed; test with a second player)**
-- [ ] Fortify, Healing Aura, Ward (Weakness on intruders), Alarm (outline plus one chat line per visit), Sanctuary (no natural hostile spawns), Deadlock (longer steal), Overclock (machines in range are faster within 5 seconds).
-
-**Raid (in the thief's offhand when the steal starts)**
-- [ ] Lockpick shortens the steal; Shroud delays the owner's warning.
-- [ ] A steal is never longer than 600 s or shorter than 60 s.
-
-**Always stealable**
-- [ ] At Fortify 10 an intruder can still mine blocks next to the totem, at one fifth speed.
-
-## Animated single-block machines
-- [ ] Tetrium Crucible, idle: dim burner window, dark coils, low melt, tip glowing. Working: burner glows orange (yellow on RF), coils light in sequence, the melt rises and turns pale near the end, six collar lamps fill, the tip flashes white at the end.
-- [ ] Slag piles up in one tray and nuggets in the other as output collects, and empty again when taken. An RF Upgrade shows as a capacitor on the collar.
-- [ ] Combination Forge, idle: press head parked high. Working: the head strikes, faster near the end; the nuggets shrink as a glowing ingot grows; rail lights chase; five bed lamps fill. Illyrium jobs glow turquoise.
-- [ ] The left front socket lights turquoise with the Illyrium Forge Upgrade, the right one yellow with an RF Upgrade.
-- [ ] Both look right in all four facings, and their inventory icons still show the complete machine.
-
-## Totem Compass screen
-- [ ] The right-hand button reads "Shorten cooldown" and fits inside its frame. Under it is the price as a coin icon and "x4 Copper" (red when you do not have enough). Buying takes exactly those coins and nothing else; the next level asks for Gold.
-- [ ] Five coin tiles with the tracking time each adds; clicking one spends a coin and raises STORED. Start and the upgrade button grey out when they cannot be used. Header shows READY, TRACKING or COOLDOWN with a clock.
-
-## Demo mode (operators)
-- [ ] As an operator, every machine screen shows an OPERATOR box with DEMO OFF to the left of the inventory. A non-operator sees no box.
-- [ ] Switch it on with the machine empty: Tetrium Crucible (burner, coils, melt rising, lamps), Combination Forge (head striking, charge fusing), Illyrium Crucible (melt, stirring cross, rings, lava gauges part full), Illyrium Refinery (water, agitator, centrifuge), all looping.
-- [ ] Shatter Coin Factory: demo on any controller sets the whole joined machine going: belts, press, blanks turning into coins, changing coin every ten seconds. Unformed slices show nothing.
-- [ ] Nothing is produced or consumed in demo mode; a real job still runs normally with demo on or off.
-- [ ] Demo stays on after leaving and rejoining the world, and switches off cleanly.
-- [ ] A non-operator cannot switch demo, even by clicking where the button would be.
-
-## Network storage (needs a MySQL or MariaDB database)
-Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, DELETE on it.
-
-**Setup on one server**
-- [ ] With `storage.mode = "local"`, `/bsp storage status` says records are kept in this world only, and everything behaves as before.
-- [ ] Fill in host, port, database, user, password and a `serverId`; restart; `/bsp storage test` reports "Connected" and the four `bsp_` tables exist in the database. With a wrong password it reports that it could not connect, with the reason.
-- [ ] `/bsp storage migrate` reports grants added, totems and slices written; the rows are in the database; the world's own records are unchanged. Running it again refuses; `/bsp storage migrate force` runs again.
-- [ ] Set `mode = "mysql"`, restart: the log says it connected, and `/bsp storage status` shows MySQL.
-- [ ] Place and break a totem and a factory controller: rows appear in and disappear from `bsp_totems` and `bsp_factory_slices` with this server's id.
-- [ ] Stop the database while the server runs: the game keeps working, errors appear in the log, and it recovers when the database is back.
-
-**Across two servers sharing the database (different `serverId`)**
-- [ ] A new player joins server A and gets a totem and book; joining server B gives nothing. `/bsp totem reset <player>` on either lets them be granted again.
-- [ ] A player with slices on server A sees them counted on server B: the screen's "you own" count includes them (after rejoining B), and the limit of 10 is enforced across both.
-- [ ] Without logging out of server B, have slices added for the same player on server A (second client or direct database row), then place a controller on B that takes the total over 10: it is removed a moment later, returned to the inventory, and the limit message shows.
-- [ ] Migrating server B merges: players already granted in the database are reported as "already in the database".
-
-**Release jar**
-- [ ] On a plain Forge server with only `bsp-core-<version>.jar` (not `-slim`), `/bsp storage test` connects: the bundled driver is found.
-
-### Vaults, seasons and prizes across two servers (same database)
-- [ ] After a restart on the new build, the four new tables exist: `vault_totals`, `state`, `season_claims`, `pending_items`. The first server to connect fills `state`.
-- [ ] Vault limit: place vault blocks on server A, then straight away (no waiting) on server B the same player can only reach the network total of 27: a block over the limit is placed for a moment, then removed and returned with a red message, keeping any lock and alarm it carried. Breaking a block on A frees a place on B at once.
-- [ ] The admin panel on either server shows a player's vault coins and block count added up across both.
-- [ ] A player with a Netherite coin in a vault on both servers earns the Illyrium Ingot interest on one of them only.
-- [ ] Put prizes in on server A: within a refresh, "Prizes and rewards" and a Prizes Score Screen on server B show the same rows. The holder reward hours set on A show on B.
-- [ ] End the season on A with a player online on B: within a refresh B announces it, B's totems are gone and that player gets one fresh totem. A player who then moves from B to A does not get a second one.
-- [ ] A player who was offline gets exactly one fresh totem at their next login, on whichever server that is.
-- [ ] A prize winner who is on server B (or offline) when A ends the season receives the prize on B within a refresh (or at login anywhere).
-- [ ] Full reset on A removes coins on B too (vaults, trays, online players; offline players at login).
-- [ ] With an automatic holder reward set, each payout happens once, not once per server.
-- [ ] A server that joins the network with a lower season number than the database has its totems removed, as if it had missed a season end. Check this is what you want before connecting an old world.
-
-## Aura spheres and other models
-- [ ] Stand outside a Fortify or Healing sphere and look through it at a machine, a factory, another totem, a chest and an item frame on the far side: all of them stay visible, tinted by the sphere. The same from inside the sphere looking out.
-- [ ] The sphere itself still looks the same: a faint coloured bubble that pulses gently.
-
 ## Scoring and coin stacks
+
 - [ ] Shatter Coins stack to 12 everywhere; a factory tray stops at 12 and shows as full.
 - [ ] `/bsp score top` lists players with points, totem count and best tier. One Tier I totem is 1 point; raising it to Tier II makes it 2, Tier III 4, Tier IV 7, Tier V 10.
 - [ ] A carried totem counts for the carrier; placing it keeps the score; a stolen totem moves its points to the thief within a second or two.
@@ -350,6 +367,7 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] The guide book's "Scores and the Leaderboard" entry matches the numbers in the config.
 
 ## Score Screen
+
 - [ ] The Score Screen is in the BSP creative tab. One panel placed on its own shows the leaderboard title and rows on its front face, readable, the right way round, in all four facings.
 - [ ] Panels placed beside and above it (same facing) join into one display: try 2 x 1, 5 x 3 and 8 x 6. A ninth column or seventh row starts a separate screen. Breaking a panel re-splits the screen sensibly.
 - [ ] An L-shaped or ragged group shows a screen over the largest full rectangle from its bottom-left corner.
@@ -361,8 +379,8 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Settings survive a restart, and the text stays bright at night.
 - [ ] Nothing behind or beside the screen disappears when looking past it.
 
-
 ## Coin Vault
+
 - [ ] The Coin Vault is in the BSP creative tab, faces the player when placed in all four directions, and needs an iron pickaxe or better for its owner.
 - [ ] The owner's right-click opens the tabbed screen. Only Shatter Coins go into the 27 slots (shift-click works both ways); other items are refused. Hoppers and pipes cannot move coins in or out.
 - [ ] A second vault placed touching the first joins it: the Storage tab shows "VAULT BLOCK 1 OF 2" with arrows. Build 3 x 3 x 3; a block that would make it 4 long starts a separate vault. Another player's vault next to it never joins.
@@ -383,6 +401,7 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] The joined vault is lit like its surroundings (not black), is visible from every side with no gaps, does not flicker, and nothing nearby disappears when looking past it. It survives a restart.
 
 ## Admin Rack and admin panel
+
 - [ ] The Admin Rack is in the BSP creative tab, faces the player when placed, cannot be mined in survival and can be removed in creative.
 - [ ] With `admin.admins` empty, an operator's right-click (or `/bsp admin`) opens the panel; a non-operator gets a red message and the command is not available to them.
 - [ ] A name in `admin.moderators` (not an operator) opens the panel with a READ ONLY tag: every action button is grey and nothing happens when clicked.
@@ -405,12 +424,14 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Changing a prize in the admin panel updates every Prizes screen within a second, and ending a season moves the title to the next season number.
 
 ## Step 5: recipes, guide and JEI for the new blocks
+
 - [ ] The Coin Vault and Score Screen (gives 2) can be crafted in survival with the recipes JEI shows. The Admin Rack has no recipe.
 - [ ] JEI shows an information page for the Coin Vault, Score Screen and Admin Rack.
 - [ ] The guide book has "The Coin Vault" under Shatter Coins with five pages, and "Scores and the Leaderboard" now has the Score Screen recipe and a "Seasons and Prizes" page. Recipes on the pages draw correctly.
 - [ ] The Admin Rack's lamps blink in the world and on the item, violet with a few turquoise, and stay bright at night.
 
 ## Holder reward and vault advancement
+
 - [ ] "Prizes and rewards" shows four rows: 1ST, 2ND, 3RD and HOLD. Items put in HOLD stay there after a payout.
 - [ ] "Reward holders now" (second click to confirm) gives every totem holder one copy of the HOLD row for each totem they hold (two totems, two copies); a player with no totem gets nothing; an offline holder gets theirs at next login. With HOLD empty it says so and pays nothing.
 - [ ] Typing a number of hours in the box on the Season tab and pressing Set (or Enter) sets the automatic holder reward; only digits are accepted; 0 or empty turns it off; the "next" time counts down after Refresh. Set 1 hour and confirm a payout happens by itself (within a minute of the hour), and that the setting survives a restart.
@@ -418,14 +439,10 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Crafting a Coin Vault grants the "Safe Keeping" advancement. Ending a season grants no advancement.
 - [ ] The Mods screen's link for BSP-Core opens the CurseForge mod page.
 
-## Cross-server warnings, compass and guide pictures
-- [ ] Two servers on one database: with the owner on server B, start stealing their totem on server A. Within a few seconds the owner sees the red warning on B, starting with A's server name in square brackets. The "stolen" and "steal failed" messages arrive the same way.
-- [ ] The same for a totem with the Alarm upgrade when an intruder walks in, and for a Coin Vault with an Alarm when its lock is picked.
-- [ ] With the owner on the same server, messages arrive instantly and without a server name, as before.
-- [ ] Totem Compass: with none of your totems placed on this server (or in this dimension) the needle spins. While tracking rivals with no rival totem on this server it also spins. It never points at a totem on another server.
-- [ ] After adding screenshots and running the two commands in `docs/book_screenshots/README.md`, the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory entries show the picture with a frame instead of the block layout.
+# Anti Totem Block and Decoy Totems
 
 ## Anti Totem Block
+
 - [ ] In the BSP creative tab. A non-admin cannot place it (red message, item stays), cannot open it, and cannot break it even in creative. An admin in creative can remove it. Pistons and TNT do nothing to it.
 - [ ] Placed, it shows a cage with a cube turning inside, glowing in the zone colour.
 - [ ] Admin right-click opens the settings. Rules tab: two totem rules, then Machines and Other blocks listing every BSP block by name; it scrolls; each line toggles between BLOCKED and allowed; "block all / allow all" sets a whole group. A fresh block has totems and machines blocked.
@@ -439,27 +456,8 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] A totem dropped just outside that slides or is thrown in places itself outside the zone when its timer runs out.
 - [ ] Settings and zones survive a restart, and still apply when the Anti Totem Block's own chunk is not loaded (test with a 200-block zone, standing far from the block).
 
-## Magnatite (materials only; the centrifuge comes next)
-- [ ] Magnatite Ore and Deepslate Magnatite Ore are in the BSP creative tab and show dark specks with a blue sheen on stone and deepslate. A diamond pickaxe drops the ore block; an iron pickaxe drops nothing.
-- [ ] In a new world the ore is found below Y 8, mostly in deepslate, somewhat more often than diamond.
-- [ ] Magnatite Nugget and Ingot have the vanilla iron shapes in dark blue-grey; the Charged Magnatite Ingot is bright blue and glints; Carbon Dust is a black powder; the Copper Tetrium Coil shows copper windings.
-- [ ] Nine nuggets craft into an ingot and back. The Combination Forge accepts nine Magnatite Nuggets and makes an ingot.
-- [ ] The Copper Tetrium Coil recipe (Copper Ingots, Carbon Dust, Tetrium Coils around a Magnatite Ingot) shows in JEI.
-
-## Magnetic Centrifuge
-- [ ] All four blocks are craftable and in the creative tab. Placing the controller shows ghost blocks for the other eight; sneak + right-click opens the Assembly Guide, and holding Shift over any of the blocks in JEI opens it too.
-- [ ] Built in all four facings (controller front centre, Rotor in the middle, Item Hatch left, Power Port right as seen from the front), the blocks hide and the Armoured Spin Drum appears: plated sides with slit windows, hazard stripes, lamps, the extractor inside. Breaking any block brings the blocks back.
-- [ ] With no RF the screen lists "Needs 60 RF per tick" and nothing runs. With a cable on the Power Port the RF gauge fills and it runs; cables on the casing or controller do nothing. Hoppers and pipes work on the Item Hatch only.
-- [ ] One Magnatite Ore (either kind) takes 45 seconds and gives 3 nuggets and 1 Carbon Dust. The extractor spins while working and the lamps turn green; a redstone signal pauses it.
-- [ ] A Magnatite Ingot with no coil does nothing and the screen says to fit a coil. With the Copper Tetrium Coil fitted it tries every 45 seconds; over many tries about 1 in 6 succeed, and a failed try leaves the ingot in the input slot. The copper band behind the windows glows blue while charging.
-- [ ] Stack a second layer (Rotor + 8 Casing): its blocks hide, a second extractor appears turning the other way, and the status line at the top right of the screen shows the layers and the new numbers. Test up to six: nuggets rise to 7 to 9, the charge chance reaches 1 in 2 at five, and at six a try takes 25 seconds. A seventh layer is ignored.
-- [ ] Removing a block from a middle layer drops the layers above it back to ordinary blocks and the numbers fall.
-- [ ] Power use rises with layers (60 per layer separating, 240 per layer charging).
-- [ ] The status line does not overlap the title, the state text or the PORTS list on the machine screen.
-- [ ] The operator demo switch spins the extractors with nothing in the machine.
-- [ ] JEI shows a Magnetic Centrifuge category with both jobs, opened by clicking the dial on the machine screen. The guide book has "Magnatite" and "Magnetic Centrifuge" entries. The three new advancements are granted.
-
 ## Decoy Totems
+
 - [ ] The Decoy Totem, Decoy Power Base, Magnet Core and ten socket parts are in the creative tab, have recipes in JEI, and each part's tooltip says what it does.
 - [ ] A decoy placed on a Decoy Power Base with a cable on the base's side or bottom becomes ACTIVE; the base's buffer drains at 100 RF per tick. With no base, or no power, its screen says so.
 - [ ] As the owner: an active decoy shows the open cage with a blue cube turning inside, and a faint see-through Shatter Totem around it facing the way it was placed. Unpowered it shows the dark cage only.
@@ -475,7 +473,10 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Admin panel, Settings tab: the four decoy ranges change with the -8, -1, +1, +8 buttons, survive a restart, and within a few seconds apply to decoys already placed. A moderator sees them but cannot change them.
 - [ ] An Anti Totem zone with machines blocked refuses a Decoy Totem.
 
+# Wave Plasma network
+
 ## Wave Plasma chain (replaces the Totem Generator)
+
 - [ ] The totem tree's plasma path now starts with Output (Tier I ring, 6 levels), then Anchor, then Survey. Output's detail line reads "Gives off 100 mB/t of Wave Plasma" and rises per level (150, 200, 300, 400, 500, 600).
 - [ ] Plasma Extractor directly under a placed, owned totem: an extractor with portholes showing moving ion-blue plasma. A second extractor under the first stacks. Wrong order (extractor above the totem, or a gap) does nothing.
 - [ ] Plasma Interface touching an extractor's side: cables plug into it. Place 13 touching interface blocks: the 13th shows a lit seam and is not part of the group. Touch a second, separate interface to an extractor the first already serves: its seam lights.
@@ -490,80 +491,11 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Settings (received powers, expander) and the extractor's tank survive a restart. Nothing in the chain accepts RF or other mods' fluid pipes.
 
 ## Wrong-block marker and projector status
+
 - [ ] Build a Magnetic Centrifuge with a Factory Power Port in place of the Centrifuge Power Port: the wrong block gets a pulsing red box with a small Centrifuge Power Port floating above it, and right-clicking the controller prints a red chat line naming both blocks and the position. Swapping in the right block forms the machine within a second.
 - [ ] The same marker appears on the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory when a wrong block is in a part's place.
 - [ ] A Projector on an interface's cable but short of plasma: its seams glow amber and STATUS says LOW PRESSURE. With enough plasma it turns turquoise, the shards appear, and Fortify or Healing Aura draw their cubes around it.
 - [ ] A projector with no interface feeding it stays dark and STATUS says NO SIGNAL.
-
-## Jade tooltips (needs the Jade mod; it is loaded in `./gradlew runClient`)
-- [ ] With Jade installed, looking at any BSP-Core block shows its name and "BSP Core", with no extra description or status lines from BSP-Core. Blocks that hold RF show Jade's RF bar.
-- [ ] Decoy Totem, as its owner: reads "Decoy Totem". As another player, while it is powered: reads "Shatter Totem", the same as a real one. Unpowered or broken, it reads "Decoy Totem".
-- [ ] An assembled multiblock: looking at any part of it (casing, glass, rotor, ports) reads as the machine's name.
-- [ ] Without Jade installed the game starts and plays as before (also on a dedicated server).
-
-## Chunk loading (Anchor, Survey, CHUNKS tab, projector screen)
-- [ ] The totem tree shows a sixth path with Anchor (Tier II ring) and Survey (Tier III ring). Anchor has 3 levels, Survey 2; Survey opens once Anchor is level 2. The projector's POWERS tab lists Anchor as a seventh power.
-- [ ] Buy Anchor 1 on a placed totem: a CHUNKS tab appears in the header (owner and admins only). It shows a terrain map, the totem's chunk framed in turquoise, LOADED 1 / 1, RANGE 3 x 3.
-- [ ] Anchor 2: LOADED 1 / 3. Click two chunks next to the totem: they frame turquoise and the count rises. A fourth click says no chunks are left. Clicking the totem's own chunk says it is always loaded. Clicking a dark (out of range) chunk says it is out of range.
-- [ ] Survey 1 and 2 widen the pickable square to 5 x 5 and 7 x 7. Anchor 3 gives 6 chunks.
-- [ ] Walk far away (beyond view distance): a machine in a picked chunk keeps working; one in an unpicked chunk stops. `/forge chunkforce` or F3 are not needed: check the machine's progress on return.
-- [ ] Restart the server: the picks are still shown and the chunks still load without anyone visiting.
-- [ ] Pick the totem up and place it elsewhere: the same layout appears around the new position. Have another player steal it: all picks are gone except the totem's own chunk, and the thief can choose again.
-- [ ] Projector: the CHUNKS tab explains how to get chunk loading there until Anchor is received.
-- [ ] Receive Anchor on a fed projector: the CHUNKS tab shows a map centred on the projector. The projector's own chunk is picked automatically (if the totem has one left) and cannot be removed; any other chunk within range can be picked in any order while the totem has chunks left. With the totem's allowance already full the projector map shows nothing picked and clicks say no chunks are left. Picks made here use the totem's allowance: the totem's CHUNKS tab shows them in violet and counts them.
-- [ ] Cut the projector's plasma (break the cable) while you are near it: within a few seconds its chunks stop loading (the picks are kept and come back when it is fed again). Break the projector: its picks are freed.
-- [ ] Second totem: with two placed totems owned by one player, the newer one shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Remove the older totem: the newer one becomes the main totem and its full allowance returns.
-- [ ] Admin panel, Settings: the "Chunks: load always / owner online" button switches. With "owner online", the owner logging out unloads their chunks and logging in loads them again.
-- [ ] Config: `chunks.enabled = false` stops all loading and the tab says so; `chunks.maxPerPlayer = 2` limits a player to 2 chunks in total.
-- [ ] Long cable run: put a projector several chunks from the totem receiving Anchor, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
-- [ ] Restart the server with nobody near that projector: it is still loaded and projecting after the restart.
-- [ ] Guide book: The Shatter Totem has a Chunk Loading entry and a Wave Plasma and Projectors entry.
-
-## Aura cubes and the hide switch
-- [ ] Fortify and Healing Aura draw as cubes with glowing edges around totems and projectors. A player standing inside the cube still sees its edges.
-- [ ] The AURAS switch in the totem panel's header hides every aura cube for you only; another player still sees them. The setting survives a restart (`config/bsp_core-client.toml`), and the keybind (unbound by default, under BSP Core in Controls) does the same with an action-bar message.
-- [ ] Effects use the cube: a player just outside the sphere but inside the cube's corner is still warded/alarmed/healed.
-
-## Batteries, charger, cells, emitter
-- [ ] Magnetic Centrifuge: a Resonance Crystal in the input slot and Magnatite Nuggets in the upgrade slot make a Charged Resonance Crystal (30 s, 20 s with six layers). JEI shows the job.
-- [ ] Battery Charger on a cable from an interface: its screen reads FILLING once a battery is in the slot, the tank bar moves, the battery's bar fills. The STAMP switches list the interface's powers; a Tier I battery allows none, II two, III three, IV four. Stamped levels follow the totem's level while the battery sits in a fed charger.
-- [ ] A charged Tier II battery placed on a Plasma Extractor (lying on its side) feeds the interface at 100 mB/t with only its stamped powers; a projector on that interface lists only those; the battery item shows its bar draining and keeps its contents when mined.
-- [ ] Power Cells take Carried powers only (the charger's list changes to Damage, Resistance, Mining Speed, ...). The Wave Emitter: right-click with a cell in the other hand fits it; in the offhand, right-click switches it on; it gives the cell's powers (test Mining Speed and Swiftness), draws 20 mB/t, switches itself off when the cell is empty; sneak + right-click takes the cell out. It does nothing in the main hand.
-- [ ] Only the totem's owner (or a friend with Machines) can open a fed charger; others get a red message.
-
-## Friends and access
-- [ ] The totem panel's ACCESS tab (owner and admins only): type an online player's name and Add. The row shows four switches, all on; each toggles; x removes. A ninth name is refused.
-- [ ] A friend with Upgrades can buy upgrades on your placed totem, change its chunks and switch a projector's powers. Without it, those are refused.
-- [ ] A friend with Alarm walks into the Alarm cube without glowing or warning you; with Ward they are not weakened. Projectors honour the same switches.
-- [ ] The list survives pick-up and re-placing, and is empty after the totem is stolen.
-
-## Newer powers
-- [ ] The tree has five rings now (Tier V outermost). Bouncy sits beside Night Sight on the Dig path, X-ray on the outer ring; Cloaking beside Deadlock; Recall on the outer ring of Home; Recall Block after Shroud. Output starts the plasma path.
-- [ ] Bouncy: fall 3+ blocks and bounce back up, higher from a higher fall, with some forward speed; sneaking lands flat; fall damage reduced per level and no damage at level 4. Works from the emitter too.
-- [ ] X-ray: press X with X-ray carried. Ores show blue, block entities gold, spawners red through the walls within range, fading with depth; a small ring by the crosshair drains, then shows the recharge. Pressing X again switches it off early.
-- [ ] Recall: with Recall on a placed totem, have someone start stealing it while you stand far away: after the thief's Shroud and Recall Block delays a card appears above the hotbar with an arrow and distance; R teleports you to the surface at the level's distance from the totem facing it; N declines; the card runs out after 20 s. Recall then rests 10 minutes. No card appears when you are already within range.
-- [ ] Recall Block on the thief's offhand totem delays the card by its seconds.
-- [ ] Cloaking: buy it on a totem with a base built around it, then view from outside as a player not on the access list: the cube shows what was there when Cloaking came on (walk in and the real blocks appear; the owner always sees the real blocks). The totem's plasma output is 50 mB/t lower while cloaked. Known limits of this first version: the copy is of the moment it came on (not the land as generated), entities inside are not hidden, and block entities inside briefly lose their contents on the client after walking in until the chunk reloads.
-
-## Fix-ups 2026-10-06
-- [ ] Mining Tetrium, Illyrium or Magnatite ore drops a raw item (two or three with Fortune III); Silk Touch drops the block. The Tetrium Crucible, Illyrium Crucible and Magnetic Centrifuge take the raw items.
-- [ ] Buying Recall level 1 to 7 on a Tier V totem works and charges Illyrium coins.
-- [ ] Cables are glass pipes in the cable's colour with dark rails. A run carrying plasma shows the plasma inside: a level that rises with the flow (full at 100 mB/t, low behind repeaters or on a short supply) and bright pulses travelling toward the projector. Break the supply and the pipe empties within a second or two. Jade on a carrying cable reads "Wave Plasma: N mB/t", on an idle one "No plasma flowing".
-- [ ] A repeater placed while looking along the cable points that way (lit cap at the front). Plasma passes only front-ways: a repeater placed backwards leaves the projector with NO SIGNAL; right-click it empty-handed and it turns round and works.
-- [ ] `/bsp totem buff cloaking 2` while looking at a placed totem gives it Cloaking 2 (and `/bsp totem buff xray 3` while holding a totem gives the held one X-ray 3 for the X-ray test); `/bsp totem tier 5` raises the tier; `/bsp totem recloak` re-takes the cloak copy after building inside it.
-- [ ] Repeaters show turquoise arrows on their top and both sides pointing out of the lit front, in every one of the six facings (including up and down). Their five copper rings sit still when idle and swell and nudge forward one after another while plasma passes.
-- [ ] Wrench (two Tetrium Ingots over a Tetrium Ingot over a Stick): right-click a repeater steps it east, south, west, north, up, down; sneak + right-click turns it round. On a placed totem or a battery it turns them; on a plain block (stone) it does nothing. The cables re-join after the turn.
-
-## Fix-ups 2026-10-07
-- [ ] Cut a cable in a carrying run: the cables on the far side of the cut drain and empty within about three seconds, with no movement left in them; the near side keeps flowing. Take a repeater out: the same on its far side. Put the cable back: the run fills again within two seconds.
-- [ ] The plasma inside a pipe looks like a liquid: a level with a rippling surface, the ripples running the way the plasma goes, no cubes. Behind a repeater the level is lower.
-- [ ] Repeater rings are shaded copper (lighter on top, darker underneath) and no longer glare; while pumping a warm highlight runs over them.
-- [ ] Projector Base: a low tank with a nozzle on each side. Cables join its sides and not the projector. A projector with no base under it, or a base with no cable, reads NO SIGNAL; stood on a fed base it projects, and STATUS shows the base's tank.
-- [ ] Aura cubes have hair-thin edges and a faint one-block grid on every face that breathes slowly. Hiding auras removes the lot.
-- [ ] The AURAS control in the totem panel's header is a slide switch like the machines' power switch: turquoise with the knob right when on, red with the knob left when off; the AURAS label sits beside it.
-- [ ] Projector Base: the plasma level shows through the windows on every side, with a brighter line at its surface and no flicker. Fed by a 100 mB/t run it fills to the top in a few seconds (the projector burns 20 mB/t); cut the cable and it drains over about twelve seconds while the projector keeps projecting ("PROJECTING (on the base's tank)"), then stops.
-- [ ] Plasma Interface: right-click opens a screen with the group in 3D: its blocks, the extractors it draws from (gold mB/t), every cable and repeater with the mB/t passing it (blue, a dash for nothing), and the bases and chargers reached. Drag to turn. Refused blocks pulse red. The right side totals supply, blocks joined, extractors, cables, receivers, delivered and spare.
-- [ ] An interface touching an extractor shows a glass tube into the extractor's porthole; two touching interfaces show a sleeve and headers running through the seam.
 
 ## Cable pressure (2026-10-07, evening)
 
@@ -609,17 +541,6 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - A run with a repeater: cables before the repeater read a tenth more than cables after it. The gap between the supply and "Delivered" is what the repeaters cost.
 - A run with a valve set low: cables on both sides of the valve read the limited figure; only the valve's inlet window and its screen ("Offered X, passing Y") show what the run could have had.
 
-
-
-## Battery Charger facing (2026-10-08)
-
-- Place a charger: its open front faces you, the back (solid wall with the port) faces away. The wrench turns it a quarter at a time; sneak turns it back.
-- Cables only join the back. A cable at the front or sides does not connect visually and the interface does not feed the charger through it. Move the cable behind it and it does.
-- Unfed: the cradle shows no plasma. Fed: the two pads above and below the slot and the port window on the back light up with plasma; cut the cable and they go dark after the signal lapses.
-- The outline and collision follow the facing.
-
-
-
 ## Joined Plasma Interfaces (2026-10-08)
 
 - Place one interface: a dark cube with a rimmed, recessed panel on every face, bolts at the rim corners, vent slots, and a grey cross on each panel. The frame strips run round all twelve edges.
@@ -630,34 +551,17 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - The item in hand and in JEI shows the single block with turquoise crosses.
 - Wording: everything that said "drum" now says "extractor" (interface screen header, legend, guide book, JEI).
 
-
-
 ## Interface labels and the emitter screen (2026-10-08)
 
 - Interface view: a straight or bent run of cables carrying the same figure shows one label, on the cable nearest its middle. Where the figure changes (after a valve or a repeater) the two runs get their own labels side by side. Repeaters, valves, extractors and bases keep their own labels.
 - Wave Emitter: right-click at the sky or open ground (no block within four blocks) to open its screen. Drop a Power Cell in the slot (shift-click works), press ON. The right side shows the cell's name, plasma bar, time left at 20 mB/t (m:ss or h:mm:ss), and each stamped power with its level. Take the cell out and the emitter switches off. Right-clicking at a nearby block still toggles it, and sneaking there still takes the cell out.
 - The emitter cannot be moved in the inventory while its screen is open.
 
-
-
-## Fix-ups 2026-10-08 (late)
-
-- X-ray can be bought once Night Sight is at level 1 (its only level) and the totem is Tier V. The tree's "needs Night Sight 2" line is gone. The same rule covers any one-level parent.
-- Battery Charger screen: all nine Carried powers fit above the inventory; the "Cells take Carried powers" note sits between the list and the Inventory label. The screen is taller.
-- Battery Charger block: a battery stands in the cradle as a small block, a cell as an upright card facing the open front, as soon as it goes in; it vanishes when taken out. The pads still light only while fed.
-
 ## Interface screen: cloak line, zoom and pan (2026-10-08)
 
 - Totem with Output maxed and Cloaking on: the header reads "550 mB/t" with "from the extractors" under it and a grey line "The totem makes 600; Cloaking takes 50". Switch Cloaking off: 600 and the line goes.
 - Scroll over the view to zoom (25% to 800%, shown next to the button), right-drag or shift-drag to pan, left-drag still turns. RESET VIEW under the view puts everything back.
 - The right column fits inside the box: the help text wraps to the column and the legend sits below it. Nothing runs past the edge at any window size.
-
-## Advancements, guide book and JEI demo (2026-10-08)
-
-- Advancements tab: 41 entries. New ones hang off the totem projector (extractor, interface, cable, base, expander, repeater, valve) and the centrifuge (charged crystal, charger, batteries, Tier IV battery, cells, emitter), plus the wrench under the chassis and raw ore under Tetrium Ore. Each is earned by holding the item.
-- Guide book, The Shatter Totem category: "Wave Plasma and Projectors" (with the turnable hook-up scene and the four-interface scene), new "Pressure, Runs and Valves" (runs, reach, sharing, repeater, valve, wrench), "Batteries, Cells and the Emitter" (charged crystal, charger rules, stamping, all four batteries, battery-as-source scene, all three cells, the emitter screen). Every new block and item has a recipe or spotlight page, so its picture is in the book. Check the three scenes turn and show cables with arms, the charger facing south and the totem on the extractor.
-- JEI: hover any plasma block, cable or battery in JEI and hold Shift: the Assembly Guide opens with the Wave Plasma hook-up in ten steps (extractor, totem, interface, cables, valve, repeater, base, projector, second run, charger). The interface's JEI info says so.
-- docs/GUIDE_BOOK_TEXT.md is regenerated with the new pages for reading outside the game.
 
 ## Output, caps and throughput (2026-10-08)
 
@@ -676,10 +580,35 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - Sneak + right-click a cable's core with the wrench: it drops as an item that says it keeps its ends; place it and the ends are back.
 - Jade on a set cable lists its ends. The interface view draws coloured cables in their colour.
 
+## Face cap over branching runs; wrench readout (2026-10-08)
+
+- One cable out of an interface face that later splits to two bases: the first cable reads 1,000 mB/t at most and each branch 500 (with a 6,000 totem). Put a second cable on another face and that run gets its own 1,000.
+- A Tetrium trunk feeding two Illyrium branches: the trunk reads 250 and the branches 125 each.
+- The wrench readout is a single short line, a little above the crosshair: "West end: Output", "Core: sneak-click picks it up", "Port: Input".
+
+# Batteries, charger, cells and emitter
+
+## Batteries, charger, cells, emitter
+
+- [ ] Magnetic Centrifuge: a Resonance Crystal in the input slot and Magnatite Nuggets in the upgrade slot make a Charged Resonance Crystal (30 s, 20 s with six layers). JEI shows the job.
+- [ ] Battery Charger on a cable from an interface: its screen reads FILLING once a battery is in the slot, the tank bar moves, the battery's bar fills. The STAMP switches list the interface's powers; a Tier I battery allows none, II two, III three, IV four. Stamped levels follow the totem's level while the battery sits in a fed charger.
+- [ ] A charged Tier II battery placed on a Plasma Extractor (lying on its side) feeds the interface at 100 mB/t with only its stamped powers; a projector on that interface lists only those; the battery item shows its bar draining and keeps its contents when mined.
+- [ ] Power Cells take Carried powers only (the charger's list changes to Damage, Resistance, Mining Speed, ...). The Wave Emitter: right-click with a cell in the other hand fits it; in the offhand, right-click switches it on; it gives the cell's powers (test Mining Speed and Swiftness), draws 20 mB/t, switches itself off when the cell is empty; sneak + right-click takes the cell out. It does nothing in the main hand.
+- [ ] Only the totem's owner (or a friend with Machines) can open a fed charger; others get a red message.
+
+## Battery Charger facing (2026-10-08)
+
+- Place a charger: its open front faces you, the back (solid wall with the port) faces away. The wrench turns it a quarter at a time; sneak turns it back.
+- Cables only join the back. A cable at the front or sides does not connect visually and the interface does not feed the charger through it. Move the cable behind it and it does.
+- Unfed: the cradle shows no plasma. Fed: the two pads above and below the slot and the port window on the back light up with plasma; cut the cable and they go dark after the signal lapses.
+- The outline and collision follow the facing.
+
+# Plasma Tank
+
 ## Plasma Tank (2026-10-08)
 
 - Craft: Tetrium Glass (8 glass round a nugget), Tank Casing (8 plates round a chassis), Tank Glass (8 tetrium glass round a plate), Tank Port (crystal top, tetrium cables sides, casing centre, plate bottom).
-- Build a 3 x 3 x 3: casing on the edges, glass on the six face centres, swap one face for a port. The last block placed forms it: the ports' rings light turquoise, Jade says "Wave Plasma: 0 / 130,000,000 mB" on any block. Glass walls show no seams between blocks.
+- Build a 3 x 3 x 3: casing on the edges, glass on the six face centres, swap one face for a port. The last block placed forms it: the ports' rings light turquoise, Jade says "Wave Plasma: 0 / 65,000,000 mB" on any block. Glass walls show no seams between blocks.
 - Wrong builds do not form: a glass block on an edge, a block inside, a side of 2 or 13.
 - Feed it: cable from an interface into a port. The level rises; a port on top pours a stream to the surface with a ripple; a side port shows a short spout while above the surface and nothing once under it. Right-click any block: the screen shows the tank, the plasma level, "Input in 100" on the port and the first cables.
 - Drain it: a run from a port to a Projector Base with no interface on it. The port gives up to 1,000 mB/t; the base fills and the projector runs on plasma from the tank (with no powers offered). An In-and-out port that is being fed does not give out at the same time.
@@ -687,9 +616,191 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - Break one glass block: rings go grey, Jade says "Not part of a tank"; place it back: formed again with the same plasma. Break two blocks and put both back: still kept (the plasma lasts until the last block of the old shell is gone). Rebuild one block smaller than a full tank: it holds what fits. Add a layer: it keeps what it had.
 - Two tanks joined by a cable, one port Output, the other Input: plasma moves across at 1,000 mB/t.
 
-## Face cap over branching runs; wrench readout (2026-10-08)
+## Tank building without the screen (2026-10-08)
 
-- One cable out of an interface face that later splits to two bases: the first cable reads 1,000 mB/t at most and each branch 500 (with a 6,000 totem). Put a second cable on another face and that run gets its own 1,000.
-- A Tetrium trunk feeding two Illyrium branches: the trunk reads 250 and the branches 125 each.
-- The wrench readout is a single short line, a little above the crosshair: "West end: Output", "Core: sneak-click picks it up", "Port: Input".
+- Place a Tank Casing, then right-click it with another casing in hand: the second block is placed and no screen opens. Same for Tank Glass and Tank Ports while the tank is unfinished.
+- Jade on any unfinished tank block shows "Tank unfinished" in yellow. Once the last block forms the tank it shows the level line instead, and right-click opens the screen as before.
+- Break one block of a formed tank: Jade on the rest says "Tank unfinished" again and right-click on them does nothing until the block is back.
 
+## Tank formed look (2026-10-08)
+
+- Place the last block of a 3 x 3 x 3: a band of turquoise light runs over the shell from that block for about a second. Every casing cube becomes glass with a thin dark rail along the tank's edge, a lit turquoise strip on the outer edge of each horizontal rail, and a lit 4-pixel node at each of the eight corners. A casing block placed on a face (not an edge) becomes plain glass. Ports do not change.
+- The glass is one sheet: no seams between glass blocks and formed casing. The item in the inventory and a casing in the hand still look like the riveted cube.
+- The four vertical edges have no lit strip while the tank is empty (only a stub above the bottom node). Feed plasma in: the uprights light up from the bottom as the level rises, and reach the top node when the tank is full.
+- The plasma fills the hollow and half of each shell block: looking through the glass, the plasma is right behind it, not a full block in. The top port's stream and the side port's spout still start at the ports. The tank's screen shows the same wider body.
+- Break one block: all the casing goes back to cubes at once, the strips and nodes go out, the rings go grey. Put it back: the sweep plays again and the formed look returns with the same plasma.
+- Guide book, tank entry: the scene shows the formed look (glass body with outline) and the "Seeing it" page mentions it. JEI info text mentions it.
+- Larger tanks (up to 12 a side): the sweep takes the same second to cross; rails and nodes line up along every edge with no gap or doubled rail at the corners.
+
+## Extractor throughput and the tank's first plasma (2026-10-08)
+
+- Totem at Output 10 (6,000 mB/t), one extractor, interface, one run of Illyrium cable into a Tank Port: the port reads 1,000 mB/t and Jade on the tank climbs by 20,000 mB every second (1,000 x 20). Before, it read 200 and climbed by 4,000.
+- Six runs from six faces into six ports: each reads 1,000 and the tank climbs by 120,000 a second. Jade on the extractor still reads its draw (6,000 minus Cloaking).
+- Take the totem off the extractor: the runs keep going for a couple of seconds, then stop (the reserve is 4,000 mB, as before).
+- Capacity: a 3 x 3 x 3 reads 65,000,000 mB (26 blocks x 2,500,000); the test world's config file already has the new value.
+- A cable placed against a Tank Port on any face that is not against the tank draws an arm into the port, like into a base.
+- A tank that has just started filling shows a thin layer of plasma across the whole floor (about a tenth of a block) even when the figure is far below one per cent. The stream lands on it. The screen shows the same layer.
+
+# Chunk loading
+
+## Chunk loading (Anchor, Survey, CHUNKS tab, projector screen)
+
+- [ ] The totem tree shows a sixth path with Anchor (Tier II ring) and Survey (Tier III ring). Anchor has 3 levels, Survey 2; Survey opens once Anchor is level 2. The projector's POWERS tab lists Anchor as a seventh power.
+- [ ] Buy Anchor 1 on a placed totem: a CHUNKS tab appears in the header (owner and admins only). It shows a terrain map, the totem's chunk framed in turquoise, LOADED 1 / 1, RANGE 3 x 3.
+- [ ] Anchor 2: LOADED 1 / 3. Click two chunks next to the totem: they frame turquoise and the count rises. A fourth click says no chunks are left. Clicking the totem's own chunk says it is always loaded. Clicking a dark (out of range) chunk says it is out of range.
+- [ ] Survey 1 and 2 widen the pickable square to 5 x 5 and 7 x 7. Anchor 3 gives 6 chunks.
+- [ ] Walk far away (beyond view distance): a machine in a picked chunk keeps working; one in an unpicked chunk stops. `/forge chunkforce` or F3 are not needed: check the machine's progress on return.
+- [ ] Restart the server: the picks are still shown and the chunks still load without anyone visiting.
+- [ ] Pick the totem up and place it elsewhere: the same layout appears around the new position. Have another player steal it: all picks are gone except the totem's own chunk, and the thief can choose again.
+- [ ] Projector: the CHUNKS tab explains how to get chunk loading there until Anchor is received.
+- [ ] Receive Anchor on a fed projector: the CHUNKS tab shows a map centred on the projector. The projector's own chunk is picked automatically (if the totem has one left) and cannot be removed; any other chunk within range can be picked in any order while the totem has chunks left. With the totem's allowance already full the projector map shows nothing picked and clicks say no chunks are left. Picks made here use the totem's allowance: the totem's CHUNKS tab shows them in violet and counts them.
+- [ ] Cut the projector's plasma (break the cable) while you are near it: within a few seconds its chunks stop loading (the picks are kept and come back when it is fed again). Break the projector: its picks are freed.
+- [ ] Second totem: with two placed totems owned by one player, the newer one shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Remove the older totem: the newer one becomes the main totem and its full allowance returns.
+- [ ] Admin panel, Settings: the "Chunks: load always / owner online" button switches. With "owner online", the owner logging out unloads their chunks and logging in loads them again.
+- [ ] Config: `chunks.enabled = false` stops all loading and the tab says so; `chunks.maxPerPlayer = 2` limits a player to 2 chunks in total.
+- [ ] Long cable run: put a projector several chunks from the totem receiving Anchor, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
+- [ ] Restart the server with nobody near that projector: it is still loaded and projecting after the restart.
+- [ ] Guide book: The Shatter Totem has a Chunk Loading entry and a Wave Plasma and Projectors entry.
+
+# JEI, Assembly Guide, guide book, advancements and Jade
+
+## JEI
+
+JEI is loaded in dev runs (`./gradlew runClient`).
+- [ ] The game starts with JEI and the item list shows all BSP-Core items.
+- [ ] Pressing R on a Tetrium Nugget shows the Tetrium Crucible page (ore in, nuggets and slag out, time, fuel note) and the "9 nuggets from an ingot" crafting recipe.
+- [ ] Combination Forge page has three jobs: 9 Tetrium Nuggets to an ingot, 1 Tetrium Ingot to a plate, 9 Illyrium Nuggets to an ingot with the Illyrium Forge Upgrade shown as a fitted part.
+- [ ] Illyrium Crucible page has two jobs (ore + slag + lava; Pure Illyrium Dust + Tetrium Dust + lava) and shows the lava amount on hover.
+- [ ] Illyrium Refinery page shows Dirty Illyrium Dust, water and the filters cycling as the fitted part.
+- [ ] Shatter Coin Factory page has five jobs, one per tier, with real time and RF per coin.
+- [ ] Crushing by Hand page shows pickaxe + ingot giving dust and nuggets, each with its chance on hover.
+- [ ] Pressing U on a machine block shows what it makes. Pressing R on any multiblock block, the Motivator, the Shatter Totem or a Tetrium Plate shows an Information page.
+- [ ] Numbers on the pages match the config after changing it and rejoining the world.
+- [ ] Text on every page fits inside the page.
+
+## JEI click area
+
+- [ ] On each of the four machine screens, hovering the progress dial shows "Show Recipes" and clicking it opens that machine's JEI page.
+
+## Assembly Guide
+
+- [ ] Place an Illyrium Crucible controller, empty your hand, sneak + right-click it: the Assembly Guide opens. The same on a Refinery controller and a factory controller.
+- [ ] Plain right-click still behaves as before, and its message mentions the guide.
+- [ ] The controller in the guide faces you by default, whichever way the real one faces. Dragging turns and tilts the model.
+- [ ] Next / Back and the arrow keys change step; Play runs through the steps and stops at the end.
+- [ ] Earlier steps are full blocks, the current step pulses, later steps are faint see-through blocks that do not distract.
+- [ ] Part names in the list are not cut off; the controller is listed as "Controller".
+- [ ] The caption names the layer, the count and the block, with a tip underneath; nothing overlaps or runs off the panel.
+- [ ] The parts list shows each block with placed / total; the current block is orange, finished ones turquoise.
+- [ ] Positions in the guide match the in-world ghost blocks exactly (left and right not mirrored).
+- [ ] Factory guide ends with two optional steps: a second slice beside the first, then Motivators on both.
+- [ ] Sneak + right-click on a finished machine does not open the guide.
+- [ ] E or Escape closes it.
+
+## Guide book (Patchouli is loaded in dev runs)
+
+- [ ] The game starts with Patchouli and no errors about the book `bsp_core:guide` in the log.
+- [ ] A Book plus a Tetrium Nugget crafts the BSP Field Guide. It is also in the BSP creative tab.
+- [ ] A brand-new player gets the guide along with the Shatter Totem on first join (where first-join grants are on).
+- [ ] The book opens with four chapters: The Shatter Totem, Tetrium and Illyrium, Machines, Shatter Coins. Every entry opens; no page says a recipe is missing.
+- [ ] Links between entries work (for example Fortify, Illyrium Crucible, Shatter Coin Factory).
+- [ ] Build pages for the Illyrium Crucible, Illyrium Refinery and factory slice show the right blocks, with the Item Hatch left and the Pump right on the Refinery, matching the in-world ghosts. "Visualize" projects the structure in the world.
+- [ ] Text fits on every page.
+- [ ] In JEI (item list, bookmarks or a recipe page), hovering any multiblock block shows "Hold [Shift] for the Assembly Guide". Holding Shift fills a short bar and opens the guide for that machine; closing it returns to where you were.
+- [ ] Casing, Core and Item Hatch open the Illyrium Crucible guide; Tank Glass and Pump the Refinery; factory blocks and the Motivator the factory.
+- [ ] Holding Shift over the same blocks in your own inventory or a chest does not open the guide.
+
+## Advancements
+
+- [ ] The advancements screen has a BSP-Core tab whose first entry is earned by holding a Shatter Totem.
+- [ ] Picking up or crafting each item in the chain earns its advancement with a toast: Tetrium Ore, Tetrium Crucible, Tetrium Ingot, Slag Brick, Combination Forge, Tetrium Plate, Machine Chassis, Basic Control Circuit, RF Upgrade, both Illyrium controllers, Dirty Illyrium Ingot, Pure Illyrium Dust, Illyrium Ingot, factory controller, first coin, Illyrium coin, Motivator, Totem Compass.
+- [ ] Goal and challenge advancements are announced in chat; ordinary ones are not.
+- [ ] The tree reads left to right without crossed lines.
+
+## Advancements, guide book and JEI demo (2026-10-08)
+
+- Advancements tab: 41 entries. New ones hang off the totem projector (extractor, interface, cable, base, expander, repeater, valve) and the centrifuge (charged crystal, charger, batteries, Tier IV battery, cells, emitter), plus the wrench under the chassis and raw ore under Tetrium Ore. Each is earned by holding the item.
+- Guide book, The Shatter Totem category: "Wave Plasma and Projectors" (with the turnable hook-up scene and the four-interface scene), new "Pressure, Runs and Valves" (runs, reach, sharing, repeater, valve, wrench), "Batteries, Cells and the Emitter" (charged crystal, charger rules, stamping, all four batteries, battery-as-source scene, all three cells, the emitter screen). Every new block and item has a recipe or spotlight page, so its picture is in the book. Check the three scenes turn and show cables with arms, the charger facing south and the totem on the extractor.
+- JEI: hover any plasma block, cable or battery in JEI and hold Shift: the Assembly Guide opens with the Wave Plasma hook-up in ten steps (extractor, totem, interface, cables, valve, repeater, base, projector, second run, charger). The interface's JEI info says so.
+- docs/GUIDE_BOOK_TEXT.md is regenerated with the new pages for reading outside the game.
+
+## Jade tooltips (needs the Jade mod; it is loaded in `./gradlew runClient`)
+
+- [ ] With Jade installed, looking at any BSP-Core block shows its name and "BSP Core", with no extra description or status lines from BSP-Core. Blocks that hold RF show Jade's RF bar.
+- [ ] Decoy Totem, as its owner: reads "Decoy Totem". As another player, while it is powered: reads "Shatter Totem", the same as a real one. Unpowered or broken, it reads "Decoy Totem".
+- [ ] An assembled multiblock: looking at any part of it (casing, glass, rotor, ports) reads as the machine's name.
+- [ ] Without Jade installed the game starts and plays as before (also on a dedicated server).
+
+# Network storage and cross-server
+
+## Network storage (needs a MySQL or MariaDB database)
+
+Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, DELETE on it.
+
+**Setup on one server**
+- [ ] With `storage.mode = "local"`, `/bsp storage status` says records are kept in this world only, and everything behaves as before.
+- [ ] Fill in host, port, database, user, password and a `serverId`; restart; `/bsp storage test` reports "Connected" and the four `bsp_` tables exist in the database. With a wrong password it reports that it could not connect, with the reason.
+- [ ] `/bsp storage migrate` reports grants added, totems and slices written; the rows are in the database; the world's own records are unchanged. Running it again refuses; `/bsp storage migrate force` runs again.
+- [ ] Set `mode = "mysql"`, restart: the log says it connected, and `/bsp storage status` shows MySQL.
+- [ ] Place and break a totem and a factory controller: rows appear in and disappear from `bsp_totems` and `bsp_factory_slices` with this server's id.
+- [ ] Stop the database while the server runs: the game keeps working, errors appear in the log, and it recovers when the database is back.
+
+**Across two servers sharing the database (different `serverId`)**
+- [ ] A new player joins server A and gets a totem and book; joining server B gives nothing. `/bsp totem reset <player>` on either lets them be granted again.
+- [ ] A player with slices on server A sees them counted on server B: the screen's "you own" count includes them (after rejoining B), and the limit of 10 is enforced across both.
+- [ ] Without logging out of server B, have slices added for the same player on server A (second client or direct database row), then place a controller on B that takes the total over 10: it is removed a moment later, returned to the inventory, and the limit message shows.
+- [ ] Migrating server B merges: players already granted in the database are reported as "already in the database".
+
+**Release jar**
+- [ ] On a plain Forge server with only `bsp-core-<version>.jar` (not `-slim`), `/bsp storage test` connects: the bundled driver is found.
+
+### Vaults, seasons and prizes across two servers (same database)
+- [ ] After a restart on the new build, the four new tables exist: `vault_totals`, `state`, `season_claims`, `pending_items`. The first server to connect fills `state`.
+- [ ] Vault limit: place vault blocks on server A, then straight away (no waiting) on server B the same player can only reach the network total of 27: a block over the limit is placed for a moment, then removed and returned with a red message, keeping any lock and alarm it carried. Breaking a block on A frees a place on B at once.
+- [ ] The admin panel on either server shows a player's vault coins and block count added up across both.
+- [ ] A player with a Netherite coin in a vault on both servers earns the Illyrium Ingot interest on one of them only.
+- [ ] Put prizes in on server A: within a refresh, "Prizes and rewards" and a Prizes Score Screen on server B show the same rows. The holder reward hours set on A show on B.
+- [ ] End the season on A with a player online on B: within a refresh B announces it, B's totems are gone and that player gets one fresh totem. A player who then moves from B to A does not get a second one.
+- [ ] A player who was offline gets exactly one fresh totem at their next login, on whichever server that is.
+- [ ] A prize winner who is on server B (or offline) when A ends the season receives the prize on B within a refresh (or at login anywhere).
+- [ ] Full reset on A removes coins on B too (vaults, trays, online players; offline players at login).
+- [ ] With an automatic holder reward set, each payout happens once, not once per server.
+- [ ] A server that joins the network with a lower season number than the database has its totems removed, as if it had missed a season end. Check this is what you want before connecting an old world.
+
+## Cross-server warnings, compass and guide pictures
+
+- [ ] Two servers on one database: with the owner on server B, start stealing their totem on server A. Within a few seconds the owner sees the red warning on B, starting with A's server name in square brackets. The "stolen" and "steal failed" messages arrive the same way.
+- [ ] The same for a totem with the Alarm upgrade when an intruder walks in, and for a Coin Vault with an Alarm when its lock is picked.
+- [ ] With the owner on the same server, messages arrive instantly and without a server name, as before.
+- [ ] Totem Compass: with none of your totems placed on this server (or in this dimension) the needle spins. While tracking rivals with no rival totem on this server it also spins. It never points at a totem on another server.
+- [ ] After adding screenshots and running the two commands in `docs/book_screenshots/README.md`, the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory entries show the picture with a frame instead of the block layout.
+
+# Fix-up rounds (dated)
+
+## Fix-ups 2026-10-06
+
+- [ ] Mining Tetrium, Illyrium or Magnatite ore drops a raw item (two or three with Fortune III); Silk Touch drops the block. The Tetrium Crucible, Illyrium Crucible and Magnetic Centrifuge take the raw items.
+- [ ] Buying Recall level 1 to 7 on a Tier V totem works and charges Illyrium coins.
+- [ ] Cables are glass pipes in the cable's colour with dark rails. A run carrying plasma shows the plasma inside: a level that rises with the flow (full at 100 mB/t, low behind repeaters or on a short supply) and bright pulses travelling toward the projector. Break the supply and the pipe empties within a second or two. Jade on a carrying cable reads "Wave Plasma: N mB/t", on an idle one "No plasma flowing".
+- [ ] A repeater placed while looking along the cable points that way (lit cap at the front). Plasma passes only front-ways: a repeater placed backwards leaves the projector with NO SIGNAL; right-click it empty-handed and it turns round and works.
+- [ ] `/bsp totem buff cloaking 2` while looking at a placed totem gives it Cloaking 2 (and `/bsp totem buff xray 3` while holding a totem gives the held one X-ray 3 for the X-ray test); `/bsp totem tier 5` raises the tier; `/bsp totem recloak` re-takes the cloak copy after building inside it.
+- [ ] Repeaters show turquoise arrows on their top and both sides pointing out of the lit front, in every one of the six facings (including up and down). Their five copper rings sit still when idle and swell and nudge forward one after another while plasma passes.
+- [ ] Wrench (two Tetrium Ingots over a Tetrium Ingot over a Stick): right-click a repeater steps it east, south, west, north, up, down; sneak + right-click turns it round. On a placed totem or a battery it turns them; on a plain block (stone) it does nothing. The cables re-join after the turn.
+
+## Fix-ups 2026-10-07
+
+- [ ] Cut a cable in a carrying run: the cables on the far side of the cut drain and empty within about three seconds, with no movement left in them; the near side keeps flowing. Take a repeater out: the same on its far side. Put the cable back: the run fills again within two seconds.
+- [ ] The plasma inside a pipe looks like a liquid: a level with a rippling surface, the ripples running the way the plasma goes, no cubes. Behind a repeater the level is lower.
+- [ ] Repeater rings are shaded copper (lighter on top, darker underneath) and no longer glare; while pumping a warm highlight runs over them.
+- [ ] Projector Base: a low tank with a nozzle on each side. Cables join its sides and not the projector. A projector with no base under it, or a base with no cable, reads NO SIGNAL; stood on a fed base it projects, and STATUS shows the base's tank.
+- [ ] Aura cubes have hair-thin edges and a faint one-block grid on every face that breathes slowly. Hiding auras removes the lot.
+- [ ] The AURAS control in the totem panel's header is a slide switch like the machines' power switch: turquoise with the knob right when on, red with the knob left when off; the AURAS label sits beside it.
+- [ ] Projector Base: the plasma level shows through the windows on every side, with a brighter line at its surface and no flicker. Fed by a 100 mB/t run it fills to the top in a few seconds (the projector burns 20 mB/t); cut the cable and it drains over about twelve seconds while the projector keeps projecting ("PROJECTING (on the base's tank)"), then stops.
+- [ ] Plasma Interface: right-click opens a screen with the group in 3D: its blocks, the extractors it draws from (gold mB/t), every cable and repeater with the mB/t passing it (blue, a dash for nothing), and the bases and chargers reached. Drag to turn. Refused blocks pulse red. The right side totals supply, blocks joined, extractors, cables, receivers, delivered and spare.
+- [ ] An interface touching an extractor shows a glass tube into the extractor's porthole; two touching interfaces show a sleeve and headers running through the seam.
+
+## Fix-ups 2026-10-08 (late)
+
+- X-ray can be bought once Night Sight is at level 1 (its only level) and the totem is Tier V. The tree's "needs Night Sight 2" line is gone. The same rule covers any one-level parent.
+- Battery Charger screen: all nine Carried powers fit above the inventory; the "Cells take Carried powers" note sits between the list and the Inventory label. The screen is taller.
+- Battery Charger block: a battery stands in the cradle as a small block, a cell as an upright card facing the open front, as soon as it goes in; it vanishes when taken out. The pads still light only while fed.

@@ -164,10 +164,10 @@ public class TankScreen extends Screen {
             }
         }
         if (v.capacity() > 0 && v.stored() > 0) {
-            float frac = Mth.clamp(v.stored() / (float) v.capacity(), 0f, 1f);
+            float frac = Math.max(Mth.clamp(v.stored() / (float) v.capacity(), 0f, 1f), TankRenderer.minFrac(v.h()));
             pose.pushPose();
             pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
-            PlasmaRender.tank(PlasmaRender.buffer(g.bufferSource()), pose, PlasmaRender.sprite(), 16.2f, 16.2f, 16.2f, (v.w() - 1) * 16 - 0.2f, (v.h() - 1) * 16 - 0.2f, (v.d() - 1) * 16 - 0.2f, frac);
+            PlasmaRender.tank(PlasmaRender.buffer(g.bufferSource()), pose, PlasmaRender.sprite(), 8.2f, 8.2f, 8.2f, (v.w() - 1) * 16 + 7.8f, (v.h() - 1) * 16 + 7.8f, (v.d() - 1) * 16 + 7.8f, frac);
             pose.popPose();
         }
         for (TankViewPacket.Cable c : v.cables()) {

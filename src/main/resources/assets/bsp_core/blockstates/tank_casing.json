@@ -1,7 +1,264 @@
 {
- "variants": {
-  "": {
-   "model": "bsp_core:block/tank_casing"
+ "multipart": [
+  {
+   "when": {
+    "formed": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_casing"
+   }
+  },
+  {
+   "when": {
+    "formed": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_casing_formed"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "hi_y": "false",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_x_000"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "hi_y": "false",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_x_001"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "hi_y": "true",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_x_010"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "hi_y": "true",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_x_011"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_y": "true",
+    "hi_x": "false",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_y_000"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_y": "true",
+    "hi_x": "false",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_y_001"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_y": "true",
+    "hi_x": "true",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_y_100"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_y": "true",
+    "hi_x": "true",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_y_101"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_z": "true",
+    "hi_x": "false",
+    "hi_y": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_z_000"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_z": "true",
+    "hi_x": "false",
+    "hi_y": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_z_010"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_z": "true",
+    "hi_x": "true",
+    "hi_y": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_z_100"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_z": "true",
+    "hi_x": "true",
+    "hi_y": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_rail_z_110"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "false",
+    "hi_y": "false",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_000"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "true",
+    "hi_y": "false",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_100"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "false",
+    "hi_y": "true",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_010"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "true",
+    "hi_y": "true",
+    "hi_z": "false"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_110"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "false",
+    "hi_y": "false",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_001"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "true",
+    "hi_y": "false",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_101"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "false",
+    "hi_y": "true",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_011"
+   }
+  },
+  {
+   "when": {
+    "formed": "true",
+    "along_x": "true",
+    "along_y": "true",
+    "along_z": "true",
+    "hi_x": "true",
+    "hi_y": "true",
+    "hi_z": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/tank_node_111"
+   }
   }
- }
+ ]
 }

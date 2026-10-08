@@ -18,6 +18,8 @@ BLOCKS = ["plasma_extractor", "plasma_interface", "plasma_valve", "plasma_repeat
           "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4", "tetrium_core_cable", "charged_illyrium_core_cable", "magnatite_core_cable", "illyrium_core_cable"]
 DYES = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"]
 BLOCKS += [f"{d}_illyrium_core_cable" for d in DYES] + ["blue_magnatite_core_cable", "red_magnatite_core_cable", "blue_charged_illyrium_core_cable", "red_charged_illyrium_core_cable"]
+BLOCKS += ["tank_casing", "tank_glass", "tank_port"]
+CUBE_ALL = [{"from": [0, 0, 0], "to": [16, 16, 16], "faces": {f: {"uv": [0, 0, 16, 16], "texture": "#all", "cullface": f} for f in ("north", "south", "east", "west", "up", "down")}}]
 ITEMS = ["wave_emitter", "power_cell_1", "power_cell_2", "power_cell_3", "wrench"]
 MODELS, TEXTURES = {}, {}
 
@@ -31,7 +33,10 @@ def load_model(ref):
         return None
     m = json.loads((ASSETS / f"models/{path}.json").read_text())
     parent = load_model(m["parent"]) if m.get("parent", "").startswith("bsp_core:") else None
-    out = {"elements": m.get("elements") or (parent["elements"] if parent else []), "textures": dict(parent["textures"] if parent else {}, **m.get("textures", {})),
+    elements = m.get("elements") or (parent["elements"] if parent else [])
+    if not elements and m.get("parent") == "minecraft:block/cube_all":
+        elements = CUBE_ALL
+    out = {"elements": elements, "textures": dict(parent["textures"] if parent else {}, **m.get("textures", {})),
            "sprite": m.get("parent") == "minecraft:item/generated"}
     for key, tex in out["textures"].items():
         if not tex.startswith("#"):
@@ -173,7 +178,15 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
   function ends(g){ const w=new World(); w.put('blue_illyrium_core_cable',0,0,0,{ends:{west:'out',north:'in',south:'off',east:'link'}}); w.put('blue_illyrium_core_cable',-1,0,0); w.put('blue_illyrium_core_cable',0,0,-1); w.put('blue_illyrium_core_cable',0,0,1); w.put('red_illyrium_core_cable',1,0,0); w.put('red_illyrium_core_cable',2,0,0);
     w.put('blue_magnatite_core_cable',0,0,3); w.put('blue_magnatite_core_cable',1,0,3); w.put('red_magnatite_core_cable',2,0,3); w.put('red_magnatite_core_cable',3,0,3); // a blue run meeting a red one without a link: no join
     build(g,w); ground(g,-2,-2,5,5,0); return {target:[12,4,20],dist:100,ry:Math.PI*1.22,rx:.55}; }
-  const SCENES=[['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
+  function tank(g){ const W=5,H=4,D=5; const ports={'2,3,2':1,'0,1,2':1}; const face=new Set(['2,1,0','1,3,1']);
+    for(let x=0;x<W;x++) for(let y=0;y<H;y++) for(let z=0;z<D;z++){ const ex=x===0||x===W-1, ey=y===0||y===H-1, ez=z===0||z===D-1; const edges=(ex?1:0)+(ey?1:0)+(ez?1:0); if(!edges) continue; const key=x+','+y+','+z;
+      if(ports[key]){ block(g,'tank_port',x,y,z,{formed:true}); continue; }
+      if(edges>=2||face.has(key)){ const p={formed:true}; const ax=[[ex,x,W],[ey,y,H],[ez,z,D]]; 'xyz'.split('').forEach((a,i)=>{ p['along_'+a]=edges>=2&&(edges===3||!ax[i][0]); p['hi_'+a]=ax[i][1]===ax[i][2]-1; }); block(g,'tank_casing',x,y,z,p); }
+      else block(g,'tank_glass',x,y,z,{formed:true}); }
+    const frac=.6; const top=8+(H-1)*16*frac; plasma(g,[8,8,8],[(W-1)*16+8,top,(D-1)*16+8]);
+    for(const [cx,cz] of [[-0.3,-0.3],[W*16-0.9,-0.3],[-0.3,D*16-0.9],[W*16-0.9,D*16-0.9]]) box(g,[cx,4,cz],[cx+1.2,Math.min(top,H*16-4),cz+1.2],0x19d3b0,undefined,true);
+    ground(g,-1,-1,W+1,D+1,0); return {target:[40,30,40],dist:200,ry:Math.PI*1.2,rx:.4}; }
+  const SCENES=[['plasma_tank','A formed 5 x 4 x 5 Plasma Tank, 60 % full',tank],['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
     ['projector_base','Projector Base and Projector',base],['battery_charger','Battery Charger',charger],['plasma_batteries','Plasma Batteries, and one feeding an extractor',batteries],['wave_emitter','Wave Emitter, Power Cells and the Wrench',emitter]];
   const one=new URLSearchParams(location.search).get('view'); if(one) document.body.classList.add('one');
   const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
