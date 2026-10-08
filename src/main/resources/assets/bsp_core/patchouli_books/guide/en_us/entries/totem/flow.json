@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Plasma moves in $(l)runs$(): a line of cables from an interface to whatever is at its end. Every cable in a run carries the same figure, the run's $(l)pressure$(), in mB/t. Nothing is lost along a cable, however long, up to its reach.$(br2)Each kind of cable has a longest run:$(br)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)A mixed run goes as far as its weakest cable."
+      "text": "Plasma moves in $(l)runs$(): a line of cables from an interface to whatever is at its end. Every cable in a run carries the same figure, the run's $(l)pressure$(), in mB/t. Nothing is lost along a cable, however long, up to its reach.$(br2)Each kind of cable has a longest run:$(br)$(li)Tetrium: 15 blocks, 250 mB/t$(li)Magnatite: 25 blocks, 500 mB/t$(li)Illyrium: 40 blocks, 1,000 mB/t$(li)Charged Illyrium: 80 blocks, 1,000 mB/t$(br2)A mixed run goes as far, and carries as much, as its weakest cable."
     },
     {
       "type": "patchouli:crafting",
@@ -31,7 +31,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:plasma_valve",
-      "text": "A $(item)Plasma Valve$() sets the most that may pass it, from 0 to 2,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run."
+      "text": "A $(item)Plasma Valve$() sets the most that may pass it, from 0 to 1,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run."
     },
     {
       "type": "patchouli:text",
@@ -42,6 +42,21 @@
       "type": "patchouli:crafting",
       "recipe": "bsp_core:wrench",
       "text": "The $(item)Wrench$() turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:blue_illyrium_core_cable",
+      "text": "Magnatite, Illyrium and Charged Illyrium cables take any of the sixteen dyes: eight cables round a dye, and a coloured cable can be dyed again. A coloured cable joins only cables of its own colour, a plain one only plain ones, so two runs can cross without mixing. Machines take any colour."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Point the wrench at an end of a cable and right-click to set what that end does:$(br)$(li)$(l)Normal$(): plasma flows either way, as before.$(li)$(l)Output$(): plasma may only leave the cable here.$(li)$(l)Input$(): plasma may only enter here.$(li)$(l)Off$(): not joined.$(br2)Where another colour meets the end, the first click $(l)Links$() them. Sneak and right-click puts an end back to Normal.",
+      "title": "Cable ends"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "While you hold the wrench a line above the crosshair names the end you point at and its setting. Output ends wear a copper collar with an arrow pointing out, Input ends an arrow pointing in, Off ends a dark plate, and Links a copper and white collar.$(br2)Sneak and right-click the $(l)core$() of a cable to pick it up with its settings kept on the item.",
+      "title": "What you see"
     }
   ]
 }

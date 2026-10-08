@@ -483,7 +483,7 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Projector on a cable run from the interface: right-click opens POWERS / CHUNKS / STATUS. POWERS lists Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Anchor with the totem's level under OFFERED; switching one to RECEIVING shows the same level under ARRIVES; a third switch is refused until a Channel Expander is fitted (right-click the projector holding one; sneak + right-click empty-handed takes it out).
 - [ ] STATUS: PROJECTING with the plasma bar full at 100 of 100 mB/t from a single Tier I totem with one extractor. With two extractors under the totem and the interface touching only one: LOW PRESSURE at 50 mB/t. Touching both: back to 100.
 - [ ] Repeater in the run: the plasma arriving drops to 90 mB/t and STATUS reads LOW PRESSURE; raising Output to level 1 (150 mB/t) cures it. With one power received it arrives at full level; with two, each arrives one level lower; a level-1 power behind one repeater shows 0 and a tooltip explaining why.
-- [ ] A cable run longer than the cable's reach (16 Tetrium Core cables) is not fed: NO SIGNAL. A repeater in the middle starts a fresh run and it is fed again.
+- [ ] A cable run longer than the cable's reach (16 Tetrium cables) is not fed: NO SIGNAL. A repeater in the middle starts a fresh run and it is fed again.
 - [ ] The projector lights up with shards circling only while projecting. Fortify and Healing Aura now draw cubes (edges), not spheres; so does the totem. Each power works at the projector as at the totem, within the cube: Fortify slows non-owner mining and resists explosions; Healing heals the owner; Alarm makes intruders glow and tells the owner; Ward weakens; Sanctuary stops spawns; Overclock speeds machines.
 - [ ] Two projectors on one interface each pick their own powers. Breaking a cable, picking up the totem, or breaking the extractor stops the aura within a few seconds. A stolen totem keeps the chain working for the thief.
 - [ ] Another player right-clicking the projector sees the screen but the RECEIVE switches are dead and a note says only the owner can change it.
@@ -658,4 +658,38 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - Guide book, The Shatter Totem category: "Wave Plasma and Projectors" (with the turnable hook-up scene and the four-interface scene), new "Pressure, Runs and Valves" (runs, reach, sharing, repeater, valve, wrench), "Batteries, Cells and the Emitter" (charged crystal, charger rules, stamping, all four batteries, battery-as-source scene, all three cells, the emitter screen). Every new block and item has a recipe or spotlight page, so its picture is in the book. Check the three scenes turn and show cables with arms, the charger facing south and the totem on the extractor.
 - JEI: hover any plasma block, cable or battery in JEI and hold Shift: the Assembly Guide opens with the Wave Plasma hook-up in ten steps (extractor, totem, interface, cables, valve, repeater, base, projector, second run, charger). The interface's JEI info says so.
 - docs/GUIDE_BOOK_TEXT.md is regenerated with the new pages for reading outside the game.
+
+## Output, caps and throughput (2026-10-08)
+
+- Totem panel, TOTEM tab: under "This totem is yours" a blue line "Wave Plasma: 100 mB/t (Output 0 of 10)". Buy Output levels: 200, 350, 500, 750, 1,000, 1,500, 2,000, 3,000, 4,500, 6,000. The tree shows ten levels on the Output node.
+- A 6,000 mB/t totem on one extractor and one interface with a single run reads 1,000 mB/t on that run (the face cap) and the interface screen shows the rest spare. Add more faces with cables: each run gets up to 1,000.
+- A run of Tetrium cables reads at most 250 mB/t, Magnatite 500, Illyrium or Charged Illyrium 1,000. One Tetrium cable in an Illyrium run holds the whole run to 250.
+- The valve's dial tops out at 1,000.
+- Your test world's `bsp_core-server.toml` has the new Output list and valve max already; a fresh world gets them by default.
+
+## Coloured cables and cable ends (2026-10-08)
+
+- Craft eight Illyrium cables round a blue dye: eight Blue Illyrium Plasma Cables. Dye them red: red ones. JEI shows one dye recipe per colour (48 in all); tab and JEI list all 48.
+- A blue run next to a red run: no arms between them, and the interface feeds only the run it touches. Plain next to blue: no join. Blue to a base, charger, valve, repeater or interface: joins.
+- Hold the wrench and look at a cable: a box above the crosshair reads "West end: Normal" with the hint line; on the core it reads "Cable core". Right-click an end: Output (copper collar, arrow out), again: Input (arrow in), again: Off (plate, arm gone), again: Normal. Sneak + right-click: Normal. Where a red cable meets a blue end the first click reads "Linked across colours" (copper and white collar) and the two join.
+- Output and Input do what they say: an Output end at the base lets plasma reach the base; set that end to Input and the base starves. An Off end is a wall.
+- Sneak + right-click a cable's core with the wrench: it drops as an item that says it keeps its ends; place it and the ends are back.
+- Jade on a set cable lists its ends. The interface view draws coloured cables in their colour.
+
+## Plasma Tank (2026-10-08)
+
+- Craft: Tetrium Glass (8 glass round a nugget), Tank Casing (8 plates round a chassis), Tank Glass (8 tetrium glass round a plate), Tank Port (crystal top, tetrium cables sides, casing centre, plate bottom).
+- Build a 3 x 3 x 3: casing on the edges, glass on the six face centres, swap one face for a port. The last block placed forms it: the ports' rings light turquoise, Jade says "Wave Plasma: 0 / 130,000,000 mB" on any block. Glass walls show no seams between blocks.
+- Wrong builds do not form: a glass block on an edge, a block inside, a side of 2 or 13.
+- Feed it: cable from an interface into a port. The level rises; a port on top pours a stream to the surface with a ripple; a side port shows a short spout while above the surface and nothing once under it. Right-click any block: the screen shows the tank, the plasma level, "Input in 100" on the port and the first cables.
+- Drain it: a run from a port to a Projector Base with no interface on it. The port gives up to 1,000 mB/t; the base fills and the projector runs on plasma from the tank (with no powers offered). An In-and-out port that is being fed does not give out at the same time.
+- Wrench on a port steps In and out, Input, Output (ring turquoise, blue, orange); the crosshair readout names it. An Output port ignores an interface's run; an Input port gives nothing.
+- Break one glass block: rings go grey, Jade says "Not part of a tank"; place it back: formed again with the same plasma. Break two blocks and put both back: still kept (the plasma lasts until the last block of the old shell is gone). Rebuild one block smaller than a full tank: it holds what fits. Add a layer: it keeps what it had.
+- Two tanks joined by a cable, one port Output, the other Input: plasma moves across at 1,000 mB/t.
+
+## Face cap over branching runs; wrench readout (2026-10-08)
+
+- One cable out of an interface face that later splits to two bases: the first cable reads 1,000 mB/t at most and each branch 500 (with a 6,000 totem). Put a second cable on another face and that run gets its own 1,000.
+- A Tetrium trunk feeding two Illyrium branches: the trunk reads 250 and the branches 125 each.
+- The wrench readout is a single short line, a little above the crosshair: "West end: Output", "Core: sneak-click picks it up", "Port: Input".
 

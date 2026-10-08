@@ -163,8 +163,9 @@ public final class ModItems {
     public static final RegistryObject<Item> CHANNEL_EXPANDER;
 
     static {
-        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.PLASMA_EXTRACTOR, ModBlocks.PLASMA_INTERFACE, ModBlocks.PLASMA_REPEATER, ModBlocks.PLASMA_VALVE, ModBlocks.PROJECTOR_BASE, ModBlocks.TOTEM_PROJECTOR));
+        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.PLASMA_EXTRACTOR, ModBlocks.PLASMA_INTERFACE, ModBlocks.PLASMA_REPEATER, ModBlocks.PLASMA_VALVE, ModBlocks.PROJECTOR_BASE, ModBlocks.TOTEM_PROJECTOR, ModBlocks.TANK_CASING, ModBlocks.TANK_GLASS, ModBlocks.TANK_PORT, ModBlocks.TETRIUM_GLASS));
         blocks.addAll(ModBlocks.TOTEM_CABLES.values());
+        blocks.addAll(ModBlocks.COLOURED_CABLES);
         for (var block : blocks) {
             PROJECTOR_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
         }

@@ -180,6 +180,8 @@ public class BspJeiPlugin implements IModPlugin {
         info(reg, "jei.bsp_core.info.interface", "plasma_interface");
         info(reg, "jei.bsp_core.info.repeater", "plasma_repeater");
         info(reg, "jei.bsp_core.info.valve", "plasma_valve");
+        info(reg, "jei.bsp_core.info.tank", "tank_casing", "tank_glass", "tank_port");
+        info(reg, "jei.bsp_core.info.tetrium_glass", "tetrium_glass");
         info(reg, "jei.bsp_core.info.expander", "channel_expander");
         info(reg, "jei.bsp_core.info.charger", "battery_charger");
         info(reg, "jei.bsp_core.info.battery", "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4");

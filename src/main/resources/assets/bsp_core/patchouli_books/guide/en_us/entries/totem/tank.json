@@ -1,0 +1,68 @@
+{
+  "name": "The Plasma Tank",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:tank_port",
+  "sortnum": 8,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 5,000,000 mB. It holds plasma only, no powers."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "A 4 x 3 x 4 tank",
+      "multiblock": {
+        "pattern": [
+          [
+            "CCCC",
+            "CGGC",
+            "CGGC",
+            "CCCC"
+          ],
+          [
+            "CGGC",
+            "G__G",
+            "G__P",
+            "CGGC"
+          ],
+          [
+            "CCCC",
+            "CGPC",
+            "CGGC",
+            "C0CC"
+          ]
+        ],
+        "mapping": {
+          "C": "bsp_core:tank_casing[formed=true]",
+          "G": "bsp_core:tank_glass[formed=true]",
+          "P": "bsp_core:tank_port[formed=true]",
+          "0": "bsp_core:tank_casing[formed=true]"
+        },
+        "symmetrical": false
+      },
+      "text": "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tetrium_glass",
+      "recipe2": "bsp_core:tank_glass",
+      "text": "Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tank_casing",
+      "recipe2": "bsp_core:tank_port",
+      "text": "A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks. Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.$(br2)Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.",
+      "title": "Seeing it"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.",
+      "title": "Breaking and rebuilding"
+    }
+  ]
+}

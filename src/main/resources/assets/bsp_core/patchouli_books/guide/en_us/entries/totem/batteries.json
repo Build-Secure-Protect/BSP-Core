@@ -2,7 +2,7 @@
   "name": "Batteries, Cells and the Emitter",
   "category": "bsp_core:totem",
   "icon": "bsp_core:plasma_battery_2",
-  "sortnum": 9,
+  "sortnum": 10,
   "pages": [
     {
       "type": "patchouli:text",

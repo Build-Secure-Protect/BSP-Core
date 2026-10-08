@@ -15,7 +15,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "src/main/resources/assets/bsp_core"
 BLOCKS = ["plasma_extractor", "plasma_interface", "plasma_valve", "plasma_repeater", "projector_base", "totem_projector", "battery_charger",
-          "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4", "tetrium_core_cable", "charged_illyrium_core_cable"]
+          "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4", "tetrium_core_cable", "charged_illyrium_core_cable", "magnatite_core_cable", "illyrium_core_cable"]
+DYES = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"]
+BLOCKS += [f"{d}_illyrium_core_cable" for d in DYES] + ["blue_magnatite_core_cable", "red_magnatite_core_cable", "blue_charged_illyrium_core_cable", "red_charged_illyrium_core_cable"]
 ITEMS = ["wave_emitter", "power_cell_1", "power_cell_2", "power_cell_3", "wrench"]
 MODELS, TEXTURES = {}, {}
 
@@ -82,6 +84,7 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
 (function(){
   const STATES=__STATES__, MODELS=__MODELS__, TEXTURES=__TEXTURES__;
   const ION=0x4cb2fa, COPPER=0xc87a3c, HULL2=0x1e222b;
+  const DYES=['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
   const texCache={};
   function texture(ref){ if(texCache[ref]) return texCache[ref]; const t=new THREE.TextureLoader().load(TEXTURES[ref].src); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.flipY=true; texCache[ref]=t; return t; }
   const matCache={};
@@ -112,21 +115,30 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
   World.prototype.put=function(id,x,y,z,props){ this.map.set([x,y,z].join(','),{id,x,y,z,props:props||{}}); };
   World.prototype.at=function(x,y,z){ return this.map.get([x,y,z].join(',')); };
   const opp={down:'up',up:'down',north:'south',south:'north',west:'east',east:'west'};
-  function endOf(b,dir){ // does block b accept a cable from direction dir (dir = from b toward the neighbour)?
+  const colourOf=id=>{ const m=id.match(/^([a-z_]+?)_(magnatite|illyrium|charged_illyrium|tetrium)_core_cable$/); return m?m[1]:(id.endsWith('_core_cable')?'plain':null); };
+  function endOf(b,dir,from){ // does block b accept a cable from direction dir (dir = from b toward the neighbour)?
     if(!b) return false; const id=b.id;
+    if(from&&from.id.endsWith('_core_cable')&&id.endsWith('_core_cable')){ const link=(from.props.ends||{})[opp[dir]]==='link'||(b.props.ends||{})[dir]==='link'; if(!link&&colourOf(from.id)!==colourOf(id)) return false; }
+    if(from&&from.props.ends&&from.props.ends[opp[dir]]==='off') return false; if(b.props.ends&&b.props.ends[dir]==='off') return false;
     if(id.endsWith('_core_cable')||id==='projector_base'||id==='plasma_interface') return true;
     if(id==='plasma_valve') return AXIS[b.props.axis||'x'].includes(dir);
     if(id==='plasma_repeater') return AXIS[(b.props.facing||'east')==='east'||(b.props.facing)==='west'?'x':(b.props.facing==='up'||b.props.facing==='down')?'y':'z'].includes(dir);
     if(id==='battery_charger') return dir===opp[b.props.facing||'north'];
     return false; }
   function build(g,w){ for(const b of w.map.values()){ const props=Object.assign({},b.props);
-      if(b.id.endsWith('_core_cable')){ for(const d in DIRS){ const v=DIRS[d]; const n=w.at(b.x+v[0],b.y+v[1],b.z+v[2]); props[d]=endOf(n,opp[d])&&(n.id!=='plasma_valve'&&n.id!=='plasma_repeater'||endOf(n,opp[d])); } }
+      if(b.id.endsWith('_core_cable')){ for(const d in DIRS){ const v=DIRS[d]; const n=w.at(b.x+v[0],b.y+v[1],b.z+v[2]); props[d]=endOf(n,opp[d],b); } }
       if(b.id==='plasma_interface'){ for(const d in DIRS){ const v=DIRS[d]; const n=w.at(b.x+v[0],b.y+v[1],b.z+v[2]); props[d]=!n?'none':n.id==='plasma_extractor'?'drum':n.id==='plasma_interface'?'join':endOf(n,opp[d])?'cable':'none'; } }
       const grp=block(g,b.id,b.x,b.y,b.z,props); extras(grp,b,props,w); } }
   // ---- the parts the game draws with renderers
   function extras(g,b,props,w){ const id=b.id;
     if(id==='projector_base'){ plasma(g,[2.2,4.55,2.2],[13.8,10.9,13.8]); for(const n of [[6.3,6.3,-0.5,9.7,9.7,0.2],[6.3,6.3,15.8,9.7,9.7,16.5],[-0.5,6.3,6.3,0.2,9.7,9.7],[15.8,6.3,6.3,16.5,9.7,9.7]]) plasma(g,[n[0],n[1],n[2]],[n[3],n[4],n[5]]); }
     if(id.endsWith('_core_cable')){ const cx=props.east||props.west, cz=props.north||props.south, cy=props.up||props.down; plasma(g,[cx?0.3:6.4,cy?0.3:6.4,cz?0.3:6.4],[cx?15.7:9.6,cy?15.7:9.6,cz?15.7:9.6]); }
+    if(id.endsWith('_core_cable')&&b.props.ends){ for(const d in b.props.ends){ const mode=b.props.ends[d]; const ax=new THREE.Group(); ax.position.set(8,8,8); ax.rotation.y={east:0,west:Math.PI,south:-Math.PI/2,north:Math.PI/2}[d]||0; g.add(ax); const o=[-8,-8,-8];
+        const B=(f,t,c,gl)=>box(ax,[f[0]+o[0],f[1]+o[1],f[2]+o[2]],[t[0]+o[0],t[1]+o[1],t[2]+o[2]],c,undefined,gl);
+        if(mode==='off'){ B([10.6,4.6,4.6],[11.4,11.4,11.4],HULL2); B([11.4,6.2,6.2],[11.9,9.8,9.8],0x8a909c); continue; }
+        const c=mode==='link'?0xf4f7fa:COPPER; B([13.2,10.6,4.7],[15.2,11.3,11.3],c); B([13.2,4.7,4.7],[15.2,5.4,11.3],c); B([13.2,5.4,4.7],[15.2,10.6,5.4],c); B([13.2,5.4,10.6],[15.2,10.6,11.3],c);
+        if(mode==='link'){ B([13.2,10.6,4.7],[14.1,11.3,11.3],COPPER); B([13.2,4.7,4.7],[14.1,5.4,11.3],COPPER); B([13.2,5.4,4.7],[14.1,10.6,5.4],COPPER); B([13.2,5.4,10.6],[14.1,10.6,11.3],COPPER); }
+        else { const out=mode==='out'; B([11.4,11.3,7.4],[15.6,11.75,8.6],0x19d3b0,true); B([out?15.2:11.4,11.3,6.3],[out?16.1:12.3,11.75,9.7],0x19d3b0,true); B([out?16.1:10.9,11.3,7.2],[out?16.6:11.4,11.75,8.8],0x19d3b0,true); } } }
     if(id==='plasma_repeater'){ const ax=new THREE.Group(); ax.position.set(8,8,8); const f=props.facing||'east'; ax.rotation.y={east:0,west:Math.PI,south:-Math.PI/2,north:Math.PI/2}[f]||0; g.add(ax); for(let i=0;i<5;i++){ const x=2.6+i*2.2+0.7-8; ring(ax,[x,0,0],'x',4.8,.65); } }
     if(id==='plasma_valve'){ const ax=new THREE.Group(); ax.position.set(8,8,8); ax.rotation.y=(props.axis==='z')?-Math.PI/2:0; g.add(ax); ring(ax,[0,7.3,0],'y',3.4,.5); box(ax,[-3.1,7.05,-0.3],[3.1,7.55,0.3],COPPER); box(ax,[-0.3,7.05,-3.1],[0.3,7.55,3.1],COPPER);
       box(ax,[-0.25,-0.4,4.1],[0.25,1.9,4.35],0xffd23a,undefined,true); box(ax,[-4.9,1.4,3.9],[-3.7,2.4,4.25],ION,undefined,true); plasma(ax,[-6.4,-2.6,-2.6],[-2.6,2.6,2.6]); plasma(ax,[2.6,-2.6,-2.6],[6.4,2.6,2.6]); }
@@ -156,7 +168,12 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
     [1,2,3].forEach((t,i)=>{ const T=TEXTURES['bsp_core:item/power_cell_'+t]; const m=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshBasicMaterial({map:texture('bsp_core:item/power_cell_'+t),transparent:true,alphaTest:.1,side:THREE.DoubleSide})); m.position.set(30+i*16,8,8); g.add(m); });
     const wT=texture('bsp_core:item/wrench'); const wr=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshBasicMaterial({map:wT,transparent:true,alphaTest:.1,side:THREE.DoubleSide})); wr.position.set(30+3*16,8,8); g.add(wr);
     return {target:[42,8,8],dist:118,ry:Math.PI,rx:.12,still:true}; }
-  const SCENES=[['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
+  function colours(g){ const w=new World(); DYES.forEach((d,i)=>{ for(let x=0;x<3;x++) w.put(d+'_illyrium_core_cable',x,0,i); });
+    w.put('illyrium_core_cable',0,0,17); w.put('illyrium_core_cable',1,0,17); w.put('illyrium_core_cable',2,0,17); build(g,w); ground(g,-1,-1,4,19,0); return {target:[24,2,136],dist:260,ry:Math.PI*0.72,rx:.5}; }
+  function ends(g){ const w=new World(); w.put('blue_illyrium_core_cable',0,0,0,{ends:{west:'out',north:'in',south:'off',east:'link'}}); w.put('blue_illyrium_core_cable',-1,0,0); w.put('blue_illyrium_core_cable',0,0,-1); w.put('blue_illyrium_core_cable',0,0,1); w.put('red_illyrium_core_cable',1,0,0); w.put('red_illyrium_core_cable',2,0,0);
+    w.put('blue_magnatite_core_cable',0,0,3); w.put('blue_magnatite_core_cable',1,0,3); w.put('red_magnatite_core_cable',2,0,3); w.put('red_magnatite_core_cable',3,0,3); // a blue run meeting a red one without a link: no join
+    build(g,w); ground(g,-2,-2,5,5,0); return {target:[12,4,20],dist:100,ry:Math.PI*1.22,rx:.55}; }
+  const SCENES=[['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
     ['projector_base','Projector Base and Projector',base],['battery_charger','Battery Charger',charger],['plasma_batteries','Plasma Batteries, and one feeding an extractor',batteries],['wave_emitter','Wave Emitter, Power Cells and the Wrench',emitter]];
   const one=new URLSearchParams(location.search).get('view'); if(one) document.body.classList.add('one');
   const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);

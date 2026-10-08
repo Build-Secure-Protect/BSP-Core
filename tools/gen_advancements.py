@@ -58,6 +58,9 @@ ADV = [
     ("plasma_battery_4", "plasma_battery", "bsp_core:plasma_battery_4", "Five Million", "Craft a Tier IV Plasma Battery", ["bsp_core:plasma_battery_4"], "challenge"),
     ("power_cell", "battery_charger", "bsp_core:power_cell_1", "Pocket Power", "Craft a Power Cell of any tier", ["bsp_core:power_cell_1", "bsp_core:power_cell_2", "bsp_core:power_cell_3"], "task"),
     ("wave_emitter", "power_cell", "bsp_core:wave_emitter", "Carry It With You", "Craft a Wave Emitter. With a charged cell in your offhand it gives you the cell's powers", ["bsp_core:wave_emitter"], "goal"),
+    ("plasma_tank", "plasma_cable", "bsp_core:tank_port", "Big Bottle", "Craft a Tank Port. A hollow box of Tank Casing and Tank Glass with ports in it holds Wave Plasma by the million", ["bsp_core:tank_port"], "goal"),
+    ("dyed_cable", "plasma_cable", "bsp_core:blue_illyrium_core_cable", "A Splash of Colour", "Dye a cable. Coloured cables only join their own colour, so runs stay apart",
+     [f"bsp_core:{dye}_{kind}_core_cable" for kind in ("magnatite", "illyrium", "charged_illyrium") for dye in ("white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black")], "task"),
 ]
 
 

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "GNG",
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "N": {
+      "item": "bsp_core:tetrium_nugget"
+    }
+  },
+  "result": {
+    "item": "bsp_core:tetrium_glass",
+    "count": 8
+  }
+}

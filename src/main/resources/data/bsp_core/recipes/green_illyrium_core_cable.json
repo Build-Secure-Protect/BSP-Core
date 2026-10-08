@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CCC",
+    "CYC",
+    "CCC"
+  ],
+  "key": {
+    "C": {
+      "tag": "bsp_core:illyrium_cables"
+    },
+    "Y": {
+      "item": "minecraft:green_dye"
+    }
+  },
+  "result": {
+    "item": "bsp_core:green_illyrium_core_cable",
+    "count": 8
+  }
+}

@@ -1,0 +1,142 @@
+<title>Plasma Tank Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One WebGL context draws every view. Three looks for the multiblock tank, a live fill, the rules. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/8; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--on); border:1px solid var(--line); display:grid; place-items:center; font:600 9px var(--body); color:var(--fg); text-align:center; line-height:1.1; font-style:normal; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.hud{ font-family:var(--display); font-size:11px; color:#e8eaf0; background:#10151c; border:2px solid #19d3b0; padding:8px 12px; display:inline-flex; gap:14px; align-items:center; } .hud b{ color:#4cb2fa; font-weight:400; }
+</style>
+<div class="wrap">
+<section><h1>Plasma Tank Concepts</h1>
+<p class="lede">A tank built from three blocks: <b>Tank Casing</b> for the edges, <b>Tank Glass</b> to close the faces, and <b>Tank Ports</b> wherever cables should meet it. Any box from 3 x 3 x 3 up to 12 x 12 x 12, hollow inside. It holds Wave Plasma only, 5,000,000 mB per block of the shell, and no powers. Three looks below, the same 6 x 5 x 6 tank with four ports in each. Drag to turn.</p>
+<div class="card"><div class="ctl"><span class="key"><b>Fill:</b></span><label><input type="range" id="lvl" min="0" max="100" value="58"> <span id="lvlv">58%</span></label><button type="button" class="hb on" id="glassBtn">Glass: clear</button><span class="key" id="note"></span></div></div></section>
+
+<section><h2>1. Three looks</h2>
+<div class="grid3" id="looks"></div>
+</section>
+
+<section><h2>2. How it fills</h2>
+<div class="card"><p>One surface for the whole tank, as a liquid: it rises evenly across every block at once. A port above the surface pours a visible stream down to it, with a ripple where it lands; a port below the surface shows nothing, the level just climbs. Draining through a port lowers the level the same way. Press Fill or Drain and watch; the right-hand tank has its port at the side and the left one at the top.</p>
+<div class="view wide" id="fill"></div>
+<div class="ctl"><button type="button" class="hb" id="fillBtn">Fill</button><button type="button" class="hb" id="drainBtn">Drain</button><button type="button" class="hb" id="stopBtn">Hold</button><span class="hud" id="fillHud"></span></div></div>
+</section>
+
+<section><h2>3. Ports</h2>
+<div class="card"><div class="view wide" id="ports"></div>
+<p>Left to right: a port set to <b>In and out</b> (turquoise ring, the default: it takes plasma from a run that comes from an interface and gives plasma to a run that only leads to bases, chargers or other tanks), <b>Input</b> (arrow pointing into the tank), <b>Output</b> (arrow pointing out), and a port with no cable. The wrench steps a port through the three settings; Jade and the wrench readout name the setting. Each port gives at most 1,000 mB/t, like an interface face, so a tank that feeds a big base needs several.</p></div>
+</section>
+
+<section><h2>4. Rules</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Rule</th><th>Proposed</th></tr></thead><tbody>
+<tr><td><b>Shape</b></td><td>A hollow box, 3 to 12 blocks on each side, any mix of the three. Every edge must be Tank Casing. Faces are Tank Glass, Tank Casing or Tank Ports in any mix. The inside must be empty.</td></tr>
+<tr><td><b>Forms</b></td><td>When the last block completes a valid shell it forms by itself: no controller. The lowest corner keeps the contents. Right-clicking any block shows a line with the level; Jade shows "Wave Plasma: 1,250,000 / 7,280,000 mB".</td></tr>
+<tr><td><b>Capacity</b></td><td>5,000,000 mB for every block in the shell (the Tier IV battery's figure). A 12 x 12 x 12 shell is 728 blocks: 3,640,000,000 mB.</td></tr>
+<tr><td><b>Breaking</b></td><td>Break one block and the tank goes dormant but remembers its plasma; put the block back and it is whole again. Break it apart and the plasma is gone. Rebuild smaller and it keeps what fits, bigger and it keeps what it had.</td></tr>
+<tr><td><b>Shown</b></td><td>The plasma fills the glass as one surface, drawn by the same renderer as the Projector Base. Casing and ports hide what is behind them, so a glass wall is where you read the level.</td></tr>
+<tr><td><b>Recipes</b></td><td>Casing: Tetrium Plates and a Machine Chassis. Glass: Illyrium Tank Glass round a Tetrium Plate. Port: a casing, a cable and a Charged Resonance Crystal, so it costs something to add many.</td></tr>
+</tbody></table></div>
+<div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Tetrium Plate</i><i>Tetrium Plate</i><i>Tetrium Plate</i><i>Machine Chassis</i><i>Tetrium Plate</i><i>Tetrium Plate</i><i>Tetrium Plate</i><i>Tetrium Plate</i></div><span class="arrow">to</span><span class="out">8 x Tank Casing</span></div>
+<div class="rec"><div class="rc"><i>Illyrium Tank Glass</i><i>Illyrium Tank Glass</i><i>Illyrium Tank Glass</i><i>Illyrium Tank Glass</i><i>Tetrium Plate</i><i>Illyrium Tank Glass</i><i>Illyrium Tank Glass</i><i>Illyrium Tank Glass</i><i>Illyrium Tank Glass</i></div><span class="arrow">to</span><span class="out">8 x Tank Glass</span></div>
+<div class="rec"><div class="rc"><i></i><i>Charged Resonance Crystal</i><i></i><i>Illyrium Plasma Cable</i><i>Tank Casing</i><i>Illyrium Plasma Cable</i><i></i><i>Tetrium Plate</i><i></i></div><span class="arrow">to</span><span class="out">1 x Tank Port</span></div></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, COPPER=0xc87a3c, ION=0x4cb2fa, TQ=0x19d3b0, TEAL=0x0c8f78, RED=0xff5a4a;
+  const state={lvl:.58, clear:true};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; mat.depthWrite=op>.5; } const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ring(g,p,axis,R,r,c){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshBasicMaterial({color:c||COPPER})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  const plasmaMat=()=>new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:.92,depthWrite:true});
+  // ---- the shell: W x H x D blocks; which block is casing (edges), port (listed), else glass. Each look draws its own blocks.
+  function shell(g,W,H,D,ports,look){ const key=(x,y,z)=>x+','+y+','+z; const P=new Set(ports.map(p=>key(...p)));
+    for(let x=0;x<W;x++) for(let y=0;y<H;y++) for(let z=0;z<D;z++){ const ex=x===0||x===W-1, ey=y===0||y===H-1, ez=z===0||z===D-1; const onShell=ex||ey||ez; if(!onShell) continue; const edges=(ex?1:0)+(ey?1:0)+(ez?1:0); const o=[x*16,y*16,z*16];
+        const face=ex?(x===0?'w':'e'):ey?(y===0?'d':'u'):(z===0?'n':'s'); // the outward face for a face block
+        if(P.has(key(x,y,z))) look.port(g,o,face); else if(edges>=2) look.casing(g,o,ex,ey,ez); else look.glass(g,o,face); } }
+  function plasmaFill(g,W,H,D){ const m=new THREE.Mesh(new THREE.BoxGeometry((W-2)*16-1,1,(D-2)*16-1),plasmaMat()); m.position.set(W*8,16,D*8); g.add(m); return m; }
+  function setFill(m,W,H,D,f){ const h=Math.max(.01,(H-2)*16*f); m.scale.y=h; m.position.y=16+h/2; }
+  // ---- look A: Riveted Frame. Dark hull casing with pale trim edges and rivets; clear glass in a thin frame; ports a trim ring with a lit window and a mode ring
+  const lookA={ casing(g,o,ex,ey,ez){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],HULL); for(const [f,t] of [[[0,0,0],[16,2,2]],[[0,14,0],[16,16,2]],[[0,0,14],[16,2,16]],[[0,14,14],[16,16,16]],[[0,0,0],[2,16,2]],[[14,0,0],[16,16,2]],[[0,0,14],[2,16,16]],[[14,0,14],[16,16,16]],[[0,0,0],[2,2,16]],[[14,0,0],[16,2,16]],[[0,14,0],[2,16,16]],[[14,14,0],[16,16,16]]]) bx(g,[x+f[0],y+f[1],z+f[2]],[x+t[0],y+t[1],z+t[2]],TRIM);
+      for(const d of [[4,4],[11,4],[4,11],[11,11]]){ bx(g,[x+d[0],y+d[1],z-.3],[x+d[0]+1,y+d[1]+1,z+16.3],MID); } },
+    glass(g,o,face){ const [x,y,z]=o; const op=state.clear?.18:.42; bx(g,[x+.4,y+.4,z+.4],[x+15.6,y+15.6,z+15.6],0x9ec5e8,false,op); for(const [f,t] of [[[0,0,0],[16,1,1]],[[0,15,0],[16,16,1]],[[0,0,15],[16,1,16]],[[0,15,15],[16,16,16]],[[0,0,0],[1,16,1]],[[15,0,0],[16,16,1]],[[0,0,15],[1,16,16]],[[15,0,15],[16,16,16]],[[0,0,0],[1,1,16]],[[15,0,0],[16,1,16]],[[0,15,0],[1,16,16]],[[15,15,0],[16,16,16]]]) bx(g,[x+f[0],y+f[1],z+f[2]],[x+t[0],y+t[1],z+t[2]],HULL2); },
+    port(g,o,face,mode){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],HULL); const grp=portFrame(g,o,face); bx(grp,[3,3,-1.2],[13,13,0],TRIM); bx(grp,[5,5,-1.4],[11,11,-1.1],ION,true); modeMark(grp,mode||'both'); } };
+  // ---- look B: Industrial Girder. Casing as an I-beam with bolted flanges; glass with a cross mullion; ports a square valve box with a wheel
+  const lookB={ casing(g,o,ex,ey,ez){ const [x,y,z]=o; bx(g,[x+2,y+2,z+2],[x+14,y+14,z+14],HULL2); const ax=ex&&ey?'z':ey&&ez?'x':ex&&ez?'y':'x'; // flanges along the edge's axis
+      if(ax==='x'){ bx(g,[x,y,z],[x+16,y+3,z+16],MID); bx(g,[x,y+13,z],[x+16,y+16,z+16],MID); bx(g,[x,y,z],[x+16,y+16,z+3],MID); bx(g,[x,y,z+13],[x+16,y+16,z+16],MID); }
+      if(ax==='y'){ bx(g,[x,y,z],[x+3,y+16,z+16],MID); bx(g,[x+13,y,z],[x+16,y+16,z+16],MID); bx(g,[x,y,z],[x+16,y+16,z+3],MID); bx(g,[x,y,z+13],[x+16,y+16,z+16],MID); }
+      if(ax==='z'){ bx(g,[x,y,z],[x+3,y+16,z+16],MID); bx(g,[x+13,y,z],[x+16,y+16,z+16],MID); bx(g,[x,y,z],[x+16,y+3,z+16],MID); bx(g,[x,y+13,z],[x+16,y+16,z+16],MID); }
+      for(const c of [[0,0],[0,14],[14,0],[14,14]]) bx(g,[x+c[0],y+c[1],z+6],[x+c[0]+2,y+c[1]+2,z+10],TRIM); },
+    glass(g,o,face){ const [x,y,z]=o; const op=state.clear?.18:.42; bx(g,[x+.6,y+.6,z+.6],[x+15.4,y+15.4,z+15.4],0x9ec5e8,false,op); const grp=portFrame(g,o,face); bx(grp,[0,7.3,-.4],[16,8.7,.2],MID); bx(grp,[7.3,0,-.4],[8.7,16,.2],MID); bx(grp,[0,0,-.4],[16,1.2,.2],MID); bx(grp,[0,14.8,-.4],[16,16,.2],MID); bx(grp,[0,0,-.4],[1.2,16,.2],MID); bx(grp,[14.8,0,-.4],[16,16,.2],MID); },
+    port(g,o,face,mode){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],HULL2); const grp=portFrame(g,o,face); bx(grp,[2,2,-2],[14,14,0],MID); bx(grp,[4,4,-2.6],[12,12,-2],HULL); bx(grp,[5.5,5.5,-2.9],[10.5,10.5,-2.6],ION,true); const w=ring(grp,[8,8,-3.6],'z',3,.5,COPPER); modeMark(grp,mode||'both',-3.9); } };
+  // ---- look C: Crystal Vat. Teal illyrium frame, big clear panes with only a corner clip, ports flush hatches with a dial
+  const lookC={ casing(g,o,ex,ey,ez){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],0x12423a); bx(g,[x+1,y+1,z+1],[x+15,y+15,z+15],HULL); for(const [f,t] of [[[0,0,0],[16,1.5,1.5]],[[0,14.5,0],[16,16,1.5]],[[0,0,14.5],[16,1.5,16]],[[0,14.5,14.5],[16,16,16]],[[0,0,0],[1.5,16,1.5]],[[14.5,0,0],[16,16,1.5]],[[0,0,14.5],[1.5,16,16]],[[14.5,0,14.5],[16,16,16]],[[0,0,0],[1.5,1.5,16]],[[14.5,0,0],[16,1.5,16]],[[0,14.5,0],[1.5,16,16]],[[14.5,14.5,0],[16,16,16]]]) bx(g,[x+f[0],y+f[1],z+f[2]],[x+t[0],y+t[1],z+t[2]],TQ,true); },
+    glass(g,o,face){ const [x,y,z]=o; const op=state.clear?.14:.38; bx(g,[x+.2,y+.2,z+.2],[x+15.8,y+15.8,z+15.8],0xbfe6ff,false,op); const grp=portFrame(g,o,face); for(const c of [[0,0],[13,0],[0,13],[13,13]]) bx(grp,[c[0],c[1],-.3],[c[0]+3,c[1]+3,.1],TEAL); },
+    port(g,o,face,mode){ const [x,y,z]=o; bx(g,[x,y,z],[x+16,y+16,z+16],0x12423a); bx(g,[x+1,y+1,z+1],[x+15,y+15,z+15],HULL); const grp=portFrame(g,o,face); bx(grp,[2.5,2.5,-.6],[13.5,13.5,0],MID); bx(grp,[6,6,-.9],[10,10,-.6],ION,true); modeMark(grp,mode||'both',-1.2); } };
+  // a group whose -z is the outward face of the block at o: everything drawn in it sits proud of that face
+  function portFrame(g,o,face){ const grp=new THREE.Group(); grp.position.set(o[0]+8,o[1]+8,o[2]+8); grp.rotation.order='YXZ'; if(face==='s') grp.rotation.y=Math.PI; if(face==='e') grp.rotation.y=-Math.PI/2; if(face==='w') grp.rotation.y=Math.PI/2; if(face==='u') grp.rotation.x=-Math.PI/2; if(face==='d') grp.rotation.x=Math.PI/2; const inner=new THREE.Group(); inner.position.set(-8,-8,-8); grp.add(inner); g.add(grp); return inner; }
+  // the setting mark on a port: turquoise ring for in-and-out, an arrow in or out for the others
+  function modeMark(grp,mode,zz){ const z=zz===undefined?-1.6:zz; if(mode==='both'){ ring(grp,[8,8,z],'z',5.2,.45,TQ); return; } ring(grp,[8,8,z],'z',5.2,.45,mode==='in'?0x3ab3da:0xf9801d);
+    const out=mode==='out'; bx(grp,[7.4,11.5,z-.4],[8.6,15.5,z+.2],TQ,true); bx(grp,[6.3,out?14.5:11.5,z-.4],[9.7,out?15.5:12.5,z+.2],TQ,true); bx(grp,[7.1,out?15.5:10.9,z-.4],[8.9,out?16.1:11.5,z+.2],TQ,true); }
+  function ground(g,x0,z0,x1,z1,y){ bx(g,[x0,y-6,z0],[x1,y,z1],0x3f5a30); }
+  // ---- views
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const v={view,scene,cam,opts,ry:opts.ry,rx:opts.rx,drag:false,build}; let lx=0,ly=0; const rebuild=()=>{ if(v.g) scene.remove(v.g); v.g=new THREE.Group(); scene.add(v.g); v.tick=build(v.g); }; v.rebuild=rebuild; rebuild();
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);}); view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; }); view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth,H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; if(v.tick) v.tick(t); if(!reduce&&!v.drag&&!v.opts.still) v.ry+=.003; const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); } requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  const TANK=[6,5,6], PORTS=[[2,4,2],[0,2,3],[5,1,2],[3,2,5]];
+  function tankScene(look){ return g=>{ shell(g,TANK[0],TANK[1],TANK[2],PORTS,look); const fill=plasmaFill(g,...TANK); ground(g,-16,-16,TANK[0]*16+16,TANK[2]*16+16,0); return t=>{ setFill(fill,...TANK,state.lvl); fill.material.color.setHex(ION).multiplyScalar(.85+.15*Math.sin(t*2)); }; }; }
+  cards('looks',[['A. Riveted Frame','Dark hull casing with pale trim along every edge and rivets down the middle, the same family as the Projector Base. Glass in a thin dark frame. Ports are a trim ring with a lit window and the setting ring in front.',tankScene(lookA)],
+    ['B. Industrial Girder','Casing as an I-beam with bolted flanges, like a steel frame. Glass panes carry a cross mullion. Ports are a boxed valve with a copper wheel and the setting ring. Heaviest look, reads as a tank from far away.',tankScene(lookB)],
+    ['C. Crystal Vat','A thin illyrium-teal frame with lit edges and big clear panes clipped only at the corners, so the plasma is the whole show. Ports are flush hatches with a lit window. Lightest look, best for watching the fluid.',tankScene(lookC)]],{dist:260,target:[48,40,48],ry:Math.PI*1.2,rx:.45});
+  // ---- the fill demo: two 4 x 4 x 4 tanks, a top port and a side port; a stream falls from a port above the surface
+  const fillState={lvl:.15,dir:0};
+  function fillScene(g){ const look=lookA; const A=[0,0,0], B=[110,0,0]; const ga=new THREE.Group(); ga.position.set(...A); g.add(ga); const gb=new THREE.Group(); gb.position.set(...B); g.add(gb);
+    shell(ga,4,4,4,[[2,3,1]],look); shell(gb,4,4,4,[[3,2,2]],look); const fa=plasmaFill(ga,4,4,4), fb=plasmaFill(gb,4,4,4);
+    const stream=new THREE.Mesh(new THREE.BoxGeometry(2.4,1,2.4),plasmaMat()); ga.add(stream); const ripple=new THREE.Mesh(new THREE.TorusGeometry(4,.4,6,20),new THREE.MeshBasicMaterial({color:0xbfe6ff,transparent:true,opacity:.7})); ripple.rotation.x=Math.PI/2; ga.add(ripple);
+    const streamB=new THREE.Mesh(new THREE.BoxGeometry(2.4,2.4,1),plasmaMat()); gb.add(streamB); ground(g,-20,-20,180,84,0);
+    return t=>{ if(fillState.dir) fillState.lvl=Math.max(0,Math.min(1,fillState.lvl+fillState.dir*.0025)); const f=fillState.lvl; setFill(fa,4,4,4,f); setFill(fb,4,4,4,f);
+      const surface=16+32*f, portY=3*16+8; const filling=fillState.dir>0; stream.visible=filling&&surface<portY-1; if(stream.visible){ const h=portY-surface-1; stream.scale.y=h; stream.position.set(2*16+8,surface+h/2,1*16+8); stream.scale.x=stream.scale.z=1+.15*Math.sin(t*12); }
+      ripple.visible=stream.visible; if(ripple.visible){ ripple.position.set(2*16+8,surface+.6,1*16+8); const k=1+((t*2)%1)*1.2; ripple.scale.set(k,k,1); ripple.material.opacity=.7*(1-((t*2)%1)); }
+      const sidePortY=2*16+8; streamB.visible=filling&&surface<sidePortY-1.2; if(streamB.visible){ streamB.scale.z=10; streamB.position.set(3*16-5,sidePortY,2*16+8); const h=sidePortY-surface-1.2; }
+      el('fillHud').innerHTML='<span>TANK</span><b>'+Math.round(f*(4*4*4-2*2*2)*5000000).toLocaleString('en-GB')+' / '+((4*4*4-2*2*2)*5000000).toLocaleString('en-GB')+' mB</b><span style="color:#9aa3b5">'+(fillState.dir>0?'filling':fillState.dir<0?'draining':'holding')+'</span>'; }; }
+  makeView(el('fill'),fillScene,{dist:200,target:[88,30,32],ry:Math.PI*1.15,rx:.4});
+  el('fillBtn').onclick=()=>fillState.dir=1; el('drainBtn').onclick=()=>fillState.dir=-1; el('stopBtn').onclick=()=>fillState.dir=0;
+  // ---- the ports row
+  function portsScene(g){ const look=lookA; [['both',0],['in',1],['out',2],['none',3]].forEach(([m,i])=>{ const o=[i*28,0,0]; bx(g,[o[0],0,0],[o[0]+16,16,16],HULL); const grp=portFrame(g,o,'n'); bx(grp,[3,3,-1.2],[13,13,0],TRIM); bx(grp,[5,5,-1.4],[11,11,-1.1],m==='none'?MID:ION,true); if(m!=='none') modeMark(grp,m); if(m!=='none'){ for(let k=1;k<=2;k++){ const cz=-k*16; bx(g,[o[0]+5,5,cz],[o[0]+11,11,cz+16],0x9ec5e8,false,.25); bx(g,[o[0]+6.4,6.4,cz-.2],[o[0]+9.6,9.6,cz+16.2],ION,true,.9); } } });
+    ground(g,-16,-40,110,32,0); return null; }
+  makeView(el('ports'),portsScene,{dist:120,target:[50,8,-8],ry:Math.PI*1.08,rx:.35});
+  // controls
+  el('lvl').addEventListener('input',e=>{ state.lvl=e.target.value/100; el('lvlv').textContent=e.target.value+'%'; });
+  el('glassBtn').onclick=()=>{ state.clear=!state.clear; el('glassBtn').textContent='Glass: '+(state.clear?'clear':'tinted'); el('glassBtn').classList.toggle('on',state.clear); views.slice(0,3).forEach(v=>v.rebuild()); };
+})();
+</script>

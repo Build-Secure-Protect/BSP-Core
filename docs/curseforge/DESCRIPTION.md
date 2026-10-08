@@ -21,12 +21,13 @@ Every player starts with one **Shatter Totem**. It cannot be crafted or destroye
 
 ## Wave Plasma
 
-A placed totem gives off Wave Plasma, 100 mB a tick and up to 600 with the Output upgrade. Pipe it somewhere and the totem's base powers appear there too. Bottle it and you can carry its powers around without the totem. This is where most of the new blocks live.
+A placed totem gives off Wave Plasma, 100 mB a tick and up to 6,000 with the Output upgrade. Pipe it somewhere and the totem's base powers appear there too. Bottle it and you can carry its powers around without the totem. This is where most of the new blocks live.
 
-- **Extractor** under the totem. **Interface** touching it. **Cables** out to wherever you need the aura. Interfaces that touch join into one body, up to twelve blocks.
+- **Extractor** under the totem. **Interface** touching it. **Cables** out to wherever you need the aura. Interfaces that touch join into one body, up to twelve blocks, and each face sends up to 1,000 mB/t, so a big totem needs a big group and good cables: Tetrium carries 250 mB/t, Magnatite 500, Illyrium 1,000.
 - **Projector Base and Projector.** The base is a tank the projector stands on. 100 mB/t arriving and it projects; it burns 20 mB/t, so a full base runs on for a few minutes if a cable is cut. Right-click the projector to choose which powers it receives.
 - **Pressure is shared.** An interface splits its plasma equally between the runs leaving it, and a run that needs less leaves the rest to the others. Right-click any interface and you get the whole network in 3D with the mB/t on every cable. Jade shows the same block by block.
 - **Repeaters** start a fresh run for a tenth of the pressure. **Valves** cap a run from a dial or shut it with a lever or redstone.
+- **Colours and ends.** Dye cables in any of the sixteen colours and they only join their own colour, so runs cross without mixing. The wrench sets each end of a cable to Normal, Output, Input or Off, or links two colours.
 
 - **Battery Charger.** Cable into its back. Fills the battery or cell in it and stamps powers from the interface into it.
 - **Plasma Batteries** hold Base powers. Stand a charged one on an extractor instead of a totem and everything downstream keeps working while the totem is away, or stolen.

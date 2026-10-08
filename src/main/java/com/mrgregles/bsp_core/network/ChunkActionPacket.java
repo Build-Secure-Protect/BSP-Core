@@ -32,6 +32,8 @@ public record ChunkActionPacket(BlockPos pos, int action, int chunkX, int chunkZ
             BlockEntity be = player.level().getBlockEntity(msg.pos);
             if (be instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity) {
                 com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock.sendView(player, msg.pos);
+            } else if (be instanceof com.mrgregles.bsp_core.tank.TankPartBlockEntity) {
+                com.mrgregles.bsp_core.tank.TankStructure.sendView(player, msg.pos);
             } else if (be instanceof ShatterTotemBlockEntity || be instanceof TotemProjectorBlockEntity) {
                 if (msg.action == TOGGLE) {
                     ChunkLoading.toggle(player, msg.pos, msg.chunkX, msg.chunkZ);

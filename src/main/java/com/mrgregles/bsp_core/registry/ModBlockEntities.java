@@ -97,10 +97,16 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity::new, ModBlocks.PLASMA_INTERFACE.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity>> PLASMA_CABLE =
             BLOCK_ENTITIES.register("plasma_cable", () -> BlockEntityType.Builder
-                    .of(com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity::new, ModBlocks.TOTEM_CABLES.values().stream().map(RegistryObject::get).toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
+                    .of(com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity::new, ModBlocks.allCables().stream().map(RegistryObject::get).toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity>> PLASMA_REPEATER =
             BLOCK_ENTITIES.register("plasma_repeater", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity::new, ModBlocks.PLASMA_REPEATER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.tank.TankPartBlockEntity>> TANK_PART =
+            BLOCK_ENTITIES.register("tank_part", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.tank.TankPartBlockEntity::new, ModBlocks.TANK_CASING.get(), ModBlocks.TANK_GLASS.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.tank.TankPortBlockEntity>> TANK_PORT =
+            BLOCK_ENTITIES.register("tank_port", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.tank.TankPortBlockEntity::new, ModBlocks.TANK_PORT.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity>> PLASMA_VALVE =
             BLOCK_ENTITIES.register("plasma_valve", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity::new, ModBlocks.PLASMA_VALVE.get()).build(null));

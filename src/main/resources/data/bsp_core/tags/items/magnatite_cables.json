@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:magnatite_core_cable",
+    "bsp_core:white_magnatite_core_cable",
+    "bsp_core:orange_magnatite_core_cable",
+    "bsp_core:magenta_magnatite_core_cable",
+    "bsp_core:light_blue_magnatite_core_cable",
+    "bsp_core:yellow_magnatite_core_cable",
+    "bsp_core:lime_magnatite_core_cable",
+    "bsp_core:pink_magnatite_core_cable",
+    "bsp_core:gray_magnatite_core_cable",
+    "bsp_core:light_gray_magnatite_core_cable",
+    "bsp_core:cyan_magnatite_core_cable",
+    "bsp_core:purple_magnatite_core_cable",
+    "bsp_core:blue_magnatite_core_cable",
+    "bsp_core:brown_magnatite_core_cable",
+    "bsp_core:green_magnatite_core_cable",
+    "bsp_core:red_magnatite_core_cable",
+    "bsp_core:black_magnatite_core_cable"
+  ]
+}

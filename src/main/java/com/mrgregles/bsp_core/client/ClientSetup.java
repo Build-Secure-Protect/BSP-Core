@@ -50,6 +50,8 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_CABLE.get(), PlasmaCableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_REPEATER.get(), PlasmaRepeaterRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_VALVE.get(), PlasmaValveRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TANK_PART.get(), TankRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TANK_PORT.get(), TankRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.BATTERY_CHARGER.get(), BatteryChargerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_INTERFACE.get(), PlasmaInterfaceRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PROJECTOR_BASE.get(), ProjectorBaseRenderer::new);
@@ -66,5 +68,6 @@ public final class ClientSetup {
         event.registerAboveAll("steal_timer", StealHudOverlay.INSTANCE);
         event.registerAboveAll("recall_offer", RecallHud.INSTANCE);
         event.registerAboveAll("xray_ring", XrayClient.INSTANCE);
+        event.registerAboveAll("wrench_ends", WrenchHud.INSTANCE);
     }
 }

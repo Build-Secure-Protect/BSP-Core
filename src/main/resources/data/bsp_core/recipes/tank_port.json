@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " R ",
+    "LCL",
+    " P "
+  ],
+  "key": {
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "L": {
+      "item": "bsp_core:tetrium_core_cable"
+    },
+    "C": {
+      "item": "bsp_core:tank_casing"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:tank_port"
+  }
+}

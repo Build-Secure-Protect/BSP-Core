@@ -86,6 +86,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ValveViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ValveViewPacket::encode).decoder(ValveViewPacket::decode)
                 .consumerMainThread(ValveViewPacket::handle).add();
+        CHANNEL.messageBuilder(TankViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TankViewPacket::encode).decoder(TankViewPacket::decode)
+                .consumerMainThread(TankViewPacket::handle).add();
         CHANNEL.messageBuilder(ValveSetPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(ValveSetPacket::encode).decoder(ValveSetPacket::decode)
                 .consumerMainThread(ValveSetPacket::handle).add();

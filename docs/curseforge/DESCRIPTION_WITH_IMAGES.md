@@ -8,7 +8,7 @@ Every player starts with one **Shatter Totem**. It cannot be crafted or destroye
 - Needed on both the client and the server
 - Optional: JEI (recipes and build guides), Patchouli (the in-game guide book), Jade (block info), any RF mod (power for the machines), Mekanism, Create or Thermal (crushers)
 
-![The whole progression](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/31_flow_progression.jpg)
+![The whole progression](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/32_flow_progression.jpg)
 
 ## The Shatter Totem
 
@@ -23,14 +23,15 @@ Every player starts with one **Shatter Totem**. It cannot be crafted or destroye
 
 ## Wave Plasma
 
-A placed totem gives off Wave Plasma, 100 mB a tick and up to 600 with the Output upgrade. Pipe it somewhere and the totem's base powers appear there too. Bottle it and you can carry its powers around without the totem. This is where most of the new blocks live.
+A placed totem gives off Wave Plasma, 100 mB a tick and up to 6,000 with the Output upgrade. Pipe it somewhere and the totem's base powers appear there too. Bottle it and you can carry its powers around without the totem. This is where most of the new blocks live.
 
 ![Wave Plasma: the network](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/06_layout_plasma_network.jpg)
 
-- **Extractor** under the totem. **Interface** touching it. **Cables** out to wherever you need the aura. Interfaces that touch join into one body, up to twelve blocks.
+- **Extractor** under the totem. **Interface** touching it. **Cables** out to wherever you need the aura. Interfaces that touch join into one body, up to twelve blocks, and each face sends up to 1,000 mB/t, so a big totem needs a big group and good cables: Tetrium carries 250 mB/t, Magnatite 500, Illyrium 1,000.
 - **Projector Base and Projector.** The base is a tank the projector stands on. 100 mB/t arriving and it projects; it burns 20 mB/t, so a full base runs on for a few minutes if a cable is cut. Right-click the projector to choose which powers it receives.
 - **Pressure is shared.** An interface splits its plasma equally between the runs leaving it, and a run that needs less leaves the rest to the others. Right-click any interface and you get the whole network in 3D with the mB/t on every cable. Jade shows the same block by block.
 - **Repeaters** start a fresh run for a tenth of the pressure. **Valves** cap a run from a dial or shut it with a lever or redstone.
+- **Colours and ends.** Dye cables in any of the sixteen colours and they only join their own colour, so runs cross without mixing. The wrench sets each end of a cable to Normal, Output, Input or Off, or links two colours.
 
 ![The plasma blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/07_layout_plasma_blocks.jpg)
 
@@ -40,19 +41,21 @@ A placed totem gives off Wave Plasma, 100 mB a tick and up to 600 with the Outpu
 
 ![Batteries, cells and the Wave Emitter](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/08_layout_batteries.jpg)
 
-![How Wave Plasma flows](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/30_flow_plasma.jpg)
+![Coloured cables and cable ends](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/09_layout_cable_colours.jpg)
+
+![How Wave Plasma flows](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/31_flow_plasma.jpg)
 
 ## Three metals
 
 Tetrium is where you start, Magnatite comes next, and Illyrium is the slow, valuable one. Ores drop raw chunks like vanilla iron; the machines take the chunks and the blocks alike.
 
-![Ores and metals](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/11_resources.jpg)
+![Ores and metals](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/12_resources.jpg)
 
-![How Tetrium is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/26_flow_tetrium.jpg)
+![How Tetrium is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/27_flow_tetrium.jpg)
 
-![How Illyrium is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/27_flow_illyrium.jpg)
+![How Illyrium is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/28_flow_illyrium.jpg)
 
-![How Magnatite is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/28_flow_magnatite.jpg)
+![How Magnatite is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/29_flow_magnatite.jpg)
 
 ## Machines
 
@@ -68,17 +71,17 @@ Two single-block machines get you going. Four multiblocks do the heavy work. Eve
 
 ![Magnetic Centrifuge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/05_machine_magnetic_centrifuge.jpg)
 
-![Machine recipes: Tetrium and Illyrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/23_machine_recipes_1.jpg)
+![Machine recipes: Tetrium and Illyrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/24_machine_recipes_1.jpg)
 
-![Machine recipes: Magnatite and crystals](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/24_machine_recipes_2.jpg)
+![Machine recipes: Magnatite and crystals](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/25_machine_recipes_2.jpg)
 
-![Machine recipes: crushing and coins](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/25_machine_recipes_3.jpg)
+![Machine recipes: crushing and coins](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/26_machine_recipes_3.jpg)
 
 ## Shatter Coins
 
 Coins pay for totem upgrades and much else. You press them yourself, in real time: 12 hours for a Copper coin, 7 days for an Illyrium one. The factory keeps working while you are offline.
 
-![How Shatter Coins are made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/29_flow_coins.jpg)
+![How Shatter Coins are made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/30_flow_coins.jpg)
 
 - **Coin Vault.** A safe for coins that pays interest. Vault blocks join into one vault of up to 3 x 3 x 3. Rivals can pick the lock for a quarter of what is inside.
 
@@ -86,37 +89,37 @@ Coins pay for totem upgrades and much else. You press them yourself, in real tim
 
 - **Decoy Totems.** A fake totem that pulls rival compasses toward it. To everyone but you it looks like the real thing, until they try to steal it and its traps go off.
 
-![Decoy Totem](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/09_layout_decoy.jpg)
+![Decoy Totem](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/10_layout_decoy.jpg)
 
-![Coin Vault and Anti Totem Block](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/10_layout_base_blocks.jpg)
+![Coin Vault and Anti Totem Block](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/11_layout_base_blocks.jpg)
 
 ## Every block and item
 
-![Every block and item, 1 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/12_items_1.jpg)
+![Every block and item, 1 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/13_items_1.jpg)
 
-![Every block and item, 2 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/13_items_2.jpg)
+![Every block and item, 2 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/14_items_2.jpg)
 
-![Every block and item, 3 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/14_items_3.jpg)
+![Every block and item, 3 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/15_items_3.jpg)
 
 ## Every crafting recipe
 
 All recipes are in JEI too, and the guide book walks through each chain.
 
-![Crafting recipes, 1 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/15_recipes_01.jpg)
+![Crafting recipes, 1 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/16_recipes_01.jpg)
 
-![Crafting recipes, 2 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/16_recipes_02.jpg)
+![Crafting recipes, 2 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/17_recipes_02.jpg)
 
-![Crafting recipes, 3 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/17_recipes_03.jpg)
+![Crafting recipes, 3 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/18_recipes_03.jpg)
 
-![Crafting recipes, 4 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/18_recipes_04.jpg)
+![Crafting recipes, 4 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/19_recipes_04.jpg)
 
-![Crafting recipes, 5 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/19_recipes_05.jpg)
+![Crafting recipes, 5 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/20_recipes_05.jpg)
 
-![Crafting recipes, 6 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/20_recipes_06.jpg)
+![Crafting recipes, 6 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/21_recipes_06.jpg)
 
-![Crafting recipes, 7 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/21_recipes_07.jpg)
+![Crafting recipes, 7 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/22_recipes_07.jpg)
 
-![Crafting recipes, 8 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/22_recipes_08.jpg)
+![Crafting recipes, 8 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/23_recipes_08.jpg)
 
 ## For server owners
 

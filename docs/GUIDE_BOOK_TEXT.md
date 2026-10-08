@@ -186,7 +186,7 @@ The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Pris
 
 **Page 1**
 
-A placed totem gives off **Wave Plasma**: 100 mB every tick, up to 600 with the **Output** upgrade. Drawn out and piped to a *Projector*, it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.
+A placed totem gives off **Wave Plasma**: 100 mB every tick, up to 6,000 with the ten levels of the **Output** upgrade. The totem panel shows the figure. Drawn out and piped to a *Projector*, it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.
 
 The projector works for whoever owns the totem. If your totem is stolen, so is the aura.
 
@@ -210,7 +210,7 @@ Stack extractors under the totem to split the flow between several interfaces. A
 
 **Page 5**  `[3D structure] Four interfaces joined`
 
-Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group.
+Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs.
 
 **Page 6: Seeing the flow**
 
@@ -246,12 +246,12 @@ Plasma moves in **runs**: a line of cables from an interface to whatever is at i
 
 Each kind of cable has a longest run:
 
-- Tetrium Core: 15 blocks
-- Magnatite Core: 25
-- Illyrium Core: 40
-- Charged Illyrium Core: 80
+- Tetrium: 15 blocks, 250 mB/t
+- Magnatite: 25 blocks, 500 mB/t
+- Illyrium: 40 blocks, 1,000 mB/t
+- Charged Illyrium: 80 blocks, 1,000 mB/t
 
-A mixed run goes as far as its weakest cable.
+A mixed run goes as far, and carries as much, as its weakest cable.
 
 **Page 2**  `[recipe] tetrium_core_cable, magnatite_core_cable`
 
@@ -269,7 +269,7 @@ A *Plasma Repeater* ends one run and starts a fresh one, so the reach count begi
 
 **Page 6**  `[recipe] plasma_valve`
 
-A *Plasma Valve* sets the most that may pass it, from 0 to 2,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run.
+A *Plasma Valve* sets the most that may pass it, from 0 to 1,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run.
 
 **Page 7: What you see**
 
@@ -280,6 +280,57 @@ Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs k
 **Page 8**  `[recipe] wrench`
 
 The *Wrench* turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round.
+
+**Page 9**  `[recipe] blue_illyrium_core_cable`
+
+Magnatite, Illyrium and Charged Illyrium cables take any of the sixteen dyes: eight cables round a dye, and a coloured cable can be dyed again. A coloured cable joins only cables of its own colour, a plain one only plain ones, so two runs can cross without mixing. Machines take any colour.
+
+**Page 10: Cable ends**
+
+Point the wrench at an end of a cable and right-click to set what that end does:
+
+- **Normal**: plasma flows either way, as before.
+- **Output**: plasma may only leave the cable here.
+- **Input**: plasma may only enter here.
+- **Off**: not joined.
+
+Where another colour meets the end, the first click **Links** them. Sneak and right-click puts an end back to Normal.
+
+**Page 11: What you see**
+
+While you hold the wrench a line above the crosshair names the end you point at and its setting. Output ends wear a copper collar with an arrow pointing out, Input ends an arrow pointing in, Off ends a dark plate, and Links a copper and white collar.
+
+Sneak and right-click the **core** of a cable to pick it up with its settings kept on the item.
+
+## The Plasma Tank
+
+**Page 1**
+
+Wave Plasma can be kept in bulk. A *Plasma Tank* is a hollow box you build from three blocks: *Tank Casing* on every edge, *Tank Glass* or casing on the faces, and *Tank Ports* wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.
+
+Every block of the shell holds 5,000,000 mB. It holds plasma only, no powers.
+
+**Page 2**  `[3D structure] A 4 x 3 x 4 tank`
+
+Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.
+
+**Page 3**  `[recipe] tetrium_glass, tank_glass`
+
+Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet.
+
+**Page 4**  `[recipe] tank_casing, tank_port`
+
+A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks. Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face.
+
+**Page 5: Seeing it**
+
+Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.
+
+Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.
+
+**Page 6: Breaking and rebuilding**
+
+Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.
 
 ## Chunk Loading
 

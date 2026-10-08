@@ -36,6 +36,23 @@ public class WrenchItem extends Item {
         BlockState state = level.getBlockState(pos);
         Player player = ctx.getPlayer();
         boolean back = player != null && player.isShiftKeyDown();
+        if (state.getBlock() instanceof com.mrgregles.bsp_core.projector.TotemCableBlock) {
+            return onCable(ctx, state, back);
+        }
+        if (state.getBlock() instanceof com.mrgregles.bsp_core.tank.TankBlock tank) {
+            if (tank.part != com.mrgregles.bsp_core.tank.TankBlock.Part.PORT) {
+                return InteractionResult.PASS;
+            }
+            if (level instanceof net.minecraft.server.level.ServerLevel sl) {
+                com.mrgregles.bsp_core.tank.TankStructure.cycleMode(sl, pos, back);
+                var port = com.mrgregles.bsp_core.tank.TankStructure.portAt(sl, pos);
+                if (player != null && port != null) {
+                    player.displayClientMessage(Component.translatable("message.bsp_core.tank.port", Component.translatable(port.mode().key())).withStyle(ChatFormatting.AQUA), true);
+                }
+                level.playSound(null, pos, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.4f, 1.8f);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         BlockState turned = turn(state, back);
         if (turned == null) {
             return InteractionResult.PASS;
@@ -45,6 +62,65 @@ public class WrenchItem extends Item {
             level.playSound(null, pos, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.5f, 1.6f);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    /** The end of the cable at {@code pos} the hit at {@code where} points at. */
+    public static Direction endHit(BlockPos pos, net.minecraft.world.phys.Vec3 where) {
+        net.minecraft.world.phys.Vec3 off = where.subtract(net.minecraft.world.phys.Vec3.atCenterOf(pos));
+        return Direction.getNearest(off.x, off.y, off.z);
+    }
+
+    /** Whether the hit is on the cable's core rather than one of its arms. */
+    public static boolean coreHit(BlockPos pos, net.minecraft.world.phys.Vec3 where) {
+        net.minecraft.world.phys.Vec3 off = where.subtract(net.minecraft.world.phys.Vec3.atCenterOf(pos));
+        return Math.max(Math.abs(off.x), Math.max(Math.abs(off.y), Math.abs(off.z))) <= 0.2;
+    }
+
+    /**
+     * On a cable the wrench sets ends: a click steps the end you point at through Normal, Output, Input and Off (and Links it first
+     * where another colour meets it); sneak + click puts it back to Normal; sneak + click on the core picks the cable up with its settings.
+     */
+    private static InteractionResult onCable(UseOnContext ctx, BlockState state, boolean back) {
+        Level level = ctx.getLevel();
+        BlockPos pos = ctx.getClickedPos();
+        Player player = ctx.getPlayer();
+        if (!(level.getBlockEntity(pos) instanceof com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity cable)) {
+            return InteractionResult.PASS;
+        }
+        Direction side = endHit(pos, ctx.getClickLocation());
+        boolean core = coreHit(pos, ctx.getClickLocation());
+        if (level.isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+        if (back && core) {
+            ItemStack drop = new ItemStack(state.getBlock());
+            if (cable.anyEndSet()) {
+                drop.getOrCreateTag().putByteArray(com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.TAG_ENDS, cable.ends());
+            }
+            level.destroyBlock(pos, false);
+            net.minecraft.world.level.block.Block.popResource(level, pos, drop);
+            level.playSound(null, pos, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.5f, 1.2f);
+            return InteractionResult.CONSUME;
+        }
+        com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End cur = cable.end(side), next;
+        if (back) {
+            next = com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.NORMAL;
+        } else {
+            next = switch (cur) {
+                case NORMAL -> com.mrgregles.bsp_core.projector.TotemCableBlock.foreignCable(level, pos, side) ? com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.LINK : com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.OUTPUT;
+                case LINK -> com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.OUTPUT;
+                case OUTPUT -> com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.INPUT;
+                case INPUT -> com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.OFF;
+                case OFF -> com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.NORMAL;
+            };
+        }
+        cable.setEnd(side, next);
+        level.setBlock(pos, com.mrgregles.bsp_core.projector.TotemCableBlock.refresh(level, pos), 3);
+        level.playSound(null, pos, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.4f, 1.8f);
+        if (player != null) {
+            player.displayClientMessage(Component.translatable("message.bsp_core.wrench.end", Component.translatable("gui.bsp_core.wrench.side." + side.getSerializedName()), Component.translatable(next.key())).withStyle(ChatFormatting.AQUA), true);
+        }
+        return InteractionResult.CONSUME;
     }
 
     /** The block turned one step, or null if it has nothing to turn. */

@@ -499,6 +499,10 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         } else {
             g.drawString(font, Component.translatable(isOwner() ? "gui.bsp_core.shatter_totem.yours" : "gui.bsp_core.shatter_totem.hint")
                     .withStyle(isOwner() ? ChatFormatting.GREEN : ChatFormatting.GRAY), 10, STATUS_Y + 11, 0xFFFFFF, false);
+            if (totem.getOwner().isPresent()) { // what the placed totem gives off, without having to find the Output node on the tree
+                int level = totem.getUpgradeLevel(TotemUpgrades.Buff.OUTPUT), max = TotemUpgrades.Buff.OUTPUT.maxLevel();
+                g.drawString(font, Component.translatable("gui.bsp_core.shatter_totem.plasma", totem.plasmaOutput(), level, max), 10, STATUS_Y + 22, 0x4FB8FF, false);
+            }
         }
     }
 }

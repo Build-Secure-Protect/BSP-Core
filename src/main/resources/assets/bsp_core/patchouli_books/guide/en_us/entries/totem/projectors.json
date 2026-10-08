@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 600 with the $(l)Output$() upgrade. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
+      "text": "A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 6,000 with the ten levels of the $(l)Output$() upgrade. The totem panel shows the figure. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
     },
     {
       "type": "patchouli:multiblock",
@@ -78,7 +78,7 @@
         },
         "symmetrical": false
       },
-      "text": "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group."
+      "text": "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs."
     },
     {
       "type": "patchouli:text",

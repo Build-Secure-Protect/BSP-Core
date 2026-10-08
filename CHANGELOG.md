@@ -4,6 +4,13 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Changed
+- Cable names lose the word "Core": Tetrium Plasma Cable, Magnatite Plasma Cable, Illyrium Plasma Cable, Charged Illyrium Plasma Cable. Block ids are unchanged, so nothing in a world moves.
+- Output has ten levels, 100 to 6,000 mB/t (`plasma.outputPerLevel`); the totem panel shows what the placed totem makes.
+- Each face of a Plasma Interface sends at most `plasma.interfaceSideMax` (1,000 mB/t) into its run, so a large totem needs a larger group.
+- Cables carry at most `plasma.cableThroughput`: Tetrium Core 250, Magnatite 500, Illyrium and Charged Illyrium 1,000 mB/t; a run is held to its weakest cable.
+- The valve's top limit (`plasma.valveMax`) is 1,000 mB/t.
+
 ## [0.3.0] - 2026-10-08
 
 ### Added
@@ -41,12 +48,20 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 - **Advancements** for every new block and item (15 new), **guide book** pages for all of them with three turnable hook-up scenes and a new entry on pressure, runs and valves, and a **JEI Assembly Guide** for the Wave Plasma hook-up (Shift over any plasma block in JEI).
 
+- **Coloured cables.** Magnatite, Illyrium and Charged Illyrium cables in all sixteen dyes (eight cables round a dye; dye again to change). A coloured cable joins only its own colour and a plain one only plain ones, so runs stay apart; machines take any colour.
+- **Cable ends.** The wrench sets each end of a cable: Normal, Output (plasma only leaves there), Input (only enters), Off, or Linked to another colour. A readout above the crosshair shows the end you point at; Output and Input ends wear a copper collar with an arrow, Off a plate, Link a copper and white collar. Sneak + right-click the core picks the cable up with its settings. Jade lists set ends.
+- Cable names lose the word "Core".
+
+- **Plasma Tank.** A hollow box of Tank Casing (edges), Tank Glass or casing (faces) and Tank Ports, 3 to 12 blocks a side, that forms by itself and holds `plasma.tankPerBlock` (5,000,000 mB) for every block of the shell, plasma only. Ports take from runs that come from an interface and give to runs that only lead to bases, chargers or other tanks, up to an interface face's worth each; the wrench sets Input or Output only. Right-click any block for a screen with the tank in 3D, its level, ports and the cables out of them; Jade reads the level. The plasma draws as one body, with a stream from any port filling it from above the surface. One broken block makes the tank dormant and keeps its plasma; the last one gone loses it; a rebuild keeps what fits. New Tetrium Glass (glass round a Tetrium Nugget) for the Tank Glass recipe.
+
 ### Fixed
 - The plasma in a Projector Base was drawn without depth, so the base's own inner faces painted grey over it and a full tank looked empty. It now writes depth, the cavity is lined dark, the glass is clearer and no longer fights the plates. The drawing lives in `PlasmaRender` for the planned multiblock tank.
 - Cable figures in the interface view add up to the supply: cables before a repeater read a tenth more than those after it, and cables before a valve read what passes, not what was offered.
 - X-ray could never be bought: it asked for Night Sight level 2, and Night Sight has one level. A one-level parent now opens its path at level 1.
 - The Battery Charger screen's power list ran into the inventory with nine Carried powers; the layout is taller and tighter. The charger now shows the battery or cell standing in its cradle.
 - The interface screen explains a supply below the totem's output (Cloaking takes its share first), zooms with the wheel and pans with a right-drag, has a RESET VIEW button, and its text no longer runs past the edge.
+- Blocks shared by several runs are held to their cap over all of them: one interface face never sends more than `plasma.interfaceSideMax` however many runs branch from it, and a trunk cable never more than its kind carries. Shares are max-min fair, so a saturated block only stops the runs through it.
+- The wrench readout is one small line, higher above the crosshair.
 - Cables report the pressure on the run (the extractors' share after repeaters), not the amount the far end happened to take. A full Projector Base read 20 mB/t on its cables and looked starved.
 - Buying Recall (and any Tier V power with more than two levels) crashed the server: the price looked for a coin past the last tier.
 
@@ -54,7 +69,7 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 - The Totem Generator, its array screen and the Reach Amplifiers. Existing generators and amplifiers in a world disappear; the Totem Generator advancement is gone. Projectors no longer use RF.
 
 ### Changed
-- Block names drop "Totem": Projector, Tetrium Core Plasma Cable, and so on.
+- Block names drop "Totem": Projector, Tetrium Plasma Cable, and so on.
 
 ## [0.2.1] - 2026-10-04
 

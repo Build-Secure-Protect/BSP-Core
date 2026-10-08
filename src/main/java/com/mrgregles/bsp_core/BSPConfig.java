@@ -102,8 +102,8 @@ public final class BSPConfig {
             VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, STORAGE_NOTICE_SECONDS,
             CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING, CENT_MAGNETISE_TICKS, CENT_MAGNETISE_TICKS_FULL,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
-            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, PLASMA_OUTPUT, BATTERY_CAPACITY, BATTERY_POWERS, CELL_CAPACITY, CELL_POWERS;
+            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX, INTERFACE_SIDE_MAX, TANK_PER_BLOCK, TANK_MAX;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, CABLE_THROUGHPUT, PLASMA_OUTPUT, BATTERY_CAPACITY, BATTERY_POWERS, CELL_CAPACITY, CELL_POWERS;
     public static final ForgeConfigSpec.DoubleValue REPEATER_PRESSURE;
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
@@ -364,12 +364,12 @@ public final class BSPConfig {
 
         BUILDER.comment("Wave Plasma: the fluid a placed totem gives off, and the extractors, interfaces, cables, repeaters and projectors that carry it.").push("plasma");
         PLASMA_OUTPUT = BUILDER.comment("mB per tick a placed totem gives off with the Output upgrade at level 0 (none), 1, 2 ... Split evenly between the extractors stacked under it.")
-                .defineList("outputPerLevel", List.of(100, 150, 200, 300, 400, 500, 600), BSPConfig::isPositiveInt);
+                .defineList("outputPerLevel", List.of(100, 200, 350, 500, 750, 1000, 1500, 2000, 3000, 4500, 6000), BSPConfig::isPositiveInt);
         EXTRACTOR_TANK = BUILDER.comment("mB a Plasma Extractor holds.").defineInRange("extractorTank", 4000, 100, 1_000_000);
         INTERFACE_MAX = BUILDER.comment("Most Plasma Interface blocks that may join into one. Any more show a red seam and do nothing, so interfaces cannot be used as cables.").defineInRange("interfaceMax", 12, 1, 64);
         PROJECTOR_NEED = BUILDER.comment("mB per tick that must arrive at a Projector for it to project.").defineInRange("projectorNeed", 100, 1, 100_000);
         PROJECTOR_USE = BUILDER.comment("mB per tick a Projector burns from its base while projecting. Less than projectorNeed, so the base fills while fed and keeps the projector going for a while after a cut.").defineInRange("projectorUse", 20, 1, 100_000);
-        VALVE_MAX = BUILDER.comment("Most mB per tick a Plasma Valve can be set to let through: the top of its dial.").defineInRange("valveMax", 2000, 10, 1_000_000);
+        VALVE_MAX = BUILDER.comment("Most mB per tick a Plasma Valve can be set to let through: the top of its dial.").defineInRange("valveMax", 1000, 10, 1_000_000);
         PROJECTOR_TANK = BUILDER.comment("mB a Projector Base holds for the projector on it: it fills from the cable and the projector draws from it, so it runs on for a while after a cut.").defineInRange("projectorTank", 5000, 100, 1_000_000);
         PROJECTOR_CHANNELS = BUILDER.comment("How many powers a Projector receives at once. A fitted Channel Expander adds one.").defineInRange("channels", 2, 1, 7);
         REPEATER_PRESSURE = BUILDER.comment("Share of the plasma that passes each Plasma Repeater (0.9 = a tenth is lost at every repeater). Power levels also drop one per repeater when two or more are received.")
@@ -386,6 +386,12 @@ public final class BSPConfig {
         CELL_POWERS = BUILDER.comment("Powers a Power Cell may hold, tiers I to III.").defineList("cellPowers", List.of(1, 2, 3), BSPConfig::isPositiveInt);
         CABLE_REACH = BUILDER.comment("The longest run each cable carries at full pressure: Tetrium Core, Magnatite Core, Illyrium Core, Charged Illyrium Core. A repeater starts a fresh run.")
                 .defineList("cableReach", List.of(15, 25, 40, 80), BSPConfig::isPositiveInt);
+        CABLE_THROUGHPUT = BUILDER.comment("Most mB per tick each cable kind carries: Tetrium Core, Magnatite Core, Illyrium Core, Charged Illyrium Core. A run is held to its weakest cable.")
+                .defineList("cableThroughput", List.of(250, 500, 1000, 1000), BSPConfig::isPositiveInt);
+        TANK_PER_BLOCK = BUILDER.comment("mB each block of a Plasma Tank's shell holds (casing, glass and ports alike).").defineInRange("tankPerBlock", 5_000_000, 1000, 100_000_000);
+        TANK_MAX = BUILDER.comment("Longest side of a Plasma Tank, in blocks (the shortest is 3).").defineInRange("tankMax", 12, 3, 32);
+        INTERFACE_SIDE_MAX = BUILDER.comment("Most mB per tick one face of a Plasma Interface sends into the run leaving it. More output needs more faces, so a big totem needs a bigger interface group.")
+                .defineInRange("interfaceSideMax", 1000, 10, 1_000_000);
         BUILDER.pop();
 
         BUILDER.comment("The Coin Vault: a safe for Shatter Coins. Vault blocks of one owner that touch join into one vault of up to 3 x 3 x 3.").push("vault");

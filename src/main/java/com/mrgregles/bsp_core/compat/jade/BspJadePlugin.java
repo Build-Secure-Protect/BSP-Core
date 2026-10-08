@@ -40,6 +40,8 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.tank.TankPartBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.tank.TankPortBlockEntity.class);
     }
 
     @Override
@@ -48,6 +50,7 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaExtractorBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.ProjectorBaseBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaValveBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.tank.TankBlock.class);
         registration.addRayTraceCallback((hit, accessor, original) -> redirect(registration, accessor));
     }
 
@@ -61,6 +64,9 @@ public class BspJadePlugin implements IWailaPlugin {
         public void appendServerData(net.minecraft.nbt.CompoundTag data, BlockAccessor accessor) {
             if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity cable) {
                 data.putInt("PlasmaFlow", cable.flow());
+                if (cable.anyEndSet()) {
+                    data.putByteArray("PlasmaEnds", cable.ends());
+                }
             }
         }
 
@@ -69,6 +75,23 @@ public class BspJadePlugin implements IWailaPlugin {
             int flow = accessor.getServerData().getInt("PlasmaFlow");
             tooltip.add(net.minecraft.network.chat.Component.translatable(flow > 0 ? "jade.bsp_core.cable_flow" : "jade.bsp_core.cable_idle", flow)
                     .withStyle(flow > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+            if (accessor.getServerData().contains("PlasmaEnds")) {
+                byte[] ends = accessor.getServerData().getByteArray("PlasmaEnds");
+                net.minecraft.network.chat.MutableComponent list = net.minecraft.network.chat.Component.empty();
+                boolean first = true;
+                for (int i = 0; i < 6 && i < ends.length; i++) {
+                    if (ends[i] == 0) {
+                        continue;
+                    }
+                    var end = com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.End.values()[Math.min(ends[i], 4)];
+                    if (!first) {
+                        list.append(", ");
+                    }
+                    first = false;
+                    list.append(net.minecraft.network.chat.Component.translatable("gui.bsp_core.wrench.side." + net.minecraft.core.Direction.from3DDataValue(i).getSerializedName())).append(" ").append(net.minecraft.network.chat.Component.translatable(end.key()));
+                }
+                tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.cable_ends", list).withStyle(net.minecraft.ChatFormatting.GOLD));
+            }
         }
 
         @Override
@@ -93,6 +116,18 @@ public class BspJadePlugin implements IWailaPlugin {
             } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity valve) {
                 data.putInt("ValveLimit", valve.limit());
                 data.putBoolean("ValveOpen", valve.open());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.tank.TankPartBlockEntity part) {
+                var master = part.masterEntity();
+                data.putBoolean("TankFormed", master != null);
+                if (master != null) {
+                    data.putLong("TankStored", master.stored());
+                    data.putLong("TankCap", master.capacity());
+                }
+                if (part instanceof com.mrgregles.bsp_core.tank.TankPortBlockEntity port) {
+                    data.putByte("PortMode", (byte) port.mode().ordinal());
+                    data.putInt("PortIn", port.in());
+                    data.putInt("PortOut", port.out());
+                }
             }
         }
 
@@ -111,6 +146,18 @@ public class BspJadePlugin implements IWailaPlugin {
                 boolean open = d.getBoolean("ValveOpen");
                 tooltip.add(net.minecraft.network.chat.Component.translatable(open ? "jade.bsp_core.valve_limit" : "jade.bsp_core.valve_shut", d.getInt("ValveLimit"))
                         .withStyle(open ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.RED));
+            } else if (d.contains("TankFormed")) {
+                if (d.getBoolean("TankFormed")) {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_level", String.format("%,d", d.getLong("TankStored")), String.format("%,d", d.getLong("TankCap")))
+                            .withStyle(d.getLong("TankStored") > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+                } else {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_unformed").withStyle(net.minecraft.ChatFormatting.GRAY));
+                }
+                if (d.contains("PortMode")) {
+                    var mode = com.mrgregles.bsp_core.tank.TankPortBlockEntity.Mode.values()[Math.min(2, Math.max(0, d.getByte("PortMode")))];
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_port", net.minecraft.network.chat.Component.translatable(mode.key()), d.getInt("PortIn"), d.getInt("PortOut"))
+                            .withStyle(net.minecraft.ChatFormatting.GOLD));
+                }
             }
         }
 

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "GPG",
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "bsp_core:tetrium_glass"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:tank_glass",
+    "count": 8
+  }
+}

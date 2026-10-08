@@ -188,11 +188,11 @@ def layouts():
     plate("layout_plasma_network", "Wave Plasma: the network",
           '<div class="split"><div class="col" style="flex:1.6">' + render("plasma_network", "A Wave Plasma network")
           + '<p>Totem on an extractor, interfaces beside it, cables out to a Projector Base with its Projector, and a second run into the back of a Battery Charger. A valve and a repeater sit in the long run.</p></div>'
-          '<div class="col"><h3>How it flows</h3><p>A placed totem gives 100 mB/t, up to 600 with the Output upgrade. An interface shares it equally between the runs leaving it. Every cable in a run carries the run\'s figure to its end.</p>'
-          '<table class="t"><tr><th>Cable</th><th>Longest run</th></tr>'
-          + "".join(f'<tr><td>{icon(c, 18)} {html.escape(name_of("bsp_core:" + c))}</td><td>{n} blocks</td></tr>' for c, n in
-                    (("tetrium_core_cable", 15), ("magnatite_core_cable", 25), ("illyrium_core_cable", 40), ("charged_illyrium_core_cable", 80))) + '</table>'
-          '<p>A repeater starts a fresh run for a tenth of the pressure. A valve caps a run or shuts it by redstone. A projector needs 100 mB/t; its base holds 5,000 mB.</p></div></div>',
+          '<div class="col"><h3>How it flows</h3><p>A placed totem gives 100 mB/t, up to 6,000 with the Output upgrade. An interface shares it equally between the runs leaving it, up to 1,000 mB/t a face, and a run is held to its weakest cable.</p>'
+          '<table class="t"><tr><th>Cable</th><th>Run</th><th>Carries</th></tr>'
+          + "".join(f'<tr><td>{icon(c, 18)} {html.escape(name_of("bsp_core:" + c))}</td><td>{n} blocks</td><td>{t} mB/t</td></tr>' for c, n, t in
+                    (("tetrium_core_cable", 15, 250), ("magnatite_core_cable", 25, 500), ("illyrium_core_cable", 40, "1,000"), ("charged_illyrium_core_cable", 80, "1,000"))) + '</table>'
+          '<p>A repeater starts a fresh run for a tenth of the pressure. A valve caps a run at up to 1,000 mB/t or shuts it by redstone. A projector needs 100 mB/t; its base holds 5,000 mB.</p></div></div>',
           "Right-click any interface for the flow view: the whole network in 3D with the mB/t on every cable. Jade reads the figures block by block.")
     plate("layout_plasma_blocks", "The plasma blocks",
           '<div class="split"><div class="col"><h3>Extractor and interfaces</h3>' + render("plasma_interface_group", "Six interfaces joined, one refused", "5/2")
@@ -207,6 +207,13 @@ def layouts():
           '<div class="col"><h3>Plasma Batteries</h3>' + render("plasma_batteries", "Plasma Batteries, and one feeding an extractor", "5/2") + '<p>Four tiers. Stood on an extractor instead of a totem, a battery feeds it with its stamped Base powers until it runs dry.</p>'
           '<table class="t"><tr><th>Tier</th><th>Holds</th><th>Powers</th></tr><tr><td>Battery I to IV</td><td>40k / 200k / 1M / 5M mB</td><td>0 / 2 / 3 / 4 Base</td></tr><tr><td>Cell I to III</td><td>8k / 24k / 60k mB</td><td>1 / 2 / 3 Carried</td></tr></table></div></div>',
           "Every battery and cell is built around a Charged Resonance Crystal: a Resonance Crystal magnetised in the centrifuge with a Magnatite Nugget in the upgrade slot.")
+    plate("layout_cable_colours", "Coloured cables and cable ends",
+          '<div class="split"><div class="col"><h3>Sixteen colours</h3>' + render("coloured_cables", "Sixteen colours of Illyrium cable", "5/2")
+          + '<p>Magnatite, Illyrium and Charged Illyrium cables take any dye: eight cables round a dye, and dye again to change. A coloured cable joins only its own colour and a plain one only plain ones, so runs can cross without mixing. Machines take any colour.</p>'
+          '<div class="cells wide" style="grid-template-columns:repeat(8,1fr)">' + "".join(cell(f"{d}_illyrium_core_cable", 22) for d in DYE_COLOURS) + '</div></div>'
+          '<div class="col"><h3>Wrench-set ends</h3>' + render("cable_ends", "Wrench-set cable ends", "5/2")
+          + '<p>Point the wrench at an end of a cable and right-click to set it: Normal, Output (plasma only leaves there, copper collar and arrow out), Input (only enters, arrow in), Off (a plate, not joined), or Linked where another colour meets it (copper and white collar). A line above the crosshair names the end and its setting. Sneak + right-click: back to Normal; on the core, pick the cable up with its settings.</p></div></div>',
+          "One Output end at a base stops a loop feeding back; an Input end on a shared trunk stops a run drawing from the wrong side.")
     plate("layout_decoy", "Decoy Totem",
           '<div class="split"><div class="col"><h3>What its owner sees</h3>' + render("decoy_owner_view", "Decoy Totem as its owner sees it")
           + '<p>The Hollow Idol on its Decoy Power Base, with a faint ghost of the totem around it.</p></div>'
@@ -221,9 +228,20 @@ def layouts():
 
 
 # ----------------------------------------------------------------------------- 2 + 3. items and resources
+DYE_COLOURS = {"white": "#F9FFFE", "orange": "#F9801D", "magenta": "#C74EBD", "light_blue": "#3AB3DA", "yellow": "#FED83D", "lime": "#80C71F", "pink": "#F38BAA", "gray": "#474F52",
+               "light_gray": "#9D9D97", "cyan": "#169C9C", "purple": "#8932B8", "blue": "#3C44AA", "brown": "#835432", "green": "#5E7C16", "red": "#B02E26", "black": "#1D1D21"}
+for _dye, _hex in DYE_COLOURS.items():
+    for _kind in ("magnatite", "illyrium", "charged_illyrium"):
+        TILE[f"{_dye}_{_kind}_core_cable"] = ("Ca", _hex)
+
+
+def is_dyed_cable(name):
+    return any(name.startswith(d + "_") and name.endswith("_core_cable") for d in DYE_COLOURS)
+
+
 def all_ids():
     ids = [k.split(".")[-1] for k in LANG if (k.startswith("item.bsp_core.") or k.startswith("block.bsp_core.")) and k.count(".") == 2]
-    return list(dict.fromkeys(ids))
+    return [i for i in dict.fromkeys(ids) if not is_dyed_cable(i)]  # the 48 dyed cables get their own plate
 
 
 def cell(i, size=40):
@@ -249,7 +267,10 @@ def ingredient(o):
     if isinstance(o, list):
         o = o[0]
     if "tag" in o:
-        return {"bsp_core:illyrium_ores": "bsp_core:illyrium_ore", "bsp_core:tetrium_ores": "bsp_core:tetrium_ore", "bsp_core:magnatite_ores": "bsp_core:magnatite_ore"}.get(o["tag"])
+        tag = o["tag"]
+        if tag.endswith("_cables"):  # any cable of the kind: shown as the plain one
+            return "bsp_core:" + tag.split(":")[1].replace("_cables", "_core_cable")
+        return {"bsp_core:illyrium_ores": "bsp_core:illyrium_ore", "bsp_core:tetrium_ores": "bsp_core:tetrium_ore", "bsp_core:magnatite_ores": "bsp_core:magnatite_ore"}.get(tag)
     return o.get("item")
 
 
@@ -277,6 +298,8 @@ def recipes():
         r = json.loads(open(f).read())
         if r["type"].split(":")[0] == "minecraft" and r["type"].split(":")[1] != "blasting":
             res = r["result"] if isinstance(r["result"], str) else r["result"]["item"]
+            if is_dyed_cable(res.split(":")[1]) and res.split(":")[1] != "blue_illyrium_core_cable":
+                continue  # one dye recipe stands for all forty-eight
             cards.append((name_of(res), recipe_card(os.path.basename(f), r)))
     cards.sort(key=lambda c: c[0])
     per = 12

@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:tank_port"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.plasma_tank"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.plasma_tank.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:tank_port"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:plasma_cable"
+}

@@ -1,0 +1,147 @@
+<title>Coloured Cable Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One WebGL context draws every view. Coloured cables, how they join, three looks for wrench-set cable ends, and a click-through of the wrench. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/7; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--on); border:1px solid var(--line); display:grid; place-items:center; font:600 9px var(--body); color:var(--fg); text-align:center; line-height:1.1; font-style:normal; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+.swatches{ display:flex; flex-wrap:wrap; gap:6px; } .sw{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); } .sw i{ width:14px; height:14px; border-radius:3px; border:1px solid #0008; display:inline-block; }
+/* the wrench HUD line */
+.hud{ font-family:var(--display); font-size:11px; color:#e8eaf0; background:#10151c; border:2px solid #19d3b0; padding:8px 12px; display:inline-flex; gap:14px; align-items:center; }
+.hud b{ color:#4cb2fa; font-weight:400; } .hud small{ color:#9aa3b5; font-size:10px; }
+</style>
+<div class="wrap">
+<section><h1>Coloured Cable Concepts</h1>
+<p class="lede">Two things: cables in every dye colour so runs can be kept apart, and a wrench that sets what each end of a cable does. Drag any 3D view to turn it. The names drop the word Core from here on: Tetrium Plasma Cable, Magnatite Plasma Cable, and so on.</p></section>
+
+<section><h2>1. Coloured cables</h2>
+<div class="grid3">
+<div class="card" style="grid-column:1/-1"><h3>Sixteen colours, three kinds</h3><div class="view wide" id="colours"></div>
+<p>Magnatite, Illyrium and Charged Illyrium cables come in all sixteen dye colours; the glass takes the dye and the rails stay dark. Tetrium stays plain. Front row Magnatite, middle Illyrium, back Charged Illyrium, with the plain cable of each kind at the left end.</p>
+<div class="swatches" id="swatches"></div></div>
+<div class="card"><h3>Dyeing</h3><div class="rec"><div class="rc"><i>Illyrium Plasma Cable</i><i>Illyrium Plasma Cable</i><i>Illyrium Plasma Cable</i><i>Illyrium Plasma Cable</i><i>Blue Dye</i><i>Illyrium Plasma Cable</i><i>Illyrium Plasma Cable</i><i>Illyrium Plasma Cable</i><i>Illyrium Plasma Cable</i></div><span class="arrow">to</span><span class="out">8 x Blue Illyrium Plasma Cable</span></div>
+<p>Eight cables of one kind round a dye. Any colour can be dyed again the same way, so a wrong colour is not wasted. Reach and throughput are the kind's; colour changes nothing but who it joins.</p></div>
+<div class="card"><h3>Who joins whom</h3><div class="view" id="crossing"></div>
+<p>A blue run and a red run cross without joining. A coloured cable joins only cables of its own colour; a plain cable joins only plain cables. Every cable still joins machines: interfaces, bases, chargers, valves and repeaters take any colour.</p></div>
+</div>
+</section>
+
+<section><h2>2. Wrench-set cable ends</h2>
+<p class="lede">Right-click an end of a cable with the wrench to change what that end does, the way Mekanism pipes are set side by side. Each click steps the end on: <b>Normal</b>, <b>Output</b> (plasma may only leave the cable this way), <b>Input</b> (may only enter this way), <b>Off</b> (not joined), then back to Normal. Where two different colours meet, the first click <b>Links</b> them. Sneak-click puts an end back to Normal. The three views show the same cable with all five ends set, in three looks.</p>
+<div class="grid3" id="ends"></div>
+</section>
+
+<section><h2>3. The wrench in use</h2>
+<div class="card"><p>Click an end of the cable below as if with the wrench. The line under the view is what the game would show over the crosshair while the wrench is held. The right end meets a red cable, so its first click links the colours.</p>
+<div class="view wide" id="sim" style="cursor:pointer"></div>
+<div class="hud" id="hud"></div>
+<div class="ctl"><button type="button" class="hb" id="sneak">Sneak: off</button><button type="button" class="hb" id="styleBtn">Look: A</button><span class="key">Sneak + click resets an end to Normal.</span></div></div>
+</section>
+
+<section><h2>4. Rules</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Rule</th><th>Proposed</th></tr></thead><tbody>
+<tr><td><b>Colours</b></td><td>All sixteen dyes, for Magnatite, Illyrium and Charged Illyrium: 48 new cables. Tetrium stays plain.</td></tr>
+<tr><td><b>Recipe</b></td><td>8 cables of one kind + 1 dye = 8 of that colour. Works on already coloured cables too.</td></tr>
+<tr><td><b>Joining</b></td><td>Same colour only; plain to plain only. Machines take any colour. The interface view shows each run in its colour.</td></tr>
+<tr><td><b>Ends</b></td><td>Set per end with the wrench: Normal, Output, Input, Off, and Link for a forced join across colours. Stored in the cable, kept when the cable is picked up with the wrench, lost when broken.</td></tr>
+<tr><td><b>Output and Input</b></td><td>The interface's search only moves plasma out of an Output end and into an Input end. An Off end is a wall. So one Output end at a base keeps a loop from feeding back, and an Input end on a shared trunk stops a run drawing from the wrong side.</td></tr>
+<tr><td><b>Shown</b></td><td>The chosen look draws on the cable itself; the wrench shows a line over the crosshair with the end you are pointing at and its setting.</td></tr>
+</tbody></table></div></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL2=0x1e222b, TRIM=0x8a909c, COPPER=0xc87a3c, ION=0x4cb2fa, TQ=0x19d3b0;
+  const KIND={tetrium:0x6b4fa3, magnatite:0x5c7fb8, illyrium:0x19d3b0, charged:0xbfe6ff};
+  const DYES=[['white',0xf9fffe],['light_gray',0x9d9d97],['gray',0x474f52],['black',0x1d1d21],['brown',0x835432],['red',0xb02e26],['orange',0xf9801d],['yellow',0xfed83d],['lime',0x80c71f],['green',0x5e7c16],['cyan',0x169c9c],['light_blue',0x3ab3da],['blue',0x3c44aa],['purple',0x8932b8],['magenta',0xc74ebd],['pink',0xf38baa]];
+  el('swatches').innerHTML=DYES.map(([n,c])=>'<span class="sw"><i style="background:#'+c.toString(16).padStart(6,'0')+'"></i>'+n.replace('_',' ')+'</span>').join('');
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; } const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ring(g,p,axis,R,r,c){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshLambertMaterial({color:c||COPPER})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  // a cable block along +x at origin o, glass tinted; arms: array of 'w','e','n','s'
+  function cable(g,o,tint,arms,flow){ const [x,y,z]=o; const grp=new THREE.Group(); grp.position.set(x,y,z); g.add(grp);
+    const rail=(f,t)=>bx(grp,f,t,HULL2); for(const [a,b] of [[5,5],[5,10.2],[10.2,5],[10.2,10.2]]) { rail([5,a,b],[11,a+.8,b+.8]); }
+    const glass=(f,t)=>bx(grp,f,t,tint,false,.42); glass([5.6,5.6,5.6],[10.4,10.4,10.4]);
+    const liq=flow!==false; if(liq) bx(grp,[6.3,6.3,6.3],[9.7,9.7,9.7],ION,true,.9);
+    for(const s of arms){ const h=s==='w'?[[0,5.5,5.5],[5,10.5,10.5]]:s==='e'?[[11,5.5,5.5],[16,10.5,10.5]]:s==='n'?[[5.5,5.5,0],[10.5,10.5,5]]:[[5.5,5.5,11],[10.5,10.5,16]];
+      for(const [a,b] of [[0,0],[0,4.2],[4.2,0],[4.2,4.2]]){ if(s==='w'||s==='e') rail([h[0][0],h[0][1]+a,h[0][2]+b],[h[1][0],h[0][1]+a+.8,h[0][2]+b+.8]); else rail([h[0][0]+a,h[0][1]+b,h[0][2]],[h[0][0]+a+.8,h[0][1]+b+.8,h[1][2]]); }
+      glass([h[0][0]+.3,h[0][1]+.3,h[0][2]+.3],[h[1][0]-.3,h[1][1]-.3,h[1][2]-.3]); if(liq){ const f=[h[0][0]+1.4,h[0][1]+1.4,h[0][2]+1.4], t=[h[1][0]-1.4,h[1][1]-1.4,h[1][2]-1.4]; if(s==='w') f[0]=0; if(s==='e') t[0]=16; if(s==='n') f[2]=0; if(s==='s') t[2]=16; bx(grp,f,t,ION,true,.9); } }
+    return grp; }
+  // the three looks for a set end, drawn at the +x end of a cable group (callers rotate). mode: 'out','in','off','link'
+  function endA(grp,mode){ // collars and arrows: copper collar, turquoise arrow ring pointing out or in, dark plate for off, two-tone collar for link
+    if(mode==='off'){ bx(grp,[10.6,4.6,4.6],[11.4,11.4,11.4],HULL2); bx(grp,[11.4,6,6],[11.8,10,10],TRIM); return; }
+    bx(grp,[13.4,4.8,4.8],[15,11.2,11.2],mode==='link'?0xb02e26:COPPER); if(mode==='link') bx(grp,[13.4,4.8,4.8],[14.2,11.2,11.2],0x3c44aa);
+    if(mode==='out'||mode==='in'){ const pts=mode==='out'?[[15.2,8,8],[16.2,8,8]]:[[16.4,8,8],[15.4,8,8]]; const a=bx(grp,[15.1,7.3,7.3],[16.3,8.7,8.7],TQ,true); const tip=new THREE.Mesh(new THREE.ConeGeometry(1.6,1.6,4),new THREE.MeshBasicMaterial({color:TQ})); tip.position.set(mode==='out'?16.6:14.9,8,8); tip.rotation.z=mode==='out'?-Math.PI/2:Math.PI/2; tip.rotation.y=Math.PI/4; grp.add(tip); } }
+  function endB(grp,mode){ // Mekanism bands: a flat band at the arm's mouth in a mode colour; off removes the arm and leaves a red stub
+    const c={out:0xf9801d,in:0x3ab3da,link:0xf9fffe,off:0xb02e26}[mode]; if(mode==='off'){ bx(grp,[10.6,5,5],[11.6,11,11],c); return; } bx(grp,[14.4,4.9,4.9],[16,11.1,11.1],c); }
+  function endC(grp,mode){ // shaped ends: a nozzle for out, a funnel for in, a flat cap for off, a clamp for link
+    if(mode==='out'){ bx(grp,[14,6.2,6.2],[16.4,9.8,9.8],TRIM); bx(grp,[16.4,7,7],[17.2,9,9],COPPER); }
+    if(mode==='in'){ bx(grp,[14,4.6,4.6],[15.2,11.4,11.4],TRIM); bx(grp,[15.2,3.8,3.8],[16.2,12.2,12.2],COPPER); }
+    if(mode==='off'){ bx(grp,[10.6,4.6,4.6],[11.6,11.4,11.4],TRIM); }
+    if(mode==='link'){ bx(grp,[13,4.2,4.2],[16,5.2,11.8],COPPER); bx(grp,[13,10.8,4.2],[16,11.8,11.8],COPPER); bx(grp,[14,5.2,4.2],[15,10.8,5.2],COPPER); bx(grp,[14,5.2,10.8],[15,10.8,11.8],COPPER); } }
+  const LOOKS={A:endA,B:endB,C:endC};
+  // an end drawn on a side of a cable at origin o: rotate the +x end helper to that side
+  function setEnd(g,o,side,mode,look){ const grp=new THREE.Group(); grp.position.set(o[0]+8,o[1]+8,o[2]+8); grp.rotation.y={e:0,n:Math.PI/2,w:Math.PI,s:-Math.PI/2}[side]; const inner=new THREE.Group(); inner.position.set(-8,-8,-8); grp.add(inner); g.add(grp); LOOKS[look](inner,mode); }
+  function ground(g,x0,z0,x1,z1,y){ bx(g,[x0,y-6,z0],[x1,y,z1],0x3f5a30); }
+  // ---- scenes
+  function colours(g){ const kinds=[['magnatite',0],['illyrium',24],['charged',48]]; for(const [k,z] of kinds){ cable(g,[-20,0,z],KIND[k],['e','w']); DYES.forEach(([n,c],i)=>cable(g,[i*16+0,0,z],c,['e','w'],true)); } ground(g,-26,-10,262,70,0); return {target:[118,6,24],dist:250,ry:Math.PI*0.58,rx:.42}; }
+  function crossing(g){ for(let x=-32;x<=48;x+=16) cable(g,[x,0,0],0x3c44aa,['e','w']); for(let z=-32;z<=48;z+=16){ if(z===0) continue; cable(g,[0,0,z],0xb02e26,['n','s']); } cable(g,[0,0,0],0x3c44aa,['e','w']); // the red run jumps the blue one: no join, so it runs over the top
+    for(let z=-16;z<=16;z+=16) cable(g,[0,16,z],0xb02e26,z===-16?['s','n']:z===16?['n','s']:['n','s']); for(const x of [16,32]) cable(g,[x,0,32],KIND.tetrium,['e','w']);
+    ground(g,-40,-40,72,72,0); return {target:[8,8,8],dist:150,ry:Math.PI*1.2,rx:.55}; }
+  function endsScene(look){ return g=>{ const o=[0,0,0]; cable(g,o,0x3c44aa,['e','w','n','s']); cable(g,[-16,0,0],0x3c44aa,['e','w']); cable(g,[16,0,0],0xb02e26,['e','w']); cable(g,[0,0,-16],0x3c44aa,['n','s']); cable(g,[0,0,16],0x3c44aa,['n','s'],false);
+      setEnd(g,o,'w','out',look); setEnd(g,o,'n','in',look); setEnd(g,o,'s','off',look); setEnd(g,o,'e','link',look); ground(g,-24,-24,40,40,0); return {target:[8,6,8],dist:95,ry:Math.PI*1.25,rx:.6}; }; }
+  // one WebGL context for the page
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const v={view,scene,cam,opts:{},ry:0,rx:.5,drag:false,build}; let lx=0,ly=0; const rebuild=()=>{ if(v.g) scene.remove(v.g); v.g=new THREE.Group(); scene.add(v.g); const o=v.build(v.g); v.opts=o; if(v.first!==false){ v.ry=o.ry; v.rx=o.rx; v.first=false; } }; v.rebuild=rebuild; rebuild();
+    view.addEventListener('pointerdown',e=>{v.drag=true;v.moved=0;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);}); view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.moved+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly); v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; }); view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  const t0=performance.now();
+  (function loop(now){ const W=innerWidth,H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; if(!reduce&&!v.drag&&!v.opts.still) v.ry+=.003; const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); } requestAnimationFrame(loop); })(t0);
+  function cards(id,list){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  makeView(el('colours'),colours); makeView(el('crossing'),crossing);
+  cards('ends',[['A. Collars and arrows','A copper collar at the mouth of a set end, with a turquoise arrow pointing out of the cable (Output) or into it (Input). Off blanks the mouth with a plate and drops the arm. Link wears a collar in the two colours it joins.',endsScene('A')],
+    ['B. Bands','A single band at the mouth in a fixed colour, the way Mekanism marks its sides: orange Output, light blue Input, white Link. Off leaves a short red stub. Smallest and quickest to read across a wall of cables.',endsScene('B')],
+    ['C. Shaped ends','The end itself changes shape: Output narrows to a nozzle, Input flares to a funnel, Off is capped flat, Link is clamped. No extra colour, so it reads in any cable colour, but it is the hardest to tell at a distance.',endsScene('C')]]);
+  // ---- the click-through: a blue cable with four ends; the east end meets red
+  const MODES=['normal','out','in','off']; const state={w:'normal',n:'normal',s:'normal',e:'normal',sneak:false,look:'A'}; let sim;
+  function simScene(g){ const o=[0,0,0]; const arms=['w','n','s','e'].filter(s=>state[s]!=='off'); cable(g,o,0x3c44aa,arms); cable(g,[-16,0,0],0x3c44aa,['e','w']); cable(g,[0,0,-16],0x3c44aa,['n','s']); cable(g,[0,0,16],0x3c44aa,['n','s']); cable(g,[16,0,0],0xb02e26,['e','w'],state.e==='link'||state.e==='out'||state.e==='in');
+    for(const s of ['w','n','s','e']) if(state[s]!=='normal') setEnd(g,o,s,state[s],state.look); ground(g,-24,-24,40,40,0); return {target:[8,6,8],dist:90,ry:Math.PI*1.25,rx:.6,still:true}; }
+  sim=makeView(el('sim'),simScene);
+  const NAMES={normal:'Normal',out:'Output',in:'Input',off:'Off',link:'Linked across colours'}; const SIDES={w:'West end',n:'North end',s:'South end',e:'East end'};
+  let last='w';
+  function hud(){ el('hud').innerHTML='<span>WRENCH</span><b>'+SIDES[last]+': '+NAMES[state[last]]+'</b><small>Click: next. Sneak + click: Normal.</small>'; }
+  hud();
+  el('sim').addEventListener('click',e=>{ if(sim.moved>6) return; const r=el('sim').getBoundingClientRect(); const x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height; // quarters of the view pick an end
+    const s=x<.5&&y<.5?'n':x>=.5&&y<.5?'e':x<.5?'w':'s'; last=s;
+    if(state.sneak){ state[s]='normal'; } else if(s==='e'&&state.e==='normal'){ state.e='link'; } else if(s==='e'&&state.e==='link'){ state.e='out'; } else { const i=MODES.indexOf(state[s]); state[s]=MODES[(i+1)%MODES.length]; }
+    sim.rebuild(); hud(); });
+  el('sneak').onclick=()=>{ state.sneak=!state.sneak; el('sneak').textContent='Sneak: '+(state.sneak?'on':'off'); el('sneak').classList.toggle('on',state.sneak); };
+  el('styleBtn').onclick=()=>{ state.look={A:'B',B:'C',C:'A'}[state.look]; el('styleBtn').textContent='Look: '+state.look; sim.rebuild(); };
+})();
+</script>

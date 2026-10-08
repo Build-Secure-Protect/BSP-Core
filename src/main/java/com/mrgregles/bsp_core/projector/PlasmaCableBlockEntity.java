@@ -18,6 +18,27 @@ import javax.annotation.Nullable;
  * renderer can show the level inside the pipe and which way it runs.
  */
 public class PlasmaCableBlockEntity extends BlockEntity {
+    /** What one end of a cable does, set with the wrench. */
+    public enum End {
+        NORMAL, OUTPUT, INPUT, OFF, LINK;
+
+        public String key() {
+            return "gui.bsp_core.wrench.end." + name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        /** Plasma may leave the cable through this end. */
+        public boolean out() {
+            return this == NORMAL || this == OUTPUT || this == LINK;
+        }
+
+        /** Plasma may enter the cable through this end. */
+        public boolean in() {
+            return this == NORMAL || this == INPUT || this == LINK;
+        }
+    }
+
+    public static final String TAG_ENDS = "Ends";
+    private final byte[] ends = new byte[6];
     private int flow;
     @Nullable
     private Direction in, out;
@@ -30,6 +51,44 @@ public class PlasmaCableBlockEntity extends BlockEntity {
 
     public int flow() {
         return flow;
+    }
+
+    public End end(Direction d) {
+        int i = ends[d.get3DDataValue()];
+        return i < 0 || i >= End.values().length ? End.NORMAL : End.values()[i];
+    }
+
+    /** Whether any end is set to something other than Normal. */
+    public boolean anyEndSet() {
+        for (byte b : ends) {
+            if (b != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public byte[] ends() {
+        return ends.clone();
+    }
+
+    public void setEnds(byte[] values) {
+        for (int i = 0; i < 6 && i < values.length; i++) {
+            ends[i] = (byte) Math.max(0, Math.min(End.values().length - 1, values[i]));
+        }
+        sync();
+    }
+
+    public void setEnd(Direction d, End end) {
+        ends[d.get3DDataValue()] = (byte) end.ordinal();
+        sync();
+    }
+
+    private void sync() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+        }
     }
 
     @Nullable
@@ -69,6 +128,7 @@ public class PlasmaCableBlockEntity extends BlockEntity {
         tag.putByte("In", (byte) (in == null ? -1 : in.get3DDataValue()));
         tag.putByte("Out", (byte) (out == null ? -1 : out.get3DDataValue()));
         tag.putLong("At", at);
+        tag.putByteArray(TAG_ENDS, ends.clone());
     }
 
     @Override
@@ -84,6 +144,11 @@ public class PlasmaCableBlockEntity extends BlockEntity {
         in = tag.getByte("In") < 0 ? null : Direction.from3DDataValue(tag.getByte("In"));
         out = tag.getByte("Out") < 0 ? null : Direction.from3DDataValue(tag.getByte("Out"));
         at = tag.getLong("At");
+        byte[] e = tag.getByteArray(TAG_ENDS);
+        java.util.Arrays.fill(ends, (byte) 0);
+        for (int i = 0; i < 6 && i < e.length; i++) {
+            ends[i] = (byte) Math.max(0, Math.min(End.values().length - 1, e[i]));
+        }
     }
 
     @Override

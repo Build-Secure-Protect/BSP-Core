@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:charged_illyrium_core_cable",
+    "bsp_core:white_charged_illyrium_core_cable",
+    "bsp_core:orange_charged_illyrium_core_cable",
+    "bsp_core:magenta_charged_illyrium_core_cable",
+    "bsp_core:light_blue_charged_illyrium_core_cable",
+    "bsp_core:yellow_charged_illyrium_core_cable",
+    "bsp_core:lime_charged_illyrium_core_cable",
+    "bsp_core:pink_charged_illyrium_core_cable",
+    "bsp_core:gray_charged_illyrium_core_cable",
+    "bsp_core:light_gray_charged_illyrium_core_cable",
+    "bsp_core:cyan_charged_illyrium_core_cable",
+    "bsp_core:purple_charged_illyrium_core_cable",
+    "bsp_core:blue_charged_illyrium_core_cable",
+    "bsp_core:brown_charged_illyrium_core_cable",
+    "bsp_core:green_charged_illyrium_core_cable",
+    "bsp_core:red_charged_illyrium_core_cable",
+    "bsp_core:black_charged_illyrium_core_cable"
+  ]
+}

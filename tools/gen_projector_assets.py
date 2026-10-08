@@ -15,6 +15,9 @@ from gen_material_assets import ASSETS, ROOT, hexc, hsh, item_model, mbox, write
 DATA = ROOT / "src/main/resources/data"
 CLEAR = (0, 0, 0, 0)
 CABLES = {"tetrium": "#6B4FA3", "magnatite": "#5C7FB8", "illyrium": "#19D3B0", "charged_illyrium": "#BFF6FF"}
+# the sixteen dyes, in Minecraft's order, as the glass colour of a dyed cable; Tetrium cables stay plain
+DYES = {'white': '#F9FFFE', 'orange': '#F9801D', 'magenta': '#C74EBD', 'light_blue': '#3AB3DA', 'yellow': '#FED83D', 'lime': '#80C71F', 'pink': '#F38BAA', 'gray': '#474F52', 'light_gray': '#9D9D97', 'cyan': '#169C9C', 'purple': '#8932B8', 'blue': '#3C44AA', 'brown': '#835432', 'green': '#5E7C16', 'red': '#B02E26', 'black': '#1D1D21'}
+COLOURED_KINDS = ("magnatite", "illyrium", "charged_illyrium")
 ATLAS = {"atlas": "bsp_core:block/machine_atlas", "particle": "bsp_core:block/machine_atlas"}
 GUI = {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]}
 
@@ -88,8 +91,8 @@ def cable_arm():
             cbox([5.4, 5.4, 0], [10.6, 10.6, 5.2], True)]
 
 
-def cable(kind, colour):
-    name = f"{kind}_core_cable"
+def cable(kind, colour, dye=None):
+    name = f"{dye}_{kind}_core_cable" if dye else f"{kind}_core_cable"
     tex = {"cable": f"bsp_core:block/{name}", "particle": f"bsp_core:block/{name}"}
     write_png(ASSETS / f"textures/block/{name}.png", 16, 16, cable_texture(colour))
     core, arm = model(cable_core(), tex, False), model(cable_arm(), tex, False)
@@ -127,7 +130,7 @@ def shaped(name, rows, key, count=1):
     result = {"item": f"bsp_core:{name}"}
     if count > 1:
         result["count"] = count
-    full = {k: {"item": v if ":" in v else f"bsp_core:{v}"} for k, v in key.items()}
+    full = {k: ({"tag": v[1:]} if v.startswith("#") else {"item": v if ":" in v else f"bsp_core:{v}"}) for k, v in key.items()}
     path = DATA / f"bsp_core/recipes/{name}.json"
     path.write_text(json.dumps({"type": "minecraft:crafting_shaped", "pattern": rows, "key": full, "result": result}, indent=2))
 
@@ -144,6 +147,12 @@ def main():
     write(ASSETS / "models/item/totem_projector.json", icon)
     loot("totem_projector")
     names = [cable(kind, colour) for kind, colour in CABLES.items()]
+    coloured = [cable(kind, hexcol, dye) for kind in COLOURED_KINDS for dye, hexcol in DYES.items()]
+    names += coloured
+    for kind in COLOURED_KINDS:  # one item tag per kind: the plain cable and all sixteen colours, for the dye recipes
+        path = DATA / f"bsp_core/tags/items/{kind}_cables.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"replace": False, "values": [f"bsp_core:{kind}_core_cable"] + [f"bsp_core:{dye}_{kind}_core_cable" for dye in DYES]}, indent=2) + "\n")
     write_png(ASSETS / "textures/item/channel_expander.png", 16, 16, expander)
     item_model("channel_expander")
 
@@ -161,6 +170,9 @@ def main():
     shaped("magnatite_core_cable", ["NNN", "DMD", "NNN"], {"N": "magnatite_nugget", "D": D, "M": "magnatite_ingot"}, 8)
     shaped("illyrium_core_cable", ["NDN", "DID", "NDN"], {"N": "magnatite_nugget", "D": D, "I": I}, 6)
     shaped("charged_illyrium_core_cable", ["CDC", "DID", "CDC"], {"C": C, "D": D, "I": I}, 4)
+    for kind in COLOURED_KINDS:  # eight cables of the kind, any colour, round a dye
+        for dye in DYES:
+            shaped(f"{dye}_{kind}_core_cable", ["CCC", "CYC", "CCC"], {"C": f"#bsp_core:{kind}_cables", "Y": f"minecraft:{dye}_dye"}, 8)
     print("projector assets written")
 
 

@@ -2,7 +2,7 @@
   "name": "Chunk Loading",
   "category": "bsp_core:totem",
   "icon": "minecraft:filled_map",
-  "sortnum": 8,
+  "sortnum": 9,
   "pages": [
     {
       "type": "patchouli:text",

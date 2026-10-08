@@ -24,7 +24,7 @@ import java.util.UUID;
  *
  * <p>The tank is deliberately not a fluid capability: nothing but a Plasma Interface can take from it.
  */
-public class PlasmaExtractorBlockEntity extends BlockEntity {
+public class PlasmaExtractorBlockEntity extends BlockEntity implements PlasmaNetwork.Reservoir {
     private int tank;
     /** mB per tick this extractor is receiving right now; 0 when there is no owned totem above the stack. */
     private int flow, cloak;

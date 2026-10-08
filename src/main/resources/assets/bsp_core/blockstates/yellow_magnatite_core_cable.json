@@ -1,0 +1,62 @@
+{
+ "multipart": [
+  {
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_core"
+   }
+  },
+  {
+   "when": {
+    "north": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_arm"
+   }
+  },
+  {
+   "when": {
+    "east": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_arm",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "south": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_arm",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "west": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_arm",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "up": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_arm",
+    "x": 270
+   }
+  },
+  {
+   "when": {
+    "down": "true"
+   },
+   "apply": {
+    "model": "bsp_core:block/yellow_magnatite_core_cable_arm",
+    "x": 90
+   }
+  }
+ ]
+}

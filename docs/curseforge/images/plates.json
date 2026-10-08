@@ -41,116 +41,121 @@
  },
  {
   "n": 9,
+  "slug": "layout_cable_colours",
+  "title": "Coloured cables and cable ends"
+ },
+ {
+  "n": 10,
   "slug": "layout_decoy",
   "title": "Decoy Totem"
  },
  {
-  "n": 10,
+  "n": 11,
   "slug": "layout_base_blocks",
   "title": "Coin Vault and Anti Totem Block"
  },
  {
-  "n": 11,
+  "n": 12,
   "slug": "resources",
   "title": "Ores and metals"
  },
  {
-  "n": 12,
+  "n": 13,
   "slug": "items_1",
   "title": "Every block and item (1 of 3)"
  },
  {
-  "n": 13,
+  "n": 14,
   "slug": "items_2",
   "title": "Every block and item (2 of 3)"
  },
  {
-  "n": 14,
+  "n": 15,
   "slug": "items_3",
   "title": "Every block and item (3 of 3)"
  },
  {
-  "n": 15,
+  "n": 16,
   "slug": "recipes_01",
   "title": "Crafting recipes (1 of 8)"
  },
  {
-  "n": 16,
+  "n": 17,
   "slug": "recipes_02",
   "title": "Crafting recipes (2 of 8)"
  },
  {
-  "n": 17,
+  "n": 18,
   "slug": "recipes_03",
   "title": "Crafting recipes (3 of 8)"
  },
  {
-  "n": 18,
+  "n": 19,
   "slug": "recipes_04",
   "title": "Crafting recipes (4 of 8)"
  },
  {
-  "n": 19,
+  "n": 20,
   "slug": "recipes_05",
   "title": "Crafting recipes (5 of 8)"
  },
  {
-  "n": 20,
+  "n": 21,
   "slug": "recipes_06",
   "title": "Crafting recipes (6 of 8)"
  },
  {
-  "n": 21,
+  "n": 22,
   "slug": "recipes_07",
   "title": "Crafting recipes (7 of 8)"
  },
  {
-  "n": 22,
+  "n": 23,
   "slug": "recipes_08",
   "title": "Crafting recipes (8 of 8)"
  },
  {
-  "n": 23,
+  "n": 24,
   "slug": "machine_recipes_1",
   "title": "Machine recipes: Tetrium and Illyrium"
  },
  {
-  "n": 24,
+  "n": 25,
   "slug": "machine_recipes_2",
   "title": "Machine recipes: Magnatite and crystals"
  },
  {
-  "n": 25,
+  "n": 26,
   "slug": "machine_recipes_3",
   "title": "Machine recipes: crushing and coins"
  },
  {
-  "n": 26,
+  "n": 27,
   "slug": "flow_tetrium",
   "title": "How Tetrium is made"
  },
  {
-  "n": 27,
+  "n": 28,
   "slug": "flow_illyrium",
   "title": "How Illyrium is made"
  },
  {
-  "n": 28,
+  "n": 29,
   "slug": "flow_magnatite",
   "title": "How Magnatite is made"
  },
  {
-  "n": 29,
+  "n": 30,
   "slug": "flow_coins",
   "title": "How Shatter Coins are made"
  },
  {
-  "n": 30,
+  "n": 31,
   "slug": "flow_plasma",
   "title": "How Wave Plasma flows"
  },
  {
-  "n": 31,
+  "n": 32,
   "slug": "flow_progression",
   "title": "The whole progression"
  }

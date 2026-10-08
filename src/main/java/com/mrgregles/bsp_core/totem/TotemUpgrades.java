@@ -119,7 +119,7 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
-            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 6; case BOUNCY, CLOAKING, RECALL_BLOCK -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
+            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */

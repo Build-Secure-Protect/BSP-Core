@@ -46,6 +46,12 @@ public final class ModBlocks {
     public static final RegistryObject<Block> PLASMA_INTERFACE = BLOCKS.register("plasma_interface", com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock::new);
     public static final RegistryObject<Block> PLASMA_REPEATER = BLOCKS.register("plasma_repeater", com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock::new);
     public static final RegistryObject<Block> PLASMA_VALVE = BLOCKS.register("plasma_valve", com.mrgregles.bsp_core.plasma.PlasmaValveBlock::new);
+    public static final RegistryObject<Block> TANK_CASING = BLOCKS.register("tank_casing", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.CASING));
+    public static final RegistryObject<Block> TANK_GLASS = BLOCKS.register("tank_glass", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.GLASS));
+    public static final RegistryObject<Block> TANK_PORT = BLOCKS.register("tank_port", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.PORT));
+    /** A plain see-through block of Tetrium-strengthened glass: the ingredient for Tank Glass. */
+    public static final RegistryObject<Block> TETRIUM_GLASS = BLOCKS.register("tetrium_glass", () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
+            .strength(1.0F, 6.0F).sound(SoundType.GLASS).noOcclusion().isViewBlocking((st, l, pos) -> false).isSuffocating((st, l, pos) -> false)));
     public static final RegistryObject<Block> BATTERY_CHARGER = BLOCKS.register("battery_charger", com.mrgregles.bsp_core.plasma.BatteryChargerBlock::new);
     public static final RegistryObject<Block> PROJECTOR_BASE = BLOCKS.register("projector_base", com.mrgregles.bsp_core.plasma.ProjectorBaseBlock::new);
     /** Plasma Batteries I to IV, by tier. */
@@ -61,10 +67,28 @@ public final class ModBlocks {
     /** bsp_core:tetrium_core_cable, magnatite_core_cable, illyrium_core_cable, charged_illyrium_core_cable */
     public static final java.util.Map<com.mrgregles.bsp_core.projector.TotemCableBlock.Kind, RegistryObject<Block>> TOTEM_CABLES = new java.util.EnumMap<>(com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.class);
 
+    /** bsp_core:{colour}_{kind}_core_cable for every dye and every kind but Tetrium, in creative-tab order. */
+    public static final java.util.List<RegistryObject<Block>> COLOURED_CABLES = new java.util.ArrayList<>();
+
     static {
         for (var kind : com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.values()) {
             TOTEM_CABLES.put(kind, BLOCKS.register(kind.name().toLowerCase(java.util.Locale.ROOT) + "_core_cable", () -> new com.mrgregles.bsp_core.projector.TotemCableBlock(kind)));
         }
+        for (var kind : com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.values()) {
+            if (kind == com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.TETRIUM) {
+                continue;
+            }
+            for (var dye : net.minecraft.world.item.DyeColor.values()) {
+                COLOURED_CABLES.add(BLOCKS.register(dye.getSerializedName() + "_" + kind.name().toLowerCase(java.util.Locale.ROOT) + "_core_cable", () -> new com.mrgregles.bsp_core.projector.TotemCableBlock(kind, dye)));
+            }
+        }
+    }
+
+    /** Every cable block, plain and coloured. */
+    public static java.util.List<RegistryObject<Block>> allCables() {
+        java.util.List<RegistryObject<Block>> all = new java.util.ArrayList<>(TOTEM_CABLES.values());
+        all.addAll(COLOURED_CABLES);
+        return all;
     }
 
     public static final RegistryObject<Block> COIN_VAULT = BLOCKS.register("coin_vault", com.mrgregles.bsp_core.vault.CoinVaultBlock::new);

@@ -36,9 +36,70 @@ public class PlasmaCableRenderer implements BlockEntityRenderer<PlasmaCableBlock
 
     public PlasmaCableRenderer(BlockEntityRendererProvider.Context ctx) {}
 
+    private static final int COPPER = 0xC87A3C, TQ = 0x19D3B0, WHITE = 0xF4F7FA;
+
+    /** The wrench-set ends: a copper collar with a turquoise arrow out (Output) or in (Input), a dark plate for Off, a copper and white collar for Link. */
+    private static void ends(PlasmaCableBlockEntity cable, PoseStack pose, MultiBufferSource buffers, int light) {
+        BlockState state = cable.getBlockState();
+        for (Direction d : Direction.values()) {
+            PlasmaCableBlockEntity.End end = cable.end(d);
+            if (end == PlasmaCableBlockEntity.End.NORMAL) {
+                continue;
+            }
+            pose.pushPose();
+            pose.translate(0.5, 0.5, 0.5);
+            switch (d) { // turn so the model's +x is the end's direction
+                case WEST -> pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180));
+                case SOUTH -> pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-90));
+                case NORTH -> pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(90));
+                case UP -> pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(90));
+                case DOWN -> pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(-90));
+                default -> {
+                }
+            }
+            pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
+            pose.translate(-8, -8, -8);
+            MachineKit k = new MachineKit(pose, buffers, light);
+            boolean joined = state.getValue(TotemCableBlock.SIDES[d.get3DDataValue()]);
+            if (end == PlasmaCableBlockEntity.End.OFF || !joined) {
+                // a plate over the mouth of the core and a small plug
+                k.box(10.6f, 4.6f, 4.6f, 11.4f, 11.4f, 11.4f, MachineKit.Mat.HULL2);
+                k.box(11.4f, 6.2f, 6.2f, 11.9f, 9.8f, 9.8f, MachineKit.Mat.TRIM);
+            } else {
+                // the collar round the arm's mouth: four sides, in copper, or copper and white for a Link
+                float x0 = 13.2f, x1 = 15.2f;
+                int c = end == PlasmaCableBlockEntity.End.LINK ? WHITE : COPPER;
+                k.glow(x0, 10.6f, 4.7f, x1, 11.3f, 11.3f, c, 0.95f);
+                k.glow(x0, 4.7f, 4.7f, x1, 5.4f, 11.3f, c, 0.55f);
+                k.glow(x0, 5.4f, 4.7f, x1, 10.6f, 5.4f, c, 0.75f);
+                k.glow(x0, 5.4f, 10.6f, x1, 10.6f, 11.3f, c, 0.75f);
+                if (end == PlasmaCableBlockEntity.End.LINK) {
+                    k.glow(x0, 10.6f, 4.7f, x0 + 0.9f, 11.3f, 11.3f, COPPER, 0.95f);
+                    k.glow(x0, 4.7f, 4.7f, x0 + 0.9f, 5.4f, 11.3f, COPPER, 0.55f);
+                    k.glow(x0, 5.4f, 4.7f, x0 + 0.9f, 10.6f, 5.4f, COPPER, 0.75f);
+                    k.glow(x0, 5.4f, 10.6f, x0 + 0.9f, 10.6f, 11.3f, COPPER, 0.75f);
+                } else {
+                    // the arrow on the top of the collar: a shaft and a wider head, pointing out or in
+                    boolean out = end == PlasmaCableBlockEntity.End.OUTPUT;
+                    k.glow(11.4f, 11.3f, 7.4f, 15.6f, 11.75f, 8.6f, TQ, 1f);
+                    float hx0 = out ? 15.2f : 11.4f, hx1 = out ? 16.1f : 12.3f;
+                    k.glow(hx0, 11.3f, 6.3f, hx1, 11.75f, 9.7f, TQ, 1f);
+                    k.glow(out ? 16.1f : 10.9f, 11.3f, 7.2f, out ? 16.6f : 11.4f, 11.75f, 8.8f, TQ, 1f);
+                }
+            }
+            pose.popPose();
+        }
+    }
+
     @Override
     public void render(PlasmaCableBlockEntity cable, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-        if (cable.getLevel() == null || cable.flow() <= 0) {
+        if (cable.getLevel() == null) {
+            return;
+        }
+        if (cable.anyEndSet()) {
+            ends(cable, pose, buffers, light);
+        }
+        if (cable.flow() <= 0) {
             return;
         }
         long age = cable.age();

@@ -1,0 +1,79 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:blue_illyrium_core_cable"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.dyed_cable"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.dyed_cable.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:white_magnatite_core_cable",
+              "bsp_core:orange_magnatite_core_cable",
+              "bsp_core:magenta_magnatite_core_cable",
+              "bsp_core:light_blue_magnatite_core_cable",
+              "bsp_core:yellow_magnatite_core_cable",
+              "bsp_core:lime_magnatite_core_cable",
+              "bsp_core:pink_magnatite_core_cable",
+              "bsp_core:gray_magnatite_core_cable",
+              "bsp_core:light_gray_magnatite_core_cable",
+              "bsp_core:cyan_magnatite_core_cable",
+              "bsp_core:purple_magnatite_core_cable",
+              "bsp_core:blue_magnatite_core_cable",
+              "bsp_core:brown_magnatite_core_cable",
+              "bsp_core:green_magnatite_core_cable",
+              "bsp_core:red_magnatite_core_cable",
+              "bsp_core:black_magnatite_core_cable",
+              "bsp_core:white_illyrium_core_cable",
+              "bsp_core:orange_illyrium_core_cable",
+              "bsp_core:magenta_illyrium_core_cable",
+              "bsp_core:light_blue_illyrium_core_cable",
+              "bsp_core:yellow_illyrium_core_cable",
+              "bsp_core:lime_illyrium_core_cable",
+              "bsp_core:pink_illyrium_core_cable",
+              "bsp_core:gray_illyrium_core_cable",
+              "bsp_core:light_gray_illyrium_core_cable",
+              "bsp_core:cyan_illyrium_core_cable",
+              "bsp_core:purple_illyrium_core_cable",
+              "bsp_core:blue_illyrium_core_cable",
+              "bsp_core:brown_illyrium_core_cable",
+              "bsp_core:green_illyrium_core_cable",
+              "bsp_core:red_illyrium_core_cable",
+              "bsp_core:black_illyrium_core_cable",
+              "bsp_core:white_charged_illyrium_core_cable",
+              "bsp_core:orange_charged_illyrium_core_cable",
+              "bsp_core:magenta_charged_illyrium_core_cable",
+              "bsp_core:light_blue_charged_illyrium_core_cable",
+              "bsp_core:yellow_charged_illyrium_core_cable",
+              "bsp_core:lime_charged_illyrium_core_cable",
+              "bsp_core:pink_charged_illyrium_core_cable",
+              "bsp_core:gray_charged_illyrium_core_cable",
+              "bsp_core:light_gray_charged_illyrium_core_cable",
+              "bsp_core:cyan_charged_illyrium_core_cable",
+              "bsp_core:purple_charged_illyrium_core_cable",
+              "bsp_core:blue_charged_illyrium_core_cable",
+              "bsp_core:brown_charged_illyrium_core_cable",
+              "bsp_core:green_charged_illyrium_core_cable",
+              "bsp_core:red_charged_illyrium_core_cable",
+              "bsp_core:black_charged_illyrium_core_cable"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:plasma_cable"
+}
