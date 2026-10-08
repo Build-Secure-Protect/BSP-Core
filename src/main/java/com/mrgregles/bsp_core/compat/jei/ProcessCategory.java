@@ -1,5 +1,7 @@
 package com.mrgregles.bsp_core.compat.jei;
 
+import com.mrgregles.bsp_core.compat.Process;
+
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;

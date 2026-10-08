@@ -157,6 +157,13 @@ Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the 
 - [ ] A friend with Alarm walks into the Alarm cube without glowing or warning you; with Ward they are not weakened. Projectors honour the same switches.
 - [ ] The list survives pick-up and re-placing, and is empty after the totem is stolen.
 
+## A totem cannot be stored away (2026-10-08)
+
+- Drop your totem onto a hopper (or a Create funnel, a Mekanism collector, an item magnet): nothing moves it. It lies there bobbing like an item, only you can pick it up by walking into it, and after 30 s it places itself as before. Falling into the void still returns it.
+- Open an AE2 or Refined Storage terminal and drag the totem into the grid: within about three seconds the totem is back in your inventory with the gold message "Your Shatter Totem came back to you." Take the copy out of the grid: it turns into a spent husk (red tooltip "Spent...", no shine, no owner, no upgrades, cannot be placed or opened). Same for a totem that a hopper took from a chest you put it in through any menu we do not catch.
+- Normal play does not trigger it: placing the totem, dropping it, dying, logging out, moving it between slots or into the offhand, carrying it on the cursor. If it ever comes back to you without reason, report what you were doing.
+- The spent husk is worthless: it cannot be upgraded, placed, or used in the offhand, and admin and death handling ignore it.
+
 # Powers, auras and placed upgrades
 
 ## Placed upgrades and auras (needs Shatter Coins: `/give @s bsp_core:shatter_coin 64`)
@@ -603,6 +610,12 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - Unfed: the cradle shows no plasma. Fed: the two pads above and below the slot and the port window on the back light up with plasma; cut the cable and they go dark after the signal lapses.
 - The outline and collision follow the facing.
 
+## Battery Charger automation (2026-10-08)
+
+- A hopper on top of a fed charger holding an empty Tier I battery: the battery drops into the cradle. A hopper under the charger (or a pipe on any side but the back) takes nothing until the battery is full, then pulls it out. A second empty battery waits in the top hopper until the cradle is empty again.
+- A hopper against the back (the cable side) neither inserts nor extracts. Stones and other items never go in.
+- Mekanism transporters, Pipez, AE2 export and import buses and Create funnels behave the same way. Stamping powers still needs the screen.
+
 # Plasma Tank
 
 ## Plasma Tank (2026-10-08)
@@ -643,6 +656,7 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 
 ## X-ray with ghost blocks (2026-10-08)
 
+- BSP ores (Tetrium, Illyrium, Magnatite, their deepslate and End forms) show bright through the rock like vanilla ores: they are in `forge:ores` now.
 - Hold a Wave Emitter with X-ray stamped (or `/bsp totem buff xray 3` on a held totem) and press X underground: the stone, dirt and other solid blocks within range turn to faint glass, fainter the further they are; ores show through them bright even in the dark; chests and other containers get a gold mark, spawners a red mark. Glass, leaves, torches, plants and water stay as they are.
 - Walking, jumping and mining work as before: the ghosted blocks still have their shape. Jade names a ghosted block "Ghost Block" while X-ray is on.
 - Move: blocks that leave the range go back to normal and new ones fade in as you go; the ring by the crosshair drains.
@@ -752,6 +766,18 @@ JEI is loaded in dev runs (`./gradlew runClient`).
 - [ ] Decoy Totem, as its owner: reads "Decoy Totem". As another player, while it is powered: reads "Shatter Totem", the same as a real one. Unpowered or broken, it reads "Decoy Totem".
 - [ ] An assembled multiblock: looking at any part of it (casing, glass, rotor, ports) reads as the machine's name.
 - [ ] Without Jade installed the game starts and plays as before (also on a dedicated server).
+
+## Crushers from other mods (2026-10-08)
+
+- Each of these turns a Tetrium Ingot into Tetrium Dust, a Dirty Illyrium Ingot into Dirty Illyrium Dust and an Illyrium Ingot into Pure Illyrium Dust, one for one: Mekanism Crusher, Create crushing wheels and millstone, Thermal Pulverizer, Ender IO SAG Mill, Railcraft Reborn Crusher, Integrated Dynamics Mechanical Squeezer, Electrodynamics Mineral Grinder. JEI shows the recipe under each machine.
+- The recipes only load when their mod is present (`forge:mod_loaded`); the formats for Ender IO, Railcraft, Integrated Dynamics and Electrodynamics were read from those mods' sources and could not be loaded in the dev run, so in the pack check the log for a "recipe" error naming `bsp_core:compat/` on first start.
+- No machine of any mod turns BSP ore or raw ore into anything: ore goes through the Tetrium Crucible, the Illyrium Crucible and the Magnetic Centrifuge only.
+
+## EMI (2026-10-08)
+
+- With EMI as the recipe viewer (the pack has it beside JEI): each BSP machine has a category named like the block (Tetrium Crucible, Combination Forge, Illyrium Crucible, Illyrium Refinery, Magnetic Centrifuge, Coin Pressing, Crushing by Hand) with the same jobs, times, fuel notes and output tooltips as in JEI; the machine item is the workstation. Every block without a crafting recipe (multiblock parts, plasma blocks, batteries, cells, emitter, wrench, totem, plate) shows its information page.
+- EMI has no Shift-hover hook, so the Assembly Guide opens only from the controller (sneak + right-click) or in JEI.
+- In dev `./gradlew runClient` now loads EMI too, so EMI is what you see there; JEI still loads underneath for the Jade and guide hooks.
 
 # Network storage and cross-server
 

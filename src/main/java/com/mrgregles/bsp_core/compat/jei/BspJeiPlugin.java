@@ -2,6 +2,8 @@ package com.mrgregles.bsp_core.compat.jei;
 
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
+import com.mrgregles.bsp_core.compat.BspProcesses;
+import com.mrgregles.bsp_core.compat.Process;
 import com.mrgregles.bsp_core.coin.CoinTier;
 import com.mrgregles.bsp_core.registry.ModItems;
 import mezz.jei.api.IModPlugin;
@@ -20,6 +22,7 @@ import net.minecraft.world.level.material.Fluids;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JEI support. Shows what each BSP-Core machine does (their jobs are code, so the pages are built
@@ -61,163 +64,40 @@ public class BspJeiPlugin implements IModPlugin {
                 new ProcessCategory(gui, HAND_CRUSHING, "jei.bsp_core.hand_crushing", new ItemStack(Items.IRON_PICKAXE)));
     }
 
-    // ------------------------------------------------------------------ helpers
+    // ------------------------------------------------------------------ recipes (from BspProcesses, shared with EMI)
+
+    private static RecipeType<Process> type(String machine) {
+        return switch (machine) {
+            case "tetrium_crucible" -> TETRIUM_CRUCIBLE;
+            case "combination_forge" -> COMBINATION_FORGE;
+            case "illyrium_crucible" -> ILLYRIUM_CRUCIBLE;
+            case "illyrium_refinery" -> ILLYRIUM_REFINERY;
+            case "magnetic_centrifuge" -> MAGNETIC_CENTRIFUGE;
+            case "coin_pressing" -> COIN_PRESSING;
+            default -> HAND_CRUSHING;
+        };
+    }
 
     private static ItemStack stack(String name) {
-        return stack(name, 1);
-    }
-
-    private static ItemStack stack(String name, int count) {
         Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(BSPCore.MODID, name));
-        return item == null ? ItemStack.EMPTY : new ItemStack(item, count);
+        return item == null ? ItemStack.EMPTY : new ItemStack(item);
     }
-
-    private static List<ItemStack> ores(String metal) {
-        List<ItemStack> out = new ArrayList<>();
-        ModItems.ORE_ITEMS.forEach(o -> {
-            if (o.getId().getPath().contains(metal)) {
-                out.add(new ItemStack(o.get()));
-            }
-        });
-        return out;
-    }
-
-    private static List<ItemStack> one(Item item, int count) {
-        return List.of(new ItemStack(item, Math.max(1, count)));
-    }
-
-    private static Component seconds(int ticks) {
-        return Component.translatable("jei.bsp_core.time", String.format("%.1f", ticks / 20.0));
-    }
-
-    private static String hours(double h) {
-        return h >= 24 ? String.format("%.1f d", h / 24) : String.format("%.1f h", h);
-    }
-
-    private static int cfg(net.minecraftforge.common.ForgeConfigSpec.IntValue value, int fallback) {
-        return BSPConfig.getOr(value, fallback);
-    }
-
-    // ------------------------------------------------------------------ recipes
 
     @Override
     public void registerRecipes(IRecipeRegistration reg) {
-        Component fuel = Component.translatable("jei.bsp_core.fuel"), fuelOrRf = Component.translatable("jei.bsp_core.fuel_or_rf");
-        Component lavaNote = Component.translatable("jei.bsp_core.lava_note");
-
-        reg.addRecipes(TETRIUM_CRUCIBLE, List.of(new Process(List.of(ores("tetrium")), List.of(), null, 0,
-                List.of(new ItemStack(ModItems.TETRIUM_NUGGET.get(), cfg(BSPConfig.TCRUC_NUGGETS, 3)), new ItemStack(ModItems.TETRIUM_SLAG.get(), cfg(BSPConfig.TCRUC_SLAG, 1))),
-                List.of(), List.of(seconds(cfg(BSPConfig.TCRUC_TICKS, 200)), fuel))));
-
-        Component forgeTime = seconds(cfg(BSPConfig.FORGE_TICKS, 600));
-        reg.addRecipes(COMBINATION_FORGE, List.of(
-                new Process(List.of(one(ModItems.TETRIUM_NUGGET.get(), 9)), List.of(), null, 0, List.of(new ItemStack(ModItems.TETRIUM_INGOT.get())), List.of(), List.of(forgeTime, fuelOrRf)),
-                new Process(List.of(one(ModItems.TETRIUM_INGOT.get(), 1)), List.of(), null, 0, List.of(new ItemStack(ModItems.TETRIUM_PLATE.get())), List.of(), List.of(forgeTime, fuelOrRf)),
-                new Process(List.of(one(ModItems.ILLYRIUM_NUGGET.get(), 9)), List.of(one(ModItems.ILLYRIUM_FORGE_UPGRADE.get(), 1)), null, 0,
-                        List.of(new ItemStack(ModItems.ILLYRIUM_INGOT.get())), List.of(), List.of(forgeTime, fuelOrRf, Component.translatable("jei.bsp_core.forge_upgrade")))));
-
-        int lava = cfg(BSPConfig.ICRUC_LAVA_PER_JOB, 250);
-        List<List<ItemStack>> smeltIn = new ArrayList<>();
-        smeltIn.add(ores("illyrium").stream().map(s -> s.copyWithCount(Math.max(1, cfg(BSPConfig.ICRUC_ORE_IN, 1)))).toList());
-        if (cfg(BSPConfig.ICRUC_SLAG_IN, 1) > 0) {
-            smeltIn.add(one(ModItems.TETRIUM_SLAG.get(), cfg(BSPConfig.ICRUC_SLAG_IN, 1)));
-        }
-        List<List<ItemStack>> alloyIn = new ArrayList<>();
-        alloyIn.add(one(ModItems.PURE_ILLYRIUM_DUST.get(), cfg(BSPConfig.ICRUC_PURE_IN, 1)));
-        if (cfg(BSPConfig.ICRUC_TDUST_IN, 1) > 0) {
-            alloyIn.add(one(ModItems.TETRIUM_DUST.get(), cfg(BSPConfig.ICRUC_TDUST_IN, 1)));
-        }
-        reg.addRecipes(ILLYRIUM_CRUCIBLE, List.of(
-                new Process(smeltIn, List.of(), Fluids.LAVA, lava, List.of(new ItemStack(ModItems.DIRTY_ILLYRIUM_INGOT.get())), List.of(),
-                        List.of(seconds(cfg(BSPConfig.ICRUC_SMELT_TICKS, 400)), lavaNote)),
-                new Process(alloyIn, List.of(), Fluids.LAVA, lava, List.of(new ItemStack(ModItems.ILLYRIUM_NUGGET.get(), cfg(BSPConfig.ICRUC_NUGGETS_OUT, 1))), List.of(),
-                        List.of(seconds(cfg(BSPConfig.ICRUC_ALLOY_TICKS, 400)), lavaNote))));
-
-        List<ItemStack> filters = new ArrayList<>();
-        ModItems.FILTERS.values().forEach(f -> filters.add(new ItemStack(f.get())));
-        reg.addRecipes(ILLYRIUM_REFINERY, List.of(new Process(List.of(one(ModItems.DIRTY_ILLYRIUM_DUST.get(), 1)), List.of(filters), Fluids.WATER, cfg(BSPConfig.REFINERY_WATER, 500),
-                List.of(new ItemStack(ModItems.PURE_ILLYRIUM_DUST.get())), List.of(),
-                List.of(seconds(cfg(BSPConfig.REFINERY_TICKS, 2400)), Component.translatable("jei.bsp_core.filter_note")))));
-
-        reg.addRecipes(MAGNETIC_CENTRIFUGE, List.of(
-                new Process(List.of(List.of(stack("magnatite_ore"), stack("deepslate_magnatite_ore"))), List.of(), null, 0,
-                        List.of(new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 3), new ItemStack(ModItems.CARBON_DUST.get())), List.of(),
-                        List.of(seconds(cfg(BSPConfig.CENT_SEPARATE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_stack_note"))),
-                new Process(List.of(one(ModItems.MAGNATITE_INGOT.get(), 1)), List.of(List.of(new ItemStack(ModItems.COPPER_TETRIUM_COIL.get()))), null, 0,
-                        List.of(new ItemStack(ModItems.CHARGED_MAGNATITE_INGOT.get())), List.of(),
-                        List.of(seconds(cfg(BSPConfig.CENT_CHARGE_TICKS, 900)), Component.translatable("jei.bsp_core.centrifuge_charge_note"))),
-                new Process(List.of(one(ModItems.RESONANCE_CRYSTAL.get(), 1)), List.of(List.of(new ItemStack(ModItems.MAGNATITE_NUGGET.get()))), null, 0,
-                        List.of(new ItemStack(ModItems.CHARGED_RESONANCE_CRYSTAL.get())), List.of(),
-                        List.of(seconds(cfg(BSPConfig.CENT_MAGNETISE_TICKS, 600)), Component.translatable("jei.bsp_core.centrifuge_magnetise_note")))));
-
-        List<Process> coins = new ArrayList<>();
-        for (CoinTier tier : CoinTier.values()) {
-            coins.add(new Process(List.of(one(tier.blank(), 1)), List.of(), null, 0, List.of(new ItemStack(tier.coin())), List.of(),
-                    List.of(Component.translatable("jei.bsp_core.press_time", hours(tier.pressMillis() / 3_600_000.0)),
-                            Component.translatable("jei.bsp_core.press_rf", String.format("%,d", tier.energyPerCoin())),
-                            Component.translatable("jei.bsp_core.press_note"))));
-        }
-        reg.addRecipes(COIN_PRESSING, coins);
-
-        List<ItemStack> picks = List.of(new ItemStack(Items.WOODEN_PICKAXE), new ItemStack(Items.STONE_PICKAXE), new ItemStack(Items.IRON_PICKAXE),
-                new ItemStack(Items.GOLDEN_PICKAXE), new ItemStack(Items.DIAMOND_PICKAXE), new ItemStack(Items.NETHERITE_PICKAXE));
-        double tetChance = BSPConfig.getOr(BSPConfig.CRUSH_TETRIUM_CHANCE, 1 / 3.0), dirtyChance = BSPConfig.getOr(BSPConfig.CRUSH_DIRTY_CHANCE, 1 / 6.0);
-        reg.addRecipes(HAND_CRUSHING, List.of(
-                crush(picks, ModItems.TETRIUM_INGOT.get(), ModItems.TETRIUM_DUST.get(), tetChance, ModItems.TETRIUM_NUGGET.get(), cfg(BSPConfig.CRUSH_TETRIUM_NUGGETS, 3)),
-                crush(picks, ModItems.DIRTY_ILLYRIUM_INGOT.get(), ModItems.DIRTY_ILLYRIUM_DUST.get(), dirtyChance, ModItems.DIRTY_ILLYRIUM_NUGGET.get(), cfg(BSPConfig.CRUSH_DIRTY_NUGGETS, 3))));
-
+        BspProcesses.all().forEach((machine, jobs) -> reg.addRecipes(type(machine), jobs));
         // information pages: how each multiblock goes together, and the items with no recipe
-        info(reg, "jei.bsp_core.info.illyrium_crucible", "illyrium_crucible", "lava_pylon");
-        info(reg, "jei.bsp_core.info.illyrium_refinery", "illyrium_refinery", "refinery_pump", "illyrium_glass");
-        info(reg, "jei.bsp_core.info.shared_parts", "illyrium_casing", "illyrium_core", "item_hatch");
-        info(reg, "jei.bsp_core.info.factory", "shatter_coin_factory", "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port");
-        info(reg, "jei.bsp_core.info.motivator", "factory_motivator");
-        info(reg, "jei.bsp_core.info.centrifuge", "magnetic_centrifuge", "centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port");
-        info(reg, "jei.bsp_core.info.copper_coil", "copper_tetrium_coil");
-        info(reg, "jei.bsp_core.info.magnatite_ore", "magnatite_ore", "deepslate_magnatite_ore");
-        info(reg, "jei.bsp_core.info.vault", "coin_vault");
-        info(reg, "jei.bsp_core.info.extractor", "plasma_extractor");
-        info(reg, "jei.bsp_core.info.interface", "plasma_interface");
-        info(reg, "jei.bsp_core.info.repeater", "plasma_repeater");
-        info(reg, "jei.bsp_core.info.valve", "plasma_valve");
-        info(reg, "jei.bsp_core.info.tank", "tank_casing", "tank_glass", "tank_port");
-        info(reg, "jei.bsp_core.info.tetrium_glass", "tetrium_glass");
-        info(reg, "jei.bsp_core.info.expander", "channel_expander");
-        info(reg, "jei.bsp_core.info.charger", "battery_charger");
-        info(reg, "jei.bsp_core.info.battery", "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4");
-        info(reg, "jei.bsp_core.info.cell", "power_cell_1", "power_cell_2", "power_cell_3");
-        info(reg, "jei.bsp_core.info.charged_crystal", "charged_resonance_crystal");
-        info(reg, "jei.bsp_core.info.emitter", "wave_emitter");
-        info(reg, "jei.bsp_core.info.wrench", "wrench");
-        info(reg, "jei.bsp_core.info.projector", "totem_projector");
-        info(reg, "jei.bsp_core.info.projector_base", "projector_base");
-        info(reg, "jei.bsp_core.info.cable", "tetrium_core_cable", "magnatite_core_cable", "illyrium_core_cable", "charged_illyrium_core_cable");
-        info(reg, "jei.bsp_core.info.decoy", "decoy_totem", "magnet_core");
-        info(reg, "jei.bsp_core.info.decoy_base", "decoy_power_base");
-        info(reg, "jei.bsp_core.info.score_screen", "score_screen");
-        info(reg, "jei.bsp_core.info.admin_rack", "admin_rack");
-        info(reg, "jei.bsp_core.info.anti_totem", "anti_totem");
-        info(reg, "jei.bsp_core.info.totem", "shatter_totem");
-        info(reg, "jei.bsp_core.info.plate", "tetrium_plate");
-    }
-
-    private static Process crush(List<ItemStack> picks, Item ingot, Item dust, double chance, Item nugget, int nuggets) {
-        int pct = (int) Math.round(chance * 100);
-        return new Process(List.of(picks, one(ingot, 1)), List.of(), null, 0, List.of(new ItemStack(dust), new ItemStack(nugget, Math.max(1, nuggets))),
-                List.of(Component.translatable("jei.bsp_core.chance", pct), Component.translatable("jei.bsp_core.chance", 100 - pct)),
-                List.of(Component.translatable("jei.bsp_core.crush_1"), Component.translatable("jei.bsp_core.crush_2", pct)));
-    }
-
-    private static void info(IRecipeRegistration reg, String key, String... items) {
-        List<ItemStack> stacks = new ArrayList<>();
-        for (String name : items) {
-            ItemStack s = stack(name);
-            if (!s.isEmpty()) {
-                stacks.add(s);
+        for (Map.Entry<String, List<String>> page : BspProcesses.INFO) {
+            List<ItemStack> stacks = new ArrayList<>();
+            for (String name : page.getValue()) {
+                ItemStack s = stack(name);
+                if (!s.isEmpty()) {
+                    stacks.add(s);
+                }
             }
-        }
-        if (!stacks.isEmpty()) {
-            reg.addIngredientInfo(stacks, VanillaTypes.ITEM_STACK, Component.translatable(key));
+            if (!stacks.isEmpty()) {
+                reg.addIngredientInfo(stacks, VanillaTypes.ITEM_STACK, Component.translatable(page.getKey()));
+            }
         }
     }
 

@@ -58,7 +58,7 @@ public class ShatterTotemItem extends BlockItem {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return true;
+        return !TotemIdentity.isSpent(stack);
     }
 
     @Override
@@ -99,6 +99,9 @@ public class ShatterTotemItem extends BlockItem {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        if (TotemIdentity.isSpent(player.getItemInHand(hand))) {
+            return InteractionResultHolder.fail(player.getItemInHand(hand));
+        }
         if (hand == InteractionHand.MAIN_HAND) {
             openUpgradeTree(player, hand);
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
@@ -126,6 +129,9 @@ public class ShatterTotemItem extends BlockItem {
 
     @Override
     public InteractionResult place(BlockPlaceContext ctx) {
+        if (TotemIdentity.isSpent(ctx.getItemInHand())) {
+            return InteractionResult.FAIL; // a husk is never a totem again
+        }
         if (!BSPConfig.isDimensionAllowed(ctx.getLevel().dimension().location())) {
             Player player = ctx.getPlayer();
             if (player != null && !ctx.getLevel().isClientSide) {
@@ -186,6 +192,10 @@ public class ShatterTotemItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
+        if (TotemIdentity.isSpent(stack)) {
+            tooltip.add(Component.translatable("tooltip.bsp_core.shatter_totem.spent").withStyle(ChatFormatting.RED));
+            return;
+        }
         tooltip.add(TotemOwner.fromStack(stack)
                 .map(owner -> Component.translatable("tooltip.bsp_core.shatter_totem.owner", owner.name())
                         .withStyle(ChatFormatting.GOLD))

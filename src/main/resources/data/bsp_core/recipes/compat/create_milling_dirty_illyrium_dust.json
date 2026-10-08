@@ -1,21 +1,21 @@
 {
-  "conditions": [
-    {
-      "type": "forge:mod_loaded",
-      "modid": "create"
-    }
-  ],
-  "type": "create:milling",
-  "ingredients": [
-    {
-      "item": "bsp_core:dirty_illyrium_ingot"
-    }
-  ],
-  "results": [
-    {
-      "item": "bsp_core:dirty_illyrium_dust",
-      "count": 1
-    }
-  ],
-  "processingTime": 250
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "create"
+  }
+ ],
+ "type": "create:milling",
+ "ingredients": [
+  {
+   "item": "bsp_core:dirty_illyrium_ingot"
+  }
+ ],
+ "results": [
+  {
+   "item": "bsp_core:dirty_illyrium_dust",
+   "count": 1
+  }
+ ],
+ "processingTime": 250
 }

@@ -1,0 +1,21 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "integrateddynamics"
+  }
+ ],
+ "type": "integrateddynamics:mechanical_squeezer",
+ "input_item": {
+  "item": "bsp_core:dirty_illyrium_ingot"
+ },
+ "output_items": [
+  {
+   "item": {
+    "item": "bsp_core:dirty_illyrium_dust",
+    "count": 1
+   }
+  }
+ ],
+ "duration": 40
+}

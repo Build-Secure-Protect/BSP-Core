@@ -1,4 +1,4 @@
-package com.mrgregles.bsp_core.compat.jei;
+package com.mrgregles.bsp_core.compat;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * One machine job as JEI shows it. The machines' jobs are code, not recipe files, so the plugin
+ * One machine job as JEI and EMI show it. The machines' jobs are code, not recipe files, so the plugin
  * builds these from the same config values the machines use.
  *
  * @param inputs    one list of alternatives per input slot

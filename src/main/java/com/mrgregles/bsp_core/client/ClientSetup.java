@@ -5,7 +5,6 @@ import com.mrgregles.bsp_core.registry.ModBlockEntities;
 import com.mrgregles.bsp_core.registry.ModEntities;
 import com.mrgregles.bsp_core.registry.ModMenus;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.renderer.entity.ItemEntityRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
@@ -40,7 +39,7 @@ public final class ClientSetup {
 
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ItemEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ShatterTotemItemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SHATTER_TOTEM.get(), ShatterTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SCORE_SCREEN.get(), ScoreScreenRenderer::new);

@@ -396,7 +396,7 @@ A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugg
 
 **Page 3**  `[recipe] battery_charger`
 
-Place the charger facing you: the cable goes into its **back**, and only there. The wrench turns it. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it.
+Place the charger facing you: the cable goes into its **back**, and only there. The wrench turns it. Pipes and hoppers may put an empty battery or cell in from any other side and take it out once it is full. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it.
 
 **Page 4: What gets stamped**
 
@@ -504,7 +504,7 @@ Keep your slag. Smelted into *Slag Bricks* it goes into almost every machine par
 
 **Page 1**
 
-Several recipes need metal dust. A crusher from another mod (Mekanism, Create, Thermal) turns an ingot into dust every time.
+Several recipes need metal dust. A crusher from another mod turns an ingot into dust every time: Mekanism's Crusher, Create's crushing wheels and millstone, Thermal's Pulverizer, Ender IO's SAG Mill, Railcraft's Crusher, Integrated Dynamics' Mechanical Squeezer and Electrodynamics' Mineral Grinder.
 
 With no crusher, put any pickaxe and one ingot in a crafting grid. The pickaxe loses a little durability, and you get either dust or a few nuggets back, by chance.
 

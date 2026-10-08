@@ -34,6 +34,12 @@ def main():
         for block in blocks:
             (DATA / f"bsp_core/loot_tables/blocks/{block}.json").write_text(json.dumps(ore_loot(block, raw), indent=2))
         add_tag(DATA / f"bsp_core/tags/items/{tag}.json", [f"bsp_core:{raw}"])
+        # the common ore tag, so X-ray (Tags.Blocks.ORES) and other mods' ore detection see them. Deliberately NOT the material
+        # subtags (forge:ores/tetrium, forge:ingots/tetrium ...): JAOPCA, Almost Unified and the big tech mods build ore-processing
+        # chains from those, which would let a player skip the crucibles. Keep BSP materials off the material tags.
+        add_tag(DATA / "forge/tags/blocks/ores.json", [f"bsp_core:{b}" for b in blocks])
+        add_tag(DATA / "forge/tags/items/ores.json", [f"bsp_core:{b}" for b in blocks])
+        add_tag(DATA / "forge/tags/items/raw_materials.json", [f"bsp_core:{raw}"])
     print("raw ore assets written")
 
 

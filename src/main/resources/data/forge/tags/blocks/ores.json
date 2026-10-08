@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:tetrium_ore",
+    "bsp_core:deepslate_tetrium_ore",
+    "bsp_core:illyrium_ore",
+    "bsp_core:deepslate_illyrium_ore",
+    "bsp_core:end_stone_illyrium_ore",
+    "bsp_core:magnatite_ore",
+    "bsp_core:deepslate_magnatite_ore"
+  ]
+}

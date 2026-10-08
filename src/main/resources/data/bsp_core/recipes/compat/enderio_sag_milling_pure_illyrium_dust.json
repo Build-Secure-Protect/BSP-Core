@@ -1,0 +1,23 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "enderio"
+  }
+ ],
+ "type": "enderio:sag_milling",
+ "energy": 2400,
+ "input": {
+  "item": "bsp_core:illyrium_ingot"
+ },
+ "outputs": [
+  {
+   "item": {
+    "item": "bsp_core:pure_illyrium_dust",
+    "count": 1
+   },
+   "chance": 1.0,
+   "optional": false
+  }
+ ]
+}

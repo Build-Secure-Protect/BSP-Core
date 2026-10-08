@@ -207,6 +207,52 @@ public class BspGameTests {
         });
     }
 
+    // ------------------------------------------------------------------ the totem stays in play
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void dropped_totem_ignores_hoppers(GameTestHelper h) {
+        // a hopper over a chest: a dropped stone goes through; a dropped totem lies on the hopper untouched
+        BlockPos chest = new BlockPos(2, 1, 2), hopper = chest.above();
+        h.setBlock(chest, Blocks.CHEST);
+        h.setBlock(hopper, Blocks.HOPPER);
+        h.spawnItem(net.minecraft.world.item.Items.STONE, 2.5f, 3.5f, 2.5f);
+        net.minecraft.world.item.ItemStack totem = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(UUID.nameUUIDFromBytes("gametest".getBytes()), "Tester").applyTo(totem);
+        BlockPos abs = h.absolutePos(hopper.above());
+        h.getLevel().addFreshEntity(new com.mrgregles.bsp_core.totem.ShatterTotemItemEntity(h.getLevel(), abs.getX() + 0.5, abs.getY() + 0.5, abs.getZ() + 0.5, totem));
+        h.runAfterDelay(80, () -> {
+            h.assertContainerContains(chest, net.minecraft.world.item.Items.STONE);
+            if (h.getBlockEntity(chest) instanceof net.minecraft.world.Container c) {
+                for (int i = 0; i < c.getContainerSize(); i++) {
+                    h.assertTrue(!c.getItem(i).is(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get()), "the hopper must not move a totem into the chest");
+                }
+            }
+            h.assertEntityPresent(com.mrgregles.bsp_core.registry.ModEntities.SHATTER_TOTEM_ITEM.get());
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void totem_identity_reissues_a_lost_totem(GameTestHelper h) {
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(h.getLevel().getServer());
+        UUID id = UUID.randomUUID(), instance = UUID.randomUUID(), holder = UUID.nameUUIDFromBytes("holder".getBytes());
+        long now = 1000;
+        ledger.seen(id, instance, holder, com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        h.assertTrue(instance.equals(ledger.currentInstance(id)), "the first sighting sets the instance");
+        ledger.seen(id, UUID.randomUUID(), holder, com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now + 1);
+        h.assertTrue(instance.equals(ledger.currentInstance(id)), "a stale copy's sighting is ignored");
+        h.assertTrue(ledger.lostHeld(now + 30, 60).isEmpty(), "not lost yet");
+        h.assertTrue(ledger.lostHeld(now + 100, 60).contains(id), "lost after a minute unseen in the hands");
+        ledger.seen(id, instance, null, com.mrgregles.bsp_core.data.TotemLedger.PLACED, null, now + 50);
+        h.assertTrue(ledger.lostHeld(now + 1000, 60).isEmpty(), "a placed totem is never lost");
+        ledger.seen(id, instance, holder, com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now + 60);
+        var fresh = ledger.reissue(id, now + 200);
+        h.assertTrue(!fresh.instance().equals(instance) && fresh.instance().equals(ledger.currentInstance(id)), "reissue makes a new current instance");
+        h.assertTrue(holder.equals(fresh.holder()), "the holder is remembered");
+        ledger.forget(id);
+        h.succeed();
+    }
+
     // ------------------------------------------------------------------ cloaking
 
     @GameTest(template = EMPTY, timeoutTicks = 400)

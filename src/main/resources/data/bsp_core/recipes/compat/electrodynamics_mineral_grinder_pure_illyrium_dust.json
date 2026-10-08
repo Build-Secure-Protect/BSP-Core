@@ -1,0 +1,23 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "electrodynamics"
+  }
+ ],
+ "type": "electrodynamics:mineral_grinder_recipe",
+ "iteminputs": {
+  "0": {
+   "item": "bsp_core:illyrium_ingot",
+   "count": 1
+  },
+  "count": 1
+ },
+ "output": {
+  "item": "bsp_core:pure_illyrium_dust",
+  "count": 1
+ },
+ "experience": 0.0,
+ "ticks": 200,
+ "usagepertick": 350.0
+}

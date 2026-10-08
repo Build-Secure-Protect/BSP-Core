@@ -17,7 +17,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:battery_charger",
-      "text": "Place the charger facing you: the cable goes into its $(l)back$(), and only there. The wrench turns it. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it."
+      "text": "Place the charger facing you: the cable goes into its $(l)back$(), and only there. The wrench turns it. Pipes and hoppers may put an empty battery or cell in from any other side and take it out once it is full. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it."
     },
     {
       "type": "patchouli:text",

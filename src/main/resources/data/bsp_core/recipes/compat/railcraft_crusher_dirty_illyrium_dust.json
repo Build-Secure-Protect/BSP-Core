@@ -1,0 +1,21 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "railcraft"
+  }
+ ],
+ "type": "railcraft:crusher",
+ "ingredient": {
+  "item": "bsp_core:dirty_illyrium_ingot"
+ },
+ "outputs": [
+  {
+   "result": {
+    "item": "bsp_core:dirty_illyrium_dust"
+   },
+   "count": 1,
+   "probability": 1.0
+  }
+ ]
+}

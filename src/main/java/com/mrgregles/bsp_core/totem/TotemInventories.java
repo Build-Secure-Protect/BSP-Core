@@ -12,8 +12,9 @@ import java.util.List;
 public final class TotemInventories {
     private TotemInventories() {}
 
+    /** A real totem: the item, and not a spent husk left behind when its totem was reissued. */
     public static boolean isTotem(ItemStack stack) {
-        return !stack.isEmpty() && stack.is(ModItems.SHATTER_TOTEM.get());
+        return !stack.isEmpty() && stack.is(ModItems.SHATTER_TOTEM.get()) && !TotemIdentity.isSpent(stack);
     }
 
     /** Removes every totem from the player's own inventory (main, offhand, armour) and returns them. */

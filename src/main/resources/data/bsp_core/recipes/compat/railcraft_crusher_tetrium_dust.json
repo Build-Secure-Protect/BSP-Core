@@ -1,0 +1,21 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "railcraft"
+  }
+ ],
+ "type": "railcraft:crusher",
+ "ingredient": {
+  "item": "bsp_core:tetrium_ingot"
+ },
+ "outputs": [
+  {
+   "result": {
+    "item": "bsp_core:tetrium_dust"
+   },
+   "count": 1,
+   "probability": 1.0
+  }
+ ]
+}

@@ -122,6 +122,7 @@ repositories {
     // Mekanism's own Maven: used only so the dev client has an RF source to test the machines with
     maven { url = 'https://modmaven.dev/' }
     maven { url = 'https://maven.blamejared.com/' }
+    maven { name = 'Sleeping Town'; url = 'https://repo.sleeping.town/' } // EMI
     // Modrinth's Maven: Jade (the "what am I looking at" tooltip mod)
     maven {
         url = 'https://api.modrinth.com/maven'
@@ -152,6 +153,10 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.20.0.112")
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.20.0.112")
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
+
+    // EMI: the pack ships EMI beside JEI; the API is compile-only, the full mod runs in dev so the EMI plugin can be seen.
+    compileOnly fg.deobf("dev.emi:emi-forge:1.1.22+1.20.1:api")
+    runtimeOnly fg.deobf("dev.emi:emi-forge:1.1.22+1.20.1")
 
     // Jade: compile-only like JEI, so BSP-Core runs without it; the full mod is loaded in dev runs only.
     compileOnly fg.deobf("maven.modrinth:jade:11.13.3+forge")

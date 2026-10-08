@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:raw_tetrium",
+    "bsp_core:raw_illyrium",
+    "bsp_core:raw_magnatite"
+  ]
+}

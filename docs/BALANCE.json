@@ -1,0 +1,4790 @@
+{
+ "assumptions": {
+  "crusher_seconds": 10.0,
+  "furnace_seconds": 10.0,
+  "fortune_multiplier": 2.2,
+  "ore_per_hour_hand": {
+   "tetrium": 60.0,
+   "illyrium": 6.0,
+   "magnatite": 18.0
+  },
+  "ore_per_hour_machine": {
+   "tetrium": 360.0,
+   "illyrium": 36.0,
+   "magnatite": 108.0
+  }
+ },
+ "scenarios": {
+  "early": "first hours: one of each, coal forge, no RF, hand mining",
+  "mid": "mid game: 2 Tetrium Crucibles, 2 forges on RF with Mk I, 1 of each multiblock (centrifuge 2 layers), 1 crusher, Digital Miner",
+  "late": "late game: 4 Tetrium Crucibles, 2 forges Mk III, 2 Illyrium Crucibles, 2 Refineries, centrifuge 6 layers, 2 crushers, Digital Miner"
+ },
+ "config": {
+  "upgrades.costs.tierGateCoins": [
+   4,
+   4,
+   4,
+   4
+  ],
+  "upgrades.costs.tierGateXpLevels": [
+   15,
+   25,
+   35,
+   50
+  ],
+  "upgrades.costs.carriedLevelCoins": [
+   1,
+   1
+  ],
+  "upgrades.costs.carriedLevelXp": [
+   4,
+   6
+  ],
+  "upgrades.costs.baseLevelCoins": [
+   1,
+   2
+  ],
+  "upgrades.costs.baseLevelXp": [
+   2,
+   3
+  ],
+  "upgrades.costs.raidLevelCoins": [
+   2,
+   3
+  ],
+  "upgrades.costs.raidLevelXp": [
+   3,
+   4
+  ],
+  "upgrades.costs.unlockLevel": 2,
+  "upgrades.carried.damagePerLevel": 0.5,
+  "upgrades.carried.resistancePerLevel": 0.03,
+  "upgrades.carried.miningSpeedPerLevel": 0.1,
+  "upgrades.carried.swiftnessSpeedBonus": [
+   0.02,
+   0.04,
+   0.06,
+   0.08,
+   0.1,
+   0.12,
+   0.14,
+   0.16
+  ],
+  "upgrades.carried.vitalityHealth": [
+   2,
+   4,
+   6,
+   8,
+   10,
+   12
+  ],
+  "upgrades.carried.featherfallReduction": [
+   0.16,
+   0.32,
+   0.48,
+   0.64,
+   0.8,
+   0.96
+  ],
+  "upgrades.base.fortifyRadius": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   9,
+   12,
+   15
+  ],
+  "upgrades.base.fortifyBreakSpeedMultiplier": [
+   0.8,
+   0.7,
+   0.6,
+   0.5,
+   0.45,
+   0.4,
+   0.35,
+   0.3,
+   0.25,
+   0.2
+  ],
+  "upgrades.base.fortifyExplosionProtection": [
+   0.1,
+   0.2,
+   0.3,
+   0.4,
+   0.5,
+   0.6,
+   0.7,
+   0.8,
+   0.9,
+   1.0
+  ],
+  "upgrades.base.healingRadius": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   12,
+   15
+  ],
+  "upgrades.base.healingPerSecond": [
+   0.5,
+   0.75,
+   1.0,
+   1.25,
+   1.5,
+   1.75,
+   2.0,
+   2.25,
+   2.5,
+   3.0
+  ],
+  "upgrades.base.alarmRadius": [
+   4,
+   8,
+   12,
+   16,
+   20,
+   24,
+   28,
+   32
+  ],
+  "upgrades.base.sanctuaryRadius": [
+   6,
+   12,
+   18,
+   24,
+   30,
+   36,
+   42,
+   48
+  ],
+  "upgrades.base.wardRadius": [
+   3,
+   6,
+   9,
+   12,
+   15,
+   18
+  ],
+  "upgrades.base.deadlockSeconds": [
+   30,
+   60,
+   90,
+   120
+  ],
+  "upgrades.base.overclockRadius": [
+   8,
+   10,
+   12,
+   16
+  ],
+  "upgrades.base.overclockSpeedBonus": [
+   0.04,
+   0.08,
+   0.12,
+   0.16
+  ],
+  "upgrades.raid.lockpickSeconds": [
+   10,
+   20,
+   30,
+   40,
+   50,
+   60,
+   70,
+   80
+  ],
+  "upgrades.raid.shroudSeconds": [
+   4,
+   8,
+   12,
+   16,
+   20,
+   24
+  ],
+  "upgrades.limits.minIntruderMiningSpeed": 0.2,
+  "upgrades.limits.minStealSeconds": 60,
+  "upgrades.limits.maxStealSeconds": 600,
+  "coins.values": [
+   1,
+   2,
+   4,
+   8,
+   16
+  ],
+  "factory.pressHours": [
+   12.0,
+   24.0,
+   48.0,
+   96.0,
+   168.0
+  ],
+  "factory.energyPerCoin": [
+   50000,
+   100000,
+   200000,
+   400000,
+   800000
+  ],
+  "factory.energyCapacity": 1000000,
+  "factory.maxReceivePerTick": 10000,
+  "factory.motivatorTimeReduction": [
+   0.15,
+   0.3,
+   0.5
+  ],
+  "factory.maxTotalReduction": 0.75,
+  "factory.maxPerPlayer": 10,
+  "rf_upgrade.bonus": [
+   0.05,
+   0.1,
+   0.3
+  ],
+  "rf_upgrade.rfPerTick": 40,
+  "rf_upgrade.capacity": 100000,
+  "tetrium_crucible.nuggetsPerOre": 2,
+  "tetrium_crucible.slagPerOre": 1,
+  "tetrium_crucible.ticksPerOre": 400,
+  "combination_forge.ticksPerIngot": 600,
+  "combination_forge.rfSpeedMultiplier": 2.0,
+  "illyrium_crucible.smeltOre": 1,
+  "illyrium_crucible.smeltSlag": 2,
+  "illyrium_crucible.smeltTicks": 1200,
+  "illyrium_crucible.alloyPureDust": 1,
+  "illyrium_crucible.alloyTetriumDust": 1,
+  "illyrium_crucible.alloyNuggets": 1,
+  "illyrium_crucible.alloyTicks": 1800,
+  "illyrium_crucible.lavaPerJob": 250,
+  "illyrium_crucible.lavaPerMagmaBlock": 250,
+  "illyrium_crucible.lavaTank": 8000,
+  "refinery.waterPerDust": 500,
+  "refinery.ticksPerDust": 2400,
+  "refinery.waterTank": 8000,
+  "refinery.filterUses": [
+   1,
+   20,
+   100,
+   1000
+  ],
+  "hand_crushing.tetriumDustChance": 0.3333333333333333,
+  "hand_crushing.tetriumNuggetsOnFail": 3,
+  "hand_crushing.dirtyIllyriumDustChance": 0.16666666666666666,
+  "hand_crushing.dirtyIllyriumNuggetsOnFail": 3,
+  "centrifuge.separateTicks": 900,
+  "centrifuge.nuggetsMin": [
+   3,
+   3,
+   4,
+   5,
+   6,
+   7
+  ],
+  "centrifuge.nuggetsMax": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   9
+  ],
+  "centrifuge.chargeTicks": 900,
+  "centrifuge.chargeTicksFullStack": 500,
+  "centrifuge.chargeOdds": [
+   6,
+   5,
+   4,
+   3,
+   2,
+   2
+  ],
+  "centrifuge.rfPerTickSeparating": 60,
+  "centrifuge.rfPerTickCharging": 240,
+  "centrifuge.magnetiseTicks": 600,
+  "centrifuge.magnetiseTicksFullStack": 400
+ },
+ "items": {
+  "basic_control_circuit": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Furnace": 10.0,
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 29.047619047619047,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {
+    "redstone": 2.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0
+   }
+  },
+  "battery_charger": {
+   "ore": {
+    "tetrium": 25.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Furnace": 50.0,
+    "Combination Forge": 57.14285714285714,
+    "Tetrium Crucible": 476.1904761904762,
+    "Magnetic Centrifuge": 135.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 238.0952380952381,
+   "mining_h": 0.04419191919191919,
+   "vanilla": {
+    "copper_ingot": 7.0,
+    "redstone": 2.0
+   },
+   "extra": {
+    "rf": 324000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.25,
+    "tetrium_slag": 20.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 0.5
+   }
+  },
+  "black_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "black_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "black_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "black_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "black_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "black_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "blast_charge": {
+   "ore": {
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 180.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 180.0,
+   "mining_h": 0.016835016835016835,
+   "vanilla": {
+    "tnt": 1.0
+   },
+   "extra": {
+    "rf": 432000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 10.0
+   }
+  },
+  "blue_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "blue_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "blue_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "blue_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "blue_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "blue_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "brown_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "brown_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "brown_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "brown_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "brown_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "brown_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "centrifuge_casing": {
+   "ore": {
+    "tetrium": 7.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 21.428571428571427,
+    "Furnace": 5.0,
+    "Tetrium Crucible": 133.33333333333334
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 66.66666666666667,
+   "mining_h": 0.008838383838383838,
+   "vanilla": {
+    "iron_ingot": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 6.5
+   }
+  },
+  "centrifuge_power_port": {
+   "ore": {
+    "tetrium": 29.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 85.71428571428571,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 552.3809523809524
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 276.1904761904762,
+   "mining_h": 0.03661616161616161,
+   "vanilla": {
+    "copper_ingot": 0.5,
+    "gold_ingot": 2.0,
+    "redstone_block": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 27.0
+   }
+  },
+  "centrifuge_rotor": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 14.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 228.57142857142856,
+    "Tetrium Crucible": 266.6666666666667
+   },
+   "latency_s": 76.19047619047619,
+   "wall_s": 228.57142857142856,
+   "mining_h": 0.06818181818181818,
+   "vanilla": {
+    "copper_ingot": 3.5,
+    "iron_ingot": 1.0,
+    "redstone": 1.0
+   },
+   "extra": {
+    "lava_mb": 950.0
+   },
+   "surplus": {
+    "tetrium_slag": 6.0
+   }
+  },
+  "channel_expander": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 20.0,
+    "magnatite": 11.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 1395.0,
+    "Furnace": 40.0,
+    "Illyrium Crucible": 571.4285714285713,
+    "Illyrium Refinery": 457.1428571428571,
+    "Crusher": 80.0,
+    "Tetrium Crucible": 380.95238095238096
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 1395.0,
+   "mining_h": 0.12205387205387204,
+   "vanilla": {
+    "redstone": 12.0,
+    "copper_ingot": 8.0
+   },
+   "extra": {
+    "rf": 9828000.0,
+    "lava_mb": 1900.0,
+    "water_mb": 2000.0,
+    "filter_uses": 4.0
+   },
+   "surplus": {
+    "tetrium_slag": 8.0,
+    "magnatite_nugget": 2.5,
+    "carbon_dust": 10.0
+   }
+  },
+  "charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {},
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "circuit_substrate": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Furnace": 10.0,
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 29.047619047619047,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0
+   }
+  },
+  "coin_vault": {
+   "ore": {
+    "tetrium": 37.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 114.28571428571428,
+    "Furnace": 30.0,
+    "Tetrium Crucible": 704.7619047619047
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 352.38095238095235,
+   "mining_h": 0.04671717171717171,
+   "vanilla": {
+    "gold_ingot": 1.0,
+    "redstone": 2.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 34.0
+   }
+  },
+  "combination_forge": {
+   "ore": {
+    "tetrium": 14.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 266.6666666666667
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 133.33333333333334,
+   "mining_h": 0.017676767676767676,
+   "vanilla": {
+    "piston": 2.0,
+    "anvil": 1.0,
+    "smooth_stone": 3.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 14.0
+   }
+  },
+  "conveyor_belt": {
+   "ore": {
+    "tetrium": 3.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 57.14285714285714
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 28.57142857142857,
+   "mining_h": 0.0037878787878787876,
+   "vanilla": {
+    "dried_kelp": 1.0,
+    "copper_ingot": 0.5,
+    "iron_ingot": 0.3333333333333333,
+    "redstone": 0.3333333333333333
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.333333333333333,
+    "tetrium_slag": 3.0
+   }
+  },
+  "copper_coin_blank": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {
+    "copper_ingot": 4.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 9.0
+   }
+  },
+  "copper_tetrium_coil": {
+   "ore": {
+    "tetrium": 4.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 76.19047619047619,
+    "Magnetic Centrifuge": 135.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 135.0,
+   "mining_h": 0.017676767676767676,
+   "vanilla": {
+    "copper_ingot": 5.0
+   },
+   "extra": {
+    "rf": 324000.0
+   },
+   "surplus": {
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 1.0
+   }
+  },
+  "crucible_control_circuit": {
+   "ore": {
+    "tetrium": 19.0
+   },
+   "machine_seconds": {
+    "Crusher": 40.0,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 361.9047619047619
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 180.95238095238096,
+   "mining_h": 0.023989898989898985,
+   "vanilla": {
+    "blaze_powder": 4.0,
+    "redstone": 2.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 18.0
+   }
+  },
+  "cyan_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "cyan_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "cyan_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "cyan_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "cyan_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "cyan_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "decoy_power_base": {
+   "ore": {
+    "tetrium": 35.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 85.71428571428571,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 666.6666666666666,
+    "Magnetic Centrifuge": 135.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 333.3333333333333,
+   "mining_h": 0.056818181818181816,
+   "vanilla": {
+    "copper_ingot": 6.0,
+    "redstone_block": 1.0
+   },
+   "extra": {
+    "rf": 324000.0
+   },
+   "surplus": {
+    "tetrium_slag": 33.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 1.0
+   }
+  },
+  "decoy_totem": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 37.0,
+    "magnatite": 21.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 2295.0,
+    "Illyrium Crucible": 571.4285714285713,
+    "Illyrium Refinery": 457.1428571428571,
+    "Crusher": 80.0,
+    "Furnace": 40.0,
+    "Combination Forge": 57.14285714285714,
+    "Tetrium Crucible": 704.7619047619047
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 2295.0,
+   "mining_h": 0.1856060606060606,
+   "vanilla": {
+    "gold_ingot": 2.0,
+    "redstone": 8.0,
+    "copper_ingot": 4.0
+   },
+   "extra": {
+    "rf": 15228000.0,
+    "lava_mb": 1900.0,
+    "water_mb": 2000.0,
+    "filter_uses": 4.0
+   },
+   "surplus": {
+    "tetrium_slag": 25.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 19.0
+   }
+  },
+  "diamond_coin_blank": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {
+    "diamond": 4.0,
+    "gold_ingot": 4.0,
+    "copper_ingot": 4.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 9.0
+   }
+  },
+  "diamond_filter": {
+   "ore": {},
+   "machine_seconds": {},
+   "latency_s": 0.0,
+   "wall_s": 0.0,
+   "mining_h": 0.0,
+   "vanilla": {
+    "diamond": 4.0,
+    "cobweb": 5.0
+   },
+   "extra": {},
+   "surplus": {}
+  },
+  "dirty_illyrium_dust": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 2.0
+   },
+   "machine_seconds": {
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 86.19047619047619,
+   "wall_s": 86.19047619047619,
+   "mining_h": 0.015151515151515152,
+   "vanilla": {},
+   "extra": {
+    "lava_mb": 237.5
+   },
+   "surplus": {
+    "tetrium_nugget": 4.0
+   }
+  },
+  "dirty_illyrium_ingot": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 2.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 57.14285714285714,
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 76.19047619047619,
+   "wall_s": 76.19047619047619,
+   "mining_h": 0.015151515151515152,
+   "vanilla": {},
+   "extra": {
+    "lava_mb": 237.5
+   },
+   "surplus": {
+    "tetrium_nugget": 4.0
+   }
+  },
+  "drive_motor": {
+   "ore": {
+    "tetrium": 6.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 114.28571428571428
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 57.14285714285714,
+   "mining_h": 0.007575757575757575,
+   "vanilla": {
+    "copper_ingot": 1.5,
+    "iron_ingot": 1.0,
+    "redstone": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 6.0
+   }
+  },
+  "factory_blank_hatch": {
+   "ore": {
+    "tetrium": 19.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 42.857142857142854,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 361.9047619047619
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 180.95238095238096,
+   "mining_h": 0.023989898989898985,
+   "vanilla": {
+    "hopper": 1.0,
+    "dried_kelp": 2.0,
+    "copper_ingot": 1.0,
+    "iron_ingot": 0.6666666666666666,
+    "redstone": 0.6666666666666666
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.6666666666666643,
+    "tetrium_slag": 17.0
+   }
+  },
+  "factory_frame": {
+   "ore": {
+    "tetrium": 19.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 49.99999999999999,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 361.9047619047619
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 180.95238095238096,
+   "mining_h": 0.023989898989898985,
+   "vanilla": {
+    "glass": 0.5,
+    "dried_kelp": 1.0,
+    "copper_ingot": 0.5,
+    "iron_ingot": 0.3333333333333333,
+    "redstone": 0.3333333333333333
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.8333333333333286,
+    "tetrium_slag": 18.0
+   }
+  },
+  "factory_motivator": {
+   "ore": {
+    "illyrium": 5.0,
+    "tetrium": 36.0
+   },
+   "machine_seconds": {
+    "Illyrium Refinery": 571.4285714285713,
+    "Crusher": 90.0,
+    "Illyrium Crucible": 628.5714285714286,
+    "Furnace": 10.0,
+    "Combination Forge": 42.857142857142854,
+    "Tetrium Crucible": 685.7142857142857
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 628.5714285714286,
+   "mining_h": 0.10858585858585858,
+   "vanilla": {
+    "amethyst_shard": 4.0,
+    "copper_ingot": 3.0,
+    "redstone": 6.0
+   },
+   "extra": {
+    "water_mb": 2500.0,
+    "filter_uses": 5.0,
+    "lava_mb": 2137.5
+   },
+   "surplus": {
+    "tetrium_slag": 25.0
+   }
+  },
+  "factory_power_port": {
+   "ore": {
+    "tetrium": 33.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 85.71428571428571,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 628.5714285714286
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 314.2857142857143,
+   "mining_h": 0.041666666666666664,
+   "vanilla": {
+    "copper_ingot": 1.5,
+    "redstone_block": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 31.0
+   }
+  },
+  "factory_press": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 48.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 114.28571428571428,
+    "Furnace": 20.0,
+    "Illyrium Crucible": 114.28571428571428,
+    "Tetrium Crucible": 914.2857142857142
+   },
+   "latency_s": 76.19047619047619,
+   "wall_s": 457.1428571428571,
+   "mining_h": 0.08585858585858586,
+   "vanilla": {
+    "piston": 1.0,
+    "copper_ingot": 3.0,
+    "iron_ingot": 2.0,
+    "redstone": 2.0,
+    "diamond": 1.0
+   },
+   "extra": {
+    "lava_mb": 475.0
+   },
+   "surplus": {
+    "tetrium_slag": 42.0
+   }
+  },
+  "fatigue_charge": {
+   "ore": {
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 180.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 180.0,
+   "mining_h": 0.016835016835016835,
+   "vanilla": {
+    "prismarine_shard": 1.0
+   },
+   "extra": {
+    "rf": 432000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 10.0
+   }
+  },
+  "gold_coin_blank": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {
+    "gold_ingot": 4.0,
+    "copper_ingot": 4.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 9.0
+   }
+  },
+  "gray_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "gray_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "gray_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "gray_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "gray_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "gray_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "green_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "green_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "green_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "green_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "green_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "green_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "hex_charge": {
+   "ore": {
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 180.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 180.0,
+   "mining_h": 0.016835016835016835,
+   "vanilla": {
+    "fermented_spider_eye": 1.0
+   },
+   "extra": {
+    "rf": 432000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 10.0
+   }
+  },
+  "illyrium_casing": {
+   "ore": {
+    "tetrium": 7.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 21.428571428571427,
+    "Furnace": 5.0,
+    "Tetrium Crucible": 133.33333333333334
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 66.66666666666667,
+   "mining_h": 0.008838383838383838,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 6.5
+   }
+  },
+  "illyrium_coin_blank": {
+   "ore": {
+    "illyrium": 9.0,
+    "tetrium": 50.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 1285.7142857142856,
+    "Illyrium Refinery": 1028.5714285714284,
+    "Crusher": 180.0,
+    "Tetrium Crucible": 952.3809523809524
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 1285.7142857142856,
+   "mining_h": 0.17676767676767677,
+   "vanilla": {
+    "netherite_scrap": 4.0,
+    "diamond": 4.0,
+    "gold_ingot": 4.0,
+    "copper_ingot": 4.0
+   },
+   "extra": {
+    "lava_mb": 4275.0,
+    "water_mb": 4500.0,
+    "filter_uses": 9.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 32.0
+   }
+  },
+  "illyrium_core": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 18.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 57.14285714285714,
+    "Tetrium Crucible": 342.85714285714283
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 171.42857142857142,
+   "mining_h": 0.03535353535353535,
+   "vanilla": {
+    "diamond": 4.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 18.0
+   }
+  },
+  "illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {},
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "illyrium_crucible": {
+   "ore": {
+    "tetrium": 46.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 85.71428571428571,
+    "Furnace": 60.0,
+    "Crusher": 40.0,
+    "Tetrium Crucible": 876.1904761904761
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 438.0952380952381,
+   "mining_h": 0.05808080808080807,
+   "vanilla": {
+    "glass_pane": 1.0,
+    "magma_block": 1.5,
+    "blaze_powder": 4.0,
+    "redstone": 2.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 40.0
+   }
+  },
+  "illyrium_filter": {
+   "ore": {
+    "illyrium": 36.0,
+    "tetrium": 162.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 5142.857142857142,
+    "Illyrium Refinery": 4114.285714285714,
+    "Crusher": 720.0,
+    "Tetrium Crucible": 3085.714285714286
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 5142.857142857142,
+   "mining_h": 0.6590909090909091,
+   "vanilla": {
+    "cobweb": 5.0
+   },
+   "extra": {
+    "lava_mb": 17100.0,
+    "water_mb": 18000.0,
+    "filter_uses": 36.0
+   },
+   "surplus": {
+    "tetrium_slag": 90.0
+   }
+  },
+  "illyrium_forge_upgrade": {
+   "ore": {
+    "illyrium": 67.0,
+    "tetrium": 302.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 9571.428571428572,
+    "Illyrium Refinery": 7657.142857142856,
+    "Crusher": 1340.0,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 5752.380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 9571.428571428572,
+   "mining_h": 1.227272727272727,
+   "vanilla": {
+    "redstone": 6.0,
+    "copper_ingot": 2.0,
+    "iron_ingot": 1.0
+   },
+   "extra": {
+    "lava_mb": 31825.0,
+    "water_mb": 33500.0,
+    "filter_uses": 67.0
+   },
+   "surplus": {
+    "tetrium_slag": 167.0
+   }
+  },
+  "illyrium_glass": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 19.047619047619047,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {
+    "glass": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 1.0
+   }
+  },
+  "illyrium_ingot": {
+   "ore": {
+    "illyrium": 9.0,
+    "tetrium": 41.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 1285.7142857142856,
+    "Illyrium Refinery": 1028.5714285714284,
+    "Crusher": 180.0,
+    "Tetrium Crucible": 780.952380952381
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 1285.7142857142856,
+   "mining_h": 0.1654040404040404,
+   "vanilla": {},
+   "extra": {
+    "lava_mb": 4275.0,
+    "water_mb": 4500.0,
+    "filter_uses": 9.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 23.0
+   }
+  },
+  "illyrium_nugget": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 5.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 142.85714285714283,
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 20.0,
+    "Tetrium Crucible": 95.23809523809524
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.018939393939393936,
+   "vanilla": {},
+   "extra": {
+    "lava_mb": 475.0,
+    "water_mb": 500.0,
+    "filter_uses": 1.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 3.0
+   }
+  },
+  "illyrium_processor": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 19.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 571.4285714285713,
+    "Illyrium Refinery": 457.1428571428571,
+    "Crusher": 80.0,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 361.9047619047619
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 571.4285714285713,
+   "mining_h": 0.07449494949494949,
+   "vanilla": {
+    "redstone": 6.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {
+    "lava_mb": 1900.0,
+    "water_mb": 2000.0,
+    "filter_uses": 4.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 10.0
+   }
+  },
+  "illyrium_refinery": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 40.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 85.71428571428571,
+    "Crusher": 40.0,
+    "Illyrium Crucible": 228.57142857142856,
+    "Furnace": 30.0,
+    "Tetrium Crucible": 761.9047619047619
+   },
+   "latency_s": 86.19047619047619,
+   "wall_s": 380.95238095238096,
+   "mining_h": 0.101010101010101,
+   "vanilla": {
+    "glass_pane": 1.0,
+    "copper_ingot": 5.0,
+    "iron_ingot": 2.0,
+    "redstone": 4.0,
+    "lapis_lazuli": 4.0
+   },
+   "extra": {
+    "lava_mb": 950.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 29.0
+   }
+  },
+  "iron_filter": {
+   "ore": {},
+   "machine_seconds": {},
+   "latency_s": 0.0,
+   "wall_s": 0.0,
+   "mining_h": 0.0,
+   "vanilla": {
+    "iron_ingot": 4.0,
+    "cobweb": 5.0
+   },
+   "extra": {},
+   "surplus": {}
+  },
+  "item_hatch": {
+   "ore": {
+    "tetrium": 23.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 71.42857142857142,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 438.0952380952381
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 219.04761904761904,
+   "mining_h": 0.029040404040404037,
+   "vanilla": {
+    "hopper": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 21.0
+   }
+  },
+  "lava_pylon": {
+   "ore": {
+    "tetrium": 14.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 42.857142857142854,
+    "Furnace": 40.0,
+    "Tetrium Crucible": 266.6666666666667
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 133.33333333333334,
+   "mining_h": 0.017676767676767676,
+   "vanilla": {
+    "magma_block": 1.5
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 10.0
+   }
+  },
+  "light_blue_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "light_blue_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "light_blue_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "light_blue_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "light_blue_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "light_blue_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "light_gray_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "light_gray_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "light_gray_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "light_gray_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "light_gray_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "light_gray_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "lime_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "lime_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "lime_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "lime_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "lime_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "lime_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "machine_chassis": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 28.57142857142857,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 7.0
+   }
+  },
+  "magenta_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "magenta_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "magenta_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "magenta_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "magenta_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "magenta_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {},
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "magnatite_ingot": {
+   "ore": {
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 135.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 135.0,
+   "mining_h": 0.012626262626262626,
+   "vanilla": {},
+   "extra": {
+    "rf": 324000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 3.0
+   }
+  },
+  "magnatite_nugget": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {},
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 2.5,
+    "carbon_dust": 1.0
+   }
+  },
+  "magnet_core": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 19.0,
+    "magnatite": 16.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 2070.0,
+    "Illyrium Crucible": 571.4285714285713,
+    "Illyrium Refinery": 457.1428571428571,
+    "Crusher": 80.0,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 361.9047619047619
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 2070.0,
+   "mining_h": 0.14183501683501681,
+   "vanilla": {
+    "redstone": 6.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {
+    "rf": 14688000.0,
+    "lava_mb": 1900.0,
+    "water_mb": 2000.0,
+    "filter_uses": 4.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 10.0,
+    "magnatite_nugget": 2.0,
+    "carbon_dust": 14.0
+   }
+  },
+  "magnetic_centrifuge": {
+   "ore": {
+    "tetrium": 31.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 57.14285714285714,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 590.4761904761905
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 295.23809523809524,
+   "mining_h": 0.03914141414141414,
+   "vanilla": {
+    "glass_pane": 1.0,
+    "copper_ingot": 5.0,
+    "iron_ingot": 2.0,
+    "redstone": 4.0,
+    "diamond": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 30.0
+   }
+  },
+  "mint_control_circuit": {
+   "ore": {
+    "tetrium": 19.0
+   },
+   "machine_seconds": {
+    "Crusher": 40.0,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 361.9047619047619
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 180.95238095238096,
+   "mining_h": 0.023989898989898985,
+   "vanilla": {
+    "gold_ingot": 4.0,
+    "redstone": 2.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 18.0
+   }
+  },
+  "netherite_coin_blank": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {
+    "netherite_scrap": 4.0,
+    "diamond": 4.0,
+    "gold_ingot": 4.0,
+    "copper_ingot": 4.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 9.0
+   }
+  },
+  "netherite_filter": {
+   "ore": {},
+   "machine_seconds": {},
+   "latency_s": 0.0,
+   "wall_s": 0.0,
+   "mining_h": 0.0,
+   "vanilla": {
+    "netherite_ingot": 4.0,
+    "cobweb": 5.0
+   },
+   "extra": {},
+   "surplus": {}
+  },
+  "orange_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "orange_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "orange_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "orange_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "orange_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "orange_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "pink_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "pink_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "pink_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "pink_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "pink_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "pink_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "plasma_battery_1": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 14.0,
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 28.57142857142857,
+    "Magnetic Centrifuge": 240.0,
+    "Illyrium Refinery": 228.57142857142856,
+    "Crusher": 20.0,
+    "Illyrium Crucible": 114.28571428571428,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 266.6666666666667
+   },
+   "latency_s": 230.47619047619048,
+   "wall_s": 240.0,
+   "mining_h": 0.05976430976430976,
+   "vanilla": {
+    "glass": 1.0,
+    "amethyst_shard": 8.0,
+    "copper_ingot": 5.0
+   },
+   "extra": {
+    "water_mb": 1000.0,
+    "filter_uses": 2.0,
+    "lava_mb": 475.0,
+    "rf": 432000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 8.0,
+    "magnatite_nugget": 3.0,
+    "carbon_dust": 1.0
+   }
+  },
+  "plasma_battery_2": {
+   "ore": {
+    "illyrium": 3.0,
+    "tetrium": 15.0,
+    "magnatite": 14.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 720.0,
+    "Illyrium Refinery": 342.85714285714283,
+    "Crusher": 30.0,
+    "Illyrium Crucible": 171.42857142857142,
+    "Combination Forge": 28.57142857142857,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 285.7142857142857
+   },
+   "latency_s": 230.47619047619048,
+   "wall_s": 720.0,
+   "mining_h": 0.11574074074074073,
+   "vanilla": {
+    "amethyst_shard": 12.0,
+    "glass": 3.0,
+    "copper_ingot": 5.0,
+    "quartz": 1.0
+   },
+   "extra": {
+    "water_mb": 1500.0,
+    "filter_uses": 3.0,
+    "lava_mb": 712.5,
+    "rf": 1512000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 7.0,
+    "magnatite_nugget": 1.0,
+    "carbon_dust": 11.0
+   }
+  },
+  "plasma_battery_3": {
+   "ore": {
+    "illyrium": 40.0,
+    "tetrium": 178.0,
+    "magnatite": 14.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 5371.428571428571,
+    "Illyrium Refinery": 4571.428571428572,
+    "Crusher": 760.0,
+    "Magnetic Centrifuge": 750.0,
+    "Combination Forge": 28.57142857142857,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 3390.4761904761904
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 5371.428571428571,
+   "mining_h": 0.7887205387205386,
+   "vanilla": {
+    "amethyst_shard": 16.0,
+    "glass": 5.0,
+    "copper_ingot": 5.0,
+    "quartz": 1.0,
+    "ender_pearl": 1.0
+   },
+   "extra": {
+    "lava_mb": 18050.0,
+    "water_mb": 20000.0,
+    "filter_uses": 40.0,
+    "rf": 1512000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 96.0,
+    "carbon_dust": 11.0
+   }
+  },
+  "plasma_battery_4": {
+   "ore": {
+    "illyrium": 41.0,
+    "tetrium": 179.0,
+    "magnatite": 20.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 1500.0,
+    "Illyrium Refinery": 4685.714285714286,
+    "Crusher": 770.0,
+    "Illyrium Crucible": 5428.571428571428,
+    "Combination Forge": 28.57142857142857,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 3409.5238095238096
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 5428.571428571428,
+   "mining_h": 0.8278619528619527,
+   "vanilla": {
+    "amethyst_shard": 20.0,
+    "glass": 7.0,
+    "copper_ingot": 5.0,
+    "quartz": 1.0,
+    "ender_pearl": 1.0,
+    "netherite_ingot": 2.0,
+    "shulker_shell": 1.0
+   },
+   "extra": {
+    "rf": 6480000.0,
+    "water_mb": 20500.0,
+    "filter_uses": 41.0,
+    "lava_mb": 18287.5
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 95.0,
+    "magnatite_nugget": 2.0,
+    "carbon_dust": 17.0
+   }
+  },
+  "plasma_extractor": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 22.0,
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 57.14285714285714,
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Furnace": 40.0,
+    "Tetrium Crucible": 419.04761904761904,
+    "Magnetic Centrifuge": 180.0
+   },
+   "latency_s": 200.47619047619048,
+   "wall_s": 209.52380952380952,
+   "mining_h": 0.057239057239057235,
+   "vanilla": {
+    "amethyst_shard": 4.0,
+    "copper_ingot": 5.0
+   },
+   "extra": {
+    "water_mb": 500.0,
+    "filter_uses": 1.0,
+    "lava_mb": 237.5,
+    "rf": 432000.0
+   },
+   "surplus": {
+    "tetrium_slag": 16.0,
+    "magnatite_nugget": 5.0
+   }
+  },
+  "plasma_interface": {
+   "ore": {
+    "tetrium": 4.0
+   },
+   "machine_seconds": {
+    "Furnace": 25.0,
+    "Tetrium Crucible": 76.19047619047619
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 38.095238095238095,
+   "mining_h": 0.00505050505050505,
+   "vanilla": {
+    "copper_ingot": 1.75,
+    "redstone": 1.0,
+    "amethyst_shard": 0.5
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.5,
+    "tetrium_slag": 1.5
+   }
+  },
+  "plasma_repeater": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 7.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Refinery": 228.57142857142856,
+    "Crusher": 30.0,
+    "Illyrium Crucible": 199.99999999999997,
+    "Tetrium Crucible": 133.33333333333334
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.04671717171717171,
+   "vanilla": {
+    "amethyst_shard": 4.0,
+    "blaze_powder": 2.0
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "water_mb": 1000.0,
+    "filter_uses": 2.0,
+    "lava_mb": 712.5
+   },
+   "surplus": {
+    "tetrium_nugget": 1.25,
+    "tetrium_slag": 3.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 0.5
+   }
+  },
+  "plasma_valve": {
+   "ore": {
+    "tetrium": 20.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 57.14285714285714,
+    "Tetrium Crucible": 380.95238095238096,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 190.47619047619048,
+   "mining_h": 0.02946127946127946,
+   "vanilla": {
+    "copper_ingot": 1.0,
+    "lever": 1.0,
+    "redstone": 1.0
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.25,
+    "tetrium_slag": 20.0,
+    "magnatite_nugget": 3.5,
+    "carbon_dust": 0.5
+   }
+  },
+  "poison_charge": {
+   "ore": {
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 180.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 180.0,
+   "mining_h": 0.016835016835016835,
+   "vanilla": {
+    "spider_eye": 1.0
+   },
+   "extra": {
+    "rf": 432000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 10.0
+   }
+  },
+  "power_cell_1": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 13.0,
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 210.0,
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Combination Forge": 28.57142857142857,
+    "Tetrium Crucible": 247.61904761904762
+   },
+   "latency_s": 230.47619047619048,
+   "wall_s": 230.47619047619048,
+   "mining_h": 0.045875420875420875,
+   "vanilla": {
+    "amethyst_shard": 4.0,
+    "glass_bottle": 1.0,
+    "copper_ingot": 5.0
+   },
+   "extra": {
+    "water_mb": 500.0,
+    "filter_uses": 1.0,
+    "lava_mb": 237.5,
+    "rf": 432000.0
+   },
+   "surplus": {
+    "tetrium_slag": 11.0,
+    "magnatite_nugget": 4.0
+   }
+  },
+  "power_cell_2": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 13.0,
+    "magnatite": 19.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 915.0,
+    "Illyrium Refinery": 228.57142857142856,
+    "Crusher": 20.0,
+    "Illyrium Crucible": 114.28571428571428,
+    "Combination Forge": 28.57142857142857,
+    "Tetrium Crucible": 247.61904761904762
+   },
+   "latency_s": 230.47619047619048,
+   "wall_s": 915.0,
+   "mining_h": 0.12163299663299662,
+   "vanilla": {
+    "amethyst_shard": 8.0,
+    "glass_bottle": 1.0,
+    "copper_ingot": 5.0,
+    "quartz": 1.0
+   },
+   "extra": {
+    "water_mb": 1000.0,
+    "filter_uses": 2.0,
+    "lava_mb": 475.0,
+    "rf": 2052000.0
+   },
+   "surplus": {
+    "tetrium_slag": 9.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 15.0
+   }
+  },
+  "power_cell_3": {
+   "ore": {
+    "illyrium": 57.0,
+    "tetrium": 256.0,
+    "magnatite": 19.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 7885.714285714284,
+    "Illyrium Refinery": 6514.285714285715,
+    "Crusher": 1110.0,
+    "Magnetic Centrifuge": 945.0,
+    "Combination Forge": 28.57142857142857,
+    "Tetrium Crucible": 4876.190476190476
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 7885.714285714284,
+   "mining_h": 1.1228956228956228,
+   "vanilla": {
+    "amethyst_shard": 12.0,
+    "glass_bottle": 1.0,
+    "copper_ingot": 5.0,
+    "quartz": 1.0,
+    "ender_pearl": 1.0
+   },
+   "extra": {
+    "lava_mb": 26362.5,
+    "water_mb": 28500.0,
+    "filter_uses": 57.0,
+    "rf": 2052000.0
+   },
+   "surplus": {
+    "tetrium_slag": 142.0,
+    "magnatite_nugget": 0.5,
+    "carbon_dust": 15.0
+   }
+  },
+  "press_die": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 28.57142857142857,
+    "Illyrium Crucible": 114.28571428571428,
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 76.19047619047619,
+   "wall_s": 114.28571428571428,
+   "mining_h": 0.036616161616161616,
+   "vanilla": {
+    "diamond": 1.0
+   },
+   "extra": {
+    "lava_mb": 475.0
+   },
+   "surplus": {
+    "tetrium_slag": 5.0
+   }
+  },
+  "projector_base": {
+   "ore": {
+    "tetrium": 25.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 57.14285714285714,
+    "Furnace": 40.0,
+    "Tetrium Crucible": 476.1904761904762,
+    "Magnetic Centrifuge": 135.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 238.0952380952381,
+   "mining_h": 0.04419191919191919,
+   "vanilla": {
+    "glass": 1.0,
+    "copper_ingot": 5.0
+   },
+   "extra": {
+    "rf": 324000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.25,
+    "tetrium_slag": 21.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 0.5
+   }
+  },
+  "pure_illyrium_dust": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 2.0
+   },
+   "machine_seconds": {
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 200.47619047619048,
+   "wall_s": 200.47619047619048,
+   "mining_h": 0.015151515151515152,
+   "vanilla": {},
+   "extra": {
+    "water_mb": 500.0,
+    "filter_uses": 1.0,
+    "lava_mb": 237.5
+   },
+   "surplus": {
+    "tetrium_nugget": 4.0
+   }
+  },
+  "purple_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "purple_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "purple_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "purple_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "purple_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "purple_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "range_coil_mk1": {
+   "ore": {
+    "tetrium": 6.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 114.28571428571428,
+    "Magnetic Centrifuge": 135.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 135.0,
+   "mining_h": 0.0202020202020202,
+   "vanilla": {
+    "copper_ingot": 1.5
+   },
+   "extra": {
+    "rf": 324000.0
+   },
+   "surplus": {
+    "tetrium_slag": 6.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "range_coil_mk2": {
+   "ore": {
+    "tetrium": 6.0,
+    "magnatite": 11.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 1170.0,
+    "Tetrium Crucible": 114.28571428571428
+   },
+   "latency_s": 270.0,
+   "wall_s": 1170.0,
+   "mining_h": 0.05387205387205387,
+   "vanilla": {
+    "copper_ingot": 1.5
+   },
+   "extra": {
+    "rf": 7668000.0
+   },
+   "surplus": {
+    "tetrium_slag": 6.0,
+    "magnatite_nugget": 2.5,
+    "carbon_dust": 9.0
+   }
+  },
+  "range_coil_mk3": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 24.0,
+    "magnatite": 18.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 571.4285714285713,
+    "Illyrium Refinery": 457.1428571428571,
+    "Crusher": 80.0,
+    "Magnetic Centrifuge": 2160.0,
+    "Tetrium Crucible": 457.1428571428571
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 2160.0,
+   "mining_h": 0.15656565656565657,
+   "vanilla": {
+    "copper_ingot": 1.5
+   },
+   "extra": {
+    "lava_mb": 1900.0,
+    "water_mb": 2000.0,
+    "filter_uses": 4.0,
+    "rf": 14904000.0
+   },
+   "surplus": {
+    "tetrium_slag": 16.0,
+    "carbon_dust": 15.0
+   }
+  },
+  "red_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "red_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "red_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "red_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "red_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "red_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "refinery_control_circuit": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Crusher": 40.0,
+    "Illyrium Crucible": 228.57142857142856,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 86.19047619047619,
+   "wall_s": 228.57142857142856,
+   "mining_h": 0.061868686868686865,
+   "vanilla": {
+    "lapis_lazuli": 4.0,
+    "redstone": 2.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {
+    "lava_mb": 950.0
+   },
+   "surplus": {
+    "tetrium_nugget": 17.0
+   }
+  },
+  "refinery_pump": {
+   "ore": {
+    "tetrium": 38.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 99.99999999999999,
+    "Furnace": 20.0,
+    "Tetrium Crucible": 723.8095238095239
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 361.9047619047619,
+   "mining_h": 0.04797979797979797,
+   "vanilla": {
+    "copper_ingot": 1.5,
+    "iron_ingot": 1.0,
+    "redstone": 1.0,
+    "bucket": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 36.0
+   }
+  },
+  "reinforced_casing": {
+   "ore": {
+    "tetrium": 18.0,
+    "magnatite": 13.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 57.14285714285714,
+    "Magnetic Centrifuge": 810.0,
+    "Tetrium Crucible": 342.85714285714283
+   },
+   "latency_s": 270.0,
+   "wall_s": 810.0,
+   "mining_h": 0.07744107744107744,
+   "vanilla": {},
+   "extra": {
+    "rf": 3564000.0
+   },
+   "surplus": {
+    "tetrium_slag": 18.0,
+    "magnatite_nugget": 0.5,
+    "carbon_dust": 13.0
+   }
+  },
+  "resonance_crystal": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 2.0
+   },
+   "machine_seconds": {
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 200.47619047619048,
+   "wall_s": 200.47619047619048,
+   "mining_h": 0.015151515151515152,
+   "vanilla": {
+    "amethyst_shard": 4.0
+   },
+   "extra": {
+    "water_mb": 500.0,
+    "filter_uses": 1.0,
+    "lava_mb": 237.5
+   },
+   "surplus": {
+    "tetrium_nugget": 4.0
+   }
+  },
+  "rf_upgrade_mk1": {
+   "ore": {
+    "tetrium": 11.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 104.76190476190476,
+   "mining_h": 0.013888888888888888,
+   "vanilla": {
+    "copper_ingot": 5.5,
+    "redstone_block": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 11.0
+   }
+  },
+  "rf_upgrade_mk2": {
+   "ore": {
+    "tetrium": 22.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 419.04761904761904
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 209.52380952380952,
+   "mining_h": 0.027777777777777776,
+   "vanilla": {
+    "gold_ingot": 2.0,
+    "copper_ingot": 1.0,
+    "redstone_block": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 22.0
+   }
+  },
+  "rf_upgrade_mk3": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 31.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 285.71428571428567,
+    "Illyrium Refinery": 228.57142857142856,
+    "Crusher": 40.0,
+    "Tetrium Crucible": 590.4761904761905
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 295.23809523809524,
+   "mining_h": 0.06439393939393939,
+   "vanilla": {
+    "copper_ingot": 1.0,
+    "redstone_block": 1.0
+   },
+   "extra": {
+    "lava_mb": 950.0,
+    "water_mb": 1000.0,
+    "filter_uses": 2.0
+   },
+   "surplus": {
+    "tetrium_slag": 27.0
+   }
+  },
+  "score_screen": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Furnace": 5.0,
+    "Combination Forge": 21.428571428571427,
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {
+    "glass_pane": 1.5,
+    "copper_ingot": 1.5,
+    "redstone": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 8.5
+   }
+  },
+  "shatter_blank": {
+   "ore": {
+    "tetrium": 9.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 171.42857142857142
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 85.71428571428571,
+   "mining_h": 0.011363636363636364,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 9.0
+   }
+  },
+  "shatter_coin_factory": {
+   "ore": {
+    "tetrium": 50.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 85.71428571428571,
+    "Crusher": 40.0,
+    "Furnace": 30.0,
+    "Tetrium Crucible": 952.3809523809524
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 476.1904761904762,
+   "mining_h": 0.06313131313131314,
+   "vanilla": {
+    "glass_pane": 1.0,
+    "copper_ingot": 3.0,
+    "gold_ingot": 4.0,
+    "redstone": 2.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 47.0
+   }
+  },
+  "slag_brick": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Furnace": 10.0,
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 29.047619047619047,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 2.0
+   }
+  },
+  "tank_casing": {
+   "ore": {
+    "tetrium": 6.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 17.857142857142854,
+    "Furnace": 2.5,
+    "Tetrium Crucible": 114.28571428571428
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 57.14285714285714,
+   "mining_h": 0.007575757575757575,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 0.75,
+    "tetrium_slag": 5.75
+   }
+  },
+  "tank_glass": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 1.7857142857142856,
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 33.33333333333333,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {
+    "glass": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 0.75,
+    "tetrium_slag": 1.0
+   }
+  },
+  "tank_port": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 12.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 75.0,
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Combination Forge": 32.14285714285714,
+    "Furnace": 2.5,
+    "Tetrium Crucible": 228.57142857142856
+   },
+   "latency_s": 230.47619047619048,
+   "wall_s": 230.47619047619048,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "amethyst_shard": 4.0
+   },
+   "extra": {
+    "water_mb": 500.0,
+    "filter_uses": 1.0,
+    "lava_mb": 237.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_slag": 9.75,
+    "magnatite_nugget": 2.5,
+    "carbon_dust": 0.5
+   }
+  },
+  "tetrium_coil": {
+   "ore": {
+    "tetrium": 2.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 19.047619047619047,
+   "mining_h": 0.002525252525252525,
+   "vanilla": {
+    "copper_ingot": 0.5
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_slag": 2.0
+   }
+  },
+  "tetrium_core_cable": {
+   "ore": {
+    "tetrium": 1.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 19.047619047619047,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.005471380471380471,
+   "vanilla": {},
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.125,
+    "tetrium_slag": 1.0,
+    "magnatite_nugget": 3.5,
+    "carbon_dust": 0.75
+   }
+  },
+  "tetrium_crucible": {
+   "ore": {},
+   "machine_seconds": {},
+   "latency_s": 0.0,
+   "wall_s": 0.0,
+   "mining_h": 0.0,
+   "vanilla": {
+    "bricks": 5.0,
+    "furnace": 1.0,
+    "iron_ingot": 3.0
+   },
+   "extra": {},
+   "surplus": {}
+  },
+  "tetrium_dust": {
+   "ore": {
+    "tetrium": 5.0
+   },
+   "machine_seconds": {
+    "Crusher": 10.0,
+    "Tetrium Crucible": 95.23809523809524
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 47.61904761904762,
+   "mining_h": 0.006313131313131312,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 5.0
+   }
+  },
+  "tetrium_glass": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 19.047619047619047,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {
+    "glass": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.875,
+    "tetrium_slag": 1.0
+   }
+  },
+  "tetrium_ingot": {
+   "ore": {
+    "tetrium": 5.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 95.23809523809524
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 47.61904761904762,
+   "mining_h": 0.006313131313131312,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 5.0
+   }
+  },
+  "tetrium_nugget": {
+   "ore": {
+    "tetrium": 1.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 19.047619047619047,
+   "mining_h": 0.0012626262626262625,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 1.0
+   }
+  },
+  "thermal_lining": {
+   "ore": {
+    "tetrium": 2.0
+   },
+   "machine_seconds": {
+    "Furnace": 15.0,
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 29.047619047619047,
+   "wall_s": 29.047619047619047,
+   "mining_h": 0.002525252525252525,
+   "vanilla": {
+    "magma_block": 0.75
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 4.0,
+    "tetrium_slag": 0.5
+   }
+  },
+  "totem_compass": {
+   "ore": {
+    "illyrium": 9.0,
+    "tetrium": 59.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 1285.7142857142856,
+    "Illyrium Refinery": 1028.5714285714284,
+    "Crusher": 180.0,
+    "Tetrium Crucible": 1123.8095238095239
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 1285.7142857142856,
+   "mining_h": 0.18813131313131312,
+   "vanilla": {},
+   "extra": {
+    "lava_mb": 4275.0,
+    "water_mb": 4500.0,
+    "filter_uses": 9.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 41.0
+   }
+  },
+  "totem_projector": {
+   "ore": {
+    "illyrium": 6.0,
+    "tetrium": 32.0,
+    "magnatite": 6.0
+   },
+   "machine_seconds": {
+    "Illyrium Refinery": 685.7142857142857,
+    "Crusher": 100.0,
+    "Illyrium Crucible": 685.7142857142857,
+    "Magnetic Centrifuge": 720.0,
+    "Furnace": 30.0,
+    "Combination Forge": 42.857142857142854,
+    "Tetrium Crucible": 609.5238095238095
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 720.0,
+   "mining_h": 0.1414141414141414,
+   "vanilla": {
+    "amethyst_shard": 8.0,
+    "redstone": 6.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {
+    "water_mb": 3000.0,
+    "filter_uses": 6.0,
+    "lava_mb": 2375.0,
+    "rf": 4968000.0
+   },
+   "surplus": {
+    "tetrium_slag": 17.0,
+    "magnatite_nugget": 3.0,
+    "carbon_dust": 4.0
+   }
+  },
+  "trap_amplifier": {
+   "ore": {
+    "tetrium": 1.0,
+    "magnatite": 11.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 1395.0,
+    "Furnace": 10.0,
+    "Tetrium Crucible": 19.047619047619047
+   },
+   "latency_s": 270.0,
+   "wall_s": 1395.0,
+   "mining_h": 0.04755892255892256,
+   "vanilla": {
+    "redstone": 5.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {
+    "rf": 9828000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "magnatite_nugget": 2.5,
+    "carbon_dust": 10.0
+   }
+  },
+  "warp_charge": {
+   "ore": {
+    "magnatite": 4.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 180.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 180.0,
+   "mining_h": 0.016835016835016835,
+   "vanilla": {
+    "ender_pearl": 1.0
+   },
+   "extra": {
+    "rf": 432000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 10.0
+   }
+  },
+  "wave_emitter": {
+   "ore": {
+    "illyrium": 5.0,
+    "tetrium": 28.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 28.57142857142857,
+    "Illyrium Refinery": 571.4285714285713,
+    "Crusher": 90.0,
+    "Illyrium Crucible": 628.5714285714286,
+    "Furnace": 10.0,
+    "Magnetic Centrifuge": 360.0,
+    "Tetrium Crucible": 533.3333333333334
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 628.5714285714286,
+   "mining_h": 0.1111111111111111,
+   "vanilla": {
+    "amethyst_shard": 4.0,
+    "blaze_rod": 2.0,
+    "redstone": 6.0,
+    "copper_ingot": 2.0
+   },
+   "extra": {
+    "water_mb": 2500.0,
+    "filter_uses": 5.0,
+    "lava_mb": 2137.5,
+    "rf": 2484000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 17.0,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 1.0
+   }
+  },
+  "white_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "white_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "white_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "white_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "white_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "white_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "wrench": {
+   "ore": {
+    "tetrium": 14.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 266.6666666666667
+   },
+   "latency_s": 19.047619047619047,
+   "wall_s": 133.33333333333334,
+   "mining_h": 0.017676767676767676,
+   "vanilla": {
+    "stick": 1.0
+   },
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 14.0
+   }
+  },
+  "yellow_charged_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 2.25,
+    "tetrium": 11.0,
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0,
+    "Illyrium Crucible": 321.4285714285714,
+    "Illyrium Refinery": 257.1428571428571,
+    "Crusher": 45.0,
+    "Tetrium Crucible": 209.52380952380952
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 360.0,
+   "mining_h": 0.05492424242424242,
+   "vanilla": {
+    "yellow_dye": 0.125
+   },
+   "extra": {
+    "rf": 2484000.0,
+    "lava_mb": 1068.75,
+    "water_mb": 1125.0,
+    "filter_uses": 2.25
+   },
+   "surplus": {
+    "tetrium_nugget": 1.75,
+    "tetrium_slag": 6.5,
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 2.0
+   }
+  },
+  "yellow_illyrium_core_cable": {
+   "ore": {
+    "illyrium": 1.5,
+    "tetrium": 7.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Illyrium Crucible": 214.28571428571428,
+    "Illyrium Refinery": 171.42857142857142,
+    "Crusher": 30.0,
+    "Tetrium Crucible": 133.33333333333334,
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 286.1904761904762,
+   "wall_s": 286.1904761904762,
+   "mining_h": 0.03198653198653199,
+   "vanilla": {
+    "yellow_dye": 0.125
+   },
+   "extra": {
+    "lava_mb": 712.5,
+    "water_mb": 750.0,
+    "filter_uses": 1.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 0.5,
+    "tetrium_slag": 4.0,
+    "magnatite_nugget": 2.8333333333333335,
+    "carbon_dust": 0.33333333333333337
+   }
+  },
+  "yellow_magnatite_core_cable": {
+   "ore": {
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 45.0
+   },
+   "latency_s": 45.0,
+   "wall_s": 45.0,
+   "mining_h": 0.004208754208754209,
+   "vanilla": {
+    "yellow_dye": 0.125
+   },
+   "extra": {
+    "rf": 108000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.625,
+    "carbon_dust": 0.75
+   }
+  },
+  "charged_magnatite_ingot": {
+   "ore": {
+    "magnatite": 3.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 360.0
+   },
+   "latency_s": 270.0,
+   "wall_s": 360.0,
+   "mining_h": 0.012626262626262626,
+   "vanilla": {},
+   "extra": {
+    "rf": 2484000.0
+   },
+   "surplus": {
+    "magnatite_nugget": 1.5,
+    "carbon_dust": 3.0
+   }
+  },
+  "charged_resonance_crystal": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 2.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 75.0,
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Tetrium Crucible": 38.095238095238095
+   },
+   "latency_s": 230.47619047619048,
+   "wall_s": 230.47619047619048,
+   "mining_h": 0.019360269360269362,
+   "vanilla": {
+    "amethyst_shard": 4.0
+   },
+   "extra": {
+    "water_mb": 500.0,
+    "filter_uses": 1.0,
+    "lava_mb": 237.5,
+    "rf": 108000.0
+   },
+   "surplus": {
+    "tetrium_nugget": 4.0,
+    "magnatite_nugget": 2.5,
+    "carbon_dust": 1.0
+   }
+  },
+  "tetrium_plate": {
+   "ore": {
+    "tetrium": 5.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 14.285714285714285,
+    "Tetrium Crucible": 95.23809523809524
+   },
+   "latency_s": 33.33333333333333,
+   "wall_s": 47.61904761904762,
+   "mining_h": 0.006313131313131312,
+   "vanilla": {},
+   "extra": {},
+   "surplus": {
+    "tetrium_nugget": 1.0,
+    "tetrium_slag": 5.0
+   }
+  }
+ },
+ "builds": {
+  "Illyrium Crucible (27 blocks)": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 298.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 885.7142857142856,
+    "Furnace": 480.0,
+    "Crusher": 40.0,
+    "Tetrium Crucible": 5676.190476190476
+   },
+   "wall_s": 2838.095238095238,
+   "mining_h": 0.3888888888888889,
+   "plates": 62.0
+  },
+  "Illyrium Refinery (14 blocks)": {
+   "ore": {
+    "illyrium": 5.0,
+    "tetrium": 173.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 485.71428571428555,
+    "Furnace": 110.0,
+    "Crusher": 40.0,
+    "Illyrium Crucible": 228.57142857142856,
+    "Tetrium Crucible": 3295.2380952380954
+   },
+   "wall_s": 1647.6190476190477,
+   "mining_h": 0.2815656565656565,
+   "plates": 34.0
+  },
+  "Magnetic Centrifuge, 1 layer (9 blocks)": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 130.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 321.42857142857144,
+    "Furnace": 75.0,
+    "Illyrium Crucible": 228.57142857142856,
+    "Tetrium Crucible": 2476.190476190476
+   },
+   "wall_s": 1238.095238095238,
+   "mining_h": 0.2146464646464646,
+   "plates": 22.5
+  },
+  "Centrifuge extra layer (9 blocks)": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 68.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 171.42857142857142,
+    "Furnace": 40.0,
+    "Illyrium Crucible": 228.57142857142856,
+    "Tetrium Crucible": 1295.2380952380952
+   },
+   "wall_s": 647.6190476190476,
+   "mining_h": 0.13636363636363635,
+   "plates": 12.0
+  },
+  "Coin Factory slice (6 blocks)": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 185.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 428.57142857142844,
+    "Furnace": 110.0,
+    "Illyrium Crucible": 114.28571428571428,
+    "Crusher": 40.0,
+    "Tetrium Crucible": 3523.809523809524
+   },
+   "wall_s": 1761.904761904762,
+   "mining_h": 0.2588383838383838,
+   "plates": 30.0
+  },
+  "Plasma hook-up (extractor, interface, 8 cables, base, projector)": {
+   "ore": {
+    "illyrium": 7.0,
+    "tetrium": 90.0,
+    "magnatite": 11.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 157.1428571428571,
+    "Illyrium Refinery": 800.0,
+    "Crusher": 110.0,
+    "Illyrium Crucible": 742.8571428571428,
+    "Furnace": 135.0,
+    "Magnetic Centrifuge": 945.0,
+    "Tetrium Crucible": 1714.2857142857142
+   },
+   "wall_s": 945.0,
+   "mining_h": 0.24831649831649832,
+   "plates": 11.0
+  },
+  "Plasma Tank 3x3x3 (20 casing, 5 glass, 1 port)": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 128.0,
+    "magnatite": 1.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 398.21428571428567,
+    "Furnace": 52.5,
+    "Magnetic Centrifuge": 75.0,
+    "Illyrium Refinery": 114.28571428571428,
+    "Crusher": 10.0,
+    "Illyrium Crucible": 57.14285714285714,
+    "Tetrium Crucible": 2438.095238095238
+   },
+   "wall_s": 1219.047619047619,
+   "mining_h": 0.17845117845117844,
+   "plates": 27.875
+  },
+  "Battery set (charger + Battery I)": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 38.0,
+    "magnatite": 6.0
+   },
+   "machine_seconds": {
+    "Furnace": 70.0,
+    "Combination Forge": 85.71428571428571,
+    "Magnetic Centrifuge": 330.0,
+    "Illyrium Refinery": 228.57142857142856,
+    "Crusher": 20.0,
+    "Illyrium Crucible": 114.28571428571428,
+    "Tetrium Crucible": 723.8095238095239
+   },
+   "wall_s": 361.9047619047619,
+   "mining_h": 0.09848484848484847,
+   "plates": 6.0
+  },
+  "Decoy (totem + power base)": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 72.0,
+    "magnatite": 24.0
+   },
+   "machine_seconds": {
+    "Magnetic Centrifuge": 2430.0,
+    "Illyrium Crucible": 571.4285714285713,
+    "Illyrium Refinery": 457.1428571428571,
+    "Crusher": 80.0,
+    "Furnace": 60.0,
+    "Combination Forge": 142.85714285714283,
+    "Tetrium Crucible": 1371.4285714285713
+   },
+   "wall_s": 2430.0,
+   "mining_h": 0.24242424242424243,
+   "plates": 10.0
+  },
+  "Coin Vault 3x3x3 (27 blocks)": {
+   "ore": {
+    "tetrium": 986.0
+   },
+   "machine_seconds": {
+    "Combination Forge": 3085.7142857142853,
+    "Furnace": 810.0,
+    "Tetrium Crucible": 18780.95238095238
+   },
+   "wall_s": 9390.47619047619,
+   "mining_h": 1.2449494949494948,
+   "plates": 216.0
+  },
+  "Tier V gate coins (4 Copper, 4 Gold, 4 Diamond, 4 Netherite blanks)": {
+   "ore": {
+    "tetrium": 144.0
+   },
+   "machine_seconds": {
+    "Tetrium Crucible": 2742.8571428571427
+   },
+   "wall_s": 1371.4285714285713,
+   "mining_h": 0.18181818181818182,
+   "plates": 0
+  }
+ },
+ "milestones": {
+  "Tetrium Crucible": {
+   "ore": {},
+   "wall_s": {
+    "early": 0.0,
+    "mid": 0.0,
+    "late": 0.0
+   },
+   "mining_s": {
+    "early": 0.0,
+    "mid": 0.0,
+    "late": 0.0
+   },
+   "cumulative_h": {
+    "early": 0.0,
+    "mid": 0.0,
+    "late": 0.0
+   },
+   "realistic_h": 0.0,
+   "stage": "early"
+  },
+  "Combination Forge": {
+   "ore": {
+    "tetrium": 14.0
+   },
+   "wall_s": {
+    "early": 280.0,
+    "mid": 133.33333333333334,
+    "late": 53.84615384615384
+   },
+   "mining_s": {
+    "early": 381.81818181818176,
+    "mid": 63.63636363636363,
+    "late": 63.63636363636363
+   },
+   "cumulative_h": {
+    "early": 0.10606060606060605,
+    "mid": 0.03703703703703704,
+    "late": 0.017676767676767676
+   },
+   "realistic_h": 0.10606060606060605,
+   "stage": "early"
+  },
+  "Machine parts for one controller-grade block": {
+   "ore": {
+    "tetrium": 20.0
+   },
+   "wall_s": {
+    "early": 400.0,
+    "mid": 190.47619047619048,
+    "late": 76.92307692307692
+   },
+   "mining_s": {
+    "early": 545.4545454545454,
+    "mid": 90.90909090909089,
+    "late": 90.90909090909089
+   },
+   "cumulative_h": {
+    "early": 0.2575757575757575,
+    "mid": 0.08994708994708996,
+    "late": 0.04292929292929293
+   },
+   "realistic_h": 0.2575757575757575,
+   "stage": "early"
+  },
+  "RF Upgrade Mk I": {
+   "ore": {
+    "tetrium": 11.0
+   },
+   "wall_s": {
+    "early": 220.0,
+    "mid": 104.76190476190476,
+    "late": 42.30769230769231
+   },
+   "mining_s": {
+    "early": 300.0,
+    "mid": 50.0,
+    "late": 50.0
+   },
+   "cumulative_h": {
+    "early": 0.34090909090909083,
+    "mid": 0.11904761904761905,
+    "late": 0.056818181818181816
+   },
+   "realistic_h": 0.34090909090909083,
+   "stage": "early"
+  },
+  "Coin Vault (one block)": {
+   "ore": {
+    "tetrium": 37.0
+   },
+   "wall_s": {
+    "early": 740.0,
+    "mid": 352.38095238095235,
+    "late": 142.3076923076923
+   },
+   "mining_s": {
+    "early": 1009.090909090909,
+    "mid": 168.18181818181816,
+    "late": 168.18181818181816
+   },
+   "cumulative_h": {
+    "early": 0.6212121212121211,
+    "mid": 0.21693121693121695,
+    "late": 0.10353535353535352
+   },
+   "realistic_h": 0.6212121212121211,
+   "stage": "early"
+  },
+  "Illyrium Crucible": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 298.0
+   },
+   "wall_s": {
+    "early": 5960.0,
+    "mid": 2838.095238095238,
+    "late": 1146.153846153846
+   },
+   "mining_s": {
+    "early": 8399.999999999998,
+    "mid": 1400.0,
+    "late": 1400.0
+   },
+   "cumulative_h": {
+    "early": 2.954545454545454,
+    "mid": 1.0052910052910053,
+    "late": 0.49242424242424243
+   },
+   "realistic_h": 1.4095719095719097,
+   "stage": "mid"
+  },
+  "First Dirty Illyrium Ingot": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 2.0
+   },
+   "wall_s": {
+    "early": 80.0,
+    "mid": 76.19047619047619,
+    "late": 61.53846153846153
+   },
+   "mining_s": {
+    "early": 327.2727272727273,
+    "mid": 54.54545454545455,
+    "late": 54.54545454545455
+   },
+   "cumulative_h": {
+    "early": 3.045454545454545,
+    "mid": 1.0264550264550265,
+    "late": 0.5095182595182595
+   },
+   "realistic_h": 1.4307359307359309,
+   "stage": "mid"
+  },
+  "Diamond Filter": {
+   "ore": {},
+   "wall_s": {
+    "early": 0.0,
+    "mid": 0.0,
+    "late": 0.0
+   },
+   "mining_s": {
+    "early": 0.0,
+    "mid": 0.0,
+    "late": 0.0
+   },
+   "cumulative_h": {
+    "early": 3.045454545454545,
+    "mid": 1.0264550264550265,
+    "late": 0.5095182595182595
+   },
+   "realistic_h": 1.4307359307359309,
+   "stage": "mid"
+  },
+  "Illyrium Refinery": {
+   "ore": {
+    "illyrium": 5.0,
+    "tetrium": 173.0
+   },
+   "wall_s": {
+    "early": 3460.0,
+    "mid": 1647.6190476190477,
+    "late": 665.3846153846154
+   },
+   "mining_s": {
+    "early": 6081.81818181818,
+    "mid": 1013.6363636363635,
+    "late": 1013.6363636363635
+   },
+   "cumulative_h": {
+    "early": 4.734848484848484,
+    "mid": 1.4841269841269842,
+    "late": 0.791083916083916
+   },
+   "realistic_h": 1.8884078884078885,
+   "stage": "mid"
+  },
+  "First Illyrium Ingot": {
+   "ore": {
+    "illyrium": 9.0,
+    "tetrium": 41.0
+   },
+   "wall_s": {
+    "early": 1350.0,
+    "mid": 1285.7142857142856,
+    "late": 519.2307692307693
+   },
+   "mining_s": {
+    "early": 3572.7272727272725,
+    "mid": 595.4545454545454,
+    "late": 595.4545454545454
+   },
+   "cumulative_h": {
+    "early": 5.727272727272727,
+    "mid": 1.8412698412698412,
+    "late": 0.9564879564879565
+   },
+   "realistic_h": 2.2455507455507453,
+   "stage": "mid"
+  },
+  "Magnetic Centrifuge": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 130.0
+   },
+   "wall_s": {
+    "early": 2600.0,
+    "mid": 1238.095238095238,
+    "late": 499.99999999999994
+   },
+   "mining_s": {
+    "early": 4636.363636363636,
+    "mid": 772.7272727272726,
+    "late": 772.7272727272726
+   },
+   "cumulative_h": {
+    "early": 7.015151515151515,
+    "mid": 2.185185185185185,
+    "late": 1.171134421134421
+   },
+   "realistic_h": 2.5894660894660895,
+   "stage": "mid"
+  },
+  "Copper Tetrium Coil": {
+   "ore": {
+    "tetrium": 4.0,
+    "magnatite": 3.0
+   },
+   "wall_s": {
+    "early": 135.0,
+    "mid": 135.0,
+    "late": 90.0
+   },
+   "mining_s": {
+    "early": 381.81818181818176,
+    "mid": 63.63636363636363,
+    "late": 48.484848484848484
+   },
+   "cumulative_h": {
+    "early": 7.12121212121212,
+    "mid": 2.222685185185185,
+    "late": 1.1961344211344211
+   },
+   "realistic_h": 2.6269660894660896,
+   "stage": "mid"
+  },
+  "Illyrium Forge Upgrade": {
+   "ore": {
+    "illyrium": 67.0,
+    "tetrium": 302.0
+   },
+   "wall_s": {
+    "early": 10050.0,
+    "mid": 9571.428571428572,
+    "late": 3865.3846153846152
+   },
+   "mining_s": {
+    "early": 26509.090909090908,
+    "mid": 4418.181818181817,
+    "late": 4418.181818181817
+   },
+   "cumulative_h": {
+    "early": 14.484848484848484,
+    "mid": 4.881415343915344,
+    "late": 2.423407148407148
+   },
+   "realistic_h": 5.285696248196248,
+   "stage": "mid"
+  },
+  "Coin Factory slice": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 185.0
+   },
+   "wall_s": {
+    "early": 3700.0,
+    "mid": 1761.904761904762,
+    "late": 711.5384615384614
+   },
+   "mining_s": {
+    "early": 5590.909090909091,
+    "mid": 931.8181818181818,
+    "late": 931.8181818181818
+   },
+   "cumulative_h": {
+    "early": 16.037878787878785,
+    "mid": 5.370833333333334,
+    "late": 2.682245532245532
+   },
+   "realistic_h": 5.775114237614238,
+   "stage": "mid"
+  },
+  "Motivator": {
+   "ore": {
+    "illyrium": 5.0,
+    "tetrium": 36.0
+   },
+   "wall_s": {
+    "early": 720.0,
+    "mid": 628.5714285714286,
+    "late": 253.8461538461538
+   },
+   "mining_s": {
+    "early": 2345.454545454545,
+    "mid": 390.9090909090909,
+    "late": 390.9090909090909
+   },
+   "cumulative_h": {
+    "early": 16.689393939393938,
+    "mid": 5.5454365079365076,
+    "late": 2.79083139083139
+   },
+   "realistic_h": 5.949717412217413,
+   "stage": "mid"
+  },
+  "Plasma hook-up": {
+   "ore": {
+    "illyrium": 7.0,
+    "tetrium": 90.0,
+    "magnatite": 11.0
+   },
+   "wall_s": {
+    "early": 1800.0,
+    "mid": 945.0,
+    "late": 595.0
+   },
+   "mining_s": {
+    "early": 5454.545454545454,
+    "mid": 893.939393939394,
+    "late": 893.939393939394
+   },
+   "cumulative_h": {
+    "early": 18.204545454545453,
+    "mid": 5.807936507936508,
+    "late": 3.0391478891478885
+   },
+   "realistic_h": 6.19803391053391,
+   "stage": "late"
+  },
+  "Battery Charger + Battery I": {
+   "ore": {
+    "illyrium": 2.0,
+    "tetrium": 38.0,
+    "magnatite": 6.0
+   },
+   "wall_s": {
+    "early": 760.0,
+    "mid": 361.9047619047619,
+    "late": 310.0
+   },
+   "mining_s": {
+    "early": 2218.181818181818,
+    "mid": 354.5454545454545,
+    "late": 354.5454545454545
+   },
+   "cumulative_h": {
+    "early": 18.820707070707073,
+    "mid": 5.908465608465608,
+    "late": 3.137632737632737
+   },
+   "realistic_h": 6.29651875901876,
+   "stage": "late"
+  },
+  "Plasma Tank 3x3x3": {
+   "ore": {
+    "illyrium": 1.0,
+    "tetrium": 128.0,
+    "magnatite": 1.0
+   },
+   "wall_s": {
+    "early": 2560.0,
+    "mid": 1219.047619047619,
+    "late": 492.30769230769226
+   },
+   "mining_s": {
+    "early": 3854.5454545454545,
+    "mid": 642.4242424242424,
+    "late": 642.4242424242424
+   },
+   "cumulative_h": {
+    "early": 19.891414141414142,
+    "mid": 6.247089947089947,
+    "late": 3.3160839160839153
+   },
+   "realistic_h": 6.474969937469938,
+   "stage": "late"
+  },
+  "Decoy Totem + Power Base": {
+   "ore": {
+    "illyrium": 4.0,
+    "tetrium": 72.0,
+    "magnatite": 24.0
+   },
+   "wall_s": {
+    "early": 2835.0,
+    "mid": 2430.0,
+    "late": 795.0
+   },
+   "mining_s": {
+    "early": 5509.090909090909,
+    "mid": 872.7272727272727,
+    "late": 675.7575757575758
+   },
+   "cumulative_h": {
+    "early": 21.421717171717173,
+    "mid": 6.922089947089947,
+    "late": 3.5369172494172485
+   },
+   "realistic_h": 6.695803270803271,
+   "stage": "late"
+  },
+  "Tier V gate blanks": {
+   "ore": {
+    "tetrium": 144.0
+   },
+   "wall_s": {
+    "early": 2880.0,
+    "mid": 1371.4285714285713,
+    "late": 553.8461538461538
+   },
+   "mining_s": {
+    "early": 3927.272727272727,
+    "mid": 654.5454545454546,
+    "late": 654.5454545454546
+   },
+   "cumulative_h": {
+    "early": 22.512626262626263,
+    "mid": 7.303042328042328,
+    "late": 3.71873543123543
+   },
+   "realistic_h": 6.877621452621454,
+   "stage": "late"
+  }
+ }
+}

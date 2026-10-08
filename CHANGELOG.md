@@ -5,6 +5,11 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 ## [Unreleased]
 
 ### Added
+- EMI support: the same machine categories and information pages as the JEI plugin, from one shared description of the machines' jobs.
+- Ingot-to-dust recipes for four more machines in the pack: Ender IO SAG Mill, Railcraft Reborn Crusher, Integrated Dynamics Mechanical Squeezer and Electrodynamics Mineral Grinder, beside Mekanism, Create and Thermal. All crusher recipes now come from `tools/gen_compat_recipes.py`.
+- The Battery Charger takes empty batteries and cells from pipes and hoppers on any side but the back, and gives them back once full.
+- A Shatter Totem can no longer be put beyond reach: the dropped totem is not an item entity any more, so hoppers, funnels, collectors and magnets cannot carry it off, and every totem now has an identity the server tracks. One that goes missing from its holder (dragged into an ME or RS grid, moved by a pipe) comes back to them within seconds and the copy left behind becomes a spent husk.
+- `tools/balance_report.py` writes `docs/BALANCE.md` and `docs/BALANCE.json`: for every craftable, build and progression milestone, the ore it costs, the machine-seconds per machine, the latency through the chain, the wall time at early, mid and late machine counts, and the mining time, all read from the config defaults, the recipe JSON and the worldgen files. Rerun it after any recipe or machine-config change.
 - An outsider walking into a cloaked cube sees the base fade in over `effects.cloakFadeSeconds` (7 s) instead of appearing at once, and fade out again over `effects.cloakFadeOutSeconds` (3 s) on the way out; the players and mobs inside fade with the blocks.
 - `/bsp cloak see off` lets an operator see cloaks like an outsider (and `on` puts it back), for testing; the choice is remembered.
 - Cloaking now shows outsiders the land as the world generated it (ground, trees, plants, ores, snow and ice; no caves) in place of the base, made from the seed over a couple of seconds, and hides the players and mobs inside the cube from them.
@@ -13,6 +18,7 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 - A Plasma Tank changes when it forms: a sweep of light runs over the shell from the block that completed it, the casing turns to glass with a thin dark rail and a lit turquoise strip along every edge of the tank and a lit node at each corner, and the four uprights glow only as high as the plasma stands, so the level can be read from outside. Breaking a block puts the casing cubes back.
 
 ### Fixed
+- BSP ores are now in the common `forge:ores` tag (and raw ores in `forge:raw_materials`), so X-ray highlights them and other mods' ore detection sees them. The material tags (`forge:ores/tetrium` and the like) are deliberately left out so no mod can process BSP ores around the crucibles.
 - A Plasma Extractor only ever handed out 4,000 mB a second (200 mB/t) however high the totem's Output was: its tank was that size and the network takes a second's worth at a time. Bases and chargers hid this because they want little; a Plasma Tank showed it. The extractor now holds one second of its flow on top of the 4,000 mB reserve, so a 6,000 mB/t totem really moves 6,000 mB/t.
 - A Plasma Tank with only a little plasma in it showed nothing but the stream: the layer was thinner than a pixel. It now draws a thin layer as soon as it holds anything, in the world and on its screen.
 - Right-clicking an unfinished Plasma Tank block no longer opens the tank screen, so the next block can be placed against it without sneaking. Jade shows "Tank unfinished" on any block that is not yet part of a formed tank.

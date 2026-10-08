@@ -1,21 +1,21 @@
 {
-  "conditions": [
-    {
-      "type": "forge:mod_loaded",
-      "modid": "create"
-    }
-  ],
-  "type": "create:crushing",
-  "ingredients": [
-    {
-      "item": "bsp_core:tetrium_ingot"
-    }
-  ],
-  "results": [
-    {
-      "item": "bsp_core:tetrium_dust",
-      "count": 1
-    }
-  ],
-  "processingTime": 250
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "create"
+  }
+ ],
+ "type": "create:crushing",
+ "ingredients": [
+  {
+   "item": "bsp_core:tetrium_ingot"
+  }
+ ],
+ "results": [
+  {
+   "item": "bsp_core:tetrium_dust",
+   "count": 1
+  }
+ ],
+ "processingTime": 250
 }

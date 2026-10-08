@@ -50,6 +50,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     @Nullable
     private StealState steal;
     private CompoundTag upgrades = new CompoundTag();
+    /** The totem's id and instance ({@link TotemIdentity}), kept so the item that comes back out is the same totem. */
+    private CompoundTag identity = new CompoundTag();
     /** When the current owner got this totem (ms since 1970); 0 for totems from before chunk loading. */
     private long ownedSince;
     /** Friends the owner has let in and what each may do. Cleared when the totem changes hands. */
@@ -102,6 +104,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     /** Reads everything the item form carried (owner, later upgrades) into this block. */
     public void loadFromStack(ItemStack stack) {
+        TotemIdentity.ensure(stack);
+        identity = new CompoundTag();
+        TotemIdentity.copy(stack.getTag(), identity);
         upgrades = TotemUpgrades.copyFrom(stack);
         setOwner(TotemOwner.fromStack(stack).orElse(null));
         CompoundTag tag = stack.getTag();
@@ -117,6 +122,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     /** Writes everything that must survive into the item when the block is picked up. */
     public void writeToStackTag(CompoundTag tag) {
+        TotemIdentity.copy(identity, tag);
         if (owner != null) {
             owner.save(tag);
             tag.putLong(TotemOwner.TAG_OWNED_SINCE, ownedSince);
@@ -252,6 +258,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             healingTick(level);
             intruderTick(level);
             cloakTick(level);
+            reportToLedger(level);
         }
         if (cloakBuilder != null && cloakBuilder.step()) {
             cloak = cloakBuilder.result();
@@ -443,6 +450,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         cloakBuilder = null;
         if (level instanceof ServerLevel sl) {
             cloakTick(sl);
+        }
+    }
+
+    /** Tells the ledger this totem stands here as a block (a placed totem is never lost). */
+    private void reportToLedger(ServerLevel level) {
+        if (identity.hasUUID(TotemIdentity.TAG_ID) && identity.hasUUID(TotemIdentity.TAG_INSTANCE)) {
+            com.mrgregles.bsp_core.data.TotemLedger.get(level.getServer()).seen(identity.getUUID(TotemIdentity.TAG_ID), identity.getUUID(TotemIdentity.TAG_INSTANCE),
+                    owner == null ? null : owner.uuid(), com.mrgregles.bsp_core.data.TotemLedger.PLACED, null, level.getServer().overworld().getGameTime());
         }
     }
 
@@ -738,11 +753,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (!upgrades.isEmpty()) {
             tag.put(TotemUpgrades.TAG_UPGRADES, upgrades.copy());
         }
+        TotemIdentity.copy(identity, tag);
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
+        identity = new CompoundTag();
+        TotemIdentity.copy(tag, identity);
         owner = TotemOwner.load(tag).orElse(null);
         ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
         access = TotemAccess.load(tag);

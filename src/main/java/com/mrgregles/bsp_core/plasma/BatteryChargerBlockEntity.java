@@ -55,8 +55,66 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
     private long fedAt = -1000;
     private boolean signal, filling;
 
+    /**
+     * What pipes see: an empty battery or cell may go in while the cradle is empty, and comes out once it is full, from any side but
+     * the back (the cable's side). Charging itself still needs the plasma run; this only moves the items.
+     */
+    private final net.minecraftforge.items.IItemHandler automation = new net.minecraftforge.items.IItemHandler() {
+        @Override
+        public int getSlots() {
+            return 1;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return items.getStackInSlot(0);
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (!isItemValid(slot, stack) || !items.getStackInSlot(0).isEmpty()) {
+                return stack;
+            }
+            return items.insertItem(0, stack, simulate);
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            ItemStack in = items.getStackInSlot(0);
+            if (in.isEmpty() || PlasmaItems.stored(in) < PlasmaItems.capacity(in)) {
+                return ItemStack.EMPTY; // not full yet: the charger keeps it
+            }
+            return items.extractItem(0, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return PlasmaItems.isChargeable(stack) && PlasmaItems.stored(stack) < PlasmaItems.capacity(stack);
+        }
+    };
+    private final net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> automationCap = net.minecraftforge.common.util.LazyOptional.of(() -> automation);
+
     public BatteryChargerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BATTERY_CHARGER.get(), pos, state);
+    }
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, @Nullable net.minecraft.core.Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER && (side == null || !getBlockState().hasProperty(BatteryChargerBlock.FACING) || side != BatteryChargerBlock.back(getBlockState()))) {
+            return automationCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        automationCap.invalidate();
     }
 
     public ItemStackHandler getItems() {
