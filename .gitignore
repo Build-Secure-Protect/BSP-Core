@@ -29,3 +29,9 @@ run-data
 src/generated/.cache
 .DS_Store
 mcmodsrepo
+
+# Claude files never go to GitHub (owner's rule, 2026-10-08): the project instructions and the Claude Code workspace folder
+CLAUDE.md
+**/CLAUDE.md
+.claude/
+.claude*

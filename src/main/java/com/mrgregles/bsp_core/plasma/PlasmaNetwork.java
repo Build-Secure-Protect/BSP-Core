@@ -186,7 +186,7 @@ public final class PlasmaNetwork {
      * Max-min fair shares of {@code rate} between runs, where no block carries more than its cap over all the runs through it.
      * Every run grows at the same speed until a block it uses is full, and the runs through that block stop; the rest go on.
      */
-    static double[] allocate(int rate, List<List<BlockPos>> paths, Map<BlockPos, Integer> caps) {
+    public static double[] allocate(int rate, List<List<BlockPos>> paths, Map<BlockPos, Integer> caps) {
         int n = paths.size();
         double[] share = new double[n];
         boolean[] frozen = new boolean[n];

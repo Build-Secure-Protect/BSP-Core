@@ -39,6 +39,21 @@ public final class CloakClient {
         restore(totem.getBlockPos());
     }
 
+    /** Whether {@code pos} is inside a cloaked cube this player is being kept out of: X-ray leaves those blocks alone. */
+    public static boolean hiddenFromMe(BlockPos pos) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return false;
+        }
+        for (ShatterTotemBlockEntity totem : TOTEMS) {
+            CloakSnapshot snap = totem.isRemoved() ? null : totem.cloak();
+            if (snap != null && snap.contains(pos) && !snap.contains(mc.player.blockPosition()) && !totem.seesThroughCloak(mc.player)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void restore(BlockPos origin) {
         Map<BlockPos, BlockState> real = REAL.remove(origin);
         Minecraft mc = Minecraft.getInstance();

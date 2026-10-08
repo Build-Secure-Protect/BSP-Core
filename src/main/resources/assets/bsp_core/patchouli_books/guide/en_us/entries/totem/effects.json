@@ -10,7 +10,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Bouncy$() (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.$(br2)$(l)X-ray$() (Carried, after Night Sight, Tier V): press its key and ores, containers and spawners within range show through the blocks for a while, fading with depth; then it recharges.",
+      "text": "$(l)Bouncy$() (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.$(br2)$(l)X-ray$() (Carried, after Night Sight, Tier V): press its key and the solid blocks around you turn to faint glass, fainter the deeper they are, for a while; ores show through them bright, containers and spawners are marked. The level sets how far it reaches and how long it lasts; then it recharges.",
       "title": "Carried"
     },
     {

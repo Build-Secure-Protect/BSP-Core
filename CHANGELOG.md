@@ -5,6 +5,8 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 ## [Unreleased]
 
 ### Added
+- X-ray is now true see-through: the solid blocks around you become faint glass, fainter the deeper they are, ores show through them bright even in the dark, and containers and spawners keep their marks. Walking and mining are unchanged. It never touches a cloaked base that hides from you.
+- Forge GameTests (`./gradlew runGameTestServer`): tank forming, rejection and dormancy, max-min allocation, plasma reaching a base, the Tetrium reach limit, and a 6,000 mB/t totem really moving 1,000 mB/t through one face. They run on a headless server, no client needed.
 - A Plasma Tank changes when it forms: a sweep of light runs over the shell from the block that completed it, the casing turns to glass with a thin dark rail and a lit turquoise strip along every edge of the tank and a lit node at each corner, and the four uprights glow only as high as the plasma stands, so the level can be read from outside. Breaking a block puts the casing cubes back.
 
 ### Fixed

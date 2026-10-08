@@ -641,6 +641,16 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - A cable placed against a Tank Port on any face that is not against the tank draws an arm into the port, like into a base.
 - A tank that has just started filling shows a thin layer of plasma across the whole floor (about a tenth of a block) even when the figure is far below one per cent. The stream lands on it. The screen shows the same layer.
 
+## X-ray with ghost blocks (2026-10-08)
+
+- Hold a Wave Emitter with X-ray stamped (or `/bsp totem buff xray 3` on a held totem) and press X underground: the stone, dirt and other solid blocks within range turn to faint glass, fainter the further they are; ores show through them bright even in the dark; chests and other containers get a gold mark, spawners a red mark. Glass, leaves, torches, plants and water stay as they are.
+- Walking, jumping and mining work as before: the ghosted blocks still have their shape. Jade names a ghosted block "Ghost Block" while X-ray is on.
+- Move: blocks that leave the range go back to normal and new ones fade in as you go; the ring by the crosshair drains.
+- Press X again, or let it run out: every block is back as it was, with no holes and no leftover ghosts. Log out and in during X-ray: the world is normal.
+- Mine an ore or a ghosted block while on: the server breaks the real block and the drop is right.
+- Near a cloaked base that hides from you: its fake terrain stays, X-ray does not reveal it.
+- Levels: radius 4 / 6 / 8 / 10 / 12, strength 35 % to 75 % (the shells draw at half of that, so 17 % to 37 %; container marks at 8 % of it, a faint gold tint so the machine underneath can be read; spawner marks at the full figure), 25 to 45 s, recharge 120 to 80 s (`effects.xray*` config).
+
 # Chunk loading
 
 ## Chunk loading (Anchor, Survey, CHUNKS tab, projector screen)
@@ -774,6 +784,15 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] With the owner on the same server, messages arrive instantly and without a server name, as before.
 - [ ] Totem Compass: with none of your totems placed on this server (or in this dimension) the needle spins. While tracking rivals with no rival totem on this server it also spins. It never points at a totem on another server.
 - [ ] After adding screenshots and running the two commands in `docs/book_screenshots/README.md`, the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory entries show the picture with a frame instead of the block layout.
+
+# Game tests (headless, no client)
+
+## Running the Forge GameTests (2026-10-08)
+
+- `./gradlew runGameTestServer` starts a headless server, runs every test in `src/main/java/com/mrgregles/bsp_core/gametest/`, prints a pass/fail line per test and exits; the Gradle task fails when a test fails. Claude can run this, so these checks no longer need screenshots.
+- Each test builds its own blocks inside the empty 24 x 10 x 24 template `bsp_core:empty` (written by `tools/gen_gametest_structures.py`).
+- Tests so far: the tank forms when complete (flags, master, capacity, port), rejects glass on an edge, keeps plasma while a block is missing; `allocate` is max-min fair; plasma reaches a base over 3 Tetrium cables; 15 Tetrium cables reach, 16 do not; an Output 10 totem moves 20,000 mB a second through one Illyrium cable into a tank port.
+- Add a test for each new rule or fix where the client is not needed: anything about forming, flow figures, reach, caps and sharing.
 
 # Fix-up rounds (dated)
 

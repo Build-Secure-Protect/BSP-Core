@@ -464,7 +464,7 @@ Five powers added with the plasma rework. Auras are now cubes: a radius of 5 cov
 
 **Bouncy** (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.
 
-**X-ray** (Carried, after Night Sight, Tier V): press its key and ores, containers and spawners within range show through the blocks for a while, fading with depth; then it recharges.
+**X-ray** (Carried, after Night Sight, Tier V): press its key and the solid blocks around you turn to faint glass, fainter the deeper they are, for a while; ores show through them bright, containers and spawners are marked. The level sets how far it reaches and how long it lasts; then it recharges.
 
 **Page 3: Base**
 
