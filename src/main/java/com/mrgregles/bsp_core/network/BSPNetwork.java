@@ -68,6 +68,15 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(InterfaceViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(InterfaceViewPacket::encode).decoder(InterfaceViewPacket::decode)
                 .consumerMainThread(InterfaceViewPacket::handle).add();
+        CHANNEL.messageBuilder(CloakRefreshPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CloakRefreshPacket::encode).decoder(CloakRefreshPacket::decode)
+                .consumerMainThread(CloakRefreshPacket::handle).add();
+        CHANNEL.messageBuilder(CloakStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CloakStatusPacket::encode).decoder(CloakStatusPacket::decode)
+                .consumerMainThread(CloakStatusPacket::handle).add();
+        CHANNEL.messageBuilder(CloakBlindPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CloakBlindPacket::encode).decoder(CloakBlindPacket::decode)
+                .consumerMainThread(CloakBlindPacket::handle).add();
         CHANNEL.messageBuilder(RecallOfferPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(RecallOfferPacket::encode).decoder(RecallOfferPacket::decode)
                 .consumerMainThread(RecallOfferPacket::handle).add();

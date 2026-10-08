@@ -57,6 +57,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     /** The Cloaking cube's copy of the land, taken when Cloaking first came on; null while there is none. */
     @Nullable
     private CloakSnapshot cloak;
+    /** A snapshot being generated, one chunk a tick; null when none is wanted. */
+    @Nullable
+    private CloakSnapshot.Builder cloakBuilder;
 
     public ShatterTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SHATTER_TOTEM.get(), pos, state);
@@ -250,6 +253,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             intruderTick(level);
             cloakTick(level);
         }
+        if (cloakBuilder != null && cloakBuilder.step()) {
+            cloak = cloakBuilder.result();
+            cloakBuilder = null;
+            setChanged();
+            sync();
+        }
         if (steal != null && warnDelay > 0 && --warnDelay == 0) {
             warnOwner(level); // Shroud ran out: the owner now hears about the steal
         }
@@ -425,21 +434,23 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     /** Whether {@code player} sees the real blocks inside the cloak: the owner, friends with Machines access, or an operator. */
     public boolean seesThroughCloak(net.minecraft.world.entity.player.Player player) {
-        return isOwner(player.getUUID()) || player.hasPermissions(2) || hasAccess(player.getUUID(), TotemAccess.MACHINES);
+        return isOwner(player.getUUID()) || player.hasPermissions(2) && !CloakBlind.isBlind(player) || hasAccess(player.getUUID(), TotemAccess.MACHINES);
     }
 
     /** Operator: take the Cloaking snapshot again now (for example after building the base that should be hidden). */
     public void recloak() {
         cloak = null;
+        cloakBuilder = null;
         if (level instanceof ServerLevel sl) {
             cloakTick(sl);
         }
     }
 
-    /** Takes the snapshot the first time Cloaking is on (or its radius grew), and drops it when the upgrade is gone. */
+    /** Starts generating the snapshot the first time Cloaking is on (or its radius changed), and drops it when the upgrade is gone. */
     private void cloakTick(ServerLevel level) {
         int r = cloakRadius();
-        if (r <= 0) {
+        if (r <= 0 || owner == null) {
+            cloakBuilder = null;
             if (cloak != null) {
                 cloak = null;
                 setChanged();
@@ -447,10 +458,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             }
             return;
         }
-        if (cloak == null || cloak.radius != r || owner == null) {
-            cloak = owner == null ? null : CloakSnapshot.capture(level, worldPosition, r);
-            setChanged();
-            sync();
+        boolean building = cloakBuilder != null && cloakBuilder.radius() == r;
+        if (!building && (cloak == null || cloak.radius != r || cloak.version < CloakSnapshot.VERSION)) {
+            cloakBuilder = new CloakSnapshot.Builder(level, worldPosition, r);
         }
     }
 
@@ -696,9 +706,16 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     // ------------------------------------------------------------------ persistence + sync
 
+    /**
+     * Sends this block entity's data to every player tracking the chunk. Only the data, not a block update: a block update would put
+     * the totem block back in the world of a client that is hiding it under a cloak, for a frame each time.
+     */
     private void sync() {
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        if (level instanceof ServerLevel sl) {
+            var packet = getUpdatePacket();
+            if (packet != null) {
+                sl.getChunkSource().chunkMap.getPlayers(new net.minecraft.world.level.ChunkPos(worldPosition), false).forEach(p -> p.connection.send(packet));
+            }
         }
     }
 

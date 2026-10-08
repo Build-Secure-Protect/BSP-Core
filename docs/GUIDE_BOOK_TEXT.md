@@ -468,7 +468,7 @@ Five powers added with the plasma rework. Auras are now cubes: a radius of 5 cov
 
 **Page 3: Base**
 
-**Cloaking** (Base, Walls path after Deadlock, Tier IV): outsiders see the land as it was when the cloak came on, not what is inside the cube. Uses 50 mB/t of the totem's plasma output.
+**Cloaking** (Base, Walls path after Deadlock, Tier IV): outsiders see the land as the world generated it, with its trees, plants, snow and ice but no caves, in place of everything inside the cube, and the players and mobs inside are hidden from them too. Uses 50 mB/t of the totem's plasma output.
 
 **Recall** (Base, Home path after Overclock, Tier V): when your totem is being stolen, a card above the hotbar offers to bring you back to within its distance of the totem. Twenty seconds to decide, ten minutes' rest after.
 

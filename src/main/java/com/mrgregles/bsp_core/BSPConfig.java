@@ -109,7 +109,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
-    public static final ForgeConfigSpec.IntValue CLOAK_DRAW, RECALL_PROMPT_SECONDS, RECALL_COOLDOWN_MINUTES;
+    public static final ForgeConfigSpec.IntValue CLOAK_DRAW, CLOAK_FADE_SECONDS, CLOAK_FADE_OUT_SECONDS, RECALL_PROMPT_SECONDS, RECALL_COOLDOWN_MINUTES;
     public static final ForgeConfigSpec.IntValue CHUNKS_MAX_PER_PLAYER;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> DECOY_RANGES;
@@ -474,6 +474,8 @@ public final class BSPConfig {
         XRAY_ALPHA = BUILDER.comment("How strongly X-ray marks show, 0 to 1, by level.").defineList("xrayStrength", List.of(0.35, 0.45, 0.55, 0.65, 0.75), BSPConfig::isFraction);
         CLOAK_RADIUS = BUILDER.comment("Blocks either side of the totem a Cloaking cube reaches, by level.").defineList("cloakRadius", List.of(6, 9, 12, 16), BSPConfig::isPositiveInt);
         CLOAK_DRAW = BUILDER.comment("mB per tick of the totem's Wave Plasma output that Cloaking uses while on.").defineInRange("cloakDraw", 50, 0, 100_000);
+        CLOAK_FADE_SECONDS = BUILDER.comment("Seconds the real blocks take to fade in for an outsider who walks into a Cloaking cube. 0 shows them at once.").defineInRange("cloakFadeSeconds", 7, 0, 60);
+        CLOAK_FADE_OUT_SECONDS = BUILDER.comment("Seconds the real blocks take to fade out behind the generated land when that outsider walks out again. 0 hides them at once.").defineInRange("cloakFadeOutSeconds", 3, 0, 60);
         RECALL_RADIUS = BUILDER.comment("Recall lands the owner within this many blocks of the totem, by level. No offer is made when they are already that close.")
                 .defineList("recallRadius", List.of(150, 120, 100, 80, 60, 40, 20), BSPConfig::isPositiveInt);
         RECALL_PROMPT_SECONDS = BUILDER.comment("Seconds the Recall offer stays open.").defineInRange("recallPromptSeconds", 20, 3, 300);

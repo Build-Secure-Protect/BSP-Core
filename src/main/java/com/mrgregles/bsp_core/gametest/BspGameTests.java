@@ -207,6 +207,28 @@ public class BspGameTests {
         });
     }
 
+    // ------------------------------------------------------------------ cloaking
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void cloak_shows_generated_land(GameTestHelper h) {
+        // a totem with Cloaking in the middle of the plot and a gold block built nearby (the generator never makes one): outsiders must
+        // see natural land there, not the gold. (The plot sits at the bottom of the test world on a floor the framework lays, so the
+        // land shown is bedrock and deepslate; the real ground cannot be compared.)
+        BlockPos totem = new BlockPos(12, 1, 12), built = totem.offset(3, 2, 0);
+        h.setBlock(totem, ModBlocks.SHATTER_TOTEM.get());
+        ShatterTotemBlockEntity be = entity(h, totem, ShatterTotemBlockEntity.class);
+        be.setOwner(new TotemOwner(UUID.nameUUIDFromBytes("gametest".getBytes()), "Tester"));
+        be.setUpgradeLevel(TotemUpgrades.Buff.CLOAKING, 1);
+        h.setBlock(built, Blocks.GOLD_BLOCK);
+        h.succeedWhen(() -> {
+            h.assertTrue(be.cloak() != null, "snapshot made");
+            h.assertTrue(be.cloak().contains(h.absolutePos(built)), "the built block is inside the cube");
+            net.minecraft.world.level.block.state.BlockState over = be.cloak().at(h.absolutePos(built));
+            h.assertTrue(!over.is(Blocks.GOLD_BLOCK), "the built gold block is replaced by generated land, got " + over);
+            h.assertTrue(!over.hasBlockEntity(), "what is shown is natural land without machines, got " + over);
+        });
+    }
+
     @GameTest(template = EMPTY, timeoutTicks = 240)
     public void extractor_moves_the_full_output(GameTestHelper h) {
         // Output 10 totem (6,000 mB/t), interface, one Illyrium cable into a port of a 3 x 3 x 3 tank: the face gives 1,000 mB/t, 20,000 mB a second

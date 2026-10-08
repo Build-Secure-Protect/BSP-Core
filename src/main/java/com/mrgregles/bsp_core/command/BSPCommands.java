@@ -71,6 +71,12 @@ public final class BSPCommands {
                                 .then(Commands.argument("tier", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
                                         .executes(ctx -> setTier(ctx.getSource(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "tier")))))
                         .then(Commands.literal("recloak").executes(ctx -> recloak(ctx.getSource()))))
+                // testing: an operator may choose to be treated like any outsider by Cloaking
+                .then(Commands.literal("cloak").requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("see")
+                                .executes(ctx -> cloakSee(ctx.getSource(), null))
+                                .then(Commands.literal("on").executes(ctx -> cloakSee(ctx.getSource(), true)))
+                                .then(Commands.literal("off").executes(ctx -> cloakSee(ctx.getSource(), false)))))
                 .then(Commands.literal("score")
                         .then(Commands.literal("top").executes(ctx -> {
                             CommandSourceStack src = ctx.getSource();
@@ -167,6 +173,18 @@ public final class BSPCommands {
     }
 
     /** Takes the Cloaking snapshot again on the totem looked at, so a test base built after the cloak came on can be hidden. */
+    /** {@code /bsp cloak see [on|off]}: whether this operator sees through cloaks (on, the default) or sees them like an outsider (off). */
+    private static int cloakSee(CommandSourceStack src, @javax.annotation.Nullable Boolean see) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var player = src.getPlayerOrException();
+        if (see != null) {
+            com.mrgregles.bsp_core.totem.CloakBlind.set(player, !see);
+        }
+        boolean sees = !com.mrgregles.bsp_core.totem.CloakBlind.isBlind(player);
+        src.sendSuccess(() -> Component.literal(sees ? "You see through cloaks, as an operator. /bsp cloak see off to see them like an outsider."
+                : "You see cloaks like an outsider (takes effect within two seconds). /bsp cloak see on to see through them again."), false);
+        return 1;
+    }
+
     private static int recloak(CommandSourceStack src) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         var totem = lookedAt(src.getPlayerOrException());
         if (totem == null) {

@@ -793,7 +793,7 @@
   "buff.bsp_core.xray": "X-ray",
   "buff.bsp_core.xray.effect": "Blocks within %s turn to faint glass for %s s, ores show through them bright; recharges in %s s",
   "buff.bsp_core.cloaking": "Cloaking",
-  "buff.bsp_core.cloaking.effect": "Outsiders see the land as it was in a %1$s x %1$s x %1$s box; uses %2$s mB/t of plasma",
+  "buff.bsp_core.cloaking.effect": "Outsiders see the land as the world generated it in a %1$s x %1$s x %1$s box, and nobody inside it; uses %2$s mB/t of plasma",
   "buff.bsp_core.recall": "Recall",
   "buff.bsp_core.recall.effect": "While the totem is being stolen you may teleport to within %s blocks of it",
   "buff.bsp_core.recall_block": "Recall Block",

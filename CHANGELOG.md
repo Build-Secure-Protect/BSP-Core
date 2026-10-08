@@ -5,6 +5,9 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 ## [Unreleased]
 
 ### Added
+- An outsider walking into a cloaked cube sees the base fade in over `effects.cloakFadeSeconds` (7 s) instead of appearing at once, and fade out again over `effects.cloakFadeOutSeconds` (3 s) on the way out; the players and mobs inside fade with the blocks.
+- `/bsp cloak see off` lets an operator see cloaks like an outsider (and `on` puts it back), for testing; the choice is remembered.
+- Cloaking now shows outsiders the land as the world generated it (ground, trees, plants, ores, snow and ice; no caves) in place of the base, made from the seed over a couple of seconds, and hides the players and mobs inside the cube from them.
 - X-ray is now true see-through: the solid blocks around you become faint glass, fainter the deeper they are, ores show through them bright even in the dark, and containers and spawners keep their marks. Walking and mining are unchanged. It never touches a cloaked base that hides from you.
 - Forge GameTests (`./gradlew runGameTestServer`): tank forming, rejection and dormancy, max-min allocation, plasma reaching a base, the Tetrium reach limit, and a 6,000 mB/t totem really moving 1,000 mB/t through one face. They run on a headless server, no client needed.
 - A Plasma Tank changes when it forms: a sweep of light runs over the shell from the block that completed it, the casing turns to glass with a thin dark rail and a lit turquoise strip along every edge of the tank and a lit node at each corner, and the four uprights glow only as high as the plasma stands, so the level can be read from outside. Breaking a block puts the casing cubes back.
