@@ -1,0 +1,223 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:translucent",
+ "ambientocclusion": false,
+ "textures": {
+  "atlas": "bsp_core:block/machine_atlas",
+  "plasma": "bsp_core:block/plasma_still",
+  "particle": "bsp_core:block/machine_atlas",
+  "glass": "bsp_core:block/tank_glass"
+ },
+ "elements": [
+  {
+   "from": [
+    5,
+    5,
+    -0.6
+   ],
+   "to": [
+    11,
+    11,
+    0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      4.0,
+      1.5,
+      5.5
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      4.0,
+      1.5,
+      5.5
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      4.0,
+      0.15,
+      5.5
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      4.0,
+      0.15,
+      5.5
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      4.0,
+      1.5,
+      4.15
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      4.0,
+      1.5,
+      4.15
+     ],
+     "texture": "#atlas"
+    }
+   }
+  },
+  {
+   "from": [
+    5.6,
+    5.6,
+    -0.5
+   ],
+   "to": [
+    10.4,
+    10.4,
+    0.1
+   ],
+   "shade": false,
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    }
+   }
+  },
+  {
+   "from": [
+    6.2,
+    6.2,
+    -0.45
+   ],
+   "to": [
+    9.8,
+    9.8,
+    0.05
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    }
+   }
+  }
+ ]
+}

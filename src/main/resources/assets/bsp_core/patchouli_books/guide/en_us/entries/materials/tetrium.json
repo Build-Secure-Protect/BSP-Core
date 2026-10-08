@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. The ore block itself is what the machines take, so do not smelt it."
+      "text": "$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. Without Silk Touch the ore drops $(item)Raw Tetrium$(); the crucibles take raw chunks and ore blocks alike, so do not smelt either."
     },
     {
       "type": "patchouli:crafting",

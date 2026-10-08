@@ -2,7 +2,7 @@
   "name": "Letting Friends In",
   "category": "bsp_core:totem",
   "icon": "minecraft:name_tag",
-  "sortnum": 9,
+  "sortnum": 10,
   "pages": [
     {
       "type": "patchouli:text",

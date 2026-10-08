@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PGP",
+    "THT",
+    "SWS"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "G": {
+      "item": "bsp_core:illyrium_glass"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_core_cable"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    },
+    "S": {
+      "item": "bsp_core:slag_brick"
+    },
+    "W": {
+      "item": "bsp_core:copper_tetrium_coil"
+    }
+  },
+  "result": {
+    "item": "bsp_core:projector_base"
+  }
+}

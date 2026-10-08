@@ -1,7 +1,19 @@
 {
  "variants": {
-  "": {
+  "facing=north": {
    "model": "bsp_core:block/battery_charger"
+  },
+  "facing=east": {
+   "model": "bsp_core:block/battery_charger",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "bsp_core:block/battery_charger",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "bsp_core:block/battery_charger",
+   "y": 270
   }
  }
 }

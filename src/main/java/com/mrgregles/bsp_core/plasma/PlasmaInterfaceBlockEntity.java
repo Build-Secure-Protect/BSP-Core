@@ -17,6 +17,7 @@ public class PlasmaInterfaceBlockEntity extends BlockEntity {
     @Nullable
     private BlockPos master;
     private final PlasmaNetwork network = new PlasmaNetwork(this);
+    private boolean lit;
 
     public PlasmaInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PLASMA_INTERFACE.get(), pos, state);
@@ -35,6 +36,22 @@ public class PlasmaInterfaceBlockEntity extends BlockEntity {
         return network;
     }
 
+    /** Whether the group this block belongs to has plasma: its lit parts glow blue, else grey. */
+    public boolean lit() {
+        return lit;
+    }
+
+    void setLit(boolean lit) {
+        if (this.lit == lit) {
+            return;
+        }
+        this.lit = lit;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+        }
+    }
+
     public void serverTick(ServerLevel sl) {
         if (sl.getGameTime() % 20 == 0) {
             network.tick(sl);
@@ -47,11 +64,26 @@ public class PlasmaInterfaceBlockEntity extends BlockEntity {
         if (master != null) {
             tag.putLong("Master", master.asLong());
         }
+        tag.putBoolean("Lit", lit);
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         master = tag.contains("Master") ? BlockPos.of(tag.getLong("Master")) : null;
+        lit = tag.getBoolean("Lit");
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        tag.putBoolean("Lit", lit);
+        return tag;
+    }
+
+    @Nullable
+    @Override
+    public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
     }
 }

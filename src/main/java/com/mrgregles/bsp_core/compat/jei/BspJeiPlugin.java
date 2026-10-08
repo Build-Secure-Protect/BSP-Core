@@ -179,6 +179,7 @@ public class BspJeiPlugin implements IModPlugin {
         info(reg, "jei.bsp_core.info.extractor", "plasma_extractor");
         info(reg, "jei.bsp_core.info.interface", "plasma_interface");
         info(reg, "jei.bsp_core.info.repeater", "plasma_repeater");
+        info(reg, "jei.bsp_core.info.valve", "plasma_valve");
         info(reg, "jei.bsp_core.info.expander", "channel_expander");
         info(reg, "jei.bsp_core.info.charger", "battery_charger");
         info(reg, "jei.bsp_core.info.battery", "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4");
@@ -187,6 +188,7 @@ public class BspJeiPlugin implements IModPlugin {
         info(reg, "jei.bsp_core.info.emitter", "wave_emitter");
         info(reg, "jei.bsp_core.info.wrench", "wrench");
         info(reg, "jei.bsp_core.info.projector", "totem_projector");
+        info(reg, "jei.bsp_core.info.projector_base", "projector_base");
         info(reg, "jei.bsp_core.info.cable", "tetrium_core_cable", "magnatite_core_cable", "illyrium_core_cable", "charged_illyrium_core_cable");
         info(reg, "jei.bsp_core.info.decoy", "decoy_totem", "magnet_core");
         info(reg, "jei.bsp_core.info.decoy_base", "decoy_power_base");

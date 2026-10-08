@@ -44,6 +44,8 @@
     "bsp_core:plasma_battery_1",
     "bsp_core:plasma_battery_2",
     "bsp_core:plasma_battery_3",
-    "bsp_core:plasma_battery_4"
+    "bsp_core:plasma_battery_4",
+    "bsp_core:projector_base",
+    "bsp_core:plasma_valve"
   ]
 }

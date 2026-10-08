@@ -79,6 +79,12 @@ public class WaveEmitterItem extends Item {
         if (level.isClientSide) {
             return InteractionResultHolder.sidedSuccess(emitter, true);
         }
+        // right-clicked at the air (no block within four blocks): the screen, where the cell goes in and the switch lives
+        if (player.pick(4.0, 0f, false).getType() != net.minecraft.world.phys.HitResult.Type.BLOCK && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            net.minecraftforge.network.NetworkHooks.openScreen(sp, new net.minecraft.world.SimpleMenuProvider((id, inv, p) -> new WaveEmitterMenu(id, inv, hand), Component.translatable("item.bsp_core.wave_emitter")),
+                    buf -> buf.writeEnum(hand));
+            return InteractionResultHolder.sidedSuccess(emitter, false);
+        }
         if (PlasmaItems.isCell(other) && cell(emitter).isEmpty()) {
             setCell(emitter, other.copy());
             other.shrink(1);
@@ -144,6 +150,12 @@ public class WaveEmitterItem extends Item {
     @Override
     public boolean isFoil(ItemStack stack) {
         return running(stack);
+    }
+
+    /** The cell's charge changes every second while running; that must not make the hand dip and re-raise the emitter each time. */
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        return slotChanged || oldStack.getItem() != newStack.getItem();
     }
 
     @Override

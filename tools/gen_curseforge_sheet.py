@@ -35,7 +35,10 @@ BLOCK_TEX = {"shatter_coin_factory": "shatter_coin_factory_front", "illyrium_cru
 TILE = {"shatter_totem": ("ST", "#E3B341"), "tetrium_crucible": ("TC", "#B58CFF"), "combination_forge": ("CF", "#B58CFF"), "factory_motivator": ("Mo", "#B58CFF"),
         "admin_rack": ("AR", "#B58CFF"), "anti_totem": ("AT", "#FF4B3C"), "decoy_totem": ("DT", "#7FB3FF"), "decoy_power_base": ("PB", "#C87A3C"),
         "totem_generator": ("TG", "#19D3B0"), "totem_projector": ("TP", "#19D3B0"), "tetrium_core_cable": ("Ca", "#6B4FA3"), "magnatite_core_cable": ("Ca", "#5C7FB8"),
-        "illyrium_core_cable": ("Ca", "#19D3B0"), "charged_illyrium_core_cable": ("Ca", "#BFF6FF"), "totem_compass": None}
+        "illyrium_core_cable": ("Ca", "#19D3B0"), "charged_illyrium_core_cable": ("Ca", "#BFF6FF"), "totem_compass": None,
+        "plasma_extractor": ("Ex", "#4CB2FA"), "plasma_interface": ("In", "#4CB2FA"), "plasma_repeater": ("Re", "#C87A3C"), "plasma_valve": ("Va", "#C87A3C"), "projector_base": ("PB", "#4CB2FA"),
+        "battery_charger": ("BC", "#19D3B0"), "plasma_battery_1": ("B1", "#8A909C"), "plasma_battery_2": ("B2", "#6F5A7A"), "plasma_battery_3": ("B3", "#19D3B0"), "plasma_battery_4": ("B4", "#BFE6FF"),
+        "wave_emitter": ("WE", "#4CB2FA")}
 _cache = {}
 
 
@@ -108,11 +111,13 @@ def icon(item, size=32, count=None):
     return f'<span class="ic" title="{name}" style="width:{size}px;height:{size}px">{inner}{badge}</span>'
 
 
-def render(name, alt):
+def render(name, alt, ratio=None):
+    """A saved render as an inline picture; a ratio such as '2/1' crops it shorter so two fit in one column."""
     path = IMAGES / f"render_{name}.jpg"
+    style = f' style="aspect-ratio:{ratio}"' if ratio else ""
     if not path.exists():
-        return f'<div class="shot missing">{html.escape(alt)}</div>'
-    return f'<img class="shot" alt="{html.escape(alt)}" src="data:image/jpeg;base64,{base64.b64encode(path.read_bytes()).decode()}">'
+        return f'<div class="shot missing"{style}>{html.escape(alt)}</div>'
+    return f'<img class="shot" alt="{html.escape(alt)}"{style} src="data:image/jpeg;base64,{base64.b64encode(path.read_bytes()).decode()}">'
 
 
 PLATES = []
@@ -180,15 +185,28 @@ def machines():
 
 # ----------------------------------------------------------------------------- 4. layouts
 def layouts():
-    plate("layout_generators", "Totem Generators and the Totem Projector",
-          '<div class="split"><div class="col"><h3>Generators under a totem</h3>' + render("generator_array", "Nine Totem Generators under a Shatter Totem")
-          + '<p>One to nine generators in a three by three with the totem on the middle one. They join into one slab, with three cable ports on every outer edge. A ring rises around the totem while they have RF.</p></div>'
-          '<div class="col"><h3>Totem Projector</h3>' + render("totem_projector", "Totem Projector with its aura")
-          + '<p>Recreates two of the totem\'s base powers as a second aura, wherever a Totem Cable from a generator reaches it.</p>'
+    plate("layout_plasma_network", "Wave Plasma: the network",
+          '<div class="split"><div class="col" style="flex:1.6">' + render("plasma_network", "A Wave Plasma network")
+          + '<p>Totem on an extractor, interfaces beside it, cables out to a Projector Base with its Projector, and a second run into the back of a Battery Charger. A valve and a repeater sit in the long run.</p></div>'
+          '<div class="col"><h3>How it flows</h3><p>A placed totem gives 100 mB/t, up to 600 with the Output upgrade. An interface shares it equally between the runs leaving it. Every cable in a run carries the run\'s figure to its end.</p>'
           '<table class="t"><tr><th>Cable</th><th>Longest run</th></tr>'
           + "".join(f'<tr><td>{icon(c, 18)} {html.escape(name_of("bsp_core:" + c))}</td><td>{n} blocks</td></tr>' for c, n in
-                    (("tetrium_core_cable", 15), ("magnatite_core_cable", 25), ("illyrium_core_cable", 40), ("charged_illyrium_core_cable", 80))) + '</table></div></div>',
-          "A generator pushes 15 blocks, or 25, 40 and 80 with Reach Amplifiers. Strength falls from full to half along the run.")
+                    (("tetrium_core_cable", 15), ("magnatite_core_cable", 25), ("illyrium_core_cable", 40), ("charged_illyrium_core_cable", 80))) + '</table>'
+          '<p>A repeater starts a fresh run for a tenth of the pressure. A valve caps a run or shuts it by redstone. A projector needs 100 mB/t; its base holds 5,000 mB.</p></div></div>',
+          "Right-click any interface for the flow view: the whole network in 3D with the mB/t on every cable. Jade reads the figures block by block.")
+    plate("layout_plasma_blocks", "The plasma blocks",
+          '<div class="split"><div class="col"><h3>Extractor and interfaces</h3>' + render("plasma_interface_group", "Six interfaces joined, one refused", "5/2")
+          + '<p>Touching interfaces join into one body, up to twelve. A thirteenth, or one touching an extractor another group holds, turns red and does nothing.</p>'
+          '<h3>Projector Base</h3>' + render("projector_base", "Projector Base and Projector", "5/2") + '<p>A tank the projector stands on. Cables plug into its sides; the level shows through its windows.</p></div>'
+          '<div class="col"><h3>Plasma Valve</h3>' + render("plasma_valve", "Plasma Valve", "5/2") + '<p>Sets the most that may pass, from its screen. A lever on it or any redstone signal shuts it. The wheel turns with the limit.</p>'
+          '<h3>Plasma Repeater</h3>' + render("plasma_repeater", "Plasma Repeater", "5/2") + '<p>One way: in through the dark back, out through the lit front. Starts a fresh run. The wrench turns it.</p></div></div>',
+          "Powers pass a valve unchanged. Behind a repeater a projector receives one power at full level, or several each a level lower per repeater.")
+    plate("layout_batteries", "Batteries, cells and the Wave Emitter",
+          '<div class="split"><div class="col"><h3>Battery Charger</h3>' + render("battery_charger", "Battery Charger", "5/2") + '<p>Cable into its back. Fills the battery or cell standing in it and stamps powers from the interface into it, chosen on its screen.</p>'
+          '<h3>Wave Emitter, Power Cells, Wrench</h3>' + render("wave_emitter", "Wave Emitter, Power Cells and the Wrench", "5/2") + '<p>The emitter runs on a cell in your offhand and gives you its Carried powers at 20 mB/t. Right-click at the air to open it.</p></div>'
+          '<div class="col"><h3>Plasma Batteries</h3>' + render("plasma_batteries", "Plasma Batteries, and one feeding an extractor", "5/2") + '<p>Four tiers. Stood on an extractor instead of a totem, a battery feeds it with its stamped Base powers until it runs dry.</p>'
+          '<table class="t"><tr><th>Tier</th><th>Holds</th><th>Powers</th></tr><tr><td>Battery I to IV</td><td>40k / 200k / 1M / 5M mB</td><td>0 / 2 / 3 / 4 Base</td></tr><tr><td>Cell I to III</td><td>8k / 24k / 60k mB</td><td>1 / 2 / 3 Carried</td></tr></table></div></div>',
+          "Every battery and cell is built around a Charged Resonance Crystal: a Resonance Crystal magnetised in the centrifuge with a Magnatite Nugget in the upgrade slot.")
     plate("layout_decoy", "Decoy Totem",
           '<div class="split"><div class="col"><h3>What its owner sees</h3>' + render("decoy_owner_view", "Decoy Totem as its owner sees it")
           + '<p>The Hollow Idol on its Decoy Power Base, with a faint ghost of the totem around it.</p></div>'
@@ -220,7 +238,7 @@ def items():
     plate("resources", "Ores and metals", "".join(f'<h3>{n}</h3><div class="cells wide">{"".join(cell(i) for i in ids)}</div>' for n, ids in resources),
           "Tetrium Ore needs an iron pickaxe; Illyrium and Magnatite Ore need diamond. All three also generate in the AllTheModium Mining dimension.")
     ids = all_ids()
-    per = 40
+    per = 42
     for n in range(0, len(ids), per):
         plate(f"items_{n // per + 1}", f"Every block and item ({n // per + 1} of {(len(ids) + per - 1) // per})", '<div class="cells">' + "".join(cell(i, 36) for i in ids[n:n + per]) + "</div>",
               "Lettered tiles are blocks drawn as animated 3D models in game.")
@@ -284,11 +302,14 @@ def processes():
           + step([("pure_illyrium_dust", 1), ("tetrium_dust", 1)], "Illyrium Crucible, 90 s", [("illyrium_nugget", 1)], "uses lava")
           + step([("illyrium_nugget", 9)], "Combination Forge, 30 s", [("illyrium_ingot", 1)], "needs the Illyrium Forge Upgrade"),
           "Times are the defaults, with no upgrades. Every number is in the server config.")
-    plate("machine_recipes_2", "Machine recipes: Magnatite, crushing and coins",
+    plate("machine_recipes_2", "Machine recipes: Magnatite and crystals",
           step([("magnatite_ore", 1)], "Magnetic Centrifuge, 45 s", [("magnatite_nugget", 3), ("carbon_dust", 1)], "up to 7 to 9 nuggets with six layers")
           + step([("magnatite_nugget", 9)], "Combination Forge, 30 s", [("magnatite_ingot", 1)])
           + step([("magnatite_ingot", 1), ("copper_tetrium_coil", 1)], "Magnetic Centrifuge, 45 s a try", [("charged_magnatite_ingot", 1)], "1 in 6, up to 1 in 2 stacked; the coil is not used up")
-          + step([("tetrium_ingot", 1), ("minecraft:iron_pickaxe", 1)], "Crafting grid, by chance", [("tetrium_dust", 1)], "or a crusher from another mod")
+          + step([("resonance_crystal", 1), ("magnatite_nugget", 1)], "Magnetic Centrifuge, 30 s", [("charged_resonance_crystal", 1)], "the nugget goes in the upgrade slot; 20 s at full speed"),
+          "The Charged Resonance Crystal is the heart of every Plasma Battery and Power Cell.")
+    plate("machine_recipes_3", "Machine recipes: crushing and coins",
+          step([("tetrium_ingot", 1), ("minecraft:iron_pickaxe", 1)], "Crafting grid, by chance", [("tetrium_dust", 1)], "or a crusher from another mod")
           + step([("dirty_illyrium_ingot", 1), ("minecraft:iron_pickaxe", 1)], "Crafting grid, by chance", [("dirty_illyrium_dust", 1)], "or a crusher from another mod")
           + step([("copper_coin_blank", 1)], "Shatter Coin Factory, 12 h", [("copper_shatter_coin", 1)], "Gold 24 h, Diamond 48 h, Netherite 4 d")
           + step([("illyrium_coin_blank", 1)], "Shatter Coin Factory, 7 d", [("illyrium_shatter_coin", 1)], "real time, also while offline"))
@@ -317,13 +338,13 @@ def flows():
           "<h3>Ore to ingot: about 40 minutes</h3>" + chain("illyrium_ore", ("Illyrium Crucible + slag",), "dirty_illyrium_ingot", ("pickaxe or crusher",), "dirty_illyrium_dust", ("Illyrium Refinery",), "pure_illyrium_dust")
           + chain("pure_illyrium_dust", ("Illyrium Crucible + Tetrium Dust",), "illyrium_nugget", ("x9, Combination Forge + upgrade",), "illyrium_ingot")
           + "<h3>What it unlocks</h3>" + chain("dirty_illyrium_ingot", ("crafting",), "press_die", ("crafting",), "factory_press", ("and",), "centrifuge_rotor")
-          + chain("illyrium_nugget", ("crafting",), "illyrium_processor", ("crafting",), "factory_motivator", ("and",), "magnet_core", ("and",), "totem_generator"),
+          + chain("illyrium_nugget", ("crafting",), "illyrium_processor", ("crafting",), "factory_motivator", ("and",), "magnet_core", ("and",), "plasma_interface"),
           "Illyrium is the slow, valuable metal: each ingot is nine nuggets, each made one at a time.")
     plate("flow_magnatite", "How Magnatite is made",
           "<h3>Ore to ingot: about 3 minutes</h3>" + chain("magnatite_ore", ("Magnetic Centrifuge",), "magnatite_nugget", ("x9, Combination Forge",), "magnatite_ingot")
           + "<h3>Charging: about 4 to 8 minutes more</h3>" + chain("magnatite_ingot", ("Magnetic Centrifuge + coil",), "charged_magnatite_ingot", ("x6, crafting",), "magnet_core", ("crafting",), "decoy_totem")
           + "<h3>The by-product</h3>" + chain("magnatite_ore", ("Magnetic Centrifuge",), "carbon_dust", ("crafting",), "copper_tetrium_coil", ("and",), "tetrium_core_cable", ("and",), "blast_charge")
-          + "<h3>What it builds</h3>" + chain("charged_magnatite_ingot", ("crafting",), "totem_projector", ("and",), "charged_illyrium_core_cable", ("and",), "reach_amplifier_mk2"),
+          + "<h3>What it builds</h3>" + chain("charged_magnatite_ingot", ("crafting",), "totem_projector", ("and",), "charged_illyrium_core_cable", ("and",), "plasma_valve"),
           "Magnatite sits between Tetrium and Illyrium. Stacking centrifuges raises the yield and the charge chance.")
     plate("flow_coins", "How Shatter Coins are made",
           "<h3>Blanks: each is built on the one before</h3>" + chain("tetrium_ingot", ("crafting",), "shatter_blank", ("+ copper",), "copper_coin_blank", ("+ gold",), "gold_coin_blank", ("+ diamond",), "diamond_coin_blank")
@@ -331,11 +352,17 @@ def flows():
           + "<h3>Pressing: real time in the Shatter Coin Factory</h3>" + chain("copper_coin_blank", ("12 hours",), "copper_shatter_coin", ("",), "gold_shatter_coin", ("",), "diamond_shatter_coin", ("",), "netherite_shatter_coin", ("",), "illyrium_shatter_coin")
           + "<h3>What coins pay for</h3>" + chain("gold_shatter_coin", ("pay for",), "shatter_totem", ("and",), "totem_compass", ("and",), "coin_vault"),
           "Gold takes 24 hours, Diamond 48 hours, Netherite 4 days, Illyrium 7 days. Coins stack to 12.")
-    tiers = [("1. Start", ["shatter_totem", "tetrium_ore", "tetrium_crucible", "combination_forge"]),
-             ("2. Tetrium parts", ["tetrium_plate", "machine_chassis", "tetrium_coil", "basic_control_circuit", "coin_vault", "score_screen"]),
-             ("3. Illyrium", ["illyrium_crucible", "dirty_illyrium_ingot", "illyrium_refinery", "illyrium_ingot"]),
-             ("4. Coins and Magnatite", ["shatter_coin_factory", "copper_shatter_coin", "magnetic_centrifuge", "magnatite_ingot", "charged_magnatite_ingot"]),
-             ("5. End game", ["factory_motivator", "illyrium_shatter_coin", "decoy_totem", "totem_generator", "totem_projector", "charged_illyrium_core_cable"])]
+    tiers = [("1. Start: Tetrium", ["shatter_totem", "tetrium_ore", "tetrium_crucible", "combination_forge", "tetrium_plate", "machine_chassis", "tetrium_coil", "basic_control_circuit", "coin_vault"]),
+             ("2. Illyrium", ["illyrium_crucible", "dirty_illyrium_ingot", "illyrium_refinery", "illyrium_ingot"]),
+             ("3. Coins and Magnatite", ["shatter_coin_factory", "copper_shatter_coin", "magnetic_centrifuge", "magnatite_ingot", "charged_magnatite_ingot"]),
+             ("4. Wave Plasma", ["plasma_extractor", "plasma_interface", "projector_base", "totem_projector", "battery_charger", "plasma_battery_2", "wave_emitter"]),
+             ("5. End game", ["factory_motivator", "illyrium_shatter_coin", "decoy_totem", "plasma_battery_4", "charged_illyrium_core_cable"])]
+    plate("flow_plasma", "How Wave Plasma flows",
+          "<h3>From the totem to a second aura</h3>" + chain("shatter_totem", ("stands on",), "plasma_extractor", ("touching",), "plasma_interface", ("cable run",), "projector_base", ("stands on it",), "totem_projector")
+          + "<h3>Bottled: batteries</h3>" + chain("plasma_interface", ("cable into its back",), "battery_charger", ("fills and stamps",), "plasma_battery_2", ("stood on an",), "plasma_extractor")
+          + "<h3>Carried: cells and the emitter</h3>" + chain("battery_charger", ("fills and stamps",), "power_cell_3", ("fitted in the",), "wave_emitter", ("in your offhand",), "shatter_totem")
+          + "<h3>Shaping a run</h3>" + chain("plasma_valve", ("caps or shuts a run",), "plasma_repeater", ("starts a fresh run",), "charged_illyrium_core_cable", ("80 blocks",), "projector_base"),
+          "Pressure is shared equally between runs. Jade and the interface screen show the mB/t everywhere.")
     plate("flow_progression", "The whole progression",
           "".join(f'<div class="tier"><h3>{n}</h3><div class="chain">' + "".join(f'<span class="node">{icon(i, 30)}<em>{html.escape(name_of("bsp_core:" + i))}</em></span>' for i in ids) + "</div></div>" for n, ids in tiers),
           "Each row needs the one above it. Raising your totem's tier costs the coin of the tier you are leaving.")

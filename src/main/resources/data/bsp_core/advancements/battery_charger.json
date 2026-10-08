@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:battery_charger"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.battery_charger"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.battery_charger.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:battery_charger"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:charged_resonance_crystal"
+}

@@ -23,98 +23,100 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 /**
- * The plasma inside a cable, seen through the pipe's glass: a level that rises with what is flowing
- * (full at the projector's need), the moving plasma texture, and bright pulses that travel the way
- * the plasma is going. An idle cable shows a thin trace, or nothing after a while.
+ * The plasma inside a cable, seen through the pipe's glass. It sits at a level that rises with what
+ * is flowing (full at the projector's need) and its surface ripples along the pipe in the direction
+ * the plasma runs. A cable nobody feeds any more (cut off, or its run gone) drains away in a second.
  */
 public class PlasmaCableRenderer implements BlockEntityRenderer<PlasmaCableBlockEntity> {
     private static final ResourceLocation PLASMA = new ResourceLocation(BSPCore.MODID, "block/plasma_still");
     private static final float LO = 6.3f, HI = 9.7f; // the cavity inside the 5..11 px pipe, in model pixels
+    private static final int SLICES = 8;
+    /** Reports come about every two seconds; after this many ticks without one the pipe is taken as cut and drains. */
+    private static final int STALE = 55, DRAIN = 20;
 
     public PlasmaCableRenderer(BlockEntityRendererProvider.Context ctx) {}
 
     @Override
     public void render(PlasmaCableBlockEntity cable, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-        if (cable.getLevel() == null) {
+        if (cable.getLevel() == null || cable.flow() <= 0) {
             return;
         }
-        int flow = cable.flow();
-        if (flow <= 0) {
+        long age = cable.age();
+        if (age > STALE + DRAIN) {
             return;
         }
+        float drain = age <= STALE ? 1f : 1f - (age - STALE) / (float) DRAIN;
         float t = (cable.getLevel().getGameTime() + partialTick) / 20f;
-        float frac = Mth.clamp(flow / (float) Math.max(1, BSPConfig.getOr(BSPConfig.PROJECTOR_NEED, 100)), 0.12f, 1f);
+        float frac = Mth.clamp(cable.flow() / (float) Math.max(1, BSPConfig.getOr(BSPConfig.PROJECTOR_NEED, 100)), 0.15f, 1f) * drain;
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(PLASMA);
         VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS));
         pose.pushPose();
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
         BlockState state = cable.getBlockState();
-        float h = LO + (HI - LO) * frac; // the level, measured from the bottom of the cavity
-        // the core, then each joined arm out to the block edge
-        liquid(vc, pose, sprite, LO, LO, LO, HI, h, HI, 0.85f);
+        Direction out = cable.out(), in = cable.in();
+        float depth = (HI - LO) * frac;
+        // the core: a wave running from the way in toward the way out
+        Direction axis = out != null ? out : in != null ? in.getOpposite() : Direction.EAST;
+        wave(vc, pose, sprite, LO, LO, LO, HI, HI, HI, depth, axis, t, drain);
         for (Direction d : Direction.values()) {
             if (!state.getValue(TotemCableBlock.SIDES[d.get3DDataValue()])) {
                 continue;
             }
-            float[] b = arm(d, h);
-            liquid(vc, pose, sprite, b[0], b[1], b[2], b[3], b[4], b[5], 0.85f);
-        }
-        // pulses run from the way in to the way out
-        Direction out = cable.out(), in = cable.in();
-        if (out != null) {
-            for (int i = 0; i < 2; i++) {
-                float k = (t * 0.9f + i * 0.5f) % 1f;
-                float[] p = along(in, out, k);
-                float c = (LO + h) / 2f, r = 0.9f + 0.5f * frac;
-                liquid(vc, pose, sprite, p[0] - r, Math.max(LO, c - r), p[2] - r, p[0] + r, Math.min(h, c + r), p[2] + r, 1f, p[1]);
-            }
+            // the arm's cavity, out to the block edge; the wave runs outward on the way out and inward on the way in
+            float[] b = switch (d) {
+                case NORTH -> new float[]{LO, LO, 0, HI, HI, LO};
+                case SOUTH -> new float[]{LO, LO, HI, HI, HI, 16};
+                case WEST -> new float[]{0, LO, LO, LO, HI, HI};
+                case EAST -> new float[]{HI, LO, LO, 16, HI, HI};
+                case UP -> new float[]{LO, HI, LO, HI, 16, HI};
+                case DOWN -> new float[]{LO, 0, LO, HI, LO, HI};
+            };
+            wave(vc, pose, sprite, b[0], b[1], b[2], b[3], b[4], b[5], depth, d == in ? d.getOpposite() : d, t, drain);
         }
         pose.popPose();
     }
 
-    /** The cavity of the arm in direction {@code d}, filled to level {@code h} (vertical arms fill to a width instead). */
-    private static float[] arm(Direction d, float h) {
-        return switch (d) {
-            case NORTH -> new float[]{LO, LO, 0, HI, h, LO};
-            case SOUTH -> new float[]{LO, LO, HI, HI, h, 16};
-            case WEST -> new float[]{0, LO, LO, LO, h, HI};
-            case EAST -> new float[]{HI, LO, LO, 16, h, HI};
-            case UP -> new float[]{8 - (h - LO) / 2, HI, 8 - (h - LO) / 2, 8 + (h - LO) / 2, 16, 8 + (h - LO) / 2};
-            case DOWN -> new float[]{8 - (h - LO) / 2, 0, 8 - (h - LO) / 2, 8 + (h - LO) / 2, LO, 8 + (h - LO) / 2};
-        };
-    }
-
-    /** A point {@code k} of the way through the cable, entering from {@code in} (or the centre) and leaving by {@code out}. Returns x, y, z. */
-    private static float[] along(Direction in, Direction out, float k) {
-        float[] a = in == null ? new float[]{8, 8, 8} : new float[]{8 + in.getStepX() * 8, 8 + in.getStepY() * 8, 8 + in.getStepZ() * 8};
-        float[] b = {8 + out.getStepX() * 8, 8 + out.getStepY() * 8, 8 + out.getStepZ() * 8};
-        if (k < 0.5f) {
-            float s = k * 2;
-            return new float[]{a[0] + (8 - a[0]) * s, a[1] + (8 - a[1]) * s, a[2] + (8 - a[2]) * s};
+    /**
+     * Fills the cavity {@code x0..x1, y0..y1, z0..z1} to {@code depth} from its floor, sliced along {@code along} so each slice's
+     * level and brightness ride a wave that travels that way. Vertical cavities fill as a centred column instead.
+     */
+    private static void wave(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1, float depth, Direction along, float t, float drain) {
+        boolean vertical = along.getAxis() == Direction.Axis.Y;
+        float len = along.getAxis() == Direction.Axis.X ? x1 - x0 : along.getAxis() == Direction.Axis.Y ? y1 - y0 : z1 - z0;
+        if (len <= 0) {
+            return;
         }
-        float s = (k - 0.5f) * 2;
-        return new float[]{8 + (b[0] - 8) * s, 8 + (b[1] - 8) * s, 8 + (b[2] - 8) * s};
+        int sign = along.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1 : -1;
+        float step = len / SLICES;
+        for (int i = 0; i < SLICES; i++) {
+            float a = i * step, b = a + step;
+            // the wave: position along the pipe minus time, so crests move the way the plasma goes
+            float phase = (sign > 0 ? a : len - a) / 3.4f - t * 3.2f;
+            float ripple = 0.22f * Mth.sin(phase) * drain, bright = 0.82f + 0.18f * Mth.sin(phase + 1f);
+            float d = Mth.clamp(depth + ripple, 0.3f, HI - LO);
+            float sx0 = x0, sx1 = x1, sy0 = y0, sy1 = y1, sz0 = z0, sz1 = z1;
+            switch (along.getAxis()) {
+                case X -> { sx0 = x0 + a; sx1 = x0 + b; }
+                case Y -> { sy0 = y0 + a; sy1 = y0 + b; }
+                case Z -> { sz0 = z0 + a; sz1 = z0 + b; }
+            }
+            if (vertical) { // a column whose width breathes with the wave
+                float half = d / 2f, cx = (x0 + x1) / 2f, cz = (z0 + z1) / 2f;
+                box(vc, pose, sprite, cx - half, sy0, cz - half, cx + half, sy1, cz + half, bright);
+            } else {
+                box(vc, pose, sprite, sx0, y0, sz0, sx1, y0 + d, sz1, bright);
+            }
+        }
     }
 
-    private static void liquid(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1, float alpha) {
-        liquid(vc, pose, sprite, x0, y0, z0, x1, y1, z1, alpha, Float.NaN);
-    }
-
-    /** A box of plasma; the sprite is animated by itself. When {@code bright} is a number the box is drawn whiter, for a pulse. */
-    private static void liquid(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1, float alpha, float bright) {
+    private static void box(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1, float bright) {
         if (x1 <= x0 || y1 <= y0 || z1 <= z0) {
             return;
         }
         Matrix4f m = pose.last().pose();
         Matrix3f nm = pose.last().normal();
-        int c = Float.isNaN(bright) ? 255 : 255, a = Math.round(alpha * 255);
+        int c = Math.round(255 * bright), a = 225;
         float u0 = sprite.getU(0), u1 = sprite.getU(16), v0 = sprite.getV(0), v1 = sprite.getV(16);
-        if (!Float.isNaN(bright)) { // a pulse: a small patch of the brightest part of the texture
-            u0 = sprite.getU(6);
-            u1 = sprite.getU(10);
-            v0 = sprite.getV(6);
-            v1 = sprite.getV(10);
-        }
         float[][] faces = {
                 {x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, 0, 0, 1}, {x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, 0, 0, -1},
                 {x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, 1, 0, 0}, {x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, -1, 0, 0},

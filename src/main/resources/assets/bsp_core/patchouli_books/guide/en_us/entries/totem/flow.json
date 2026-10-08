@@ -1,0 +1,47 @@
+{
+  "name": "Pressure, Runs and Valves",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:plasma_valve",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Plasma moves in $(l)runs$(): a line of cables from an interface to whatever is at its end. Every cable in a run carries the same figure, the run's $(l)pressure$(), in mB/t. Nothing is lost along a cable, however long, up to its reach.$(br2)Each kind of cable has a longest run:$(br)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)A mixed run goes as far as its weakest cable."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tetrium_core_cable",
+      "recipe2": "bsp_core:magnatite_core_cable"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:illyrium_core_cable",
+      "recipe2": "bsp_core:charged_illyrium_core_cable"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "An interface shares what its extractors give $(l)equally$() between the runs leaving it. A run that can take less than its share, because a valve caps it or its end is full, leaves the rest to the others.$(br2)So two bases on one totem get 50 mB/t each; cap one at 20 and the other gets 80. The cables leaving the interface always add up to the supply.",
+      "title": "Sharing"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:plasma_repeater",
+      "text": "A $(item)Plasma Repeater$() ends one run and starts a fresh one, so the reach count begins again. Plasma goes in its dark back and out its lit front; placed pointing the way you look, the wrench turns it. It costs a tenth of the pressure, and a projector behind it receives one power at full level, or two or more each one level lower per repeater."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:plasma_valve",
+      "text": "A $(item)Plasma Valve$() sets the most that may pass it, from 0 to 2,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs keep drinking from what is left for a short while, then stop.",
+      "title": "What you see"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:wrench",
+      "text": "The $(item)Wrench$() turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round."
+    }
+  ]
+}

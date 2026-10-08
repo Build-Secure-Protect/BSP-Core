@@ -12,6 +12,8 @@
     "bsp_core:totem_projector",
     "bsp_core:plasma_extractor",
     "bsp_core:plasma_interface",
-    "bsp_core:battery_charger"
+    "bsp_core:battery_charger",
+    "bsp_core:projector_base",
+    "bsp_core:plasma_valve"
   ]
 }

@@ -40,7 +40,7 @@ import java.util.UUID;
  * <p>With repeaters in the run the choice narrows: one power arrives at full level, two or more each
  * arrive one level lower per repeater. A Channel Expander fitted in the projector adds a channel.
  */
-public class TotemProjectorBlockEntity extends BlockEntity implements com.mrgregles.bsp_core.plasma.PlasmaReceiver {
+public class TotemProjectorBlockEntity extends BlockEntity {
     /** The powers a projector can receive, in screen order. Indexes into {@link #chosen}. */
     public static final Buff[] SENDABLE = {Buff.FORTIFY, Buff.HEALING, Buff.ALARM, Buff.WARD, Buff.SANCTUARY, Buff.OVERCLOCK, Buff.ANCHOR};
     private static final int FEED_TICKS = 50;
@@ -55,7 +55,7 @@ public class TotemProjectorBlockEntity extends BlockEntity implements com.mrgreg
     private BlockPos source, anchorTotem;
     private com.mrgregles.bsp_core.plasma.PlasmaAccess access = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
     private long fedAt = -1000;
-    private boolean active, signal;
+    private boolean active, signal, powered;
     private final Set<UUID> alarmed = new HashSet<>();
 
     public TotemProjectorBlockEntity(BlockPos pos, BlockState state) {
@@ -64,13 +64,7 @@ public class TotemProjectorBlockEntity extends BlockEntity implements com.mrgreg
 
     // ------------------------------------------------------------------ what the interface tells it
 
-    @Override
-    public int wanted() {
-        return need() * 20;
-    }
-
-    /** Called by the interface group at {@code master} once a second. {@code deliveredPerTick} is the plasma arriving after repeaters. */
-    @Override
+    /** Fed from the Projector Base below once a second: {@code deliveredPerTick} is what the base could give this second. */
     public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable BlockPos anchorTotem) {
         int[] was = offered.clone();
         for (int i = 0; i < SENDABLE.length; i++) {
@@ -82,12 +76,16 @@ public class TotemProjectorBlockEntity extends BlockEntity implements com.mrgreg
         this.delivered = deliveredPerTick;
         this.access = access;
         this.anchorTotem = anchorTotem;
-        tank = Math.min(capacity(), tank + deliveredPerTick * 20);
         fedAt = level == null ? 0 : level.getGameTime();
         recompute();
         if (changed) {
             sync();
         }
+    }
+
+    /** Called by the base with its feed: whether it had a full second's worth of plasma for the projector. */
+    public void power(boolean enough) {
+        powered = enough;
     }
 
     /** Drops choices the interface no longer offers or beyond the channels, then works out what arrives. */
@@ -224,9 +222,12 @@ public class TotemProjectorBlockEntity extends BlockEntity implements com.mrgreg
         if (sl.getGameTime() % 20 != 0) {
             return;
         }
-        boolean fed = source != null && sl.getGameTime() - fedAt <= FEED_TICKS, now = fed && delivered >= need();
+        // the base below holds the plasma and feeds this projector from its own tick; here we only mirror its tank for the screen
+        if (sl.getBlockEntity(worldPosition.below()) instanceof com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity base) {
+            tank = base.tank();
+        }
+        boolean fed = source != null && sl.getGameTime() - fedAt <= FEED_TICKS, now = fed && powered;
         if (now) {
-            tank = Math.max(0, tank - need() * 20);
             effects(sl);
         }
         if (now != active || fed != signal) {

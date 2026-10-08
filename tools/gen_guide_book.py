@@ -59,6 +59,26 @@ def craft(first, second=None, body=None):
     return page
 
 
+def scene(name, layers, mapping, body):
+    """A turnable 3D scene of blocks that is not a machine: layers top to bottom, rows north to south, characters west to east, '0' at the centre."""
+    pattern = [[row.replace(" ", "_") for row in layer] for layer in layers]
+    return {"type": "patchouli:multiblock", "name": name, "multiblock": {"pattern": pattern, "mapping": mapping, "symmetrical": False}, "text": body}
+
+
+CABLE_X, CABLE_Z = "bsp_core:tetrium_core_cable[east=true,west=true]", "bsp_core:tetrium_core_cable[north=true,south=true]"
+HOOKUP = scene("The hook-up", [["T________J", "          ", "          ", "          "], ["E0cccVcRcB", " d        ", " d        ", " H        "]],
+               {"E": "bsp_core:plasma_extractor", "0": "bsp_core:plasma_interface[west=drum,east=cable,south=cable]", "T": "bsp_core:shatter_totem", "c": CABLE_X, "d": CABLE_Z,
+                "V": "bsp_core:plasma_valve[axis=x]", "R": "bsp_core:plasma_repeater[facing=east]", "B": "bsp_core:projector_base", "J": "bsp_core:totem_projector", "H": "bsp_core:battery_charger[facing=south]"},
+               "Totem on extractor, interface beside it, a run east through a valve and a repeater to a base and its projector, and a second run south into the back of a charger. Drag to turn.")
+GROUP = scene("Four interfaces joined", [["T    ", "     "], ["E0Ac ", " BC  "]],
+              {"E": "bsp_core:plasma_extractor", "T": "bsp_core:shatter_totem", "0": "bsp_core:plasma_interface[west=drum,east=join,south=join]", "A": "bsp_core:plasma_interface[west=join,south=join,east=cable]",
+               "B": "bsp_core:plasma_interface[north=join,east=join]", "C": "bsp_core:plasma_interface[north=join,west=join]", "c": CABLE_X},
+              "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group.")
+BATTERY_FEED = scene("A battery instead of a totem", [["A   J", "     "], ["E0ccB", "     "]],
+                     {"E": "bsp_core:plasma_extractor", "A": "bsp_core:plasma_battery_2[axis=x]", "0": "bsp_core:plasma_interface[west=drum,east=cable]", "c": CABLE_X, "B": "bsp_core:projector_base", "J": "bsp_core:totem_projector"},
+                     "A charged battery standing on an extractor feeds it at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.")
+
+
 def build(name, layers, controller, body):
     """A picture of the finished machine if one has been made (see docs/book_screenshots), otherwise the turnable block layout."""
     machine = controller.split(":")[1]
@@ -111,37 +131,54 @@ ENTRIES = [
         craft("reinforced_casing"),
     ]),
     ("totem", "projectors", "Wave Plasma and Projectors", "bsp_core:totem_projector", 6, [
-        text("A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, more with the $(l)Output$() upgrade. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."),
-        text("The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into it.$(li)$(item)Plasma Cable$() from the interface to the projector.$(li)$(item)Projector$() at the end.", "How it joins up"),
-        craft("plasma_extractor", "plasma_interface", "Interfaces that touch join into one, up to twelve blocks in any shape. More than twelve, or one touching a drum another interface already serves, shows a lit seam and does nothing: an interface is not a cable."),
-        craft("totem_projector", "channel_expander", "A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure. It receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking it."),
-        text("A cable carries its whole run at full pressure. Each kind has a longest run:$(br2)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)A mixed run goes as far as its weakest cable. A $(item)Plasma Repeater$() in the run starts a fresh one.", "Cables and reach"),
-        craft("plasma_repeater", None, "Each repeater costs something: nine tenths of the plasma passes it, and a projector behind it receives one power at full level, or two or more each one level lower per repeater. The projector screen shows what arrives before you switch."),
+        text("A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 600 with the $(l)Output$() upgrade. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."),
+        HOOKUP,
+        text("The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into its outer faces.$(li)$(item)Plasma Cable$() from the interface onward.$(li)$(item)Projector Base$() at the end of the cable, holding what arrives.$(li)$(item)Projector$() standing on the base.", "How it joins up"),
+        craft("plasma_extractor", "plasma_interface", "Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."),
+        GROUP,
+        text("Right-click any interface for its $(l)flow view$(): the group and every cable, valve, repeater, extractor, base and charger it reaches in 3D, labelled with the mB/t passing. Drag to turn, right-drag to pan, scroll to zoom.$(br2)Jade shows the same figures block by block: an extractor's draw, a cable's flow, a valve's limit, a base's tank.", "Seeing the flow"),
+        craft("projector_base", "totem_projector", "Cables plug into the base's four sides; the projector on top draws from it. A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure."),
+        text("The base holds 5,000 mB and the projector burns 20 mB/t of it, so a base that was full keeps its projector going for about four minutes after a cable is cut. A base with nothing feeding it and no projector drains by itself.$(br2)A projector runs on plasma alone: no RF. With less than 100 mB/t arriving and a dry base it shows no aura.", "The base's tank"),
+        craft("channel_expander", None, "A projector receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking the projector with it; sneak and right-click empty-handed takes it out."),
+        text("What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.", "Powers and auras"),
+    ]),
+    ("totem", "flow", "Pressure, Runs and Valves", "bsp_core:plasma_valve", 7, [
+        text("Plasma moves in $(l)runs$(): a line of cables from an interface to whatever is at its end. Every cable in a run carries the same figure, the run's $(l)pressure$(), in mB/t. Nothing is lost along a cable, however long, up to its reach.$(br2)Each kind of cable has a longest run:$(br)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)A mixed run goes as far as its weakest cable."),
         craft("tetrium_core_cable", "magnatite_core_cable"),
         craft("illyrium_core_cable", "charged_illyrium_core_cable"),
-        text("What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.", "Powers and auras"),
+        text("An interface shares what its extractors give $(l)equally$() between the runs leaving it. A run that can take less than its share, because a valve caps it or its end is full, leaves the rest to the others.$(br2)So two bases on one totem get 50 mB/t each; cap one at 20 and the other gets 80. The cables leaving the interface always add up to the supply.", "Sharing"),
+        craft("plasma_repeater", None, "A $(item)Plasma Repeater$() ends one run and starts a fresh one, so the reach count begins again. Plasma goes in its dark back and out its lit front; placed pointing the way you look, the wrench turns it. It costs a tenth of the pressure, and a projector behind it receives one power at full level, or two or more each one level lower per repeater."),
+        craft("plasma_valve", None, "A $(item)Plasma Valve$() sets the most that may pass it, from 0 to 2,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run."),
+        text("The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs keep drinking from what is left for a short while, then stop.", "What you see"),
+        craft("wrench", None, "The $(item)Wrench$() turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round."),
     ]),
-    ("totem", "chunks", "Chunk Loading", "minecraft:filled_map", 7, [
+    ("totem", "chunks", "Chunk Loading", "minecraft:filled_map", 8, [
         text("A placed totem can keep the land around it running while you are away: machines work and crops grow as if you were standing there.$(br2)Two base upgrades on the totem's tree do it. $(l)Anchor$() sets how many chunks stay loaded. $(l)Survey$() sets how far from the totem they can be."),
         text("$(l)Anchor$(), from Tier II:$(br)$(li)Level 1: 1 chunk$(li)Level 2: 3 chunks$(li)Level 3: 6 chunks$(br2)$(l)Survey$(), from Tier III, once Anchor is level 2:$(br)$(li)Without it: pick within 3 by 3 chunks$(li)Level 1: 5 by 5$(li)Level 2: 7 by 7$(br2)The chunk the totem stands in is always loaded and counts as one.", "Anchor and Survey"),
         text("Once Anchor has a level, your totem's panel gains a $(l)CHUNKS$() tab. It shows a map of the ground around the totem, one square for each chunk, north at the top.$(br2)Click a square to load that chunk. Click it again to let it go. Turquoise squares are loaded from here, violet ones from a projector, dark ones are out of range.", "Choosing chunks"),
-        text("Receive $(l)Anchor$() on a $(l:totem/projectors)Projector$() and it gets a chunk map of its own, centred on the projector.$(br2)A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps using RF. Its chunks stay loaded while it has a signal and RF.", "Through a projector"),
+        text("Receive $(l)Anchor$() on a $(l:totem/projectors)Projector$() and it gets a chunk map of its own, centred on the projector.$(br2)A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps drawing plasma. Its chunks stay loaded while plasma reaches it.", "Through a projector"),
         text("Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.$(br2)Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.", "More than one totem"),
         text("When a totem is stolen, every chunk chosen for it is let go, at the totem and at its projectors. The thief keeps the upgrades and chooses again.$(br2)If you pick your own totem up and place it somewhere else, it remembers the layout.$(br2)The server may be set to load chunks only while you are online.", "Stolen and moved totems"),
     ]),
-    ("totem", "batteries", "Batteries, Cells and the Emitter", "bsp_core:plasma_battery_2", 8, [
-        text("Wave Plasma can be bottled. A $(item)Battery Charger$() on a Plasma Cable fills a $(item)Plasma Battery$() or $(item)Power Cell$() standing in it, and stamps powers from the interface into it, chosen on the charger's screen.$(br2)Every battery and cell is built around a $(item)Charged Resonance Crystal$(): a Resonance Crystal magnetised in the Magnetic Centrifuge with a Magnatite Nugget in the upgrade slot."),
-        craft("battery_charger", "plasma_battery_1", "Tier I holds 40,000 mB of plasma and nothing else. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers, and each is built around the tier below."),
-        craft("plasma_battery_2", "plasma_battery_3"),
-        craft("plasma_battery_4", None, "Stand a charged battery on a Plasma Extractor instead of a totem: it feeds the extractor at 100 mB/t with its stamped powers until it runs dry. A spare for when your totem is stolen but you still want a projector running."),
-        craft("power_cell_1", "wave_emitter", "A $(item)Power Cell$() holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III. The $(item)Wave Emitter$() runs on one."),
-        text("Hold a Power Cell in one hand and the emitter in the other and right-click: the cell clicks in. Put the emitter in your offhand and right-click to switch it on: you get the cell's powers as if you carried the totem, while it draws 20 mB/t. Sneak and right-click to take the cell out.$(br2)So the totem can stay safe at home while you go out.", "The Wave Emitter"),
+    ("totem", "batteries", "Batteries, Cells and the Emitter", "bsp_core:plasma_battery_2", 9, [
+        text("Wave Plasma can be bottled. A $(item)Battery Charger$() with a Plasma Cable into its back fills a $(item)Plasma Battery$() or $(item)Power Cell$() standing in it, and $(l)stamps$() powers from the interface into it, chosen on the charger's screen.$(br2)Every battery and cell is built around a $(item)Charged Resonance Crystal$()."),
+        spot("bsp_core:charged_resonance_crystal", "A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.", "Charged Resonance Crystal"),
+        craft("battery_charger", None, "Place the charger facing you: the cable goes into its $(l)back$(), and only there. The wrench turns it. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it."),
+        text("Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.$(br2)$(l)Batteries$() take Base powers: the ones a projector can receive. $(l)Cells$() take Carried powers: the ones that work from your offhand.", "What gets stamped"),
+        craft("plasma_battery_1", "plasma_battery_2", "Tier I holds 40,000 mB and no powers. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below."),
+        craft("plasma_battery_3", "plasma_battery_4"),
+        BATTERY_FEED,
+        text("A battery on an extractor feeds it at 100 mB/t with its stamped powers until it runs dry, so projectors and chargers keep working while your totem is away or stolen. The battery lies along an axis; the wrench turns it. A battery keeps its charge and powers when mined.", "Batteries as a source"),
+        craft("power_cell_1", "power_cell_2", "A $(item)Power Cell$() holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III."),
+        craft("power_cell_3", "wave_emitter", "The $(item)Wave Emitter$() runs on one cell. Its hover text and the cell's own show the charge and the powers stamped in."),
+        text("Right-click the emitter at the air (no block within four blocks) to open it: put a Power Cell in the slot, press ON, and read the cell's powers and how long it will last. Put the emitter in your $(l)offhand$(): you get the cell's powers as if you carried the totem, while it draws 20 mB/t. It switches off when the cell runs dry.$(br2)Right-click at a nearby block to switch it without opening the screen; sneak there to take the cell out.", "The Wave Emitter"),
+        text("So the totem can stay safe at home while you go out: a Tier III cell at 20 mB/t lasts 50 minutes.$(br2)Carried powers from the emitter: Damage, Resistance, Mining Speed, Swiftness, Vitality, Featherfall, Night Sight, Bouncy and X-ray, at the stamped level.", "Out and about"),
     ]),
-    ("totem", "access", "Letting Friends In", "minecraft:name_tag", 9, [
+    ("totem", "access", "Letting Friends In", "minecraft:name_tag", 10, [
         text("Your placed totem's panel has an $(l)ACCESS$() tab. Type an online player's name and Add: they get four switches.$(br2)$(li)$(l)Upgrades$(): may buy upgrades and change chunks and projector settings.$(li)$(l)Alarm$(): does not set it off.$(li)$(l)Ward$(): is not weakened by it.$(li)$(l)Machines$(): may open the totem's chargers and see through its Cloaking."),
         text("Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.", "Rules"),
     ]),
-    ("totem", "effects", "The Newer Powers", "minecraft:ender_eye", 10, [
+    ("totem", "effects", "The Newer Powers", "minecraft:ender_eye", 11, [
         text("Five powers added with the plasma rework. Auras are now cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind."),
         text("$(l)Bouncy$() (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.$(br2)$(l)X-ray$() (Carried, after Night Sight, Tier V): press its key and ores, containers and spawners within range show through the blocks for a while, fading with depth; then it recharges.", "Carried"),
         text("$(l)Cloaking$() (Base, Walls path after Deadlock, Tier IV): outsiders see the land as it was when the cloak came on, not what is inside the cube. Uses 50 mB/t of the totem's plasma output.$(br2)$(l)Recall$() (Base, Home path after Overclock, Tier V): when your totem is being stolen, a card above the hotbar offers to bring you back to within its distance of the totem. Twenty seconds to decide, ten minutes' rest after.", "Base"),
@@ -152,7 +189,7 @@ ENTRIES = [
         craft("totem_compass"),
     ]),
     ("materials", "tetrium", "Tetrium", "bsp_core:tetrium_ingot", 0, [
-        text("$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. The ore block itself is what the machines take, so do not smelt it."),
+        text("$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. Without Silk Touch the ore drops $(item)Raw Tetrium$(); the crucibles take raw chunks and ore blocks alike, so do not smelt either."),
         craft("tetrium_crucible", None, "The $(item)Tetrium Crucible$() burns furnace fuel and turns each ore into Tetrium Nuggets and Tetrium Slag."),
         craft("tetrium_ingot_from_nuggets", "combination_forge", "Nine nuggets make an ingot by hand. The $(item)Combination Forge$() does the same job for you and also presses plates."),
         {"type": "patchouli:smelting", "recipe": "bsp_core:slag_brick_from_smelting", "text": "Keep your slag. Smelted into $(item)Slag Bricks$() it goes into almost every machine part."},
@@ -258,6 +295,7 @@ def write_review_copy():
                 extra = {"crafting": "[recipe] " + ", ".join(v.split(":")[1] for k, v in page.items() if k in ("recipe", "recipe2")),
                          "smelting": "[recipe] " + page.get("recipe", "").split(":")[-1], "multiblock": "[3D structure] " + page.get("name", ""),
                          "image": "[picture] " + page.get("title", ""), "spotlight": "[item shown] " + page.get("item", "").split(":")[-1]}.get(kind)
+                extra = extra or (("[3D scene] " + page.get("name", "")) if kind == "multiblock" else None)
                 title = page.get("title")
                 out.append(f"**Page {n}" + (f": {title}" if title and kind != "image" else "") + "**" + (f"  `{extra}`" if extra else ""))
                 out.append("")

@@ -1,0 +1,154 @@
+<title>Plasma Valve Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One WebGL context draws every 3D view. Three block looks, three screen looks, one rule table. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-ion:#4cb2fa;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+button:focus-visible, input:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.ctl input[type=range]{ width:200px; accent-color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; font-style:normal; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+/* ---- in-game screens ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:12px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:10px; margin:0 auto; width:100%; max-width:300px; }
+.hud small{ color:var(--h-muted); font-size:10px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:12px; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); } .ion{ color:var(--h-ion); }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; cursor:pointer; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.on{ border-color:var(--h-ion); color:var(--h-ion); }
+.bar{ height:8px; background:var(--h-slot); border:1px solid var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-ion); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .big{ font-size:16px; } .num{ font-variant-numeric:tabular-nums; }
+.state{ border:2px solid var(--k); color:var(--k); padding:3px 8px; display:inline-block; }
+/* slider screen */
+.track{ position:relative; height:14px; background:var(--h-slot); border:2px solid var(--h-dim); cursor:pointer; } .track i{ position:absolute; left:0; top:0; bottom:0; background:var(--h-ion); } .track b{ position:absolute; top:-5px; width:8px; height:20px; margin-left:-4px; background:var(--h-fg); border:2px solid var(--h-bg); box-sizing:border-box; }
+.ticks{ display:flex; justify-content:space-between; font-size:9px; color:var(--h-muted); }
+/* gauge screen */
+.gauge{ display:flex; gap:12px; align-items:stretch; } .tube{ position:relative; width:34px; height:150px; background:var(--h-slot); border:2px solid var(--h-dim); cursor:pointer; } .tube i{ position:absolute; left:0; right:0; bottom:0; background:var(--h-ion); } .tube b{ position:absolute; left:-6px; right:-6px; height:4px; background:var(--h-fg); margin-top:-2px; }
+.presets{ display:grid; grid-template-columns:1fr 1fr; gap:4px; align-content:start; }
+/* dial screen */
+.dial{ display:flex; gap:12px; align-items:center; } .dial svg{ width:120px; height:120px; cursor:pointer; }
+</style>
+<div class="wrap">
+<section><h1>Plasma Valve Concepts</h1>
+<p class="lede">A block that sits in a cable run and limits what passes, and shuts when a lever on it or a redstone signal says so. It does not weaken powers like a repeater and it does not start a fresh run. Three looks for the block, three looks for its screen, and the rules. Drag any 3D view to turn it. The controls below drive every view at once.</p>
+<div class="card"><div class="ctl"><label>Limit <input type="range" id="lim" min="0" max="2000" step="10" value="600"> <span id="limv" class="num">600 mB/t</span></label><label><input type="checkbox" id="lever"> Lever on (shut)</label><span class="key" id="note"></span></div></div>
+</section>
+
+<section><h2>1. The block</h2>
+<p class="lede">All three are cable-sized along one axis, wrenchable like the repeater, and fit between two cables. A vanilla lever is shown on each so you can see where it would sit. The same plasma runs in and out at the set limit.</p>
+<div class="grid3" id="blocks"></div>
+</section>
+
+<section><h2>2. The screen</h2>
+<p class="lede">Right-click opens it (Machines access on the totem, like the charger). Each shows the limit, what is actually passing, and why the valve is shut if it is.</p>
+<div class="grid3">
+<div class="card"><h3>UI-1. Slider</h3><div class="hud" id="ui1"></div><p>One horizontal slider with ticks, nudge buttons for exact numbers, a flow bar underneath. Plainest to read and to use.</p></div>
+<div class="card"><h3>UI-2. Gauge</h3><div class="hud" id="ui2"></div><p>A vertical tank-style gauge you drag, with preset buttons for quarters. Reads like the base's tank.</p></div>
+<div class="card"><h3>UI-3. Dial</h3><div class="hud" id="ui3"></div><p>A round dial you drag around, matching the gauge on block A. Looks the part, slower for exact numbers.</p></div>
+</div>
+</section>
+
+<section><h2>3. Rules</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Rule</th><th>Proposed</th></tr></thead><tbody>
+<tr><td><b>What it limits</b></td><td>The pressure that may pass, in the same units as the cable labels (mB/t). Slider 0 to 2000 in steps of 10. Cables after the valve show the limited figure.</td></tr>
+<tr><td><b>Shut</b></td><td>A lever on any face of the valve, or any redstone signal into it, shuts it. Shut means 0 passes: the run beyond goes dark and the base beyond drains like a cut cable.</td></tr>
+<tr><td><b>Powers</b></td><td>Pass through unchanged, every level. The valve counts as one cable of reach and does not start a fresh run.</td></tr>
+<tr><td><b>Direction</b></td><td>None. It lies along an axis (wrench turns it). The interface decides which way plasma moves, as with cables.</td></tr>
+<tr><td><b>Sharing at the interface</b></td><td>Each run gets an equal share of the supply; a run that needs less leaves the rest for the others. This on its own fixes the screenshot. Valves then shape it further.</td></tr>
+<tr><td><b>Interface view</b></td><td>The valve shows in the 3D view with its limit and OPEN or SHUT. Jade shows the same line as a cable.</td></tr>
+</tbody></table></div>
+<div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Copper Ingot</i><i>Tetrium Plate</i><i>Tetrium Core Cable</i><i>Lever</i><i>Tetrium Core Cable</i><i>Tetrium Plate</i><i>Redstone</i><i>Tetrium Plate</i></div><span class="arrow">to</span><span class="out">1 x Plasma Valve</span></div>
+<p>Recipe to confirm: the plates and cable ends match the repeater, the lever and redstone say what it does.</p></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, COPPER=0xc77a3a, ION=0x4cb2fa, RED=0x8a2a22, GLASS=0x9ec5e8, WOOD=0x8a5a2b, STONE=0x7a7a7a;
+  const state={lim:600, lever:false}; const MAX=2000;
+  function sync(){ el('limv').textContent=state.lim+' mB/t'; el('note').textContent=state.lever?'Shut by the lever: nothing passes.':'Open: up to '+state.lim+' mB/t passes.'; drawUI(); }
+  el('lim').addEventListener('input',e=>{ state.lim=+e.target.value; sync(); }); el('lever').addEventListener('change',e=>{ state.lever=e.target.checked; sync(); });
+  const open=()=>!state.lever&&state.lim>0, frac=()=>state.lim/MAX;
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  const liq=()=>{ const m=new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:.92}); return m; };
+  function lq(g,f,t){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),liq()); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function cyl(g,p,axis,r,len,c,mat){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,16),mat||new THREE.MeshLambertMaterial({color:c})); m.position.set(...p); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; }
+  function ring(g,p,axis,R,r,c){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshLambertMaterial({color:c||COPPER})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  // a cable block at x..x+16 along x, with glass walls and plasma inside; returns the plasma mesh
+  function cable(g,x){ for(const [y,z] of [[5,5],[5,10.2],[10.2,5],[10.2,10.2]]) bx(g,[x,y,z],[x+16,y+.8,z+.8],HULL2); bx(g,[x,5.4,5.4],[x+16,10.6,10.6],GLASS,false,.22); return lq(g,[x+.1,6.3,6.3],[x+15.9,9.7,9.7]); }
+  // a vanilla lever on a face: plate plus a stick that tilts with the state; axis 'y' top face, 'z' south face
+  function lever(g,p,face){ const grp=new THREE.Group(); grp.position.set(...p); g.add(grp); if(face==='s') grp.rotation.x=Math.PI/2; bx(grp,[-3,0,-2],[3,1,2],STONE); const stick=bx(grp,[-.8,0,-.8],[.8,7,.8],WOOD); const base=stick.position.clone(); stick.position.set(0,0,0); const piv=new THREE.Group(); piv.add(stick); stick.position.y=3.5; grp.add(piv); return piv; }
+  // ---- A. Gate Wheel: tube, two collars, bonnet with a copper hand wheel on top that turns while open, a round gauge on the south face
+  function gateWheel(g){ const inL=cable(g,-16), outL=cable(g,16); bx(g,[0,4.5,4.5],[16,11.5,11.5],HULL); for(const x of [0,14.6]) bx(g,[x,3.6,3.6],[x+1.4,12.4,12.4],TRIM);
+    bx(g,[5.5,11.5,5.5],[10.5,14,10.5],HULL2); cyl(g,[8,14.5,8],'y',.7,2,TRIM); const wheel=new THREE.Group(); wheel.position.set(8,15.6,8); g.add(wheel); ring(wheel,[0,0,0],'y',3.4,.55); for(const a of [0,Math.PI/2]){ const s=bx(wheel,[-3.3,-.3,-.3],[3.3,.3,.3],COPPER); s.rotation.y=a; }
+    cyl(g,[8,8,11.7],'z',2.4,.6,MID); const needle=new THREE.Group(); needle.position.set(8,8,12.05); g.add(needle); bx(needle,[-.25,0,0],[.25,2,.3],0xffd23a); const lamp=bx(g,[2.5,8.5,11.6],[4,9.5,12],ION,true);
+    const lev=lever(g,[8,2.6,8],'y'); const plate=bx(g,[5,4,5],[11,4.6,11],MID);
+    return t=>{ const o=open(); inL.material.opacity=.92; outL.material.opacity=o?.5+.42*frac():.08; if(o&&!reduce) wheel.rotation.y+=.01+.05*frac(); needle.rotation.z=Math.PI*.75-Math.PI*1.5*frac(); lamp.material.color.setHex(o?ION:0xff6b5c); lev.rotation.z=state.lever?-.9:.9; plate.material.color.setHex(state.lever?RED:MID); }; }
+  // ---- B. Slide Gate: a glass window on the tube, a plate through it that rises with the limit and drops shut; pips on the guide show the setting
+  function slideGate(g){ const inL=cable(g,-16), outL=cable(g,16); for(const [y,z] of [[4.5,4.5],[4.5,10.7],[10.7,4.5],[10.7,10.7]]) bx(g,[0,y,z],[16,y+.8,z+.8],HULL); for(const x of [0,14.6]) bx(g,[x,3.6,3.6],[x+1.4,12.4,12.4],TRIM);
+    bx(g,[1.4,5,5],[14.6,11,11],GLASS,false,.25); const plasma=lq(g,[.1,6.3,6.3],[15.9,9.7,9.7]); bx(g,[6.4,11.5,3.2],[9.6,17.5,12.8],HULL2); const gate=bx(g,[7.4,4.8,4.2],[8.6,17,11.8],TRIM);
+    const pips=[]; for(let i=0;i<5;i++) pips.push(bx(g,[7.3,17.5,4.6+i*1.5],[8.7,18,5.6+i*1.5],ION,true)); const lev=lever(g,[8,2.6,8],'y'); const plate=bx(g,[5,4,5],[11,4.6,11],MID);
+    return t=>{ const o=open(); const lift=o?6*frac():0; gate.position.y=10.9+lift; outL.material.opacity=o?.5+.42*frac():.08; plasma.material.opacity=.92; pips.forEach((p,i)=>p.material.color.setHex(o&&frac()>i/5?ION:0x1e222b)); lev.rotation.z=state.lever?-.9:.9; plate.material.color.setHex(state.lever?RED:MID); }; }
+  // ---- C. Regulator Drum: a fat drum in the line with glass ends, a copper dial ring with a lit mark showing the limit, a lamp on top
+  function regulatorDrum(g){ const inL=cable(g,-16), outL=cable(g,16); cyl(g,[8,8,8],'x',5,12,HULL); for(const x of [1,15]) cyl(g,[x,8,8],'x',4.4,2,GLASS,new THREE.MeshLambertMaterial({color:GLASS,transparent:true,opacity:.3})); const core=cyl(g,[8,8,8],'x',2.2,16,ION,liq());
+    ring(g,[8,8,8],'x',5.6,.5); const mark=new THREE.Group(); mark.position.set(8,8,8); g.add(mark); bx(mark,[-.7,5.2,-.4],[.7,6.6,.4],ION,true); const lamp=bx(g,[7,13,7],[9,14.2,9],ION,true); for(const x of [0,14.6]) bx(g,[x,3.6,3.6],[x+1.4,12.4,12.4],TRIM);
+    const lev=lever(g,[8,8,13.4],'s'); const plate=bx(g,[5,2.6,5],[11,3.2,11],MID);
+    return t=>{ const o=open(); core.material.opacity=o?.5+.42*frac():.15; outL.material.opacity=o?.5+.42*frac():.08; mark.rotation.x=-Math.PI*.8+Math.PI*1.6*frac(); lamp.material.color.setHex(o?ION:0xff6b5c); lev.rotation.z=state.lever?-.9:.9; plate.material.color.setHex(state.lever?RED:MID); }; }
+  // one WebGL context for the whole page: a fixed transparent canvas draws each view into its own rectangle
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,ry:Math.PI+.6,rx:.45,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Gate Wheel','A copper hand wheel on a bonnet turns while plasma passes, faster the higher the limit. A small round gauge on the side shows the setting with a needle; its lamp goes red when shut. Lever sits on top.',gateWheel],
+    ['B. Slide Gate','The tube has a window and a steel plate running through it. The plate stands as high as the limit allows and drops to the floor when shut, so you can read it from across the room. Five pips on the guide show the setting.',slideGate],
+    ['C. Regulator Drum','A short drum in the line with glass ends showing the plasma, a copper dial ring with a lit mark at the limit, and a lamp on top. Lever on the side face.',regulatorDrum]],{dist:70,target:[8,8,8]});
+  // ---- screens
+  function drawUI(){ const o=open(), pass=o?Math.min(state.lim,600):0, why=state.lever?'SHUT BY LEVER':state.lim===0?'SHUT, LIMIT 0':'OPEN'; const k=o?'var(--h-ion)':'var(--h-bad)';
+    el('ui1').innerHTML='<div class="top"><span>PLASMA VALVE</span><span class="state" style="--k:'+k+'">'+why+'</span></div>'
+      +'<div class="row"><span class="mut">LIMIT</span><span class="big num">'+state.lim+' mB/t</span></div><div class="track" id="tr"><i style="width:'+(frac()*100)+'%"></i><b style="left:'+(frac()*100)+'%"></b></div><div class="ticks"><span>0</span><span>500</span><span>1000</span><span>1500</span><span>2000</span></div>'
+      +'<div class="row"><button class="hb" data-d="-100">-100</button><button class="hb" data-d="-10">-10</button><button class="hb" data-d="10">+10</button><button class="hb" data-d="100">+100</button><button class="hb go" data-set="2000">MAX</button></div>'
+      +'<div class="row"><span class="mut">PASSING</span><span class="num">'+pass+' of 600 mB/t offered</span></div><div class="bar"><i style="width:'+(pass/MAX*100)+'%"></i></div>';
+    el('ui2').innerHTML='<div class="top"><span>PLASMA VALVE</span><span class="state" style="--k:'+k+'">'+why+'</span></div><div class="gauge"><div class="tube" id="tb"><i style="height:'+(frac()*100)+'%"></i><b style="top:'+((1-frac())*100)+'%"></b></div>'
+      +'<div class="presets"><button class="hb" data-set="0">0</button><button class="hb" data-set="500">500</button><button class="hb" data-set="1000">1000</button><button class="hb" data-set="1500">1500</button><button class="hb go" data-set="2000">MAX</button><span class="num big" style="grid-column:span 2">'+state.lim+' mB/t</span><span class="mut" style="grid-column:span 2">PASSING '+pass+' mB/t</span></div></div>';
+    const a=-Math.PI*.75+Math.PI*1.5*frac(), nx=60+40*Math.sin(a), ny=60-40*Math.cos(a); let ticks=''; for(let i=0;i<=8;i++){ const b=-Math.PI*.75+Math.PI*1.5*i/8; ticks+='<line x1="'+(60+46*Math.sin(b))+'" y1="'+(60-46*Math.cos(b))+'" x2="'+(60+52*Math.sin(b))+'" y2="'+(60-52*Math.cos(b))+'" stroke="#9aa3b5" stroke-width="2"/>'; }
+    el('ui3').innerHTML='<div class="top"><span>PLASMA VALVE</span><span class="state" style="--k:'+k+'">'+why+'</span></div><div class="dial"><svg id="dl" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="#0c0e12" stroke="#2a2f3a" stroke-width="3"/>'+ticks+'<line x1="60" y1="60" x2="'+nx+'" y2="'+ny+'" stroke="'+(o?'#4cb2fa':'#ff6b5c')+'" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="60" r="5" fill="#8a909c"/></svg>'
+      +'<div class="presets"><span class="num big" style="grid-column:span 2">'+state.lim+' mB/t</span><button class="hb" data-d="-10">-10</button><button class="hb" data-d="10">+10</button><button class="hb go" data-set="2000" style="grid-column:span 2">MAX</button><span class="mut" style="grid-column:span 2">PASSING '+pass+' mB/t</span></div></div>';
+    document.querySelectorAll('.hud .hb').forEach(b=>b.onclick=()=>{ if(b.dataset.set!==undefined) state.lim=+b.dataset.set; else state.lim=Math.max(0,Math.min(MAX,state.lim+(+b.dataset.d))); el('lim').value=state.lim; sync(); });
+    const drag=(node,fn)=>{ if(!node) return; let on=false; const at=e=>{ const r=node.getBoundingClientRect(); fn(r,e); el('lim').value=state.lim; sync(); }; node.addEventListener('pointerdown',e=>{on=true; node.setPointerCapture(e.pointerId); at(e);}); node.addEventListener('pointermove',e=>{ if(on) at(e); }); node.addEventListener('pointerup',()=>on=false); };
+    drag(el('tr'),(r,e)=>{ state.lim=Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*MAX/10)*10; });
+    drag(el('tb'),(r,e)=>{ state.lim=Math.round(Math.max(0,Math.min(1,1-(e.clientY-r.top)/r.height))*MAX/10)*10; });
+    drag(el('dl'),(r,e)=>{ const x=e.clientX-(r.left+r.width/2), y=e.clientY-(r.top+r.height/2); let a=Math.atan2(x,-y); a=Math.max(-Math.PI*.75,Math.min(Math.PI*.75,a)); state.lim=Math.round((a+Math.PI*.75)/(Math.PI*1.5)*MAX/10)*10; }); }
+  sync();
+})();
+</script>

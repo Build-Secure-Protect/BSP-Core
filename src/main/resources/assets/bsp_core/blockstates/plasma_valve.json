@@ -1,0 +1,14 @@
+{
+ "variants": {
+  "axis=x": {
+   "model": "bsp_core:block/plasma_valve"
+  },
+  "axis=z": {
+   "model": "bsp_core:block/plasma_valve",
+   "y": 90
+  },
+  "axis=y": {
+   "model": "bsp_core:block/plasma_valve_up"
+  }
+ }
+}

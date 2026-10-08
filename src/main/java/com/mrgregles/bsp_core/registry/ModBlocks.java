@@ -45,7 +45,9 @@ public final class ModBlocks {
     public static final RegistryObject<Block> PLASMA_EXTRACTOR = BLOCKS.register("plasma_extractor", com.mrgregles.bsp_core.plasma.PlasmaExtractorBlock::new);
     public static final RegistryObject<Block> PLASMA_INTERFACE = BLOCKS.register("plasma_interface", com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock::new);
     public static final RegistryObject<Block> PLASMA_REPEATER = BLOCKS.register("plasma_repeater", com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock::new);
+    public static final RegistryObject<Block> PLASMA_VALVE = BLOCKS.register("plasma_valve", com.mrgregles.bsp_core.plasma.PlasmaValveBlock::new);
     public static final RegistryObject<Block> BATTERY_CHARGER = BLOCKS.register("battery_charger", com.mrgregles.bsp_core.plasma.BatteryChargerBlock::new);
+    public static final RegistryObject<Block> PROJECTOR_BASE = BLOCKS.register("projector_base", com.mrgregles.bsp_core.plasma.ProjectorBaseBlock::new);
     /** Plasma Batteries I to IV, by tier. */
     public static final java.util.List<RegistryObject<com.mrgregles.bsp_core.plasma.PlasmaBatteryBlock>> PLASMA_BATTERIES = new java.util.ArrayList<>();
 

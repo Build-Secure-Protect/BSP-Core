@@ -101,6 +101,12 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity>> PLASMA_REPEATER =
             BLOCK_ENTITIES.register("plasma_repeater", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity::new, ModBlocks.PLASMA_REPEATER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity>> PLASMA_VALVE =
+            BLOCK_ENTITIES.register("plasma_valve", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity::new, ModBlocks.PLASMA_VALVE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity>> PROJECTOR_BASE =
+            BLOCK_ENTITIES.register("projector_base", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity::new, ModBlocks.PROJECTOR_BASE.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaBatteryBlockEntity>> PLASMA_BATTERY =
             BLOCK_ENTITIES.register("plasma_battery", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.PlasmaBatteryBlockEntity::new, ModBlocks.PLASMA_BATTERIES.stream().map(RegistryObject::get).toArray(net.minecraft.world.level.block.Block[]::new)).build(null));

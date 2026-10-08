@@ -1,0 +1,133 @@
+<title>Plasma Interface Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. One WebGL context draws every view. Three skins for a joined interface group, one rule table. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:16/9; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.hb{ font:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+</style>
+<div class="wrap">
+<section><h1>Plasma Interface Concepts</h1>
+<p class="lede">Interfaces that touch already work as one group of up to twelve, but each block still looks like a separate machine. These three skins make a touching group read as one body, the way an ME Controller does: the faces between joined blocks vanish, the frame runs only round the outside of the whole group, and the lit parts carry on across the joins. Every view shows the same six-block group with a drum on its left, cables leaving on two sides, and a thirteenth block on the right that is refused (its lit parts turn red). Drag to turn.</p>
+<div class="card"><div class="ctl"><span class="key"><b>Shape:</b></span><button type="button" class="hb on" data-shape="l">Six in an L</button><button type="button" class="hb" data-shape="bar">Four in a row</button><button type="button" class="hb" data-shape="cube">Eight in a cube</button><button type="button" class="hb" data-shape="one">One alone</button><span class="key" id="note"></span></div></div>
+</section>
+
+<section><h2>1. The skins</h2>
+<div class="grid3" id="skins"></div>
+</section>
+
+<section><h2>2. How it would be built</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Part</th><th>Proposed</th></tr></thead><tbody>
+<tr><td><b>Joined faces</b></td><td>The block already knows what each of its six sides touches. A side touching another interface draws nothing, so the two bodies read as one.</td></tr>
+<tr><td><b>Frame</b></td><td>The frame strips sit only on edges that are on the outside of the whole group. That needs the diagonal neighbours too, so the block gets a model that reads its neighbours when it is drawn (the way AE2 does it) instead of more blockstates.</td></tr>
+<tr><td><b>Lit parts</b></td><td>Blue while the group works, red on a block the group refuses (a thirteenth, or one touching a drum another group holds). Same rule as today's seam, carried into the skin.</td></tr>
+<tr><td><b>Nozzles and tubes</b></td><td>A cable nozzle appears on any outer face a cable touches; the tube into a drum stays as it is. Faces with nothing on them stay plain.</td></tr>
+<tr><td><b>Screen and Jade</b></td><td>Unchanged: right-click any block of the group for the 3D view; Jade shows the name.</td></tr>
+</tbody></table></div></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, COPPER=0xc77a3a, ION=0x4cb2fa, RED=0xff5a4a, GLASS=0x9ec5e8;
+  const SHAPES={ l:[[0,0,0],[1,0,0],[0,0,1],[1,0,1],[0,1,0],[1,1,0]], bar:[[0,0,0],[1,0,0],[2,0,0],[3,0,0]], cube:[[0,0,0],[1,0,0],[0,0,1],[1,0,1],[0,1,0],[1,1,0],[0,1,1],[1,1,1]], one:[[0,0,0]] };
+  let shape='l'; const scenes=[];
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function cyl(g,p,axis,r,len,c){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,18),new THREE.MeshLambertMaterial({color:c})); m.position.set(...p); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; }
+  function ring(g,p,axis,R,r,c){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),new THREE.MeshLambertMaterial({color:c})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  const DIRS={e:[1,0,0],w:[-1,0,0],u:[0,1,0],d:[0,-1,0],s:[0,0,1],n:[0,0,-1]};
+  // a face box of thickness t on the outside of face dir of a block at origin o (units of 16), inset i from the face's edges
+  function faceBox(o,dir,i,t,depth){ const [x,y,z]=o; const a=16-i; depth=depth||0;
+    switch(dir){ case 'u': return [[x+i,y+16-depth,z+i],[x+a,y+16+t,z+a]]; case 'd': return [[x+i,y-t,z+i],[x+a,y+depth,z+a]]; case 'n': return [[x+i,y+i,z-t],[x+a,y+a,z+depth]]; case 's': return [[x+i,y+i,z+16-depth],[x+a,y+a,z+16+t]]; case 'w': return [[x-t,y+i,z+i],[x+depth,y+a,z+a]]; default: return [[x+16-depth,y+i,z+i],[x+16+t,y+a,z+a]]; } }
+  // a cable block along +x or +z leaving the group, with glass and plasma
+  function cable(g,o,axis){ const [x,y,z]=o; const f=axis==='x'?[[x,y+5,z+5],[x+16,y+11,z+11]]:[[x+5,y+5,z],[x+11,y+11,z+16]];
+    for(const [a,b] of (axis==='x'?[[5,5],[5,10.2],[10.2,5],[10.2,10.2]]:[[5,5],[5,10.2],[10.2,5],[10.2,10.2]])){ if(axis==='x') bx(g,[x,y+a,z+b],[x+16,y+a+.8,z+b+.8],HULL2); else bx(g,[x+a,y+b,z],[x+a+.8,y+b+.8,z+16],HULL2); }
+    bx(g,[f[0][0]+.4,f[0][1]+.4,f[0][2]+.4],[f[1][0]-.4,f[1][1]-.4,f[1][2]-.4],GLASS,false,.22); return bx(g,[f[0][0]+1.3,f[0][1]+1.3,f[0][2]+1.3],[f[1][0]-1.3,f[1][1]-1.3,f[1][2]-1.3],ION,true); }
+  // the drum: a dark cylinder with a porthole facing +x
+  function drum(g,o){ const [x,y,z]=o; cyl(g,[x+8,y+8,z+8],'y',7.5,16,HULL); for(const yy of [1,15]) cyl(g,[x+8,y+yy,z+8],'y',7.9,1.2,TRIM); bx(g,[x+15.4,y+5.5,z+5.5],[x+16.2,y+10.5,z+10.5],TRIM); return bx(g,[x+15.8,y+6.3,z+6.3],[x+16.6,y+9.7,z+9.7],ION,true); }
+  // the scene: group blocks drawn by a skin, plus a refused block, a drum and two cables. skin(g,o,ctx) draws one block; ctx has has(dx,dy,dz), refused, lit list
+  function scene(g,skin){ const blocks=SHAPES[shape].map(p=>p.slice()); const refusedAt=shape==='one'?[2,0,0]:shape==='bar'?[4,0,0]:[2,0,1]; const all=blocks.concat([refusedAt]);
+    const key=p=>p.join(','); const set=new Set(all.map(key)); const lit=[];
+    for(const p of all){ const o=p.map(v=>v*16); const refused=p===refusedAt; const has=(dx,dy,dz)=>set.has(key([p[0]+dx,p[1]+dy,p[2]+dz]));
+      skin(g,o,{has,refused,lit,p}); }
+    // the drum on the west of the first block, cables leaving the group east of its top-right block and south of a bottom block
+    const d=drum(g,[-16,0,0]); lit.push(d);
+    const top=blocks.filter(p=>p[1]===Math.max(...blocks.map(q=>q[1]))); const e=top.reduce((a,b)=>b[0]>a[0]?b:a); const sOut=blocks.filter(p=>p[1]===0).reduce((a,b)=>b[2]>a[2]?b:a);
+    lit.push(cable(g,[(e[0]+1)*16,e[1]*16,e[2]*16],'x')); lit.push(cable(g,[(e[0]+2)*16,e[1]*16,e[2]*16],'x'));
+    if(!set.has(key([sOut[0],0,sOut[2]+1]))){ lit.push(cable(g,[sOut[0]*16,0,(sOut[2]+1)*16],'z')); lit.push(cable(g,[sOut[0]*16,0,(sOut[2]+2)*16],'z')); }
+    bx(g,[-40,-6,-24],[90,0,70],0x3f5a30);
+    return t=>{ const k=.75+.25*Math.sin(t*2.5); for(const m of lit){ if(m.userData.red) m.material.color.setHex(RED).multiplyScalar(.7+.3*Math.sin(t*4)); else m.material.color.setHex(ION).multiplyScalar(k); } }; }
+  // edge strips on the outside of the group: convex outer edges and concave inner corners, never along a join
+  const EDGES=[['u','n'],['u','s'],['u','e'],['u','w'],['d','n'],['d','s'],['d','e'],['d','w'],['n','e'],['n','w'],['s','e'],['s','w']];
+  function edgeBox(o,d1,d2,w){ const [x,y,z]=o; let f=[x-w*.3,y-w*.3,z-w*.3], t=[x+16+w*.3,y+16+w*.3,z+16+w*.3];
+    for(const d of [d1,d2]){ const v=DIRS[d]; for(let i=0;i<3;i++){ if(v[i]>0){ f[i]=o[i]+16-w; t[i]=o[i]+16+w*.3; } if(v[i]<0){ f[i]=o[i]-w*.3; t[i]=o[i]+w; } } }
+    return [f,t]; }
+  function frame(g,o,ctx,w,c){ for(const [d1,d2] of EDGES){ const v1=DIRS[d1], v2=DIRS[d2]; const n1=ctx.has(...v1), n2=ctx.has(...v2), diag=ctx.has(v1[0]+v2[0],v1[1]+v2[1],v1[2]+v2[2]);
+      if((!n1&&!n2)||(n1&&n2&&!diag)){ const [f,t]=edgeBox(o,d1,d2,w); bx(g,f,t,c); } } }
+  function outerFaces(ctx){ return Object.keys(DIRS).filter(d=>!ctx.has(...DIRS[d])); }
+  // ---- A. Grid Core: dark body, a lit cross on every outer face that lines up with its neighbours into one grid over the whole group
+  function gridCore(g,o,ctx){ bx(g,[o[0],o[1],o[2]],[o[0]+16,o[1]+16,o[2]+16],HULL); frame(g,o,ctx,1.6,HULL2);
+    for(const d of outerFaces(ctx)){ const [f,t]=faceBox(o,d,2.2,.3); bx(g,f,t,MID); // the inset panel
+      const v=DIRS[d]; const axes=[0,1,2].filter(i=>v[i]===0); // the lit cross: two lines across the panel along the two in-face axes
+      for(const ax of axes){ const [lf,lt]=faceBox(o,d,0,.5); const ff=lf.slice(), tt=lt.slice(); const other=axes.find(a=>a!==ax); ff[other]=o[other]+7.2; tt[other]=o[other]+8.8; const m=bx(g,ff,tt,ION,true); m.userData.red=ctx.refused; ctx.lit.push(m); }
+      const [nf,nt]=faceBox(o,d,6.3,.9); const dot=bx(g,nf,nt,ION,true); dot.userData.red=ctx.refused; ctx.lit.push(dot); } }
+  // ---- B. Manifold Band: one hull with a glass band of plasma running round the outside of the whole group, header pipes along the top
+  function manifold(g,o,ctx){ bx(g,[o[0],o[1],o[2]],[o[0]+16,o[1]+16,o[2]+16],HULL); frame(g,o,ctx,1.2,TRIM);
+    for(const d of outerFaces(ctx)){ if(d==='u'||d==='d'){ if(d==='u'){ for(const z of [4,10]){ const n=ctx.has(0,0,0); bx(g,[o[0]-(ctx.has(-1,0,0)?.5:0),o[1]+16,o[2]+z],[o[0]+16+(ctx.has(1,0,0)?.5:0),o[1]+18.2,o[2]+z+2.4],TRIM); const m=bx(g,[o[0]-(ctx.has(-1,0,0)?.6:.2),o[1]+16.6,o[2]+z+.6],[o[0]+16+(ctx.has(1,0,0)?.6:-.2),o[1]+17.6,o[2]+z+1.8],ION,true); m.userData.red=ctx.refused; ctx.lit.push(m); } } continue; }
+      const v=DIRS[d]; // a band y 5..11 across the face, glass over plasma; it runs on into the neighbour's band without a break
+      const [gf,gt]=faceBox(o,d,0,.4); gf[1]=o[1]+5; gt[1]=o[1]+11; bx(g,gf,gt,GLASS,false,.28);
+      const [pf,pt]=faceBox(o,d,0,0,1.2); pf[1]=o[1]+5.6; pt[1]=o[1]+10.4; const m=bx(g,pf,pt,ION,true); m.userData.red=ctx.refused; ctx.lit.push(m);
+      for(const yy of [4.2,11]){ const [bf,bt]=faceBox(o,d,0,.6); bf[1]=o[1]+yy; bt[1]=o[1]+yy+.8; bx(g,bf,bt,TRIM); } } }
+  // ---- C. Ribbed Monolith: a smooth body; each outer face carries a copper ring with a lit eye, and the joins between blocks glow as seams on the skin
+  function monolith(g,o,ctx){ bx(g,[o[0],o[1],o[2]],[o[0]+16,o[1]+16,o[2]+16],HULL2); frame(g,o,ctx,1.4,MID);
+    for(const d of outerFaces(ctx)){ const v=DIRS[d]; const c=[o[0]+8+v[0]*8.3,o[1]+8+v[1]*8.3,o[2]+8+v[2]*8.3]; const axis=v[0]?'x':v[1]?'y':'z'; ring(g,c,axis,4.6,.7,COPPER);
+      const [ef,et]=faceBox(o,d,5.8,.5); const eye=bx(g,ef,et,ION,true); eye.userData.red=ctx.refused; ctx.lit.push(eye);
+      // seams: where this outer face meets a joined neighbour's outer face, a lit line runs along the join on the skin
+      for(const [d1,d2] of EDGES){ if(d1!==d&&d2!==d) continue; const other=d1===d?d2:d1; const ov=DIRS[other]; if(!ctx.has(...ov)) continue; if(ctx.has(ov[0]+v[0],ov[1]+v[1],ov[2]+v[2])) continue;
+        const [sf,st]=edgeBox(o,d,other,.6); const v2=[0,1,2].find(i=>v[i]===0&&ov[i]===0); sf[v2]=o[v2]+1.5; st[v2]=o[v2]+14.5; const m=bx(g,sf,st,ION,true); m.userData.red=ctx.refused; ctx.lit.push(m); } } }
+  // one WebGL context for the whole page
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const v={view,scene,cam,opts,ry:Math.PI+.8,rx:.62,drag:false,build}; let lx=0,ly=0; const rebuild=()=>{ if(v.g) scene.remove(v.g); v.g=new THREE.Group(); scene.add(v.g); v.tick=build(v.g); }; rebuild(); v.rebuild=rebuild;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,skin] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,g=>scene(g,skin),opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('skins',[['A. Grid Core','Closest to the ME Controller. A dark body with a plain inset panel on every outer face and a lit cross through it. Because the lines sit at the middle of each face they meet their neighbours edge to edge, so the whole group wears one continuous blue grid with a dot at every crossing. Red on a refused block. The frame runs round the outside of the group only.',gridCore],
+    ['B. Manifold Band','One hull with a glass band at cable height running round the outside of the whole group, plasma visible inside it, and the two header pipes of today\'s block carrying on along the top of every row. Reads as a tank the cables plug into. Red plasma in a refused block\'s band.',manifold],
+    ['C. Ribbed Monolith','A smooth dark body. Every outer face carries a copper ring with a lit eye, like a porthole, and the joins between blocks glow as thin seams on the skin, so you can count the blocks in a group at a glance. A refused block\'s eyes and seams go red.',monolith]],{dist:165,target:[14,10,12]});
+  const shapeNote={l:'Six blocks in an L, two high.',bar:'Four in a row.',cube:'Eight in a cube: the most compact twelve-block groups look like this.',one:'A single block, as today.'};
+  document.querySelectorAll('[data-shape]').forEach(b=>b.onclick=()=>{ shape=b.dataset.shape; document.querySelectorAll('[data-shape]').forEach(x=>x.classList.toggle('on',x===b)); el('note').textContent=shapeNote[shape]; views.forEach(v=>v.rebuild()); });
+  el('note').textContent=shapeNote[shape];
+})();
+</script>

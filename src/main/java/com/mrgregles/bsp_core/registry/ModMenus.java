@@ -40,6 +40,9 @@ public final class ModMenus {
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.decoy.DecoyMenu(id, inv, buf.readBlockPos())));
 
 
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.plasma.WaveEmitterMenu>> WAVE_EMITTER = MENUS.register("wave_emitter",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.plasma.WaveEmitterMenu(id, inv, buf.readEnum(InteractionHand.class))));
+
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.plasma.BatteryChargerMenu>> BATTERY_CHARGER = MENUS.register("battery_charger",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.plasma.BatteryChargerMenu(id, inv, buf.readBlockPos())));
 

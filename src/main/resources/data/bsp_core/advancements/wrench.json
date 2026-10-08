@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:wrench"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.wrench"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.wrench.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:wrench"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:machine_chassis"
+}

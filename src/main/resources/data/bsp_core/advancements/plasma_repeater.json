@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:plasma_repeater"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.plasma_repeater"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.plasma_repeater.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:plasma_repeater"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:plasma_cable"
+}

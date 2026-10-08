@@ -66,10 +66,16 @@ public class TotemCableBlock extends Block implements net.minecraft.world.level.
     /** Whether a cable at {@code pos} joins to whatever is in direction {@code dir}. */
     public static boolean joins(BlockGetter level, BlockPos pos, Direction dir) {
         Block other = level.getBlockState(pos.relative(dir)).getBlock();
-        if (other instanceof TotemCableBlock || other instanceof TotemProjectorBlock || other instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock) {
+        if (other instanceof TotemCableBlock || other instanceof com.mrgregles.bsp_core.plasma.ProjectorBaseBlock || other instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock) {
             return true;
         }
-        // a repeater only takes cables at its two ends
+        // a repeater or a valve only takes cables at its two ends
+        if (other instanceof com.mrgregles.bsp_core.plasma.BatteryChargerBlock) {
+            return com.mrgregles.bsp_core.plasma.BatteryChargerBlock.joins(level.getBlockState(pos.relative(dir)), dir);
+        }
+        if (other instanceof com.mrgregles.bsp_core.plasma.PlasmaValveBlock) {
+            return com.mrgregles.bsp_core.plasma.PlasmaValveBlock.joins(level.getBlockState(pos.relative(dir)), dir);
+        }
         return other instanceof com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock && com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock.joins(level.getBlockState(pos.relative(dir)), dir);
     }
 
@@ -89,6 +95,19 @@ public class TotemCableBlock extends Block implements net.minecraft.world.level.
     @Override
     public BlockState updateShape(BlockState state, Direction dir, BlockState neighbour, LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
         return state.setValue(SIDES[dir.get3DDataValue()], joins(level, pos, dir));
+    }
+
+    /** Breaking a cable empties the cables around it at once; anything further along drains by itself when no report arrives. */
+    @Override
+    public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos, BlockState newState, boolean moving) {
+        if (!state.is(newState.getBlock()) && !level.isClientSide) {
+            for (Direction d : Direction.values()) {
+                if (level.getBlockEntity(pos.relative(d)) instanceof PlasmaCableBlockEntity cable) {
+                    cable.report(0, null, null);
+                }
+            }
+        }
+        super.onRemove(state, level, pos, newState, moving);
     }
 
     @Override

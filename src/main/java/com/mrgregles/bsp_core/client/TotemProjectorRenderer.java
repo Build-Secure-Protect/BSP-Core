@@ -63,7 +63,7 @@ public class TotemProjectorRenderer implements BlockEntityRenderer<TotemProjecto
             if (r > 0) {
                 pose.pushPose();
                 pose.translate(0.5, 0.5, 0.5);
-                ShatterTotemRenderer.auraCube(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.55f + 0.25f * Mth.sin(t * 1.6f + b.ordinal()));
+                ShatterTotemRenderer.auraCube(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.45f + 0.2f * Mth.sin(t * 1.6f + b.ordinal()), t + b.ordinal());
                 pose.popPose();
             }
         }

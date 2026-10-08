@@ -63,6 +63,9 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
     @Nullable
     public static AssemblyGuide ofItem(net.minecraft.world.item.Item item) {
         String id = path(Block.byItem(item));
+        if (PLASMA_ITEMS.contains(id) || id.endsWith("_core_cable") || id.startsWith("plasma_battery_")) {
+            return plasmaChain();
+        }
         Block controller = switch (id) {
             case "illyrium_crucible", "illyrium_casing", "illyrium_core", "lava_pylon", "item_hatch" -> ModBlocks.ILLYRIUM_CRUCIBLE.get();
             case "illyrium_refinery", "illyrium_glass", "refinery_pump" -> ModBlocks.ILLYRIUM_REFINERY.get();
@@ -75,6 +78,59 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
         }
         // a controller that exists only to describe its structure; it is never placed in a world
         return of(entity.newBlockEntity(BlockPos.ZERO, controller.defaultBlockState()));
+    }
+
+    private static final java.util.Set<String> PLASMA_ITEMS = java.util.Set.of("plasma_extractor", "plasma_interface", "projector_base", "totem_projector", "plasma_repeater", "plasma_valve", "battery_charger");
+
+    private static BlockState cable(boolean x) {
+        BlockState s = ModBlocks.TOTEM_CABLES.get(com.mrgregles.bsp_core.projector.TotemCableBlock.Kind.TETRIUM).get().defaultBlockState();
+        for (Direction d : Direction.values()) {
+            s = s.setValue(com.mrgregles.bsp_core.projector.TotemCableBlock.SIDES[d.get3DDataValue()], d.getAxis() == (x ? Direction.Axis.X : Direction.Axis.Z));
+        }
+        return s;
+    }
+
+    private static BlockState iface(Direction drum, Direction... cables) {
+        BlockState s = ModBlocks.PLASMA_INTERFACE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock.SIDES[drum.get3DDataValue()], com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock.Link.DRUM);
+        for (Direction c : cables) {
+            s = s.setValue(com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock.SIDES[c.get3DDataValue()], com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock.Link.CABLE);
+        }
+        return s;
+    }
+
+    private static Step plasmaStep(int n, Block block, List<Placed> blocks) {
+        return new Step(block, blocks, Component.translatable("guide.bsp_core.plasma.step." + n), tip("guide.bsp_core.plasma.tip." + n));
+    }
+
+    /**
+     * The Wave Plasma hook-up, shown for every plasma block: a totem on an extractor, the interface beside it, a cable run east through
+     * a valve and a repeater to a Projector Base with its projector, and a second run south into the back of a Battery Charger.
+     */
+    public static AssemblyGuide plasmaChain() {
+        List<Step> steps = new ArrayList<>();
+        BlockState extractor = ModBlocks.PLASMA_EXTRACTOR.get().defaultBlockState();
+        steps.add(plasmaStep(0, extractor.getBlock(), List.of(new Placed(new BlockPos(-1, 0, 0), extractor))));
+        BlockState totem = ModBlocks.SHATTER_TOTEM.get().defaultBlockState();
+        steps.add(plasmaStep(1, totem.getBlock(), List.of(new Placed(new BlockPos(-1, 1, 0), totem))));
+        BlockState iface = iface(Direction.WEST, Direction.EAST, Direction.SOUTH);
+        steps.add(plasmaStep(2, iface.getBlock(), List.of(new Placed(BlockPos.ZERO, iface))));
+        List<Placed> run = new ArrayList<>();
+        for (int x : new int[]{1, 2, 3, 5, 7}) {
+            run.add(new Placed(new BlockPos(x, 0, 0), cable(true)));
+        }
+        steps.add(plasmaStep(3, cable(true).getBlock(), run));
+        BlockState valve = ModBlocks.PLASMA_VALVE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaValveBlock.AXIS, Direction.Axis.X);
+        steps.add(plasmaStep(4, valve.getBlock(), List.of(new Placed(new BlockPos(4, 0, 0), valve))));
+        BlockState repeater = ModBlocks.PLASMA_REPEATER.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlock.FACING, Direction.EAST);
+        steps.add(plasmaStep(5, repeater.getBlock(), List.of(new Placed(new BlockPos(6, 0, 0), repeater))));
+        BlockState base = ModBlocks.PROJECTOR_BASE.get().defaultBlockState();
+        steps.add(plasmaStep(6, base.getBlock(), List.of(new Placed(new BlockPos(8, 0, 0), base))));
+        BlockState projector = ModBlocks.TOTEM_PROJECTOR.get().defaultBlockState();
+        steps.add(plasmaStep(7, projector.getBlock(), List.of(new Placed(new BlockPos(8, 1, 0), projector))));
+        steps.add(plasmaStep(8, cable(false).getBlock(), List.of(new Placed(new BlockPos(0, 0, 1), cable(false)), new Placed(new BlockPos(0, 0, 2), cable(false)))));
+        BlockState charger = ModBlocks.BATTERY_CHARGER.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.BatteryChargerBlock.FACING, Direction.SOUTH);
+        steps.add(plasmaStep(9, charger.getBlock(), List.of(new Placed(new BlockPos(0, 0, 3), charger))));
+        return new AssemblyGuide(Component.translatable("guide.bsp_core.plasma.title"), Direction.NORTH, steps);
     }
 
     /** The guide for the controller at this block entity, or null if it is not a multiblock controller. */

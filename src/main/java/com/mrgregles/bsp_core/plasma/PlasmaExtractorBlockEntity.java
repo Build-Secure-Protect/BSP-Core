@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /**
- * One drum of a stack of extractors under a totem. Once a second it finds the totem at the top of its
+ * One extractor of a stack of extractors under a totem. Once a second it finds the totem at the top of its
  * stack, takes its even share of the totem's output into its own tank, and remembers the totem's
  * owner and Base powers so a Plasma Interface touching it can offer them.
  *
@@ -26,14 +26,14 @@ import java.util.UUID;
  */
 public class PlasmaExtractorBlockEntity extends BlockEntity {
     private int tank;
-    /** mB per tick this drum is receiving right now; 0 when there is no owned totem above the stack. */
-    private int flow;
+    /** mB per tick this extractor is receiving right now; 0 when there is no owned totem above the stack. */
+    private int flow, cloak;
     @Nullable
     private UUID owner;
     @Nullable
     private BlockPos totemPos;
     private final int[] offered = new int[Buff.values().length];
-    /** Master position of the interface group this drum is served by, so a second group cannot also take from it. */
+    /** Master position of the interface group this extractor is served by, so a second group cannot also take from it. */
     private PlasmaAccess access = new PlasmaAccess();
     @Nullable
     private BlockPos servedBy;
@@ -49,6 +49,11 @@ public class PlasmaExtractorBlockEntity extends BlockEntity {
 
     public int tank() {
         return tank;
+    }
+
+    /** mB per tick of the totem's output that Cloaking is taking before this extractor gets its share. */
+    public int cloak() {
+        return cloak;
     }
 
     public int flow() {
@@ -74,7 +79,7 @@ public class PlasmaExtractorBlockEntity extends BlockEntity {
         return flow > 0;
     }
 
-    /** Who may edit, use or walk past the blocks this drum feeds, from its totem's access list. */
+    /** Who may edit, use or walk past the blocks this extractor feeds, from its totem's access list. */
     public PlasmaAccess access() {
         return access;
     }
@@ -89,7 +94,7 @@ public class PlasmaExtractorBlockEntity extends BlockEntity {
         return took;
     }
 
-    /** The interface group at {@code master} wants this drum. True if it may have it (nobody else holds it, or that group let go). */
+    /** The interface group at {@code master} wants this extractor. True if it may have it (nobody else holds it, or that group let go). */
     public boolean claim(BlockPos master) {
         if (servedBy != null && !servedBy.equals(master) && level != null && level.getGameTime() - servedAt <= 60) {
             return false;
@@ -108,7 +113,7 @@ public class PlasmaExtractorBlockEntity extends BlockEntity {
         if (sl.getGameTime() % 20 != 0) {
             return;
         }
-        // the stack: this drum and every extractor touching it above and below; the totem sits on the top one
+        // the stack: this extractor and every extractor touching it above and below; the totem sits on the top one
         BlockPos top = worldPosition;
         while (sl.getBlockState(top.above()).getBlock() instanceof PlasmaExtractorBlock) {
             top = top.above();
@@ -120,6 +125,7 @@ public class PlasmaExtractorBlockEntity extends BlockEntity {
         int oldFlow = flow;
         UUID oldOwner = owner;
         flow = 0;
+        cloak = 0;
         Arrays.fill(offered, 0);
         owner = null;
         totemPos = null;
@@ -130,6 +136,7 @@ public class PlasmaExtractorBlockEntity extends BlockEntity {
             totemPos = top.above();
             access = PlasmaAccess.of(totem);
             flow = Math.max(1, totem.plasmaOutput() / Math.max(1, count));
+            cloak = totem.cloakDraw() / Math.max(1, count);
             for (Buff b : Buff.values()) {
                 offered[b.ordinal()] = totem.getUpgradeLevel(b);
             }

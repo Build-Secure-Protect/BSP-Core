@@ -38,8 +38,15 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
+            // clients draw the item in the cradle, so they hear when it is put in, taken out or swapped (not every second it fills)
+            if (level != null && !level.isClientSide && getStackInSlot(0).getItem() != shownItem) {
+                shownItem = getStackInSlot(0).getItem();
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            }
         }
     };
+    @Nullable
+    private net.minecraft.world.item.Item shownItem;
     private int tank, delivered;
     private final int[] offered = new int[Buff.values().length];
     private PlasmaAccess access = new PlasmaAccess();
@@ -89,18 +96,24 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
         return !signal || access.users.isEmpty() || access.users.contains(player.getUUID()) || com.mrgregles.bsp_core.admin.Admins.isAdmin(player);
     }
 
+    /** Only through the back: the cable must sit behind the charger. */
+    @Override
+    public boolean accepts(BlockPos from, BlockState state, net.minecraft.core.Direction d) {
+        return state.hasProperty(BatteryChargerBlock.FACING) && d == state.getValue(BatteryChargerBlock.FACING);
+    }
+
     @Override
     public int wanted() {
         return Math.max(0, capacity() - tank);
     }
 
     @Override
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
         source = master.immutable();
         System.arraycopy(offeredByOrdinal, 0, offered, 0, offered.length);
         delivered = deliveredPerTick;
         this.access = access;
-        tank = Math.min(capacity(), tank + deliveredPerTick * 20);
+        tank = Math.min(capacity(), tank + movedMB);
         fedAt = level == null ? 0 : level.getGameTime();
         setChanged();
     }

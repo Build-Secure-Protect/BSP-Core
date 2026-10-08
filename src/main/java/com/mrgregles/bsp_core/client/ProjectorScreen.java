@@ -184,7 +184,7 @@ public class ProjectorScreen extends Screen {
     private void status(GuiGraphics g, int x, int y, ChunkViewPacket v) {
         boolean signal = v.has(ChunkViewPacket.SIGNAL), active = v.has(ChunkViewPacket.ACTIVE);
         int need = BSPConfig.getOr(BSPConfig.PROJECTOR_NEED, 100), cap = BSPConfig.getOr(BSPConfig.PROJECTOR_TANK, 2000);
-        g.drawString(font, tr(active ? "active" : signal ? "low_pressure" : "no_signal"), x + 10, y + 26, active ? TQ & 0xFFFFFF : signal ? BAD : GOLD & 0xFFFFFF, false);
+        g.drawString(font, tr(active ? (v.delivered() < need ? "active_reserve" : "active") : signal ? "low_pressure" : "no_signal"), x + 10, y + 26, active ? TQ & 0xFFFFFF : signal ? BAD : GOLD & 0xFFFFFF, false);
         small(g, tr("pressure"), x + 10, y + 42, MUTED);
         g.fill(x + 10, y + 50, x + W - 10, y + 58, DIM);
         g.fill(x + 10, y + 50, x + 10 + Math.round((W - 20) * Mth.clamp(v.delivered() / (float) need, 0, 1)), y + 58, active ? ION : BAD);

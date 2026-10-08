@@ -30,6 +30,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.DECOY.get(), DecoyScreen::new);
             MenuScreens.register(ModMenus.SEASON_REWARDS.get(), SeasonRewardsScreen::new);
             MenuScreens.register(ModMenus.BATTERY_CHARGER.get(), BatteryChargerScreen::new);
+            MenuScreens.register(ModMenus.WAVE_EMITTER.get(), WaveEmitterScreen::new);
             // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
                     new net.minecraft.resources.ResourceLocation("angle"),
@@ -48,6 +49,10 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_PROJECTOR.get(), TotemProjectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_CABLE.get(), PlasmaCableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_REPEATER.get(), PlasmaRepeaterRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_VALVE.get(), PlasmaValveRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.BATTERY_CHARGER.get(), BatteryChargerRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_INTERFACE.get(), PlasmaInterfaceRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.PROJECTOR_BASE.get(), ProjectorBaseRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ANTI_TOTEM.get(), AntiTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TETRIUM_CRUCIBLE.get(), TetriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMBINATION_FORGE.get(), CombinationForgeRenderer::new);

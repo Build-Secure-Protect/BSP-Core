@@ -65,6 +65,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ChunkViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ChunkViewPacket::encode).decoder(ChunkViewPacket::decode)
                 .consumerMainThread(ChunkViewPacket::handle).add();
+        CHANNEL.messageBuilder(InterfaceViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(InterfaceViewPacket::encode).decoder(InterfaceViewPacket::decode)
+                .consumerMainThread(InterfaceViewPacket::handle).add();
         CHANNEL.messageBuilder(RecallOfferPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(RecallOfferPacket::encode).decoder(RecallOfferPacket::decode)
                 .consumerMainThread(RecallOfferPacket::handle).add();
@@ -80,6 +83,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(StealStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(StealStatusPacket::encode).decoder(StealStatusPacket::decode)
                 .consumerMainThread(StealStatusPacket::handle).add();
+        CHANNEL.messageBuilder(ValveViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ValveViewPacket::encode).decoder(ValveViewPacket::decode)
+                .consumerMainThread(ValveViewPacket::handle).add();
+        CHANNEL.messageBuilder(ValveSetPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ValveSetPacket::encode).decoder(ValveSetPacket::decode)
+                .consumerMainThread(ValveSetPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

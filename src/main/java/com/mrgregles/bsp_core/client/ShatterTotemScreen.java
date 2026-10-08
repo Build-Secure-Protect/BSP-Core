@@ -33,7 +33,7 @@ import java.util.Locale;
  */
 public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu> {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, VIO = 0xFFB58CFF, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5;
-    private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 44, AURAS_W = 36;
+    private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 40, AURAS_W = 56, SWITCH_W = 26, SWITCH_H = 11;
 
     private final TotemTree tree = new TotemTree();
     private Button stealButton;
@@ -222,7 +222,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         int x = leftPos, y = topPos;
         int[] tabs = tabs();
         if (my >= y + 3 && my < y + 16) { // tabs sit in the header
-            if (mx >= x + aurasX() && mx < x + aurasX() + TAB_W) {
+            if (mx >= x + aurasX() && mx < x + aurasX() + AURAS_W) {
                 com.mrgregles.bsp_core.BSPClientConfig.toggleAuras();
                 return true;
             }
@@ -336,9 +336,18 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             g.fill(tx, y + 3, tx + TAB_W, y + 16, tabs[i] != currentTab() ? DIM : tabs[i] == T_OPERATOR ? VIO : TQ);
             g.fill(tx + 1, y + 4, tx + TAB_W - 1, y + 15, SLOT_BG);
         }
-        int ax = x + aurasX();
-        g.fill(ax, y + 3, ax + AURAS_W, y + 16, DIM);
-        g.fill(ax + 1, y + 4, ax + AURAS_W - 1, y + 15, SLOT_BG);
+        // the AURAS switch, drawn like the machines' power switch: housing, rail, a knob that slides right when on
+        boolean shown = com.mrgregles.bsp_core.BSPClientConfig.showAuras();
+        int sx = x + aurasX() + AURAS_W - SWITCH_W, sy = y + 4, sc = shown ? TQ : 0xFFFF6B5C;
+        g.fill(sx - 1, sy - 1, sx + SWITCH_W + 1, sy + SWITCH_H + 1, sc);
+        g.fill(sx, sy, sx + SWITCH_W, sy + SWITCH_H, SLOT_BG);
+        g.fill(sx + 3, sy + 4, sx + SWITCH_W - 3, sy + SWITCH_H - 4, DIM);
+        if (shown) {
+            g.fill(sx + 3, sy + 4, sx + SWITCH_W - 3, sy + SWITCH_H - 4, sc);
+        }
+        int kx = shown ? sx + SWITCH_W - 10 : sx + 2;
+        g.fill(kx, sy + 1, kx + 8, sy + SWITCH_H - 1, 0xFFC9CED8);
+        g.fill(kx + 1, sy + 2, kx + 7, sy + SWITCH_H - 2, 0xFF8A909C);
         if (accessTab) {
             accessRows(g, x, y, mouseX, mouseY);
             return;
@@ -462,8 +471,8 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         }
         g.drawString(font, head, 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
         boolean shown = com.mrgregles.bsp_core.BSPClientConfig.showAuras();
-        Component auras = Component.translatable(shown ? "gui.bsp_core.tree.auras.shown" : "gui.bsp_core.tree.auras.hidden");
-        small(g, auras, aurasX() + AURAS_W / 2 - font.width(auras) * 3 / 8, 7, shown ? TQ & 0xFFFFFF : MUTED);
+        Component auras = Component.translatable("gui.bsp_core.tree.auras.label");
+        small(g, auras, aurasX(), 7, shown ? TQ & 0xFFFFFF : MUTED);
         int[] tabs = tabs();
         String[] tabKeys = {"totem", "chunks", "operator", "access"};
         for (int i = 0; i < tabs.length; i++) {

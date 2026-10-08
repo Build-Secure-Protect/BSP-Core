@@ -37,11 +37,17 @@ public class BspJadePlugin implements IWailaPlugin {
     @Override
     public void register(IWailaCommonRegistration registration) {
         registration.registerBlockDataProvider(CableFlow.INSTANCE, com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity.class);
     }
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
         registration.registerBlockComponent(CableFlow.INSTANCE, com.mrgregles.bsp_core.projector.TotemCableBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaExtractorBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.ProjectorBaseBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaValveBlock.class);
         registration.addRayTraceCallback((hit, accessor, original) -> redirect(registration, accessor));
     }
 
@@ -63,6 +69,49 @@ public class BspJadePlugin implements IWailaPlugin {
             int flow = accessor.getServerData().getInt("PlasmaFlow");
             tooltip.add(net.minecraft.network.chat.Component.translatable(flow > 0 ? "jade.bsp_core.cable_flow" : "jade.bsp_core.cable_idle", flow)
                     .withStyle(flow > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+        }
+
+        @Override
+        public net.minecraft.resources.ResourceLocation getUid() {
+            return UID;
+        }
+    }
+
+    /** One line on an extractor (mB/t drawn from the totem), a Projector Base (its tank) or a valve (its limit, or shut). */
+    public enum PlasmaLine implements snownee.jade.api.IBlockComponentProvider, snownee.jade.api.IServerDataProvider<BlockAccessor> {
+        INSTANCE;
+
+        private static final net.minecraft.resources.ResourceLocation UID = new net.minecraft.resources.ResourceLocation(com.mrgregles.bsp_core.BSPCore.MODID, "plasma");
+
+        @Override
+        public void appendServerData(net.minecraft.nbt.CompoundTag data, BlockAccessor accessor) {
+            if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity extractor) {
+                data.putInt("PlasmaDraw", extractor.flow());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity base) {
+                data.putInt("PlasmaTank", base.tank());
+                data.putInt("PlasmaCap", base.capacity());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity valve) {
+                data.putInt("ValveLimit", valve.limit());
+                data.putBoolean("ValveOpen", valve.open());
+            }
+        }
+
+        @Override
+        public void appendTooltip(snownee.jade.api.ITooltip tooltip, BlockAccessor accessor, snownee.jade.api.config.IPluginConfig config) {
+            net.minecraft.nbt.CompoundTag d = accessor.getServerData();
+            if (d.contains("PlasmaDraw")) {
+                int draw = d.getInt("PlasmaDraw");
+                tooltip.add(net.minecraft.network.chat.Component.translatable(draw > 0 ? "jade.bsp_core.extractor_draw" : "jade.bsp_core.extractor_idle", draw)
+                        .withStyle(draw > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+            } else if (d.contains("PlasmaTank")) {
+                int tank = d.getInt("PlasmaTank"), cap = Math.max(1, d.getInt("PlasmaCap"));
+                tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.base_tank", tank, cap)
+                        .withStyle(tank > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+            } else if (d.contains("ValveLimit")) {
+                boolean open = d.getBoolean("ValveOpen");
+                tooltip.add(net.minecraft.network.chat.Component.translatable(open ? "jade.bsp_core.valve_limit" : "jade.bsp_core.valve_shut", d.getInt("ValveLimit"))
+                        .withStyle(open ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.RED));
+            }
         }
 
         @Override

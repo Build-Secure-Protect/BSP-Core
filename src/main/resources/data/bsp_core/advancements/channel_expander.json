@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:channel_expander"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.channel_expander"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.channel_expander.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:channel_expander"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:projector_base"
+}

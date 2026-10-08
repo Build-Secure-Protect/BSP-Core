@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:plasma_valve"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.plasma_valve"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.plasma_valve.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:plasma_valve"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:plasma_cable"
+}

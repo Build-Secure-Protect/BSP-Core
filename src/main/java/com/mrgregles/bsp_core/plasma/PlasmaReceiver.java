@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.plasma;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
 
@@ -9,6 +10,14 @@ public interface PlasmaReceiver {
     /** mB this block would like this second, before pressure loss. */
     int wanted();
 
-    /** Called once a second by the interface group at {@code master}. {@code deliveredPerTick} is what arrives after repeaters. */
-    void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, PlasmaAccess access, @Nullable BlockPos anchorTotem);
+    /** Whether plasma may enter from a cable or interface that reaches this block by moving in direction {@code d}. */
+    default boolean accepts(BlockPos from, BlockState state, net.minecraft.core.Direction d) {
+        return true;
+    }
+
+    /**
+     * Called once a second by the interface group at {@code master}. {@code pressurePerTick} is the pressure on the run after repeaters
+     * (the extractors' share, whether or not this block had room for it); {@code movedMB} is what actually went into the tank this second.
+     */
+    void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem);
 }

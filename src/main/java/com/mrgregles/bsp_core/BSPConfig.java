@@ -102,7 +102,7 @@ public final class BSPConfig {
             VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, STORAGE_NOTICE_SECONDS,
             CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING, CENT_MAGNETISE_TICKS, CENT_MAGNETISE_TICKS_FULL,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
-            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW;
+            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, PLASMA_OUTPUT, BATTERY_CAPACITY, BATTERY_POWERS, CELL_CAPACITY, CELL_POWERS;
     public static final ForgeConfigSpec.DoubleValue REPEATER_PRESSURE;
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
@@ -368,7 +368,9 @@ public final class BSPConfig {
         EXTRACTOR_TANK = BUILDER.comment("mB a Plasma Extractor holds.").defineInRange("extractorTank", 4000, 100, 1_000_000);
         INTERFACE_MAX = BUILDER.comment("Most Plasma Interface blocks that may join into one. Any more show a red seam and do nothing, so interfaces cannot be used as cables.").defineInRange("interfaceMax", 12, 1, 64);
         PROJECTOR_NEED = BUILDER.comment("mB per tick that must arrive at a Projector for it to project.").defineInRange("projectorNeed", 100, 1, 100_000);
-        PROJECTOR_TANK = BUILDER.comment("mB a Projector holds.").defineInRange("projectorTank", 2000, 100, 1_000_000);
+        PROJECTOR_USE = BUILDER.comment("mB per tick a Projector burns from its base while projecting. Less than projectorNeed, so the base fills while fed and keeps the projector going for a while after a cut.").defineInRange("projectorUse", 20, 1, 100_000);
+        VALVE_MAX = BUILDER.comment("Most mB per tick a Plasma Valve can be set to let through: the top of its dial.").defineInRange("valveMax", 2000, 10, 1_000_000);
+        PROJECTOR_TANK = BUILDER.comment("mB a Projector Base holds for the projector on it: it fills from the cable and the projector draws from it, so it runs on for a while after a cut.").defineInRange("projectorTank", 5000, 100, 1_000_000);
         PROJECTOR_CHANNELS = BUILDER.comment("How many powers a Projector receives at once. A fitted Channel Expander adds one.").defineInRange("channels", 2, 1, 7);
         REPEATER_PRESSURE = BUILDER.comment("Share of the plasma that passes each Plasma Repeater (0.9 = a tenth is lost at every repeater). Power levels also drop one per repeater when two or more are received.")
                 .defineInRange("repeaterPressure", 0.9, 0.1, 1.0);

@@ -43,6 +43,21 @@ ADV = [
     ("first_coin", "shatter_coin_factory", "bsp_core:copper_shatter_coin", "Fresh Off the Press", "Take a Shatter Coin from your factory's tray", COINS, "task"),
     ("illyrium_coin", "first_coin", "bsp_core:illyrium_shatter_coin", "Top Coin", "Press an Illyrium Shatter Coin", ["bsp_core:illyrium_shatter_coin"], "challenge"),
     ("motivator", "illyrium_ingot", "bsp_core:factory_motivator", "Properly Motivated", "Craft a Motivator and put it on top of a factory slice", ["bsp_core:factory_motivator"], "challenge"),
+    ("raw_ore", "tetrium_ore", "bsp_core:raw_tetrium", "In the Rough", "Pick up a raw ore chunk. The crucibles take them like ore blocks", ["bsp_core:raw_tetrium", "bsp_core:raw_illyrium", "bsp_core:raw_magnatite"], "task"),
+    ("wrench", "machine_chassis", "bsp_core:wrench", "Righty Tighty", "Craft a Wrench. It turns repeaters, valves, chargers, batteries and totems in place", ["bsp_core:wrench"], "task"),
+    ("plasma_extractor", "totem_projector", "bsp_core:plasma_extractor", "Tap the Source", "Craft a Plasma Extractor and stand your totem on it", ["bsp_core:plasma_extractor"], "task"),
+    ("plasma_interface", "plasma_extractor", "bsp_core:plasma_interface", "Header Rack", "Craft a Plasma Interface. Touching interfaces join into one", ["bsp_core:plasma_interface"], "task"),
+    ("plasma_cable", "plasma_interface", "bsp_core:tetrium_core_cable", "Down the Line", "Craft a Plasma Cable of any kind", ["bsp_core:tetrium_core_cable", "bsp_core:magnatite_core_cable", "bsp_core:illyrium_core_cable", "bsp_core:charged_illyrium_core_cable"], "task"),
+    ("projector_base", "plasma_cable", "bsp_core:projector_base", "Firm Footing", "Craft a Projector Base. The projector stands on it and drinks from it", ["bsp_core:projector_base"], "task"),
+    ("channel_expander", "projector_base", "bsp_core:channel_expander", "Third Channel", "Craft a Channel Expander and fit it to a projector", ["bsp_core:channel_expander"], "task"),
+    ("plasma_repeater", "plasma_cable", "bsp_core:plasma_repeater", "Second Wind", "Craft a Plasma Repeater to start a fresh cable run", ["bsp_core:plasma_repeater"], "task"),
+    ("plasma_valve", "plasma_cable", "bsp_core:plasma_valve", "Turn It Down", "Craft a Plasma Valve to limit or shut a run", ["bsp_core:plasma_valve"], "task"),
+    ("charged_resonance_crystal", "magnetic_centrifuge", "bsp_core:charged_resonance_crystal", "Humming", "Magnetise a Resonance Crystal in the centrifuge with a Magnatite Nugget in the upgrade slot", ["bsp_core:charged_resonance_crystal"], "task"),
+    ("battery_charger", "charged_resonance_crystal", "bsp_core:battery_charger", "Open Cradle", "Craft a Battery Charger", ["bsp_core:battery_charger"], "goal"),
+    ("plasma_battery", "battery_charger", "bsp_core:plasma_battery_1", "Bottled Lightning", "Craft a Plasma Battery of any tier", ["bsp_core:plasma_battery_1", "bsp_core:plasma_battery_2", "bsp_core:plasma_battery_3", "bsp_core:plasma_battery_4"], "task"),
+    ("plasma_battery_4", "plasma_battery", "bsp_core:plasma_battery_4", "Five Million", "Craft a Tier IV Plasma Battery", ["bsp_core:plasma_battery_4"], "challenge"),
+    ("power_cell", "battery_charger", "bsp_core:power_cell_1", "Pocket Power", "Craft a Power Cell of any tier", ["bsp_core:power_cell_1", "bsp_core:power_cell_2", "bsp_core:power_cell_3"], "task"),
+    ("wave_emitter", "power_cell", "bsp_core:wave_emitter", "Carry It With You", "Craft a Wave Emitter. With a charged cell in your offhand it gives you the cell's powers", ["bsp_core:wave_emitter"], "goal"),
 ]
 
 

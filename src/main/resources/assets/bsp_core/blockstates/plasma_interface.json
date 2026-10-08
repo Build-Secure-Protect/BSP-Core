@@ -1,10 +1,168 @@
 {
- "variants": {
-  "refused=false": {
-   "model": "bsp_core:block/plasma_interface"
+ "multipart": [
+  {
+   "apply": {
+    "model": "bsp_core:block/plasma_interface"
+   }
   },
-  "refused=true": {
-   "model": "bsp_core:block/plasma_interface_refused"
+  {
+   "when": {
+    "north": "none|drum|cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_face"
+   }
+  },
+  {
+   "when": {
+    "north": "drum"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_tube"
+   }
+  },
+  {
+   "when": {
+    "north": "cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_nozzle"
+   }
+  },
+  {
+   "when": {
+    "east": "none|drum|cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_face",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "east": "drum"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_tube",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "east": "cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_nozzle",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "south": "none|drum|cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_face",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "south": "drum"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_tube",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "south": "cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_nozzle",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "west": "none|drum|cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_face",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "west": "drum"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_tube",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "west": "cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_nozzle",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "up": "none|drum|cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_face",
+    "x": 270
+   }
+  },
+  {
+   "when": {
+    "up": "drum"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_tube",
+    "x": 270
+   }
+  },
+  {
+   "when": {
+    "up": "cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_nozzle",
+    "x": 270
+   }
+  },
+  {
+   "when": {
+    "down": "none|drum|cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_face",
+    "x": 90
+   }
+  },
+  {
+   "when": {
+    "down": "drum"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_tube",
+    "x": 90
+   }
+  },
+  {
+   "when": {
+    "down": "cable"
+   },
+   "apply": {
+    "model": "bsp_core:block/plasma_interface_nozzle",
+    "x": 90
+   }
   }
- }
+ ]
 }

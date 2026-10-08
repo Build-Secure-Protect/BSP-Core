@@ -4,8 +4,10 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-08
+
 ### Added
-- **Wave Plasma.** A placed totem now gives off a fluid, Wave Plasma (100 mB/t, raised by the new Base upgrade **Output** on the plasma path, up to 600 mB/t over six levels). It is drawn out by **Plasma Extractors** stacked under the totem (the flow split between them), routed by **Plasma Interfaces** (touching blocks join, up to 12; more, or an interface touching a drum another already serves, show a lit seam and do nothing), carried by Plasma Cables at full pressure for their whole run, and passed on by **Plasma Repeaters** that start a fresh run at the cost of a tenth of the pressure and, when two or more powers are received, one level per repeater.
+- **Wave Plasma.** A placed totem now gives off a fluid, Wave Plasma (100 mB/t, raised by the new Base upgrade **Output** on the plasma path, up to 600 mB/t over six levels). It is drawn out by **Plasma Extractors** stacked under the totem (the flow split between them), routed by **Plasma Interfaces** (touching blocks join, up to 12; more, or an interface touching an extractor another already serves, show a lit seam and do nothing), carried by Plasma Cables at full pressure for their whole run, and passed on by **Plasma Repeaters** that start a fresh run at the cost of a tenth of the pressure and, when two or more powers are received, one level per repeater.
 - **Projector screen.** Right-click a Projector: POWERS (what the interface offers, what arrives, a RECEIVE switch per power), CHUNKS (the picker), STATUS (plasma arriving against the 100 mB/t needed, the run, the Channel Expander). The Channel Expander is now fitted to the projector by right-clicking it with one.
 - Auras are cubes: a power with radius r covers the (2r+1)-block box around the totem or projector. (Drawing them as cubes comes with the next build.)
 - Config section `plasma` replaces `projector`: `outputPerLevel`, `extractorTank`, `interfaceMax`, `projectorNeed`, `projectorTank`, `channels`, `repeaterPressure`, `cableCheckSeconds`, `cableReach`.
@@ -16,12 +18,36 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 - **New powers.** Bouncy (Carried), X-ray (Carried, first version marks ores, containers and spawners through blocks), Cloaking (Base, first version: outsiders see a copy of the cube taken when it came on), Recall (Base, Compass Card offer with R/N keys, 10-minute rest), Recall Block (Raid). The tree gains a fifth ring for Tier V. Config section `effects`.
 
 - **Raw ores.** Tetrium, Illyrium and Magnatite ores now drop Raw Tetrium, Raw Illyrium and Raw Magnatite (more with Fortune; the ore block with Silk Touch), like vanilla iron. The crucibles and the centrifuge take the raw items as they took the blocks.
-- **Cables are glass pipes.** The plasma inside shows through, at a level that rises with the flow, with pulses travelling the way it runs; an empty pipe shows nothing. Jade on a cable reads the mB/t flowing through it. Repeater rings pump while plasma passes.
+- **Cables are glass pipes.** The plasma inside shows through as a liquid: a level that rises with the flow, its surface rippling the way it runs; a cut-off run drains and empties within seconds. Jade on a cable reads the mB/t flowing through it. Repeater rings are shaded copper and pump while plasma passes.
+- **Projector Base.** A low tank block with a cable nozzle on each side; the Projector now stands on it and draws from it. Cables no longer join a projector directly.
+- Aura cubes have hair-thin edges and a faint breathing grid on their faces; the AURAS control is a slide switch.
+- **Interface screen.** Right-click a Plasma Interface: the group in 3D with its extractors, cables, repeaters and the bases and chargers reached, each labelled with the mB/t passing it. Interfaces show a tube into a touching extractor and a joint to a touching interface.
+- A projector now burns `plasma.projectorUse` (20 mB/t) from its base, so a fed base fills and a cut run keeps projecting until the tank is dry. The base shows its level through windows on every side.
 - **Repeaters are one-way** and point the way you look when placed: plasma goes in through the dark back and out of the lit front. Right-click with an empty hand to turn one round.
 - **Wrench.** Right-click a block to turn it in place: a Plasma Repeater steps through its six directions (sneak to turn it straight round), totems, batteries and machines with a facing turn a quarter. Repeaters carry direction arrows on their top and sides.
 - Testing commands for operators: `/bsp totem buff <power> <level>` and `/bsp totem tier <1-5>` set a power or the tier on the totem you hold (either hand) or, with none held, the placed one you look at; `/bsp totem recloak` takes a Cloaking snapshot again.
 
+- **Plasma Valve.** A block for a cable run that limits what passes it, set from its screen (a dial, a typed number, nudge buttons; up to `plasma.valveMax`, 2000 mB/t). A lever on it or any redstone signal shuts it, unless redstone control is switched off on the screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run. The hand wheel turns with the limit, the side gauge shows it, the lamp is blue open and red shut, and its windows show plasma arriving on one side and leaving on the other. Shows in the interface view. Recipe: tetrium plates, a copper ingot, a lever, redstone and two tetrium core cables.
+- **Fair sharing.** An interface now splits its plasma equally between the runs leaving it; a run that needs less than its share (its valves, or nothing beyond) leaves the rest to the others. Before, the first run in the search could drain the extractors and starve the rest.
+
+- **Jade.** One line each on a Plasma Extractor (mB/t drawn from the totem), a Projector Base (tank level) and a Plasma Valve (its limit, or shut).
+
+- **Battery Charger** faces the player when placed (open front toward you), takes cables only at its back, is turned by the wrench, and shows plasma in its cradle only while a cable feeds it.
+
+- **Plasma Interfaces join into one body.** Faces between touching interfaces vanish, the frame runs round the outside of the whole group, and a lit cross on every outer face lines up with its neighbours into one grid: blue while the group has plasma, grey without, red on a refused block. Each outer face is a rimmed, recessed panel with bolts and vents; a cable nozzle appears only where a cable touches. Everything that said "drum" now says "extractor".
+
+- **Wave Emitter screen.** Right-click at the air to open it: a slot for the Power Cell, an ON/OFF switch, the cell's plasma and time left, and its powers.
+- **Interface view** labels each run of cables once, on the cable nearest its middle, instead of every block.
+
+- **Advancements** for every new block and item (15 new), **guide book** pages for all of them with three turnable hook-up scenes and a new entry on pressure, runs and valves, and a **JEI Assembly Guide** for the Wave Plasma hook-up (Shift over any plasma block in JEI).
+
 ### Fixed
+- The plasma in a Projector Base was drawn without depth, so the base's own inner faces painted grey over it and a full tank looked empty. It now writes depth, the cavity is lined dark, the glass is clearer and no longer fights the plates. The drawing lives in `PlasmaRender` for the planned multiblock tank.
+- Cable figures in the interface view add up to the supply: cables before a repeater read a tenth more than those after it, and cables before a valve read what passes, not what was offered.
+- X-ray could never be bought: it asked for Night Sight level 2, and Night Sight has one level. A one-level parent now opens its path at level 1.
+- The Battery Charger screen's power list ran into the inventory with nine Carried powers; the layout is taller and tighter. The charger now shows the battery or cell standing in its cradle.
+- The interface screen explains a supply below the totem's output (Cloaking takes its share first), zooms with the wheel and pans with a right-drag, has a RESET VIEW button, and its text no longer runs past the edge.
+- Cables report the pressure on the run (the extractors' share after repeaters), not the amount the far end happened to take. A full Projector Base read 20 mB/t on its cables and looked starved.
 - Buying Recall (and any Tier V power with more than two levels) crashed the server: the price looked for a coin past the last tier.
 
 ### Removed

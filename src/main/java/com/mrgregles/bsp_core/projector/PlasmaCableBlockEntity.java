@@ -21,6 +21,8 @@ public class PlasmaCableBlockEntity extends BlockEntity {
     private int flow;
     @Nullable
     private Direction in, out;
+    /** Game time of the last report (synced about every two seconds while flowing): a cable nobody reports to any more drains on the client. */
+    private long at = -1000, syncedAt = -1000;
 
     public PlasmaCableBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PLASMA_CABLE.get(), pos, state);
@@ -42,22 +44,31 @@ public class PlasmaCableBlockEntity extends BlockEntity {
 
     /** Server: called by the interface once a second; syncs only on a change. */
     public void report(int flow, @Nullable Direction in, @Nullable Direction out) {
-        if (this.flow == flow && this.in == in && this.out == out) {
-            return;
-        }
+        long now = level == null ? 0 : level.getGameTime();
+        boolean changed = this.flow != flow || this.in != in || this.out != out;
         this.flow = flow;
         this.in = in;
         this.out = out;
-        setChanged();
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+        at = now;
+        if (changed || (flow > 0 && now - syncedAt >= 40)) {
+            syncedAt = now;
+            setChanged();
+            if (level != null && !level.isClientSide) {
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            }
         }
+    }
+
+    /** Ticks since the interface last spoke for this cable. */
+    public long age() {
+        return level == null ? Long.MAX_VALUE : level.getGameTime() - at;
     }
 
     private void write(CompoundTag tag) {
         tag.putInt("Flow", flow);
         tag.putByte("In", (byte) (in == null ? -1 : in.get3DDataValue()));
         tag.putByte("Out", (byte) (out == null ? -1 : out.get3DDataValue()));
+        tag.putLong("At", at);
     }
 
     @Override
@@ -72,6 +83,7 @@ public class PlasmaCableBlockEntity extends BlockEntity {
         flow = tag.getInt("Flow");
         in = tag.getByte("In") < 0 ? null : Direction.from3DDataValue(tag.getByte("In"));
         out = tag.getByte("Out") < 0 ? null : Direction.from3DDataValue(tag.getByte("Out"));
+        at = tag.getLong("At");
     }
 
     @Override

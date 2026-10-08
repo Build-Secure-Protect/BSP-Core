@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PCP",
+    "TLT",
+    "PRP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_core_cable"
+    },
+    "L": {
+      "item": "minecraft:lever"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "result": {
+    "item": "bsp_core:plasma_valve"
+  }
+}

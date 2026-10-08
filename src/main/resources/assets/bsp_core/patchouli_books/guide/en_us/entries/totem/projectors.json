@@ -6,48 +6,104 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, more with the $(l)Output$() upgrade. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
+      "text": "A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 600 with the $(l)Output$() upgrade. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "The hook-up",
+      "multiblock": {
+        "pattern": [
+          [
+            "T________J",
+            "__________",
+            "__________",
+            "__________"
+          ],
+          [
+            "E0cccVcRcB",
+            "_d________",
+            "_d________",
+            "_H________"
+          ]
+        ],
+        "mapping": {
+          "E": "bsp_core:plasma_extractor",
+          "0": "bsp_core:plasma_interface[west=drum,east=cable,south=cable]",
+          "T": "bsp_core:shatter_totem",
+          "c": "bsp_core:tetrium_core_cable[east=true,west=true]",
+          "d": "bsp_core:tetrium_core_cable[north=true,south=true]",
+          "V": "bsp_core:plasma_valve[axis=x]",
+          "R": "bsp_core:plasma_repeater[facing=east]",
+          "B": "bsp_core:projector_base",
+          "J": "bsp_core:totem_projector",
+          "H": "bsp_core:battery_charger[facing=south]"
+        },
+        "symmetrical": false
+      },
+      "text": "Totem on extractor, interface beside it, a run east through a valve and a repeater to a base and its projector, and a second run south into the back of a charger. Drag to turn."
     },
     {
       "type": "patchouli:text",
-      "text": "The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into it.$(li)$(item)Plasma Cable$() from the interface to the projector.$(li)$(item)Projector$() at the end.",
+      "text": "The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into its outer faces.$(li)$(item)Plasma Cable$() from the interface onward.$(li)$(item)Projector Base$() at the end of the cable, holding what arrives.$(li)$(item)Projector$() standing on the base.",
       "title": "How it joins up"
     },
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:plasma_extractor",
       "recipe2": "bsp_core:plasma_interface",
-      "text": "Interfaces that touch join into one, up to twelve blocks in any shape. More than twelve, or one touching a drum another interface already serves, shows a lit seam and does nothing: an interface is not a cable."
+      "text": "Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."
     },
     {
-      "type": "patchouli:crafting",
-      "recipe": "bsp_core:totem_projector",
-      "recipe2": "bsp_core:channel_expander",
-      "text": "A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure. It receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking it."
+      "type": "patchouli:multiblock",
+      "name": "Four interfaces joined",
+      "multiblock": {
+        "pattern": [
+          [
+            "T____",
+            "_____"
+          ],
+          [
+            "E0Ac_",
+            "_BC__"
+          ]
+        ],
+        "mapping": {
+          "E": "bsp_core:plasma_extractor",
+          "T": "bsp_core:shatter_totem",
+          "0": "bsp_core:plasma_interface[west=drum,east=join,south=join]",
+          "A": "bsp_core:plasma_interface[west=join,south=join,east=cable]",
+          "B": "bsp_core:plasma_interface[north=join,east=join]",
+          "C": "bsp_core:plasma_interface[north=join,west=join]",
+          "c": "bsp_core:tetrium_core_cable[east=true,west=true]"
+        },
+        "symmetrical": false
+      },
+      "text": "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group."
     },
     {
       "type": "patchouli:text",
-      "text": "A cable carries its whole run at full pressure. Each kind has a longest run:$(br2)$(li)Tetrium Core: 15 blocks$(li)Magnatite Core: 25$(li)Illyrium Core: 40$(li)Charged Illyrium Core: 80$(br2)A mixed run goes as far as its weakest cable. A $(item)Plasma Repeater$() in the run starts a fresh one.",
-      "title": "Cables and reach"
+      "text": "Right-click any interface for its $(l)flow view$(): the group and every cable, valve, repeater, extractor, base and charger it reaches in 3D, labelled with the mB/t passing. Drag to turn, right-drag to pan, scroll to zoom.$(br2)Jade shows the same figures block by block: an extractor's draw, a cable's flow, a valve's limit, a base's tank.",
+      "title": "Seeing the flow"
     },
     {
       "type": "patchouli:crafting",
-      "recipe": "bsp_core:plasma_repeater",
-      "text": "Each repeater costs something: nine tenths of the plasma passes it, and a projector behind it receives one power at full level, or two or more each one level lower per repeater. The projector screen shows what arrives before you switch."
-    },
-    {
-      "type": "patchouli:crafting",
-      "recipe": "bsp_core:tetrium_core_cable",
-      "recipe2": "bsp_core:magnatite_core_cable"
-    },
-    {
-      "type": "patchouli:crafting",
-      "recipe": "bsp_core:illyrium_core_cable",
-      "recipe2": "bsp_core:charged_illyrium_core_cable"
+      "recipe": "bsp_core:projector_base",
+      "recipe2": "bsp_core:totem_projector",
+      "text": "Cables plug into the base's four sides; the projector on top draws from it. A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure."
     },
     {
       "type": "patchouli:text",
-      "text": "What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.",
+      "text": "The base holds 5,000 mB and the projector burns 20 mB/t of it, so a base that was full keeps its projector going for about four minutes after a cable is cut. A base with nothing feeding it and no projector drains by itself.$(br2)A projector runs on plasma alone: no RF. With less than 100 mB/t arriving and a dry base it shows no aura.",
+      "title": "The base's tank"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:channel_expander",
+      "text": "A projector receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking the projector with it; sneak and right-click empty-handed takes it out."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.",
       "title": "Powers and auras"
     }
   ]

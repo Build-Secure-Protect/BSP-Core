@@ -202,10 +202,15 @@ public final class TotemUpgrades {
         return new Price(CoinTier.values()[tier], pick(BSPConfig.TIER_GATE_COINS, tier, 4), pick(BSPConfig.TIER_GATE_XP, tier, 15), tier + 1);
     }
 
+    /** The level a parent must reach to open what follows it: the configured unlock level, or the parent's top level if that is lower (Night Sight has one). */
+    public static int unlockLevel(Buff parent) {
+        return Math.min(BSPConfig.getOr(BSPConfig.UNLOCK_LEVEL, 2), parent.maxLevel());
+    }
+
     /** Whether the upgrade is open on the tree: the totem is at its tier and its parent is far enough along. */
     public static boolean unlocked(Buff buff, ToIntFunction<Buff> levels, int totemTier) {
         Buff parent = buff.parent();
-        return totemTier >= buff.tier && (parent == null || levels.applyAsInt(parent) >= BSPConfig.getOr(BSPConfig.UNLOCK_LEVEL, 2));
+        return totemTier >= buff.tier && (parent == null || levels.applyAsInt(parent) >= unlockLevel(parent));
     }
 
     @Nullable
@@ -226,7 +231,7 @@ public final class TotemUpgrades {
             return Component.translatable("gui.bsp_core.tree.why.tier", roman(buff.tier));
         }
         Buff parent = buff.parent();
-        int need = BSPConfig.getOr(BSPConfig.UNLOCK_LEVEL, 2);
+        int need = parent == null ? 0 : unlockLevel(parent);
         if (parent != null && levels.applyAsInt(parent) < need) {
             return Component.translatable("gui.bsp_core.tree.why.parent", Component.translatable(parent.translationKey()), need);
         }

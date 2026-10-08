@@ -2,7 +2,7 @@
   "name": "The Newer Powers",
   "category": "bsp_core:totem",
   "icon": "minecraft:ender_eye",
-  "sortnum": 10,
+  "sortnum": 11,
   "pages": [
     {
       "type": "patchouli:text",

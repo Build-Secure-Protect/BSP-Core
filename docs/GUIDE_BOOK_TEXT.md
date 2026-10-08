@@ -186,52 +186,100 @@ The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Pris
 
 **Page 1**
 
-A placed totem gives off **Wave Plasma**: 100 mB every tick, more with the **Output** upgrade. Drawn out and piped to a *Projector*, it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.
+A placed totem gives off **Wave Plasma**: 100 mB every tick, up to 600 with the **Output** upgrade. Drawn out and piped to a *Projector*, it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.
 
 The projector works for whoever owns the totem. If your totem is stolen, so is the aura.
 
-**Page 2: How it joins up**
+**Page 2**  `[3D structure] The hook-up`
+
+Totem on extractor, interface beside it, a run east through a valve and a repeater to a base and its projector, and a second run south into the back of a charger. Drag to turn.
+
+**Page 3: How it joins up**
 
 The chain, in order:
 
 - *Plasma Extractor* directly under the totem. More stack below; the flow is split between them.
-- *Plasma Interface* touching an open face of an extractor. Cables plug into it.
-- *Plasma Cable* from the interface to the projector.
-- *Projector* at the end.
+- *Plasma Interface* touching an open face of an extractor. Cables plug into its outer faces.
+- *Plasma Cable* from the interface onward.
+- *Projector Base* at the end of the cable, holding what arrives.
+- *Projector* standing on the base.
 
-**Page 3**  `[recipe] plasma_extractor, plasma_interface`
+**Page 4**  `[recipe] plasma_extractor, plasma_interface`
 
-Interfaces that touch join into one, up to twelve blocks in any shape. More than twelve, or one touching a drum another interface already serves, shows a lit seam and does nothing: an interface is not a cable.
+Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing.
 
-**Page 4**  `[recipe] totem_projector, channel_expander`
+**Page 5**  `[3D structure] Four interfaces joined`
 
-A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure. It receives two powers at once, three with a *Channel Expander* fitted by right-clicking it.
+Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group.
 
-**Page 5: Cables and reach**
+**Page 6: Seeing the flow**
 
-A cable carries its whole run at full pressure. Each kind has a longest run:
+Right-click any interface for its **flow view**: the group and every cable, valve, repeater, extractor, base and charger it reaches in 3D, labelled with the mB/t passing. Drag to turn, right-drag to pan, scroll to zoom.
 
+Jade shows the same figures block by block: an extractor's draw, a cable's flow, a valve's limit, a base's tank.
+
+**Page 7**  `[recipe] projector_base, totem_projector`
+
+Cables plug into the base's four sides; the projector on top draws from it. A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure.
+
+**Page 8: The base's tank**
+
+The base holds 5,000 mB and the projector burns 20 mB/t of it, so a base that was full keeps its projector going for about four minutes after a cable is cut. A base with nothing feeding it and no projector drains by itself.
+
+A projector runs on plasma alone: no RF. With less than 100 mB/t arriving and a dry base it shows no aura.
+
+**Page 9**  `[recipe] channel_expander`
+
+A projector receives two powers at once, three with a *Channel Expander* fitted by right-clicking the projector with it; sneak and right-click empty-handed takes it out.
+
+**Page 10: Powers and auras**
+
+What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.
+
+Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.
+
+## Pressure, Runs and Valves
+
+**Page 1**
+
+Plasma moves in **runs**: a line of cables from an interface to whatever is at its end. Every cable in a run carries the same figure, the run's **pressure**, in mB/t. Nothing is lost along a cable, however long, up to its reach.
+
+Each kind of cable has a longest run:
 
 - Tetrium Core: 15 blocks
 - Magnatite Core: 25
 - Illyrium Core: 40
 - Charged Illyrium Core: 80
 
-A mixed run goes as far as its weakest cable. A *Plasma Repeater* in the run starts a fresh one.
+A mixed run goes as far as its weakest cable.
 
-**Page 6**  `[recipe] plasma_repeater`
+**Page 2**  `[recipe] tetrium_core_cable, magnatite_core_cable`
 
-Each repeater costs something: nine tenths of the plasma passes it, and a projector behind it receives one power at full level, or two or more each one level lower per repeater. The projector screen shows what arrives before you switch.
+**Page 3**  `[recipe] illyrium_core_cable, charged_illyrium_core_cable`
 
-**Page 7**  `[recipe] tetrium_core_cable, magnatite_core_cable`
+**Page 4: Sharing**
 
-**Page 8**  `[recipe] illyrium_core_cable, charged_illyrium_core_cable`
+An interface shares what its extractors give **equally** between the runs leaving it. A run that can take less than its share, because a valve caps it or its end is full, leaves the rest to the others.
 
-**Page 9: Powers and auras**
+So two bases on one totem get 50 mB/t each; cap one at 20 and the other gets 80. The cables leaving the interface always add up to the supply.
 
-What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock and Anchor, at the highest level any totem on the interface has.
+**Page 5**  `[recipe] plasma_repeater`
 
-Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.
+A *Plasma Repeater* ends one run and starts a fresh one, so the reach count begins again. Plasma goes in its dark back and out its lit front; placed pointing the way you look, the wrench turns it. It costs a tenth of the pressure, and a projector behind it receives one power at full level, or two or more each one level lower per repeater.
+
+**Page 6**  `[recipe] plasma_valve`
+
+A *Plasma Valve* sets the most that may pass it, from 0 to 2,000 mB/t. Right-click it and drag the dial, type a number, or use the buttons. A lever on it or any redstone signal shuts it, unless you switch redstone control off on its screen. Powers pass unchanged; it counts as one cable of reach and does not start a fresh run.
+
+**Page 7: What you see**
+
+The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.
+
+Each extractor also keeps a tank of 4,000 mB. Take the totem away and the runs keep drinking from what is left for a short while, then stop.
+
+**Page 8**  `[recipe] wrench`
+
+The *Wrench* turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round.
 
 ## Chunk Loading
 
@@ -267,7 +315,7 @@ Click a square to load that chunk. Click it again to let it go. Turquoise square
 
 Receive **Anchor** on a Projector and it gets a chunk map of its own, centred on the projector.
 
-A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps using RF. Its chunks stay loaded while it has a signal and RF.
+A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps drawing plasma. Its chunks stay loaded while plasma reaches it.
 
 **Page 5: More than one totem**
 
@@ -287,29 +335,57 @@ The server may be set to load chunks only while you are online.
 
 **Page 1**
 
-Wave Plasma can be bottled. A *Battery Charger* on a Plasma Cable fills a *Plasma Battery* or *Power Cell* standing in it, and stamps powers from the interface into it, chosen on the charger's screen.
+Wave Plasma can be bottled. A *Battery Charger* with a Plasma Cable into its back fills a *Plasma Battery* or *Power Cell* standing in it, and **stamps** powers from the interface into it, chosen on the charger's screen.
 
-Every battery and cell is built around a *Charged Resonance Crystal*: a Resonance Crystal magnetised in the Magnetic Centrifuge with a Magnatite Nugget in the upgrade slot.
+Every battery and cell is built around a *Charged Resonance Crystal*.
 
-**Page 2**  `[recipe] battery_charger, plasma_battery_1`
+**Page 2: Charged Resonance Crystal**  `[item shown] charged_resonance_crystal`
 
-Tier I holds 40,000 mB of plasma and nothing else. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers, and each is built around the tier below.
+A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.
 
-**Page 3**  `[recipe] plasma_battery_2, plasma_battery_3`
+**Page 3**  `[recipe] battery_charger`
 
-**Page 4**  `[recipe] plasma_battery_4`
+Place the charger facing you: the cable goes into its **back**, and only there. The wrench turns it. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it.
 
-Stand a charged battery on a Plasma Extractor instead of a totem: it feeds the extractor at 100 mB/t with its stamped powers until it runs dry. A spare for when your totem is stolen but you still want a projector running.
+**Page 4: What gets stamped**
 
-**Page 5**  `[recipe] power_cell_1, wave_emitter`
+Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.
 
-A *Power Cell* holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III. The *Wave Emitter* runs on one.
+**Batteries** take Base powers: the ones a projector can receive. **Cells** take Carried powers: the ones that work from your offhand.
 
-**Page 6: The Wave Emitter**
+**Page 5**  `[recipe] plasma_battery_1, plasma_battery_2`
 
-Hold a Power Cell in one hand and the emitter in the other and right-click: the cell clicks in. Put the emitter in your offhand and right-click to switch it on: you get the cell's powers as if you carried the totem, while it draws 20 mB/t. Sneak and right-click to take the cell out.
+Tier I holds 40,000 mB and no powers. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below.
 
-So the totem can stay safe at home while you go out.
+**Page 6**  `[recipe] plasma_battery_3, plasma_battery_4`
+
+**Page 7**  `[3D structure] A battery instead of a totem`
+
+A charged battery standing on an extractor feeds it at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.
+
+**Page 8: Batteries as a source**
+
+A battery on an extractor feeds it at 100 mB/t with its stamped powers until it runs dry, so projectors and chargers keep working while your totem is away or stolen. The battery lies along an axis; the wrench turns it. A battery keeps its charge and powers when mined.
+
+**Page 9**  `[recipe] power_cell_1, power_cell_2`
+
+A *Power Cell* holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III.
+
+**Page 10**  `[recipe] power_cell_3, wave_emitter`
+
+The *Wave Emitter* runs on one cell. Its hover text and the cell's own show the charge and the powers stamped in.
+
+**Page 11: The Wave Emitter**
+
+Right-click the emitter at the air (no block within four blocks) to open it: put a Power Cell in the slot, press ON, and read the cell's powers and how long it will last. Put the emitter in your **offhand**: you get the cell's powers as if you carried the totem, while it draws 20 mB/t. It switches off when the cell runs dry.
+
+Right-click at a nearby block to switch it without opening the screen; sneak there to take the cell out.
+
+**Page 12: Out and about**
+
+So the totem can stay safe at home while you go out: a Tier III cell at 20 mB/t lasts 50 minutes.
+
+Carried powers from the emitter: Damage, Resistance, Mining Speed, Swiftness, Vitality, Featherfall, Night Sight, Bouncy and X-ray, at the stamped level.
 
 ## Letting Friends In
 
@@ -359,7 +435,7 @@ Two new metals, from first ore to refined ingot.
 
 **Page 1**
 
-*Tetrium Ore* is found underground in stone and deepslate. Mine it with an iron pickaxe or better. The ore block itself is what the machines take, so do not smelt it.
+*Tetrium Ore* is found underground in stone and deepslate. Mine it with an iron pickaxe or better. Without Silk Touch the ore drops *Raw Tetrium*; the crucibles take raw chunks and ore blocks alike, so do not smelt either.
 
 **Page 2**  `[recipe] tetrium_crucible`
 

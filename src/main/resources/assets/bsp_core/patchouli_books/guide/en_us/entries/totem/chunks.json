@@ -2,7 +2,7 @@
   "name": "Chunk Loading",
   "category": "bsp_core:totem",
   "icon": "minecraft:filled_map",
-  "sortnum": 7,
+  "sortnum": 8,
   "pages": [
     {
       "type": "patchouli:text",
@@ -20,7 +20,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Receive $(l)Anchor$() on a $(l:totem/projectors)Projector$() and it gets a chunk map of its own, centred on the projector.$(br2)A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps using RF. Its chunks stay loaded while it has a signal and RF.",
+      "text": "Receive $(l)Anchor$() on a $(l:totem/projectors)Projector$() and it gets a chunk map of its own, centred on the projector.$(br2)A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps drawing plasma. Its chunks stay loaded while plasma reaches it.",
       "title": "Through a projector"
     },
     {

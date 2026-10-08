@@ -1,0 +1,153 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "atlas": "bsp_core:block/machine_atlas",
+  "plasma": "bsp_core:block/plasma_still",
+  "particle": "bsp_core:block/machine_atlas"
+ },
+ "elements": [
+  {
+   "from": [
+    5.5,
+    5.5,
+    -1.2
+   ],
+   "to": [
+    10.5,
+    10.5,
+    -0.3
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      4.0,
+      1.25,
+      5.25
+     ],
+     "texture": "#atlas"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      4.0,
+      1.25,
+      5.25
+     ],
+     "texture": "#atlas"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      4.0,
+      0.22499999999999998,
+      5.25
+     ],
+     "texture": "#atlas"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      4.0,
+      0.22499999999999998,
+      5.25
+     ],
+     "texture": "#atlas"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      4.0,
+      1.25,
+      4.225
+     ],
+     "texture": "#atlas"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      4.0,
+      1.25,
+      4.225
+     ],
+     "texture": "#atlas"
+    }
+   }
+  },
+  {
+   "from": [
+    6.5,
+    6.5,
+    -1.25
+   ],
+   "to": [
+    9.5,
+    9.5,
+    -0.9
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#plasma"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:plasma_battery_1"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.plasma_battery"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.plasma_battery.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:plasma_battery_1",
+              "bsp_core:plasma_battery_2",
+              "bsp_core:plasma_battery_3",
+              "bsp_core:plasma_battery_4"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:battery_charger"
+}

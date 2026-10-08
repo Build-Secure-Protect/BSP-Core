@@ -583,6 +583,11 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         return cloak != null ? Math.max(0, out - BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50)) : out; // Cloaking takes its share first
     }
 
+    /** mB per tick Cloaking is taking from the output right now, 0 while not cloaked. */
+    public int cloakDraw() {
+        return cloak == null ? 0 : Math.min(BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.PLASMA_OUTPUT, java.util.List.<Integer>of()), getUpgradeLevel(TotemUpgrades.Buff.OUTPUT) + 1, 100));
+    }
+
     /** Totem tier, 0 (I) to 4 (V). */
     public int getTier() {
         return Math.max(0, Math.min(TotemUpgrades.MAX_TIER, upgrades.getInt(TotemUpgrades.TAG_TIER)));

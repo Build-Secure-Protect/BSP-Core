@@ -15,7 +15,7 @@ import net.minecraftforge.items.SlotItemHandler;
 
 /** The Battery Charger's screen: one slot for the battery or cell, the tank and fill gauges, and a STAMP switch per power the interface offers. */
 public class BatteryChargerMenu extends AbstractContainerMenu {
-    public static final int WIDTH = 300, SLOT_X = 24, SLOT_Y = 44, INV_X = 69, INV_Y = 150, HEIGHT = INV_Y + 82;
+    public static final int WIDTH = 300, SLOT_X = 24, SLOT_Y = 44, INV_X = 69, INV_Y = 164, HEIGHT = INV_Y + 82;
     public static final int D_TANK = 0, D_FILL = 1, D_SIGNAL = 2, D_FILLING = 3, D_KIND = 4, D_MAX = 5, D_EDIT = 6, D_DELIVERED = 7, D_OFFERED = 8;
     private static final int NB = PlasmaItems.BATTERY_POWERS.length, NC = PlasmaItems.CELL_POWERS.length, D_STAMPED = D_OFFERED + NB + NC, DATA_COUNT = D_STAMPED + NB + NC;
 

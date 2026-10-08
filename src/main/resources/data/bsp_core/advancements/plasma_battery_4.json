@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "bsp_core:plasma_battery_4"
+    },
+    "title": {
+      "translate": "advancement.bsp_core.plasma_battery_4"
+    },
+    "description": {
+      "translate": "advancement.bsp_core.plasma_battery_4.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "bsp_core:plasma_battery_4"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "parent": "bsp_core:plasma_battery"
+}

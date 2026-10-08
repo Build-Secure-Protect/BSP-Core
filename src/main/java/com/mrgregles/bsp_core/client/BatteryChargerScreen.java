@@ -14,7 +14,7 @@ import java.util.Locale;
 /** The Battery Charger screen: the tank and the item filling on the left, the powers to stamp on the right. */
 public class BatteryChargerScreen extends AbstractContainerScreen<BatteryChargerMenu> {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, BAD = 0xFF6B5C, ION = 0xFF4FB8FF;
-    private static final int LIST_X = 120, LIST_Y = 36, ROW = 14, BTN_X = 236, BTN_W = 54;
+    private static final int LIST_X = 120, LIST_Y = 32, ROW = 12, BTN_X = 236, BTN_W = 54;
 
     public BatteryChargerScreen(BatteryChargerMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);

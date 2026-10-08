@@ -448,15 +448,15 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 
 ## Magnetic Centrifuge
 - [ ] All four blocks are craftable and in the creative tab. Placing the controller shows ghost blocks for the other eight; sneak + right-click opens the Assembly Guide, and holding Shift over any of the blocks in JEI opens it too.
-- [ ] Built in all four facings (controller front centre, Rotor in the middle, Item Hatch left, Power Port right as seen from the front), the blocks hide and the Armoured Spin Drum appears: plated sides with slit windows, hazard stripes, lamps, the drum inside. Breaking any block brings the blocks back.
+- [ ] Built in all four facings (controller front centre, Rotor in the middle, Item Hatch left, Power Port right as seen from the front), the blocks hide and the Armoured Spin Drum appears: plated sides with slit windows, hazard stripes, lamps, the extractor inside. Breaking any block brings the blocks back.
 - [ ] With no RF the screen lists "Needs 60 RF per tick" and nothing runs. With a cable on the Power Port the RF gauge fills and it runs; cables on the casing or controller do nothing. Hoppers and pipes work on the Item Hatch only.
-- [ ] One Magnatite Ore (either kind) takes 45 seconds and gives 3 nuggets and 1 Carbon Dust. The drum spins while working and the lamps turn green; a redstone signal pauses it.
+- [ ] One Magnatite Ore (either kind) takes 45 seconds and gives 3 nuggets and 1 Carbon Dust. The extractor spins while working and the lamps turn green; a redstone signal pauses it.
 - [ ] A Magnatite Ingot with no coil does nothing and the screen says to fit a coil. With the Copper Tetrium Coil fitted it tries every 45 seconds; over many tries about 1 in 6 succeed, and a failed try leaves the ingot in the input slot. The copper band behind the windows glows blue while charging.
-- [ ] Stack a second layer (Rotor + 8 Casing): its blocks hide, a second drum appears turning the other way, and the status line at the top right of the screen shows the layers and the new numbers. Test up to six: nuggets rise to 7 to 9, the charge chance reaches 1 in 2 at five, and at six a try takes 25 seconds. A seventh layer is ignored.
+- [ ] Stack a second layer (Rotor + 8 Casing): its blocks hide, a second extractor appears turning the other way, and the status line at the top right of the screen shows the layers and the new numbers. Test up to six: nuggets rise to 7 to 9, the charge chance reaches 1 in 2 at five, and at six a try takes 25 seconds. A seventh layer is ignored.
 - [ ] Removing a block from a middle layer drops the layers above it back to ordinary blocks and the numbers fall.
 - [ ] Power use rises with layers (60 per layer separating, 240 per layer charging).
 - [ ] The status line does not overlap the title, the state text or the PORTS list on the machine screen.
-- [ ] The operator demo switch spins the drums with nothing in the machine.
+- [ ] The operator demo switch spins the extractors with nothing in the machine.
 - [ ] JEI shows a Magnetic Centrifuge category with both jobs, opened by clicking the dial on the machine screen. The guide book has "Magnatite" and "Magnetic Centrifuge" entries. The three new advancements are granted.
 
 ## Decoy Totems
@@ -477,8 +477,8 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 
 ## Wave Plasma chain (replaces the Totem Generator)
 - [ ] The totem tree's plasma path now starts with Output (Tier I ring, 6 levels), then Anchor, then Survey. Output's detail line reads "Gives off 100 mB/t of Wave Plasma" and rises per level (150, 200, 300, 400, 500, 600).
-- [ ] Plasma Extractor directly under a placed, owned totem: a drum with portholes showing moving ion-blue plasma. A second extractor under the first stacks. Wrong order (extractor above the totem, or a gap) does nothing.
-- [ ] Plasma Interface touching an extractor's side: cables plug into it. Place 13 touching interface blocks: the 13th shows a lit seam and is not part of the group. Touch a second, separate interface to a drum the first already serves: its seam lights.
+- [ ] Plasma Extractor directly under a placed, owned totem: an extractor with portholes showing moving ion-blue plasma. A second extractor under the first stacks. Wrong order (extractor above the totem, or a gap) does nothing.
+- [ ] Plasma Interface touching an extractor's side: cables plug into it. Place 13 touching interface blocks: the 13th shows a lit seam and is not part of the group. Touch a second, separate interface to an extractor the first already serves: its seam lights.
 - [ ] Cables join to each other, to interfaces, to projectors and to a repeater's two ends (not its sides). Breaking a cable updates the neighbours' arms.
 - [ ] Projector on a cable run from the interface: right-click opens POWERS / CHUNKS / STATUS. POWERS lists Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Anchor with the totem's level under OFFERED; switching one to RECEIVING shows the same level under ARRIVES; a third switch is refused until a Channel Expander is fitted (right-click the projector holding one; sneak + right-click empty-handed takes it out).
 - [ ] STATUS: PROJECTING with the plasma bar full at 100 of 100 mB/t from a single Tier I totem with one extractor. With two extractors under the totem and the interface touching only one: LOW PRESSURE at 50 mB/t. Touching both: back to 100.
@@ -553,3 +553,109 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] `/bsp totem buff cloaking 2` while looking at a placed totem gives it Cloaking 2 (and `/bsp totem buff xray 3` while holding a totem gives the held one X-ray 3 for the X-ray test); `/bsp totem tier 5` raises the tier; `/bsp totem recloak` re-takes the cloak copy after building inside it.
 - [ ] Repeaters show turquoise arrows on their top and both sides pointing out of the lit front, in every one of the six facings (including up and down). Their five copper rings sit still when idle and swell and nudge forward one after another while plasma passes.
 - [ ] Wrench (two Tetrium Ingots over a Tetrium Ingot over a Stick): right-click a repeater steps it east, south, west, north, up, down; sneak + right-click turns it round. On a placed totem or a battery it turns them; on a plain block (stone) it does nothing. The cables re-join after the turn.
+
+## Fix-ups 2026-10-07
+- [ ] Cut a cable in a carrying run: the cables on the far side of the cut drain and empty within about three seconds, with no movement left in them; the near side keeps flowing. Take a repeater out: the same on its far side. Put the cable back: the run fills again within two seconds.
+- [ ] The plasma inside a pipe looks like a liquid: a level with a rippling surface, the ripples running the way the plasma goes, no cubes. Behind a repeater the level is lower.
+- [ ] Repeater rings are shaded copper (lighter on top, darker underneath) and no longer glare; while pumping a warm highlight runs over them.
+- [ ] Projector Base: a low tank with a nozzle on each side. Cables join its sides and not the projector. A projector with no base under it, or a base with no cable, reads NO SIGNAL; stood on a fed base it projects, and STATUS shows the base's tank.
+- [ ] Aura cubes have hair-thin edges and a faint one-block grid on every face that breathes slowly. Hiding auras removes the lot.
+- [ ] The AURAS control in the totem panel's header is a slide switch like the machines' power switch: turquoise with the knob right when on, red with the knob left when off; the AURAS label sits beside it.
+- [ ] Projector Base: the plasma level shows through the windows on every side, with a brighter line at its surface and no flicker. Fed by a 100 mB/t run it fills to the top in a few seconds (the projector burns 20 mB/t); cut the cable and it drains over about twelve seconds while the projector keeps projecting ("PROJECTING (on the base's tank)"), then stops.
+- [ ] Plasma Interface: right-click opens a screen with the group in 3D: its blocks, the extractors it draws from (gold mB/t), every cable and repeater with the mB/t passing it (blue, a dash for nothing), and the bases and chargers reached. Drag to turn. Refused blocks pulse red. The right side totals supply, blocks joined, extractors, cables, receivers, delivered and spare.
+- [ ] An interface touching an extractor shows a glass tube into the extractor's porthole; two touching interfaces show a sleeve and headers running through the seam.
+
+## Cable pressure (2026-10-07, evening)
+
+Totem -> extractor -> interface -> cables -> Projector Base -> projector, all in one run.
+
+- Right-click the interface and watch the cable labels: every cable on the run reads 100 mB/t (the extractor's share), whether the base is empty, filling or full. A full base no longer drops the cables to the 20 mB/t the projector burns.
+- Break a cable: the labels drop to 0 and the base drains over time as before.
+- Two bases on one interface: each run reads 50 mB/t. A repeater on a run takes a tenth off (90 mB/t).
+- Stack a battery with little charge under the extractor instead of a totem and let it run dry: the cables read what actually got through, then 0.
+- Projector STATUS tab: "Projecting" with the pressure bar at 100 / 100 once the base is full. The base's tank fills to 5000 mB and holds there.
+
+## Projector Base tank look (2026-10-07, late)
+
+- Feed a base and stand at the window: the band shows bright, near-solid blue plasma up to the level the tank holds, with a slightly brighter surface line. The base's own floor, ceiling and corner posts no longer paint grey over it.
+- Empty base: the band is a dark cavity behind clear glass, not a grey box. No flicker on the plates above and below the glass.
+- Cut the cable: the level sinks over a few seconds and the cavity goes dark.
+- The Plasma Interface's little extractor tube still has its top and bottom glass.
+
+## Plasma Valve and fair sharing (2026-10-08)
+
+Setup from the owner's screenshot: one totem, one extractor, one interface, two runs; run A has a Battery Charger (with a battery charging) and a Projector Base + projector, run B has a base + projector.
+
+- Fair share, no valves: open the interface. Each run reads half the supply (50 mB/t from a plain totem). Run B's base fills and its projector runs; the charger no longer takes everything. Remove the charger's battery: run A needs less, run B's figure rises.
+- Place a Plasma Valve in a run (it joins cables at its two ends; the wrench turns its axis, sneak for the other way). Right-click: the dial, the typed box, the nudge buttons and MAX / SHUT all set the limit, and the hand wheel on the block turns with it (one and a half turns from shut to full). The needle on the side gauge follows.
+- Set the valve to 20 mB/t: cables after it read 20, the valve's outlet window holds a sliver of plasma, the inlet window holds what the run is offered, and the other run's figure rises by what this run gave up.
+- Lever on the valve, flipped on: the lamp goes red, the screen says SHUT BY REDSTONE, cables beyond read 0 and the base beyond drains. Flip it off: back to normal. A redstone wire or torch next to it does the same. Switch REDSTONE: SHUTS IT to REDSTONE: IGNORED on the screen: the lever no longer matters.
+- Limit 0 shuts it the same way (screen says SHUT, interface view labels it "shut").
+- A repeater after a valve still costs its tenth; the valve itself costs nothing and powers arrive at full level. A valve counts as one cable for reach.
+- Access: a player without Machines access on the totem gets the red "machines" message instead of the screen. Admins always may.
+- The valve appears in the interface's 3D view with its passing figure, or "shut".
+- Totem removed with stock in the extractor: runs keep receiving from the extractor for a while (at most a projector's need per tick), then stop.
+
+## Jade lines on plasma blocks (2026-10-08)
+
+- Look at a Plasma Extractor under a totem: "Drawing 100 mB/t from the totem" (split by the stack; an extractor with no totem reads "No totem to draw from").
+- Projector Base: "Wave Plasma: 4600 / 5000 mB", grey when empty.
+- Plasma Valve: "Letting through up to 600 mB/t", or red "Shut (limit 600 mB/t)" when a lever or limit 0 shuts it.
+- Cables keep their flow line; everything else still shows only name and RF.
+
+## Cable figures add up (2026-10-08, later)
+
+- Interface view with several runs: the cables leaving the interface add up to the extractors' supply (allowing for rounding down). Before, a run with a valve showed what it was offered rather than what passed, and a run with a repeater showed the figure after the repeater's loss on every cable.
+- A run with a repeater: cables before the repeater read a tenth more than cables after it. The gap between the supply and "Delivered" is what the repeaters cost.
+- A run with a valve set low: cables on both sides of the valve read the limited figure; only the valve's inlet window and its screen ("Offered X, passing Y") show what the run could have had.
+
+
+
+## Battery Charger facing (2026-10-08)
+
+- Place a charger: its open front faces you, the back (solid wall with the port) faces away. The wrench turns it a quarter at a time; sneak turns it back.
+- Cables only join the back. A cable at the front or sides does not connect visually and the interface does not feed the charger through it. Move the cable behind it and it does.
+- Unfed: the cradle shows no plasma. Fed: the two pads above and below the slot and the port window on the back light up with plasma; cut the cable and they go dark after the signal lapses.
+- The outline and collision follow the facing.
+
+
+
+## Joined Plasma Interfaces (2026-10-08)
+
+- Place one interface: a dark cube with a rimmed, recessed panel on every face, bolts at the rim corners, vent slots, and a grey cross on each panel. The frame strips run round all twelve edges.
+- Place a second touching it: the faces between them vanish, the frame now runs round the outside of the pair only, and the crosses line up into one grid. Try an L, a row of four and a 2x2x2 cube; inner corners of an L get a frame strip, flat joins do not.
+- Feed the group from an extractor: every cross turns blue. Remove the totem: they go grey after a second.
+- A thirteenth block, or one touching an extractor another group holds: its crosses pulse red (the old orange seam is gone). The rest of the group stays blue.
+- A cable touching any outer face gets a nozzle with a lit window on that face; a face touching an extractor gets the tube; faces with nothing stay plain panels. Repeaters and valves touching an interface along their axis also get a nozzle.
+- The item in hand and in JEI shows the single block with turquoise crosses.
+- Wording: everything that said "drum" now says "extractor" (interface screen header, legend, guide book, JEI).
+
+
+
+## Interface labels and the emitter screen (2026-10-08)
+
+- Interface view: a straight or bent run of cables carrying the same figure shows one label, on the cable nearest its middle. Where the figure changes (after a valve or a repeater) the two runs get their own labels side by side. Repeaters, valves, extractors and bases keep their own labels.
+- Wave Emitter: right-click at the sky or open ground (no block within four blocks) to open its screen. Drop a Power Cell in the slot (shift-click works), press ON. The right side shows the cell's name, plasma bar, time left at 20 mB/t (m:ss or h:mm:ss), and each stamped power with its level. Take the cell out and the emitter switches off. Right-clicking at a nearby block still toggles it, and sneaking there still takes the cell out.
+- The emitter cannot be moved in the inventory while its screen is open.
+
+
+
+## Fix-ups 2026-10-08 (late)
+
+- X-ray can be bought once Night Sight is at level 1 (its only level) and the totem is Tier V. The tree's "needs Night Sight 2" line is gone. The same rule covers any one-level parent.
+- Battery Charger screen: all nine Carried powers fit above the inventory; the "Cells take Carried powers" note sits between the list and the Inventory label. The screen is taller.
+- Battery Charger block: a battery stands in the cradle as a small block, a cell as an upright card facing the open front, as soon as it goes in; it vanishes when taken out. The pads still light only while fed.
+
+## Interface screen: cloak line, zoom and pan (2026-10-08)
+
+- Totem with Output maxed and Cloaking on: the header reads "550 mB/t" with "from the extractors" under it and a grey line "The totem makes 600; Cloaking takes 50". Switch Cloaking off: 600 and the line goes.
+- Scroll over the view to zoom (25% to 800%, shown next to the button), right-drag or shift-drag to pan, left-drag still turns. RESET VIEW under the view puts everything back.
+- The right column fits inside the box: the help text wraps to the column and the legend sits below it. Nothing runs past the edge at any window size.
+
+## Advancements, guide book and JEI demo (2026-10-08)
+
+- Advancements tab: 41 entries. New ones hang off the totem projector (extractor, interface, cable, base, expander, repeater, valve) and the centrifuge (charged crystal, charger, batteries, Tier IV battery, cells, emitter), plus the wrench under the chassis and raw ore under Tetrium Ore. Each is earned by holding the item.
+- Guide book, The Shatter Totem category: "Wave Plasma and Projectors" (with the turnable hook-up scene and the four-interface scene), new "Pressure, Runs and Valves" (runs, reach, sharing, repeater, valve, wrench), "Batteries, Cells and the Emitter" (charged crystal, charger rules, stamping, all four batteries, battery-as-source scene, all three cells, the emitter screen). Every new block and item has a recipe or spotlight page, so its picture is in the book. Check the three scenes turn and show cables with arms, the charger facing south and the totem on the extractor.
+- JEI: hover any plasma block, cable or battery in JEI and hold Shift: the Assembly Guide opens with the Wave Plasma hook-up in ten steps (extractor, totem, interface, cables, valve, repeater, base, projector, second run, charger). The interface's JEI info says so.
+- docs/GUIDE_BOOK_TEXT.md is regenerated with the new pages for reading outside the game.
+

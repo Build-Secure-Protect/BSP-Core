@@ -83,7 +83,7 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             // which made the sphere hide machines and anything else drawn after it that stood behind its surface.
             pose.pushPose();
             pose.translate(0.5, 0.5, 0.5);
-            auraCube(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.55f + 0.25f * Mth.sin(time * 0.08f + b.ordinal()));
+            auraCube(buffers, pose, r + 0.5f, UpgradeOrbColors.auraColor(b), 0.45f + 0.2f * Mth.sin(time * 0.08f + b.ordinal()), time / 20f + b.ordinal());
             pose.popPose();
         }
     }
@@ -93,7 +93,7 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
      * faces almost clear, so the exact extent can be read while the view stays open. Used by the Projector too.
      * {@code half} is the distance from the centre to each face; {@code edge} is the edges' brightness, 0 to 1.
      */
-    public static void auraCube(MultiBufferSource buffers, PoseStack pose, float half, int rgb, float edge) {
+    public static void auraCube(MultiBufferSource buffers, PoseStack pose, float half, int rgb, float edge, float time) {
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS_TEX);
         // the emissive translucent layer blends without writing depth, so the cube never hides what stands behind its faces
         VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS));
@@ -101,8 +101,25 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
         Matrix4f m = pose.last().pose();
         Matrix3f nm = pose.last().normal();
-        quadBox(vc, m, nm, -half, -half, -half, half, half, half, u, v, r, g, b, 14);
-        float t = Math.max(0.04f, half / 60f); // the bars thicken a little with the cube so they stay visible from afar
+        quadBox(vc, m, nm, -half, -half, -half, half, half, half, u, v, r, g, b, 8);
+        // a one-block grid on every face, breathing gently
+        int ga = Math.round(18 + 16 * Mth.sin(time * 1.3f));
+        float gt = 0.012f;
+        for (float p = -half + 1; p < half - 0.5f; p += 1f) {
+            quadBox(vc, m, nm, p - gt, -half, -half - gt, p + gt, half, -half + gt, u, v, r, g, b, ga); // north face, vertical lines
+            quadBox(vc, m, nm, p - gt, -half, half - gt, p + gt, half, half + gt, u, v, r, g, b, ga);   // south
+            quadBox(vc, m, nm, -half - gt, -half, p - gt, -half + gt, half, p + gt, u, v, r, g, b, ga); // west
+            quadBox(vc, m, nm, half - gt, -half, p - gt, half + gt, half, p + gt, u, v, r, g, b, ga);   // east
+            quadBox(vc, m, nm, -half, p - gt, -half - gt, half, p + gt, -half + gt, u, v, r, g, b, ga); // north, horizontal lines
+            quadBox(vc, m, nm, -half, p - gt, half - gt, half, p + gt, half + gt, u, v, r, g, b, ga);   // south
+            quadBox(vc, m, nm, -half - gt, p - gt, -half, -half + gt, p + gt, half, u, v, r, g, b, ga); // west
+            quadBox(vc, m, nm, half - gt, p - gt, -half, half + gt, p + gt, half, u, v, r, g, b, ga);   // east
+            quadBox(vc, m, nm, p - gt, half - gt, -half, p + gt, half + gt, half, u, v, r, g, b, ga);   // top, both ways
+            quadBox(vc, m, nm, -half, half - gt, p - gt, half, half + gt, p + gt, u, v, r, g, b, ga);
+            quadBox(vc, m, nm, p - gt, -half - gt, -half, p + gt, -half + gt, half, u, v, r, g, b, ga); // bottom, both ways
+            quadBox(vc, m, nm, -half, -half - gt, p - gt, half, -half + gt, p + gt, u, v, r, g, b, ga);
+        }
+        float t = 0.02f + half / 900f; // the twelve edges stay hair-thin, growing only a touch with the cube
         int a = Math.round(Mth.clamp(edge, 0f, 1f) * 255);
         for (float[] e : new float[][]{
                 {-half, -half, -half, half, -half, -half}, {-half, -half, half, half, -half, half}, {-half, half, -half, half, half, -half}, {-half, half, half, half, half, half}, // along x
