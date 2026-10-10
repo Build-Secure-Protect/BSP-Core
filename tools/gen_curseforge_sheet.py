@@ -243,7 +243,7 @@ def metals():
           + h3("The by-product builds every machine") + chain("tetrium_ore", ("Tetrium Crucible",), "tetrium_slag", ("Furnace",), "slag_brick", ("+ plates",), "machine_chassis", ("+ nugget",), "circuit_substrate")
           + h3("Dust, by hand or in a crusher") + chain("tetrium_ingot", "+", "minecraft:iron_pickaxe", ("crafting grid|1 in 3; or any crusher",), "tetrium_dust", ("crafting",), "crucible_control_circuit", "+", "mint_control_circuit")
           + h3("Parts that everything later is built from") + chain("tetrium_plate", "+", "machine_chassis", "+", "tetrium_coil", "+", "basic_control_circuit", "+", "drive_motor", ("make",), "illyrium_crucible")
-          + h3("And the first things worth having") + chain("tetrium_ingot", ("crafting",), "wrench", "+", "coin_vault", "+", "score_screen", "+", "rf_upgrade_mk1", "+", "tetrium_glass"),
+          + h3("And the first things worth having") + chain("tetrium_ingot", ("crafting",), "wrench", "+", "coin_vault", "+", "patchouli:guide_book", "+", "rf_upgrade_mk1", "+", "tetrium_glass"),
           "Times are the defaults with no upgrades or plasma. Every number is in serverconfig/bsp_core-server.toml.")
     plate("machines_single", "Tetrium Crucible and Combination Forge",
           '<div class="split"><div class="col">' + h3("Tetrium Crucible") + render("tetrium_crucible", "Tetrium Crucible")
@@ -402,7 +402,7 @@ def extras():
           + p("Vault blocks of one owner join into one vault of up to 3 x 3 x 3. Coins inside earn interest. Rivals can pick the lock for a quarter of the coins.") + '</div>'
           '<div class="col">' + h3("Anti Totem Block") + render("anti_totem_block", "Anti Totem Block", "5/2")
           + p("For admins: keeps Shatter Totems and chosen BSP blocks out of a box of up to 256 blocks in each direction. Spawn, hubs, arenas.") + '</div></div>'
-          + f'<p class="hint big">{icon("score_screen", 40)} <span><b>Score Screen.</b> Shows the live leaderboard, the rules, or the season\'s prizes. Every totem scores by its tier.</span></p>'
+          + f'<p class="hint big">{icon("score_screen", 40)} <span><b>Score Screen.</b> An admin block, placed from the creative menu: shows the live leaderboard, the rules, or the season\'s prizes. Every totem scores by its tier.</span></p>'
           + f'<p class="hint big">{icon("admin_rack", 40)} <span><b>Admin Rack</b>, or /bsp admin. Every player\'s totems, positions and vault coins, with teleport and reset. End a season from it: the top three get the prizes you placed, everyone gets a fresh totem.</span></p>'
           + f'<p class="hint big">{icon("totem_compass", 40)} <span><b>One config file</b>, serverconfig/bsp_core-server.toml, holds every cost, time, range and price. Optional MySQL or MariaDB links several servers into one season.</span></p>',
           "Moderators get a read-only admin view. /bsp totem buff and /bsp totem tier set powers for testing.")
@@ -412,7 +412,7 @@ def extras():
 GROUPS = [
     ("Tetrium", ["guide_book", "wrench", "tetrium_crucible", "combination_forge", "tetrium_ingot_from_nuggets", "tetrium_nuggets_from_ingot", "slag_brick_from_smelting", "machine_chassis",
                  "tetrium_coil", "circuit_substrate", "basic_control_circuit", "drive_motor", "thermal_lining", "conveyor_belt", "rf_upgrade_mk1", "rf_upgrade_mk2", "tetrium_glass",
-                 "score_screen", "coin_vault", "hand:tetrium_dust"]),
+                 "coin_vault", "hand:tetrium_dust"]),
     ("Illyrium Crucible", ["crucible_control_circuit", "illyrium_casing", "illyrium_glass", "lava_pylon", "item_hatch", "illyrium_core", "illyrium_crucible", "dirty_illyrium_ingot_from_nuggets"]),
     ("Illyrium Refinery", ["hand:dirty_illyrium_dust", "refinery_control_circuit", "refinery_pump", "iron_filter", "diamond_filter", "netherite_filter", "illyrium_refinery"]),
     ("Illyrium", ["press_die", "illyrium_nuggets_from_ingot", "illyrium_ingot_from_nuggets", "illyrium_processor", "illyrium_forge_upgrade", "illyrium_filter", "rf_upgrade_mk3", "totem_compass", "resonance_crystal"]),

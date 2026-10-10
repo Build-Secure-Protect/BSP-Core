@@ -1,5 +1,5 @@
 {
-  "name": "Batteries, Cells and the Emitter",
+  "name": "Batteries and Cells",
   "category": "bsp_core:totem",
   "icon": "bsp_core:plasma_battery_2",
   "sortnum": 10,
@@ -12,7 +12,7 @@
       "type": "patchouli:spotlight",
       "item": "bsp_core:charged_resonance_crystal",
       "text": "A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.",
-      "title": "Charged Resonance Crystal"
+      "title": "The Charged Crystal"
     },
     {
       "type": "patchouli:crafting",
@@ -36,30 +36,13 @@
       "recipe2": "bsp_core:plasma_battery_4"
     },
     {
-      "type": "patchouli:multiblock",
-      "name": "A battery instead of a totem",
-      "multiblock": {
-        "pattern": [
-          [
-            "A___J",
-            "_____"
-          ],
-          [
-            "E0ccB",
-            "_____"
-          ]
-        ],
-        "mapping": {
-          "E": "bsp_core:plasma_extractor",
-          "A": "bsp_core:plasma_battery_2[axis=x]",
-          "0": "bsp_core:plasma_interface[west=drum,east=cable]",
-          "c": "bsp_core:tetrium_core_cable[east=true,west=true]",
-          "B": "bsp_core:projector_base",
-          "J": "bsp_core:totem_projector"
-        },
-        "symmetrical": false
-      },
-      "text": "A charged battery standing on an extractor feeds it at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there."
+      "type": "patchouli:image",
+      "title": "A battery as source",
+      "images": [
+        "bsp_core:textures/gui/book/plasma_batteries.png"
+      ],
+      "border": true,
+      "text": "The four tiers, and a charged battery standing on an extractor: it feeds at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there."
     },
     {
       "type": "patchouli:text",

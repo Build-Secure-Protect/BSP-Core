@@ -18,8 +18,17 @@
       "recipe": "bsp_core:plasma_injector"
     },
     {
+      "type": "patchouli:image",
+      "title": "Injector on a crucible",
+      "images": [
+        "bsp_core:textures/gui/book/plasma_injector.png"
+      ],
+      "border": true,
+      "text": "The cable comes in at the far end, the nozzle end touches the machine. The barrel fills as high as the rate, and a slug of plasma runs down each feed tube while it works."
+    },
+    {
       "type": "patchouli:text",
-      "text": "$(l)Overclock$() on a totem no longer speeds machines by itself: it travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.",
+      "text": "$(l)Overclock$() on a totem travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.",
       "title": "Overclock"
     }
   ]

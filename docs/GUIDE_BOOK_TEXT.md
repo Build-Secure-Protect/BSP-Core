@@ -65,27 +65,43 @@ Work while the totem is in your **offhand**. Paid in experience levels.
 - Vitality: extra hearts
 - Featherfall: less fall damage
 - Night Sight: see in the dark
+- Bouncy: bounce back up from a fall
+- X-ray: see ores through the walls for a while
 
-**Page 4: Base**
+The last two are described under Powers in Detail.
+
+**Page 4: Base: walls**
 
 Work only while the totem is **placed**. Paid in Shatter Coins.
 
 
 - Fortify: blocks nearby resist explosions and intruders mine slower
-- Healing Aura: heals you nearby
-- Ward: weakens intruders
 - Alarm: outlines intruders and warns you
-- Sanctuary: no hostile spawns
+- Sentinel: tells you who is inside, from anywhere
+- Ward: weakens intruders
 - Deadlock: your totem takes longer to steal
-- Overclock: every injector fed by this totem's plasma speeds its machine up more
+- Cloaking: outsiders see untouched land
 
-**Page 5: Raid**
+**Page 5: Base: aura and plasma**
+
+- Healing Aura: heals you nearby
+- Sanctuary: no hostile spawns
+- Overclock: every injector fed by this totem's plasma speeds its machine up more
+- Recall: teleport to the totem while it is being stolen
+- Output: more Wave Plasma
+- Anchor and Survey: keep chunks loaded, see Chunk Loading
+- Harvest: mined ores grow back
+
+**Page 6: Raid**
 
 Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.
 
 
 - Lockpick: your steals take less time
 - Shroud: the owner is warned late
+- Recall Block: delays the owner's Recall
+- Thief's Step: silent steps, hidden from weak Alarms
+- Siege: mine at full speed inside Fortify for a while
 
 No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.
 
@@ -99,7 +115,7 @@ After tracking it needs to cool down. Upgrades shorten the cooldown.
 
 **Page 2**  `[recipe] totem_compass`
 
-## Scores and the Leaderboard
+## Scores and Seasons
 
 **Page 1**
 
@@ -114,21 +130,17 @@ Every totem you own scores points by its tier:
 
 Your score is the total for all your totems, so stealing totems and upgrading them both move you up.
 
-**Page 2**  `[recipe] score_screen`
-
-*Score Screen* panels placed side by side and above each other, facing the same way, join into one display of up to 8 wide and 6 high. It shows the leaderboard, these scoring rules, or the season's prizes.
-
-**Page 3: Seasons and Prizes**
+**Page 2: Seasons and Prizes**
 
 The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.
 
-A Score Screen set to Prizes shows what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.
+The screens the admins put up show what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.
 
-**Page 4: How it is counted**
+**Page 3: How it is counted**
 
 A placed totem counts for its owner. A carried totem counts for whoever is carrying it.
 
-Ties go to the player with more totems, then to the higher tier. Score Screens show the current leaderboard, and on a network it covers every server.
+Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server.
 
 ## Decoy Totems
 
@@ -146,7 +158,7 @@ The *Magnet Core* is the hard part: six Charged Magnatite Ingots around an Illyr
 
 A decoy must stand on a *Decoy Power Base*, fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol.
 
-**Page 4: When someone takes the bait**
+**Page 4: Taking the bait**
 
 An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.
 
@@ -182,7 +194,7 @@ The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Pris
 
 **Page 10**  `[recipe] reinforced_casing`
 
-## Wave Plasma and Projectors
+## Plasma and Projectors
 
 **Page 1**
 
@@ -190,9 +202,9 @@ A placed totem gives off **Wave Plasma**: 100 mB every tick, up to 6,000 with th
 
 The projector works for whoever owns the totem. If your totem is stolen, so is the aura.
 
-**Page 2**  `[3D structure] The hook-up`
+**Page 2**  `[picture] The hook-up`
 
-Totem on extractor, interface beside it, a run east through a valve and a repeater to a base and its projector, and a second run south into the back of a charger. Drag to turn.
+Totem on extractor, interfaces beside it, a run through a valve and a repeater to a base and its projector, and a second run into the back of a charger.
 
 **Page 3: How it joins up**
 
@@ -208,9 +220,9 @@ The chain, in order:
 
 Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing.
 
-**Page 5**  `[3D structure] Four interfaces joined`
+**Page 5**  `[picture] Interfaces joined`
 
-Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs.
+Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs. The red one touches an extractor another group holds.
 
 **Page 6: Seeing the flow**
 
@@ -238,7 +250,7 @@ What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Clo
 
 Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.
 
-## Pressure, Runs and Valves
+## Runs and Valves
 
 **Page 1**
 
@@ -289,7 +301,7 @@ Magnatite, Illyrium and Charged Illyrium cables take any of the sixteen dyes: ei
 
 Point the wrench at an end of a cable and right-click to set what that end does:
 
-- **Normal**: plasma flows either way, as before.
+- **Normal**: plasma flows either way.
 - **Output**: plasma may only leave the cable here.
 - **Input**: plasma may only enter here.
 - **Off**: not joined.
@@ -310,9 +322,9 @@ Wave Plasma can be kept in bulk. A *Plasma Tank* is a hollow box you build from 
 
 Every block of the shell holds 2,500,000 mB. It holds plasma only, no powers.
 
-**Page 2**  `[3D structure] A 4 x 3 x 4 tank, formed`
+**Page 2**  `[picture] A 5 x 4 x 5 tank, formed`
 
-Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.
+Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges and the uprights glow as high as the plasma stands. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.
 
 **Page 3**  `[recipe] tetrium_glass, tank_glass`
 
@@ -382,7 +394,7 @@ If you pick your own totem up and place it somewhere else, it remembers the layo
 
 The server may be set to load chunks only while you are online.
 
-## Batteries, Cells and the Emitter
+## Batteries and Cells
 
 **Page 1**
 
@@ -390,7 +402,7 @@ Wave Plasma can be bottled. A *Battery Charger* with a Plasma Cable into its bac
 
 Every battery and cell is built around a *Charged Resonance Crystal*.
 
-**Page 2: Charged Resonance Crystal**  `[item shown] charged_resonance_crystal`
+**Page 2: The Charged Crystal**  `[item shown] charged_resonance_crystal`
 
 A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.
 
@@ -410,9 +422,9 @@ Tier I holds 40,000 mB and no powers. Tiers II, III and IV hold 200,000, 1,000,0
 
 **Page 6**  `[recipe] plasma_battery_3, plasma_battery_4`
 
-**Page 7**  `[3D structure] A battery instead of a totem`
+**Page 7**  `[picture] A battery as source`
 
-A charged battery standing on an extractor feeds it at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.
+The four tiers, and a charged battery standing on an extractor: it feeds at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.
 
 **Page 8: Batteries as a source**
 
@@ -452,9 +464,13 @@ It also works on most machines from other mods, which it ticks extra; a few that
 
 **Page 3**  `[recipe] plasma_injector`
 
-**Page 4: Overclock**
+**Page 4**  `[picture] Injector on a crucible`
 
-**Overclock** on a totem no longer speeds machines by itself: it travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.
+The cable comes in at the far end, the nozzle end touches the machine. The barrel fills as high as the rate, and a slug of plasma runs down each feed tube while it works.
+
+**Page 5: Overclock**
+
+**Overclock** on a totem travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.
 
 ## Letting Friends In
 
@@ -472,11 +488,11 @@ Your placed totem's panel has an **ACCESS** tab. Type an online player's name an
 
 Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.
 
-## The Newer Powers
+## Powers in Detail
 
 **Page 1**
 
-Five powers added with the plasma rework. Auras are now cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind.
+The higher-tier powers, one by one. Auras are cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind.
 
 **Page 2: Carried**
 
@@ -498,7 +514,7 @@ Five powers added with the plasma rework. Auras are now cubes: a radius of 5 cov
 
 **Siege** (Raid, after Thief's Step, Tier V): press its key and for a while Fortify does not slow your mining; then it recharges.
 
-**Page 5: Harvest**
+**Page 5: Sentinel and Harvest**
 
 **Sentinel** (Base, Walls path beside Ward after Alarm, Tier III, priced like a Raid power): while anyone is inside your Alarm cube, a strip at the top of your screen tells you, from anywhere on the server: how many (level 1), who (2), how far from the totem (3), and at level 4 where they are right now, with a marker through the walls when they are near you. A steal in progress shows the thief and the seconds left. Friends with the Alarm switch see it too.
 
@@ -506,9 +522,9 @@ Five powers added with the plasma rework. Auras are now cubes: a radius of 5 cov
 
 ---
 
-# Tetrium and Illyrium
+# The Three Metals
 
-Two new metals, from first ore to refined ingot.
+Tetrium, Illyrium and Magnatite, from first ore to refined ingot.
 
 ## Tetrium
 
@@ -607,7 +623,7 @@ The lower Lava Pylons (orange sockets) take lava by pipe. The upper ones (yellow
 
 Stuck on a build? Empty your hand and **sneak + right-click** the controller for the step-by-step Assembly Guide.
 
-**Page 2**  `[3D structure] Illyrium Crucible`
+**Page 2**  `[picture] Illyrium Crucible`
 
 Controller at the bottom front centre. 12 Casing, 8 Lava Pylons, 2 Item Hatches, 1 Core.
 
@@ -629,7 +645,7 @@ The Refinery Pump takes water (blue socket) and RF (yellow socket). The Item Hat
 
 Stuck on a build? Empty your hand and **sneak + right-click** the controller for the step-by-step Assembly Guide.
 
-**Page 2**  `[3D structure] Illyrium Refinery`
+**Page 2**  `[picture] Illyrium Refinery`
 
 Controller at the bottom front centre. 8 Casing, 1 Core, 2 Tank Glass, 1 Item Hatch, 1 Pump.
 
@@ -657,7 +673,7 @@ A multiblock one block high and three by three. It separates Magnatite Ore and, 
 
 Stuck on a build? Empty your hand and **sneak + right-click** the controller for the step-by-step Assembly Guide.
 
-**Page 2**  `[3D structure] Magnetic Centrifuge`
+**Page 2**  `[picture] Magnetic Centrifuge`
 
 Controller front centre, Rotor in the middle, Item Hatch left, Power Port right, 5 Casing.
 
@@ -706,7 +722,7 @@ Pressing takes real time, from hours to days by tier, and carries on while you a
 
 Stuck on a build? Empty your hand and **sneak + right-click** the controller for the step-by-step Assembly Guide.
 
-**Page 2**  `[3D structure] Factory slice`
+**Page 2**  `[picture] Factory slice`
 
 Bottom from the front: Controller, Frame, Blank Hatch. Top: Frame, Press, Power Port.
 

@@ -99,7 +99,6 @@ R = {
     "magnetic_centrifuge": (1, ["PGP", "MKM", "PDP"], {"P": "tetrium_plate", "G": "glass_pane", "M": "drive_motor", "K": "basic_control_circuit", "D": "diamond"}, "Crafting"),
     # --- base blocks
     "coin_vault": (1, ["PAP", "PKP", "PCP"], {"P": "tetrium_plate", "A": "gold_ingot", "K": "basic_control_circuit", "C": "machine_chassis"}, "Crafting"),
-    "score_screen": (2, ["GGG", "WKW", "PPP"], {"G": "glass_pane", "W": "tetrium_coil", "K": "basic_control_circuit", "P": "tetrium_plate"}, "Crafting"),
     # --- existing items, reworked to use the new parts
     "rf_upgrade_mk1": (1, ["CWC", "WRW", "CTC"], {"C": "copper_ingot", "W": "tetrium_coil", "R": "redstone_block", "T": "tetrium_ingot"}, "Crafting"),
     "rf_upgrade_mk2": (1, ["TGT", "WRW", "TGT"], {"T": "tetrium_ingot", "G": "gold_ingot", "W": "tetrium_coil", "R": "redstone_block"}, "Crafting"),
@@ -124,7 +123,7 @@ GROUPS = [
     ("Magnetic Centrifuge", "Mid tier: Tetrium parts, and a Rotor that needs Dirty Illyrium Ingots, so it comes after the Illyrium Crucible. Each stacked layer needs another Rotor and eight Casing.",
      ["centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port", "magnetic_centrifuge"], ["centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port", "magnetic_centrifuge"]),
     ("Base blocks", "Early tier: Tetrium parts only, so a first Coin Vault and a Score Screen are within reach as soon as the Combination Forge is running. The Admin Rack has no recipe.",
-     ["coin_vault", "score_screen"], ["coin_vault", "score_screen"]),
+     ["coin_vault"], ["coin_vault"]),
     ("Reworked existing recipes", "The RF Upgrades now use Tetrium Coils and the Illyrium Forge Upgrade an Illyrium Processor.",
      ["rf_upgrade_mk1", "rf_upgrade_mk2", "rf_upgrade_mk3", "illyrium_forge_upgrade"], ["rf_upgrade_mk1", "rf_upgrade_mk2", "rf_upgrade_mk3", "illyrium_forge_upgrade"]),
 ]
@@ -136,7 +135,6 @@ BUILDS = [
     ("Magnetic Centrifuge, one layer (9 blocks)", {"centrifuge_casing": 5, "centrifuge_rotor": 1, "item_hatch": 1, "centrifuge_power_port": 1, "magnetic_centrifuge": 1}),
     ("Each extra centrifuge layer (9 blocks)", {"centrifuge_casing": 8, "centrifuge_rotor": 1}),
     ("A full 3 x 3 x 3 Coin Vault (27 blocks)", {"coin_vault": 27}),
-    ("A 5 x 3 Score Screen (15 panels)", {"score_screen": 15}),
 ]
 
 # what exists today: (name, type, how you get it, status). status: ok = crafting recipe, mach = made in a machine, world = found or given, none = no recipe yet

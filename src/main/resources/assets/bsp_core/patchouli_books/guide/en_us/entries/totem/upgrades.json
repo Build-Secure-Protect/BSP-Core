@@ -15,17 +15,22 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Work while the totem is in your $(l)offhand$(). Paid in experience levels.$(br2)$(li)Damage, Resistance, Mining Speed$(li)Swiftness: move faster$(li)Vitality: extra hearts$(li)Featherfall: less fall damage$(li)Night Sight: see in the dark",
+      "text": "Work while the totem is in your $(l)offhand$(). Paid in experience levels.$(br2)$(li)Damage, Resistance, Mining Speed$(li)Swiftness: move faster$(li)Vitality: extra hearts$(li)Featherfall: less fall damage$(li)Night Sight: see in the dark$(li)Bouncy: bounce back up from a fall$(li)X-ray: see ores through the walls for a while$(br2)The last two are described under $(l:totem/effects)Powers in Detail$().",
       "title": "Carried"
     },
     {
       "type": "patchouli:text",
-      "text": "Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Healing Aura: heals you nearby$(li)Ward: weakens intruders$(li)Alarm: outlines intruders and warns you$(li)Sanctuary: no hostile spawns$(li)Deadlock: your totem takes longer to steal$(li)Overclock: every injector fed by this totem's plasma speeds its machine up more",
-      "title": "Base"
+      "text": "Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Alarm: outlines intruders and warns you$(li)Sentinel: tells you who is inside, from anywhere$(li)Ward: weakens intruders$(li)Deadlock: your totem takes longer to steal$(li)Cloaking: outsiders see untouched land",
+      "title": "Base: walls"
     },
     {
       "type": "patchouli:text",
-      "text": "Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.$(br2)$(li)Lockpick: your steals take less time$(li)Shroud: the owner is warned late$(br2)No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.",
+      "text": "$(li)Healing Aura: heals you nearby$(li)Sanctuary: no hostile spawns$(li)Overclock: every injector fed by this totem's plasma speeds its machine up more$(li)Recall: teleport to the totem while it is being stolen$(li)Output: more Wave Plasma$(li)Anchor and Survey: keep chunks loaded, see $(l:totem/chunks)Chunk Loading$()$(li)Harvest: mined ores grow back",
+      "title": "Base: aura and plasma"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.$(br2)$(li)Lockpick: your steals take less time$(li)Shroud: the owner is warned late$(li)Recall Block: delays the owner's Recall$(li)Thief's Step: silent steps, hidden from weak Alarms$(li)Siege: mine at full speed inside Fortify for a while$(br2)No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.",
       "title": "Raid"
     }
   ]

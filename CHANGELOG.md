@@ -4,6 +4,14 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-11
+
+### Changed
+- Guide book wording: it reads as if everything had always been there (no "added", "now", "no longer", "rework"); the entry The Newer Powers is Powers in Detail, the Upgrade Tree pages list every power on all three paths, the materials category is The Three Metals. The generator refuses changelog-style wording.
+- The Score Screen is an admin block: no recipe, placed from the creative menu by BSP admins only (the `AdminBlockItem` check used by the Anti Totem Block). Its guide book recipe page is gone; the scoring pages stay.
+- Guide book titles shortened to fit the page (Scores and Seasons, Plasma and Projectors, Runs and Valves, Batteries and Cells, Taking the bait, The Charged Crystal, A battery as source); the generator refuses titles over 24 characters.
+- Guide book: the finished multiblocks, the plasma hook-up, joined interfaces, batteries, the tank and the injector are shown as pictures rendered from the mod's own models (`tools/make_book_images.py` from the `capture_images.py` renders) instead of Patchouli's block scenes, so nothing in the book can leave a visualisation floating in the world.
+
 ## [1.0.0] - 2026-10-10
 
 ### Added

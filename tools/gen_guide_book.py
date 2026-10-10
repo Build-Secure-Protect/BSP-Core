@@ -59,71 +59,24 @@ def craft(first, second=None, body=None):
     return page
 
 
-def scene(name, layers, mapping, body):
-    """A turnable 3D scene of blocks that is not a machine: layers top to bottom, rows north to south, characters west to east, '0' at the centre."""
-    pattern = [[row.replace(" ", "_") for row in layer] for layer in layers]
-    return {"type": "patchouli:multiblock", "name": name, "multiblock": {"pattern": pattern, "mapping": mapping, "symmetrical": False}, "text": body}
+def picture(name, file, body):
+    """A picture page: one of the renders of the mod's own models, made by tools/make_book_images.py (textures/gui/book/<file>.png)."""
+    assert (ROOT / f"src/main/resources/assets/bsp_core/textures/gui/book/{file}.png").exists(), f"no book picture {file}: run make_book_images.py"
+    return {"type": "patchouli:image", "title": name, "images": [f"bsp_core:textures/gui/book/{file}.png"], "border": True, "text": body}
 
 
-CABLE_X, CABLE_Z = "bsp_core:tetrium_core_cable[east=true,west=true]", "bsp_core:tetrium_core_cable[north=true,south=true]"
-HOOKUP = scene("The hook-up", [["T________J", "          ", "          ", "          "], ["E0cccVcRcB", " d        ", " d        ", " H        "]],
-               {"E": "bsp_core:plasma_extractor", "0": "bsp_core:plasma_interface[west=drum,east=cable,south=cable]", "T": "bsp_core:shatter_totem", "c": CABLE_X, "d": CABLE_Z,
-                "V": "bsp_core:plasma_valve[axis=x]", "R": "bsp_core:plasma_repeater[facing=east]", "B": "bsp_core:projector_base", "J": "bsp_core:totem_projector", "H": "bsp_core:battery_charger[facing=south]"},
-               "Totem on extractor, interface beside it, a run east through a valve and a repeater to a base and its projector, and a second run south into the back of a charger. Drag to turn.")
-GROUP = scene("Four interfaces joined", [["T    ", "     "], ["E0Ac ", " BC  "]],
-              {"E": "bsp_core:plasma_extractor", "T": "bsp_core:shatter_totem", "0": "bsp_core:plasma_interface[west=drum,east=join,south=join]", "A": "bsp_core:plasma_interface[west=join,south=join,east=cable]",
-               "B": "bsp_core:plasma_interface[north=join,east=join]", "C": "bsp_core:plasma_interface[north=join,west=join]", "c": CABLE_X},
-              "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs.")
-BATTERY_FEED = scene("A battery instead of a totem", [["A   J", "     "], ["E0ccB", "     "]],
-                     {"E": "bsp_core:plasma_extractor", "A": "bsp_core:plasma_battery_2[axis=x]", "0": "bsp_core:plasma_interface[west=drum,east=cable]", "c": CABLE_X, "B": "bsp_core:projector_base", "J": "bsp_core:totem_projector"},
-                     "A charged battery standing on an extractor feeds it at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.")
-
-
-def tank_scene(w, h, d, ports, name, body):
-    """A formed tank as the game shows it: every casing block carries the rail flags TankStructure.form sets (which axes its rail
-    runs along and which corner it sits on), so the scene shows the outline-and-glass look, not cubes."""
-    chars = iter("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-    mapping, by_state, layers = {}, {}, []
-    for y in reversed(range(h)):
-        rows = []
-        for z in range(d):
-            row = ""
-            for x in range(w):
-                ex, ey, ez = x in (0, w - 1), y in (0, h - 1), z in (0, d - 1)
-                edges = ex + ey + ez
-                if edges == 0:
-                    row += " "
-                    continue
-                if (x, y, z) in ports:
-                    state = "bsp_core:tank_port[formed=true]"
-                elif edges >= 2:
-                    props = ["formed=true"]
-                    for axis, (e, v, n) in zip("xyz", ((ex, x, w), (ey, y, h), (ez, z, d))):
-                        along = edges == 3 or not e
-                        props.append(f"along_{axis}={'true' if along else 'false'}")
-                        props.append(f"hi_{axis}={'true' if v == n - 1 else 'false'}")
-                    state = "bsp_core:tank_casing[" + ",".join(props) + "]"
-                else:
-                    state = "bsp_core:tank_glass[formed=true]"
-                if state not in by_state:
-                    by_state[state] = next(chars)
-                    mapping[by_state[state]] = state
-                row += by_state[state]
-            rows.append(row)
-        layers.append(rows)
-    # Patchouli wants one "0", the centre: the bottom layer's south-west corner block
-    bottom = layers[-1]
-    mapping["0"] = mapping[bottom[d - 1][0]]
-    bottom[d - 1] = "0" + bottom[d - 1][1:]
-    return scene(name, layers, mapping, body)
-
-
-TANK_SCENE = tank_scene(4, 3, 4, {(2, 2, 1), (3, 1, 2)}, "A 4 x 3 x 4 tank, formed",
-                        "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.")
+HOOKUP = picture("The hook-up", "plasma_network",
+                 "Totem on extractor, interfaces beside it, a run through a valve and a repeater to a base and its projector, and a second run into the back of a charger.")
+GROUP = picture("Interfaces joined", "plasma_interface_group",
+                "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs. The red one touches an extractor another group holds.")
+BATTERY_FEED = picture("A battery as source", "plasma_batteries",
+                       "The four tiers, and a charged battery standing on an extractor: it feeds at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.")
+TANK_SCENE = picture("A 5 x 4 x 5 tank, formed", "plasma_tank",
+                     "Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges and the uprights glow as high as the plasma stands. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.")
 
 
 def build(name, layers, controller, body):
-    """A picture of the finished machine if one has been made (see docs/book_screenshots), otherwise the turnable block layout."""
+    """A picture of the finished machine (made by tools/make_book_images.py from the renders or docs/book_screenshots), otherwise the turnable block layout."""
     machine = controller.split(":")[1]
     if (ROOT / f"src/main/resources/assets/bsp_core/textures/gui/book/{machine}.png").exists():
         return {"type": "patchouli:image", "title": name, "images": [f"bsp_core:textures/gui/book/{machine}.png"], "border": True, "text": body}
@@ -132,7 +85,7 @@ def build(name, layers, controller, body):
 
 CATEGORIES = [
     ("totem", "The Shatter Totem", "Your totem is the heart of BSP: build around it, protect it, and take other players' totems if you can.", "bsp_core:shatter_totem"),
-    ("materials", "Tetrium and Illyrium", "Two new metals, from first ore to refined ingot.", "bsp_core:illyrium_ingot"),
+    ("materials", "The Three Metals", "Tetrium, Illyrium and Magnatite, from first ore to refined ingot.", "bsp_core:illyrium_ingot"),
     ("machines", "Machines", "The parts every machine is made of, and how to build the two Illyrium multiblocks.", "bsp_core:illyrium_crucible"),
     ("coins", "Shatter Coins", "Coins pay for the strongest totem upgrades. You press them yourself.", "bsp_core:gold_shatter_coin"),
 ]
@@ -151,21 +104,21 @@ ENTRIES = [
     ("totem", "upgrades", "The Upgrade Tree", "minecraft:experience_bottle", 2, [
         text("Right-click with the totem in your hand, or right-click your placed totem, to open its upgrade tree. Upgrades belong to the totem, so they move with it if it is stolen.$(br2)Your totem has five tiers, I to V. Each tier has its own Shatter Coin: Copper, Gold, Diamond, Netherite, Illyrium."),
         text("Raising the totem a tier costs coins of the tier you are leaving, plus XP levels. A new tier opens new upgrades and two more levels on the ones you have.$(br2)Upgrades sit on paths. The next one opens when the one before it reaches level 2. Every level costs the coin of the tier it is bought at, plus XP.", "Tiers and paths"),
-        text("Work while the totem is in your $(l)offhand$(). Paid in experience levels.$(br2)$(li)Damage, Resistance, Mining Speed$(li)Swiftness: move faster$(li)Vitality: extra hearts$(li)Featherfall: less fall damage$(li)Night Sight: see in the dark", "Carried"),
-        text("Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Healing Aura: heals you nearby$(li)Ward: weakens intruders$(li)Alarm: outlines intruders and warns you$(li)Sanctuary: no hostile spawns$(li)Deadlock: your totem takes longer to steal$(li)Overclock: every injector fed by this totem's plasma speeds its machine up more", "Base"),
-        text("Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.$(br2)$(li)Lockpick: your steals take less time$(li)Shroud: the owner is warned late$(br2)No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.", "Raid"),
+        text("Work while the totem is in your $(l)offhand$(). Paid in experience levels.$(br2)$(li)Damage, Resistance, Mining Speed$(li)Swiftness: move faster$(li)Vitality: extra hearts$(li)Featherfall: less fall damage$(li)Night Sight: see in the dark$(li)Bouncy: bounce back up from a fall$(li)X-ray: see ores through the walls for a while$(br2)The last two are described under $(l:totem/effects)Powers in Detail$().", "Carried"),
+        text("Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Alarm: outlines intruders and warns you$(li)Sentinel: tells you who is inside, from anywhere$(li)Ward: weakens intruders$(li)Deadlock: your totem takes longer to steal$(li)Cloaking: outsiders see untouched land", "Base: walls"),
+        text("$(li)Healing Aura: heals you nearby$(li)Sanctuary: no hostile spawns$(li)Overclock: every injector fed by this totem's plasma speeds its machine up more$(li)Recall: teleport to the totem while it is being stolen$(li)Output: more Wave Plasma$(li)Anchor and Survey: keep chunks loaded, see $(l:totem/chunks)Chunk Loading$()$(li)Harvest: mined ores grow back", "Base: aura and plasma"),
+        text("Help you take other totems. They count when the totem that has them is in your offhand as you start a steal. Paid in Shatter Coins.$(br2)$(li)Lockpick: your steals take less time$(li)Shroud: the owner is warned late$(li)Recall Block: delays the owner's Recall$(li)Thief's Step: silent steps, hidden from weak Alarms$(li)Siege: mine at full speed inside Fortify for a while$(br2)No upgrade can make a totem impossible to steal: blocks can always be mined, and a steal always has a time limit.", "Raid"),
     ]),
-    ("totem", "scoring", "Scores and the Leaderboard", "minecraft:gold_block", 4, [
+    ("totem", "scoring", "Scores and Seasons", "minecraft:gold_block", 4, [
         text("Every totem you own scores points by its tier:$(br2)$(li)Tier I: 1 point$(li)Tier II: 2 points$(li)Tier III: 4 points$(li)Tier IV: 7 points$(li)Tier V: 10 points$(br2)Your score is the total for all your totems, so stealing totems and upgrading them both move you up."),
-        craft("score_screen", None, "$(item)Score Screen$() panels placed side by side and above each other, facing the same way, join into one display of up to 8 wide and 6 high. It shows the leaderboard, these scoring rules, or the season's prizes."),
-        text("The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.$(br2)A Score Screen set to Prizes shows what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.", "Seasons and Prizes"),
-        text("A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. Score Screens show the current leaderboard, and on a network it covers every server.", "How it is counted"),
+        text("The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.$(br2)The screens the admins put up show what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.", "Seasons and Prizes"),
+        text("A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server.", "How it is counted"),
     ]),
     ("totem", "decoys", "Decoy Totems", "bsp_core:decoy_totem", 5, [
         spot("bsp_core:decoy_totem", "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."),
         craft("magnet_core", "decoy_totem", "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."),
         craft("decoy_power_base", None, "A decoy must stand on a $(item)Decoy Power Base$(), fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol."),
-        text("An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.", "When someone takes the bait"),
+        text("An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.", "Taking the bait"),
         text("Right-click your decoy to fit parts. A socket opens when the one before it is filled.$(br2)$(li)$(l)Range$(): Range Coils Mk I, II, III widen the compass range from 24 blocks to 40, 64 and 96.$(li)$(l)Traps$(): a charge, then a Trap Amplifier, then a second charge.$(li)$(l)Casing$(): each Reinforced Casing survives one more attempt.", "Sockets"),
         text("Each charge is used up when it goes off.$(br2)$(li)Blast: an explosion that hurts the thief and breaks nothing.$(li)Hex: Slowness, Weakness and Glowing.$(li)Poison.$(li)Fatigue: Mining Fatigue.$(li)Warp: throws the thief up to 30 blocks away.", "Trap charges"),
         craft("range_coil_mk1", "range_coil_mk2"),
@@ -173,7 +126,7 @@ ENTRIES = [
         craft("blast_charge", "warp_charge", "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."),
         craft("reinforced_casing"),
     ]),
-    ("totem", "projectors", "Wave Plasma and Projectors", "bsp_core:totem_projector", 6, [
+    ("totem", "projectors", "Plasma and Projectors", "bsp_core:totem_projector", 6, [
         text("A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 6,000 with the ten levels of the $(l)Output$() upgrade. The totem panel shows the figure. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."),
         HOOKUP,
         text("The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into its outer faces.$(li)$(item)Plasma Cable$() from the interface onward.$(li)$(item)Projector Base$() at the end of the cable, holding what arrives.$(li)$(item)Projector$() standing on the base.", "How it joins up"),
@@ -185,7 +138,7 @@ ENTRIES = [
         craft("channel_expander", None, "A projector receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking the projector with it; sneak and right-click empty-handed takes it out."),
         text("What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.", "Powers and auras"),
     ]),
-    ("totem", "flow", "Pressure, Runs and Valves", "bsp_core:plasma_valve", 7, [
+    ("totem", "flow", "Runs and Valves", "bsp_core:plasma_valve", 7, [
         text("Plasma moves in $(l)runs$(): a line of cables from an interface to whatever is at its end. Every cable in a run carries the same figure, the run's $(l)pressure$(), in mB/t. Nothing is lost along a cable, however long, up to its reach.$(br2)Each kind of cable has a longest run:$(br)$(li)Tetrium: 15 blocks, 250 mB/t$(li)Magnatite: 25 blocks, 500 mB/t$(li)Illyrium: 40 blocks, 1,000 mB/t$(li)Charged Illyrium: 80 blocks, 1,000 mB/t$(br2)A mixed run goes as far, and carries as much, as its weakest cable."),
         craft("tetrium_core_cable", "magnatite_core_cable"),
         craft("illyrium_core_cable", "charged_illyrium_core_cable"),
@@ -195,14 +148,15 @@ ENTRIES = [
         text("The valve's hand wheel turns as far as the limit is set. Its windows show plasma arriving on one side and leaving on the other at the limited rate; the lamp by the gauge is blue while open and red while shut.$(br2)Each extractor also keeps a reserve of 4,000 mB. Take the totem away and the runs keep drinking from it for a short while, then stop.", "What you see"),
         craft("wrench", None, "The $(item)Wrench$() turns blocks in place: repeaters, valves, chargers, batteries and placed totems. Sneak and right-click turns the other way, or turns a repeater round."),
         craft("blue_illyrium_core_cable", None, "Magnatite, Illyrium and Charged Illyrium cables take any of the sixteen dyes: eight cables round a dye, and a coloured cable can be dyed again. A coloured cable joins only cables of its own colour, a plain one only plain ones, so two runs can cross without mixing. Machines take any colour."),
-        text("Point the wrench at an end of a cable and right-click to set what that end does:$(br)$(li)$(l)Normal$(): plasma flows either way, as before.$(li)$(l)Output$(): plasma may only leave the cable here.$(li)$(l)Input$(): plasma may only enter here.$(li)$(l)Off$(): not joined.$(br2)Where another colour meets the end, the first click $(l)Links$() them. Sneak and right-click puts an end back to Normal.", "Cable ends"),
+        text("Point the wrench at an end of a cable and right-click to set what that end does:$(br)$(li)$(l)Normal$(): plasma flows either way.$(li)$(l)Output$(): plasma may only leave the cable here.$(li)$(l)Input$(): plasma may only enter here.$(li)$(l)Off$(): not joined.$(br2)Where another colour meets the end, the first click $(l)Links$() them. Sneak and right-click puts an end back to Normal.", "Cable ends"),
         text("While you hold the wrench a line above the crosshair names the end you point at and its setting. Output ends wear a copper collar with an arrow pointing out, Input ends an arrow pointing in, Off ends a dark plate, and Links a copper and white collar.$(br2)Sneak and right-click the $(l)core$() of a cable to pick it up with its settings kept on the item.", "What you see"),
     ]),
     ("totem", "injector", "The Plasma Injector", "bsp_core:plasma_injector", 11, [
         spot("bsp_core:plasma_injector", "Wave Plasma can drive machines. A $(item)Plasma Injector$() stands against a machine, with its port on the far end for the cable (the only face a cable connects to), and the machine runs faster the more plasma arrives: twice as fast at 300 mB/t, three times at 500. Only what is arriving counts, so a cut cable or a stolen totem slows the machine back down within a second or two."),
         text("It works on every BSP-Core machine: against any block of the Illyrium Crucible, Refinery or Magnetic Centrifuge, or against a Tetrium Crucible or Combination Forge. On a $(item)Shatter Coin Factory$() it stands in one of the three Motivator cells and speeds that slice only, on top of what the Motivators do.$(br2)It also works on most machines from other mods, which it ticks extra; a few that keep their own clock will ignore it."),
         craft("plasma_injector"),
-        text("$(l)Overclock$() on a totem no longer speeds machines by itself: it travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.", "Overclock"),
+        picture("Injector on a crucible", "plasma_injector", "The cable comes in at the far end, the nozzle end touches the machine. The barrel fills as high as the rate, and a slug of plasma runs down each feed tube while it works."),
+        text("$(l)Overclock$() on a totem travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.", "Overclock"),
     ]),
     ("totem", "tank", "The Plasma Tank", "bsp_core:tank_port", 8, [
         text("Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 2,500,000 mB. It holds plasma only, no powers."),
@@ -220,9 +174,9 @@ ENTRIES = [
         text("Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.$(br2)Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.", "More than one totem"),
         text("When a totem is stolen, every chunk chosen for it is let go, at the totem and at its projectors. The thief keeps the upgrades and chooses again.$(br2)If you pick your own totem up and place it somewhere else, it remembers the layout.$(br2)The server may be set to load chunks only while you are online.", "Stolen and moved totems"),
     ]),
-    ("totem", "batteries", "Batteries, Cells and the Emitter", "bsp_core:plasma_battery_2", 10, [
+    ("totem", "batteries", "Batteries and Cells", "bsp_core:plasma_battery_2", 10, [
         text("Wave Plasma can be bottled. A $(item)Battery Charger$() with a Plasma Cable into its back fills a $(item)Plasma Battery$() or $(item)Power Cell$() standing in it, and $(l)stamps$() powers from the interface into it, chosen on the charger's screen.$(br2)Every battery and cell is built around a $(item)Charged Resonance Crystal$()."),
-        spot("bsp_core:charged_resonance_crystal", "A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.", "Charged Resonance Crystal"),
+        spot("bsp_core:charged_resonance_crystal", "A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.", "The Charged Crystal"),
         craft("battery_charger", None, "Place the charger facing you: the cable goes into its $(l)back$(), and only there. The wrench turns it. Pipes and hoppers may put an empty battery or cell in from any other side and take it out once it is full. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it."),
         text("Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.$(br2)$(l)Batteries$() take Base powers: the ones a projector can receive. $(l)Cells$() take Carried powers: the ones that work from your offhand.", "What gets stamped"),
         craft("plasma_battery_1", "plasma_battery_2", "Tier I holds 40,000 mB and no powers. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below."),
@@ -238,12 +192,12 @@ ENTRIES = [
         text("Your placed totem's panel has an $(l)ACCESS$() tab. Type an online player's name and Add: they get four switches.$(br2)$(li)$(l)Upgrades$(): may buy upgrades and change chunks and projector settings.$(li)$(l)Alarm$(): does not set it off.$(li)$(l)Ward$(): is not weakened by it.$(li)$(l)Machines$(): may open the totem's chargers and see through its Cloaking."),
         text("Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.", "Rules"),
     ]),
-    ("totem", "effects", "The Newer Powers", "minecraft:ender_eye", 12, [
-        text("Five powers added with the plasma rework. Auras are now cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind."),
+    ("totem", "effects", "Powers in Detail", "minecraft:ender_eye", 12, [
+        text("The higher-tier powers, one by one. Auras are cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind."),
         text("$(l)Bouncy$() (Carried, Dig path after Featherfall, Tier III): less fall damage, and landing from three blocks or more throws you back up with part of your landing speed, so a bigger fall means a bigger bounce. Sneak to land flat.$(br2)$(l)X-ray$() (Carried, after Night Sight, Tier V): press its key and the solid blocks around you turn to faint glass, fainter the deeper they are, for a while; ores show through them bright, containers and spawners are marked. The level sets how far it reaches and how long it lasts; then it recharges.", "Carried"),
         text("$(l)Cloaking$() (Base, Walls path after Deadlock, Tier IV): outsiders see the land as the world generated it, with its trees, plants, snow and ice but no caves, in place of everything inside the cube, and the players and mobs inside are hidden from them too. Uses 50 mB/t of the totem's plasma output.$(br2)$(l)Recall$() (Base, Home path after Overclock, Tier V): when your totem is being stolen, a card above the hotbar offers to bring you back to within its distance of the totem. Twenty seconds to decide, ten minutes' rest after.", "Base"),
         text("$(l)Recall Block$() (Raid, after Shroud, Tier IV): with it on the totem in your offhand while you steal, the owner's Recall offer comes later, on top of Shroud.$(br2)$(l)Thief's Step$() (Raid, beside Recall Block, Tier IV): your footsteps make no sound, and an Alarm up to the level shown does not see you.$(br2)$(l)Siege$() (Raid, after Thief's Step, Tier V): press its key and for a while Fortify does not slow your mining; then it recharges.", "Raid"),
-        text("$(l)Sentinel$() (Base, Walls path beside Ward after Alarm, Tier III, priced like a Raid power): while anyone is inside your Alarm cube, a strip at the top of your screen tells you, from anywhere on the server: how many (level 1), who (2), how far from the totem (3), and at level 4 where they are right now, with a marker through the walls when they are near you. A steal in progress shows the thief and the seconds left. Friends with the Alarm switch see it too.$(br2)$(l)Harvest$() (Base, Anchor path after Survey, Tier IV): BSP ores you mine within its reach grow back where they were, one at a time, as long as the totem has plasma to spare for it.", "Harvest"),
+        text("$(l)Sentinel$() (Base, Walls path beside Ward after Alarm, Tier III, priced like a Raid power): while anyone is inside your Alarm cube, a strip at the top of your screen tells you, from anywhere on the server: how many (level 1), who (2), how far from the totem (3), and at level 4 where they are right now, with a marker through the walls when they are near you. A steal in progress shows the thief and the seconds left. Friends with the Alarm switch see it too.$(br2)$(l)Harvest$() (Base, Anchor path after Survey, Tier IV): BSP ores you mine within its reach grow back where they were, one at a time, as long as the totem has plasma to spare for it.", "Sentinel and Harvest"),
     ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
         spot("bsp_core:totem_compass", "Points to your own nearest totem. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
@@ -386,6 +340,12 @@ def main():
     recipes = {p.stem for p in (ROOT / "src/main/resources/data/bsp_core/recipes").glob("*.json")}
     missing = sorted({v.split(":")[1] for _, _, _, _, _, pages in ENTRIES for p in pages for k, v in p.items() if k in ("recipe", "recipe2")} - recipes)
     assert not missing, missing
+    import re
+    history = re.compile(r"\b(added|newer|no longer|rework|as before|used to|any ?more|replaces|nowadays)\b|(?<!right )\bnow\b", re.I)
+    told = [m.group(0) for _, _, name, _, _, pages in ENTRIES for p in pages for m in [history.search(p.get("text", "") + " " + (p.get("title") or ""))] if m]
+    assert not told, f"the book must read as if everything was always there; found: {told}"
+    long = [t for _, _, name, _, _, pages in ENTRIES for t in [name] + [p.get("title") or p.get("name") for p in pages] if t and len(t) > 24]
+    assert not long, f"titles too long for a page: {long}"
     write_review_copy()
     print("guide book written:", len(CATEGORIES), "categories,", len(ENTRIES), "entries")
 

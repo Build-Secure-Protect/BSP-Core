@@ -9,35 +9,12 @@
       "text": "A 3 x 3 x 3 multiblock that runs on lava. It smelts Illyrium Ore with slag into Dirty Illyrium Ingots, and alloys Pure Illyrium Dust with Tetrium Dust into Illyrium Nuggets.$(br2)The lower Lava Pylons (orange sockets) take lava by pipe. The upper ones (yellow sockets) take RF once an RF Upgrade is fitted.$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
     },
     {
-      "type": "patchouli:multiblock",
-      "name": "Illyrium Crucible",
-      "multiblock": {
-        "pattern": [
-          [
-            "PCP",
-            "C_C",
-            "PCP"
-          ],
-          [
-            "PHP",
-            "_O_",
-            "PHP"
-          ],
-          [
-            "CCC",
-            "0CC",
-            "CCC"
-          ]
-        ],
-        "mapping": {
-          "C": "bsp_core:illyrium_casing",
-          "H": "bsp_core:item_hatch",
-          "O": "bsp_core:illyrium_core",
-          "P": "bsp_core:lava_pylon",
-          "0": "bsp_core:illyrium_crucible[facing=north]"
-        },
-        "symmetrical": false
-      },
+      "type": "patchouli:image",
+      "title": "Illyrium Crucible",
+      "images": [
+        "bsp_core:textures/gui/book/illyrium_crucible.png"
+      ],
+      "border": true,
       "text": "Controller at the bottom front centre. 12 Casing, 8 Lava Pylons, 2 Item Hatches, 1 Core."
     },
     {

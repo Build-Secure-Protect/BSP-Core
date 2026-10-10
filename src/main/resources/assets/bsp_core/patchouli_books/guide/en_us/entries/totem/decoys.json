@@ -23,7 +23,7 @@
     {
       "type": "patchouli:text",
       "text": "An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.",
-      "title": "When someone takes the bait"
+      "title": "Taking the bait"
     },
     {
       "type": "patchouli:text",

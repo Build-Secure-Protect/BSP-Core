@@ -899,3 +899,14 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - X-ray can be bought once Night Sight is at level 1 (its only level) and the totem is Tier V. The tree's "needs Night Sight 2" line is gone. The same rule covers any one-level parent.
 - Battery Charger screen: all nine Carried powers fit above the inventory; the "Cells take Carried powers" note sits between the list and the Inventory label. The screen is taller.
 - Battery Charger block: a battery stands in the cradle as a small block, a cell as an upright card facing the open front, as soon as it goes in; it vanishes when taken out. The pads still light only while fed.
+
+## Guide book pictures and the Score Screen (2026-10-10, night)
+
+Setup: creative, the guide book, a second account that is not an admin.
+
+- [ ] The book's Plasma Tank entry shows a picture of a formed tank (glass walls, lit rails, plasma inside), not a 3D block scene. The hook-up, the joined interfaces, the battery on an extractor, the four multiblock machines and the injector are pictures too.
+- [ ] No page in the book has a Visualize button any more, so nothing can be left floating in the world. (An older visualisation clears when you click Visualize again on the page that started it, or when the game is restarted.)
+- [ ] No page title runs off the edge of the page: "Scores and Seasons", "Plasma and Projectors", "Runs and Valves", "Batteries and Cells", "Taking the bait", "The Charged Crystal", "A battery as source".
+- [ ] The Scores entry no longer has a Score Screen recipe page; the points, seasons and counting pages are still there.
+- [ ] JEI and EMI show no recipe for the Score Screen.
+- [ ] The Score Screen is still in the BSP creative tab. An admin places it as before. The second account, holding one from the creative menu, cannot place it and sees the red admin message.

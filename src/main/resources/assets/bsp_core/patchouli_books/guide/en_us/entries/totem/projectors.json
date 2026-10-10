@@ -1,5 +1,5 @@
 {
-  "name": "Wave Plasma and Projectors",
+  "name": "Plasma and Projectors",
   "category": "bsp_core:totem",
   "icon": "bsp_core:totem_projector",
   "sortnum": 6,
@@ -9,38 +9,13 @@
       "text": "A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 6,000 with the ten levels of the $(l)Output$() upgrade. The totem panel shows the figure. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."
     },
     {
-      "type": "patchouli:multiblock",
-      "name": "The hook-up",
-      "multiblock": {
-        "pattern": [
-          [
-            "T________J",
-            "__________",
-            "__________",
-            "__________"
-          ],
-          [
-            "E0cccVcRcB",
-            "_d________",
-            "_d________",
-            "_H________"
-          ]
-        ],
-        "mapping": {
-          "E": "bsp_core:plasma_extractor",
-          "0": "bsp_core:plasma_interface[west=drum,east=cable,south=cable]",
-          "T": "bsp_core:shatter_totem",
-          "c": "bsp_core:tetrium_core_cable[east=true,west=true]",
-          "d": "bsp_core:tetrium_core_cable[north=true,south=true]",
-          "V": "bsp_core:plasma_valve[axis=x]",
-          "R": "bsp_core:plasma_repeater[facing=east]",
-          "B": "bsp_core:projector_base",
-          "J": "bsp_core:totem_projector",
-          "H": "bsp_core:battery_charger[facing=south]"
-        },
-        "symmetrical": false
-      },
-      "text": "Totem on extractor, interface beside it, a run east through a valve and a repeater to a base and its projector, and a second run south into the back of a charger. Drag to turn."
+      "type": "patchouli:image",
+      "title": "The hook-up",
+      "images": [
+        "bsp_core:textures/gui/book/plasma_network.png"
+      ],
+      "border": true,
+      "text": "Totem on extractor, interfaces beside it, a run through a valve and a repeater to a base and its projector, and a second run into the back of a charger."
     },
     {
       "type": "patchouli:text",
@@ -54,31 +29,13 @@
       "text": "Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."
     },
     {
-      "type": "patchouli:multiblock",
-      "name": "Four interfaces joined",
-      "multiblock": {
-        "pattern": [
-          [
-            "T____",
-            "_____"
-          ],
-          [
-            "E0Ac_",
-            "_BC__"
-          ]
-        ],
-        "mapping": {
-          "E": "bsp_core:plasma_extractor",
-          "T": "bsp_core:shatter_totem",
-          "0": "bsp_core:plasma_interface[west=drum,east=join,south=join]",
-          "A": "bsp_core:plasma_interface[west=join,south=join,east=cable]",
-          "B": "bsp_core:plasma_interface[north=join,east=join]",
-          "C": "bsp_core:plasma_interface[north=join,west=join]",
-          "c": "bsp_core:tetrium_core_cable[east=true,west=true]"
-        },
-        "symmetrical": false
-      },
-      "text": "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs."
+      "type": "patchouli:image",
+      "title": "Interfaces joined",
+      "images": [
+        "bsp_core:textures/gui/book/plasma_interface_group.png"
+      ],
+      "border": true,
+      "text": "Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs. The red one touches an extractor another group holds."
     },
     {
       "type": "patchouli:text",

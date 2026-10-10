@@ -189,7 +189,7 @@ public final class ModItems {
             () -> new com.mrgregles.bsp_core.vault.CoinVaultBlockItem(ModBlocks.COIN_VAULT.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> SCORE_SCREEN = ITEMS.register("score_screen",
-            () -> new net.minecraft.world.item.BlockItem(ModBlocks.SCORE_SCREEN.get(), new Item.Properties()));
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SCORE_SCREEN.get()));
 
     /** The blocks a factory slice is built from, and the Motivator that goes on top. */
     public static final List<RegistryObject<Item>> FACTORY_ITEMS = new ArrayList<>();

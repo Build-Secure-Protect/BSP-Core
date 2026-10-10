@@ -55,12 +55,25 @@ def load_model(ref):
     return out
 
 
+FRAME = {"bsp_core:block/shatter_totem_stealing": 4}  # animated textures shown at this frame (the steal flashes gold and red: show the red)
+
+
 def load_texture(ref):
     if ref in TEXTURES:
         return
     ns, path = ref.split(":")
     data = (ASSETS / f"textures/{path}.png").read_bytes()
     w, h = struct.unpack(">II", data[16:24])
+    if ref in FRAME:
+        from gen_material_assets import read_png, write_png
+        import tempfile, os
+        _, _, rows = read_png(data)
+        y0 = FRAME[ref] * w
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+            tmp = Path(f.name)
+        write_png(tmp, w, w, lambda x, y: rows[y0 + y][x])
+        data, h = tmp.read_bytes(), w
+        os.unlink(tmp)
     TEXTURES[ref] = {"src": "data:image/png;base64," + base64.b64encode(data).decode(), "w": w, "h": h}
 
 
@@ -205,7 +218,7 @@ body.icons{ background:transparent; } body.icons .wrap{ padding:0; max-width:non
     for(const [cx,cz] of [[-0.3,-0.3],[W*16-0.9,-0.3],[-0.3,D*16-0.9],[W*16-0.9,D*16-0.9]]) box(g,[cx,4,cz],[cx+1.2,Math.min(top,H*16-4),cz+1.2],0x19d3b0,undefined,true);
     ground(g,-1,-1,W+1,D+1,0); return {target:[40,30,40],dist:200,ry:Math.PI*1.2,rx:.4}; }
   function totem(g){ const w=new World(); w.put('shatter_totem',0,0,0); build(g,w); ground(g,-2,-2,3,3,0); return {target:[8,11,6],dist:64,ry:Math.PI*1.12,rx:.28}; }
-  function totemStates(g){ const w=new World(); w.put('shatter_totem_unclaimed',0,0,0); w.put('shatter_totem',2,0,0); w.put('shatter_totem_stealing',4,0,0); build(g,w); ground(g,-1,-2,6,3,0); return {target:[40,11,6],dist:130,ry:Math.PI*1.06,rx:.25}; }
+  function totemStates(g){ const w=new World(); w.put('shatter_totem_stealing',0,0,0); w.put('shatter_totem',2,0,0); w.put('shatter_totem_unclaimed',4,0,0); build(g,w); ground(g,-1,-2,6,3,0); return {target:[40,11,6],dist:130,ry:Math.PI*1.06,rx:.25}; }
   function injector(g){ const w=new World(); w.put('tetrium_crucible',0,0,0); w.put('plasma_injector',0,0,1,{facing:'north'}); w.put('tetrium_core_cable',0,0,2); w.put('tetrium_core_cable',0,0,3); build(g,w); ground(g,-2,-1,3,5,0); return {target:[8,10,22],dist:84,ry:Math.PI*.52,rx:.38}; }
   const SCENES=[['shatter_totem','The Shatter Totem',totem],['totem_states','Unclaimed, owned and being stolen',totemStates],['plasma_injector','A Plasma Injector feeding a Tetrium Crucible',injector],['plasma_tank','A formed 5 x 4 x 5 Plasma Tank, 60 % full',tank],['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
     ['projector_base','Projector Base and Projector',base],['battery_charger','Battery Charger',charger],['plasma_batteries','Plasma Batteries, and one feeding an extractor',batteries],['wave_emitter','Wave Emitter, Power Cells and the Wrench',emitter]];

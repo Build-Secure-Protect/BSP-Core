@@ -1,5 +1,5 @@
 {
-  "name": "Scores and the Leaderboard",
+  "name": "Scores and Seasons",
   "category": "bsp_core:totem",
   "icon": "minecraft:gold_block",
   "sortnum": 4,
@@ -9,18 +9,13 @@
       "text": "Every totem you own scores points by its tier:$(br2)$(li)Tier I: 1 point$(li)Tier II: 2 points$(li)Tier III: 4 points$(li)Tier IV: 7 points$(li)Tier V: 10 points$(br2)Your score is the total for all your totems, so stealing totems and upgrading them both move you up."
     },
     {
-      "type": "patchouli:crafting",
-      "recipe": "bsp_core:score_screen",
-      "text": "$(item)Score Screen$() panels placed side by side and above each other, facing the same way, join into one display of up to 8 wide and 6 high. It shows the leaderboard, these scoring rules, or the season's prizes."
-    },
-    {
       "type": "patchouli:text",
-      "text": "The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.$(br2)A Score Screen set to Prizes shows what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.",
+      "text": "The server runs in seasons. When a season ends, the top three players receive that season's prizes, every totem is removed, and every player gets one fresh Tier I totem.$(br2)The screens the admins put up show what first, second and third place will win. If you are offline when the season ends, your prizes and your new totem are waiting when you next log in.",
       "title": "Seasons and Prizes"
     },
     {
       "type": "patchouli:text",
-      "text": "A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. Score Screens show the current leaderboard, and on a network it covers every server.",
+      "text": "A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server.",
       "title": "How it is counted"
     }
   ]

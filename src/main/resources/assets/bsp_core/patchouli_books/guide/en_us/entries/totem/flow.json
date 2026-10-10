@@ -1,5 +1,5 @@
 {
-  "name": "Pressure, Runs and Valves",
+  "name": "Runs and Valves",
   "category": "bsp_core:totem",
   "icon": "bsp_core:plasma_valve",
   "sortnum": 7,
@@ -50,7 +50,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Point the wrench at an end of a cable and right-click to set what that end does:$(br)$(li)$(l)Normal$(): plasma flows either way, as before.$(li)$(l)Output$(): plasma may only leave the cable here.$(li)$(l)Input$(): plasma may only enter here.$(li)$(l)Off$(): not joined.$(br2)Where another colour meets the end, the first click $(l)Links$() them. Sneak and right-click puts an end back to Normal.",
+      "text": "Point the wrench at an end of a cable and right-click to set what that end does:$(br)$(li)$(l)Normal$(): plasma flows either way.$(li)$(l)Output$(): plasma may only leave the cable here.$(li)$(l)Input$(): plasma may only enter here.$(li)$(l)Off$(): not joined.$(br2)Where another colour meets the end, the first click $(l)Links$() them. Sneak and right-click puts an end back to Normal.",
       "title": "Cable ends"
     },
     {
