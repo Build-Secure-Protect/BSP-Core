@@ -19,6 +19,16 @@ BLOCKS = ["plasma_extractor", "plasma_interface", "plasma_valve", "plasma_repeat
 DYES = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"]
 BLOCKS += [f"{d}_illyrium_core_cable" for d in DYES] + ["blue_magnatite_core_cable", "red_magnatite_core_cable", "blue_charged_illyrium_core_cable", "red_charged_illyrium_core_cable"]
 BLOCKS += ["tank_casing", "tank_glass", "tank_port"]
+BLOCKS += ["tetrium_crucible", "combination_forge", "factory_motivator", "admin_rack", "anti_totem", "decoy_totem", "decoy_power_base", "plasma_injector"]
+# every block the sheet cannot show from a flat texture, drawn as an inventory-style icon by ?icons=1: id, kind, blockstate properties
+ICONS = [["shatter_totem", "item", {}], ["wave_emitter", "item", {}], ["tetrium_crucible", "block", {}], ["combination_forge", "block", {}],
+         ["factory_motivator", "block", {}], ["admin_rack", "block", {"facing": "north"}], ["anti_totem", "block", {}], ["decoy_totem", "block", {"facing": "north"}],
+         ["decoy_power_base", "block", {}], ["totem_projector", "block", {}], ["plasma_extractor", "block", {}],
+         ["plasma_interface", "block", {d: "none" for d in ("north", "south", "east", "west", "up", "down")}],
+         ["plasma_repeater", "block", {"facing": "west"}], ["plasma_valve", "block", {"axis": "x"}], ["projector_base", "block", {}],
+         ["battery_charger", "block", {"facing": "north"}], ["plasma_injector", "block", {"facing": "north"}], ["tank_port", "block", {}]]
+ICONS += [[f"plasma_battery_{i}", "block", {"axis": "x"}] for i in range(1, 5)]
+ICONS += [[c, "block", {"east": True, "west": True}] for c in ("tetrium_core_cable", "magnatite_core_cable", "illyrium_core_cable", "charged_illyrium_core_cable")]
 CUBE_ALL = [{"from": [0, 0, 0], "to": [16, 16, 16], "faces": {f: {"uv": [0, 0, 16, 16], "texture": "#all", "cullface": f} for f in ("north", "south", "east", "west", "up", "down")}}]
 ITEMS = ["wave_emitter", "power_cell_1", "power_cell_2", "power_cell_3", "wrench"]
 MODELS, TEXTURES = {}, {}
@@ -62,11 +72,13 @@ def main():
             load_model(part["apply"]["model"])
         for v in states[b].get("variants", {}).values():
             load_model(v["model"])
-    states["shatter_totem"] = {"variants": {"": {"model": "bsp_core:block/shatter_totem_owned"}}}
-    load_model("bsp_core:block/shatter_totem_owned")
+    for state in ("owned", "unclaimed", "stealing"):
+        states["shatter_totem" if state == "owned" else f"shatter_totem_{state}"] = {"variants": {"": {"model": f"bsp_core:block/shatter_totem_{state}"}}}
+        load_model(f"bsp_core:block/shatter_totem_{state}")
+    load_model("bsp_core:item/shatter_totem")
     for i in ITEMS:
         load_model(f"bsp_core:item/{i}")
-    page = TEMPLATE.replace("__STATES__", json.dumps(states)).replace("__MODELS__", json.dumps(MODELS)).replace("__TEXTURES__", json.dumps(TEXTURES))
+    page = TEMPLATE.replace("__STATES__", json.dumps(states)).replace("__MODELS__", json.dumps(MODELS)).replace("__TEXTURES__", json.dumps(TEXTURES)).replace("__ICONS__", json.dumps(ICONS))
     assert all(ord(c) < 128 for c in page)
     (ROOT / "tools/preview/plasma_renders.html").write_text(page)
     print("renders page written:", len(MODELS), "models,", len(TEXTURES), "textures,", len(page) // 1024, "KB")
@@ -82,12 +94,14 @@ h1{ font-size:22px; margin:0; } p{ margin:0; color:var(--muted); }
 .view{ width:800px; max-width:100%; aspect-ratio:8/5; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; overflow:hidden; }
 body.one{ overflow:hidden; } body.one .wrap{ padding:0; max-width:none; } body.one h1, body.one p, body.one .card{ display:none; } body.one .card.show{ display:block; padding:0; border:0; background:none; }
 body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
+body.icons{ background:transparent; } body.icons .wrap{ padding:0; max-width:none; gap:0; } body.icons h1, body.icons p{ display:none; }
+.icongrid{ display:grid; grid-template-columns:repeat(8,96px); width:768px; } .icell{ width:96px; height:96px; }
 </style>
 <div class="wrap"><h1>Plasma Renders</h1><p>The plasma blocks drawn from the mod's own models and textures. Drag to turn. Add ?view=slug to show one scene at 800 x 500.</p><div id="cards"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-  const STATES=__STATES__, MODELS=__MODELS__, TEXTURES=__TEXTURES__;
+  const STATES=__STATES__, MODELS=__MODELS__, TEXTURES=__TEXTURES__, ICONS=__ICONS__;
   const ION=0x4cb2fa, COPPER=0xc87a3c, HULL2=0x1e222b;
   const DYES=['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
   const texCache={};
@@ -129,6 +143,7 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
     if(id==='plasma_valve') return AXIS[b.props.axis||'x'].includes(dir);
     if(id==='plasma_repeater') return AXIS[(b.props.facing||'east')==='east'||(b.props.facing)==='west'?'x':(b.props.facing==='up'||b.props.facing==='down')?'y':'z'].includes(dir);
     if(id==='battery_charger') return dir===opp[b.props.facing||'north'];
+    if(id==='plasma_injector') return dir===opp[b.props.facing||'north'];
     return false; }
   function build(g,w){ for(const b of w.map.values()){ const props=Object.assign({},b.props);
       if(b.id.endsWith('_core_cable')){ for(const d in DIRS){ const v=DIRS[d]; const n=w.at(b.x+v[0],b.y+v[1],b.z+v[2]); props[d]=endOf(n,opp[d],b); } }
@@ -136,6 +151,9 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
       const grp=block(g,b.id,b.x,b.y,b.z,props); extras(grp,b,props,w); } }
   // ---- the parts the game draws with renderers
   function extras(g,b,props,w){ const id=b.id;
+    if(id==='plasma_injector'){ const ax=new THREE.Group(); ax.position.set(8,8,8); ax.rotation.y={north:0,east:-Math.PI/2,south:Math.PI,west:Math.PI/2}[props.facing||'north']; g.add(ax); const o=[-8,-8,-8];
+      const P=(f,t)=>plasma(ax,[f[0]+o[0],f[1]+o[1],f[2]+o[2]],[t[0]+o[0],t[1]+o[1],t[2]+o[2]]); P([4.6,4.6,6.3],[11.4,11.4,11.5]); for(const [x,y] of [[4,4],[10,4],[4,10],[10,10]]) P([x+.4,y+.4,.6],[x+1.6,y+1.6,2.4]);
+      box(ax,[7.2+o[0],12.4+o[1],12.7+o[2]],[8.8+o[0],13.2+o[1],13.3+o[2]],0x19d3b0,undefined,true); }
     if(id==='projector_base'){ plasma(g,[2.2,4.55,2.2],[13.8,10.9,13.8]); for(const n of [[6.3,6.3,-0.5,9.7,9.7,0.2],[6.3,6.3,15.8,9.7,9.7,16.5],[-0.5,6.3,6.3,0.2,9.7,9.7],[15.8,6.3,6.3,16.5,9.7,9.7]]) plasma(g,[n[0],n[1],n[2]],[n[3],n[4],n[5]]); }
     if(id.endsWith('_core_cable')){ const cx=props.east||props.west, cz=props.north||props.south, cy=props.up||props.down; plasma(g,[cx?0.3:6.4,cy?0.3:6.4,cz?0.3:6.4],[cx?15.7:9.6,cy?15.7:9.6,cz?15.7:9.6]); }
     if(id.endsWith('_core_cable')&&b.props.ends){ for(const d in b.props.ends){ const mode=b.props.ends[d]; const ax=new THREE.Group(); ax.position.set(8,8,8); ax.rotation.y={east:0,west:Math.PI,south:-Math.PI/2,north:Math.PI/2}[d]||0; g.add(ax); const o=[-8,-8,-8];
@@ -186,18 +204,28 @@ body.one .view{ width:800px; height:500px; aspect-ratio:auto; }
     const frac=.6; const top=8+(H-1)*16*frac; plasma(g,[8,8,8],[(W-1)*16+8,top,(D-1)*16+8]);
     for(const [cx,cz] of [[-0.3,-0.3],[W*16-0.9,-0.3],[-0.3,D*16-0.9],[W*16-0.9,D*16-0.9]]) box(g,[cx,4,cz],[cx+1.2,Math.min(top,H*16-4),cz+1.2],0x19d3b0,undefined,true);
     ground(g,-1,-1,W+1,D+1,0); return {target:[40,30,40],dist:200,ry:Math.PI*1.2,rx:.4}; }
-  const SCENES=[['plasma_tank','A formed 5 x 4 x 5 Plasma Tank, 60 % full',tank],['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
+  function totem(g){ const w=new World(); w.put('shatter_totem',0,0,0); build(g,w); ground(g,-2,-2,3,3,0); return {target:[8,11,6],dist:64,ry:Math.PI*1.12,rx:.28}; }
+  function totemStates(g){ const w=new World(); w.put('shatter_totem_unclaimed',0,0,0); w.put('shatter_totem',2,0,0); w.put('shatter_totem_stealing',4,0,0); build(g,w); ground(g,-1,-2,6,3,0); return {target:[40,11,6],dist:130,ry:Math.PI*1.06,rx:.25}; }
+  function injector(g){ const w=new World(); w.put('tetrium_crucible',0,0,0); w.put('plasma_injector',0,0,1,{facing:'north'}); w.put('tetrium_core_cable',0,0,2); w.put('tetrium_core_cable',0,0,3); build(g,w); ground(g,-2,-1,3,5,0); return {target:[8,10,22],dist:84,ry:Math.PI*.52,rx:.38}; }
+  const SCENES=[['shatter_totem','The Shatter Totem',totem],['totem_states','Unclaimed, owned and being stolen',totemStates],['plasma_injector','A Plasma Injector feeding a Tetrium Crucible',injector],['plasma_tank','A formed 5 x 4 x 5 Plasma Tank, 60 % full',tank],['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
     ['projector_base','Projector Base and Projector',base],['battery_charger','Battery Charger',charger],['plasma_batteries','Plasma Batteries, and one feeding an extractor',batteries],['wave_emitter','Wave Emitter, Power Cells and the Wrench',emitter]];
   const one=new URLSearchParams(location.search).get('view'); if(one) document.body.classList.add('one');
+  const iconsMode=!!new URLSearchParams(location.search).get('icons'); if(iconsMode) document.body.classList.add('icons');
   const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true}); renderer.setPixelRatio(1); renderer.setScissorTest(true); renderer.setClearColor(0x12151b,1);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true}); renderer.setPixelRatio(1); renderer.setScissorTest(true); if(iconsMode) renderer.setClearColor(0x000000,0); else renderer.setClearColor(0x12151b,1);
   const views=[];
-  for(const [slug,name,builder] of SCENES){ if(one&&one!==slug) continue; const card=document.createElement('div'); card.className='card'+(one?' show':''); card.innerHTML='<b>'+name+'</b> <span style="color:#9aa3b5">'+slug+'</span>'; const view=document.createElement('div'); view.className='view'; card.appendChild(view); document.getElementById('cards').appendChild(card);
+  function lights(scene){ scene.add(new THREE.AmbientLight(0xffffff,.8)); const d=new THREE.DirectionalLight(0xffffff,.75); d.position.set(60,120,-80); scene.add(d); const d2=new THREE.DirectionalLight(0xffffff,.25); d2.position.set(-60,40,80); scene.add(d2); }
+  if(iconsMode){ const grid=document.getElementById('cards'); grid.className='icongrid';
+    for(const [id,kind,props] of ICONS){ const cell=document.createElement('div'); cell.className='icell'; cell.dataset.id=id; grid.appendChild(cell); const scene=new THREE.Scene(); lights(scene); const g=new THREE.Group(); scene.add(g);
+      if(kind==='item') placeModel(g,'bsp_core:item/'+id,0,0); else { const w=new World(); w.put(id,0,0,0,props); const b=w.at(0,0,0); const p=Object.assign({},props); const grp=block(g,id,0,0,0,p); extras(grp,b,p,w); }
+      const bb=new THREE.Box3().setFromObject(g), c=bb.getCenter(new THREE.Vector3()), sz=bb.getSize(new THREE.Vector3()); const pw=(sz.x+sz.z)*.707, ph=sz.y*.866+(sz.x+sz.z)*.354; const R=Math.max(pw,ph)/2*1.06+.5;
+      const cam=new THREE.OrthographicCamera(-R,R,R,-R,-400,400); const ry=Math.PI*1.25, rx=Math.PI/6; cam.position.set(c.x+Math.sin(ry)*100*Math.cos(rx),c.y+Math.sin(rx)*100,c.z+Math.cos(ry)*100*Math.cos(rx)); cam.lookAt(c); views.push({view:cell,scene,cam,fixed:true}); } }
+  for(const [slug,name,builder] of SCENES){ if(one&&one!==slug||iconsMode) continue; const card=document.createElement('div'); card.className='card'+(one?' show':''); card.innerHTML='<b>'+name+'</b> <span style="color:#9aa3b5">'+slug+'</span>'; const view=document.createElement('div'); view.className='view'; card.appendChild(view); document.getElementById('cards').appendChild(card);
     const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(28,1.6,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.8)); const d=new THREE.DirectionalLight(0xffffff,.75); d.position.set(60,120,-80); scene.add(d); const d2=new THREE.DirectionalLight(0xffffff,.25); d2.position.set(-60,40,80); scene.add(d2);
     const g=new THREE.Group(); scene.add(g); const opts=builder(g); const v={view,scene,cam,opts,ry:opts.ry,rx:opts.rx,drag:false}; let lx=0,ly=0;
     view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);}); view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; }); view.addEventListener('pointerup',()=>v.drag=false); views.push(v); }
   function frame(){ const W=innerWidth,H=innerHeight; if(canvas.width!==W||canvas.height!==H) renderer.setSize(W,H,false); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
-    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.width<2) continue; const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.width<2) continue; if(!v.fixed){ const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix(); }
       const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); } requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
   // capture: the one view, as a JPEG data URL (used by the sheet pipeline)

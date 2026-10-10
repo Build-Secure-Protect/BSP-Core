@@ -1,162 +1,156 @@
 [
  {
   "n": 1,
-  "slug": "machines_single",
-  "title": "Single-block machines"
+  "slug": "totem",
+  "title": "The Shatter Totem"
  },
  {
   "n": 2,
+  "slug": "totem_powers",
+  "title": "28 powers on five tiers"
+ },
+ {
+  "n": 3,
+  "slug": "progression",
+  "title": "The road from Tetrium to Illyrium"
+ },
+ {
+  "n": 4,
+  "slug": "ores",
+  "title": "Where the metals come from"
+ },
+ {
+  "n": 5,
+  "slug": "tetrium",
+  "title": "Tetrium: the first metal"
+ },
+ {
+  "n": 6,
+  "slug": "machines_single",
+  "title": "Tetrium Crucible and Combination Forge"
+ },
+ {
+  "n": 7,
+  "slug": "recipes_01",
+  "title": "Recipes 1 of 9: Tetrium",
+  "after": "machines_single"
+ },
+ {
+  "n": 8,
+  "slug": "illyrium",
+  "title": "Illyrium: slow and valuable"
+ },
+ {
+  "n": 9,
   "slug": "machine_illyrium_crucible",
   "title": "Illyrium Crucible (3 x 3 x 3)"
  },
  {
-  "n": 3,
+  "n": 10,
+  "slug": "recipes_02",
+  "title": "Recipes 2 of 9: Tetrium, Illyrium Crucible",
+  "after": "machine_illyrium_crucible"
+ },
+ {
+  "n": 11,
   "slug": "machine_illyrium_refinery",
   "title": "Illyrium Refinery"
  },
  {
-  "n": 4,
+  "n": 12,
+  "slug": "recipes_03",
+  "title": "Recipes 3 of 9: Illyrium Crucible, Illyrium Refinery, Illyrium",
+  "after": "machine_illyrium_refinery"
+ },
+ {
+  "n": 13,
+  "slug": "magnatite",
+  "title": "Magnatite: the metal in between"
+ },
+ {
+  "n": 14,
+  "slug": "machine_magnetic_centrifuge",
+  "title": "Magnetic Centrifuge (3 x 3, stackable to six layers)"
+ },
+ {
+  "n": 15,
+  "slug": "recipes_04",
+  "title": "Recipes 4 of 9: Illyrium, Magnetic Centrifuge",
+  "after": "machine_magnetic_centrifuge"
+ },
+ {
+  "n": 16,
+  "slug": "coins",
+  "title": "Shatter Coins: real time, no shortcuts"
+ },
+ {
+  "n": 17,
   "slug": "machine_coin_factory",
   "title": "Shatter Coin Factory (one slice: 1 x 2 x 3)"
  },
  {
-  "n": 5,
-  "slug": "machine_magnetic_centrifuge",
-  "title": "Magnetic Centrifuge (1 x 3 x 3, stackable)"
- },
- {
-  "n": 6,
-  "slug": "layout_plasma_network",
-  "title": "Wave Plasma: the network"
- },
- {
-  "n": 7,
-  "slug": "layout_plasma_blocks",
-  "title": "The plasma blocks"
- },
- {
-  "n": 8,
-  "slug": "layout_batteries",
-  "title": "Batteries, cells and the Wave Emitter"
- },
- {
-  "n": 9,
-  "slug": "layout_cable_colours",
-  "title": "Coloured cables and cable ends"
- },
- {
-  "n": 10,
-  "slug": "layout_decoy",
-  "title": "Decoy Totem"
- },
- {
-  "n": 11,
-  "slug": "layout_base_blocks",
-  "title": "Coin Vault and Anti Totem Block"
- },
- {
-  "n": 12,
-  "slug": "resources",
-  "title": "Ores and metals"
- },
- {
-  "n": 13,
-  "slug": "items_1",
-  "title": "Every block and item (1 of 3)"
- },
- {
-  "n": 14,
-  "slug": "items_2",
-  "title": "Every block and item (2 of 3)"
- },
- {
-  "n": 15,
-  "slug": "items_3",
-  "title": "Every block and item (3 of 3)"
- },
- {
-  "n": 16,
-  "slug": "recipes_01",
-  "title": "Crafting recipes (1 of 8)"
- },
- {
-  "n": 17,
-  "slug": "recipes_02",
-  "title": "Crafting recipes (2 of 8)"
- },
- {
   "n": 18,
-  "slug": "recipes_03",
-  "title": "Crafting recipes (3 of 8)"
+  "slug": "recipes_05",
+  "title": "Recipes 5 of 9: Magnetic Centrifuge, Shatter Coins",
+  "after": "machine_coin_factory"
  },
  {
   "n": 19,
-  "slug": "recipes_04",
-  "title": "Crafting recipes (4 of 8)"
+  "slug": "plasma_network",
+  "title": "Wave Plasma: the totem's power on tap"
  },
  {
   "n": 20,
-  "slug": "recipes_05",
-  "title": "Crafting recipes (5 of 8)"
+  "slug": "plasma_blocks",
+  "title": "The plasma blocks"
  },
  {
   "n": 21,
-  "slug": "recipes_06",
-  "title": "Crafting recipes (6 of 8)"
+  "slug": "plasma_tank_injector",
+  "title": "Plasma Tank and Plasma Injector"
  },
  {
   "n": 22,
-  "slug": "recipes_07",
-  "title": "Crafting recipes (7 of 8)"
+  "slug": "batteries",
+  "title": "Batteries, cells and the Wave Emitter"
  },
  {
   "n": 23,
-  "slug": "recipes_08",
-  "title": "Crafting recipes (8 of 8)"
+  "slug": "cable_colours",
+  "title": "Coloured cables and cable ends"
  },
  {
   "n": 24,
-  "slug": "machine_recipes_1",
-  "title": "Machine recipes: Tetrium and Illyrium"
+  "slug": "recipes_06",
+  "title": "Recipes 6 of 9: Shatter Coins, Wave Plasma",
+  "after": "cable_colours"
  },
  {
   "n": 25,
-  "slug": "machine_recipes_2",
-  "title": "Machine recipes: Magnatite and crystals"
+  "slug": "recipes_07",
+  "title": "Recipes 7 of 9: Wave Plasma, Batteries",
+  "after": "cable_colours"
  },
  {
   "n": 26,
-  "slug": "machine_recipes_3",
-  "title": "Machine recipes: crushing and coins"
+  "slug": "raiding",
+  "title": "Decoys, the compass and traps"
  },
  {
   "n": 27,
-  "slug": "flow_tetrium",
-  "title": "How Tetrium is made"
+  "slug": "recipes_08",
+  "title": "Recipes 8 of 9: Batteries, Decoys and traps",
+  "after": "raiding"
  },
  {
   "n": 28,
-  "slug": "flow_illyrium",
-  "title": "How Illyrium is made"
+  "slug": "recipes_09",
+  "title": "Recipes 9 of 9: Decoys and traps",
+  "after": "raiding"
  },
  {
   "n": 29,
-  "slug": "flow_magnatite",
-  "title": "How Magnatite is made"
- },
- {
-  "n": 30,
-  "slug": "flow_coins",
-  "title": "How Shatter Coins are made"
- },
- {
-  "n": 31,
-  "slug": "flow_plasma",
-  "title": "How Wave Plasma flows"
- },
- {
-  "n": 32,
-  "slug": "flow_progression",
-  "title": "The whole progression"
+  "slug": "base_blocks",
+  "title": "Vault, screens and admin blocks"
  }
 ]

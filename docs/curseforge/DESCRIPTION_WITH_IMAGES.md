@@ -1,136 +1,99 @@
 # BSP-Core
 
-**The companion mod for the Build Secure Protect (BSP) modpack.** Build a base, protect your Shatter Totem, raid other players for theirs, and climb the season leaderboard.
+**The mod at the heart of the Build Secure Protect modpack.** Build a base, secure it, protect your Shatter Totem, and go and take everyone else's! Every block and machine in here is about the totem: keeping yours, stealing theirs, or getting rich enough to upgrade it.
 
-Every player starts with one **Shatter Totem**. It cannot be crafted or destroyed, but it can be stolen. Everything else in the mod is there to help you defend your totem, take someone else's, or grow rich enough to upgrade it.
-
-- Minecraft 1.20.1, Forge 47 or newer, Java 17
-- Needed on both the client and the server
-- Optional: JEI (recipes and build guides), Patchouli (the in-game guide book), Jade (block info), any RF mod (power for the machines), Mekanism, Create or Thermal (crushers)
-
-![The whole progression](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/32_flow_progression.jpg)
+- Minecraft 1.20.1, Forge 47 or newer, Java 17. Needed on the client and the server.
+- Plays well with JEI or EMI (every recipe and machine job), Patchouli (the in-game guide book), Jade (block info), any RF mod (power for the machines), and the pack's crushers: Mekanism, Create, Thermal, Ender IO, Railcraft, Integrated Dynamics and Electrodynamics all turn BSP ingots into dust.
 
 ## The Shatter Totem
 
-- **Carry it or place it.** A placed totem projects your base upgrades; a carried one powers your personal upgrades.
-- **Steal and defend.** Start a steal at a rival's totem and stay close until the timer runs out, and it is yours with every upgrade on it. The owner is warned. No upgrade can make a totem impossible to steal. That rule is not going to change.
-- **Five tiers, six paths, twenty-four upgrades.** Carried: Mining Speed, Swiftness, Featherfall, Night Sight, X-ray, Damage, Resistance, Vitality, Bouncy. Base: Fortify, Alarm, Ward, Deadlock, Cloaking, Healing Aura, Sanctuary, Overclock, Recall, Output, Anchor, Survey. Raid: Lockpick, Shroud, Recall Block.
-- **Auras are cubes.** Radius 5 means 11 x 11 x 11 blocks, so you can build right to the edge. Switch the drawings off in the totem panel if you prefer.
-- **Friends.** The ACCESS tab lets up to eight players through your Alarm and Ward, buy upgrades, or open your machines. The list is wiped if the totem is stolen.
-- **Chunk loading.** The Anchor and Survey upgrades keep chunks around the totem loaded while you are away, picked on a map in the totem panel. A projector can spend the same allowance somewhere else.
-- **Totem Compass.** Points to your own totem, or for a while to the nearest rival's.
-- **Scores and seasons.** Every totem scores by its tier. Score Screens show the live leaderboard, the rules, or the season's prizes.
+![The Shatter Totem](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/01_totem.jpg)
 
-## Wave Plasma
+You get one the moment you join, and that is the only way to get one. Place it and it projects your base powers in a cube around it. Carry it and it powers you. Keep it somewhere clever, because anyone who finds it can stand beside it for five minutes and walk off with it, powers and all. You get a warning the second they start. There is no power, block or trick that makes a totem safe, and we are never adding one. You cannot hide it in a storage system either: it comes straight back out.
 
-A placed totem gives off Wave Plasma, 100 mB a tick and up to 6,000 with the Output upgrade. Pipe it somewhere and the totem's base powers appear there too. Bottle it and you can carry its powers around without the totem. This is where most of the new blocks live.
+![28 powers on five tiers](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/02_totem_powers.jpg)
 
-![Wave Plasma: the network](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/06_layout_plasma_network.jpg)
+Twenty-eight powers on six paths, bought with Shatter Coins and XP. Carried powers work while the totem is on you, Base powers come from a placed totem, and Raid powers help you take someone else's. Up to eight friends on the ACCESS tab can pass your Alarm and Ward and use your machines.
 
-- **Extractor** under the totem. **Interface** touching it. **Cables** out to wherever you need the aura. Interfaces that touch join into one body, up to twelve blocks, and each face sends up to 1,000 mB/t, so a big totem needs a big group and good cables: Tetrium carries 250 mB/t, Magnatite 500, Illyrium 1,000.
-- **Projector Base and Projector.** The base is a tank the projector stands on. 100 mB/t arriving and it projects; it burns 20 mB/t, so a full base runs on for a few minutes if a cable is cut. Right-click the projector to choose which powers it receives.
-- **Pressure is shared.** An interface splits its plasma equally between the runs leaving it, and a run that needs less leaves the rest to the others. Right-click any interface and you get the whole network in 3D with the mB/t on every cable. Jade shows the same block by block.
-- **Repeaters** start a fresh run for a tenth of the pressure. **Valves** cap a run from a dial or shut it with a lever or redstone.
-- **Colours and ends.** Dye cables in any of the sixteen colours and they only join their own colour, so runs cross without mixing. The wrench sets each end of a cable to Normal, Output, Input or Off, or links two colours.
+## The road ahead
 
-![The plasma blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/07_layout_plasma_blocks.jpg)
+![The road from Tetrium to Illyrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/03_progression.jpg)
 
-- **Battery Charger.** Cable into its back. Fills the battery or cell in it and stamps powers from the interface into it.
-- **Plasma Batteries** hold Base powers. Stand a charged one on an extractor instead of a totem and everything downstream keeps working while the totem is away, or stolen.
-- **Power Cells** hold Carried powers. Fit one in the **Wave Emitter**, put the emitter in your offhand, and you have the cell's powers at 20 mB/t. The totem stays safe at home.
+Three metals, each slower than the last, and a machine for every step. That is the whole thing in one picture; the rest of this page walks it top to bottom.
 
-![Batteries, cells and the Wave Emitter](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/08_layout_batteries.jpg)
+## Ores
 
-![Coloured cables and cable ends](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/09_layout_cable_colours.jpg)
+![Where the metals come from](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/04_ores.jpg)
 
-![How Wave Plasma flows](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/31_flow_plasma.jpg)
+## Tetrium: where you start
 
-## Three metals
+![Tetrium: the first metal](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/05_tetrium.jpg)
+![Tetrium Crucible and Combination Forge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/06_machines_single.jpg)
 
-Tetrium is where you start, Magnatite comes next, and Illyrium is the slow, valuable one. Ores drop raw chunks like vanilla iron; the machines take the chunks and the blocks alike.
+Tetrium is everywhere and it is quick. A crucible, a forge, and you are making plates, chassis and circuits: the parts every later machine is built from. Hang on to the slag, it becomes the bricks in every chassis.
 
-![Ores and metals](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/12_resources.jpg)
+![Recipes 1 of 9: Tetrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/07_recipes_01.jpg)
 
-![How Tetrium is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/27_flow_tetrium.jpg)
+## Illyrium: slow and worth it
 
-![How Illyrium is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/28_flow_illyrium.jpg)
+![Illyrium: slow and valuable](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/08_illyrium.jpg)
 
-![How Magnatite is made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/29_flow_magnatite.jpg)
+Illyrium comes one nugget at a time: smelt the ore in lava, crush the dirty ingot, wash the dust, alloy it back. Nine nuggets and the best part of an hour make one ingot. The dirty metal is useful on its own: it presses the dies that build the coin factory and the centrifuge.
 
-## Machines
+![Illyrium Crucible (3 x 3 x 3)](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/09_machine_illyrium_crucible.jpg)
+![Recipes 2 of 9: Tetrium, Illyrium Crucible](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/10_recipes_02.jpg)
+![Illyrium Refinery](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/11_machine_illyrium_refinery.jpg)
+![Recipes 3 of 9: Illyrium Crucible, Illyrium Refinery, Illyrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/12_recipes_03.jpg)
 
-Two single-block machines get you going. Four multiblocks do the heavy work. Every multiblock shows ghost blocks where its parts go, and sneak + right-click on a controller opens a step-by-step Assembly Guide. JEI opens the same guide if you hold Shift over a part.
+## Magnatite: the metal in between
 
-![Single-block machines](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/01_machines_single.jpg)
+![Magnatite: the metal in between](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/13_magnatite.jpg)
 
-![Illyrium Crucible](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/02_machine_illyrium_crucible.jpg)
+The Magnetic Centrifuge separates the ore, and with a coil in it charges the ingots: a gamble that gets better with every layer you stack on top. Charged Magnatite and Carbon Dust go into every cable, battery and plasma block.
 
-![Illyrium Refinery](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/03_machine_illyrium_refinery.jpg)
+![Magnetic Centrifuge (3 x 3, stackable to six layers)](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/14_machine_magnetic_centrifuge.jpg)
+![Recipes 4 of 9: Illyrium, Magnetic Centrifuge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/15_recipes_04.jpg)
 
-![Shatter Coin Factory](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/04_machine_coin_factory.jpg)
+## Shatter Coins: real time, no shortcuts
 
-![Magnetic Centrifuge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/05_machine_magnetic_centrifuge.jpg)
+![Shatter Coins: real time, no shortcuts](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/16_coins.jpg)
 
-![Machine recipes: Tetrium and Illyrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/24_machine_recipes_1.jpg)
+Coins buy totem tiers and powers, and you press them yourself, in real hours: 8 for Copper, 96 for Illyrium. The factory keeps pressing while you are offline, and a Coin Vault pays interest on what you keep in it. Rivals can pick the vault for a quarter of the coins.
 
-![Machine recipes: Magnatite and crystals](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/25_machine_recipes_2.jpg)
+![Shatter Coin Factory (one slice: 1 x 2 x 3)](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/17_machine_coin_factory.jpg)
+![Recipes 5 of 9: Magnetic Centrifuge, Shatter Coins](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/18_recipes_05.jpg)
 
-![Machine recipes: crushing and coins](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/26_machine_recipes_3.jpg)
+## Wave Plasma: your totem, on tap
 
-## Shatter Coins
+![Wave Plasma: the totem's power on tap](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/19_plasma_network.jpg)
 
-Coins pay for totem upgrades and much else. You press them yourself, in real time: 12 hours for a Copper coin, 7 days for an Illyrium one. The factory keeps working while you are offline.
+A placed totem gives off Wave Plasma. Pipe it and your base powers appear wherever the cable ends. Feed it into a Plasma Injector and a machine runs up to three times faster. Bottle it in a battery and your base keeps running while the totem is away, or stolen. Put a cell in the Wave Emitter and carry your powers without carrying the totem. A tank holds millions of mB of it for the lean times.
 
-![How Shatter Coins are made](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/30_flow_coins.jpg)
+![The plasma blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/20_plasma_blocks.jpg)
+![Plasma Tank and Plasma Injector](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/21_plasma_tank_injector.jpg)
+![Batteries, cells and the Wave Emitter](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/22_batteries.jpg)
+![Coloured cables and cable ends](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/23_cable_colours.jpg)
+![Recipes 6 of 9: Shatter Coins, Wave Plasma](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/24_recipes_06.jpg)
+![Recipes 7 of 9: Wave Plasma, Batteries](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/25_recipes_07.jpg)
 
-- **Coin Vault.** A safe for coins that pays interest. Vault blocks join into one vault of up to 3 x 3 x 3. Rivals can pick the lock for a quarter of what is inside.
+## Decoys, traps and the compass
 
-## Decoys and base blocks
+![Decoys, the compass and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/26_raiding.jpg)
 
-- **Decoy Totems.** A fake totem that pulls rival compasses toward it. To everyone but you it looks like the real thing, until they try to steal it and its traps go off.
+A Decoy Totem looks like the real thing to everyone but you, pulls rival compasses toward it, and goes off like a trap when they try to steal it. Range coils, five kinds of charge, an amplifier and reinforced casings go in its sockets. Your own Totem Compass points home, or for a while at the nearest rival.
 
-![Decoy Totem](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/10_layout_decoy.jpg)
-
-![Coin Vault and Anti Totem Block](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/11_layout_base_blocks.jpg)
-
-## Every block and item
-
-![Every block and item, 1 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/13_items_1.jpg)
-
-![Every block and item, 2 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/14_items_2.jpg)
-
-![Every block and item, 3 of 3](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/15_items_3.jpg)
-
-## Every crafting recipe
-
-All recipes are in JEI too, and the guide book walks through each chain.
-
-![Crafting recipes, 1 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/16_recipes_01.jpg)
-
-![Crafting recipes, 2 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/17_recipes_02.jpg)
-
-![Crafting recipes, 3 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/18_recipes_03.jpg)
-
-![Crafting recipes, 4 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/19_recipes_04.jpg)
-
-![Crafting recipes, 5 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/20_recipes_05.jpg)
-
-![Crafting recipes, 6 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/21_recipes_06.jpg)
-
-![Crafting recipes, 7 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/22_recipes_07.jpg)
-
-![Crafting recipes, 8 of 8](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/23_recipes_08.jpg)
+![Recipes 8 of 9: Batteries, Decoys and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/27_recipes_08.jpg)
+![Recipes 9 of 9: Decoys and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/28_recipes_09.jpg)
 
 ## For server owners
 
-- **One config file:** `serverconfig/bsp_core-server.toml`. Costs, times, ranges, limits and prices are all there, including the `plasma`, `effects` and `chunks` sections.
-- **Admin panel:** an Admin Rack block or `/bsp admin` shows every player's totems, positions and vault coins, with teleport and reset tools. Moderators get a read-only view. `/bsp totem buff` and `/bsp totem tier` set powers for testing.
-- **Seasons:** end a season from the panel to pay prizes to the top three and hand everyone a fresh totem. Prizes are real items you place in the panel, and can be shown on Score Screens.
-- **Anti Totem Block:** keeps totems and chosen machines out of spawn areas, hubs and arenas, in a zone of up to 256 blocks each way.
-- **Networks (experimental):** optional MySQL or MariaDB support shares first-join totems, limits, the leaderboard, vault totals, seasons, prizes and steal warnings across several servers. Not tested on a live database yet.
+![Vault, screens and admin blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/29_base_blocks.jpg)
+
+- **One config file,** `serverconfig/bsp_core-server.toml`: every cost, time, range, limit and price.
+- **Admin Rack,** or `/bsp admin`: every totem, position and vault at a glance, teleport and reset, and the season end that pays the top three and hands everyone a fresh totem. Prizes are real items you place in the panel; Score Screens show them, the rules, and the live leaderboard.
+- **Anti Totem Block:** keeps totems and chosen machines out of spawn, hubs and arenas.
+- **Networks (experimental):** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons and steal warnings across several servers. Not tested on a live database yet.
 
 ## Status
 
-Made for the BSP modpack and still early. Expect bugs and balance changes, especially around Wave Plasma, which is new in 0.3.0. The pictures of machines on this page are renders of the in-game models.
-
-Please report problems at https://github.com/Mrgregles/BSP-Core/issues
+1.0 is the first full release. Every picture on this page is drawn from the mod's own models, textures and recipes, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
