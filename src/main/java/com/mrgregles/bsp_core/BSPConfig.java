@@ -116,7 +116,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
     /** Thief's Step, Siege and Harvest (the 1.0 buffs), by level. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> THIEF_STEP_ALARM, SIEGE_SECONDS, SIEGE_RECHARGE, HARVEST_RADIUS, HARVEST_SECONDS;
-    public static final ForgeConfigSpec.IntValue HARVEST_DRAW;
+    public static final ForgeConfigSpec.IntValue HARVEST_DRAW, SENTINEL_MARKER_RANGE;
     public static final ForgeConfigSpec.IntValue CLOAK_DRAW, CLOAK_FADE_SECONDS, CLOAK_FADE_OUT_SECONDS, RECALL_PROMPT_SECONDS, RECALL_COOLDOWN_MINUTES;
     public static final ForgeConfigSpec.IntValue CHUNKS_MAX_PER_PLAYER;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
@@ -502,6 +502,7 @@ public final class BSPConfig {
         HARVEST_RADIUS = BUILDER.comment("Harvest: BSP ores mined within this many blocks of the totem grow back, by level.").defineList("harvestRadius", List.of(8, 12, 16, 24), BSPConfig::isPositiveInt);
         HARVEST_SECONDS = BUILDER.comment("Harvest: seconds between one ore growing back and the next, by level.").defineList("harvestSeconds", List.of(120, 90, 60, 30), BSPConfig::isPositiveInt);
         HARVEST_DRAW = BUILDER.comment("mB per tick of the totem's Wave Plasma output Harvest uses while ores are waiting to grow back.").defineInRange("harvestDraw", 25, 0, 100_000);
+        SENTINEL_MARKER_RANGE = BUILDER.comment("Sentinel level 4: intruders within this many blocks of the viewer, in the same dimension, get a marker through walls. 0 turns the markers off.").defineInRange("sentinelMarkerRange", 128, 0, 1024);
         RECALL_BLOCK_SECONDS = BUILDER.comment("Seconds a thief's Recall Block delays the owner's Recall offer, by level, on top of Shroud.").defineList("recallBlockSeconds", List.of(10, 20, 30, 45), BSPConfig::isPositiveInt);
         BUILDER.pop();
 

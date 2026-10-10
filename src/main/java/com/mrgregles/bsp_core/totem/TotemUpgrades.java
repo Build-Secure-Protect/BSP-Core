@@ -77,7 +77,9 @@ public final class TotemUpgrades {
         /** Raid, carried: for a while, Fortify does not slow your mining. A key, like X-ray. */
         SIEGE("siege", Branch.RAID, 4, "thief_step", 4, false),
         /** Base: BSP ores mined near the totem grow back, fed by plasma. */
-        HARVEST("harvest", Branch.BASE, 3, "survey", 5, false);
+        HARVEST("harvest", Branch.BASE, 3, "survey", 5, false),
+        /** Base: who is inside the Alarm cube, shown to the owner from anywhere. Priced like a Raid power. */
+        SENTINEL("sentinel", Branch.BASE, 2, "alarm", 2, false);
 
         public final String key;
         private final Branch branch;
@@ -125,7 +127,7 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
-            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
+            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST, SENTINEL -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */
@@ -187,12 +189,13 @@ public final class TotemUpgrades {
         }
         // powers with their own level counts (Recall, X-ray, Output, ...) never price past the top tier's coin
         int tier = Math.min(MAX_TIER, buff.single ? buff.tier : buff.tier + level / LEVELS_PER_TIER), step = buff.single ? 0 : level % LEVELS_PER_TIER;
-        var coins = switch (buff.branch()) {
+        Branch pricing = buff == Buff.SENTINEL ? Branch.RAID : buff.branch(); // Sentinel is a Base power at Raid prices (owner's rule)
+        var coins = switch (pricing) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_COINS;
             case BASE -> BSPConfig.BASE_LEVEL_COINS;
             case RAID -> BSPConfig.RAID_LEVEL_COINS;
         };
-        var xp = switch (buff.branch()) {
+        var xp = switch (pricing) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_XP;
             case BASE -> BSPConfig.BASE_LEVEL_XP;
             case RAID -> BSPConfig.RAID_LEVEL_XP;

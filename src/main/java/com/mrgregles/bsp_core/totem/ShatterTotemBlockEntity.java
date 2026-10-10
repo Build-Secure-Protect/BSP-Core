@@ -301,6 +301,51 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             }
         }
         alarmed.retainAll(inside);
+        // Sentinel: tell the owner (and Alarm friends) who is inside, from anywhere on this server
+        boolean had = !sentinelInside.isEmpty();
+        sentinelInside.clear();
+        if (getUpgradeLevel(TotemUpgrades.Buff.SENTINEL) > 0) {
+            sentinelInside.addAll(inside);
+        }
+        if (!sentinelInside.isEmpty() || had) {
+            sentinelSend(level);
+        }
+    }
+
+    /** Players inside the Alarm cube at the last look, for Sentinel. */
+    private final java.util.Set<UUID> sentinelInside = new java.util.HashSet<>();
+
+    /** Sends the Sentinel strip to everyone who may see it: the owner and friends with the Alarm switch, online here. Empty = clear. */
+    private void sentinelSend(ServerLevel level) {
+        if (owner == null) {
+            return;
+        }
+        int lvl = getUpgradeLevel(TotemUpgrades.Buff.SENTINEL);
+        java.util.List<com.mrgregles.bsp_core.network.SentinelPacket.Intruder> list = new java.util.ArrayList<>();
+        for (UUID id : sentinelInside) {
+            ServerPlayer p = level.getServer().getPlayerList().getPlayer(id);
+            if (p == null) {
+                continue;
+            }
+            int dist = (int) Math.round(Math.sqrt(p.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5)));
+            list.add(new com.mrgregles.bsp_core.network.SentinelPacket.Intruder(lvl >= 2 ? p.getGameProfile().getName() : "", lvl >= 3 ? dist : -1,
+                    lvl >= 4 ? p.getX() : 0, lvl >= 4 ? p.getY() : 0, lvl >= 4 ? p.getZ() : 0));
+        }
+        var packet = new com.mrgregles.bsp_core.network.SentinelPacket(level.dimension().location().toString(), worldPosition, lvl,
+                steal == null ? "" : steal.thiefName(), steal == null ? 0 : steal.ticksLeft() / 20, list);
+        java.util.Set<UUID> viewers = new java.util.HashSet<>();
+        viewers.add(owner.uuid());
+        for (TotemAccess a : access) {
+            if (a.has(TotemAccess.ALARM)) {
+                viewers.add(a.id());
+            }
+        }
+        for (UUID id : viewers) {
+            ServerPlayer viewer = level.getServer().getPlayerList().getPlayer(id);
+            if (viewer != null) {
+                com.mrgregles.bsp_core.network.BSPNetwork.sendTo(viewer, packet);
+            }
+        }
     }
 
     /** Server tick, registered by the block. */
@@ -311,6 +356,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             cloakTick(level);
             reportToLedger(level);
             harvestTick(level);
+        } else if (!sentinelInside.isEmpty() && getUpgradeLevel(TotemUpgrades.Buff.SENTINEL) >= 4) {
+            sentinelSend(level); // level 4 is live: positions every tick while someone is inside
         }
         if (cloakBuilder != null && cloakBuilder.step()) {
             cloak = cloakBuilder.result();

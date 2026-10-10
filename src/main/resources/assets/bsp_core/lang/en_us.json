@@ -1138,5 +1138,14 @@
   "gui.bsp_core.projector.chunks.needs_power": "Needs a signal and plasma to hold chunks.",
   "gui.bsp_core.projector.chunks.not_owner": "Only the totem's owner can change this.",
   "gui.bsp_core.projector.chunks.shared": "From the totem's allowance. Range %1$s x %1$s",
-  "jei.bsp_core.info.injector": "Place it against a machine: the end with the nozzle and the four feed tubes grips the block you click, and a plasma cable plugs into the port on the far end, the only face a cable connects to. The machine runs faster the more plasma arrives, twice as fast at 300 mB/t and three times at 500; only plasma arriving counts. On a Shatter Coin Factory it stands in a Motivator cell and speeds that slice, on top of its Motivators. It works on every BSP-Core machine and on most machines from other mods."
+  "jei.bsp_core.info.injector": "Place it against a machine: the end with the nozzle and the four feed tubes grips the block you click, and a plasma cable plugs into the port on the far end, the only face a cable connects to. The machine runs faster the more plasma arrives, twice as fast at 300 mB/t and three times at 500; only plasma arriving counts. On a Shatter Coin Factory it stands in a Motivator cell and speeds that slice, on top of its Motivators. It works on every BSP-Core machine and on most machines from other mods.",
+  "buff.bsp_core.sentinel": "Sentinel",
+  "buff.bsp_core.sentinel.effect.1": "A strip at the top of your screen, from anywhere: how many are inside your Alarm cube",
+  "buff.bsp_core.sentinel.effect.2": "The strip names them",
+  "buff.bsp_core.sentinel.effect.3": "The strip shows how far each is from the totem",
+  "buff.bsp_core.sentinel.effect.4": "Live positions, and a marker through walls on each intruder near you",
+  "gui.bsp_core.sentinel.totem": "TOTEM %s, %s, %s",
+  "gui.bsp_core.sentinel.steal": "STEAL: %s, %s s",
+  "gui.bsp_core.sentinel.inside": "%s inside",
+  "gui.bsp_core.sentinel.distance": "%s m"
 }

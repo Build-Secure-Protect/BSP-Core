@@ -69,6 +69,7 @@ public final class ClientSetup {
         event.registerAboveAll("recall_offer", RecallHud.INSTANCE);
         event.registerAboveAll("xray_ring", XrayClient.INSTANCE);
         event.registerAboveAll("siege_ring", SiegeClient.INSTANCE);
+        event.registerAboveAll("sentinel_strip", SentinelHud.INSTANCE);
         event.registerAboveAll("wrench_ends", WrenchHud.INSTANCE);
     }
 }

@@ -496,6 +496,8 @@ Five powers added with the plasma rework. Auras are now cubes: a radius of 5 cov
 
 **Page 5: Harvest**
 
+**Sentinel** (Base, Walls path beside Ward after Alarm, Tier III, priced like a Raid power): while anyone is inside your Alarm cube, a strip at the top of your screen tells you, from anywhere on the server: how many (level 1), who (2), how far from the totem (3), and at level 4 where they are right now, with a marker through the walls when they are near you. A steal in progress shows the thief and the seconds left. Friends with the Alarm switch see it too.
+
 **Harvest** (Base, Anchor path after Survey, Tier IV): BSP ores you mine within its reach grow back where they were, one at a time, as long as the totem has plasma to spare for it.
 
 ---
