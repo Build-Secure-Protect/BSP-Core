@@ -39,7 +39,7 @@ public final class TotemTree {
     static {
         for (Buff b : Buff.values()) {
             // two nodes on one ring of one path sit either side of the spoke
-            double a = Math.toRadians(SPOKE[b.path] + (b == Buff.BOUNCY || b == Buff.CLOAKING ? 22 : b == Buff.NIGHT_SIGHT || b == Buff.DEADLOCK ? -14 : 0));
+            double a = Math.toRadians(SPOKE[b.path] + (b == Buff.BOUNCY || b == Buff.CLOAKING || b == Buff.THIEF_STEP ? 22 : b == Buff.NIGHT_SIGHT || b == Buff.DEADLOCK ? -14 : 0));
             int r = RING[Math.min(b.tier, RING.length - 1)];
             POS.put(b, new int[]{CX + (int) Math.round(Math.cos(a) * r), CY + (int) Math.round(Math.sin(a) * r)});
         }
@@ -180,6 +180,9 @@ public final class TotemTree {
             case CLOAKING -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.CLOAK_RADIUS, java.util.List.<Integer>of()), level, 6) * 2 + 1, BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50));
             case RECALL -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.RECALL_RADIUS, java.util.List.<Integer>of()), level, 150));
             case RECALL_BLOCK -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.RECALL_BLOCK_SECONDS, java.util.List.<Integer>of()), level, 10));
+            case THIEF_STEP -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.THIEF_STEP_ALARM, java.util.List.<Integer>of()), level, 2));
+            case SIEGE -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.SIEGE_SECONDS, java.util.List.<Integer>of()), level, 8), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.SIEGE_RECHARGE, java.util.List.<Integer>of()), level, 180));
+            case HARVEST -> Component.translatable(key, b.reach(level), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_SECONDS, java.util.List.<Integer>of()), level, 120), BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25));
         };
     }
 

@@ -42,6 +42,9 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaValveBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.tank.TankPartBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.tank.TankPortBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.machine.MachineBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
     }
 
     @Override
@@ -51,6 +54,9 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.ProjectorBaseBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaValveBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.tank.TankBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.machine.MachineBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.coin.CoinFactoryBlock.class);
         registration.addRayTraceCallback((hit, accessor, original) -> redirect(registration, accessor));
     }
 
@@ -128,6 +134,15 @@ public class BspJadePlugin implements IWailaPlugin {
                     data.putInt("PortIn", port.in());
                     data.putInt("PortOut", port.out());
                 }
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity injector) {
+                data.putInt("InjRate", injector.rate());
+                data.putDouble("InjFactor", injector.factor());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.machine.MachineBlockEntity machine && machine.plasmaRate() > 0) {
+                data.putInt("BoostRate", machine.plasmaRate());
+                data.putDouble("BoostFactor", machine.plasmaFactor());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity slice && slice.plasmaRate() > 0) {
+                data.putInt("BoostRate", slice.plasmaRate());
+                data.putDouble("BoostFactor", slice.plasmaFactor());
             }
         }
 
@@ -158,6 +173,12 @@ public class BspJadePlugin implements IWailaPlugin {
                     tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_port", net.minecraft.network.chat.Component.translatable(mode.key()), d.getInt("PortIn"), d.getInt("PortOut"))
                             .withStyle(net.minecraft.ChatFormatting.GOLD));
                 }
+            } else if (d.contains("InjRate")) {
+                int rate = d.getInt("InjRate");
+                tooltip.add((rate > 0 ? net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector", rate, String.format("%.1f", d.getDouble("InjFactor")))
+                        : net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector_idle")).withStyle(rate > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+            } else if (d.contains("BoostRate")) {
+                tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.boost", d.getInt("BoostRate"), String.format("%.1f", d.getDouble("BoostFactor"))).withStyle(net.minecraft.ChatFormatting.AQUA));
             }
         }
 

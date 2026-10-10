@@ -1,0 +1,100 @@
+<title>Sentinel Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark board like the other BSP concept pages. Three HUD treatments drawn over a mock game view, each with a live demo of the four levels. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+/* the mock game view: sky, ground, crosshair, hotbar; the HUD treatments sit inside it */
+.game{ position:relative; width:100%; max-width:100%; aspect-ratio:16/9; border-radius:4px; overflow:hidden; background:linear-gradient(#6fa8dc 0%,#9fc7ea 42%,#4a6a3a 42%,#3b5530 100%); font-family:var(--display); color:#e8eaf0; }
+.game .cross{ position:absolute; left:50%; top:50%; width:10px; height:10px; transform:translate(-50%,-50%); }
+.game .cross:before,.game .cross:after{ content:""; position:absolute; background:#fff; mix-blend-mode:difference; } .game .cross:before{ left:4px; top:0; width:2px; height:10px; } .game .cross:after{ top:4px; left:0; width:10px; height:2px; }
+.game .hotbar{ position:absolute; left:50%; bottom:4%; transform:translateX(-50%); display:flex; gap:2px; } .game .hotbar i{ width:20px; height:20px; background:#1a1a1aa8; border:2px solid #777; } .game .hotbar i.sel{ border-color:#fff; }
+.game .tree{ position:absolute; bottom:52%; width:14px; height:30px; background:#2d4a24; border-radius:3px 3px 0 0; } .game .tree:after{ content:""; position:absolute; left:-10px; top:-18px; width:34px; height:28px; background:#355a2a; border-radius:50%; }
+.hud{ position:absolute; font-size:9px; line-height:1.3; }
+/* A. Watch strip: a bar along the top edge */
+.strip{ left:0; right:0; top:0; background:#0b0d11d9; border-bottom:2px solid #ff6b5c; padding:4px 10px; display:flex; gap:14px; align-items:center; transform:translateY(-110%); transition:transform .35s ease; }
+.strip.show{ transform:none; } .strip .t{ color:#ffd23a; } .strip .chip{ background:#1c2028; border:1px solid #ff6b5c; padding:1px 6px; white-space:nowrap; } .strip .chip b{ color:#ff6b5c; font-weight:400; } .strip .n{ color:#9aa3b5; }
+/* B. Compass band: bearings along the top centre */
+.band{ left:50%; top:4%; transform:translateX(-50%); width:56%; height:26px; background:#0b0d11c8; border:1px solid #2a2f3a; overflow:hidden; }
+.band .tick{ position:absolute; top:0; width:1px; height:6px; background:#9aa3b5; } .band .lab{ position:absolute; top:7px; transform:translateX(-50%); color:#9aa3b5; font-size:8px; }
+.band .base{ position:absolute; top:4px; transform:translateX(-50%); color:#19d3b0; } .band .foe{ position:absolute; top:3px; transform:translateX(-50%); color:#ff6b5c; text-align:center; white-space:nowrap; } .band .foe small{ display:block; font-size:7px; color:#e8eaf0; }
+.band .mid{ position:absolute; left:50%; top:0; width:1px; height:100%; background:#e8eaf066; }
+/* C. Corner card: a panel bottom right */
+.cardhud{ right:1.5%; bottom:12%; width:34%; background:#0b0d11d9; border:1px solid #2a2f3a; border-left:3px solid #ff6b5c; padding:6px 8px; display:flex; flex-direction:column; gap:4px; opacity:0; transition:opacity .35s; }
+.cardhud.show{ opacity:1; } .cardhud .h{ color:#ffd23a; display:flex; justify-content:space-between; } .cardhud .row{ display:flex; align-items:center; gap:6px; } .cardhud .row b{ color:#ff6b5c; font-weight:400; min-width:34px; } .cardhud .bar{ flex:1; height:4px; background:#2a2f3a; } .cardhud .bar i{ display:block; height:100%; background:#ff6b5c; } .cardhud .row .d{ color:#9aa3b5; min-width:28px; text-align:right; }
+.cardhud.steal{ animation:pulse 1s infinite; } @keyframes pulse{ 0%,100%{ border-left-color:#ff6b5c; } 50%{ border-left-color:#ffd23a; } }
+/* world marker, shared toggle: a diamond through everything with a name and distance */
+.marker{ position:absolute; transform:translate(-50%,-50%); text-align:center; font-size:8px; color:#ff6b5c; } .marker i{ display:block; width:8px; height:8px; margin:0 auto 2px; background:#ff6b5c; transform:rotate(45deg); box-shadow:0 0 6px #ff6b5c; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+</style>
+<div class="wrap">
+<section><h1>Sentinel Concepts</h1>
+<p class="lede">Sentinel is a Base power on the Walls path beside Ward (Tier III, after Alarm). Alarm already outlines intruders near your placed totem and sends you one chat line. Sentinel keeps you watching from anywhere in the world: how many are inside the Alarm cube, who they are, how far from the totem, and at the top level where they are right now. Three ways to show it; every treatment stays off-screen until there is something to show. A player with Thief's Step at a high enough level does not appear.</p>
+<div class="card"><div class="ctl"><span class="key"><b>Level:</b></span><button type="button" class="hb" data-lvl="1">1 COUNT</button><button type="button" class="hb" data-lvl="2">2 NAMES</button><button type="button" class="hb" data-lvl="3">3 DISTANCE</button><button type="button" class="hb on" data-lvl="4">4 LIVE</button><span class="key"><b>Scene:</b></span><button type="button" class="hb on" id="sc1">Two intruders</button><button type="button" class="hb" id="sc2">A steal</button><button type="button" class="hb" id="sc0">Quiet</button><label class="key"><input type="checkbox" id="mk" checked> World markers at level 4 (through walls)</label></div></div></section>
+
+<section><h2>1. Three treatments</h2><div class="grid3" id="looks"></div></section>
+
+<section><h2>2. Levels and rules</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Level</th><th>Shows</th><th>Updates</th></tr></thead><tbody>
+<tr><td>1</td><td>How many players are inside the Alarm cube, and which totem (its coordinates).</td><td>Once a second while any are inside.</td></tr>
+<tr><td>2</td><td>Their names.</td><td>Same.</td></tr>
+<tr><td>3</td><td>Names and distance from the totem, so you can tell a passer-by from someone at the door.</td><td>Same.</td></tr>
+<tr><td>4</td><td>Live: positions follow them, and with the marker switch on, a diamond through walls when you are in the same dimension within 128 blocks.</td><td>Every tick.</td></tr>
+<tr><td>Steal</td><td>At any level, a steal in progress turns the treatment gold with the thief's name and the seconds left.</td><td>Every second.</td></tr>
+</tbody></table></div>
+<p>Rules: only the owner and friends with the Alarm switch see it; a totem on another server is reported through the network store the same way steal warnings are; Thief's Step hides a player from Sentinel at the same level it hides them from Alarm; Cloaking does not matter (the owner always sees their own base).</p></div></section>
+
+<section><h2>3. Decisions</h2><div class="card"><ol>
+<li><b>Treatment:</b> A Watch Strip (default), B Compass Band, or C Corner Card.</li>
+<li><b>World markers at level 4:</b> on (default) or never.</li>
+<li><b>Where it sits on the tree:</b> Walls path, Tier III beside Ward after Alarm (default), or Tier IV after Ward.</li>
+<li><b>Price:</b> Base prices like Alarm (default), or Raid prices (dearer) to slow the early game.</li>
+</ol></div></section>
+</div>
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const state={lvl:4, scene:1, markers:true};
+  const FOES=[{name:'Bob',dist:14,x:62,y:48},{name:'Lena',dist:31,x:38,y:52}];
+  function game(inner){ return '<div class="game">'+inner+'<div class="tree" style="left:12%"></div><div class="tree" style="left:78%"></div><div class="cross"></div><div class="hotbar"><i class="sel"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>'; }
+  function chip(f){ if(state.lvl<=1) return ''; return '<span class="chip"><b>'+f.name+'</b>'+(state.lvl>=3?' <span class="n">'+f.dist+' m</span>':'')+'</span>'; }
+  function markers(){ if(state.lvl<4||!state.markers||state.scene===0) return ''; return FOES.map(f=>'<div class="marker" style="left:'+f.x+'%;top:'+f.y+'%"><i></i>'+f.name+'<br>'+f.dist+' m</div>').join(''); }
+  function render(){
+    const quiet=state.scene===0, steal=state.scene===2, n=quiet?0:FOES.length;
+    // A
+    el('a').innerHTML=game('<div class="hud strip'+(quiet?'':' show')+'"><span class="t">'+(steal?'STEAL 212 s':'TOTEM 120, 64, -40')+'</span><span>'+n+' inside</span>'+FOES.map(chip).join('')+'</div>'+markers());
+    // B
+    const band='<div class="hud band"><div class="mid"></div>'+[0,25,50,75,100].map(p=>'<div class="tick" style="left:'+p+'%"></div>').join('')+'<div class="lab" style="left:25%">N</div><div class="lab" style="left:75%">S</div><div class="base" style="left:26%">^ base '+(steal?'<span style="color:#ffd23a">STEAL 212 s</span>':n+' inside')+'</div>'+(quiet?'':FOES.map(f=>'<div class="foe" style="left:'+(46+f.dist*1.2)+'%">'+(state.lvl>=2?f.name:'?')+(state.lvl>=3?'<small>'+f.dist+' m</small>':'')+'</div>').join(''))+'</div>';
+    el('b').innerHTML=game(band+markers());
+    // C
+    const rows=quiet?'':FOES.map(f=>'<div class="row"><b>'+(state.lvl>=2?f.name:'?')+'</b>'+(state.lvl>=3?'<span class="bar"><i style="width:'+(100-f.dist*2)+'%"></i></span><span class="d">'+f.dist+' m</span>':'')+'</div>').join('');
+    el('c').innerHTML=game('<div class="hud cardhud'+(quiet?'':' show')+(steal?' steal':'')+'"><div class="h"><span>'+(steal?'STEAL: BOB, 212 s':'YOUR TOTEM')+'</span><span>'+n+' inside</span></div>'+rows+'</div>'+markers());
+  }
+  const looks=[['a','A. Watch Strip','A bar slides down from the top edge only while someone is inside: the totem (or the steal with its countdown), the count, and a red chip per intruder. Out of the way of the crosshair, readable at a glance, and it mirrors how the steal timer already looks.'],
+    ['b','B. Compass Band','A compass across the top centre, like the HUD compasses players know from other packs: your base as a turquoise mark at its bearing, each intruder as a red mark at theirs with distance under it. You can turn toward them without opening anything. Busiest of the three.'],
+    ['c','C. Corner Card','A small card bottom right: the totem, the count, one line per intruder with a bar for how close to the totem they are. A steal makes the edge pulse gold. Most information, least drama; closest to the totem panel\'s own style.']];
+  for(const [id,name,text] of looks){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3><div id="'+id+'"></div><p>'+text+'</p>'; el('looks').appendChild(c); }
+  document.querySelectorAll('[data-lvl]').forEach(b=>b.onclick=()=>{ state.lvl=+b.dataset.lvl; document.querySelectorAll('[data-lvl]').forEach(x=>x.classList.toggle('on',x===b)); render(); });
+  el('sc1').onclick=()=>{ state.scene=1; scene(); }; el('sc2').onclick=()=>{ state.scene=2; scene(); }; el('sc0').onclick=()=>{ state.scene=0; scene(); };
+  function scene(){ ['sc1','sc2','sc0'].forEach((id,i)=>el(id).classList.toggle('on',[1,2,0][i]===state.scene)); render(); }
+  el('mk').onchange=e=>{ state.markers=e.target.checked; render(); };
+  render();
+})();
+</script>

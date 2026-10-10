@@ -197,6 +197,14 @@ Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the 
 - [ ] Recall Block on the thief's offhand totem delays the card by its seconds.
 - [ ] Cloaking: buy it on a totem with a base built around it, then view from outside as a player not on the access list: the cube shows what was there when Cloaking came on (walk in and the real blocks appear; the owner always sees the real blocks). The totem's plasma output is 50 mB/t lower while cloaked. Known limits of this first version: the copy is of the moment it came on (not the land as generated), entities inside are not hidden, and block entities inside briefly lose their contents on the client after walking in until the chunk reloads.
 
+## The 1.0 buffs: Thief's Step, Siege, Harvest; cheaper gates; Damage (2026-10-10)
+
+- Tree: Thief's Step sits beside Recall Block on the Raid path (Tier IV, after Shroud), Siege after it on the outer ring (Tier V); Harvest after Survey on the Anchor path (Tier IV). Four levels each, Raid or Base prices.
+- Mining Speed, Swiftness, Featherfall and Night Sight cost half the XP they did (coins unchanged). Damage reaches +8 at level 10 (0.8 a level; `carried.damagePerLevel`).
+- Thief's Step (carry it in the offhand, or on an emitter if stamped): your footsteps and landing make no sound to anyone; an Alarm of level 2 / 4 / 6 / 8 or lower neither outlines you nor warns the owner. A higher Alarm still does.
+- Siege: press V (key "Siege on/off"). Inside an enemy Fortify your mining runs at full speed for 8 / 12 / 16 / 20 s; an orange ring left of the crosshair drains, then a grey one fills over the 180 / 150 / 120 / 90 s recharge. Press again to stop early. Without the power: "You carry no Siege power".
+- Harvest: on a placed totem with plasma; mine a BSP ore (Tetrium, Illyrium, Magnatite, any form) within 8 / 12 / 16 / 24 blocks: it grows back where it was after 120 / 90 / 60 / 30 s, one at a time, oldest first. While ores wait, the totem's plasma output drops by 25 mB/t (the interface line now reads "its powers take"). Ores mined by someone else count too. Fill the spot with a block: it does not grow back until the spot is clear.
+
 # Totem Compass
 
 ## Totem Compass
@@ -304,8 +312,8 @@ Full list with grids: `tools/preview/recipe_plan.html` (regenerate with `python3
 - [ ] All four blocks are craftable and in the creative tab. Placing the controller shows ghost blocks for the other eight; sneak + right-click opens the Assembly Guide, and holding Shift over any of the blocks in JEI opens it too.
 - [ ] Built in all four facings (controller front centre, Rotor in the middle, Item Hatch left, Power Port right as seen from the front), the blocks hide and the Armoured Spin Drum appears: plated sides with slit windows, hazard stripes, lamps, the extractor inside. Breaking any block brings the blocks back.
 - [ ] With no RF the screen lists "Needs 60 RF per tick" and nothing runs. With a cable on the Power Port the RF gauge fills and it runs; cables on the casing or controller do nothing. Hoppers and pipes work on the Item Hatch only.
-- [ ] One Magnatite Ore (either kind) takes 45 seconds and gives 3 nuggets and 1 Carbon Dust. The extractor spins while working and the lamps turn green; a redstone signal pauses it.
-- [ ] A Magnatite Ingot with no coil does nothing and the screen says to fit a coil. With the Copper Tetrium Coil fitted it tries every 45 seconds; over many tries about 1 in 6 succeed, and a failed try leaves the ingot in the input slot. The copper band behind the windows glows blue while charging.
+- [ ] One Magnatite Ore (either kind) takes 30 seconds and gives 3 nuggets and 1 Carbon Dust. The extractor spins while working and the lamps turn green; a redstone signal pauses it.
+- [ ] A Magnatite Ingot with no coil does nothing and the screen says to fit a coil. With the Copper Tetrium Coil fitted it tries every 30 seconds; over many tries about 1 in 6 succeed, and a failed try leaves the ingot in the input slot. The copper band behind the windows glows blue while charging.
 - [ ] Stack a second layer (Rotor + 8 Casing): its blocks hide, a second extractor appears turning the other way, and the status line at the top right of the screen shows the layers and the new numbers. Test up to six: nuggets rise to 7 to 9, the charge chance reaches 1 in 2 at five, and at six a try takes 25 seconds. A seventh layer is ignored.
 - [ ] Removing a block from a middle layer drops the layers above it back to ordinary blocks and the numbers fall.
 - [ ] Power use rises with layers (60 per layer separating, 240 per layer charging).
@@ -314,6 +322,20 @@ Full list with grids: `tools/preview/recipe_plan.html` (regenerate with `python3
 - [ ] JEI shows a Magnetic Centrifuge category with both jobs, opened by clicking the dial on the machine screen. The guide book has "Magnatite" and "Magnetic Centrifuge" entries. The three new advancements are granted.
 
 # Shatter Coins, factory, vault, scoring and admin
+
+## Balancing for 1.0, first pass (2026-10-09)
+
+New world, or edit the test world's `bsp_core-server.toml` to the new defaults (`ticksPerOre` 300, `smeltTicks` 800, `alloyTicks` 1200, `ticksPerDust` 1800, `filterUses` [5, 20, 100, 1000], `dirtyIllyriumDustChance` 0.25, `separateTicks` 600, `chargeTicks` 600, `pressHours` [8, 16, 32, 64, 96]); the dev world's copy has been updated.
+
+- [ ] Tetrium Crucible: one ore takes 15 seconds (the game test `tetrium_crucible_takes_300_ticks` checks this headlessly).
+- [ ] Illyrium Crucible: a Dirty Illyrium Ingot takes 40 seconds, an alloy job 60 seconds; the lava per job is unchanged (250 mB).
+- [ ] Illyrium Refinery: one Pure Illyrium Dust takes 90 seconds. An Iron Filter shows 5 uses in its tooltip and lasts five dusts.
+- [ ] Magnetic Centrifuge: one ore takes 30 seconds; a charging try takes 30 seconds (25 with six layers, unchanged).
+- [ ] JEI: the four filter recipes show string in the cross, not cobweb; the Lava Pylon recipe gives 4.
+- [ ] Crafting-grid crushing of Dirty Illyrium Ingots succeeds about 1 in 4 over many tries (the tooltip shows 25%).
+- [ ] Coin factory screen: a Copper blank shows 8 h to press (Gold 16, Diamond 32, Netherite 64, Illyrium 96) with no Motivators.
+- [ ] New world: Illyrium ore between y -64 and -16 is clearly easier to find than before (8 veins per chunk; about half as common as diamond). X-ray marks it.
+- [ ] `python3 tools/balance_report.py` after any further number change; `docs/BALANCE.md` is generated.
 
 ## Shatter Coins and the factory (multiblock slices)
 
@@ -618,6 +640,19 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 
 # Plasma Tank
 
+## Plasma Injector (2026-10-10)
+
+- [ ] The Plasma Injector is craftable (Slag Brick, Charged Resonance Crystal, Tetrium Plasma Cable, Illyrium Processor, Tetrium Plate, Copper Tetrium Coil) and in the creative tab; JEI shows the recipe; its tooltip names the curve (x3.0 at 500 mB/t).
+- [ ] Placing it against a block attaches it to that block: the plate end touches the block, the socket end points away, in all six directions. Jade on it says "No plasma arriving".
+- [ ] The look: the nozzle and the four feed tubes touch the machine with no gap in all six facings (they sink a little into its face); the glass barrel, gauge marks, guide rails, plunger ring, bolted cap and port read from a few blocks away. Idle: dark, nothing moves.
+- [ ] Fed: plasma stands in the barrel as high as the rate (a sliver at 50 mB/t, full at 500) and breathes; a slug of plasma runs down each tube into the machine, faster with more plasma; the nozzle tip, the lamp on the cap and the port light. Cut the cable: all of it goes dark within two seconds. Check the fill and the slugs run toward the machine in every facing, including on a factory slice (facing down).
+- [ ] Only a cable on the port face (the end away from the machine) connects to it, its arm reaching into the port ring; cables on the sides stay unconnected and feed nothing. The ring stands proud of the cap with a dark throat that fills with plasma while fed. A cable into the port from an interface feeds it; the interface's flow view lists it like a base with the mB/t. Jade: "Injecting 100 mB/t: x1.3 speed" with a base totem.
+- [ ] Against a Tetrium Crucible fed 100 mB/t an ore takes about 11 s instead of 15; with Output 3 (500 mB/t) about 5 s. Jade on the crucible shows the plasma line. Cutting the cable brings it back to 15 s within two seconds. The Combination Forge, Illyrium Crucible (against any casing or pylon), Refinery and Centrifuge behave the same; the factor stacks with an RF upgrade and with Overclock.
+- [ ] Two injectors on one machine add their rates (two at 250 = 500 = x3); an injector pointing at a different block does nothing for this one.
+- [ ] Factory: an injector in a Motivator cell (socket up, cable from above or the side) speeds that slice only. The screen's PLASMA gauge lights one cell per 100 mB/t over the machine; the lane tooltip shows "Plasma: 500 mB/t (x3.0 press speed)"; the remaining time on that lane drops; other lanes are unchanged. It stacks with that slice's Motivators (two Motivators + 500 mB/t: 8 h Copper coin in about 1 h 50 min).
+- [ ] Other mods: against a vanilla furnace (game test `injector_speeds_a_furnace`) and, in the pack, a Mekanism or Thermal machine: it runs faster and uses its RF faster. With `plasma.injectorForeign = false` or the block in `plasma.injectorBlacklist` nothing happens. A real-time machine (another factory-like block) is not sped up.
+- [ ] Game tests `injector_speeds_a_furnace`, `injector_speeds_the_tetrium_crucible`, `injector_boosts_a_factory_slice` pass in `./gradlew runGameTestServer`.
+
 ## Plasma Tank (2026-10-08)
 
 - Craft: Tetrium Glass (8 glass round a nugget), Tank Casing (8 plates round a chassis), Tank Glass (8 tetrium glass round a plate), Tank Port (crystal top, tetrium cables sides, casing centre, plate bottom).
@@ -833,6 +868,7 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - Add a test for each new rule or fix where the client is not needed: anything about forming, flow figures, reach, caps and sharing.
 
 # Fix-up rounds (dated)
+- [ ] The game test server keeps its own world config in `run/world/serverconfig/bsp_core-server.toml`, which does not follow a changed default. After changing a machine number in `BSPConfig`, edit that file too (or delete it so it regenerates); the crucible test reads its timing from the loaded config and separately asserts the shipped default, so a stale file fails it with a clear message.
 
 ## Fix-ups 2026-10-06
 

@@ -141,7 +141,7 @@ public class PlasmaExtractorBlockEntity extends BlockEntity implements PlasmaNet
             totemPos = top.above();
             access = PlasmaAccess.of(totem);
             flow = Math.max(1, totem.plasmaOutput() / Math.max(1, count));
-            cloak = totem.cloakDraw() / Math.max(1, count);
+            cloak = (totem.cloakDraw() + totem.harvestDraw()) / Math.max(1, count);
             for (Buff b : Buff.values()) {
                 offered[b.ordinal()] = totem.getUpgradeLevel(b);
             }

@@ -155,6 +155,19 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
     }
 
     /** A block the structure needs and where it goes. */
+    @Override
+    protected Iterable<BlockPos> boostPositions() {
+        if (!isFormed()) {
+            return java.util.List.of(worldPosition);
+        }
+        java.util.List<BlockPos> out = new java.util.ArrayList<>();
+        out.add(worldPosition);
+        for (Part p : parts()) {
+            out.add(p.pos());
+        }
+        return out;
+    }
+
     public record Part(BlockPos pos, Block block) {}
 
     /** Every position of the structure with the block it requires, worked out from the controller's facing. */

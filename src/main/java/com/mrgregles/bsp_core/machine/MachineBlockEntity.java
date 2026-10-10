@@ -136,6 +136,20 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     // ------------------------------------------------------------------ RF upgrade
 
+    /** The blocks a Plasma Injector may stand against to serve this machine: the block itself, or every block of a formed multiblock. */
+    protected Iterable<BlockPos> boostPositions() {
+        return List.of(worldPosition);
+    }
+
+    /** mB/t of Wave Plasma arriving at this machine's injectors, and the speed factor it gives. */
+    public int plasmaRate() {
+        return plasmaRate;
+    }
+
+    public double plasmaFactor() {
+        return plasma;
+    }
+
     /** Speed gain of the fitted RF upgrade (0 if none). */
     public double rfBonus() {
         int slot = slotOf(Role.RF, 0);
@@ -304,11 +318,18 @@ public abstract class MachineBlockEntity extends BlockEntity {
     private boolean demo;
     /** Speed multiplier from a nearby totem's Overclock aura, refreshed every few seconds. Server side. */
     private double overclock = 1.0;
+    /** Speed multiplier from Plasma Injectors standing against the machine, and the mB/t they get. Server side. */
+    private double plasma = 1.0;
+    private int plasmaRate;
 
     public void serverTick(ServerLevel level) {
         powered = level.hasNeighborSignal(worldPosition); // a redstone signal pauses the machine
         if (level.getGameTime() % 100 == 0) {
             overclock = com.mrgregles.bsp_core.totem.TotemAuras.overclock(level, worldPosition);
+        }
+        if (level.getGameTime() % 20 == 0) {
+            plasmaRate = com.mrgregles.bsp_core.plasma.PlasmaBoost.rate(level, boostPositions());
+            plasma = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(plasmaRate);
         }
         boolean work = enabled && !powered && canWork() && (!needsRf() || energy.getEnergyStored() >= rfPerWorkTick());
         if (work && usesFuel() && burnTime <= 0) {
@@ -318,7 +339,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
             burnTime--;
         }
         if (work) {
-            speedCarry += speed() * overclock;
+            speedCarry += speed() * overclock * plasma;
             if (rfActive()) {
                 energy.use(BSPConfig.RF_PER_TICK.get());
             }

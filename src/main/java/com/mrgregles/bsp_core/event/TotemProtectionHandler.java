@@ -17,6 +17,14 @@ public final class TotemProtectionHandler {
 
     @SubscribeEvent
     public static void onBreak(BlockEvent.BreakEvent event) {
+        if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel sl && event.getState().is(net.minecraftforge.common.Tags.Blocks.ORES)
+                && net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(event.getState().getBlock()) != null
+                && com.mrgregles.bsp_core.BSPCore.MODID.equals(net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(event.getState().getBlock()).getNamespace())) {
+            // a BSP ore mined within a Harvest totem's reach grows back there later
+            for (ShatterTotemBlockEntity harvester : com.mrgregles.bsp_core.totem.TotemAuras.totemsCovering(sl, event.getPos(), com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.HARVEST)) {
+                harvester.harvestRecord(event.getPos(), event.getState());
+            }
+        }
         if (!(event.getLevel().getBlockEntity(event.getPos()) instanceof ShatterTotemBlockEntity totem)) {
             return;
         }

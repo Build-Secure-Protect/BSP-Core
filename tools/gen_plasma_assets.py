@@ -243,6 +243,33 @@ def battery(tier):
     return e
 
 
+# ----------------------------------------------------------------------------- injector: a plasma column that stands against a machine
+def injector():
+    """Model points north: nozzle and feed tubes at z 0 (they sink 0.6 into the machine's face so nothing shows between), cable end at z 16.
+    Foot plate with four bolts, a stepped nozzle, four glass feed tubes with collars, a manifold, a glass barrel on four rails with gauge marks,
+    guide rails and a plunger ring, a bolted cap with a lamp socket, and the port. PlasmaInjectorRenderer draws the plasma, the tip, the lamp and the port."""
+    e = [mbox([2, 2, 0], [14, 14, 1], "hull2")]
+    for a, b in ((2.4, 2.4), (12.4, 2.4), (2.4, 12.4), (12.4, 12.4)):
+        e.append(mbox([a, b, -0.2], [a + 1.2, b + 1.2, 1.2], "trim"))                          # bolts on the foot plate
+    e += [mbox([5, 5, 0], [11, 11, 2], "hull"), mbox([6, 6, 1], [10, 10, 3], "mid"), mbox([6.6, 6.6, -0.6], [9.4, 9.4, 1], "hull2")]   # the stepped nozzle and the tip socket
+    for a, b in ((4, 4), (10, 4), (4, 10), (10, 10)):
+        e += [glass([a, b, 0], [a + 2, b + 2, 4.5]), mbox([a - 0.5, b - 0.5, -0.6], [a + 2.5, b + 2.5, 0.4], "trim"), mbox([a - 0.4, b - 0.4, 4], [a + 2.4, b + 2.4, 4.8], "trim")]  # feed tubes with collars
+    e += [mbox([3, 3, 4.5], [13, 13, 6], "trim"), mbox([2.6, 2.6, 5], [13.4, 13.4, 5.6], "hull")]  # manifold
+    for a, b in ((3, 3), (11.8, 3), (3, 11.8), (11.8, 11.8)):
+        e.append(mbox([a, b, 6], [a + 1.2, b + 1.2, 12], "hull"))                                  # barrel rails
+    e.append(glass([4.2, 4.2, 6], [11.8, 11.8, 12]))                                              # the barrel
+    for z in (7, 8.5, 10, 11.3):
+        e.append(mbox([5, 12, z], [6.2, 12.5, z + 0.4], "trim"))                                   # gauge marks
+    e += [mbox([1.8, 7.4, 6], [2.8, 8.6, 13], "hull2"), mbox([13.2, 7.4, 6], [14.2, 8.6, 13], "hull2")]   # guide rails
+    e += [mbox([2.8, 2.8, 11], [13.2, 13.2, 11.8], "trim"), mbox([3.6, 3.6, 10.6], [12.4, 12.4, 11], "hull2")]  # plunger ring at the cap end
+    e += [mbox([2, 2, 12], [14, 14, 14], "hull2"), mbox([3, 3, 14], [13, 13, 15], "trim"), mbox([7, 12.2, 12.5], [9, 13, 13.5], "hull2")]  # cap, ring, lamp socket
+    for a, b in ((2.3, 2.3), (12.5, 2.3), (2.3, 12.5), (12.5, 12.5)):
+        e.append(mbox([a, b, 12], [a + 1.2, b + 1.2, 14.4], "trim"))                               # cap bolts
+    e += [mbox([4, 4, 15], [12, 12, 16.2], "hull2"), mbox([3, 3, 16], [13, 4, 17.2], "trim"), mbox([3, 12, 16], [13, 13, 17.2], "trim"),
+          mbox([3, 4, 16], [4, 12, 17.2], "trim"), mbox([12, 4, 16], [13, 12, 17.2], "trim")]   # the port: a dark throat inside a trim ring proud of the cap, the cable's arm reaches into it
+    return e
+
+
 # ----------------------------------------------------------------------------- charger: the open cradle
 def charger():
     e = [mbox([0, 0, 0], [16, 2, 16], "hull2"), mbox([0, 2, 12], [16, 16, 16], "hull2"), mbox([0, 2, 4], [3, 11, 16], "hull2"), mbox([13, 2, 4], [16, 11, 16], "hull2"), mbox([3, 13, 8], [13, 15, 14], "hull2"),
@@ -380,6 +407,13 @@ def main():
                                                                      "facing=south": {"model": "bsp_core:block/battery_charger", "y": 180}, "facing=west": {"model": "bsp_core:block/battery_charger", "y": 270}}})
     write(ASSETS / "models/item/battery_charger.json", model(charger(), PLASMA))
     loot("battery_charger")
+    injector_tex = dict(PLASMA, glass="bsp_core:block/tank_glass")
+    write(ASSETS / "models/block/plasma_injector.json", model(injector(), injector_tex, gui=False))
+    write(ASSETS / "blockstates/plasma_injector.json", {"variants": {"facing=north": {"model": "bsp_core:block/plasma_injector"}, "facing=east": {"model": "bsp_core:block/plasma_injector", "y": 90},
+                                                                     "facing=south": {"model": "bsp_core:block/plasma_injector", "y": 180}, "facing=west": {"model": "bsp_core:block/plasma_injector", "y": 270},
+                                                                     "facing=down": {"model": "bsp_core:block/plasma_injector", "x": 90}, "facing=up": {"model": "bsp_core:block/plasma_injector", "x": 270}}})
+    write(ASSETS / "models/item/plasma_injector.json", model(injector(), injector_tex))
+    loot("plasma_injector")
     for name, colour in CELLS.items():
         write_png(ASSETS / f"textures/item/{name}.png", 16, 16, cell_sprite(colour))
         item_model(name)
@@ -426,7 +460,7 @@ def main():
     loot("plasma_valve")
     for name in ("plasma_extractor", "plasma_interface", "plasma_repeater"):
         loot(name)
-    for tag, blocks in (("mineable/pickaxe", ["plasma_extractor", "plasma_interface", "plasma_repeater", "plasma_valve", "battery_charger", "projector_base"] + list(TIERS)), ("needs_iron_tool", ["plasma_extractor", "plasma_interface", "plasma_valve", "battery_charger", "projector_base"])):
+    for tag, blocks in (("mineable/pickaxe", ["plasma_extractor", "plasma_interface", "plasma_repeater", "plasma_valve", "battery_charger", "projector_base", "plasma_injector"] + list(TIERS)), ("needs_iron_tool", ["plasma_extractor", "plasma_interface", "plasma_valve", "battery_charger", "projector_base", "plasma_injector"])):
         path = DATA / f"minecraft/tags/blocks/{tag}.json"
         data = json.loads(path.read_text())
         data["values"] = [v for v in data["values"] if v != "bsp_core:totem_generator"]
@@ -443,6 +477,7 @@ def main():
     shaped("totem_projector", ["DXD", "CKC", "XHP"], {"D": D, "X": X, "C": C, "K": "illyrium_processor", "P": "tetrium_plate", "H": "machine_chassis"})
     shaped("channel_expander", ["CBC", "BKB", "CDC"], {"C": C, "B": "basic_control_circuit", "K": "illyrium_processor", "D": D})
     R, G = "charged_resonance_crystal", "illyrium_glass"
+    shaped("plasma_injector", ["BRB", "TZT", "PWP"], {"B": "slag_brick", "R": "charged_resonance_crystal", "T": "tetrium_core_cable", "Z": "illyrium_processor", "P": "tetrium_plate", "W": "copper_tetrium_coil"})
     shaped("battery_charger", ["SWS", "THT", "PBP"], {"S": S, "W": "copper_tetrium_coil", "T": "tetrium_core_cable", "H": "machine_chassis", "P": "tetrium_plate", "B": "basic_control_circuit"})
     shaped("plasma_battery_1", ["PGP", "RDR", "SWS"], {"P": "tetrium_plate", "G": G, "R": R, "D": D, "S": S, "W": "copper_tetrium_coil"})
     shaped("plasma_battery_2", ["MRM", "GBG", "MQM"], {"M": "magnatite_ingot", "R": R, "G": G, "B": "plasma_battery_1", "Q": "minecraft:quartz"})

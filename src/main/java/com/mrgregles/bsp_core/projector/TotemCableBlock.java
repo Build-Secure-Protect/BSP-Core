@@ -130,6 +130,9 @@ public class TotemCableBlock extends Block implements net.minecraft.world.level.
         if (other instanceof com.mrgregles.bsp_core.plasma.BatteryChargerBlock) {
             return com.mrgregles.bsp_core.plasma.BatteryChargerBlock.joins(level.getBlockState(pos.relative(dir)), dir);
         }
+        if (other instanceof com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock) {
+            return com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.joins(there, dir);
+        }
         if (other instanceof com.mrgregles.bsp_core.plasma.PlasmaValveBlock) {
             return com.mrgregles.bsp_core.plasma.PlasmaValveBlock.joins(level.getBlockState(pos.relative(dir)), dir);
         }

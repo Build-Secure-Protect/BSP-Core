@@ -215,6 +215,55 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     private int recallDelay;
     /** Intruders the Alarm has already reported, so the owner is told once per visit. */
     private final java.util.Set<UUID> alarmed = new java.util.HashSet<>();
+    /** Harvest: the BSP ores mined within reach, oldest first, waiting to grow back; and when the last one did. */
+    private final java.util.ArrayDeque<net.minecraft.util.Tuple<BlockPos, BlockState>> harvestQueue = new java.util.ArrayDeque<>();
+    private long harvestLast;
+    private static final int HARVEST_QUEUE_MAX = 256;
+
+    /** The break handler saw a BSP ore mined within this totem's Harvest reach. */
+    public void harvestRecord(BlockPos pos, BlockState ore) {
+        if (harvestQueue.size() >= HARVEST_QUEUE_MAX) {
+            harvestQueue.pollFirst();
+        }
+        harvestQueue.addLast(new net.minecraft.util.Tuple<>(pos.immutable(), ore));
+        setChanged();
+    }
+
+    /** mB per tick Harvest is taking from the output: only while ores are waiting. */
+    public int harvestDraw() {
+        return harvestQueue.isEmpty() || getUpgradeLevel(TotemUpgrades.Buff.HARVEST) <= 0 || owner == null ? 0 : BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25);
+    }
+
+    /** Once a second: when the level's interval has passed, the oldest waiting ore grows back if its spot is clear; otherwise it goes to the back of the queue. */
+    private void harvestTick(ServerLevel level) {
+        int lvl = getUpgradeLevel(TotemUpgrades.Buff.HARVEST);
+        if (lvl <= 0 || harvestQueue.isEmpty() || owner == null) {
+            return;
+        }
+        long now = level.getGameTime();
+        int every = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_SECONDS, java.util.List.<Integer>of()), lvl, 120) * 20;
+        if (now - harvestLast < every) {
+            return;
+        }
+        var next = harvestQueue.pollFirst();
+        if (next == null) {
+            return;
+        }
+        BlockPos pos = next.getA();
+        if (!level.isLoaded(pos)) {
+            harvestQueue.addLast(next);
+            return;
+        }
+        BlockState there = level.getBlockState(pos);
+        if (there.isAir() || there.canBeReplaced()) {
+            level.setBlock(pos, next.getB(), 3);
+            level.levelEvent(2001, pos, Block.getId(next.getB())); // the break particles, as the ore knits back
+            harvestLast = now;
+        } else {
+            harvestQueue.addLast(next); // something stands there: wait for the spot to clear
+            harvestLast = now; // and do not spin through the queue every tick
+        }
+    }
 
     private void warnOwner(ServerLevel serverLevel) {
         if (owner != null && steal != null) {
@@ -240,7 +289,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             if (ward > 0 && !hasAccess(p.getUUID(), TotemAccess.WARD) && TotemAuras.inCube(p, cx, cy, cz, wardR)) {
                 p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 60, (ward - 1) / 2, true, false, true));
             }
-            if (alarm > 0 && !hasAccess(p.getUUID(), TotemAccess.ALARM) && TotemAuras.inCube(p, cx, cy, cz, alarmR)) {
+            int thief = com.mrgregles.bsp_core.plasma.CarriedPowers.level(p, TotemUpgrades.Buff.THIEF_STEP);
+            boolean unseen = thief > 0 && alarm <= BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.THIEF_STEP_ALARM, java.util.List.<Integer>of()), thief, 0);
+            if (alarm > 0 && !unseen && !hasAccess(p.getUUID(), TotemAccess.ALARM) && TotemAuras.inCube(p, cx, cy, cz, alarmR)) {
                 p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 60, 0, true, false, true));
                 inside.add(p.getUUID());
                 if (alarmed.add(p.getUUID())) {
@@ -259,6 +310,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             intruderTick(level);
             cloakTick(level);
             reportToLedger(level);
+            harvestTick(level);
         }
         if (cloakBuilder != null && cloakBuilder.step()) {
             cloak = cloakBuilder.result();
@@ -605,7 +657,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     /** Wave Plasma this totem gives off, in mB per tick, by its Output level (config {@code plasma.outputPerLevel}). */
     public int plasmaOutput() {
         int out = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.PLASMA_OUTPUT, java.util.List.<Integer>of()), getUpgradeLevel(TotemUpgrades.Buff.OUTPUT) + 1, 100);
-        return cloak != null ? Math.max(0, out - BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50)) : out; // Cloaking takes its share first
+        int draw = (cloak != null ? BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50) : 0) + harvestDraw();
+        return Math.max(0, out - draw); // Cloaking and Harvest take their share first
     }
 
     /** mB per tick Cloaking is taking from the output right now, 0 while not cloaked. */
@@ -754,6 +807,17 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             tag.put(TotemUpgrades.TAG_UPGRADES, upgrades.copy());
         }
         TotemIdentity.copy(identity, tag);
+        if (!harvestQueue.isEmpty()) {
+            net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+            for (var e : harvestQueue) {
+                CompoundTag t = new CompoundTag();
+                t.putLong("Pos", e.getA().asLong());
+                t.put("Ore", net.minecraft.nbt.NbtUtils.writeBlockState(e.getB()));
+                list.add(t);
+            }
+            tag.put("Harvest", list);
+            tag.putLong("HarvestLast", harvestLast);
+        }
     }
 
     @Override
@@ -761,6 +825,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         super.load(tag);
         identity = new CompoundTag();
         TotemIdentity.copy(tag, identity);
+        harvestQueue.clear();
+        if (tag.contains("Harvest") && level != null) {
+            for (net.minecraft.nbt.Tag raw : tag.getList("Harvest", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                CompoundTag t = (CompoundTag) raw;
+                harvestQueue.addLast(new net.minecraft.util.Tuple<>(BlockPos.of(t.getLong("Pos")), net.minecraft.nbt.NbtUtils.readBlockState(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK), t.getCompound("Ore"))));
+            }
+            harvestLast = tag.getLong("HarvestLast");
+        }
         owner = TotemOwner.load(tag).orElse(null);
         ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
         access = TotemAccess.load(tag);

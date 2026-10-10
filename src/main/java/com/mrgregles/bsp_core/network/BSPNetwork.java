@@ -68,6 +68,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(InterfaceViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(InterfaceViewPacket::encode).decoder(InterfaceViewPacket::decode)
                 .consumerMainThread(InterfaceViewPacket::handle).add();
+        CHANNEL.messageBuilder(SiegePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SiegePacket::encode).decoder(SiegePacket::decode)
+                .consumerMainThread(SiegePacket::handle).add();
+        CHANNEL.messageBuilder(SiegeStatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SiegeStatePacket::encode).decoder(SiegeStatePacket::decode)
+                .consumerMainThread(SiegeStatePacket::handle).add();
         CHANNEL.messageBuilder(CloakRefreshPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(CloakRefreshPacket::encode).decoder(CloakRefreshPacket::decode)
                 .consumerMainThread(CloakRefreshPacket::handle).add();

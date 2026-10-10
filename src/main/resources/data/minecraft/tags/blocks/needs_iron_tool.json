@@ -16,6 +16,7 @@
     "bsp_core:projector_base",
     "bsp_core:plasma_valve",
     "bsp_core:tank_casing",
-    "bsp_core:tank_port"
+    "bsp_core:tank_port",
+    "bsp_core:plasma_injector"
   ]
 }

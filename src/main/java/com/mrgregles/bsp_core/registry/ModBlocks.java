@@ -55,6 +55,7 @@ public final class ModBlocks {
     public static final RegistryObject<Block> TETRIUM_GLASS = BLOCKS.register("tetrium_glass", () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
             .strength(1.0F, 6.0F).sound(SoundType.GLASS).noOcclusion().isViewBlocking((st, l, pos) -> false).isSuffocating((st, l, pos) -> false)));
     public static final RegistryObject<Block> BATTERY_CHARGER = BLOCKS.register("battery_charger", com.mrgregles.bsp_core.plasma.BatteryChargerBlock::new);
+    public static final RegistryObject<Block> PLASMA_INJECTOR = BLOCKS.register("plasma_injector", com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock::new);
     public static final RegistryObject<Block> PROJECTOR_BASE = BLOCKS.register("projector_base", com.mrgregles.bsp_core.plasma.ProjectorBaseBlock::new);
     /** Plasma Batteries I to IV, by tier. */
     public static final java.util.List<RegistryObject<com.mrgregles.bsp_core.plasma.PlasmaBatteryBlock>> PLASMA_BATTERIES = new java.util.ArrayList<>();

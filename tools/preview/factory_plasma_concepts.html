@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factory Plasma Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Dark board like the other BSP concept pages. One WebGL context draws every 3D view. Three places for the plasma input, three screen looks, the curve, the rules. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-ion:#4cb2fa;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num{ font-variant-numeric:tabular-nums; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.ctl input[type=range]{ width:200px; accent-color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.rc{ display:grid; grid-template-columns:repeat(3,62px); gap:2px; } .rc i{ width:62px; height:44px; box-sizing:border-box; padding:2px; background:var(--h-slot); border:1px solid var(--h-dim); display:grid; place-items:center; font:600 9px var(--body); color:var(--h-fg); text-align:center; line-height:1.1; font-style:normal; }
+.rec{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; } .rec .arrow{ color:var(--muted); font-size:18px; } .rec .out{ font:600 12px var(--body); color:var(--tq); }
+button:focus-visible, input:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+/* ---- in-game screen mock-ups ---- */
+.hud{ box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-tq); padding:10px; font-family:var(--display); font-size:10px; display:flex; flex-direction:column; gap:8px; margin:0 auto; width:100%; max-width:300px; }
+.top{ display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--h-tq); font-size:11px; }
+.gold{ color:var(--h-gold); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .mut{ color:var(--h-muted); } .ion{ color:var(--h-ion); } .vio{ color:var(--h-vio); }
+.lanes{ display:flex; gap:6px; } .lane{ flex:1; border:2px solid var(--h-dim); padding:4px; display:flex; flex-direction:column; gap:3px; align-items:center; min-width:0; } .lane.go{ border-color:var(--h-tq); }
+.lane .bar{ width:8px; height:46px; background:var(--h-slot); border:1px solid var(--h-dim); position:relative; } .lane .bar i{ position:absolute; left:0; right:0; bottom:0; background:var(--h-tq); }
+.pips{ display:flex; gap:2px; } .pips i{ width:4px; height:4px; background:var(--h-dim); } .pips i.on{ background:var(--h-vio); } .pips i.ion{ background:var(--h-ion); }
+.gauge{ display:flex; gap:8px; align-items:center; } .cells{ display:flex; gap:1px; } .cells i{ width:5px; height:9px; background:var(--h-dim); } .cells i.rf{ background:var(--h-gold); } .cells i.pl{ background:var(--h-ion); }
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .num{ font-variant-numeric:tabular-nums; }
+.hb{ font:inherit; font-size:9px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:2px 6px; } .hb.go{ border-color:var(--h-tq); color:var(--h-tq); }
+.speed{ border:2px solid var(--h-ion); padding:4px 8px; display:flex; justify-content:space-between; }
+.chart{ width:100%; height:auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<section><h1>Factory Plasma Concepts</h1>
+<p class="lede">Where Wave Plasma enters a Shatter Coin Factory slice, and how much faster it presses. A slice is 1 wide, 2 high, 3 long: controller, Frame, Blank Hatch along the bottom; Frame, Press, Power Port along the top; up to three Motivators on top of that. In a joined machine the slices stand side by side, so the only faces that stay free are the back (hatch and port), the front (controller and top Frame) and the top row. Drag any 3D view to turn it; the slider drives every view and screen.</p>
+<div class="card"><h3>Decided (2026-10-10) and built</h3><p><b>B, the Plasma Injector</b>, in a Motivator cell; <b>UI-1</b>, a PLASMA gauge beside the RF gauge; curve <b>x2 at 300 mB/t, x3 at 500</b>, straight lines between, flat above (<code>plasma.injectorRates</code> / <code>plasma.injectorFactors</code>); <b>RF stays required</b>; <b>only slices with their own injector speed up</b>; a cable connects <b>only through the port</b> on the far end. The same block also serves every other BSP machine and other mods' machines. The built look is the Nozzle from the injector mock-ups: bolted foot plate, stepped nozzle and four feed tubes into the machine, glass barrel with the plasma level, bolted cap, port ring.</p></div>
+<div class="card"><div class="ctl"><label>Plasma arriving per slice <input type="range" id="rate" min="0" max="500" step="10" value="300"> <span id="ratev" class="num">100 mB/t</span></label><label>Motivators <input type="range" id="mot" min="0" max="3" step="1" value="0"> <span id="motv" class="num">0</span></label><span class="key" id="note"></span></div></div>
+</section>
+
+<section><h2>1. Where the plasma goes in</h2>
+<p class="lede">Yellow ring = RF socket, blue square = item hatch, ion-blue ring = plasma socket (same colour as the interface and the charger). The plasma cable is drawn where it would really have to sit.</p>
+<div class="grid3" id="blocks"></div>
+</section>
+
+<section><h2>2. The screen</h2>
+<p class="lede">The factory screen today: one lane per slice with a progress bar and Motivator pips, an RF gauge below. Three ways to show the plasma.</p>
+<div class="grid3">
+<div class="card"><h3>UI-1. Second gauge</h3><div class="hud" id="ui1"></div><p>A plasma gauge in ion blue next to the RF gauge, with the arriving rate and the speed it buys. Lanes unchanged. Plainest.</p></div>
+<div class="card"><h3>UI-2. Speed line</h3><div class="hud" id="ui2"></div><p>One SPEED line under the lanes: the combined factor from Motivators, plasma and Overclock, and what each contributes. The gauge only shows the tank.</p></div>
+<div class="card"><h3>UI-3. Pips per lane</h3><div class="hud" id="ui3"></div><p>Each lane gets blue pips under its violet Motivator pips, one per 100 mB/t that lane is getting, so a half-fed machine is visible lane by lane. Busiest.</p></div>
+</div>
+</section>
+
+<section><h2>3. The curve (as decided)</h2>
+<div class="card"><svg class="chart" id="chart" viewBox="0 0 640 260" role="img" aria-label="Press speed against plasma arriving per slice"></svg>
+<p id="curvenote"></p>
+<div class="scroll"><table class="t"><thead><tr><th>Plasma per slice</th><th>Factor (decided curve)</th><th>Copper coin (8 h)</th><th>Illyrium coin (96 h)</th><th>Whole tree, 10 slices, no Motivators</th><th>With 3 Motivators each</th></tr></thead><tbody id="curvetable"></tbody></table></div></div>
+</section>
+
+<section><h2>4. Rules</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Rule</th><th>Proposed</th></tr></thead><tbody>
+<tr><td><b>What arrives counts</b></td><td>The factory is a plasma receiver like a base or a charger: the interface feeds it once a second with what the run delivers. Speed comes from the rate arriving, not from a stored amount, so a cut cable or a stolen totem drops the slice back to normal speed within a second. Chunks must be loaded for plasma to arrive (Anchor); presses still run offline, at the unboosted speed.</td></tr>
+<tr><td><b>Per slice</b></td><td>Decided: only a slice with its own injector speeds up, by what arrives at that injector. Ten slices at full speed want ten injectors and 5,000 mB/t. Nothing is pooled.</td></tr>
+<tr><td><b>Cable</b></td><td>Decided: a cable connects only through the port on the end away from the machine; cables on the sides neither connect nor feed.</td></tr>
+<tr><td><b>Curve</b></td><td>Decided: x2 at 300 mB/t and x3 at 500, straight lines from x1 at 0 through each point, flat after the last (<code>plasma.injectorRates</code> = [300, 500], <code>plasma.injectorFactors</code> = [2.0, 3.0]). One curve for every machine, the factory included.</td></tr>
+<tr><td><b>Stacking</b></td><td>Multiplies with Motivators and Overclock: time = press hours x (1 - Motivator cut) / plasma factor / Overclock. Three Motivators and 200 mB/t make a 96 h Illyrium coin a 24 h one.</td></tr>
+<tr><td><b>Energy</b></td><td>Decided: RF stays required everywhere; plasma only speeds. (Option A's plasma-pays-for-the-press idea was not chosen.)</td></tr>
+<tr><td><b>Screen and Jade</b></td><td>The arriving rate and the factor show on the screen; Jade shows "Plasma 200 mB/t, x2.0" on any block of the slice; the interface's flow view lists the factory like a base.</td></tr>
+</tbody></table></div></div>
+</section>
+
+<section><h2>5. Recipes to confirm</h2>
+<div class="grid3">
+<div class="card"><h3>Not chosen: A. Plasma Port</h3><div class="rec"><div class="rc"><i>Tetrium Plate</i><i>Charged Resonance Crystal</i><i>Tetrium Plate</i><i>Tetrium Core Cable</i><i>Machine Chassis</i><i>Tetrium Core Cable</i><i>Tetrium Plate</i><i>Copper Tetrium Coil</i><i>Tetrium Plate</i></div><span class="arrow">to</span><span class="out">1 x Plasma Port</span></div><p>Swaps in for the Power Port. Priced like a Tank Port plus the coil the Power Port has.</p></div>
+<div class="card"><h3>Chosen: B. Plasma Injector</h3><div class="rec"><div class="rc"><i>Slag Brick</i><i>Charged Resonance Crystal</i><i>Slag Brick</i><i>Tetrium Core Cable</i><i>Illyrium Processor</i><i>Tetrium Core Cable</i><i>Tetrium Plate</i><i>Copper Tetrium Coil</i><i>Tetrium Plate</i></div><span class="arrow">to</span><span class="out">1 x Plasma Injector</span></div><p>Sits in a Motivator cell. Dearer than a Motivator (it needs an Illyrium Processor and a charged crystal) because it is worth more.</p></div>
+<div class="card"><h3>Not chosen: C. Socket on the Frame</h3><p>No new block: the top-front Factory Frame gets the socket. The Frame recipe gains a Charged Resonance Crystal in the middle (it gives 2 today), or stays as it is and only formed slices open the socket. Cheapest for the player.</p></div>
+</div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, COPPER=0xc77a3a, ION=0x4cb2fa, GOLD=0xffd23a, BLUE=0x3a7bd5, VIO=0xb58cff, GLASS=0x9ec5e8, SCREEN=0x19d3b0, CERAMIC=0x8f949e;
+  const HOURS=[8,16,32,64,96], TREE=[13,31,46,57,69], CUT=[0,.15,.30,.50];
+  const state={rate:300, mot:0};
+  const factor=(rate,cap)=>Math.min(3,rate<=300?1+rate/300:2+(rate-300)/200); // decided: x2 at 300, x3 at 500
+  function sync(){ el('ratev').textContent=state.rate+' mB/t'; el('motv').textContent=state.mot; const f=factor(state.rate,2); const cut=CUT[state.mot];
+    el('note').innerHTML='Speed <b>x'+(f/(1-cut)).toFixed(2)+'</b>: plasma x'+f.toFixed(2)+', Motivators cut '+Math.round(cut*100)+'%. Illyrium coin '+(96*(1-cut)/f).toFixed(0)+' h.'; drawUI(); drawChart(); }
+  el('rate').addEventListener('input',e=>{ state.rate=+e.target.value; sync(); }); el('mot').addEventListener('input',e=>{ state.mot=+e.target.value; sync(); });
+  // ---- 3D helpers (16 units = one block). Slice: x 0..16, y 0..32 (+ top row 32..48), z 0..48 with the front (controller) at z 0 and the back at z 48.
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  const liq=()=>new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:.92});
+  function lq(g,f,t){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),liq()); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ring(g,p,axis,R,r,c,glow){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),mat); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  // a cable block along an axis from a to a+16 at the given cross position; returns its plasma mesh
+  function cableZ(g,x,y,z){ for(const [dx,dy] of [[5,5],[5,10.2],[10.2,5],[10.2,10.2]]) bx(g,[x+dx,y+dy,z],[x+dx+.8,y+dy+.8,z+16],HULL2); bx(g,[x+5.4,y+5.4,z],[x+10.6,y+10.6,z+16],GLASS,false,.22); return lq(g,[x+6.3,y+6.3,z+.1],[x+9.7,y+9.7,z+15.9]); }
+  function cableY(g,x,y,z){ for(const [dx,dz] of [[5,5],[5,10.2],[10.2,5],[10.2,10.2]]) bx(g,[x+dx,y,z+dz],[x+dx+.8,y+16,z+dz+.8],HULL2); bx(g,[x+5.4,y,z+5.4],[x+10.6,y+16,z+10.6],GLASS,false,.22); return lq(g,[x+6.3,y+.1,z+6.3],[x+9.7,y+15.9,z+9.7]); }
+  function rfCable(g,x,y,z){ bx(g,[x+5,y+5,z],[x+11,y+11,z+16],0x4a4f5a); bx(g,[x+6,y+6,z],[x+10,y+10,z+16],GOLD,true); }
+  // a hull block with ceramic panel strips
+  function hull(g,f,t,panel){ bx(g,f,t,HULL); if(panel){ bx(g,[f[0]+1,f[1]+2,f[2]+2],[t[0]-1,t[1]-2,f[2]+2.6],CERAMIC); bx(g,[f[0]+1,f[1]+2,t[2]-2.6],[t[0]-1,t[1]-2,t[2]-2],CERAMIC); bx(g,[f[0]+2,f[1]+2,f[2]+1],[f[0]+2.6,t[1]-2,t[2]-1],CERAMIC); bx(g,[t[0]-2.6,f[1]+2,f[2]+1],[t[0]-2,t[1]-2,t[2]-1],CERAMIC); } }
+  // the slice itself; opts: {port:'rf'|'plasma', injector:bool, frameSocket:bool, motivators:n}
+  function slice(g,o){ const parts=[];
+    hull(g,[0,0,0],[16,16,16]); bx(g,[2,3,-.3],[14,13,.2],SCREEN,true);            // controller with its screen on the front
+    bx(g,[3,4,-.6],[13,5,-.2],HULL2); bx(g,[3,6,-.6],[9,7,-.2],HULL2);
+    hull(g,[0,0,16],[16,16,32],true);                                                 // bottom frame
+    hull(g,[0,0,32],[16,16,48],true); bx(g,[4,4,47.6],[12,12,48.6],BLUE,true);      // blank hatch, blue square socket on the back
+    hull(g,[0,16,0],[16,32,16],true);                                                 // top frame (front)
+    if(o.frameSocket){ ring(g,[8,24,-.4],'z',4,.9,ION,true); parts.socket=ring(g,[8,24,-1.2],'z',2.2,.6,ION,true); }
+    hull(g,[0,16,16],[16,32,32]); bx(g,[3,30,19],[13,33,29],TRIM); const head=bx(g,[5,22,20],[11,30,28],CERAMIC); parts.head=head;  // press with a hovering head
+    hull(g,[0,16,32],[16,32,48],true);                                                // power port or plasma port
+    if(o.port==='rf'){ ring(g,[8,24,48.4],'z',4,.9,GOLD,true); rfCable(g,0,16,48); }
+    else { ring(g,[8,24,48.4],'z',4,.9,ION,true); parts.plasma=cableZ(g,0,16,48); }
+    const mots=o.motivators||0; const cells=o.injector?[0,1]:[0,1,2];
+    for(let i=0;i<mots&&i<cells.length;i++){ const z=cells[i]*16; bx(g,[4,32,z+4],[12,34,z+12],HULL2); bx(g,[6,34,z+6],[10,44,z+10],VIO,true,.85); ring(g,[8,40,z+8],'y',3.4,.5,COPPER); }
+    if(o.injector){ const z=32; bx(g,[2,32,z+2],[14,33,z+14],HULL2); for(const [a,b] of [[2.4,2.4],[12.4,2.4],[2.4,12.4],[12.4,12.4]]) bx(g,[a,31.8,z+b],[a+1.2,33.2,z+b+1.2],TRIM);
+      bx(g,[5,32,z+5],[11,34,z+11],HULL); bx(g,[6,33,z+6],[10,35,z+10],MID); for(const [a,b] of [[4,4],[10,4],[4,10],[10,10]]){ bx(g,[a,31.4,z+b],[a+2,36.5,z+b+2],GLASS,false,.3); bx(g,[a-.5,31.4,z+b-.5],[a+2.5,32.4,z+b+2.5],TRIM); bx(g,[a-.4,36,z+b-.4],[a+2.4,36.8,z+b+2.4],TRIM); }
+      bx(g,[3,36.5,z+3],[13,38,z+13],TRIM); for(const [a,b] of [[3,3],[11.8,3],[3,11.8],[11.8,11.8]]) bx(g,[a,38,z+b],[a+1.2,44,z+b+1.2],HULL); bx(g,[4.2,38,z+4.2],[11.8,44,z+11.8],GLASS,false,.28);
+      parts.fill=lq(g,[4.6,38.2,z+4.6],[11.4,43.8,z+11.4],.85); bx(g,[2,44,z+2],[14,46,z+14],HULL2); bx(g,[3,46,z+3],[13,47,z+13],TRIM); ring(g,[8,47.3,z+8],'y',4.6,.7,TRIM); parts.plasma=cableY(g,0,47,z); parts.inj=true; }
+    if(o.frameSocket){ parts.plasma=cableZ(g,0,16,-16); }
+    return parts; }
+  function anim(parts){ return t=>{ const f=factor(state.rate,2); if(parts.head&&!reduce) parts.head.position.y=26+2*Math.sin(t*(1+2*(f-1))); if(parts.plasma) parts.plasma.material.opacity=state.rate>0?.5+.42*state.rate/500:.08;
+      if(parts.fill){ const lvl=state.rate>0?.12+.88*state.rate/500:0; parts.fill.scale.y=Math.max(.001,lvl); parts.fill.position.y=38.2+5.6*lvl/2; parts.fill.material.opacity=state.rate>0?.85:0; } if(parts.socket) parts.socket.material.color.setHex(state.rate>0?ION:0x1e222b); }; }
+  const A=g=>anim(slice(g,{port:'plasma',motivators:2}));
+  const B=g=>anim(slice(g,{port:'rf',injector:true,motivators:2}));
+  const C=g=>anim(slice(g,{port:'rf',frameSocket:true,motivators:2}));
+  // one WebGL context for the page
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,ry:opts.ry||.8,rx:.5,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build,ry] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,Object.assign({},opts,{ry})); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[
+    ['Not chosen: A. Plasma Port (swap-in)','A new back block that takes the Power Port\'s place. Its socket is ion blue; the plasma cable sits behind it where the RF cable would. The slice then runs on plasma instead of RF: plasma pays for each press and speeds it. In a joined machine some slices can keep Power Ports and others take Plasma Ports; both pools are shared. One new block, one new recipe, no change to the slice shape.',A,.6],
+    ['Chosen: B. Plasma Injector (top row)','Built as the Nozzle look. It stands in one of the three Motivator cells with its port on top, so the cable comes down from above (the only face a cable connects to). RF stays as it is. It costs a Motivator cell, so a slice chooses two Motivators plus plasma, or three Motivators and none. Visible from across the base: a blue column pulsing beside the violet ones.',B,2.5],
+    ['Not chosen: C. Socket on the front Frame','No new block. The top-front Factory Frame, whose front face is always free, gets a plasma socket above the controller screen. The cable comes in at the front. Nothing else changes and nothing is given up, but the cable crosses the side the player works from.',C,2.9]],{dist:130,target:[8,22,22]});
+  // ---- screens
+  function lanes(n,withIon){ let h='<div class="lanes">'; for(let i=0;i<n;i++){ const p=[62,30,88][i]; const go=i!==1; h+='<div class="lane'+(go?' go':'')+'"><small class="mut">'+(i+1)+'</small><div class="bar"><i style="height:'+p+'%"></i></div><div class="pips">'+[0,1,2].map(k=>'<i class="'+(k<state.mot?'on':'')+'"></i>').join('')+'</div>'+(withIon?'<div class="pips">'+[0,1,2,3].map(k=>'<i class="'+(k<Math.round(state.rate/100)?'ion':'')+'"></i>').join('')+'</div>':'')+'</div>'; } return h+'</div>'; }
+  function cellsRow(n,cls,lit){ let h='<div class="cells">'; for(let i=0;i<n;i++) h+='<i class="'+(i<lit?cls:'')+'"></i>'; return h+'</div>'; }
+  function drawUI(){ const f=factor(state.rate,2), cut=CUT[state.mot], total=f/(1-cut);
+    const top='<div class="top"><span>SHATTER COIN FACTORY</span><span class="tq">working</span></div>';
+    el('ui1').innerHTML=top+lanes(3,false)+'<div class="gauge"><span class="mut">RF</span>'+cellsRow(12,'rf',9)+'<span class="num">742,000</span></div><div class="gauge"><span class="ion">PLASMA</span>'+cellsRow(12,'pl',Math.round(12*Math.min(1,state.rate/200)))+'<span class="num ion">'+state.rate+' mB/t x'+f.toFixed(1)+'</span></div><div class="row"><button class="hb go">POWER: ON</button><small class="mut">3 slices, '+state.mot*3+' Motivators</small></div>';
+    el('ui2').innerHTML=top+lanes(3,false)+'<div class="speed"><span>SPEED</span><span class="num">x'+total.toFixed(2)+'</span></div><div class="row"><small class="vio">Motivators -'+Math.round(cut*100)+'%</small><small class="ion">Plasma x'+f.toFixed(1)+' ('+state.rate+' mB/t)</small><small class="mut">Overclock x1.0</small></div><div class="gauge"><span class="mut">RF</span>'+cellsRow(12,'rf',9)+'<span class="num">742,000</span></div><div class="row"><button class="hb go">POWER: ON</button></div>';
+    el('ui3').innerHTML=top+lanes(3,true)+'<div class="gauge"><span class="mut">RF</span>'+cellsRow(12,'rf',9)+'<span class="num">742,000</span></div><div class="row"><button class="hb go">POWER: ON</button><small class="ion">plasma '+state.rate+' mB/t per slice</small></div>'; }
+  // ---- curve
+  function drawChart(){ const W=640,H=260,L=50,R=20,T=16,B=36; const sx=r=>L+(W-L-R)*r/500, sy=f=>H-B-(H-T-B)*(f-1)/2.2; let s='';
+    s+='<line x1="'+L+'" y1="'+sy(1)+'" x2="'+(W-R)+'" y2="'+sy(1)+'" stroke="var(--line)"/>';
+    for(const f of [1,1.5,2,2.5,3]) s+='<text x="'+(L-8)+'" y="'+(sy(f)+4)+'" font-size="11" fill="var(--muted)" text-anchor="end">x'+f.toFixed(1)+'</text><line x1="'+L+'" y1="'+sy(f)+'" x2="'+(W-R)+'" y2="'+sy(f)+'" stroke="var(--line)" stroke-dasharray="2 4"/>';
+    for(const r of [0,100,200,300,400,500]) s+='<text x="'+sx(r)+'" y="'+(H-B+16)+'" font-size="11" fill="var(--muted)" text-anchor="middle">'+r+'</text>';
+    s+='<text x="'+((L+W-R)/2)+'" y="'+(H-4)+'" font-size="11" fill="var(--muted)" text-anchor="middle">mB/t arriving per slice</text>';
+    const path=cap=>{ let d=''; for(let r=0;r<=500;r+=10) d+=(r?'L':'M')+sx(r)+' '+sy(factor(r,cap)); return d; };
+    s+='<path d="'+path(3)+'" fill="none" stroke="var(--h-ion)" stroke-width="3"/>';
+    s+='<circle cx="'+sx(state.rate)+'" cy="'+sy(factor(state.rate,2))+'" r="5" fill="var(--h-ion)"/>';
+    s+='<text x="'+(W-R)+'" y="'+(sy(3)-8)+'" font-size="11" fill="var(--h-ion)" text-anchor="end">decided curve, every machine</text>';
+    el('chart').innerHTML=s;
+    el('curvenote').textContent='The decided curve for every machine: x2 at 300 mB/t, x3 at 500, straight lines between, flat above. At the slider\'s '+state.rate+' mB/t a slice with an injector presses at x'+factor(state.rate,2).toFixed(2)+'.';
+    let rows=''; for(const r of [0,100,200,300,400,500]){ const f2=factor(r,2); const tree=TREE.reduce((a,n,i)=>a+n*HOURS[i],0)/10; rows+='<tr><td class="num">'+r+' mB/t</td><td class="num">x'+f2.toFixed(2)+'</td><td class="num">'+(8/f2).toFixed(1)+' h</td><td class="num">'+(96/f2).toFixed(0)+' h</td><td class="num">'+(tree/f2/24).toFixed(1)+' days</td><td class="num">'+(tree/f2/24*.5).toFixed(1)+' days</td></tr>'; }
+    el('curvetable').innerHTML=rows; }
+  sync();
+})();
+</script>
+</body>
+</html>

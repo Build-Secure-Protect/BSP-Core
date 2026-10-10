@@ -74,7 +74,7 @@ R = {
     "illyrium_casing": (4, [" P ", "PCP", " P "], {"P": "tetrium_plate", "C": "machine_chassis"}, "Crafting"),
     "illyrium_glass": (4, ["NGN", "G G", "NGN"], {"N": "tetrium_nugget", "G": "glass"}, "Crafting"),
     "illyrium_core": (1, ["PDP", "DOD", "PDP"], {"P": "tetrium_plate", "D": "diamond", "O": "illyrium_ore"}, "Crafting"),
-    "lava_pylon": (2, ["PLP", "LCL", "PLP"], {"P": "tetrium_plate", "L": "thermal_lining", "C": "machine_chassis"}, "Crafting"),
+    "lava_pylon": (4, ["PLP", "LCL", "PLP"], {"P": "tetrium_plate", "L": "thermal_lining", "C": "machine_chassis"}, "Crafting"),
     "item_hatch": (1, [" H ", "PCP", " P "], {"H": "hopper", "P": "tetrium_plate", "C": "machine_chassis"}, "Crafting"),
     "refinery_pump": (1, ["PMP", "BCB", "PPP"], {"P": "tetrium_plate", "M": "drive_motor", "B": "bucket", "C": "machine_chassis"}, "Crafting"),
     "illyrium_crucible": (1, ["PGP", "LKL", "PCP"], {"P": "tetrium_plate", "G": "glass_pane", "L": "thermal_lining", "K": "crucible_control_circuit", "C": "machine_chassis"}, "Crafting"),

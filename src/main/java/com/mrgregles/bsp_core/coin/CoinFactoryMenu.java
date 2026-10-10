@@ -25,7 +25,7 @@ import java.util.List;
 public class CoinFactoryMenu extends AbstractContainerMenu {
     public static final int WIDTH = 326, LANE_W = 30, BLANK_Y = 31, TRAY_Y = 75, INV_X = 82, INV_Y = 144, BTN_POWER = 0, BTN_DEMO = 1;
     /** Per slice: tier + 1, progress in thousandths, seconds left (two shorts), Motivators, state. */
-    private static final int PER = 6, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
+    private static final int PER = 7, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
 
     @Nullable
     private final CoinFactoryBlockEntity origin;
@@ -97,6 +97,7 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
                         case 2 -> (int) (rem & 0xFFFF);
                         case 3 -> (int) ((rem >>> 16) & 0xFFFF);
                         case 4 -> s.motivators();
+                        case 5 -> s.plasmaRate();
                         default -> s.stateCode();
                     };
                 }
@@ -151,8 +152,13 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
         return data.get(lane * PER + 4);
     }
 
-    public int state(int lane) {
+    /** mB/t of Wave Plasma arriving at the lane's injectors. */
+    public int plasmaRate(int lane) {
         return data.get(lane * PER + 5);
+    }
+
+    public int state(int lane) {
+        return data.get(lane * PER + 6);
     }
 
     private int wide(int lo) {

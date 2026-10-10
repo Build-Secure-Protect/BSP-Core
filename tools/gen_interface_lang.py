@@ -10,7 +10,7 @@ LANG = Path(__file__).resolve().parent.parent / "src/main/resources/assets/bsp_c
 KEYS = {
     "gui.bsp_core.interface.supply": "%s mB/t",
     "gui.bsp_core.interface.supply_from": "from the extractors",
-    "gui.bsp_core.interface.cloak": "The totem makes %s; Cloaking takes %s",
+    "gui.bsp_core.interface.cloak": "The totem makes %s; its powers take %s",
     "gui.bsp_core.interface.reset": "RESET VIEW",
     "gui.bsp_core.interface.zoom": "Zoom %s%%",
     "gui.bsp_core.interface.members": "%s of %s blocks joined",

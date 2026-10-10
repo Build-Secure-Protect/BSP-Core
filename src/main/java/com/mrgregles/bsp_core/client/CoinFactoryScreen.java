@@ -142,14 +142,22 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         Component st = Component.translatable("gui.bsp_core.hud." + state);
         g.drawString(font, st, imageWidth - 10 - font.width(st), 8, state.equals("working") ? TQ & 0xFFFFFF : 0xFF6B5C, false);
 
-        int motivators = 0;
+        int motivators = 0, plasma = 0;
         for (int i = 0; i < n; i++) {
             String num = String.valueOf(i + 1);
             g.drawString(font, num, laneLeft(i) + 14 - font.width(num) / 2, LANE_TOP + 2, MUTED, false);
             motivators += menu.motivators(i);
+            plasma += menu.plasmaRate(i);
         }
 
         g.drawString(font, Component.translatable("gui.bsp_core.hud.rf"), GAUGE_X, GAUGE_Y, MUTED, false);
+        // plasma arriving at the slices' injectors: one cell per 100 mB/t, beside the RF gauge
+        int ION = 0xFF4CB2FA, px = GAUGE_X + 150;
+        g.drawString(font, Component.translatable("gui.bsp_core.factory.plasma_label"), px, GAUGE_Y, plasma > 0 ? ION & 0xFFFFFF : MUTED, false);
+        int lit = Math.min(6, Math.round(plasma / 100f));
+        for (int i = 0; i < 6; i++) {
+            g.fill(px + 42 + i * 9, GAUGE_Y - 1, px + 49 + i * 9, GAUGE_Y + 7, i < lit ? ION : DIM);
+        }
         small(g, Component.translatable("gui.bsp_core.factory.intake", String.format("%,d", menu.intake()), menu.cables()), GAUGE_X + 142, GAUGE_Y + 1, MUTED);
         Component power = Component.translatable("gui.bsp_core.hud.power");
         small(g, power, POWER_X - 4 - Math.round(font.width(power) * 0.75f), POWER_Y + 5, MUTED);
@@ -184,6 +192,10 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         int m = menu.motivators(lane);
         Number cut = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.FACTORY_MOTIVATOR_REDUCTIONS, List.<Number>of()), m, (Number) 0.0);
         tip.add(Component.translatable("gui.bsp_core.factory.motivators", m, Math.round(cut.doubleValue() * 100)));
+        int pr = menu.plasmaRate(lane);
+        if (pr > 0) {
+            tip.add(Component.translatable("gui.bsp_core.factory.plasma", pr, String.format("%.1f", com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(pr))));
+        }
         return tip;
     }
 

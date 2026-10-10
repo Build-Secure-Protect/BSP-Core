@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BRB",
+    "TZT",
+    "PWP"
+  ],
+  "key": {
+    "B": {
+      "item": "bsp_core:slag_brick"
+    },
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_core_cable"
+    },
+    "Z": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "W": {
+      "item": "bsp_core:copper_tetrium_coil"
+    }
+  },
+  "result": {
+    "item": "bsp_core:plasma_injector"
+  }
+}

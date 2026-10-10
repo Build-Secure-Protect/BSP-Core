@@ -1,0 +1,27 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "bsp_core:block/plasma_injector"
+  },
+  "facing=east": {
+   "model": "bsp_core:block/plasma_injector",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "bsp_core:block/plasma_injector",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "bsp_core:block/plasma_injector",
+   "y": 270
+  },
+  "facing=down": {
+   "model": "bsp_core:block/plasma_injector",
+   "x": 90
+  },
+  "facing=up": {
+   "model": "bsp_core:block/plasma_injector",
+   "x": 270
+  }
+ }
+}

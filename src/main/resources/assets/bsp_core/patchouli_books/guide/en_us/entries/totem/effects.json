@@ -20,8 +20,13 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Recall Block$() (Raid, after Shroud, Tier IV): with it on the totem in your offhand while you steal, the owner's Recall offer comes later, on top of Shroud.",
+      "text": "$(l)Recall Block$() (Raid, after Shroud, Tier IV): with it on the totem in your offhand while you steal, the owner's Recall offer comes later, on top of Shroud.$(br2)$(l)Thief's Step$() (Raid, beside Recall Block, Tier IV): your footsteps make no sound, and an Alarm up to the level shown does not see you.$(br2)$(l)Siege$() (Raid, after Thief's Step, Tier V): press its key and for a while Fortify does not slow your mining; then it recharges.",
       "title": "Raid"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Harvest$() (Base, Anchor path after Survey, Tier IV): BSP ores you mine within its reach grow back where they were, one at a time, as long as the totem has plasma to spare for it.",
+      "title": "Harvest"
     }
   ]
 }

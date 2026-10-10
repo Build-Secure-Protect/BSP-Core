@@ -98,6 +98,7 @@
     "bsp_core:tank_casing",
     "bsp_core:tank_port",
     "bsp_core:tank_glass",
-    "bsp_core:tetrium_glass"
+    "bsp_core:tetrium_glass",
+    "bsp_core:plasma_injector"
   ]
 }

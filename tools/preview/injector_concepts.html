@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plasma Injector Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Dark board like the other BSP concept pages. One WebGL context draws every 3D view. Three looks for the Plasma Injector, each against a machine block, with its glow and motion. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --ion:#4cb2fa;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.ctl input[type=range]{ width:200px; accent-color:var(--tq); }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+button:focus-visible, input:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<section><h1>Plasma Injector Looks</h1>
+<p class="lede">Three designs for the block that stands against a machine and feeds it Wave Plasma. Each shows the machine as the dark cube on the left, so you can see which end grips it and which end takes the cable. Drag to turn. The controls drive every view: how much plasma arrives, and whether any arrives at all.</p>
+<div class="card"><div class="ctl"><label>Plasma arriving <input type="range" id="rate" min="0" max="500" step="10" value="300"> <span id="ratev">300 mB/t</span></label><label><input type="checkbox" id="fed" checked> Fed (cable live)</label><span class="key" id="note"></span></div></div>
+</section>
+
+<section><h2>1. The block</h2>
+<p class="lede">All three keep the same footprint as today (a column of 12 x 12 inside the block, 16 long) so the shapes and the six facings stay as built. The machine end is on the left in every view.</p>
+<div class="grid3" id="blocks"></div>
+</section>
+
+<section><h2>2. What moves and what glows</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A. Clamp</th><th>B. Nozzle</th><th>C. Coil Stack</th></tr></thead><tbody>
+<tr><td><b>Machine end</b></td><td>A wide foot plate with four hooked jaws that reach a hair onto the machine's face. Unmistakable grip.</td><td>A stepped nozzle narrowing to a bright tip that touches the machine. Points like an arrow.</td><td>A bolted foot plate; two lit chevrons on each side point at the machine.</td></tr>
+<tr><td><b>Cable end</b></td><td>A thick collar with the port recessed in it and four studs.</td><td>A flat cap with four bolts and the port in the middle.</td><td>A flared collar with an ion ring round the port.</td></tr>
+<tr><td><b>Glow (fed)</b></td><td>Jaw lamps and the two copper rings light ion blue; off they are dark grey.</td><td>The nozzle tip and the barrel's plasma light; off the barrel is empty glass.</td><td>The chevrons and the ring light; off they are dark.</td></tr>
+<tr><td><b>Motion (fed)</b></td><td>The plasma core ripples toward the jaws (like a cable); the rings breathe in and out, faster with more plasma.</td><td>The plasma level in the barrel stands as high as the rate; a plunger ring slides toward the nozzle and back, one stroke a second, faster with more plasma.</td><td>The chevrons light in sequence toward the machine, a chase that quickens with the rate; the core ripples.</td></tr>
+<tr><td><b>Built with</b></td><td>Static model from the generator (plate, jaws, collar, studs); a renderer draws the core, the rings and the lamps.</td><td>Static model (nozzle, cap, bolts); a renderer draws the plasma level, the tip and the plunger.</td><td>Static model (plate, coils, collar); a renderer draws the chevrons, the ring and the core.</td></tr>
+</tbody></table></div></div>
+</section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, COPPER=0xc77a3a, ION=0x4cb2fa, DARK=0x1a2230, GLASS=0x9ec5e8, CERAMIC=0x8f949e, MACHINE=0x23272f;
+  const state={rate:300, fed:true};
+  const factor=r=>r<=300?1+r/300:Math.min(3,2+(r-300)/200);
+  function sync(){ el('ratev').textContent=state.rate+' mB/t'; const on=state.fed&&state.rate>0; el('note').innerHTML=on?'Speed <b>x'+factor(state.rate).toFixed(2)+'</b>':'<b>Idle</b>: nothing arriving, all lamps dark, nothing moves.'; }
+  el('rate').addEventListener('input',e=>{ state.rate=+e.target.value; sync(); }); el('fed').addEventListener('change',e=>{ state.fed=e.target.checked; sync(); });
+  const live=()=>state.fed&&state.rate>0, speed=()=>0.5+state.rate/250;
+  // ---- helpers. The injector points along +z: machine end at z 0 (the machine cube sits at z -16..0), cable end at z 16.
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  const liq=(op)=>new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:op===undefined?.92:op});
+  function lq(g,f,t,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),liq(op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ring(g,p,R,r,c,glow){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,24),mat); m.position.set(...p); g.add(m); return m; }
+  function machine(g){ bx(g,[0,0,-16],[16,16,0],MACHINE); for(const [x,y] of [[1,1],[13,1],[1,13],[13,13]]) bx(g,[x,y,-16.2],[x+2,y+2,-15.8],TRIM); bx(g,[2,2,-16.4],[14,14,-16.1],HULL2); }
+  function cableIn(g){ for(const [x,y] of [[5,5],[5,10.2],[10.2,5],[10.2,10.2]]) bx(g,[x,y,16],[x+.8,y+.8,32],HULL2); bx(g,[5.4,5.4,16],[10.6,10.6,32],GLASS,false,.22); return lq(g,[6.3,6.3,16.1],[9.7,9.7,31.9]); }
+  const lampCol=(m,on)=>m.material.color.setHex(on?ION:DARK);
+  // ---- A. Clamp: foot plate, four hooked jaws onto the machine face, hull body with two copper rings, glass window on a plasma core, thick collar with a recessed port
+  function clamp(g){ machine(g); const cab=cableIn(g); bx(g,[1,1,0],[15,15,1.6],HULL2); const lamps=[];
+    for(const [x,y] of [[1,1],[12,1],[1,12],[12,12]]){ bx(g,[x,y,-1],[x+3,y+3,1.6],TRIM); lamps.push(bx(g,[x+.8,y+.8,-1.3],[x+2.2,y+2.2,-.9],DARK,true)); }
+    bx(g,[3,3,1.6],[13,13,13],HULL); bx(g,[2.4,4.5,1.6],[13.6,11.5,13],GLASS,false,.25); bx(g,[4.5,2.4,1.6],[11.5,13.6,13],GLASS,false,.25); const core=lq(g,[5,5,1.8],[11,11,12.8]);
+    const rings=[]; for(const z of [4.5,9.5]){ const r=ring(g,[8,8,z],6.2,.7,COPPER); rings.push(r); }
+    bx(g,[2,2,13],[14,14,16],HULL2); for(const [x,y] of [[3,3],[11,3],[3,11],[11,11]]) bx(g,[x,y,15.6],[x+2,y+2,16.4],TRIM); bx(g,[5,5,15.2],[11,11,16.3],MID); const port=lq(g,[5.6,5.6,15.4],[10.4,10.4,16.4]);
+    return t=>{ const on=live(); core.material.opacity=on?.6+.35*Math.abs(Math.sin(t*3*speed())):.08; cab.material.opacity=on?.9:.08; port.material.opacity=on?.9:.15; lamps.forEach(l=>lampCol(l,on));
+      rings.forEach((r,i)=>{ const s=on?1+.06*Math.sin(t*4*speed()+i*1.5):1; r.scale.set(s,s,1); r.material.color.setHex(on?0xe0923f:COPPER); }); }; }
+  // ---- B. Nozzle: stepped nozzle to a bright tip on the machine, glass barrel with a plasma level, a plunger ring that strokes toward the nozzle, bolted cap with the port
+  function nozzle(g){ machine(g); const cab=cableIn(g); bx(g,[2,2,0],[14,14,1.2],HULL2); bx(g,[4,4,0],[12,12,2],HULL); bx(g,[6,6,0],[10,10,3],MID); const tip=bx(g,[7,7,-.6],[9,9,1],DARK,true);
+    bx(g,[3,3,3],[13,13,4],TRIM); for(const [x,y] of [[3,3],[12,3],[3,12],[12,12]]) bx(g,[x,y,4],[x+1,y+1,13],HULL); bx(g,[4,4,4],[12,12,13],GLASS,false,.28);
+    const fill=lq(g,[4.4,4.4,4.2],[11.6,11.6,12.8]); const plunger=ring(g,[8,8,12],5.4,.6,TRIM); const rod=bx(g,[7.4,7.4,12],[8.6,8.6,14],TRIM);
+    bx(g,[2,2,13],[14,14,16],HULL2); bx(g,[3,3,16],[13,13,16.4],HULL); for(const [x,y] of [[3.5,3.5],[11,3.5],[3.5,11],[11,11]]) bx(g,[x,y,16],[x+1.5,y+1.5,16.6],TRIM); const port=lq(g,[5.6,5.6,15.6],[10.4,10.4,16.5]);
+    return t=>{ const on=live(); const lvl=on?.15+.85*state.rate/500:0; fill.scale.z=Math.max(.001,lvl); fill.position.z=4.2+8.6*lvl/2; fill.material.opacity=on?.85:0;
+      const s=on?(.5+.5*Math.sin(t*2*Math.PI*speed()/1.5)):1; plunger.position.z=4.5+7.5*s; rod.position.z=plunger.position.z+1; lampCol(tip,on); cab.material.opacity=on?.9:.08; port.material.opacity=on?.9:.15; }; }
+  // ---- C. Coil Stack: bolted foot plate, five copper coil rings round a plasma core, chevrons on four sides that chase toward the machine, flared collar with an ion ring
+  function coilStack(g){ machine(g); const cab=cableIn(g); bx(g,[1.5,1.5,0],[14.5,14.5,1.5],HULL2); for(const [x,y] of [[2.5,2.5],[12,2.5],[2.5,12],[12,12]]) bx(g,[x,y,-.4],[x+1.5,y+1.5,1.5],TRIM);
+    bx(g,[5,5,1.5],[11,11,13],HULL); const core=lq(g,[5.6,5.6,1.6],[10.4,10.4,12.9]); for(let i=0;i<5;i++) ring(g,[8,8,2.8+i*2.2],5.2,.75,COPPER);
+    const chev=[]; for(let i=0;i<3;i++){ const z=3.5+i*3.2; for(const side of [[13.2,8],[2.8,8],[8,13.2],[8,2.8]]){ const horiz=side[1]===8; const f=horiz?[side[0]-.5,6.5,z]:[6.5,side[1]-.5,z]; const tt=horiz?[side[0]+.5,9.5,z+1.2]:[9.5,side[1]+.5,z+1.2]; chev.push({m:bx(g,f,tt,DARK,true),i}); } }
+    bx(g,[3,3,13],[13,13,14.5],HULL2); bx(g,[2,2,14.5],[14,14,16],HULL2); const ion=ring(g,[8,8,16.1],4.2,.5,DARK,true); const port=lq(g,[5.6,5.6,15.4],[10.4,10.4,16.4]);
+    return t=>{ const on=live(); core.material.opacity=on?.6+.35*Math.abs(Math.sin(t*3*speed())):.08; const step=on?Math.floor(t*2.5*speed())%3:-1; chev.forEach(c=>lampCol(c.m,on&&(2-c.i)===step)); lampCol(ion,on); cab.material.opacity=on?.9:.08; port.material.opacity=on?.9:.15; }; }
+  // ---- one WebGL context
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,ry:2.2,rx:.45,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Clamp','Four hooked jaws on a foot plate grip the machine; the body is a hull block with glass windows on a plasma core and two copper rings; a thick collar with a recessed port takes the cable. Fed: jaw lamps and rings light, the core ripples toward the jaws, the rings breathe.',clamp],
+    ['B. Nozzle','A stepped nozzle with a bright tip touches the machine, so the block points like an arrow. A glass barrel shows the plasma standing as high as the rate; a plunger ring strokes toward the nozzle. A bolted cap with the port takes the cable.',nozzle],
+    ['C. Coil Stack','A bolted foot plate, five copper coils round a plasma core, chevrons on every side pointing at the machine, a flared collar with an ion ring round the port. Fed: the chevrons chase toward the machine, the ring and core light.',coilStack]],{dist:62,target:[8,8,6]});
+  sync();
+})();
+</script>
+</body>
+</html>

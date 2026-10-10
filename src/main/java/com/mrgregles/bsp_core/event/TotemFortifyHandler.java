@@ -23,7 +23,7 @@ public final class TotemFortifyHandler {
             return;
         }
         int lvl = TotemAuras.fortifyLevelAt(level, event.getPosition().get(), player.getUUID());
-        if (lvl > 0) {
+        if (lvl > 0 && !com.mrgregles.bsp_core.totem.Siege.active(player)) { // Siege: the raider mines at full speed for a while
             event.setNewSpeed((float) (event.getNewSpeed() * TotemAuras.breakSpeedMultiplier(lvl)));
         }
     }

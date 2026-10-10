@@ -240,6 +240,16 @@ KEYS.update({
     "gui.bsp_core.wrench.hint.link": "Right-click: link it to the other colour",
     "jade.bsp_core.cable_ends": "Ends: %s",
     "tooltip.bsp_core.cable.ends": "Keeps its wrench-set ends when placed",
+    # Plasma Injector (2026-10-10)
+    "block.bsp_core.plasma_injector": "Plasma Injector",
+    "tooltip.bsp_core.injector": "Place it against a machine and run a plasma cable into the port on its far end: the machine runs faster the more arrives. On a factory slice it stands in a Motivator cell and speeds that slice.",
+    "tooltip.bsp_core.injector.curve": "Up to x%2$s at %1$s mB/t",
+    "jade.bsp_core.injector": "Injecting %s mB/t: x%s speed",
+    "jade.bsp_core.injector_idle": "No plasma arriving",
+    "jade.bsp_core.boost": "Plasma %s mB/t: x%s speed",
+    "gui.bsp_core.factory.plasma_label": "PLASMA",
+    "gui.bsp_core.factory.plasma": "Plasma: %s mB/t (x%s press speed)",
+    "jei.bsp_core.info.injector": "Place it against a machine: the end with the nozzle and the four feed tubes grips the block you click, and a plasma cable plugs into the port on the far end, the only face a cable connects to. The machine runs faster the more plasma arrives, twice as fast at 300 mB/t and three times at 500; only plasma arriving counts. On a Shatter Coin Factory it stands in a Motivator cell and speeds that slice, on top of its Motivators. It works on every BSP-Core machine and on most machines from other mods.",
 })
 
 lang = json.loads(LANG.read_text())

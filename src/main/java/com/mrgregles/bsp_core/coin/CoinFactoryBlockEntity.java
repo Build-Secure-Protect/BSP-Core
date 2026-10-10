@@ -93,6 +93,9 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     private double overclock = 1.0;
     /** Bit i set = a Motivator sits on top cell i (0 = front). */
     private int motivatorMask;
+    /** mB/t of Wave Plasma arriving at the Plasma Injectors in this slice's top cells, and the speed factor it gives. */
+    private int plasmaRate;
+    private double plasma = 1.0;
 
     /** Tier being pressed, or -1 when idle. */
     private int jobTier = -1;
@@ -187,6 +190,15 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         return Integer.bitCount(motivatorMask);
     }
 
+    /** mB/t of Wave Plasma arriving at this slice's injectors, and the press speed factor it gives. */
+    public int plasmaRate() {
+        return plasmaRate;
+    }
+
+    public double plasmaFactor() {
+        return plasma;
+    }
+
     public boolean hasCoins() {
         return !items.getStackInSlot(SLOT_OUTPUT).isEmpty();
     }
@@ -204,7 +216,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     }
 
     private double speed() {
-        return overclock / (1.0 - totalReduction());
+        return overclock * plasma / (1.0 - totalReduction());
     }
 
     /** Real seconds until the current press finishes, or 0 when idle. */
@@ -288,6 +300,16 @@ public class CoinFactoryBlockEntity extends BlockEntity {
                 }
             }
         }
+        int rate = 0;
+        if (ok) {
+            for (int i = 0; i < MOTIVATOR_CELLS; i++) {
+                BlockPos c = motivatorPos(i);
+                if (level.getBlockEntity(c) instanceof com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity injector && injector.target().equals(c.below())) {
+                    rate += injector.rate();
+                }
+            }
+        }
+        plasmaRate = rate;
         showParts(!ok);
         if (ok) {
             for (Part part : parts()) {
@@ -461,6 +483,12 @@ public class CoinFactoryBlockEntity extends BlockEntity {
             advance(System.currentTimeMillis()); // settle progress at the old speed first
             overclock = aura;
         }
+        double boost = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(plasmaRate);
+        if (boost != plasma) {
+            advance(System.currentTimeMillis()); // settle progress at the old speed first
+            plasma = boost;
+            setChanged();
+        }
         boolean signal = level.hasNeighborSignal(worldPosition);
         if (signal != powered) {
             advance(System.currentTimeMillis()); // settle progress under the old state before pausing or resuming
@@ -551,6 +579,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         tag.putBoolean("Powered", powered);
         tag.putBoolean("Demo", demo);
         tag.putInt("Motivators", motivatorMask);
+        tag.putDouble("Plasma", plasma);
         tag.putInt("JobTier", jobTier);
         tag.putDouble("ProgressMs", progressMs);
         tag.putLong("LastUpdateMs", lastUpdateMs);
@@ -572,6 +601,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         powered = tag.getBoolean("Powered");
         demo = tag.getBoolean("Demo");
         motivatorMask = tag.getInt("Motivators");
+        plasma = tag.contains("Plasma") ? tag.getDouble("Plasma") : 1.0;
         jobTier = tag.contains("JobTier") ? tag.getInt("JobTier") : -1;
         progressMs = tag.getDouble("ProgressMs");
         lastUpdateMs = tag.getLong("LastUpdateMs");

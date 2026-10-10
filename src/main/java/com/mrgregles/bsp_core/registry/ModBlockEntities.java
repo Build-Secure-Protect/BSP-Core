@@ -119,6 +119,10 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.BatteryChargerBlockEntity>> BATTERY_CHARGER =
             BLOCK_ENTITIES.register("battery_charger", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.BatteryChargerBlockEntity::new, ModBlocks.BATTERY_CHARGER.get()).build(null));
+    @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity>> PLASMA_INJECTOR =
+            BLOCK_ENTITIES.register("plasma_injector", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity::new, ModBlocks.PLASMA_INJECTOR.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity>> TOTEM_PROJECTOR =

@@ -71,7 +71,13 @@ public final class TotemUpgrades {
         /** Base: the owner may teleport back near the totem when it is being stolen. */
         RECALL("recall", Branch.BASE, 4, "overclock", 3, false),
         /** Raid: delays the owner's Recall offer. */
-        RECALL_BLOCK("recall_block", Branch.RAID, 3, "shroud", 4, false);
+        RECALL_BLOCK("recall_block", Branch.RAID, 3, "shroud", 4, false),
+        /** Raid, carried: no footsteps, and Alarm up to a level does not see you. */
+        THIEF_STEP("thief_step", Branch.RAID, 3, "shroud", 4, false),
+        /** Raid, carried: for a while, Fortify does not slow your mining. A key, like X-ray. */
+        SIEGE("siege", Branch.RAID, 4, "thief_step", 4, false),
+        /** Base: BSP ores mined near the totem grow back, fed by plasma. */
+        HARVEST("harvest", Branch.BASE, 3, "survey", 5, false);
 
         public final String key;
         private final Branch branch;
@@ -119,7 +125,7 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
-            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
+            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */
@@ -149,6 +155,7 @@ public final class TotemUpgrades {
                 case ALARM -> BSPConfig.levelValue(BSPConfig.ALARM_RADIUS.get(), level, 0);
                 case SANCTUARY -> BSPConfig.levelValue(BSPConfig.SANCTUARY_RADIUS.get(), level, 0);
                 case OVERCLOCK -> BSPConfig.levelValue(BSPConfig.OVERCLOCK_RADIUS.get(), level, 0);
+                case HARVEST -> BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_RADIUS, List.<Integer>of()), level, 8);
                 default -> 0;
             };
         }
@@ -190,8 +197,15 @@ public final class TotemUpgrades {
             case BASE -> BSPConfig.BASE_LEVEL_XP;
             case RAID -> BSPConfig.RAID_LEVEL_XP;
         };
-        return new Price(CoinTier.values()[tier], pick(coins, step, 1), pick(xp, step, 1) * (tier + 1), tier);
+        int xpLevels = pick(xp, step, 1) * (tier + 1);
+        if (CHEAP.contains(buff)) {
+            xpLevels = Math.max(1, (xpLevels + 1) / 2); // the pack gives these cheaply elsewhere: half the XP, they are gates, not prizes
+        }
+        return new Price(CoinTier.values()[tier], pick(coins, step, 1), xpLevels, tier);
     }
+
+    /** Carried powers the modpack's other mods also give cheaply (beacons, potions, jetpacks, suits): kept as steps on the path at half the XP. */
+    public static final java.util.Set<Buff> CHEAP = java.util.EnumSet.of(Buff.MINING_SPEED, Buff.SWIFTNESS, Buff.FEATHERFALL, Buff.NIGHT_SIGHT);
 
     /** Price of raising a totem from {@code tier} to the next, or null at the top tier. */
     @Nullable

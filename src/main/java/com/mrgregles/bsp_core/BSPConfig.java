@@ -103,12 +103,20 @@ public final class BSPConfig {
             CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING, CENT_MAGNETISE_TICKS, CENT_MAGNETISE_TICKS_FULL,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
             PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX, INTERFACE_SIDE_MAX, TANK_PER_BLOCK, TANK_MAX;
+    /** Plasma Injector: the speed curve (mB/t points and the factor at each), and whether other mods' machines may be ticked extra. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> INJECTOR_RATES;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> INJECTOR_FACTORS;
+    public static final ForgeConfigSpec.BooleanValue INJECTOR_FOREIGN;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> INJECTOR_BLACKLIST;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CABLE_REACH, CABLE_THROUGHPUT, PLASMA_OUTPUT, BATTERY_CAPACITY, BATTERY_POWERS, CELL_CAPACITY, CELL_POWERS;
     public static final ForgeConfigSpec.DoubleValue REPEATER_PRESSURE;
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
+    /** Thief's Step, Siege and Harvest (the 1.0 buffs), by level. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> THIEF_STEP_ALARM, SIEGE_SECONDS, SIEGE_RECHARGE, HARVEST_RADIUS, HARVEST_SECONDS;
+    public static final ForgeConfigSpec.IntValue HARVEST_DRAW;
     public static final ForgeConfigSpec.IntValue CLOAK_DRAW, CLOAK_FADE_SECONDS, CLOAK_FADE_OUT_SECONDS, RECALL_PROMPT_SECONDS, RECALL_COOLDOWN_MINUTES;
     public static final ForgeConfigSpec.IntValue CHUNKS_MAX_PER_PLAYER;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
@@ -170,7 +178,7 @@ public final class BSPConfig {
         BUILDER.pop();
 
         BUILDER.comment("Carried upgrades (work while the totem is in the offhand).").push("carried");
-        DAMAGE_PER_LEVEL = BUILDER.comment("Damage: attack damage added per level (10 levels).").defineInRange("damagePerLevel", 0.5, 0.0, 100.0);
+        DAMAGE_PER_LEVEL = BUILDER.comment("Damage: attack damage added per level (10 levels).").defineInRange("damagePerLevel", 0.8, 0.0, 100.0);
         RESISTANCE_PER_LEVEL = BUILDER.comment("Resistance: share of incoming damage removed per level (8 levels).").defineInRange("resistancePerLevel", 0.03, 0.0, 0.12);
         MINING_SPEED_PER_LEVEL = BUILDER.comment("Mining Speed: mining speed added per level, as a fraction (10 levels).").defineInRange("miningSpeedPerLevel", 0.10, 0.0, 10.0);
         SWIFTNESS_BONUS = BUILDER.comment("Swiftness: movement speed added, as a fraction, per level (8 levels).")
@@ -255,7 +263,7 @@ public final class BSPConfig {
         BUILDER.comment("Shatter Coin Factory").push("factory");
         FACTORY_PRESS_HOURS = BUILDER.comment("Real-time hours to press one Copper, Gold, Diamond, Netherite, Illyrium coin without upgrades.",
                         "Time keeps running while the chunk is unloaded or the server is off.")
-                .defineList("pressHours", List.of(12.0, 24.0, 48.0, 96.0, 168.0), o -> o instanceof Number n && n.doubleValue() > 0);
+                .defineList("pressHours", List.of(8.0, 16.0, 32.0, 64.0, 96.0), o -> o instanceof Number n && n.doubleValue() > 0);
         FACTORY_ENERGY_PER_COIN = BUILDER.comment("Forge Energy (RF) used per coin, taken when a press starts.")
                 .defineList("energyPerCoin", List.of(50_000, 100_000, 200_000, 400_000, 800_000), o -> o instanceof Integer i && i >= 0);
         FACTORY_ENERGY_CAPACITY = BUILDER.comment("Energy each slice adds to the machine's shared buffer.")
@@ -280,7 +288,7 @@ public final class BSPConfig {
         BUILDER.comment("Tetrium Crucible").push("tetrium_crucible");
         TCRUC_NUGGETS = BUILDER.comment("Tetrium Nuggets from one ore.").defineInRange("nuggetsPerOre", 2, 0, 64);
         TCRUC_SLAG = BUILDER.comment("Tetrium Slag from one ore.").defineInRange("slagPerOre", 1, 0, 64);
-        TCRUC_TICKS = BUILDER.comment("Ticks to process one ore (20 ticks = 1 second).").defineInRange("ticksPerOre", 400, 1, 1_000_000);
+        TCRUC_TICKS = BUILDER.comment("Ticks to process one ore (20 ticks = 1 second).").defineInRange("ticksPerOre", 300, 1, 1_000_000);
         BUILDER.pop();
 
         BUILDER.comment("Combination Forge").push("combination_forge");
@@ -291,11 +299,11 @@ public final class BSPConfig {
         BUILDER.comment("Illyrium Crucible (multiblock). Runs on lava only.").push("illyrium_crucible");
         ICRUC_ORE_IN = BUILDER.comment("Smelting: Illyrium Ore per Dirty Illyrium Ingot.").defineInRange("smeltOre", 1, 1, 64);
         ICRUC_SLAG_IN = BUILDER.comment("Smelting: Tetrium Slag per Dirty Illyrium Ingot.").defineInRange("smeltSlag", 2, 0, 64);
-        ICRUC_SMELT_TICKS = BUILDER.comment("Smelting: ticks per Dirty Illyrium Ingot.").defineInRange("smeltTicks", 1200, 1, 1_000_000);
+        ICRUC_SMELT_TICKS = BUILDER.comment("Smelting: ticks per Dirty Illyrium Ingot.").defineInRange("smeltTicks", 800, 1, 1_000_000);
         ICRUC_PURE_IN = BUILDER.comment("Alloying: Pure Illyrium Dust per job.").defineInRange("alloyPureDust", 1, 1, 64);
         ICRUC_TDUST_IN = BUILDER.comment("Alloying: Tetrium Dust per job.").defineInRange("alloyTetriumDust", 1, 0, 64);
         ICRUC_NUGGETS_OUT = BUILDER.comment("Alloying: Illyrium Nuggets per job.").defineInRange("alloyNuggets", 1, 1, 64);
-        ICRUC_ALLOY_TICKS = BUILDER.comment("Alloying: ticks per job.").defineInRange("alloyTicks", 1800, 1, 1_000_000);
+        ICRUC_ALLOY_TICKS = BUILDER.comment("Alloying: ticks per job.").defineInRange("alloyTicks", 1200, 1, 1_000_000);
         ICRUC_LAVA_PER_JOB = BUILDER.comment("Lava used per job, in millibuckets.").defineInRange("lavaPerJob", 250, 0, 100_000);
         ICRUC_LAVA_PER_MAGMA = BUILDER.comment("Lava a Magma Block is worth, in millibuckets.").defineInRange("lavaPerMagmaBlock", 250, 1, 100_000);
         ICRUC_TANK = BUILDER.comment("Lava tank size in millibuckets.").defineInRange("lavaTank", 8000, 1000, 1_000_000);
@@ -303,16 +311,16 @@ public final class BSPConfig {
 
         BUILDER.comment("Illyrium Refinery").push("refinery");
         REFINERY_WATER = BUILDER.comment("Water per Pure Illyrium Dust, in millibuckets.").defineInRange("waterPerDust", 500, 0, 100_000);
-        REFINERY_TICKS = BUILDER.comment("Ticks per Pure Illyrium Dust.").defineInRange("ticksPerDust", 2400, 1, 1_000_000);
+        REFINERY_TICKS = BUILDER.comment("Ticks per Pure Illyrium Dust.").defineInRange("ticksPerDust", 1800, 1, 1_000_000);
         REFINERY_TANK = BUILDER.comment("Water tank size in millibuckets.").defineInRange("waterTank", 8000, 1000, 1_000_000);
         FILTER_USES = BUILDER.comment("Pure Illyrium Dust a filter can refine before it is used up: Iron, Diamond, Netherite, Illyrium.")
-                .defineList("filterUses", List.of(1, 20, 100, 1000), BSPConfig::isPositiveInt);
+                .defineList("filterUses", List.of(5, 20, 100, 1000), BSPConfig::isPositiveInt);
         BUILDER.pop();
 
         BUILDER.comment("Crushing an ingot with a pickaxe on a crafting table, for packs without a crusher").push("hand_crushing");
         CRUSH_TETRIUM_CHANCE = BUILDER.comment("Chance a Tetrium Ingot becomes Tetrium Dust.").defineInRange("tetriumDustChance", 1.0 / 3.0, 0.0, 1.0);
         CRUSH_TETRIUM_NUGGETS = BUILDER.comment("Tetrium Nuggets returned when it does not.").defineInRange("tetriumNuggetsOnFail", 3, 0, 64);
-        CRUSH_DIRTY_CHANCE = BUILDER.comment("Chance a Dirty Illyrium Ingot becomes Dirty Illyrium Dust.").defineInRange("dirtyIllyriumDustChance", 1.0 / 6.0, 0.0, 1.0);
+        CRUSH_DIRTY_CHANCE = BUILDER.comment("Chance a Dirty Illyrium Ingot becomes Dirty Illyrium Dust.").defineInRange("dirtyIllyriumDustChance", 0.25, 0.0, 1.0);
         CRUSH_DIRTY_NUGGETS = BUILDER.comment("Dirty Illyrium Nuggets returned when it does not. Nine craft back into a Dirty Illyrium Ingot.")
                 .defineInRange("dirtyIllyriumNuggetsOnFail", 3, 0, 64);
         BUILDER.pop();
@@ -339,10 +347,10 @@ public final class BSPConfig {
         BUILDER.pop();
 
         BUILDER.comment("The Magnetic Centrifuge. Lists have one entry for each number of stacked layers, 1 to 6.").push("centrifuge");
-        CENT_SEPARATE_TICKS = BUILDER.comment("Ticks to separate one Magnatite Ore (20 ticks = 1 second).").defineInRange("separateTicks", 900, 1, 1_000_000);
+        CENT_SEPARATE_TICKS = BUILDER.comment("Ticks to separate one Magnatite Ore (20 ticks = 1 second).").defineInRange("separateTicks", 600, 1, 1_000_000);
         CENT_NUGGETS_MIN = BUILDER.comment("Fewest Magnatite Nuggets from one ore, by layers.").defineList("nuggetsMin", List.of(3, 3, 4, 5, 6, 7), BSPConfig::isPositiveInt);
         CENT_NUGGETS_MAX = BUILDER.comment("Most Magnatite Nuggets from one ore, by layers.").defineList("nuggetsMax", List.of(3, 4, 5, 6, 7, 9), BSPConfig::isPositiveInt);
-        CENT_CHARGE_TICKS = BUILDER.comment("Ticks for one try at charging a Magnatite Ingot.").defineInRange("chargeTicks", 900, 1, 1_000_000);
+        CENT_CHARGE_TICKS = BUILDER.comment("Ticks for one try at charging a Magnatite Ingot.").defineInRange("chargeTicks", 600, 1, 1_000_000);
         CENT_CHARGE_TICKS_FULL = BUILDER.comment("Ticks for one try with all six layers.").defineInRange("chargeTicksFullStack", 500, 1, 1_000_000);
         CENT_CHARGE_ODDS = BUILDER.comment("A try succeeds one time in this many, by layers.").defineList("chargeOdds", List.of(6, 5, 4, 3, 2, 2), BSPConfig::isPositiveInt);
         CENT_RF_SEPARATING = BUILDER.comment("RF per tick, per layer, while separating ore.").defineInRange("rfPerTickSeparating", 60, 0, 1_000_000);
@@ -392,6 +400,14 @@ public final class BSPConfig {
         TANK_MAX = BUILDER.comment("Longest side of a Plasma Tank, in blocks (the shortest is 3).").defineInRange("tankMax", 12, 3, 32);
         INTERFACE_SIDE_MAX = BUILDER.comment("Most mB per tick one face of a Plasma Interface sends into the run leaving it. More output needs more faces, so a big totem needs a bigger interface group.")
                 .defineInRange("interfaceSideMax", 1000, 10, 1_000_000);
+        INJECTOR_RATES = BUILDER.comment("Plasma Injector speed curve: mB/t arriving at the injector, one point per entry, rising. The factor climbs in a straight line from x1 at 0 through each point and stays flat after the last.")
+                .defineList("injectorRates", List.of(300, 500), BSPConfig::isPositiveInt);
+        INJECTOR_FACTORS = BUILDER.comment("Speed factor of the machine at each of those points (2.0 = twice as fast).")
+                .defineList("injectorFactors", List.of(2.0, 3.0), o -> o instanceof Number n && n.doubleValue() >= 1.0);
+        INJECTOR_FOREIGN = BUILDER.comment("Whether an injector may speed up machines from other mods, by ticking them extra. BSP-Core's own machines are always sped up.")
+                .define("injectorForeign", true);
+        INJECTOR_BLACKLIST = BUILDER.comment("Blocks an injector must not tick extra (registry names, e.g. \"mekanism:digital_miner\").")
+                .defineListAllowEmpty(List.of("injectorBlacklist"), List::of, o -> o instanceof String);
         BUILDER.pop();
 
         BUILDER.comment("The Coin Vault: a safe for Shatter Coins. Vault blocks of one owner that touch join into one vault of up to 3 x 3 x 3.").push("vault");
@@ -480,6 +496,12 @@ public final class BSPConfig {
                 .defineList("recallRadius", List.of(150, 120, 100, 80, 60, 40, 20), BSPConfig::isPositiveInt);
         RECALL_PROMPT_SECONDS = BUILDER.comment("Seconds the Recall offer stays open.").defineInRange("recallPromptSeconds", 20, 3, 300);
         RECALL_COOLDOWN_MINUTES = BUILDER.comment("Minutes Recall rests after a use.").defineInRange("recallCooldownMinutes", 10, 0, 1440);
+        THIEF_STEP_ALARM = BUILDER.comment("Thief's Step: an Alarm of this level or lower does not see or outline the carrier, by level. Footsteps are silent from level 1.").defineList("thiefStepHidesFromAlarm", List.of(2, 4, 6, 8), BSPConfig::isPositiveInt);
+        SIEGE_SECONDS = BUILDER.comment("Siege: seconds Fortify stops slowing the carrier's mining after the key is pressed, by level.").defineList("siegeSeconds", List.of(8, 12, 16, 20), BSPConfig::isPositiveInt);
+        SIEGE_RECHARGE = BUILDER.comment("Siege: seconds before it may be used again, by level.").defineList("siegeRecharge", List.of(180, 150, 120, 90), BSPConfig::isPositiveInt);
+        HARVEST_RADIUS = BUILDER.comment("Harvest: BSP ores mined within this many blocks of the totem grow back, by level.").defineList("harvestRadius", List.of(8, 12, 16, 24), BSPConfig::isPositiveInt);
+        HARVEST_SECONDS = BUILDER.comment("Harvest: seconds between one ore growing back and the next, by level.").defineList("harvestSeconds", List.of(120, 90, 60, 30), BSPConfig::isPositiveInt);
+        HARVEST_DRAW = BUILDER.comment("mB per tick of the totem's Wave Plasma output Harvest uses while ores are waiting to grow back.").defineInRange("harvestDraw", 25, 0, 100_000);
         RECALL_BLOCK_SECONDS = BUILDER.comment("Seconds a thief's Recall Block delays the owner's Recall offer, by level, on top of Shroud.").defineList("recallBlockSeconds", List.of(10, 20, 30, 45), BSPConfig::isPositiveInt);
         BUILDER.pop();
 

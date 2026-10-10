@@ -127,6 +127,18 @@ public final class TotemAuras {
         return best;
     }
 
+    /** Every loaded placed totem whose reach for {@code buff} covers {@code pos}. */
+    public static java.util.List<ShatterTotemBlockEntity> totemsCovering(ServerLevel level, BlockPos pos, TotemUpgrades.Buff buff) {
+        java.util.List<ShatterTotemBlockEntity> out = new java.util.ArrayList<>();
+        for (ShatterTotemBlockEntity totem : LOADED.getOrDefault(level.dimension(), Map.of()).values()) {
+            int lvl = totem.isRemoved() ? 0 : totem.getUpgradeLevel(buff);
+            if (lvl > 0 && inCube(pos, totem.getBlockPos(), buff.reach(lvl))) {
+                out.add(totem);
+            }
+        }
+        return out;
+    }
+
     /** Speed multiplier for a BSP-Core machine at {@code pos} from any Overclock aura covering it; 1.0 if none. */
     public static double overclock(ServerLevel level, BlockPos pos) {
         int lvl = levelInReach(level, pos, TotemUpgrades.Buff.OVERCLOCK);

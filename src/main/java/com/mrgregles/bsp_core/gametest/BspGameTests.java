@@ -253,6 +253,33 @@ public class BspGameTests {
         h.succeed();
     }
 
+    // ------------------------------------------------------------------ the 1.0 buffs
+
+    @GameTest(template = EMPTY)
+    public void cheap_carried_buffs_cost_half_the_xp(GameTestHelper h) {
+        // Damage and Mining Speed both start at tier I, so their unhalved XP is the same figure
+        var damage = TotemUpgrades.price(TotemUpgrades.Buff.DAMAGE, 0);
+        var mining = TotemUpgrades.price(TotemUpgrades.Buff.MINING_SPEED, 0);
+        h.assertTrue(damage != null && mining != null, "both priced");
+        h.assertTrue(mining.xp() == Math.max(1, (damage.xp() + 1) / 2), "Mining Speed costs half the XP of Damage: " + mining.xp() + " vs " + damage.xp());
+        h.assertTrue(mining.coins() == damage.coins(), "coins unchanged");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 1200)
+    public void harvest_regrows_a_mined_ore(GameTestHelper h) {
+        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
+        h.setBlock(totem, ModBlocks.SHATTER_TOTEM.get());
+        ShatterTotemBlockEntity be = entity(h, totem, ShatterTotemBlockEntity.class);
+        be.setOwner(new TotemOwner(UUID.nameUUIDFromBytes("gametest".getBytes()), "Tester"));
+        be.setUpgradeLevel(TotemUpgrades.Buff.HARVEST, 4); // 30 s between regrowths
+        Block oreBlock = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new net.minecraft.resources.ResourceLocation("bsp_core", "tetrium_ore"));
+        h.setBlock(ore, oreBlock);
+        be.harvestRecord(h.absolutePos(ore), oreBlock.defaultBlockState()); // what the break handler does when a player mines it
+        h.setBlock(ore, Blocks.AIR);
+        h.succeedWhen(() -> h.assertBlock(ore, b -> b == oreBlock, "the ore grew back"));
+    }
+
     // ------------------------------------------------------------------ cloaking
 
     @GameTest(template = EMPTY, timeoutTicks = 400)
@@ -296,6 +323,117 @@ public class BspGameTests {
                 h.assertTrue(gained == 20_000, "one second moved 20,000 mB, got " + gained);
                 h.succeed();
             });
+        });
+    }
+
+    // ------------------------------------------------------------------ machine times (balancing for 1.0, 2026-10-09)
+
+    /**
+     * One Tetrium Ore takes {@code tetrium_crucible.ticksPerOre} ticks on coal: nothing has come out 50 ticks before that, two nuggets and
+     * one slag have 30 ticks after. The shipped default must be 300. The timing itself is read from the loaded config, because the game
+     * test server keeps a world copy in {@code run/world/serverconfig/bsp_core-server.toml} that does not follow a changed default.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 1200)
+    public void tetrium_crucible_takes_300_ticks(GameTestHelper h) {
+        h.assertTrue(com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.getDefault() == 300, "the shipped default is 300 ticks per ore, got " + com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.getDefault());
+        int ticks = com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.get();
+        BlockPos p = new BlockPos(2, 1, 2);
+        h.setBlock(p, ModBlocks.TETRIUM_CRUCIBLE.get());
+        com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity be = entity(h, p, com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity.class);
+        net.minecraft.world.item.Item raw = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "raw_tetrium"));
+        h.assertTrue(be.getItems().insertItem(0, new net.minecraft.world.item.ItemStack(raw), false).isEmpty(), "the ore slot takes Raw Tetrium");
+        h.assertTrue(be.getItems().insertItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL), false).isEmpty(), "the fuel slot takes coal");
+        h.runAfterDelay(ticks - 50, () -> h.assertTrue(be.getItems().getStackInSlot(2).isEmpty(), "no nuggets before " + ticks + " ticks"));
+        h.runAfterDelay(ticks + 30, () -> {
+            net.minecraft.world.item.ItemStack nuggets = be.getItems().getStackInSlot(2), slag = be.getItems().getStackInSlot(3);
+            h.assertTrue(nuggets.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_NUGGET.get()) && nuggets.getCount() == 2, "two Tetrium Nuggets after " + ticks + " ticks, got " + nuggets);
+            h.assertTrue(slag.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_SLAG.get()) && slag.getCount() == 1, "one Tetrium Slag after " + ticks + " ticks, got " + slag);
+            h.succeed();
+        });
+    }
+
+    // ------------------------------------------------------------------ Plasma Injector (2026-10-10)
+
+    /** Extractor and totem at {@code start} (Output {@code outputLevel}), an interface east of it, then Illyrium cables east up to {@code end} (exclusive). The injectors face down, so the line runs one block above them and the last cable sits over the port. */
+    private static void plasmaLineTo(GameTestHelper h, BlockPos start, int outputLevel, BlockPos end) {
+        totemOnExtractor(h, start, outputLevel);
+        h.setBlock(start.east(), ModBlocks.PLASMA_INTERFACE.get());
+        for (BlockPos p = start.east(2); p.getX() < end.getX(); p = p.east()) {
+            h.setBlock(p, cable(TotemCableBlock.Kind.ILLYRIUM)); // 1,000 mB/t, so a 500 mB/t totem arrives in full
+        }
+    }
+
+    private static void injectorDown(GameTestHelper h, BlockPos p) {
+        h.setBlock(p, ModBlocks.PLASMA_INJECTOR.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.FACING, net.minecraft.core.Direction.DOWN));
+    }
+
+    /** A vanilla furnace under a fed injector smelts in a third of its 200 ticks (Output 3 = 500 mB/t = x3); a plain one beside it has not finished. */
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void injector_speeds_a_furnace(GameTestHelper h) {
+        BlockPos start = new BlockPos(2, 3, 2), inj = new BlockPos(7, 2, 2), furnace = inj.below(), control = new BlockPos(7, 1, 6);
+        plasmaLineTo(h, start, 3, inj.above().east());
+        injectorDown(h, inj);
+        h.setBlock(furnace, Blocks.FURNACE);
+        h.setBlock(control, Blocks.FURNACE);
+        h.setBlock(inj.east(), cable(TotemCableBlock.Kind.ILLYRIUM)); // a cable on a side: the injector only takes cables through its port
+        h.runAfterDelay(100, () -> {
+            var be = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
+            h.assertTrue(be.rate() >= 450, "plasma arriving at the injector, got " + be.rate() + " mB/t");
+            h.assertBlockProperty(inj.above(), TotemCableBlock.SIDES[net.minecraft.core.Direction.DOWN.ordinal()], true); // the cable over the port reaches into it
+            h.assertBlockProperty(inj.east(), TotemCableBlock.SIDES[net.minecraft.core.Direction.WEST.ordinal()], false); // the side cable does not
+            for (BlockPos f : List.of(furnace, control)) {
+                var fe = entity(h, f, net.minecraft.world.level.block.entity.FurnaceBlockEntity.class);
+                fe.setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RAW_IRON));
+                fe.setItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL));
+            }
+            h.runAfterDelay(120, () -> {
+                h.assertTrue(!entity(h, furnace, net.minecraft.world.level.block.entity.FurnaceBlockEntity.class).getItem(2).isEmpty(), "the injected furnace smelted within 120 ticks");
+                h.assertTrue(entity(h, control, net.minecraft.world.level.block.entity.FurnaceBlockEntity.class).getItem(2).isEmpty(), "the plain furnace needs 200 ticks");
+                h.succeed();
+            });
+        });
+    }
+
+    /** A Tetrium Crucible under a fed injector finishes an ore in a third of its ticks (300 -> 100); checked at half the plain time. */
+    @GameTest(template = EMPTY, timeoutTicks = 600)
+    public void injector_speeds_the_tetrium_crucible(GameTestHelper h) {
+        BlockPos start = new BlockPos(2, 3, 2), inj = new BlockPos(7, 2, 2), crucible = inj.below();
+        plasmaLineTo(h, start, 3, inj.above().east());
+        injectorDown(h, inj);
+        h.setBlock(crucible, ModBlocks.TETRIUM_CRUCIBLE.get());
+        int ticks = com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.get();
+        h.runAfterDelay(100, () -> {
+            var be = entity(h, crucible, com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity.class);
+            net.minecraft.world.item.Item raw = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "raw_tetrium"));
+            be.getItems().insertItem(0, new net.minecraft.world.item.ItemStack(raw), false);
+            be.getItems().insertItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL), false);
+            h.runAfterDelay(ticks / 2, () -> {
+                h.assertTrue(be.plasmaFactor() >= 2.9, "the crucible reads x3 from its injector, got x" + be.plasmaFactor());
+                h.assertTrue(!be.getItems().getStackInSlot(2).isEmpty(), "nuggets out in half the plain time");
+                h.succeed();
+            });
+        });
+    }
+
+    /** An injector in a factory slice's Motivator cell gives that slice the curve's factor. */
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void injector_boosts_a_factory_slice(GameTestHelper h) {
+        BlockPos c = new BlockPos(10, 1, 10); // controller facing north: the slice runs south (back) from it
+        h.setBlock(c, ModBlocks.COIN_FACTORY.get().defaultBlockState().setValue(com.mrgregles.bsp_core.coin.CoinFactoryBlock.FACING, net.minecraft.core.Direction.NORTH));
+        h.setBlock(c.south(), ModBlocks.FACTORY_FRAME.get());
+        h.setBlock(c.south(2), ModBlocks.FACTORY_BLANK_HATCH.get());
+        h.setBlock(c.above(), ModBlocks.FACTORY_FRAME.get());
+        h.setBlock(c.above().south(), ModBlocks.FACTORY_PRESS.get());
+        h.setBlock(c.above().south(2), ModBlocks.FACTORY_POWER_PORT.get());
+        BlockPos inj = c.above(2).south(2); // the back Motivator cell
+        plasmaLineTo(h, new BlockPos(2, 4, 12), 3, inj.above().east());
+        injectorDown(h, inj);
+        h.runAfterDelay(120, () -> {
+            var slice = entity(h, c, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
+            h.assertTrue(slice.isFormed(), "the slice is formed");
+            h.assertTrue(slice.plasmaRate() >= 450, "the slice reads its injector, got " + slice.plasmaRate() + " mB/t");
+            h.assertTrue(slice.plasmaFactor() >= 2.9, "x3 press speed, got x" + slice.plasmaFactor());
+            h.succeed();
         });
     }
 }

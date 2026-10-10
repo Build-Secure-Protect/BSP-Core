@@ -438,6 +438,20 @@ So the totem can stay safe at home while you go out: a Tier III cell at 20 mB/t 
 
 Carried powers from the emitter: Damage, Resistance, Mining Speed, Swiftness, Vitality, Featherfall, Night Sight, Bouncy and X-ray, at the stamped level.
 
+## The Plasma Injector
+
+**Page 1**  `[item shown] plasma_injector`
+
+Wave Plasma can drive machines. A *Plasma Injector* stands against a machine, with its port on the far end for the cable (the only face a cable connects to), and the machine runs faster the more plasma arrives: twice as fast at 300 mB/t, three times at 500. Only what is arriving counts, so a cut cable or a stolen totem slows the machine back down within a second or two.
+
+**Page 2**
+
+It works on every BSP-Core machine: against any block of the Illyrium Crucible, Refinery or Magnetic Centrifuge, or against a Tetrium Crucible or Combination Forge. On a *Shatter Coin Factory* it stands in one of the three Motivator cells and speeds that slice only, on top of what the Motivators do.
+
+It also works on most machines from other mods, which it ticks extra; a few that keep their own clock will ignore it.
+
+**Page 3**  `[recipe] plasma_injector`
+
 ## Letting Friends In
 
 **Page 1**
@@ -475,6 +489,14 @@ Five powers added with the plasma rework. Auras are now cubes: a radius of 5 cov
 **Page 4: Raid**
 
 **Recall Block** (Raid, after Shroud, Tier IV): with it on the totem in your offhand while you steal, the owner's Recall offer comes later, on top of Shroud.
+
+**Thief's Step** (Raid, beside Recall Block, Tier IV): your footsteps make no sound, and an Alarm up to the level shown does not see you.
+
+**Siege** (Raid, after Thief's Step, Tier V): press its key and for a while Fortify does not slow your mining; then it recharges.
+
+**Page 5: Harvest**
+
+**Harvest** (Base, Anchor path after Survey, Tier IV): BSP ores you mine within its reach grow back where they were, one at a time, as long as the totem has plasma to spare for it.
 
 ---
 
