@@ -169,7 +169,7 @@ public final class TotemTree {
             case WARD -> Component.translatable(key, (level - 1) / 2 + 1, b.reach(level));
             case ALARM, SANCTUARY -> Component.translatable(key, b.reach(level));
             case DEADLOCK -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.DEADLOCK_SECONDS.get(), level, 0));
-            case OVERCLOCK -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), level, 0.0)), b.reach(level));
+            case OVERCLOCK -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), level, 0.0)));
             case LOCKPICK -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.LOCKPICK_SECONDS.get(), level, 0));
             case SHROUD -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.SHROUD_SECONDS.get(), level, 0));
             case ANCHOR -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.chunksAt(level));

@@ -34,10 +34,32 @@ public final class PlasmaBoost {
         return y0;
     }
 
+    /**
+     * Overclock's part: the totem power no longer speeds a machine by itself; it scales what the plasma does. {@code scale} is
+     * {@link com.mrgregles.bsp_core.totem.TotemAuras#overclock} (1.0 with no Overclock in reach): the speed-up above 1 is multiplied by it.
+     */
+    public static double apply(double factor, double scale) {
+        return 1.0 + (factor - 1.0) * Math.max(0.0, scale);
+    }
+
     /** The most mB/t that still raises the factor: the last point of the curve. */
     public static int topRate() {
         List<? extends Integer> rates = BSPConfig.getOr(BSPConfig.INJECTOR_RATES, List.of(300, 500));
         return rates.isEmpty() ? 500 : rates.get(rates.size() - 1);
+    }
+
+    /** The strongest Overclock scale among the fed injectors that stand against {@code machine}'s blocks and point at it; 1.0 if none. */
+    public static double scale(ServerLevel level, Iterable<BlockPos> machine) {
+        double best = 1.0;
+        for (BlockPos p : machine) {
+            for (Direction d : Direction.values()) {
+                BlockPos q = p.relative(d);
+                if (level.isLoaded(q) && level.getBlockEntity(q) instanceof PlasmaInjectorBlockEntity injector && injector.target().equals(p)) {
+                    best = Math.max(best, injector.overclockScale());
+                }
+            }
+        }
+        return best;
     }
 
     /** mB/t arriving at every injector that stands against one of {@code machine}'s blocks and points at it. Each injector counts once. */

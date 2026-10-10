@@ -42,7 +42,7 @@ import java.util.UUID;
  */
 public class TotemProjectorBlockEntity extends BlockEntity {
     /** The powers a projector can receive, in screen order. Indexes into {@link #chosen}. */
-    public static final Buff[] SENDABLE = {Buff.FORTIFY, Buff.HEALING, Buff.ALARM, Buff.WARD, Buff.SANCTUARY, Buff.OVERCLOCK, Buff.ANCHOR};
+    public static final Buff[] SENDABLE = {Buff.FORTIFY, Buff.HEALING, Buff.ALARM, Buff.WARD, Buff.SANCTUARY, Buff.ANCHOR};
     private static final int FEED_TICKS = 50;
 
     private final int[] levels = new int[Buff.values().length];

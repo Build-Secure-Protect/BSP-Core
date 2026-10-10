@@ -36,6 +36,7 @@ KEYS = {
     "message.bsp_core.siege.none": "You carry no Siege power",
     "message.bsp_core.siege.recharging": "Siege recharges in %s s",
     "message.bsp_core.siege.on": "Siege: full mining speed for %s s",
+    "buff.bsp_core.overclock.effect": "Every Plasma Injector fed by this totem speeds its machine up %s%% more",
     "buff.bsp_core.sentinel": "Sentinel",
     "buff.bsp_core.sentinel.effect.1": "A strip at the top of your screen, from anywhere: how many are inside your Alarm cube",
     "buff.bsp_core.sentinel.effect.2": "The strip names them",

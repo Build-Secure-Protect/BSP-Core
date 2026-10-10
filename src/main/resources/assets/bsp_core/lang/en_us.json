@@ -376,7 +376,7 @@
   "buff.bsp_core.alarm.effect": "Outlines intruders within %s blocks and warns you",
   "buff.bsp_core.sanctuary.effect": "No hostile mobs spawn within %s blocks",
   "buff.bsp_core.deadlock.effect": "Stealing this totem takes %s seconds longer",
-  "buff.bsp_core.overclock.effect": "Machines work %s%% faster within %s blocks",
+  "buff.bsp_core.overclock.effect": "Every Plasma Injector fed by this totem speeds its machine up %s%% more",
   "buff.bsp_core.lockpick.effect": "Your steals take %s seconds less",
   "buff.bsp_core.shroud.effect": "The owner is warned %s seconds late",
   "gui.bsp_core.compass.tile": "Spend one %s coin: +%s tracking time",

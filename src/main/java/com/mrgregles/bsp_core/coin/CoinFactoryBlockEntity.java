@@ -90,7 +90,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     private boolean powered;
     private boolean demo;
     /** Speed multiplier from a nearby totem's Overclock aura. Server side. */
-    private double overclock = 1.0;
+    private double overclock = 1.0, plasmaScale = 1.0;
     /** Bit i set = a Motivator sits on top cell i (0 = front). */
     private int motivatorMask;
     /** mB/t of Wave Plasma arriving at the Plasma Injectors in this slice's top cells, and the speed factor it gives. */
@@ -216,7 +216,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     }
 
     private double speed() {
-        return overclock * plasma / (1.0 - totalReduction());
+        return com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plasma, overclock) / (1.0 - totalReduction());
     }
 
     /** Real seconds until the current press finishes, or 0 when idle. */
@@ -301,15 +301,18 @@ public class CoinFactoryBlockEntity extends BlockEntity {
             }
         }
         int rate = 0;
+        double scale = 1.0;
         if (ok) {
             for (int i = 0; i < MOTIVATOR_CELLS; i++) {
                 BlockPos c = motivatorPos(i);
                 if (level.getBlockEntity(c) instanceof com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity injector && injector.target().equals(c.below())) {
                     rate += injector.rate();
+                    scale = Math.max(scale, injector.overclockScale());
                 }
             }
         }
         plasmaRate = rate;
+        plasmaScale = scale;
         showParts(!ok);
         if (ok) {
             for (Part part : parts()) {
@@ -478,7 +481,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         }
         intakeRate = (int) (intakeAcc / 20);
         intakeAcc = 0;
-        double aura = com.mrgregles.bsp_core.totem.TotemAuras.overclock(level, worldPosition);
+        double aura = plasmaScale; // the feeding totem's Overclock, through the injectors
         if (aura != overclock) {
             advance(System.currentTimeMillis()); // settle progress at the old speed first
             overclock = aura;

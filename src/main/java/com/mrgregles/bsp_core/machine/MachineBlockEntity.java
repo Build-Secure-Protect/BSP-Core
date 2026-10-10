@@ -324,12 +324,10 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     public void serverTick(ServerLevel level) {
         powered = level.hasNeighborSignal(worldPosition); // a redstone signal pauses the machine
-        if (level.getGameTime() % 100 == 0) {
-            overclock = com.mrgregles.bsp_core.totem.TotemAuras.overclock(level, worldPosition);
-        }
         if (level.getGameTime() % 20 == 0) {
             plasmaRate = com.mrgregles.bsp_core.plasma.PlasmaBoost.rate(level, boostPositions());
             plasma = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(plasmaRate);
+            overclock = com.mrgregles.bsp_core.plasma.PlasmaBoost.scale(level, boostPositions()); // the feeding totem's Overclock, through the injectors
         }
         boolean work = enabled && !powered && canWork() && (!needsRf() || energy.getEnergyStored() >= rfPerWorkTick());
         if (work && usesFuel() && burnTime <= 0) {
@@ -339,7 +337,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
             burnTime--;
         }
         if (work) {
-            speedCarry += speed() * overclock * plasma;
+            speedCarry += speed() * com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plasma, overclock); // Overclock scales the plasma speed-up, nothing more
             if (rfActive()) {
                 energy.use(BSPConfig.RF_PER_TICK.get());
             }

@@ -32,7 +32,7 @@ public final class BSPConfig {
     /** Effect per level (one entry per level; a short list repeats its last value). */
     public static final ForgeConfigSpec.DoubleValue DAMAGE_PER_LEVEL, RESISTANCE_PER_LEVEL, MINING_SPEED_PER_LEVEL;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FORTIFY_RADIUS, HEALING_RADIUS, VITALITY_HEALTH, WARD_RADIUS, ALARM_RADIUS,
-            SANCTUARY_RADIUS, DEADLOCK_SECONDS, OVERCLOCK_RADIUS, LOCKPICK_SECONDS, SHROUD_SECONDS;
+            SANCTUARY_RADIUS, DEADLOCK_SECONDS, LOCKPICK_SECONDS, SHROUD_SECONDS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> FORTIFY_BREAK_SPEED, FORTIFY_EXPLOSION_PROTECTION, HEALING_PER_SECOND,
             SWIFTNESS_BONUS, FEATHERFALL_REDUCTION, OVERCLOCK_BONUS;
     /** Guarantees that a totem can always be reached and stolen. */
@@ -208,10 +208,8 @@ public final class BSPConfig {
                 .defineList("wardRadius", List.of(3, 6, 9, 12, 15, 18), BSPConfig::isPositiveInt);
         DEADLOCK_SECONDS = BUILDER.comment("Deadlock: seconds added to the time needed to steal this totem (4 levels)")
                 .defineList("deadlockSeconds", List.of(30, 60, 90, 120), BSPConfig::isPositiveInt);
-        OVERCLOCK_RADIUS = BUILDER.comment("Overclock: BSP-Core machines within this many blocks work faster (4 levels)")
-                .defineList("overclockRadius", List.of(8, 10, 12, 16), BSPConfig::isPositiveInt);
-        OVERCLOCK_BONUS = BUILDER.comment("Overclock: speed added per level, as a fraction")
-                .defineList("overclockSpeedBonus", List.of(0.04, 0.08, 0.12, 0.16), BSPConfig::isFraction);
+        OVERCLOCK_BONUS = BUILDER.comment("Overclock: how much stronger a Plasma Injector's speed-up is for machines in reach, as a fraction added per level (1.0 = twice the speed-up). Overclock does nothing without an injector.")
+                .defineList("overclockPlasmaScale", List.of(0.25, 0.5, 0.75, 1.0), o -> o instanceof Number n && n.doubleValue() >= 0);
         BUILDER.pop();
 
         BUILDER.comment("Raid upgrades (apply when the totem carrying them is in the thief's offhand).").push("raid");

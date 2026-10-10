@@ -36,6 +36,8 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
 
     private int rate, syncedRate = -1;
     private long fedAt = -1000;
+    /** Overclock level of the totem whose plasma arrives here (the network hands every receiver the feeding totem's power levels). */
+    private int overclockLevel;
     private double carry;
     @Nullable
     private BlockPos source;
@@ -55,8 +57,9 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
         return level != null && level.getGameTime() - fedAt <= FEED_TICKS ? rate : 0;
     }
 
+    /** The speed factor this injector gives: the plasma's curve, scaled by the feeding totem's Overclock. */
     public double factor() {
-        return PlasmaBoost.factor(rate());
+        return PlasmaBoost.apply(PlasmaBoost.factor(rate()), overclockScale());
     }
 
     @Nullable
@@ -78,8 +81,14 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
     public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
         source = master.immutable();
         rate = movedMB / 20;
+        overclockLevel = offeredByOrdinal[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.OVERCLOCK.ordinal()];
         fedAt = level == null ? 0 : level.getGameTime();
         setChanged();
+    }
+
+    /** Overclock's scale for this injector: from the totem feeding it, 1.0 when none or when the feed has stopped. */
+    public double overclockScale() {
+        return rate() <= 0 ? 1.0 : com.mrgregles.bsp_core.totem.TotemAuras.overclockScale(overclockLevel);
     }
 
     public void serverTick(ServerLevel sl) {
@@ -134,6 +143,7 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
         super.saveAdditional(tag);
         tag.putInt("Rate", rate);
         tag.putLong("FedAt", fedAt);
+        tag.putInt("Overclock", overclockLevel);
         if (source != null) {
             tag.putLong("Source", source.asLong());
         }
@@ -144,6 +154,7 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
         super.load(tag);
         rate = tag.getInt("Rate");
         fedAt = tag.contains("FedAt") ? tag.getLong("FedAt") : -1000;
+        overclockLevel = tag.getInt("Overclock");
         source = tag.contains("Source") ? BlockPos.of(tag.getLong("Source")) : null;
     }
 

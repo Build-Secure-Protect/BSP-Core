@@ -156,7 +156,6 @@ public final class TotemUpgrades {
                 case WARD -> BSPConfig.levelValue(BSPConfig.WARD_RADIUS.get(), level, 0);
                 case ALARM -> BSPConfig.levelValue(BSPConfig.ALARM_RADIUS.get(), level, 0);
                 case SANCTUARY -> BSPConfig.levelValue(BSPConfig.SANCTUARY_RADIUS.get(), level, 0);
-                case OVERCLOCK -> BSPConfig.levelValue(BSPConfig.OVERCLOCK_RADIUS.get(), level, 0);
                 case HARVEST -> BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_RADIUS, List.<Integer>of()), level, 8);
                 default -> 0;
             };

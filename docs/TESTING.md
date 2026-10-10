@@ -653,6 +653,7 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - [ ] Factory: an injector in a Motivator cell (socket up, cable from above or the side) speeds that slice only. The screen's PLASMA gauge lights one cell per 100 mB/t over the machine; the lane tooltip shows "Plasma: 500 mB/t (x3.0 press speed)"; the remaining time on that lane drops; other lanes are unchanged. It stacks with that slice's Motivators (two Motivators + 500 mB/t: 8 h Copper coin in about 1 h 50 min).
 - [ ] Other mods: against a vanilla furnace (game test `injector_speeds_a_furnace`) and, in the pack, a Mekanism or Thermal machine: it runs faster and uses its RF faster. With `plasma.injectorForeign = false` or the block in `plasma.injectorBlacklist` nothing happens. A real-time machine (another factory-like block) is not sped up.
 - [ ] Game tests `injector_speeds_a_furnace`, `injector_speeds_the_tetrium_crucible`, `injector_boosts_a_factory_slice` pass in `./gradlew runGameTestServer`.
+- Overclock (2026-10-10 rule): Overclock travels with the plasma. An injector fed from a totem with Overclock, at any distance along the cables, is stronger: with an injector giving 2x, Overclock I makes it 2.25x, II 2.5x, III 2.75x, IV 3x; Jade on the injector shows the factor with it. An injector fed from a tank, or from a totem without Overclock, gives the plain factor. Cut the cable: back to normal within two seconds. Overclock no longer appears in a projector's POWERS tab and has no radius (`overclockRadius` is gone from the config).
 
 ## Plasma Tank (2026-10-08)
 

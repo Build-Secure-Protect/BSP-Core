@@ -77,7 +77,7 @@ Work only while the totem is **placed**. Paid in Shatter Coins.
 - Alarm: outlines intruders and warns you
 - Sanctuary: no hostile spawns
 - Deadlock: your totem takes longer to steal
-- Overclock: machines nearby work faster
+- Overclock: every injector fed by this totem's plasma speeds its machine up more
 
 **Page 5: Raid**
 
@@ -234,7 +234,7 @@ A projector receives two powers at once, three with a *Channel Expander* fitted 
 
 **Page 10: Powers and auras**
 
-What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Overclock, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.
+What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.
 
 Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.
 
@@ -451,6 +451,10 @@ It works on every BSP-Core machine: against any block of the Illyrium Crucible, 
 It also works on most machines from other mods, which it ticks extra; a few that keep their own clock will ignore it.
 
 **Page 3**  `[recipe] plasma_injector`
+
+**Page 4: Overclock**
+
+**Overclock** on a totem no longer speeds machines by itself: it travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.
 
 ## Letting Friends In
 

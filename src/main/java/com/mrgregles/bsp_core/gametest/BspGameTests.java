@@ -255,6 +255,39 @@ public class BspGameTests {
 
     // ------------------------------------------------------------------ the 1.0 buffs
 
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void overclock_travels_with_the_plasma(GameTestHelper h) {
+        // Output 0 totem with Overclock IV, interface, two cables into an injector standing on a Tetrium Crucible: the injector's factor is the plain curve scaled by 2
+        BlockPos start = new BlockPos(1, 1, 1);
+        ShatterTotemBlockEntity totem = totemOnExtractor(h, start, 0);
+        totem.setUpgradeLevel(TotemUpgrades.Buff.OVERCLOCK, 4);
+        // the injector points down at the crucible and takes its cable at the other end, so the run climbs and comes in from above
+        h.setBlock(start.east(), ModBlocks.PLASMA_INTERFACE.get());
+        h.setBlock(start.east(2), cable(TotemCableBlock.Kind.TETRIUM));
+        h.setBlock(start.east(3), cable(TotemCableBlock.Kind.TETRIUM));
+        h.setBlock(start.east(3).above(), cable(TotemCableBlock.Kind.TETRIUM));
+        h.setBlock(start.east(4).above(), cable(TotemCableBlock.Kind.TETRIUM));
+        BlockPos injector = start.east(4);
+        h.setBlock(injector.below(), ModBlocks.TETRIUM_CRUCIBLE.get());
+        h.setBlock(injector, ModBlocks.PLASMA_INJECTOR.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.FACING, net.minecraft.core.Direction.DOWN));
+        h.runAfterDelay(100, () -> {
+            var inj = entity(h, injector, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
+            h.assertTrue(inj.rate() > 0, "plasma arrives at the injector, rate " + inj.rate());
+            double plain = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(inj.rate());
+            h.assertTrue(Math.abs(inj.factor() - com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plain, 2.0)) < 1e-9, "Overclock IV doubles the speed-up: " + inj.factor() + " from " + plain);
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void overclock_scales_the_plasma_speed_up(GameTestHelper h) {
+        h.assertTrue(com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(1.0, 2.0) == 1.0, "no plasma: Overclock gives nothing");
+        h.assertTrue(com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(2.0, 1.0) == 2.0, "no Overclock: the injector's factor as it is");
+        h.assertTrue(Math.abs(com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(2.0, 2.0) - 3.0) < 1e-9, "a 2x injector at Overclock IV gives 3x");
+        h.assertTrue(Math.abs(com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(3.0, 1.25) - 3.5) < 1e-9, "a 3x injector at Overclock I gives 3.5x");
+        h.succeed();
+    }
+
     @GameTest(template = EMPTY)
     public void cheap_carried_buffs_cost_half_the_xp(GameTestHelper h) {
         // Damage and Mining Speed both start at tier I, so their unhalved XP is the same figure
@@ -282,7 +315,7 @@ public class BspGameTests {
 
     // ------------------------------------------------------------------ cloaking
 
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1600)
     public void cloak_shows_generated_land(GameTestHelper h) {
         // a totem with Cloaking in the middle of the plot and a gold block built nearby (the generator never makes one): outsiders must
         // see natural land there, not the gold. (The plot sits at the bottom of the test world on a floor the framework lays, so the

@@ -139,10 +139,13 @@ public final class TotemAuras {
         return out;
     }
 
-    /** Speed multiplier for a BSP-Core machine at {@code pos} from any Overclock aura covering it; 1.0 if none. */
-    public static double overclock(ServerLevel level, BlockPos pos) {
-        int lvl = levelInReach(level, pos, TotemUpgrades.Buff.OVERCLOCK);
-        return lvl <= 0 ? 1.0 : 1.0 + BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), lvl, 0.0);
+    /**
+     * Overclock's scale at a level: how many times stronger a Plasma Injector's speed-up is when the plasma comes from a totem with
+     * that Overclock (1.0 at level 0, 2.0 at the top level by default). It travels with the plasma, not by distance: see
+     * {@link com.mrgregles.bsp_core.plasma.PlasmaBoost#apply}.
+     */
+    public static double overclockScale(int level) {
+        return level <= 0 ? 1.0 : 1.0 + BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), level, 0.0);
     }
 
     public static double explosionProtection(int fortifyLevel) {
