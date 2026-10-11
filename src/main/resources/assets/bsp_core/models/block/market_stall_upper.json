@@ -1,0 +1,7 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "particle": "bsp_core:block/stall/stall_vanilla_planks"
+ },
+ "elements": []
+}

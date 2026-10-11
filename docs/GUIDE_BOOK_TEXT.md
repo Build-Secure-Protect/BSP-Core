@@ -834,7 +834,15 @@ Each card shows the lot, **buy** and **sell** prices and the stock left. Left cl
 
 Some shops keep **opening hours**. A closed vendor shows when it opens and how long is left. A vendor's post powers the block beneath it while the shop is open, so signs and lamps can follow.
 
-**Page 3: The Shopping Network**
+A *Stall Display* beside a vendor floats its wares in the air, one after another, while the shop is open. Right-click it to open the shop.
+
+**Page 3: Market Stalls**
+
+A *Market Stall* is a shop front in one of eight styles: a timber booth, a vending terminal, a boiler booth, a player-built stall, a blackstone shrine, a street cart, a dockside stall or a mage's pedestal. Right-click it for its shop.
+
+Two lamps tell you the state before you click: the left one is **green** while the shop has stock and **red** when it is sold out, the right one **amber** while the shop is open. The shop's first item sits on the counter. A stall with no shop stands broken and out of order.
+
+**Page 4: The Shopping Network**
 
 Buy the **Shopping Network** on your *Portable Banker* with Shatter Coins and the shops marked remote open from anywhere. It stays with your account, whatever happens to the device; admins may clear it at a season end.
 

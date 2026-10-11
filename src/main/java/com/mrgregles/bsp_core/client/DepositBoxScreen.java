@@ -101,7 +101,7 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
         String key = menu.messageKey;
         boolean good = key.equals("rented") || key.equals("slots_added");
         messageColour = good ? AMBER : RED;
-        message = Component.translatable("message.bsp_core.box." + key, (Object[]) menu.messageArgs);
+        message = key.isEmpty() ? Component.empty() : Component.translatable("message.bsp_core.box." + key, (Object[]) menu.messageArgs);
     }
 
     @Override
@@ -187,16 +187,7 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
-        boolean hover = k.enabled && over(mx, my, x, y, KW, KH);
-        g.fill(x, y, x + KW, y + KH + 2, KEY_EDGE);
-        g.fill(x, y, x + KW, y + KH, hover ? 0xFFF5F0E4 : KEY);
-        String label = tr(k.label, days).getString().toUpperCase(Locale.ROOT);
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(label), KW - 6);
-        int ty = y + (KH - lines.size() * 9) / 2 + 1;
-        for (var line : lines) {
-            g.drawString(font, line, x + KW / 2 - font.width(line) / 2, ty, k.enabled ? KEY_TEXT : KEY_LOCKED, false);
-            ty += 9;
-        }
+        CashMachine.key(g, font, x, y, KW, KH, tr(k.label, days).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     @Override
@@ -209,7 +200,7 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
             case EXPIRED -> tr("lapsed", DepositBox.lapsedDays(menu.account, now)).getString();
             default -> tr("not_rented").getString();
         };
-        g.drawString(font, right, SX + SW - 6 - font.width(right), SY + 6, st == DepositBox.State.EXPIRED ? RED : PHOS_DIM, false);
+        CashMachine.fitRight(g, font, right, SX + SW - 6, SY + 6, SW - 12 - font.width("> " + tr("title").getString()) - 4, st == DepositBox.State.EXPIRED ? RED : PHOS_DIM);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
         int ty = SY + 22;
         if (menu.open) {
@@ -234,7 +225,7 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
             g.drawString(font, line, SX + 6, ty, PHOS_DIM, false);
             ty += 9;
         }
-        g.drawString(font, tr("forbidden"), SX + 6, ty + 2, PHOS_DIM, false);
+        CashMachine.wrap(g, font, tr("forbidden"), SX + 6, ty + 2, SW - 12, PHOS_DIM);
         if (!message.getString().isEmpty()) {
             List<net.minecraft.util.FormattedCharSequence> lines = font.split(message, SW - 12);
             int ly = SY + screenHeight() - 4 - lines.size() * 9;

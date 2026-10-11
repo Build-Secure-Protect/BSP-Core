@@ -63,9 +63,9 @@ public class SellHereScreen extends AbstractContainerScreen<SellHereMenu> {
 
     @Override
     protected void renderLabels(GuiGraphics g, int mx, int my) {
-        g.drawString(font, "> " + Component.translatable("gui.bsp_core.shop.sell_here").getString().toUpperCase(Locale.ROOT) + ": " + title.getString().toUpperCase(Locale.ROOT), SX + 6, SY + 6, PHOS, false);
+        CashMachine.fit(g, font, "> " + Component.translatable("gui.bsp_core.shop.sell_here").getString().toUpperCase(Locale.ROOT) + ": " + title.getString().toUpperCase(Locale.ROOT), SX + 6, SY + 6, SW - 12, PHOS);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
-        g.drawString(font, Component.translatable("gui.bsp_core.shop.sell_here_hint"), SX + 6, SY + SH - 16, PHOS_DIM, false);
+        CashMachine.wrapUp(g, font, Component.translatable("gui.bsp_core.shop.sell_here_hint"), SX + 6, SY + SH - 4, SW - 12, PHOS_DIM);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, KEY_TEXT, false);
     }
 }

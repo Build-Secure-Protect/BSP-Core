@@ -1,0 +1,1696 @@
+{
+ "credit": "BSP-Core Market Stall, made by tools/gen_stall_design.py",
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "book": "bsp_core:block/stall/stall_arcane_book",
+  "candle": "bsp_core:block/stall/stall_arcane_candle",
+  "cloth": "bsp_core:block/stall/stall_arcane_cloth",
+  "cover": "bsp_core:block/stall/stall_arcane_cover",
+  "crystal": "bsp_core:block/stall/stall_arcane_crystal",
+  "lamp": "bsp_core:block/stall/stall_arcane_lamp",
+  "rune": "bsp_core:block/stall/stall_arcane_rune",
+  "stone": "bsp_core:block/stall/stall_arcane_stone",
+  "trim": "bsp_core:block/stall/stall_arcane_trim",
+  "particle": "bsp_core:block/stall/stall_arcane_stone"
+ },
+ "elements": [
+  {
+   "name": "step",
+   "from": [
+    0.5,
+    0,
+    0.5
+   ],
+   "to": [
+    15.5,
+    2,
+    15.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.5,
+      14,
+      15.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      0.5,
+      14,
+      15.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      0.5,
+      14,
+      15.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      0.5,
+      14,
+      15.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      0.5,
+      0.5,
+      15.5,
+      15.5
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      0.5,
+      0.5,
+      15.5,
+      15.5
+     ],
+     "texture": "#stone",
+     "cullface": "down"
+    }
+   }
+  },
+  {
+   "name": "counter",
+   "from": [
+    1.5,
+    2,
+    2.5
+   ],
+   "to": [
+    14.5,
+    11,
+    14.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1.5,
+      5,
+      14.5,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      1.5,
+      5,
+      14.5,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      1.5,
+      5,
+      13.5,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      2.5,
+      5,
+      14.5,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      1.5,
+      2.5,
+      14.5,
+      14.5
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      1.5,
+      1.5,
+      14.5,
+      13.5
+     ],
+     "texture": "#stone"
+    }
+   }
+  },
+  {
+   "name": "counter_top",
+   "from": [
+    1,
+    11,
+    2
+   ],
+   "to": [
+    15,
+    12.5,
+    15
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      3.5,
+      15,
+      5
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      1,
+      3.5,
+      15,
+      5
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      1,
+      3.5,
+      14,
+      5
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      2,
+      3.5,
+      15,
+      5
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      1,
+      2,
+      15,
+      15
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      1,
+      1,
+      15,
+      14
+     ],
+     "texture": "#stone"
+    }
+   }
+  },
+  {
+   "name": "counter_trim",
+   "from": [
+    1,
+    11.25,
+    1.75
+   ],
+   "to": [
+    15,
+    12.25,
+    2
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      3.75,
+      15,
+      4.75
+     ],
+     "texture": "#trim"
+    },
+    "south": {
+     "uv": [
+      1,
+      3.75,
+      15,
+      4.75
+     ],
+     "texture": "#trim"
+    },
+    "east": {
+     "uv": [
+      14,
+      3.75,
+      14.25,
+      4.75
+     ],
+     "texture": "#trim"
+    },
+    "west": {
+     "uv": [
+      1.75,
+      3.75,
+      2,
+      4.75
+     ],
+     "texture": "#trim"
+    },
+    "up": {
+     "uv": [
+      1,
+      1.75,
+      15,
+      2
+     ],
+     "texture": "#trim"
+    },
+    "down": {
+     "uv": [
+      1,
+      14,
+      15,
+      14.25
+     ],
+     "texture": "#trim"
+    }
+   }
+  },
+  {
+   "name": "cloth",
+   "from": [
+    4.5,
+    2.5,
+    2.25
+   ],
+   "to": [
+    11.5,
+    11,
+    2.25
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#cloth"
+    }
+   }
+  },
+  {
+   "name": "lamp_stock",
+   "from": [
+    2,
+    8,
+    2
+   ],
+   "to": [
+    4,
+    10,
+    2.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    }
+   }
+  },
+  {
+   "name": "lamp_open",
+   "from": [
+    12,
+    8,
+    2
+   ],
+   "to": [
+    14,
+    10,
+    2.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lamp"
+    }
+   }
+  },
+  {
+   "name": "obelisk_a_base",
+   "from": [
+    1,
+    12.5,
+    11.5
+   ],
+   "to": [
+    4,
+    14,
+    14.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      12,
+      2,
+      15,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "south": {
+     "uv": [
+      1,
+      2,
+      4,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "east": {
+     "uv": [
+      1.5,
+      2,
+      4.5,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "west": {
+     "uv": [
+      11.5,
+      2,
+      14.5,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "up": {
+     "uv": [
+      1,
+      11.5,
+      4,
+      14.5
+     ],
+     "texture": "#trim"
+    },
+    "down": {
+     "uv": [
+      1,
+      1.5,
+      4,
+      4.5
+     ],
+     "texture": "#trim"
+    }
+   }
+  },
+  {
+   "name": "obelisk_a",
+   "from": [
+    1.25,
+    14,
+    11.75
+   ],
+   "to": [
+    3.75,
+    26,
+    14.25
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      12.25,
+      4,
+      14.75,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      1.25,
+      4,
+      3.75,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      1.75,
+      4,
+      4.25,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      11.75,
+      4,
+      14.25,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      1.25,
+      11.75,
+      3.75,
+      14.25
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      1.25,
+      1.75,
+      3.75,
+      4.25
+     ],
+     "texture": "#stone"
+    }
+   }
+  },
+  {
+   "name": "obelisk_a_cap",
+   "from": [
+    1.5,
+    26,
+    12
+   ],
+   "to": [
+    3.5,
+    27.5,
+    14
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     2.5,
+     26.75,
+     13
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      12.5,
+      4.5,
+      14.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "south": {
+     "uv": [
+      1.5,
+      4.5,
+      3.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "east": {
+     "uv": [
+      2,
+      4.5,
+      4,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "west": {
+     "uv": [
+      12,
+      4.5,
+      14,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "up": {
+     "uv": [
+      1.5,
+      12,
+      3.5,
+      14
+     ],
+     "texture": "#trim"
+    },
+    "down": {
+     "uv": [
+      1.5,
+      2,
+      3.5,
+      4
+     ],
+     "texture": "#trim"
+    }
+   }
+  },
+  {
+   "name": "crystal_a",
+   "from": [
+    2,
+    27.5,
+    12.5
+   ],
+   "to": [
+    3,
+    31.5,
+    13.5
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     2.5,
+     29.5,
+     13
+    ]
+   },
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "crystal_a_side",
+   "from": [
+    1.5,
+    27.5,
+    12.75
+   ],
+   "to": [
+    2.25,
+    29.5,
+    13.5
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     1.875,
+     28.5,
+     13.125
+    ]
+   },
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "obelisk_b_base",
+   "from": [
+    12,
+    12.5,
+    11.5
+   ],
+   "to": [
+    15,
+    14,
+    14.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      2,
+      4,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "south": {
+     "uv": [
+      12,
+      2,
+      15,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "east": {
+     "uv": [
+      1.5,
+      2,
+      4.5,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "west": {
+     "uv": [
+      11.5,
+      2,
+      14.5,
+      3.5
+     ],
+     "texture": "#trim"
+    },
+    "up": {
+     "uv": [
+      12,
+      11.5,
+      15,
+      14.5
+     ],
+     "texture": "#trim"
+    },
+    "down": {
+     "uv": [
+      12,
+      1.5,
+      15,
+      4.5
+     ],
+     "texture": "#trim"
+    }
+   }
+  },
+  {
+   "name": "obelisk_b",
+   "from": [
+    12.25,
+    14,
+    11.75
+   ],
+   "to": [
+    14.75,
+    26,
+    14.25
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1.25,
+      4,
+      3.75,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      12.25,
+      4,
+      14.75,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      1.75,
+      4,
+      4.25,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      11.75,
+      4,
+      14.25,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      12.25,
+      11.75,
+      14.75,
+      14.25
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      12.25,
+      1.75,
+      14.75,
+      4.25
+     ],
+     "texture": "#stone"
+    }
+   }
+  },
+  {
+   "name": "obelisk_b_cap",
+   "from": [
+    12.5,
+    26,
+    12
+   ],
+   "to": [
+    14.5,
+    27.5,
+    14
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     13.5,
+     26.75,
+     13
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      1.5,
+      4.5,
+      3.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "south": {
+     "uv": [
+      12.5,
+      4.5,
+      14.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "east": {
+     "uv": [
+      2,
+      4.5,
+      4,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "west": {
+     "uv": [
+      12,
+      4.5,
+      14,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "up": {
+     "uv": [
+      12.5,
+      12,
+      14.5,
+      14
+     ],
+     "texture": "#trim"
+    },
+    "down": {
+     "uv": [
+      12.5,
+      2,
+      14.5,
+      4
+     ],
+     "texture": "#trim"
+    }
+   }
+  },
+  {
+   "name": "crystal_b",
+   "from": [
+    13,
+    27.5,
+    12.5
+   ],
+   "to": [
+    14,
+    31.5,
+    13.5
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     13.5,
+     29.5,
+     13
+    ]
+   },
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "crystal_b_side",
+   "from": [
+    12.5,
+    27.5,
+    12.75
+   ],
+   "to": [
+    13.25,
+    29.5,
+    13.5
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     12.875,
+     28.5,
+     13.125
+    ]
+   },
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      8,
+      0,
+      12,
+      8
+     ],
+     "texture": "#crystal",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "rune_ring_flat",
+   "from": [
+    2.5,
+    13.25,
+    3
+   ],
+   "to": [
+    13.5,
+    13.25,
+    14
+   ],
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "rune_ring_a",
+   "from": [
+    3,
+    12.75,
+    8.5
+   ],
+   "to": [
+    13,
+    22.75,
+    8.5
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     8,
+     17.75,
+     8.5
+    ]
+   },
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "rune_ring_b",
+   "from": [
+    3,
+    12.75,
+    8.5
+   ],
+   "to": [
+    13,
+    22.75,
+    8.5
+   ],
+   "rotation": {
+    "angle": -45,
+    "axis": "y",
+    "origin": [
+     8,
+     17.75,
+     8.5
+    ]
+   },
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "book",
+   "from": [
+    9.5,
+    13.5,
+    2.75
+   ],
+   "to": [
+    14,
+    13.5,
+    6.25
+   ],
+   "rotation": {
+    "angle": -22.5,
+    "axis": "x",
+    "origin": [
+     11.75,
+     13,
+     4.5
+    ]
+   },
+   "faces": {
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#book"
+    }
+   }
+  },
+  {
+   "name": "book_stand",
+   "from": [
+    10.5,
+    12.5,
+    3.5
+   ],
+   "to": [
+    13,
+    13.25,
+    6
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      4
+     ],
+     "texture": "#cover"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      4
+     ],
+     "texture": "#cover"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      4
+     ],
+     "texture": "#cover"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      4
+     ],
+     "texture": "#cover"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      4
+     ],
+     "texture": "#cover"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      4
+     ],
+     "texture": "#cover"
+    }
+   }
+  },
+  {
+   "name": "candle_a",
+   "from": [
+    2.5,
+    12.5,
+    3
+   ],
+   "to": [
+    3.5,
+    15,
+    4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "south": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "east": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "west": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "up": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "down": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    }
+   }
+  },
+  {
+   "name": "flame_a",
+   "from": [
+    2.5,
+    15,
+    3.5
+   ],
+   "to": [
+    3.5,
+    16.5,
+    3.5
+   ],
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      10,
+      6,
+      14,
+      12
+     ],
+     "texture": "#candle",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      10,
+      6,
+      14,
+      12
+     ],
+     "texture": "#candle",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "candle_b",
+   "from": [
+    5,
+    12.5,
+    3
+   ],
+   "to": [
+    6,
+    14,
+    4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "south": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "east": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "west": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "up": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    },
+    "down": {
+     "uv": [
+      2,
+      4,
+      6,
+      16
+     ],
+     "texture": "#candle"
+    }
+   }
+  },
+  {
+   "name": "flame_b",
+   "from": [
+    5,
+    14,
+    3.5
+   ],
+   "to": [
+    6,
+    15.5,
+    3.5
+   ],
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      10,
+      6,
+      14,
+      12
+     ],
+     "texture": "#candle",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      10,
+      6,
+      14,
+      12
+     ],
+     "texture": "#candle",
+     "shade": false
+    }
+   }
+  }
+ ]
+}

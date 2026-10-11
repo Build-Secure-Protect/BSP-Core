@@ -1,0 +1,852 @@
+{
+ "credit": "BSP-Core Market Stall, made by tools/gen_stall_design.py",
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "banner": "bsp_core:block/stall/stall_fantasy_banner_torn",
+  "cloth": "bsp_core:block/stall/stall_fantasy_cloth_torn",
+  "gold": "bsp_core:block/stall/stall_fantasy_gold",
+  "note": "bsp_core:block/stall/stall_fantasy_note",
+  "planks": "bsp_core:block/stall/stall_fantasy_planks_worn",
+  "timber": "bsp_core:block/stall/stall_fantasy_timber",
+  "particle": "bsp_core:block/stall/stall_fantasy_planks_worn"
+ },
+ "elements": [
+  {
+   "name": "sill",
+   "from": [
+    2,
+    0,
+    2
+   ],
+   "to": [
+    14,
+    1.5,
+    14
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2,
+      14.5,
+      14,
+      16
+     ],
+     "texture": "#timber"
+    },
+    "south": {
+     "uv": [
+      2,
+      14.5,
+      14,
+      16
+     ],
+     "texture": "#timber"
+    },
+    "east": {
+     "uv": [
+      2,
+      14.5,
+      14,
+      16
+     ],
+     "texture": "#timber"
+    },
+    "west": {
+     "uv": [
+      2,
+      14.5,
+      14,
+      16
+     ],
+     "texture": "#timber"
+    },
+    "up": {
+     "uv": [
+      2,
+      2,
+      14,
+      14
+     ],
+     "texture": "#timber"
+    },
+    "down": {
+     "uv": [
+      2,
+      2,
+      14,
+      14
+     ],
+     "texture": "#timber",
+     "cullface": "down"
+    }
+   }
+  },
+  {
+   "name": "crate",
+   "from": [
+    3,
+    1.5,
+    3
+   ],
+   "to": [
+    13,
+    9,
+    13
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3,
+      7,
+      13,
+      14.5
+     ],
+     "texture": "#planks"
+    },
+    "south": {
+     "uv": [
+      3,
+      7,
+      13,
+      14.5
+     ],
+     "texture": "#planks"
+    },
+    "east": {
+     "uv": [
+      3,
+      7,
+      13,
+      14.5
+     ],
+     "texture": "#planks"
+    },
+    "west": {
+     "uv": [
+      3,
+      7,
+      13,
+      14.5
+     ],
+     "texture": "#planks"
+    },
+    "up": {
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ],
+     "texture": "#planks"
+    },
+    "down": {
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ],
+     "texture": "#planks"
+    }
+   }
+  },
+  {
+   "name": "post_a",
+   "from": [
+    2.5,
+    1.5,
+    2.5
+   ],
+   "to": [
+    4,
+    10,
+    4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "south": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "east": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "west": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "up": {
+     "uv": [
+      2.5,
+      2.5,
+      4,
+      4
+     ],
+     "texture": "#timber"
+    },
+    "down": {
+     "uv": [
+      2.5,
+      12,
+      4,
+      13.5
+     ],
+     "texture": "#timber"
+    }
+   }
+  },
+  {
+   "name": "post_b",
+   "from": [
+    12,
+    1.5,
+    2.5
+   ],
+   "to": [
+    13.5,
+    10,
+    4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "south": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "east": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "west": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "up": {
+     "uv": [
+      12,
+      2.5,
+      13.5,
+      4
+     ],
+     "texture": "#timber"
+    },
+    "down": {
+     "uv": [
+      12,
+      12,
+      13.5,
+      13.5
+     ],
+     "texture": "#timber"
+    }
+   }
+  },
+  {
+   "name": "post_c",
+   "from": [
+    2.5,
+    1.5,
+    12
+   ],
+   "to": [
+    4,
+    10,
+    13.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "south": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "east": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "west": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "up": {
+     "uv": [
+      2.5,
+      12,
+      4,
+      13.5
+     ],
+     "texture": "#timber"
+    },
+    "down": {
+     "uv": [
+      2.5,
+      2.5,
+      4,
+      4
+     ],
+     "texture": "#timber"
+    }
+   }
+  },
+  {
+   "name": "post_d",
+   "from": [
+    12,
+    1.5,
+    12
+   ],
+   "to": [
+    13.5,
+    10,
+    13.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "south": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "east": {
+     "uv": [
+      2.5,
+      6,
+      4,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "west": {
+     "uv": [
+      12,
+      6,
+      13.5,
+      14.5
+     ],
+     "texture": "#timber"
+    },
+    "up": {
+     "uv": [
+      12,
+      12,
+      13.5,
+      13.5
+     ],
+     "texture": "#timber"
+    },
+    "down": {
+     "uv": [
+      12,
+      2.5,
+      13.5,
+      4
+     ],
+     "texture": "#timber"
+    }
+   }
+  },
+  {
+   "name": "top",
+   "from": [
+    2,
+    9,
+    2
+   ],
+   "to": [
+    14,
+    10.5,
+    14
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2,
+      5.5,
+      14,
+      7
+     ],
+     "texture": "#planks"
+    },
+    "south": {
+     "uv": [
+      2,
+      5.5,
+      14,
+      7
+     ],
+     "texture": "#planks"
+    },
+    "east": {
+     "uv": [
+      2,
+      5.5,
+      14,
+      7
+     ],
+     "texture": "#planks"
+    },
+    "west": {
+     "uv": [
+      2,
+      5.5,
+      14,
+      7
+     ],
+     "texture": "#planks"
+    },
+    "up": {
+     "uv": [
+      2,
+      2,
+      14,
+      14
+     ],
+     "texture": "#planks"
+    },
+    "down": {
+     "uv": [
+      2,
+      2,
+      14,
+      14
+     ],
+     "texture": "#planks"
+    }
+   }
+  },
+  {
+   "name": "cushion",
+   "from": [
+    4,
+    10.5,
+    4
+   ],
+   "to": [
+    12,
+    12,
+    12
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.5,
+      0,
+      3.5,
+      3
+     ],
+     "texture": "#cloth"
+    },
+    "south": {
+     "uv": [
+      0.5,
+      0,
+      3.5,
+      3
+     ],
+     "texture": "#cloth"
+    },
+    "east": {
+     "uv": [
+      0.5,
+      0,
+      3.5,
+      3
+     ],
+     "texture": "#cloth"
+    },
+    "west": {
+     "uv": [
+      0.5,
+      0,
+      3.5,
+      3
+     ],
+     "texture": "#cloth"
+    },
+    "up": {
+     "uv": [
+      0.5,
+      0,
+      3.5,
+      3
+     ],
+     "texture": "#cloth"
+    },
+    "down": {
+     "uv": [
+      0.5,
+      0,
+      3.5,
+      3
+     ],
+     "texture": "#cloth"
+    }
+   }
+  },
+  {
+   "name": "tassel_a",
+   "from": [
+    3.5,
+    10,
+    3.5
+   ],
+   "to": [
+    4.5,
+    11,
+    4.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      11.5,
+      5,
+      12.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "south": {
+     "uv": [
+      3.5,
+      5,
+      4.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "east": {
+     "uv": [
+      11.5,
+      5,
+      12.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "west": {
+     "uv": [
+      3.5,
+      5,
+      4.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "up": {
+     "uv": [
+      3.5,
+      3.5,
+      4.5,
+      4.5
+     ],
+     "texture": "#gold"
+    },
+    "down": {
+     "uv": [
+      3.5,
+      11.5,
+      4.5,
+      12.5
+     ],
+     "texture": "#gold"
+    }
+   }
+  },
+  {
+   "name": "tassel_b",
+   "from": [
+    11.5,
+    10,
+    3.5
+   ],
+   "to": [
+    12.5,
+    11,
+    4.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3.5,
+      5,
+      4.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "south": {
+     "uv": [
+      11.5,
+      5,
+      12.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "east": {
+     "uv": [
+      11.5,
+      5,
+      12.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "west": {
+     "uv": [
+      3.5,
+      5,
+      4.5,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "up": {
+     "uv": [
+      11.5,
+      3.5,
+      12.5,
+      4.5
+     ],
+     "texture": "#gold"
+    },
+    "down": {
+     "uv": [
+      11.5,
+      11.5,
+      12.5,
+      12.5
+     ],
+     "texture": "#gold"
+    }
+   }
+  },
+  {
+   "name": "banner_rod",
+   "from": [
+    4.5,
+    8.5,
+    2.15
+   ],
+   "to": [
+    11.5,
+    9,
+    2.65
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     11,
+     8.75,
+     2.4
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      4.5,
+      7,
+      11.5,
+      7.5
+     ],
+     "texture": "#gold"
+    },
+    "south": {
+     "uv": [
+      4.5,
+      7,
+      11.5,
+      7.5
+     ],
+     "texture": "#gold"
+    },
+    "east": {
+     "uv": [
+      13.35,
+      7,
+      13.85,
+      7.5
+     ],
+     "texture": "#gold"
+    },
+    "west": {
+     "uv": [
+      2.15,
+      7,
+      2.65,
+      7.5
+     ],
+     "texture": "#gold"
+    },
+    "up": {
+     "uv": [
+      4.5,
+      2.15,
+      11.5,
+      2.65
+     ],
+     "texture": "#gold"
+    },
+    "down": {
+     "uv": [
+      4.5,
+      13.35,
+      11.5,
+      13.85
+     ],
+     "texture": "#gold"
+    }
+   }
+  },
+  {
+   "name": "banner",
+   "from": [
+    5,
+    1,
+    2.4
+   ],
+   "to": [
+    11,
+    8.75,
+    2.4
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     11,
+     8.75,
+     2.4
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      4,
+      0,
+      12,
+      10
+     ],
+     "texture": "#banner"
+    }
+   }
+  },
+  {
+   "name": "note",
+   "from": [
+    8.5,
+    2.5,
+    2.3
+   ],
+   "to": [
+    12.5,
+    6.5,
+    2.3
+   ],
+   "rotation": {
+    "angle": -22.5,
+    "axis": "z",
+    "origin": [
+     10.5,
+     4.5,
+     2.3
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#note"
+    }
+   }
+  }
+ ]
+}

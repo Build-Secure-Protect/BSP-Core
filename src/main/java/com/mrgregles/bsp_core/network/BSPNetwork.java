@@ -86,6 +86,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(VendorConfigPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(VendorConfigPacket::encode).decoder(VendorConfigPacket::decode)
                 .consumerMainThread(VendorConfigPacket::handle).add();
+        CHANNEL.messageBuilder(StallDisplayConfigPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(StallDisplayConfigPacket::encode).decoder(StallDisplayConfigPacket::decode)
+                .consumerMainThread(StallDisplayConfigPacket::handle).add();
         CHANNEL.messageBuilder(OpenRemoteShopPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(OpenRemoteShopPacket::encode).decoder(OpenRemoteShopPacket::decode)
                 .consumerMainThread(OpenRemoteShopPacket::handle).add();

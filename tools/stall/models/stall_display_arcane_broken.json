@@ -1,0 +1,480 @@
+{
+ "credit": "BSP-Core Market Stall, made by tools/gen_stall_design.py",
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "cloth": "bsp_core:block/stall/stall_arcane_cloth_torn",
+  "crystal": "bsp_core:block/stall/stall_arcane_crystal_dark",
+  "note": "bsp_core:block/stall/stall_arcane_note",
+  "rune": "bsp_core:block/stall/stall_arcane_rune_broken",
+  "stone": "bsp_core:block/stall/stall_arcane_stone_cracked",
+  "trim": "bsp_core:block/stall/stall_arcane_trim",
+  "particle": "bsp_core:block/stall/stall_arcane_stone_cracked"
+ },
+ "elements": [
+  {
+   "name": "step",
+   "from": [
+    1.5,
+    0,
+    1.5
+   ],
+   "to": [
+    14.5,
+    1.5,
+    14.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1.5,
+      14.5,
+      14.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      1.5,
+      14.5,
+      14.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      1.5,
+      14.5,
+      14.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      1.5,
+      14.5,
+      14.5,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      1.5,
+      1.5,
+      14.5,
+      14.5
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      1.5,
+      1.5,
+      14.5,
+      14.5
+     ],
+     "texture": "#stone",
+     "cullface": "down"
+    }
+   }
+  },
+  {
+   "name": "column",
+   "from": [
+    4.5,
+    1.5,
+    4.5
+   ],
+   "to": [
+    11.5,
+    10,
+    11.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4.5,
+      6,
+      11.5,
+      14.5
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      4.5,
+      6,
+      11.5,
+      14.5
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      4.5,
+      6,
+      11.5,
+      14.5
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      4.5,
+      6,
+      11.5,
+      14.5
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      4.5,
+      4.5,
+      11.5,
+      11.5
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      4.5,
+      4.5,
+      11.5,
+      11.5
+     ],
+     "texture": "#stone"
+    }
+   }
+  },
+  {
+   "name": "cloth",
+   "from": [
+    5.5,
+    2.5,
+    4.25
+   ],
+   "to": [
+    10.5,
+    10,
+    4.25
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#cloth"
+    }
+   }
+  },
+  {
+   "name": "top",
+   "from": [
+    3.5,
+    10,
+    3.5
+   ],
+   "to": [
+    12.5,
+    11.5,
+    12.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3.5,
+      4.5,
+      12.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "south": {
+     "uv": [
+      3.5,
+      4.5,
+      12.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "east": {
+     "uv": [
+      3.5,
+      4.5,
+      12.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "west": {
+     "uv": [
+      3.5,
+      4.5,
+      12.5,
+      6
+     ],
+     "texture": "#trim"
+    },
+    "up": {
+     "uv": [
+      3.5,
+      3.5,
+      12.5,
+      12.5
+     ],
+     "texture": "#trim"
+    },
+    "down": {
+     "uv": [
+      3.5,
+      3.5,
+      12.5,
+      12.5
+     ],
+     "texture": "#trim"
+    }
+   }
+  },
+  {
+   "name": "crystal_b",
+   "from": [
+    11.25,
+    11.5,
+    11.25
+   ],
+   "to": [
+    12.25,
+    15.5,
+    12.25
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     11.75,
+     13.5,
+     11.75
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "south": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "east": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "west": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "down": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    }
+   }
+  },
+  {
+   "name": "crystal_a_fallen",
+   "from": [
+    5,
+    11.5,
+    6
+   ],
+   "to": [
+    9,
+    12.5,
+    7
+   ],
+   "rotation": {
+    "angle": -22.5,
+    "axis": "y",
+    "origin": [
+     7,
+     12,
+     6.5
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "south": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "east": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "west": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    },
+    "down": {
+     "uv": [
+      4,
+      0,
+      8,
+      16
+     ],
+     "texture": "#crystal"
+    }
+   }
+  },
+  {
+   "name": "rune_fallen",
+   "from": [
+    3,
+    11.75,
+    3
+   ],
+   "to": [
+    13,
+    11.75,
+    13
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "x",
+    "origin": [
+     8,
+     11.75,
+     8
+    ]
+   },
+   "faces": {
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#rune"
+    }
+   }
+  },
+  {
+   "name": "note",
+   "from": [
+    5.5,
+    3.5,
+    4.05
+   ],
+   "to": [
+    10.5,
+    8.5,
+    4.05
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     8,
+     6,
+     4.05
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#note"
+    }
+   }
+  }
+ ]
+}

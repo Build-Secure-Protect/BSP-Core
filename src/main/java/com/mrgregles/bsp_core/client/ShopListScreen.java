@@ -79,8 +79,7 @@ public class ShopListScreen extends AbstractContainerScreen<ShopListMenu> {
         boolean hover = enabled && over(mx, my, x, y, KW, KH);
         g.fill(x, y, x + KW, y + KH + 2, KEY_EDGE);
         g.fill(x, y, x + KW, y + KH, hover ? 0xFFF5F0E4 : KEY);
-        String s = Component.translatable("gui.bsp_core.network." + label).getString().toUpperCase(Locale.ROOT);
-        g.drawString(font, s, x + KW / 2 - font.width(s) / 2, y + 6, enabled ? KEY_TEXT : KEY_LOCKED, false);
+        CashMachine.fit(g, font, Component.translatable("gui.bsp_core.network." + label).getString().toUpperCase(Locale.ROOT), x + 3, y + 6, KW - 6, enabled ? KEY_TEXT : KEY_LOCKED);
     }
 
     @Override
@@ -94,9 +93,9 @@ public class ShopListScreen extends AbstractContainerScreen<ShopListMenu> {
             var e = menu.shops.get(i);
             int ry = SY + 22 + (i - page * PER) * 11;
             boolean hover = over(mx, my, leftPos + SX + 6, topPos + ry, SW - 12, 10);
-            g.drawString(font, (hover ? "> " : "  ") + font.plainSubstrByWidth(e.name(), 120), SX + 6, ry, hover ? PHOS : PHOS_DIM, false);
-            String right = e.kind().name().toLowerCase(Locale.ROOT) + "  " + e.items();
-            g.drawString(font, right, SX + SW - 6 - font.width(right), ry, PHOS_DIM, false);
+            String right = (e.open() ? "" : Component.translatable("gui.bsp_core.network.closed").getString() + "  ") + e.kind().name().toLowerCase(Locale.ROOT) + "  " + e.items();
+            g.drawString(font, (hover ? "> " : "  ") + font.plainSubstrByWidth(e.name(), SW - 24 - font.width(right)), SX + 6, ry, hover ? PHOS : PHOS_DIM, false);
+            g.drawString(font, right, SX + SW - 6 - font.width(right), ry, e.open() ? PHOS_DIM : 0xFF6B5C, false);
         }
         String pg = Component.translatable("gui.bsp_core.network.page", page + 1, pages()).getString();
         g.drawString(font, pg, SX + SW - 6 - font.width(pg), SY + SH - 12, PHOS_DIM, false);

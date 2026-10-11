@@ -298,4 +298,27 @@ public final class Shops {
         }
         return CoinWallet.totalValue(player) >= cost * CoinTier.values()[currency].value();
     }
+
+    /** True while any visible item card can still be bought: unlimited, or a count above zero (refilling countdowns that are due). */
+    public static boolean anyStock(MinecraftServer server, Shop shop) {
+        long now = System.currentTimeMillis();
+        for (int i : visible(server, shop, now)) {
+            ShopItem it = shop.item(i);
+            if (it != null && it.section.isEmpty() && !it.stack.isEmpty() && stockLeft(server, shop, i, net.minecraft.Util.NIL_UUID, now) != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The shop's first visible item card, for a stall's counter; empty if it has none. */
+    public static net.minecraft.world.item.ItemStack firstItem(MinecraftServer server, Shop shop) {
+        for (int i : visible(server, shop, System.currentTimeMillis())) {
+            ShopItem it = shop.item(i);
+            if (it != null && it.section.isEmpty() && !it.stack.isEmpty()) {
+                return it.stack.copy();
+            }
+        }
+        return net.minecraft.world.item.ItemStack.EMPTY;
+    }
 }

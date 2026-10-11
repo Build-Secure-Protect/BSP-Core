@@ -1,5 +1,7 @@
 # Handoff: design the Market Stall models (for a separate design conversation)
 
+> **Status 2026-10-11: delivered and approved by the owner.** Eight skins (the four below plus `nether`, `yatai`, `nautical`, `arcane`), each with a broken variant: 16 models, 123 textures. Source `tools/gen_stall_design.py`, output `tools/stall/` (models, textures, `layout.json`, `NOTES.md` with a hook-up checklist), preview `tools/preview/stall_models.html`. The build conversation starts at `tools/stall/NOTES.md`. The brief below is kept as written.
+
 This is a design-only brief. The files you deliver come back to the BSP-Core build conversation, which wraps them in the mod (registration, generator, renderer, Jade, book, tests). Nothing here needs the mod's code.
 
 ## What the block is
@@ -43,6 +45,10 @@ Put these in a short notes file per skin (see deliverables). The broken variant 
 - **Inventory icon**: the normal `vanilla` skin is used for the item icon; nothing extra needed. If you want a specific angle, add a `display.gui` transform to that model (`rotation`, `translation`, `scale`).
 - The **Vendor Post**: a one-block post that a stock game mob (villager, wandering trader) stands on, with a lamp and a small name plate on its front, in the same four skins. Only if the stalls are done; the mod has a plain one already.
 
+## The Stall Display (a second, smaller block)
+
+A **Stall Display** is a one-block stand an admin places near a stall or vendor and links to it; the mod floats that shop's wares above it, one item after another, turning slowly, while the shop is open. It is set dressing for a market: a plinth, a pedestal, a hovering pane, a crate with a lid, whatever reads as "look what is sold here". One model is enough (no skins needed; if you want one per skin, name them `stall_display_<skin>.json` and say so in the notes). Keep the top open: the item floats above the block, so nothing should stand in the top third of the space over it. Give the **float point** (x, y, z in model units, y may be above 16) and the **scale** (0.8 is the default) in `NOTES.md`; they become the defaults, and admins can change size and height per display in game. It needs no lamps. The mod has a plain placeholder plinth today, which your model replaces.
+
 ## Deliverables (what to send back)
 
 ```
@@ -56,12 +62,14 @@ stall/
     market_stall_steampunk_broken.json
     market_stall_vanilla.json
     market_stall_vanilla_broken.json
+    stall_display.json
   textures/
-    stall_<skin>_<part>.png ...   (and .mcmeta files for any animated texture)
+    stall_<skin>_<part>.png ...
+    stall_display_<part>.png ...   (and .mcmeta files for any animated texture)
   NOTES.md
 ```
 
-`NOTES.md` lists, per skin: the stock lamp face (coordinates and which way it faces), the open lamp face, the display item point and scale, and anything the build conversation should know (which elements are the awning, what the broken variant changed). Texture references inside the models must be `bsp_core:block/stall/<file name without .png>`.
+`NOTES.md` lists, per skin: the stock lamp face (coordinates and which way it faces), the open lamp face, the display item point and scale, and for the Stall Display its float point and scale, and anything the build conversation should know (which elements are the awning, what the broken variant changed). Texture references inside the models must be `bsp_core:block/stall/<file name without .png>`.
 
 The build conversation then: copies the files into `src/main/resources/assets/bsp_core/` through a generator (so the rule "every asset comes from a generator" holds), writes the blockstate (`facing` x `skin` x `broken`), adds the lamps, the display item, the Jade line, the guide page and the tests.
 

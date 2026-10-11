@@ -16,8 +16,8 @@ import java.util.List;
 
 /**
  * The Vendor Post's assignment screen menu: the post's settings and the list of shops to pick from
- * come in the open buffer; the screen sends a {@code VendorConfigPacket} back and closes. Also used
- * by the Market Stall.
+ * come in the open buffer; the screen sends a {@code VendorConfigPacket} back and closes. The Market
+ * Stall uses it too, with its skin in place of the figure.
  */
 public class VendorMenu extends AbstractContainerMenu {
     /** The stock mobs an admin can pick, in order; a villager carries its profession as entity NBT. */
@@ -27,11 +27,13 @@ public class VendorMenu extends AbstractContainerMenu {
 
     public final BlockPos pos;
     public final boolean editable;
+    /** The Market Stall's skin ordinal, or -1 for a Vendor Post (which has a figure instead). */
+    public final int skin;
     public String shopId, mob, mobNbt;
     public OpenHours hours;
     public final List<String[]> shops = new ArrayList<>();
 
-    public VendorMenu(int id, Inventory inv, BlockPos pos, boolean editable, String shopId, OpenHours hours, String mob, String mobNbt, List<String[]> shops) {
+    public VendorMenu(int id, Inventory inv, BlockPos pos, boolean editable, String shopId, OpenHours hours, String mob, String mobNbt, int skin, List<String[]> shops) {
         super(ModMenus.VENDOR.get(), id);
         this.pos = pos;
         this.editable = editable;
@@ -39,6 +41,7 @@ public class VendorMenu extends AbstractContainerMenu {
         this.hours = hours;
         this.mob = mob;
         this.mobNbt = mobNbt;
+        this.skin = skin;
         this.shops.addAll(shops);
     }
 
@@ -53,6 +56,14 @@ public class VendorMenu extends AbstractContainerMenu {
     }
 
     public static void open(ServerPlayer sp, VendorPostBlockEntity post) {
+        open(sp, post.getBlockPos(), post.shopId, post.hours, post.mob, post.mobNbt, -1, "gui.bsp_core.vendor.title");
+    }
+
+    public static void open(ServerPlayer sp, MarketStallBlockEntity stall) {
+        open(sp, stall.getBlockPos(), stall.shopId, stall.hours, "", "", stall.skin().ordinal(), "block.bsp_core.market_stall");
+    }
+
+    private static void open(ServerPlayer sp, BlockPos pos, String shopId, OpenHours hours, String mob, String mobNbt, int skin, String titleKey) {
         boolean editable = com.mrgregles.bsp_core.admin.Admins.isAdmin(sp);
         List<String[]> shops = new ArrayList<>();
         for (Shop s : Shops.ledger(sp.server).all().values()) {
@@ -60,14 +71,15 @@ public class VendorMenu extends AbstractContainerMenu {
                 shops.add(new String[]{s.id, s.name});
             }
         }
-        NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> new VendorMenu(id, inv, post.getBlockPos(), editable, post.shopId, post.hours, post.mob, post.mobNbt, shops),
-                Component.translatable("gui.bsp_core.vendor.title")), buf -> {
-            buf.writeBlockPos(post.getBlockPos());
+        NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> new VendorMenu(id, inv, pos, editable, shopId, hours, mob, mobNbt, skin, shops),
+                Component.translatable(titleKey)), buf -> {
+            buf.writeBlockPos(pos);
             buf.writeBoolean(editable);
-            buf.writeUtf(post.shopId, 32);
-            buf.writeNbt(post.hours.save());
-            buf.writeUtf(post.mob, 64);
-            buf.writeUtf(post.mobNbt, 255);
+            buf.writeUtf(shopId, 32);
+            buf.writeNbt(hours.save());
+            buf.writeUtf(mob, 64);
+            buf.writeUtf(mobNbt, 255);
+            buf.writeInt(skin);
             buf.writeVarInt(shops.size());
             for (String[] s : shops) {
                 buf.writeUtf(s[0], 32);

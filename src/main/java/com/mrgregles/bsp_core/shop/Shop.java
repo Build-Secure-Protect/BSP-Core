@@ -32,6 +32,8 @@ public final class Shop {
     /** Special offer: the discount and when it ends (0 = no end). */
     public int offerPercent;
     public long offerEndMs;
+    /** The shop's own opening hours: used on the Shopping Network, and at a post or stall that has none of its own. */
+    public OpenHours hours = OpenHours.ALWAYS;
 
     public Shop(String id) {
         this.id = id;
@@ -72,6 +74,11 @@ public final class Shop {
         return false;
     }
 
+    /** The hours that count at a vendor or stall: its own when it has any, otherwise the shop's. */
+    public OpenHours effectiveHours(@javax.annotation.Nullable OpenHours venue) {
+        return venue != null && venue.mode() != OpenHours.Mode.ALWAYS ? venue : hours;
+    }
+
     public boolean offerActive(long now) {
         return kind == Kind.OFFER && offerPercent > 0 && (offerEndMs == 0 || now < offerEndMs);
     }
@@ -98,6 +105,7 @@ public final class Shop {
         t.putLong("Interval", intervalMs);
         t.putInt("OfferPercent", offerPercent);
         t.putLong("OfferEnd", offerEndMs);
+        t.put("Hours", hours.save());
         return t;
     }
 
@@ -128,6 +136,7 @@ public final class Shop {
         s.intervalMs = t.contains("Interval") ? t.getLong("Interval") : 12 * 3_600_000L;
         s.offerPercent = t.getInt("OfferPercent");
         s.offerEndMs = t.getLong("OfferEnd");
+        s.hours = OpenHours.load(t.getCompound("Hours"));
         return s;
     }
 }

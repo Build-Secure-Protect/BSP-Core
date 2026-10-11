@@ -896,11 +896,129 @@ public class BspGameTests {
         var remote = com.mrgregles.bsp_core.shop.Shops.create(server, "rem_" + Long.toHexString(System.nanoTime()), "Remote", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         remote.remote = true;
         com.mrgregles.bsp_core.shop.Shops.save(server, remote);
-        var list = com.mrgregles.bsp_core.shop.ShopListMenu.remote(server);
+        var list = com.mrgregles.bsp_core.shop.ShopListMenu.remote(server, h.getLevel());
         h.assertTrue(list.stream().anyMatch(e -> e.id().equals(remote.id)) && list.stream().noneMatch(e -> e.id().equals(local.id)), "only remote shops are listed");
         h.assertTrue(!com.mrgregles.bsp_core.shop.ShopListMenu.mayOpen(server, id, remote), "locked account cannot open it");
         com.mrgregles.bsp_core.bank.Bank.setRemoteShops(server, id, true);
         h.assertTrue(com.mrgregles.bsp_core.shop.ShopListMenu.mayOpen(server, id, remote) && !com.mrgregles.bsp_core.shop.ShopListMenu.mayOpen(server, id, local), "unlocked: remote yes, local no");
         h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_hours_close_it_on_the_network_and_yield_to_a_post(GameTestHelper h) {
+        var server = server(h);
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "hrs_" + Long.toHexString(System.nanoTime()), "Hours", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        shop.remote = true;
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursmode", "GAME", 0, 0), shop.id).equals("saved"), "mode set");
+        com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursopen", "20000", 0, 0), shop.id);
+        com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursclose", "23000", 0, 0), shop.id);
+        h.assertTrue(shop.hours.mode() == com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME && shop.hours.openMin() == 20000 && shop.hours.closeMin() == 23000, "hours saved: " + shop.hours);
+        var entry = com.mrgregles.bsp_core.shop.ShopListMenu.remote(server, h.getLevel()).stream().filter(e -> e.id().equals(shop.id)).findFirst().orElse(null);
+        h.assertTrue(entry != null && entry.open() == shop.hours.isOpen(h.getLevel()), "the network list carries the open state");
+        var post = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.REAL, 60, 120);
+        h.assertTrue(shop.effectiveHours(post) == post && shop.effectiveHours(com.mrgregles.bsp_core.shop.OpenHours.ALWAYS) == shop.hours && shop.effectiveHours(null) == shop.hours, "a post's own hours win; otherwise the shop's");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursmode", "REAL", 0, 0), shop.id).equals("saved"), "clock mode set");
+        com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursopen", "09:30", 0, 0), shop.id);
+        h.assertTrue(shop.hours.openMin() == 570, "hh:mm parsed on the clock: " + shop.hours.openMin());
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void stall_display_floats_the_linked_shops_wares_while_open(GameTestHelper h) {
+        var server = server(h);
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "disp_" + Long.toHexString(System.nanoTime()), "Display Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var it = new com.mrgregles.bsp_core.shop.ShopItem();
+        it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLDEN_APPLE, 1);
+        it.buy = 5;
+        shop.add(it);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        BlockPos postPos = new BlockPos(6, 1, 6), displayPos = new BlockPos(8, 1, 6);
+        h.setBlock(postPos, com.mrgregles.bsp_core.registry.ModBlocks.VENDOR_POST.get().defaultBlockState());
+        h.setBlock(displayPos, com.mrgregles.bsp_core.registry.ModBlocks.STALL_DISPLAY.get().defaultBlockState());
+        var post = entity(h, postPos, com.mrgregles.bsp_core.shop.VendorPostBlockEntity.class);
+        var display = entity(h, displayPos, com.mrgregles.bsp_core.shop.StallDisplayBlockEntity.class);
+        h.assertTrue(!display.link(h.absolutePos(new BlockPos(1, 1, 1))), "cannot link to air");
+        h.assertTrue(display.link(h.absolutePos(postPos)) && display.linked(), "linked to the post");
+        display.unlink();
+        h.assertTrue(!display.linked() && display.shown.isEmpty(), "unlinked and dark");
+        h.assertTrue(display.link(h.absolutePos(postPos)), "linked again");
+        var bread = new com.mrgregles.bsp_core.shop.ShopItem();
+        bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4);
+        bread.buy = 1;
+        shop.add(bread);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var a = display.choose(h.getLevel(), shop);
+        var b = display.choose(h.getLevel(), shop);
+        h.assertTrue(a.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && b.is(net.minecraft.world.item.Items.BREAD), "the items take turns: " + a + ", " + b);
+        display.pinned = 1;
+        h.assertTrue(display.choose(h.getLevel(), shop).is(net.minecraft.world.item.Items.BREAD) && display.choose(h.getLevel(), shop).is(net.minecraft.world.item.Items.BREAD), "a pinned item stays");
+        display.pinned = 99;
+        h.assertTrue(!display.choose(h.getLevel(), shop).isEmpty(), "a pin to a missing item falls back to the turn");
+        display.pinned = 0;
+        h.assertTrue(display.scale() == 0.88f && display.height() == 1.16f, "the player-built display's own point (18.5/16, in whole percent) and scale: " + display.scale() + " " + display.height());
+        display.scalePct = 150;
+        h.assertTrue(display.scale() == 1.5f, "size set");
+        post.set(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "minecraft:villager", "");
+        h.succeedWhen(() -> h.assertTrue(display.shown.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && display.shopName.equals("Display Shop"), "the golden apple floats: " + display.shown));
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void market_stall_is_broken_until_assigned_then_lights_lamps_and_powers_below(GameTestHelper h) {
+        var server = server(h);
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "stall_" + Long.toHexString(System.nanoTime()), "Stall Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var it = new com.mrgregles.bsp_core.shop.ShopItem();
+        it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.APPLE, 1);
+        it.buy = 5;
+        it.stockGlobal = 1;
+        shop.add(it);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        BlockPos lamp = new BlockPos(5, 1, 5), lower = new BlockPos(5, 2, 5), upper = new BlockPos(5, 3, 5);
+        h.setBlock(lamp, Blocks.REDSTONE_LAMP);
+        var block = com.mrgregles.bsp_core.registry.ModBlocks.MARKET_STALL.get();
+        var state = block.defaultBlockState().setValue(com.mrgregles.bsp_core.shop.MarketStallBlock.FACING, net.minecraft.core.Direction.EAST);
+        h.setBlock(lower, state);
+        h.setBlock(upper, state.setValue(com.mrgregles.bsp_core.shop.MarketStallBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+        var stall = entity(h, lower, com.mrgregles.bsp_core.shop.MarketStallBlockEntity.class);
+        h.assertTrue(h.getBlockEntity(upper) == null, "the upper half has no block entity");
+        h.assertTrue(h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN) && stall.skin() == com.mrgregles.bsp_core.shop.StallSkin.VANILLA, "a new stall is vanilla and broken");
+        h.assertTrue(state.getLightEmission(h.getLevel(), h.absolutePos(lower)) == 0, "a broken stall gives no light");
+        stall.setSkin(com.mrgregles.bsp_core.shop.StallSkin.NETHER);
+        h.assertTrue(h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.SKIN) == com.mrgregles.bsp_core.shop.StallSkin.NETHER
+                && h.getBlockState(upper).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.SKIN) == com.mrgregles.bsp_core.shop.StallSkin.NETHER, "the skin is on both halves");
+        h.assertTrue(h.getBlockEntity(lower) == stall, "changing the skin keeps the block entity");
+        BlockPos displayPos = new BlockPos(7, 2, 5);
+        h.setBlock(displayPos, com.mrgregles.bsp_core.registry.ModBlocks.STALL_DISPLAY.get().defaultBlockState());
+        var display = entity(h, displayPos, com.mrgregles.bsp_core.shop.StallDisplayBlockEntity.class);
+        h.assertTrue(h.getBlockState(displayPos).getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN), "a new display looks neglected");
+        h.assertTrue(display.link(h.absolutePos(lower)), "a Stall Display links to a stall");
+        stall.assign(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");
+        h.runAfterDelay(30, () -> {
+            display.refreshNow();
+            var ds = h.getBlockState(displayPos);
+            h.assertTrue(ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.SKIN) == com.mrgregles.bsp_core.shop.StallSkin.NETHER && !ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN)
+                    && display.shown.is(net.minecraft.world.item.Items.APPLE), "the display takes the stall's style and floats the apple");
+            h.assertTrue(display.height() == 1.03f && display.scale() == 0.81f, "the nether display's own item point (16.5/16, in whole percent) and scale are the defaults: " + display.height() + " " + display.scale());
+            h.assertTrue(!h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN) && !h.getBlockState(upper).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN), "assigned: whole again on both halves");
+            h.assertTrue(stall.open && stall.stocked && stall.shown.is(net.minecraft.world.item.Items.APPLE), "open, in stock, the apple on the counter: " + stall.open + " " + stall.stocked + " " + stall.shown);
+            h.assertTrue(h.getBlockState(lower).getLightEmission(h.getLevel(), h.absolutePos(lower)) == 7, "a whole nether stall glows");
+            h.assertTrue(h.getBlockState(lamp).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT), "the lamp beneath is lit while open");
+            com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, 0).left = 0;
+            h.runAfterDelay(25, () -> {
+                h.assertTrue(stall.open && !stall.stocked, "sold out: the stock lamp goes red, still open");
+                stall.assign("", com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");
+                h.runAfterDelay(25, () -> {
+                    h.assertTrue(h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN) && h.getBlockState(upper).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN), "unassigned: broken again");
+                    h.assertTrue(!stall.open && stall.shown.isEmpty(), "dark counter");
+                    display.refreshNow();
+                    h.assertTrue(h.getBlockState(displayPos).getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN), "the display looks neglected again");
+                    h.assertTrue(!h.getBlockState(lamp).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT), "the lamp beneath is off");
+                    h.setBlock(upper, Blocks.AIR);
+                    h.runAfterDelay(2, () -> {
+                        h.assertBlock(lower, b -> b == Blocks.AIR, () -> "taking the upper half away removes the lower half too");
+                        h.succeed();
+                    });
+                });
+            });
+        });
     }
 }

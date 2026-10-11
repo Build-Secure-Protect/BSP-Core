@@ -33,7 +33,6 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A,
             PHOS_DIM = 0x3FB97A, AMBER = 0xF2B544, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, ROW_SEL = 0xFF0F2D1C;
     private static final int SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20, KGAP = 4, STRIP_Y = 180, STRIP_H = 22;
-    private static final int PAGE = 7;
     private static final String[] FILTERS = {"all", "bought", "sold", "paid", "received", "deposits"};
     private static final SimpleDateFormat DATE = new SimpleDateFormat("d MMM HH:mm", Locale.ROOT);
 
@@ -70,9 +69,9 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
     @Override
     protected void init() {
         super.init();
-        nameBox = box(SX + 8, SY + 22, 120, "find");
+        nameBox = box(SX + 8, SY + 24, 120, "find");
         nameBox.setResponder(s -> send(BankActionPacket.Action.SEARCH, 0, 0, s, 0, false));
-        amountBox = box(SX + 8, SY + 96, 90, "amount");
+        amountBox = box(SX + 8, SY + 100, 90, "amount");
         amountBox.setFilter(s -> s.matches("[0-9]{0,12}"));
         searchBox = box(SX + 8, SY + 20, 120, "search");
         setView(View.ACCOUNT);
@@ -131,7 +130,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             case LOG -> {
                 top.add(new Key("back", true, () -> setView(View.ACCOUNT)));
                 top.add(new Key("prev_page", true, () -> page = Math.max(0, page - 1)));
-                top.add(new Key("next_page", true, () -> page = Math.min(Math.max(0, (filtered().size() - 1) / PAGE), page + 1)));
+                top.add(new Key("next_page", true, () -> page = Math.min(Math.max(0, (filtered().size() - 1) / perPage()), page + 1)));
                 bottom.add(new Key("filter", true, () -> { filter = (filter + 1) % FILTERS.length; page = 0; }));
                 bottom.add(new Key(sortByAmount ? "sort_amount" : "sort_date", true, () -> { sortByAmount = !sortByAmount; setView(View.LOG); }));
             }
@@ -170,6 +169,32 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         send(BankActionPacket.Action.PAY, 0, 0, name, amount, false);
     }
 
+    /** The filter chips wrapped into rows across the screen: x, y, w of each, screen-relative. */
+    private List<int[]> chips() {
+        List<int[]> out = new ArrayList<>();
+        int fx = SX + 6, fy = SY + 33;
+        for (String f : FILTERS) {
+            int w = font.width(tr("filter_" + f)) + 6;
+            if (fx + w > SX + SW - 6) {
+                fx = SX + 6;
+                fy += 13;
+            }
+            out.add(new int[]{fx, fy, w});
+            fx += w + 3;
+        }
+        return out;
+    }
+
+    /** Where the log rows start, under the chips. */
+    private int listY() {
+        List<int[]> chips = chips();
+        return chips.get(chips.size() - 1)[1] + 17;
+    }
+
+    private int perPage() {
+        return Math.max(1, (SY + SH - 24 - listY()) / 11);
+    }
+
     private List<BankTransaction> filtered() {
         String q = searchBox.getValue().trim().toLowerCase(Locale.ROOT);
         List<BankTransaction> out = new ArrayList<>();
@@ -200,6 +225,10 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         lastSerial = menu.messageSerial;
         String key = menu.messageKey;
         Object[] args = menu.messageArgs;
+        if (key.isEmpty()) {
+            message = Component.empty();
+            return;
+        }
         if (key.equals("confirm_screen")) {
             confirming = true;
             confirmName = args.length > 1 ? (String) args[1] : nameBox.getValue().trim();
@@ -257,7 +286,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         }
         if (view == View.PAY) {
             for (int i = 0; i < Math.min(5, menu.found.size()); i++) {
-                if (over(mx, my, x + SX + 8, y + SY + 36 + i * 11, 120, 10)) {
+                if (over(mx, my, x + SX + 8, y + SY + 38 + i * 11, 120, 10)) {
                     nameBox.setValue(menu.found.get(i));
                     click();
                     return true;
@@ -265,16 +294,15 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             }
         }
         if (view == View.LOG) {
-            int fx = x + SX + 6;
-            for (int i = 0; i < FILTERS.length; i++) {
-                int w = font.width(tr("filter_" + FILTERS[i])) + 6;
-                if (over(mx, my, fx, y + SY + 34, w, 10)) {
+            List<int[]> chips = chips();
+            for (int i = 0; i < chips.size(); i++) {
+                int[] c = chips.get(i);
+                if (over(mx, my, x + c[0], y + c[1], c[2], 11)) {
                     filter = i;
                     page = 0;
                     click();
                     return true;
                 }
-                fx += w + 3;
             }
         }
         if (view == View.DEPOSIT || view == View.WITHDRAW) {
@@ -353,16 +381,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
-        boolean hover = k.enabled && over(mx, my, x, y, KW, KH);
-        g.fill(x, y, x + KW, y + KH + 2, KEY_EDGE);
-        g.fill(x, y, x + KW, y + KH, hover ? 0xFFF5F0E4 : KEY);
-        String label = tr(k.label).getString().toUpperCase(Locale.ROOT);
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(label), KW - 6);
-        int ty = y + (KH - lines.size() * 9) / 2 + 1;
-        for (var line : lines) {
-            g.drawString(font, line, x + KW / 2 - font.width(line) / 2, ty, k.enabled ? KEY_TEXT : KEY_LOCKED, false);
-            ty += 9;
-        }
+        CashMachine.key(g, font, x, y, KW, KH, tr(k.label).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     @Override
@@ -373,20 +392,19 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         String who = minecraft.player.getGameProfile().getName();
         g.drawString(font, who, SX + SW - 6 - font.width(who), SY + 6, PHOS_DIM, false);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
+        // the message sits at the foot of the screen; the view is clipped to the space above it
+        int msgH = CashMachine.height(font, message, SW - 12);
+        int bottom = SY + SH - (msgH > 0 ? msgH + 4 : 0);
+        CashMachine.clip(g, leftPos, topPos, SX, SY + 18, SW, bottom - SY - 18);
         switch (view) {
             case ACCOUNT -> drawAccount(g);
             case PAY -> drawPay(g);
             case LOG -> drawLog(g);
             case DEPOSIT, WITHDRAW -> drawCoins(g);
         }
-        // the message line at the foot of the screen
-        if (!message.getString().isEmpty()) {
-            List<net.minecraft.util.FormattedCharSequence> lines = font.split(message, SW - 12);
-            int ly = SY + SH - 4 - lines.size() * 9;
-            for (var line : lines) {
-                g.drawString(font, line, SX + 6, ly, messageColour, false);
-                ly += 9;
-            }
+        g.disableScissor();
+        if (msgH > 0) {
+            CashMachine.wrap(g, font, message, SX + 6, bottom, SW - 12, messageColour);
         }
     }
 
@@ -400,14 +418,9 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         String unit = tr("pieces").getString().toUpperCase(Locale.ROOT);
         g.drawString(font, unit, SX + SW / 2 + font.width(big) + 4, SY + 38, PHOS_DIM, false);
         coinRow(g, SY + 58, true);
-        List<net.minecraft.util.FormattedCharSequence> hint = font.split(tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SW - 16);
-        int hy = SY + 110;
-        for (var line : hint) {
-            g.drawString(font, line, SX + 8, hy, PHOS_DIM, false);
-            hy += 9;
-        }
+        int hy = SY + 100 + CashMachine.wrap(g, font, tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SX + 8, SY + 100, SW - 16, PHOS_DIM);
         if (menu.portable()) {
-            g.drawString(font, tr(account().remoteShops ? "network_open" : "network_locked", com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.BANK_REMOTE_UNLOCK_VALUE, 16)), SX + 8, hy + 4, AMBER, false);
+            CashMachine.wrap(g, font, tr(account().remoteShops ? "network_open" : "network_locked", com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.BANK_REMOTE_UNLOCK_VALUE, 16)), SX + 8, hy + 3, SW - 16, AMBER);
         }
     }
 
@@ -447,53 +460,52 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         }
     }
 
+    /** The search box (hint "Search") with the matches under it, then the amount box (hint "0") with "pieces" beside it. */
     private void drawPay(GuiGraphics g) {
-        g.drawString(font, tr("find"), SX + 8, SY + 22 - 10, PHOS_DIM, false);
-        g.fill(SX + 6, SY + 32, SX + 132, SY + 33, SCREEN_EDGE);
+        g.fill(SX + 6, SY + 34, SX + 132, SY + 35, SCREEN_EDGE);
+        String bal = tr("balance", Bank.format(account().pieces)).getString();
+        CashMachine.fitRight(g, font, bal, SX + SW - 6, SY + 24, SW - 150, PHOS_DIM);
         for (int i = 0; i < Math.min(5, menu.found.size()); i++) {
             String n = menu.found.get(i);
             boolean chosen = n.equalsIgnoreCase(nameBox.getValue().trim());
-            g.drawString(font, (chosen ? "> " : "  ") + n, SX + 8, SY + 36 + i * 11, chosen ? PHOS : PHOS_DIM, false);
+            g.drawString(font, (chosen ? "> " : "  ") + n, SX + 8, SY + 38 + i * 11, chosen ? PHOS : PHOS_DIM, false);
         }
-        g.drawString(font, tr("amount"), SX + 8, SY + 96 - 10, PHOS_DIM, false);
-        g.fill(SX + 6, SY + 106, SX + 100, SY + 107, SCREEN_EDGE);
-        g.drawString(font, tr("pieces"), SX + 104, SY + 96, PHOS_DIM, false);
+        g.fill(SX + 6, SY + 110, SX + 100, SY + 111, SCREEN_EDGE);
+        g.drawString(font, tr("pieces"), SX + 104, SY + 100, PHOS_DIM, false);
         long amount;
         try {
             amount = Long.parseLong(amountBox.getValue().trim());
         } catch (NumberFormatException e) {
             amount = 0;
         }
-        String after = tr("balance_after", Bank.format(Math.max(0, account().pieces - amount))).getString();
-        g.drawString(font, after, SX + 8, SY + 112, PHOS_DIM, false);
-        g.drawString(font, tr("balance", Bank.format(account().pieces)), SX + SW - 6 - font.width(tr("balance", Bank.format(account().pieces))), SY + 22 - 10, PHOS_DIM, false);
+        CashMachine.fit(g, font, tr("balance_after", Bank.format(Math.max(0, account().pieces - amount))).getString(), SX + 8, SY + 114, SW - 16, PHOS_DIM);
     }
 
     private void drawLog(GuiGraphics g) {
         g.fill(SX + 6, SY + 30, SX + 132, SY + 31, SCREEN_EDGE);
-        int fx = SX + 6;
-        for (int i = 0; i < FILTERS.length; i++) {
+        List<int[]> chips = chips();
+        for (int i = 0; i < chips.size(); i++) {
+            int[] c = chips.get(i);
             String f = tr("filter_" + FILTERS[i]).getString();
-            int w = font.width(f) + 6;
             if (i == filter) {
-                g.fill(fx, SY + 33, fx + w, SY + 44, PHOS);
+                g.fill(c[0], c[1], c[0] + c[2], c[1] + 11, PHOS);
             } else {
-                g.fill(fx, SY + 33, fx + w, SY + 34, PHOS_DIM);
-                g.fill(fx, SY + 43, fx + w, SY + 44, PHOS_DIM);
+                g.fill(c[0], c[1], c[0] + c[2], c[1] + 1, PHOS_DIM);
+                g.fill(c[0], c[1] + 10, c[0] + c[2], c[1] + 11, PHOS_DIM);
             }
-            g.drawString(font, f, fx + 3, SY + 35, i == filter ? SCREEN & 0xFFFFFF : PHOS_DIM, false);
-            fx += w + 3;
+            g.drawString(font, f, c[0] + 3, c[1] + 2, i == filter ? SCREEN & 0xFFFFFF : PHOS_DIM, false);
         }
+        int listY = listY(), per = perPage();
         List<BankTransaction> list = filtered();
         if (list.isEmpty()) {
-            g.drawString(font, tr("log_empty"), SX + 8, SY + 52, PHOS_DIM, false);
+            g.drawString(font, tr("log_empty"), SX + 8, listY + 2, PHOS_DIM, false);
             return;
         }
-        int pages = (list.size() + PAGE - 1) / PAGE;
+        int pages = (list.size() + per - 1) / per;
         page = Math.min(page, pages - 1);
-        for (int i = page * PAGE; i < Math.min(list.size(), (page + 1) * PAGE); i++) {
+        for (int i = page * per; i < Math.min(list.size(), (page + 1) * per); i++) {
             BankTransaction t = list.get(i);
-            int ry = SY + 50 + (i - page * PAGE) * 11;
+            int ry = listY + (i - page * per) * 11;
             String when = DATE.format(new Date(t.ms()));
             String what = t.type().name().toLowerCase(Locale.ROOT) + " " + t.with() + (t.detail().isEmpty() ? "" : ", " + t.detail());
             String amount = t.pieces() != 0 ? (t.pieces() > 0 ? "+" : "-") + Bank.format(Math.abs(t.pieces()))
@@ -505,7 +517,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             g.drawString(font, amount, SX + SW - 6 - aw, ry, t.pieces() < 0 ? AMBER : PHOS, false);
         }
         String pg = tr("page", page + 1, pages, list.size()).getString();
-        g.drawString(font, pg, SX + SW - 6 - font.width(pg), SY + SH - 22, PHOS_DIM, false);
+        CashMachine.fitRight(g, font, pg, SX + SW - 6, SY + SH - 22, SW - 12, PHOS_DIM);
     }
 
     private void drawCoins(GuiGraphics g) {
@@ -515,18 +527,12 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         CoinTier t = CoinTier.values()[tier];
         int avail = available();
         count = Math.max(1, Math.min(count, Math.max(1, avail)));
-        String line1 = tr(dep ? "in_hand" : "in_bank", avail, Bank.tierName(t)).getString();
-        g.drawString(font, line1, SX + 8, SY + 84, PHOS_DIM, false);
-        String preview = dep ? (convert ? tr("preview_convert", count, Bank.tierName(t), Bank.format(Bank.piecesPerCoin(t) * count)) : tr("preview_keep", count, Bank.tierName(t))).getString()
-                : tr("preview_withdraw", count, Bank.tierName(t)).getString();
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(preview), SW - 16);
-        int py = SY + 98;
-        for (var line : lines) {
-            g.drawString(font, line, SX + 8, py, PHOS, false);
-            py += 9;
-        }
+        CashMachine.fit(g, font, tr(dep ? "in_hand" : "in_bank", avail, Bank.tierName(t)).getString(), SX + 8, SY + 84, SW - 16, PHOS_DIM);
+        Component preview = dep ? (convert ? tr("preview_convert", count, Bank.tierName(t), Bank.format(Bank.piecesPerCoin(t) * count)) : tr("preview_keep", count, Bank.tierName(t)))
+                : tr("preview_withdraw", count, Bank.tierName(t));
+        int py = SY + 98 + CashMachine.wrap(g, font, preview, SX + 8, SY + 98, SW - 16, PHOS);
         if (dep) {
-            g.drawString(font, tr(convert ? "convert_hint" : "keep_hint"), SX + 8, py + 4, PHOS_DIM, false);
+            CashMachine.wrap(g, font, tr(convert ? "convert_hint" : "keep_hint"), SX + 8, py + 4, SW - 16, PHOS_DIM);
         }
     }
 }

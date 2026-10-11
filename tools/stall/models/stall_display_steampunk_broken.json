@@ -1,0 +1,791 @@
+{
+ "credit": "BSP-Core Market Stall, made by tools/gen_stall_design.py",
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "brass": "bsp_core:block/stall/stall_steampunk_brass",
+  "copper": "bsp_core:block/stall/stall_steampunk_copper_patina",
+  "dial": "bsp_core:block/stall/stall_steampunk_dial_broken",
+  "gear": "bsp_core:block/stall/stall_steampunk_gear",
+  "glass": "bsp_core:block/stall/stall_steampunk_glass_broken",
+  "iron": "bsp_core:block/stall/stall_steampunk_iron",
+  "pipe": "bsp_core:block/stall/stall_steampunk_pipe_patina",
+  "tag": "bsp_core:block/stall/stall_steampunk_tag",
+  "particle": "bsp_core:block/stall/stall_steampunk_copper_patina"
+ },
+ "elements": [
+  {
+   "name": "floor_plate",
+   "from": [
+    1,
+    0,
+    1
+   ],
+   "to": [
+    15,
+    0.75,
+    15
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#iron"
+    },
+    "south": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#iron"
+    },
+    "east": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#iron"
+    },
+    "west": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#iron"
+    },
+    "up": {
+     "uv": [
+      1,
+      1,
+      15,
+      15
+     ],
+     "texture": "#iron"
+    },
+    "down": {
+     "uv": [
+      1,
+      1,
+      15,
+      15
+     ],
+     "texture": "#iron",
+     "cullface": "down"
+    }
+   }
+  },
+  {
+   "name": "stand_a",
+   "from": [
+    5,
+    0.75,
+    4.5
+   ],
+   "to": [
+    11,
+    8,
+    11.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5,
+      8,
+      11,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "south": {
+     "uv": [
+      5,
+      8,
+      11,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "east": {
+     "uv": [
+      4.5,
+      8,
+      11.5,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "west": {
+     "uv": [
+      4.5,
+      8,
+      11.5,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "up": {
+     "uv": [
+      5,
+      4.5,
+      11,
+      11.5
+     ],
+     "texture": "#copper"
+    },
+    "down": {
+     "uv": [
+      5,
+      4.5,
+      11,
+      11.5
+     ],
+     "texture": "#copper"
+    }
+   }
+  },
+  {
+   "name": "stand_b",
+   "from": [
+    4.5,
+    0.75,
+    5
+   ],
+   "to": [
+    11.5,
+    8,
+    11
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4.5,
+      8,
+      11.5,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "south": {
+     "uv": [
+      4.5,
+      8,
+      11.5,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "east": {
+     "uv": [
+      5,
+      8,
+      11,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "west": {
+     "uv": [
+      5,
+      8,
+      11,
+      15.25
+     ],
+     "texture": "#copper"
+    },
+    "up": {
+     "uv": [
+      4.5,
+      5,
+      11.5,
+      11
+     ],
+     "texture": "#copper"
+    },
+    "down": {
+     "uv": [
+      4.5,
+      5,
+      11.5,
+      11
+     ],
+     "texture": "#copper"
+    }
+   }
+  },
+  {
+   "name": "band_a",
+   "from": [
+    4.75,
+    6,
+    4.25
+   ],
+   "to": [
+    11.25,
+    7,
+    11.75
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4.75,
+      9,
+      11.25,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "south": {
+     "uv": [
+      4.75,
+      9,
+      11.25,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "east": {
+     "uv": [
+      4.25,
+      9,
+      11.75,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "west": {
+     "uv": [
+      4.25,
+      9,
+      11.75,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "up": {
+     "uv": [
+      4.75,
+      4.25,
+      11.25,
+      11.75
+     ],
+     "texture": "#brass"
+    },
+    "down": {
+     "uv": [
+      4.75,
+      4.25,
+      11.25,
+      11.75
+     ],
+     "texture": "#brass"
+    }
+   }
+  },
+  {
+   "name": "band_b",
+   "from": [
+    4.25,
+    6,
+    4.75
+   ],
+   "to": [
+    11.75,
+    7,
+    11.25
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4.25,
+      9,
+      11.75,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "south": {
+     "uv": [
+      4.25,
+      9,
+      11.75,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "east": {
+     "uv": [
+      4.75,
+      9,
+      11.25,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "west": {
+     "uv": [
+      4.75,
+      9,
+      11.25,
+      10
+     ],
+     "texture": "#brass"
+    },
+    "up": {
+     "uv": [
+      4.25,
+      4.75,
+      11.75,
+      11.25
+     ],
+     "texture": "#brass"
+    },
+    "down": {
+     "uv": [
+      4.25,
+      4.75,
+      11.75,
+      11.25
+     ],
+     "texture": "#brass"
+    }
+   }
+  },
+  {
+   "name": "dial",
+   "from": [
+    5.5,
+    1.5,
+    4.2
+   ],
+   "to": [
+    9,
+    5,
+    4.2
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#dial"
+    }
+   }
+  },
+  {
+   "name": "gear",
+   "from": [
+    9,
+    1.25,
+    4.25
+   ],
+   "to": [
+    12,
+    4.25,
+    4.25
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     10.5,
+     2.75,
+     4.25
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#gear"
+    }
+   }
+  },
+  {
+   "name": "pipe",
+   "from": [
+    11.75,
+    0.75,
+    11.75
+   ],
+   "to": [
+    13.25,
+    8.5,
+    13.25
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2.75,
+      7.5,
+      4.25,
+      15.25
+     ],
+     "texture": "#pipe"
+    },
+    "south": {
+     "uv": [
+      11.75,
+      7.5,
+      13.25,
+      15.25
+     ],
+     "texture": "#pipe"
+    },
+    "east": {
+     "uv": [
+      2.75,
+      7.5,
+      4.25,
+      15.25
+     ],
+     "texture": "#pipe"
+    },
+    "west": {
+     "uv": [
+      11.75,
+      7.5,
+      13.25,
+      15.25
+     ],
+     "texture": "#pipe"
+    },
+    "up": {
+     "uv": [
+      11.75,
+      11.75,
+      13.25,
+      13.25
+     ],
+     "texture": "#pipe"
+    },
+    "down": {
+     "uv": [
+      11.75,
+      2.75,
+      13.25,
+      4.25
+     ],
+     "texture": "#pipe"
+    }
+   }
+  },
+  {
+   "name": "pipe_elbow",
+   "from": [
+    11.5,
+    7.5,
+    11.5
+   ],
+   "to": [
+    13.5,
+    9,
+    13.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2.5,
+      7,
+      4.5,
+      8.5
+     ],
+     "texture": "#brass"
+    },
+    "south": {
+     "uv": [
+      11.5,
+      7,
+      13.5,
+      8.5
+     ],
+     "texture": "#brass"
+    },
+    "east": {
+     "uv": [
+      2.5,
+      7,
+      4.5,
+      8.5
+     ],
+     "texture": "#brass"
+    },
+    "west": {
+     "uv": [
+      11.5,
+      7,
+      13.5,
+      8.5
+     ],
+     "texture": "#brass"
+    },
+    "up": {
+     "uv": [
+      11.5,
+      11.5,
+      13.5,
+      13.5
+     ],
+     "texture": "#brass"
+    },
+    "down": {
+     "uv": [
+      11.5,
+      2.5,
+      13.5,
+      4.5
+     ],
+     "texture": "#brass"
+    }
+   }
+  },
+  {
+   "name": "jar_base",
+   "from": [
+    3,
+    8,
+    3
+   ],
+   "to": [
+    13,
+    9,
+    13
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3,
+      7,
+      13,
+      8
+     ],
+     "texture": "#brass"
+    },
+    "south": {
+     "uv": [
+      3,
+      7,
+      13,
+      8
+     ],
+     "texture": "#brass"
+    },
+    "east": {
+     "uv": [
+      3,
+      7,
+      13,
+      8
+     ],
+     "texture": "#brass"
+    },
+    "west": {
+     "uv": [
+      3,
+      7,
+      13,
+      8
+     ],
+     "texture": "#brass"
+    },
+    "up": {
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ],
+     "texture": "#brass"
+    },
+    "down": {
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ],
+     "texture": "#brass"
+    }
+   }
+  },
+  {
+   "name": "jar_glass",
+   "from": [
+    3.5,
+    9,
+    3.5
+   ],
+   "to": [
+    12.5,
+    15.5,
+    12.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#glass"
+    }
+   }
+  },
+  {
+   "name": "tag_string",
+   "from": [
+    7.4,
+    7,
+    2.95
+   ],
+   "to": [
+    7.6,
+    8,
+    3.05
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      8.4,
+      8,
+      8.6,
+      9
+     ],
+     "texture": "#iron"
+    },
+    "south": {
+     "uv": [
+      7.4,
+      8,
+      7.6,
+      9
+     ],
+     "texture": "#iron"
+    },
+    "east": {
+     "uv": [
+      12.95,
+      8,
+      13.05,
+      9
+     ],
+     "texture": "#iron"
+    },
+    "west": {
+     "uv": [
+      2.95,
+      8,
+      3.05,
+      9
+     ],
+     "texture": "#iron"
+    },
+    "up": {
+     "uv": [
+      7.4,
+      2.95,
+      7.6,
+      3.05
+     ],
+     "texture": "#iron"
+    },
+    "down": {
+     "uv": [
+      7.4,
+      12.95,
+      7.6,
+      13.05
+     ],
+     "texture": "#iron"
+    }
+   }
+  },
+  {
+   "name": "tag",
+   "from": [
+    5.5,
+    3,
+    2.9
+   ],
+   "to": [
+    9.5,
+    7,
+    2.9
+   ],
+   "rotation": {
+    "angle": 22.5,
+    "axis": "z",
+    "origin": [
+     7.5,
+     7,
+     2.9
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#tag"
+    }
+   }
+  }
+ ]
+}

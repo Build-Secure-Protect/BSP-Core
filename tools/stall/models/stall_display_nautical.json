@@ -1,0 +1,623 @@
+{
+ "credit": "BSP-Core Market Stall, made by tools/gen_stall_design.py",
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "barrel": "bsp_core:block/stall/stall_nautical_barrel",
+  "iron": "bsp_core:block/stall/stall_nautical_iron",
+  "lantern": "bsp_core:block/stall/stall_nautical_lantern",
+  "net": "bsp_core:block/stall/stall_nautical_net",
+  "planks": "bsp_core:block/stall/stall_nautical_planks",
+  "rope": "bsp_core:block/stall/stall_nautical_rope",
+  "top": "bsp_core:block/stall/stall_nautical_barrel_top",
+  "particle": "bsp_core:block/stall/stall_nautical_planks"
+ },
+ "elements": [
+  {
+   "name": "deck",
+   "from": [
+    1,
+    0,
+    1
+   ],
+   "to": [
+    15,
+    0.75,
+    15
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#planks"
+    },
+    "south": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#planks"
+    },
+    "east": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#planks"
+    },
+    "west": {
+     "uv": [
+      1,
+      15.25,
+      15,
+      16
+     ],
+     "texture": "#planks"
+    },
+    "up": {
+     "uv": [
+      1,
+      1,
+      15,
+      15
+     ],
+     "texture": "#planks"
+    },
+    "down": {
+     "uv": [
+      1,
+      1,
+      15,
+      15
+     ],
+     "texture": "#planks",
+     "cullface": "down"
+    }
+   }
+  },
+  {
+   "name": "barrel_x",
+   "from": [
+    4.5,
+    0.75,
+    4
+   ],
+   "to": [
+    11.5,
+    11,
+    12
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#top"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    }
+   }
+  },
+  {
+   "name": "barrel_z",
+   "from": [
+    4,
+    0.75,
+    4.5
+   ],
+   "to": [
+    12,
+    11,
+    11.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#top"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#barrel"
+    }
+   }
+  },
+  {
+   "name": "net",
+   "from": [
+    4,
+    3,
+    3.9
+   ],
+   "to": [
+    12,
+    10,
+    3.9
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      8,
+      7
+     ],
+     "texture": "#net"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      8,
+      7
+     ],
+     "texture": "#net"
+    }
+   }
+  },
+  {
+   "name": "rope",
+   "from": [
+    3.75,
+    10,
+    4.25
+   ],
+   "to": [
+    12.25,
+    10.75,
+    11.75
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3.75,
+      5.25,
+      12.25,
+      6
+     ],
+     "texture": "#rope"
+    },
+    "south": {
+     "uv": [
+      3.75,
+      5.25,
+      12.25,
+      6
+     ],
+     "texture": "#rope"
+    },
+    "east": {
+     "uv": [
+      4.25,
+      5.25,
+      11.75,
+      6
+     ],
+     "texture": "#rope"
+    },
+    "west": {
+     "uv": [
+      4.25,
+      5.25,
+      11.75,
+      6
+     ],
+     "texture": "#rope"
+    },
+    "up": {
+     "uv": [
+      3.75,
+      4.25,
+      12.25,
+      11.75
+     ],
+     "texture": "#rope"
+    },
+    "down": {
+     "uv": [
+      3.75,
+      4.25,
+      12.25,
+      11.75
+     ],
+     "texture": "#rope"
+    }
+   }
+  },
+  {
+   "name": "anchor_shank",
+   "from": [
+    12.5,
+    0.75,
+    7
+   ],
+   "to": [
+    13.5,
+    8,
+    8
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2.5,
+      8,
+      3.5,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "south": {
+     "uv": [
+      12.5,
+      8,
+      13.5,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "east": {
+     "uv": [
+      8,
+      8,
+      9,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "west": {
+     "uv": [
+      7,
+      8,
+      8,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "up": {
+     "uv": [
+      12.5,
+      7,
+      13.5,
+      8
+     ],
+     "texture": "#iron"
+    },
+    "down": {
+     "uv": [
+      12.5,
+      8,
+      13.5,
+      9
+     ],
+     "texture": "#iron"
+    }
+   }
+  },
+  {
+   "name": "anchor_stock",
+   "from": [
+    11.75,
+    6.5,
+    7
+   ],
+   "to": [
+    14.25,
+    7.25,
+    8
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1.75,
+      8.75,
+      4.25,
+      9.5
+     ],
+     "texture": "#iron"
+    },
+    "south": {
+     "uv": [
+      11.75,
+      8.75,
+      14.25,
+      9.5
+     ],
+     "texture": "#iron"
+    },
+    "east": {
+     "uv": [
+      8,
+      8.75,
+      9,
+      9.5
+     ],
+     "texture": "#iron"
+    },
+    "west": {
+     "uv": [
+      7,
+      8.75,
+      8,
+      9.5
+     ],
+     "texture": "#iron"
+    },
+    "up": {
+     "uv": [
+      11.75,
+      7,
+      14.25,
+      8
+     ],
+     "texture": "#iron"
+    },
+    "down": {
+     "uv": [
+      11.75,
+      8,
+      14.25,
+      9
+     ],
+     "texture": "#iron"
+    }
+   }
+  },
+  {
+   "name": "anchor_arm",
+   "from": [
+    12,
+    0.75,
+    7
+   ],
+   "to": [
+    14,
+    1.5,
+    8
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "z",
+    "origin": [
+     13,
+     1.1,
+     7.5
+    ]
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      2,
+      14.5,
+      4,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "south": {
+     "uv": [
+      12,
+      14.5,
+      14,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "east": {
+     "uv": [
+      8,
+      14.5,
+      9,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "west": {
+     "uv": [
+      7,
+      14.5,
+      8,
+      15.25
+     ],
+     "texture": "#iron"
+    },
+    "up": {
+     "uv": [
+      12,
+      7,
+      14,
+      8
+     ],
+     "texture": "#iron"
+    },
+    "down": {
+     "uv": [
+      12,
+      8,
+      14,
+      9
+     ],
+     "texture": "#iron"
+    }
+   }
+  },
+  {
+   "name": "lantern",
+   "from": [
+    9.5,
+    11,
+    9.5
+   ],
+   "to": [
+    11.5,
+    13.5,
+    11.5
+   ],
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    }
+   }
+  }
+ ]
+}

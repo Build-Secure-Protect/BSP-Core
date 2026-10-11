@@ -38,6 +38,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
             AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, CARD = 0xFF0A1A10, CARD_SEL = 0xFF0F2D1C, CARD_EMPTY = 0xFF07100A;
     private static final int SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3, CX = SX + 6, CY = SY + 22, CW = 28, CH = 42, CGAP = 1;
     private static final String[] STYLES = {"cash_machine", "passbook", "market_board"};
+    private static final int LIST_ROWS = 8, SIDE_Y = 38, SIDE_STEP = 11, SET_STEP = 10;
 
     private enum View { LIST, PAGE, BROWSER, SETTINGS, STYLE }
 
@@ -83,7 +84,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
     @Override
     protected void init() {
         super.init();
-        field = new EditBox(font, leftPos + PX + 2, topPos + SY + 150, PW - 4, 10, Component.empty());
+        field = new EditBox(font, leftPos + PX + 2, topPos + SY + 154, PW - 4, 10, Component.empty());
         field.setBordered(false);
         field.setTextColor(PHOS);
         field.setMaxLength(32);
@@ -169,7 +170,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
             case LIST -> {
                 bottom.add(new Key("new_shop", ed && !newId.getValue().isBlank(), () -> send(Action.CREATE, newId.getValue(), "SHOP", 0, 0)));
                 bottom.add(new Key("prev", listPage > 0, () -> listPage--));
-                bottom.add(new Key("next", (listPage + 1) * 12 < menu.list.size(), () -> listPage++));
+                bottom.add(new Key("next", (listPage + 1) * LIST_ROWS < menu.list.size(), () -> listPage++));
             }
             case PAGE -> {
                 bottom.add(new Key("hand_to_slot", ed && has && !minecraft.player.getMainHandItem().isEmpty(), () -> send(Action.ADD_HAND, "", "", sel < 0 ? 999 : sel, 0)));
@@ -216,8 +217,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
             ky -= KH + KGAP;
         }
         if (view == View.LIST) {
-            for (int i = listPage * 12; i < Math.min(menu.list.size(), (listPage + 1) * 12); i++) {
-                if (over(mx, my, x + SX + 6, y + SY + 22 + (i - listPage * 12) * 11, SW - 12, 10)) {
+            for (int i = listPage * LIST_ROWS; i < Math.min(menu.list.size(), (listPage + 1) * LIST_ROWS); i++) {
+                if (over(mx, my, x + SX + 6, y + SY + 22 + (i - listPage * LIST_ROWS) * 11, SW - 12, 10)) {
                     send(Action.SELECT, menu.list.get(i).id(), "", 0, 0);
                     sel = -1;
                     setView(View.PAGE);
@@ -262,7 +263,10 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
 
     private void sideClick(double ry) {
         ShopItem it = item();
-        int row = (int) ((ry - 22) / 12);
+        if (ry < SIDE_Y) {
+            return;
+        }
+        int row = (int) ((ry - SIDE_Y) / SIDE_STEP);
         switch (row) {
             case 0 -> edit("item.count", String.valueOf(it.stack.getCount()));
             case 1 -> edit("item.buy", String.valueOf(it.buy));
@@ -280,7 +284,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
 
     private void settingsClick(double ry) {
         Shop s = menu.shop;
-        int row = (int) (ry / 12);
+        int row = (int) (ry / SET_STEP);
         switch (row) {
             case 0 -> edit("name", s.name);
             case 1 -> send(Action.SET, "kind", Shop.Kind.values()[(s.kind.ordinal() + 1) % Shop.Kind.values().length].name(), 0, 0);
@@ -291,8 +295,15 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
             case 6 -> edit("interval", String.valueOf(s.intervalMs / 3_600_000L));
             case 7 -> edit("offer", String.valueOf(s.offerPercent));
             case 8 -> edit("offerhours", s.offerEndMs == 0 ? "0" : String.valueOf(Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L)));
+            case 9 -> send(Action.SET, "hoursmode", com.mrgregles.bsp_core.shop.OpenHours.Mode.values()[(s.hours.mode().ordinal() + 1) % 3].name(), 0, 0);
+            case 10 -> edit("hoursopen", hm(s.hours.openMin(), s.hours.mode()));
+            case 11 -> edit("hoursclose", hm(s.hours.closeMin(), s.hours.mode()));
             default -> { }
         }
+    }
+
+    private static String hm(int v, com.mrgregles.bsp_core.shop.OpenHours.Mode mode) {
+        return mode == com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME ? String.valueOf(v) : String.format(Locale.ROOT, "%02d:%02d", v / 60, v % 60);
     }
 
     @Override
@@ -319,7 +330,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
             lastSerial = menu.messageSerial;
             String key = menu.messageKey;
             messageColour = key.equals("saved") || key.equals("created") || key.equals("deleted") ? AMBER : RED;
-            message = Component.translatable("message.bsp_core.config." + key, (Object[]) menu.messageArgs);
+            message = key.isEmpty() ? Component.empty() : Component.translatable("message.bsp_core.config." + key, (Object[]) menu.messageArgs);
         }
         keys();
         renderBackground(g);
@@ -380,20 +391,11 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
         g.fill(x + SX - 2, y + SY + SH + 6, x + W - SX + 2, y + H - 6, SCREEN_EDGE);
         g.fill(x + SX, y + SY + SH + 8, x + W - SX, y + H - 8, SCREEN);
         String strip = tr(menu.editable ? "strip_admin" : "strip_mod").getString() + " / " + Bank.serverId();
-        g.drawString(font, strip, x + SX + 6, y + SY + SH + 12, PHOS_DIM, false);
+        CashMachine.fit(g, font, strip, x + SX + 6, y + SY + SH + 12, W - 2 * SX - 12, PHOS_DIM);
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
-        boolean hover = k.enabled && over(mx, my, x, y, KW, KH);
-        g.fill(x, y, x + KW, y + KH + 2, KEY_EDGE);
-        g.fill(x, y, x + KW, y + KH, hover ? 0xFFF5F0E4 : KEY);
-        String label = tr(k.label).getString().toUpperCase(Locale.ROOT);
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(label), KW - 4);
-        int ty = y + (KH - lines.size() * 9) / 2 + 1;
-        for (var line : lines) {
-            g.drawString(font, line, x + KW / 2 - font.width(line) / 2, ty, k.enabled ? KEY_TEXT : KEY_LOCKED, false);
-            ty += 9;
-        }
+        CashMachine.key(g, font, x, y, KW, KH, tr(k.label).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     private void line(GuiGraphics g, int x, int y, String label, String value, int w) {
@@ -405,21 +407,25 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
     protected void renderLabels(GuiGraphics g, int mx, int my) {
         Shop s = menu.shop;
         String head = "> " + tr("title").getString().toUpperCase(Locale.ROOT) + (s == null ? "" : ": " + font.plainSubstrByWidth(s.name.toUpperCase(Locale.ROOT), 100));
-        g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
+        CashMachine.fit(g, font, head, SX + 6, SY + 6, SW - 12, PHOS);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
+        // the message sits at the foot of the main screen; hints stack above it and the view is clipped to the screen
+        int msgH = CashMachine.height(font, message, SW - 12);
+        int bottom = SY + SH - (msgH > 0 ? msgH + 4 : 4);
+        CashMachine.clip(g, leftPos, topPos, SX, SY + 18, SW, SH - 18);
         switch (view) {
             case LIST -> {
                 if (menu.list.isEmpty()) {
                     g.drawString(font, tr("no_shops"), SX + 8, SY + 24, PHOS_DIM, false);
                 }
-                for (int i = listPage * 12; i < Math.min(menu.list.size(), (listPage + 1) * 12); i++) {
+                for (int i = listPage * LIST_ROWS; i < Math.min(menu.list.size(), (listPage + 1) * LIST_ROWS); i++) {
                     var e = menu.list.get(i);
                     boolean cur = s != null && s.id.equals(e.id());
                     String row = (cur ? "> " : "  ") + e.name() + "  " + e.kind().name().toLowerCase(Locale.ROOT) + "  " + e.items() + (e.remote() ? "  NET" : "");
-                    g.drawString(font, font.plainSubstrByWidth(row, SW - 14), SX + 6, SY + 22 + (i - listPage * 12) * 11, cur ? PHOS : PHOS_DIM, false);
+                    g.drawString(font, font.plainSubstrByWidth(row, SW - 14), SX + 6, SY + 22 + (i - listPage * LIST_ROWS) * 11, cur ? PHOS : PHOS_DIM, false);
                 }
                 if (menu.editable) {
-                    g.drawString(font, tr("new_hint"), SX + 8, SY + SH - 42, PHOS_DIM, false);
+                    CashMachine.wrap(g, font, tr("new_hint"), SX + 8, SY + SH - 56, SW - 16, PHOS_DIM);
                 }
             }
             case PAGE -> {
@@ -434,19 +440,20 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
                             small(g, "hid", cx + CW - 12, cy + 2, RED);
                         }
                     }
-                    g.drawString(font, tr(all.size() > Shop.PER_PAGE ? "more_pages" : "page_hint", all.size()), SX + 6, SY + SH - 22, PHOS_DIM, false);
+                    CashMachine.wrapUp(g, font, tr(all.size() > Shop.PER_PAGE ? "more_pages" : "page_hint", all.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
                 }
             }
-            case BROWSER -> g.drawString(font, tr("browser", found.size()), SX + 140, SY + 20, PHOS_DIM, false);
+            case BROWSER -> CashMachine.wrapUp(g, font, tr("browser", found.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
             case SETTINGS -> {
                 if (s != null) {
                     String[][] rows = {{"name", s.name}, {"kind", s.kind.name().toLowerCase(Locale.ROOT)}, {"parent", s.parent.isEmpty() ? "-" : s.parent}, {"remote", s.remote ? "on" : "off"},
                             {"buyonly", s.buyOnly ? "on" : "off"}, {"slots", String.valueOf(s.displaySlots)}, {"interval", s.intervalMs / 3_600_000L + " h"}, {"offer", s.offerPercent + "%"},
-                            {"offerhours", s.offerEndMs == 0 ? tr("no_end").getString() : Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L) + " h"}, {"id", s.id}};
+                            {"offerhours", s.offerEndMs == 0 ? tr("no_end").getString() : Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L) + " h"},
+                            {"hoursmode", s.hours.mode().name().toLowerCase(Locale.ROOT)}, {"hoursopen", hm(s.hours.openMin(), s.hours.mode())}, {"hoursclose", hm(s.hours.closeMin(), s.hours.mode())}, {"id", s.id}};
                     for (int i = 0; i < rows.length; i++) {
-                        line(g, SX + 8, SY + 22 + i * 12, tr("f_" + rows[i][0]).getString(), rows[i][1], SW - 16);
+                        line(g, SX + 8, SY + 22 + i * SET_STEP, tr("f_" + rows[i][0]).getString(), rows[i][1], SW - 16);
                     }
-                    g.drawString(font, tr("settings_hint"), SX + 8, SY + SH - 22, PHOS_DIM, false);
+                    CashMachine.wrapUp(g, font, tr("settings_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
                 }
             }
             case STYLE -> {
@@ -455,9 +462,13 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
                         boolean cur = STYLES[i].equals(s.style);
                         g.drawString(font, (cur ? "> " : "  ") + tr("style_" + STYLES[i]).getString(), SX + 8, SY + 32 + i * 14, cur ? PHOS : PHOS_DIM, false);
                     }
-                    g.drawString(font, tr("style_hint"), SX + 8, SY + SH - 22, PHOS_DIM, false);
+                    CashMachine.wrapUp(g, font, tr("style_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
                 }
             }
+        }
+        g.disableScissor();
+        if (msgH > 0) {
+            CashMachine.wrap(g, font, message, SX + 6, SY + SH - 4 - msgH, SW - 12, messageColour);
         }
         // the side panel: the selected card
         ShopItem it = item();
@@ -471,24 +482,23 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
             g.renderItem(it.stack, PX + PW / 2 - 8, SY + 20);
             for (int i = 0; i < rows.length; i++) {
                 boolean editing = fieldName.equals("item." + rows[i][0]);
-                small(g, tr("f_" + rows[i][0]).getString(), PX + 3, SY + 44 + i * 12, editing ? AMBER : PHOS_DIM);
-                small(g, rows[i][1], PX + 3, SY + 50 + i * 12, PHOS);
+                small(g, tr("f_" + rows[i][0]).getString(), PX + 3, SY + SIDE_Y + i * SIDE_STEP, editing ? AMBER : PHOS_DIM);
+                small(g, rows[i][1], PX + 3, SY + SIDE_Y + 6 + i * SIDE_STEP, PHOS);
             }
         } else if (view == View.PAGE) {
-            for (var ln : font.split(tr("side_hint"), PW - 6)) {
-                g.drawString(font, ln, PX + 3, SY + 22, PHOS_DIM, false);
-                break;
-            }
+            CashMachine.wrap(g, font, tr("side_hint"), PX + 3, SY + 22, PW - 6, PHOS_DIM);
         }
         if (!fieldName.isEmpty()) {
-            g.drawString(font, tr("editing", tr("f_" + fieldName.replace("item.", "")).getString()), PX + 2, SY + 140, AMBER, false);
-        }
-        if (!message.getString().isEmpty()) {
-            List<net.minecraft.util.FormattedCharSequence> lines = font.split(message, SW - 12);
-            int ly = SY + SH - 4 - lines.size() * 9;
-            for (var ln : lines) {
-                g.drawString(font, ln, SX + 6, ly, messageColour, false);
-                ly += 9;
+            // the field sits under the rows; the row being edited is amber
+            g.fill(PX + 2, SY + 165, PX + PW - 2, SY + 166, PHOS_DIM | 0xFF000000);
+            int py = SY + 168;
+            for (var ln : font.split(tr("editing"), (int) ((PW - 4) / 0.75f))) {
+                g.pose().pushPose();
+                g.pose().translate(PX + 3, py, 0);
+                g.pose().scale(0.75f, 0.75f, 1f);
+                g.drawString(font, ln, 0, 0, AMBER, false);
+                g.pose().popPose();
+                py += 7;
             }
         }
     }

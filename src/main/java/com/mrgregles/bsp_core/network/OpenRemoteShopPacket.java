@@ -26,7 +26,7 @@ public record OpenRemoteShopPacket(String shopId) {
             ctx.get().enqueueWork(() -> {
                 Shop shop = Shops.ledger(player.server).shop(msg.shopId);
                 if (shop != null && ShopListMenu.mayOpen(player.server, player.getUUID(), shop)) {
-                    ShopOpener.open(player, shop, null, true, null);
+                    ShopOpener.open(player, shop, null, true, shop.hours);
                 }
             });
         }

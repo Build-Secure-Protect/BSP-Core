@@ -16,7 +16,7 @@ import net.minecraft.world.phys.AABB;
  * Once a second the server checks the hours and sets the block's OPEN state, which lights the lamp
  * and powers the block beneath.
  */
-public class VendorPostBlockEntity extends BlockEntity {
+public class VendorPostBlockEntity extends BlockEntity implements Assignable {
     public String shopId = "";
     public OpenHours hours = OpenHours.ALWAYS;
     /** Entity type id of the figure, for example "minecraft:villager", with optional entity NBT (a villager profession). */
@@ -32,11 +32,27 @@ public class VendorPostBlockEntity extends BlockEntity {
         return !shopId.isEmpty();
     }
 
+    @Override
+    public void assign(String shopId, OpenHours hours, String mob, String mobNbt) {
+        set(shopId, hours, mob, mobNbt);
+    }
+
+    @Override
+    public String shopId() {
+        return shopId;
+    }
+
+    @Override
+    public OpenHours hours() {
+        return hours;
+    }
+
     public static void serverTick(ServerLevel level, BlockPos pos, BlockState state, VendorPostBlockEntity be) {
         if (++be.tick % 20 != 0) {
             return;
         }
-        boolean open = be.assigned() && be.hours.isOpen(level) && Shops.ledger(level.getServer()).shop(be.shopId) != null;
+        Shop shop = be.assigned() ? Shops.ledger(level.getServer()).shop(be.shopId) : null;
+        boolean open = shop != null && shop.effectiveHours(be.hours).isOpen(level);
         if (state.getValue(VendorPostBlock.OPEN) != open) {
             level.setBlock(pos, state.setValue(VendorPostBlock.OPEN, open), 3);
             level.updateNeighborsAt(pos.below(), state.getBlock());

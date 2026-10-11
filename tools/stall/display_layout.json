@@ -1,0 +1,74 @@
+{
+ "fantasy": {
+  "item": [
+   8,
+   17,
+   8
+  ],
+  "width": 7,
+  "ground_scale": 0.875
+ },
+ "scifi": {
+  "item": [
+   8,
+   17.5,
+   8
+  ],
+  "width": 7,
+  "ground_scale": 0.875
+ },
+ "steampunk": {
+  "item": [
+   8,
+   12.25,
+   8
+  ],
+  "width": 5.5,
+  "ground_scale": 0.688
+ },
+ "vanilla": {
+  "item": [
+   8,
+   18.5,
+   8
+  ],
+  "width": 7,
+  "ground_scale": 0.875
+ },
+ "nether": {
+  "item": [
+   8,
+   16.5,
+   7.5
+  ],
+  "width": 6.5,
+  "ground_scale": 0.812
+ },
+ "yatai": {
+  "item": [
+   8,
+   12.5,
+   7
+  ],
+  "width": 5.5,
+  "ground_scale": 0.688
+ },
+ "nautical": {
+  "item": [
+   8,
+   16,
+   7
+  ],
+  "width": 7,
+  "ground_scale": 0.875
+ },
+ "arcane": {
+  "item": [
+   8,
+   16.5,
+   8
+  ],
+  "width": 6,
+  "ground_scale": 0.75
+ }
+}

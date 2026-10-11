@@ -10,8 +10,13 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Sell here$() opens a tray: drop items in and close it; every full lot the shop buys is paid for in one go and the rest comes back.$(br2)Some shops keep $(l)opening hours$(). A closed vendor shows when it opens and how long is left. A vendor's post powers the block beneath it while the shop is open, so signs and lamps can follow.",
+      "text": "$(l)Sell here$() opens a tray: drop items in and close it; every full lot the shop buys is paid for in one go and the rest comes back.$(br2)Some shops keep $(l)opening hours$(). A closed vendor shows when it opens and how long is left. A vendor's post powers the block beneath it while the shop is open, so signs and lamps can follow.$(br2)A $(item)Stall Display$() beside a vendor floats its wares in the air, one after another, while the shop is open. Right-click it to open the shop.",
       "title": "Selling and hours"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Market Stall$() is a shop front in one of eight styles: a timber booth, a vending terminal, a boiler booth, a player-built stall, a blackstone shrine, a street cart, a dockside stall or a mage's pedestal. Right-click it for its shop.$(br2)Two lamps tell you the state before you click: the left one is $(l)green$() while the shop has stock and $(l)red$() when it is sold out, the right one $(l)amber$() while the shop is open. The shop's first item sits on the counter. A stall with no shop stands broken and out of order.",
+      "title": "Market Stalls"
     },
     {
       "type": "patchouli:text",

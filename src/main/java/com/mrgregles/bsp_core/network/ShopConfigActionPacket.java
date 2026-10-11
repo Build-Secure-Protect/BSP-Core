@@ -112,6 +112,9 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                         case "slots" -> shop.displaySlots = Math.max(1, Integer.parseInt(v.trim()));
                         case "interval" -> shop.intervalMs = Math.max(1, Long.parseLong(v.trim())) * 3_600_000L;
                         case "offer" -> shop.offerPercent = Math.max(0, Math.min(99, Integer.parseInt(v.trim())));
+                        case "hoursmode" -> shop.hours = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.valueOf(v.toUpperCase(Locale.ROOT)), shop.hours.openMin(), shop.hours.closeMin());
+                        case "hoursopen" -> shop.hours = new com.mrgregles.bsp_core.shop.OpenHours(shop.hours.mode(), clock(v, shop.hours.mode()), shop.hours.closeMin());
+                        case "hoursclose" -> shop.hours = new com.mrgregles.bsp_core.shop.OpenHours(shop.hours.mode(), shop.hours.openMin(), clock(v, shop.hours.mode()));
                         case "offerhours" -> shop.offerEndMs = Long.parseLong(v.trim()) <= 0 ? 0 : System.currentTimeMillis() + Long.parseLong(v.trim()) * 3_600_000L;
                         default -> {
                             return "bad_field";
@@ -187,6 +190,15 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
         }
         Shops.save(server, shop);
         return "saved";
+    }
+
+    /** "hh:mm" on the clock, or ticks in game time. */
+    static int clock(String v, com.mrgregles.bsp_core.shop.OpenHours.Mode mode) {
+        String[] p = v.trim().split(":");
+        if (mode == com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME) {
+            return Math.max(0, Math.min(23999, Integer.parseInt(p[0])));
+        }
+        return Math.max(0, Math.min(1439, Integer.parseInt(p[0]) * 60 + (p.length > 1 ? Integer.parseInt(p[1]) : 0)));
     }
 
     /** Puts a new item at {@code index} (shifting the rest) or at the end when the index is past the end. */

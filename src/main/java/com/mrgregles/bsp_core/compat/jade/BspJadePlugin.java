@@ -25,8 +25,10 @@ import javax.annotation.Nullable;
 
 /**
  * Jade ("what am I looking at") support. Jade already shows every block's name and its RF, and that is
- * all BSP-Core wants shown, so this adds no lines of its own. It only corrects what Jade points at:
+ * all BSP-Core wants shown; the lines added here are for plasma, cables and shops. It also corrects
+ * what Jade points at:
  * <ul>
+ *   <li>the upper half of a Market Stall reads as its lower half (the block entity);</li>
  *   <li>a working Decoy Totem reads as a Shatter Totem to everyone but its owner, like its renderer;</li>
  *   <li>the hidden part blocks of an assembled machine read as the machine itself.</li>
  * </ul>
@@ -45,6 +47,8 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.machine.MachineBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
+        registration.registerBlockDataProvider(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.MarketStallBlockEntity.class);
+        registration.registerBlockDataProvider(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.VendorPostBlockEntity.class);
     }
 
     @Override
@@ -57,6 +61,8 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.machine.MachineBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.coin.CoinFactoryBlock.class);
+        registration.registerBlockComponent(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.MarketStallBlock.class);
+        registration.registerBlockComponent(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.VendorPostBlock.class);
         registration.addRayTraceCallback((hit, accessor, original) -> redirect(registration, accessor));
     }
 
@@ -98,6 +104,54 @@ public class BspJadePlugin implements IWailaPlugin {
                 }
                 tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.cable_ends", list).withStyle(net.minecraft.ChatFormatting.GOLD));
             }
+        }
+
+        @Override
+        public net.minecraft.resources.ResourceLocation getUid() {
+            return UID;
+        }
+    }
+
+    /** Lines on a Market Stall or Vendor Post: the shop it runs (or none), open or closed, in stock or sold out, and a stall's style. */
+    public enum VenueLine implements snownee.jade.api.IBlockComponentProvider, snownee.jade.api.IServerDataProvider<BlockAccessor> {
+        INSTANCE;
+
+        private static final net.minecraft.resources.ResourceLocation UID = new net.minecraft.resources.ResourceLocation(com.mrgregles.bsp_core.BSPCore.MODID, "venue");
+
+        @Override
+        public void appendServerData(net.minecraft.nbt.CompoundTag data, BlockAccessor accessor) {
+            if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.shop.Assignable venue && accessor.getLevel().getServer() != null) {
+                var server = accessor.getLevel().getServer();
+                var shop = venue.shopId().isEmpty() ? null : com.mrgregles.bsp_core.shop.Shops.ledger(server).shop(venue.shopId());
+                data.putBoolean("VenueAssigned", shop != null);
+                if (shop != null) {
+                    data.putString("VenueShop", shop.name);
+                    data.putBoolean("VenueOpen", shop.effectiveHours(venue.hours()).isOpen(accessor.getLevel()));
+                    data.putBoolean("VenueStock", com.mrgregles.bsp_core.shop.Shops.anyStock(server, shop));
+                }
+            }
+        }
+
+        @Override
+        public void appendTooltip(snownee.jade.api.ITooltip tooltip, BlockAccessor accessor, snownee.jade.api.config.IPluginConfig config) {
+            var data = accessor.getServerData();
+            if (!data.contains("VenueAssigned")) {
+                return;
+            }
+            BlockState state = accessor.getBlockState();
+            if (state.hasProperty(com.mrgregles.bsp_core.shop.MarketStallBlock.SKIN)) {
+                tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.stall_style",
+                        net.minecraft.network.chat.Component.translatable("gui.bsp_core.stall.skin." + state.getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.SKIN).id)).withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+            if (!data.getBoolean("VenueAssigned")) {
+                tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.venue_unassigned").withStyle(net.minecraft.ChatFormatting.RED));
+                return;
+            }
+            tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.venue_shop", data.getString("VenueShop")).withStyle(net.minecraft.ChatFormatting.GOLD));
+            boolean open = data.getBoolean("VenueOpen"), stock = data.getBoolean("VenueStock");
+            tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.venue_state",
+                    net.minecraft.network.chat.Component.translatable(open ? "jade.bsp_core.venue_open" : "jade.bsp_core.venue_closed").withStyle(open ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.RED),
+                    net.minecraft.network.chat.Component.translatable(stock ? "jade.bsp_core.venue_stock" : "jade.bsp_core.venue_out").withStyle(stock ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.RED)));
         }
 
         @Override
@@ -199,6 +253,16 @@ public class BspJadePlugin implements IWailaPlugin {
                         .setValue(ShatterTotemBlock.FACING, state.getValue(DecoyTotemBlock.FACING))).build();
             }
             return accessor;
+        }
+        if (state.is(ModBlocks.MARKET_STALL.get()) && state.getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.HALF) == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER) {
+            BlockPos lowerPos = target.getPosition().below();
+            BlockEntity lower = target.getLevel().getBlockEntity(lowerPos);
+            if (lower != null) {
+                BlockHitResult old = target.getHitResult();
+                return registration.blockAccessor().from(target)
+                        .hit(new BlockHitResult(old.getLocation(), old.getDirection(), lowerPos, old.isInside()))
+                        .blockState(lower.getBlockState()).blockEntity(lower).build();
+            }
         }
         if (state.hasProperty(StructurePartBlock.FORMED) && state.getValue(StructurePartBlock.FORMED)) {
             BlockEntity controller = controllerOf(target.getLevel(), target.getPosition());

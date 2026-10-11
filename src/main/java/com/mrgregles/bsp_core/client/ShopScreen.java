@@ -153,7 +153,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         String key = menu.messageKey;
         boolean good = key.equals("bought") || key.equals("sold") || key.equals("sold_all");
         messageColour = good ? AMBER : RED;
-        message = Component.translatable("message.bsp_core.shop." + key, (Object[]) menu.messageArgs);
+        message = key.isEmpty() ? Component.empty() : Component.translatable("message.bsp_core.shop." + key, (Object[]) menu.messageArgs);
     }
 
     // ------------------------------------------------------------------ input
@@ -297,31 +297,25 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         g.fill(x + SX - 2, y + STRIP_Y - 2, x + W - SX + 2, y + STRIP_Y + STRIP_H + 2, SCREEN_EDGE);
         g.fill(x + SX, y + STRIP_Y, x + W - SX, y + STRIP_Y + STRIP_H, SCREEN);
         String left = (menu.open ? tr("open_now").getString() : tr("closed_now").getString()) + " / " + (menu.remote ? tr("network").getString() : Bank.serverId());
-        g.drawString(font, left, x + SX + 6, y + STRIP_Y + 7, PHOS_DIM, false);
         String bal = tr("balance", Bank.format(menu.balance)).getString();
+        CashMachine.fit(g, font, left, x + SX + 6, y + STRIP_Y + 7, W - 2 * SX - 16 - font.width(bal), PHOS_DIM);
         g.drawString(font, bal, x + W - SX - 6 - font.width(bal), y + STRIP_Y + 7, PHOS_DIM, false);
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
-        boolean hover = k.enabled && over(mx, my, x, y, KW, KH);
-        g.fill(x, y, x + KW, y + KH + 2, KEY_EDGE);
-        g.fill(x, y, x + KW, y + KH, hover ? 0xFFF5F0E4 : KEY);
-        String label = tr(k.label).getString().toUpperCase(Locale.ROOT);
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(label), KW - 6);
-        int ty = y + (KH - lines.size() * 9) / 2 + 1;
-        for (var line : lines) {
-            g.drawString(font, line, x + KW / 2 - font.width(line) / 2, ty, k.enabled ? KEY_TEXT : KEY_LOCKED, false);
-            ty += 9;
-        }
+        CashMachine.key(g, font, x, y, KW, KH, tr(k.label).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     @Override
     protected void renderLabels(GuiGraphics g, int mx, int my) {
-        String head = "> " + font.plainSubstrByWidth(menu.path.toUpperCase(Locale.ROOT), SW - 70);
-        g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
         String right = !menu.open ? tr("closed").getString() : menu.kind == Shop.Kind.ROTATING ? tr("rotates_in", clock(menu.rotatesIn)).getString() : tr("page", menu.page + 1, menu.pages).getString();
+        String head = "> " + font.plainSubstrByWidth(menu.path.toUpperCase(Locale.ROOT), SW - 20 - font.width(right));
+        g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
         g.drawString(font, right, SX + SW - 6 - font.width(right), SY + 6, menu.open ? PHOS_DIM : RED, false);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
+        int msgH = CashMachine.height(font, message, SW - 12);
+        int bottom = SY + SH - (msgH > 0 ? msgH + 4 : 4);
+        CashMachine.clip(g, leftPos, topPos, SX, SY + 18, SW, SH - 18);
         if (!menu.open) {
             g.pose().pushPose();
             g.pose().translate(SX + SW / 2f - font.width(tr("closed").getString()), SY + 50, 0);
@@ -335,7 +329,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             ShopMenu.Card c = card(sel);
             if (c != null) {
                 g.renderItem(c.stack(), SX + 20, SY + 40);
-                g.drawString(font, c.stack().getCount() + " " + c.stack().getHoverName().getString(), SX + 42, SY + 44, PHOS, false);
+                CashMachine.fit(g, font, c.stack().getCount() + " " + c.stack().getHoverName().getString(), SX + 42, SY + 44, SW - 50, PHOS);
                 long unit = selling ? c.sell() : c.buy();
                 String n = String.valueOf(lots);
                 g.pose().pushPose();
@@ -345,11 +339,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
                 g.pose().popPose();
                 g.drawString(font, tr("lots").getString(), SX + SW / 2 + font.width(n) + 4, SY + 72, PHOS_DIM, false);
                 String total = tr(selling ? "you_get" : "total", Bank.format(unit * lots), unitName(c.currency())).getString();
-                g.drawString(font, total, SX + SW / 2 - font.width(total) / 2, SY + 92, AMBER, false);
-                String hint = tr(selling ? "max_sell_hint" : "max_buy_hint").getString();
-                for (var line : font.split(Component.literal(hint), SW - 16)) {
-                    g.drawString(font, line, SX + 8, SY + 108, PHOS_DIM, false);
-                }
+                CashMachine.fit(g, font, total, SX + SW / 2 - Math.min(font.width(total), SW - 16) / 2, SY + 92, SW - 16, AMBER);
+                CashMachine.wrap(g, font, tr(selling ? "max_sell_hint" : "max_buy_hint"), SX + 8, SY + 108, SW - 16, PHOS_DIM);
             }
         } else {
             if (menu.offerPercent > 0) {
@@ -374,15 +365,11 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             if (menu.cards.isEmpty()) {
                 g.drawString(font, tr("empty"), SX + 8, SY + 40, PHOS_DIM, false);
             }
-            g.drawString(font, tr("hint"), SX + 6, SY + SH - 22, PHOS_DIM, false);
+            CashMachine.wrapUp(g, font, tr("hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
         }
-        if (!message.getString().isEmpty()) {
-            List<net.minecraft.util.FormattedCharSequence> lines = font.split(message, SW - 12);
-            int ly = SY + SH - 4 - lines.size() * 9;
-            for (var line : lines) {
-                g.drawString(font, line, SX + 6, ly, messageColour, false);
-                ly += 9;
-            }
+        g.disableScissor();
+        if (msgH > 0) {
+            CashMachine.wrap(g, font, message, SX + 6, SY + SH - 4 - msgH, SW - 12, messageColour);
         }
     }
 

@@ -1,0 +1,589 @@
+{
+ "credit": "BSP-Core Market Stall, made by tools/gen_stall_design.py",
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "basalt": "bsp_core:block/stall/stall_nether_basalt",
+  "gold": "bsp_core:block/stall/stall_nether_gold",
+  "lantern": "bsp_core:block/stall/stall_nether_soul_lantern",
+  "magma": "bsp_core:block/stall/stall_nether_magma",
+  "stone": "bsp_core:block/stall/stall_nether_blackstone",
+  "particle": "bsp_core:block/stall/stall_nether_blackstone"
+ },
+ "elements": [
+  {
+   "name": "plinth",
+   "from": [
+    1,
+    0,
+    1
+   ],
+   "to": [
+    15,
+    2,
+    15
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      1,
+      14,
+      15,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      1,
+      14,
+      15,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      1,
+      14,
+      15,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      1,
+      14,
+      15,
+      16
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      1,
+      1,
+      15,
+      15
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      1,
+      1,
+      15,
+      15
+     ],
+     "texture": "#stone",
+     "cullface": "down"
+    }
+   }
+  },
+  {
+   "name": "column",
+   "from": [
+    4,
+    2,
+    4
+   ],
+   "to": [
+    12,
+    10,
+    12
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4,
+      6,
+      12,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "south": {
+     "uv": [
+      4,
+      6,
+      12,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "east": {
+     "uv": [
+      4,
+      6,
+      12,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "west": {
+     "uv": [
+      4,
+      6,
+      12,
+      14
+     ],
+     "texture": "#stone"
+    },
+    "up": {
+     "uv": [
+      4,
+      4,
+      12,
+      12
+     ],
+     "texture": "#stone"
+    },
+    "down": {
+     "uv": [
+      4,
+      4,
+      12,
+      12
+     ],
+     "texture": "#stone"
+    }
+   }
+  },
+  {
+   "name": "magma_panel",
+   "from": [
+    5,
+    3,
+    3.75
+   ],
+   "to": [
+    11,
+    9,
+    4
+   ],
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      5,
+      7,
+      11,
+      13
+     ],
+     "texture": "#magma",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      5,
+      7,
+      11,
+      13
+     ],
+     "texture": "#magma",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      12,
+      7,
+      12.25,
+      13
+     ],
+     "texture": "#magma",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      3.75,
+      7,
+      4,
+      13
+     ],
+     "texture": "#magma",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      5,
+      3.75,
+      11,
+      4
+     ],
+     "texture": "#magma",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      5,
+      12,
+      11,
+      12.25
+     ],
+     "texture": "#magma",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "gold_rim",
+   "from": [
+    3,
+    10,
+    3
+   ],
+   "to": [
+    13,
+    11.5,
+    13
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3,
+      4.5,
+      13,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "south": {
+     "uv": [
+      3,
+      4.5,
+      13,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "east": {
+     "uv": [
+      3,
+      4.5,
+      13,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "west": {
+     "uv": [
+      3,
+      4.5,
+      13,
+      6
+     ],
+     "texture": "#gold"
+    },
+    "up": {
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ],
+     "texture": "#gold"
+    },
+    "down": {
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ],
+     "texture": "#gold"
+    }
+   }
+  },
+  {
+   "name": "spike_a",
+   "from": [
+    3,
+    11.5,
+    10.5
+   ],
+   "to": [
+    5,
+    16,
+    12.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      11,
+      0,
+      13,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "south": {
+     "uv": [
+      3,
+      0,
+      5,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "east": {
+     "uv": [
+      3.5,
+      0,
+      5.5,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "west": {
+     "uv": [
+      10.5,
+      0,
+      12.5,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "up": {
+     "uv": [
+      3,
+      10.5,
+      5,
+      12.5
+     ],
+     "texture": "#basalt"
+    },
+    "down": {
+     "uv": [
+      3,
+      3.5,
+      5,
+      5.5
+     ],
+     "texture": "#basalt"
+    }
+   }
+  },
+  {
+   "name": "spike_b",
+   "from": [
+    11,
+    11.5,
+    10.5
+   ],
+   "to": [
+    13,
+    16,
+    12.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      3,
+      0,
+      5,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "south": {
+     "uv": [
+      11,
+      0,
+      13,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "east": {
+     "uv": [
+      3.5,
+      0,
+      5.5,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "west": {
+     "uv": [
+      10.5,
+      0,
+      12.5,
+      4.5
+     ],
+     "texture": "#basalt"
+    },
+    "up": {
+     "uv": [
+      11,
+      10.5,
+      13,
+      12.5
+     ],
+     "texture": "#basalt"
+    },
+    "down": {
+     "uv": [
+      11,
+      3.5,
+      13,
+      5.5
+     ],
+     "texture": "#basalt"
+    }
+   }
+  },
+  {
+   "name": "soul_lantern",
+   "from": [
+    3.25,
+    11.5,
+    3.25
+   ],
+   "to": [
+    5.25,
+    14,
+    5.25
+   ],
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#lantern",
+     "shade": false
+    }
+   }
+  },
+  {
+   "name": "soul_lantern_cap",
+   "from": [
+    3.75,
+    14,
+    3.75
+   ],
+   "to": [
+    4.75,
+    14.5,
+    4.75
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      11.25,
+      1.5,
+      12.25,
+      2
+     ],
+     "texture": "#gold"
+    },
+    "south": {
+     "uv": [
+      3.75,
+      1.5,
+      4.75,
+      2
+     ],
+     "texture": "#gold"
+    },
+    "east": {
+     "uv": [
+      11.25,
+      1.5,
+      12.25,
+      2
+     ],
+     "texture": "#gold"
+    },
+    "west": {
+     "uv": [
+      3.75,
+      1.5,
+      4.75,
+      2
+     ],
+     "texture": "#gold"
+    },
+    "up": {
+     "uv": [
+      3.75,
+      3.75,
+      4.75,
+      4.75
+     ],
+     "texture": "#gold"
+    },
+    "down": {
+     "uv": [
+      3.75,
+      11.25,
+      4.75,
+      12.25
+     ],
+     "texture": "#gold"
+    }
+   }
+  }
+ ]
+}

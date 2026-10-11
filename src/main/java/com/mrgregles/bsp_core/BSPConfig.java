@@ -143,7 +143,7 @@ public final class BSPConfig {
 
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
     public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_VALUE,
-            BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS;
+            BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS;
     public static final ForgeConfigSpec.BooleanValue STORAGE_SSL;
 
     // ------------------------------------------------------------------ visuals
@@ -509,6 +509,10 @@ public final class BSPConfig {
                 .defineInRange("holdingFeePiecesPerDay", 150, 0, 1000000);
         BOX_MAX_DAYS = BUILDER.comment("Most days of rent a box may hold ahead.").defineInRange("maxDaysAhead", 365, 1, 3650);
         BUILDER.pop();
+        BUILDER.pop();
+
+        BUILDER.comment("Shops.").push("shop");
+        DISPLAY_SECONDS = BUILDER.comment("Seconds a Stall Display shows each item before moving to the next.").defineInRange("displaySeconds", 4, 1, 600);
         BUILDER.pop();
 
         BUILDER.comment("Chunk loading: the totem's Anchor and Survey upgrades.").push("chunks");

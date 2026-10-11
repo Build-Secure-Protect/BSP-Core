@@ -117,6 +117,6 @@ public class VendorPostBlock extends BaseEntityBlock {
             }
             return;
         }
-        ShopOpener.open(sp, shop, post.getBlockPos(), false, post.hours);
+        ShopOpener.open(sp, shop, post.getBlockPos(), false, shop.effectiveHours(post.hours));
     }
 }

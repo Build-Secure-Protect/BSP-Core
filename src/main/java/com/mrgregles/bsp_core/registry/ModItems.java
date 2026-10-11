@@ -197,6 +197,10 @@ public final class ModItems {
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SAFETY_DEPOSIT_BOX.get()));
     public static final RegistryObject<Item> VENDOR_POST = ITEMS.register("vendor_post",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.VENDOR_POST.get()));
+    public static final RegistryObject<Item> STALL_DISPLAY = ITEMS.register("stall_display",
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.STALL_DISPLAY.get()));
+    public static final RegistryObject<Item> MARKET_STALL = ITEMS.register("market_stall",
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.MARKET_STALL.get()));
 
     /** The blocks a factory slice is built from, and the Motivator that goes on top. */
     public static final List<RegistryObject<Item>> FACTORY_ITEMS = new ArrayList<>();

@@ -36,6 +36,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.SELL_HERE.get(), SellHereScreen::new);
             MenuScreens.register(ModMenus.SHOP_CONFIG.get(), ShopConfigScreen::new);
             MenuScreens.register(ModMenus.VENDOR.get(), VendorScreen::new);
+            MenuScreens.register(ModMenus.STALL_DISPLAY.get(), StallDisplayScreen::new);
             MenuScreens.register(ModMenus.SHOP_LIST.get(), ShopListScreen::new);
             // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
@@ -66,6 +67,8 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.BANK_ATM.get(), BankAtmRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SAFETY_DEPOSIT_BOX.get(), SafetyDepositBoxRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.VENDOR_POST.get(), VendorPostRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.STALL_DISPLAY.get(), StallDisplayRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.MARKET_STALL.get(), MarketStallRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TETRIUM_CRUCIBLE.get(), TetriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMBINATION_FORGE.get(), CombinationForgeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), IllyriumCrucibleRenderer::new);

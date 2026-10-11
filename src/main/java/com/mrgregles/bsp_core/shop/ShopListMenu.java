@@ -18,7 +18,7 @@ import java.util.UUID;
 
 /** The Shopping Network: the shops flagged remote, listed on the Portable Banker for a player who has unlocked it. */
 public class ShopListMenu extends AbstractContainerMenu {
-    public record Entry(String id, String name, Shop.Kind kind, int items) {}
+    public record Entry(String id, String name, Shop.Kind kind, int items, boolean open) {}
 
     public final List<Entry> shops = new ArrayList<>();
 
@@ -38,11 +38,11 @@ public class ShopListMenu extends AbstractContainerMenu {
     }
 
     /** Every shop on the network, top-level only (sub-sections open from their parents). */
-    public static List<Entry> remote(MinecraftServer server) {
+    public static List<Entry> remote(MinecraftServer server, net.minecraft.world.level.Level level) {
         List<Entry> out = new ArrayList<>();
         for (Shop s : Shops.ledger(server).all().values()) {
             if (s.remote && s.kind != Shop.Kind.SUB) {
-                out.add(new Entry(s.id, s.name, s.kind, s.all().size()));
+                out.add(new Entry(s.id, s.name, s.kind, s.all().size(), s.hours.isOpen(level)));
             }
         }
         return out;
@@ -54,7 +54,7 @@ public class ShopListMenu extends AbstractContainerMenu {
     }
 
     public static void open(ServerPlayer sp) {
-        List<Entry> list = remote(sp.server);
+        List<Entry> list = remote(sp.server, sp.level());
         NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> new ShopListMenu(id, inv, list), Component.translatable("gui.bsp_core.network.title")), buf -> {
             buf.writeVarInt(list.size());
             for (Entry e : list) {
@@ -62,6 +62,7 @@ public class ShopListMenu extends AbstractContainerMenu {
                 buf.writeUtf(e.name, 64);
                 buf.writeEnum(e.kind);
                 buf.writeVarInt(e.items);
+                buf.writeBoolean(e.open);
             }
         });
     }

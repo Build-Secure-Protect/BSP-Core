@@ -37,6 +37,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.PORTABLE_BANKER.get());
                 output.accept(ModItems.SAFETY_DEPOSIT_BOX.get());
                 output.accept(ModItems.VENDOR_POST.get());
+                output.accept(ModItems.MARKET_STALL.get());
+                output.accept(ModItems.STALL_DISPLAY.get());
                 output.accept(ModItems.TETRIUM_CRUCIBLE.get());
                 output.accept(ModItems.COMBINATION_FORGE.get());
                 ModItems.MULTIBLOCK_ITEMS.forEach(i -> output.accept(i.get()));

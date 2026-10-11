@@ -70,20 +70,24 @@ public final class ModMenus {
                 String shop = buf.readUtf(32);
                 var hours = com.mrgregles.bsp_core.shop.OpenHours.load(java.util.Objects.requireNonNullElse(buf.readNbt(), new net.minecraft.nbt.CompoundTag()));
                 String mob = buf.readUtf(64), nbt = buf.readUtf(255);
+                int skin = buf.readInt();
                 int n = buf.readVarInt();
                 java.util.List<String[]> shops = new java.util.ArrayList<>();
                 for (int i = 0; i < n; i++) {
                     shops.add(new String[]{buf.readUtf(32), buf.readUtf(64)});
                 }
-                return new com.mrgregles.bsp_core.shop.VendorMenu(id, inv, pos, editable, shop, hours, mob, nbt, shops);
+                return new com.mrgregles.bsp_core.shop.VendorMenu(id, inv, pos, editable, shop, hours, mob, nbt, skin, shops);
             }));
+
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.shop.StallDisplayMenu>> STALL_DISPLAY = MENUS.register("stall_display",
+            () -> IForgeMenuType.create(com.mrgregles.bsp_core.shop.StallDisplayMenu::read));
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.shop.ShopListMenu>> SHOP_LIST = MENUS.register("shop_list",
             () -> IForgeMenuType.create((id, inv, buf) -> {
                 int n = buf.readVarInt();
                 java.util.List<com.mrgregles.bsp_core.shop.ShopListMenu.Entry> list = new java.util.ArrayList<>();
                 for (int i = 0; i < n; i++) {
-                    list.add(new com.mrgregles.bsp_core.shop.ShopListMenu.Entry(buf.readUtf(32), buf.readUtf(64), buf.readEnum(com.mrgregles.bsp_core.shop.Shop.Kind.class), buf.readVarInt()));
+                    list.add(new com.mrgregles.bsp_core.shop.ShopListMenu.Entry(buf.readUtf(32), buf.readUtf(64), buf.readEnum(com.mrgregles.bsp_core.shop.Shop.Kind.class), buf.readVarInt(), buf.readBoolean()));
                 }
                 return new com.mrgregles.bsp_core.shop.ShopListMenu(id, inv, list);
             }));

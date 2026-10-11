@@ -1,0 +1,436 @@
+{
+ "variants": {
+  "broken=false,facing=north,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy"
+  },
+  "broken=false,facing=north,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi"
+  },
+  "broken=false,facing=north,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk"
+  },
+  "broken=false,facing=north,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla"
+  },
+  "broken=false,facing=north,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether"
+  },
+  "broken=false,facing=north,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai"
+  },
+  "broken=false,facing=north,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical"
+  },
+  "broken=false,facing=north,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane"
+  },
+  "broken=false,facing=north,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=north,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical",
+   "y": 90
+  },
+  "broken=false,facing=east,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane",
+   "y": 90
+  },
+  "broken=false,facing=east,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=east,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical",
+   "y": 180
+  },
+  "broken=false,facing=south,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane",
+   "y": 180
+  },
+  "broken=false,facing=south,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=south,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical",
+   "y": 270
+  },
+  "broken=false,facing=west,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane",
+   "y": 270
+  },
+  "broken=false,facing=west,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=false,facing=west,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical_broken"
+  },
+  "broken=true,facing=north,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane_broken"
+  },
+  "broken=true,facing=north,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=north,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane_broken",
+   "y": 90
+  },
+  "broken=true,facing=east,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=east,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane_broken",
+   "y": 180
+  },
+  "broken=true,facing=south,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=south,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=lower,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_fantasy_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=scifi": {
+   "model": "bsp_core:block/market_stall_scifi_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_steampunk_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_vanilla_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=nether": {
+   "model": "bsp_core:block/market_stall_nether_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=yatai": {
+   "model": "bsp_core:block/market_stall_yatai_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=nautical": {
+   "model": "bsp_core:block/market_stall_nautical_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=lower,skin=arcane": {
+   "model": "bsp_core:block/market_stall_arcane_broken",
+   "y": 270
+  },
+  "broken=true,facing=west,half=upper,skin=fantasy": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=scifi": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=steampunk": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=vanilla": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=nether": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=yatai": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=nautical": {
+   "model": "bsp_core:block/market_stall_upper"
+  },
+  "broken=true,facing=west,half=upper,skin=arcane": {
+   "model": "bsp_core:block/market_stall_upper"
+  }
+ }
+}

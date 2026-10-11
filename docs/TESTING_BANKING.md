@@ -113,7 +113,7 @@ One run through everything the banking line adds, in order, on one server. Each 
 - [ ] 2.4 matches
 
 ### 2.5 Pay from the screen
-1. PAY PLAYERS. Type the first letters of the newcomer's name in "Find a player". **See:** matching names listed under the box (online players first, then players this server knows); click one to fill the name.
+1. PAY PLAYERS. Type the first letters of the newcomer's name in the search box (hint "Search"; the amount box below shows "0" until you type). **See:** matching names listed under the box (online players first, then players this server knows); click one to fill the name.
 2. Type 300 in Amount. **See:** "Balance after: ..." updates as you type. Press PAY. **See:** the amber line "Paid 300 pieces to <newcomer>. Balance: ...", the amount box clears; the newcomer gets the chat line.
 3. Type 1,000 or more and press PAY. **See:** "Pay 1,000 pieces to <newcomer>? Press CONFIRM." and the bottom keys become CONFIRM and CANCEL. CANCEL goes back without paying; PAY again then CONFIRM pays.
 4. Press the ACCEPTING PAY key: it turns to REFUSING PAY and the newcomer can no longer pay you; press again to accept.
@@ -302,7 +302,53 @@ Setup: operator, a shop (bakery) with cards, a redstone lamp.
 1. In the workbench, Settings of bakery: Shopping Network on. Leave quarry off.
 2. On a locked account (newcomer, Portable Banker): the UNLOCK NETWORK key; pressing it with no coins gives the cost line. Unlock it with coins (Part 3).
 3. Press SHOPPING NETWORK. **See:** "> SHOPPING NETWORK": bakery listed with "shop" and its card count; quarry absent; PREVIOUS, NEXT, CLOSE keys. Click bakery: the bakery opens with "open / shopping network" in the strip; buying and selling work from anywhere.
-4. `/bsp bank remote reset`, reopen the device: the key reads UNLOCK NETWORK again.
+4. In the workbench, bakery Settings: click "Hours" until it reads clock, click Opens and type 03:00, Closes 03:10 (a window closed now). Reopen the Shopping Network: bakery shows "closed" in red; clicking it opens the closed view with the countdown. Set the hours back to always.
+5. Place a Vendor Post on the bakery with its own game-time hours: the post's hours decide at the post; with the post on "always" the shop's hours decide.
+6. `/bsp bank remote reset`, reopen the device: the key reads UNLOCK NETWORK again.
 - [ ] Part 10 matches
+
+## Part 11: the Stall Display
+
+Setup: operator, the bakery assigned to a Vendor Post (Part 9) with at least two cards, one of them with a stock of 1.
+
+### 11.1 Linking
+1. From the BSP creative tab place a **Stall Display** two blocks from the post. **See:** the player-built display in its neglected look (cobble base, fence post, an oak slab with a striped carpet, a dark lantern, the small sign reading CLOSED). Right-click it as the newcomer: "This display is not linked to a shop yet." Nothing floats.
+2. As the operator, sneak and right-click the display. **See:** the Cash Machine "> STALL DISPLAY" screen: "Not linked" in red, an empty item grid, "Size 0.80*  Height 1.35*  Every 4* s" with the note that * means default; keys SIZE, HEIGHT, INTERVAL, RESET LOOK (greyed) at the top; LINK, UNLINK (greyed), DONE at the bottom.
+3. Press LINK. **See:** the screen closes and the status line says "Now right-click the Vendor Post or stall this display should follow." Right-click a stone block: nothing happens, the prompt still waits. Right-click the post: "Display linked to <x, y, z>." and the post's own screens do not open.
+4. Within a few seconds the display becomes whole (lantern lit, SHOP sign) and the first card's item floats above it, turning slowly and bobbing; about every four seconds it changes to the next card and then back round. Buy the whole stock of the stock-1 card: that item leaves the rotation the next time round. Linked to a Vendor Post the display stays in the player-built style.
+5. Right-click the display as the newcomer: the bakery opens as if the post had been clicked, with the post's hours. As the operator the ADMIN and VENDOR keys are there too.
+- [ ] 11.1 matches
+
+### 11.2 Settings
+1. Sneak and right-click the display again. **See:** "Linked to <x, y, z>: bakery" and the bakery's item cards in a grid (hover for the tooltip; scroll if there are more than 33).
+2. Click a card: it lights green, the line reads "Pinned: <item>" in amber and, behind the screen, that item floats and stays. Press DONE and watch for ten seconds: it does not change. Click the same card again: "Every item in turn, 4 s each" and the rotation resumes.
+3. The starred defaults are the style's own item point and size (player-built: size 0.88, height 1.16). Press SIZE: the line steps to the next set value (1.00, 1.25, 1.50; the * disappears) and the floating item grows at once. HEIGHT: 1.20, 1.35, 1.50, the item rises. INTERVAL: 6, 10, 15 s. RESET LOOK: all three back to the starred defaults. Pressing SIZE past the largest value wraps to 0.50.
+4. Press UNLINK: "Not linked" and the item vanishes. LINK it again (11.1 step 3).
+5. LINK, then right-click a post more than 32 blocks away: "Too far: a display follows a post or stall within 32 blocks." and the display keeps its old link.
+6. Give the post a closed window (Part 9.2): the floating item disappears within a few seconds; the display's right-click shows the closed view with the countdown. Open the post again: the items return. UNASSIGN the post: the display goes dark and the screen reads "Linked to <x, y, z>: no shop assigned there." in amber; assign the bakery again: the items return.
+7. Break the post as the operator: the display goes dark but stays linked to that spot; place a new post there and assign it: the items return.
+8. The newcomer cannot place or mine the display, and sneaking and right-clicking it as the newcomer opens the shop, not the settings.
+- [ ] 11.2 matches
+
+## Part 12: the Market Stall
+
+Setup: operator, the bakery with at least two cards (one with a stock of 1), a redstone lamp. Jade installed if you want the hover lines.
+
+### 12.1 Placing, skins and the setup screen
+1. From the BSP creative tab place a **Market Stall** on a redstone lamp, facing you. **See:** a two-block stall in the player-built style, but broken: a post gone, the awning sagging with torn wool, boards nailed across the counter, a CLOSED sign on one chain, cobwebs, a dark lantern. The inventory icon shows the whole player-built stall at an angle. Right-click it as the newcomer: "No shop here yet." Hover with Jade: "Market Stall", "Player-built style", "No shop assigned" in red; hovering the upper half shows the same.
+2. As the operator, sneak and right-click it empty-handed. **See:** the Cash Machine "> MARKET STALL" screen: the shop list, Opens and Closes, "Style: Player-built", the red note that the stall stands broken; keys PREVIOUS, NEXT, NEXT STYLE at the top; HOURS: ALWAYS, UNASSIGN, DONE at the bottom. No figure or profession keys.
+3. Press NEXT STYLE until "Style: Blackstone shrine", click bakery, DONE. **See:** the stall becomes the whole nether shrine: glowing magma front, soul lanterns lit, nether wart on the roof; within a second two lamps light at the top corners of the front (left green, right amber), the bakery's first card's item turns above the gold plate on the counter, the redstone lamp beneath turns on, and the stall gives off light.
+4. Step through all eight styles with NEXT STYLE and DONE, walking round each: timber booth, vending terminal (two blocks tall, animated holo screen leaning out), boiler booth (item inside the bell jar, firebox flickering), player-built, blackstone shrine, street cart (lanterns, tiled roof), dockside (mast and sail), mage's pedestal (rune rings turning). For each: the lamps sit on their housings (not floating or buried), the item sits where the model makes room for it, nothing z-fights, and the awning or roof overhangs only to the front or top. Place a second stall directly beside the first: no overlap between neighbours. Face a stall north, east, south and west: the lamps and item turn with it.
+5. Hover with Jade on an assigned stall: "Blackstone shrine style", "Shop: bakery" in gold, "open, in stock".
+- [ ] 12.1 matches
+
+### 12.2 Lamps, hours, redstone and the broken state
+1. As the newcomer, right-click either half: the bakery opens with the hours in the strip. Buy the whole stock of the stock-1 card: the stall's left lamp stays green (another card still has stock). In the workbench give every bakery card a stock of 1 and buy them all: within a second the left lamp turns red; Jade reads "sold out". Restock (set the stock again): green.
+2. Setup screen, HOURS: CLOCK with a window closed now, DONE: within a second the right lamp goes dark and the lamp beneath turns off; the model stays whole (the stall is closed, not broken); right-click shows the closed view with the countdown. HOURS: GAME 13000 to 23000, `/time set day` closed, `/time set night` open.
+3. UNASSIGN, DONE: the stall turns back into its broken variant in the current style (for the shrine: cracked blackstone, the magma cold, a lantern fallen, a tooth broken off, a scorched CLOSED note), no lamps, no item, no light, the lamp beneath off. Assign the bakery again: whole within a second.
+4. Link a Stall Display (Part 11) to the stall: within a few seconds the display takes the stall's style (for the shrine: a blackstone column with a magma front, basalt spikes, a soul lantern) and floats the bakery's items at that style's own point; step the stall through the eight styles and the display follows each time. When the stall is unassigned or closed the display shows its neglected variant with no item. The boiler-booth and street-cart displays hold the item inside a jar or frame with a small bob.
+5. Break the upper half as the operator: both halves go. Place again, break the lower half: both go. The newcomer can neither place nor mine either half, and sneaking and right-clicking as the newcomer opens the shop, not the setup screen. A moderator sees the setup screen read-only.
+6. Leave and rejoin (or restart the server): the stall keeps its style, shop and hours.
+- [ ] 12.2 matches
 
 *(The shop parts are added as the shops are built.)*
