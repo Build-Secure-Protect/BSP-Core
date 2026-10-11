@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,open=true": {
+      "model": "bsp_core:block/vendor_post_open"
+    },
+    "facing=east,open=true": {
+      "model": "bsp_core:block/vendor_post_open",
+      "y": 90
+    },
+    "facing=south,open=true": {
+      "model": "bsp_core:block/vendor_post_open",
+      "y": 180
+    },
+    "facing=west,open=true": {
+      "model": "bsp_core:block/vendor_post_open",
+      "y": 270
+    },
+    "facing=north,open=false": {
+      "model": "bsp_core:block/vendor_post"
+    },
+    "facing=east,open=false": {
+      "model": "bsp_core:block/vendor_post",
+      "y": 90
+    },
+    "facing=south,open=false": {
+      "model": "bsp_core:block/vendor_post",
+      "y": 180
+    },
+    "facing=west,open=false": {
+      "model": "bsp_core:block/vendor_post",
+      "y": 270
+    }
+  }
+}

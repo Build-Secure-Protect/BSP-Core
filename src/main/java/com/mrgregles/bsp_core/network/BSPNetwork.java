@@ -71,6 +71,24 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(DepositBoxActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DepositBoxActionPacket::encode).decoder(DepositBoxActionPacket::decode)
                 .consumerMainThread(DepositBoxActionPacket::handle).add();
+        CHANNEL.messageBuilder(ShopDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ShopDataPacket::encode).decoder(ShopDataPacket::decode)
+                .consumerMainThread(ShopDataPacket::handle).add();
+        CHANNEL.messageBuilder(ShopActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ShopActionPacket::encode).decoder(ShopActionPacket::decode)
+                .consumerMainThread(ShopActionPacket::handle).add();
+        CHANNEL.messageBuilder(ShopConfigDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ShopConfigDataPacket::encode).decoder(ShopConfigDataPacket::decode)
+                .consumerMainThread(ShopConfigDataPacket::handle).add();
+        CHANNEL.messageBuilder(ShopConfigActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ShopConfigActionPacket::encode).decoder(ShopConfigActionPacket::decode)
+                .consumerMainThread(ShopConfigActionPacket::handle).add();
+        CHANNEL.messageBuilder(VendorConfigPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(VendorConfigPacket::encode).decoder(VendorConfigPacket::decode)
+                .consumerMainThread(VendorConfigPacket::handle).add();
+        CHANNEL.messageBuilder(OpenRemoteShopPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(OpenRemoteShopPacket::encode).decoder(OpenRemoteShopPacket::decode)
+                .consumerMainThread(OpenRemoteShopPacket::handle).add();
         CHANNEL.messageBuilder(ScoreSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ScoreSyncPacket::encode).decoder(ScoreSyncPacket::decode)
                 .consumerMainThread(ScoreSyncPacket::handle).add();

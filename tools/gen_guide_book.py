@@ -93,6 +93,11 @@ CATEGORIES = [
 GUIDE_TIP = "$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
 
 ENTRIES = [
+    ("coins", "shops", "Shops and Vendors", "bsp_core:vendor_post", 8, [
+        text("Shops sell and buy for $(l)Shatter Pieces$() (some lots ask for Shatter Coins instead). You find them at a $(item)Vendor Post$(), at a stall, or at an NPC in the world: right-click to see the shelves.$(br2)Each card shows the lot, $(l)buy$() and $(l)sell$() prices and the stock left. Left click buys, right click sells, shift and right click sells every full lot you hold."),
+        text("$(l)Sell here$() opens a tray: drop items in and close it; every full lot the shop buys is paid for in one go and the rest comes back.$(br2)Some shops keep $(l)opening hours$(). A closed vendor shows when it opens and how long is left. A vendor's post powers the block beneath it while the shop is open, so signs and lamps can follow.", "Selling and hours"),
+        text("Buy the $(l)Shopping Network$() on your $(item)Portable Banker$() with Shatter Coins and the shops marked remote open from anywhere. It stays with your account, whatever happens to the device; admins may clear it at a season end.$(br2)Special offers show a chip with the discount; rotating shops change their shelves on a timer.", "The Shopping Network"),
+    ]),
     ("coins", "safety_deposit_box", "Safety Deposit Box", "bsp_core:safety_deposit_box", 7, [
         text("A $(item)Safety Deposit Box$() is a cabinet admins place beside the bank. Right-click it to rent $(l)your own box$(): the same box opens from any of these cabinets on the network, and what is inside is safe at all times.$(br2)Rent is paid by the day, in pieces or coins, for as long ahead as you like. A box starts with $(l)6 slots$(); buy $(l)3 more$() at a time, up to 18."),
         text("When the rent runs out nothing is lost: your slots and their contents are kept, but the drawer is locked until you pay rent again, plus a $(l)holding fee$() for every day the box sat unpaid. Leave it long and it costs more to get back.$(br2)Shatter Coins and totems cannot be stored in a box. The bank keeps coins; totems belong in the world.", "Rent and fees"),

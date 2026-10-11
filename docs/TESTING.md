@@ -892,6 +892,26 @@ Setup: a fresh world or a second account that has never joined; operator for the
 
 - [ ] Run Part 5 of `docs/TESTING_BANKING.md` with the MySQL live test (two servers; status and test commands; payments and boxes with and without Redis; Redis stopped and restarted).
 
+## Shops by command (2026-10-11)
+
+- [ ] Run Part 6 of `docs/TESTING_BANKING.md` (create, add the held item, stock and restock, buying with test mode, no room, too poor, selling full lots, buy-only, who may do what).
+
+## Shop screen (2026-10-11)
+
+- [ ] Run Part 7 of `docs/TESTING_BANKING.md` (the page and its cards, pages, the buy and sell quantity views, shift-right sell all, Sell here, buy-only).
+
+## Shop workbench (2026-10-11)
+
+- [ ] Run Part 8 of `docs/TESTING_BANKING.md` (the list and new shops, moderators read-only, cards and the side panel, hand to slot, the item browser, settings, style, test mode, the Admin key, delete).
+
+## Vendor Post (2026-10-11)
+
+- [ ] Run Part 9 of `docs/TESTING_BANKING.md` (placing, the assignment screen, the figure and its head, the lamp and the redstone beneath, clock and game hours, closed shops, unassigning).
+
+## Shopping Network (2026-10-11)
+
+- [ ] Run Part 10 of `docs/TESTING_BANKING.md` (the remote flag, the locked and unlocked device, the list, opening a shop anywhere, the admin reset).
+
 # Game tests (headless, no client)
 
 ## Running the Forge GameTests (2026-10-08)

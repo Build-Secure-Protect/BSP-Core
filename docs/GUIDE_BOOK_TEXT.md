@@ -820,3 +820,23 @@ When the rent runs out nothing is lost: your slots and their contents are kept, 
 
 Shatter Coins and totems cannot be stored in a box. The bank keeps coins; totems belong in the world.
 
+## Shops and Vendors
+
+**Page 1**
+
+Shops sell and buy for **Shatter Pieces** (some lots ask for Shatter Coins instead). You find them at a *Vendor Post*, at a stall, or at an NPC in the world: right-click to see the shelves.
+
+Each card shows the lot, **buy** and **sell** prices and the stock left. Left click buys, right click sells, shift and right click sells every full lot you hold.
+
+**Page 2: Selling and hours**
+
+**Sell here** opens a tray: drop items in and close it; every full lot the shop buys is paid for in one go and the rest comes back.
+
+Some shops keep **opening hours**. A closed vendor shows when it opens and how long is left. A vendor's post powers the block beneath it while the shop is open, so signs and lamps can follow.
+
+**Page 3: The Shopping Network**
+
+Buy the **Shopping Network** on your *Portable Banker* with Shatter Coins and the shops marked remote open from anywhere. It stays with your account, whatever happens to the device; admins may clear it at a season end.
+
+Special offers show a chip with the discount; rotating shops change their shelves on a timer.
+

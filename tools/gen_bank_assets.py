@@ -75,6 +75,27 @@ def forbidden_tag():
     (out / "no_safety_deposit.json").write_text(json.dumps({"replace": False, "values": values}, indent=2))
 
 
+def vendor_post(lit):
+    """The Vendor Post: a steel post with a bolted base, a front lamp (amber when open, dark when closed) and a name plate; the mob is drawn by the renderer."""
+    e = [mbox([0, 0, 0], [16, 2, 16], "hull2"), mbox([2, 2, 2], [14, 14, 14], "steel"), mbox([1, 14, 1], [15, 16, 15], "hull2")]
+    for x, z in ((1, 1), (13.5, 1), (1, 13.5), (13.5, 13.5)):
+        e.append(mbox([x, 2, z], [x + 1.5, 2.8, z + 1.5], "trim"))
+    e.append(mbox([6, 6, -0.4], [10, 8, 2], "amber" if lit else "screen"))
+    e.append(mbox([4, 9, -0.3], [12, 12, 2], "panel"))
+    return e
+
+
+def open_blockstate(name):
+    variants = {}
+    for o in ("true", "false"):
+        for facing, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
+            v = {"model": f"bsp_core:block/{name}" + ("_open" if o == "true" else "")}
+            if y:
+                v["y"] = y
+            variants[f"facing={facing},open={o}"] = v
+    return {"variants": variants}
+
+
 def model(elements, gui_scale=None):
     m = {"parent": "minecraft:block/block", "render_type": "minecraft:cutout", "ambientocclusion": False,
          "textures": {"atlas": "bsp_core:block/machine_atlas", "particle": "bsp_core:block/machine_atlas"}, "elements": elements}
@@ -139,4 +160,8 @@ if __name__ == "__main__":
     (ASSETS / "models/item/safety_deposit_box.json").write_text(json.dumps(model(drawer_stack(), 0.6), indent=1))
     (ASSETS / "blockstates/safety_deposit_box.json").write_text(json.dumps(facing_blockstate("safety_deposit_box"), indent=2))
     forbidden_tag()
+    (ASSETS / "models/block/vendor_post.json").write_text(json.dumps(model(vendor_post(False)), indent=1))
+    (ASSETS / "models/block/vendor_post_open.json").write_text(json.dumps(model(vendor_post(True)), indent=1))
+    (ASSETS / "models/item/vendor_post.json").write_text(json.dumps(model(vendor_post(True), 0.6), indent=1))
+    (ASSETS / "blockstates/vendor_post.json").write_text(json.dumps(open_blockstate("vendor_post"), indent=2))
     print("bank assets written")

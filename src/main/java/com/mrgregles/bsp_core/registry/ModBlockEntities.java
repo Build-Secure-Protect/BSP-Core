@@ -59,6 +59,10 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.coin.FactoryPortBlockEntity::new, ModBlocks.FACTORY_BLANK_HATCH.get(), ModBlocks.FACTORY_POWER_PORT.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.shop.VendorPostBlockEntity>> VENDOR_POST =
+            BLOCK_ENTITIES.register("vendor_post", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.shop.VendorPostBlockEntity::new, ModBlocks.VENDOR_POST.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.bank.SafetyDepositBoxBlockEntity>> SAFETY_DEPOSIT_BOX =
             BLOCK_ENTITIES.register("safety_deposit_box", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.bank.SafetyDepositBoxBlockEntity::new, ModBlocks.SAFETY_DEPOSIT_BOX.get()).build(null));

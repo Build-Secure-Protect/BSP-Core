@@ -1,0 +1,113 @@
+<title>Stall Block Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages. One WebGL context draws every 3D view. Three stall shapes; a skin picker recolours and retrims each (fantasy, sci-fi, steampunk, vanilla); toggles show the broken variant and the stock lamp. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--bg); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible,input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+</style>
+<div class="wrap">
+<section><h1>Stall Block Looks</h1>
+<p class="lede">One stall block, several skins, so it can match the shop it stands in. A stall is tied to one shop; right-click opens it. It carries a stock lamp (green while the shop has stock, red when its limited items are all out), the open lamp and the redstone signal below like the post, and a broken, out-of-order variant of its skin while no shop is assigned. Three shapes to choose from; pick a skin to see each shape wear it. The grey cube is one block for scale.</p>
+<div class="card"><div class="ctl"><span><b>Skin:</b></span><button type="button" class="tb" data-skin="fantasy">Fantasy</button><button type="button" class="tb on" data-skin="scifi">Sci-fi</button><button type="button" class="tb" data-skin="steam">Steampunk</button><button type="button" class="tb" data-skin="vanilla">Vanilla</button>
+<label><input type="checkbox" id="broken"> Broken (no shop assigned)</label><label><input type="checkbox" id="stock" checked> In stock</label><label><input type="checkbox" id="night"> Night</label></div></div></section>
+
+<section><h2>1. Three shapes</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. Skins and states</h2><div class="card"><ol>
+<li><b>Fantasy</b>: dark oak frame, violet and gold cloth, a banner; <b>Sci-fi</b>: steel and white panels, a cyan light strip, a holo pane; <b>Steampunk</b>: copper and brass, rivets, a pressure dial; <b>Vanilla</b>: oak planks, cobble feet, a plain sign. The same block in four palettes and trims; later skins are one more palette each.</li>
+<li><b>Broken</b>: the awning torn or the pane cracked, boards loose, lamps dark, an OUT OF ORDER tag; this is what a stall shows while no shop is assigned (admins right-click to assign).</li>
+<li><b>Stock lamp</b>: green while any item in the shop has stock (unlimited shops always), red when every limited item is out; the Jade line says which.</li>
+<li><b>Open lamp and redstone</b>: like the Vendor Post: lit and powering the block below while the shop is open; off and no power when closed.</li>
+</ol></div></section>
+
+<section><h2>3. Decisions</h2><div class="card"><ol>
+<li><b>Shape:</b> A Counter, B Kiosk, or C Cart.</li>
+<li><b>Skin set:</b> the four named (default), or add a fifth now (name it).</li>
+<li><b>Stock lamp:</b> a lamp on the stall (default), or the display item itself fading when out of stock.</li>
+<li><b>Display item:</b> the stall shows its shop's first item floating above the counter (default), or no item.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STONE=0x6c6f73, DARK=0x1a1d24, GREEN=0x58f29a, RED=0xe24b3b, AMBER=0xf2b544, CREAM=0xf1e9d6;
+  const SKINS={fantasy:{frame:0x3b2f2a, body:0x5a3d22, cloth:0x6b2f8a, cloth2:0xe4b84a, trim:0xb8893a, glow:0xffd97a, pane:0x6b2f8a},
+    scifi:{frame:0x2a2f3a, body:0x4a5060, cloth:0xd9d2c0, cloth2:0x2a2f3a, trim:0x8a909c, glow:0x4cb2fa, pane:0x4cb2fa},
+    steam:{frame:0x4a321c, body:0xc77a3a, cloth:0xb8893a, cloth2:0x8c6628, trim:0xb8893a, glow:0xf2b544, pane:0x9ec5e8},
+    vanilla:{frame:0x6b4a2b, body:0xb08a57, cloth:0xffffff, cloth2:0xd63b2f, trim:0x8a909c, glow:0xffd97a, pane:0x9ec5e8}};
+  const state={skin:'scifi', broken:false, stock:true, night:false};
+  const views=[];
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos,rx){ const s=new THREE.Group(); s.position.set(...pos); if(rx) s.rotation.x=rx; g.add(s); return s; }
+  function floor(g){ bx(g,[-30,-1,-30],[60,0,30],0x1c2026); bx(g,[22,0,0],[38,16,16],STONE); }
+  function lamps(g){ const stock=bx(g,[1,13,-0.6],[3,15,0.2],GREEN,true); const open=bx(g,[13,13,-0.6],[15,15,0.2],AMBER,true); const tag=grp(g,[8,8,-1.2]); bx(tag,[-5,-1.5,-0.3],[5,1.5,0.3],CREAM); bx(tag,[-4,-0.5,-0.5],[4,0.5,-0.3],RED); return {stock,open,tag}; }
+  function item(g){ const it=grp(g,[8,19,6]); bx(it,[-2,-2,-2],[2,2,2],0x7fd8e8); return it; }
+  // A. Counter: a market counter with an awning on two poles, goods shelf under the top
+  function counter(g){ floor(g); const parts=[], L=lamps(g), it=item(g);
+    const p=(f,t,k)=>{ parts.push([bx(g,f,t,0xffffff),k]); };
+    p([0,0,2],[16,2,16],'frame'); p([1,2,3],[15,12,15],'body'); p([0,12,0],[16,14,16],'frame'); p([0,12,-2],[16,13,0],'trim');
+    p([1,2,1],[15,11,2.5],'cloth2'); p([2,4,0.5],[14,9,1],'trim');
+    p([1,14,1],[2.5,28,2.5],'trim'); p([13.5,14,1],[15,28,2.5],'trim'); p([1,14,13.5],[2.5,28,15],'trim'); p([13.5,14,13.5],[15,28,15],'trim');
+    const aw=grp(g,[0,28,0],-0.35); parts.push([bx(aw,[-1,0,-6],[17,1.2,16],0xffffff),'cloth']); for(let i=0;i<4;i++) parts.push([bx(aw,[-1+i*4.5,-0.1,-6],[1.2+i*4.5,1.3,16],0xffffff),'cloth2']);
+    return t=>{ paint(parts); L.tag.visible=state.broken; aw.rotation.x=state.broken?-0.9:-0.35; aw.rotation.z=state.broken?0.12:0; L.stock.visible=!state.broken; L.open.visible=!state.broken; L.stock.material.color.setHex(state.stock?GREEN:RED); it.visible=!state.broken; if(!reduce) it.rotation.y=t; it.position.y=30+Math.sin(t*2)*0.5; }; }
+  // B. Kiosk: a tall booth, a window pane in the upper half, a slot and a shelf below
+  function kiosk(g){ floor(g); const parts=[], L=lamps(g), it=item(g);
+    const p=(f,t,k)=>{ parts.push([bx(g,f,t,0xffffff),k]); };
+    p([0,0,0],[16,2,16],'frame'); p([1,2,1],[15,30,15],'body'); p([0,30,0],[16,32,16],'frame'); p([0,15.5,-0.3],[16,16.5,1],'trim');
+    const pane=bx(g,[2,17,0.4],[14,29,1],0xffffff,false,0.55); parts.push([pane,'pane']);
+    p([3,10,-0.8],[13,11,1],'trim'); p([4,4,-0.6],[12,6,1],'frame'); p([2,16.5,-0.8],[14,17,1.2],'trim');
+    const crack=bx(g,[7,18,0.2],[7.8,28,0.3],DARK); const crack2=bx(g,[7.4,22,0.2],[11,22.8,0.3],DARK);
+    it.position.set(8,23,0.2); it.scale.set(0.7,0.7,0.3);
+    return t=>{ paint(parts); L.tag.visible=state.broken; crack.visible=crack2.visible=state.broken; L.stock.visible=!state.broken; L.open.visible=!state.broken; L.stock.material.color.setHex(state.stock?GREEN:RED); it.visible=!state.broken; if(!reduce) it.rotation.z=t*0.8; pane.material.opacity=state.broken?0.3:0.55; }; }
+  // C. Cart: a handcart on two wheels with a canopy, goods trays on the bed
+  function cart(g){ floor(g); const parts=[], L=lamps(g), it=item(g);
+    const p=(f,t,k)=>{ parts.push([bx(g,f,t,0xffffff),k]); };
+    p([1,6,2],[15,8,14],'frame'); p([1.5,8,2.5],[14.5,12,13.5],'body'); p([0,12,1],[16,13,15],'trim');
+    for(const x of [-1,14.5]){ parts.push([bx(g,[x,1,5],[x+2.5,11,11],0xffffff),'frame']); parts.push([bx(g,[x+0.5,1,7.5],[x+2,11,8.5],0xffffff),'trim']); parts.push([bx(g,[x+0.5,5.5,5],[x+2,6.5,11],0xffffff),'trim']); }
+    p([15,7,2.5],[22,8.5,4],'frame'); p([15,7,12],[22,8.5,13.5],'frame'); p([2,13,2],[6,15,6],'cloth2'); p([7,13,9],[12,15,13],'cloth2');
+    p([2,13,2],[3.5,26,3.5],'trim'); p([12.5,13,12.5],[14,26,14],'trim');
+    const can=grp(g,[0,26,0],0.25); parts.push([bx(can,[0,0,0],[16,1.2,16],0xffffff),'cloth']); for(let i=0;i<4;i++) parts.push([bx(can,[0,-0.1,i*4.2],[16,1.3,1.6+i*4.2],0xffffff),'cloth2']);
+    L.stock.position.set(8,14,1.5); L.open.position.set(8,14,14.5); L.tag.position.set(8,10,1.3);
+    return t=>{ paint(parts); L.tag.visible=state.broken; can.rotation.x=state.broken?0.9:0.25; can.rotation.y=state.broken?0.15:0; L.stock.visible=!state.broken; L.open.visible=!state.broken; L.stock.material.color.setHex(state.stock?GREEN:RED); it.visible=!state.broken; it.position.set(8,30,8); if(!reduce) it.rotation.y=t; }; }
+  function paint(parts){ const k=SKINS[state.skin]; for(const [m,key] of parts){ const c=key==='pane'?k.pane:k[key]; m.material.color.setHex(state.broken&&(key==='cloth'||key==='pane')?0x6b6b63:c); } }
+
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:3.3,rx:.3,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Counter','A market counter: a body with a front panel in the skin\'s second colour, a top with a trim lip, four poles and a striped awning two blocks up; the shop\'s first item floats over the counter. Broken: the awning sags and greys, lamps dark, an OUT OF ORDER tag on the front. One block wide; the awning reaches into the block above.',counter],
+    ['B. Kiosk','A tall booth two blocks high: a window pane in the skin\'s colour over a serving slot and a shelf, a trim band at the waist, the display item behind the glass. Broken: the pane cracks and dims, lamps dark, the tag over the slot. The most compact; rows of them make an arcade.',kiosk],
+    ['C. Cart','A handcart: a bed on two spoked wheels with handles out the back, two covered trays, two poles and a striped canopy, the item floating above. Broken: the canopy collapses and greys, lamps dark, the tag on the bed. Wider than a block (the wheels and handles stick out), so it stands in open squares.',cart]],{dist:100,target:[13,16,6]});
+  document.querySelectorAll('[data-skin]').forEach(b=>b.onclick=()=>{ state.skin=b.dataset.skin; document.querySelectorAll('[data-skin]').forEach(x=>x.classList.toggle('on',x===b)); });
+  el('broken').onchange=e=>state.broken=e.target.checked; el('stock').onchange=e=>state.stock=e.target.checked; el('night').onchange=e=>state.night=e.target.checked;
+})();
+</script>

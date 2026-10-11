@@ -1,0 +1,111 @@
+<title>Shop Configurator Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages. The admin configurator stays in the Holo HUD admin look (dark, violet) because it is an admin tool like the Admin Rack panel; what differs between the three concepts is how an admin works: a desk of lists and tabs, a workbench where you edit the live shop, or a guided deck of steps. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--bg); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:14px; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+
+/* ---- the admin screen, Holo HUD admin look: dark navy, violet admin accent, gold for money, turquoise for ok ---- */
+.stage{ background:#0b0d11; border-radius:4px; padding:10px; display:flex; justify-content:center; }
+.scr{ position:relative; width:100%; max-width:520px; aspect-ratio:520/360; background:#10151C; border:1px solid #2a2f3a; color:#e6eaf2; font-family:var(--display); font-size:8.5px; line-height:1.3; display:grid; gap:4px; padding:8px; box-sizing:border-box; overflow:hidden; }
+.scr .h{ color:#B58CFF; font-size:9px; letter-spacing:.08em; display:flex; justify-content:space-between; align-items:baseline; }
+.scr .h span:last-child{ color:#9aa3b5; font-size:7.5px; }
+.pane{ background:#0c0e12; border:1px solid #2a2f3a; padding:5px; display:flex; flex-direction:column; gap:3px; min-width:0; overflow:hidden; }
+.pane .t{ color:#9aa3b5; font-size:7px; letter-spacing:.08em; border-bottom:1px solid #2a2f3a; padding-bottom:2px; }
+.row{ display:flex; justify-content:space-between; gap:6px; padding:2px 3px; font-size:7.5px; } .row.sel{ background:#231a3a; color:#B58CFF; } .row .m{ color:#9aa3b5; } .row .g{ color:#ffd23a; } .row .tq{ color:#19d3b0; } .row .bad{ color:#ff6b5c; }
+.btn{ font-size:7px; padding:3px 5px; border:1px solid #B58CFF; color:#B58CFF; background:#0c0e12; text-align:center; letter-spacing:.04em; white-space:nowrap; } .btn.p{ background:#B58CFF; color:#0b0d11; } .btn.q{ border-color:#2a2f3a; color:#9aa3b5; }
+.tabs{ display:flex; gap:3px; flex-wrap:wrap; } .tabs i{ font-style:normal; font-size:7px; padding:2px 5px; border:1px solid #2a2f3a; color:#9aa3b5; } .tabs i.on{ border-color:#B58CFF; color:#B58CFF; }
+.slots{ display:grid; grid-template-columns:repeat(9,1fr); gap:2px; } .slot{ aspect-ratio:1; background:#1a1f28; border:1px solid #2a2f3a; display:flex; align-items:center; justify-content:center; font-size:6.5px; color:#e6eaf2; position:relative; } .slot.k{ background:#2a2f3a; border-color:#3a3f4b; color:#ffd23a; } .slot.e{ background:#12161d; } .slot b{ position:absolute; right:1px; bottom:0; font-size:5.5px; color:#ffd23a; font-weight:400; } .slot.sel{ outline:1px solid #B58CFF; }
+.field{ display:flex; justify-content:space-between; gap:4px; font-size:7.5px; padding:2px 3px; border-bottom:1px dotted #2a2f3a; } .field span:last-child{ color:#e6eaf2; } .field .in{ background:#1a1f28; padding:0 4px; min-width:40px; text-align:right; }
+.chips{ display:flex; flex-wrap:wrap; gap:2px; } .chip{ font-size:6.5px; padding:1px 4px; border:1px solid #2a2f3a; color:#9aa3b5; } .chip.on{ border-color:#19d3b0; color:#19d3b0; }
+.sw{ display:flex; gap:3px; } .sw i{ width:12px; height:12px; border:1px solid #2a2f3a; display:block; }
+.steps{ display:flex; gap:2px; } .steps i{ font-style:normal; flex:1; font-size:6.5px; padding:3px 2px; text-align:center; border:1px solid #2a2f3a; color:#9aa3b5; } .steps i.on{ background:#B58CFF; color:#0b0d11; border-color:#B58CFF; } .steps i.done{ color:#19d3b0; border-color:#19d3b0; }
+.mini{ background:#061008; border:1px solid #0d3b22; color:#58f29a; padding:4px; font-size:7px; display:grid; grid-template-columns:1fr 50px; gap:3px; } .mini .k{ background:#eae4d5; color:#2b2823; text-align:center; padding:2px; font-size:6px; margin-bottom:2px; } .mini .s{ display:grid; grid-template-columns:repeat(7,1fr); gap:1px; } .mini .s i{ aspect-ratio:1; background:#0d3b22; display:block; }
+.mini.pass{ background:#f1e9d6; border-color:#c9b98f; color:#1e2a44; } .mini.pass .s i{ background:#efe4ca; } .mini.pass .k{ background:#f6efdf; border:1px solid #a33b2a; color:#a33b2a; }
+.mini.mkt{ background:#243029; border-color:#6b4a2b; color:#f4f1e8; } .mini.mkt .s i{ background:#2e3b33; } .mini.mkt .k{ background:#d9b98a; color:#4a321c; }
+.note{ font-size:7px; color:#9aa3b5; }
+</style>
+<div class="wrap">
+<section><h1>Shop Configurator Concepts</h1>
+<p class="lede">Three ways an admin builds and runs shops, all opened with <code>/bsp shop</code>. The configurator is an admin tool, so all three sit in the Holo HUD admin look (dark, violet) beside the Admin Rack panel; the shops players see get their own skins. What differs is how the admin works: a desk of lists and tabs, a workbench where you edit the live shop by clicking its slots, or a guided deck of steps. Switch the screen to see each concept do the same job.</p>
+<div class="card" style="border-color:var(--acc)"><h3>Decided (owner, 2026-10-11)</h3><p><b>B, Workbench</b>, built in the <b>Cash Machine skin</b> like the bank rather than the Holo HUD admin look shown here. The item in hand goes to the next free slot with one key, the browser covers everything else. The admin key under a live shop is seen by admins and moderators, moderators read-only. A and C are not chosen.</p></div>
+<div class="card"><div class="ctl"><span><b>Screen:</b></span><button type="button" class="tb on" data-v="list">Shop list</button><button type="button" class="tb" data-v="settings">Shop settings</button><button type="button" class="tb" data-v="browser">Item browser</button><button type="button" class="tb" data-v="style">Layout and style</button><button type="button" class="tb" data-v="preview">Preview and test buy</button></div></div></section>
+
+<section><h2>1. Three concepts</h2><div class="grid3" id="looks"></div></section>
+
+<section><h2>2. What every concept has to carry</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Screen</th><th>Has</th></tr></thead><tbody>
+<tr><td>Shop list</td><td>Every shop with its kind (shop, sub-section, rotating, special offer), item count, Shopping Network flag, where it is assigned (posts, stalls, Easy NPCs), open or closed now; New shop, Duplicate, Delete; search.</td></tr>
+<tr><td>Shop settings</td><td>Name, parent (for a sub-section), kind, Shopping Network on or off, style preset, pages; per item: buy price and sell price each in pieces or a coin tier (either side off), global stock and per-player stock with a restock countdown, instant buy, hidden; rotating: pool, display slots, interval; special offer: discount percent and end time.</td></tr>
+<tr><td>Item browser</td><td>The item in hand, or every item in the modpack: a search box, grouped by creative tab, mod id shown; click to add to the selected slot.</td></tr>
+<tr><td>Layout and style</td><td>Three built-in presets (Cash Machine, Passbook, Market Board) and the admin's saved ones; the palette (bezel, screen, text, keys), rows, where the keys sit, the grid shape; Save as preset.</td></tr>
+<tr><td>Preview and test buy</td><td>The real shop screen in test mode: buys and sells report what would be charged and given, nothing moves and nothing is logged; a Test as <player> picker for stock limits.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. Decisions</h2><div class="card"><ol>
+<li><b>Concept:</b> A Desk, B Workbench, or C Deck. They can mix: a Deck for new shops that lands on the Desk, for example.</li>
+<li><b>Admin look:</b> Holo HUD admin (shown, matches the Admin Rack panel), or the Cash Machine skin like the bank.</li>
+<li><b>Adding items:</b> the item in hand always goes to the next free slot with one key, the browser for everything else (default), or the browser only.</li>
+<li><b>Who sees the admin panel key under a shop:</b> admins only (default), or admins and moderators (moderators read-only).</li>
+</ol></div></section>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  let view='list';
+  const SHOPS=[['Spawn Smith','shop',24,'net','2 posts','open'],['Quarry Stall','shop',9,'local','1 stall','open'],['Night Market','rotating',40,'net','1 npc','closed'],['Festival Deals','offer',6,'net','','open'],['Smith: Tools','sub',12,'','',''],['Smith: Armour','sub',14,'','','']];
+  const ITEMS=['Tetrium Plate','Coin Blank','Iron Ingot','Oak Log','Diamond','Bread','Torch','Illyrium Ingot','Ender Pearl'];
+  function list(sel){ return '<div class="pane"><div class="t">SHOPS &middot; search: [ smith ]</div>'+SHOPS.map((s,i)=>'<div class="row'+(i===sel?' sel':'')+'"><span>'+s[0]+' <span class="m">'+s[1]+'</span></span><span class="m">'+s[2]+' items '+(s[3]==='net'?'<span class="tq">NET</span>':'')+' '+s[4]+' '+(s[5]==='closed'?'<span class="bad">closed</span>':s[5]==='open'?'<span class="tq">open</span>':'')+'</span></div>').join('')+'</div>'; }
+  function grid(n,sel){ let h='<div class="slots">'; for(let i=0;i<18;i++){ const it=i<n?ITEMS[i%ITEMS.length]:''; h+='<div class="slot'+(i===sel?' sel':'')+(i>=n?' e':'')+'">'+(it?it.split(' ')[0].slice(0,4):'')+(it?'<b>'+(i%3?'120':'5k')+'</b>':'')+'</div>'; } return h+'</div>'; }
+  function fields(){ return '<div class="field"><span>Buy</span><span><span class="in">120</span> pieces</span></div><div class="field"><span>Sell</span><span><span class="in">30</span> pieces</span></div><div class="field"><span>Stock (global)</span><span><span class="in">64</span> restock 6h</span></div><div class="field"><span>Stock (per player)</span><span><span class="in">8</span> restock 1d</span></div><div class="field"><span>Instant buy</span><span>off</span></div>'; }
+  function shopFields(){ return '<div class="field"><span>Name</span><span><span class="in">Spawn Smith</span></span></div><div class="field"><span>Kind</span><span>shop</span></div><div class="field"><span>Shopping Network</span><span class="tq">on</span></div><div class="field"><span>Style</span><span>Cash Machine</span></div><div class="field"><span>Pages</span><span>2</span></div>'; }
+  function browser(){ return '<div class="pane"><div class="t">ITEM BROWSER &middot; search: [ ingot ] &middot; tab: all / bsp / mekanism / vanilla</div><div class="slots">'+['Iron','Gold','Copper','Tet','Illy','Mag','Osm','Tin','Lead','Steel','Netr','Brass','Zinc','Lumi','Elec','Char','Dirt','Slag'].map(n=>'<div class="slot">'+n+'</div>').join('')+'</div><div class="note">hover: bsp_core:tetrium_ingot &middot; click: add to slot 7 &middot; HAND: put the held item in the next free slot</div></div>'; }
+  function styleP(){ return '<div class="pane"><div class="t">LAYOUT &amp; STYLE &middot; preset: Cash Machine &#9662;</div><div class="chips"><span class="chip on">Cash Machine</span><span class="chip">Passbook</span><span class="chip">Market Board</span><span class="chip">My: Smithy</span><span class="chip">+ save as preset</span></div><div class="field"><span>Keys</span><span>right column</span></div><div class="field"><span>Rows</span><span>3 &middot; grid 7 wide</span></div><div class="field"><span>Bezel / screen / text / keys</span><span class="sw"><i style="background:#cfc8b8"></i><i style="background:#061008"></i><i style="background:#58f29a"></i><i style="background:#eae4d5"></i></span></div><div class="mini"><div><div class="s">'+'<i></i>'.repeat(14)+'</div></div><div><div class="k">BUY</div><div class="k">SELL</div><div class="k">BACK</div></div></div></div>'; }
+  function preview(){ return '<div class="pane"><div class="t">PREVIEW &middot; test mode &middot; test as: [ Lena &#9662; ]</div><div class="mini"><div><div style="font-size:6.5px;margin-bottom:2px">&gt; SPAWN SMITH &nbsp; Lena &nbsp; 24,350 pieces</div><div class="s">'+'<i></i>'.repeat(14)+'</div><div style="font-size:6.5px;margin-top:3px;color:#f2b544">TEST: would charge 120 pieces for 1 Tetrium Plate; stock 63 left for Lena. Nothing moved.</div></div><div><div class="k">BUY x1</div><div class="k">-1 +1</div><div class="k">SELL</div><div class="k">ADMIN</div></div></div><div class="note">the ADMIN key is what admins see under every live shop: re-assign, settings, opening times</div></div>'; }
+
+  const A={name:'A. Desk',text:'Two panes: every shop in a list on the left, the selected shop on the right under tabs (Items, Prices and stock, Sections, Network and times, Layout and style, Preview). The item browser slides over the right pane. Everything is a list or a field; fastest for an admin who runs many shops and edits numbers.',
+    draw(v){ const head='<div class="h"><span>SHOP CONFIGURATOR</span><span>admin &middot; Mrgregles</span></div>';
+      if(v==='list') return head+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:0">'+list(0)+'<div class="pane"><div class="t">SPAWN SMITH</div>'+shopFields()+'<div class="tabs"><i class="on">Items</i><i>Prices</i><i>Sections</i><i>Net &amp; times</i><i>Style</i><i>Preview</i></div>'+grid(14,-1)+'<div style="display:flex;gap:3px"><span class="btn p">NEW SHOP</span><span class="btn">DUPLICATE</span><span class="btn q">DELETE</span></div></div></div>';
+      if(v==='settings') return head+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:0">'+list(0)+'<div class="pane"><div class="tabs"><i>Items</i><i class="on">Prices &amp; stock</i><i>Sections</i><i>Net &amp; times</i><i>Style</i><i>Preview</i></div>'+grid(14,6)+'<div class="t">SLOT 7 &middot; TETRIUM PLATE</div>'+fields()+'<div style="display:flex;gap:3px"><span class="btn">HAND &rarr; SLOT</span><span class="btn">BROWSE...</span><span class="btn q">CLEAR</span></div></div></div>';
+      if(v==='browser') return head+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:0">'+list(0)+browser()+'</div>';
+      if(v==='style') return head+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:0">'+list(0)+styleP()+'</div>';
+      return head+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:0">'+list(0)+preview()+'</div>'; }};
+  const B={name:'B. Workbench',text:'The live shop screen sits in the middle at all times, drawn in its own preset. You build by clicking its slots: drop the item in hand, or pick from the browser drawer below; click a slot to set its price and stock in a side card. The style editor recolours the same live screen as you change it. Preview is just the switch to test mode. What you see is what players get.',
+    draw(v){ const head='<div class="h"><span>WORKBENCH &middot; SPAWN SMITH</span><span>shops &#9662; &middot; '+(v==='preview'?'<span style="color:#f2b544">TEST MODE</span>':'editing')+'</span></div>';
+      const live='<div class="mini" style="min-height:120px"><div><div style="font-size:6.5px;margin-bottom:2px">&gt; SPAWN SMITH &nbsp; page 1/2</div><div class="s">'+'<i></i>'.repeat(14)+'</div>'+(v==='preview'?'<div style="font-size:6.5px;margin-top:3px;color:#f2b544">TEST: would charge 120 pieces. Nothing moved.</div>':'<div style="font-size:6.5px;margin-top:3px;color:#3fb97a">click a slot to edit &middot; drag items between slots</div>')+'</div><div><div class="k">BUY</div><div class="k">SELL</div><div class="k">PAGE</div>'+(v==='preview'?'<div class="k">ADMIN</div>':'')+'</div></div>';
+      const side=v==='settings'?'<div class="pane"><div class="t">SLOT 7 &middot; TETRIUM PLATE</div>'+fields()+'<span class="btn q">CLEAR SLOT</span></div>':v==='style'?styleP():v==='list'?list(0):'<div class="pane"><div class="t">SHOP</div>'+shopFields()+'<div class="chips"><span class="chip on">Items</span><span class="chip">Sections</span><span class="chip">Net &amp; times</span></div></div>';
+      const bottom=v==='browser'?browser():'<div class="pane" style="flex-direction:row;gap:3px;align-items:center"><span class="btn p">HAND &rarr; SLOT</span><span class="btn">BROWSE ITEMS</span><span class="btn">STYLE</span><span class="btn">'+(v==='preview'?'STOP TEST':'TEST MODE')+'</span><span class="btn q">SHOPS</span></div>';
+      return head+'<div style="display:grid;grid-template-columns:3fr 2fr;gap:4px;min-height:0"><div style="display:flex;flex-direction:column;gap:4px;min-width:0">'+live+bottom+'</div>'+side+'</div>'; }};
+  const C={name:'C. Deck',text:'A guided deck: steps across the top (Name, Items, Prices and stock, Sections, Look, Network and times, Preview), one big card per step with only that step\'s controls, Next and Back at the bottom. The item browser is the Items step itself. Simplest to learn and hard to leave a shop half set up; slower for an admin who tweaks one price.',
+    draw(v){ const order=['list','settings','browser','style','preview']; const names=['Shops','Items','Prices','Sections','Look','Net &amp; times','Preview']; const idx={list:0,browser:1,settings:2,style:4,preview:6}[v];
+      const steps='<div class="steps">'+names.map((n,i)=>'<i class="'+(i<idx?'done':i===idx?'on':'')+'">'+n+'</i>').join('')+'</div>';
+      let body;
+      if(v==='list') body=list(0)+'<div style="display:flex;gap:3px"><span class="btn p">NEW SHOP &rarr;</span><span class="btn">EDIT</span><span class="btn">DUPLICATE</span><span class="btn q">DELETE</span></div>';
+      else if(v==='browser') body='<div class="pane"><div class="t">STEP 2 &middot; ITEMS &middot; 14 placed</div>'+grid(14,14)+'</div>'+browser().replace('ITEM BROWSER','PICK FOR SLOT 15');
+      else if(v==='settings') body='<div class="pane"><div class="t">STEP 3 &middot; PRICES &amp; STOCK &middot; 7 of 14</div>'+grid(14,6)+fields()+'<div class="note">&larr; &rarr; move between items; APPLY TO ALL copies the stock settings</div></div>';
+      else if(v==='style') body=styleP().replace('LAYOUT &amp; STYLE','STEP 5 &middot; LOOK');
+      else body=preview().replace('PREVIEW','STEP 7 &middot; PREVIEW');
+      return '<div class="h"><span>NEW SHOP &middot; SPAWN SMITH</span><span>admin</span></div>'+steps+body+'<div style="display:flex;justify-content:space-between"><span class="btn q">&larr; BACK</span><span class="btn p">'+(v==='preview'?'SAVE &amp; OPEN':'NEXT &rarr;')+'</span></div>'; }};
+  const CONCEPTS=[A,B,C];
+  for(const c of CONCEPTS){ const card=document.createElement('div'); card.className='card'; card.innerHTML='<h3>'+c.name+'</h3><div class="stage"><div class="scr" data-c="'+c.name[0]+'"></div></div><p>'+c.text+'</p>'; $('looks').appendChild(card); }
+  function render(){ document.querySelectorAll('.scr').forEach((s,i)=>{ s.innerHTML=CONCEPTS[i].draw(view); s.style.gridTemplateRows='auto 1fr'+(i===2?' auto':''); }); }
+  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ view=b.dataset.v; document.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('on',x===b)); render(); });
+  render();
+})();
+</script>

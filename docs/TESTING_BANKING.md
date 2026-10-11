@@ -200,4 +200,109 @@ Needs the MySQL live test setup: two servers with `storage.mode = "mysql"` on on
 4. Stop Redis. **See:** the server log warns "subscriber dropped ... retrying", and payments still arrive within 3 s through the polling. Start Redis again: the log says "listening" within a minute.
 - [ ] 5.2 matches
 
+## Part 6: shops by command (before the screens)
+
+Setup: operator, the newcomer with pieces (`/bsp bank give <newcomer> 5000`), some iron ingots in your hand.
+
+### 6.1 Making a shop
+1. `/bsp shop create smith Spawn Smith`. **See:** "Shop smith (Spawn Smith) created..."; `/bsp shop list` shows it with 0 items.
+2. Hold 4 iron ingots: `/bsp shop add smith 120 30`. **See:** "Added 4 Iron Ingot to smith at index 0."
+3. `/bsp shop item smith 0 stock 3 -1 1`: three lots for the whole server, restock one minute after they run out.
+4. `/bsp shop open smith`. **See:** the shop listed in chat: "0: 4 Iron Ingot  buy 120  sell 30 pieces  stock 3" and the how-to line.
+- [ ] 6.1 matches
+
+### 6.2 Buying and stock
+1. As the newcomer: `/bsp shop buy smith 0 2 test`. **See:** "Test: would buy 2 lot(s) for 240 pieces...", nothing in the inventory, balance unchanged.
+2. `/bsp shop buy smith 0 2`. **See:** gold "Bought 2 lot(s) for 240 pieces. Balance: ..."; 8 iron ingots in the inventory; `/bank log` shows a `bought Spawn Smith, 8 Iron Ingot -240` line.
+3. `/bsp shop buy smith 0 5`. **See:** only 1 lot bought (the stock left). Again: "Sold out. Check back after the restock." Wait a minute: a buy works again (restocked to 3).
+4. Fill your inventory so fewer than 4 ingots fit, then buy 1 lot: "No room in your inventory for it." (nothing paid).
+5. `/bsp bank set <newcomer> 50` then buy: "Not enough pieces in the bank."; nothing given.
+- [ ] 6.2 matches
+
+### 6.3 Selling, buy-only, offers
+1. Holding 40 cobblestone, add it to a second shop at sell 20 per lot of 16: `/bsp shop create quarry Quarry`, hold 16 cobblestone, `/bsp shop add quarry 100 20`. `/bsp shop sell quarry 0 10`. **See:** "Sold 2 lot(s) for 40 pieces..."; 8 cobblestone left (only full lots sell).
+2. `/bsp shop set quarry buyonly on`, then `/bsp shop sell quarry 0 1` with 16 cobble: "This shop does not buy that."
+3. Opening the shop as a player who is not an admin works for `open`, `buy` and `sell`; `create`, `add`, `set` are refused for them.
+- [ ] 6.3 matches
+
+*(The Shopping Network, rotating shops, special offers and opening hours get their steps with the screens, the Vendor Post and the stall.)*
+
+## Part 7: the shop screen
+
+Setup as Part 6: shops `smith` (iron ingots, stock 3) and `quarry` (cobblestone) exist; the newcomer has pieces.
+
+### 7.1 The page
+1. `/bsp shop open smith`. **See:** the Cash Machine screen headed "> SPAWN SMITH" with "page 1 / 1" at the right; a card with the iron ingot icon, "buy 120" in amber, "sell 30" dim, "3" top right; keys BACK, PREVIOUS (greyed), NEXT PAGE (greyed) at the top, SELL HERE, SELL ALL at the bottom (plus ADMIN for you as an admin, not for the newcomer); the strip reads "open / <server>" and "balance ...". Hover the card: the tooltip lists the prices, the stock and the clicks.
+2. Add 22 items to a shop (hold anything, `/bsp shop add smith 1 -1` repeatedly): a second page appears; NEXT PAGE and PREVIOUS move between them.
+3. Add a card with no buy price (`/bsp shop add smith -1 5`): "--" in place of the buy price.
+- [ ] 7.1 matches
+
+### 7.2 Buying
+1. Left-click the iron card. **See:** the quantity view: the item and its name, a big "1" with "lots", "total 120 pieces" in amber, keys -1, +1, +16, MAX at the top, CONFIRM and CANCEL at the bottom. +1 twice: total 360. MAX: the count stops at the stock (3), at what you can afford or at what fits. CONFIRM. **See:** "Bought 3 lot(s) for 360 pieces.", 12 iron ingots, the badge reads OUT and the card is dark.
+2. Left-click the OUT card: nothing opens. After the restock minute the badge returns.
+3. Make an instant-buy item (set `instant` once the configurator exists; skip for now).
+- [ ] 7.2 matches
+
+### 7.3 Selling
+1. `/bsp shop open quarry` holding 40 cobblestone. Right-click the cobblestone card. **See:** the sell quantity view with "you get 20 pieces" for 1 lot; MAX gives 2 (two full lots of 16). CONFIRM: "Sold 2 lot(s) for 40 pieces.", 8 cobblestone left.
+2. With more cobblestone, shift-right-click the card: every full lot sells at once.
+3. SELL HERE. **See:** the grid screen "> SELL HERE: QUARRY" with 14 green-framed slots over your inventory and a SELL NOW key. Drop in cobblestone and a diamond; press SELL NOW (or close). **See:** the cobblestone's full lots sold with one gold "Sold ... lot(s) in all" line, the diamond and any part lot back in your inventory.
+4. `/bsp shop set quarry buyonly on`, open it: no sell prices on cards, no SELL HERE or SELL ALL keys; right-click does nothing.
+- [ ] 7.3 matches
+
+*(Closed shops, special offers and rotating pages get their steps with the Vendor Post and the configurator.)*
+
+## Part 8: the shop workbench
+
+Setup: operator; a moderator account if you have one; a few items in hand.
+
+### 8.1 Opening and the list
+1. `/bsp shop`. **See:** the Cash Machine workbench "> SHOP WORKBENCH": the shop list (smith, quarry, ...) with kind, card count and NET flags; keys SHOPS, PAGE (greyed until a shop is picked), SETTINGS, STYLE at the top; NEW SHOP (greyed until an id is typed), PREVIOUS, NEXT at the bottom; the strip "admin: changes save at once".
+2. Type `bakery` in the id box, press NEW SHOP. **See:** "Shop bakery created.", the list shows it, PAGE opens on an empty page.
+3. The newcomer: `/bsp shop` is refused. A moderator: the workbench opens with the strip "moderator: read only" and every change answers "Moderators may look but not change."
+- [ ] 8.1 matches
+
+### 8.2 Cards
+1. On bakery's PAGE hold 8 bread, press HAND TO SLOT. **See:** a bread card with "--" (no prices yet). Click it: the side panel lists Lot size 8, Buy off, Sell off, Currency pieces, Stock inf, Stock per player inf, Restock 0 m, Instant off, Hidden off, Opens section -.
+2. Click "Buy price" on the side panel, type 12, Enter. **See:** "Saved." and the card reads "buy 12". Set Sell 3 the same way. Click Currency: it cycles to Copper, Gold ... and back to pieces. Click Instant: on. Click Stock, server: type 5, Enter; Restock: 1.
+3. Press BROWSE ITEMS, type `torch` in the search: the grid narrows; click a torch. **See:** back on the page with a torch card added after the bread. Type `mekanism` or another mod's name in the search: its items appear with their mod id in the tooltip.
+4. Click a card then REMOVE CARD: gone. Click an empty slot then HAND TO SLOT: the item lands there, shifting the rest.
+- [ ] 8.2 matches
+
+### 8.3 Settings, style and test
+1. SETTINGS. **See:** Name, Kind, Parent, Shopping Network, Buy only, rotating slots and interval, Offer discount and end, Id. Click Name, type "The Bakery", Enter: the header updates. Click Kind: shop > sub > rotating > offer > shop. Click Shopping Network: on. Click Offer discount, type 25: the player page shows the SPECIAL OFFER chip with prices cut.
+2. STYLE: Cash Machine marked; the other two are listed as coming later.
+3. PAGE then TEST SHOP. **See:** the player's shop screen for the bakery; buying answers "Test: would buy ... Nothing moved." and your balance and inventory do not change; SELL HERE is not offered in test mode.
+4. Open the bakery as a player (`/bsp shop open bakery`): the ADMIN key opens the workbench on it.
+5. DELETE SHOP on a shop: it leaves the list and `/bsp shop open` for it fails.
+- [ ] 8.3 matches
+
+## Part 9: the Vendor Post
+
+Setup: operator, a shop (bakery) with cards, a redstone lamp.
+
+### 9.1 Placing and assigning
+1. From the BSP creative tab place a **Vendor Post** on a redstone lamp, facing you. **See:** a steel post with a bolted base, a name plate and a dark lamp on the front; the lamp blinks red (no shop yet). Right-click as a player (the newcomer): "No shop here yet."
+2. As the operator, sneak and right-click it with an empty hand. **See:** the Cash Machine "> VENDOR POST" screen: the shop list, Opens and Closes boxes, "Always open" in amber, "Figure: villager", "No shop assigned" in red; keys PREVIOUS, NEXT, NEXT FIGURE, PROFESSION at the top; HOURS: ALWAYS, UNASSIGN, DONE at the bottom.
+3. Click bakery, NEXT FIGURE until "wandering trader", DONE. **See:** a wandering trader standing on the post facing the way you placed it; within a second the front lamp lights amber and the redstone lamp beneath turns on. Walk around it within six blocks: its head follows you.
+4. Right-click the post as the newcomer: the bakery screen opens, with "open / <server>" in the strip; no ADMIN or VENDOR key. As the operator: both keys; VENDOR reopens the assignment screen.
+- [ ] 9.1 matches
+
+### 9.2 Hours and redstone
+1. Assignment screen, press HOURS: ALWAYS so it reads HOURS: CLOCK; type a window that is closed now (for example 03:00 to 03:10), DONE. **See:** the lamp beneath turns off within a second, the post's front lamp goes dark. Right-click: the bakery shows CLOSED with "opens at 03:00" and the countdown, no cards.
+2. Set a window that is open now: the lamp comes back and the shop opens.
+3. HOURS: GAME with 13000 to 23000 (night); `/time set day`: closed; `/time set night`: open within a second.
+4. Villager figure: NEXT FIGURE to "villager", PROFESSION to "librarian", DONE: a librarian stands on the post.
+5. UNASSIGN then DONE: the figure vanishes, the lamp blinks red again, players get "No shop here yet."
+6. The newcomer cannot place or mine the post.
+- [ ] 9.2 matches
+
+## Part 10: the Shopping Network
+
+1. In the workbench, Settings of bakery: Shopping Network on. Leave quarry off.
+2. On a locked account (newcomer, Portable Banker): the UNLOCK NETWORK key; pressing it with no coins gives the cost line. Unlock it with coins (Part 3).
+3. Press SHOPPING NETWORK. **See:** "> SHOPPING NETWORK": bakery listed with "shop" and its card count; quarry absent; PREVIOUS, NEXT, CLOSE keys. Click bakery: the bakery opens with "open / shopping network" in the strip; buying and selling work from anywhere.
+4. `/bsp bank remote reset`, reopen the device: the key reads UNLOCK NETWORK again.
+- [ ] Part 10 matches
+
 *(The shop parts are added as the shops are built.)*

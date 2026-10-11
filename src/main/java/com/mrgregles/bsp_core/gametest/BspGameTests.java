@@ -642,7 +642,7 @@ public class BspGameTests {
         com.mrgregles.bsp_core.bank.DepositBox.rent(server, player, 7, -1, x -> r[0] = x);
         h.assertTrue(r[0].ok() && com.mrgregles.bsp_core.bank.DepositBox.state(a, now) == com.mrgregles.bsp_core.bank.DepositBox.State.OPEN && a.boxSlots == 6, "rented: open with 6 slots");
         h.assertTrue(a.pieces == before - 7 * rent, "7 days cost 7 x rent: " + (before - a.pieces));
-        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, now) == 7, "7 days left: " + com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, now));
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, System.currentTimeMillis()) == 7, "7 days left: " + com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, System.currentTimeMillis()));
         a.box.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 5));
         for (int i = 0; i < 4; i++) {
             com.mrgregles.bsp_core.bank.DepositBox.addSlots(server, player, -1, x -> r[0] = x);
@@ -704,6 +704,203 @@ public class BspGameTests {
         String[] p = com.mrgregles.bsp_core.storage.RedisLink.parse("bank:hub:a:b", "survival");
         h.assertTrue(p != null && p[0].equals("bank") && p[1].equals("hub") && p[2].equals("a:b"), "kind, origin and payload, the payload keeping its colons");
         h.assertTrue(com.mrgregles.bsp_core.storage.RedisLink.parse("junk", "hub") == null, "anything else is dropped");
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ shops
+
+    @GameTest(template = EMPTY)
+    public void shop_buy_pays_gives_counts_stock_and_restocks(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Gus", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, id, 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "smith_" + Long.toHexString(System.nanoTime()), "Spawn Smith", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        h.assertTrue(shop != null && com.mrgregles.bsp_core.shop.Shops.create(server, shop.id, "again", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP) == null, "ids are unique");
+        var item = new com.mrgregles.bsp_core.shop.ShopItem();
+        item.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 4);
+        item.buy = 120;
+        item.sell = 30;
+        item.stockGlobal = 3;
+        item.restockMs = 60_000;
+        int index = shop.add(item);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 2, true, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].key().equals("test_bought") && player.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 0 && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start, "test mode moves nothing: " + o[0]);
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 2, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].lots() == 2 && o[0].amount() == 240, "bought two lots for 240: " + o[0]);
+        h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 8 && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start - 240, "eight ingots given, 240 paid");
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, index, id, System.currentTimeMillis()) == 1, "one lot of stock left");
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 5, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].lots() == 1, "a buy is cut to the stock left: " + o[0]);
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("sold_out"), "sold out: " + o[0]);
+        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, index).restockAt = System.currentTimeMillis() - 1;
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, index, id, System.currentTimeMillis()) == 3, "restocked after the countdown");
+        com.mrgregles.bsp_core.bank.Bank.set(server, id, 100, "test", r -> {});
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("short") && player.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 12, "too poor: nothing given");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_sell_pays_buy_only_refuses_and_offers_discount(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Hal", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, id, 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "quarry_" + Long.toHexString(System.nanoTime()), "Quarry", com.mrgregles.bsp_core.shop.Shop.Kind.OFFER);
+        shop.offerPercent = 25;
+        var item = new com.mrgregles.bsp_core.shop.ShopItem();
+        item.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16);
+        item.buy = 100;
+        item.sell = 20;
+        int index = shop.add(item);
+        var perPlayer = new com.mrgregles.bsp_core.shop.ShopItem();
+        perPlayer.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 1);
+        perPlayer.buy = 10;
+        perPlayer.stockPlayer = 2;
+        int pi = shop.add(perPlayer);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        long now = System.currentTimeMillis();
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.price(shop, item, true, now) == 75 && com.mrgregles.bsp_core.shop.Shops.price(shop, item, false, now) == 20, "the offer cuts the buy price only");
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 40));
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+        com.mrgregles.bsp_core.shop.Shops.sell(server, player, shop, index, 10, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].lots() == 2 && o[0].amount() == 40 && player.getInventory().countItem(net.minecraft.world.item.Items.COBBLESTONE) == 8, "sold two full lots of 16, 8 left: " + o[0]);
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start + 40, "paid 40");
+        com.mrgregles.bsp_core.shop.Shops.sellAll(server, player, shop, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("none_held"), "sell all with no full lot left: " + o[0]);
+        shop.buyOnly = true;
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16));
+        com.mrgregles.bsp_core.shop.Shops.sell(server, player, shop, index, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("not_bought"), "a buy-only shop buys nothing");
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, pi, 5, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].lots() == 2, "per-player stock caps the buy at 2: " + o[0]);
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, pi, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("sold_out"), "and then it is sold out for this player");
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, pi, UUID.randomUUID(), now) == 2, "another player still has two");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_rotation_draws_and_open_hours_follow_both_clocks(GameTestHelper h) {
+        var server = server(h);
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "night_" + Long.toHexString(System.nanoTime()), "Night Market", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        shop.displaySlots = 3;
+        for (int i = 0; i < 10; i++) {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER, i + 1);
+            it.buy = 10;
+            shop.add(it);
+        }
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        long now = System.currentTimeMillis();
+        var first = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, now);
+        h.assertTrue(first.size() == 3 && new java.util.HashSet<>(first).size() == 3, "three distinct items drawn: " + first);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.visible(server, shop, now + 1000).equals(first), "the draw holds until the next rotation");
+        var later = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, now + shop.intervalMs + 1);
+        h.assertTrue(later.size() == 3, "a new draw after the interval: " + later);
+        var real = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.REAL, 9 * 60, 21 * 60);
+        h.assertTrue(real.isOpenAt(10 * 60) && !real.isOpenAt(22 * 60) && real.untilOpen(22 * 60) == 11 * 60, "real clock 09:00 to 21:00");
+        var night = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, 13000, 1000);
+        h.assertTrue(night.isOpenAt(18000) && night.isOpenAt(500) && !night.isOpenAt(6000) && night.untilOpen(6000) == 7000, "a game-time window wrapping past midnight");
+        h.assertTrue(com.mrgregles.bsp_core.shop.OpenHours.ALWAYS.isOpenAt(0), "always open");
+        var ledger = com.mrgregles.bsp_core.shop.ShopLedger.load(com.mrgregles.bsp_core.shop.ShopLedger.get(server).save(new net.minecraft.nbt.CompoundTag()));
+        h.assertTrue(ledger.shop(shop.id) != null && ledger.shop(shop.id).all().size() == 10 && ledger.shop(shop.id).kind == com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING, "shops survive a save and load");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void sell_here_quotes_full_lots_the_shop_buys(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "pantry_" + Long.toHexString(System.nanoTime()), "Pantry", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var bread = new com.mrgregles.bsp_core.shop.ShopItem();
+        bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4);
+        bread.buy = 12;
+        bread.sell = 3;
+        shop.add(bread);
+        var torch = new com.mrgregles.bsp_core.shop.ShopItem();
+        torch.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TORCH, 1);
+        torch.buy = 2;
+        shop.add(torch);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var menu = new com.mrgregles.bsp_core.shop.SellHereMenu(1, player.getInventory(), shop.id, null, false, null);
+        menu.grid.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 10));
+        menu.grid.setStackInSlot(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TORCH, 5));
+        menu.grid.setStackInSlot(2, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 1));
+        long[] q = menu.quote(shop, System.currentTimeMillis());
+        h.assertTrue(q[0] == 2 && q[1] == 6, "ten bread is two full lots for 6; torches (no sell price) and diamonds count nothing: " + q[0] + ", " + q[1]);
+        shop.buyOnly = true;
+        q = menu.quote(shop, System.currentTimeMillis());
+        h.assertTrue(q[0] == 0, "a buy-only shop quotes nothing");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_configurator_edits_save_through_the_shop_record(GameTestHelper h) {
+        var server = server(h);
+        String id = "cfg_" + Long.toHexString(System.nanoTime());
+        var A = com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.class;
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.CREATE, id, "ROTATING", 0, 0), "").equals("created"), "created");
+        var shop = com.mrgregles.bsp_core.shop.Shops.ledger(server).shop(id);
+        h.assertTrue(shop != null && shop.kind == com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING, "a rotating shop");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.ADD_ITEM, "minecraft:bread", "", 999, 4), id).equals("saved"), "added bread by id");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.ADD_ITEM, "minecraft:torch", "", 0, 1), id).equals("saved"), "added torch at the front");
+        h.assertTrue(shop.all().size() == 2 && shop.item(0).stack.is(net.minecraft.world.item.Items.TORCH) && shop.item(1).stack.getCount() == 4, "torch first, a lot of four bread second");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM, "buy", "12", 1, 0), id).equals("saved") && shop.item(1).buy == 12, "buy price set");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM, "buy", "x", 1, 0), id).equals("bad_value"), "a bad value is refused");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "remote", "true", 0, 0), id).equals("saved") && shop.remote, "remote on");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "offer", "150", 0, 0), id).equals("saved") && shop.offerPercent == 99, "offer capped at 99");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.MOVE_ITEM, "", "", 0, 1), id).equals("saved") && shop.item(1).stack.is(net.minecraft.world.item.Items.TORCH), "moved the torch to the end");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.REMOVE_ITEM, "", "", 0, 0), id).equals("saved") && shop.all().size() == 1, "removed one");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.DELETE, "", "", 0, 0), id).equals("deleted") && com.mrgregles.bsp_core.shop.Shops.ledger(server).shop(id) == null, "deleted");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void vendor_post_powers_the_block_beneath_while_open(GameTestHelper h) {
+        var server = server(h);
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "post_" + Long.toHexString(System.nanoTime()), "Post Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        BlockPos lamp = new BlockPos(3, 1, 3), post = lamp.above();
+        h.setBlock(lamp, Blocks.REDSTONE_LAMP);
+        h.setBlock(post, com.mrgregles.bsp_core.registry.ModBlocks.VENDOR_POST.get().defaultBlockState());
+        var be = entity(h, post, com.mrgregles.bsp_core.shop.VendorPostBlockEntity.class);
+        h.assertTrue(!be.assigned() && !h.getBlockState(post).getValue(com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN), "unassigned: closed");
+        be.set(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "minecraft:villager", "");
+        h.runAfterDelay(25, () -> {
+            h.assertBlockProperty(post, com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN, true);
+            h.assertBlockProperty(lamp, net.minecraft.world.level.block.RedstoneLampBlock.LIT, true);
+            // a game-time window that is closed now (the test world sits at dawn, time 0..): open from tick 20000 to 23000
+            be.set(shop.id, new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, 20000, 23000), "minecraft:villager", "");
+            h.runAfterDelay(25, () -> {
+                h.assertBlockProperty(post, com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN, false);
+                h.assertBlockProperty(lamp, net.minecraft.world.level.block.RedstoneLampBlock.LIT, false);
+                h.succeed();
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void shopping_network_lists_remote_shops_for_unlocked_accounts_only(GameTestHelper h) {
+        var server = server(h);
+        UUID id = UUID.randomUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Ivy", g -> {});
+        var local = com.mrgregles.bsp_core.shop.Shops.create(server, "loc_" + Long.toHexString(System.nanoTime()), "Local", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var remote = com.mrgregles.bsp_core.shop.Shops.create(server, "rem_" + Long.toHexString(System.nanoTime()), "Remote", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        remote.remote = true;
+        com.mrgregles.bsp_core.shop.Shops.save(server, remote);
+        var list = com.mrgregles.bsp_core.shop.ShopListMenu.remote(server);
+        h.assertTrue(list.stream().anyMatch(e -> e.id().equals(remote.id)) && list.stream().noneMatch(e -> e.id().equals(local.id)), "only remote shops are listed");
+        h.assertTrue(!com.mrgregles.bsp_core.shop.ShopListMenu.mayOpen(server, id, remote), "locked account cannot open it");
+        com.mrgregles.bsp_core.bank.Bank.setRemoteShops(server, id, true);
+        h.assertTrue(com.mrgregles.bsp_core.shop.ShopListMenu.mayOpen(server, id, remote) && !com.mrgregles.bsp_core.shop.ShopListMenu.mayOpen(server, id, local), "unlocked: remote yes, local no");
         h.succeed();
     }
 }

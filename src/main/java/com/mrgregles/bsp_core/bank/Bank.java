@@ -389,7 +389,7 @@ public final class Bank {
     }
 
     /** Writes a log line locally and, on a network, to the database. */
-    static void record(MinecraftServer server, UUID id, BankTransaction t) {
+    public static void record(MinecraftServer server, UUID id, BankTransaction t) {
         BankLedger.get(server).record(id, t);
         NetworkStorage.bankLog(id, t);
     }

@@ -116,7 +116,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
                 top.add(new Key("transaction_log", true, () -> setView(View.LOG)));
                 if (portable) {
                     top.add(new Key(account().remoteShops ? "shopping_network" : "unlock_network", true,
-                            () -> { if (!account().remoteShops) { send(BankActionPacket.Action.UNLOCK_NETWORK, 0, 0, "", 0, false); } }));
+                            () -> send(account().remoteShops ? BankActionPacket.Action.OPEN_NETWORK : BankActionPacket.Action.UNLOCK_NETWORK, 0, 0, "", 0, false)));
                     bottom.add(new Key("convert_at_bank", false, () -> {}));
                 } else {
                     bottom.add(new Key("deposit_coins", true, () -> setView(View.DEPOSIT)));

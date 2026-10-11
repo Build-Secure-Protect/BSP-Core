@@ -136,6 +136,13 @@ public final class NetworkStorage {
                     }
                 }
                 case "notice" -> collectNotices(srv);
+                case "shop" -> {
+                    if (payload.startsWith("-")) {
+                        com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
+                    } else {
+                        shopReload(payload);
+                    }
+                }
                 default -> { } // shops and later kinds
             }
         });
@@ -166,6 +173,7 @@ public final class NetworkStorage {
                 if (!migrated) {
                     BSPCore.LOGGER.warn("BSP-Core storage: this server's local records are not in the database yet. Run /bsp storage migrate.");
                 }
+                shopReload(null);
             } catch (SQLException | RuntimeException e) {
                 if (s != null) {
                     s.close();
@@ -701,6 +709,53 @@ public final class NetworkStorage {
         async("save a deposit box", s -> {
             s.bankBoxWrite(id, slots, until, items);
             publish("box", id.toString());
+        });
+    }
+
+    // ------------------------------------------------------------------ shops
+
+    public static void shopWrite(String id, String name, String data) {
+        async("save a shop", s -> {
+            s.shopWrite(id, name, data);
+            publish("shop", id);
+        });
+    }
+
+    public static void shopDelete(String id) {
+        async("delete a shop", s -> {
+            s.shopDelete(id);
+            publish("shop", "-" + id);
+        });
+    }
+
+    /** Loads one shop (or all with null) from the database into this server's ledger. */
+    public static void shopReload(@Nullable String id) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            Map<String, String> rows;
+            try {
+                rows = s.shopRead(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read shops: {}", e.toString());
+                return;
+            }
+            onServer(() -> {
+                var ledger = com.mrgregles.bsp_core.shop.ShopLedger.get(srv);
+                for (var e : rows.entrySet()) {
+                    try {
+                        ledger.put(com.mrgregles.bsp_core.shop.Shop.load(net.minecraft.nbt.TagParser.parseTag(e.getValue())));
+                    } catch (Exception ex) {
+                        BSPCore.LOGGER.error("BSP-Core storage: shop {} is unreadable: {}", e.getKey(), ex.toString());
+                    }
+                }
+                if (id != null && rows.isEmpty()) {
+                    ledger.remove(id);
+                }
+            });
         });
     }
 

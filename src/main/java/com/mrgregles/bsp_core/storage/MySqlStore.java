@@ -137,6 +137,8 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_log") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, ms BIGINT NOT NULL, "
                     + "type VARCHAR(16) NOT NULL, with_name VARCHAR(64) NOT NULL, detail VARCHAR(255) NOT NULL, pieces BIGINT NOT NULL, coin_tier INT NOT NULL, coin_count INT NOT NULL, "
                     + "server_id VARCHAR(64) NOT NULL, INDEX (uuid, ms))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shops") + " (id VARCHAR(32) NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, "
+                    + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_boxes") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, slots INT NOT NULL, rent_until BIGINT NOT NULL, "
                     + "items MEDIUMTEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         }
@@ -785,6 +787,38 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(4, items);
             ps.executeUpdate();
         }
+    }
+
+    void shopWrite(String id, String name, String data) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("shops") + " (id, name, data) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), data = VALUES(data)")) {
+            ps.setString(1, id);
+            ps.setString(2, name);
+            ps.setString(3, data);
+            ps.executeUpdate();
+        }
+    }
+
+    void shopDelete(String id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("shops") + " WHERE id = ?")) {
+            ps.setString(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /** One shop's data, or null; with a null id, every shop as id -> data. */
+    Map<String, String> shopRead(String id) throws SQLException {
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, data FROM " + t("shops") + (id == null ? "" : " WHERE id = ?"))) {
+            if (id != null) {
+                ps.setString(1, id);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.put(rs.getString(1), rs.getString(2));
+                }
+            }
+        }
+        return out;
     }
 
     /** A player known to the network by name (case-insensitive), or null. */

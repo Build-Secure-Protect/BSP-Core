@@ -1,0 +1,108 @@
+<title>Vendor Post Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages. One WebGL context draws every 3D view. Three figures for the Vendor Post: a one-block post that holds the shop assignment and opening times, powers the block beneath while open, and renders the vendor on top. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+</style>
+<div class="wrap">
+<section><h1>Vendor Post Looks</h1>
+<p class="lede">The Vendor Post is BSP-Core's own vendor: a one-block post an admin places and right-clicks to assign a shop and its opening times. It powers the block beneath with redstone while the shop is open (for signs and other cosmetics), and it draws the vendor figure on top. Easy NPCs are the other kind of vendor and bring their own looks; these three are for the post. The grey cube is one block for scale. Drag to turn; toggles show open and closed, and an unassigned post.</p>
+<div class="card" style="border-color:var(--acc)"><h3>Decided (owner, 2026-10-11)</h3><p><b>None of the three figures.</b> The post draws a stock game model chosen per post: the villagers (every profession and biome type), the wandering trader and other vanilla mobs from a config list. No floating name (the owner uses signs). The head follows the nearest player. Unassigned: the post alone with its lamp blinking red, no figure until a shop is assigned. The post itself (lamp, name plate, redstone below) stays as drawn here.</p></div>
+<div class="card"><div class="ctl"><label><input type="checkbox" id="open" checked> Shop open (lamp lit, redstone on)</label><label><input type="checkbox" id="assigned" checked> Shop assigned</label><label><input type="checkbox" id="night"> Night</label></div></div></section>
+
+<section><h2>1. Three figures</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. What all three share</h2><div class="card"><ol>
+<li>The post: a 16 x 16 block, the figure stands on it and reaches two blocks high in all; right-click the post or the figure to open the shop (or, as an admin, the assignment panel).</li>
+<li>An open lamp on the post lights while the shop is open and the post gives strong redstone power to the block below; closed: lamp off, no power.</li>
+<li>Unassigned: the figure holds a "?" board and the post's lamp blinks red; admins get the shop picker on right-click, players a "no shop here yet" line.</li>
+<li>The figure turns its head toward the nearest player within six blocks and idles otherwise; it never moves off the post and cannot be hurt.</li>
+<li>Built with a static post model from the generator and a renderer for the figure (boxes and planes, no entity, no AI), so it costs nothing to run and survives restarts and chunk reloads.</li>
+</ol></div></section>
+
+<section><h2>3. Decisions</h2><div class="card"><ol>
+<li><b>Figure:</b> A Hooded Merchant, B Brass Automaton, or C Market Clerk.</li>
+<li><b>Name tag:</b> the shop's name floats over the figure like a player's name (default), or only shows when looked at.</li>
+<li><b>Head turn:</b> follows the nearest player (default), or still.</li>
+<li><b>Unassigned look:</b> the "?" board and a blinking red lamp (default), or the figure missing (post only) until assigned.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STEEL2=0x2a2f3a, TRIM=0x8a909c, BRASS=0xb8893a, WOOD=0x5a3d22, WOOD2=0x6b4a2b, STONE=0x6c6f73, CLOTH=0x6b2f8a, CLOTH2=0x3a1b4f, SKIN=0xd9a985, LEATHER=0x4a321c, AMBER=0xf2b544, RED=0xe24b3b, PLATE=0xd9d2c0, CREAM=0xf1e9d6, GREEN=0x2f6b4f, GLASS=0x9ec5e8, COPPER=0xc77a3a, DARK=0x1a1d24;
+  const state={open:true, assigned:true, night:false};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos){ const s=new THREE.Group(); s.position.set(...pos); g.add(s); return s; }
+  function floor(g){ bx(g,[-30,-1,-30],[60,0,30],0x1c2026); bx(g,[22,0,0],[38,16,16],STONE); }
+  function post(g,col){ bx(g,[0,0,0],[16,2,16],STEEL2); bx(g,[2,2,2],[14,14,14],col); bx(g,[1,14,1],[15,16,15],STEEL2); for(const [x,z] of [[1,1],[13.5,1],[1,13.5],[13.5,13.5]]) bx(g,[x,2,z],[x+1.5,2.8,z+1.5],TRIM);
+    const lamp=bx(g,[6,6,-0.4],[10,8,2],AMBER,true); const plate=bx(g,[4,9,-0.3],[12,12,2],PLATE); return {lamp,plate}; }
+  function qboard(g){ const b=grp(g,[0,0,0]); bx(b,[-5,0,-0.5],[5,7,0.5],CREAM); bx(b,[-3.5,1,-0.7],[-1.5,5.5,-0.5],RED); bx(b,[-1.5,4,-0.7],[1.5,5.5,-0.5],RED); bx(b,[1,1,-0.7],[3,5.5,-0.5],RED); return b; }
+  function head(g,pos,col){ const h=grp(g,pos); bx(h,[-4,0,-4],[4,8,4],col); bx(h,[-2.5,3,-4.2],[-1,4.5,-4],DARK); bx(h,[1,3,-4.2],[2.5,4.5,-4],DARK); return h; }
+  // A. Hooded Merchant: robes, hood, a tray of wares held in front
+  function merchant(g){ floor(g); const p=post(g,WOOD2); const f=grp(g,[8,16,8]);
+    bx(f,[-5,0,-4],[5,14,4],CLOTH2); bx(f,[-6,14,-5],[6,24,5],CLOTH); bx(f,[-6.5,22,-5.5],[6.5,26,5.5],CLOTH);
+    const h=head(f,[0,24,0],SKIN); bx(h,[-5,4,-5],[5,10,5],CLOTH); bx(h,[-5,9,-5],[5,10,2],CLOTH);
+    bx(f,[-8,15,-2],[-5.5,23,2],CLOTH); bx(f,[5.5,15,-2],[8,23,2],CLOTH);
+    const tray=grp(f,[0,15,-7]); bx(tray,[-7,0,-3],[7,1,3],WOOD); bx(tray,[-6,1,-2],[-3,3,1],RED); bx(tray,[-2,1,-2],[1,3,1],GLASS); bx(tray,[2,1,-2],[6,3,1],AMBER);
+    const q=qboard(f); q.position.set(0,16,-8);
+    return t=>{ p.lamp.visible=state.assigned?state.open:Math.floor(t*2)%2===0; p.lamp.material.color.setHex(state.assigned?AMBER:RED); tray.visible=state.assigned; q.visible=!state.assigned; h.rotation.y=reduce?0:Math.sin(t*0.7)*0.4; f.position.y=16+ (reduce?0:Math.sin(t*1.5)*0.15); }; }
+  // B. Brass Automaton: a clockwork vendor bolted to the post, a glass chest showing gears, a crank arm
+  function automaton(g){ floor(g); const p=post(g,STEEL2); const f=grp(g,[8,16,8]);
+    bx(f,[-3,0,-3],[3,4,3],BRASS); bx(f,[-6,4,-4.5],[6,16,4.5],COPPER); bx(f,[-4,7,-5],[4,13,-4.4],GLASS,false,0.6);
+    const gear=grp(f,[0,10,-4.2]); bx(gear,[-2.5,-0.5,-0.3],[2.5,0.5,0.3],BRASS); bx(gear,[-0.5,-2.5,-0.3],[0.5,2.5,0.3],BRASS);
+    const h=head(f,[0,17,0],BRASS); bx(h,[-5,7,-5],[5,8,5],BRASS); bx(h,[-1,8,-1],[1,11,1],BRASS); const eye=bx(h,[-2.5,3,-4.3],[2.5,4.5,-4],AMBER,true);
+    bx(f,[-8.5,8,-1.5],[-6,15,1.5],COPPER); const arm=grp(f,[7,14,0]); bx(arm,[-1,-8,-1.5],[1.5,1,1.5],COPPER); bx(arm,[-1,-9,-5],[1.5,-7,1.5],BRASS);
+    const sign=grp(f,[0,26,0]); bx(sign,[-7,0,-0.6],[7,5,0.6],CREAM); bx(sign,[-0.3,-3,-0.3],[0.3,0,0.3],BRASS);
+    const q=qboard(f); q.position.set(0,26,0); q.scale.set(1.4,0.7,1);
+    return t=>{ p.lamp.visible=state.assigned?state.open:Math.floor(t*2)%2===0; p.lamp.material.color.setHex(state.assigned?AMBER:RED); sign.visible=state.assigned; q.visible=!state.assigned; eye.visible=state.open||!state.assigned; if(!reduce){ gear.rotation.z=state.open?t*2:0; arm.rotation.x=state.open?Math.sin(t*2)*0.5:0; h.rotation.y=Math.sin(t*0.5)*0.5; } }; }
+  // C. Market Clerk: apron, flat cap, a counter board on the post's front with hanging price tags
+  function clerk(g){ floor(g); const p=post(g,WOOD); const f=grp(g,[8,16,8]);
+    bx(f,[-5,0,-3.5],[5,13,3.5],LEATHER); bx(f,[-5.5,13,-4],[5.5,23,4],GREEN); bx(f,[-4,13,-4.6],[4,21,-4],CREAM);
+    const h=head(f,[0,23,0],SKIN); bx(h,[-4.5,7.5,-5.5],[4.5,9,4.5],LEATHER); bx(h,[-4.5,6.5,-4.5],[4.5,7.5,4.5],LEATHER);
+    bx(f,[-8,14,-1.5],[-5.5,22,1.5],GREEN); bx(f,[5.5,14,-1.5],[8,22,1.5],GREEN);
+    const board=grp(g,[8,8,0]); bx(board,[-8,0,-3],[8,1.5,0],WOOD2); for(let i=0;i<3;i++){ bx(board,[-6+i*4.5,-5,-2.2],[-3+i*4.5,0,-1.8],PLATE); bx(board,[-4.5+i*4.5,0,-2.1],[-4.3+i*4.5,1.5,-1.9],TRIM); }
+    const q=qboard(f); q.position.set(0,15,-8);
+    return t=>{ p.lamp.visible=state.assigned?state.open:Math.floor(t*2)%2===0; p.lamp.material.color.setHex(state.assigned?AMBER:RED); board.visible=state.assigned; q.visible=!state.assigned; if(!reduce){ h.rotation.y=Math.sin(t*0.6)*0.45; h.rotation.x=Math.sin(t*0.9)*0.08; } }; }
+
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:3.3,rx:.3,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Hooded Merchant','A robed figure in violet with a deep hood, holding a wooden tray of wares in front; the tray is swapped for the "?" board when no shop is assigned. The post is dark wood with the lamp and a name plate. Head turns toward you; a slow breathing bob. Fantasy, quiet, fits the Market Board preset.',merchant],
+    ['B. Brass Automaton','A clockwork vendor bolted to a steel post: copper body, a glass chest with a turning gear while open, a brass head with an amber eye, a crank arm that works while the shop is open and a sign on a rod above. The steampunk one; pairs with the Cash Machine and the Vault Pillar.',automaton],
+    ['C. Market Clerk','A clerk in a green shirt, cream apron and flat cap behind a counter board fixed to the post\'s front, with three hanging price tags. The counter is swapped for the "?" board when unassigned. Head turns and nods. Vanilla-flavoured; the natural match for the vanilla stall skin.',clerk]],{dist:104,target:[13,21,6]});
+  el('open').onchange=e=>state.open=e.target.checked; el('assigned').onchange=e=>state.assigned=e.target.checked; el('night').onchange=e=>state.night=e.target.checked;
+})();
+</script>

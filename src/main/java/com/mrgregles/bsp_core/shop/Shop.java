@@ -1,0 +1,133 @@
+package com.mrgregles.bsp_core.shop;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A shop: a tree node. Plain shops and sub-sections hold pages of items; a rotating shop draws a
+ * few of its pool each interval; a special offer is a section with a discount until a time. The
+ * whole shop is one record, saved as NBT.
+ */
+public final class Shop {
+    public enum Kind { SHOP, SUB, ROTATING, OFFER }
+
+    public static final int COLUMNS = 7, ROWS = 3, PER_PAGE = COLUMNS * ROWS;
+
+    public final String id;
+    public String name = "";
+    public Kind kind = Kind.SHOP;
+    public String parent = "";
+    /** Reachable through the Portable Banker's Shopping Network. */
+    public boolean remote;
+    public boolean buyOnly;
+    public String style = "cash_machine";
+    public final List<List<ShopItem>> pages = new ArrayList<>();
+    /** Rotating: how many of the pool show, and how often a new draw happens. */
+    public int displaySlots = 4;
+    public long intervalMs = 12 * 3_600_000L;
+    /** Special offer: the discount and when it ends (0 = no end). */
+    public int offerPercent;
+    public long offerEndMs;
+
+    public Shop(String id) {
+        this.id = id;
+        pages.add(new ArrayList<>());
+    }
+
+    /** Every item in order, across pages (the pool, for a rotating shop). */
+    public List<ShopItem> all() {
+        List<ShopItem> out = new ArrayList<>();
+        pages.forEach(out::addAll);
+        return out;
+    }
+
+    public ShopItem item(int index) {
+        List<ShopItem> all = all();
+        return index >= 0 && index < all.size() ? all.get(index) : null;
+    }
+
+    /** Appends an item to the last page with room, opening a new page when full; returns its index. */
+    public int add(ShopItem item) {
+        List<ShopItem> last = pages.get(pages.size() - 1);
+        if (last.size() >= PER_PAGE) {
+            last = new ArrayList<>();
+            pages.add(last);
+        }
+        last.add(item);
+        return all().size() - 1;
+    }
+
+    public boolean remove(int index) {
+        for (List<ShopItem> page : pages) {
+            if (index < page.size()) {
+                page.remove(index);
+                return true;
+            }
+            index -= page.size();
+        }
+        return false;
+    }
+
+    public boolean offerActive(long now) {
+        return kind == Kind.OFFER && offerPercent > 0 && (offerEndMs == 0 || now < offerEndMs);
+    }
+
+    public CompoundTag save() {
+        CompoundTag t = new CompoundTag();
+        t.putString("Id", id);
+        t.putString("Name", name);
+        t.putString("Kind", kind.name());
+        t.putString("Parent", parent);
+        t.putBoolean("Remote", remote);
+        t.putBoolean("BuyOnly", buyOnly);
+        t.putString("Style", style);
+        ListTag pl = new ListTag();
+        for (List<ShopItem> page : pages) {
+            ListTag il = new ListTag();
+            page.forEach(i -> il.add(i.save()));
+            CompoundTag p = new CompoundTag();
+            p.put("Items", il);
+            pl.add(p);
+        }
+        t.put("Pages", pl);
+        t.putInt("DisplaySlots", displaySlots);
+        t.putLong("Interval", intervalMs);
+        t.putInt("OfferPercent", offerPercent);
+        t.putLong("OfferEnd", offerEndMs);
+        return t;
+    }
+
+    public static Shop load(CompoundTag t) {
+        Shop s = new Shop(t.getString("Id"));
+        s.name = t.getString("Name");
+        try {
+            s.kind = Kind.valueOf(t.getString("Kind"));
+        } catch (IllegalArgumentException e) {
+            s.kind = Kind.SHOP;
+        }
+        s.parent = t.getString("Parent");
+        s.remote = t.getBoolean("Remote");
+        s.buyOnly = t.getBoolean("BuyOnly");
+        s.style = t.contains("Style") ? t.getString("Style") : "cash_machine";
+        s.pages.clear();
+        for (Tag p : t.getList("Pages", Tag.TAG_COMPOUND)) {
+            List<ShopItem> page = new ArrayList<>();
+            for (Tag i : ((CompoundTag) p).getList("Items", Tag.TAG_COMPOUND)) {
+                page.add(ShopItem.load((CompoundTag) i));
+            }
+            s.pages.add(page);
+        }
+        if (s.pages.isEmpty()) {
+            s.pages.add(new ArrayList<>());
+        }
+        s.displaySlots = t.contains("DisplaySlots") ? t.getInt("DisplaySlots") : 4;
+        s.intervalMs = t.contains("Interval") ? t.getLong("Interval") : 12 * 3_600_000L;
+        s.offerPercent = t.getInt("OfferPercent");
+        s.offerEndMs = t.getLong("OfferEnd");
+        return s;
+    }
+}
