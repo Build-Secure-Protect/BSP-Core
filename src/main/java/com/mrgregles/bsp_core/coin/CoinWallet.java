@@ -27,7 +27,7 @@ public final class CoinWallet {
      *
      * @return false (and takes nothing) if the player cannot afford it
      */
-    public static boolean pay(ServerPlayer player, int cost) {
+    public static boolean pay(Player player, int cost) {
         if (cost <= 0) {
             return true;
         }
@@ -55,7 +55,7 @@ public final class CoinWallet {
     }
 
     /** Gives {@code value} as coins, largest tiers first. Any remainder smaller than the cheapest coin is lost. */
-    public static void give(ServerPlayer player, int value) {
+    public static void give(Player player, int value) {
         CoinTier[] tiers = CoinTier.values();
         for (int i = tiers.length - 1; i >= 0 && value > 0; i--) {
             int v = tiers[i].value();

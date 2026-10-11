@@ -185,6 +185,8 @@ public final class BspProcesses {
             Map.entry("jei.bsp_core.info.score_screen", List.of("score_screen")),
             Map.entry("jei.bsp_core.info.admin_rack", List.of("admin_rack")),
             Map.entry("jei.bsp_core.info.anti_totem", List.of("anti_totem")),
+            Map.entry("jei.bsp_core.info.bank_atm", List.of("bank_atm")),
+            Map.entry("jei.bsp_core.info.safety_deposit_box", List.of("safety_deposit_box")),
             Map.entry("jei.bsp_core.info.totem", List.of("shatter_totem")),
             Map.entry("jei.bsp_core.info.plate", List.of("tetrium_plate")));
 

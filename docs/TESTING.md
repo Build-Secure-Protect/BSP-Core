@@ -860,12 +860,45 @@ Use an empty test database and an account with CREATE, SELECT, INSERT, UPDATE, D
 - [ ] Totem Compass: with none of your totems placed on this server (or in this dimension) the needle spins. While tracking rivals with no rival totem on this server it also spins. It never points at a totem on another server.
 - [ ] After adding screenshots and running the two commands in `docs/book_screenshots/README.md`, the Illyrium Crucible, Illyrium Refinery and Shatter Coin Factory entries show the picture with a frame instead of the block layout.
 
+# Banking and shops
+
+## Bank account, pieces and commands (2026-10-11)
+
+Setup: a fresh world or a second account that has never joined; operator for the admin commands. Nothing is visual yet: the Bank block, the Portable Banker and the deposit box come next.
+
+- [ ] A player's first join prints the gold welcome line with 500 pieces; `/bank` shows `Balance: 500 pieces` and `No coins in the bank`. Leaving and rejoining does not give another 500.
+- [ ] `/bank pay <other> 300` moves 300 pieces at once; the recipient sees the gold "received" line if online, and `/bank` on both sides shows the new balances. `/bank pay <other> 999999` fails with "Not enough in the bank" and nothing moves.
+- [ ] `/bank pay <other> 1000` (the confirmation threshold) only sets up the payment and tells you to run it again with `confirm`; the second command pays. Running `confirm` first, or more than a minute later, is refused.
+- [ ] The recipient runs `/bank paytoggle`: paying them fails with "is not accepting payments"; after another `/bank paytoggle` it works.
+- [ ] Paying an offline player by name works (they must have joined this server before, or be known to the network). At their next login they see "While you were away: 1 payment(s), 300 pieces in all".
+- [ ] `/bank log` lists the newest first: `grant`, `paid`, `received` lines with signed amounts in red and green; `/bank log 2` pages when there are more than eight.
+- [ ] Admin: `/bsp bank give <player> 1000`, `take`, `set 0` change the balance and print it; each shows in the player's log as `admin`. `/bsp bank remote <player> on` is accepted (it only matters once the Portable Banker exists).
+- [ ] Config `bank.startingPieces`, `bank.payConfirmPieces`, `bank.piecesPerCopperCoin` in `serverconfig/bsp_core-server.toml` take effect after a restart.
+- [ ] Network (when a database is available, with the MySQL live test): the same balance on two servers; a payment made on A shows on B after `/bank` there; the starting pieces are given on one server only.
+
+## Shatter Bank block and screens (2026-10-11)
+
+- [ ] Run Part 2 of `docs/TESTING_BANKING.md` (placing, facings, light, admin-only, both halves; the account, deposit, withdraw, pay and log screens; the block's idle and in-use screen text).
+
+## Portable Banker (2026-10-11)
+
+- [ ] Run Part 3 of `docs/TESTING_BANKING.md` (recipe, tooltip, the screens anywhere, the coin-paid Shopping Network unlock, the admin reset).
+
+## Safety Deposit Box (2026-10-11)
+
+- [ ] Run Part 4 of `docs/TESTING_BANKING.md` (placing, renting, slots, forbidden items, the second block, expiry with the holding fee, coin payment, guide and JEI).
+
+## Redis live sync (2026-10-11)
+
+- [ ] Run Part 5 of `docs/TESTING_BANKING.md` with the MySQL live test (two servers; status and test commands; payments and boxes with and without Redis; Redis stopped and restarted).
+
 # Game tests (headless, no client)
 
 ## Running the Forge GameTests (2026-10-08)
 
 - `./gradlew runGameTestServer` starts a headless server, runs every test in `src/main/java/com/mrgregles/bsp_core/gametest/`, prints a pass/fail line per test and exits; the Gradle task fails when a test fails. Claude can run this, so these checks no longer need screenshots.
 - Each test builds its own blocks inside the empty 24 x 10 x 24 template `bsp_core:empty` (written by `tools/gen_gametest_structures.py`).
+- Bank tests (2026-10-11): starting pieces once, pay and shortfall and self-pay, refusing payments, one-way conversion with banked coins by tier and withdrawal, the API charge and credit.
 - Tests so far: the tank forms when complete (flags, master, capacity, port), rejects glass on an edge, keeps plasma while a block is missing; `allocate` is max-min fair; plasma reaches a base over 3 Tetrium cables; 15 Tetrium cables reach, 16 do not; an Output 10 totem moves 20,000 mB a second through one Illyrium cable into a tank port.
 - Add a test for each new rule or fix where the client is not needed: anything about forming, flow figures, reach, caps and sharing.
 

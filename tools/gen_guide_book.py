@@ -93,6 +93,15 @@ CATEGORIES = [
 GUIDE_TIP = "$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
 
 ENTRIES = [
+    ("coins", "safety_deposit_box", "Safety Deposit Box", "bsp_core:safety_deposit_box", 7, [
+        text("A $(item)Safety Deposit Box$() is a cabinet admins place beside the bank. Right-click it to rent $(l)your own box$(): the same box opens from any of these cabinets on the network, and what is inside is safe at all times.$(br2)Rent is paid by the day, in pieces or coins, for as long ahead as you like. A box starts with $(l)6 slots$(); buy $(l)3 more$() at a time, up to 18."),
+        text("When the rent runs out nothing is lost: your slots and their contents are kept, but the drawer is locked until you pay rent again, plus a $(l)holding fee$() for every day the box sat unpaid. Leave it long and it costs more to get back.$(br2)Shatter Coins and totems cannot be stored in a box. The bank keeps coins; totems belong in the world.", "Rent and fees"),
+    ]),
+    ("coins", "shatter_bank", "The Shatter Bank", "bsp_core:bank_atm", 6, [
+        text("The $(item)Shatter Bank$() is a two-block machine admins place at spawn and in safe zones. Right-click it to open your account.$(br2)Your account holds $(l)Shatter Pieces$(), the everyday money. Pieces are never an item: they live in the account, and the same balance follows you to every server of the network.$(br2)Every player is given 500 pieces on their first join."),
+        text("The bank also keeps $(item)Shatter Coins$() for you, by tier. Coins in the bank are safe from raids but earn $(l)no interest$(): a Coin Vault pays interest and can be robbed. Choose.$(br2)Deposit coins to keep them, or $(l)convert$() them: a Copper coin becomes 1,000 pieces, each higher tier double the one below. Converting is one way. Pieces never turn back into coins.", "Coins and pieces"),
+        text("From the account screen you can pay any player on the network, online or not; large payments ask you to confirm, and you can refuse incoming payments.$(br2)The transaction log lists what you bought and sold, who you paid and who paid you, with filters and a search. It is kept for 90 days.$(br2)Commands are a backup: $(l)/bank$(), $(l)/bank pay$(), $(l)/bank log$().", "Paying and the log"),
+    ]),
     ("totem", "your_totem", "Your Shatter Totem", "bsp_core:shatter_totem", 0, [
         text("Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be crafted and it cannot be destroyed.$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."),
         text("Only one totem is ever yours by right, but you can hold others: any totem you steal becomes yours.$(br2)If you die to another player while carrying your totem, it is placed where you fell. A totem dropped on the ground places itself after a short while.", "Keeping it"),

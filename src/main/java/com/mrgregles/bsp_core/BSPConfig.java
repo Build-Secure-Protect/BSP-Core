@@ -135,6 +135,15 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<String> STORAGE_MODE, STORAGE_SERVER_ID, STORAGE_HOST, STORAGE_DATABASE, STORAGE_USER, STORAGE_PASSWORD,
             STORAGE_TABLE_PREFIX;
     public static final ForgeConfigSpec.IntValue STORAGE_PORT;
+    public static final ForgeConfigSpec.BooleanValue REDIS_ENABLED, REDIS_SSL;
+    public static final ForgeConfigSpec.ConfigValue<String> REDIS_HOST, REDIS_PASSWORD, REDIS_CHANNEL;
+    public static final ForgeConfigSpec.IntValue REDIS_PORT, REDIS_DB;
+
+    // ------------------------------------------------------------------ bank
+
+    /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
+    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_VALUE,
+            BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS;
     public static final ForgeConfigSpec.BooleanValue STORAGE_SSL;
 
     // ------------------------------------------------------------------ visuals
@@ -465,6 +474,41 @@ public final class BSPConfig {
         STORAGE_NOTICE_SECONDS = BUILDER.comment("How often this server collects messages left for its players by other servers, such as \"your totem is being stolen\".",
                         "Lower is quicker to warn but asks the database more often.")
                 .defineInRange("noticeSeconds", 3, 1, 60);
+        BUILDER.comment("Redis, optional: with it, balance changes, deposit boxes, shop edits and messages reach the other servers at once",
+                        "instead of at the next poll. Without it (or while it is down) everything still works through the database.")
+               .push("redis");
+        REDIS_ENABLED = BUILDER.comment("Connect to Redis when storage.mode is \"mysql\".").define("enabled", false);
+        REDIS_HOST = BUILDER.define("host", "localhost");
+        REDIS_PORT = BUILDER.defineInRange("port", 6379, 1, 65535);
+        REDIS_PASSWORD = BUILDER.comment("Password, if Redis has one. Plain text: keep this file private.").define("password", "");
+        REDIS_SSL = BUILDER.comment("Connect with TLS.").define("useSsl", false);
+        REDIS_DB = BUILDER.comment("Redis database index.").defineInRange("db", 0, 0, 15);
+        REDIS_CHANNEL = BUILDER.comment("Pub/sub channel every server of the network listens on.").define("channel", "bsp_core");
+        BUILDER.pop();
+        BUILDER.pop();
+
+        BUILDER.comment("The bank: every player's account of Shatter Pieces (the everyday money, never an item) and the coins they keep in the bank.",
+                        "One account per player; on a network the database holds it and every server shows the same balance.")
+               .push("bank");
+        BANK_PIECES_PER_COPPER = BUILDER.comment("Pieces one Copper Shatter Coin turns into at a bank. Gold, Diamond, Netherite and Illyrium follow coins.values (x2, x4, x8, x16 by default).",
+                        "Converting is one way: pieces never turn back into coins.")
+                .defineInRange("piecesPerCopperCoin", 1000, 1, 1000000);
+        BANK_STARTING_PIECES = BUILDER.comment("Pieces a player is given the first time they join the network (once, whichever server they join).").defineInRange("startingPieces", 500, 0, 1000000000);
+        BANK_PAY_CONFIRM = BUILDER.comment("Paying another player this many pieces or more asks for a confirmation first.").defineInRange("payConfirmPieces", 1000, 0, 1000000000);
+        BANK_LOG_DAYS = BUILDER.comment("Days a player's transaction log is kept.").defineInRange("logDays", 90, 1, 3650);
+        BANK_LOG_ENTRIES = BUILDER.comment("Most log entries kept per player on this server (the newest stay).").defineInRange("logEntries", 500, 10, 100000);
+        BANK_COIN_MARKUP_PERCENT = BUILDER.comment("When a shop sells a Shatter Coin for pieces, its price is the conversion value plus this percentage.").defineInRange("coinSaleMarkupPercent", 25, 0, 10000);
+        BANK_REMOTE_UNLOCK_VALUE = BUILDER.comment("Coin value (Copper 1, Gold 2, Diamond 4, Netherite 8, Illyrium 16 by default) a player pays once to unlock the Shopping Network on their Portable Banker.",
+                        "Paid in coins from the inventory; admins can clear everyone's access at a season end with /bsp bank remote reset.")
+                .defineInRange("remoteUnlockCoinValue", 16, 1, 100000);
+        BUILDER.comment("Safety deposit boxes: one per player for the whole network, rented by the day, 6 slots at first and 3 more per purchase up to 18.",
+                        "Coins pay at their conversion value; any overpayment is credited as pieces.").push("box");
+        BOX_RENT_PER_DAY = BUILDER.comment("Pieces one day of rent costs.").defineInRange("rentPiecesPerDay", 50, 0, 1000000);
+        BOX_SLOT_STEP_PIECES = BUILDER.comment("Pieces three more slots cost.").defineInRange("slotStepPieces", 2000, 0, 100000000);
+        BOX_FEE_PER_DAY = BUILDER.comment("Holding fee in pieces for every day a box was left with its rent run out, charged on top of the new rent when it is opened again.")
+                .defineInRange("holdingFeePiecesPerDay", 150, 0, 1000000);
+        BOX_MAX_DAYS = BUILDER.comment("Most days of rent a box may hold ahead.").defineInRange("maxDaysAhead", 365, 1, 3650);
+        BUILDER.pop();
         BUILDER.pop();
 
         BUILDER.comment("Chunk loading: the totem's Anchor and Survey upgrades.").push("chunks");

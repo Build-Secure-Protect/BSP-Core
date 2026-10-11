@@ -782,3 +782,41 @@ Coins in your vaults earn interest: XP levels and Tetrium Ingots for every 50 co
 
 Interest builds up while you are offline, but stops at 3 days' worth. Press **Redeem** on the Storage tab to collect it and start it building again.
 
+## The Shatter Bank
+
+**Page 1**
+
+The *Shatter Bank* is a two-block machine admins place at spawn and in safe zones. Right-click it to open your account.
+
+Your account holds **Shatter Pieces**, the everyday money. Pieces are never an item: they live in the account, and the same balance follows you to every server of the network.
+
+Every player is given 500 pieces on their first join.
+
+**Page 2: Coins and pieces**
+
+The bank also keeps *Shatter Coins* for you, by tier. Coins in the bank are safe from raids but earn **no interest**: a Coin Vault pays interest and can be robbed. Choose.
+
+Deposit coins to keep them, or **convert** them: a Copper coin becomes 1,000 pieces, each higher tier double the one below. Converting is one way. Pieces never turn back into coins.
+
+**Page 3: Paying and the log**
+
+From the account screen you can pay any player on the network, online or not; large payments ask you to confirm, and you can refuse incoming payments.
+
+The transaction log lists what you bought and sold, who you paid and who paid you, with filters and a search. It is kept for 90 days.
+
+Commands are a backup: **/bank**, **/bank pay**, **/bank log**.
+
+## Safety Deposit Box
+
+**Page 1**
+
+A *Safety Deposit Box* is a cabinet admins place beside the bank. Right-click it to rent **your own box**: the same box opens from any of these cabinets on the network, and what is inside is safe at all times.
+
+Rent is paid by the day, in pieces or coins, for as long ahead as you like. A box starts with **6 slots**; buy **3 more** at a time, up to 18.
+
+**Page 2: Rent and fees**
+
+When the rent runs out nothing is lost: your slots and their contents are kept, but the drawer is locked until you pay rent again, plus a **holding fee** for every day the box sat unpaid. Leave it long and it costs more to get back.
+
+Shatter Coins and totems cannot be stored in a box. The bank keeps coins; totems belong in the world.
+

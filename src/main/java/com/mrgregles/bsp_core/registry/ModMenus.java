@@ -46,5 +46,11 @@ public final class ModMenus {
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.plasma.BatteryChargerMenu>> BATTERY_CHARGER = MENUS.register("battery_charger",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.plasma.BatteryChargerMenu(id, inv, buf.readBlockPos())));
 
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.bank.BankMenu>> BANK = MENUS.register("bank",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.bank.BankMenu(id, inv, buf.readBoolean() ? buf.readBlockPos() : null)));
+
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.bank.DepositBoxMenu>> DEPOSIT_BOX = MENUS.register("deposit_box",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.bank.DepositBoxMenu(id, inv, buf.readBlockPos(), buf.readBoolean(), buf.readVarInt())));
+
     private ModMenus() {}
 }

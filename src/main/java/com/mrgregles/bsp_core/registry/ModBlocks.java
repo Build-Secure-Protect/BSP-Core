@@ -97,6 +97,8 @@ public final class ModBlocks {
     public static final RegistryObject<Block> COIN_VAULT = BLOCKS.register("coin_vault", com.mrgregles.bsp_core.vault.CoinVaultBlock::new);
 
     public static final RegistryObject<Block> SCORE_SCREEN = BLOCKS.register("score_screen", com.mrgregles.bsp_core.score.ScoreScreenBlock::new);
+    public static final RegistryObject<Block> BANK_ATM = BLOCKS.register("bank_atm", com.mrgregles.bsp_core.bank.BankAtmBlock::new);
+    public static final RegistryObject<Block> SAFETY_DEPOSIT_BOX = BLOCKS.register("safety_deposit_box", com.mrgregles.bsp_core.bank.SafetyDepositBoxBlock::new);
 
     public static final RegistryObject<MachineBlock> TETRIUM_CRUCIBLE =
             BLOCKS.register("tetrium_crucible", () -> new MachineBlock(TetriumCrucibleBlockEntity::new));

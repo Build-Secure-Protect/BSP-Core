@@ -1,0 +1,109 @@
+<title>Safety Deposit Box Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages. One WebGL context draws every 3D view. Three looks for the one-block Safety Deposit Box, in the steel-and-amber family of the chosen Vault Pillar ATM, with the box's three states. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--bg); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible,input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+</style>
+<div class="wrap">
+<section><h1>Safety Deposit Box Looks</h1>
+<p class="lede">Three designs for the Safety Deposit Box block: one block, placed by admins, right-click opens the rent screen and then your box. Every player has one box for the whole network, so any of these blocks opens yours; the block shows <em>your</em> state when you look at it. All three sit in the steel-and-amber family of the chosen Vault Pillar ATM. The plain grey cube is one block, for scale. Drag to turn.</p>
+<div class="card" style="border-color:var(--acc)"><h3>Decided (owner, 2026-10-11)</h3><p><b>C, Drawer Stack, with gold trim</b>: gold edges round each drawer front, gold handle ends and label plates, a gold line along the top and bottom of the cabinet. Chosen because it does not feel like the Coin Vault. Shows your own box state; red on the block plus a chat line at login when the rent has run out; latch click on opening, clunk on paying. A and B are not chosen.</p></div>
+<div class="card"><div class="ctl"><span><b>Your box:</b></span><button type="button" class="tb" data-st="none">Not rented</button><button type="button" class="tb on" data-st="rented">Rented, 13 days left</button><button type="button" class="tb" data-st="expired">Rent ran out</button><label><input type="checkbox" id="night"> Night</label></div></div></section>
+
+<section><h2>1. Three looks</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. What each is made of</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A. Lockbox Wall</th><th>B. Strongbox</th><th>C. Drawer Stack</th></tr></thead><tbody>
+<tr><td><b>Shape</b></td><td>A wall of sixteen small brass-fronted box doors with keyholes and number plates, the classic bank vault wall in one block.</td><td>One heavy steel strongbox on a riveted plinth, a combination dial and a handle on the front, hinges on the side, a status lamp above the dial.</td><td>A steel cabinet of three stacked drawers with bar handles and label slots, riveted sides, a lamp strip down the edge.</td></tr>
+<tr><td><b>Not rented</b></td><td>All doors shut and dark.</td><td>Dial lamp dark, door shut.</td><td>Drawers shut, strip dark.</td></tr>
+<tr><td><b>Rented</b></td><td>One door (yours) carries a lit amber plate and sits a touch open.</td><td>Lamp amber, the dial turns slowly, the door stands ajar a crack.</td><td>The middle drawer slides out a little, its label lit amber.</td></tr>
+<tr><td><b>Rent ran out</b></td><td>Your door shut with a red tag over the keyhole.</td><td>Lamp red, door shut, dial still.</td><td>Drawer shut, label red, a red tag hanging from the handle.</td></tr>
+<tr><td><b>Reads as</b></td><td>A bank vault wall. Several in a row make a real vault corridor.</td><td>The box itself, heavy and single. Closest to the ATM pillar.</td><td>A records room; the drawers echo the slot upgrades (6, 9, 12 ... 18).</td></tr>
+<tr><td><b>Built with</b></td><td colspan="3">One block, admin-only item, four facings. Static model from `gen_bank_assets.py`; a block entity renderer draws the viewer's own state (lamp, tag, the open door or drawer) from the client's copy of its account, so two players see different things on the same block. Gives off a little light when lit (level 3).</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. Decisions</h2><div class="card"><ol>
+<li><b>Look:</b> A Lockbox Wall, B Strongbox, or C Drawer Stack.</li>
+<li><b>Per-viewer state:</b> the block shows your own box's state (default), or the same neutral look to everyone.</li>
+<li><b>Expired warning:</b> red lamp or tag on the block (default) and a chat line at login saying the rent ran out; or the block only.</li>
+<li><b>Sound:</b> a latch click on opening and a heavier clunk on paying (default), or silent.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STEEL=0x4a5060, STEEL2=0x2a2f3a, TRIM=0x8a909c, BRASS=0xb8893a, BRASS2=0x8c6628, GOLD=0xe4b84a, DARK=0x1a1d24, STONE=0x6c6f73, AMBER=0xf2b544, RED=0xe24b3b, PLATE=0xd9d2c0;
+  const state={st:'rented', night:false};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos){ const s=new THREE.Group(); s.position.set(...pos); g.add(s); return s; }
+  function floor(g){ bx(g,[-30,-1,-30],[60,0,30],0x1c2026); bx(g,[22,0,0],[38,16,16],STONE); }
+  const lampCol=()=>state.st==='rented'?AMBER:state.st==='expired'?RED:0x3a3f4b;
+  // A. Lockbox Wall
+  function wall(g){ floor(g); bx(g,[0,0,0],[16,16,16],STEEL2); bx(g,[0,0,-0.3],[16,16,0],DARK);
+    const doors=[]; for(let r=0;r<4;r++) for(let c=0;c<4;c++){ const x=0.6+c*3.85, y=0.6+r*3.85; const mine=(r===2&&c===1); const d=grp(g,[x,y,-0.3]); bx(d,[0,0,-0.6],[3.3,3.3,0],mine?BRASS:BRASS2); bx(d,[0.5,2.2,-0.75],[2.8,2.9,-0.6],PLATE); bx(d,[1.3,0.6,-0.8],[2,1.5,-0.6],DARK); if(mine) doors.push(d); }
+    const d=doors[0]; const plate=bx(d,[0.5,2.2,-0.9],[2.8,2.9,-0.75],AMBER,true); const tag=bx(d,[1,0.3,-1],[2.4,1.9,-0.8],RED,true);
+    return t=>{ plate.visible=state.st==='rented'; plate.material.color.setHex(AMBER); tag.visible=state.st==='expired'; d.rotation.y=state.st==='rented'?-0.35:0; }; }
+  // B. Strongbox
+  function strongbox(g){ floor(g); bx(g,[0,0,0],[16,2.5,16],STEEL2); for(const [x,z] of [[1,1],[13.5,1],[1,13.5],[13.5,13.5]]) bx(g,[x,2.5,z],[x+1.5,3.2,z+1.5],TRIM);
+    bx(g,[1.5,2.5,2],[14.5,15,15],STEEL); bx(g,[1,14.5,1.5],[15,15.5,15.5],STEEL2);
+    const door=grp(g,[14.5,2.5,2]); bx(door,[-13,0.5,-1.2],[0,12,0],STEEL2); bx(door,[-12.2,1.3,-1.5],[-0.8,11.2,-1.2],STEEL);
+    for(const y of [2,10.4]) bx(door,[0,y,-1.1],[0.9,y+1.2,0.2],TRIM);
+    const dial=grp(door,[-8.5,6.5,-1.5]); bx(dial,[-2.2,-2.2,-0.9],[2.2,2.2,0],TRIM); bx(dial,[-1.6,-1.6,-1.3],[1.6,1.6,-0.9],DARK); bx(dial,[-0.3,0,-1.5],[0.3,1.5,-1.3],PLATE);
+    bx(door,[-4.5,5.3,-2.4],[-3.5,8,-1.5],TRIM); bx(door,[-4.5,5.3,-2.4],[-1.5,6.1,-1.6],TRIM);
+    const lamp=bx(door,[-9.3,10,-1.9],[-7.7,10.9,-1.5],AMBER,true); bx(door,[-11.5,3.2,-1.6],[-6,4.2,-1.5],PLATE);
+    return t=>{ lamp.material.color.setHex(lampCol()); if(state.st==='rented'&&!reduce) dial.rotation.z=t*0.8; door.rotation.y=state.st==='rented'?0.18:0; }; }
+  // C. Drawer Stack
+  function drawers(g){ floor(g); bx(g,[0,0,0],[16,16,16],STEEL2); bx(g,[1,0.5,-0.2],[15,15.5,0.2],DARK);
+    for(const x of [0.4,15]) for(let i=0;i<5;i++) bx(g,[x,1+i*3.2,-0.4],[x+0.6,1.8+i*3.2,-0.1],TRIM);
+    const strip=bx(g,[15.3,1,-0.5],[15.8,15,-0.2],AMBER,true);
+    bx(g,[0,15.4,-0.3],[16,16,0.1],GOLD); bx(g,[0,0,-0.3],[16,0.6,0.1],GOLD);
+    const ds=[]; for(let i=0;i<3;i++){ const d=grp(g,[1.5,1.2+i*4.7,0]); bx(d,[0,0,-0.6],[12.5,4.2,0.2],STEEL);
+      bx(d,[0,0,-0.7],[12.5,0.35,-0.6],GOLD); bx(d,[0,3.85,-0.7],[12.5,4.2,-0.6],GOLD); bx(d,[0,0,-0.7],[0.35,4.2,-0.6],GOLD); bx(d,[12.15,0,-0.7],[12.5,4.2,-0.6],GOLD);
+      bx(d,[4.2,1.6,-1.4],[8.3,2.4,-0.6],TRIM); bx(d,[4.2,1.6,-1.4],[4.9,2.4,-0.3],GOLD); bx(d,[7.6,1.6,-1.4],[8.3,2.4,-0.3],GOLD); bx(d,[0.8,2.85,-0.72],[4.2,3.85,-0.6],GOLD); bx(d,[1,3,-0.75],[4,3.7,-0.6],PLATE); ds.push(d); }
+    const mine=ds[1]; const label=bx(mine,[1,3,-0.9],[4,3.7,-0.75],AMBER,true); const tag=bx(mine,[6,0.4,-1.6],[7.2,1.6,-1.2],RED,true);
+    return t=>{ strip.material.color.setHex(lampCol()); label.visible=state.st!=='none'; label.material.color.setHex(state.st==='expired'?RED:AMBER); tag.visible=state.st==='expired'; mine.position.z=state.st==='rented'?-2.2:0; }; }
+
+  // ---- one WebGL context
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:3.3,rx:.3,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Lockbox Wall','Sixteen small brass box doors with keyholes and number plates set into a steel block: the classic vault wall. Your own door carries a lit amber plate and sits a touch open while rented; a red tag covers its keyhole when the rent has run out. Several blocks in a row make a vault corridor.',wall],
+    ['B. Strongbox','One heavy steel strongbox on a riveted plinth: a combination dial and a handle on the door, hinges on the side, a name plate and a status lamp. Rented: the lamp is amber, the dial turns slowly and the door stands ajar a crack. Expired: the lamp turns red and the door shuts.',strongbox],
+    ['C. Drawer Stack (chosen, with gold trim)','A steel cabinet of three drawers with bar handles and label slots, rivets down both sides and a lamp strip along the edge; gold edges round each drawer, gold handle ends and label plates, a gold line top and bottom. Rented: your drawer slides out a little with its label lit amber. Expired: the strip and label turn red and a tag hangs from the handle.',drawers]],{dist:64,target:[13,8,6]});
+  document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ state.st=b.dataset.st; document.querySelectorAll('[data-st]').forEach(x=>x.classList.toggle('on',x===b)); });
+  el('night').onchange=e=>state.night=e.target.checked;
+})();
+</script>

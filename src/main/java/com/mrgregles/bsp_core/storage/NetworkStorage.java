@@ -46,6 +46,7 @@ public final class NetworkStorage {
 
     @Nullable
     private static volatile MySqlStore store;
+    private static volatile RedisLink redis;
     @Nullable
     private static ExecutorService worker;
     @Nullable
@@ -104,6 +105,42 @@ public final class NetworkStorage {
         });
     }
 
+    /** Tells the other servers something changed, over Redis if it is on; harmless without it. Runs on the storage thread. */
+    private static void publish(String kind, String payload) {
+        RedisLink r = redis;
+        if (r != null) {
+            worker().execute(() -> r.publish(kind, payload));
+        }
+    }
+
+    /** A message from another server (Redis thread): refresh what it names, on the server thread. */
+    private static void onRedisMessage(String[] msg) {
+        MinecraftServer srv = server;
+        if (srv == null) {
+            return;
+        }
+        String kind = msg[0], payload = msg[2];
+        srv.execute(() -> {
+            switch (kind) {
+                case "bank", "box" -> {
+                    try {
+                        UUID id = UUID.fromString(payload);
+                        if (srv.getPlayerList().getPlayer(id) != null) {
+                            com.mrgregles.bsp_core.bank.Bank.refresh(srv, id);
+                            if (kind.equals("box") && srv.getPlayerList().getPlayer(id).containerMenu instanceof com.mrgregles.bsp_core.bank.DepositBoxMenu) {
+                                srv.getPlayerList().getPlayer(id).closeContainer(); // the box changed elsewhere: reopen to see it
+                            }
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
+                case "notice" -> collectNotices(srv);
+                default -> { } // shops and later kinds
+            }
+        });
+    }
+
     // ------------------------------------------------------------------ lifecycle
 
     @SubscribeEvent
@@ -120,6 +157,12 @@ public final class NetworkStorage {
                 boolean migrated = s.hasMigrated();
                 store = s;
                 BSPCore.LOGGER.info("BSP-Core storage: connected to MySQL {}", s.describe());
+                if (BSPConfig.REDIS_ENABLED.get()) {
+                    RedisLink r = new RedisLink(BSPConfig.REDIS_HOST.get(), BSPConfig.REDIS_PORT.get(), BSPConfig.REDIS_PASSWORD.get(), BSPConfig.REDIS_SSL.get(),
+                            BSPConfig.REDIS_DB.get(), BSPConfig.REDIS_CHANNEL.get(), BSPConfig.STORAGE_SERVER_ID.get(), NetworkStorage::onRedisMessage);
+                    redis = r;
+                    r.start();
+                }
                 if (!migrated) {
                     BSPCore.LOGGER.warn("BSP-Core storage: this server's local records are not in the database yet. Run /bsp storage migrate.");
                 }
@@ -135,6 +178,11 @@ public final class NetworkStorage {
 
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
+        RedisLink r = redis;
+        redis = null;
+        if (r != null) {
+            r.close();
+        }
         MySqlStore s = store;
         store = null;
         ExecutorService w = worker;
@@ -285,7 +333,10 @@ public final class NetworkStorage {
         }
         String json = net.minecraft.network.chat.Component.Serializer.toJson(
                 net.minecraft.network.chat.Component.translatable("message.bsp_core.network.from", BSPConfig.STORAGE_SERVER_ID.get(), message));
-        async("leave a message for a player", s -> s.addNotice(player, json));
+        async("leave a message for a player", s -> {
+            s.addNotice(player, json);
+            publish("notice", player.toString());
+        });
     }
 
     @SubscribeEvent
@@ -295,7 +346,11 @@ public final class NetworkStorage {
             return;
         }
         noticeTicks = 0;
-        MinecraftServer srv = event.getServer();
+        collectNotices(event.getServer());
+    }
+
+    /** Delivers the messages other servers left for the players online here. Polled every few seconds, and at once on a Redis notice. */
+    private static void collectNotices(MinecraftServer srv) {
         List<UUID> online = new java.util.ArrayList<>();
         srv.getPlayerList().getPlayers().forEach(p -> online.add(p.getUUID()));
         if (online.isEmpty()) {
@@ -440,6 +495,14 @@ public final class NetworkStorage {
             } catch (SQLException | RuntimeException e) {
                 line = "Could not connect: " + e.getMessage();
             }
+            if (BSPConfig.REDIS_ENABLED.get()) {
+                try (RedisLink r = new RedisLink(BSPConfig.REDIS_HOST.get(), BSPConfig.REDIS_PORT.get(), BSPConfig.REDIS_PASSWORD.get(), BSPConfig.REDIS_SSL.get(),
+                        BSPConfig.REDIS_DB.get(), BSPConfig.REDIS_CHANNEL.get(), BSPConfig.STORAGE_SERVER_ID.get(), m -> { })) {
+                    line += " Redis: " + r.ping() + " from " + BSPConfig.REDIS_HOST.get() + ":" + BSPConfig.REDIS_PORT.get() + ".";
+                } catch (java.io.IOException | RuntimeException e) {
+                    line += " Redis: could not connect: " + e.getMessage() + ".";
+                }
+            }
             String out = line;
             srv.execute(() -> report.accept(out));
         });
@@ -477,6 +540,192 @@ public final class NetworkStorage {
         });
     }
 
+    // ------------------------------------------------------------------ bank
+
+    /** Opens or refreshes the account; {@code then} gets whether the starting pieces were given now, and the row (null if unreachable). */
+    public static void bankEnsure(UUID id, String name, long starting, java.util.function.BiConsumer<Boolean, com.mrgregles.bsp_core.bank.BankAccount> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(false, null);
+            return;
+        }
+        worker().execute(() -> {
+            boolean inserted = false;
+            com.mrgregles.bsp_core.bank.BankAccount row = null;
+            try {
+                inserted = s.bankEnsure(id, name, starting);
+                row = s.bankRead(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not open the bank account of {}: {}", name, e.toString());
+            }
+            boolean i = inserted;
+            com.mrgregles.bsp_core.bank.BankAccount r = row;
+            onServer(() -> then.accept(i, r));
+        });
+    }
+
+    public static void bankRead(UUID id, Consumer<com.mrgregles.bsp_core.bank.BankAccount> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            com.mrgregles.bsp_core.bank.BankAccount row = null;
+            try {
+                row = s.bankRead(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read a bank account: {}", e.toString());
+            }
+            com.mrgregles.bsp_core.bank.BankAccount r = row;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    /** Applies the deltas atomically; {@code then} gets the row after, or null when refused or unreachable. */
+    public static void bankAdjust(UUID id, long dPieces, int[] dCoins, Consumer<com.mrgregles.bsp_core.bank.BankAccount> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            com.mrgregles.bsp_core.bank.BankAccount row = null;
+            try {
+                row = s.bankAdjust(id, dPieces, dCoins);
+                if (row != null) {
+                    publish("bank", id.toString());
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not change a bank balance: {}", e.toString());
+            }
+            com.mrgregles.bsp_core.bank.BankAccount r = row;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    public static void bankSet(UUID id, long pieces, Consumer<com.mrgregles.bsp_core.bank.BankAccount> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            com.mrgregles.bsp_core.bank.BankAccount row = null;
+            try {
+                row = s.bankSet(id, pieces);
+                publish("bank", id.toString());
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not set a bank balance: {}", e.toString());
+            }
+            com.mrgregles.bsp_core.bank.BankAccount r = row;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    public static void bankTransfer(UUID from, UUID to, long amount, Consumer<com.mrgregles.bsp_core.bank.BankResult> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(com.mrgregles.bsp_core.bank.BankResult.fail("unreachable"));
+            return;
+        }
+        worker().execute(() -> {
+            com.mrgregles.bsp_core.bank.BankResult r;
+            try {
+                r = s.bankTransfer(from, to, amount);
+                if (r.ok()) {
+                    publish("bank", from.toString());
+                    publish("bank", to.toString());
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not transfer pieces: {}", e.toString());
+                r = com.mrgregles.bsp_core.bank.BankResult.fail("unreachable");
+            }
+            com.mrgregles.bsp_core.bank.BankResult rr = r;
+            onServer(() -> then.accept(rr));
+        });
+    }
+
+    public static void bankFlags(UUID id, @Nullable Boolean acceptPay, @Nullable Boolean remoteShops, @Nullable Long seenMs) {
+        async("update bank account switches", s -> {
+            s.bankFlags(id, acceptPay, remoteShops, seenMs);
+            if (acceptPay != null || remoteShops != null) {
+                publish("bank", id.toString());
+            }
+        });
+    }
+
+    public static void bankLog(UUID id, com.mrgregles.bsp_core.bank.BankTransaction tx) {
+        async("write a bank log line", s -> s.bankLog(id, tx));
+    }
+
+    /** The newest log entries from the database, or null when unreachable. */
+    public static void bankLogRead(UUID id, Consumer<List<com.mrgregles.bsp_core.bank.BankTransaction>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.bank.BankTransaction> list = null;
+            try {
+                list = s.bankLogRead(id, BSPConfig.getOr(BSPConfig.BANK_LOG_ENTRIES, 500), BSPConfig.getOr(BSPConfig.BANK_LOG_DAYS, 90));
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read a bank log: {}", e.toString());
+            }
+            List<com.mrgregles.bsp_core.bank.BankTransaction> l = list;
+            onServer(() -> then.accept(l));
+        });
+    }
+
+    /** {@code then} gets {slots, rentUntil, itemsSnbt}, or null when the network has no box or is unreachable. */
+    public static void bankBoxRead(UUID id, Consumer<Object[]> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Object[] row = null;
+            try {
+                row = s.bankBoxRead(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read a deposit box: {}", e.toString());
+            }
+            Object[] r = row;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    public static void bankBoxWrite(UUID id, int slots, long until, String items) {
+        async("save a deposit box", s -> {
+            s.bankBoxWrite(id, slots, until, items);
+            publish("box", id.toString());
+        });
+    }
+
+    public static void bankResetRemote() {
+        async("reset Shopping Network access", MySqlStore::bankResetRemote);
+    }
+
+    public static void bankFind(String name, Consumer<Map.Entry<UUID, String>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Map.Entry<UUID, String> hit = null;
+            try {
+                hit = s.bankFind(name);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not look up a player: {}", e.toString());
+            }
+            Map.Entry<UUID, String> h = hit;
+            onServer(() -> then.accept(h));
+        });
+    }
+
     private static Map<UUID, Set<GlobalPos>> copy(Map<UUID, Set<GlobalPos>> in) {
         Map<UUID, Set<GlobalPos>> out = new HashMap<>();
         in.forEach((k, v) -> out.put(k, new HashSet<>(v)));
@@ -487,7 +736,8 @@ public final class NetworkStorage {
     public static String status() {
         MySqlStore s = store;
         if (s != null) {
-            return "Network storage: MySQL, " + s.describe();
+            RedisLink r = redis;
+            return "Network storage: MySQL, " + s.describe() + (r != null ? ". Redis: " + r.describe() : BSPConfig.REDIS_ENABLED.get() ? ". Redis: enabled but not started." : ". Redis: off (polling).");
         }
         return "mysql".equalsIgnoreCase(BSPConfig.STORAGE_MODE.get())
                 ? "Network storage: storage.mode is \"mysql\" but the database is not connected. See the server log."

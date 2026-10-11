@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ICI",
+    "PRP",
+    "IGI"
+  ],
+  "key": {
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "C": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "R": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "G": {
+      "item": "bsp_core:gold_shatter_coin"
+    }
+  },
+  "result": {
+    "item": "bsp_core:portable_banker"
+  }
+}

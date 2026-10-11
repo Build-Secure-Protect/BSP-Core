@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:copper_shatter_coin",
+    "bsp_core:gold_shatter_coin",
+    "bsp_core:diamond_shatter_coin",
+    "bsp_core:netherite_shatter_coin",
+    "bsp_core:illyrium_shatter_coin",
+    "bsp_core:shatter_totem",
+    "bsp_core:decoy_totem"
+  ]
+}

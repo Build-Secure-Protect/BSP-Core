@@ -59,6 +59,18 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(VaultAccessPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(VaultAccessPacket::encode).decoder(VaultAccessPacket::decode)
                 .consumerMainThread(VaultAccessPacket::handle).add();
+        CHANNEL.messageBuilder(BankActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BankActionPacket::encode).decoder(BankActionPacket::decode)
+                .consumerMainThread(BankActionPacket::handle).add();
+        CHANNEL.messageBuilder(BankDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BankDataPacket::encode).decoder(BankDataPacket::decode)
+                .consumerMainThread(BankDataPacket::handle).add();
+        CHANNEL.messageBuilder(BankStatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BankStatePacket::encode).decoder(BankStatePacket::decode)
+                .consumerMainThread(BankStatePacket::handle).add();
+        CHANNEL.messageBuilder(DepositBoxActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DepositBoxActionPacket::encode).decoder(DepositBoxActionPacket::decode)
+                .consumerMainThread(DepositBoxActionPacket::handle).add();
         CHANNEL.messageBuilder(ScoreSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ScoreSyncPacket::encode).decoder(ScoreSyncPacket::decode)
                 .consumerMainThread(ScoreSyncPacket::handle).add();

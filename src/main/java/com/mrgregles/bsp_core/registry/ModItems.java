@@ -190,6 +190,11 @@ public final class ModItems {
 
     public static final RegistryObject<Item> SCORE_SCREEN = ITEMS.register("score_screen",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SCORE_SCREEN.get()));
+    public static final RegistryObject<Item> PORTABLE_BANKER = ITEMS.register("portable_banker", com.mrgregles.bsp_core.bank.PortableBankerItem::new);
+    public static final RegistryObject<Item> BANK_ATM = ITEMS.register("bank_atm",
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.BANK_ATM.get()));
+    public static final RegistryObject<Item> SAFETY_DEPOSIT_BOX = ITEMS.register("safety_deposit_box",
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SAFETY_DEPOSIT_BOX.get()));
 
     /** The blocks a factory slice is built from, and the Motivator that goes on top. */
     public static final List<RegistryObject<Item>> FACTORY_ITEMS = new ArrayList<>();

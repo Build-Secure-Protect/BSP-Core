@@ -469,4 +469,241 @@ public class BspGameTests {
             h.succeed();
         });
     }
+
+    // ------------------------------------------------------------------ the bank
+
+    private static net.minecraft.server.MinecraftServer server(GameTestHelper h) {
+        return h.getLevel().getServer();
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_gives_starting_pieces_once(GameTestHelper h) {
+        UUID id = UUID.randomUUID();
+        long starting = com.mrgregles.bsp_core.BSPConfig.BANK_STARTING_PIECES.get();
+        boolean[] first = new boolean[2];
+        com.mrgregles.bsp_core.bank.Bank.ensure(server(h), id, "Tester", g -> first[0] = g);
+        com.mrgregles.bsp_core.bank.Bank.ensure(server(h), id, "Tester", g -> first[1] = g);
+        h.assertTrue(first[0] && !first[1], "the starting pieces are given on the first join only");
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.pieces(server(h), id) == starting, "balance is the starting amount once: " + com.mrgregles.bsp_core.bank.Bank.pieces(server(h), id));
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.account(server(h), id).name.equals("Tester"), "the name is kept");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_pay_moves_pieces_and_refuses_a_shortfall(GameTestHelper h) {
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        var server = server(h);
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, a, "Alice", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, b, "Bob", g -> {});
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, a);
+        com.mrgregles.bsp_core.bank.BankResult[] r = new com.mrgregles.bsp_core.bank.BankResult[3];
+        com.mrgregles.bsp_core.bank.Bank.transfer(server, a, b, 300, x -> r[0] = x);
+        h.assertTrue(r[0].ok() && r[0].pieces() == start - 300, "paid 300: " + r[0]);
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.pieces(server, b) == start + 300, "Bob received 300");
+        com.mrgregles.bsp_core.bank.Bank.transfer(server, a, b, start, x -> r[1] = x);
+        h.assertTrue(!r[1].ok() && r[1].key().equals("short"), "cannot pay more than the balance: " + r[1]);
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.pieces(server, a) == start - 300, "a refused payment takes nothing");
+        com.mrgregles.bsp_core.bank.Bank.transfer(server, a, a, 1, x -> r[2] = x);
+        h.assertTrue(!r[2].ok() && r[2].key().equals("self"), "no paying yourself");
+        var log = com.mrgregles.bsp_core.bank.Bank.account(server, a);
+        com.mrgregles.bsp_core.bank.Bank.log(server, a, list -> {
+            h.assertTrue(list.get(0).type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.PAID && list.get(0).pieces() == -300 && list.get(0).with().equals("Bob"), "Alice's newest log line is the payment: " + list.get(0));
+        });
+        com.mrgregles.bsp_core.bank.Bank.log(server, b, list -> {
+            h.assertTrue(list.get(0).type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.RECEIVED && list.get(0).pieces() == 300 && list.get(0).with().equals("Alice"), "Bob's newest log line is the receipt: " + list.get(0));
+        });
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_refuses_payments_when_toggled_off(GameTestHelper h) {
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        var server = server(h);
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, a, "Alice", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, b, "Bob", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.setAcceptPay(server, b, false);
+        com.mrgregles.bsp_core.bank.BankResult[] r = new com.mrgregles.bsp_core.bank.BankResult[1];
+        com.mrgregles.bsp_core.bank.Bank.transfer(server, a, b, 10, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("refused"), "Bob refuses: " + r[0]);
+        com.mrgregles.bsp_core.bank.Bank.setAcceptPay(server, b, true);
+        com.mrgregles.bsp_core.bank.Bank.transfer(server, a, b, 10, x -> r[0] = x);
+        h.assertTrue(r[0].ok(), "Bob accepts again");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_converts_coins_one_way_and_keeps_banked_coins_by_tier(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Carol", g -> {});
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+        var copper = com.mrgregles.bsp_core.coin.CoinTier.COPPER;
+        var diamond = com.mrgregles.bsp_core.coin.CoinTier.DIAMOND;
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(copper.coin(), 5));
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(diamond.coin(), 2));
+        com.mrgregles.bsp_core.bank.BankResult[] r = new com.mrgregles.bsp_core.bank.BankResult[1];
+        // convert two Copper coins: pieces rise by the rate, the coins are gone from the inventory and are not in the bank
+        com.mrgregles.bsp_core.bank.Bank.depositCoins(server, player, copper, 2, true, x -> r[0] = x);
+        long perCopper = com.mrgregles.bsp_core.bank.Bank.piecesPerCoin(copper);
+        h.assertTrue(r[0].ok() && r[0].pieces() == start + 2 * perCopper, "two Copper coins became " + (2 * perCopper) + " pieces: " + r[0]);
+        h.assertTrue(player.getInventory().countItem(copper.coin()) == 3, "three Copper coins left in hand");
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.account(server, id).coins(copper) == 0, "converted coins are not banked");
+        // keep two Diamond coins in the bank: pieces unchanged, the ledger holds them, the rate scales with the tier
+        com.mrgregles.bsp_core.bank.Bank.depositCoins(server, player, diamond, 2, false, x -> r[0] = x);
+        h.assertTrue(r[0].ok() && r[0].pieces() == start + 2 * perCopper, "banking coins changes no pieces");
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.account(server, id).coins(diamond) == 2 && player.getInventory().countItem(diamond.coin()) == 0, "the two Diamond coins are in the bank");
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.piecesPerCoin(diamond) == perCopper * diamond.value(), "a Diamond coin is worth its coin value in pieces");
+        // more coins than held: refused, nothing taken
+        com.mrgregles.bsp_core.bank.Bank.depositCoins(server, player, copper, 4, true, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("coins_short") && player.getInventory().countItem(copper.coin()) == 3, "cannot deposit coins you do not hold");
+        // withdraw one Diamond coin back as an item; a second withdrawal of two is refused
+        com.mrgregles.bsp_core.bank.Bank.withdrawCoins(server, player, diamond, 1, x -> r[0] = x);
+        h.assertTrue(r[0].ok() && player.getInventory().countItem(diamond.coin()) == 1 && com.mrgregles.bsp_core.bank.Bank.account(server, id).coins(diamond) == 1, "one Diamond coin came back");
+        com.mrgregles.bsp_core.bank.Bank.withdrawCoins(server, player, diamond, 2, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("short"), "cannot withdraw more than the bank holds");
+        // the shop price of a coin is the conversion value plus the markup
+        long markup = com.mrgregles.bsp_core.BSPConfig.BANK_COIN_MARKUP_PERCENT.get();
+        h.assertTrue(com.mrgregles.bsp_core.bank.Bank.coinSalePrice(copper) == perCopper * (100 + markup) / 100, "coin sale price carries the markup");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_api_charges_and_credits(GameTestHelper h) {
+        var server = server(h);
+        UUID id = UUID.randomUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Dave", g -> {});
+        long start = com.mrgregles.bsp_core.api.BspBank.balance(server, id);
+        boolean[] ok = new boolean[2];
+        com.mrgregles.bsp_core.api.BspBank.charge(server, id, start + 1, "Region Guard", "a plot", x -> ok[0] = x);
+        h.assertTrue(!ok[0] && com.mrgregles.bsp_core.api.BspBank.balance(server, id) == start, "a charge above the balance fails and takes nothing");
+        com.mrgregles.bsp_core.api.BspBank.charge(server, id, 200, "Region Guard", "a plot", x -> ok[0] = x);
+        com.mrgregles.bsp_core.api.BspBank.credit(server, id, 50, "Region Guard", "refund", x -> ok[1] = x);
+        h.assertTrue(ok[0] && ok[1] && com.mrgregles.bsp_core.api.BspBank.balance(server, id) == start - 150, "charged 200 and credited 50");
+        com.mrgregles.bsp_core.bank.Bank.log(server, id, list -> h.assertTrue(list.size() == 3 && list.get(0).type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.SOLD
+                && list.get(1).type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.BOUGHT && list.get(2).type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.GRANT, "the log holds grant, purchase, refund newest first"));
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void bank_atm_is_two_halves_that_stand_and_fall_together(GameTestHelper h) {
+        BlockPos lower = new BlockPos(5, 1, 5), upper = lower.above();
+        var block = com.mrgregles.bsp_core.registry.ModBlocks.BANK_ATM.get();
+        var state = block.defaultBlockState().setValue(com.mrgregles.bsp_core.bank.BankAtmBlock.FACING, net.minecraft.core.Direction.EAST);
+        h.setBlock(lower, state);
+        h.setBlock(upper, state.setValue(com.mrgregles.bsp_core.bank.BankAtmBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+        h.assertTrue(h.getBlockEntity(lower) instanceof com.mrgregles.bsp_core.bank.BankAtmBlockEntity, "the lower half has the block entity");
+        h.assertTrue(h.getBlockEntity(upper) == null, "the upper half has none");
+        h.assertTrue(state.getLightEmission(h.getLevel(), h.absolutePos(lower)) == 7, "it gives off light like a machine");
+        h.setBlock(upper, Blocks.AIR);
+        h.runAfterDelay(2, () -> {
+            h.assertBlock(lower, b -> b == Blocks.AIR, () -> "taking the upper half away removes the lower half too");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_shopping_network_is_bought_with_coins_and_reset_by_admins(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Erin", g -> {});
+        com.mrgregles.bsp_core.bank.BankResult[] r = new com.mrgregles.bsp_core.bank.BankResult[1];
+        com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("coins_unlock"), "no coins, no unlock: " + r[0]);
+        int cost = com.mrgregles.bsp_core.BSPConfig.BANK_REMOTE_UNLOCK_VALUE.get();
+        var copper = com.mrgregles.bsp_core.coin.CoinTier.COPPER;
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(copper.coin(), cost + 2));
+        com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
+        h.assertTrue(r[0].ok() && com.mrgregles.bsp_core.bank.Bank.account(server, id).remoteShops, "unlocked with coins");
+        h.assertTrue(player.getInventory().countItem(copper.coin()) == 2, "the coins were taken: " + player.getInventory().countItem(copper.coin()));
+        com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("already"), "cannot buy it twice");
+        int n = com.mrgregles.bsp_core.bank.Bank.resetRemoteAll(server);
+        h.assertTrue(n >= 1 && !com.mrgregles.bsp_core.bank.Bank.account(server, id).remoteShops, "the admin reset clears it");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void deposit_box_rent_slots_expiry_and_holding_fee(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        var B = com.mrgregles.bsp_core.bank.DepositBox.class;
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Fay", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, id, 100_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        var a = com.mrgregles.bsp_core.bank.Bank.account(server, id);
+        long now = System.currentTimeMillis(), rent = com.mrgregles.bsp_core.bank.DepositBox.rentPerDay(), fee = com.mrgregles.bsp_core.bank.DepositBox.feePerDay(), step = com.mrgregles.bsp_core.bank.DepositBox.slotStepPieces();
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.state(a, now) == com.mrgregles.bsp_core.bank.DepositBox.State.NONE, "no box yet");
+        com.mrgregles.bsp_core.bank.BankResult[] r = new com.mrgregles.bsp_core.bank.BankResult[1];
+        com.mrgregles.bsp_core.bank.DepositBox.addSlots(server, player, -1, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("closed"), "no slots before renting");
+        long before = a.pieces;
+        com.mrgregles.bsp_core.bank.DepositBox.rent(server, player, 7, -1, x -> r[0] = x);
+        h.assertTrue(r[0].ok() && com.mrgregles.bsp_core.bank.DepositBox.state(a, now) == com.mrgregles.bsp_core.bank.DepositBox.State.OPEN && a.boxSlots == 6, "rented: open with 6 slots");
+        h.assertTrue(a.pieces == before - 7 * rent, "7 days cost 7 x rent: " + (before - a.pieces));
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, now) == 7, "7 days left: " + com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, now));
+        a.box.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 5));
+        for (int i = 0; i < 4; i++) {
+            com.mrgregles.bsp_core.bank.DepositBox.addSlots(server, player, -1, x -> r[0] = x);
+        }
+        h.assertTrue(a.boxSlots == 18, "three purchases reach 18: " + a.boxSlots);
+        com.mrgregles.bsp_core.bank.DepositBox.addSlots(server, player, -1, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("full"), "no more than 18");
+        h.assertTrue(a.pieces == before - 7 * rent - 4 * step, "four slot steps paid: " + (before - a.pieces));
+        // the rent runs out five days ago
+        a.boxUntilMs = now - 5 * com.mrgregles.bsp_core.bank.DepositBox.DAY_MS + 1000;
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.state(a, now) == com.mrgregles.bsp_core.bank.DepositBox.State.EXPIRED, "expired");
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.lapsedDays(a, now) == 5, "five lapsed days: " + com.mrgregles.bsp_core.bank.DepositBox.lapsedDays(a, now));
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.rentCost(a, now, 7) == 7 * rent + 5 * fee, "owed is rent plus the holding fee");
+        h.assertTrue(a.box.getStackInSlot(0).getCount() == 5, "the items are kept while expired");
+        before = a.pieces;
+        com.mrgregles.bsp_core.bank.DepositBox.rent(server, player, 7, -1, x -> r[0] = x);
+        h.assertTrue(r[0].ok() && com.mrgregles.bsp_core.bank.DepositBox.state(a, System.currentTimeMillis()) == com.mrgregles.bsp_core.bank.DepositBox.State.OPEN && a.boxSlots == 18, "open again with the slots kept");
+        h.assertTrue(a.pieces == before - 7 * rent - 5 * fee, "paid rent and fee: " + (before - a.pieces));
+        // paying with coins: one Copper covers 7 days and the change comes back as pieces
+        before = a.pieces;
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.coin.CoinTier.COPPER.coin(), 1));
+        com.mrgregles.bsp_core.bank.DepositBox.rent(server, player, 7, com.mrgregles.bsp_core.coin.CoinTier.COPPER.ordinal(), x -> r[0] = x);
+        long perCopper = com.mrgregles.bsp_core.bank.Bank.piecesPerCoin(com.mrgregles.bsp_core.coin.CoinTier.COPPER);
+        h.assertTrue(r[0].ok() && player.getInventory().countItem(com.mrgregles.bsp_core.coin.CoinTier.COPPER.coin()) == 0, "the coin was taken");
+        h.assertTrue(a.pieces == before + perCopper - 7 * rent, "change credited as pieces: " + (a.pieces - before));
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, System.currentTimeMillis()) == 14, "14 days left: " + com.mrgregles.bsp_core.bank.DepositBox.daysLeft(a, System.currentTimeMillis()));
+        com.mrgregles.bsp_core.bank.DepositBox.rent(server, player, 400, -1, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("days"), "cannot rent past the limit");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void deposit_box_refuses_coins_and_totems(GameTestHelper h) {
+        h.assertTrue(!com.mrgregles.bsp_core.bank.DepositBox.allowed(new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.coin.CoinTier.GOLD.coin())), "no coins");
+        h.assertTrue(!com.mrgregles.bsp_core.bank.DepositBox.allowed(new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get())), "no totems");
+        h.assertTrue(com.mrgregles.bsp_core.bank.DepositBox.allowed(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND)), "anything else is fine");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void redis_link_speaks_resp_and_ignores_its_own_messages(GameTestHelper h) throws java.io.IOException {
+        byte[] cmd = com.mrgregles.bsp_core.storage.RedisLink.encode("PUBLISH", "bsp_core", "bank:hub:abc");
+        h.assertTrue(new String(cmd, java.nio.charset.StandardCharsets.UTF_8).equals("*3\r\n$7\r\nPUBLISH\r\n$8\r\nbsp_core\r\n$12\r\nbank:hub:abc\r\n"), "a command is a RESP array of bulk strings");
+        String reply = "*3\r\n$7\r\nmessage\r\n$8\r\nbsp_core\r\n$14\r\nbox:survival:x\r\n+OK\r\n:5\r\n$-1\r\n";
+        java.io.InputStream in = new java.io.ByteArrayInputStream(reply.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Object v = com.mrgregles.bsp_core.storage.RedisLink.decode(in);
+        h.assertTrue(v instanceof java.util.List<?> l && l.size() == 3 && "message".equals(l.get(0)) && "box:survival:x".equals(l.get(2)), "a published message decodes as a three-part array: " + v);
+        h.assertTrue("OK".equals(com.mrgregles.bsp_core.storage.RedisLink.decode(in)), "simple strings decode");
+        h.assertTrue("5".equals(com.mrgregles.bsp_core.storage.RedisLink.decode(in)), "integers decode");
+        h.assertTrue(com.mrgregles.bsp_core.storage.RedisLink.decode(in) == null, "a null bulk decodes as null");
+        boolean threw = false;
+        try {
+            com.mrgregles.bsp_core.storage.RedisLink.decode(new java.io.ByteArrayInputStream("-ERR no\r\n".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (java.io.IOException e) {
+            threw = true;
+        }
+        h.assertTrue(threw, "an error reply throws");
+        h.assertTrue(com.mrgregles.bsp_core.storage.RedisLink.parse("bank:hub:abc", "hub") == null, "a server ignores its own messages");
+        String[] p = com.mrgregles.bsp_core.storage.RedisLink.parse("bank:hub:a:b", "survival");
+        h.assertTrue(p != null && p[0].equals("bank") && p[1].equals("hub") && p[2].equals("a:b"), "kind, origin and payload, the payload keeping its colons");
+        h.assertTrue(com.mrgregles.bsp_core.storage.RedisLink.parse("junk", "hub") == null, "anything else is dropped");
+        h.succeed();
+    }
 }

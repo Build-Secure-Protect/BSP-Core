@@ -1,0 +1,17 @@
+{
+  "name": "Safety Deposit Box",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:safety_deposit_box",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Safety Deposit Box$() is a cabinet admins place beside the bank. Right-click it to rent $(l)your own box$(): the same box opens from any of these cabinets on the network, and what is inside is safe at all times.$(br2)Rent is paid by the day, in pieces or coins, for as long ahead as you like. A box starts with $(l)6 slots$(); buy $(l)3 more$() at a time, up to 18."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "When the rent runs out nothing is lost: your slots and their contents are kept, but the drawer is locked until you pay rent again, plus a $(l)holding fee$() for every day the box sat unpaid. Leave it long and it costs more to get back.$(br2)Shatter Coins and totems cannot be stored in a box. The bank keeps coins; totems belong in the world.",
+      "title": "Rent and fees"
+    }
+  ]
+}

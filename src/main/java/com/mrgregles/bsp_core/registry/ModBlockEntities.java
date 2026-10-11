@@ -59,6 +59,14 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.coin.FactoryPortBlockEntity::new, ModBlocks.FACTORY_BLANK_HATCH.get(), ModBlocks.FACTORY_POWER_PORT.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.bank.SafetyDepositBoxBlockEntity>> SAFETY_DEPOSIT_BOX =
+            BLOCK_ENTITIES.register("safety_deposit_box", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.bank.SafetyDepositBoxBlockEntity::new, ModBlocks.SAFETY_DEPOSIT_BOX.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.bank.BankAtmBlockEntity>> BANK_ATM =
+            BLOCK_ENTITIES.register("bank_atm", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.bank.BankAtmBlockEntity::new, ModBlocks.BANK_ATM.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.score.ScoreScreenBlockEntity>> SCORE_SCREEN =
             BLOCK_ENTITIES.register("score_screen", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.score.ScoreScreenBlockEntity::new, ModBlocks.SCORE_SCREEN.get()).build(null));

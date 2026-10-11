@@ -1,0 +1,129 @@
+<title>Bank ATM Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages. One WebGL context draws every 3D view. Three looks for the two-block Bank ATM, each beside a plain block for scale, with the screen glow, lamps and moving parts. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+</style>
+<div class="wrap">
+<section><h1>Bank ATM Looks</h1>
+<p class="lede">Three designs for the Bank block: two blocks tall, one wide, placed by admins, right-click opens the banking screen. The chosen screen skin is the Cash Machine (green phosphor screen, beige keys), so every look carries a real glowing screen on the top block and keeps the key column idea beside it. The plain grey cube at the side is one block, for scale. Drag to turn; the views idle slowly.</p>
+<div class="card" style="border-color:var(--acc)"><h3>Decided (owner, 2026-10-11)</h3><p><b>B, Vault Pillar.</b> Gives off light at night like a real machine (level 7). The idle screen shows SHATTER BANK and the server name. A key beep on opening, a cash-tray clunk on a withdrawal. A and C are not chosen.</p></div>
+<div class="card"><div class="ctl"><label><input type="checkbox" id="night"> Night (shows what glows)</label><label><input type="checkbox" id="busy" checked> Someone using it (screen text, lamps)</label></div></div></section>
+
+<section><h2>1. Three looks</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. What each is made of</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A. Street Machine</th><th>B. Vault Pillar</th><th>C. Teller Window</th></tr></thead><tbody>
+<tr><td><b>Top block</b></td><td>Cream casing, a recessed green screen under a small amber lamp, three beige keys down each side of the screen, a navy name plate above.</td><td>A dark steel column with riveted bands, the screen under a hood, two columns of lit keys beside it, a rotating amber beacon on the crown.</td><td>A brass-barred window in a dark wood frame with a striped awning; the screen sits behind the bars like the teller, with a lamp over it.</td></tr>
+<tr><td><b>Bottom block</b></td><td>A slanted keypad shelf, a card slot with a green slit, a cash slot with a flap, a receipt slot, a coin tray at the foot.</td><td>A slanted coin hopper that coins go into, a bolted base plate, a lit coin tray low down.</td><td>A wooden counter with a brass edge, a coin tray and a service bell on it, a card slot in the panel below.</td></tr>
+<tr><td><b>Glows at night</b></td><td>Screen, lamp, card slit.</td><td>Screen, beacon, keys, tray.</td><td>Screen, lamp, card slit.</td></tr>
+<tr><td><b>Moves</b></td><td>Screen cursor blinks; the lamp blinks while someone is at the machine.</td><td>Beacon turns; the hopper slit pulses.</td><td>The lamp flickers like a filament; the cursor blinks.</td></tr>
+<tr><td><b>Reads as</b></td><td>The cash machine on a high street. Matches the screen skin one to one.</td><td>A bank that has been armoured for a PvP world. Heaviest.</td><td>An old bank counter; a vendor-stall cousin, so it ties the bank to the later stalls.</td></tr>
+<tr><td><b>Built with</b></td><td colspan="3">Two blocks (bottom and top halves, like a door; both open the screen; breaking either removes both; admin-only item). A static model from a generator (`gen_bank_assets.py`) for the casing and fittings; a block entity renderer draws the screen text, the lamps and the moving part. Four horizontal facings.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. Decisions</h2><div class="card"><ol>
+<li><b>Look:</b> A Street Machine, B Vault Pillar, or C Teller Window.</li>
+<li><b>Light:</b> the block gives off light at night like a machine (level 7, default), or only the renderer glows with no light level.</li>
+<li><b>Idle screen:</b> shows "SHATTER BANK" and the server name when nobody is using it (default), or stays dark until opened.</li>
+<li><b>Sound:</b> a short key beep when the screen opens and a cash-tray clunk on a withdrawal (default), or silent.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CREAM=0xd9d2c0, CREAM2=0xeae4d5, BEZEL=0x2b2823, DARKGREY=0x3a3f4b, STEEL=0x4a5060, STEEL2=0x2a2f3a, TRIM=0x8a909c, BRASS=0xb8893a, WOOD=0x5a3d22, WOOD2=0x6b4a2b, NAVY=0x1e2a44, STONE=0x6c6f73;
+  const SCREEN=0x0a2a14, PHOS=0x58f29a, AMBER=0xf2b544;
+  const state={night:false, busy:true};
+  const glows=[];
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); if(glow) glows.push(m); return m; }
+  function grp(g,pos,rx){ const s=new THREE.Group(); s.position.set(...pos); if(rx) s.rotation.x=rx; g.add(s); return s; }
+  function floor(g){ bx(g,[-30,-1,-30],[60,0,30],0x1c2026); bx(g,[22,0,0],[38,16,16],STONE); }
+  // a glowing screen with text lines; returns the cursor mesh and the lines for the busy state
+  function screen(g,f,t){ bx(g,f,t,SCREEN,true); const z=f[2]-0.15, x0=f[0]+1, w=t[0]-f[0]-2, top=t[1]-1.6; const lines=[];
+    for(let i=0;i<4;i++){ const lw=[w*.55,w*.8,w*.35,w*.65][i]; lines.push(bx(g,[x0,top-i*1.9,z],[x0+lw,top-i*1.9+.7,z+.1],PHOS,true)); }
+    const cur=bx(g,[x0+w*.65+.6,top-3*1.9,z],[x0+w*.65+1.6,top-3*1.9+.7,z+.1],PHOS,true); return {cur,lines}; }
+  function keysBeside(g,xl,xr,y0,n,zf){ const ks=[]; for(let s of [xl,xr]) for(let i=0;i<n;i++) ks.push(bx(g,[s,y0+i*2.6,zf-0.9],[s+1.6,y0+i*2.6+1.7,zf],CREAM2)); return ks; }
+
+  // A. Street Machine
+  function street(g){ floor(g);
+    bx(g,[0,0,0],[16,32,16],CREAM); bx(g,[0,0,0],[16,3,16],TRIM);
+    bx(g,[2,19.5,-0.5],[14,30,0],BEZEL); const sc=screen(g,[3,20.5,-0.9],[13,29,-0.5]);
+    keysBeside(g,0.4,14,21,3,0);
+    bx(g,[4,30.4,-0.3],[12,31.7,0],NAVY); const lamp=bx(g,[7,30.6,-0.7],[9,31.5,-0.3],AMBER,true);
+    const shelf=grp(g,[0,14,0],-0.55); bx(shelf,[2,0,-3.2],[14,2,0],CREAM); bx(shelf,[3.5,2,-2.8],[12.5,2.4,-0.4],BEZEL);
+    for(let r=0;r<3;r++) for(let c=0;c<4;c++) bx(shelf,[4.2+c*2.1,2.4,-2.5+r*0.75],[5.7+c*2.1,2.9,-1.9+r*0.75],TRIM);
+    bx(g,[5,10.5,-0.9],[11,12,0],BEZEL); const slit=bx(g,[5.6,11,-1],[10.4,11.5,-0.9],PHOS,true);
+    bx(g,[3,6,-1],[13,8.5,0],DARKGREY); bx(g,[3.6,7.4,-1.3],[12.4,8.1,-1],TRIM);
+    bx(g,[11.5,13,-0.6],[15,13.7,0],BEZEL);
+    bx(g,[4,3,-2.6],[12,5,0],TRIM); bx(g,[4.6,4.2,-2.3],[11.4,5,-0.3],BEZEL);
+    return t=>{ const on=state.busy; sc.cur.visible=on&&Math.floor(t*2)%2===0; sc.lines.forEach((l,i)=>l.visible=on||i<1); lamp.visible=!on||Math.floor(t*3)%2===0; slit.visible=true; }; }
+  // B. Vault Pillar
+  function pillar(g){ floor(g);
+    bx(g,[0,0,0],[16,2,16],STEEL2); for(const [x,z] of [[1,1],[13.5,1],[1,13.5],[13.5,13.5]]) bx(g,[x,2,z],[x+1.5,2.8,z+1.5],TRIM);
+    bx(g,[1,2,1],[15,30,15],STEEL); bx(g,[2,30,2],[14,31,14],STEEL2); bx(g,[4,31,4],[12,32,12],STEEL2);
+    for(const y of [11,25]){ bx(g,[0.5,y,0.5],[15.5,y+1.6,15.5],TRIM); for(const x of [2,6,10,14]) bx(g,[x-0.4,y+0.4,0.2],[x+0.4,y+1.2,0.5],STEEL2); }
+    bx(g,[0.5,27,-3],[15.5,29,1],STEEL2);
+    bx(g,[2,16.5,0.2],[14,27,1],BEZEL); const sc=screen(g,[3.5,17.5,-0.2],[12.5,26,0.2]);
+    const keys=[]; for(const x of [1.4,13.4]) for(let i=0;i<4;i++) keys.push(bx(g,[x,18+i*2.2,0.3],[x+1.2,19.4+i*2.2,1.1],AMBER,true));
+    const hop=grp(g,[0,12.5,0],0.6); bx(hop,[3.5,0,-3.5],[12.5,1.2,1],TRIM); bx(hop,[4,1.2,-3],[12,2.2,-2.2],STEEL2); const slit=bx(hop,[4.5,2.2,-2.9],[11.5,2.5,-2.3],AMBER,true);
+    bx(g,[3,3,-2.2],[13,5.5,1],STEEL2); const tray=bx(g,[3.6,4.6,-1.9],[12.4,5.4,0.5],AMBER,true);
+    const beacon=grp(g,[8,32,8],0); bx(beacon,[-2,0,-2],[2,0.6,2],STEEL2); const bl=bx(beacon,[-1.5,0.6,-1.5],[1.5,2.2,1.5],AMBER,true); bx(beacon,[-0.4,0.6,-3],[0.4,2.2,3],0xfff0c0,true,0.85);
+    return t=>{ const on=state.busy; sc.cur.visible=on&&Math.floor(t*2)%2===0; sc.lines.forEach((l,i)=>l.visible=on||i<1); if(!reduce) beacon.rotation.y=t*2.2; slit.material.opacity=.6+.4*Math.sin(t*4); slit.material.transparent=true; tray.visible=true; keys.forEach((k,i)=>k.visible=!on||((i+Math.floor(t*4))%8!==0)); }; }
+  // C. Teller Window
+  function teller(g){ floor(g);
+    bx(g,[0,0,2],[16,32,16],WOOD); bx(g,[0,0,0],[2,32,2],BRASS); bx(g,[14,0,0],[16,32,2],BRASS); bx(g,[0,29,0],[16,32,2],WOOD2);
+    bx(g,[2,2,0],[14,13,0.6],WOOD2); bx(g,[3,8,0.6],[13,12,2],WOOD); bx(g,[5,9.6,-0.5],[11,10.6,0.6],BEZEL); const slit=bx(g,[5.6,10,-0.6],[10.4,10.3,-0.5],PHOS,true);
+    bx(g,[0,13,-4],[16,16,2],WOOD2); bx(g,[0,15.6,-4.3],[16,16.2,-3.7],BRASS);
+    bx(g,[5,16,-3.6],[11,17,-0.6],DARKGREY); bx(g,[5.5,16.8,-3.3],[10.5,17.3,-0.9],BEZEL);
+    bx(g,[12,16,-3.2],[13.8,17.6,-1.4],BRASS); bx(g,[12.6,17.6,-2.6],[13.2,18.2,-2],BRASS);
+    for(const x of [3.8,6.4,9,11.6]) bx(g,[x-0.3,16.2,0.6],[x+0.3,29,1.2],BRASS);
+    bx(g,[3,20,1.8],[13,27.5,2.4],BEZEL); const sc=screen(g,[4,21,1.5],[12,26.8,1.9]);
+    const lamp=bx(g,[7,27.6,0.8],[9,28.6,1.6],AMBER,true);
+    const aw=grp(g,[0,29,0],0.5); for(let i=0;i<8;i++) bx(aw,[-0.5+i*2.125,0,-5.5],[1.625+i*2.125,0.6,0],i%2?NAVY:CREAM2);
+    bx(g,[3,30.3,-1.6],[13,31.6,-0.6],NAVY); bx(g,[3.5,30.9,-1.7],[12.5,31.1,-1.6],BRASS);
+    return t=>{ const on=state.busy; sc.cur.visible=on&&Math.floor(t*2)%2===0; sc.lines.forEach((l,i)=>l.visible=on||i<1); lamp.material.color.setHex(Math.random()<0.06?0xc98f2a:AMBER); slit.visible=true; }; }
+
+  // ---- one WebGL context
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:3.3,rx:.3,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Street Machine','The cash machine from a high street: cream casing on a grey plinth, the green screen recessed in a dark bezel with three beige keys down each side (the screen skin\'s key column, made physical), a lamp and a navy name plate above, a slanted keypad shelf, a card slot with a green slit, a cash slot with a flap, a receipt slot and a coin tray at the foot.',street],
+    ['B. Vault Pillar','A dark steel column on a bolted base plate with two riveted bands, the screen under a hood with four amber keys lit down each side, a slanted coin hopper where coins go in, a lit coin tray low down and a turning amber beacon on the crown. Armoured for a PvP world.',pillar],
+    ['C. Teller Window','An old bank counter: brass posts and bars in a dark wood frame, a striped awning and a hanging sign, the screen behind the bars like the teller with a lamp over it, a wooden counter with a brass edge carrying the coin tray and a service bell, a card slot in the panel beneath.',teller]],{dist:92,target:[14,15,6]});
+  el('night').onchange=e=>state.night=e.target.checked; el('busy').onchange=e=>state.busy=e.target.checked;
+})();
+</script>

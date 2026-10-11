@@ -231,8 +231,11 @@ ATLAS, UVU = 64, 16 / 64
 MATS = {  # name: (tile origin px, colour, noisy)
     "hull": ((0, 0), "#1E222B", True), "hull2": ((16, 0), "#2B313D", True), "panel": ((32, 0), "#C9CED8", True), "mid": ((48, 0), "#565C6B", True),
     "trim": ((0, 16), "#8A909C", True), "violet": ((16, 16), "#B58CFF", False), "turq": ((32, 16), "#19D3B0", False), "orange": ((48, 16), "#FF9A4A", False),
+    # the bank family (Vault Pillar ATM, Drawer Stack deposit box): steel, amber lamps, phosphor screen text, the dark screen, gold trim, a red lamp
+    "steel": ((0, 32), "#4A5060", True), "amber": ((16, 32), "#F2B544", False), "phos": ((32, 32), "#58F29A", False), "screen": ((48, 32), "#061008", False),
+    "gold": ((0, 48), "#E4B84A", True), "red": ((16, 48), "#E24B3B", False),
 }
-GLOW = {"violet", "turq", "orange"}
+GLOW = {"violet", "turq", "orange", "amber", "phos", "red"}
 
 
 def machine_atlas(x, y):

@@ -13,6 +13,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
+import com.mrgregles.bsp_core.bank.BankAccount;
+import com.mrgregles.bsp_core.bank.BankResult;
+import com.mrgregles.bsp_core.bank.BankTransaction;
 
 /**
  * BSP-Core's tables in a MySQL (or MariaDB) database that the network's owner provides. The mod
@@ -125,6 +130,15 @@ final class MySqlStore implements AutoCloseable {
                     + "message MEDIUMTEXT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX (uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("pending_items") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, "
                     + "item MEDIUMTEXT NOT NULL, INDEX (uuid))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_accounts") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL DEFAULT '', "
+                    + "pieces BIGINT NOT NULL DEFAULT 0, c0 INT NOT NULL DEFAULT 0, c1 INT NOT NULL DEFAULT 0, c2 INT NOT NULL DEFAULT 0, c3 INT NOT NULL DEFAULT 0, c4 INT NOT NULL DEFAULT 0, "
+                    + "accept_pay TINYINT NOT NULL DEFAULT 1, remote_shops TINYINT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, "
+                    + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX (name))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_log") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, ms BIGINT NOT NULL, "
+                    + "type VARCHAR(16) NOT NULL, with_name VARCHAR(64) NOT NULL, detail VARCHAR(255) NOT NULL, pieces BIGINT NOT NULL, coin_tier INT NOT NULL, coin_count INT NOT NULL, "
+                    + "server_id VARCHAR(64) NOT NULL, INDEX (uuid, ms))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_boxes") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, slots INT NOT NULL, rent_until BIGINT NOT NULL, "
+                    + "items MEDIUMTEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
         }
     }
 
@@ -550,6 +564,236 @@ final class MySqlStore implements AutoCloseable {
             throw e;
         } finally {
             c.setAutoCommit(auto);
+        }
+    }
+
+    // ------------------------------------------------------------------ bank
+
+    private BankAccount bankRow(ResultSet rs) throws SQLException {
+        BankAccount a = new BankAccount();
+        a.name = rs.getString("name");
+        a.pieces = rs.getLong("pieces");
+        for (int i = 0; i < 5; i++) {
+            a.coins[i] = rs.getInt("c" + i);
+        }
+        a.granted = true;
+        a.acceptPay = rs.getInt("accept_pay") != 0;
+        a.remoteShops = rs.getInt("remote_shops") != 0;
+        a.seenMs = rs.getLong("seen_ms");
+        return a;
+    }
+
+    /** The account, or null if the network has none for this player. */
+    BankAccount bankRead(UUID id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT * FROM " + t("bank_accounts") + " WHERE uuid = ?")) {
+            ps.setString(1, id.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? bankRow(rs) : null;
+            }
+        }
+    }
+
+    /** Opens the account with the starting pieces if no server has yet; records the name. True when opened just now. */
+    boolean bankEnsure(UUID id, String name, long starting) throws SQLException {
+        boolean inserted;
+        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("bank_accounts") + " (uuid, name, pieces) VALUES (?, ?, ?)")) {
+            ps.setString(1, id.toString());
+            ps.setString(2, name);
+            ps.setLong(3, starting);
+            inserted = ps.executeUpdate() == 1;
+        }
+        if (!inserted) {
+            try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET name = ? WHERE uuid = ?")) {
+                ps.setString(1, name);
+                ps.setString(2, id.toString());
+                ps.executeUpdate();
+            }
+        }
+        return inserted;
+    }
+
+    /** Applies signed deltas as one atomic change; null if the account is missing or anything would go below zero. */
+    BankAccount bankAdjust(UUID id, long dPieces, int[] dCoins) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces + ?, c0 = c0 + ?, c1 = c1 + ?, c2 = c2 + ?, c3 = c3 + ?, c4 = c4 + ? "
+                + "WHERE uuid = ? AND pieces + ? >= 0 AND c0 + ? >= 0 AND c1 + ? >= 0 AND c2 + ? >= 0 AND c3 + ? >= 0 AND c4 + ? >= 0")) {
+            ps.setLong(1, dPieces);
+            for (int i = 0; i < 5; i++) {
+                ps.setInt(2 + i, dCoins[i]);
+            }
+            ps.setString(7, id.toString());
+            ps.setLong(8, dPieces);
+            for (int i = 0; i < 5; i++) {
+                ps.setInt(9 + i, dCoins[i]);
+            }
+            if (ps.executeUpdate() != 1) {
+                return null;
+            }
+        }
+        return bankRead(id);
+    }
+
+    BankAccount bankSet(UUID id, long pieces) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = ? WHERE uuid = ?")) {
+            ps.setLong(1, pieces);
+            ps.setString(2, id.toString());
+            if (ps.executeUpdate() != 1) {
+                return null;
+            }
+        }
+        return bankRead(id);
+    }
+
+    /** Moves pieces between two accounts in one transaction. */
+    BankResult bankTransfer(UUID from, UUID to, long amount) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("SELECT accept_pay FROM " + t("bank_accounts") + " WHERE uuid = ? FOR UPDATE")) {
+                ps.setString(1, to.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        c.rollback();
+                        return BankResult.fail("no_account");
+                    }
+                    if (rs.getInt(1) == 0) {
+                        c.rollback();
+                        return BankResult.fail("refused");
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces - ? WHERE uuid = ? AND pieces >= ?")) {
+                ps.setLong(1, amount);
+                ps.setString(2, from.toString());
+                ps.setLong(3, amount);
+                if (ps.executeUpdate() != 1) {
+                    c.rollback();
+                    return BankResult.fail("short");
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces + ? WHERE uuid = ?")) {
+                ps.setLong(1, amount);
+                ps.setString(2, to.toString());
+                ps.executeUpdate();
+            }
+            long left;
+            try (PreparedStatement ps = c.prepareStatement("SELECT pieces FROM " + t("bank_accounts") + " WHERE uuid = ?")) {
+                ps.setString(1, from.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    left = rs.next() ? rs.getLong(1) : 0;
+                }
+            }
+            c.commit();
+            return BankResult.ok(left);
+        } catch (SQLException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    void bankFlags(UUID id, Boolean acceptPay, Boolean remoteShops, Long seenMs) throws SQLException {
+        if (acceptPay != null) {
+            try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET accept_pay = ? WHERE uuid = ?")) {
+                ps.setInt(1, acceptPay ? 1 : 0);
+                ps.setString(2, id.toString());
+                ps.executeUpdate();
+            }
+        }
+        if (remoteShops != null) {
+            try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET remote_shops = ? WHERE uuid = ?")) {
+                ps.setInt(1, remoteShops ? 1 : 0);
+                ps.setString(2, id.toString());
+                ps.executeUpdate();
+            }
+        }
+        if (seenMs != null) {
+            try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET seen_ms = GREATEST(seen_ms, ?) WHERE uuid = ?")) {
+                ps.setLong(1, seenMs);
+                ps.setString(2, id.toString());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    void bankLog(UUID id, BankTransaction tx) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, id.toString());
+            ps.setLong(2, tx.ms());
+            ps.setString(3, tx.type().name());
+            ps.setString(4, tx.with().length() > 64 ? tx.with().substring(0, 64) : tx.with());
+            ps.setString(5, tx.detail().length() > 255 ? tx.detail().substring(0, 255) : tx.detail());
+            ps.setLong(6, tx.pieces());
+            ps.setInt(7, tx.coinTier());
+            ps.setInt(8, tx.coinCount());
+            ps.setString(9, tx.server());
+            ps.executeUpdate();
+        }
+    }
+
+    /** The newest {@code limit} entries within {@code days}, newest first; older rows are trimmed now and then. */
+    List<BankTransaction> bankLogRead(UUID id, int limit, int days) throws SQLException {
+        long oldest = System.currentTimeMillis() - days * 86_400_000L;
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("bank_log") + " WHERE uuid = ? AND ms < ?")) {
+            ps.setString(1, id.toString());
+            ps.setLong(2, oldest);
+            ps.executeUpdate();
+        }
+        List<BankTransaction> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id FROM " + t("bank_log")
+                + " WHERE uuid = ? ORDER BY ms DESC, id DESC LIMIT ?")) {
+            ps.setString(1, id.toString());
+            ps.setInt(2, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    BankTransaction.Type type;
+                    try {
+                        type = BankTransaction.Type.valueOf(rs.getString(2));
+                    } catch (IllegalArgumentException e) {
+                        type = BankTransaction.Type.ADMIN;
+                    }
+                    out.add(new BankTransaction(rs.getLong(1), type, rs.getString(3), rs.getString(4), rs.getLong(5), rs.getInt(6), rs.getInt(7), rs.getString(8)));
+                }
+            }
+        }
+        return out;
+    }
+
+    void bankResetRemote() throws SQLException {
+        try (Statement st = conn().createStatement()) {
+            st.executeUpdate("UPDATE " + t("bank_accounts") + " SET remote_shops = 0");
+        }
+    }
+
+    /** The player's safety deposit box: slots, rent end and the items as SNBT; null if none. */
+    Object[] bankBoxRead(UUID id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT slots, rent_until, items FROM " + t("bank_boxes") + " WHERE uuid = ?")) {
+            ps.setString(1, id.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new Object[]{rs.getInt(1), rs.getLong(2), rs.getString(3)} : null;
+            }
+        }
+    }
+
+    void bankBoxWrite(UUID id, int slots, long until, String items) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("bank_boxes") + " (uuid, slots, rent_until, items) VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE slots = VALUES(slots), rent_until = VALUES(rent_until), items = VALUES(items)")) {
+            ps.setString(1, id.toString());
+            ps.setInt(2, slots);
+            ps.setLong(3, until);
+            ps.setString(4, items);
+            ps.executeUpdate();
+        }
+    }
+
+    /** A player known to the network by name (case-insensitive), or null. */
+    Map.Entry<UUID, String> bankFind(String name) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name FROM " + t("bank_accounts") + " WHERE LOWER(name) = LOWER(?) LIMIT 1")) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? Map.entry(UUID.fromString(rs.getString(1)), rs.getString(2)) : null;
+            }
         }
     }
 
