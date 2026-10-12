@@ -33,7 +33,7 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
 
     private record Key(String label, boolean enabled, Runnable action) {}
 
-    private final List<Key> top = new ArrayList<>(), bottom = new ArrayList<>();
+    private final List<Key> top = new ArrayList<>(), middle = new ArrayList<>(), bottom = new ArrayList<>();
     private int days = 7, lastSerial = -1;
     private Component message = Component.empty();
     private int messageColour = AMBER;
@@ -47,7 +47,7 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
     }
 
     private int screenHeight() {
-        return menu.open ? 108 : 118;
+        return menu.open ? 116 : 118;
     }
 
     private static MutableComponent tr(String key, Object... args) {
@@ -73,20 +73,53 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
         return DepositBox.rentCost(menu.account, System.currentTimeMillis(), days);
     }
 
+    /** Three groups down the key column, each its own job: the days at the top, the two ways to pay in the middle, more slots on its own at the foot. */
+    private int groupY(int group) {
+        return switch (group) {
+            case 0 -> topPos + SY;
+            case 1 -> topPos + SY + 2 * (KH + KGAP) + 16;
+            default -> topPos + imageHeight - 10 - KH;
+        };
+    }
+
+    private List<Key> group(int group) {
+        return group == 0 ? top : group == 1 ? middle : bottom;
+    }
+
     private void keys() {
         top.clear();
+        middle.clear();
         bottom.clear();
         int max = BSPConfig.getOr(BSPConfig.BOX_MAX_DAYS, 365);
         DepositBox.State st = state();
         top.add(new Key("minus_days", days > 1, () -> days = Math.max(1, days - 7 < 1 ? 1 : days - 7)));
         top.add(new Key("plus_days", DepositBox.daysLeft(menu.account, System.currentTimeMillis()) + days + 7 <= max, () -> days += 7));
         String rent = st == DepositBox.State.EXPIRED ? "pay_open" : "rent";
-        bottom.add(new Key(rent + "_pieces", menu.account.pieces >= cost(), () -> send(false, -1)));
+        middle.add(new Key(rent + "_pieces", menu.account.pieces >= cost(), () -> send(false, -1)));
         int tier = coinTier();
-        bottom.add(new Key(rent + "_coins", tier >= 0, () -> send(false, coinTier())));
+        middle.add(new Key(rent + "_coins", tier >= 0, () -> send(false, coinTier())));
         if (st == DepositBox.State.OPEN) {
             bottom.add(new Key("add_slots", menu.account.boxSlots < DepositBox.SLOTS_MAX && menu.account.pieces >= DepositBox.slotStepPieces(), () -> send(true, -1)));
         }
+    }
+
+    /** What a key's label says it costs: the pieces, or the smallest coin that covers it (or "coins" when none does). */
+    private Object[] labelArgs(String label) {
+        if (label.endsWith("_pieces")) {
+            return new Object[]{days, Bank.format(cost())};
+        }
+        if (label.endsWith("_coins")) {
+            int tier = coinTier();
+            if (tier < 0) {
+                return new Object[]{days, "", tr("coins_none").getString()};
+            }
+            CoinTier t = CoinTier.values()[tier];
+            return new Object[]{days, DepositBox.coinsFor(cost(), t), Bank.tierName(t)};
+        }
+        if (label.equals("add_slots")) {
+            return new Object[]{Bank.format(DepositBox.slotStepPieces())};
+        }
+        return new Object[]{days};
     }
 
     private void send(boolean slots, int tier) {
@@ -107,26 +140,17 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         keys();
-        int x = leftPos, y = topPos, ky = y + SY;
-        for (Key k : top) {
-            if (over(mx, my, x + KX, ky, KW, KH)) {
-                if (k.enabled) {
-                    k.action.run();
+        for (int gi = 0; gi < 3; gi++) {
+            int ky = groupY(gi);
+            for (Key k : group(gi)) {
+                if (over(mx, my, leftPos + KX, ky, KW, KH)) {
+                    if (k.enabled) {
+                        k.action.run();
+                    }
+                    return true;
                 }
-                return true;
+                ky += KH + KGAP;
             }
-            ky += KH + KGAP;
-        }
-        ky = y + SY + screenHeight() - KH;
-        for (int i = bottom.size() - 1; i >= 0; i--) {
-            Key k = bottom.get(i);
-            if (over(mx, my, x + KX, ky, KW, KH)) {
-                if (k.enabled) {
-                    k.action.run();
-                }
-                return true;
-            }
-            ky -= KH + KGAP;
         }
         return super.mouseClicked(mx, my, button);
     }
@@ -174,20 +198,17 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
                 g.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0xFFDAD3C3);
             }
         }
-        int ky = y + SY;
-        for (Key k : top) {
-            key(g, x + KX, ky, k, mx, my);
-            ky += KH + KGAP;
-        }
-        ky = y + SY + sh - KH;
-        for (int i = bottom.size() - 1; i >= 0; i--) {
-            key(g, x + KX, ky, bottom.get(i), mx, my);
-            ky -= KH + KGAP;
+        for (int gi = 0; gi < 3; gi++) {
+            int ky = groupY(gi);
+            for (Key k : group(gi)) {
+                key(g, x + KX, ky, k, mx, my);
+                ky += KH + KGAP;
+            }
         }
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
-        CashMachine.key(g, font, x, y, KW, KH, tr(k.label, days).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
+        CashMachine.key(g, font, x, y, KW, KH, tr(k.label, labelArgs(k.label)).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     @Override
@@ -200,42 +221,42 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
             case EXPIRED -> tr("lapsed", DepositBox.lapsedDays(menu.account, now)).getString();
             default -> tr("not_rented").getString();
         };
-        CashMachine.fitRight(g, font, right, SX + SW - 6, SY + 6, SW - 12 - font.width("> " + tr("title").getString()) - 4, st == DepositBox.State.EXPIRED ? RED : PHOS_DIM);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
-        int ty = SY + 22;
-        if (menu.open) {
-            String slots = tr("slots", menu.account.boxSlots, DepositBox.SLOTS_MAX).getString();
-            g.drawString(font, slots, SX + 6, ty, PHOS_DIM, false);
-            ty = DepositBoxMenu.SLOT_Y + 38;
-        } else {
-            long cost = cost();
-            String owed = st == DepositBox.State.EXPIRED ? tr("owed", Bank.format(cost), days, DepositBox.lapsedDays(menu.account, now)).getString() : tr("first", Bank.format(cost), days).getString();
-            for (var line : font.split(Component.literal(owed), SW - 12)) {
-                g.drawString(font, line, SX + 6, ty, st == DepositBox.State.EXPIRED ? AMBER : PHOS, false);
-                ty += 9;
-            }
-            ty += 4;
-            if (st == DepositBox.State.EXPIRED) {
-                g.drawString(font, tr("kept", menu.account.boxSlots), SX + 6, ty, PHOS_DIM, false);
-                ty += 12;
-            }
-        }
-        String terms = tr("terms", days, Bank.format(cost()), Bank.format(DepositBox.rentPerDay())).getString();
-        for (var line : font.split(Component.literal(terms), SW - 12)) {
-            g.drawString(font, line, SX + 6, ty, PHOS_DIM, false);
-            ty += 9;
-        }
-        CashMachine.wrap(g, font, tr("forbidden"), SX + 6, ty + 2, SW - 12, PHOS_DIM);
+        // the rent state on its own line under the title
+        CashMachine.fit(g, font, right, SX + 6, SY + 20, SW - 12, st == DepositBox.State.EXPIRED ? RED : PHOS_DIM);
+        int sh = screenHeight();
+        // the message sits at the foot; the terms stack above it, clipped to the space left
+        int bottom = SY + sh - 4;
         if (!message.getString().isEmpty()) {
-            List<net.minecraft.util.FormattedCharSequence> lines = font.split(message, SW - 12);
-            int ly = SY + screenHeight() - 4 - lines.size() * 9;
-            for (var line : lines) {
-                g.drawString(font, line, SX + 6, ly, messageColour, false);
-                ly += 9;
-            }
+            bottom = CashMachine.wrapUp(g, font, message, SX + 6, bottom, SW - 12, messageColour) - 2;
         }
+        int top;
         if (menu.open) {
-            g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, KEY_TEXT, false);
+            // a rented box shows only how long the rent has left under the slots
+            CashMachine.fit(g, font, tr("slots", menu.account.boxSlots, DepositBox.SLOTS_MAX).getString(), SX + 6, SY + 30, SW - 12, PHOS_DIM);
+            long left = Math.max(0, menu.account.boxUntilMs - now), d = left / 86_400_000L, hh = left / 3_600_000L % 24, mm = left / 60_000L % 60;
+            CashMachine.fit(g, font, tr("time_left", d, hh, mm).getString(), SX + 6, DepositBoxMenu.SLOT_Y + 40, SW - 12, PHOS);
+            // what the keys would charge for more days, in pieces and in the smallest coin that covers it
+            int tier = coinTier();
+            Component costLine = tier < 0 ? tr("cost_pieces", days, Bank.format(cost()))
+                    : tr("cost_both", days, Bank.format(cost()), DepositBox.coinsFor(cost(), CoinTier.values()[tier]), Bank.tierName(CoinTier.values()[tier]));
+            CashMachine.fit(g, font, costLine.getString(), SX + 6, DepositBoxMenu.SLOT_Y + 51, SW - 12, PHOS_DIM);
+            return;
+        } else {
+            int ty = SY + 32;
+            long cost = cost();
+            Component owed = st == DepositBox.State.EXPIRED ? tr("owed", Bank.format(cost), days, DepositBox.lapsedDays(menu.account, now)) : tr("first", Bank.format(cost), days);
+            CashMachine.clip(g, leftPos, topPos, SX, ty, SW, bottom - ty);
+            ty += CashMachine.wrap(g, font, owed, SX + 6, ty, SW - 12, st == DepositBox.State.EXPIRED ? AMBER : PHOS) + 3;
+            if (st == DepositBox.State.EXPIRED) {
+                ty += CashMachine.wrap(g, font, tr("kept", menu.account.boxSlots), SX + 6, ty, SW - 12, PHOS_DIM) + 3;
+            }
+            g.disableScissor();
+            top = ty;
         }
+        CashMachine.clip(g, leftPos, topPos, SX, top, SW, Math.max(0, bottom - top));
+        int y2 = CashMachine.wrapUp(g, font, tr("forbidden"), SX + 6, bottom, SW - 12, PHOS_DIM);
+        CashMachine.wrapUp(g, font, tr(menu.open ? "terms_open" : "terms", days, Bank.format(cost()), Bank.format(DepositBox.rentPerDay())), SX + 6, y2 - 2, SW - 12, PHOS_DIM);
+        g.disableScissor();
     }
 }

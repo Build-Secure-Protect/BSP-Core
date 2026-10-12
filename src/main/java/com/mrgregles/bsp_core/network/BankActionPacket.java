@@ -126,7 +126,7 @@ public record BankActionPacket(Action action, int tier, int count, String text, 
                 BankMenu.sync(player, "", found, null);
             }
             case UNLOCK_NETWORK -> Bank.unlockRemote(server, player, r -> BankMenu.sync(player, r.ok() ? "network_unlocked" : r.key(), List.of(),
-                    new String[]{String.valueOf(BSPConfig.getOr(BSPConfig.BANK_REMOTE_UNLOCK_VALUE, 16))}));
+                    new String[]{String.valueOf(Bank.remoteUnlockCoins()), Bank.tierName(Bank.remoteUnlockTier())}));
             case OPEN_NETWORK -> {
                 if (menu.portable() && Bank.account(server, id).remoteShops) {
                     com.mrgregles.bsp_core.shop.ShopListMenu.open(player);

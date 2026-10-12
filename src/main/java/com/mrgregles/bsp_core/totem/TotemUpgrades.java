@@ -79,7 +79,11 @@ public final class TotemUpgrades {
         /** Base: BSP ores mined near the totem grow back, fed by plasma. */
         HARVEST("harvest", Branch.BASE, 3, "survey", 5, false),
         /** Base: who is inside the Alarm cube, shown to the owner from anywhere. Priced like a Raid power. */
-        SENTINEL("sentinel", Branch.BASE, 2, "alarm", 2, false);
+        SENTINEL("sentinel", Branch.BASE, 2, "alarm", 2, false),
+        /** Carried, on the Home spoke: more home slots in the pack's teleport mod, which reads the level; BSP-Core only keeps it. */
+        EXTRA_HOMES("extra_homes", Branch.CARRIED, 1, "healing", 3, false),
+        /** Carried, on the Home spoke: a shorter teleport cooldown in the teleport mod, which reads the level. */
+        SWIFT_TRAVEL("swift_travel", Branch.CARRIED, 2, "extra_homes", 3, false);
 
         public final String key;
         private final Branch branch;
@@ -127,7 +131,7 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
-            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST, SENTINEL -> 4; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
+            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST, SENTINEL -> 4; case EXTRA_HOMES, SWIFT_TRAVEL -> 3; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */
@@ -207,7 +211,7 @@ public final class TotemUpgrades {
     }
 
     /** Carried powers the modpack's other mods also give cheaply (beacons, potions, jetpacks, suits): kept as steps on the path at half the XP. */
-    public static final java.util.Set<Buff> CHEAP = java.util.EnumSet.of(Buff.MINING_SPEED, Buff.SWIFTNESS, Buff.FEATHERFALL, Buff.NIGHT_SIGHT);
+    public static final java.util.Set<Buff> CHEAP = java.util.EnumSet.of(Buff.MINING_SPEED, Buff.SWIFTNESS, Buff.FEATHERFALL, Buff.NIGHT_SIGHT, Buff.EXTRA_HOMES, Buff.SWIFT_TRAVEL);
 
     /** Price of raising a totem from {@code tier} to the next, or null at the top tier. */
     @Nullable

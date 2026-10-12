@@ -15,7 +15,10 @@ import java.util.List;
 public final class Shop {
     public enum Kind { SHOP, SUB, ROTATING, OFFER }
 
+    /** The storage page size (how items are grouped in the record); what players see per page follows the shop's layout. */
     public static final int COLUMNS = 7, ROWS = 3, PER_PAGE = COLUMNS * ROWS;
+    /** The card grid's width on the Cash Machine screen and the gap between cards, in GUI pixels. */
+    public static final int GRID_WIDTH = 194, GRID_GAP = 1, MIN_COLUMNS = 4, MAX_COLUMNS = 7;
 
     public final String id;
     public String name = "";
@@ -34,6 +37,8 @@ public final class Shop {
     public long offerEndMs;
     /** The shop's own opening hours: used on the Shopping Network, and at a post or stall that has none of its own. */
     public OpenHours hours = OpenHours.ALWAYS;
+    /** The card layout players see: cards per row (0 = automatic, from the longest price label) and rows per page. */
+    public int columns, rows = 3;
 
     public Shop(String id) {
         this.id = id;
@@ -74,6 +79,36 @@ public final class Shop {
         return false;
     }
 
+    /** The text under a card: "buy 2,000 G", "sell 15". Shared so the server can size cards the way the client draws them. */
+    public static String priceLabel(String verb, long price, int currency) {
+        return verb + " " + com.mrgregles.bsp_core.bank.Bank.format(price) + (currency < 0 ? "" : " " + com.mrgregles.bsp_core.bank.Bank.tierName(com.mrgregles.bsp_core.coin.CoinTier.values()[currency]).charAt(0));
+    }
+
+    /** Cards per row for these items: the set number, or, when automatic, as many as the longest label leaves room for (4 to 7). */
+    public int effectiveColumns(List<ShopItem> items) {
+        if (columns >= MIN_COLUMNS) {
+            return Math.min(MAX_COLUMNS, columns);
+        }
+        int longest = 6; // "> open"
+        for (ShopItem it : items) {
+            if (it == null || !it.section.isEmpty()) {
+                continue;
+            }
+            if (it.buy >= 0) {
+                longest = Math.max(longest, priceLabel("buy", it.buy, it.currency).length());
+            }
+            if (it.sell >= 0) {
+                longest = Math.max(longest, priceLabel("sell", it.sell, it.currency).length());
+            }
+        }
+        int need = (int) Math.ceil(longest * 6 * 0.75) + 4; // small text is three quarters of 6 px a character, plus padding
+        return Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, (GRID_WIDTH + GRID_GAP) / (need + GRID_GAP)));
+    }
+
+    public int rows() {
+        return Math.max(2, Math.min(3, rows));
+    }
+
     /** The hours that count at a vendor or stall: its own when it has any, otherwise the shop's. */
     public OpenHours effectiveHours(@javax.annotation.Nullable OpenHours venue) {
         return venue != null && venue.mode() != OpenHours.Mode.ALWAYS ? venue : hours;
@@ -102,6 +137,8 @@ public final class Shop {
         }
         t.put("Pages", pl);
         t.putInt("DisplaySlots", displaySlots);
+        t.putInt("Columns", columns);
+        t.putInt("Rows", rows);
         t.putLong("Interval", intervalMs);
         t.putInt("OfferPercent", offerPercent);
         t.putLong("OfferEnd", offerEndMs);
@@ -133,6 +170,8 @@ public final class Shop {
             s.pages.add(new ArrayList<>());
         }
         s.displaySlots = t.contains("DisplaySlots") ? t.getInt("DisplaySlots") : 4;
+        s.columns = t.getInt("Columns");
+        s.rows = t.contains("Rows") ? t.getInt("Rows") : 3;
         s.intervalMs = t.contains("Interval") ? t.getLong("Interval") : 12 * 3_600_000L;
         s.offerPercent = t.getInt("OfferPercent");
         s.offerEndMs = t.getLong("OfferEnd");

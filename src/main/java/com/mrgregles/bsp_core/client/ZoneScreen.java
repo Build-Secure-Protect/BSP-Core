@@ -51,6 +51,7 @@ public class ZoneScreen extends Screen {
         this.colour = zone.colourIndex();
         this.blocked.addAll(zone.blocked());
         group("totems", ZoneRules.totems());
+        group("teleport", ZoneRules.teleport());
         group("machines", ZoneRules.machines());
         group("others", ZoneRules.others());
     }
@@ -59,7 +60,7 @@ public class ZoneScreen extends Screen {
         lines.add(new Line(name, null, Component.translatable("gui.bsp_core.zone.group." + name)));
         for (String key : keys) {
             Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(BSPCore.MODID, key));
-            boolean rule = key.equals(ZoneLedger.TOTEM_PLACE) || key.equals(ZoneLedger.TOTEM_DROP);
+            boolean rule = ZoneRules.isRule(key);
             lines.add(new Line(name, key, rule || block == null ? Component.translatable("gui.bsp_core.zone.rule." + key) : block.getName()));
         }
     }

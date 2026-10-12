@@ -611,12 +611,16 @@ public class BspGameTests {
         com.mrgregles.bsp_core.bank.BankResult[] r = new com.mrgregles.bsp_core.bank.BankResult[1];
         com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
         h.assertTrue(!r[0].ok() && r[0].key().equals("coins_unlock"), "no coins, no unlock: " + r[0]);
-        int cost = com.mrgregles.bsp_core.BSPConfig.BANK_REMOTE_UNLOCK_VALUE.get();
-        var copper = com.mrgregles.bsp_core.coin.CoinTier.COPPER;
-        player.getInventory().add(new net.minecraft.world.item.ItemStack(copper.coin(), cost + 2));
+        int cost = com.mrgregles.bsp_core.bank.Bank.remoteUnlockCoins();
+        var tier = com.mrgregles.bsp_core.bank.Bank.remoteUnlockTier();
+        h.assertTrue(cost == 12 && tier == com.mrgregles.bsp_core.coin.CoinTier.NETHERITE, "the default price is 12 Netherite coins");
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.coin.CoinTier.ILLYRIUM.coin(), 64));
+        com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
+        h.assertTrue(!r[0].ok() && r[0].key().equals("coins_unlock"), "other tiers do not pay for it, whatever their value");
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(tier.coin(), cost + 2));
         com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
         h.assertTrue(r[0].ok() && com.mrgregles.bsp_core.bank.Bank.account(server, id).remoteShops, "unlocked with coins");
-        h.assertTrue(player.getInventory().countItem(copper.coin()) == 2, "the coins were taken: " + player.getInventory().countItem(copper.coin()));
+        h.assertTrue(player.getInventory().countItem(tier.coin()) == 2, "the coins were taken: " + player.getInventory().countItem(tier.coin()));
         com.mrgregles.bsp_core.bank.Bank.unlockRemote(server, player, x -> r[0] = x);
         h.assertTrue(!r[0].ok() && r[0].key().equals("already"), "cannot buy it twice");
         int n = com.mrgregles.bsp_core.bank.Bank.resetRemoteAll(server);
@@ -932,16 +936,14 @@ public class BspGameTests {
         it.buy = 5;
         shop.add(it);
         com.mrgregles.bsp_core.shop.Shops.save(server, shop);
-        BlockPos postPos = new BlockPos(6, 1, 6), displayPos = new BlockPos(8, 1, 6);
-        h.setBlock(postPos, com.mrgregles.bsp_core.registry.ModBlocks.VENDOR_POST.get().defaultBlockState());
+        BlockPos displayPos = new BlockPos(8, 1, 6);
         h.setBlock(displayPos, com.mrgregles.bsp_core.registry.ModBlocks.STALL_DISPLAY.get().defaultBlockState());
-        var post = entity(h, postPos, com.mrgregles.bsp_core.shop.VendorPostBlockEntity.class);
         var display = entity(h, displayPos, com.mrgregles.bsp_core.shop.StallDisplayBlockEntity.class);
-        h.assertTrue(!display.link(h.absolutePos(new BlockPos(1, 1, 1))), "cannot link to air");
-        h.assertTrue(display.link(h.absolutePos(postPos)) && display.linked(), "linked to the post");
+        h.assertTrue(!display.linkShop("no_such_shop_" + Long.toHexString(System.nanoTime())), "cannot link a shop that does not exist");
+        h.assertTrue(display.linkShop(shop.id) && display.linked(), "linked to the shop");
         display.unlink();
         h.assertTrue(!display.linked() && display.shown.isEmpty(), "unlinked and dark");
-        h.assertTrue(display.link(h.absolutePos(postPos)), "linked again");
+        h.assertTrue(display.linkShop(shop.id), "linked again");
         var bread = new com.mrgregles.bsp_core.shop.ShopItem();
         bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4);
         bread.buy = 1;
@@ -949,7 +951,7 @@ public class BspGameTests {
         com.mrgregles.bsp_core.shop.Shops.save(server, shop);
         var a = display.choose(h.getLevel(), shop);
         var b = display.choose(h.getLevel(), shop);
-        h.assertTrue(a.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && b.is(net.minecraft.world.item.Items.BREAD), "the items take turns: " + a + ", " + b);
+        h.assertTrue((a.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && b.is(net.minecraft.world.item.Items.BREAD)) || (a.is(net.minecraft.world.item.Items.BREAD) && b.is(net.minecraft.world.item.Items.GOLDEN_APPLE)), "the items take turns: " + a + ", " + b);
         display.pinned = 1;
         h.assertTrue(display.choose(h.getLevel(), shop).is(net.minecraft.world.item.Items.BREAD) && display.choose(h.getLevel(), shop).is(net.minecraft.world.item.Items.BREAD), "a pinned item stays");
         display.pinned = 99;
@@ -958,7 +960,7 @@ public class BspGameTests {
         h.assertTrue(display.scale() == 0.88f && display.height() == 1.16f, "the player-built display's own point (18.5/16, in whole percent) and scale: " + display.scale() + " " + display.height());
         display.scalePct = 150;
         h.assertTrue(display.scale() == 1.5f, "size set");
-        post.set(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "minecraft:villager", "");
+        display.refreshNow();
         h.succeedWhen(() -> h.assertTrue(display.shown.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && display.shopName.equals("Display Shop"), "the golden apple floats: " + display.shown));
     }
 
@@ -990,13 +992,14 @@ public class BspGameTests {
         h.setBlock(displayPos, com.mrgregles.bsp_core.registry.ModBlocks.STALL_DISPLAY.get().defaultBlockState());
         var display = entity(h, displayPos, com.mrgregles.bsp_core.shop.StallDisplayBlockEntity.class);
         h.assertTrue(h.getBlockState(displayPos).getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN), "a new display looks neglected");
-        h.assertTrue(display.link(h.absolutePos(lower)), "a Stall Display links to a stall");
+        h.assertTrue(display.linkShop(shop.id), "a Stall Display shows the stall's shop");
+        display.setSkin(com.mrgregles.bsp_core.shop.StallSkin.NETHER);
         stall.assign(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");
         h.runAfterDelay(30, () -> {
             display.refreshNow();
             var ds = h.getBlockState(displayPos);
             h.assertTrue(ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.SKIN) == com.mrgregles.bsp_core.shop.StallSkin.NETHER && !ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN)
-                    && display.shown.is(net.minecraft.world.item.Items.APPLE), "the display takes the stall's style and floats the apple");
+                    && display.shown.is(net.minecraft.world.item.Items.APPLE), "the display shows its chosen style and floats the apple");
             h.assertTrue(display.height() == 1.03f && display.scale() == 0.81f, "the nether display's own item point (16.5/16, in whole percent) and scale are the defaults: " + display.height() + " " + display.scale());
             h.assertTrue(!h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN) && !h.getBlockState(upper).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN), "assigned: whole again on both halves");
             h.assertTrue(stall.open && stall.stocked && stall.shown.is(net.minecraft.world.item.Items.APPLE), "open, in stock, the apple on the counter: " + stall.open + " " + stall.stocked + " " + stall.shown);
@@ -1009,8 +1012,6 @@ public class BspGameTests {
                 h.runAfterDelay(25, () -> {
                     h.assertTrue(h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN) && h.getBlockState(upper).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN), "unassigned: broken again");
                     h.assertTrue(!stall.open && stall.shown.isEmpty(), "dark counter");
-                    display.refreshNow();
-                    h.assertTrue(h.getBlockState(displayPos).getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN), "the display looks neglected again");
                     h.assertTrue(!h.getBlockState(lamp).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT), "the lamp beneath is off");
                     h.setBlock(upper, Blocks.AIR);
                     h.runAfterDelay(2, () -> {
@@ -1020,5 +1021,172 @@ public class BspGameTests {
                 });
             });
         });
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_totem_lookups_for_other_mods(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        var api = com.mrgregles.bsp_core.api.BspTotems.class;
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placed(server, UUID.randomUUID()).isEmpty(), "a stranger has no placed totems");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.beingStolen(server, id).isEmpty(), "nothing is being stolen");
+        var buff = com.mrgregles.bsp_core.api.BspTotems.upgrade("swiftness");
+        h.assertTrue(buff == com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.SWIFTNESS && com.mrgregles.bsp_core.api.BspTotems.upgrade("no_such") == null, "upgrades look up by name");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, buff) == 0, "no totem, level 0");
+        var totem = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(id, "Erin").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemUpgrades.setLevel(totem, buff, 2);
+        player.getInventory().add(totem);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, buff) == 2, "a carried totem counts: " + com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, buff));
+        var other = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(UUID.randomUUID(), "Sam").applyTo(other);
+        com.mrgregles.bsp_core.totem.TotemUpgrades.setLevel(other, buff, 5);
+        player.getInventory().add(other);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, buff) == 2, "someone else's totem in the bag does not count");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspPlayers.isDimensionAllowed(net.minecraft.world.level.Level.OVERWORLD.location()), "the Overworld is allowed");
+        h.assertTrue(!com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), h.absolutePos(new BlockPos(1, 1, 1)), com.mrgregles.bsp_core.api.BspZones.TOTEM_PLACE), "no zone here");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_totem_events_fire_for_other_mods(GameTestHelper h) {
+        var server = server(h);
+        UUID erin = UUID.randomUUID(), sam = UUID.randomUUID();
+        List<String> seen = new ArrayList<>();
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_core.api.event.TotemEvent.Placed e) -> {
+            if (erin.equals(e.getOwner())) {
+                seen.add("placed");
+            }
+        });
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_core.api.event.TotemEvent.OwnerChanged e) -> {
+            if (erin.equals(e.getPrevious()) && sam.equals(e.getOwner())) {
+                seen.add("changed");
+            }
+        });
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_core.api.event.TotemEvent.Removed e) -> {
+            if (sam.equals(e.getOwner())) {
+                seen.add("removed");
+            }
+        });
+        BlockPos pos = new BlockPos(4, 1, 4);
+        h.setBlock(pos, com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get().defaultBlockState());
+        var totem = entity(h, pos, com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity.class);
+        totem.setOwner(new com.mrgregles.bsp_core.totem.TotemOwner(erin, "Erin"));
+        h.assertTrue(seen.contains("placed"), "Placed fired for Erin: " + seen);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placed(server, erin).contains(net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(pos))), "the API lists it");
+        totem.setOwner(new com.mrgregles.bsp_core.totem.TotemOwner(sam, "Sam"));
+        h.assertTrue(seen.contains("changed"), "OwnerChanged fired from Erin to Sam: " + seen);
+        h.setBlock(pos, Blocks.AIR);
+        h.runAfterDelay(2, () -> {
+            h.assertTrue(seen.contains("removed"), "Removed fired for Sam's totem: " + seen);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placed(server, sam).isEmpty(), "and the API no longer lists it");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_transfer_hook_stores_the_totem_and_hands_it_back(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        var totem = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(id, "Erin").applyTo(totem);
+        player.getInventory().setItem(0, totem);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player) == 1, "one totem taken for the transfer");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.isTransferring(id), "the flag is set");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(player).isEmpty(), "the totem is out of the inventory");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.endTransfer(player), "a cancelled teleport ends the transfer");
+        h.assertTrue(!com.mrgregles.bsp_core.api.BspTransfer.isTransferring(id), "the flag is cleared");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.isTotem(player.getInventory().getItem(0)), "the totem is back in the hand slot");
+        h.assertTrue(!com.mrgregles.bsp_core.api.BspTransfer.endTransfer(player), "nothing to end twice");
+        // the window runs out without a logout: the totem comes back on its own
+        player.getInventory().setItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE, 64));
+        com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player);
+        com.mrgregles.bsp_core.api.BspTransfer.expire(server, System.currentTimeMillis() + com.mrgregles.bsp_core.api.BspTransfer.transferSeconds() * 1000L - 1000);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.isTransferring(id), "still inside the window");
+        com.mrgregles.bsp_core.api.BspTransfer.expire(server, System.currentTimeMillis() + com.mrgregles.bsp_core.api.BspTransfer.transferSeconds() * 1000L + 1);
+        h.assertTrue(!com.mrgregles.bsp_core.api.BspTransfer.isTransferring(id), "expired after the window");
+        // (a mock player is not in the server's player list, so the hand-back on expiry is covered by the endTransfer path above)
+        // a logout mid-transfer: the handler gets the held totem to place, and the flag is gone
+        var totem2 = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(id, "Erin").applyTo(totem2);
+        player.getInventory().setItem(0, totem2);
+        com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player);
+        var held = com.mrgregles.bsp_core.api.BspTransfer.takeOnLogout(id);
+        h.assertTrue(held != null && held.size() == 1 && !com.mrgregles.bsp_core.api.BspTransfer.isTransferring(id), "a logout without a database hands the held totem to the placer");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.takeOnLogout(id) == null, "an ordinary logout has nothing");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_teleport_upgrades_sit_on_the_home_spoke_at_carried_prices(GameTestHelper h) {
+        var B = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.class;
+        var homes = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.EXTRA_HOMES;
+        var travel = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.SWIFT_TRAVEL;
+        h.assertTrue(homes.parent() == com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.HEALING && travel.parent() == homes, "Healing Aura, then Extra Homes, then Swift Travel");
+        h.assertTrue(homes.path == 3 && travel.path == 3 && homes.tier == 1 && travel.tier == 2, "on the Home spoke at tiers II and III");
+        h.assertTrue(homes.maxLevel() == 3 && travel.maxLevel() == 3 && !homes.placedOnly, "three levels each, bought while carried too");
+        var price = com.mrgregles.bsp_core.totem.TotemUpgrades.price(homes, 0);
+        var swift = com.mrgregles.bsp_core.totem.TotemUpgrades.price(com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.SWIFTNESS, 0);
+        h.assertTrue(price != null && swift != null && price.coin() == swift.coin() && price.coins() == swift.coins() && price.xp() == swift.xp(), "priced like Swiftness (same tier, Carried, half XP): " + price + " vs " + swift);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemUpgrades.price(homes, 3) == null, "maxed at three");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.upgrade("extra_homes") == homes && com.mrgregles.bsp_core.api.BspTotems.upgrade("SWIFT_TRAVEL") == travel, "the API finds them by name");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_zone_teleport_rules_are_stored_and_read(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.zone.ZoneLedger.get(server);
+        BlockPos centre = h.absolutePos(new BlockPos(4, 1, 4));
+        var where = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), centre);
+        ledger.put(where, new int[]{3, 3, 3, 3, 3, 3}, java.util.Set.of(com.mrgregles.bsp_core.api.BspZones.TELEPORT_IN, com.mrgregles.bsp_core.api.BspZones.SET_HOME));
+        BlockPos inside = centre.offset(2, 0, 2), outside = centre.offset(6, 0, 0);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), inside, com.mrgregles.bsp_core.api.BspZones.TELEPORT_IN), "teleporting in is blocked inside");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), inside, com.mrgregles.bsp_core.api.BspZones.SET_HOME), "setting a home is blocked inside");
+        h.assertTrue(!com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), inside, com.mrgregles.bsp_core.api.BspZones.TELEPORT_OUT), "teleporting out was not switched on");
+        h.assertTrue(!com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), outside, com.mrgregles.bsp_core.api.BspZones.TELEPORT_IN), "nothing is blocked outside");
+        h.assertTrue(com.mrgregles.bsp_core.zone.ZoneRules.known("set_home") && !com.mrgregles.bsp_core.zone.ZoneRules.defaults().contains("set_home"), "a known rule, off on a new block");
+        ledger.remove(where);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_recall_offer_waits_for_an_owner_on_another_server(GameTestHelper h) {
+        var player = h.makeMockPlayer();
+        UUID away = UUID.randomUUID();
+        com.mrgregles.bsp_core.totem.RecallService.offer(h.getLevel(), h.absolutePos(new BlockPos(3, 1, 3)), away, 3);
+        h.assertTrue(com.mrgregles.bsp_core.totem.RecallService.hasRemoteOffer(away), "an owner who is not here gets a waiting offer");
+        com.mrgregles.bsp_core.totem.RecallService.offer(h.getLevel(), h.absolutePos(new BlockPos(3, 1, 3)), UUID.randomUUID(), 0);
+        String[] target = new String[1];
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_core.api.event.RecallEvent.CrossServer e) -> {
+            if (e.getOwner() == player) {
+                target[0] = e.getTargetServer();
+                e.setHandled();
+            }
+        });
+        h.assertTrue(com.mrgregles.bsp_core.totem.RecallService.acceptRemote(player, "hub"), "a listener that moves the player marks the offer handled");
+        h.assertTrue("hub".equals(target[0]), "the event names the server the totem stands on: " + target[0]);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_transfer_departures_time_out_after_48_hours(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.totem.TransferLedger.get(server);
+        UUID id = UUID.randomUUID();
+        long now = System.currentTimeMillis();
+        var where = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(2, 1, 2)));
+        ledger.put(id, now, where);
+        h.assertTrue(ledger.has(id) && ledger.departure(id).where().equals(where), "the departure point is kept");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.timeoutMs() == 48L * 3_600_000L, "the default timeout is 48 hours");
+        h.assertTrue(ledger.due(now + 47L * 3_600_000L, com.mrgregles.bsp_core.api.BspTransfer.timeoutMs()).isEmpty(), "not due at 47 hours");
+        h.assertTrue(ledger.due(now + 49L * 3_600_000L, com.mrgregles.bsp_core.api.BspTransfer.timeoutMs()).contains(id), "due at 49 hours");
+        var saved = com.mrgregles.bsp_core.totem.TransferLedger.load(ledger.save(new net.minecraft.nbt.CompoundTag()));
+        h.assertTrue(saved.has(id) && saved.departure(id).where().equals(where), "survives a save and load");
+        com.mrgregles.bsp_core.api.BspTransfer.placeBackTimedOut(server, now + 49L * 3_600_000L);
+        h.assertTrue(!ledger.has(id), "without a database a due departure is simply forgotten");
+        h.succeed();
     }
 }

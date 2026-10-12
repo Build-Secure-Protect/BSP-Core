@@ -36,9 +36,11 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
     private static final int W = 360, H = 232;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, CARD = 0xFF0A1A10, CARD_SEL = 0xFF0F2D1C, CARD_EMPTY = 0xFF07100A;
-    private static final int SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3, CX = SX + 6, CY = SY + 22, CW = 28, CH = 42, CGAP = 1;
+    private static final int SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3, CX = SX + 6, CY = SY + 22, CGAP = 1;
     private static final String[] STYLES = {"cash_machine", "passbook", "market_board"};
-    private static final int LIST_ROWS = 8, SIDE_Y = 38, SIDE_STEP = 11, SET_STEP = 10;
+    private static final int LIST_ROWS = 7, LIST_Y = SY + 34, SIDE_Y = 38, SIDE_STEP = 11, SET_STEP = 10;
+    /** Shop list columns: name, kind, cards, network. */
+    private static final int[] COL = {SX + 6, SX + 104, SX + 146, SX + 174};
 
     private enum View { LIST, PAGE, BROWSER, SETTINGS, STYLE }
 
@@ -93,11 +95,18 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
         search.setTextColor(PHOS);
         search.setHint(tr("search").withStyle(s -> s.withColor(PHOS_DIM)));
         search.setResponder(s -> { browserPage = 0; findItems(s); });
-        newId = new EditBox(font, leftPos + SX + 8, topPos + SY + SH - 30, 120, 10, tr("new_id"));
+        newId = new EditBox(font, leftPos + SX + 28, topPos + SY + SH - 30, 110, 10, tr("new_id"));
         newId.setBordered(false);
         newId.setTextColor(PHOS);
         newId.setHint(tr("new_id").withStyle(s -> s.withColor(PHOS_DIM)));
-        newId.setFilter(s -> s.matches("[a-z0-9_]{0,32}"));
+        // ids are lower case with underscores; typing capitals or spaces is fine, they are turned into that
+        newId.setFilter(s -> s.matches("[A-Za-z0-9_ ]{0,32}"));
+        newId.setResponder(s -> {
+            String n = s.toLowerCase(Locale.ROOT).replace(' ', '_');
+            if (!n.equals(s)) {
+                newId.setValue(n);
+            }
+        });
         addRenderableWidget(field);
         addRenderableWidget(search);
         addRenderableWidget(newId);
@@ -218,7 +227,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
         }
         if (view == View.LIST) {
             for (int i = listPage * LIST_ROWS; i < Math.min(menu.list.size(), (listPage + 1) * LIST_ROWS); i++) {
-                if (over(mx, my, x + SX + 6, y + SY + 22 + (i - listPage * LIST_ROWS) * 11, SW - 12, 10)) {
+                if (over(mx, my, x + SX + 6, y + LIST_Y + (i - listPage * LIST_ROWS) * 11, SW - 12, 10)) {
                     send(Action.SELECT, menu.list.get(i).id(), "", 0, 0);
                     sel = -1;
                     setView(View.PAGE);
@@ -226,9 +235,9 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
                 }
             }
         } else if (view == View.PAGE && menu.shop != null) {
-            for (int k = 0; k < Shop.PER_PAGE; k++) {
-                int cx = x + CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = y + CY + (k / Shop.COLUMNS) * (CH + CGAP);
-                if (over(mx, my, cx, cy, CW, CH)) {
+            for (int k = 0; k < perPage(); k++) {
+                int cx = x + CX + (k % cols()) * (cw() + CGAP), cy = y + CY + (k / cols()) * (ch() + CGAP);
+                if (over(mx, my, cx, cy, cw(), ch())) {
                     commit();
                     sel = k;
                     return true;
@@ -256,6 +265,15 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
                     send(Action.SET, "style", STYLES[i], 0, 0);
                     return true;
                 }
+            }
+            if (over(mx, my, x + SX + 8, y + SY + 84, SW - 16, 12)) {
+                int c = menu.shop.columns;
+                send(Action.SET, "columns", String.valueOf(c == 0 ? Shop.MIN_COLUMNS : c >= Shop.MAX_COLUMNS ? 0 : c + 1), 0, 0);
+                return true;
+            }
+            if (over(mx, my, x + SX + 8, y + SY + 98, SW - 16, 12)) {
+                send(Action.SET, "rows", String.valueOf(menu.shop.rows() == 3 ? 2 : 3), 0, 0);
+                return true;
             }
         }
         return super.mouseClicked(mx, my, button);
@@ -360,15 +378,15 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
         }
         if (view == View.PAGE && menu.shop != null) {
             List<ShopItem> all = menu.shop.all();
-            for (int k = 0; k < Shop.PER_PAGE; k++) {
-                int cx = x + CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = y + CY + (k / Shop.COLUMNS) * (CH + CGAP);
+            for (int k = 0; k < perPage(); k++) {
+                int cx = x + CX + (k % cols()) * (cw() + CGAP), cy = y + CY + (k / cols()) * (ch() + CGAP);
                 boolean has = k < all.size();
-                g.fill(cx, cy, cx + CW, cy + CH, k == sel ? CARD_SEL : has ? CARD : CARD_EMPTY);
-                g.fill(cx, cy, cx + CW, cy + 1, has ? PHOS_DIM | 0xFF000000 : 0xFF1F6B43);
-                g.fill(cx, cy + CH - 1, cx + CW, cy + CH, has ? PHOS_DIM | 0xFF000000 : 0xFF1F6B43);
+                g.fill(cx, cy, cx + cw(), cy + ch(), k == sel ? CARD_SEL : has ? CARD : CARD_EMPTY);
+                g.fill(cx, cy, cx + cw(), cy + 1, has ? PHOS_DIM | 0xFF000000 : 0xFF1F6B43);
+                g.fill(cx, cy + ch() - 1, cx + cw(), cy + ch(), has ? PHOS_DIM | 0xFF000000 : 0xFF1F6B43);
                 if (has) {
-                    g.renderItem(all.get(k).stack, cx + 6, cy + 3);
-                    g.renderItemDecorations(font, all.get(k).stack, cx + 6, cy + 3);
+                    g.renderItem(all.get(k).stack, cx + cw() / 2 - 8, cy + iconY());
+                    g.renderItemDecorations(font, all.get(k).stack, cx + cw() / 2 - 8, cy + iconY());
                 }
             }
         } else if (view == View.BROWSER) {
@@ -387,6 +405,11 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
         for (int i = bottom.size() - 1; i >= 0; i--) {
             key(g, x + KX, ky, bottom.get(i), mx, my);
             ky -= KH + KGAP;
+        }
+        if (view == View.LIST && menu.editable) {
+            // the new-id field drawn as a field, so it reads as somewhere to type
+            g.fill(x + SX + 24, y + SY + SH - 34, x + SX + 142, y + SY + SH - 17, PHOS_DIM | 0xFF000000);
+            g.fill(x + SX + 25, y + SY + SH - 33, x + SX + 141, y + SY + SH - 18, CARD_SEL);
         }
         g.fill(x + SX - 2, y + SY + SH + 6, x + W - SX + 2, y + H - 6, SCREEN_EDGE);
         g.fill(x + SX, y + SY + SH + 8, x + W - SX, y + H - 8, SCREEN);
@@ -418,29 +441,38 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
                 if (menu.list.isEmpty()) {
                     g.drawString(font, tr("no_shops"), SX + 8, SY + 24, PHOS_DIM, false);
                 }
+                String[] heads = {"col_name", "col_kind", "col_cards", "col_net"};
+                for (int c = 0; c < heads.length; c++) {
+                    CashMachine.fit(g, font, tr(heads[c]).getString(), COL[c], SY + 22, (c + 1 < COL.length ? COL[c + 1] : SX + SW - 6) - COL[c] - 4, AMBER);
+                }
+                g.fill(SX + 4, SY + 31, SX + SW - 4, SY + 32, SCREEN_EDGE);
                 for (int i = listPage * LIST_ROWS; i < Math.min(menu.list.size(), (listPage + 1) * LIST_ROWS); i++) {
                     var e = menu.list.get(i);
                     boolean cur = s != null && s.id.equals(e.id());
-                    String row = (cur ? "> " : "  ") + e.name() + "  " + e.kind().name().toLowerCase(Locale.ROOT) + "  " + e.items() + (e.remote() ? "  NET" : "");
-                    g.drawString(font, font.plainSubstrByWidth(row, SW - 14), SX + 6, SY + 22 + (i - listPage * LIST_ROWS) * 11, cur ? PHOS : PHOS_DIM, false);
+                    int ry = LIST_Y + (i - listPage * LIST_ROWS) * 11, colour = cur ? PHOS : PHOS_DIM;
+                    g.drawString(font, font.plainSubstrByWidth((cur ? "> " : "  ") + e.name(), COL[1] - COL[0] - 4), COL[0], ry, colour, false);
+                    g.drawString(font, e.kind().name().toLowerCase(Locale.ROOT), COL[1], ry, colour, false);
+                    g.drawString(font, String.valueOf(e.items()), COL[2], ry, colour, false);
+                    g.drawString(font, e.remote() ? tr("col_net_on").getString() : "-", COL[3], ry, colour, false);
                 }
                 if (menu.editable) {
                     CashMachine.wrap(g, font, tr("new_hint"), SX + 8, SY + SH - 56, SW - 16, PHOS_DIM);
+                    g.drawString(font, tr("id_label"), SX + 8, SY + SH - 30, AMBER, false);
                 }
             }
             case PAGE -> {
                 if (s != null) {
                     List<ShopItem> all = s.all();
-                    for (int k = 0; k < Math.min(Shop.PER_PAGE, all.size()); k++) {
+                    for (int k = 0; k < Math.min(perPage(), all.size()); k++) {
                         ShopItem it = all.get(k);
-                        int cx = CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = CY + (k / Shop.COLUMNS) * (CH + CGAP);
-                        small(g, it.section.isEmpty() ? (it.buy >= 0 ? "buy " + it.buy : "--") : "> " + it.section, cx + 2, cy + 22, AMBER);
-                        small(g, it.sell >= 0 && it.section.isEmpty() ? "sell " + it.sell : "", cx + 2, cy + 30, PHOS_DIM);
+                        int cx = CX + (k % cols()) * (cw() + CGAP), cy = CY + (k / cols()) * (ch() + CGAP);
+                        small(g, it.section.isEmpty() ? (it.buy >= 0 ? Shop.priceLabel("buy", it.buy, it.currency) : "--") : "> " + it.section, cx + 2, cy + labelY(), AMBER, cw() - 4);
+                        small(g, it.sell >= 0 && it.section.isEmpty() ? Shop.priceLabel("sell", it.sell, it.currency) : "", cx + 2, cy + labelY() + 7, PHOS_DIM, cw() - 4);
                         if (it.hidden) {
-                            small(g, "hid", cx + CW - 12, cy + 2, RED);
+                            small(g, "hid", cx + cw() - 12, cy + 2, RED, 12);
                         }
                     }
-                    CashMachine.wrapUp(g, font, tr(all.size() > Shop.PER_PAGE ? "more_pages" : "page_hint", all.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    CashMachine.wrapUp(g, font, tr(all.size() > perPage() ? "more_pages" : "page_hint", all.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
                 }
             }
             case BROWSER -> CashMachine.wrapUp(g, font, tr("browser", found.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
@@ -460,8 +492,12 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
                 if (s != null) {
                     for (int i = 0; i < STYLES.length; i++) {
                         boolean cur = STYLES[i].equals(s.style);
-                        g.drawString(font, (cur ? "> " : "  ") + tr("style_" + STYLES[i]).getString(), SX + 8, SY + 32 + i * 14, cur ? PHOS : PHOS_DIM, false);
+                        CashMachine.fit(g, font, (cur ? "> " : "  ") + tr("style_" + STYLES[i]).getString(), SX + 8, SY + 32 + i * 14, SW - 16, cur ? PHOS : PHOS_DIM);
                     }
+                    g.fill(SX + 4, SY + 78, SX + SW - 4, SY + 79, SCREEN_EDGE);
+                    String colsValue = s.columns == 0 ? tr("auto", cols()).getString() : String.valueOf(s.columns);
+                    line(g, SX + 8, SY + 86, tr("f_columns").getString(), colsValue, SW - 16);
+                    line(g, SX + 8, SY + 100, tr("f_rows").getString(), String.valueOf(s.rows()), SW - 16);
                     CashMachine.wrapUp(g, font, tr("style_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
                 }
             }
@@ -491,7 +527,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
         if (!fieldName.isEmpty()) {
             // the field sits under the rows; the row being edited is amber
             g.fill(PX + 2, SY + 165, PX + PW - 2, SY + 166, PHOS_DIM | 0xFF000000);
-            int py = SY + 168;
+            int py = SY + 167;
             for (var ln : font.split(tr("editing"), (int) ((PW - 4) / 0.75f))) {
                 g.pose().pushPose();
                 g.pose().translate(PX + 3, py, 0);
@@ -504,10 +540,45 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
     }
 
     private void small(GuiGraphics g, String s, int x, int y, int colour) {
+        small(g, s, x, y, colour, Integer.MAX_VALUE);
+    }
+
+    /** Small (three-quarter) text, shrunk further if it would be wider than {@code maxW}. */
+    private void small(GuiGraphics g, String s, int x, int y, int colour, int maxW) {
+        float scale = Math.min(0.75f, maxW / (float) Math.max(1, font.width(s)));
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
-        g.pose().scale(0.75f, 0.75f, 1f);
+        g.pose().scale(scale, scale, 1f);
         g.drawString(font, s, 0, 0, colour, false);
         g.pose().popPose();
+    }
+
+    /** The preview grid follows the shop's layout, as players see it. */
+    private int cols() {
+        return menu.shop == null ? Shop.MAX_COLUMNS : menu.shop.effectiveColumns(menu.shop.all());
+    }
+
+    private int rows() {
+        return menu.shop == null ? 3 : menu.shop.rows();
+    }
+
+    private int perPage() {
+        return cols() * rows();
+    }
+
+    private int cw() {
+        return (SW - 12 - (cols() - 1) * CGAP) / cols();
+    }
+
+    private int ch() {
+        return rows() >= 3 ? 36 : 56;
+    }
+
+    private int iconY() {
+        return rows() >= 3 ? 3 : 10;
+    }
+
+    private int labelY() {
+        return rows() >= 3 ? 21 : 32;
     }
 }

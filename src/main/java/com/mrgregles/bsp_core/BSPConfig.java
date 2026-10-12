@@ -137,12 +137,14 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue STORAGE_PORT;
     public static final ForgeConfigSpec.BooleanValue REDIS_ENABLED, REDIS_SSL;
     public static final ForgeConfigSpec.ConfigValue<String> REDIS_HOST, REDIS_PASSWORD, REDIS_CHANNEL;
+    public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER;
+    public static final ForgeConfigSpec.IntValue TRANSFER_SECONDS, TRANSFER_TIMEOUT_HOURS;
     public static final ForgeConfigSpec.IntValue REDIS_PORT, REDIS_DB;
 
     // ------------------------------------------------------------------ bank
 
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
-    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_VALUE,
+    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS,
             BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS;
     public static final ForgeConfigSpec.BooleanValue STORAGE_SSL;
 
@@ -245,6 +247,12 @@ public final class BSPConfig {
         GROUND_SECONDS_BEFORE_PLACE = BUILDER
                 .comment("Seconds a dropped totem waits on the ground before placing itself as a block.")
                 .defineInRange("groundSecondsBeforePlace", 30, 1, 3600);
+        TRANSFER_SECONDS = BUILDER
+                .comment("When a teleport mod announces a server transfer (BspTransfer.beginTransfer), how many seconds the player has to leave before their stored totem comes back.")
+                .defineInRange("transferSeconds", 10, 2, 300);
+        TRANSFER_TIMEOUT_HOURS = BUILDER
+                .comment("A totem stored for a server transfer whose owner never logs in anywhere is placed back at the departure point after this many hours.")
+                .defineInRange("transferTotemTimeoutHours", 48, 1, 24 * 365);
         BUILDER.pop();
 
         BUILDER.comment("Stealing a placed Shatter Totem").push("steal");
@@ -498,9 +506,10 @@ public final class BSPConfig {
         BANK_LOG_DAYS = BUILDER.comment("Days a player's transaction log is kept.").defineInRange("logDays", 90, 1, 3650);
         BANK_LOG_ENTRIES = BUILDER.comment("Most log entries kept per player on this server (the newest stay).").defineInRange("logEntries", 500, 10, 100000);
         BANK_COIN_MARKUP_PERCENT = BUILDER.comment("When a shop sells a Shatter Coin for pieces, its price is the conversion value plus this percentage.").defineInRange("coinSaleMarkupPercent", 25, 0, 10000);
-        BANK_REMOTE_UNLOCK_VALUE = BUILDER.comment("Coin value (Copper 1, Gold 2, Diamond 4, Netherite 8, Illyrium 16 by default) a player pays once to unlock the Shopping Network on their Portable Banker.",
-                        "Paid in coins from the inventory; admins can clear everyone's access at a season end with /bsp bank remote reset.")
-                .defineInRange("remoteUnlockCoinValue", 16, 1, 100000);
+        BANK_REMOTE_UNLOCK_COINS = BUILDER.comment("How many Shatter Coins of remoteUnlockTier a player pays once to unlock the Shopping Network on their Portable Banker.",
+                        "Taken from the inventory; admins can clear everyone's access at a season end with /bsp bank remote reset.")
+                .defineInRange("remoteUnlockCoins", 12, 1, 10000);
+        BANK_REMOTE_UNLOCK_TIER = BUILDER.comment("The coin tier the unlock is paid in: copper, gold, diamond, netherite or illyrium.").define("remoteUnlockTier", "netherite");
         BUILDER.comment("Safety deposit boxes: one per player for the whole network, rented by the day, 6 slots at first and 3 more per purchase up to 18.",
                         "Coins pay at their conversion value; any overpayment is credited as pieces.").push("box");
         BOX_RENT_PER_DAY = BUILDER.comment("Pieces one day of rent costs.").defineInRange("rentPiecesPerDay", 50, 0, 1000000);

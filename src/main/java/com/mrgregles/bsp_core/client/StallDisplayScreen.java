@@ -5,6 +5,7 @@ import com.mrgregles.bsp_core.network.StallDisplayConfigPacket;
 import com.mrgregles.bsp_core.network.StallDisplayConfigPacket.Action;
 import com.mrgregles.bsp_core.shop.StallDisplayBlockEntity;
 import com.mrgregles.bsp_core.shop.StallDisplayMenu;
+import com.mrgregles.bsp_core.shop.StallSkin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -17,22 +18,26 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The Stall Display's settings screen in the Cash Machine skin: what it is linked to, the shop's
- * items to pin one of (or let them all turn), and keys that step the size, the hover height and the
- * interval through fixed values. Every key sends its change at once; Done closes.
+ * The Stall Display's screen in the Cash Machine skin. Settings view: the shop it shows, the shop's
+ * items to pin one of (or let them all turn), and keys that step the size, the hover height, the
+ * interval and the style through set values. Shops view (the SHOP key): every shop to pick from.
+ * Every key sends its change at once; Done closes.
  */
 public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu> {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
-            AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A;
+            AMBER = 0xF2B544, RED = 0xFF6B5C;
     private static final int SX = 10, SY = 10, SW = 206, SH = 176, KX = 226, KW = 64, KH = 20, KGAP = 4;
-    private static final int COLS = 11, ROWS = 3, CELL = 18, GRID_Y = 52;
+    private static final int COLS = 11, ROWS = 3, CELL = 18, GRID_Y = 52, SHOP_ROWS = 12;
     private static final int[] SCALES = {50, 65, 80, 100, 125, 150, 200}, HEIGHTS = {100, 120, 135, 150, 175, 200, 250}, INTERVALS = {2, 4, 6, 10, 15, 30, 60};
+
+    private enum View { SETTINGS, SHOPS }
 
     private record Key(String label, boolean enabled, Runnable action) {}
 
     private final List<Key> top = new ArrayList<>(), bottom = new ArrayList<>();
-    private int page;
+    private View view = View.SETTINGS;
+    private int page, shopPage;
 
     public StallDisplayScreen(StallDisplayMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -68,14 +73,20 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         top.clear();
         bottom.clear();
         StallDisplayBlockEntity d = display();
-        boolean linked = d != null && d.linked();
+        if (view == View.SHOPS) {
+            top.add(new Key("prev", shopPage > 0, () -> shopPage--));
+            top.add(new Key("next", (shopPage + 1) * SHOP_ROWS < menu.shops.size(), () -> shopPage++));
+            bottom.add(new Key("unlink", !menu.shopId.isEmpty(), () -> send(Action.UNLINK, 0)));
+            bottom.add(new Key("back", true, () -> view = View.SETTINGS));
+            return;
+        }
         int scale = d == null ? 0 : d.scalePct, height = d == null ? 0 : d.heightPct, interval = d == null ? 0 : d.intervalSec;
-        top.add(new Key("size", true, () -> send(Action.SCALE, next(SCALES, scale, (d == null ? 80 : d.defaultScalePct())))));
-        top.add(new Key("height", true, () -> send(Action.HEIGHT, next(HEIGHTS, height, (d == null ? 135 : d.defaultHeightPct())))));
+        top.add(new Key("size", true, () -> send(Action.SCALE, next(SCALES, scale, d == null ? 80 : d.defaultScalePct()))));
+        top.add(new Key("height", true, () -> send(Action.HEIGHT, next(HEIGHTS, height, d == null ? 135 : d.defaultHeightPct()))));
         top.add(new Key("interval", true, () -> send(Action.INTERVAL, next(INTERVALS, interval, StallDisplayBlockEntity.defaultIntervalSec()))));
-        top.add(new Key("reset", scale != 0 || height != 0 || interval != 0, () -> send(Action.RESET, 0)));
-        bottom.add(new Key("link", true, () -> send(Action.LINK, 0)));
-        bottom.add(new Key("unlink", linked, () -> send(Action.UNLINK, 0)));
+        top.add(new Key("skin", true, () -> send(Action.SKIN, (d == null ? 0 : d.skinIndex) + 1)));
+        bottom.add(new Key("reset", scale != 0 || height != 0 || interval != 0, () -> send(Action.RESET, 0)));
+        bottom.add(new Key("shop", true, () -> { shopPage = 0; view = View.SHOPS; }));
         bottom.add(new Key("done", true, this::onClose));
     }
 
@@ -103,6 +114,15 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
             }
             ky -= KH + KGAP;
         }
+        if (view == View.SHOPS) {
+            for (int i = shopPage * SHOP_ROWS; i < Math.min(menu.shops.size(), (shopPage + 1) * SHOP_ROWS); i++) {
+                if (over(mx, my, x + SX + 6, y + SY + 34 + (i - shopPage * SHOP_ROWS) * 11, SW - 12, 10)) {
+                    send(Action.SHOP, i);
+                    return true;
+                }
+            }
+            return super.mouseClicked(mx, my, button);
+        }
         StallDisplayBlockEntity d = display();
         int per = COLS * ROWS;
         for (int i = page * per; i < Math.min(menu.items.size(), (page + 1) * per); i++) {
@@ -118,8 +138,13 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
-        int pages = Math.max(1, (menu.items.size() + COLS * ROWS - 1) / (COLS * ROWS));
-        page = Math.max(0, Math.min(pages - 1, page - (int) Math.signum(delta)));
+        if (view == View.SHOPS) {
+            int pages = Math.max(1, (menu.shops.size() + SHOP_ROWS - 1) / SHOP_ROWS);
+            shopPage = Math.max(0, Math.min(pages - 1, shopPage - (int) Math.signum(delta)));
+        } else {
+            int pages = Math.max(1, (menu.items.size() + COLS * ROWS - 1) / (COLS * ROWS));
+            page = Math.max(0, Math.min(pages - 1, page - (int) Math.signum(delta)));
+        }
         return true;
     }
 
@@ -132,6 +157,9 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         keys();
         renderBackground(g);
         super.render(g, mx, my, partial);
+        if (view != View.SETTINGS) {
+            return;
+        }
         int per = COLS * ROWS;
         for (int i = page * per; i < Math.min(menu.items.size(), (page + 1) * per); i++) {
             int c = (i - page * per) % COLS, r = (i - page * per) / COLS;
@@ -158,6 +186,9 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         for (int i = bottom.size() - 1; i >= 0; i--) {
             key(g, x + KX, ky, bottom.get(i), mx, my);
             ky -= KH + KGAP;
+        }
+        if (view != View.SETTINGS) {
+            return;
         }
         StallDisplayBlockEntity d = display();
         int per = COLS * ROWS;
@@ -186,12 +217,30 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         StallDisplayBlockEntity d = display();
         g.drawString(font, "> " + tr("title").getString().toUpperCase(Locale.ROOT), SX + 6, SY + 6, PHOS, false);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
-        if (menu.linked == null) {
+        if (view == View.SHOPS) {
+            CashMachine.fit(g, font, tr("shops_title").getString(), SX + 6, SY + 22, SW - 12, PHOS_DIM);
+            if (menu.shops.isEmpty()) {
+                CashMachine.wrap(g, font, tr("no_shops"), SX + 8, SY + 34, SW - 16, PHOS_DIM);
+            }
+            for (int i = shopPage * SHOP_ROWS; i < Math.min(menu.shops.size(), (shopPage + 1) * SHOP_ROWS); i++) {
+                String[] s = menu.shops.get(i);
+                int ry = SY + 34 + (i - shopPage * SHOP_ROWS) * 11;
+                boolean cur = s[0].equals(menu.shopId), hover = over(mx, my, leftPos + SX + 6, topPos + ry, SW - 12, 10);
+                g.drawString(font, font.plainSubstrByWidth((cur || hover ? "> " : "  ") + s[1] + "  (" + s[0] + ")", SW - 14), SX + 6, ry, cur || hover ? PHOS : PHOS_DIM, false);
+            }
+            int pages = Math.max(1, (menu.shops.size() + SHOP_ROWS - 1) / SHOP_ROWS);
+            if (pages > 1) {
+                String pg = tr("page", shopPage + 1, pages).getString();
+                g.drawString(font, pg, SX + SW - 8 - font.width(pg), SY + SH - 12, PHOS_DIM, false);
+            }
+            return;
+        }
+        if (menu.shopId.isEmpty()) {
             CashMachine.wrap(g, font, tr("not_linked"), SX + 8, SY + 22, SW - 16, RED);
         } else if (menu.shopName.isEmpty()) {
-            CashMachine.wrap(g, font, tr("linked_noshop", menu.linked.toShortString()), SX + 8, SY + 22, SW - 16, AMBER);
+            CashMachine.wrap(g, font, tr("linked_gone", menu.shopId), SX + 8, SY + 22, SW - 16, AMBER);
         } else {
-            CashMachine.wrap(g, font, tr("linked", menu.linked.toShortString(), menu.shopName), SX + 8, SY + 22, SW - 16, PHOS_DIM);
+            CashMachine.wrap(g, font, tr("linked", menu.shopName), SX + 8, SY + 22, SW - 16, PHOS_DIM);
         }
         int pinned = d == null ? -1 : d.pinned;
         String pinnedName = "";
@@ -216,6 +265,7 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         int scale = d == null ? 0 : d.scalePct, height = d == null ? 0 : d.heightPct, iv = d == null ? 0 : d.intervalSec;
         CashMachine.fit(g, font, tr("size_line", pct(scale, (d == null ? 80 : d.defaultScalePct())), pct(height, (d == null ? 135 : d.defaultHeightPct())),
                 (iv == 0 ? StallDisplayBlockEntity.defaultIntervalSec() + "*" : String.valueOf(iv))).getString(), SX + 8, ty + 3, SW - 16, PHOS);
-        CashMachine.wrap(g, font, tr("default_note"), SX + 8, ty + 14, SW - 16, PHOS_DIM);
+        StallSkin skin = d == null ? StallSkin.VANILLA : d.skin();
+        CashMachine.wrap(g, font, tr("default_note", Component.translatable("gui.bsp_core.stall.skin." + skin.id)), SX + 8, ty + 14, SW - 16, PHOS_DIM);
     }
 }

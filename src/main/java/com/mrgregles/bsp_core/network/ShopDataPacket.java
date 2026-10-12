@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /** Server → client: one page of a shop as the player may see it now, with their balance and an outcome message. */
 public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean buyOnly, boolean open, boolean admin, int offerPercent, long offerEnd, long rotatesIn,
-                             int page, int pages, long balance, String opensAt, int untilOpen, List<ShopMenu.Card> cards, String messageKey, String[] messageArgs) {
+                             int page, int pages, int columns, int rows, long balance, String opensAt, int untilOpen, List<ShopMenu.Card> cards, String messageKey, String[] messageArgs) {
     public static void encode(ShopDataPacket m, FriendlyByteBuf buf) {
         buf.writeUtf(m.name, 64);
         buf.writeUtf(m.path, 128);
@@ -26,6 +26,8 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
         buf.writeLong(m.rotatesIn);
         buf.writeVarInt(m.page);
         buf.writeVarInt(m.pages);
+        buf.writeVarInt(m.columns);
+        buf.writeVarInt(m.rows);
         buf.writeLong(m.balance);
         buf.writeUtf(m.opensAt, 32);
         buf.writeVarInt(m.untilOpen);
@@ -53,7 +55,7 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
         boolean buyOnly = buf.readBoolean(), open = buf.readBoolean(), admin = buf.readBoolean();
         int offer = buf.readVarInt();
         long offerEnd = buf.readLong(), rotatesIn = buf.readLong();
-        int page = buf.readVarInt(), pages = buf.readVarInt();
+        int page = buf.readVarInt(), pages = buf.readVarInt(), columns = buf.readVarInt(), rows = buf.readVarInt();
         long balance = buf.readLong();
         String opensAt = buf.readUtf(32);
         int until = buf.readVarInt();
@@ -67,7 +69,7 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
         for (int i = 0; i < args.length; i++) {
             args[i] = buf.readUtf(64);
         }
-        return new ShopDataPacket(name, path, kind, buyOnly, open, admin, offer, offerEnd, rotatesIn, page, pages, balance, opensAt, until, cards, key, args);
+        return new ShopDataPacket(name, path, kind, buyOnly, open, admin, offer, offerEnd, rotatesIn, page, pages, columns, rows, balance, opensAt, until, cards, key, args);
     }
 
     public static void handle(ShopDataPacket msg, Supplier<NetworkEvent.Context> ctx) {

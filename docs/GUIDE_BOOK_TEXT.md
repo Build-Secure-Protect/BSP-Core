@@ -67,8 +67,9 @@ Work while the totem is in your **offhand**. Paid in experience levels.
 - Night Sight: see in the dark
 - Bouncy: bounce back up from a fall
 - X-ray: see ores through the walls for a while
+- Extra Homes, Swift Travel: more homes and quicker teleports with the pack's teleport mod
 
-The last two are described under Powers in Detail.
+Bouncy and X-ray are described under Powers in Detail.
 
 **Page 4: Base: walls**
 

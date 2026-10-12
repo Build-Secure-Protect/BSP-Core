@@ -39,7 +39,15 @@ public record DepositBoxActionPacket(boolean slots, int days, int tier) {
                                 return;
                             }
                         }
-                        DepositBoxMenu.sync(player, r.ok() ? "rented" : r.key(), new String[]{String.valueOf(msg.days), Bank.format(cost)});
+                        String[] args = {String.valueOf(msg.days), Bank.format(cost)};
+                        String okKey = "rented";
+                        if (r.ok() && msg.tier >= 0 && msg.tier < com.mrgregles.bsp_core.coin.CoinTier.values().length) {
+                            var tier = com.mrgregles.bsp_core.coin.CoinTier.values()[msg.tier];
+                            int n = DepositBox.coinsFor(cost, tier);
+                            okKey = "rented_coins";
+                            args = new String[]{String.valueOf(msg.days), String.valueOf(n), Bank.tierName(tier), Bank.format(n * Bank.piecesPerCoin(tier) - cost)};
+                        }
+                        DepositBoxMenu.sync(player, r.ok() ? okKey : r.key(), args);
                     });
                 }
             });

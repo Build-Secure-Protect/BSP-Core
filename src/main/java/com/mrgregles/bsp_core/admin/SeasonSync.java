@@ -143,6 +143,7 @@ public final class SeasonSync {
                 BSPCore.LOGGER.info("Season {} was ended on another server: removing totems here", ended);
                 AdminService.wipeTotems(server);
                 AdminService.announceSeason(server, ended, s.lastWinner, s.lastWinnerPoints);
+                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.SeasonEvent.Ended(server, ended, false, "network"));
             }
             if (prizes || newSeason) {
                 AdminService.prizesChanged(); // resend to this server's clients
@@ -168,7 +169,13 @@ public final class SeasonSync {
             }
             ServerPlayer player = server.getPlayerList().getPlayer(id);
             if (player != null) {
-                AdminService.giveItems(player, items, "message.bsp_core.season.delivery");
+                // a totem that travelled with a transferring player goes back into their hand; prizes and the like are added as before
+                List<ItemStack> totems = new ArrayList<>(), rest = new ArrayList<>();
+                items.forEach(stack -> (com.mrgregles.bsp_core.totem.TotemInventories.isTotem(stack) ? totems : rest).add(stack));
+                com.mrgregles.bsp_core.api.BspTransfer.handBack(player, totems, "message.bsp_core.transfer.arrived");
+                if (!rest.isEmpty()) {
+                    AdminService.giveItems(player, rest, "message.bsp_core.season.delivery");
+                }
             } else if (!items.isEmpty()) {
                 season.pendingItems.computeIfAbsent(id, k -> new ArrayList<>()).addAll(items); // they left in the meantime: keep it here for their next login
                 season.setDirty();

@@ -31,6 +31,8 @@ import java.util.Set;
 public class ZoneLedger extends SavedData {
     private static final String DATA_NAME = BSPCore.MODID + "_zones";
     public static final String TOTEM_PLACE = "totem_place", TOTEM_DROP = "totem_drop";
+    /** Teleport rules, enforced by the pack's teleport mod through {@code api.BspZones}: no teleporting into the zone, none out of it, no setting a home in it. */
+    public static final String TELEPORT_IN = "teleport_in", TELEPORT_OUT = "teleport_out", SET_HOME = "set_home";
     public static final int N = 0, S = 1, E = 2, W = 3, U = 4, D = 5, MAX = 256;
 
     /** One zone: the six distances and the rule keys it blocks. */

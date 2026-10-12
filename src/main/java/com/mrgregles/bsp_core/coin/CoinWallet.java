@@ -54,6 +54,20 @@ public final class CoinWallet {
         return true;
     }
 
+    /** Takes exactly {@code count} coins of one tier from the inventory; false (and nothing taken) when there are not enough. */
+    public static boolean take(Player player, CoinTier tier, int count) {
+        Inventory inv = player.getInventory();
+        if (count <= 0) {
+            return true;
+        }
+        if (inv.countItem(tier.coin()) < count) {
+            return false;
+        }
+        inv.clearOrCountMatchingItems(st -> st.is(tier.coin()), count, player.inventoryMenu.getCraftSlots());
+        player.inventoryMenu.broadcastChanges();
+        return true;
+    }
+
     /** Gives {@code value} as coins, largest tiers first. Any remainder smaller than the cheapest coin is lost. */
     public static void give(Player player, int value) {
         CoinTier[] tiers = CoinTier.values();

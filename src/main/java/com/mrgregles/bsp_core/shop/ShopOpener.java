@@ -68,7 +68,12 @@ public final class ShopOpener {
         long now = System.currentTimeMillis();
         boolean open = menu.hours == null || menu.hours.isOpen(player.level());
         List<Integer> shown = open ? Shops.visible(server, shop, now) : List.of();
-        int perPage = Shop.PER_PAGE, pages = Math.max(1, (shown.size() + perPage - 1) / perPage);
+        List<ShopItem> shownItems = new ArrayList<>();
+        for (int i : shown) {
+            shownItems.add(shop.item(i));
+        }
+        int columns = shop.effectiveColumns(shownItems), rows = shop.rows();
+        int perPage = columns * rows, pages = Math.max(1, (shown.size() + perPage - 1) / perPage);
         page = Math.max(0, Math.min(page, pages - 1));
         List<ShopMenu.Card> cards = new ArrayList<>();
         for (int k = page * perPage; k < Math.min(shown.size(), (page + 1) * perPage); k++) {
@@ -91,6 +96,6 @@ public final class ShopOpener {
         }
         boolean admin = Admins.isAdmin(player) || Admins.isModerator(player);
         BSPNetwork.sendTo(player, new ShopDataPacket(shop.name, path.toString(), shop.kind, shop.buyOnly, open, admin, shop.offerActive(now) ? shop.offerPercent : 0, shop.offerEndMs, rotatesIn,
-                page, pages, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args));
+                page, pages, columns, rows, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args));
     }
 }

@@ -28,7 +28,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A,
             PHOS_DIM = 0x3FB97A, AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, CARD = 0xFF0A1A10, CARD_SEL = 0xFF0F2D1C, CARD_OUT = 0xFF070D09;
-    private static final int SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20, KGAP = 4, STRIP_Y = 180, STRIP_H = 22, CX = SX + 6, CY = SY + 22, CW = 28, CH = 42, CGAP = 1;
+    private static final int SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20, KGAP = 4, STRIP_Y = 180, STRIP_H = 22, CX = SX + 6, CY = SY + 22, CGAP = 1;
 
     private enum View { PAGE, QTY }
 
@@ -62,6 +62,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             menu.rotatesIn = m.rotatesIn();
             menu.page = m.page();
             menu.pages = m.pages();
+            menu.columns = Math.max(1, m.columns());
+            menu.rows = Math.max(1, m.rows());
             menu.balance = m.balance();
             menu.opensAt = m.opensAt();
             menu.untilOpen = m.untilOpen();
@@ -186,8 +188,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         }
         if (view == View.PAGE && menu.open) {
             for (int k = 0; k < menu.cards.size(); k++) {
-                int cx = x + CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = y + CY + (k / Shop.COLUMNS) * (CH + CGAP);
-                if (over(mx, my, cx, cy, CW, CH)) {
+                int cx = x + CX + (k % menu.columns) * (cw() + CGAP), cy = y + CY + (k / menu.columns) * (ch() + CGAP);
+                if (over(mx, my, cx, cy, cw(), ch())) {
                     ShopMenu.Card c = menu.cards.get(k);
                     click();
                     if (!c.section().isEmpty()) {
@@ -234,8 +236,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         super.render(g, mx, my, partial);
         if (view == View.PAGE && menu.open) {
             for (int k = 0; k < menu.cards.size(); k++) {
-                int cx = leftPos + CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = topPos + CY + (k / Shop.COLUMNS) * (CH + CGAP);
-                if (over(mx, my, cx, cy, CW, CH)) {
+                int cx = leftPos + CX + (k % menu.columns) * (cw() + CGAP), cy = topPos + CY + (k / menu.columns) * (ch() + CGAP);
+                if (over(mx, my, cx, cy, cw(), ch())) {
                     ShopMenu.Card c = menu.cards.get(k);
                     List<Component> tip = new ArrayList<>(getTooltipFromItem(minecraft, c.stack()));
                     if (!c.section().isEmpty()) {
@@ -275,13 +277,13 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         if (view == View.PAGE && menu.open) {
             for (int k = 0; k < menu.cards.size(); k++) {
                 ShopMenu.Card c = menu.cards.get(k);
-                int cx = x + CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = y + CY + (k / Shop.COLUMNS) * (CH + CGAP);
+                int cx = x + CX + (k % menu.columns) * (cw() + CGAP), cy = y + CY + (k / menu.columns) * (ch() + CGAP);
                 boolean out = c.stock() == 0;
-                g.fill(cx, cy, cx + CW, cy + CH, out ? CARD_OUT : over(mx, my, cx, cy, CW, CH) ? CARD_SEL : CARD);
-                g.fill(cx, cy, cx + CW, cy + 1, out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
-                g.fill(cx, cy + CH - 1, cx + CW, cy + CH, out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
-                g.renderItem(c.stack(), cx + 6, cy + 3);
-                g.renderItemDecorations(font, c.stack(), cx + 6, cy + 3);
+                g.fill(cx, cy, cx + cw(), cy + ch(), out ? CARD_OUT : over(mx, my, cx, cy, cw(), ch()) ? CARD_SEL : CARD);
+                g.fill(cx, cy, cx + cw(), cy + 1, out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
+                g.fill(cx, cy + ch() - 1, cx + cw(), cy + ch(), out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
+                g.renderItem(c.stack(), cx + cw() / 2 - 8, cy + iconY());
+                g.renderItemDecorations(font, c.stack(), cx + cw() / 2 - 8, cy + iconY());
             }
         }
         int ky = y + SY;
@@ -350,13 +352,13 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             }
             for (int k = 0; k < menu.cards.size(); k++) {
                 ShopMenu.Card c = menu.cards.get(k);
-                int cx = CX + (k % Shop.COLUMNS) * (CW + CGAP), cy = CY + (k / Shop.COLUMNS) * (CH + CGAP);
-                small(g, c.section().isEmpty() ? (c.buy() >= 0 ? "buy " + Bank.format(c.buy()) + unit(c.currency()) : "--") : "> open", cx + 2, cy + 22, c.buy() >= 0 ? AMBER : PHOS_DIM);
+                int cx = CX + (k % menu.columns) * (cw() + CGAP), cy = CY + (k / menu.columns) * (ch() + CGAP);
+                small(g, c.section().isEmpty() ? (c.buy() >= 0 ? Shop.priceLabel("buy", c.buy(), c.currency()) : "--") : "> open", cx + 2, cy + labelY(), c.buy() >= 0 ? AMBER : PHOS_DIM);
                 if (c.section().isEmpty()) {
-                    small(g, c.sell() >= 0 ? "sell " + Bank.format(c.sell()) + unit(c.currency()) : "", cx + 2, cy + 30, PHOS_DIM);
+                    small(g, c.sell() >= 0 ? Shop.priceLabel("sell", c.sell(), c.currency()) : "", cx + 2, cy + labelY() + 7, PHOS_DIM);
                 }
                 if (c.stock() >= 0) {
-                    small(g, c.stock() == 0 ? "OUT" : String.valueOf(c.stock()), cx + CW - 3 - (int) (font.width(c.stock() == 0 ? "OUT" : String.valueOf(c.stock())) * 0.75f), cy + 2, c.stock() == 0 ? RED : PHOS);
+                    small(g, c.stock() == 0 ? "OUT" : String.valueOf(c.stock()), cx + cw() - 3 - (int) (font.width(c.stock() == 0 ? "OUT" : String.valueOf(c.stock())) * 0.75f), cy + 2, c.stock() == 0 ? RED : PHOS);
                 }
                 if (c.instant()) {
                     small(g, "*", cx + 2, cy + 2, AMBER);
@@ -373,10 +375,29 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
         }
     }
 
+    /** Card size from the shop's layout: cards per row and rows per page. */
+    private int cw() {
+        return (SW - 12 - (menu.columns - 1) * CGAP) / menu.columns;
+    }
+
+    private int ch() {
+        return menu.rows >= 3 ? 36 : 56;
+    }
+
+    private int iconY() {
+        return menu.rows >= 3 ? 3 : 10;
+    }
+
+    private int labelY() {
+        return menu.rows >= 3 ? 21 : 32;
+    }
+
+    /** Small (three-quarter) text, shrunk further if it would leave the card. */
     private void small(GuiGraphics g, String s, int x, int y, int colour) {
+        float scale = Math.min(0.75f, (cw() - 4) / (float) Math.max(1, font.width(s)));
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
-        g.pose().scale(0.75f, 0.75f, 1f);
+        g.pose().scale(scale, scale, 1f);
         g.drawString(font, s, 0, 0, colour, false);
         g.pose().popPose();
     }

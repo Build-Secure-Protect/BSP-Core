@@ -32,7 +32,13 @@ public final class RecallService {
     }
 
     private static final Map<UUID, Offer> OFFERS = new HashMap<>();
+    /** Owners offered a Recall while on another server: the offer waits here for their arrival. */
+    private static final java.util.Set<UUID> REMOTE = new java.util.HashSet<>();
+    /** Arrivals to finish: the owner logged in here with a remote offer open; the teleport runs once they are fully in. */
+    private static final Map<UUID, Long> ARRIVING = new HashMap<>();
     private static final String TAG_READY = "RecallReadyAt";
+    /** Extra seconds a remote offer stays open on top of the prompt time, for the server transfer. */
+    private static final int REMOTE_EXTRA_SECONDS = 90;
 
     private RecallService() {}
 
@@ -43,7 +49,11 @@ public final class RecallService {
     /** Makes the offer to {@code owner} for the totem at {@code pos} if they are online, far enough away and not resting. */
     public static void offer(ServerLevel level, BlockPos pos, UUID owner, int recallLevel) {
         ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
-        if (player == null || recallLevel <= 0) {
+        if (recallLevel <= 0) {
+            return;
+        }
+        if (player == null) {
+            offerRemote(level, pos, owner, recallLevel);
             return;
         }
         int r = radius(recallLevel);
@@ -59,6 +69,48 @@ public final class RecallService {
         OFFERS.put(owner, new Offer(level, pos.immutable(), r, level.getGameTime() + seconds * 20L));
         double dist = player.level() == level ? Math.sqrt(player.blockPosition().distSqr(pos)) : -1;
         BSPNetwork.sendTo(player, new RecallOfferPacket(pos, level.dimension().location().toString(), seconds, (int) dist, r));
+    }
+
+    /**
+     * The owner is not on this server: the offer waits here for them, and on a network they get a
+     * clickable message wherever they are; clicking it runs {@code /bsp recall <this server>},
+     * which asks a teleport mod to bring them (see {@link com.mrgregles.bsp_core.api.event.RecallEvent}).
+     */
+    private static void offerRemote(ServerLevel level, BlockPos pos, UUID owner, int recallLevel) {
+        int seconds = BSPConfig.getOr(BSPConfig.RECALL_PROMPT_SECONDS, 20) + REMOTE_EXTRA_SECONDS;
+        OFFERS.put(owner, new Offer(level, pos.immutable(), radius(recallLevel), level.getGameTime() + seconds * 20L));
+        REMOTE.add(owner);
+        if (!com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
+            return;
+        }
+        String here = BSPConfig.STORAGE_SERVER_ID.get();
+        Component offer = Component.translatable("message.bsp_core.recall.remote", here, seconds)
+                .withStyle(st -> st.withColor(ChatFormatting.AQUA).withUnderlined(true)
+                        .withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND, "/bsp recall " + here)));
+        com.mrgregles.bsp_core.storage.NetworkStorage.tell(level.getServer(), owner, offer);
+        BSPCore.LOGGER.info("Recall offered to {} on another server for the totem at {}", owner, pos);
+    }
+
+    public static boolean hasRemoteOffer(UUID owner) {
+        return REMOTE.contains(owner) && OFFERS.containsKey(owner);
+    }
+
+    /** The owner clicked the remote offer on the server they are on: a teleport mod is asked to take them to {@code targetServer}. */
+    public static boolean acceptRemote(net.minecraft.world.entity.player.Player player, String targetServer) {
+        var event = new com.mrgregles.bsp_core.api.event.RecallEvent.CrossServer(player, targetServer);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event);
+        player.displayClientMessage(Component.translatable(event.isHandled() ? "message.bsp_core.recall.remote_going" : "message.bsp_core.recall.remote_none", targetServer)
+                .withStyle(event.isHandled() ? ChatFormatting.AQUA : ChatFormatting.RED), false);
+        return event.isHandled();
+    }
+
+    /** An owner with a remote offer arrived on this server: finish the Recall once they are fully in. */
+    @SubscribeEvent
+    public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        UUID id = event.getEntity().getUUID();
+        if (REMOTE.remove(id) && OFFERS.containsKey(id)) {
+            ARRIVING.put(id, event.getEntity().level().getGameTime() + 40);
+        }
     }
 
     /** The owner pressed accept (or decline). */
@@ -92,8 +144,25 @@ public final class RecallService {
 
     @SubscribeEvent
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
-        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && event.getServer().getTickCount() % 20 == 0) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) {
+            return;
+        }
+        if (!ARRIVING.isEmpty()) {
+            long now = event.getServer().overworld().getGameTime();
+            for (Map.Entry<UUID, Long> e : new java.util.ArrayList<>(ARRIVING.entrySet())) {
+                if (now < e.getValue()) {
+                    continue;
+                }
+                ARRIVING.remove(e.getKey());
+                ServerPlayer player = event.getServer().getPlayerList().getPlayer(e.getKey());
+                if (player != null) {
+                    answer(player, true);
+                }
+            }
+        }
+        if (event.getServer().getTickCount() % 20 == 0) {
             OFFERS.entrySet().removeIf(e -> e.getValue().level.getGameTime() > e.getValue().expiresAt);
+            REMOTE.removeIf(id -> !OFFERS.containsKey(id));
         }
     }
 }

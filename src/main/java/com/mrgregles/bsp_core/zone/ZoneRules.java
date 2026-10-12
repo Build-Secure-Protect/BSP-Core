@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * The things an Anti Totem zone can keep out, in the order its settings screen lists them. The two
- * totem rules come first; then every BSP block, read from the registry, so a block added to the
+ * totem rules come first, then the three teleport rules (read by the pack's teleport mod); then every BSP block, read from the registry, so a block added to the
  * mod later appears here by itself. Blocks with a block entity count as machines.
  */
 public final class ZoneRules {
@@ -23,6 +23,16 @@ public final class ZoneRules {
 
     public static List<String> totems() {
         return List.of(ZoneLedger.TOTEM_PLACE, ZoneLedger.TOTEM_DROP);
+    }
+
+    /** The teleport rules a teleport mod asks about; off on a new block. */
+    public static List<String> teleport() {
+        return List.of(ZoneLedger.TELEPORT_IN, ZoneLedger.TELEPORT_OUT, ZoneLedger.SET_HOME);
+    }
+
+    /** A rule with its own wording (not a block of the mod). */
+    public static boolean isRule(String key) {
+        return totems().contains(key) || teleport().contains(key);
     }
 
     private static List<String> blocks(boolean machines) {
@@ -53,6 +63,6 @@ public final class ZoneRules {
     }
 
     public static boolean known(String key) {
-        return totems().contains(key) || machines().contains(key) || others().contains(key);
+        return isRule(key) || machines().contains(key) || others().contains(key);
     }
 }

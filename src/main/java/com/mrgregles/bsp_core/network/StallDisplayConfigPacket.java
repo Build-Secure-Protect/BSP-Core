@@ -1,9 +1,9 @@
 package com.mrgregles.bsp_core.network;
 
 import com.mrgregles.bsp_core.admin.Admins;
-import com.mrgregles.bsp_core.shop.StallDisplayBlock;
 import com.mrgregles.bsp_core.shop.StallDisplayBlockEntity;
 import com.mrgregles.bsp_core.shop.StallDisplayMenu;
+import com.mrgregles.bsp_core.shop.StallSkin;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -11,11 +11,12 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * Client → server: one change to a Stall Display from its settings screen. Applied at once so the
- * admin can step out and look; LINK closes the screen and waits for the click on the post or stall.
+ * Client → server: one change to a Stall Display from its screen. Applied at once so the admin can
+ * step out and look; SHOP (an index into the menu's shop list) and UNLINK reopen the screen with
+ * the new shop's items.
  */
 public record StallDisplayConfigPacket(Action action, int value) {
-    public enum Action { INTERVAL, PIN, SCALE, HEIGHT, RESET, LINK, UNLINK }
+    public enum Action { INTERVAL, PIN, SCALE, HEIGHT, RESET, SHOP, UNLINK, SKIN }
 
     public static void encode(StallDisplayConfigPacket m, FriendlyByteBuf buf) {
         buf.writeEnum(m.action);
@@ -43,11 +44,21 @@ public record StallDisplayConfigPacket(Action action, int value) {
                         display.heightPct = 0;
                         display.intervalSec = 0;
                     }
-                    case LINK -> {
+                    case SKIN -> display.setSkin(StallSkin.values()[Math.floorMod(msg.value, StallSkin.values().length)]);
+                    case SHOP -> {
+                        if (msg.value >= 0 && msg.value < menu.shops.size()) {
+                            display.linkShop(menu.shops.get(msg.value)[0]);
+                        }
                         player.closeContainer();
-                        StallDisplayBlock.startLinking(player, display);
+                        StallDisplayMenu.open(player, display);
+                        return;
                     }
-                    case UNLINK -> display.unlink();
+                    case UNLINK -> {
+                        display.unlink();
+                        player.closeContainer();
+                        StallDisplayMenu.open(player, display);
+                        return;
+                    }
                 }
                 display.refreshNow();
             });

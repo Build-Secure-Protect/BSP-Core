@@ -32,7 +32,7 @@ public class ShopMenu extends AbstractContainerMenu {
     public String name = "", path = "";
     public Shop.Kind kind = Shop.Kind.SHOP;
     public boolean buyOnly, open = true, admin;
-    public int offerPercent, page, pages = 1, untilOpen;
+    public int offerPercent, page, pages = 1, untilOpen, columns = 7, rows = 3;
     public long offerEnd, rotatesIn, balance;
     public String opensAt = "";
     public final List<Card> cards = new ArrayList<>();

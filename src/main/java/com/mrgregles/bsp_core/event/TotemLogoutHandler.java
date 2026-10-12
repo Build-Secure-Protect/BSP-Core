@@ -18,8 +18,8 @@ import java.util.List;
  * next to where they stood (or at their last main-dimension position), so it can still be stolen.
  *
  * <p>Forge fires this event before the player's data is saved, so the removal persists. A server
- * switch inside a network looks identical to a logout; the cross-server transfer prompt is a
- * Phase 4 feature that needs the shared database.
+ * switch inside a network looks identical to a logout, unless a teleport mod announced it through
+ * {@link com.mrgregles.bsp_core.api.BspTransfer}: then the totem travels through the database instead.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class TotemLogoutHandler {
@@ -32,6 +32,15 @@ public final class TotemLogoutHandler {
         }
         List<ItemStack> totems = TotemInventories.removeAll(player);
         totems.addAll(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(player)); // left while dead in an Anti Totem zone
+        List<ItemStack> transferring = com.mrgregles.bsp_core.api.BspTransfer.takeOnLogout(player.getUUID());
+        if (transferring != null) {
+            // a server transfer announced by a teleport mod: totems in the database travel with the player; any held here are placed as usual
+            totems.addAll(transferring);
+            if (totems.isEmpty()) {
+                BSPCore.LOGGER.info("{} left for another server; their totem travels with them", player.getGameProfile().getName());
+                return;
+            }
+        }
         if (totems.isEmpty()) {
             return;
         }

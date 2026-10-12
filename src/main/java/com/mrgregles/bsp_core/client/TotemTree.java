@@ -172,6 +172,8 @@ public final class TotemTree {
             case OVERCLOCK -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.OVERCLOCK_BONUS.get(), level, 0.0)));
             case LOCKPICK -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.LOCKPICK_SECONDS.get(), level, 0));
             case SHROUD -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.SHROUD_SECONDS.get(), level, 0));
+            case EXTRA_HOMES -> Component.translatable(key, level);
+            case SWIFT_TRAVEL -> Component.translatable(key, level * 25);
             case ANCHOR -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.chunksAt(level));
             case SURVEY -> Component.translatable(key, com.mrgregles.bsp_core.chunk.ChunkLoading.radiusAt(level) * 2 + 1);
             case OUTPUT -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.PLASMA_OUTPUT, java.util.List.<Integer>of()), level + 1, 100));

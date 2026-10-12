@@ -283,6 +283,19 @@ public final class Bank {
         }
     }
 
+    /** How many coins, and of which tier, the Shopping Network unlock costs (config; an unknown tier name means Netherite). */
+    public static int remoteUnlockCoins() {
+        return BSPConfig.getOr(BSPConfig.BANK_REMOTE_UNLOCK_COINS, 12);
+    }
+
+    public static com.mrgregles.bsp_core.coin.CoinTier remoteUnlockTier() {
+        try {
+            return com.mrgregles.bsp_core.coin.CoinTier.valueOf(BSPConfig.BANK_REMOTE_UNLOCK_TIER.get().trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
+            return com.mrgregles.bsp_core.coin.CoinTier.NETHERITE;
+        }
+    }
+
     /** Buys the Shopping Network for the player's Portable Banker with coins from their inventory. Fails with "already" or "coins_unlock". */
     public static void unlockRemote(MinecraftServer server, Player player, Consumer<BankResult> then) {
         UUID id = player.getUUID();
@@ -290,13 +303,14 @@ public final class Bank {
             then.accept(BankResult.fail("already"));
             return;
         }
-        int cost = BSPConfig.getOr(BSPConfig.BANK_REMOTE_UNLOCK_VALUE, 16);
-        if (!com.mrgregles.bsp_core.coin.CoinWallet.pay(player, cost)) {
+        int count = remoteUnlockCoins();
+        com.mrgregles.bsp_core.coin.CoinTier tier = remoteUnlockTier();
+        if (!com.mrgregles.bsp_core.coin.CoinWallet.take(player, tier, count)) {
             then.accept(BankResult.fail("coins_unlock"));
             return;
         }
         setRemoteShops(server, id, true);
-        record(server, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.FEE, "Shatter Bank", "Shopping Network unlocked for coin value " + cost, 0, -1, 0, serverId()));
+        record(server, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.FEE, "Shatter Bank", "Shopping Network unlocked", 0, tier.ordinal(), -count, serverId()));
         then.accept(BankResult.ok(account(server, id).pieces));
     }
 

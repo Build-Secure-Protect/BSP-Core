@@ -114,6 +114,7 @@ Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the 
 - [ ] A totem upgraded before this change (in hand or placed) shows Tier I with no levels after loading; a totem upgraded under the new system keeps everything across relog, pick-up and placing.
 - [ ] Right-click with the totem in hand: rings I to IV around the totem, five spokes. At Tier I only Mining Speed, Damage, Fortify and Healing Aura are outlined; everything else is dark. The wallet row shows XP and a count for each of the five coins.
 - [ ] The panel shows the selected upgrade's level, NOW and NEXT, and the price as a coin icon with a count plus XP. A Tier I level costs Copper coins.
+- [ ] On the Home spoke, after Healing Aura: Extra Homes (Tier II) and then Swift Travel (Tier III), three levels each, at Carried prices with half the XP; the panel reads "+1 home slot(s) in the pack's teleport mod" and "-25% teleport cooldown in the pack's teleport mod". They change nothing in BSP-Core itself; the teleport mod reads their levels.
 - [ ] After two levels the panel says the Tier I limit is reached. "Raise" costs 4 Copper coins and 15 XP levels; afterwards the centre reads II, ring II lights, and levels 3 and 4 cost Gold coins.
 - [ ] Swiftness opens only once Mining Speed is level 2 and the totem is Tier II; before that the panel says what is needed. The same along every path.
 - [ ] With too few of the right coin the reason names the coin and number; other coins are not accepted in its place.
@@ -485,6 +486,7 @@ Blocks: Shatter Coin Factory Controller, Factory Frame x2, Factory Press, Factor
 - [ ] Logging out inside the zone with a totem: the totem is placed just outside the nearest side of the zone, on the surface.
 - [ ] A totem dropped just outside that slides or is thrown in places itself outside the zone when its timer runs out.
 - [ ] Settings and zones survive a restart, and still apply when the Anti Totem Block's own chunk is not loaded (test with a 200-block zone, standing far from the block).
+- [ ] The Rules tab lists a "Teleports (the pack's teleport mod)" group under Totems with three rules, all "allowed" on a new block; switch them to BLOCKED and back; they save with the zone. (What they do is the teleport mod's to test.)
 
 ## Decoy Totems
 

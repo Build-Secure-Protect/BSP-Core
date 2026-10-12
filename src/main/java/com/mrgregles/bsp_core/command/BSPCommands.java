@@ -72,6 +72,12 @@ public final class BSPCommands {
                                         .executes(ctx -> setTier(ctx.getSource(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "tier")))))
                         .then(Commands.literal("recloak").executes(ctx -> recloak(ctx.getSource()))))
                 // testing: an operator may choose to be treated like any outsider by Cloaking
+                .then(Commands.literal("recall")
+                        .then(Commands.argument("server", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .executes(ctx -> {
+                                    com.mrgregles.bsp_core.totem.RecallService.acceptRemote(ctx.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "server"));
+                                    return 1;
+                                })))
                 .then(Commands.literal("cloak").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("see")
                                 .executes(ctx -> cloakSee(ctx.getSource(), null))

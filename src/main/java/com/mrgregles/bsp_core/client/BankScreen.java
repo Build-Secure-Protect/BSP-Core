@@ -38,13 +38,18 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
 
     private enum View { ACCOUNT, PAY, LOG, DEPOSIT, WITHDRAW }
 
-    private record Key(String label, boolean enabled, Runnable action) {}
+    /** A key; {@code selected} draws it green (the mode that is on); with {@code label2} it is two half keys side by side. */
+    private record Key(String label, boolean enabled, Runnable action, boolean selected, @Nullable String label2, @Nullable Runnable action2) {
+        Key(String label, boolean enabled, Runnable action) {
+            this(label, enabled, action, false, null, null);
+        }
+    }
 
     private View view = View.ACCOUNT;
-    private final List<Key> top = new ArrayList<>(), bottom = new ArrayList<>();
+    private final List<Key> top = new ArrayList<>(), middle = new ArrayList<>(), bottom = new ArrayList<>();
     private EditBox nameBox, amountBox, searchBox;
     private int filter, page, tier, count = 1, lastSerial = -1;
-    private boolean sortByAmount, convert = true, confirming;
+    private boolean sortByAmount, convert, confirming, confirmingConvert;
     private String confirmName = "";
     private long confirmAmount;
     private Component message = Component.empty();
@@ -102,11 +107,13 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
     private void setView(View v) {
         view = v;
         confirming = false;
+        confirmingConvert = false;
         nameBox.setVisible(v == View.PAY);
         amountBox.setVisible(v == View.PAY);
         searchBox.setVisible(v == View.LOG);
         setFocused(null);
         top.clear();
+        middle.clear();
         bottom.clear();
         boolean portable = menu.portable();
         switch (v) {
@@ -137,14 +144,34 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             case DEPOSIT, WITHDRAW -> {
                 top.add(new Key("back", true, () -> setView(View.ACCOUNT)));
                 if (v == View.DEPOSIT) {
-                    top.add(new Key(convert ? "convert" : "keep", true, () -> { convert = !convert; setView(View.DEPOSIT); }));
+                    // the two modes, the one that is on lit green; depositing is the default so nobody converts by accident
+                    middle.add(new Key("deposit_mode", true, () -> { convert = false; setView(View.DEPOSIT); }, !convert, null, null));
+                    middle.add(new Key("convert_mode", true, () -> { convert = true; setView(View.DEPOSIT); }, convert, null, null));
                 }
-                bottom.add(new Key("minus", true, () -> count = Math.max(1, count - 1)));
-                bottom.add(new Key("plus", true, () -> count = Math.min(available(), count + 1)));
+                bottom.add(new Key("minus", true, () -> count = Math.max(1, count - 1), false, "plus", () -> count = Math.min(available(), count + 1)));
                 bottom.add(new Key("all", true, () -> count = Math.max(1, available())));
-                bottom.add(new Key("confirm", available() > 0, () -> send(v == View.DEPOSIT ? BankActionPacket.Action.DEPOSIT : BankActionPacket.Action.WITHDRAW, tier, count, "", 0, convert)));
+                bottom.add(new Key("confirm", available() > 0, this::confirmCoins));
             }
         }
+    }
+
+    /** Deposits or withdraws the chosen coins; converting asks once more first, since it cannot be undone. */
+    private void confirmCoins() {
+        CoinTier t = CoinTier.values()[tier];
+        if (view == View.DEPOSIT && convert && !confirmingConvert) {
+            confirmingConvert = true;
+            message = tr("convert_confirm", count, Bank.tierName(t), Bank.format(Bank.piecesPerCoin(t) * count));
+            messageColour = 0xFF6B5C;
+            bottom.clear();
+            bottom.add(new Key("confirm", true, this::confirmCoins));
+            bottom.add(new Key("cancel", true, () -> { message = Component.empty(); setView(View.DEPOSIT); }));
+            return;
+        }
+        send(view == View.DEPOSIT ? BankActionPacket.Action.DEPOSIT : BankActionPacket.Action.WITHDRAW, tier, count, "", 0, convert);
+    }
+
+    private int middleY() {
+        return topPos + SY + top.size() * (KH + KGAP) + 14;
     }
 
     private int available() {
@@ -261,28 +288,8 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int x = leftPos, y = topPos;
-        int ky = y + SY;
-        for (Key k : top) {
-            if (over(mx, my, x + KX, ky, KW, KH)) {
-                if (k.enabled) {
-                    click();
-                    k.action.run();
-                }
-                return true;
-            }
-            ky += KH + KGAP;
-        }
-        ky = y + SY + SH - KH;
-        for (int i = bottom.size() - 1; i >= 0; i--) {
-            Key k = bottom.get(i);
-            if (over(mx, my, x + KX, ky, KW, KH)) {
-                if (k.enabled) {
-                    click();
-                    k.action.run();
-                }
-                return true;
-            }
-            ky -= KH + KGAP;
+        if (clickKeys(top, y + SY, false, mx, my) || clickKeys(middle, middleY(), false, mx, my) || clickKeys(bottom, y + SY + SH - KH, true, mx, my)) {
+            return true;
         }
         if (view == View.PAY) {
             for (int i = 0; i < Math.min(5, menu.found.size()); i++) {
@@ -317,6 +324,39 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             }
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    /** Clicks in a key group laid out from {@code startY} downwards (or upwards from the last key); a split key takes its half. */
+    private boolean clickKeys(List<Key> keys, int startY, boolean upward, double mx, double my) {
+        int x = leftPos + KX, ky = startY;
+        for (int n = 0; n < keys.size(); n++) {
+            Key k = upward ? keys.get(keys.size() - 1 - n) : keys.get(n);
+            if (over(mx, my, x, ky, KW, KH)) {
+                Runnable action = k.label2 != null && mx >= x + KW / 2 ? k.action2 : k.action;
+                if (k.enabled && action != null) {
+                    click();
+                    action.run();
+                }
+                return true;
+            }
+            ky += upward ? -(KH + KGAP) : KH + KGAP;
+        }
+        return false;
+    }
+
+    private void drawKeys(GuiGraphics g, List<Key> keys, int startY, boolean upward, int mx, int my) {
+        int x = leftPos + KX, ky = startY;
+        for (int n = 0; n < keys.size(); n++) {
+            Key k = upward ? keys.get(keys.size() - 1 - n) : keys.get(n);
+            if (k.label2 == null) {
+                CashMachine.key(g, font, x, ky, KW, KH, tr(k.label).getString(), k.enabled, k.enabled && over(mx, my, x, ky, KW, KH), k.selected);
+            } else {
+                int hw = KW / 2 - 1;
+                CashMachine.key(g, font, x, ky, hw, KH, tr(k.label).getString(), k.enabled, k.enabled && over(mx, my, x, ky, hw, KH));
+                CashMachine.key(g, font, x + KW - hw, ky, hw, KH, tr(k.label2).getString(), k.enabled, k.enabled && over(mx, my, x + KW - hw, ky, hw, KH));
+            }
+            ky += upward ? -(KH + KGAP) : KH + KGAP;
+        }
     }
 
     private void click() {
@@ -361,16 +401,9 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             g.fill(x + SX, ly, x + SX + SW, ly + 1, 0x14000000);
         }
         // keys
-        int ky = y + SY;
-        for (Key k : top) {
-            key(g, x + KX, ky, k, mx, my);
-            ky += KH + KGAP;
-        }
-        ky = y + SY + SH - KH;
-        for (int i = bottom.size() - 1; i >= 0; i--) {
-            key(g, x + KX, ky, bottom.get(i), mx, my);
-            ky -= KH + KGAP;
-        }
+        drawKeys(g, top, y + SY, false, mx, my);
+        drawKeys(g, middle, middleY(), false, mx, my);
+        drawKeys(g, bottom, y + SY + SH - KH, true, mx, my);
         // status strip
         g.fill(x + SX - 2, y + STRIP_Y - 2, x + W - SX + 2, y + STRIP_Y + STRIP_H + 2, SCREEN_EDGE);
         g.fill(x + SX, y + STRIP_Y, x + W - SX, y + STRIP_Y + STRIP_H, SCREEN);
@@ -378,10 +411,6 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         g.drawString(font, where + " / " + Bank.serverId(), x + SX + 6, y + STRIP_Y + 7, PHOS_DIM, false);
         String synced = tr("synced").getString();
         g.drawString(font, synced, x + W - SX - 6 - font.width(synced), y + STRIP_Y + 7, PHOS_DIM, false);
-    }
-
-    private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
-        CashMachine.key(g, font, x, y, KW, KH, tr(k.label).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     @Override
@@ -420,7 +449,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         coinRow(g, SY + 58, true);
         int hy = SY + 100 + CashMachine.wrap(g, font, tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SX + 8, SY + 100, SW - 16, PHOS_DIM);
         if (menu.portable()) {
-            CashMachine.wrap(g, font, tr(account().remoteShops ? "network_open" : "network_locked", com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.BANK_REMOTE_UNLOCK_VALUE, 16)), SX + 8, hy + 3, SW - 16, AMBER);
+            CashMachine.wrap(g, font, tr(account().remoteShops ? "network_open" : "network_locked", Bank.remoteUnlockCoins(), Bank.tierName(Bank.remoteUnlockTier())), SX + 8, hy + 3, SW - 16, AMBER);
         }
     }
 

@@ -61,7 +61,7 @@ public class VendorScreen extends AbstractContainerScreen<VendorMenu> {
     protected void init() {
         super.init();
         openBox = box(SX + 70, SY + 108, fmt(menu.hours.openMin()));
-        closeBox = box(SX + 150, SY + 108, fmt(menu.hours.closeMin()));
+        closeBox = box(SX + 154, SY + 108, fmt(menu.hours.closeMin()));
     }
 
     private EditBox box(int x, int y, String value) {
@@ -193,7 +193,7 @@ public class VendorScreen extends AbstractContainerScreen<VendorMenu> {
             ky -= KH + KGAP;
         }
         g.fill(x + SX + 66, y + SY + 118, x + SX + 122, y + SY + 119, SCREEN_EDGE);
-        g.fill(x + SX + 146, y + SY + 118, x + SX + 202, y + SY + 119, SCREEN_EDGE);
+        g.fill(x + SX + 152, y + SY + 118, x + SX + 204, y + SY + 119, SCREEN_EDGE);
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
@@ -214,7 +214,7 @@ public class VendorScreen extends AbstractContainerScreen<VendorMenu> {
         }
         g.fill(SX + 4, SY + 102, SX + SW - 4, SY + 103, SCREEN_EDGE);
         g.drawString(font, tr("open"), SX + 8, SY + 108, PHOS_DIM, false);
-        g.drawString(font, tr("close"), SX + 126, SY + 108, PHOS_DIM, false);
+        CashMachine.fit(g, font, tr("close").getString(), SX + 112, SY + 108, 38, PHOS_DIM);
         CashMachine.wrap(g, font, tr("mode_" + mode.name().toLowerCase(Locale.ROOT)), SX + 8, SY + 122, SW - 16, AMBER);
         if (menu.skin >= 0) {
             var skin = com.mrgregles.bsp_core.shop.StallSkin.values()[skinIndex];
@@ -223,6 +223,6 @@ public class VendorScreen extends AbstractContainerScreen<VendorMenu> {
             String mob = VendorMenu.MOBS[mobIndex].replace("minecraft:", "").replace('_', ' ');
             CashMachine.fit(g, font, tr("figure", mob + (VendorMenu.MOBS[mobIndex].endsWith("villager") && profIndex > 0 ? ", " + VendorMenu.PROFESSIONS[profIndex] : "")).getString(), SX + 8, SY + 142, SW - 16, PHOS);
         }
-        CashMachine.wrap(g, font, tr(shopId.isEmpty() ? (menu.skin >= 0 ? "unassigned_stall" : "unassigned") : "assigned", shopId), SX + 8, SY + 153, SW - 16, shopId.isEmpty() ? 0xFF6B5C : PHOS_DIM);
+        CashMachine.wrap(g, font, tr(shopId.isEmpty() ? (menu.skin >= 0 ? "unassigned_stall" : "unassigned") : "assigned", shopId), SX + 8, SY + 152, SW - 16, shopId.isEmpty() ? 0xFF6B5C : PHOS_DIM);
     }
 }

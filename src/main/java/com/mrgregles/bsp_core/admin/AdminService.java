@@ -378,6 +378,10 @@ public final class AdminService {
 
     /** Ends the season: see the class comment. Returns how many players are online to get their fresh totem at once. */
     public static int endSeason(MinecraftServer server, String by) {
+        return endSeason(server, by, false);
+    }
+
+    private static int endSeason(MinecraftServer server, String by, boolean fullReset) {
         SeasonData season = SeasonData.get(server);
         // on a network the standings are the whole network's board
         List<ScoreService.Entry> standings = NetworkStorage.enabled() ? ScoreService.board() : ScoreService.local(server);
@@ -409,6 +413,7 @@ public final class AdminService {
         SeasonSync.publish(server); // the other servers of a network pick the new season up and wipe their own totems
         announceSeason(server, ended, season.lastWinner, season.lastWinnerPoints);
         BSPCore.LOGGER.info("Season {} ended by {}. Winner: {} ({} points).", ended, by, season.lastWinner, season.lastWinnerPoints);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.SeasonEvent.Ended(server, ended, fullReset, by));
         return server.getPlayerList().getPlayerCount();
     }
 
@@ -450,7 +455,7 @@ public final class AdminService {
     public static int fullReset(MinecraftServer server, String by) {
         BSPCore.LOGGER.info("FULL RESET by {}", by);
         wipeCoins(server, SeasonData.get(server).coinEpoch + 1);
-        return endSeason(server, by);
+        return endSeason(server, by, true);
     }
 
     /** Opens the season prize rows: admins can change them, moderators can only look. */

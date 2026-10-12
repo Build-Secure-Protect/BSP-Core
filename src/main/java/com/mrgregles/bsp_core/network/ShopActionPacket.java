@@ -88,8 +88,16 @@ public record ShopActionPacket(Action action, int index, int lots, int page) {
             }
             case REFRESH -> ShopOpener.sync(player, menu, msg.page, "", null);
             case VENDOR -> {
-                if (menu.at != null && (Admins.isAdmin(player) || Admins.isModerator(player)) && player.level().getBlockEntity(menu.at) instanceof com.mrgregles.bsp_core.shop.VendorPostBlockEntity post) {
-                    com.mrgregles.bsp_core.shop.VendorMenu.open(player, post);
+                // the venue's own setup screen: a post or stall's assignment, a display's settings
+                if (menu.at != null && (Admins.isAdmin(player) || Admins.isModerator(player))) {
+                    var be = player.level().getBlockEntity(menu.at);
+                    if (be instanceof com.mrgregles.bsp_core.shop.VendorPostBlockEntity post) {
+                        com.mrgregles.bsp_core.shop.VendorMenu.open(player, post);
+                    } else if (be instanceof com.mrgregles.bsp_core.shop.MarketStallBlockEntity stall) {
+                        com.mrgregles.bsp_core.shop.VendorMenu.open(player, stall);
+                    } else if (be instanceof com.mrgregles.bsp_core.shop.StallDisplayBlockEntity display && Admins.isAdmin(player)) {
+                        com.mrgregles.bsp_core.shop.StallDisplayMenu.open(player, display);
+                    }
                 }
             }
         }

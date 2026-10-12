@@ -109,6 +109,8 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                         case "remote" -> shop.remote = Boolean.parseBoolean(v);
                         case "buyonly" -> shop.buyOnly = Boolean.parseBoolean(v);
                         case "style" -> shop.style = v.trim();
+                        case "columns" -> shop.columns = Integer.parseInt(v.trim()) < Shop.MIN_COLUMNS ? 0 : Math.min(Shop.MAX_COLUMNS, Integer.parseInt(v.trim()));
+                        case "rows" -> shop.rows = Math.max(2, Math.min(3, Integer.parseInt(v.trim())));
                         case "slots" -> shop.displaySlots = Math.max(1, Integer.parseInt(v.trim()));
                         case "interval" -> shop.intervalMs = Math.max(1, Long.parseLong(v.trim())) * 3_600_000L;
                         case "offer" -> shop.offerPercent = Math.max(0, Math.min(99, Integer.parseInt(v.trim())));

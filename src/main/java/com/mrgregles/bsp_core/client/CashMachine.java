@@ -15,14 +15,20 @@ import java.util.Locale;
  */
 final class CashMachine {
     static final int KEY = 0xFFEAE4D5, KEY_HOVER = 0xFFF5F0E4, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A;
+    /** A selected key (the mode that is on): phosphor green with dark text. */
+    static final int KEY_ON = 0xFF58F29A, KEY_ON_HOVER = 0xFF7CF7B3, KEY_ON_EDGE = 0xFF2E8B57;
     static final int LINE = 9;
 
     private CashMachine() {}
 
     /** A key with its label upper-cased and fitted: at most {@code h / 9} lines, words never split, shrunk when they would not fit. */
     static void key(GuiGraphics g, Font font, int x, int y, int w, int h, String label, boolean enabled, boolean hover) {
-        g.fill(x, y, x + w, y + h + 2, KEY_EDGE);
-        g.fill(x, y, x + w, y + h, hover ? KEY_HOVER : KEY);
+        key(g, font, x, y, w, h, label, enabled, hover, false);
+    }
+
+    static void key(GuiGraphics g, Font font, int x, int y, int w, int h, String label, boolean enabled, boolean hover, boolean selected) {
+        g.fill(x, y, x + w, y + h + 2, selected ? KEY_ON_EDGE : KEY_EDGE);
+        g.fill(x, y, x + w, y + h, selected ? (hover ? KEY_ON_HOVER : KEY_ON) : hover ? KEY_HOVER : KEY);
         String text = label.toUpperCase(Locale.ROOT);
         int maxW = w - 6, maxLines = Math.max(1, Math.round(h / 9f));
         float scale = 1f;

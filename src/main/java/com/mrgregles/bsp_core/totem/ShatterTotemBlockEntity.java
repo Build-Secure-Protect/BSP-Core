@@ -82,6 +82,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     }
 
     public void setOwner(@Nullable TotemOwner owner) {
+        TotemOwner previous = this.owner;
         if (owner != null && (this.owner == null || !this.owner.uuid().equals(owner.uuid()))) {
             ownedSince = System.currentTimeMillis();
             access.clear(); // a new owner starts with nobody let in
@@ -99,6 +100,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 ledger.recordRemoved(here);
             }
             ChunkLoading.totemChanged(this);
+            // tell other mods: placed (an owner where there was none), or the owner changed (including to nobody)
+            UUID was = previous == null ? null : previous.uuid(), now = owner == null ? null : owner.uuid();
+            if (was == null && now != null) {
+                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.Placed(serverLevel.getServer(), here, now));
+            } else if (was != null && !was.equals(now)) {
+                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.OwnerChanged(serverLevel.getServer(), here, was, now));
+            }
         }
     }
 
@@ -150,6 +158,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 endSteal(serverLevel, StealStatusPacket.OUTCOME_FAILED, "message.bsp_core.steal.totem_gone");
             }
             TotemLedger.get(serverLevel.getServer()).recordRemoved(GlobalPos.of(serverLevel.dimension(), worldPosition));
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.Removed(serverLevel.getServer(),
+                    GlobalPos.of(serverLevel.dimension(), worldPosition), owner == null ? null : owner.uuid()));
         }
     }
 
@@ -196,6 +206,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         setChanged();
         sync();
         updateBlockState();
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.StealStarted(serverLevel.getServer(),
+                GlobalPos.of(serverLevel.dimension(), worldPosition), owner == null ? null : owner.uuid(), thief.getUUID(), steal.thiefName(), seconds));
         BSPCore.LOGGER.info("{} started stealing {}'s totem at {}", steal.thiefName(), ownerName(), worldPosition);
 
         thief.displayClientMessage(Component.translatable("message.bsp_core.steal.started", ownerName(), seconds).withStyle(ChatFormatting.GOLD), false);
@@ -413,6 +425,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         StealState finished = steal;
         sendStatus(level, StealStatusPacket.OUTCOME_SUCCESS);
         steal = null;
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.StealEnded(level.getServer(),
+                GlobalPos.of(level.dimension(), worldPosition), previous == null ? null : previous.uuid(), finished.thief(), finished.thiefName(), true, ""));
         setOwner(new TotemOwner(thief.getUUID(), thief.getGameProfile().getName()));
         blast(level, thief);
         thief.displayClientMessage(Component.translatable("message.bsp_core.steal.success", previous == null ? "?" : previous.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), false);
@@ -456,6 +470,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                     Component.translatable("message.bsp_core.steal.defended", steal.thiefName()).withStyle(ChatFormatting.GREEN));
         }
         BSPCore.LOGGER.info("Steal of totem at {} by {} ended: {}", worldPosition, steal.thiefName(), reasonKey);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.StealEnded(level.getServer(),
+                GlobalPos.of(level.dimension(), worldPosition), owner == null ? null : owner.uuid(), steal.thief(), steal.thiefName(), false, reasonKey));
         steal = null;
         setChanged();
         sync();
