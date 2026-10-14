@@ -11,8 +11,12 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /** Server to client: a Plasma Tank for its screen: the master corner, size, level, each port's setting and flow, and the cables near the ports. A zero size means the block is not part of a formed tank. */
-public record TankViewPacket(BlockPos pos, int w, int h, int d, long stored, long capacity, List<Port> ports, List<Cable> cables) {
+public record TankViewPacket(BlockPos pos, int w, int h, int d, long stored, long capacity, List<Port> ports, List<Cable> cables, List<Power> powers) {
     public record Port(BlockPos pos, int mode, int in, int out) {
+    }
+
+    /** A totem power the stored plasma carries: the Buff ordinal, its level, how much plasma still carries it, and whether a totem is feeding it now. */
+    public record Power(int ordinal, int level, long mB, boolean live) {
     }
 
     public record Cable(BlockPos pos, int flow) {
@@ -37,6 +41,13 @@ public record TankViewPacket(BlockPos pos, int w, int h, int d, long stored, lon
             buf.writeBlockPos(c.pos);
             buf.writeVarInt(c.flow);
         }
+        buf.writeVarInt(msg.powers.size());
+        for (Power p : msg.powers) {
+            buf.writeVarInt(p.ordinal);
+            buf.writeVarInt(p.level);
+            buf.writeLong(p.mB);
+            buf.writeBoolean(p.live);
+        }
     }
 
     public static TankViewPacket decode(FriendlyByteBuf buf) {
@@ -53,7 +64,12 @@ public record TankViewPacket(BlockPos pos, int w, int h, int d, long stored, lon
         for (int i = 0; i < m; i++) {
             cables.add(new Cable(buf.readBlockPos(), buf.readVarInt()));
         }
-        return new TankViewPacket(pos, w, h, d, stored, capacity, ports, cables);
+        int k = Math.min(buf.readVarInt(), 64);
+        List<Power> powers = new ArrayList<>(k);
+        for (int i = 0; i < k; i++) {
+            powers.add(new Power(buf.readVarInt(), buf.readVarInt(), buf.readLong(), buf.readBoolean()));
+        }
+        return new TankViewPacket(pos, w, h, d, stored, capacity, ports, cables, powers);
     }
 
     public static void handle(TankViewPacket msg, Supplier<NetworkEvent.Context> ctx) {

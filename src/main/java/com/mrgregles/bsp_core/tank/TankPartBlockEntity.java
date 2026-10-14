@@ -36,6 +36,10 @@ public class TankPartBlockEntity extends BlockEntity {
     protected BlockPos origin;
     /** Client: the level the renderer last showed, so it glides. */
     public float shown = -1;
+    /** Of the stored plasma, how much carries each totem power (by Buff ordinal), the level it carries, and when a port last fed it. */
+    private final long[] buffedMb = new long[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values().length];
+    private final int[] buffedLevel = new int[buffedMb.length];
+    private final long[] buffedFedAt = new long[buffedMb.length];
     private long syncedStored = -1;
     private boolean dirty;
 
@@ -125,6 +129,9 @@ public class TankPartBlockEntity extends BlockEntity {
 
     void setStored(long mB) {
         stored = Math.max(0, Math.min(capacity(), mB));
+        for (int i = 0; i < buffedMb.length; i++) {
+            buffedMb[i] = Math.min(buffedMb[i], stored);
+        }
         setChanged();
     }
 
@@ -138,14 +145,66 @@ public class TankPartBlockEntity extends BlockEntity {
         return took;
     }
 
-    /** Takes up to {@code mB} out; returns what came. */
+    /**
+     * Puts plasma in that carries the feeding totem's powers ({@code offered} by Buff ordinal): the
+     * tank remembers how much of what it holds carries each power and at what level, and passes
+     * them on with what it gives out until that plasma is used up, totem or no totem.
+     */
+    public long add(long mB, int[] offered) {
+        long took = add(mB);
+        if (took <= 0 || offered == null) {
+            return took;
+        }
+        long now = level == null ? 0 : level.getGameTime();
+        for (int i = 0; i < buffedMb.length && i < offered.length; i++) {
+            if (offered[i] > 0) {
+                buffedMb[i] = Math.min(stored, buffedMb[i] + took);
+                buffedLevel[i] = Math.max(buffedLevel[i], offered[i]);
+                buffedFedAt[i] = now;
+            }
+        }
+        return took;
+    }
+
+    /** Takes up to {@code mB} out; returns what came. The plasma is mixed, so each power's share leaves in proportion. */
     public long drain(long mB) {
+        long before = stored;
         long took = Math.max(0, Math.min(mB, stored));
         stored -= took;
         if (took > 0) {
+            for (int i = 0; i < buffedMb.length; i++) {
+                if (buffedMb[i] > 0) {
+                    buffedMb[i] = Math.max(0, Math.min(stored, buffedMb[i] - Math.round(buffedMb[i] * (double) took / before)));
+                    if (buffedMb[i] == 0) {
+                        buffedLevel[i] = 0;
+                    }
+                }
+            }
             setChanged();
         }
         return took;
+    }
+
+    /** The totem powers the stored plasma still carries, by Buff ordinal (0 = none), for the port that gives it out. */
+    public int[] offered() {
+        int[] out = new int[buffedMb.length];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = buffedMb[i] > 0 ? buffedLevel[i] : 0;
+        }
+        return out;
+    }
+
+    public long buffedMb(int ordinal) {
+        return buffedMb[ordinal];
+    }
+
+    public int buffedLevel(int ordinal) {
+        return buffedMb[ordinal] > 0 ? buffedLevel[ordinal] : 0;
+    }
+
+    /** Whether a port is being fed plasma carrying this power right now (within the last couple of seconds). */
+    public boolean buffLive(int ordinal) {
+        return buffedMb[ordinal] > 0 && level != null && level.getGameTime() - buffedFedAt[ordinal] <= 45;
     }
 
     public Map<BlockPos, int[]> ports() {
@@ -201,6 +260,8 @@ public class TankPartBlockEntity extends BlockEntity {
         tag.putInt("H", h);
         tag.putInt("D", d);
         tag.putLong("Stored", stored);
+        tag.putLongArray("BuffMb", buffedMb.clone());
+        tag.putIntArray("BuffLevel", buffedLevel.clone());
         tag.putLong("FormedAt", formedAt);
         if (origin != null) {
             tag.putLong("Origin", origin.asLong());
@@ -221,6 +282,12 @@ public class TankPartBlockEntity extends BlockEntity {
         h = tag.getInt("H");
         d = tag.getInt("D");
         stored = tag.getLong("Stored");
+        long[] mb = tag.getLongArray("BuffMb");
+        int[] lv = tag.getIntArray("BuffLevel");
+        for (int i = 0; i < buffedMb.length; i++) {
+            buffedMb[i] = i < mb.length ? mb[i] : 0;
+            buffedLevel[i] = i < lv.length ? lv[i] : 0;
+        }
         formedAt = tag.contains("FormedAt") ? tag.getLong("FormedAt") : -1000;
         origin = tag.contains("Origin") ? BlockPos.of(tag.getLong("Origin")) : null;
         ports.clear();

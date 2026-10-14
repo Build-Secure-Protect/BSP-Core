@@ -1189,4 +1189,30 @@ public class BspGameTests {
         h.assertTrue(!ledger.has(id), "without a database a due departure is simply forgotten");
         h.succeed();
     }
+
+    @GameTest(template = EMPTY)
+    public void tank_passes_on_the_powers_its_plasma_carries_until_it_is_used_up(GameTestHelper h) {
+        buildTank(h, TANK, 3, 3, 3, Set.of(TANK.offset(1, 2, 1)), null);
+        h.succeedWhen(() -> {
+            TankPartBlockEntity master = entity(h, TANK, TankPartBlockEntity.class);
+            h.assertTrue(master.isMaster(), "formed");
+            int oc = TotemUpgrades.Buff.OVERCLOCK.ordinal(), out = TotemUpgrades.Buff.OUTPUT.ordinal();
+            int[] offered = new int[TotemUpgrades.Buff.values().length];
+            offered[oc] = 3;
+            offered[out] = 2;
+            master.drain(master.stored());
+            h.assertTrue(master.add(1000, offered) == 1000, "a thousand mB with Overclock III and Output II went in");
+            h.assertTrue(master.offered()[oc] == 3 && master.offered()[out] == 2 && master.buffedMb(oc) == 1000, "the tank now offers what fed it");
+            TankPortBlockEntity port = entity(h, TANK.offset(1, 2, 1), TankPortBlockEntity.class);
+            h.assertTrue(port.offered()[oc] == 3, "a port giving out offers it too, totem or no totem");
+            h.assertTrue(master.drain(500) == 500 && master.buffedMb(oc) == 500, "draining takes a proportional share of the buffed plasma: " + master.buffedMb(oc));
+            h.assertTrue(master.add(500, null) == 500 && master.buffedMb(oc) == 500 && master.offered()[oc] == 3, "plain plasma dilutes it but the level stays while any remains");
+            master.drain(1000);
+            h.assertTrue(master.buffedMb(oc) == 0 && master.offered()[oc] == 0 && master.offered()[out] == 0, "used up: nothing more is passed on");
+            master.add(200, offered);
+            var tag = master.saveWithoutMetadata();
+            h.assertTrue(tag.getLongArray("BuffMb")[oc] == 200 && tag.getIntArray("BuffLevel")[oc] == 3, "the buffed amount and level are saved with the tank");
+            master.drain(master.stored());
+        });
+    }
 }

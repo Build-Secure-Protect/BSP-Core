@@ -212,7 +212,7 @@ public final class TankStructure {
         }
         TankPartBlockEntity master = part.masterEntity();
         if (master == null) { // not formed: a view of just this block, so the screen can say so
-            BSPNetwork.sendTo(player, new TankViewPacket(pos, 0, 0, 0, 0, 0, List.of(), List.of()));
+            BSPNetwork.sendTo(player, new TankViewPacket(pos, 0, 0, 0, 0, 0, List.of(), List.of(), List.of()));
             return;
         }
         List<TankViewPacket.Port> ports = new ArrayList<>();
@@ -246,7 +246,14 @@ public final class TankStructure {
                 depth++;
             }
         });
-        BSPNetwork.sendTo(player, new TankViewPacket(master.master(), master.w(), master.h(), master.d(), master.stored(), master.capacity(), ports, cables));
+        List<TankViewPacket.Power> powers = new ArrayList<>();
+        for (int i = 0; i < com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values().length; i++) {
+            if (master.buffedMb(i) > 0) {
+                powers.add(new TankViewPacket.Power(i, master.buffedLevel(i), master.buffedMb(i), master.buffLive(i)));
+            }
+        }
+        powers.sort((a, b) -> Long.compare(b.mB(), a.mB()));
+        BSPNetwork.sendTo(player, new TankViewPacket(master.master(), master.w(), master.h(), master.d(), master.stored(), master.capacity(), ports, cables, powers));
     }
 
     /** The port the wrench points at steps In and out, Input, Output. */

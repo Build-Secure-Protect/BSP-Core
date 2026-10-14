@@ -364,6 +364,10 @@ public final class PlasmaNetwork {
             clusterAll = members;
             extractors.add(source);
             supply = source.flow();
+            int[] o = source.offered(); // a tank passes on the powers its plasma still carries
+            for (int i = 0; i < o.length && i < offered.length; i++) {
+                offered[i] = Math.max(offered[i], o[i]);
+            }
         } else if (iface != null) {
             List<BlockPos> cluster = cluster(sl, here);
             master = cluster.get(0);

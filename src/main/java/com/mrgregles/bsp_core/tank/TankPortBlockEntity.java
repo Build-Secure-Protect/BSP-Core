@@ -80,7 +80,7 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
         if (m == null) {
             return;
         }
-        m.add(movedMB);
+        m.add(movedMB, offeredByOrdinal);
         in = pressurePerTick;
         fedAt = level == null ? 0 : level.getGameTime();
         m.portReport(worldPosition, mode.ordinal(), in, out);
@@ -125,7 +125,8 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
 
     @Override
     public int[] offered() {
-        return new int[Buff.values().length]; // a tank holds plasma only, no powers
+        TankPartBlockEntity m = masterEntity();
+        return m == null ? new int[Buff.values().length] : m.offered(); // the powers the stored plasma still carries, from the totems that fed it
     }
 
     @Nullable

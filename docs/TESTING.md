@@ -693,6 +693,15 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - A cable placed against a Tank Port on any face that is not against the tank draws an arm into the port, like into a base.
 - A tank that has just started filling shows a thin layer of plasma across the whole floor (about a tenth of a block) even when the figure is far below one per cent. The stream lands on it. The screen shows the same layer.
 
+## Tanks carry the totem's powers (2026-10-15)
+
+- Feed a tank from a totem with Overclock (say III) through an extractor, interface and cable. Open the tank screen: under In/Out, "Powers in the plasma:" lists "Overclock III, fed now" in turquoise (and Output at its level). Jade on any tank block adds "Carries Overclock III, Output II".
+- Run a cable from an Output port to a Plasma Injector on a machine. The injector's gauge and the machine's speed show the Overclock scale, the same as when the injector is fed from the totem's interface directly.
+- Break the totem (or its extractor). Within a few seconds the screen line turns gold: "Overclock III: 1,250,000 mB still carry it", falling as the port gives plasma out. The injector keeps its Overclock scale the whole time.
+- Feed the tank plain plasma from a totem with no Overclock: the stored figure rises, the "still carry it" figure does not; the port still offers Overclock III until the counted plasma is gone (draining takes a share of both, so the figure falls with every mB out).
+- When the figure reaches 0 the line goes, Jade drops "Carries", and the injector's Overclock scale returns to 1.0.
+- Break and rebuild the tank one block smaller: what fits is kept, and so is its powers figure, capped at what fits.
+
 ## X-ray with ghost blocks (2026-10-08)
 
 - BSP ores (Tetrium, Illyrium, Magnatite, their deepslate and End forms) show bright through the rock like vanilla ores: they are in `forge:ores` now.

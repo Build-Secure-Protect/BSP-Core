@@ -256,7 +256,28 @@ public class TankScreen extends Screen {
         small(g, tr("ports", v.ports().size()), cx, row + 9, TEXT);
         small(g, tr("in", in), cx, row + 18, in > 0 ? ION & 0xFFFFFF : MUTED);
         small(g, tr("out", out), cx, row + 27, out > 0 ? GOLD & 0xFFFFFF : MUTED);
-        row += 42;
+        row += 40;
+        // the totem powers the stored plasma carries: while a totem feeds them, just the names; once it is gone, how much plasma still carries each
+        if (v.powers().isEmpty()) {
+            small(g, tr("power_none"), cx, row, MUTED);
+            row += 9;
+        } else {
+            small(g, tr("powers"), cx, row, TEXT);
+            row += 9;
+            int shown = 0;
+            for (TankViewPacket.Power pw : v.powers()) {
+                if (shown++ >= 4) {
+                    break;
+                }
+                var buffs = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values();
+                var buff = buffs[Math.floorMod(pw.ordinal(), buffs.length)];
+                Component name = Component.translatable(buff.translationKey());
+                String level = com.mrgregles.bsp_core.totem.TotemUpgrades.roman(pw.level());
+                small(g, pw.live() ? tr("power_live", name, level) : tr("power_left", name, level, String.format("%,d", pw.mB())), cx, row, pw.live() ? ION & 0xFFFFFF : GOLD & 0xFFFFFF);
+                row += 9;
+            }
+        }
+        row += 4;
         for (var line : font.split(tr("help"), Math.round(COL_W / 0.75f))) {
             g.pose().pushPose();
             g.pose().translate(cx, row, 0);

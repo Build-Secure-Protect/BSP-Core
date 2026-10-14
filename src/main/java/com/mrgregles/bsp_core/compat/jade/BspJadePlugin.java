@@ -182,6 +182,13 @@ public class BspJadePlugin implements IWailaPlugin {
                 if (master != null) {
                     data.putLong("TankStored", master.stored());
                     data.putLong("TankCap", master.capacity());
+                    StringBuilder carries = new StringBuilder();
+                    for (int i = 0; i < com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values().length; i++) {
+                        if (master.buffedMb(i) > 0) {
+                            carries.append(carries.length() > 0 ? "," : "").append(i).append(':').append(master.buffedLevel(i));
+                        }
+                    }
+                    data.putString("TankPowers", carries.toString());
                 }
                 if (part instanceof com.mrgregles.bsp_core.tank.TankPortBlockEntity port) {
                     data.putByte("PortMode", (byte) port.mode().ordinal());
@@ -219,6 +226,24 @@ public class BspJadePlugin implements IWailaPlugin {
                 if (d.getBoolean("TankFormed")) {
                     tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_level", String.format("%,d", d.getLong("TankStored")), String.format("%,d", d.getLong("TankCap")))
                             .withStyle(d.getLong("TankStored") > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+                    if (!d.getString("TankPowers").isEmpty()) {
+                        net.minecraft.network.chat.MutableComponent list = net.minecraft.network.chat.Component.empty();
+                        boolean first = true;
+                        var buffs = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values();
+                        for (String part : d.getString("TankPowers").split(",")) {
+                            String[] kv = part.split(":");
+                            int o = Integer.parseInt(kv[0]);
+                            if (o < 0 || o >= buffs.length) {
+                                continue;
+                            }
+                            if (!first) {
+                                list.append(", ");
+                            }
+                            first = false;
+                            list.append(net.minecraft.network.chat.Component.translatable(buffs[o].translationKey())).append(" " + com.mrgregles.bsp_core.totem.TotemUpgrades.roman(Integer.parseInt(kv[1])));
+                        }
+                        tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_powers", list).withStyle(net.minecraft.ChatFormatting.GOLD));
+                    }
                 } else {
                     tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_unformed").withStyle(net.minecraft.ChatFormatting.YELLOW));
                 }
