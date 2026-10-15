@@ -9,6 +9,11 @@ import com.mrgregles.bsp_core.totem.TotemOwner;
 import com.mrgregles.bsp_core.totem.TotemUpgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import com.mrgregles.bsp_core.storage.NetworkStorage;
+import net.minecraft.world.level.Level;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -31,6 +36,14 @@ public final class BspTotems {
 
     /** A steal in progress on one of a player's totems. */
     public record Steal(GlobalPos where, UUID thief, String thiefName, float fractionLeft) {}
+
+    /**
+     * A steal in progress anywhere on the network. {@code serverId} is that server's {@code
+     * storage.serverId}; {@code local} is true for a steal on this server. {@code fractionLeft} is
+     * exact for a local steal and, for a remote one, estimated from when it started and is expected
+     * to end (a steal pauses while the thief is outside the radius, so it may run a little behind).
+     */
+    public record StealAnywhere(String serverId, boolean local, ResourceKey<Level> dimension, BlockPos pos, @Nullable UUID owner, UUID thief, String thiefName, float fractionLeft) {}
 
     /** A placed totem and who owns it. */
     public record Placed(UUID owner, GlobalPos where) {}
@@ -108,6 +121,50 @@ public final class BspTotems {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Every steal running on this server (read live from the totems) and on the other servers of
+     * the network (as last read from the shared database; see {@code storage.noticeSeconds}).
+     * Without network storage only this server's steals are listed.
+     */
+    public static java.util.List<StealAnywhere> stealsAnywhere(MinecraftServer server) {
+        java.util.List<StealAnywhere> out = new java.util.ArrayList<>();
+        String here = com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get();
+        TotemLedger.get(server).allPlaced().forEach((owner, set) -> {
+            for (GlobalPos where : set) {
+                Optional<ShatterTotemBlockEntity> be = totemAt(server, where);
+                if (be.isPresent() && be.get().getSteal().isPresent()) {
+                    StealState s = be.get().getSteal().get();
+                    out.add(new StealAnywhere(here, true, where.dimension(), where.pos(), owner, s.thief(), s.thiefName(), s.fractionLeft()));
+                }
+            }
+        });
+        long now = System.currentTimeMillis();
+        for (NetworkStorage.RemoteSteal r : NetworkStorage.stealsElsewhere()) {
+            if (r.serverId().equals(here)) {
+                continue;
+            }
+            ResourceLocation dim = ResourceLocation.tryParse(r.dimension());
+            if (dim == null) {
+                continue;
+            }
+            float left = r.endsMs() <= r.startedMs() ? 0 : (r.endsMs() - now) / (float) (r.endsMs() - r.startedMs());
+            out.add(new StealAnywhere(r.serverId(), false, ResourceKey.create(Registries.DIMENSION, dim), new BlockPos(r.x(), r.y(), r.z()),
+                    r.owner(), r.thief(), r.thiefName(), Math.max(0f, Math.min(1f, left))));
+        }
+        return out;
+    }
+
+    /** The steals running anywhere on the network on totems owned by {@code owner}. */
+    public static java.util.List<StealAnywhere> stealsAnywhere(MinecraftServer server, UUID owner) {
+        java.util.List<StealAnywhere> out = new java.util.ArrayList<>();
+        for (StealAnywhere s : stealsAnywhere(server)) {
+            if (owner.equals(s.owner())) {
+                out.add(s);
+            }
+        }
+        return out;
     }
 
     /** The upgrade named like the enum constant ("SWIFTNESS", case does not matter); null when there is no such upgrade. */

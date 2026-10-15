@@ -130,6 +130,9 @@ final class MySqlStore implements AutoCloseable {
                     + "message MEDIUMTEXT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX (uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("pending_items") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, "
                     + "item MEDIUMTEXT NOT NULL, INDEX (uuid))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("steals") + " (" + place + ", owner_uuid CHAR(36) NULL, thief_uuid CHAR(36) NOT NULL, "
+                    + "thief_name VARCHAR(32) NOT NULL, started_ms BIGINT NOT NULL, ends_ms BIGINT NOT NULL, "
+                    + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_accounts") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL DEFAULT '', "
                     + "pieces BIGINT NOT NULL DEFAULT 0, c0 INT NOT NULL DEFAULT 0, c1 INT NOT NULL DEFAULT 0, c2 INT NOT NULL DEFAULT 0, c3 INT NOT NULL DEFAULT 0, c4 INT NOT NULL DEFAULT 0, "
                     + "accept_pay TINYINT NOT NULL DEFAULT 1, remote_shops TINYINT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, "
@@ -265,6 +268,54 @@ final class MySqlStore implements AutoCloseable {
         } finally {
             c.setAutoCommit(auto);
         }
+    }
+
+    // ------------------------------------------------------------------ steals in progress, visible from every server
+
+    void stealStarted(UUID owner, UUID thief, String thiefName, GlobalPos pos, long startedMs, long endsMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("REPLACE INTO " + t("steals")
+                + " (server_id, dimension, x, y, z, owner_uuid, thief_uuid, thief_name, started_ms, ends_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+            place(ps, pos);
+            ps.setString(6, owner == null ? null : owner.toString());
+            ps.setString(7, thief.toString());
+            ps.setString(8, thiefName);
+            ps.setLong(9, startedMs);
+            ps.setLong(10, endsMs);
+            ps.executeUpdate();
+        }
+    }
+
+    void stealEnded(GlobalPos pos) throws SQLException {
+        delete("steals", pos);
+    }
+
+    /** Forgets every steal this server recorded: run at start, since a crash can leave rows behind. */
+    void clearSteals() throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("steals") + " WHERE server_id = ?")) {
+            ps.setString(1, serverId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** The steals running on the other servers. Rows an hour past their expected end are dropped as stale (a server that died mid-steal). */
+    java.util.List<NetworkStorage.RemoteSteal> readSteals(long now) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("steals") + " WHERE ends_ms < ?")) {
+            ps.setLong(1, now - 3_600_000L);
+            ps.executeUpdate();
+        }
+        java.util.List<NetworkStorage.RemoteSteal> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT server_id, dimension, x, y, z, owner_uuid, thief_uuid, thief_name, started_ms, ends_ms FROM "
+                + t("steals") + " WHERE server_id <> ?")) {
+            ps.setString(1, serverId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String owner = rs.getString(6);
+                    out.add(new NetworkStorage.RemoteSteal(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getInt(4), rs.getInt(5),
+                            owner == null ? null : UUID.fromString(owner), UUID.fromString(rs.getString(7)), rs.getString(8), rs.getLong(9), rs.getLong(10)));
+                }
+            }
+        }
+        return out;
     }
 
     // ------------------------------------------------------------------ messages for players on other servers

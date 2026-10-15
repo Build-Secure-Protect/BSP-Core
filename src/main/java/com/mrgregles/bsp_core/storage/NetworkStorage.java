@@ -55,6 +55,11 @@ public final class NetworkStorage {
     /** What each player keeps in Coin Vaults on the other servers, as last read: five coin counts, blocks, and the Illyrium-interest flag. */
     private static volatile Map<UUID, int[]> vaultsElsewhere = Map.of();
     private static final int[] NO_VAULTS = new int[7];
+    /** The steals running on the other servers, as last read. */
+    private static volatile List<RemoteSteal> stealsElsewhere = List.of();
+
+    /** A steal running on another server of the network: where, whose totem, who is stealing, and when it started and is expected to end (wall-clock ms). */
+    public record RemoteSteal(String serverId, String dimension, int x, int y, int z, @Nullable UUID owner, UUID thief, String thiefName, long startedMs, long endsMs) {}
 
     private NetworkStorage() {}
 
@@ -136,6 +141,7 @@ public final class NetworkStorage {
                     }
                 }
                 case "notice" -> collectNotices(srv);
+                case "steal" -> refreshSteals();
                 case "shop" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
@@ -174,6 +180,8 @@ public final class NetworkStorage {
                     BSPCore.LOGGER.warn("BSP-Core storage: this server's local records are not in the database yet. Run /bsp storage migrate.");
                 }
                 shopReload(null);
+                s.clearSteals();
+                stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis()));
             } catch (SQLException | RuntimeException e) {
                 if (s != null) {
                     s.close();
@@ -202,6 +210,7 @@ public final class NetworkStorage {
         }
         slicesElsewhere.clear();
         vaultsElsewhere = Map.of();
+        stealsElsewhere = List.of();
         server = null;
     }
 
@@ -355,6 +364,46 @@ public final class NetworkStorage {
         }
         noticeTicks = 0;
         collectNotices(event.getServer());
+        refreshSteals();
+    }
+
+    // ------------------------------------------------------------------ steals in progress, visible from every server
+
+    /** A steal began here: every server is told, so a teleport mod can keep its raid rule across the network. */
+    @SubscribeEvent
+    public static void onStealStarted(com.mrgregles.bsp_core.api.event.TotemEvent.StealStarted event) {
+        if (store == null) {
+            return;
+        }
+        UUID owner = event.getOwner(), thief = event.getThief();
+        String name = event.getThiefName();
+        GlobalPos where = event.getWhere();
+        long now = System.currentTimeMillis(), ends = now + event.getSeconds() * 1000L;
+        async("record a steal", s -> {
+            s.stealStarted(owner, thief, name, where, now, ends);
+            publish("steal", "");
+        });
+    }
+
+    @SubscribeEvent
+    public static void onStealEnded(com.mrgregles.bsp_core.api.event.TotemEvent.StealEnded event) {
+        if (store == null) {
+            return;
+        }
+        GlobalPos where = event.getWhere();
+        async("forget a steal", s -> {
+            s.stealEnded(where);
+            publish("steal", "");
+        });
+    }
+
+    /** The steals running on the other servers, as last read (every {@code storage.noticeSeconds}, and at once on a Redis notice). Empty without network storage. */
+    public static List<RemoteSteal> stealsElsewhere() {
+        return stealsElsewhere;
+    }
+
+    private static void refreshSteals() {
+        async("read the steals in progress", s -> stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis())));
     }
 
     /** Delivers the messages other servers left for the players online here. Polled every few seconds, and at once on a Redis notice. */

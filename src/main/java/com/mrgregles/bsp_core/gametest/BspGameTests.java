@@ -881,8 +881,10 @@ public class BspGameTests {
         h.runAfterDelay(25, () -> {
             h.assertBlockProperty(post, com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN, true);
             h.assertBlockProperty(lamp, net.minecraft.world.level.block.RedstoneLampBlock.LIT, true);
-            // a game-time window that is closed now (the test world sits at dawn, time 0..): open from tick 20000 to 23000
-            be.set(shop.id, new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, 20000, 23000), "minecraft:villager", "");
+            // a game-time window that is closed now: it opens a quarter day from the current day time (the test world is
+            // reused between runs with the daylight cycle on, so a fixed window would sometimes be open)
+            int now = (int) (h.getLevel().getDayTime() % 24000);
+            be.set(shop.id, new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, (now + 6000) % 24000, (now + 9000) % 24000), "minecraft:villager", "");
             h.runAfterDelay(25, () -> {
                 h.assertBlockProperty(post, com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN, false);
                 h.assertBlockProperty(lamp, net.minecraft.world.level.block.RedstoneLampBlock.LIT, false);
@@ -1232,6 +1234,8 @@ public class BspGameTests {
         h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.isTotem(h.getBlockState(pos)) && !com.mrgregles.bsp_core.api.BspTotems.isTotem(Blocks.STONE.defaultBlockState()), "a totem state is known as one");
         h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.thiefAt(h.getLevel(), h.absolutePos(pos)).isEmpty(), "no steal is running");
         h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.stealRadius() > 0, "the steal radius is published");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.stealsAnywhere(server).stream().noneMatch(s -> s.pos().equals(h.absolutePos(pos))), "no steal is listed for the totem");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.stealsAnywhere(server, erin).isEmpty(), "no steal is listed for the owner");
         h.setBlock(pos, Blocks.AIR);
         h.succeed();
     }

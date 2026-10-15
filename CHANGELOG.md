@@ -4,6 +4,9 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Added
+- `BspTotems.stealsAnywhere(server)` / `stealsAnywhere(server, owner)`: every steal running on this server and, with network storage, on the other servers of the network (BSP-Teleport request R6, for its raid rule across servers). Steals are written to a new shared `steals` table on start and removed on end; each server clears its own rows on start, reads the others' every `storage.noticeSeconds` and at once on a Redis notice.
+
 ## [1.1.0] - 2026-10-15
 
 ### Changed
