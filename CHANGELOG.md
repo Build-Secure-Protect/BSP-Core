@@ -4,6 +4,8 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-15
+
 ### Changed
 - **Depositing coins is the default** at the Shatter Bank: the deposit view has DEPOSIT and CONVERT keys in the middle of the key column, the one that is on lit green, so nobody converts by accident; CONFIRM with CONVERT lit asks once more in red ("This cannot be undone") with CANCEL beside it, depositing asks nothing. The -1 and +1 keys share one row.
 - **The Shopping Network unlock costs 12 Netherite coins** (`bank.remoteUnlockCoins`, `bank.remoteUnlockTier`), taken as exactly those coins; other tiers do not pay for it. Was coins worth 16 Copper in any mix. Game test updated.
