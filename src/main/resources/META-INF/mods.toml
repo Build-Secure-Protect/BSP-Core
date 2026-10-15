@@ -57,6 +57,14 @@ description='''${mod_description}'''
     ordering="NONE"
     # Side this dependency is applied on - BOTH, CLIENT, or SERVER
     side="BOTH"
+# BSP Region Guard is optional: when it is installed, BSP-Core's Anti Totem checks ask its regions too. It loads after BSP-Core
+# (it depends on this mod with AFTER), so the order here is NONE and BSP-Core reaches it lazily.
+[[dependencies.${mod_id}]]
+    modId="bsp_region_guard"
+    mandatory=false
+    versionRange="[0.1.0,)"
+    ordering="NONE"
+    side="BOTH"
 # Here's another dependency
 [[dependencies.${mod_id}]]
     modId="minecraft"

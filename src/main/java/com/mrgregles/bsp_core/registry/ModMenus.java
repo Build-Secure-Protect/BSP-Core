@@ -79,6 +79,9 @@ public final class ModMenus {
                 return new com.mrgregles.bsp_core.shop.VendorMenu(id, inv, pos, editable, shop, hours, mob, nbt, skin, shops);
             }));
 
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.land.LandOfficeMenu>> LAND_OFFICE = MENUS.register("land_office",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.land.LandOfficeMenu(id, inv)));
+
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.shop.StallDisplayMenu>> STALL_DISPLAY = MENUS.register("stall_display",
             () -> IForgeMenuType.create(com.mrgregles.bsp_core.shop.StallDisplayMenu::read));
 

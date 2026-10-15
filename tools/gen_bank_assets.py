@@ -85,6 +85,24 @@ def vendor_post(lit):
     return e
 
 
+def land_office():
+    """The Land Office, "Deeds Board" (owner's pick, 2026-10-15): a notice board on two steel posts carrying the land map in
+    green phosphor with amber and green plot squares, a gold frame, a shelf in front with a brass bell and a stamp, a lamp on an
+    arm above, a name plate on the base. The deed cards, the lamp's pulse and the blinking plots are drawn by the renderer."""
+    e = [mbox([0, 0, 0], [16, 1, 16], "hull2"), mbox([4, 1, 2], [12, 1.6, 4], "hull")]
+    for x in (1.5, 13):
+        e.append(mbox([x, 1, 10], [x + 1.5, 15, 11.5], "steel"))
+    e += [mbox([0.5, 6, 9.6], [15.5, 15.5, 10], "hull2"), mbox([0.8, 6.3, 9.5], [15.2, 15.2, 9.6], "gold"), mbox([1.6, 7, 9.4], [14.4, 14.4, 9.5], "screen")]
+    # the map's plot squares: three for sale in amber, one green claim, one dim open area
+    for (x0, y0, x1, y1, m) in ((3.1, 12.2, 6.9, 14.1, "amber"), (8.6, 11.9, 12.4, 13.5, "amber"), (4.2, 8.3, 7.4, 10.1, "phos"), (9, 8, 12.8, 10.2, "amber"), (2.4, 7.4, 13.6, 7.7, "trim")):
+        e.append(mbox([x0, y0, 9.3], [x1, y1, 9.4], m))
+    e += [mbox([0.5, 4.5, 4.5], [15.5, 6, 10], "steel"), mbox([0.5, 5.9, 4.2], [15.5, 6.3, 10], "gold"),
+          mbox([3, 6.3, 6], [5.4, 7.5, 8.4], "gold"), mbox([3.9, 7.5, 6.9], [4.5, 8.4, 7.5], "gold"),
+          mbox([10.5, 6.3, 6.2], [13, 7.2, 8.2], "hull2"), mbox([11.2, 7.2, 6.8], [12.3, 8.6, 7.6], "trim"),
+          mbox([7, 15.5, 9], [9, 17.5, 10.5], "hull2"), mbox([6.5, 15.5, 5.5], [9.5, 16.3, 9], "hull2"), mbox([6.8, 14.5, 5.8], [9.2, 15.5, 8.6], "amber")]
+    return e
+
+
 def open_blockstate(name):
     variants = {}
     for o in ("true", "false"):
@@ -164,4 +182,7 @@ if __name__ == "__main__":
     (ASSETS / "models/block/vendor_post_open.json").write_text(json.dumps(model(vendor_post(True)), indent=1))
     (ASSETS / "models/item/vendor_post.json").write_text(json.dumps(model(vendor_post(True), 0.6), indent=1))
     (ASSETS / "blockstates/vendor_post.json").write_text(json.dumps(open_blockstate("vendor_post"), indent=2))
+    (ASSETS / "models/block/land_office.json").write_text(json.dumps(model(land_office()), indent=1))
+    (ASSETS / "models/item/land_office.json").write_text(json.dumps(model(land_office(), 0.6), indent=1))
+    (ASSETS / "blockstates/land_office.json").write_text(json.dumps(facing_blockstate("land_office"), indent=2))
     print("bank assets written")

@@ -201,6 +201,8 @@ public final class ModItems {
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.STALL_DISPLAY.get()));
     public static final RegistryObject<Item> MARKET_STALL = ITEMS.register("market_stall",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.MARKET_STALL.get()));
+    public static final RegistryObject<Item> LAND_OFFICE = ITEMS.register("land_office",
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.LAND_OFFICE.get()));
 
     /** The blocks a factory slice is built from, and the Motivator that goes on top. */
     public static final List<RegistryObject<Item>> FACTORY_ITEMS = new ArrayList<>();

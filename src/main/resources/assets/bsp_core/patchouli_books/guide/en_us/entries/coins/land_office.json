@@ -1,0 +1,17 @@
+{
+  "name": "The Land Office",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:land_office",
+  "sortnum": 9,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Land Office$() sells land. Right-click it for a map of the plots around you: $(l)amber$() plots are for sale at a set price, $(l)dashed$() areas are open ground where you mark out your own plot, and $(l)green$() plots are yours.$(br2)Click a plot to see its size and price, then press $(l)Buy$() and confirm. The price comes out of your bank account."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "For open ground, mark the corners with the land wand ($(l)/claim tool$()); the office opens by itself with the price of what you marked, and shows how near it lies to other plots.$(br2)$(l)Enlarge$() grows one of your plots to an outline that covers it, paying for the new ground. $(l)Give up$() returns part of what you paid and frees the land.",
+      "title": "Open ground"
+    }
+  ]
+}

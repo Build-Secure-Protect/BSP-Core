@@ -59,6 +59,10 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.coin.FactoryPortBlockEntity::new, ModBlocks.FACTORY_BLANK_HATCH.get(), ModBlocks.FACTORY_POWER_PORT.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.land.LandOfficeBlockEntity>> LAND_OFFICE =
+            BLOCK_ENTITIES.register("land_office", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.land.LandOfficeBlockEntity::new, ModBlocks.LAND_OFFICE.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.shop.MarketStallBlockEntity>> MARKET_STALL =
             BLOCK_ENTITIES.register("market_stall", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.shop.MarketStallBlockEntity::new, ModBlocks.MARKET_STALL.get()).build(null));

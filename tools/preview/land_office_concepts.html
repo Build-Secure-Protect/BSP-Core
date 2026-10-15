@@ -1,0 +1,131 @@
+<title>Land Office Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages; the screens inside are drawn in the Cash Machine skin, which the owner chose for every bank and shop screen. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:14px; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ color:var(--muted); font-weight:600; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+ul.plain{ margin:0; padding-left:18px; } ul.plain li{ margin-bottom:4px; max-width:78ch; font-size:13px; color:var(--muted); }
+
+/* ---- Cash Machine skin: beige bezel, black phosphor screen, green text, amber for money, key column on the right, strip at the base ---- */
+.stage{ background:#2a2620; border-radius:4px; padding:10px; display:flex; justify-content:center; }
+.cm{ position:relative; width:100%; max-width:520px; aspect-ratio:300/216; background:#CFC8B8; border:3px solid #8F877A; border-top-color:#ECE6D8; box-shadow:inset 0 2px 0 #ECE6D8; font-family:var(--display); display:grid; grid-template-columns:1fr 64px; grid-template-rows:1fr 24px; gap:6px; padding:8px; box-sizing:border-box; }
+.scr{ background:#061008; border:2px solid #0D3B22; color:#58F29A; padding:5px 6px; display:flex; flex-direction:column; gap:3px; min-width:0; overflow:hidden; font-size:7.5px; line-height:1.25; }
+.scr .h{ display:flex; justify-content:space-between; border-bottom:1px solid #0D3B22; padding-bottom:2px; font-size:8px; } .scr .h span:last-child{ color:#3FB97A; }
+.dim{ color:#3FB97A; } .amb{ color:#F2B544; } .red{ color:#FF6B5C; }
+.keys{ display:flex; flex-direction:column; gap:4px; } .keys .sp{ flex:1; }
+.k{ background:#EAE4D5; border-bottom:2px solid #9A9183; color:#2B2823; font-size:6.5px; text-align:center; padding:4px 2px; line-height:1.1; text-transform:uppercase; }
+.k.off{ color:#8F877A; } .k.on{ background:#58F29A; border-bottom-color:#2E8B57; }
+.strip{ grid-column:1 / span 2; background:#061008; border:2px solid #0D3B22; color:#3FB97A; font-size:7px; padding:3px 6px; display:flex; justify-content:space-between; align-items:center; }
+.rows{ display:flex; flex-direction:column; gap:1px; } .row{ display:flex; justify-content:space-between; gap:4px; padding:1px 2px; } .row.sel{ background:#0F2D1C; color:#58F29A; } .row .m{ color:#3FB97A; }
+.cols{ display:grid; grid-template-columns:1fr 1fr; gap:6px; min-height:0; } .pane{ border:1px solid #0D3B22; padding:3px 4px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.pane .t{ color:#3FB97A; font-size:6.5px; letter-spacing:.06em; border-bottom:1px solid #0D3B22; padding-bottom:1px; }
+.field{ display:flex; justify-content:space-between; gap:4px; } .field span:last-child{ color:#58F29A; } .field span:first-child{ color:#3FB97A; }
+.big{ font-size:13px; color:#F2B544; } .msg{ margin-top:auto; color:#F2B544; }
+.map{ position:relative; flex:1; background:#040b05; border:1px solid #0D3B22; min-height:70px; overflow:hidden; }
+.map i{ position:absolute; border:1px solid; font-style:normal; font-size:6px; padding:1px 2px; } .map .sale{ border-color:#F2B544; color:#F2B544; background:#1f1a08; } .map .mine{ border-color:#58F29A; color:#58F29A; background:#0F2D1C; } .map .other{ border-color:#3FB97A; color:#3FB97A; } .map .open{ border:1px dashed #3FB97A; color:#3FB97A; } .map .you{ color:#fff; font-size:7px; border:none; }
+.deed{ border:1px solid #F2B544; padding:5px 6px; display:flex; flex-direction:column; gap:3px; }
+.deed .n{ font-size:10px; color:#F2B544; } .deed .rule{ display:flex; gap:4px; flex-wrap:wrap; } .deed .rule i{ font-style:normal; border:1px solid #0D3B22; padding:0 3px; font-size:6.5px; color:#3FB97A; }
+.pick{ font-size:12px; color:var(--acc); }
+</style>
+<div class="wrap">
+<section><h1>Land Office Concepts</h1>
+<p class="lede">Three layouts for the plot shop screen BSP-Core adds for Region Guard (request RG-C3). All three sit in the <b>Cash Machine skin</b>, since every bank and shop screen does, and all three buy through Region Guard's own claim service, which keeps the rules and the claim. The screen opens from an admin-placed <b>Land Office</b> block, or with <code>/bsp plots</code> for an Easy NPC, the same way shops do.</p>
+<div class="card"><h3>What is shown in every mock-up</h3><p>Example plots: <b>Harbour Row 3</b> (20 x 20, 4,000 pieces, for sale), <b>Hilltop 7</b> (30 x 30, 9,000 pieces, for sale), <b>Common Field</b> (an open area where a player marks their own ground: 12 pieces a block, 10 to 40 a side), and the player's own <b>Harbour Row 1</b>. The balance in the strip is the bank's.</p></div>
+</section>
+
+<section><h2>1. Three concepts</h2><div class="grid3">
+
+<div class="card"><h3>A. Ledger</h3><p class="pick">Owner's stated default: a list on the left, the chosen plot in the middle, Buy and Give up on the right.</p>
+<div class="stage"><div class="cm">
+ <div class="scr"><div class="h"><span>&gt; LAND OFFICE</span><span>Dev</span></div>
+  <div class="cols">
+   <div class="pane"><div class="t">FOR SALE / OPEN</div><div class="rows">
+    <div class="row sel"><span>&gt; Harbour Row 3</span><span class="amb">4,000</span></div>
+    <div class="row"><span>&nbsp; Hilltop 7</span><span class="m">9,000</span></div>
+    <div class="row"><span>&nbsp; Common Field</span><span class="m">12/blk</span></div>
+    <div class="row"><span class="m">&nbsp; Harbour Row 1</span><span class="m">yours</span></div></div></div>
+   <div class="pane"><div class="t">HARBOUR ROW 3</div>
+    <div class="field"><span>Size</span><span>20 x 20 x 64</span></div>
+    <div class="field"><span>Price</span><span class="amb">4,000 pieces</span></div>
+    <div class="field"><span>Build</span><span>members only</span></div>
+    <div class="field"><span>PvP</span><span>off</span></div>
+    <div class="field"><span>Totems</span><span class="red">not here</span></div>
+    <div class="field"><span>After</span><span>1,250 left</span></div></div>
+  </div>
+  <div class="msg">You can afford it. Press BUY, then CONFIRM.</div></div>
+ <div class="keys"><div class="k">Previous</div><div class="k">Next</div><div class="k">Show plot</div><div class="sp"></div><div class="k">Buy</div><div class="k off">Give up</div><div class="k">Done</div></div>
+ <div class="strip"><span>land office / local</span><span>balance 5,250</span></div>
+</div></div>
+<p>Two panes: the list (plots for sale in amber, open areas with their price per block, your own claims dim at the bottom) and the chosen one's details with the quote: size, price, the rules that matter to a buyer, and your balance after. SHOW PLOT pulses the plot's gold outline in the world for ten seconds. For an open area the details pane reads your wand selection (Region Guard's <code>/claim tool</code>) as a size and a total. GIVE UP works on your own claims, shows the refund, and asks twice.</p></div>
+
+<div class="card"><h3>B. Map board</h3>
+<div class="stage"><div class="cm">
+ <div class="scr"><div class="h"><span>&gt; LAND OFFICE</span><span>around you, 160 blocks</span></div>
+  <div class="map">
+   <i class="mine" style="left:8%;top:12%;width:22%;height:26%">Harbour Row 1</i>
+   <i class="sale" style="left:34%;top:12%;width:22%;height:26%">Harbour Row 3</i>
+   <i class="other" style="left:60%;top:8%;width:18%;height:22%">Sam</i>
+   <i class="open" style="left:10%;top:52%;width:60%;height:40%">Common Field</i>
+   <i class="sale" style="left:74%;top:48%;width:22%;height:40%">Hilltop 7</i>
+   <i class="you" style="left:44%;top:40%">&#9650;</i>
+  </div>
+  <div class="field"><span>Harbour Row 3</span><span class="amb">20 x 20, 4,000 pieces, build: members</span></div>
+  <div class="msg">Click a plot. Gold is for sale, green is yours, dashed is open ground.</div></div>
+ <div class="keys"><div class="k">Zoom in</div><div class="k">Zoom out</div><div class="k">Centre</div><div class="sp"></div><div class="k">Buy</div><div class="k off">Give up</div><div class="k">Done</div></div>
+ <div class="strip"><span>land office / local</span><span>balance 5,250</span></div>
+</div></div>
+<p>A top-down map of the plots around the player, drawn from the same listings the client already gets for the gold outlines: for sale in amber, yours in green, others' plain, open areas dashed, you as an arrow. Click a plot to select it; one line under the map carries the quote. Buying an open area draws your wand selection on the map as you make it. Strongest for seeing where a plot is; weakest for reading its rules, which need a second line or a tooltip.</p></div>
+
+<div class="card"><h3>C. Deed counter</h3>
+<div class="stage"><div class="cm">
+ <div class="scr"><div class="h"><span>&gt; LAND OFFICE</span><span>2 of 4, nearest first</span></div>
+  <div class="deed"><div class="n">HARBOUR ROW 3</div>
+   <div class="field"><span>Size</span><span>20 x 20 x 64 blocks</span></div>
+   <div class="field"><span>Price</span><span class="big">4,000</span></div>
+   <div class="field"><span>Distance</span><span>35 blocks east</span></div>
+   <div class="rule"><i>build: members</i><i>pvp off</i><i>no totems</i><i>mobs off</i></div></div>
+  <div class="field"><span>Your claims</span><span>Harbour Row 1 (20 x 20)</span></div>
+  <div class="msg">You can afford it: 1,250 pieces left after.</div></div>
+ <div class="keys"><div class="k">Previous</div><div class="k">Next</div><div class="k">Show plot</div><div class="sp"></div><div class="k">Buy</div><div class="k">Enlarge</div><div class="k off">Give up</div><div class="k">Done</div></div>
+ <div class="strip"><span>land office / local</span><span>balance 5,250</span></div>
+</div></div>
+<p>One plot at a time as a deed card, paged nearest first, with the rules as chips and the distance and direction to it. Open areas appear as a deed too, priced from your wand selection. ENLARGE grows one of your own claims from the wand selection. Easiest to read on a small screen; slowest to compare several plots.</p></div>
+
+</div></section>
+
+<section><h2>2. What every concept has to carry</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Part</th><th>What it does</th><th>Where it comes from</th></tr></thead><tbody>
+<tr><td>Listings</td><td>Plots for sale and open areas in the player's world, with name, bounds, price (a plot) or price per block with the size limits (an open area).</td><td>Region Guard <code>claims().plotsForSale(level)</code> and <code>openAreas(level)</code></td></tr>
+<tr><td>Quote</td><td>Before anything moves: the price, whether the player may buy it and why not (too poor, too big, claims off in this world), in a plain sentence.</td><td><code>quotePlot</code> / <code>quoteOpen</code></td></tr>
+<tr><td>Buy</td><td>BUY then CONFIRM; the bank is charged by Region Guard, the claim is made, the screen shows the outcome. A plot that changed while the money was in flight is refunded and the screen says so.</td><td><code>purchasePlot</code> / <code>purchaseOpen</code> with the callback</td></tr>
+<tr><td>Open ground</td><td>The player marks their ground with Region Guard's wand; the screen shows the selection as a size and a total and refuses sizes outside the limits.</td><td>Region Guard wand selection</td></tr>
+<tr><td>Enlarge</td><td>Grow one of your claims to the wand selection, paying for the new blocks.</td><td><code>enlarge</code></td></tr>
+<tr><td>Give up</td><td>Abandon one of your claims; the refund is shown before the second CONFIRM and paid into the bank.</td><td><code>abandon</code></td></tr>
+<tr><td>Show</td><td>Pulse the chosen plot's outline in the world so the buyer sees where it is.</td><td>The outlines Region Guard already draws, plus one packet to highlight one</td></tr>
+<tr><td>Balance</td><td>The bank balance in the strip and "left after" in the quote.</td><td><code>BspBank.balance</code></td></tr>
+<tr><td>Opening</td><td>An admin-placed Land Office block (Cash Machine family, like the ATM) and <code>/bsp plots [player]</code> for Easy NPCs.</td><td>BSP-Core</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. Decisions, with defaults</h2>
+<div class="card"><ol>
+<li><b>Layout.</b> A Ledger (default), B Map board, or C Deed counter. A mix is possible: A with B's map in place of the details pane.</li>
+<li><b>Opening.</b> Default: the Land Office block plus the command. Alternative: also a key on the Portable Banker, like the Shopping Network.</li>
+<li><b>Open ground.</b> Default: the player marks it with Region Guard's wand and the screen prices the selection. Alternative: pick a width and depth in the screen, centred on where you stand.</li>
+<li><b>Give up.</b> Default: in this screen, refund shown, two confirms. Alternative: leave it to Region Guard's command only.</li>
+<li><b>Your claims.</b> Default: listed in the same screen (dim rows in A, green in B, a line in C) so ENLARGE and GIVE UP have something to point at.</li>
+</ol></div></section>
+</div>

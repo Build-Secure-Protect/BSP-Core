@@ -1148,6 +1148,8 @@ public class BspGameTests {
         h.assertTrue(!com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), inside, com.mrgregles.bsp_core.api.BspZones.TELEPORT_OUT), "teleporting out was not switched on");
         h.assertTrue(!com.mrgregles.bsp_core.api.BspZones.isBlocked(h.getLevel(), outside, com.mrgregles.bsp_core.api.BspZones.TELEPORT_IN), "nothing is blocked outside");
         h.assertTrue(com.mrgregles.bsp_core.zone.ZoneRules.known("set_home") && !com.mrgregles.bsp_core.zone.ZoneRules.defaults().contains("set_home"), "a known rule, off on a new block");
+        h.assertTrue(com.mrgregles.bsp_core.compat.regionguard.RegionGuardZones.allows(h.getLevel(), inside, com.mrgregles.bsp_core.zone.ZoneLedger.TOTEM_PLACE, null)
+                == !com.mrgregles.bsp_core.compat.regionguard.RegionGuardZones.present(), "without Region Guard its say is always yes");
         ledger.remove(where);
         h.succeed();
     }
@@ -1214,5 +1216,58 @@ public class BspGameTests {
             h.assertTrue(tag.getLongArray("BuffMb")[oc] == 200 && tag.getIntArray("BuffLevel")[oc] == 3, "the buffed amount and level are saved with the tank");
             master.drain(master.stored());
         });
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_lists_placed_totems_near_a_spot_and_the_steal_radius(GameTestHelper h) {
+        var server = server(h);
+        UUID erin = UUID.randomUUID();
+        BlockPos pos = new BlockPos(4, 1, 4);
+        h.setBlock(pos, com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get().defaultBlockState());
+        entity(h, pos, com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity.class).setOwner(new com.mrgregles.bsp_core.totem.TotemOwner(erin, "Erin"));
+        var here = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(pos));
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.allPlaced(server).stream().anyMatch(p -> p.owner().equals(erin) && p.where().equals(here)), "every placed totem is listed with its owner");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placedNear(h.getLevel(), h.absolutePos(pos.offset(2, 0, 0)), 3).stream().anyMatch(p -> p.owner().equals(erin)), "found within three blocks");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placedNear(h.getLevel(), h.absolutePos(pos.offset(2, 0, 0)), 1).stream().noneMatch(p -> p.owner().equals(erin)), "not within one");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.isTotem(h.getBlockState(pos)) && !com.mrgregles.bsp_core.api.BspTotems.isTotem(Blocks.STONE.defaultBlockState()), "a totem state is known as one");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.thiefAt(h.getLevel(), h.absolutePos(pos)).isEmpty(), "no steal is running");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.stealRadius() > 0, "the steal radius is published");
+        h.setBlock(pos, Blocks.AIR);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void land_office_data_travels_and_says_when_region_guard_is_missing(GameTestHelper h) {
+        var plots = java.util.List.of(
+                new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot("shop1", "Harbour Row 3", 10, 10, 29, 29, 4000, 0, 0, 0, com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot.FOR_SALE, ""),
+                new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot("field", "Common Field", -40, -40, 40, 40, 0, 12, 10, 40, com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot.OPEN, ""),
+                new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot("sam1", "Sam's place", 50, 50, 69, 69, 0, 0, 0, 0, com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot.OTHER, "Sam"));
+        var packet = new com.mrgregles.bsp_core.network.LandOfficeDataPacket(plots, 5250, true, true, new int[]{0, 0, 19, 19}, "You can afford it.", true);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.LandOfficeDataPacket.encode(packet, buf);
+        var back = com.mrgregles.bsp_core.network.LandOfficeDataPacket.decode(buf);
+        h.assertTrue(back.plots().size() == 3 && back.plots().get(0).name().equals("Harbour Row 3") && back.plots().get(0).price() == 4000 && back.plots().get(1).costPerBlock() == 12
+                && back.plots().get(2).kind() == com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot.OTHER && back.plots().get(2).owner().equals("Sam"), "listings travel whole, another player's claim with its owner");
+        h.assertTrue(back.balance() == 5250 && back.selection() != null && back.selection()[2] == 19 && back.message().equals("You can afford it.") && back.ok(), "balance, outline and message travel");
+        h.assertTrue(back.plots().get(1).contains(new int[]{0, 0, 19, 19}) && !back.plots().get(0).contains(new int[]{0, 0, 19, 19}), "an outline knows which plot holds it");
+        h.assertTrue(back.plots().get(0).containsXZ(15, 15) && !back.plots().get(0).containsXZ(30, 15), "a click finds a plot");
+        BlockPos office = new BlockPos(2, 1, 2);
+        h.setBlock(office, com.mrgregles.bsp_core.registry.ModBlocks.LAND_OFFICE.get().defaultBlockState());
+        var be = entity(h, office, com.mrgregles.bsp_core.land.LandOfficeBlockEntity.class);
+        h.assertTrue(!be.inUse(), "nobody at a fresh office");
+        be.userOpened();
+        be.userOpened();
+        be.userClosed();
+        h.assertTrue(be.inUse(), "two at it, one left: still in use");
+        be.userClosed();
+        h.assertTrue(!be.inUse(), "the last one left");
+        h.setBlock(office, Blocks.AIR);
+        if (!com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.present()) {
+            h.assertTrue(com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.listings(h.getLevel(), UUID.randomUUID(), BlockPos.ZERO).isEmpty(), "no Region Guard, no listings");
+            h.assertTrue(com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.selection(null) == null, "and no outline");
+            var r = com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.quotePlot(null, "shop1");
+            h.assertTrue(!r.ok() && r.message().contains("not installed"), "and a plain answer why: " + r.message());
+        }
+        h.succeed();
     }
 }

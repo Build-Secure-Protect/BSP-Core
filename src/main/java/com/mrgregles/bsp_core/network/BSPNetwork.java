@@ -89,6 +89,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(StallDisplayConfigPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(StallDisplayConfigPacket::encode).decoder(StallDisplayConfigPacket::decode)
                 .consumerMainThread(StallDisplayConfigPacket::handle).add();
+        CHANNEL.messageBuilder(LandOfficeDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LandOfficeDataPacket::encode).decoder(LandOfficeDataPacket::decode)
+                .consumerMainThread(LandOfficeDataPacket::handle).add();
+        CHANNEL.messageBuilder(LandOfficeActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(LandOfficeActionPacket::encode).decoder(LandOfficeActionPacket::decode)
+                .consumerMainThread(LandOfficeActionPacket::handle).add();
         CHANNEL.messageBuilder(VendorUsePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(VendorUsePacket::encode).decoder(VendorUsePacket::decode)
                 .consumerMainThread(VendorUsePacket::handle).add();

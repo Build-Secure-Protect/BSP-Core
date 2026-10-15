@@ -3,6 +3,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 version = mod_version
@@ -12,8 +13,11 @@ base {
     archivesName = mod_archive_name
 }
 
-// The MySQL driver is shipped inside the mod jar (jar-in-jar), so servers need nothing extra installed.
-jarJar.enable()
+// The MySQL driver is shipped inside the mod jar, relocated under this mod's own package (see shadowJar below), so servers
+// need nothing extra installed and a server that ships the same driver itself (Mohist does) sees no second copy of it.
+configurations {
+    shade
+}
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -136,6 +140,10 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
+    // BSP Region Guard's jar from its own checkout beside this one, for the optional totem-rule hand-off (compile only).
+    flatDir {
+        dirs '../BSP-Region Guard/build/libs'
+    }
 }
 
 dependencies {
@@ -150,6 +158,8 @@ dependencies {
     runtimeOnly fg.deobf("mekanism:Mekanism:1.20.1-10.4.16.80")
 
     // JEI: the API is compile-only, so BSP-Core runs without JEI; the full mod is loaded in dev runs only.
+    // BSP Region Guard (optional at run time): BSP-Core asks its regions about totem-place and totem-drop when it is installed.
+    compileOnly fg.deobf("blank:bsp-region-guard:0.1.0")
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.20.0.112")
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.20.0.112")
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
@@ -164,7 +174,7 @@ dependencies {
 
     // MySQL driver for the optional network storage: on the classpath in dev runs, and bundled into the released jar.
     minecraftLibrary('com.mysql:mysql-connector-j:8.4.0') { transitive = false }
-    jarJar(group: 'com.mysql', name: 'mysql-connector-j', version: '[8.4.0,9.0)') { transitive = false }
+    shade('com.mysql:mysql-connector-j:8.4.0') { transitive = false }
 
     // Patchouli: the guide book is data only, so there is no compile dependency; loaded in dev runs to read the book.
     runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-84.1-FORGE")
@@ -246,8 +256,16 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 // The jar with the bundled driver is the one to release (no classifier); the plain jar is kept as "-slim".
+// The driver's classes (and every reference to them in this mod) are moved under com.mrgregles.bsp_core.shaded, and its
+// module descriptor is dropped, so it is plain content of this mod's jar and never a second "mysql.connector.j" module.
 tasks.named('jar') { archiveClassifier = 'slim' }
-tasks.named('jarJar') { archiveClassifier = '' }
-reobf { jarJar { } }
-tasks.named('jarJar') { finalizedBy 'reobfJarJar' }
-tasks.named('assemble') { dependsOn 'jarJar' }
+shadowJar {
+    archiveClassifier = ''
+    configurations = [project.configurations.shade]
+    relocate 'com.mysql', 'com.mrgregles.bsp_core.shaded.mysql'
+    exclude '**/module-info.class'
+    mergeServiceFiles()
+}
+reobf { shadowJar { } }
+tasks.named('shadowJar') { finalizedBy 'reobfShadowJar' }
+tasks.named('assemble') { dependsOn 'shadowJar' }

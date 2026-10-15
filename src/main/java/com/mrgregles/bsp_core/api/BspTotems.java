@@ -32,6 +32,52 @@ public final class BspTotems {
     /** A steal in progress on one of a player's totems. */
     public record Steal(GlobalPos where, UUID thief, String thiefName, float fractionLeft) {}
 
+    /** A placed totem and who owns it. */
+    public record Placed(UUID owner, GlobalPos where) {}
+
+    /** Every placed totem this server knows of, in every dimension. */
+    public static java.util.List<Placed> allPlaced(MinecraftServer server) {
+        java.util.List<Placed> out = new java.util.ArrayList<>();
+        TotemLedger.get(server).allPlaced().forEach((owner, set) -> set.forEach(where -> out.add(new Placed(owner, where))));
+        return out;
+    }
+
+    /** The placed totems within {@code radius} blocks of {@code pos} in {@code level} (straight-line distance). */
+    public static java.util.List<Placed> placedNear(ServerLevel level, BlockPos pos, int radius) {
+        java.util.List<Placed> out = new java.util.ArrayList<>();
+        double r2 = (double) radius * radius;
+        TotemLedger.get(level.getServer()).allPlaced().forEach((owner, set) -> {
+            for (GlobalPos where : set) {
+                if (where.dimension() == level.dimension() && where.pos().distSqr(pos) <= r2) {
+                    out.add(new Placed(owner, where));
+                }
+            }
+        });
+        return out;
+    }
+
+    /** The radius, in blocks, a thief must stay within while stealing (and within which raid rules apply). */
+    public static int stealRadius() {
+        return com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.STEAL_RADIUS, 16);
+    }
+
+    /** Whether a block state is a placed Shatter Totem. */
+    public static boolean isTotem(net.minecraft.world.level.block.state.BlockState state) {
+        return state.is(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get());
+    }
+
+    /** The steal running on the totem at {@code pos}, if one is. */
+    public static Optional<Steal> thiefAt(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof ShatterTotemBlockEntity be) {
+            Optional<StealState> steal = be.getSteal();
+            if (steal.isPresent()) {
+                StealState s = steal.get();
+                return Optional.of(new Steal(GlobalPos.of(level.dimension(), pos.immutable()), s.thief(), s.thiefName(), s.fractionLeft()));
+            }
+        }
+        return Optional.empty();
+    }
+
     /** Where the player's placed totems stand, on this server, in every dimension; empty when none. */
     public static Set<GlobalPos> placed(MinecraftServer server, UUID owner) {
         Set<GlobalPos> set = TotemLedger.get(server).placedFor(owner);

@@ -486,6 +486,7 @@ Blocks: Shatter Coin Factory Controller, Factory Frame x2, Factory Press, Factor
 - [ ] Logging out inside the zone with a totem: the totem is placed just outside the nearest side of the zone, on the surface.
 - [ ] A totem dropped just outside that slides or is thrown in places itself outside the zone when its timer runs out.
 - [ ] Settings and zones survive a restart, and still apply when the Anti Totem Block's own chunk is not loaded (test with a 200-block zone, standing far from the block).
+- [ ] With BSP Region Guard installed: make a region with `totem-place` set to deny and no Anti Totem block near. Placing a totem inside it as a player is refused with BSP-Core's own "cannot be placed here" message and the totem stays in hand; dropping one inside a `totem-drop` deny region gives it back with the "cannot be dropped here" message; outside the region both work. Without Region Guard nothing changes.
 - [ ] The Rules tab lists a "Teleports (the pack's teleport mod)" group under Totems with three rules, all "allowed" on a new block; switch them to BLOCKED and back; they save with the zone. (What they do is the teleport mod's to test.)
 
 ## Decoy Totems

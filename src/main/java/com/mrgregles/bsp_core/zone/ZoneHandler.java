@@ -52,7 +52,7 @@ public final class ZoneHandler {
             return;
         }
         String key = id.getPath().equals("shatter_totem") ? ZoneLedger.TOTEM_PLACE : id.getPath();
-        if (ZoneLedger.isBlocked(level, event.getPos(), key)) {
+        if (ZoneLedger.isBlocked(level, event.getPos(), key) || !com.mrgregles.bsp_core.compat.regionguard.RegionGuardZones.allows(level, event.getPos(), key, player)) {
             event.setCanceled(true);
             player.displayClientMessage(Component.translatable("message.bsp_core.zone.no_place", event.getPlacedBlock().getBlock().getName()).withStyle(ChatFormatting.RED), true);
             player.inventoryMenu.sendAllDataToRemote(); // the client already took the item out of the hand
@@ -66,7 +66,8 @@ public final class ZoneHandler {
         if (event.isCanceled() || !TotemInventories.isTotem(stack) || !(event.getPlayer() instanceof ServerPlayer player) || Admins.isAdmin(player)) {
             return;
         }
-        if (ZoneLedger.isBlocked(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_DROP)) {
+        if (ZoneLedger.isBlocked(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_DROP)
+                || !com.mrgregles.bsp_core.compat.regionguard.RegionGuardZones.allows(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_DROP, player)) {
             event.setCanceled(true);
             TotemInventories.giveBack(player, stack.copy());
             player.displayClientMessage(Component.translatable("message.bsp_core.zone.no_drop").withStyle(ChatFormatting.RED), true);
@@ -77,7 +78,9 @@ public final class ZoneHandler {
     public static boolean inTotemZone(ServerPlayer player) {
         ZoneLedger zones = ZoneLedger.get(player.server);
         return zones.blocked(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_PLACE)
-                || zones.blocked(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_DROP);
+                || zones.blocked(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_DROP)
+                || !com.mrgregles.bsp_core.compat.regionguard.RegionGuardZones.allows(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_PLACE, player)
+                || !com.mrgregles.bsp_core.compat.regionguard.RegionGuardZones.allows(player.serverLevel(), player.blockPosition(), ZoneLedger.TOTEM_DROP, player);
     }
 
     /**

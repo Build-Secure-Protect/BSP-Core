@@ -849,3 +849,17 @@ Buy the **Shopping Network** on your *Portable Banker* with Shatter Coins and th
 
 Special offers show a chip with the discount; rotating shops change their shelves on a timer.
 
+## The Land Office
+
+**Page 1**
+
+The *Land Office* sells land. Right-click it for a map of the plots around you: **amber** plots are for sale at a set price, **dashed** areas are open ground where you mark out your own plot, and **green** plots are yours.
+
+Click a plot to see its size and price, then press **Buy** and confirm. The price comes out of your bank account.
+
+**Page 2: Open ground**
+
+For open ground, mark the corners with the land wand (**/claim tool**); the office opens by itself with the price of what you marked, and shows how near it lies to other plots.
+
+**Enlarge** grows one of your plots to an outline that covers it, paying for the new ground. **Give up** returns part of what you paid and frees the land.
+

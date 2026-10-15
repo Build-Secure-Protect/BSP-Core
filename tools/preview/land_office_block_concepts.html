@@ -1,0 +1,123 @@
+<title>Land Office Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Board like the other BSP concept pages. One WebGL context draws every 3D view. Three looks for the one-block Land Office, each beside a plain stone block for scale, with what glows and what moves. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ color:var(--muted); font-weight:600; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+</style>
+<div class="wrap">
+<section><h1>Land Office Looks</h1>
+<p class="lede">Three designs for the Land Office block: one block, placed by admins, right-click opens the land map where players buy plots from Region Guard. All three belong to the bank family (dark steel, amber lamps, gold trim, a green phosphor surface) so an office sits well beside a Shatter Bank. The screen is already built; only the block's look is open.</p>
+<div class="card"><div class="ctl"><label><input type="checkbox" id="night"> Night (shows what glows)</label><label><input type="checkbox" id="busy" checked> Someone at the office (map lit, plots blinking)</label><span style="color:var(--muted)">Drag a view to turn it.</span></div></div></section>
+
+<section><h2>1. Three looks</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. What each is made of</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A. Map Counter</th><th>B. Surveyor's Cabinet</th><th>C. Deeds Board</th></tr></thead><tbody>
+<tr><td><b>Body</b></td><td>A dark steel counter on a bolted base, the Vault Pillar's materials. A slanted map table on top under a glass lid: a green phosphor map with amber plot squares, a brass stamp and an ink pad at the corner, two rolled maps in a rack on the side.</td><td>A walnut cabinet with brass corners and three map drawers down the front, a slanted lid holding a lit plan under glass, a brass theodolite on a tripod on top, a compass rose dial on the side.</td><td>A notice board on two steel posts: a green phosphor board with the land map and three amber deed cards pinned to it, a narrow counter shelf in front with a bell and a stamp, an amber lamp on an arm above.</td></tr>
+<tr><td><b>Glows at night</b></td><td>The map table, the plot squares, the lamp on the stamp post.</td><td>The plan under the lid, the theodolite's eyepiece, the dial.</td><td>The board, the deed cards, the lamp.</td></tr>
+<tr><td><b>Moves</b></td><td>Plot squares blink in turn while someone uses it; the stamp lifts and drops.</td><td>The theodolite turns slowly; the plan's cursor sweeps.</td><td>The deed cards flutter; the lamp pulses while someone uses it.</td></tr>
+<tr><td><b>Reads as</b></td><td>The bank's land desk. Closest to the ATM and the deposit box.</td><td>A surveyor's office. Most "map".</td><td>A town hall notice board. Lightest, easiest to place in a market.</td></tr>
+<tr><td><b>Built with</b></td><td colspan="3">One block, admin-only item, a static model from a generator (`gen_bank_assets.py`, the machine atlas) with the glowing parts drawn full bright, and a small renderer for what moves. Light level 5 while whole, like the stall displays.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. Decisions, with defaults</h2>
+<div class="card"><ol>
+<li><b>Look.</b> A, B or C. Default A, Map Counter, since it matches the bank blocks it stands beside.</li>
+<li><b>Light.</b> Default 5 at night, like the displays; the ATM gives 7.</li>
+<li><b>Idle motion.</b> Default: the plot squares blink only while someone has the screen open; still otherwise.</li>
+<li><b>Sound.</b> Default: the bank's key beep on opening.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STEEL=0x4a5060, STEEL2=0x2a2f3a, TRIM=0x8a909c, BRASS=0xb8893a, GOLD=0xd4a84b, WOOD=0x5a3d22, WOOD2=0x6b4a2b, NAVY=0x1e2a44, STONE=0x6c6f73, CREAM=0xeae4d5, GLASS=0x9fd8e6;
+  const SCREEN=0x0a2a14, PHOS=0x58f29a, PHOSD=0x2e8b57, AMBER=0xf2b544, RED=0xc0392b;
+  const state={night:false, busy:true};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos,rx,ry){ const s=new THREE.Group(); s.position.set(...pos); if(rx) s.rotation.x=rx; if(ry) s.rotation.y=ry; g.add(s); return s; }
+  function floor(g){ bx(g,[-30,-1,-30],[60,0,30],0x1c2026); bx(g,[22,0,0],[38,16,16],STONE); }
+  // a lit map surface: green ground, a grid, amber plot squares; returns the plots for blinking
+  function mapFace(g,f,t,axisUp){ bx(g,f,t,SCREEN,true); const plots=[]; const w=t[0]-f[0], d=axisUp?t[2]-f[2]:t[1]-f[1];
+    const cells=[[.12,.15,.3,.3,AMBER],[.55,.2,.3,.25,AMBER],[.2,.6,.25,.25,PHOS],[.58,.55,.3,.3,PHOSD]];
+    for(const [cx,cy,cw,ch,col] of cells){ const x0=f[0]+w*cx, x1=x0+w*cw; let m;
+      if(axisUp){ const z0=f[2]+d*cy, z1=z0+d*ch; m=bx(g,[x0,t[1],z0],[x1,t[1]+.12,z1],col,true,.85); } else { const y0=f[1]+d*(1-cy-ch), y1=y0+d*ch; m=bx(g,[x0,y0,f[2]-.12],[x1,y1,f[2]],col,true,.85); }
+      plots.push(m); }
+    return plots; }
+
+  // A. Map Counter
+  function counter(g){ floor(g);
+    bx(g,[0,0,0],[16,2,16],STEEL2); for(const [x,z] of [[1,1],[13.5,1],[1,13.5],[13.5,13.5]]) bx(g,[x,2,z],[x+1.5,2.8,z+1.5],TRIM);
+    bx(g,[1,2,1],[15,9,15],STEEL); bx(g,[0,9,0],[16,11,16],STEEL2); bx(g,[0.5,10.6,0.5],[15.5,11,15.5],GOLD);
+    const table=grp(g,[0,11,16],-0.28); bx(table,[1,0,-13],[15,1.2,0],STEEL2); const plots=mapFace(table,[2,1.2,-12],[14,1.3,-1],true); bx(table,[1.5,1.3,-12.5],[14.5,1.9,-.5],GLASS,false,.25);
+    bx(g,[12.2,11,12],[14.8,12,14.6],STEEL2); const stamp=grp(g,[13.5,12,13.3],0); bx(stamp,[-0.8,0,-0.8],[0.8,1.6,0.8],BRASS); bx(stamp,[-0.3,1.6,-0.3],[0.3,2.8,0.3],WOOD2);
+    bx(g,[0.5,11,0.5],[3,12.2,3.4],RED);
+    bx(g,[-1.2,3,2],[0,8.5,14],STEEL2); bx(g,[-1.1,4,3],[-0.2,5,13],CREAM); bx(g,[-1.1,6.2,3],[-0.2,7.2,13],CREAM);
+    bx(g,[6,5,-0.4],[10,6.2,0],NAVY); bx(g,[6.6,5.3,-0.5],[9.4,5.9,-0.4],GOLD);
+    const lamp=bx(g,[14.4,12.2,0.8],[15.6,13.6,2],AMBER,true);
+    return t=>{ const on=state.busy; plots.forEach((p,i)=>p.visible=!on||((i+Math.floor(t*2))%4!==0)); if(!reduce) stamp.position.y=12+(on?Math.max(0,Math.sin(t*2.5))*1.4:0); lamp.visible=true; }; }
+  // B. Surveyor's Cabinet
+  function cabinet(g){ floor(g);
+    bx(g,[0,0,0],[16,1.5,16],STEEL2); bx(g,[1,1.5,1],[15,12,15],WOOD); for(const [x,z] of [[1,1],[14,1],[1,14],[14,14]]) bx(g,[x-0.3,1.5,z-0.3],[x+1.3,12,z+1.3],BRASS);
+    for(let i=0;i<3;i++){ bx(g,[3,2.5+i*3,0.4],[13,4.8+i*3,1],WOOD2); bx(g,[7,3.2+i*3,0],[9,3.9+i*3,0.4],BRASS); }
+    const lid=grp(g,[0,12,16],-0.35); bx(lid,[1,0,-14],[15,1,0],WOOD2); bx(lid,[1.5,1,-13.5],[14.5,1.3,-.5],BRASS); const plots=mapFace(lid,[2.5,1.3,-12.5],[13.5,1.4,-1.5],true); bx(lid,[2,1.4,-13],[14,2,-1],GLASS,false,.25);
+    const cur=bx(lid,[3,1.5,-12],[3.3,1.6,-2],PHOS,true);
+    const tri=grp(g,[11,12,11],0); for(const a of [0,2.1,4.2]) { const leg=grp(tri,[0,0,0],0,a); bx(leg,[-0.25,0,0],[0.25,6,2.8],BRASS); }
+    const head=grp(tri,[0,6,0],0); bx(head,[-1,0,-1],[1,1,1],STEEL2); const scope=grp(head,[0,1.4,0],-0.3); bx(scope,[-0.5,-0.5,-2.5],[0.5,0.5,2.5],BRASS); const eye=bx(scope,[-0.35,-0.35,2.5],[0.35,0.35,2.9],PHOS,true);
+    const dial=grp(g,[16,7,8],0,1.57); bx(dial,[-2.2,-2.2,0],[2.2,2.2,0.4],BRASS); const face=bx(dial,[-1.8,-1.8,0.4],[1.8,1.8,0.6],SCREEN,true); bx(dial,[-0.15,-0.2,0.6],[0.15,1.6,0.75],RED,true); bx(dial,[-0.15,-1.6,0.6],[0.15,0.2,0.75],CREAM,true);
+    return t=>{ const on=state.busy; if(!reduce) head.rotation.y=t*0.5; cur.position.x=3+(on?(t*2%1)*10:0); plots.forEach(p=>p.visible=true); eye.visible=true; face.visible=true; }; }
+  // C. Deeds Board
+  function board(g){ floor(g);
+    bx(g,[0,0,0],[16,1,16],STEEL2); for(const x of [1.5,13]) bx(g,[x,1,10],[x+1.5,15,11.5],STEEL);
+    bx(g,[0.5,6,9.6],[15.5,15.5,10],STEEL2); bx(g,[0.8,6.3,9.5],[15.2,15.2,9.6],GOLD); const plots=mapFace(g,[1.6,7,9.4],[14.4,14.4,9.5],false);
+    const cards=[]; for(const [x,y,r] of [[2.5,10.5,-.08],[9.5,11.5,.1],[6,7.6,.05]]){ const c=grp(g,[x+1.5,y+1.1,9.3],0,0); c.rotation.z=r; bx(c,[-1.5,-1.1,0],[1.5,1.1,0.1],AMBER,true); bx(c,[-1.1,0.2,0.1],[1.1,0.4,0.15],SCREEN,true); bx(c,[-1.1,-0.3,0.1],[0.4,-0.1,0.15],SCREEN,true); bx(c,[-0.2,0.9,-0.1],[0.2,1.3,0.2],RED); cards.push(c); }
+    bx(g,[0.5,4.5,4.5],[15.5,6,10],STEEL); bx(g,[0.5,5.9,4.2],[15.5,6.3,10],GOLD);
+    bx(g,[3,6.3,6],[5.4,7.5,8.4],BRASS); bx(g,[3.9,7.5,6.9],[4.5,8.4,7.5],BRASS);
+    bx(g,[10.5,6.3,6.2],[13,7.2,8.2],STEEL2); bx(g,[11.2,7.2,6.8],[12.3,8.6,7.6],WOOD2);
+    bx(g,[7,15.5,9],[9,17.5,10.5],STEEL2); bx(g,[6.5,15.5,5.5],[9.5,16.3,9],STEEL2); const lamp=bx(g,[6.8,14.5,5.8],[9.2,15.5,8.6],AMBER,true);
+    bx(g,[4,1,2],[12,1.6,4],NAVY);
+    return t=>{ const on=state.busy; plots.forEach((p,i)=>p.visible=!on||((i+Math.floor(t*2))%4!==0)); if(!reduce) cards.forEach((c,i)=>c.rotation.z=[-.08,.1,.05][i]+Math.sin(t*1.7+i)*.03); lamp.material.opacity=on?.7+.3*Math.sin(t*3):1; lamp.material.transparent=true; }; }
+
+  // ---- one WebGL context
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:3.3,rx:.45,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.003; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Map Counter','The bank\'s land desk: a dark steel counter on a bolted base with a gold edge, a slanted map table under glass showing the land in green phosphor with amber plot squares that blink in turn, a brass stamp on an ink pad, a red ledger, rolled maps in a rack on the side, a name plate on the front and a lamp.',counter],
+    ['B. Surveyor\'s Cabinet','A walnut cabinet with brass corners and three map drawers, a slanted lid holding a lit plan under glass with a sweeping cursor, a brass theodolite on a tripod turning slowly on top with a glowing eyepiece, and a compass dial on the side.',cabinet],
+    ['C. Deeds Board','A town notice board on two steel posts: a green phosphor board with the land map, three amber deed cards pinned to it that flutter, a counter shelf in front with a bell and a stamp, and an amber lamp on an arm above that pulses while someone reads it.',board]],{dist:70,target:[9,8,6]});
+  el('night').onchange=e=>state.night=e.target.checked; el('busy').onchange=e=>state.busy=e.target.checked;
+})();
+</script>

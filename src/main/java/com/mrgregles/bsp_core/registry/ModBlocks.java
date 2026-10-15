@@ -102,6 +102,7 @@ public final class ModBlocks {
     public static final RegistryObject<Block> VENDOR_POST = BLOCKS.register("vendor_post", com.mrgregles.bsp_core.shop.VendorPostBlock::new);
     public static final RegistryObject<Block> STALL_DISPLAY = BLOCKS.register("stall_display", com.mrgregles.bsp_core.shop.StallDisplayBlock::new);
     public static final RegistryObject<Block> MARKET_STALL = BLOCKS.register("market_stall", com.mrgregles.bsp_core.shop.MarketStallBlock::new);
+    public static final RegistryObject<Block> LAND_OFFICE = BLOCKS.register("land_office", com.mrgregles.bsp_core.land.LandOfficeBlock::new);
 
     public static final RegistryObject<MachineBlock> TETRIUM_CRUCIBLE =
             BLOCKS.register("tetrium_crucible", () -> new MachineBlock(TetriumCrucibleBlockEntity::new));

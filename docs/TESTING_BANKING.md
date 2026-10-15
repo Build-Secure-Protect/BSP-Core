@@ -349,4 +349,22 @@ Setup: operator, the bakery with at least two cards (one with a stock of 1), a r
 6. Leave and rejoin (or restart the server): the stall keeps its style, shop and hours.
 - [ ] 12.2 matches
 
+## Part 13: the Land Office (needs BSP Region Guard)
+
+Setup: operator, Region Guard installed with a plot for sale and an open area near spawn (`/rg` on its side), a newcomer with pieces in the bank.
+
+### 13.1 The map
+1. From the BSP creative tab place a **Land Office**. **See:** the Deeds Board: a notice board on two steel posts with a gold frame around a green phosphor land map (amber and green plot squares), three amber deed cards pinned to it with red pins, a steel shelf in front with a gold lip, a brass bell and a stamp, a lamp on an arm above, a name plate on the base; it gives off light 5 at night. The cards hang still. The newcomer cannot place or mine it.
+2. Right-click it. **See:** a page-turn sound; while the screen is open the cards on the block flutter, the lamp breathes and one plot square at a time goes dark (ask a second player to watch, or open it and look at a second office in view); they stop when you close it. Then: the Cash Machine "> LAND OFFICE" screen: a top-down map of the land around you drawn from the terrain, north up, "96 blocks across" at the top right; plots for sale outlined and tinted amber, the open area dashed, your own claims green, a white dot where you stand; the legend under the map; keys ZOOM IN, ZOOM OUT, CENTRE at the top, BUY (greyed), GIVE UP (greyed), DONE at the bottom; the side panel reads "Click a plot on the map."; the strip "land office: Region Guard holds the claims / <server>" and your balance.
+3. Scroll and ZOOM: 48, 96, 160 blocks across; drag the map to move; CENTRE snaps back to you. Hover a plot: its name as a tooltip. Without Region Guard installed the strip reads "Region Guard is not installed" and the panel says there is no land to sell.
+- [ ] 13.1 matches
+
+### 13.2 Buying, outlining, giving up
+1. Click the plot for sale: it turns white, the panel shows its name, "for sale", size, price in amber, "N left after" and the distance; the foot shows Region Guard's quote (whether you can afford it). BUY lights. Press BUY: the key reads CONFIRM in green and the foot says to press it again; click elsewhere: it stops. Press BUY then CONFIRM: the foot shows Region Guard's answer, the plot turns green on the map, the strip's balance drops, and the bank log has the purchase from "Region Guard".
+2. Outline ground inside the open area with Region Guard's wand (`/claim tool`), two corners. **See:** on the second corner the office opens by itself, centred on the outline drawn in white, the open area chosen, the panel reading "Outline W x D: N pieces" and, under it, how far the outline lies from the nearest other plot or claim ("12 blocks from Sam's place", or "Touches ..." in red), the foot showing the quote. Click a corner again: the office reopens with the new ground. BUY then CONFIRM: the outline becomes a green claim. Open the office from the block instead: it shows the same outline. An admin with bypass on gets no office from the wand (they draw regions with it); the block still works for them. Have a second player claim nearby: their claim shows in violet with their name in the panel, and a BUY by either player redraws the other's open office at once.
+3. `/claim buy` as a player now says to buy at a Land Office (Region Guard's rule); admins keep it. Click one of your claims: "your claim", size, distance; GIVE UP lights. Press GIVE UP then CONFIRM: the claim leaves the map, the refund shows at the foot and the balance rises.
+4. Outline ground that covers one of your claims (same as 2), click the claim: the panel says the outline covers it and the first key reads ENLARGE; press it then CONFIRM: the claim grows to the outline and the bank is charged for the new ground.
+5. Click a plot you cannot afford: the quote at the foot says so in red and CONFIRM is refused by Region Guard with the same reason.
+- [ ] 13.2 matches
+
 *(The shop parts are added as the shops are built.)*
