@@ -1,0 +1,37 @@
+{
+  "name": "Teams",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:white_banner",
+  "sortnum": 11,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Friends who build together can form a $(l)team$(). Every member counts as a friend with all four switches on every teammate's totem: they open its panel, buy its upgrades, pass its Ward and Alarm, use its machines and see through its Cloaking. Teammates cannot steal from each other, and the Totem Compass leaves teammates' totems alone."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Open the Team screen from the $(l)TEAM$() tab on your placed totem, the TEAM key on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.",
+      "title": "Making one"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "An invited player sees a card at the top right with your face and the team's name, hears a chime, and finds the same offer in chat with Accept and Decline. Two keys answer the card (Y and H unless rebound); the chat buttons work from inside any screen.",
+      "title": "The invite"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A team holds up to five. The leader renames, recolours, removes members, hands the lead over and disbands; everyone may invite. Leaving, being removed or a disband takes the shared access away at once, and a totem stolen by an outsider is out of the team's reach by itself. The leader hands the lead over before leaving.",
+      "title": "Members and the lead"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Press $(l)TEAM CHAT$() on the Team screen and what you type goes to the team until you press it again; a pill above the chat shows while it is on. $(l)/t message$() sends one line without switching. The team's board keeps the last fifty lines for members who were away, counts the unread ones at login, and the leader can pin one note above it.",
+      "title": "Talking"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Any member may buy upgrades on a teammate's placed totem and raise its tier; the one buying pays, with coins and experience as for their own. The upgrade belongs to the totem and stays with it whoever leaves the team.",
+      "title": "Upgrading together"
+    }
+  ]
+}

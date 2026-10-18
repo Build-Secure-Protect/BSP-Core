@@ -1747,4 +1747,359 @@ public class BspGameTests {
         h.setBlock(floor.above(), Blocks.AIR);
         h.succeed();
     }
+    // ------------------------------------------------------------------ teams
+
+    /** A team name nobody used before: the test world persists between runs. */
+    private static String teamName(String prefix) {
+        String n = prefix + " " + Long.toString(System.nanoTime() % 1_000_000_000L, 36);
+        return n.substring(0, Math.min(16, n.length()));
+    }
+
+    private static net.minecraft.server.level.ServerPlayer survivor(GameTestHelper h) {
+        return com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+    }
+
+    @GameTest(template = EMPTY)
+    public void team_is_made_joined_by_invite_and_left(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var c = survivor(h);
+        java.util.List<String> events = new java.util.ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.TeamEvent> listener = e -> events.add(e.getClass().getSimpleName());
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(listener);
+        try {
+            String name = teamName("Night");
+            var made = com.mrgregles.bsp_core.team.Teams.create(a, name, net.minecraft.ChatFormatting.AQUA);
+            h.assertTrue(made.ok(), "a teamless player makes a team: " + made.message());
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Day"), net.minecraft.ChatFormatting.RED).ok(), "one team per player");
+            var team = com.mrgregles.bsp_core.api.BspTeams.teamOf(server, a.getUUID()).orElseThrow();
+            h.assertTrue(team.name().equals(name) && team.leader().equals(a.getUUID()) && team.members().size() == 1, "the maker leads it alone");
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "nothing to accept yet");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok(), "the leader invites");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(b.getUUID()).isPresent(), "the invite waits");
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok(), "not twice while it waits");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "the invitee accepts");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), b.getUUID()), "teammates");
+            h.assertFalse(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), c.getUUID()), "an outsider is not");
+            h.assertFalse(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), a.getUUID()), "nobody is their own teammate");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.teammates(server, a.getUUID()).equals(java.util.List.of(b.getUUID())), "teammates lists the others");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(b, c).ok(), "a member may invite too (membersInvite)");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.decline(c).ok() && com.mrgregles.bsp_core.team.Teams.pending(c.getUUID()).isEmpty(), "declining clears the invite");
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.leave(a).ok(), "the leader hands over before leaving");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.leave(b).ok(), "a member leaves");
+            h.assertFalse(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), b.getUUID()), "and is no teammate at once");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.leave(a).ok(), "the last member leaving disbands");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.teamOf(server, a.getUUID()).isEmpty(), "gone");
+            h.assertTrue(events.equals(java.util.List.of("Created", "Joined", "Left", "Left", "Disbanded")), "events in order: " + events);
+        } finally {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(listener);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void team_names_seats_and_the_lead_follow_the_rules(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.create(a, "ab", net.minecraft.ChatFormatting.AQUA).ok(), "too short");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.create(a, "seventeen letters!", net.minecraft.ChatFormatting.AQUA).ok(), "too long");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.create(a, "bad<name>", net.minecraft.ChatFormatting.AQUA).ok(), "odd characters");
+        String name = teamName("Dawn");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, "  " + name + "  ", net.minecraft.ChatFormatting.GOLD).ok(), "spaces round a name are trimmed");
+        var b = survivor(h);
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.create(b, name.toUpperCase(java.util.Locale.ROOT), net.minecraft.ChatFormatting.RED).ok(), "names are unique whatever the case");
+        // five seats: the leader, then four invites hold the rest
+        var others = new java.util.ArrayList<net.minecraft.server.level.ServerPlayer>();
+        for (int i = 0; i < 4; i++) {
+            var p = survivor(h);
+            others.add(p);
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, p).ok(), "seat " + (i + 2));
+        }
+        var sixth = survivor(h);
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.invite(a, sixth).ok(), "a waiting invite holds its seat: the sixth is refused");
+        for (var p : others) {
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.accept(p).ok(), "accepted");
+        }
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.invite(a, sixth).ok(), "full with five members");
+        var second = others.get(0);
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.kick(second, others.get(1).getUUID()).ok(), "a member cannot remove");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.kick(a, a.getUUID()).ok(), "the leader cannot remove themself");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.kick(a, others.get(1).getUUID()).ok(), "the leader removes a member");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.teamOf(server, others.get(1).getUUID()).isEmpty(), "who is out at once");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.transfer(a, second.getUUID()).ok(), "the lead is handed over");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.teamOf(server, a.getUUID()).orElseThrow().leader().equals(second.getUUID()), "the new leader");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.leave(a).ok(), "the old leader may leave now");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.rename(a, teamName("Dusk")).ok(), "an outsider changes nothing");
+        String renamed = teamName("Dusk");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.rename(second, renamed).ok() && com.mrgregles.bsp_core.team.Teams.recolour(second, net.minecraft.ChatFormatting.GREEN).ok(), "the leader renames and recolours");
+        var view = com.mrgregles.bsp_core.api.BspTeams.teamOf(server, second.getUUID()).orElseThrow();
+        h.assertTrue(view.name().equals(renamed) && view.colour() == net.minecraft.ChatFormatting.GREEN, "as asked");
+        var team = com.mrgregles.bsp_core.team.TeamLedger.get(server).team(view.id());
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.adminLead(server, team, others.get(2).getUUID()).ok() && team.leader.equals(others.get(2).getUUID()), "an admin moves the lead");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.adminKick(server, second.getUUID()).ok(), "an admin removes a member");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(others.get(2)).ok(), "the leader disbands");
+        for (var p : others) {
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.teamOf(server, p.getUUID()).isEmpty(), "nobody is left in it");
+        }
+        h.assertTrue(com.mrgregles.bsp_core.team.TeamLedger.get(server).byName(renamed) == null, "and the name is free again");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void team_invite_runs_out(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Owl"), net.minecraft.ChatFormatting.DARK_AQUA).ok(), "made");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok(), "invited");
+        com.mrgregles.bsp_core.team.Teams.expireInvites(server, System.currentTimeMillis() + 30_000L);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(b.getUUID()).isPresent(), "still waiting after thirty seconds");
+        com.mrgregles.bsp_core.team.Teams.expireInvites(server, System.currentTimeMillis() + 61_000L);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(b.getUUID()).isEmpty(), "gone after a minute");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "too late to accept");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok(), "the seat is free for a new invite");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(b.getUUID()).isEmpty(), "takes its invites with it");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void team_board_keeps_the_last_lines_and_a_pinned_note(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Fox"), net.minecraft.ChatFormatting.LIGHT_PURPLE).ok(), "made");
+        for (int i = 1; i <= 55; i++) {
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.post(a, "line " + i).ok(), "posted " + i);
+        }
+        var team = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        h.assertTrue(team.messages().size() == 50 && team.messages().get(0).text().equals("line 6") && team.messages().get(49).text().equals("line 55"), "the board keeps the last fifty");
+        h.assertTrue(team.unread(a.getUUID()) == 0, "your own lines are read");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok() && com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins");
+        h.assertTrue(team.unread(b.getUUID()) == 0, "what was there before you joined is not new");
+        com.mrgregles.bsp_core.team.Teams.post(a, "after");
+        com.mrgregles.bsp_core.team.Teams.post(a, "b joined");
+        h.assertTrue(team.unread(b.getUUID()) == 2, "two new lines for b");
+        com.mrgregles.bsp_core.team.Teams.markRead(server, b.getUUID());
+        h.assertTrue(team.unread(b.getUUID()) == 0, "read once the board was opened");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.post(b, "   ").ok(), "an empty line is refused");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.pin(b, "mine").ok(), "only the leader pins");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.pin(a, "Meet at the hub").ok() && team.pinned() != null && team.pinned().text().equals("Meet at the hub"), "the leader pins a note");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.pin(a, "").ok() && team.pinned() == null, "an empty note takes it down");
+        // the board survives a save and load
+        var copy = com.mrgregles.bsp_core.team.Team.load(team.save());
+        h.assertTrue(copy.messages().size() == 50 && copy.members().size() == 2 && copy.unread(b.getUUID()) == 0 && copy.colour == net.minecraft.ChatFormatting.LIGHT_PURPLE, "saved and loaded whole");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void teammates_share_access_to_each_others_totems(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var c = survivor(h);
+        BlockPos pos = new BlockPos(6, 1, 6);
+        h.setBlock(pos, com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get());
+        var totem = entity(h, pos, com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity.class);
+        totem.setOwner(new com.mrgregles.bsp_core.totem.TotemOwner(a.getUUID(), a.getGameProfile().getName()));
+        BlockPos at = h.absolutePos(pos);
+        b.setPos(at.getX() + 2.5, at.getY(), at.getZ() + 0.5);
+        int[] flags = {com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES, com.mrgregles.bsp_core.totem.TotemAccess.ALARM, com.mrgregles.bsp_core.totem.TotemAccess.WARD, com.mrgregles.bsp_core.totem.TotemAccess.MACHINES};
+        for (int f : flags) {
+            h.assertFalse(totem.hasAccess(b.getUUID(), f), "a stranger has no flag " + f);
+        }
+        h.assertFalse(totem.mayUpgrade(b), "a stranger may not upgrade");
+        h.assertFalse(com.mrgregles.bsp_core.plasma.PlasmaAccess.of(totem).users.contains(b.getUUID()), "nor use the machines");
+        h.assertTrue(com.mrgregles.bsp_core.compass.TotemCompassItem.isRival(server, b.getUUID(), a.getUUID()), "the compass counts them as rivals");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Keep"), net.minecraft.ChatFormatting.BLUE).ok(), "a makes a team");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok() && com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins");
+        h.assertTrue(totem.isTeammate(b.getUUID()) && !totem.isTeammate(a.getUUID()) && !totem.isTeammate(c.getUUID()), "b is the owner's teammate, the owner and c are not");
+        for (int f : flags) {
+            h.assertTrue(totem.hasAccess(b.getUUID(), f), "a teammate has flag " + f);
+        }
+        h.assertTrue(totem.mayUpgrade(b), "a teammate may upgrade");
+        var access = com.mrgregles.bsp_core.plasma.PlasmaAccess.of(totem);
+        h.assertTrue(access.editors.contains(b.getUUID()) && access.users.contains(b.getUUID()) && access.alarmSafe.contains(b.getUUID()) && access.wardSafe.contains(b.getUUID()), "and reaches the machines, alarm and ward");
+        h.assertFalse(access.users.contains(c.getUUID()), "an outsider does not");
+        h.assertTrue(totem.getUpdateTag().getList("Teammates", net.minecraft.nbt.Tag.TAG_INT_ARRAY).size() == 1, "the client is told who the teammates are");
+        totem.tryStartSteal(b);
+        h.assertTrue(totem.getSteal().isEmpty(), "a teammate cannot start a steal");
+        h.assertFalse(com.mrgregles.bsp_core.compass.TotemCompassItem.isRival(server, b.getUUID(), a.getUUID()), "the compass ignores a teammate's totem");
+        h.assertTrue(com.mrgregles.bsp_core.compass.TotemCompassItem.isRival(server, c.getUUID(), a.getUUID()), "an outsider is still a rival");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.leave(b).ok(), "b leaves");
+        h.assertFalse(totem.hasAccess(b.getUUID(), com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES) || totem.mayUpgrade(b), "and the access is gone at once");
+        h.assertTrue(totem.getUpdateTag().getList("Teammates", net.minecraft.nbt.Tag.TAG_INT_ARRAY).isEmpty(), "the client learns that too");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+        h.setBlock(pos, Blocks.AIR);
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void team_screen_view_and_actions_round_trip(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var A = com.mrgregles.bsp_core.network.TeamActionPacket.Action.class;
+        var none = com.mrgregles.bsp_core.network.TeamViewPacket.of(a, true);
+        h.assertTrue(none.open() && !none.hasTeam() && none.enabled() && none.maxMembers() == 5, "no team yet: an empty view that opens the screen");
+        String name = teamName("Lynx");
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.text(com.mrgregles.bsp_core.network.TeamActionPacket.Action.CREATE, name, net.minecraft.ChatFormatting.GOLD.getId()));
+        var va = com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false);
+        h.assertTrue(va.hasTeam() && va.name().equals(name) && va.colour() == net.minecraft.ChatFormatting.GOLD.getId() && va.leader() && va.members().size() == 1 && va.members().get(0).leader(), "CREATE made the team as asked: " + va);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok(), "invited");
+        va = com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false);
+        h.assertTrue(va.candidates().size() == 1 && va.candidates().get(0).id().equals(b.getUUID()) && va.candidates().get(0).waitSeconds() > 0 && va.candidates().get(0).waitSeconds() <= 60, "the invite view shows b waiting: " + va.candidates());
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins");
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.text(com.mrgregles.bsp_core.network.TeamActionPacket.Action.POST, "first", 0));
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.text(com.mrgregles.bsp_core.network.TeamActionPacket.Action.POST, "second", 0));
+        var vb = com.mrgregles.bsp_core.network.TeamViewPacket.of(b, false);
+        h.assertTrue(vb.hasTeam() && !vb.leader() && vb.members().size() == 2 && vb.unread() == 2 && vb.lines().size() == 2 && vb.lines().get(0).fresh() && vb.lines().get(1).text().equals("second"), "b sees two new lines: " + vb);
+        h.assertTrue(vb.members().stream().allMatch(m -> m.state() == com.mrgregles.bsp_core.network.TeamViewPacket.OFFLINE && m.totems() == 0), "mock players count as offline with no totems");
+        com.mrgregles.bsp_core.team.TeamActions.apply(b, com.mrgregles.bsp_core.network.TeamActionPacket.of(com.mrgregles.bsp_core.network.TeamActionPacket.Action.MARK_READ));
+        vb = com.mrgregles.bsp_core.network.TeamViewPacket.of(b, false);
+        h.assertTrue(vb.unread() == 0 && vb.lines().stream().noneMatch(com.mrgregles.bsp_core.network.TeamViewPacket.Line::fresh), "read after MARK_READ");
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.text(com.mrgregles.bsp_core.network.TeamActionPacket.Action.PIN, "Meet at the hub", 0));
+        String renamed = teamName("Puma");
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.text(com.mrgregles.bsp_core.network.TeamActionPacket.Action.RENAME, renamed, 0));
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.text(com.mrgregles.bsp_core.network.TeamActionPacket.Action.RECOLOUR, "", net.minecraft.ChatFormatting.RED.getId()));
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.of(com.mrgregles.bsp_core.network.TeamActionPacket.Action.CHAT_TOGGLE));
+        va = com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false);
+        h.assertTrue(va.pinText().equals("Meet at the hub") && va.pinBy().equals(a.getGameProfile().getName()) && va.name().equals(renamed) && va.colour() == net.minecraft.ChatFormatting.RED.getId() && va.chatOn(), "pin, rename, recolour and the chat toggle show in the view: " + va);
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.of(com.mrgregles.bsp_core.network.TeamActionPacket.Action.CHAT_TOGGLE));
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.isChatOn(a.getUUID()), "and toggles back");
+        // the view survives the wire
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.TeamViewPacket.encode(va, buf);
+        h.assertTrue(com.mrgregles.bsp_core.network.TeamViewPacket.decode(buf).equals(va), "encode and decode give the same view");
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.target(com.mrgregles.bsp_core.network.TeamActionPacket.Action.TRANSFER, b.getUUID()));
+        h.assertTrue(com.mrgregles.bsp_core.network.TeamViewPacket.of(b, false).leader() && !com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false).leader(), "the lead moved to b");
+        com.mrgregles.bsp_core.team.TeamActions.apply(a, com.mrgregles.bsp_core.network.TeamActionPacket.target(com.mrgregles.bsp_core.network.TeamActionPacket.Action.KICK, b.getUUID()));
+        h.assertTrue(com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false).members().size() == 2, "a member cannot remove the leader");
+        com.mrgregles.bsp_core.team.TeamActions.apply(b, com.mrgregles.bsp_core.network.TeamActionPacket.target(com.mrgregles.bsp_core.network.TeamActionPacket.Action.KICK, a.getUUID()));
+        h.assertFalse(com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false).hasTeam(), "the leader removed a");
+        com.mrgregles.bsp_core.team.TeamActions.apply(b, com.mrgregles.bsp_core.network.TeamActionPacket.of(com.mrgregles.bsp_core.network.TeamActionPacket.Action.DISBAND));
+        h.assertFalse(com.mrgregles.bsp_core.network.TeamViewPacket.of(b, false).hasTeam(), "and disbanded");
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void team_invite_arrives_as_a_card_and_a_clickable_line(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var c = survivor(h);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Hawk"), net.minecraft.ChatFormatting.GREEN).ok(), "made");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok(), "invited (the card, the chime and the chat line went to b)");
+        var invite = com.mrgregles.bsp_core.team.Teams.pending(b.getUUID()).orElseThrow();
+        h.assertTrue(invite.id() > 0 && invite.inviter().equals(a.getUUID()), "the invite carries an id for the card");
+        var team = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        var line = com.mrgregles.bsp_core.team.TeamPrompts.chatLine(invite, team);
+        java.util.List<String> clicks = new java.util.ArrayList<>();
+        line.visit((style, text) -> {
+            if (style.getClickEvent() != null) {
+                clicks.add(style.getClickEvent().getValue());
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        h.assertTrue(clicks.equals(java.util.List.of(com.mrgregles.bsp_core.team.TeamPrompts.ACCEPT_COMMAND, com.mrgregles.bsp_core.team.TeamPrompts.DECLINE_COMMAND)), "Accept and Decline click the two commands: " + clicks);
+        // the card packet survives the wire, and a clear is a clear
+        var packet = new com.mrgregles.bsp_core.network.TeamPromptPacket(invite.id(), false, a.getUUID(), "A", team.name, team.colour.getId(), 1, 5, "A", 60);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.TeamPromptPacket.encode(packet, buf);
+        h.assertTrue(com.mrgregles.bsp_core.network.TeamPromptPacket.decode(buf).equals(packet), "encode and decode agree");
+        h.assertTrue(com.mrgregles.bsp_core.network.TeamPromptPacket.clear(7).clear() && com.mrgregles.bsp_core.network.TeamPromptPacket.clear(7).id() == 7, "a clear names its card");
+        // the chat line's clicks go through the player command
+        server.getCommands().performPrefixedCommand(b.createCommandSourceStack(), "bspteam accept");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), b.getUUID()), "clicking Accept joined b");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, c).ok(), "c invited");
+        server.getCommands().performPrefixedCommand(c.createCommandSourceStack(), "bspteam decline");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(c.getUUID()).isEmpty() && com.mrgregles.bsp_core.api.BspTeams.teamOf(server, c.getUUID()).isEmpty(), "clicking Decline cleared the invite");
+        server.getCommands().performPrefixedCommand(c.createCommandSourceStack(), "bspteam accept");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.teamOf(server, c.getUUID()).isEmpty(), "a stale click joins nothing");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void team_chat_goes_to_the_board_when_switched_on(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Wren"), net.minecraft.ChatFormatting.YELLOW).ok(), "made");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok() && com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins");
+        var team = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        // channel off: a chat line goes to everyone and the board stays empty
+        var everyone = new net.minecraftforge.event.ServerChatEvent(a, "hello all", net.minecraft.network.chat.Component.literal("hello all"));
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(everyone);
+        h.assertFalse(everyone.isCanceled(), "with the channel off the line is not taken");
+        h.assertTrue(team.messages().isEmpty(), "and nothing is on the board");
+        // channel on: the line is taken and lands on the board
+        h.assertTrue(com.mrgregles.bsp_core.team.TeamChat.toggle(a), "TEAM CHAT on");
+        var toTeam = new net.minecraftforge.event.ServerChatEvent(a, "hello team", net.minecraft.network.chat.Component.literal("hello team"));
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(toTeam);
+        h.assertTrue(toTeam.isCanceled(), "with the channel on the line is taken from everyone");
+        h.assertTrue(team.messages().size() == 1 && team.messages().get(0).text().equals("hello team") && team.messages().get(0).author().equals(a.getUUID()), "and is on the board");
+        h.assertTrue(team.unread(b.getUUID()) == 1, "new to b");
+        // /t sends one line without switching
+        h.assertFalse(com.mrgregles.bsp_core.team.TeamChat.toggle(a), "TEAM CHAT off again");
+        server.getCommands().performPrefixedCommand(b.createCommandSourceStack(), "t on my way");
+        h.assertTrue(team.messages().size() == 2 && team.messages().get(1).text().equals("on my way") && team.messages().get(1).author().equals(b.getUUID()), "/t posted b's line");
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.isChatOn(b.getUUID()), "without switching b's channel");
+        // the login summary: new lines and the pinned note (posting your own line counts the board as read up to it)
+        h.assertTrue(team.unread(b.getUUID()) == 0, "b's own line marked the board read for b");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.post(a, "one more").ok() && com.mrgregles.bsp_core.team.Teams.pin(a, "Bring lava").ok(), "a posts again and pins");
+        var summary = com.mrgregles.bsp_core.team.TeamChat.loginSummary(team, b.getUUID());
+        h.assertTrue(summary.size() == 2, "b hears two things: " + summary);
+        var first = (net.minecraft.network.chat.contents.TranslatableContents) summary.get(0).getContents();
+        var second = (net.minecraft.network.chat.contents.TranslatableContents) summary.get(1).getContents();
+        h.assertTrue(first.getKey().equals("message.bsp_core.team.unread") && first.getArgs()[0].equals(1), "one new line: " + first.getKey() + " " + java.util.Arrays.toString(first.getArgs()));
+        h.assertTrue(second.getKey().equals("message.bsp_core.team.pinned_login") && second.getArgs()[1].equals("Bring lava"), "and the note");
+        com.mrgregles.bsp_core.team.Teams.markRead(server, b.getUUID());
+        h.assertTrue(com.mrgregles.bsp_core.team.TeamChat.loginSummary(team, b.getUUID()).size() == 1, "read: only the note");
+        // leaving switches the channel off
+        h.assertTrue(com.mrgregles.bsp_core.team.TeamChat.toggle(b) && com.mrgregles.bsp_core.team.Teams.leave(b).ok() && !com.mrgregles.bsp_core.team.Teams.isChatOn(b.getUUID()), "leaving turns TEAM CHAT off");
+        var afterwards = new net.minecraftforge.event.ServerChatEvent(b, "free again", net.minecraft.network.chat.Component.literal("free again"));
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(afterwards);
+        h.assertFalse(afterwards.isCanceled(), "and b's chat reaches everyone");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void team_read_from_the_network_replaces_the_local_copy(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var c = survivor(h);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Elk"), net.minecraft.ChatFormatting.DARK_GREEN).ok(), "made locally");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok() && com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins locally");
+        var local = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        com.mrgregles.bsp_core.team.Teams.post(a, "before");
+        // what another server would have written: c joined there, a line was posted there, the name changed there
+        var fresh = com.mrgregles.bsp_core.team.Team.load(local.save());
+        fresh.members().put(c.getUUID(), new com.mrgregles.bsp_core.team.Team.Member(c.getGameProfile().getName(), System.currentTimeMillis(), fresh.messageSeq()));
+        fresh.members().get(c.getUUID()).onlineServer = "survival-2";
+        fresh.messages().add(new com.mrgregles.bsp_core.team.Team.Message(fresh.messageSeq() + 1, System.currentTimeMillis(), c.getUUID(), c.getGameProfile().getName(), "hello from survival-2"));
+        fresh.setMessageSeq(fresh.messageSeq() + 1);
+        String renamed = teamName("Moose");
+        fresh.name = renamed;
+        com.mrgregles.bsp_core.team.TeamSync.apply(server, java.util.List.of(fresh), fresh.id);
+        var now = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        h.assertTrue(now == fresh, "the fresh copy is the team now");
+        h.assertTrue(now.name.equals(renamed) && now.messages().size() == 2 && now.messages().get(1).text().equals("hello from survival-2"), "with its name and the new line");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), c.getUUID()), "c, who joined elsewhere, is a teammate here");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.teamOf(server, c.getUUID()) == now, "and is found by their id");
+        h.assertTrue(now.unread(b.getUUID()) == 2, "b has the local line and the remote line to read");
+        var view = com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false);
+        var cRow = view.members().stream().filter(m -> m.id().equals(c.getUUID())).findFirst().orElseThrow();
+        h.assertTrue(cRow.state() == com.mrgregles.bsp_core.network.TeamViewPacket.ELSEWHERE && cRow.where().equals("survival-2"), "the screen shows c on survival-2: " + cRow);
+        // c leaves elsewhere
+        var later = com.mrgregles.bsp_core.team.Team.load(fresh.save());
+        later.members().remove(c.getUUID());
+        com.mrgregles.bsp_core.team.TeamSync.apply(server, java.util.List.of(later), later.id);
+        h.assertFalse(com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, a.getUUID(), c.getUUID()), "c is out here too");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.teamOf(server, c.getUUID()) == null, "and in no team");
+        // disbanded elsewhere
+        com.mrgregles.bsp_core.team.TeamSync.apply(server, java.util.List.of(), later.id);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID()) == null && com.mrgregles.bsp_core.team.Teams.teamOf(server, b.getUUID()) == null, "gone here too");
+        h.assertTrue(com.mrgregles.bsp_core.team.TeamLedger.get(server).byName(renamed) == null, "and the name is free");
+        h.succeed();
+    }
 }

@@ -116,6 +116,8 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.DoubleValue REPEATER_PRESSURE;
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
+    public static final ForgeConfigSpec.BooleanValue TEAM_ENABLED, TEAM_MEMBERS_INVITE, TEAM_CHAT_TAG, TEAM_TEAMMATES_STEAL, TEAM_COMPASS_IGNORES;
+    public static final ForgeConfigSpec.IntValue TEAM_MAX_MEMBERS, TEAM_INVITE_SECONDS, TEAM_HISTORY_SIZE, TEAM_NAME_MIN, TEAM_NAME_MAX;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
     /** Thief's Step, Siege and Harvest (the 1.0 buffs), by level. */
@@ -552,6 +554,19 @@ public final class BSPConfig {
                 .defineList("rangePerLevel", List.of(1, 2, 3), BSPConfig::isPositiveInt);
         CHUNKS_OWNER_ONLINE = BUILDER.comment("When true a totem's chunks are only kept loaded while its owner is online. Also a switch in the admin panel.").define("ownerMustBeOnline", false);
         CHUNKS_MAX_PER_PLAYER = BUILDER.comment("Most chunks one player may keep loaded across all their totems. 0 means no limit beyond the upgrades.").defineInRange("maxPerPlayer", 0, 0, 10_000);
+        BUILDER.pop();
+
+        BUILDER.comment("Teams: players who share full access to each other's totems.").push("team");
+        TEAM_ENABLED = BUILDER.comment("Master switch. When false nobody can make or join a team; teams that exist keep their names but give no access.").define("enabled", true);
+        TEAM_MAX_MEMBERS = BUILDER.comment("Most players in one team, the leader included. An invite that is waiting holds a seat.").defineInRange("maxMembers", 5, 1, 100);
+        TEAM_MEMBERS_INVITE = BUILDER.comment("When true every member may invite; when false only the leader.").define("membersInvite", true);
+        TEAM_INVITE_SECONDS = BUILDER.comment("How long an invite waits for an answer.").defineInRange("inviteSeconds", 60, 5, 3600);
+        TEAM_HISTORY_SIZE = BUILDER.comment("How many lines the team's board keeps.").defineInRange("historySize", 50, 0, 1000);
+        TEAM_CHAT_TAG = BUILDER.comment("When true a member's lines in global chat carry the team's name in its colour. Off by default so a permissions mod's prefixes stay as they are.").define("chatTag", false);
+        TEAM_TEAMMATES_STEAL = BUILDER.comment("When true a member may steal a teammate's totem; when false the steal is refused.").define("teammatesSteal", false);
+        TEAM_COMPASS_IGNORES = BUILDER.comment("When true the Totem Compass does not count teammates' totems as rivals.").define("compassIgnoresTeam", true);
+        TEAM_NAME_MIN = BUILDER.comment("Shortest team name.").defineInRange("nameMin", 3, 1, 32);
+        TEAM_NAME_MAX = BUILDER.comment("Longest team name.").defineInRange("nameMax", 16, 3, 32);
         BUILDER.pop();
 
         BUILDER.comment("The newer totem powers: Bouncy, X-ray, Cloaking, Recall and Recall Block. Lists have one entry per level.").push("effects");

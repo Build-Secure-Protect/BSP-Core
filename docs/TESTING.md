@@ -1081,3 +1081,76 @@ Setup: survival, a carried totem, a second account for the steal.
 - [ ] Die carrying the totem, respawn: it stays where you fell, as before (death placements do not come back).
 - [ ] Set `logoutReturnMinutes` to 1, log out, wait two minutes, log in: "stands at ..." in gold and the totem stays placed.
 
+## Teams, part 1: the team record and the admin commands (2026-10-18)
+
+Setup: two or three accounts, one an operator. Players have no screen yet, so this part is checked through the admin commands and the API; the screen, popup and chat come in later parts.
+
+- [ ] `/bsp team list` on a fresh world: "No teams yet."
+- [ ] From a game test or a scratch command, make a team and invite the second account; `/bsp team info "<name>"` lists the members with the leader marked and who is online.
+- [ ] `/bsp team rename "<name>" New Name` renames it (quotes round a name with spaces); a name shorter than 3 or longer than 16, with odd characters, or already used (any case) is refused with the reason.
+- [ ] `/bsp team lead "<name>" <player>` moves the lead; `/bsp team kick <player>` removes a member (the leader is refused until the lead moves); `/bsp team disband "<name>"` removes it and tells every member online.
+- [ ] Stop and start the server: the teams are still there (`world/data/bsp_core_teams.dat`).
+- [ ] Set `team.maxMembers` to 2 in `serverconfig/bsp_core-server.toml`: a third invite is refused as full.
+
+## Teams, part 2: access through the team (2026-10-18)
+
+Setup: two accounts in one team (made through a game test or a scratch command until the Team screen arrives), a third outside it, a placed totem of the first with Ward or Alarm and a plasma machine fed by it.
+
+- [ ] The teammate opens the totem's panel: the buy keys are live, "A teammate's totem" in aqua on the status line, no STEAL key; buying a level takes the teammate's coins and XP and the level goes onto the totem; with Anchor the CHUNKS tab is there and chunks can be picked.
+- [ ] The teammate walks through the Ward and Alarm without setting them off; opens the projector or charger screen; sees through the cloak.
+- [ ] The third account sees the old panel (no buy keys, STEAL key), is weakened by the Ward, sets the Alarm off, cannot open the machine.
+- [ ] The teammate tries to steal (right-click, STEAL): "You cannot steal from your own team" and no steal starts. Set `team.teammatesSteal` true: the steal starts.
+- [ ] A Totem Compass on the rivals setting in the teammate's hand ignores the teammate's totem and points at the third account's; `team.compassIgnoresTeam` false points at the nearest again.
+- [ ] The teammate leaves the team (`/bsp team kick` for now): the panel they have open or reopen is the stranger's panel within a second, with no relog.
+
+## Teams, part 3: the Team screen (2026-10-18)
+
+Setup: two or three accounts, each with a totem; Controls > BSP-Core > "Open the Team screen" bound on one of them.
+
+- [ ] No team: the key, the TEAM key on the held totem's screen and the TEAM tab on your placed totem all open the same board with "no team" top right, the name box, sixteen swatches and CREATE. A two-letter name, a name with punctuation or a name another team has is refused with a red line in chat; a good name makes the team and the board shows MEMBERS with you as LEAD, "1 of 5 members".
+- [ ] INVITE lists the other accounts online here; invite one: its row says "waiting 60 s" and counts down; the invited account sees "X invites you to join Y" in chat (the popup is part 4) and joins with a game test or `/bsp team` for now; both boards show two members within two seconds; the inviter's row disappears when the invite is answered or runs out.
+- [ ] MESSAGES: type a line and press Enter or SEND; the line appears at the bottom with your name in violet and the time; the other member's MESSAGES key carries a "1" badge until they open the view, where the line has a green mark; closing the screen or switching views clears the badge. Post more than fits: the mouse wheel scrolls back.
+- [ ] The leader's SETTINGS: rename and recolour (the name's colour changes on both boards); PIN a note: it shows above the board for everyone and the key reads TAKE DOWN when the box is empty; HAND OVER asks SURE? first, then the other member is LEAD and your keys lose SETTINGS and DISBAND and gain LEAVE; REMOVE a member: they drop off the list and their board goes back to "no team".
+- [ ] DISBAND asks SURE?; a leader with members has DISBAND, a lone leader LEAVE; a member's LEAVE works at once after SURE?.
+- [ ] TEAM CHAT lights and says "on"; a chat line confirms; press again to switch back (the team channel itself comes with part 5).
+- [ ] Every label fits its key at GUI scale 2 and 3; long names are cut with an ellipsis, never drawn over the state column.
+
+## Teams, part 4: the invite card (2026-10-18)
+
+Setup: two accounts, one in a team.
+
+- [ ] Invite the other: a card appears top right on their screen with your face, "you · Team" in the team's colour, "1 of 5 members · leader you", "Y ACCEPT · H DECLINE · 60 S" counting down with the line along the bottom edge shrinking; a chime plays; chat shows "X invited you to join Y [Accept] [Decline]".
+- [ ] Press Y: the card goes, "You joined Y" in chat, the inviter sees "X joined the team" and the waiting row on their INVITE view disappears. Repeat with H: "You declined", the inviter sees "X declined your invite".
+- [ ] Leave the invite alone for a minute: the card drains and leaves, "The invite to Y ran out" for the invited, "X did not answer your invite" for the inviter.
+- [ ] Answer from chat instead: open the inventory (the card stays visible behind it), click [Accept] in chat: joined, and the card is gone. Click [Accept] again on the old line: "No invite is waiting for you", nothing else.
+- [ ] The inviter disbands while the invite waits: the card goes at once.
+- [ ] Rebind Y and H in Controls: the card shows the new keys.
+
+## Teams, part 5: team chat and the board (2026-10-18)
+
+Setup: two accounts in a team, a third outside it.
+
+- [ ] Press TEAM CHAT on the Team screen: "Your chat goes to the team now" and a "TEAM CHAT" pill in the team's colour above the chat lines, left; type a line: the teammate sees "[Team] you: line" in the colour, the third account sees nothing; the line is on both MESSAGES views. Open the chat box: the pill reads "TEAM CHAT · Name". Press the key again: the pill goes and chat reaches everyone.
+- [ ] `/t hello` from an account with the channel off: the team sees the line, the channel stays off.
+- [ ] Log the teammate out, post two lines and pin a note, log them in: "2 new team messages" in aqua and "[Team] Pinned by X: note" in the colour; the MESSAGES key carries the 2 until they open it.
+- [ ] With the channel on, leave the team (or be removed): the pill goes at once and the next line reaches everyone.
+- [ ] Set `team.chatTag` true: a member's ordinary lines start with "[Name]" in the team's colour; off again, they do not.
+- [ ] The pill does not overlap the hotbar, the chat lines or the chat box at GUI scales 2 and 3.
+
+## Teams, part 6: across the network (2026-10-18)
+
+Setup: two servers on the same MySQL database with Redis on (the MySQL live test), two accounts, one on each server.
+
+- [ ] Make a team on server A and invite someone on A; on server B, `/bsp team list` shows it within a second or two with its members.
+- [ ] The member on B opens the Team screen: the members on A show "on A"; the one on A sees "on B". Log one out: "n min ago" on the other side.
+- [ ] Post a line on A with TEAM CHAT on: the member on B sees "[Team] name: line" at once and it is on B's board; the MESSAGES badge counts it; reading it on B clears the count seen from A on the next refresh.
+- [ ] Rename, recolour and pin on A: B's screen follows within two seconds. Remove a member on A while they stand at a teammate's totem on B: their panel loses the buy keys at once.
+- [ ] Disband on A: everyone on B hears "X was disbanded" and their screens drop to "no team".
+- [ ] Restart server A: the teams are still there (read from the database), and nobody is shown "on A" until they log in again.
+- [ ] Make a team called "Nightwatch" on A, then try the same name (any case) on B: refused.
+
+## Teams, part 7: the guide (2026-10-18)
+
+- [ ] The guide book's totem category has "Teams" next to "Letting Friends In": six pages, no picture; every page fits without a cut line; "Letting Friends In" ends with the pointer to Teams.
+- [ ] Controls > BSP-Core lists "Open the Team screen" (unbound), "Accept a team invite" (Y) and "Decline a team invite" (H) beside the Recall keys.
+

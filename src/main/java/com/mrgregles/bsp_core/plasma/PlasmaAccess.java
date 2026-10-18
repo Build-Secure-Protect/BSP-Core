@@ -42,6 +42,17 @@ public final class PlasmaAccess {
                 wardSafe.add(a.id());
             }
         }
+        // teammates count as friends with every flag
+        if (totem.getLevel() instanceof net.minecraft.server.level.ServerLevel sl && com.mrgregles.bsp_core.team.Teams.enabled()) {
+            totem.getOwner().ifPresent(o -> {
+                for (UUID m : com.mrgregles.bsp_core.api.BspTeams.teammates(sl.getServer(), o.uuid())) {
+                    editors.add(m);
+                    users.add(m);
+                    alarmSafe.add(m);
+                    wardSafe.add(m);
+                }
+            });
+        }
     }
 
     public void addAll(PlasmaAccess other) {

@@ -142,6 +142,17 @@ public final class NetworkStorage {
                 }
                 case "notice" -> collectNotices(srv);
                 case "steal" -> refreshSteals();
+                case "team" -> {
+                    try {
+                        if (payload.startsWith("-")) {
+                            com.mrgregles.bsp_core.team.TeamSync.apply(srv, List.of(), UUID.fromString(payload.substring(1)));
+                        } else {
+                            teamReload(UUID.fromString(payload));
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // not a team id
+                    }
+                }
                 case "shop" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
@@ -180,6 +191,8 @@ public final class NetworkStorage {
                     BSPCore.LOGGER.warn("BSP-Core storage: this server's local records are not in the database yet. Run /bsp storage migrate.");
                 }
                 shopReload(null);
+                s.teamClearOnline();
+                teamReload(null);
                 s.clearSteals();
                 stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis()));
             } catch (SQLException | RuntimeException e) {
@@ -805,6 +818,72 @@ public final class NetworkStorage {
                     ledger.remove(id);
                 }
             });
+        });
+    }
+
+    // ------------------------------------------------------------------ teams
+
+    public static void teamWrite(com.mrgregles.bsp_core.team.Team team) {
+        async("write a team", s -> {
+            s.teamWrite(team);
+            publish("team", team.id.toString());
+        });
+    }
+
+    public static void teamMember(UUID teamId, UUID player, com.mrgregles.bsp_core.team.Team.Member m) {
+        async("write a team member", s -> {
+            s.teamMemberWrite(teamId, player, m);
+            publish("team", teamId.toString());
+        });
+    }
+
+    public static void teamLeft(UUID teamId, UUID player) {
+        async("remove a team member", s -> {
+            s.teamMemberDelete(player);
+            publish("team", teamId.toString());
+        });
+    }
+
+    public static void teamDelete(UUID teamId) {
+        async("remove a team", s -> {
+            s.teamDelete(teamId);
+            publish("team", "-" + teamId);
+        });
+    }
+
+    public static void teamMessage(UUID teamId, com.mrgregles.bsp_core.team.Team.Message message, int keep) {
+        async("write a team message", s -> {
+            s.teamMessageWrite(teamId, message, keep);
+            publish("team", teamId.toString());
+        });
+    }
+
+    public static void teamOnline(UUID player, boolean online) {
+        async("mark a team member online", s -> {
+            s.teamOnline(player, online ? BSPConfig.STORAGE_SERVER_ID.get() : "");
+            com.mrgregles.bsp_core.team.Team team = server == null ? null : com.mrgregles.bsp_core.team.Teams.teamOf(server, player);
+            if (team != null) {
+                publish("team", team.id.toString());
+            }
+        });
+    }
+
+    /** Reads one team (or every team) from the database and puts it in place of the local copy, on the server thread. */
+    public static void teamReload(@Nullable UUID id) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.team.Team> teams;
+            try {
+                teams = s.teamRead(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read teams: {}", e.toString());
+                return;
+            }
+            onServer(() -> com.mrgregles.bsp_core.team.TeamSync.apply(srv, teams, id));
         });
     }
 

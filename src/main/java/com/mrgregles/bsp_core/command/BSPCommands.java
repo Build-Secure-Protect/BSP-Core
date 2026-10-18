@@ -43,6 +43,8 @@ public final class BSPCommands {
     }
 
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(TeamCommands.playerTree());
+        dispatcher.register(TeamCommands.chatTree());
         dispatcher.register(Commands.literal("bsp")
                 .requires(src -> src.hasPermission(2) || src.getEntity() instanceof ServerPlayer p && com.mrgregles.bsp_core.admin.Admins.isModerator(p))
                 .then(Commands.literal("admin").executes(ctx -> {
@@ -101,6 +103,7 @@ public final class BSPCommands {
                         })))
                 .then(com.mrgregles.bsp_core.bank.BankCommands.admin())
                 .then(com.mrgregles.bsp_core.shop.ShopCommands.tree())
+                .then(TeamCommands.tree())
                 .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(com.mrgregles.bsp_core.storage.NetworkStorage.status()), false);

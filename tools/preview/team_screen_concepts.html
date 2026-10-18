@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Screen Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: the Team screen drawn in three looks. Views: no team yet (create), the team (members), invite, messages, settings. Toggles pick the view and who is looking (leader or member). */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+.stage{ background:var(--board); border-radius:4px; padding:12px; display:flex; justify-content:center; }
+
+/* ---------- shared screen skeleton ---------- */
+.screen{ position:relative; width:100%; max-width:500px; box-sizing:border-box; font-size:11px; line-height:1.3; overflow:hidden; display:grid; gap:6px; }
+.row{ display:flex; align-items:center; gap:6px; min-width:0; } .row .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .row .st{ font-size:9px; opacity:.8; white-space:nowrap; }
+.dot{ width:7px; height:7px; border-radius:50%; flex:none; } .dot.here{ background:#58f29a; } .dot.else{ background:#f2b544; } .dot.off{ background:#555c6a; }
+.head{ width:12px; height:12px; flex:none; background:#8a6a3c; box-shadow:inset 0 -5px 0 #5a3d22, inset 0 0 0 2px #c79a62; }
+.crown{ font-size:9px; color:#ffd23a; } .tag{ font-size:8px; letter-spacing:.06em; text-transform:uppercase; padding:1px 4px; border-radius:2px; }
+.k{ display:block; padding:5px 4px; text-align:center; font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; line-height:1.1; border-radius:2px; } .k.locked{ opacity:.5; } .k small{ display:block; font-weight:400; text-transform:none; letter-spacing:0; font-size:8.5px; opacity:.85; }
+.grp{ display:flex; flex-direction:column; gap:5px; } .gap{ height:8px; }
+.msg{ display:grid; grid-template-columns:auto 1fr; gap:0 6px; font-size:9.5px; } .msg .t{ opacity:.6; font-variant-numeric:tabular-nums; } .msg .w{ font-weight:600; } .msg.new .w::after{ content:" •"; color:#58f29a; }
+.pin{ font-size:9.5px; padding:4px 6px; border-left:3px solid #ffd23a; } .pin b{ font-size:8px; letter-spacing:.08em; text-transform:uppercase; display:block; opacity:.8; }
+.input{ font-size:9.5px; padding:4px 6px; opacity:.8; border:1px dashed currentColor; border-radius:2px; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; } .input::after{ content:"▏"; animation:bl 1s steps(1) infinite; } @keyframes bl{50%{opacity:0}}
+.sw{ display:grid; grid-template-columns:repeat(8,1fr); gap:3px; } .sw i{ display:block; aspect-ratio:1; border-radius:2px; } .sw i.on{ outline:2px solid #fff; outline-offset:1px; }
+.hint{ font-size:9px; opacity:.7; } .badge{ font-size:8px; padding:1px 5px; border-radius:8px; font-weight:700; }
+.confirm{ font-size:9px; opacity:.85; }
+
+/* ---------- Look A: a TEAM tab of the Shatter Totem panel ---------- */
+.lA .screen{ aspect-ratio:326/261; background:#10151Cf0; border:1px solid #19d3b0; color:#e8eaf0; font-family:"IBM Plex Mono",ui-monospace,monospace; padding:6px 10px 8px; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 86px; }
+.lA .hdr{ grid-area:1/1/2/3; display:flex; justify-content:space-between; align-items:center; gap:6px; } .lA .hdr .ttl{ color:#19d3b0; font-weight:600; letter-spacing:.04em; }
+.lA .tabs{ display:flex; gap:2px; } .lA .tabs span{ width:40px; text-align:center; font-size:8px; letter-spacing:.04em; padding:2px 0; background:#0c0e12; border:1px solid #2a2f3a; color:#9aa3b5; } .lA .tabs span.on{ border-color:#19d3b0; color:#19d3b0; }
+.lA .main{ grid-area:2/1/3/2; display:flex; flex-direction:column; gap:5px; min-width:0; background:#0c0e12; padding:6px; }
+.lA .side{ grid-area:2/2/3/3; display:flex; flex-direction:column; justify-content:flex-start; } .lA .k{ background:#0c0e12; border:1px solid #2a2f3a; color:#9aa3b5; } .lA .k.on{ border-color:#19d3b0; color:#19d3b0; } .lA .k.warn{ border-color:#ff6b5c; color:#ff6b5c; } .lA .k.locked{ color:#555c6a; }
+.lA .status{ grid-area:3/1/4/3; font-size:9.5px; color:#e8eaf0; } .lA .status small{ color:#9aa3b5; display:block; }
+.lA .row{ padding:2px 0; border-bottom:1px solid #1a1f29; } .lA .tag{ background:#2a2f3a; color:#19d3b0; } .lA .pin{ background:#141a22; } .lA .badge{ background:#19d3b0; color:#061008; } .lA .msg .w{ color:#19d3b0; } .lA .input{ color:#9aa3b5; }
+.lA .team{ color:#4fd8ff; font-weight:600; }
+
+/* ---------- Look B: Cash Machine (the bank skin), its own screen ---------- */
+.lB .screen{ aspect-ratio:500/360; background:#cfc8b8; color:#58f29a; font-family:"VT323","Courier New",monospace; font-size:14px; border:4px solid #8f877a; border-radius:8px; box-shadow:inset 0 2px 0 #ece6d8, inset 0 -3px 0 #a79e8e; padding:10px; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 104px; }
+.lB .hdr,.lB .main,.lB .status{ background:#061008; padding:6px 10px; box-shadow:inset 0 0 14px #0d3b22; }
+.lB .hdr{ grid-area:1/1/2/2; border-radius:4px 4px 0 0; margin-bottom:-6px; display:flex; justify-content:space-between; align-items:baseline; gap:6px; } .lB .hdr .ttl{ letter-spacing:.14em; font-weight:700; } .lB .hdr .ttl::before{ content:"> "; } .lB .hdr .who{ color:#3fb97a; font-size:12px; }
+.lB .main{ grid-area:2/1/3/2; border-radius:0 0 4px 4px; padding-top:8px; display:flex; flex-direction:column; gap:5px; min-width:0; }
+.lB .side{ grid-area:1/2/3/3; display:flex; flex-direction:column; } .lB .k{ background:#eae4d5; color:#2b2823; border:1px solid #9a9183; border-bottom-width:3px; border-radius:4px; font-family:"Oswald",system-ui,sans-serif; font-weight:600; font-size:10px; letter-spacing:.08em; } .lB .k.on{ background:#58f29a; border-color:#2e8b57; } .lB .k.locked{ color:#8f877a; opacity:1; } .lB .k.warn{ color:#a33b2a; }
+.lB .status{ grid-area:3/1/4/3; border-radius:4px; color:#3fb97a; font-size:12px; }
+.lB .screen::after{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(transparent 0 2px,#00000022 2px 3px); mix-blend-mode:multiply; }
+.lB .tabs{ display:flex; gap:4px; flex-wrap:wrap; } .lB .tabs span{ font-size:11px; padding:0 6px; border:1px solid #3fb97a; color:#3fb97a; letter-spacing:.06em; } .lB .tabs span.on{ background:#58f29a; color:#061008; font-weight:700; }
+.lB .row{ font-size:13px; } .lB .row .st{ font-size:11px; color:#3fb97a; } .lB .tag{ border:1px solid #f2b544; color:#f2b544; } .lB .pin{ border-left-color:#f2b544; background:#0a1a10; font-size:12px; } .lB .msg{ font-size:12px; } .lB .msg .w{ color:#f2b544; } .lB .badge{ background:#f2b544; color:#061008; } .lB .input{ color:#3fb97a; font-size:12px; } .lB .hint{ font-size:11px; } .lB .confirm{ font-size:11px; color:#f2b544; }
+.lB .team{ color:#4fd8ff; }
+
+/* ---------- Look C: Roster board (the panel's palette, cards and the message board together) ---------- */
+.lC .screen{ aspect-ratio:500/360; background:#10151Cf0; border:1px solid #b58cff; color:#e8eaf0; font-family:"IBM Plex Sans",system-ui,sans-serif; padding:8px 10px; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 1fr; }
+.lC .hdr{ grid-area:1/1/2/3; display:flex; justify-content:space-between; align-items:center; gap:6px; } .lC .hdr .ttl{ font-weight:600; letter-spacing:.04em; color:#b58cff; } .lC .hdr .who{ font-size:9.5px; color:#9aa3b5; }
+.lC .left{ grid-area:2/1/3/2; display:flex; flex-direction:column; gap:5px; min-width:0; } .lC .right{ grid-area:2/2/3/3; display:flex; flex-direction:column; gap:5px; min-width:0; background:#0c0e12; padding:6px; border:1px solid #2a2f3a; }
+.lC .cards{ display:grid; grid-template-columns:1fr 1fr; gap:5px; } .lC .cardm{ background:#0c0e12; border:1px solid #2a2f3a; padding:5px; display:grid; grid-template-columns:auto 1fr; gap:2px 6px; align-items:center; min-width:0; } .lC .cardm .head{ width:18px; height:18px; grid-row:1/3; } .lC .cardm .nm{ font-size:10px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .lC .cardm .st{ font-size:8.5px; color:#9aa3b5; display:flex; align-items:center; gap:4px; } .lC .cardm.lead{ border-color:#ffd23a; } .lC .cardm.empty{ border-style:dashed; color:#555c6a; justify-items:center; grid-template-columns:1fr; font-size:9px; }
+.lC .keys{ grid-area:3/1/4/3; display:flex; gap:5px; align-items:stretch; } .lC .keys .grp{ flex-direction:row; } .lC .keys .gap{ width:10px; height:auto; } .lC .k{ min-width:64px; background:#0c0e12; border:1px solid #2a2f3a; color:#9aa3b5; } .lC .k.on{ border-color:#b58cff; color:#b58cff; } .lC .k.warn{ border-color:#ff6b5c; color:#ff6b5c; } .lC .k.locked{ color:#555c6a; }
+.lC .rt{ font-size:8.5px; letter-spacing:.08em; text-transform:uppercase; color:#9aa3b5; display:flex; justify-content:space-between; } .lC .badge{ background:#b58cff; color:#10151c; } .lC .pin{ background:#141a22; } .lC .msg .w{ color:#b58cff; } .lC .input{ color:#9aa3b5; } .lC .tag{ background:#2a2f3a; color:#b58cff; }
+.lC .team{ color:#4fd8ff; font-weight:600; }
+.lC .row{ padding:2px 0; border-bottom:1px solid #1a1f29; }
+</style>
+</head>
+<body><div class="wrap">
+
+<section><h1>Team Screen Concepts</h1>
+<p class="lede">Three looks for the Team screen, mock-up set 1 of the Teams line. The same five views in each: <b>no team yet</b> (name, colour, CREATE), <b>the team</b> (members with where they are, the leader marked), <b>invite</b> (players online and not in a team), <b>messages</b> (the pinned note, then the last fifty lines, new ones marked, a line to type) and <b>settings</b> (leader only: rename, recolour, hand over, remove, disband). Every look opens the same three ways: the TEAM tab on a placed totem's panel, the TEAM key on the held totem's screen, and a key binding. Toggle who is looking: the leader sees every key, a member sees no settings.</p>
+<div class="card"><div class="ctl"><span class="key"><b>View:</b></span><button type="button" class="tb" data-v="create">No team yet</button><button type="button" class="tb on" data-v="team">The team</button><button type="button" class="tb" data-v="invite">Invite</button><button type="button" class="tb" data-v="messages">Messages</button><button type="button" class="tb" data-v="settings">Settings</button>
+<span class="key" style="margin-left:14px"><b>Looking:</b></span><button type="button" class="tb on" data-r="leader">Leader</button><button type="button" class="tb" data-r="member">Member</button></div>
+<p>Dots: green = online here, amber = online on another server of the network, grey = offline with the last time seen. The crown marks the leader. Team names show in the team's chat colour.</p></div></section>
+
+<section><h2>1. The three looks</h2><div class="grid3" id="looks"></div></section>
+
+<section><h2>2. Rules every look carries</h2><div class="card"><ol>
+<li><b>Keys grouped by job with a gap</b> (the owner's UI rule): the team's own actions (INVITE, TEAM CHAT) apart from the leaving ones (LEAVE, DISBAND), and settings apart from both.</li>
+<li><b>Two confirms</b> for LEAVE, REMOVE, HAND OVER and DISBAND, drawn in the key itself ("LEAVE?" then "SURE?"), no popup window.</li>
+<li><b>TEAM CHAT</b> is a toggle key: lit while the player's chat goes to the team; the HUD badge (mock-up set 2) shows the same state.</li>
+<li><b>Invite</b> lists players online on this server who are in no team, with one INVITE key per row; a sent invite shows "waiting 54 s" in the row until answered or expired.</li>
+<li><b>Messages</b> read like chat: oldest at the top, newest at the bottom, the pinned note above the list, new lines marked; the input line sends to the team without leaving the screen.</li>
+<li><b>Every string</b> goes through the CashMachine fit and wrap helpers; names are cut with an ellipsis, never overflow.</li>
+<li>The leader cannot leave while others remain (the LEAVE key says HAND OVER FIRST); a member sees no settings view at all.</li>
+</ol></div></section>
+
+<section><h2>3. Decisions for this round</h2><div class="card"><ol>
+<li><b>Look:</b> A the panel tab (team life lives inside the totem's panel, no new window), B the Cash Machine screen (the bank's skin, cream keys, phosphor text), or C the roster board (member cards and the message board side by side, the panel's palette with the operator's violet). Default: <b>A</b>, with the key binding and the held totem's TEAM key opening the same panel without a totem.</li>
+<li><b>Members shown as:</b> rows (A, B) or cards with heads (C)? A card could also carry "2 totems" and the last seen time. Default: rows.</li>
+<li><b>Message board:</b> its own view (A, B) or always on screen beside the members (C)? Default: own view, with a "3 new" badge on the MESSAGES key.</li>
+<li><b>Colour picker:</b> the 16 chat colours as swatches (shown) or a cycling key? Default: swatches.</li>
+<li><b>Create without a totem placed:</b> the key binding and the held screen open the Team screen alone, so a new player can make or join a team before placing. Default: yes.</li>
+<li><b>Chat toggle on the screen:</b> keep TEAM CHAT as a key here (shown) or only on the HUD badge and <code>/t</code>? Default: key here too.</li>
+</ol></div></section>
+
+</div>
+<script>
+(function(){
+  const looks=[
+    {id:'A',cls:'lA',name:'A. Panel tab',desc:'A TEAM tab beside TOTEM, ACCESS and CHUNKS on the placed totem\'s panel. Teal frame, the panel\'s mono text, keys in the right column as the panel draws them. Opened without a totem by the key binding, the frame carries no totem status line.'},
+    {id:'B',cls:'lB',name:'B. Cash Machine',desc:'The bank\'s skin: cream keys with a deep edge, phosphor-green text, chips for the views. A standalone screen, the same one the Portable Banker uses, so it feels like a service you walk up to.'},
+    {id:'C',cls:'lC',name:'C. Roster board',desc:'Member cards with heads on the left, the message board always on the right, keys along the bottom. The panel\'s palette with the operator\'s violet for the frame so a team screen reads as its own thing.'}
+  ];
+  const members=[
+    {n:'Mrgregles',s:'here',st:'online here',lead:true},
+    {n:'Avenn',s:'else',st:'on survival-2'},
+    {n:'Kestrel_Vane',s:'off',st:'2 h ago'},
+    {n:'Doro',s:'off',st:'3 d ago'}
+  ];
+  const online=[{n:'Pell'},{n:'Rook_7',wait:'waiting 54 s'},{n:'Mira'}];
+  const msgs=[
+    {t:'Fri 21:04',w:'Avenn',m:'Nether hub chunks are loaded again'},
+    {t:'Fri 21:06',w:'Mrgregles',m:'Put Ward II on the east totem'},
+    {t:'Sat 09:12',w:'Kestrel_Vane',m:'Anyone have spare Tetrium Plates?',nw:true},
+    {t:'Sat 09:40',w:'Doro',m:'12 in the deposit box, take them',nw:true},
+    {t:'Sat 10:02',w:'Avenn',m:'Steal alarm on my totem last night, nothing taken',nw:true}
+  ];
+  const colours=['#aa0000','#ff5555','#ffaa00','#ffff55','#00aa00','#55ff55','#55ffff','#00aaaa','#0000aa','#5555ff','#ff55ff','#aa00aa','#ffffff','#aaaaaa','#555555','#000000'];
+  let view='team', role='leader';
+
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const rows=()=>members.map(m=>`<div class="row"><span class="dot ${m.s}"></span><span class="nm">${esc(m.n)}${m.lead?' <span class="crown">♛</span>':''}</span><span class="st">${m.st}</span></div>`).join('');
+  const inviteRows=(cls)=>online.map(p=>`<div class="row"><span class="dot here"></span><span class="nm">${esc(p.n)}</span>${p.wait?`<span class="st">${p.wait}</span>`:`<span class="k ${cls}" style="padding:2px 6px">invite</span>`}</div>`).join('');
+  const swatches=()=>`<div class="sw">${colours.map((c,i)=>`<i style="background:${c}" class="${i===6?'on':''}"></i>`).join('')}</div>`;
+  const pin=()=>`<div class="pin"><b>Pinned by Mrgregles</b>Meet at the Nether hub Saturday 20:00, bring lava</div>`;
+  const history=()=>msgs.map(x=>`<div class="msg ${x.nw?'new':''}"><span class="t">${x.t}</span><span><span class="w">${esc(x.w)}</span> ${esc(x.m)}</span></div>`).join('');
+  const newCount=msgs.filter(x=>x.nw).length;
+  const lead=()=>role==='leader';
+
+  function mainFor(v,cls){
+    if(v==='create') return `<div class="hint">You are in no team. Name it, pick a colour, and invite friends from the next view.</div><div class="input">Nightwatch</div>${swatches()}<div class="hint">3 to 16 letters, digits and spaces. Unique on the network.</div>`;
+    if(v==='team') return `<div class="row" style="border:0"><span class="team">Nightwatch</span><span class="st">4 of 5 members</span></div>${rows()}`;
+    if(v==='invite') return `<div class="hint">Online here and in no team</div>${inviteRows(cls)}<div class="hint">An invite holds a seat for 60 s. They see a popup and a chat line.</div>`;
+    if(v==='messages') return pin()+`<div style="flex:1;display:flex;flex-direction:column;gap:2px;justify-content:flex-end;min-height:0;overflow:hidden">${history()}</div><div class="input">Type to the team</div>`;
+    if(v==='settings') return lead()?`<div class="hint">Team name and colour</div><div class="input">Nightwatch</div>${swatches()}<div class="hint">Members</div>`+members.filter(m=>!m.lead).map(m=>`<div class="row"><span class="nm">${esc(m.n)}</span><span class="k" style="padding:2px 5px">hand over</span><span class="k warn" style="padding:2px 5px">remove</span></div>`).join(''):`<div class="hint">Only the leader changes the team. Ask Mrgregles.</div>`;
+    return '';
+  }
+  function keysFor(v){
+    const on=k=>v===k?' on':'';
+    if(v==='create') return `<div class="grp"><span class="k on">create</span></div><div class="gap"></div><div class="grp"><span class="k locked">invite</span><span class="k locked">messages</span></div>`;
+    const top=`<div class="grp"><span class="k${on('team')}">members</span><span class="k${on('invite')}">invite</span><span class="k${on('messages')}">messages ${newCount?`<span class="badge">${newCount}</span>`:''}</span></div>`;
+    const chat=`<div class="gap"></div><div class="grp"><span class="k on">team chat<small>on</small></span></div>`;
+    const set=lead()?`<div class="gap"></div><div class="grp"><span class="k${on('settings')}">settings</span></div>`:'';
+    const leave=lead()?`<div class="gap"></div><div class="grp"><span class="k locked">leave<small>hand over first</small></span><span class="k warn">disband</span></div>`:`<div class="gap"></div><div class="grp"><span class="k warn">leave</span></div>`;
+    return top+chat+set+leave;
+  }
+  function tabsA(v){ const t=['TOTEM','ACCESS','CHUNKS','TEAM']; return `<div class="tabs">${t.map(x=>`<span class="${x==='TEAM'?'on':''}">${x}</span>`).join('')}</div>`; }
+  function chipsB(v){ const t=[['team','MEMBERS'],['invite','INVITE'],['messages','MESSAGES'],['settings','SETTINGS']]; return `<div class="tabs">${t.filter(x=>x[0]!=='settings'||lead()).map(x=>`<span class="${v===x[0]?'on':''}">${x[1]}</span>`).join('')}</div>`; }
+
+  function screen(look){
+    const v=view;
+    if(look.cls==='lA'){
+      return `<div class="screen"><div class="hdr"><span class="ttl">Shatter Totem</span>${tabsA(v)}</div><div class="main">${mainFor(v,'')}</div><div class="side">${keysFor(v)}</div><div class="status">${v==='create'?'Owner: Mrgregles':'Team <span class="team">Nightwatch</span>: members may open, upgrade and pass the wards of this totem'}<small>${v==='messages'?'Last fifty lines kept for the team':'Steal: nobody'}</small></div></div>`;
+    }
+    if(look.cls==='lB'){
+      const who=v==='create'?'no team':'<span class="team">Nightwatch</span> · 4 of 5';
+      return `<div class="screen"><div class="hdr"><span class="ttl">Team</span><span class="who">${who}</span></div><div class="main">${v==='create'?'':chipsB(v)}${mainFor(v,'')}</div><div class="side">${keysFor(v)}</div><div class="status">${v==='invite'?'Invites expire in 60 s':v==='messages'?`${newCount} new since you were last here`:'Team chat ON: your chat goes to the team'}</div></div>`;
+    }
+    // Look C: roster board, messages always on the right
+    const cards=members.map(m=>`<div class="cardm ${m.lead?'lead':''}"><span class="head"></span><span class="nm">${esc(m.n)}${m.lead?' <span class="crown">♛</span>':''}</span><span class="st"><span class="dot ${m.s}"></span>${m.st}</span></div>`).join('')+`<div class="cardm empty">free seat</div>`;
+    let left;
+    if(v==='create') left=`<div class="hint">Name your team</div><div class="input">Nightwatch</div>${swatches()}`;
+    else if(v==='invite') left=`<div class="rt"><span>Online, no team</span></div>${inviteRows('')}`;
+    else if(v==='settings') left=mainFor('settings','');
+    else left=`<div class="rt"><span><span class="team">Nightwatch</span></span><span>4 of 5</span></div><div class="cards">${cards}</div>`;
+    const right=v==='create'?`<div class="rt"><span>Messages</span></div><div class="hint">Your team's board appears here.</div>`:`<div class="rt"><span>Board</span><span>${newCount?`<span class="badge">${newCount} new</span>`:''}</span></div>${pin()}<div style="flex:1;display:flex;flex-direction:column;gap:2px;justify-content:flex-end;overflow:hidden">${history()}</div><div class="input">Type to the team</div>`;
+    const keys=v==='create'?`<div class="grp"><span class="k on">create</span></div>`:`<div class="grp"><span class="k ${v==='team'?'on':''}">members</span><span class="k ${v==='invite'?'on':''}">invite</span></div><div class="gap"></div><div class="grp"><span class="k on">team chat</span></div>${lead()?`<div class="gap"></div><div class="grp"><span class="k ${v==='settings'?'on':''}">settings</span><span class="k warn">disband</span></div>`:`<div class="gap"></div><div class="grp"><span class="k warn">leave</span></div>`}`;
+    return `<div class="screen"><div class="hdr"><span class="ttl">Team</span><span class="who">${lead()?'you lead this team':'member'}</span></div><div class="left">${left}</div><div class="right">${right}</div><div class="keys">${keys}</div></div>`;
+  }
+  function render(){
+    document.getElementById('looks').innerHTML=looks.map(l=>`<div class="card ${l.cls}"><h3>${l.name}</h3><div class="stage">${screen(l)}</div><p>${l.desc}</p></div>`).join('');
+  }
+  document.querySelectorAll('[data-v]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.v;document.querySelectorAll('[data-v]').forEach(x=>x.classList.toggle('on',x===b));render();}));
+  document.querySelectorAll('[data-r]').forEach(b=>b.addEventListener('click',()=>{role=b.dataset.r;document.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',x===b));render();}));
+  render();
+})();
+</script>
+</body>
+</html>

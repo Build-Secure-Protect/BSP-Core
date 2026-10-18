@@ -9,6 +9,7 @@ Package `com.mrgregles.bsp_core.api`. Compile against the BSP-Core jar; keep eve
 | `BspPlayers` | `isAdmin`, `isModerator`; Shatter Coins in hand: `coinValue`, `payCoins`, `giveCoins` (values in Copper); `isDimensionAllowed`. |
 | `BspZones` | `isBlocked(level, pos, key)` for Anti Totem zone rules; keys `TOTEM_PLACE`, `TOTEM_DROP`, and for a teleport mod to enforce `TELEPORT_IN`, `TELEPORT_OUT`, `SET_HOME` (admins switch them on per zone in the Anti Totem block's Rules tab; off on a new block). |
 | `BspTransfer` | For server transfers: `beginTransfer(player)` just before sending them away takes their carried totems and stores them for the journey (the arrival server hands them back) and tells the player; `endTransfer(player)` when the teleport is cancelled hands them straight back; `isTransferring(uuid)`. A transfer that does not happen within `restrictions.transferSeconds` (10) returns the totems by itself; a stored totem whose owner never logs in anywhere is placed back at the departure point after `restrictions.transferTotemTimeoutHours` (48). Without a shared database the totems are held in memory and placed at the departure point on a real logout, as usual. |
+| `BspTeams` | Teams: `teamOf(server, uuid)` / `team(server, teamId)` as `Team(id, name, colour, leader, members)`; `sameTeam(server, a, b)` (teammates count as friends with every access flag on each other's totems; a player is not their own teammate); `teammates(server, uuid)`; `all(server)`. Read-only: players run a team from the Team screen. |
 
 ## Events
 
@@ -23,6 +24,11 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 | `TotemEvent.StealEnded` | the steal ended; `isSuccess` (an `OwnerChanged` follows), or `getReasonKey` for why it failed |
 | `RecallEvent.CrossServer` | the owner clicked a Recall offer for a totem on another server (`/bsp recall <server>`); `getTargetServer()` is that server's `storage.serverId`; a teleport mod moves them there and calls `setHandled()`; BSP-Core lands them near the totem on arrival |
 | `SeasonEvent.Ended` | a season ended on this server; `getEndedNumber`, `isFullReset` (coins wiped too), `getBy`. On a network each server fires its own when it picks the new season up. |
+| `TeamEvent.Created` | a team was made; `getLeader`, `getTeamId`, `getTeamName` |
+| `TeamEvent.Joined` | a player accepted an invite; `getPlayer` |
+| `TeamEvent.Left` | a player is out: `getReason()` is `LEFT`, `KICKED` or `DISBANDED`; `getPlayer` |
+| `TeamEvent.LeaderChanged` | the lead passed on; `getPrevious`, `getLeader` |
+| `TeamEvent.Disbanded` | the team is gone (a `Left` with `DISBANDED` came first for every member); `getBy` is null for an admin command |
 
 Upgrade names for `BspTotems.upgrade` are the constants of `TotemUpgrades.Buff` (for example `SWIFTNESS`, `RECALL`); the enum itself may be used directly.
 
@@ -33,6 +39,10 @@ Two upgrades exist only for a teleport mod to read; BSP-Core sells them on the t
 With `storage.mode = "mysql"` every running steal is written to the shared `steals` table on `StealStarted` and removed on `StealEnded` (a server also clears its own rows when it starts, so a crash leaves nothing behind, and rows an hour past their expected end are dropped as stale). Each server reads the other servers' rows every `storage.noticeSeconds` and at once on a Redis notice, so `BspTotems.stealsAnywhere` answers from a cache and never touches the database on the server thread. A remote entry's `fractionLeft` is estimated from the start and expected end times; a steal pauses while the thief is outside the radius, so the estimate can run a little behind the real steal. Without network storage the list holds this server's steals only.
 
 Requests from other mods live in their own vault notes (for BSP-Teleport: `BSP-Teleport/Claude Notes/Teleport - Requests for BSP-Core.md`).
+
+## Teams across the network
+
+With `storage.mode = "mysql"` the team record is the shared tables `teams`, `team_members` and `team_messages`; each server keeps a local copy (`bsp_core_teams`), writes every change through and announces it over Redis (kind `team`), and reads a team back when another server announces it. `BspTeams` and `TeamEvent` answer from the local copy, which is a moment behind a change made elsewhere; `TeamEvent`s fire only on the server where the change was made.
 
 ## Region Guard
 

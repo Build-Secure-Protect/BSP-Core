@@ -28,6 +28,13 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         this.imageHeight = TREE_Y + TotemTree.H + 22;
     }
 
+    @Override
+    protected void init() {
+        super.init();
+        addRenderableWidget(net.minecraft.client.gui.components.Button.builder(Component.translatable("gui.bsp_core.team.key"), b -> TeamKeys.open())
+                .bounds(leftPos + imageWidth - 10 - 52, topPos + TREE_Y + TotemTree.H + 3, 52, 16).build());
+    }
+
     private int level(Buff b) {
         return TotemUpgrades.getLevel(menu.getTotem(), b);
     }

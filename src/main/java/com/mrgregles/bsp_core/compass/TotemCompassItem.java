@@ -155,11 +155,24 @@ public class TotemCompassItem extends Item {
 
     /** Nearest placed totem in the player's dimension: their own, or someone else's when {@code rivals}. */
     @Nullable
+    /** Whether another owner's totems count as rivals for the needle: anyone outside the player's team (with {@code team.compassIgnoresTeam}). */
+    public static boolean isRival(net.minecraft.server.MinecraftServer server, UUID player, UUID owner) {
+        if (player.equals(owner)) {
+            return false;
+        }
+        return !com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.TEAM_COMPASS_IGNORES, true)
+                || !com.mrgregles.bsp_core.team.Teams.enabled()
+                || !com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, player, owner);
+    }
+
     private static BlockPos nearest(ServerPlayer player, boolean rivals) {
         BlockPos best = null;
         double bestDist = Double.MAX_VALUE;
         for (Map.Entry<UUID, Set<GlobalPos>> e : TotemLedger.get(player.server).allPlaced().entrySet()) {
             if (e.getKey().equals(player.getUUID()) == rivals) {
+                continue;
+            }
+            if (rivals && !isRival(player.server, player.getUUID(), e.getKey())) {
                 continue;
             }
             for (GlobalPos pos : e.getValue()) {

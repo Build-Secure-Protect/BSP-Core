@@ -144,6 +144,13 @@ final class MySqlStore implements AutoCloseable {
                     + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_boxes") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, slots INT NOT NULL, rent_until BIGINT NOT NULL, "
                     + "items MEDIUMTEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("teams") + " (id CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(32) NOT NULL, colour VARCHAR(16) NOT NULL, "
+                    + "leader CHAR(36) NOT NULL, created_ms BIGINT NOT NULL, seq INT NOT NULL DEFAULT 0, pin_text VARCHAR(255) NOT NULL DEFAULT '', pin_by CHAR(36) NOT NULL DEFAULT '', "
+                    + "pin_by_name VARCHAR(16) NOT NULL DEFAULT '', pin_ms BIGINT NOT NULL DEFAULT 0, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX (name))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("team_members") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, team CHAR(36) NOT NULL, name VARCHAR(16) NOT NULL, "
+                    + "joined_ms BIGINT NOT NULL, read_seq INT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, online_server VARCHAR(64) NOT NULL DEFAULT '', INDEX (team))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("team_messages") + " (team CHAR(36) NOT NULL, seq INT NOT NULL, ms BIGINT NOT NULL, uuid CHAR(36) NOT NULL, "
+                    + "name VARCHAR(16) NOT NULL, text VARCHAR(512) NOT NULL, PRIMARY KEY (team, seq))");
         }
     }
 
@@ -880,6 +887,154 @@ final class MySqlStore implements AutoCloseable {
                 return rs.next() ? Map.entry(UUID.fromString(rs.getString(1)), rs.getString(2)) : null;
             }
         }
+    }
+
+    // ------------------------------------------------------------------ teams, one record for the network
+
+    /** Writes the team's row and every member row, and drops member rows of people no longer in it. */
+    void teamWrite(com.mrgregles.bsp_core.team.Team team) throws SQLException {
+        com.mrgregles.bsp_core.team.Team.Note pin = team.pinned();
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("teams") + " (id, name, colour, leader, created_ms, seq, pin_text, pin_by, pin_by_name, pin_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE name = VALUES(name), colour = VALUES(colour), leader = VALUES(leader), seq = GREATEST(seq, VALUES(seq)), pin_text = VALUES(pin_text), pin_by = VALUES(pin_by), pin_by_name = VALUES(pin_by_name), pin_ms = VALUES(pin_ms)")) {
+            ps.setString(1, team.id.toString());
+            ps.setString(2, team.name);
+            ps.setString(3, team.colour.getName());
+            ps.setString(4, team.leader.toString());
+            ps.setLong(5, team.createdMs);
+            ps.setInt(6, team.messageSeq());
+            ps.setString(7, pin == null ? "" : pin.text());
+            ps.setString(8, pin == null ? "" : pin.by().toString());
+            ps.setString(9, pin == null ? "" : pin.byName());
+            ps.setLong(10, pin == null ? 0 : pin.ms());
+            ps.executeUpdate();
+        }
+        for (var e : team.members().entrySet()) {
+            teamMemberWrite(team.id, e.getKey(), e.getValue());
+        }
+        StringBuilder keep = new StringBuilder();
+        for (UUID m : team.members().keySet()) {
+            keep.append(keep.length() == 0 ? "'" : ", '").append(m).append("'");
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("team_members") + " WHERE team = ?" + (keep.length() == 0 ? "" : " AND uuid NOT IN (" + keep + ")"))) {
+            ps.setString(1, team.id.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** One member's row: name, joined, read and seen; the online server is kept as it is. */
+    void teamMemberWrite(UUID teamId, UUID player, com.mrgregles.bsp_core.team.Team.Member m) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("team_members") + " (uuid, team, name, joined_ms, read_seq, seen_ms) VALUES (?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE team = VALUES(team), name = VALUES(name), joined_ms = VALUES(joined_ms), read_seq = GREATEST(read_seq, VALUES(read_seq)), seen_ms = GREATEST(seen_ms, VALUES(seen_ms))")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, teamId.toString());
+            ps.setString(3, m.name);
+            ps.setLong(4, m.joinedMs);
+            ps.setInt(5, m.readSeq);
+            ps.setLong(6, m.seenMs);
+            ps.executeUpdate();
+        }
+    }
+
+    void teamMemberDelete(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("team_members") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    void teamDelete(UUID teamId) throws SQLException {
+        for (String table : new String[] {"team_messages", "team_members", "teams"}) {
+            try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t(table) + " WHERE " + (table.equals("teams") ? "id" : "team") + " = ?")) {
+                ps.setString(1, teamId.toString());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    /** Adds a line, moves the team's counter on, and drops lines beyond {@code keep}. */
+    void teamMessageWrite(UUID teamId, com.mrgregles.bsp_core.team.Team.Message m, int keep) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("team_messages") + " (team, seq, ms, uuid, name, text) VALUES (?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, teamId.toString());
+            ps.setInt(2, m.seq());
+            ps.setLong(3, m.ms());
+            ps.setString(4, m.author().toString());
+            ps.setString(5, m.authorName());
+            ps.setString(6, m.text());
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("teams") + " SET seq = GREATEST(seq, ?) WHERE id = ?")) {
+            ps.setInt(1, m.seq());
+            ps.setString(2, teamId.toString());
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("team_messages") + " WHERE team = ? AND seq <= ?")) {
+            ps.setString(1, teamId.toString());
+            ps.setInt(2, m.seq() - Math.max(0, keep));
+            ps.executeUpdate();
+        }
+    }
+
+    /** Marks where a player is online ("" when they left), for the team screen's "on server-2". */
+    void teamOnline(UUID player, String serverId) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("team_members") + " SET online_server = ? WHERE uuid = ?")) {
+            ps.setString(1, serverId);
+            ps.setString(2, player.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Forgets this server's online marks (a restart after a crash). */
+    void teamClearOnline() throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("team_members") + " SET online_server = '' WHERE online_server = ?")) {
+            ps.setString(1, serverId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** One team whole (members with their online server, the kept messages), or every team with a null id. */
+    java.util.List<com.mrgregles.bsp_core.team.Team> teamRead(UUID id) throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.team.Team> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, colour, leader, created_ms, seq, pin_text, pin_by, pin_by_name, pin_ms FROM " + t("teams") + (id == null ? "" : " WHERE id = ?"))) {
+            if (id != null) {
+                ps.setString(1, id.toString());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    net.minecraft.ChatFormatting colour = net.minecraft.ChatFormatting.getByName(rs.getString("colour"));
+                    com.mrgregles.bsp_core.team.Team team = new com.mrgregles.bsp_core.team.Team(UUID.fromString(rs.getString("id")), rs.getString("name"),
+                            colour == null || !colour.isColor() ? net.minecraft.ChatFormatting.AQUA : colour, UUID.fromString(rs.getString("leader")), rs.getLong("created_ms"));
+                    team.setMessageSeq(rs.getInt("seq"));
+                    String pin = rs.getString("pin_text");
+                    if (!pin.isEmpty()) {
+                        String by = rs.getString("pin_by");
+                        team.pin(new com.mrgregles.bsp_core.team.Team.Note(pin, by.isEmpty() ? team.leader : UUID.fromString(by), rs.getString("pin_by_name"), rs.getLong("pin_ms")));
+                    }
+                    out.add(team);
+                }
+            }
+        }
+        for (com.mrgregles.bsp_core.team.Team team : out) {
+            try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, joined_ms, read_seq, seen_ms, online_server FROM " + t("team_members") + " WHERE team = ? ORDER BY joined_ms")) {
+                ps.setString(1, team.id.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        com.mrgregles.bsp_core.team.Team.Member m = new com.mrgregles.bsp_core.team.Team.Member(rs.getString("name"), rs.getLong("joined_ms"), rs.getInt("read_seq"));
+                        m.seenMs = rs.getLong("seen_ms");
+                        m.onlineServer = rs.getString("online_server");
+                        team.members().put(UUID.fromString(rs.getString("uuid")), m);
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn().prepareStatement("SELECT seq, ms, uuid, name, text FROM " + t("team_messages") + " WHERE team = ? ORDER BY seq")) {
+                ps.setString(1, team.id.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        team.messages().add(new com.mrgregles.bsp_core.team.Team.Message(rs.getInt("seq"), rs.getLong("ms"), UUID.fromString(rs.getString("uuid")), rs.getString("name"), rs.getString("text")));
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     @Override

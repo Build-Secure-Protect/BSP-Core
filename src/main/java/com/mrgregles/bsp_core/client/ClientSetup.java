@@ -88,5 +88,7 @@ public final class ClientSetup {
         event.registerAboveAll("siege_ring", SiegeClient.INSTANCE);
         event.registerAboveAll("sentinel_strip", SentinelHud.INSTANCE);
         event.registerAboveAll("wrench_ends", WrenchHud.INSTANCE);
+        event.registerAboveAll("team_prompts", PromptHud.INSTANCE);
+        event.registerAboveAll("team_chat_badge", TeamChatBadge.INSTANCE);
     }
 }

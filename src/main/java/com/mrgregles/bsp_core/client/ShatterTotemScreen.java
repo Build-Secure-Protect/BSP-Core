@@ -102,7 +102,19 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         return totem != null && totem.isOwner(minecraft.player.getUUID());
     }
 
-    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, T_ACCESS = 3, MAP_TILE = 24, ACC_ROW = 18, ACC_Y = TREE_Y + 22, ACC_COL = 118, ACC_W = 40, ACC_GAP = 46;
+    /** In the owner's team: a friend with every flag, synced with the block. */
+    private boolean teammate() {
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        return totem != null && totem.isTeammate(minecraft.player.getUUID());
+    }
+
+    /** May buy upgrades and change chunks here: the owner, an admin, a teammate or a friend with Upgrades (what the server's {@code mayUpgrade} allows). */
+    private boolean mayUpgrade() {
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        return isOwner() || admin || totem != null && totem.hasAccess(minecraft.player.getUUID(), com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES);
+    }
+
+    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, T_ACCESS = 3, T_TEAM = 4, MAP_TILE = 24, ACC_ROW = 18, ACC_Y = TREE_Y + 22, ACC_COL = 118, ACC_W = 40, ACC_GAP = 46;
     private static final int[] ACC_FLAGS = {com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES, com.mrgregles.bsp_core.totem.TotemAccess.ALARM, com.mrgregles.bsp_core.totem.TotemAccess.WARD, com.mrgregles.bsp_core.totem.TotemAccess.MACHINES};
     private boolean chunksTab, accessTab;
     private EditBox nameBox;
@@ -112,7 +124,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     /** The CHUNKS tab is there for the owner (and admins) once the totem has the Anchor upgrade. */
     private boolean chunksAvailable() {
         ShatterTotemBlockEntity totem = menu.getTotem();
-        return totem != null && totem.getUpgradeLevel(Buff.ANCHOR) > 0 && (isOwner() || admin);
+        return totem != null && totem.getUpgradeLevel(Buff.ANCHOR) > 0 && mayUpgrade();
     }
 
     /** The tabs in the header, left to right. With only the totem's own page there are none. */
@@ -132,6 +144,12 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (admin) {
             out.add(T_OPERATOR);
         }
+        if (isOwner() || teammate()) {
+            if (!out.contains(T_TOTEM)) {
+                out.add(0, T_TOTEM);
+            }
+            out.add(T_TEAM); // opens the Team screen rather than a page here
+        }
         return out.size() == 1 ? new int[0] : out.stream().mapToInt(Integer::intValue).toArray();
     }
 
@@ -150,6 +168,10 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     }
 
     private void setTab(int tab) {
+        if (tab == T_TEAM) {
+            TeamKeys.open();
+            return;
+        }
         operatorTab = tab == T_OPERATOR;
         chunksTab = tab == T_CHUNKS;
         accessTab = tab == T_ACCESS;
@@ -175,7 +197,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 nameBox.setFocused(false);
             }
         }
-        boolean canSteal = !operatorTab && !chunksTab && !accessTab && totem != null && !isOwner() && totem.getSteal().isEmpty();
+        boolean canSteal = !operatorTab && !chunksTab && !accessTab && totem != null && !isOwner() && !teammate() && totem.getSteal().isEmpty();
         stealButton.visible = canSteal;
         stealButton.active = canSteal;
         for (Button b : adminButtons) {
@@ -203,7 +225,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     /** Why the selected upgrade cannot be bought right now, or null if it can. */
     @Nullable
     private Component blocked(Buff b) {
-        if (!isOwner() && !admin) {
+        if (!mayUpgrade()) {
             return level(b) >= b.maxLevel() ? null : Component.translatable("gui.bsp_core.tree.not_yours");
         }
         return TotemUpgrades.whyNot(b, this::level, tier(), minecraft.player);
@@ -214,7 +236,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     }
 
     private boolean canRaise() {
-        return (isOwner() || admin) && tier() < TotemUpgrades.MAX_TIER && TotemUpgrades.whyNotGate(tier(), minecraft.player) == null;
+        return mayUpgrade() && tier() < TotemUpgrades.MAX_TIER && TotemUpgrades.whyNotGate(tier(), minecraft.player) == null;
     }
 
     @Override
@@ -474,7 +496,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         Component auras = Component.translatable("gui.bsp_core.tree.auras.label");
         small(g, auras, aurasX(), 7, shown ? TQ & 0xFFFFFF : MUTED);
         int[] tabs = tabs();
-        String[] tabKeys = {"totem", "chunks", "operator", "access"};
+        String[] tabKeys = {"totem", "chunks", "operator", "access", "team"};
         for (int i = 0; i < tabs.length; i++) {
             Component label = Component.translatable("gui.bsp_core.tree.tab." + tabKeys[tabs[i]]);
             small(g, label, tabX(i, tabs.length) + TAB_W / 2 - font.width(label) * 3 / 8, 7, tabs[i] != currentTab() ? MUTED : (tabs[i] == T_OPERATOR ? VIO : TQ) & 0xFFFFFF);
@@ -497,8 +519,8 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 g.drawString(font, Component.translatable("gui.bsp_core.shatter_totem.grace", (steal.graceLeft() + 19) / 20).withStyle(ChatFormatting.YELLOW), 10, STATUS_Y + 31, 0xFFFFFF, false);
             }
         } else {
-            g.drawString(font, Component.translatable(isOwner() ? "gui.bsp_core.shatter_totem.yours" : "gui.bsp_core.shatter_totem.hint")
-                    .withStyle(isOwner() ? ChatFormatting.GREEN : ChatFormatting.GRAY), 10, STATUS_Y + 11, 0xFFFFFF, false);
+            g.drawString(font, Component.translatable(isOwner() ? "gui.bsp_core.shatter_totem.yours" : teammate() ? "gui.bsp_core.shatter_totem.team" : "gui.bsp_core.shatter_totem.hint")
+                    .withStyle(isOwner() ? ChatFormatting.GREEN : teammate() ? ChatFormatting.AQUA : ChatFormatting.GRAY), 10, STATUS_Y + 11, 0xFFFFFF, false);
             if (totem.getOwner().isPresent()) { // what the placed totem gives off, without having to find the Output node on the tree
                 int level = totem.getUpgradeLevel(TotemUpgrades.Buff.OUTPUT), max = TotemUpgrades.Buff.OUTPUT.maxLevel();
                 g.drawString(font, Component.translatable("gui.bsp_core.shatter_totem.plasma", totem.plasmaOutput(), level, max), 10, STATUS_Y + 22, 0x4FB8FF, false);

@@ -56,6 +56,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     private long ownedSince;
     /** Friends the owner has let in and what each may do. Cleared when the totem changes hands. */
     private java.util.List<TotemAccess> access = new java.util.ArrayList<>();
+    /** The owner's teammates as last synced to this client; the server asks the team ledger instead. */
+    private final java.util.Set<UUID> teammates = new java.util.HashSet<>();
     /** The Cloaking cube's copy of the land, taken when Cloaking first came on; null while there is none. */
     @Nullable
     private CloakSnapshot cloak;
@@ -176,6 +178,10 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         if (isOwner(thief.getUUID())) {
             thief.displayClientMessage(Component.translatable("message.bsp_core.steal.own_totem").withStyle(ChatFormatting.YELLOW), true);
+            return;
+        }
+        if (!BSPConfig.getOr(BSPConfig.TEAM_TEAMMATES_STEAL, false) && isTeammate(thief.getUUID())) {
+            thief.displayClientMessage(Component.translatable("message.bsp_core.steal.teammate").withStyle(ChatFormatting.YELLOW), true);
             return;
         }
         if (steal != null) {
@@ -676,7 +682,26 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 return true;
             }
         }
-        return false;
+        return isTeammate(player);
+    }
+
+    /**
+     * Whether the player is in the owner's team: a teammate counts as a friend with every access flag.
+     * On the server this asks the team ledger; a client uses the teammates synced with the block.
+     */
+    public boolean isTeammate(UUID player) {
+        if (owner == null || owner.uuid().equals(player)) {
+            return false;
+        }
+        if (level instanceof ServerLevel sl) {
+            return com.mrgregles.bsp_core.team.Teams.enabled() && com.mrgregles.bsp_core.api.BspTeams.sameTeam(sl.getServer(), owner.uuid(), player);
+        }
+        return teammates.contains(player);
+    }
+
+    /** Sends the block's data again so clients learn a team change (a teammate joined or left). */
+    public void resyncAccess() {
+        sync();
     }
 
     /** The owner, an operator, or someone let in with Upgrades. */
@@ -899,6 +924,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         owner = TotemOwner.load(tag).orElse(null);
         ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
         access = TotemAccess.load(tag);
+        teammates.clear();
+        if (tag.contains("Teammates")) {
+            for (net.minecraft.nbt.Tag raw : tag.getList("Teammates", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
+                teammates.add(net.minecraft.nbt.NbtUtils.loadUUID(raw));
+            }
+        }
         cloak = tag.contains("Cloak") && level != null ? CloakSnapshot.load(tag.getCompound("Cloak"), CloakSnapshot.blocks(level)) : null;
         steal = StealState.load(tag);
         upgrades = TotemUpgrades.current(tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy());
@@ -908,6 +939,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
+        if (owner != null && level instanceof ServerLevel sl && com.mrgregles.bsp_core.team.Teams.enabled()) {
+            net.minecraft.nbt.ListTag mates = new net.minecraft.nbt.ListTag();
+            for (UUID m : com.mrgregles.bsp_core.api.BspTeams.teammates(sl.getServer(), owner.uuid())) {
+                mates.add(net.minecraft.nbt.NbtUtils.createUUID(m));
+            }
+            tag.put("Teammates", mates);
+        }
         // An unclaimed totem with no upgrades and no steal writes nothing, and Minecraft drops update
         // packets whose tag is empty. Without this marker the client would never learn that the owner,
         // steal or upgrades were cleared.

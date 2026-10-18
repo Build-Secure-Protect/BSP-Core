@@ -487,7 +487,33 @@ Your placed totem's panel has an **ACCESS** tab. Type an online player's name an
 
 **Page 2: Rules**
 
-Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.
+Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers. Teammates have all four switches without being listed: see Teams.
+
+## Teams
+
+**Page 1**
+
+Friends who build together can form a **team**. Every member counts as a friend with all four switches on every teammate's totem: they open its panel, buy its upgrades, pass its Ward and Alarm, use its machines and see through its Cloaking. Teammates cannot steal from each other, and the Totem Compass leaves teammates' totems alone.
+
+**Page 2: Making one**
+
+Open the Team screen from the **TEAM** tab on your placed totem, the TEAM key on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.
+
+**Page 3: The invite**
+
+An invited player sees a card at the top right with your face and the team's name, hears a chime, and finds the same offer in chat with Accept and Decline. Two keys answer the card (Y and H unless rebound); the chat buttons work from inside any screen.
+
+**Page 4: Members and the lead**
+
+A team holds up to five. The leader renames, recolours, removes members, hands the lead over and disbands; everyone may invite. Leaving, being removed or a disband takes the shared access away at once, and a totem stolen by an outsider is out of the team's reach by itself. The leader hands the lead over before leaving.
+
+**Page 5: Talking**
+
+Press **TEAM CHAT** on the Team screen and what you type goes to the team until you press it again; a pill above the chat shows while it is on. **/t message** sends one line without switching. The team's board keeps the last fifty lines for members who were away, counts the unread ones at login, and the leader can pin one note above it.
+
+**Page 6: Upgrading together**
+
+Any member may buy upgrades on a teammate's placed totem and raise its tier; the one buying pays, with coins and experience as for their own. The upgrade belongs to the totem and stays with it whoever leaves the team.
 
 ## Plasma Across Worlds
 

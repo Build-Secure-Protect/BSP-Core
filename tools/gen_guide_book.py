@@ -216,7 +216,15 @@ ENTRIES = [
     ]),
     ("totem", "access", "Letting Friends In", "minecraft:name_tag", 11, [
         text("Your placed totem's panel has an $(l)ACCESS$() tab. Type an online player's name and Add: they get four switches.$(br2)$(li)$(l)Upgrades$(): may buy upgrades and change chunks and projector settings.$(li)$(l)Alarm$(): does not set it off.$(li)$(l)Ward$(): is not weakened by it.$(li)$(l)Machines$(): may open the totem's chargers and see through its Cloaking."),
-        text("Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.", "Rules"),
+        text("Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers. Teammates have all four switches without being listed: see Teams.", "Rules"),
+    ]),
+    ("totem", "teams", "Teams", "minecraft:white_banner", 11, [
+        text("Friends who build together can form a $(l)team$(). Every member counts as a friend with all four switches on every teammate's totem: they open its panel, buy its upgrades, pass its Ward and Alarm, use its machines and see through its Cloaking. Teammates cannot steal from each other, and the Totem Compass leaves teammates' totems alone."),
+        text("Open the Team screen from the $(l)TEAM$() tab on your placed totem, the TEAM key on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.", "Making one"),
+        text("An invited player sees a card at the top right with your face and the team's name, hears a chime, and finds the same offer in chat with Accept and Decline. Two keys answer the card (Y and H unless rebound); the chat buttons work from inside any screen.", "The invite"),
+        text("A team holds up to five. The leader renames, recolours, removes members, hands the lead over and disbands; everyone may invite. Leaving, being removed or a disband takes the shared access away at once, and a totem stolen by an outsider is out of the team's reach by itself. The leader hands the lead over before leaving.", "Members and the lead"),
+        text("Press $(l)TEAM CHAT$() on the Team screen and what you type goes to the team until you press it again; a pill above the chat shows while it is on. $(l)/t message$() sends one line without switching. The team's board keeps the last fifty lines for members who were away, counts the unread ones at login, and the leader can pin one note above it.", "Talking"),
+        text("Any member may buy upgrades on a teammate's placed totem and raise its tier; the one buying pays, with coins and experience as for their own. The upgrade belongs to the totem and stays with it whoever leaves the team.", "Upgrading together"),
     ]),
     ("totem", "effects", "Powers in Detail", "minecraft:ender_eye", 12, [
         text("The higher-tier powers, one by one. Auras are cubes: a radius of 5 covers 11 by 11 by 11 blocks, so the edge can be measured and built to. Hide the cube drawings for yourself with the AURAS switch in the totem panel's header or the keybind."),

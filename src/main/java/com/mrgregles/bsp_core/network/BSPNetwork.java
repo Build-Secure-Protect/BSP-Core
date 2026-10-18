@@ -158,6 +158,18 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(LinkActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(LinkActionPacket::encode).decoder(LinkActionPacket::decode)
                 .consumerMainThread(LinkActionPacket::handle).add();
+        CHANNEL.messageBuilder(TeamViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TeamViewPacket::encode).decoder(TeamViewPacket::decode)
+                .consumerMainThread(TeamViewPacket::handle).add();
+        CHANNEL.messageBuilder(TeamActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TeamActionPacket::encode).decoder(TeamActionPacket::decode)
+                .consumerMainThread(TeamActionPacket::handle).add();
+        CHANNEL.messageBuilder(TeamPromptPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TeamPromptPacket::encode).decoder(TeamPromptPacket::decode)
+                .consumerMainThread(TeamPromptPacket::handle).add();
+        CHANNEL.messageBuilder(TeamChatPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TeamChatPacket::encode).decoder(TeamChatPacket::decode)
+                .consumerMainThread(TeamChatPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {
