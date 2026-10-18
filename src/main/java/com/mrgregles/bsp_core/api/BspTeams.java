@@ -56,6 +56,49 @@ public final class BspTeams {
         return out;
     }
 
+    /**
+     * A member as other mods see them: {@code server} is the network server they are online on ("" when
+     * offline or unknown; this server's id when here). {@code seenMs} is wall-clock and never 0 for a
+     * member: at the latest it is the moment they joined (they were online to accept), and it moves on
+     * at every login and logout seen on any server, so "offline, seen 2 h ago" is always right.
+     */
+    public record Member(UUID uuid, String name, boolean leader, boolean onlineHere, String server, long seenMs) {}
+
+    /** The members of a team with where they are, in joining order; empty when the team is gone. */
+    public static List<Member> members(MinecraftServer server, UUID teamId) {
+        com.mrgregles.bsp_core.team.Team t = TeamLedger.get(server).team(teamId);
+        if (t == null) {
+            return List.of();
+        }
+        String me = com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID, "server");
+        List<Member> out = new ArrayList<>();
+        for (var e : t.members().entrySet()) {
+            boolean here = server.getPlayerList().getPlayer(e.getKey()) != null;
+            out.add(new Member(e.getKey(), e.getValue().name, t.isLeader(e.getKey()), here, here ? me : e.getValue().onlineServer, e.getValue().seenMs));
+        }
+        return out;
+    }
+
+    private static volatile String teleporter = "";
+
+    /**
+     * A teleport mod says it handles {@code TeamEvent.TeleportRequest}. Call once at setup; from
+     * then on the Team screen draws a TELEPORT key on every online teammate's row.
+     */
+    public static void teleportsHandledBy(String modId) {
+        teleporter = modId == null ? "" : modId;
+    }
+
+    /** The mod that handles team teleports, or "" when none has said so. */
+    public static String teleporter() {
+        return teleporter;
+    }
+
+    /** Asks the teleport mod to move the player to a teammate: the same thing the TELEPORT key does. */
+    public static boolean requestTeleport(net.minecraft.server.level.ServerPlayer player, UUID target) {
+        return com.mrgregles.bsp_core.team.Teams.requestTeleport(player, target).ok();
+    }
+
     /** Every team this server knows. */
     public static List<Team> all(MinecraftServer server) {
         List<Team> out = new ArrayList<>();

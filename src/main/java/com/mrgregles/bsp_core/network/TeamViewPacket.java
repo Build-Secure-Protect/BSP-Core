@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  * open the screen; otherwise an open screen takes the new data and a closed one ignores it.
  */
 public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, String name, int colour, boolean leader, int maxMembers, boolean membersInvite,
-                             boolean chatOn, int unread, String pinText, String pinBy, List<Member> members, List<Candidate> candidates, List<Line> lines) {
+                             boolean chatOn, int unread, String pinText, String pinBy, List<Member> members, List<Candidate> candidates, List<Line> lines, boolean canTeleport) {
     /** A member: {@code state} 0 online here, 1 online elsewhere on the network, 2 offline (then {@code seenMs} says since when). */
     public record Member(UUID id, String name, boolean leader, int state, long seenMs, int totems, String where) {}
 
@@ -71,6 +71,7 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
             buf.writeUtf(l.text);
             buf.writeBoolean(l.fresh);
         }
+        buf.writeBoolean(m.canTeleport);
     }
 
     public static TeamViewPacket decode(FriendlyByteBuf buf) {
@@ -97,7 +98,8 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
         for (int i = 0; i < n; i++) {
             lines.add(new Line(buf.readLong(), buf.readUtf(), buf.readUtf(), buf.readBoolean()));
         }
-        return new TeamViewPacket(open, enabled, hasTeam, name, colour, leader, max, membersInvite, chatOn, unread, pinText, pinBy, members, candidates, lines);
+        boolean canTeleport = buf.readBoolean();
+        return new TeamViewPacket(open, enabled, hasTeam, name, colour, leader, max, membersInvite, chatOn, unread, pinText, pinBy, members, candidates, lines, canTeleport);
     }
 
     public static void handle(TeamViewPacket msg, Supplier<NetworkEvent.Context> ctx) {
@@ -112,7 +114,7 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
         int max = Teams.maxMembers();
         boolean membersInvite = BSPConfig.getOr(BSPConfig.TEAM_MEMBERS_INVITE, true);
         if (team == null) {
-            return new TeamViewPacket(open, Teams.enabled(), false, "", ChatFormatting.AQUA.getId(), false, max, membersInvite, false, 0, "", "", List.of(), List.of(), List.of());
+            return new TeamViewPacket(open, Teams.enabled(), false, "", ChatFormatting.AQUA.getId(), false, max, membersInvite, false, 0, "", "", List.of(), List.of(), List.of(), false);
         }
         TotemLedger totems = TotemLedger.get(server);
         List<Member> members = new ArrayList<>();
@@ -143,6 +145,6 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
         }
         Team.Note pin = team.pinned();
         return new TeamViewPacket(open, Teams.enabled(), true, team.name, team.colour.getId(), team.isLeader(p.getUUID()), max, membersInvite, Teams.isChatOn(p.getUUID()),
-                team.unread(p.getUUID()), pin == null ? "" : pin.text(), pin == null ? "" : pin.byName(), members, candidates, lines);
+                team.unread(p.getUUID()), pin == null ? "" : pin.text(), pin == null ? "" : pin.byName(), members, candidates, lines, !com.mrgregles.bsp_core.api.BspTeams.teleporter().isEmpty());
     }
 }

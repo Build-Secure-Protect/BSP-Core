@@ -1107,13 +1107,14 @@ Setup: two accounts in one team (made through a game test or a scratch command u
 
 Setup: two or three accounts, each with a totem; Controls > BSP-Core > "Open the Team screen" bound on one of them.
 
-- [ ] No team: the key, the TEAM key on the held totem's screen and the TEAM tab on your placed totem all open the same board with "no team" top right, the name box, sixteen swatches and CREATE. A two-letter name, a name with punctuation or a name another team has is refused with a red line in chat; a good name makes the team and the board shows MEMBERS with you as LEAD, "1 of 5 members".
+- [ ] No team: the key, the TEAM button above the inventory (survival and creative; it follows the panel when the recipe book opens; `teamButton = false` in `config/bsp_core-client.toml` hides it), the TEAM tab in the held totem screen's header (left of the tier, clear of the Raise box) and the TEAM tab on your placed totem all open the same board with "no team" top right, the name box, sixteen swatches and CREATE. A two-letter name, a name with punctuation or a name another team has is refused with a red line in chat; a good name makes the team and the board shows MEMBERS with you as LEAD, "1 of 5 members".
 - [ ] INVITE lists the other accounts online here; invite one: its row says "waiting 60 s" and counts down; the invited account sees "X invites you to join Y" in chat (the popup is part 4) and joins with a game test or `/bsp team` for now; both boards show two members within two seconds; the inviter's row disappears when the invite is answered or runs out.
 - [ ] MESSAGES: type a line and press Enter or SEND; the line appears at the bottom with your name in violet and the time; the other member's MESSAGES key carries a "1" badge until they open the view, where the line has a green mark; closing the screen or switching views clears the badge. Post more than fits: the mouse wheel scrolls back.
 - [ ] The leader's SETTINGS: rename and recolour (the name's colour changes on both boards); PIN a note: it shows above the board for everyone and the key reads TAKE DOWN when the box is empty; HAND OVER asks SURE? first, then the other member is LEAD and your keys lose SETTINGS and DISBAND and gain LEAVE; REMOVE a member: they drop off the list and their board goes back to "no team".
 - [ ] DISBAND asks SURE?; a leader with members has DISBAND, a lone leader LEAVE; a member's LEAVE works at once after SURE?.
 - [ ] TEAM CHAT lights and says "on"; a chat line confirms; press again to switch back (the team channel itself comes with part 5).
 - [ ] Every label fits its key at GUI scale 2 and 3; long names are cut with an ellipsis, never drawn over the state column.
+- [ ] With another mod's key bound to a letter (the minimap's G, the Curios key, the inventory key E), type that letter into the name box, the message line and the pin box, and press it in the MEMBERS view with nothing focused: the screen stays, the letter lands in the box, and the other mod does nothing. Escape still closes. The same in the totem panel's ACCESS name box, the bank's boxes and the accelerator's Worlds board.
 
 ## Teams, part 4: the invite card (2026-10-18)
 
@@ -1153,4 +1154,38 @@ Setup: two servers on the same MySQL database with Redis on (the MySQL live test
 
 - [ ] The guide book's totem category has "Teams" next to "Letting Friends In": six pages, no picture; every page fits without a cut line; "Letting Friends In" ends with the pointer to Teams.
 - [ ] Controls > BSP-Core lists "Open the Team screen" (unbound), "Accept a team invite" (Y) and "Decline a team invite" (H) beside the Recall keys.
+
+## Team teleports, BSP-Core's side (2026-10-18)
+
+Setup: two accounts in a team; BSP-Teleport with its T-1 and T-3 rows built (without it, no TELEPORT key appears anywhere, which is the first check).
+
+- [ ] With BSP-Teleport: an online teammate's row in MEMBERS ends with a TELEPORT key; your own row and offline rows have none; the state column sits left of the keys and nothing overlaps.
+- [ ] Press it: BSP-Teleport's usual warm-up, price and arrival; its message if refused (cooldown, no money, a zone that forbids arrival).
+- [ ] Have the teammate start stealing a totem and teleport to them: refused with BSP-Teleport's line (no landing within 150 blocks of a running steal, any steal on the network); the Teleport Band's row shows RAID.
+- [ ] A team teleport costs nothing; BSP-Teleport's cooldown and warm-up still apply.
+- [ ] A teammate on the other server shows "on server-2" and still gets a key; pressing it moves you across when BSP-Teleport can, or explains why not.
+
+## Proxy chat relay, VA-C2 (2026-10-18)
+
+Setup: two backends behind the Velocity proxy with BSP-Velocity Additions handling `bsp_core:proxy`; `proxy.relayChat = true` on both; two accounts on different backends, a third on the same backend as the first, in a team with it.
+
+- [ ] With `relayChat` false (the default), nothing on the channel: the proxy plugin's log shows no relay and the other backend sees no lines.
+- [ ] `relayChat` true: a plain chat line on backend A arrives on backend B through the proxy in D6's format, once, with the right name; players on A see it once (the backend's own broadcast), not twice.
+- [ ] Team chat on A (TEAM CHAT on, or `/t`): the teammate on A sees it, nobody on B does, and the proxy log shows nothing relayed for it.
+- [ ] Stand where Region Guard denies `send-chat` and speak: "You can't chat here." and nothing relayed.
+- [ ] `/me`, `/say`: not relayed (commands, not chat).
+- [ ] With `team.chatTag` on, the relayed text and JSON carry the `[Team]` prefix (the final message after the listeners).
+- [ ] Without the proxy plugin and `relayChat` true by mistake: the client logs an unknown-channel line per message and nothing else happens.
+
+## Boards on the Score Screen, R8 (2026-10-18)
+
+Setup: an admin, a Score Screen of at least 4 x 2 panels, BSP-Teleport with its "Home servers" board registered (or any mod calling `BspBoards.register`).
+
+- [ ] Sneak + right-click the screen: the settings show the new rows; without any registered board the Board row says "No boards registered on this client".
+- [ ] Show: Board, pick "Home servers", look Ledger: one row per server with the Access Token icon, the name and the value in gold at the right; the title strip reads HOME SERVERS. Switch to Tiles: tiles with the icon over a large value; Side column: the leaderboard on the left two thirds and the board in a column at the right under the screen's own title.
+- [ ] Show: Rotate with the default pages: the scoreboard then the board, each for 10 s, a short fade in, dots under the title with the current one lit; -/+ changes the seconds (5 to 120); toggle Rules and Prizes into the rotation and they take their turn with their own titles.
+- [ ] Side column while rotating: the leaderboard stays and the column turns through the boards with a "1/2" counter; with one board there is no counter.
+- [ ] A board with more lines than fit scrolls at the screen's speed; speed 0 holds still.
+- [ ] Log in with a client that lacks the registering mod (or unregister it): the page says "Board ... is not installed here" once, then the rotation goes on without it.
+- [ ] Relog: the screen keeps its mode, board, look, pages and seconds (saved on the block and sent with its data).
 

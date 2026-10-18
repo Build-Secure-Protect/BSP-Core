@@ -28,11 +28,16 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         this.imageHeight = TREE_Y + TotemTree.H + 22;
     }
 
-    @Override
-    protected void init() {
-        super.init();
-        addRenderableWidget(net.minecraft.client.gui.components.Button.builder(Component.translatable("gui.bsp_core.team.key"), b -> TeamKeys.open())
-                .bounds(leftPos + imageWidth - 10 - 52, topPos + TREE_Y + TotemTree.H + 3, 52, 16).build());
+    private static final int TAB_W = 40, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A;
+
+    /** The TEAM tab's left edge, inside the header to the left of the tier. */
+    private int tabX() {
+        Component t = Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier()));
+        return imageWidth - 10 - font.width(t) - 8 - TAB_W;
+    }
+
+    private boolean overTab(double mx, double my) {
+        return mx >= leftPos + tabX() && mx < leftPos + tabX() + TAB_W && my >= topPos + 3 && my < topPos + 16;
     }
 
     private int level(Buff b) {
@@ -62,6 +67,10 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (button == 0 && overTab(mx, my)) {
+            TeamKeys.open();
+            return true;
+        }
         Buff node = tree.nodeAt(mx, my, leftPos + TREE_X, topPos + TREE_Y);
         if (node != null) {
             tree.selected = node;
@@ -93,6 +102,10 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         int x = leftPos, y = topPos;
         g.fill(x - 1, y - 1, x + imageWidth + 1, y + imageHeight + 1, TQ);
         g.fill(x, y, x + imageWidth, y + imageHeight, BG);
+        // the TEAM tab, drawn as the placed panel draws its tabs
+        int tx = x + tabX();
+        g.fill(tx, y + 3, tx + TAB_W, y + 16, overTab(mouseX, mouseY) ? TQ : DIM);
+        g.fill(tx + 1, y + 4, tx + TAB_W - 1, y + 15, SLOT_BG);
         TotemTree.wallet(g, font, x + 10, y + WALLET_Y, minecraft.player);
         tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, tier());
         Buff b = tree.selected;
@@ -106,6 +119,12 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         g.drawString(font, title.getString().toUpperCase(Locale.ROOT), 10, 7, TQ & 0xFFFFFF, false);
         Component t = Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier()));
         g.drawString(font, t, imageWidth - 10 - font.width(t), 7, TQ & 0xFFFFFF, false);
+        Component tab = Component.translatable("gui.bsp_core.tree.tab.team");
+        g.pose().pushPose();
+        g.pose().translate(tabX() + TAB_W / 2 - font.width(tab) * 3 / 8, 7, 0);
+        g.pose().scale(0.75f, 0.75f, 1f);
+        g.drawString(font, tab, 0, 0, MUTED, false);
+        g.pose().popPose();
         // small type, so it stays clear of the tier box beside it
         g.pose().pushPose();
         g.pose().translate(10, TREE_Y + TotemTree.H + 8, 0);

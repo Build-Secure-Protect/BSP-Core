@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Score Board Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the Score Screen showing another mod's board (BSP-Teleport's "Home servers"), in three looks, with the rotation indicator each look carries. A fourth card shows the settings rows that drive it. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; letter-spacing:-.01em; } h2{ font-size:18px; margin:0; color:var(--acc); } h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+.stage{ background:var(--board); border-radius:4px; padding:12px; display:flex; justify-content:center; }
+
+/* ---------- the Score Screen: 6 x 3 blocks, the renderer's palette ---------- */
+.scr{ position:relative; width:100%; max-width:480px; aspect-ratio:6/3; background:#070A0E; border:2px solid #1f2430; box-sizing:border-box; font-family:"Silkscreen","IBM Plex Sans",monospace; color:#E8EAF0; overflow:hidden; display:flex; flex-direction:column; }
+.scr .strip{ background:#10151C; color:#19D3B0; font-size:12px; letter-spacing:.08em; text-align:center; padding:5px 8px 3px; position:relative; }
+.scr .dots{ display:flex; justify-content:center; gap:4px; padding:2px 0 0; } .scr .dots i{ width:5px; height:5px; border-radius:50%; background:#2a2f3a; } .scr .dots i.on{ background:#19D3B0; }
+.scr .bar{ height:2px; background:#2a2f3a; } .scr .bar i{ display:block; height:2px; width:62%; background:#19D3B0; }
+.scr .body{ flex:1; padding:6px 10px; display:flex; flex-direction:column; gap:3px; min-height:0; font-size:10px; }
+.icon{ width:14px; height:14px; flex:none; border-radius:2px; background:linear-gradient(135deg,#ffd23a,#c87a3c); box-shadow:inset 0 0 0 2px #0b0d11; } .icon.b{ background:linear-gradient(135deg,#4fd8ff,#19d3b0); } .icon.c{ background:linear-gradient(135deg,#b58cff,#5b3fa8); } .icon.d{ background:linear-gradient(135deg,#8a909c,#555c6a); }
+/* A Ledger */
+.row{ display:flex; align-items:center; gap:7px; padding:3px 0; border-bottom:1px solid #141a22; } .row .t{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .row .v{ color:#FFD23A; white-space:nowrap; font-variant-numeric:tabular-nums; } .row .s{ color:#9AA3B5; font-size:8.5px; }
+/* B Tiles */
+.tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; flex:1; align-content:start; } .tile{ background:#0B0D11; border:1px solid #1f2430; padding:5px; display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; } .tile .icon{ width:18px; height:18px; } .tile .n{ font-size:9px; color:#E8EAF0; } .tile .big{ font-size:16px; color:#FFD23A; line-height:1; } .tile .s{ font-size:7.5px; color:#9AA3B5; }
+/* C Side column */
+.split{ display:flex; gap:8px; flex:1; min-height:0; } .split .lb{ flex:2; display:flex; flex-direction:column; gap:3px; } .split .side{ flex:1; background:#0B0D11; border-left:1px solid #1f2430; padding:4px 6px; display:flex; flex-direction:column; gap:3px; font-size:8.5px; } .split .side .h{ color:#19D3B0; font-size:8px; letter-spacing:.08em; display:flex; justify-content:space-between; }
+.rank{ display:flex; gap:6px; align-items:center; padding:2px 0; border-bottom:1px solid #141a22; } .rank .p{ width:14px; color:#FFD23A; } .rank .n{ flex:1; } .rank .pts{ color:#9AA3B5; }
+.missing{ color:#9AA3B5; text-align:center; margin:auto; font-size:9px; }
+/* settings card */
+.set{ width:100%; max-width:480px; background:#10151Cf0; border:1px solid #19D3B0; color:#e8eaf0; font-family:"IBM Plex Sans",system-ui,sans-serif; font-size:10px; padding:8px 10px; box-sizing:border-box; display:grid; grid-template-columns:70px 1fr; gap:6px 8px; align-items:center; }
+.set .l{ color:#9AA3B5; } .set .chips{ display:flex; flex-wrap:wrap; gap:3px; } .chip{ border:1px solid #2a2f3a; background:#0c0e12; color:#9AA3B5; padding:1px 6px; font-size:8.5px; letter-spacing:.04em; text-transform:uppercase; } .chip.on{ border-color:#19D3B0; color:#19D3B0; } .set .ttl{ color:#19D3B0; font-weight:600; letter-spacing:.06em; grid-column:1/3; }
+</style>
+</head>
+<body><div class="wrap">
+
+<section><h1>Score Board Concepts</h1>
+<p class="lede">BSP-Teleport's request R8: other mods register boards and the Score Screen shows them, alone or in a rotation with the leaderboard. The sample board is BSP-Teleport's "Home servers": one line per restricted server, how many players call it home, how many are full, how many renting, with the server's Access Token as the icon. Three looks for the board page, each with its rotation indicator; the fourth card is the settings that drive it. Drawn as a 6 x 3 screen in the renderer's palette.</p></section>
+
+<section><h2>1. Three looks</h2><div class="grid3">
+<div class="card"><h3>A. Ledger</h3><div class="stage"><div class="scr">
+ <div class="strip">HOME SERVERS<div class="dots"><i></i><i class="on"></i><i></i></div></div>
+ <div class="body">
+  <div class="row"><span class="icon"></span><span class="t">BSP-Wild</span><span class="v">12 home</span><span class="s">3 full · 2 renting</span></div>
+  <div class="row"><span class="icon b"></span><span class="t">BSP-Frost</span><span class="v">7 home</span><span class="s">1 full · 4 renting</span></div>
+  <div class="row"><span class="icon c"></span><span class="t">BSP-Ember</span><span class="v">4 home</span><span class="s">0 full · 1 renting</span></div>
+  <div class="row"><span class="icon d"></span><span class="t">BSP-Deep</span><span class="v">0 home</span><span class="s">opens next season</span></div>
+ </div></div></div>
+<p>Rows like the ranked list: icon, the line's text, its value in gold at the right and the rest muted. Scrolls when there are more lines than rows, at the screen's scroll speed. The dots under the title are the rotation: three pages, this one lit. The most like the leaderboard, so a screen that turns between them keeps one voice.</p></div>
+<div class="card"><h3>B. Tiles</h3><div class="stage"><div class="scr">
+ <div class="strip">HOME SERVERS</div><div class="bar"><i></i></div>
+ <div class="body"><div class="tiles">
+  <div class="tile"><span class="icon"></span><span class="n">BSP-Wild</span><span class="big">12</span><span class="s">3 full · 2 renting</span></div>
+  <div class="tile"><span class="icon b"></span><span class="n">BSP-Frost</span><span class="big">7</span><span class="s">1 full · 4 renting</span></div>
+  <div class="tile"><span class="icon c"></span><span class="n">BSP-Ember</span><span class="big">4</span><span class="s">0 full · 1 renting</span></div>
+  <div class="tile"><span class="icon d"></span><span class="n">BSP-Deep</span><span class="big">0</span><span class="s">next season</span></div>
+ </div></div></div></div>
+<p>One tile per line with the icon large and the value as the big number, four across on a wide screen, fewer on a narrow one. The rotation is the thin bar under the title, draining as the page's seconds run out. Reads from further away; fewer lines fit.</p></div>
+<div class="card"><h3>C. Side column</h3><div class="stage"><div class="scr">
+ <div class="strip">TOTEM LEADERBOARD</div>
+ <div class="body"><div class="split">
+  <div class="lb">
+   <div class="rank"><span class="p">1</span><span class="n">Mrgregles</span><span class="pts">14 pts</span></div>
+   <div class="rank"><span class="p">2</span><span class="n">Avenn</span><span class="pts">9 pts</span></div>
+   <div class="rank"><span class="p">3</span><span class="n">Kestrel_Vane</span><span class="pts">7 pts</span></div>
+   <div class="rank"><span class="p">4</span><span class="n">Doro</span><span class="pts">4 pts</span></div>
+   <div class="rank"><span class="p">5</span><span class="n">Pell</span><span class="pts">2 pts</span></div>
+  </div>
+  <div class="side"><div class="h"><span>HOME SERVERS</span><span>1/2</span></div>
+   <div class="row"><span class="icon"></span><span class="t">Wild</span><span class="v">12</span></div>
+   <div class="row"><span class="icon b"></span><span class="t">Frost</span><span class="v">7</span></div>
+   <div class="row"><span class="icon c"></span><span class="t">Ember</span><span class="v">4</span></div>
+   <div class="row"><span class="icon d"></span><span class="t">Deep</span><span class="v">0</span></div>
+  </div>
+ </div></div></div></div>
+<p>No page swap: the leaderboard keeps two thirds of the screen and the right column turns through the registered boards, compact, with a "1/2" counter. Both always visible; needs a screen at least four blocks wide, and the board's extra text ("3 full · 2 renting") is dropped for the value alone.</p></div>
+</div></section>
+
+<section><h2>2. The settings</h2><div class="card"><div class="stage"><div class="set">
+ <div class="ttl">SCORE SCREEN SETTINGS</div>
+ <div class="l">Show</div><div class="chips"><span class="chip">Scoreboard</span><span class="chip">Scoring rules</span><span class="chip">Prizes</span><span class="chip">Board</span><span class="chip on">Rotate</span></div>
+ <div class="l">Board</div><div class="chips"><span class="chip on">Home servers</span><span class="chip">Season clock</span></div>
+ <div class="l">In rotation</div><div class="chips"><span class="chip on">Scoreboard</span><span class="chip">Scoring rules</span><span class="chip">Prizes</span><span class="chip on">Home servers</span><span class="chip on">Season clock</span></div>
+ <div class="l">Every</div><div class="chips"><span class="chip">-</span><span class="chip on">10 s</span><span class="chip">+</span></div>
+ <div class="l">Layout</div><div class="chips"><span class="chip on">Ranked list</span><span class="chip">Podium</span><span class="chip">Spotlight</span></div>
+</div></div>
+<p>Two rows join the existing settings: "Board" picks one registered board for a still screen, and "Rotate" turns the "In rotation" chips and the seconds on. Rules and Prizes start outside the rotation; every registered board starts inside it. Layout, font, size and speed still apply to the scoreboard page (and to a board's scrolling).</p></div></section>
+
+<section><h2>3. Picks for this round</h2><div class="card"><ol>
+<li><b>Board page look:</b> A Ledger (default), B Tiles, or C Side column.</li>
+<li><b>Rotation indicator:</b> dots under the title (A, default) or a draining bar (B). C has its counter.</li>
+<li><b>In the rotation by default:</b> Scoreboard and every registered board; Rules and Prizes off (default). Alternative: everything on.</li>
+<li><b>Seconds per page:</b> 10 by default, 5 to 120, with a 0.5 s cross-fade.</li>
+<li><b>Title strip:</b> the board's own title on its page, the screen's title on the scoreboard page (default). Alternative: the screen's title always.</li>
+<li><b>Missing board</b> (the mod is not on this client): "Board not installed here" in muted text and the rotation skips it next time round (default). Alternative: skip silently.</li>
+</ol></div></section>
+
+</div></body>
+</html>

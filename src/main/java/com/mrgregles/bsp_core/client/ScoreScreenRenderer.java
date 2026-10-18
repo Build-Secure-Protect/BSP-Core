@@ -15,6 +15,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import com.mrgregles.bsp_core.api.BspBoards;
+import javax.annotation.Nullable;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -49,7 +51,19 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
 
     // ------------------------------------------------------------------ drawing helpers (canvas pixels, y down)
 
+    /** Fade of the page being drawn, 0.15 to 1: a rotation's new page fades in. */
+    private float alpha = 1f;
+
+    private int faded(int argb) {
+        if (alpha >= 1f) {
+            return argb;
+        }
+        int a = Math.max(0x26, Math.round((argb >>> 24) * alpha)); // the font treats a near-zero alpha as opaque, so never go below it
+        return (a << 24) | (argb & 0xFFFFFF);
+    }
+
     private void rect(float x0, float y0, float x1, float y1, int argb) {
+        argb = faded(argb);
         VertexConsumer vc = buffers.getBuffer(RenderType.textBackground());
         Matrix4f m = pose.last().pose();
         int a = argb >>> 24, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
@@ -64,7 +78,12 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
 
     /** Draws text {@code px} pixels tall, anchored at (x, y) vertical centre; shrunk to fit {@code maxWidth} if needed. */
     private void text(String s, float x, float y, float px, int colour, float align, float maxWidth) {
-        Component c = Component.literal(s).withStyle(style);
+        text(Component.literal(s), x, y, px, colour, align, maxWidth);
+    }
+
+    private void text(Component raw, float x, float y, float px, int colour, float align, float maxWidth) {
+        colour = faded(colour);
+        Component c = raw.copy().withStyle(style);
         float w = font.width(c), k = px / 8f;
         if (w * k > maxWidth && w > 0) {
             k = maxWidth / w;
@@ -107,17 +126,51 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
         float u = Math.min(wh[0] / 5f, wh[1] / 2.2f) * screen.size() / 100f, speed = screen.speed() / 100f;
         rect(0, 0, w, h, BG);
         float th = 22 * u, top = th + 6, area = h - top - 4;
-        boolean rules = screen.mode() == ScoreScreenBlockEntity.MODE_RULES, prizes = screen.mode() == ScoreScreenBlockEntity.MODE_PRIZES;
-        text(rules ? Component.translatable("screen.bsp_core.rules.title").getString()
-                : prizes ? Component.translatable("screen.bsp_core.prizes.title", ClientScores.season()).getString() : screen.title(), w / 2, th / 2 + 3, 14 * u, TQ, 0.5f, w - 8);
+        // which page: a fixed mode, or the rotation's page for this moment
+        String page;
+        int pageIndex = 0, pageCount = 1;
+        alpha = 1f;
+        boolean side = screen.look() == ScoreScreenBlockEntity.LOOK_SIDE;
+        if (screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE) {
+            List<String> pages = rotation(screen, side);
+            pageCount = Math.max(1, pages.size());
+            int secs = Math.max(1, screen.rotateSeconds());
+            pageIndex = (int) ((long) (t / secs) % pageCount);
+            page = pages.isEmpty() ? ScoreScreenBlockEntity.PAGE_SCOREBOARD : pages.get(pageIndex);
+            float phase = t % secs;
+            alpha = Mth.clamp(phase / 0.5f, 0.15f, 1f);
+        } else {
+            page = screen.mode() == ScoreScreenBlockEntity.MODE_RULES ? ScoreScreenBlockEntity.PAGE_RULES
+                    : screen.mode() == ScoreScreenBlockEntity.MODE_PRIZES ? ScoreScreenBlockEntity.PAGE_PRIZES
+                    : screen.mode() == ScoreScreenBlockEntity.MODE_PAGE ? screen.boardId() : ScoreScreenBlockEntity.PAGE_SCOREBOARD;
+        }
+        boolean rules = page.equals(ScoreScreenBlockEntity.PAGE_RULES), prizes = page.equals(ScoreScreenBlockEntity.PAGE_PRIZES), scoreboard = page.equals(ScoreScreenBlockEntity.PAGE_SCOREBOARD);
+        BspBoards.Board modBoard = rules || prizes || scoreboard ? null : boardOf(page);
+        boolean sideBoard = side && !rules && !prizes && (modBoard != null || screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE || screen.mode() == ScoreScreenBlockEntity.MODE_PAGE);
+        float keep = alpha;
+        alpha = 1f; // the strip never fades
+        Component heading = rules ? Component.translatable("screen.bsp_core.rules.title")
+                : prizes ? Component.translatable("screen.bsp_core.prizes.title", ClientScores.season())
+                : modBoard != null && !sideBoard ? modBoard.title() : Component.literal(screen.title());
+        text(heading, w / 2, th / 2 + 3, 14 * u, TQ, 0.5f, w - 8);
         pose.translate(0, 0, 0.2f);
         rect(2, th + 3, w - 2, th + 4.5f, TQ);
+        if (screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE && pageCount > 1 && !sideBoard) {
+            dots(w, th + 7.5f, u, pageIndex, pageCount);
+            top += 5 * u;
+            area -= 5 * u;
+        }
+        alpha = keep;
 
         List<ScoreService.Entry> board = ClientScores.board();
         if (prizes) {
             prizes(level, w, top, area);
         } else if (rules) {
             rules(w, top, area);
+        } else if (sideBoard) {
+            sideColumn(level, screen, board, modBoard, page, w, h, top, area, u, t, speed, pageIndex, pageCount);
+        } else if (modBoard != null || !scoreboard) {
+            boardPage(level, modBoard, page, screen.look(), w, h, top, area, u, t, speed);
         } else if (board.isEmpty()) {
             text(Component.translatable("screen.bsp_core.empty").getString(), w / 2, top + area / 2, 12 * u, MUTED, 0.5f, w - 12);
         } else if (screen.layout() == ScoreScreenBlockEntity.LAYOUT_PODIUM) {
@@ -127,7 +180,166 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
         } else {
             list(board, w, h, top, area, u, t, speed);
         }
+        alpha = 1f;
         pose.popPose();
+    }
+
+    // ------------------------------------------------------------------ other mods' boards (BSP-Teleport R8)
+
+    /** Boards this client found missing: shown once as "not installed here", then left out of rotations. */
+    private static final java.util.Set<String> MISSING_SEEN = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    @Nullable
+    private static BspBoards.Board boardOf(String id) {
+        ResourceLocation rl = ResourceLocation.tryParse(id);
+        return rl == null ? null : BspBoards.board(rl).orElse(null);
+    }
+
+    /** The rotation's pages: the saved list or the default, less the boards this client has already found missing; with the side look, boards only. */
+    private static List<String> rotation(ScoreScreenBlockEntity screen, boolean side) {
+        List<String> source = screen.pages();
+        List<String> out = new java.util.ArrayList<>();
+        if (source.isEmpty()) {
+            out.add(ScoreScreenBlockEntity.PAGE_SCOREBOARD);
+            for (BspBoards.Board b : BspBoards.boards()) {
+                out.add(b.id().toString());
+            }
+        } else {
+            out.addAll(source);
+        }
+        out.removeIf(id -> {
+            boolean builtin = id.equals(ScoreScreenBlockEntity.PAGE_SCOREBOARD) || id.equals(ScoreScreenBlockEntity.PAGE_RULES) || id.equals(ScoreScreenBlockEntity.PAGE_PRIZES);
+            if (side) {
+                return builtin || MISSING_SEEN.contains(id);
+            }
+            return !builtin && MISSING_SEEN.contains(id);
+        });
+        return out;
+    }
+
+    private void dots(float w, float y, float u, int current, int count) {
+        float d = 3 * u, gap = 3 * u, total = count * d + (count - 1) * gap, x = w / 2 - total / 2;
+        for (int i = 0; i < count; i++) {
+            float cx = x + i * (d + gap);
+            rect(cx, y, cx + d, y + d, i == current ? TQ : DARK);
+        }
+    }
+
+    private void item(Level level, net.minecraft.world.item.ItemStack stack, float cx, float cy, float size) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        net.minecraft.client.renderer.entity.ItemRenderer items = net.minecraft.client.Minecraft.getInstance().getItemRenderer();
+        pose.pushPose();
+        pose.translate(cx, cy, 1.2f);
+        pose.scale(size, -size, size * 0.02f);
+        items.renderStatic(stack, net.minecraft.world.item.ItemDisplayContext.GUI, LightTexture.FULL_BRIGHT, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, pose, buffers, level, 0);
+        pose.popPose();
+    }
+
+    private void missing(String id, float w, float top, float area, float u) {
+        MISSING_SEEN.add(id);
+        text(Component.translatable("screen.bsp_core.board.missing", id), w / 2, top + area / 2, 11 * u, MUTED, 0.5f, w - 12);
+    }
+
+    /** A board's page in the Ledger or Tiles look. */
+    private void boardPage(Level level, @Nullable BspBoards.Board b, String id, int look, float w, float h, float top, float area, float u, float t, float speed) {
+        if (b == null) {
+            missing(id, w, top, area, u);
+            return;
+        }
+        List<BspBoards.BoardLine> lines = BspBoards.lines(b.id());
+        if (lines.isEmpty()) {
+            text(Component.translatable("screen.bsp_core.board.empty").getString(), w / 2, top + area / 2, 11 * u, MUTED, 0.5f, w - 12);
+            return;
+        }
+        if (look == ScoreScreenBlockEntity.LOOK_TILES) {
+            tiles(level, lines, w, top, area, u);
+            return;
+        }
+        ledger(level, lines, w * 0.04f, w * 0.96f, h, top, area, u, t, speed, 16 * u, true);
+    }
+
+    /** Rows: icon, text, value right-aligned; scrolls at the screen's speed when there are more rows than fit. */
+    private void ledger(Level level, List<BspBoards.BoardLine> lines, float x0, float x1, float h, float top, float area, float u, float t, float speed, float rh, boolean dividers) {
+        int n = lines.size(), fit = Math.max(1, (int) (area / rh));
+        boolean over = n > fit;
+        float off = over ? (t * speed * rh * 1.5f) % (n * rh) : 0;
+        for (int k = 0; k < n * (over ? 2 : 1); k++) {
+            float y = top + k * rh - off + rh / 2;
+            if (y < top + rh * 0.45f || y > top + area - rh * 0.45f) {
+                continue;
+            }
+            BspBoards.BoardLine line = lines.get(k % n);
+            float x = x0;
+            if (!line.icon().isEmpty()) {
+                item(level, line.icon(), x + rh * 0.4f, y, rh * 0.8f);
+                x += rh * 0.95f;
+            }
+            float valueW = line.value() == null ? 0 : Math.min((x1 - x) * 0.4f, font.width(line.value().copy().withStyle(style)) * (rh * 0.62f / 8f) + 2);
+            text(line.text(), x, y, rh * 0.62f, TEXT, 0f, x1 - x - valueW - 4);
+            if (line.value() != null) {
+                text(line.value(), x1, y, rh * 0.62f, line.colour() == 0 ? GOLD : 0xFF000000 | line.colour(), 1f, valueW + (x1 - x) * 0.3f);
+            }
+            if (dividers) {
+                rect(x0, y + rh / 2 - 0.6f, x1, y + rh / 2, STRIP);
+            }
+        }
+    }
+
+    /** Tiles: the icon above the value in large type, the text under it; as many across as fit. */
+    private void tiles(Level level, List<BspBoards.BoardLine> lines, float w, float top, float area, float u) {
+        int n = lines.size();
+        int cols = Math.max(1, Math.min(n, (int) (w / (46 * u))));
+        int rows = (n + cols - 1) / cols;
+        float tw = (w - 8) / cols, thh = Math.min(area / rows, 48 * u);
+        for (int i = 0; i < n; i++) {
+            BspBoards.BoardLine line = lines.get(i);
+            float cx = 4 + tw * (i % cols + 0.5f), cy = top + thh * (i / cols);
+            rect(cx - tw / 2 + 2, cy + 1, cx + tw / 2 - 2, cy + thh - 2, DARK);
+            float y = cy + 4;
+            if (!line.icon().isEmpty()) {
+                item(level, line.icon(), cx, y + 7 * u, 12 * u);
+                y += 15 * u;
+            }
+            if (line.value() != null) {
+                text(line.value(), cx, y + 7 * u, 14 * u, line.colour() == 0 ? GOLD : 0xFF000000 | line.colour(), 0.5f, tw - 8);
+                y += 15 * u;
+            }
+            text(line.text(), cx, y + 4 * u, 8 * u, TEXT, 0.5f, tw - 8);
+        }
+    }
+
+    /** The leaderboard in the left two thirds and one board in a column at the right; in a rotation the column turns through the boards. */
+    private void sideColumn(Level level, ScoreScreenBlockEntity screen, List<ScoreService.Entry> board, @Nullable BspBoards.Board b, String id, float w, float h, float top, float area, float u, float t, float speed, int pageIndex, int pageCount) {
+        float split = w * 0.64f;
+        float keep = alpha;
+        alpha = 1f;
+        if (board.isEmpty()) {
+            text(Component.translatable("screen.bsp_core.empty").getString(), split / 2, top + area / 2, 11 * u, MUTED, 0.5f, split - 12);
+        } else {
+            list(board, split, h, top, area, u, t, speed);
+        }
+        alpha = keep;
+        rect(split, top - 2, split + 1, h - 2, STRIP);
+        rect(split + 1, top - 2, w - 2, h - 2, DARK);
+        float x0 = split + 5, x1 = w - 6;
+        Component title = b == null ? Component.literal(id) : b.title();
+        text(title, x0, top + 5 * u, 7 * u, TQ, 0f, x1 - x0 - 16 * u);
+        if (pageCount > 1) {
+            text((pageIndex + 1) + "/" + pageCount, x1, top + 5 * u, 7 * u, MUTED, 1f, 16 * u);
+        }
+        float bodyTop = top + 11 * u, bodyArea = area - 11 * u;
+        if (b == null) {
+            missing(id, w, bodyTop, bodyArea, u);
+            return;
+        }
+        List<BspBoards.BoardLine> lines = BspBoards.lines(b.id());
+        if (lines.isEmpty()) {
+            text(Component.translatable("screen.bsp_core.board.empty").getString(), (x0 + x1) / 2, bodyTop + bodyArea / 2, 8 * u, MUTED, 0.5f, x1 - x0);
+            return;
+        }
+        ledger(level, lines, x0, x1, h, bodyTop, bodyArea, u, t, speed, 12 * u, false);
     }
 
     private void list(List<ScoreService.Entry> board, float w, float h, float top, float area, float u, float t, float speed) {

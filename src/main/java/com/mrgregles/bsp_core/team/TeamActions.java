@@ -34,6 +34,7 @@ public final class TeamActions {
             case POST -> out = Teams.post(p, m.text());
             case MARK_READ -> Teams.markRead(p.server, p.getUUID());
             case CHAT_TOGGLE -> TeamChat.toggle(p);
+            case TELEPORT -> out = Teams.requestTeleport(p, m.target());
         }
         if (out != null && out.message() != null) {
             p.displayClientMessage(out.message(), false);

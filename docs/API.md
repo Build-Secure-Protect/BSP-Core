@@ -9,7 +9,7 @@ Package `com.mrgregles.bsp_core.api`. Compile against the BSP-Core jar; keep eve
 | `BspPlayers` | `isAdmin`, `isModerator`; Shatter Coins in hand: `coinValue`, `payCoins`, `giveCoins` (values in Copper); `isDimensionAllowed`. |
 | `BspZones` | `isBlocked(level, pos, key)` for Anti Totem zone rules; keys `TOTEM_PLACE`, `TOTEM_DROP`, and for a teleport mod to enforce `TELEPORT_IN`, `TELEPORT_OUT`, `SET_HOME` (admins switch them on per zone in the Anti Totem block's Rules tab; off on a new block). |
 | `BspTransfer` | For server transfers: `beginTransfer(player)` just before sending them away takes their carried totems and stores them for the journey (the arrival server hands them back) and tells the player; `endTransfer(player)` when the teleport is cancelled hands them straight back; `isTransferring(uuid)`. A transfer that does not happen within `restrictions.transferSeconds` (10) returns the totems by itself; a stored totem whose owner never logs in anywhere is placed back at the departure point after `restrictions.transferTotemTimeoutHours` (48). Without a shared database the totems are held in memory and placed at the departure point on a real logout, as usual. |
-| `BspTeams` | Teams: `teamOf(server, uuid)` / `team(server, teamId)` as `Team(id, name, colour, leader, members)`; `sameTeam(server, a, b)` (teammates count as friends with every access flag on each other's totems; a player is not their own teammate); `teammates(server, uuid)`; `all(server)`. Read-only: players run a team from the Team screen. |
+| `BspTeams` | Teams: `teamOf(server, uuid)` / `team(server, teamId)` as `Team(id, name, colour, leader, members)`; `sameTeam(server, a, b)` (teammates count as friends with every access flag on each other's totems; a player is not their own teammate); `teammates(server, uuid)`; `members(server, teamId)` as `Member(uuid, name, leader, onlineHere, server, seenMs)` (`server` is the network server they are online on, "" when offline; `seenMs` is wall-clock and never 0 for a member: at the latest it is the moment they joined, since they were online to accept, and it moves on at every login and logout seen on any server); `all(server)`. Team teleports: a teleport mod calls `teleportsHandledBy(modId)` once at setup and handles `TeamEvent.TeleportRequest`; `requestTeleport(player, target)` asks it the way the TELEPORT key does. Otherwise read-only: players run a team from the Team screen. |
 
 ## Events
 
@@ -29,6 +29,7 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 | `TeamEvent.Left` | a player is out: `getReason()` is `LEFT`, `KICKED` or `DISBANDED`; `getPlayer` |
 | `TeamEvent.LeaderChanged` | the lead passed on; `getPrevious`, `getLeader` |
 | `TeamEvent.Disbanded` | the team is gone (a `Left` with `DISBANDED` came first for every member); `getBy` is null for an admin command |
+| `TeamEvent.TeleportRequest` | a member pressed TELEPORT on a teammate's row: `getPlayer()` (the `ServerPlayer` to move), `getTarget()` / `getTargetName()`, `getTargetServer()` ("" when the target is on this server); the teleport mod moves them under its own rules (no price for a team teleport; its cooldown and warm-up, destination access, zone flags, and its raid rule, which refuses a landing within 150 blocks of any running steal on the network) and calls `setHandled()` on every request it receives, refusals included (it tells the player why in its own words); only when nothing handled the event does BSP-Core say no teleport mod answered, which in practice means a pack without BSP-Teleport |
 
 Upgrade names for `BspTotems.upgrade` are the constants of `TotemUpgrades.Buff` (for example `SWIFTNESS`, `RECALL`); the enum itself may be used directly.
 
@@ -43,6 +44,35 @@ Requests from other mods live in their own vault notes (for BSP-Teleport: `BSP-T
 ## Teams across the network
 
 With `storage.mode = "mysql"` the team record is the shared tables `teams`, `team_members` and `team_messages`; each server keeps a local copy (`bsp_core_teams`), writes every change through and announces it over Redis (kind `team`), and reads a team back when another server announces it. `BspTeams` and `TeamEvent` answer from the local copy, which is a moment behind a change made elsewhere; `TeamEvent`s fire only on the server where the change was made.
+
+## Boards on the Score Screen (`BspBoards`, BSP-Teleport request R8)
+
+Client side. Register once, at client setup or when the mod's data first arrives:
+
+```java
+BspBoards.register(new ResourceLocation("bsp_teleport", "home_servers"), Component.literal("HOME SERVERS"),
+        () -> List.of(BspBoards.BoardLine.of(Component.literal("BSP-Wild"), Component.literal("12 home · 3 full · 2 renting"), accessTokenStack)));
+```
+
+`BoardLine(text, value, icon, colour)`: `text` at the left, `value` at the right (null for none), `icon` an `ItemStack` drawn before the text (`ItemStack.EMPTY` for none), `colour` the value's RGB (0 for the screen's gold). The supplier runs on the render thread while a page shows it (about once a second per screen), so keep it cheap and never block; an exception is logged once and the board shows "Nothing on this board yet". `unregister(id)`, `boards()`, `board(id)`, `lines(id)`. Admins pick a board in a screen's settings (Show: Board, or Rotate with the board among the pages); a screen stores the id as `namespace:path`, so a client without the providing mod sees "Board ... is not installed here" once and that client's rotation then skips it. Nothing is synced by BSP-Core: the lines come from data the registering mod already has on the client.
+
+## Proxy relay: `bsp_core:proxy` (BSP-Velocity Additions, request VA-C2)
+
+With `proxy.relayChat = true` (default false) BSP-Core sends the Velocity proxy every **public** chat line after every listener on this server ran: a `LOWEST`-priority `ServerChatEvent` listener that a cancelled event never reaches (team chat and chat Region Guard blocked are cancelled, so they never go). The message is a vanilla `CustomPayload` (clientbound `ClientboundCustomPayloadPacket`) on channel **`bsp_core:proxy`**, sent through the **sender's own connection**, so the proxy sees it on that player's `ServerConnection`. The proxy must register the channel and mark the `PluginMessageEvent` handled, so the bytes do not travel on to the client (a client that receives them logs an unknown channel and ignores them; nothing breaks). Nothing else is ever sent on the channel today.
+
+Byte layout (Minecraft's `FriendlyByteBuf` encodings: `writeUtf` is a VarInt length followed by UTF-8; `writeUUID` is two big-endian longs):
+
+| # | Field | Type | Meaning |
+|---|---|---|---|
+| 1 | `version` | byte | `1`. The proxy ignores a version it does not know. |
+| 2 | `kind` | Utf (max 32) | `"chat"`. Other kinds may follow later; ignore unknown ones. |
+| 3 | `sender` | UUID | the player who spoke |
+| 4 | `name` | Utf (max 64) | their profile name |
+| 5 | `text` | Utf (max 32767) | the final message as plain text, after any listener's change (the team tag, say) |
+| 6 | `json` | Utf (max 32767) | the decorated line the server showed, as a Component JSON string: the chat type's `<Name> text` with any datapack decoration and the message's own styles |
+| 7 | `server` | Utf (max 64) | this backend's `storage.serverId`, for the `[Server]` tag of D6 |
+
+`BspProxy` in the api: `CHANNEL`, `relayEnabled()`, and `relayChat(player, message)` for a mod that shows public chat another way and wants those lines relayed too (Region Guard's `receive-chat` re-send, if it ever wants them seen across the network). Commands such as `/me`, `/say` and `/tellraw` are not chat events and are not relayed.
 
 ## Region Guard
 

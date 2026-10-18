@@ -141,7 +141,7 @@ The screens the admins put up show what first, second and third place will win. 
 
 A placed totem counts for its owner. A carried totem counts for whoever is carrying it.
 
-Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server.
+Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server. A screen can also show other boards, such as which servers players call home, and turn through its pages.
 
 ## Decoy Totems
 
@@ -497,7 +497,7 @@ Friends who build together can form a **team**. Every member counts as a friend 
 
 **Page 2: Making one**
 
-Open the Team screen from the **TEAM** tab on your placed totem, the TEAM key on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.
+Open the Team screen from the **TEAM** button above your inventory, the TEAM tab on your placed totem, the TEAM tab on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.
 
 **Page 3: The invite**
 

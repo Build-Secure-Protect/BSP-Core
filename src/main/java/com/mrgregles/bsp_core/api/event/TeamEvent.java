@@ -104,6 +104,55 @@ public abstract class TeamEvent extends Event {
         }
     }
 
+    /**
+     * A member pressed TELEPORT on a teammate's row (or a mod asked the same through the api). A
+     * teleport mod moves {@link #getPlayer()} to {@link #getTarget()} under its own rules (no price
+     * for a team teleport; its cooldown and warm-up, destination access, zone flags, and its raid
+     * rule, which refuses a landing within 150 blocks of any running steal on the network) and calls
+     * {@link #setHandled()} on every request, refusals included, telling the player why in its own
+     * words. {@link #getTargetServer()} names the network server the target is online on, "" when
+     * they are on this one. Unhandled, BSP-Core tells the player no teleport mod answered, which
+     * happens only in a pack without one.
+     */
+    public static class TeleportRequest extends TeamEvent {
+        private final net.minecraft.server.level.ServerPlayer player;
+        private final UUID target;
+        private final String targetName, targetServer;
+        private boolean handled;
+
+        public TeleportRequest(MinecraftServer server, UUID teamId, String teamName, net.minecraft.server.level.ServerPlayer player, UUID target, String targetName, String targetServer) {
+            super(server, teamId, teamName);
+            this.player = player;
+            this.target = target;
+            this.targetName = targetName;
+            this.targetServer = targetServer;
+        }
+
+        public net.minecraft.server.level.ServerPlayer getPlayer() {
+            return player;
+        }
+
+        public UUID getTarget() {
+            return target;
+        }
+
+        public String getTargetName() {
+            return targetName;
+        }
+
+        public String getTargetServer() {
+            return targetServer;
+        }
+
+        public void setHandled() {
+            handled = true;
+        }
+
+        public boolean isHandled() {
+            return handled;
+        }
+    }
+
     /** The team is gone; a {@link Left} with reason DISBANDED was posted for every member first. {@code getBy} is null for an admin command. */
     public static class Disbanded extends TeamEvent {
         @Nullable

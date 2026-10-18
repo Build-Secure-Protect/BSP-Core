@@ -132,7 +132,7 @@ public class TeamScreen extends Screen {
         }
         int mx = x + 8, my = y + 20, mw = W - 16;
         nameBox.setY(mode == Mode.CREATE ? my + 24 : my + 16);
-        nameBox.setWidth(mode == Mode.CREATE ? mw - 12 : 160);
+        nameBox.setWidth(mode == Mode.CREATE ? mw - 12 : 140);
         show(nameBox, mode == Mode.CREATE || mode == Mode.SETTINGS);
         show(lineBox, mode == Mode.MESSAGES);
         show(pinBox, mode == Mode.SETTINGS);
@@ -201,7 +201,7 @@ public class TeamScreen extends Screen {
         g.fill(mx, my, mx + mw, my + mh, SLOT);
         switch (mode) {
             case CREATE -> drawCreate(g, mx, my, mw, mh, mouseX, mouseY);
-            case TEAM -> drawTeam(g, mx, my, mw, mh);
+            case TEAM -> drawTeam(g, mx, my, mw, mh, mouseX, mouseY);
             case INVITE -> drawInvite(g, mx, my, mw, mh, mouseX, mouseY);
             case MESSAGES -> drawMessages(g, mx, my, mw, mh, mouseX, mouseY);
             case SETTINGS -> drawSettings(g, mx, my, mw, mh, mouseX, mouseY);
@@ -228,19 +228,26 @@ public class TeamScreen extends Screen {
                 () -> send(TeamActionPacket.text(Action.CREATE, nameText, colour)));
     }
 
-    private void drawTeam(GuiGraphics g, int mx, int my, int mw, int mh) {
+    private void drawTeam(GuiGraphics g, int mx, int my, int mw, int mh, int mouseX, int mouseY) {
         g.drawString(font, teamName(), mx + 6, my + 5, TEXT, false);
         CashMachine.fitRight(g, font, Component.translatable("gui.bsp_core.team.members", view.members().size(), view.maxMembers()).getString(), mx + mw - 6, my + 5, 120, MUTED);
         int yy = my + 18;
+        UUID me = minecraft.player == null ? null : minecraft.player.getUUID();
         for (TeamViewPacket.Member m : view.members()) {
-            memberRow(g, mx, yy, mw, m);
+            boolean online = m.state() != TeamViewPacket.OFFLINE;
+            boolean tp = view.canTeleport() && online && !m.id().equals(me);
+            memberRow(g, mx, yy, mw - (view.canTeleport() ? 50 : 0), m);
+            if (tp) {
+                UUID id = m.id();
+                key(g, mx + mw - 6 - 46, yy, 46, ROW - 1, Component.translatable("gui.bsp_core.team.k.teleport").getString(), Look.ON, mouseX, mouseY, () -> send(TeamActionPacket.target(Action.TELEPORT, id)));
+            }
             yy += ROW;
         }
         CashMachine.wrapUp(g, font, Component.translatable("gui.bsp_core.team.access_hint"), mx + 6, my + mh - 4, mw - 12, MUTED);
     }
 
     private void memberRow(GuiGraphics g, int mx, int yy, int mw, TeamViewPacket.Member m) {
-        g.fill(mx + 4, yy + ROW - 1, mx + mw - 4, yy + ROW, LINE);
+        g.fill(mx + 4, yy + ROW - 1, mx + (W - 16) - 4, yy + ROW, LINE);
         int dot = m.state() == TeamViewPacket.HERE ? GREEN : m.state() == TeamViewPacket.ELSEWHERE ? AMBER : GREY;
         g.fill(mx + 7, yy + 3, mx + 12, yy + 8, dot);
         int nameW = mw - 12 - 10 - 160;
@@ -355,8 +362,8 @@ public class TeamScreen extends Screen {
             return;
         }
         small(g, Component.translatable("gui.bsp_core.team.settings.name"), mx + 6, my + 6, MUTED);
-        key(g, mx + 6 + 164, my + 15, 52, 16, Component.translatable("gui.bsp_core.team.k.rename").getString(), Look.NORMAL, mouseX, mouseY, () -> send(TeamActionPacket.text(Action.RENAME, nameText, 0)));
-        swatches(g, mx + 6 + 224, my + 12, view.colour(), mouseX, mouseY, id -> send(TeamActionPacket.text(Action.RECOLOUR, "", id)));
+        key(g, mx + 6 + 144, my + 15, 48, 16, Component.translatable("gui.bsp_core.team.k.rename").getString(), Look.NORMAL, mouseX, mouseY, () -> send(TeamActionPacket.text(Action.RENAME, nameText, 0)));
+        swatchGrid(g, mx + 6 + 200, my + 13, 10, 2, view.colour(), id -> send(TeamActionPacket.text(Action.RECOLOUR, "", id))); // 96 wide, ends well inside the box
         int yy = my + 44;
         small(g, Component.translatable("gui.bsp_core.team.settings.members"), mx + 6, yy, MUTED);
         yy += 10;
@@ -385,7 +392,7 @@ public class TeamScreen extends Screen {
         if (mode == Mode.CREATE) {
             return;
         }
-        kx = bar(g, kx, ky, 48, "gui.bsp_core.team.k.members", mode == Mode.TEAM ? Look.ON : Look.NORMAL, mouseX, mouseY, () -> setMode(Mode.TEAM));
+        kx = bar(g, kx, ky, 46, "gui.bsp_core.team.k.members", mode == Mode.TEAM ? Look.ON : Look.NORMAL, mouseX, mouseY, () -> setMode(Mode.TEAM));
         kx = bar(g, kx, ky, 40, "gui.bsp_core.team.k.invite", mode == Mode.INVITE ? Look.ON : Look.NORMAL, mouseX, mouseY, () -> setMode(Mode.INVITE));
         int mkx = kx;
         kx = bar(g, kx, ky, 54, "gui.bsp_core.team.k.messages", mode == Mode.MESSAGES ? Look.ON : Look.NORMAL, mouseX, mouseY, () -> setMode(Mode.MESSAGES));
@@ -406,10 +413,10 @@ public class TeamScreen extends Screen {
             if (view.members().size() > 1) {
                 confirmKey(g, "disband", kx, ky, 48, KEY_H, Component.translatable("gui.bsp_core.team.k.disband").getString(), Look.WARN, mouseX, mouseY, () -> send(TeamActionPacket.of(Action.DISBAND)));
             } else {
-                confirmKey(g, "leave", kx, ky, 48, KEY_H, Component.translatable("gui.bsp_core.team.k.leave").getString(), Look.WARN, mouseX, mouseY, () -> send(TeamActionPacket.of(Action.LEAVE)));
+                confirmKey(g, "leave", kx, ky, 56, KEY_H, Component.translatable("gui.bsp_core.team.k.leave").getString(), Look.WARN, mouseX, mouseY, () -> send(TeamActionPacket.of(Action.LEAVE)));
             }
         } else {
-            confirmKey(g, "leave", kx, ky, 48, KEY_H, Component.translatable("gui.bsp_core.team.k.leave").getString(), Look.WARN, mouseX, mouseY, () -> send(TeamActionPacket.of(Action.LEAVE)));
+            confirmKey(g, "leave", kx, ky, 56, KEY_H, Component.translatable("gui.bsp_core.team.k.leave").getString(), Look.WARN, mouseX, mouseY, () -> send(TeamActionPacket.of(Action.LEAVE)));
         }
     }
 
@@ -448,19 +455,24 @@ public class TeamScreen extends Screen {
     }
 
     private void swatches(GuiGraphics g, int sx, int sy, int selected, int mouseX, int mouseY, java.util.function.IntConsumer pick) {
+        swatchGrid(g, sx, sy, SW, 3, selected, pick);
+    }
+
+    /** The sixteen chat colours in two rows of eight, {@code size} square with {@code gap} between; the chosen one outlined. */
+    private void swatchGrid(GuiGraphics g, int sx, int sy, int size, int gap, int selected, java.util.function.IntConsumer pick) {
         for (int i = 0; i < COLOURS.size(); i++) {
             ChatFormatting c = COLOURS.get(i);
-            int cx = sx + (i % 8) * (SW + 3), cy = sy + (i / 8) * (SW + 3);
+            int cx = sx + (i % 8) * (size + gap), cy = sy + (i / 8) * (size + gap);
             Integer rgb = c.getColor();
-            g.fill(cx, cy, cx + SW, cy + SW, 0xFF000000 | (rgb == null ? 0 : rgb));
+            g.fill(cx, cy, cx + size, cy + size, 0xFF000000 | (rgb == null ? 0 : rgb));
             if (c.getId() == selected) {
-                g.fill(cx - 1, cy - 1, cx + SW + 1, cy, 0xFFFFFFFF);
-                g.fill(cx - 1, cy + SW, cx + SW + 1, cy + SW + 1, 0xFFFFFFFF);
-                g.fill(cx - 1, cy, cx, cy + SW, 0xFFFFFFFF);
-                g.fill(cx + SW, cy, cx + SW + 1, cy + SW, 0xFFFFFFFF);
+                g.fill(cx - 1, cy - 1, cx + size + 1, cy, 0xFFFFFFFF);
+                g.fill(cx - 1, cy + size, cx + size + 1, cy + size + 1, 0xFFFFFFFF);
+                g.fill(cx - 1, cy, cx, cy + size, 0xFFFFFFFF);
+                g.fill(cx + size, cy, cx + size + 1, cy + size, 0xFFFFFFFF);
             }
             int id = c.getId();
-            hits.add(new Hit(cx, cy, SW, SW, () -> pick.accept(id)));
+            hits.add(new Hit(cx, cy, size, size, () -> pick.accept(id)));
         }
     }
 

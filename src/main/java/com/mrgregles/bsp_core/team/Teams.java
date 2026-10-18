@@ -491,6 +491,35 @@ public final class Teams {
         return transferNow(server, team, member);
     }
 
+    // ------------------------------------------------------------------ team teleports (moved by a teleport mod)
+
+    /** Posts {@code TeamEvent.TeleportRequest} for an online teammate; the teleport mod does the rest. */
+    public static Outcome requestTeleport(ServerPlayer player, UUID target) {
+        MinecraftServer server = player.server;
+        Team team = teamOf(server, player.getUUID());
+        if (team == null) {
+            return Outcome.fail("not_in_team");
+        }
+        if (player.getUUID().equals(target)) {
+            return Outcome.fail("teleport_self");
+        }
+        Team.Member m = team.members().get(target);
+        if (m == null) {
+            return Outcome.fail("not_member", nameOf(server, target));
+        }
+        if (com.mrgregles.bsp_core.api.BspTeams.teleporter().isEmpty()) {
+            return Outcome.fail("no_teleport");
+        }
+        boolean here = server.getPlayerList().getPlayer(target) != null;
+        String where = here ? "" : m.onlineServer;
+        if (!here && where.isEmpty()) {
+            return Outcome.fail("teleport_offline", m.name);
+        }
+        TeamEvent.TeleportRequest event = new TeamEvent.TeleportRequest(server, team.id, team.name, player, target, m.name, where);
+        MinecraftForge.EVENT_BUS.post(event);
+        return event.isHandled() ? Outcome.done() : Outcome.fail("no_teleport");
+    }
+
     // ------------------------------------------------------------------ team chat channel
 
     public static boolean isChatOn(UUID player) {

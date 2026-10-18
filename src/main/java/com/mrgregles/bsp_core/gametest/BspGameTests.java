@@ -2102,4 +2102,136 @@ public class BspGameTests {
         h.assertTrue(com.mrgregles.bsp_core.team.TeamLedger.get(server).byName(renamed) == null, "and the name is free");
         h.succeed();
     }
+    @GameTest(template = EMPTY)
+    public void team_teleport_is_asked_of_the_teleport_mod(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var c = survivor(h);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Stag"), net.minecraft.ChatFormatting.GOLD).ok(), "made");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok() && com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins");
+        var team = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        var members = com.mrgregles.bsp_core.api.BspTeams.members(server, team.id);
+        h.assertTrue(members.size() == 2 && members.get(0).uuid().equals(a.getUUID()) && members.get(0).leader() && !members.get(0).onlineHere() && members.get(0).server().isEmpty(), "the members api lists them in order with where they are: " + members);
+        // nobody handles team teleports yet: no key, and a request is refused
+        String before = com.mrgregles.bsp_core.api.BspTeams.teleporter();
+        com.mrgregles.bsp_core.api.BspTeams.teleportsHandledBy("");
+        h.assertFalse(com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false).canTeleport(), "no TELEPORT keys without a teleport mod");
+        team.members().get(b.getUUID()).onlineServer = "survival-2";
+        h.assertFalse(com.mrgregles.bsp_core.team.Teams.requestTeleport(a, b.getUUID()).ok(), "refused without a teleport mod");
+        // a teleport mod declares itself and handles the event
+        com.mrgregles.bsp_core.api.BspTeams.teleportsHandledBy("bsp_teleport");
+        h.assertTrue(com.mrgregles.bsp_core.network.TeamViewPacket.of(a, false).canTeleport(), "keys appear once a mod handles the request");
+        java.util.List<com.mrgregles.bsp_core.api.event.TeamEvent.TeleportRequest> seen = new java.util.ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.TeamEvent.TeleportRequest> handler = e -> { seen.add(e); e.setHandled(); };
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(handler);
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.requestTeleport(a, b.getUUID()).ok(), "the request is handled");
+            h.assertTrue(seen.size() == 1 && seen.get(0).getPlayer() == a && seen.get(0).getTarget().equals(b.getUUID()) && seen.get(0).getTargetServer().equals("survival-2") && seen.get(0).getTeamId().equals(team.id), "with the player, the target and the target's server: " + seen);
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.requestTeleport(a, a.getUUID()).ok(), "not to yourself");
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.requestTeleport(a, c.getUUID()).ok(), "not to an outsider");
+            team.members().get(b.getUUID()).onlineServer = "";
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.requestTeleport(a, b.getUUID()).ok(), "not to a teammate who is offline everywhere");
+            h.assertTrue(seen.size() == 1, "the refused ones never reached the teleport mod");
+        } finally {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(handler);
+            com.mrgregles.bsp_core.api.BspTeams.teleportsHandledBy(before);
+        }
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void proxy_relay_sends_public_chat_only_when_switched_on(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        boolean before = com.mrgregles.bsp_core.BSPConfig.PROXY_RELAY_CHAT.get();
+        try {
+            // off by default: nothing goes
+            com.mrgregles.bsp_core.BSPConfig.PROXY_RELAY_CHAT.set(false);
+            com.mrgregles.bsp_core.proxy.ProxyRelay.forget();
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.ServerChatEvent(a, "quiet", net.minecraft.network.chat.Component.literal("quiet")));
+            h.assertTrue(com.mrgregles.bsp_core.proxy.ProxyRelay.last() == null, "with relayChat off nothing is sent");
+            // on: a public line goes with every field
+            com.mrgregles.bsp_core.BSPConfig.PROXY_RELAY_CHAT.set(true);
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.ServerChatEvent(a, "hello all", net.minecraft.network.chat.Component.literal("hello all")));
+            byte[] bytes = com.mrgregles.bsp_core.proxy.ProxyRelay.last();
+            h.assertTrue(bytes != null, "a public line is relayed");
+            var r = com.mrgregles.bsp_core.proxy.ProxyRelay.decode(bytes);
+            h.assertTrue(r.version() == 1 && r.kind().equals("chat") && r.sender().equals(a.getUUID()) && r.name().equals(a.getGameProfile().getName()) && r.text().equals("hello all"), "version, kind, sender, name and text: " + r);
+            var line = net.minecraft.network.chat.Component.Serializer.fromJson(r.json());
+            h.assertTrue(line != null && line.getString().equals("<" + a.getGameProfile().getName() + "> hello all"), "the JSON is the decorated line: " + (line == null ? null : line.getString()));
+            h.assertTrue(r.server().equals(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get()), "and names this server");
+            // a listener's change is what goes (the chat tag, here)
+            com.mrgregles.bsp_core.proxy.ProxyRelay.forget();
+            var changed = new net.minecraftforge.event.ServerChatEvent(a, "tagged", net.minecraft.network.chat.Component.literal("tagged"));
+            java.util.function.Consumer<net.minecraftforge.event.ServerChatEvent> prefixer = e -> e.setMessage(net.minecraft.network.chat.Component.literal("[X] ").append(e.getMessage()));
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(net.minecraftforge.eventbus.api.EventPriority.HIGH, prefixer);
+            try {
+                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(changed);
+            } finally {
+                net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(prefixer);
+            }
+            h.assertTrue(com.mrgregles.bsp_core.proxy.ProxyRelay.decode(com.mrgregles.bsp_core.proxy.ProxyRelay.last()).text().equals("[X] tagged"), "the final message text, after the listeners");
+            // team chat cancels the event: never relayed
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Vole"), net.minecraft.ChatFormatting.AQUA).ok() && com.mrgregles.bsp_core.team.TeamChat.toggle(a), "team chat on");
+            com.mrgregles.bsp_core.proxy.ProxyRelay.forget();
+            var teamLine = new net.minecraftforge.event.ServerChatEvent(a, "secret", net.minecraft.network.chat.Component.literal("secret"));
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(teamLine);
+            h.assertTrue(teamLine.isCanceled() && com.mrgregles.bsp_core.proxy.ProxyRelay.last() == null, "a team line is cancelled and never reaches the proxy");
+            com.mrgregles.bsp_core.team.TeamChat.toggle(a);
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.disband(a).ok(), "disbanding");
+            // the api hands a line over the same way
+            com.mrgregles.bsp_core.api.BspProxy.relayChat(a, net.minecraft.network.chat.Component.literal("from a mod"));
+            h.assertTrue(com.mrgregles.bsp_core.proxy.ProxyRelay.decode(com.mrgregles.bsp_core.proxy.ProxyRelay.last()).text().equals("from a mod"), "BspProxy.relayChat sends too");
+        } finally {
+            com.mrgregles.bsp_core.BSPConfig.PROXY_RELAY_CHAT.set(before);
+            com.mrgregles.bsp_core.proxy.ProxyRelay.forget();
+        }
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void score_screen_shows_registered_boards_and_rotates(GameTestHelper h) {
+        var id = new net.minecraft.resources.ResourceLocation("bsp_test", "homes");
+        var id2 = new net.minecraft.resources.ResourceLocation("bsp_test", "broken");
+        try {
+            // the api: register, list, read lines, a failing supplier gives nothing, unregister
+            com.mrgregles.bsp_core.api.BspBoards.register(id, net.minecraft.network.chat.Component.literal("Home servers"), () -> java.util.List.of(
+                    com.mrgregles.bsp_core.api.BspBoards.BoardLine.of(net.minecraft.network.chat.Component.literal("BSP-Wild"), net.minecraft.network.chat.Component.literal("12 home"), new ItemStack(net.minecraft.world.item.Items.COMPASS)),
+                    com.mrgregles.bsp_core.api.BspBoards.BoardLine.of(net.minecraft.network.chat.Component.literal("BSP-Frost"), null)));
+            com.mrgregles.bsp_core.api.BspBoards.register(id2, net.minecraft.network.chat.Component.literal("Broken"), () -> { throw new IllegalStateException("no data yet"); });
+            h.assertTrue(com.mrgregles.bsp_core.api.BspBoards.boards().stream().anyMatch(b -> b.id().equals(id)) && com.mrgregles.bsp_core.api.BspBoards.board(id).isPresent(), "registered and listed");
+            var lines = com.mrgregles.bsp_core.api.BspBoards.lines(id);
+            h.assertTrue(lines.size() == 2 && lines.get(0).value() != null && !lines.get(0).icon().isEmpty() && lines.get(1).value() == null && lines.get(1).icon().isEmpty(), "lines as given: " + lines);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspBoards.lines(id2).isEmpty(), "a failing supplier gives no lines");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspBoards.lines(new net.minecraft.resources.ResourceLocation("bsp_test", "nothing")).isEmpty(), "an unknown board gives no lines");
+            com.mrgregles.bsp_core.api.BspBoards.register(id, net.minecraft.network.chat.Component.literal("Home servers 2"), java.util.List::of);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspBoards.board(id).orElseThrow().title().getString().equals("Home servers 2") && com.mrgregles.bsp_core.api.BspBoards.boards().stream().filter(b -> b.id().equals(id)).count() == 1, "registering again replaces, never doubles");
+            // the screen keeps a board, a look, the rotation and its seconds, and syncs them
+            BlockPos pos = new BlockPos(4, 1, 4), other = new BlockPos(8, 1, 8);
+            h.setBlock(pos, com.mrgregles.bsp_core.registry.ModBlocks.SCORE_SCREEN.get());
+            h.setBlock(other, com.mrgregles.bsp_core.registry.ModBlocks.SCORE_SCREEN.get());
+            var screen = entity(h, pos, com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.class);
+            var pages = java.util.List.of(com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.PAGE_SCOREBOARD, id.toString(), id.toString(), "", com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.PAGE_PRIZES);
+            screen.configure(com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.MODE_ROTATE, 0, 0, 100, 40, "SPAWN", id.toString(), com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.LOOK_TILES, 3, pages);
+            h.assertTrue(screen.mode() == 4 && screen.boardId().equals(id.toString()) && screen.look() == 1 && screen.rotateSeconds() == 5, "mode, board, look kept; seconds clamped up to 5");
+            h.assertTrue(screen.pages().equals(java.util.List.of("scoreboard", id.toString(), "prizes")), "pages kept once each, blanks dropped: " + screen.pages());
+            var copy = entity(h, other, com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.class);
+            copy.load(screen.getUpdateTag());
+            h.assertTrue(copy.mode() == 4 && copy.boardId().equals(id.toString()) && copy.look() == 1 && copy.rotateSeconds() == 5 && copy.pages().equals(screen.pages()), "the update tag carries all of it to the client");
+            screen.configure(0, 1, 2, 120, 50, "AGAIN");
+            h.assertTrue(screen.boardId().equals(id.toString()) && screen.pages().size() == 3, "the old six-field configure leaves the board settings alone");
+            // the settings packet carries the new fields
+            var packet = new com.mrgregles.bsp_core.network.ScoreScreenConfigPacket(h.absolutePos(pos), 4, 0, 0, 100, 40, "SPAWN", id.toString(), 2, 15, java.util.List.of("scoreboard", id.toString()));
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.ScoreScreenConfigPacket.encode(packet, buf);
+            h.assertTrue(com.mrgregles.bsp_core.network.ScoreScreenConfigPacket.decode(buf).equals(packet), "encode and decode agree");
+            h.setBlock(pos, Blocks.AIR);
+            h.setBlock(other, Blocks.AIR);
+        } finally {
+            com.mrgregles.bsp_core.api.BspBoards.unregister(id);
+            com.mrgregles.bsp_core.api.BspBoards.unregister(id2);
+        }
+        h.assertTrue(com.mrgregles.bsp_core.api.BspBoards.board(id).isEmpty(), "unregistered");
+        h.succeed();
+    }
 }

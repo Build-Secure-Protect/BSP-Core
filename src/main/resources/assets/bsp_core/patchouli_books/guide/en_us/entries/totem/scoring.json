@@ -15,7 +15,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server.",
+      "text": "A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server. A screen can also show other boards, such as which servers players call home, and turn through its pages.",
       "title": "How it is counted"
     }
   ]

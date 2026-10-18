@@ -117,6 +117,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.DoubleValue DECOY_BLAST_POWER;
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
     public static final ForgeConfigSpec.BooleanValue TEAM_ENABLED, TEAM_MEMBERS_INVITE, TEAM_CHAT_TAG, TEAM_TEAMMATES_STEAL, TEAM_COMPASS_IGNORES;
+    public static final ForgeConfigSpec.BooleanValue PROXY_RELAY_CHAT;
     public static final ForgeConfigSpec.IntValue TEAM_MAX_MEMBERS, TEAM_INVITE_SECONDS, TEAM_HISTORY_SIZE, TEAM_NAME_MIN, TEAM_NAME_MAX;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
@@ -554,6 +555,12 @@ public final class BSPConfig {
                 .defineList("rangePerLevel", List.of(1, 2, 3), BSPConfig::isPositiveInt);
         CHUNKS_OWNER_ONLINE = BUILDER.comment("When true a totem's chunks are only kept loaded while its owner is online. Also a switch in the admin panel.").define("ownerMustBeOnline", false);
         CHUNKS_MAX_PER_PLAYER = BUILDER.comment("Most chunks one player may keep loaded across all their totems. 0 means no limit beyond the upgrades.").defineInRange("maxPerPlayer", 0, 0, 10_000);
+        BUILDER.pop();
+
+        BUILDER.comment("A Velocity proxy in front of this server (BSP-Velocity Additions).").push("proxy");
+        PROXY_RELAY_CHAT = BUILDER.comment("When true, every public chat line that passed this server's listeners is sent to the proxy as a plugin message on bsp_core:proxy,",
+                        "so the proxy can show it to players on the other servers. Team chat and chat a mod blocked are never sent. Off without a proxy.")
+                .define("relayChat", false);
         BUILDER.pop();
 
         BUILDER.comment("Teams: players who share full access to each other's totems.").push("team");

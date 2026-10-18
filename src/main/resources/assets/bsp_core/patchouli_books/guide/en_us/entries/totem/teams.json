@@ -10,7 +10,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Open the Team screen from the $(l)TEAM$() tab on your placed totem, the TEAM key on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.",
+      "text": "Open the Team screen from the $(l)TEAM$() button above your inventory, the TEAM tab on your placed totem, the TEAM tab on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.",
       "title": "Making one"
     },
     {

@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 /** Client to server: what the player did on the Team screen (or pressed the Team key). The server answers with a {@link TeamViewPacket}. */
 public record TeamActionPacket(Action action, String text, UUID target, int value) {
-    public enum Action { VIEW, REFRESH, CREATE, INVITE, ACCEPT, DECLINE, LEAVE, KICK, TRANSFER, RENAME, RECOLOUR, DISBAND, PIN, POST, MARK_READ, CHAT_TOGGLE }
+    public enum Action { VIEW, REFRESH, CREATE, INVITE, ACCEPT, DECLINE, LEAVE, KICK, TRANSFER, RENAME, RECOLOUR, DISBAND, PIN, POST, MARK_READ, CHAT_TOGGLE, TELEPORT }
 
     private static final UUID NONE = new UUID(0L, 0L);
 
