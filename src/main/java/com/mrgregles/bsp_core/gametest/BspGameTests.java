@@ -1703,4 +1703,48 @@ public class BspGameTests {
         h.setBlock(floor.above(), Blocks.AIR);
         h.succeed();
     }
+
+    @GameTest(template = EMPTY)
+    public void totem_placed_by_a_logout_comes_back_when_its_owner_returns(GameTestHelper h) {
+        BlockPos floor = new BlockPos(4, 1, 4);
+        h.setBlock(floor, Blocks.STONE);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        BlockPos stand = h.absolutePos(floor.above());
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(player.getUUID(), "Erin").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        player.getInventory().setItem(0, totem);
+        // a crash is a logout: the totem is placed where they stood and the placement remembered
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(player);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(player).isEmpty(), "the totem left the inventory");
+        h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        // they come back: the totem comes back
+        var r = com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player);
+        h.assertTrue(r.equals(List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.BACK)), "the totem came back: " + r);
+        h.assertBlockNotPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        var back = player.getInventory().getItem(0);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.isTotem(back) && id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(back)), "the same totem is in hand");
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player).isEmpty(), "nothing is remembered twice");
+        // someone took it while they were away: nothing comes back
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(player);
+        h.setBlock(floor.above(), Blocks.AIR);
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player).equals(List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.GONE)), "a missing totem is reported gone");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(player).isEmpty(), "and nothing was conjured");
+        // a steal in progress: it stays in the world
+        var totem2 = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(player.getUUID(), "Erin").applyTo(totem2);
+        player.getInventory().setItem(0, totem2);
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(player);
+        var thief = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        thief.setPos(stand.getX() + 1.5, stand.getY(), stand.getZ() + 0.5);
+        entity(h, floor.above(), com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity.class).tryStartSteal(thief);
+        boolean stealing = entity(h, floor.above(), com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity.class).getSteal().isPresent();
+        var r3 = com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player);
+        h.assertTrue(stealing ? r3.equals(List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.BEING_STOLEN)) : r3.equals(List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.BACK)),
+                "mid-steal it stays, otherwise it comes back (steal started: " + stealing + "): " + r3);
+        h.setBlock(floor.above(), Blocks.AIR);
+        h.succeed();
+    }
 }

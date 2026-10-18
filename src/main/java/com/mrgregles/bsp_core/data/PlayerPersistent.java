@@ -16,6 +16,7 @@ public final class PlayerPersistent {
     private static final String TAG_TOTEM_GRANTED = BSPCore.MODID + ":TotemGranted";
     private static final String TAG_LAST_MAIN_DIM = BSPCore.MODID + ":LastMainDim";
     private static final String TAG_LAST_MAIN_POS = BSPCore.MODID + ":LastMainPos";
+    private static final String TAG_LOGOUT_PLACED = BSPCore.MODID + ":LogoutPlaced";
 
     private PlayerPersistent() {}
 
@@ -71,6 +72,43 @@ public final class PlayerPersistent {
         }
         return Optional.of(new LastMainPosition(ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, dim),
                 BlockPos.of(tag.getLong(TAG_LAST_MAIN_POS))));
+    }
+
+    /** A totem the logout rule placed for the player: where, which totem (id and instance) and when, so it can come back on their return. */
+    public record LogoutPlaced(ResourceKey<Level> dimension, BlockPos pos, java.util.UUID id, java.util.UUID instance, long whenMs) {
+        @Nullable
+        public net.minecraft.server.level.ServerLevel level(net.minecraft.server.MinecraftServer server) {
+            return server.getLevel(dimension);
+        }
+    }
+
+    public static void addLogoutPlaced(Player player, LogoutPlaced placed) {
+        CompoundTag tag = get(player);
+        net.minecraft.nbt.ListTag list = tag.getList(TAG_LOGOUT_PLACED, net.minecraft.nbt.Tag.TAG_COMPOUND);
+        CompoundTag e = new CompoundTag();
+        e.putString("Dim", placed.dimension().location().toString());
+        e.putLong("Pos", placed.pos().asLong());
+        e.putUUID("Id", placed.id());
+        e.putUUID("Instance", placed.instance());
+        e.putLong("When", placed.whenMs());
+        list.add(e);
+        tag.put(TAG_LOGOUT_PLACED, list);
+    }
+
+    /** Takes every logout placement recorded for the player, clearing the list. */
+    public static java.util.List<LogoutPlaced> takeLogoutPlaced(Player player) {
+        CompoundTag tag = get(player);
+        java.util.List<LogoutPlaced> out = new java.util.ArrayList<>();
+        for (net.minecraft.nbt.Tag raw : tag.getList(TAG_LOGOUT_PLACED, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag e = (CompoundTag) raw;
+            ResourceLocation dim = ResourceLocation.tryParse(e.getString("Dim"));
+            if (dim == null || !e.hasUUID("Id") || !e.hasUUID("Instance")) {
+                continue;
+            }
+            out.add(new LogoutPlaced(ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, dim), BlockPos.of(e.getLong("Pos")), e.getUUID("Id"), e.getUUID("Instance"), e.getLong("When")));
+        }
+        tag.remove(TAG_LOGOUT_PLACED);
+        return out;
     }
 
     public record LastMainPosition(ResourceKey<Level> dimension, BlockPos pos) {

@@ -1071,3 +1071,13 @@ Setup: the pack with Integrated Dynamics 1.20.1-1.31.x and JEI.
 - [ ] JEI shows Tetrium Ingot, Dirty Illyrium Ingot and Illyrium Ingot to their dusts under the Mechanical Squeezer (40 ticks) and under the hand-cranked Squeezer.
 - [ ] The other compat machines (Create, Electrodynamics, Ender IO, Mekanism, Railcraft, Thermal) still load their three recipes each.
 
+## A logout's totem comes back (2026-10-18)
+
+Setup: survival, a carried totem, a second account for the steal.
+
+- [ ] Log out (or kill the client) carrying the totem, log back in: a gold line "back with you, it stood at x, y, z" and the totem is in your hand; the block is gone from the ground.
+- [ ] Log out, have the second account break the placed totem (or carry it off), log back in: a red "no longer stands at ..." line and no totem.
+- [ ] Log out, have the second account start stealing it, log back in during the steal: a red "being stolen right now" line, the totem stays in the world and the steal goes on.
+- [ ] Die carrying the totem, respawn: it stays where you fell, as before (death placements do not come back).
+- [ ] Set `logoutReturnMinutes` to 1, log out, wait two minutes, log in: "stands at ..." in gold and the totem stays placed.
+

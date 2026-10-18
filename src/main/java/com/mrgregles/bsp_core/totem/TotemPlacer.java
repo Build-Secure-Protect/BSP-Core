@@ -28,10 +28,16 @@ public final class TotemPlacer {
      * @return true if the block was placed; false if no replaceable spot exists in range
      */
     public static boolean place(ServerLevel level, BlockPos around, ItemStack totem) {
+        return placeAt(level, around, totem) != null;
+    }
+
+    /** As {@link #place}, returning where the block went, or null when no spot was free. */
+    @Nullable
+    public static BlockPos placeAt(ServerLevel level, BlockPos around, ItemStack totem) {
         // never inside an Anti Totem zone: the nearest spot outside it instead
         BlockPos pos = findSpot(level, com.mrgregles.bsp_core.zone.ZoneLedger.get(level.getServer()).outside(level, around));
         if (pos == null) {
-            return false;
+            return null;
         }
         level.setBlock(pos, ModBlocks.SHATTER_TOTEM.get().defaultBlockState(), Block.UPDATE_ALL);
         if (level.getBlockEntity(pos) instanceof ShatterTotemBlockEntity totemEntity) {
@@ -39,7 +45,7 @@ public final class TotemPlacer {
         }
         BSPCore.LOGGER.info("Shatter Totem owned by {} placed at {} in {}",
                 TotemOwner.fromStack(totem).map(TotemOwner::name).orElse("nobody"), pos, level.dimension().location());
-        return true;
+        return pos;
     }
 
     /** Where a totem leaving {@code player} should go: their position if the dimension allows it, else their last main-dimension spot. */

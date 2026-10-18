@@ -142,7 +142,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.BooleanValue REDIS_ENABLED, REDIS_SSL;
     public static final ForgeConfigSpec.ConfigValue<String> REDIS_HOST, REDIS_PASSWORD, REDIS_CHANNEL;
     public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER;
-    public static final ForgeConfigSpec.IntValue TRANSFER_SECONDS, TRANSFER_TIMEOUT_HOURS;
+    public static final ForgeConfigSpec.IntValue TRANSFER_SECONDS, TRANSFER_TIMEOUT_HOURS, LOGOUT_RETURN_MINUTES;
     public static final ForgeConfigSpec.IntValue REDIS_PORT, REDIS_DB;
 
     // ------------------------------------------------------------------ bank
@@ -257,6 +257,10 @@ public final class BSPConfig {
         TRANSFER_TIMEOUT_HOURS = BUILDER
                 .comment("A totem stored for a server transfer whose owner never logs in anywhere is placed back at the departure point after this many hours.")
                 .defineInRange("transferTotemTimeoutHours", 48, 1, 24 * 365);
+        LOGOUT_RETURN_MINUTES = BUILDER
+                .comment("A totem the logout rule placed comes back into its owner's inventory when they log in again on this server, if it still stands where it was put,",
+                        "untouched and not being stolen, within this many minutes of the logout. 0 = however long ago. It stands in the world and can be stolen the whole time.")
+                .defineInRange("logoutReturnMinutes", 0, 0, 24 * 60 * 365);
         BUILDER.pop();
 
         BUILDER.comment("Stealing a placed Shatter Totem").push("steal");
