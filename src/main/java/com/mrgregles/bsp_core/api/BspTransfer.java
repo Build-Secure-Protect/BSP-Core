@@ -62,6 +62,7 @@ public final class BspTransfer {
         endTransfer(player); // a second call starts afresh
         List<ItemStack> totems = TotemInventories.removeAll(player);
         totems.addAll(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(player));
+        markInTransit(server, player, totems);
         boolean stored = false;
         if (!totems.isEmpty() && NetworkStorage.enabled()) {
             List<String> encoded = new ArrayList<>();
@@ -136,7 +137,21 @@ public final class BspTransfer {
         return out;
     }
 
-    /** Totems go back through {@link TotemInventories#giveBack} (never dropped); anything else is added or dropped. */
+    /** The ledger stops counting these totems as held: they are in transit, so a slow proxy or a return visit never reissues them. */
+    private static void markInTransit(MinecraftServer server, Player player, List<ItemStack> totems) {
+        com.mrgregles.bsp_core.data.TotemLedger ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        long now = server.overworld().getGameTime();
+        for (ItemStack totem : totems) {
+            com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+            ledger.inTransit(com.mrgregles.bsp_core.totem.TotemIdentity.id(totem), com.mrgregles.bsp_core.totem.TotemIdentity.instance(totem), player.getUUID(), totem.getTag(), now);
+        }
+    }
+
+    /**
+     * Totems go back through {@link TotemInventories#giveBack} (never dropped); anything else is added or dropped. A totem that
+     * arrives is recorded as held with the instance it carries: it came through the database, so it is the real one even when this
+     * server's ledger remembers another (a reissue on another server), and the identity check must not spend it.
+     */
     public static void handBack(Player player, List<ItemStack> items, String messageKey) {
         if (items.isEmpty()) {
             return;
@@ -146,6 +161,11 @@ public final class BspTransfer {
         }
         for (ItemStack stack : items) {
             if (TotemInventories.isTotem(stack)) {
+                if (player.getServer() != null) {
+                    com.mrgregles.bsp_core.totem.TotemIdentity.ensure(stack);
+                    com.mrgregles.bsp_core.data.TotemLedger.get(player.getServer()).arrived(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack), com.mrgregles.bsp_core.totem.TotemIdentity.instance(stack),
+                            player.getUUID(), stack.getTag(), player.getServer().overworld().getGameTime());
+                }
                 TotemInventories.giveBack(player, stack.copy());
             } else if (!player.getInventory().add(stack.copy())) {
                 player.drop(stack.copy(), false);

@@ -818,7 +818,7 @@ JEI is loaded in dev runs (`./gradlew runClient`).
 
 ## Crushers from other mods (2026-10-08)
 
-- Each of these turns a Tetrium Ingot into Tetrium Dust, a Dirty Illyrium Ingot into Dirty Illyrium Dust and an Illyrium Ingot into Pure Illyrium Dust, one for one: Mekanism Crusher, Create crushing wheels and millstone, Thermal Pulverizer, Ender IO SAG Mill, Railcraft Reborn Crusher, Integrated Dynamics Mechanical Squeezer, Electrodynamics Mineral Grinder. JEI shows the recipe under each machine.
+- Each of these turns a Tetrium Ingot into Tetrium Dust, a Dirty Illyrium Ingot into Dirty Illyrium Dust and an Illyrium Ingot into Pure Illyrium Dust, one for one: Mekanism Crusher, Create crushing wheels and millstone, Thermal Pulverizer, Ender IO SAG Mill, Railcraft Reborn Crusher, Integrated Dynamics Squeezer (hand-cranked) and Mechanical Squeezer, Electrodynamics Mineral Grinder. JEI shows the recipe under each machine.
 - The recipes only load when their mod is present (`forge:mod_loaded`); the formats for Ender IO, Railcraft, Integrated Dynamics and Electrodynamics were read from those mods' sources and could not be loaded in the dev run, so in the pack check the log for a "recipe" error naming `bsp_core:compat/` on first start.
 - No machine of any mod turns BSP ore or raw ore into anything: ore goes through the Tetrium Crucible, the Illyrium Crucible and the Magnetic Centrifuge only.
 
@@ -1052,4 +1052,22 @@ Setup: survival or creative with JEI (or EMI) and the guide book.
 - [ ] JEI's information page on the intake, a frame, a card and an expander reads the accelerator text; on the core and the port, the decelerator text. EMI shows the same two pages.
 - [ ] The guide book's Totems category has "Plasma Across Worlds" after "The Plasma Injector": nine pages, three recipe pages showing two recipes each, no page title running off the edge, nothing that reads like a change log.
 - [ ] Crafting in survival: the frame recipe gives two.
+
+## Totems in transit and creative deletion (2026-10-18)
+
+Setup: two servers on one database with BSP-Teleport, or one server for the creative part.
+
+- [ ] Carry a totem, teleport to the other server, teleport back: one gold line each way ("stored for the transfer", "arrived with you"), never "came back to you", never the red "spent" line, and one totem in your hand, not two.
+- [ ] Stall the proxy (or stand still for ten seconds after a transfer is announced without leaving): the totem comes back once with "the transfer did not happen" and is not reissued.
+- [ ] Lose a totem on server B (drop it into a hopper), get it reissued there, then teleport to server A: the reissued totem arrives whole and the old copy, if any is lying about on A, turns to a husk; no loop of "came back" and "spent".
+- [ ] In creative mode, drag a spare totem onto the creative inventory's bin, or into the item browser: a grey "destroyed" line a second or so later, and it does not come back. In survival, drop a totem into a hopper: it still comes back after a minute as before.
+- [ ] Fly up twenty blocks over flat ground (creative flight, an elytra glide or levitation) and log out: the totem stands on the ground straight below, not in the air. The same over water: it stands on the surface. Standing on the ground, nothing changes.
+
+## Integrated Dynamics squeezer recipes (2026-10-18)
+
+Setup: the pack with Integrated Dynamics 1.20.1-1.31.x and JEI.
+
+- [ ] `latest.log` has no "Parsing error loading recipe bsp_core:compat/integrateddynamics_..." line on world load.
+- [ ] JEI shows Tetrium Ingot, Dirty Illyrium Ingot and Illyrium Ingot to their dusts under the Mechanical Squeezer (40 ticks) and under the hand-cranked Squeezer.
+- [ ] The other compat machines (Create, Electrodynamics, Ender IO, Mekanism, Railcraft, Thermal) still load their three recipes each.
 

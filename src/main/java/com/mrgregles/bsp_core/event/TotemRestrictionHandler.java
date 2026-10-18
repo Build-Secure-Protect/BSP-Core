@@ -114,8 +114,27 @@ public final class TotemRestrictionHandler {
             if (holder == null) {
                 continue; // offline: the check runs again when they are back and the totem is still nowhere
             }
-            reissue(holder, ledger, id, now);
+            lost(holder, ledger, id, now);
         }
+    }
+
+    /** What became of a held totem that is nowhere. */
+    public enum Lost { REISSUED, DESTROYED }
+
+    /**
+     * A held totem has been nowhere for a minute. A survival player gets it back with a new instance (it was stored away or carried
+     * off). A creative player is taken at their word: the creative inventory's bin and its item browser delete what is dropped on them,
+     * and an admin must be able to get rid of a spare totem, so the ledger forgets it instead.
+     */
+    public static Lost lost(ServerPlayer holder, TotemLedger ledger, UUID id, long now) {
+        if (holder.isCreative()) {
+            ledger.forget(id);
+            holder.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.destroyed").withStyle(ChatFormatting.GRAY), true);
+            BSPCore.LOGGER.info("{}'s Shatter Totem {} was nowhere for {} ticks while they were in creative mode; counted as destroyed", holder.getGameProfile().getName(), id, LOST_AFTER_TICKS);
+            return Lost.DESTROYED;
+        }
+        reissue(holder, ledger, id, now);
+        return Lost.REISSUED;
     }
 
     /** A player logging in whose held totem has been nowhere since they left gets it back. */
@@ -130,7 +149,7 @@ public final class TotemRestrictionHandler {
         for (UUID id : ledger.lostHeld(now, LOST_AFTER_TICKS)) {
             TotemLedger.Sighting lost = ledger.sighting(id);
             if (lost != null && player.getUUID().equals(lost.holder())) {
-                reissue(player, ledger, id, now);
+                lost(player, ledger, id, now);
             }
         }
     }

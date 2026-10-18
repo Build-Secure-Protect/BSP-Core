@@ -17,6 +17,7 @@ KEYS = {
     "tooltip.bsp_core.shatter_totem.spent": "Spent. This copy was stored away from its holder; the real totem went back to them.",
     "message.bsp_core.shatter_totem.returned": "Your Shatter Totem came back to you. It cannot be stored away from you.",
     "message.bsp_core.shatter_totem.spent": "That totem is spent: its holder has the real one.",
+    "message.bsp_core.shatter_totem.destroyed": "Shatter Totem destroyed (creative mode).",
     "buff.bsp_core.cloaking": "Cloaking",
     "buff.bsp_core.cloaking.effect": "Outsiders see the land as the world generated it in a %1$s x %1$s x %1$s box, and nobody inside it; uses %2$s mB/t of plasma",
     "buff.bsp_core.recall": "Recall",

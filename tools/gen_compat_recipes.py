@@ -41,8 +41,15 @@ def railcraft(inp, out):
     return cond("railcraft", {"type": "railcraft:crusher", "ingredient": {"item": inp}, "outputs": [{"result": {"item": out}, "count": 1, "probability": 1.0}]})
 
 
-def integrateddynamics(inp, out):
-    return cond("integrateddynamics", {"type": "integrateddynamics:mechanical_squeezer", "input_item": {"item": inp}, "output_items": [{"item": {"item": out, "count": 1}}], "duration": 40})
+def integrateddynamics(inp, out, mechanical=True):
+    """Integrated Dynamics squeezers: the input is "item", the outputs sit under "result": {"items": [...]} (its own dandelion recipe is the
+    model); the Mechanical Squeezer takes a "duration", the hand-cranked Squeezer none. The first cut used "input_item" and
+    "output_items", which Integrated Dynamics 1.31 refused with "Missing result" (reported from the pack, 2026-10-18)."""
+    body = {"type": "integrateddynamics:mechanical_squeezer" if mechanical else "integrateddynamics:squeezer", "item": {"item": inp},
+            "result": {"items": [{"item": {"item": out, "count": 1}}]}}
+    if mechanical:
+        body["duration"] = 40
+    return cond("integrateddynamics", body)
 
 
 def electrodynamics(inp, out):
@@ -58,6 +65,7 @@ RECIPES = {
     "enderio_sag_milling": enderio,
     "railcraft_crusher": railcraft,
     "integrateddynamics_squeezer": integrateddynamics,
+    "integrateddynamics_hand_squeezer": lambda i, o: integrateddynamics(i, o, mechanical=False),
     "electrodynamics_mineral_grinder": electrodynamics,
 }
 

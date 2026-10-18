@@ -47,7 +47,7 @@ public final class TotemPlacer {
 
     public static Target safeTargetFor(ServerPlayer player) {
         if (BSPConfig.isDimensionAllowed(player.level().dimension().location())) {
-            return new Target(player.serverLevel(), player.blockPosition());
+            return new Target(player.serverLevel(), grounded(player.serverLevel(), player.blockPosition()));
         }
         PlayerPersistent.LastMainPosition last = PlayerPersistent.getLastMainPosition(player).orElse(null);
         ServerLevel lastLevel = last == null ? null : last.level(player.server);
@@ -56,6 +56,25 @@ public final class TotemPlacer {
         }
         ServerLevel overworld = player.server.overworld();
         return new Target(overworld, overworld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, overworld.getSharedSpawnPos()));
+    }
+
+    /**
+     * The spot straight below {@code from} that stands on something: the first block above solid ground or a liquid's surface. A
+     * player who logs out in the air (flying, gliding, levitating, falling) must not leave their totem hanging where nobody walks;
+     * it goes to the ground below them instead. A position already on the ground is returned as it is. Over nothing at all (the
+     * void) the position is kept.
+     */
+    public static BlockPos grounded(ServerLevel level, BlockPos from) {
+        BlockPos.MutableBlockPos p = from.mutable();
+        while (p.getY() > level.getMinBuildHeight()) {
+            BlockPos below = p.below();
+            BlockState under = level.getBlockState(below);
+            if (!under.getCollisionShape(level, below).isEmpty() || !under.getFluidState().isEmpty()) {
+                return p.immutable();
+            }
+            p.move(0, -1, 0);
+        }
+        return from;
     }
 
     @Nullable

@@ -44,7 +44,8 @@ public class TotemLedger extends SavedData {
 
     // --- identity: where each totem (by id) was last seen, and which instance of it is the real one ---
 
-    public static final int HELD = 0, PLACED = 1, DROPPED = 2;
+    /** Where a totem was last seen. IN_TRANSIT: taken from its holder for a server transfer and travelling through the database; never "lost". */
+    public static final int HELD = 0, PLACED = 1, DROPPED = 2, IN_TRANSIT = 3;
     private static final String TAG_TOTEMS = "Totems";
 
     /** The last sighting of a totem: its current instance, the player who had it last, when, as what, and a copy of its item tag. */
@@ -79,6 +80,22 @@ public class TotemLedger extends SavedData {
         if (old == null || old.where() != where || !java.util.Objects.equals(old.holder(), keep)) {
             setDirty();
         }
+    }
+
+    /** A transfer took the totem from {@code holder}: it is on its way to another server (or held for a cancelled teleport), not lost. */
+    public void inTransit(UUID id, UUID instance, @Nullable UUID holder, @Nullable CompoundTag copy, long now) {
+        Sighting old = totems.get(id);
+        totems.put(id, new Sighting(instance, holder != null ? holder : old == null ? null : old.holder(), now, IN_TRANSIT, copy != null ? copy.copy() : old == null ? null : old.copy()));
+        setDirty();
+    }
+
+    /**
+     * A totem arrived through the database (a transfer's hand-back): the instance it carries is the real one, whatever this
+     * server's ledger remembered, because another server may have reissued it meanwhile. Counts as held by {@code holder} now.
+     */
+    public void arrived(UUID id, UUID instance, UUID holder, @Nullable CompoundTag copy, long now) {
+        totems.put(id, new Sighting(instance, holder, now, HELD, copy != null ? copy.copy() : null));
+        setDirty();
     }
 
     /** Totems last seen in a player's hands more than {@code maxAge} ticks ago and nowhere since: stored away, or carried off. */

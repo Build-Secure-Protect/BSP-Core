@@ -1627,4 +1627,80 @@ public class BspGameTests {
             h.succeed();
         });
     }
+
+    @GameTest(template = EMPTY)
+    public void transfer_keeps_the_totem_in_transit_and_trusts_the_instance_that_arrives(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var player = h.makeMockPlayer();
+        UUID who = player.getUUID();
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(who, "Erin").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem), instance = com.mrgregles.bsp_core.totem.TotemIdentity.instance(totem);
+        long now = server.overworld().getGameTime();
+        ledger.seen(id, instance, who, com.mrgregles.bsp_core.data.TotemLedger.HELD, totem.getTag(), now);
+        player.getInventory().setItem(0, totem);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player) == 1, "the totem is taken for the transfer");
+        var s = ledger.sighting(id);
+        h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.IN_TRANSIT && s.instance().equals(instance), "the ledger marks it in transit, same instance: " + s);
+        h.assertTrue(ledger.lostHeld(now + 10_000, 60).isEmpty(), "a totem in transit is never lost, however long the proxy takes");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.endTransfer(player), "the teleport is cancelled");
+        s = ledger.sighting(id);
+        h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && s.instance().equals(instance) && who.equals(s.holder()), "back in hand: held again with the same instance");
+        // the other server reissued it meanwhile: the copy that arrives through the database carries a new instance and is the real one
+        UUID reissued = UUID.randomUUID();
+        var arriving = totem.copy();
+        com.mrgregles.bsp_core.totem.TotemIdentity.setInstance(arriving, reissued);
+        player.getInventory().clearContent();
+        com.mrgregles.bsp_core.api.BspTransfer.handBack(player, List.of(arriving), "message.bsp_core.transfer.arrived");
+        h.assertTrue(reissued.equals(ledger.currentInstance(id)), "the arriving instance is current now");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.isTotem(player.getInventory().getItem(0)) && !com.mrgregles.bsp_core.totem.TotemIdentity.isSpent(player.getInventory().getItem(0)), "and the totem in hand is whole, not a husk");
+        ledger.forget(id);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void creative_player_destroys_a_spare_totem_instead_of_getting_it_back(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        UUID id = UUID.randomUUID(), instance = UUID.randomUUID();
+        long now = server.overworld().getGameTime();
+        var creative = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.CREATIVE);
+        var survival = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        ledger.seen(id, instance, creative.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(creative, ledger, id, now + 100) == com.mrgregles.bsp_core.event.TotemRestrictionHandler.Lost.DESTROYED, "deleted in creative: destroyed");
+        h.assertTrue(ledger.sighting(id) == null, "and forgotten");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(creative).isEmpty(), "nothing was handed back");
+        UUID id2 = UUID.randomUUID();
+        ledger.seen(id2, UUID.randomUUID(), survival.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(survival, ledger, id2, now + 100) == com.mrgregles.bsp_core.event.TotemRestrictionHandler.Lost.REISSUED, "a survival player gets it back");
+        h.assertTrue(ledger.sighting(id2) != null && com.mrgregles.bsp_core.totem.TotemInventories.removeAll(survival).size() == 1, "reissued into their hands");
+        ledger.forget(id2);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void logout_placement_puts_a_flying_players_totem_on_the_ground_below(GameTestHelper h) {
+        BlockPos floor = new BlockPos(5, 1, 5), pool = new BlockPos(9, 1, 9);
+        h.setBlock(floor, Blocks.STONE);
+        h.setBlock(pool, Blocks.WATER);
+        var level = h.getLevel();
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.grounded(level, h.absolutePos(floor.above(6))).equals(h.absolutePos(floor.above())), "six blocks up over stone: the block on the stone");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.grounded(level, h.absolutePos(pool.above(5))).equals(h.absolutePos(pool.above())), "over water: the block on the surface, not the sea bed");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.grounded(level, h.absolutePos(floor.above())).equals(h.absolutePos(floor.above())), "already on the ground: unchanged");
+        // the logout target of a player hovering in the air is that ground spot
+        var flyer = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.CREATIVE);
+        BlockPos hover = h.absolutePos(floor.above(6));
+        flyer.setPos(hover.getX() + 0.5, hover.getY(), hover.getZ() + 0.5);
+        flyer.getAbilities().flying = true;
+        var target = com.mrgregles.bsp_core.totem.TotemPlacer.safeTargetFor(flyer);
+        h.assertTrue(target.pos().equals(h.absolutePos(floor.above())), "a flying player's totem goes to the ground below them: " + target.pos());
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(flyer.getUUID(), "Icarus").applyTo(totem);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.place(target.level(), target.pos(), totem), "and is placed there");
+        h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        h.setBlock(floor.above(), Blocks.AIR);
+        h.succeed();
+    }
 }

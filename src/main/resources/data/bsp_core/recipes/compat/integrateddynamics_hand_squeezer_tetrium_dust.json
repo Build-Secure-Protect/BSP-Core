@@ -1,0 +1,22 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "integrateddynamics"
+  }
+ ],
+ "type": "integrateddynamics:squeezer",
+ "item": {
+  "item": "bsp_core:tetrium_ingot"
+ },
+ "result": {
+  "items": [
+   {
+    "item": {
+     "item": "bsp_core:tetrium_dust",
+     "count": 1
+    }
+   }
+  ]
+ }
+}

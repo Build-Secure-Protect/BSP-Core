@@ -595,7 +595,7 @@ Keep your slag. Smelted into *Slag Bricks* it goes into almost every machine par
 
 **Page 1**
 
-Several recipes need metal dust. A crusher from another mod turns an ingot into dust every time: Mekanism's Crusher, Create's crushing wheels and millstone, Thermal's Pulverizer, Ender IO's SAG Mill, Railcraft's Crusher, Integrated Dynamics' Mechanical Squeezer and Electrodynamics' Mineral Grinder.
+Several recipes need metal dust. A crusher from another mod turns an ingot into dust every time: Mekanism's Crusher, Create's crushing wheels and millstone, Thermal's Pulverizer, Ender IO's SAG Mill, Railcraft's Crusher, Integrated Dynamics' Squeezer and Mechanical Squeezer, and Electrodynamics' Mineral Grinder.
 
 With no crusher, put any pickaxe and one ingot in a crafting grid. The pickaxe loses a little durability, and you get either dust or a few nuggets back, by chance.
 
