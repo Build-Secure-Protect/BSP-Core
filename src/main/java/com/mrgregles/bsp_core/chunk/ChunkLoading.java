@@ -377,7 +377,7 @@ public final class ChunkLoading {
      * the RF to run, and with null by one that has lost its signal or its RF. A projector nobody has reported for
      * longer than a full cable check is switched off by {@link #onServerTick}.
      */
-    public static void projector(ServerLevel level, BlockPos blockPos, @Nullable BlockPos totem) {
+    public static void projector(ServerLevel level, BlockPos blockPos, @Nullable GlobalPos totem) {
         ChunkLedger ledger = ChunkLedger.get(level.getServer());
         GlobalPos pos = GlobalPos.of(level.dimension(), blockPos);
         ChunkLedger.Projector p = ledger.projectors.get(pos);
@@ -390,7 +390,7 @@ public final class ChunkLoading {
             return;
         }
         FED.put(pos, level.getServer().overworld().getGameTime());
-        GlobalPos from = GlobalPos.of(level.dimension(), totem);
+        GlobalPos from = totem;
         if (p != null && p.on && p.totem.equals(from)) {
             return;
         }

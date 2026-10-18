@@ -26,7 +26,8 @@ BG = (0x12, 0x15, 0x1b, 255)
 # book picture name -> render slug
 RENDER_PICTURES = {"illyrium_crucible": "illyrium_crucible", "illyrium_refinery": "illyrium_refinery", "shatter_coin_factory": "coin_factory",
                    "magnetic_centrifuge": "magnetic_centrifuge", "plasma_network": "plasma_network", "plasma_interface_group": "plasma_interface_group",
-                   "plasma_batteries": "plasma_batteries", "plasma_tank": "plasma_tank", "plasma_injector": "plasma_injector", "shatter_totem": "shatter_totem"}
+                   "plasma_batteries": "plasma_batteries", "plasma_tank": "plasma_tank", "plasma_injector": "plasma_injector", "shatter_totem": "shatter_totem",
+                   "plasma_accelerator": "plasma_accelerator", "plasma_decelerator": "plasma_decelerator"}
 
 
 def from_render(name, slug):

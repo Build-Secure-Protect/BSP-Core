@@ -166,6 +166,8 @@ public final class BspProcesses {
             Map.entry("jei.bsp_core.info.extractor", List.of("plasma_extractor")),
             Map.entry("jei.bsp_core.info.interface", List.of("plasma_interface")),
             Map.entry("jei.bsp_core.info.injector", List.of("plasma_injector")),
+            Map.entry("jei.bsp_core.info.accelerator", List.of("accelerator_intake", "accelerator_frame", "link_card", "link_expander")),
+            Map.entry("jei.bsp_core.info.decelerator", List.of("decelerator_core", "decelerator_port")),
             Map.entry("jei.bsp_core.info.repeater", List.of("plasma_repeater")),
             Map.entry("jei.bsp_core.info.valve", List.of("plasma_valve")),
             Map.entry("jei.bsp_core.info.tank", List.of("tank_casing", "tank_glass", "tank_port")),

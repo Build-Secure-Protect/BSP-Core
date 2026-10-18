@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PIP",
+    "IHI",
+    "PIP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:accelerator_frame",
+    "count": 2
+  }
+}

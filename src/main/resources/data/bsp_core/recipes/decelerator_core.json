@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RER",
+    "IGI",
+    "PHP"
+  ],
+  "key": {
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    },
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "G": {
+      "item": "bsp_core:illyrium_glass"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:decelerator_core"
+  }
+}

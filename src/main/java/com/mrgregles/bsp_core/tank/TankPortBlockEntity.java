@@ -75,7 +75,7 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
     }
 
     @Override
-    public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
+    public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
         TankPartBlockEntity m = masterEntity();
         if (m == null) {
             return;

@@ -17,6 +17,10 @@
     "bsp_core:plasma_valve",
     "bsp_core:tank_casing",
     "bsp_core:tank_port",
-    "bsp_core:plasma_injector"
+    "bsp_core:plasma_injector",
+    "bsp_core:accelerator_intake",
+    "bsp_core:accelerator_frame",
+    "bsp_core:decelerator_core",
+    "bsp_core:decelerator_port"
   ]
 }

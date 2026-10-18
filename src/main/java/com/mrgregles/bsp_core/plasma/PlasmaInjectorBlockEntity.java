@@ -78,7 +78,7 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
     }
 
     @Override
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
         source = master.immutable();
         rate = movedMB / 20;
         overclockLevel = offeredByOrdinal[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.OVERCLOCK.ordinal()];

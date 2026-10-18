@@ -157,10 +157,12 @@ body.icons{ background:transparent; } body.icons .wrap{ padding:0; max-width:non
     if(id==='plasma_repeater') return AXIS[(b.props.facing||'east')==='east'||(b.props.facing)==='west'?'x':(b.props.facing==='up'||b.props.facing==='down')?'y':'z'].includes(dir);
     if(id==='battery_charger') return dir===opp[b.props.facing||'north'];
     if(id==='plasma_injector') return dir===opp[b.props.facing||'north'];
+    if(id==='accelerator_intake'||id==='decelerator_port') return true; // drawn by hand below; cables meet them on any face
     return false; }
   function build(g,w){ for(const b of w.map.values()){ const props=Object.assign({},b.props);
       if(b.id.endsWith('_core_cable')){ for(const d in DIRS){ const v=DIRS[d]; const n=w.at(b.x+v[0],b.y+v[1],b.z+v[2]); props[d]=endOf(n,opp[d],b); } }
       if(b.id==='plasma_interface'){ for(const d in DIRS){ const v=DIRS[d]; const n=w.at(b.x+v[0],b.y+v[1],b.z+v[2]); props[d]=!n?'none':n.id==='plasma_extractor'?'drum':n.id==='plasma_interface'?'join':endOf(n,opp[d])?'cable':'none'; } }
+      if(b.props.ghost) continue; // stands in the map so cables join it, drawn by the scene itself
       const grp=block(g,b.id,b.x,b.y,b.z,props); extras(grp,b,props,w); } }
   // ---- the parts the game draws with renderers
   function extras(g,b,props,w){ const id=b.id;
@@ -220,7 +222,36 @@ body.icons{ background:transparent; } body.icons .wrap{ padding:0; max-width:non
   function totem(g){ const w=new World(); w.put('shatter_totem',0,0,0); build(g,w); ground(g,-2,-2,3,3,0); return {target:[8,11,6],dist:64,ry:Math.PI*1.12,rx:.28}; }
   function totemStates(g){ const w=new World(); w.put('shatter_totem_stealing',0,0,0); w.put('shatter_totem',2,0,0); w.put('shatter_totem_unclaimed',4,0,0); build(g,w); ground(g,-1,-2,6,3,0); return {target:[40,11,6],dist:130,ry:Math.PI*1.06,rx:.25}; }
   function injector(g){ const w=new World(); w.put('tetrium_crucible',0,0,0); w.put('plasma_injector',0,0,1,{facing:'north'}); w.put('tetrium_core_cable',0,0,2); w.put('tetrium_core_cable',0,0,3); build(g,w); ground(g,-2,-1,3,5,0); return {target:[8,10,22],dist:84,ry:Math.PI*.52,rx:.38}; }
-  const SCENES=[['shatter_totem','The Shatter Totem',totem],['totem_states','Unclaimed, owned and being stolen',totemStates],['plasma_injector','A Plasma Injector feeding a Tetrium Crucible',injector],['plasma_tank','A formed 5 x 4 x 5 Plasma Tank, 60 % full',tank],['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
+  // ---- the Plasma Accelerator and Decelerator: the game draws the formed machines with renderers, so the page draws the same shapes
+  const AHULL=0x1e222b, AHULL2=0x2b313d, ATRIM=0x8a909c, AMID=0x565c6b, ACOPPER=0xb87333, ABRASS=0xb8893a, APLASMA=0x4fb8ff, APLASMAL=0xd8f1ff, AAMBER=0xffb347;
+  function cbox(g,x,y,z,w,h,d,c,glow){ return box(g,[x-w/2,y-h/2,z-d/2],[x+w/2,y+h/2,z+d/2],c,undefined,glow); }
+  function poly(g,n,a,thick,depth,c,off,at){ const G=new THREE.Group(); G.position.set(...at); g.add(G); const len=2*a*Math.tan(Math.PI/n)+thick*.8; for(let i=0;i<n;i++){ const s=new THREE.Group(); s.rotation.z=i*2*Math.PI/n+(off||0); G.add(s); cbox(s,a,0,0,thick,len,depth,c); } return G; }
+  function onPoly(n,a,th){ const k=2*Math.PI/n; const l=((th%k)+k)%k-k/2; const r=a/Math.cos(l); return [Math.cos(th)*r,Math.sin(th)*r]; }
+  function cage(g,r,c,geo,t){ const edges=new THREE.EdgesGeometry(geo); const pos=edges.attributes.position; const up=new THREE.Vector3(0,1,0); for(let i=0;i<pos.count;i+=2){ const a=new THREE.Vector3(pos.getX(i),pos.getY(i),pos.getZ(i)).multiplyScalar(r), b=new THREE.Vector3(pos.getX(i+1),pos.getY(i+1),pos.getZ(i+1)).multiplyScalar(r); const d=b.clone().sub(a); const m=new THREE.Mesh(new THREE.CylinderGeometry(t,t,d.length(),6),new THREE.MeshBasicMaterial({color:c})); m.position.copy(a).add(b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(up,d.clone().normalize()); g.add(m); } }
+  function singularity(g,at,r,cageR,innerR,disc){ const h=new THREE.Group(); h.position.set(...at); g.add(h); h.add(new THREE.Mesh(new THREE.SphereGeometry(r,24,16),new THREE.MeshBasicMaterial({color:0x06040f})));
+    h.add(new THREE.Mesh(new THREE.SphereGeometry(r*1.09,24,16),new THREE.MeshBasicMaterial({color:0x6a3fd0,transparent:true,opacity:.32})));
+    const c1=new THREE.Group(); c1.rotation.set(.4,.7,0); h.add(c1); cage(c1,cageR,ABRASS,new THREE.DodecahedronGeometry(1),.28);
+    const c2=new THREE.Group(); c2.rotation.set(.2,-.5,.3); h.add(c2); cage(c2,innerR,APLASMA,new THREE.IcosahedronGeometry(1),.18);
+    if(disc){ const d=new THREE.Mesh(new THREE.TorusGeometry(r*1.4,r*.07,8,48),new THREE.MeshBasicMaterial({color:APLASMA})); d.rotation.x=1.25; h.add(d); for(let i=0;i<4;i++){ const a=i*Math.PI/2+.4; const s=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,.6),new THREE.MeshBasicMaterial({color:APLASMAL})); s.position.set(Math.cos(a)*r*1.4,Math.sin(a)*r*1.4,0); s.rotation.x=0; const dd=new THREE.Group(); dd.rotation.x=1.25; dd.add(s); h.add(dd); } } return h; }
+  function socket(g,at,axis,sign,glow){ const s=new THREE.Group(); s.position.set(...at); if(axis===0) s.rotation.y=sign>0?Math.PI/2:-Math.PI/2; else if(axis===1) s.rotation.x=sign>0?-Math.PI/2:Math.PI/2; else if(sign<0) s.rotation.y=Math.PI; g.add(s);
+    const h=5,w=1,p=1.2; box(s,[-h,-h,0],[h,-h+w,p],ATRIM); box(s,[-h,h-w,0],[h,h,p],ATRIM); box(s,[-h,-h+w,0],[-h+w,h-w,p],ATRIM); box(s,[h-w,-h+w,0],[h,h-w,p],ATRIM); box(s,[-h+w,-h+w,0],[h-w,h-w,.4],AHULL); box(s,[-3,-3,.5],[3,3,1],glow,undefined,true); }
+  function accelerator(g){ const w=new World(); w.put('accelerator_intake',1,0,0,{ghost:true}); w.put('tetrium_core_cable',1,0,1); w.put('tetrium_core_cable',1,0,2); w.put('tetrium_core_cable',1,0,3); build(g,w);
+    const C=[24,24,8]; poly(g,8,21,5.5,12,AHULL2,0,C); poly(g,8,23.6,.8,1.6,ATRIM,0,[24,24,1]); poly(g,8,23.6,.8,1.6,ATRIM,0,[24,24,15]); poly(g,8,13.5,1.4,1.4,0xe8a05a,0,C);
+    for(let i=0;i<8;i++){ const s=new THREE.Group(); s.position.set(...C); s.rotation.z=i*Math.PI/4; g.add(s); cbox(s,16,0,0,4,6,6,AHULL); cbox(s,15,0,0,1,7.2,7.2,0xe8a05a); cbox(s,17,0,0,1,7.2,7.2,0xe8a05a); box(s,[13,-2,-2],[13.8,2,2],AAMBER,undefined,true); }
+    box(g,[17,0,1],[31,15.8,15],AHULL2); box(g,[16.6,14,.6],[31.4,15.8,15.4],AMID);
+    for(const [at,ax,sg] of [[[31,8,8],0,1],[[17,8,8],0,-1],[[24,8,15],2,1],[[24,8,1],2,-1],[[24,0,8],1,-1]]) socket(g,at,ax,sg,APLASMAL);
+    singularity(g,C,5.6,10.5,7,true);
+    for(let i=0;i<6;i++){ const [x,y]=onPoly(8,13.5,i*Math.PI/3+.3); cbox(g,C[0]+x,C[1]+y,8,1.6,1.6,1.6,APLASMAL,true); }
+    for(const i of [0,2,5]){ const a=i*Math.PI/4; const from=new THREE.Vector3(C[0]+Math.cos(a)*13,C[1]+Math.sin(a)*13,8), to=new THREE.Vector3(C[0]+Math.cos(a+.6)*7,C[1]+Math.sin(a+.6)*7,9); const d=to.clone().sub(from); const m=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,d.length(),5),new THREE.MeshBasicMaterial({color:APLASMAL})); m.position.copy(from).add(to).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); g.add(m); }
+    ground(g,-1,-1,4,5,0); return {target:[24,22,16],dist:150,ry:Math.PI*1.18,rx:.26}; }
+  function decelerator(g){ const w=new World(); w.put('decelerator_port',0,0,1,{ghost:true}); w.put('tetrium_core_cable',0,0,2); w.put('tetrium_core_cable',0,0,3); w.put('projector_base',0,0,4); w.put('totem_projector',0,1,4); build(g,w);
+    const C=[8,8,8]; for(let i=0;i<8;i++){ const s=new THREE.Group(); s.position.set(...C); s.rotation.z=i*Math.PI/4+Math.PI/8; g.add(s); cbox(s,7,0,0,1.6,6.2,15,AHULL2); }
+    for(const z of [2.5,8,13.5]) poly(g,8,8.2,1.2,1.4,0xe8a05a,Math.PI/8,[8,8,z]);
+    singularity(g,C,2.4,4.6,3.3,false);
+    box(g,[.5,.5,24.5],[15.5,15.5,39.5],AHULL2); box(g,[.1,.1,25.6],[15.9,15.9,26.8],ATRIM); box(g,[.1,.1,37.2],[15.9,15.9,38.4],ATRIM);
+    for(const [at,ax,sg] of [[[8,8,39.5],2,1],[[15.5,8,32],0,1],[[.5,8,32],0,-1],[[8,15.5,32],1,1],[[8,.5,32],1,-1]]) socket(g,at,ax,sg,APLASMA);
+    ground(g,-2,-1,3,6,0); return {target:[8,12,40],dist:120,ry:Math.PI*1.32,rx:.34}; }
+  const SCENES=[['plasma_accelerator','A formed Plasma Accelerator with a link delivering',accelerator],['plasma_decelerator','A Plasma Decelerator feeding a Projector',decelerator],['shatter_totem','The Shatter Totem',totem],['totem_states','Unclaimed, owned and being stolen',totemStates],['plasma_injector','A Plasma Injector feeding a Tetrium Crucible',injector],['plasma_tank','A formed 5 x 4 x 5 Plasma Tank, 60 % full',tank],['coloured_cables','Sixteen colours of Illyrium cable, plain at the far end',colours],['cable_ends','Wrench-set ends: Output, Input, Off and a Link to red; below, blue meets red without a link',ends],['plasma_network','The Wave Plasma network',network],['plasma_interface_group','Six interfaces joined, one refused',group],['plasma_valve','Plasma Valve',valve],['plasma_repeater','Plasma Repeater',repeater],
     ['projector_base','Projector Base and Projector',base],['battery_charger','Battery Charger',charger],['plasma_batteries','Plasma Batteries, and one feeding an extractor',batteries],['wave_emitter','Wave Emitter, Power Cells and the Wrench',emitter]];
   const one=new URLSearchParams(location.search).get('view'); if(one) document.body.classList.add('one');
   const iconsMode=!!new URLSearchParams(location.search).get('icons'); if(iconsMode) document.body.classList.add('icons');

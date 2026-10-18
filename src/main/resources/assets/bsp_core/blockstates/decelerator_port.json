@@ -1,0 +1,10 @@
+{
+ "variants": {
+  "formed=false": {
+   "model": "bsp_core:block/decelerator_port"
+  },
+  "formed=true": {
+   "model": "bsp_core:block/decelerator_port_formed"
+  }
+ }
+}

@@ -1,0 +1,94 @@
+{
+ "variants": {
+  "facing=north,formed=false,glow=0": {
+   "model": "bsp_core:block/accelerator_intake"
+  },
+  "facing=north,formed=false,glow=1": {
+   "model": "bsp_core:block/accelerator_intake"
+  },
+  "facing=north,formed=false,glow=2": {
+   "model": "bsp_core:block/accelerator_intake"
+  },
+  "facing=east,formed=false,glow=0": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 90
+  },
+  "facing=east,formed=false,glow=1": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 90
+  },
+  "facing=east,formed=false,glow=2": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 90
+  },
+  "facing=south,formed=false,glow=0": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 180
+  },
+  "facing=south,formed=false,glow=1": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 180
+  },
+  "facing=south,formed=false,glow=2": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 180
+  },
+  "facing=west,formed=false,glow=0": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 270
+  },
+  "facing=west,formed=false,glow=1": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 270
+  },
+  "facing=west,formed=false,glow=2": {
+   "model": "bsp_core:block/accelerator_intake",
+   "y": 270
+  },
+  "facing=north,formed=true,glow=0": {
+   "model": "bsp_core:block/accelerator_intake_formed"
+  },
+  "facing=north,formed=true,glow=1": {
+   "model": "bsp_core:block/accelerator_intake_formed"
+  },
+  "facing=north,formed=true,glow=2": {
+   "model": "bsp_core:block/accelerator_intake_formed"
+  },
+  "facing=east,formed=true,glow=0": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 90
+  },
+  "facing=east,formed=true,glow=1": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 90
+  },
+  "facing=east,formed=true,glow=2": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 90
+  },
+  "facing=south,formed=true,glow=0": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 180
+  },
+  "facing=south,formed=true,glow=1": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 180
+  },
+  "facing=south,formed=true,glow=2": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 180
+  },
+  "facing=west,formed=true,glow=0": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 270
+  },
+  "facing=west,formed=true,glow=1": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 270
+  },
+  "facing=west,formed=true,glow=2": {
+   "model": "bsp_core:block/accelerator_intake_formed",
+   "y": 270
+  }
+ }
+}

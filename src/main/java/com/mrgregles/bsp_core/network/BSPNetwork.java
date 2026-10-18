@@ -152,6 +152,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ValveSetPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(ValveSetPacket::encode).decoder(ValveSetPacket::decode)
                 .consumerMainThread(ValveSetPacket::handle).add();
+        CHANNEL.messageBuilder(LinkViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LinkViewPacket::encode).decoder(LinkViewPacket::decode)
+                .consumerMainThread(LinkViewPacket::handle).add();
+        CHANNEL.messageBuilder(LinkActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(LinkActionPacket::encode).decoder(LinkActionPacket::decode)
+                .consumerMainThread(LinkActionPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

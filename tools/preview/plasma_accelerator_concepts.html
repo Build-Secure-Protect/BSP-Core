@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plasma Accelerator Looks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&family=Silkscreen:wght@400;700&display=swap">
+<style>
+/* Board like the other BSP concept pages. One WebGL context draws every 3D view. Three looks for the Plasma Accelerator family (the 3 x 3 x 1 ring and the 1 x 1 x 2 de-accelerator together), then three layouts for the accelerator's screen, the parts and the decisions. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --pixel:"Silkscreen","Courier New",monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; } .grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ color:var(--muted); font-weight:600; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+/* the screen sketches: the mod's dark panel, pixel font, keys as in the Cash Machine screens */
+.guiwrap{ overflow-x:auto; padding-bottom:4px; }
+.gui{ position:relative; width:360px; height:232px; flex:none; background:#10151c; border:3px solid #2a2f3a; box-shadow:inset 0 0 0 1px #000; font-family:var(--pixel); font-size:9px; line-height:1.2; color:#e8eaf0; }
+.gui *{ position:absolute; margin:0; }
+.gui .ttl{ left:8px; top:6px; font-size:11px; color:#fff; } .gui .wrapt{ width:340px; white-space:normal; }
+.gui .mut{ color:#9aa3b5; } .gui .aq{ color:#4fb8ff; } .gui .gd{ color:#ffd23a; } .gui .rd{ color:#ff6b5c; } .gui .gn{ color:#19d3b0; }
+.gui .key{ height:14px; padding:0 5px; line-height:14px; background:#0b0d11; border:2px solid #3a4150; color:#e8eaf0; font-size:8px; box-sizing:border-box; white-space:nowrap; }
+.gui .key.on{ border-color:#19d3b0; color:#19d3b0; } .gui .key.off{ color:#5a6272; border-color:#2a2f3a; }
+.gui .row{ left:8px; right:8px; height:22px; border-bottom:1px solid #1f2430; } .gui .row span{ top:4px; }
+.gui .bar{ height:6px; background:#0b0d11; border:1px solid #2a2f3a; } .gui .bar i{ left:0; top:0; bottom:0; background:#4fb8ff; }
+.gui .col{ top:46px; bottom:34px; border-right:1px solid #1f2430; } .gui .colh{ top:36px; font-size:8px; color:#9aa3b5; width:90px; text-align:center; }
+.gui .pip{ width:8px; height:8px; border:2px solid #4fb8ff; background:#10151c; box-sizing:border-box; } .gui .pip.src{ border-color:#ffd23a; background:#ffd23a; } .gui .pip.dim{ border-color:#5a6272; }
+.gui svg{ left:0; top:0; }
+.gui .dial{ width:84px; height:84px; border:3px solid #2a2f3a; border-radius:50%; box-sizing:border-box; background:radial-gradient(circle,#000 0 26%,#124f9c 27% 30%,#10151c 31%); }
+.gui .dial b{ left:0; right:0; top:34px; text-align:center; font-size:9px; color:#4fb8ff; font-weight:400; }
+.gui .spoke{ height:2px; background:#4fb8ff; transform-origin:0 50%; } .gui .spoke.dim{ background:#3a4150; }
+.gui .box{ border:1px solid #2a2f3a; }
+</style></head><body>
+<div class="wrap">
+<section><h1>Plasma Accelerator Looks</h1>
+<p class="lede">Two machines that carry Wave Plasma from one world to another on the same server. The <b>Plasma Accelerator</b> is a ring, 3 high, 3 wide, 1 deep, with a black hole floating in the hole inside a slowly turning dodecahedron; plasma goes in at the bottom middle block. The <b>Plasma De-accelerator</b> is two blocks long: a core holding a smaller black hole in containment arms, and a port behind it the plasma leaves through. One accelerator links to up to three de-accelerators with Link Cards, both ends burn RF, the flow is one way and keeps every power. Three looks below show the family together, the same way each time: the ring with the de-accelerator beside it, a cable stub where plasma comes in and goes out. Drag a view to turn it.</p>
+<div class="card"><div class="ctl"><label><input type="checkbox" id="night"> Night (shows what glows)</label><label><input type="checkbox" id="fed" checked> Delivering (plasma flowing through the link)</label><span style="color:var(--muted)">Unticked: formed but idle, the black hole stays, the glow and the disc go.</span></div></div></section>
+
+<section><h2>1. Three looks</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. What each is made of</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A. Containment Ring</th><th>B. Illyrium Gate</th><th>C. Arc Coils</th></tr></thead><tbody>
+<tr><td><b>Family</b></td><td>The extractor and tank family: dark hull, steel trim, bolted plates, plasma seams. Heavy and industrial.</td><td>The Illyrium machine family: pale casing, turquoise seams, violet crystal. Clean and precious.</td><td>The repeater family: copper windings on a hull core. Reads as eight electromagnets pointed at the hole.</td></tr>
+<tr><td><b>Ring blocks</b></td><td>Bolted hull blocks with a steel band; the four blocks round the hole carry a plasma seam on their inner face that lights while fed.</td><td>Casing blocks with turquoise seams at the edges and a violet crystal shard on each outer corner; the inner faces glow turquoise.</td><td>Each block a copper coil wound round a hull core, the windings turned to face the hole; a copper bus bar runs round the outside.</td></tr>
+<tr><td><b>The intake</b></td><td>The bottom middle block is a drum like the extractor's, porthole at the front, pipe stub below for the cable.</td><td>A casing block with a violet crystal socket and the pipe stub below.</td><td>A coil block with a lit capacitor at the front and the pipe stub below.</td></tr>
+<tr><td><b>Black hole</b></td><td>Black sphere, brass wire dodecahedron turning slowly, a flat blue accretion disc spinning faster.</td><td>Black sphere inside a solid dodecahedron of translucent turquoise glass with violet edges; a thin pale lensing ring.</td><td>Black sphere in a double cage: copper dodecahedron one way, blue icosahedron the other, two short flickering jets up and down.</td></tr>
+<tr><td><b>De-accelerator</b></td><td>An open hull frame with four steel claws from the face centres gripping a small dodecahedron; a solid port block behind with a porthole and the cable stub.</td><td>A casing cradle: base plate, two pillars, three violet spikes pointing at a small glass dodecahedron; a casing port with a turquoise ring.</td><td>A copper barrel: three rings round an open core with the small cage inside; a hull port with copper caps.</td></tr>
+<tr><td><b>Glows at night</b></td><td>Seams, disc, portholes.</td><td>Seams, the glass dodecahedron, the lensing ring, the socket.</td><td>Capacitor, inner cage, jets, coil ends.</td></tr>
+<tr><td><b>Moves</b></td><td>Dodecahedron turns slowly; disc spins; seams pulse while fed.</td><td>Dodecahedron turns slowly; lensing ring wobbles; crystals pulse while fed.</td><td>The two cages counter-rotate; jets flicker; coil glow pulses while fed.</td></tr>
+<tr><td><b>Built with</b></td><td colspan="3">Part blocks from a generator (the machine atlas) with a `formed` state that hides their cubes, the controller's renderer drawing the hole's contents and the glow, a small renderer on the de-accelerator core for its black hole and arms. Light level 7 in the hole while delivering, like the ATM.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. The accelerator's screen, three layouts</h2>
+<p class="lede">Opened by right-clicking the intake. Every layout shows the same facts: what is arriving, the RF pool, the powers the plasma carries, each link's world, position and state, and a way to unlink. Every line goes through the CashMachine helpers; keys are grouped by job with a gap between groups.</p>
+<div class="grid2">
+<div class="card"><h3>S1. Ledger</h3><div class="guiwrap"><div class="gui">
+<span class="ttl">PLASMA ACCELERATOR</span>
+<span class="mut" style="left:8px;top:22px">Taking <span class="aq" style="position:static">940 mB/t</span> &nbsp; RF <span class="gd" style="position:static">182,400 / 200,000</span></span>
+<span class="mut" style="left:8px;top:34px">Carries <span class="gd" style="position:static">Overclock III, Anchor II</span></span>
+<div class="row" style="top:50px"><span class="mut" style="left:0">1</span><span style="left:12px">Nether &nbsp;-112, 64, 338</span><span class="gn" style="left:186px">313 mB/t</span><span class="key" style="right:0;top:3px">UNLINK</span></div>
+<div class="row" style="top:74px"><span class="mut" style="left:0">2</span><span style="left:12px">The End &nbsp;10, 60, 4</span><span class="rd" style="left:186px">Asleep: unloaded</span><span class="key" style="right:0;top:3px">UNLINK</span></div>
+<div class="row" style="top:98px"><span class="mut" style="left:0">3</span><span style="left:12px">Overworld &nbsp;2,010, 71, -45</span><span class="rd" style="left:186px">No RF</span><span class="key" style="right:0;top:3px">UNLINK</span></div>
+<span class="mut" style="left:8px;top:128px">3 of 3 links. Two Link Expanders fitted.</span>
+<span class="mut wrapt" style="left:8px;top:146px">Right-click the intake with a blank Link Card to write it, then right-click a De-accelerator Core with the card.</span>
+<span class="key" style="left:8px;bottom:8px">WAKE NOW</span>
+<span class="key" style="right:8px;bottom:8px">DONE</span>
+</div></div><p>A row per link with the state in words and an UNLINK key on each. Closest to the Interface and Tank screens, nothing to learn.</p></div>
+<div class="card"><h3>S2. Worlds board</h3><div class="guiwrap"><div class="gui">
+<span class="ttl">PLASMA ACCELERATOR</span>
+<span class="mut" style="left:8px;top:22px">940 mB/t in &nbsp; RF 182k</span>
+<div class="col" style="left:98px"></div><div class="col" style="left:188px"></div><div class="col" style="left:278px"></div>
+<span class="colh" style="left:8px">OVERWORLD</span><span class="colh" style="left:98px">NETHER</span><span class="colh" style="left:188px">THE END</span><span class="colh" style="left:278px;width:70px">MINING</span>
+<svg width="354" height="226" viewBox="0 0 354 226" fill="none" stroke="#4fb8ff" stroke-width="1.5"><path d="M53 100 C 90 60, 110 60, 143 92"/><path d="M53 100 C 120 40, 180 40, 233 80" stroke="#5a6272" stroke-dasharray="3 3"/><path d="M53 100 C 40 140, 30 150, 60 160" /></svg>
+<span class="pip src" style="left:49px;top:96px"></span>
+<span class="pip" style="left:139px;top:88px"></span><span class="mut" style="left:106px;top:100px">-112 64 338</span><span class="gn" style="left:112px;top:110px">313 mB/t</span>
+<span class="pip dim" style="left:229px;top:76px"></span><span class="mut" style="left:200px;top:88px">10 60 4</span><span class="rd" style="left:196px;top:98px">asleep</span>
+<span class="pip" style="left:56px;top:156px"></span><span class="mut" style="left:10px;top:168px">2010 71 -45</span><span class="rd" style="left:22px;top:178px">no RF</span>
+<span class="mut" style="left:8px;top:196px">Click a link, then:</span>
+<span class="key" style="left:88px;top:193px">UNLINK</span><span class="key" style="left:140px;top:193px">WAKE</span>
+<span class="key" style="right:8px;bottom:8px">DONE</span>
+</div></div><p>A column per world, the accelerator as a gold pip, each link drawn as a line to its de-accelerator; a sleeping link is grey and dashed. Most "across worlds"; one more click to unlink.</p></div>
+<div class="card"><h3>S3. Gauge</h3><div class="guiwrap"><div class="gui">
+<span class="ttl">PLASMA ACCELERATOR</span>
+<div class="dial" style="left:138px;top:54px"><b>940</b></div>
+<span class="mut" style="left:150px;top:140px">mB/t in</span>
+<div class="spoke" style="left:208px;top:76px;width:70px;transform:rotate(-24deg)"></div>
+<div class="spoke" style="left:212px;top:112px;width:70px;transform:rotate(22deg)"></div>
+<div class="spoke dim" style="left:140px;top:112px;width:70px;transform:rotate(158deg)"></div>
+<span class="aq" style="left:280px;top:40px">NETHER</span><span class="mut" style="left:280px;top:50px">-112 64 338</span><div class="bar" style="left:280px;top:62px;width:70px"><i style="width:60%"></i></div><span class="gn" style="left:280px;top:70px">313 mB/t</span><span class="key" style="left:280px;top:84px">UNLINK</span>
+<span class="aq" style="left:280px;top:120px">OVERWORLD</span><span class="mut" style="left:280px;top:130px">2010 71 -45</span><div class="bar" style="left:280px;top:142px;width:70px"><i style="width:0"></i></div><span class="rd" style="left:280px;top:150px">no RF</span><span class="key" style="left:280px;top:164px">UNLINK</span>
+<span class="mut" style="left:8px;top:120px">THE END</span><span class="mut" style="left:8px;top:130px">10 60 4</span><div class="bar" style="left:8px;top:142px;width:70px"><i style="width:0"></i></div><span class="rd" style="left:8px;top:150px">asleep</span><span class="key" style="left:8px;top:164px">UNLINK</span>
+<span class="gd" style="left:8px;top:40px">RF 182k / 200k</span><div class="bar" style="left:8px;top:52px;width:70px"><i style="width:91%;background:#ffd23a"></i></div>
+<span class="gd" style="left:8px;top:66px">Overclock III</span><span class="gd" style="left:8px;top:76px">Anchor II</span>
+<span class="mut" style="left:8px;bottom:8px">3 of 3 links</span>
+<span class="key" style="right:8px;bottom:8px">DONE</span>
+</div></div><p>The in-flow as a dial in the middle, one spoke per link to a side panel with its own meter and UNLINK key. Most "machine"; the panels get tight with long world names.</p></div>
+</div></section>
+
+<section><h2>4. Decisions, with defaults</h2>
+<div class="card"><ol>
+<li><b>Look.</b> A, B or C. Default A, Containment Ring, since the accelerator stands in the plasma room next to extractors, interfaces and tanks.</li>
+<li><b>Screen.</b> S1, S2 or S3. Default S1, Ledger: it reads like the Interface and Tank screens.</li>
+<li><b>Names.</b> "Plasma Accelerator" and "Plasma Decelerator" (one spelling), blocks Accelerator Intake, Accelerator Frame, Decelerator Core, Decelerator Port; items Link Card, Link Expander.</li>
+<li><b>Range.</b> Any distance, same world or another world on this server. Alternative: other worlds only.</li>
+<li><b>Far side asleep</b> (unloaded, no RF, broken): its share goes to the other links; once a minute the accelerator loads the far chunk for a moment and delivers, so a far projector with Anchor relights by itself. WAKE NOW in the screen does it at once.</li>
+<li><b>Splitting.</b> Equal shares between the links that can take plasma this second, the cable rule. Alternative: strict thirds.</li>
+<li><b>Loss.</b> None per hop, no power level lost; RF is the price. Alternative: a tenth, like a repeater.</li>
+<li><b>RF.</b> 200 RF/t at the accelerator while any link delivers, 50 RF/t at a de-accelerator while receiving, 200,000 RF pools, in through any Frame block and any free face of the Core.</li>
+<li><b>Throughput.</b> Up to 1,000 mB/t per feeding run (a face's worth), several runs may feed one intake, 3,000 mB/t in all.</li>
+<li><b>Who may link.</b> Writing a card at an intake needs Machines access on the feeding totem (the valve rule), anyone while nothing has fed it yet; anyone holding a written card may plug it into a core.</li>
+<li><b>Powers.</b> All of them cross, as a tank mixes them, Anchor and the access list included.</li>
+<li><b>Chaining.</b> A de-accelerator's port may feed another accelerator; each hop pays RF.</li>
+<li><b>Recipes.</b> End game: Illyrium ingots and processors, Charged Resonance Crystals, Charged Illyrium cable, a Nether Star in the intake, Eyes of Ender in the core and the expander, a Link Card from paper, illyrium nuggets, an ender pearl and a control circuit. Alternative: Eye of Ender instead of the Nether Star.</li>
+<li><b>Orientation.</b> The ring stands upright facing the player who placed the intake; the de-accelerator lies flat, core in front, port behind.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x1e222b, HULL2=0x2b313d, PANEL=0xc9ced8, MID=0x565c6b, TRIM=0x8a909c, VIOLET=0xb58cff, TURQ=0x19d3b0, COPPER=0xb87333, BRASS=0xb8893a, PLASMA=0x4fb8ff, PLASMAD=0x124f9c, PLASMAL=0xd8f1ff, CABLE=0x3b4252;
+  const state={night:false, fed:true};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos){ const s=new THREE.Group(); s.position.set(...pos); g.add(s); return s; }
+  function wire(g,geo,c){ const m=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:c})); g.add(m); return m; }
+  function sphere(g,r,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshPhongMaterial({color:c,shininess:10}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; } const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),mat); g.add(m); return m; }
+  function torus(g,r,tube,c,op){ const mat=new THREE.MeshBasicMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; } const m=new THREE.Mesh(new THREE.TorusGeometry(r,tube,8,48),mat); g.add(m); return m; }
+  function floor(g){ bx(g,[-24,-1,-30],[104,0,50],0x1c2026); }
+  // the eight ring cells, the intake first: [x0,y0] of each block in 1/16ths
+  const CELLS=[[16,0],[0,0],[32,0],[0,16],[32,16],[0,32],[16,32],[32,32]];
+  function stubs(g){ bx(g,[21,-14,5],[27,-6,11],CABLE); bx(g,[22,-14,6],[26,-6,10],PLASMAD,true); // cable up into the intake
+    bx(g,[65,5,32],[71,11,42],CABLE); bx(g,[66,5,33],[70,11,42],PLASMAD,true); } // cable away from the port
+  // the accretion disc, a sphere and a cage: shared by every look. Returns [sphere, cage, disc]
+  function hole(g,at,r,cage,disc){ const h=grp(g,at); sphere(h,r,0x000000,true); const halo=sphere(h,r*1.08,PLASMAD,true,.35); const d=disc?torus(h,r*1.35,r*.08,PLASMA):null; if(d) d.rotation.x=1.25; return {h,halo,cage,disc:d}; }
+
+  // A. Containment Ring
+  function containment(g){ floor(g); stubs(g); const seams=[], ports=[];
+    for(const [x,y] of CELLS){ bx(g,[x+.5,y+.5,.5],[x+15.5,y+15.5,15.5],HULL2); bx(g,[x,y+6,0],[x+16,y+10,16],TRIM); // band
+      for(const [cx,cy] of [[x+1,y+1],[x+13.5,y+1],[x+1,y+13.5],[x+13.5,y+13.5]]) { bx(g,[cx,cy,-.4],[cx+1.5,cy+1.5,0],MID); bx(g,[cx,cy,16],[cx+1.5,cy+1.5,16.4],MID); } }
+    // the intake drum: porthole at the front, flange below
+    bx(g,[18,2,-1.2],[30,14,0],HULL); ports.push(bx(g,[20,4,-1.6],[28,12,-1.2],PLASMA,true)); bx(g,[19.4,3.4,-1.9],[28.6,12.6,-1.6],TRIM); bx(g,[18,-6,2],[30,0,14],HULL2);
+    // seams round the hole
+    seams.push(bx(g,[16,32,5],[32,33.2,11],PLASMA,true), bx(g,[16,14.8,5],[32,16,11],PLASMA,true), bx(g,[14.8,16,5],[16,32,11],PLASMA,true), bx(g,[32,16,5],[33.2,32,11],PLASMA,true));
+    const H=hole(g,[24,24,8],6.5,null,true); const cage=wire(H.h,new THREE.DodecahedronGeometry(11),BRASS); H.cage=cage;
+    // de-accelerator: open frame core with four claws, solid port behind
+    const X=60; const E=[[0,0],[15,0],[0,15],[15,15]];
+    for(const [a,b] of E){ bx(g,[X+a,b,0],[X+a+1,b+1,16],HULL2); bx(g,[X+a,0,b],[X+a+1,16,b+1],HULL2); bx(g,[X,a,b],[X+16,a+1,b+1],HULL2); }
+    for(const [f,t] of [[[X,6.5,6.5],[X+5,9.5,9.5]],[[X+11,6.5,6.5],[X+16,9.5,9.5]],[[X+6.5,0,6.5],[X+9.5,5,9.5]],[[X+6.5,11,6.5],[X+9.5,16,9.5]]]) { bx(g,f,t,TRIM); }
+    const h2=hole(g,[X+8,8,8],2.6,null,true); h2.cage=wire(h2.h,new THREE.DodecahedronGeometry(4.6),BRASS);
+    bx(g,[X,0,16],[X+16,16,32],HULL2); bx(g,[X-.3,6,18],[X+16.3,10,30],TRIM); ports.push(bx(g,[X+4,4,32],[X+12,12,32.4],PLASMA,true)); bx(g,[X+3.4,3.4,32.4],[X+12.6,12.6,32.7],TRIM);
+    return t=>{ const on=state.fed; const k=on?.75+.25*Math.sin(t*3):.15; for(const s of seams){ s.material.transparent=true; s.material.opacity=k; } for(const p of ports){ p.material.transparent=true; p.material.opacity=on?1:.25; }
+      for(const H2 of [H,h2]){ if(!reduce){ H2.cage.rotation.y=t*.25; H2.cage.rotation.x=t*.11; if(H2.disc) H2.disc.rotation.z=t*1.6; } if(H2.disc) H2.disc.visible=on; H2.halo.visible=on; } }; }
+
+  // B. Illyrium Gate
+  function gate(g){ floor(g); stubs(g); const glows=[];
+    for(const [x,y] of CELLS){ bx(g,[x+.5,y+.5,.5],[x+15.5,y+15.5,15.5],PANEL);
+      for(const z of [0,15]) { glows.push(bx(g,[x+.6,y+.6,z+.2],[x+15.4,y+1.4,z+.8],TURQ,true), bx(g,[x+.6,y+14.6,z+.2],[x+15.4,y+15.4,z+.8],TURQ,true), bx(g,[x+.6,y+.6,z+.2],[x+1.4,y+15.4,z+.8],TURQ,true), bx(g,[x+14.6,y+.6,z+.2],[x+15.4,y+15.4,z+.8],TURQ,true)); } }
+    for(const [x,y] of [[-1.5,-1.5],[46.5,-1.5],[-1.5,46.5],[46.5,46.5]]) { const c=bx(g,[x,y,5],[x+3,y+3,11],VIOLET,true,.9); glows.push(c); }
+    bx(g,[20,4,-1.4],[28,12,0],MID); glows.push(bx(g,[21.5,5.5,-2.2],[26.5,10.5,-1.4],VIOLET,true)); bx(g,[18,-6,2],[30,0,14],PANEL);
+    for(const [f,t] of [[[16,32,4],[32,33,12]],[[16,15,4],[32,16,12]],[[15,16,4],[16,32,12]],[[32,16,4],[33,32,12]]]) glows.push(bx(g,f,t,TURQ,true));
+    const H=hole(g,[24,24,8],6,null,false); const solid=new THREE.Mesh(new THREE.DodecahedronGeometry(11),new THREE.MeshPhongMaterial({color:TURQ,transparent:true,opacity:.32,shininess:80})); H.h.add(solid); const edges=wire(solid,new THREE.DodecahedronGeometry(11),VIOLET); H.cage=solid; const lens=torus(H.h,9.5,.35,PLASMAL); lens.rotation.x=1.4; H.lens=lens;
+    const X=60; bx(g,[X,0,0],[X+16,2,16],PANEL); bx(g,[X,2,13],[X+16,16,16],PANEL); glows.push(bx(g,[X+1,3,15.9],[X+15,15,16.1],TURQ,true,.6));
+    for(const [a,b,c] of [[X+1,2,2],[X+13,2,2],[X+7,2,10]]) bx(g,[a,b,c],[a+2,b+13,c+2],VIOLET,true,.9);
+    for(const [f,t] of [[[X+2,13,3],[X+6,15,5]],[[X+10,13,3],[X+14,15,5]],[[X+7,13,11],[X+9,15,13]]]) bx(g,f,t,MID);
+    const h2=hole(g,[X+8,8.5,7],2.4,null,false); const s2=new THREE.Mesh(new THREE.DodecahedronGeometry(4.4),new THREE.MeshPhongMaterial({color:TURQ,transparent:true,opacity:.35})); h2.h.add(s2); wire(s2,new THREE.DodecahedronGeometry(4.4),VIOLET); h2.cage=s2;
+    bx(g,[X,0,16],[X+16,16,32],PANEL); const ring=torus(g,6.5,.9,TURQ); ring.position.set(X+8,8,32.2); glows.push(ring); bx(g,[X+5,5,31],[X+11,11,32.5],MID);
+    return t=>{ const on=state.fed; const k=on?.8+.2*Math.sin(t*2.5):.2; for(const s of glows){ s.material.transparent=true; s.material.opacity=k; }
+      for(const H2 of [H,h2]){ if(!reduce){ H2.cage.rotation.y=t*.22; H2.cage.rotation.z=t*.07; } H2.halo.visible=on; H2.cage.material.opacity=on?.32:.1; } if(H.lens){ H.lens.visible=on; if(!reduce) H.lens.rotation.z=Math.sin(t*.8)*.3; } }; }
+
+  // C. Arc Coils
+  function coils(g){ floor(g); stubs(g); const glows=[];
+    for(const [x,y] of CELLS){ bx(g,[x+3,y+3,3],[x+13,y+13,13],HULL); const horizontal=(y===16)||(x===16&&y!==16?false:true);
+      if(x===16){ for(let i=0;i<4;i++) bx(g,[x+1.5+i*3.5,y+.5,.5],[x+3.5+i*3.5,y+15.5,15.5],COPPER); } // top and bottom middle: windings stand upright
+      else if(y===16){ for(let i=0;i<4;i++) bx(g,[x+.5,y+1.5+i*3.5,.5],[x+15.5,y+3.5+i*3.5,15.5],COPPER); } // sides: windings lie flat
+      else { for(let i=0;i<4;i++) bx(g,[x+1.5+i*3.5,y+1.5+i*3.5,1],[x+14.5-i*3.5,y+14.5-i*3.5,2.2],COPPER); for(let i=0;i<4;i++) bx(g,[x+1.5+i*3.5,y+1.5+i*3.5,13.8],[x+14.5-i*3.5,y+14.5-i*3.5,15],COPPER); bx(g,[x+.5,y+.5,2.2],[x+15.5,y+15.5,13.8],HULL2); } // corners: square plates
+      glows.push(bx(g,[x+6,y+6,-.3],[x+10,y+10,0],PLASMA,true)); }
+    bx(g,[-1,47,6],[49,48.2,10],COPPER); bx(g,[-1,-.2,6],[49,1,10],COPPER); bx(g,[-1,0,6],[0,48,10],COPPER); bx(g,[48,0,6],[49.2,48,10],COPPER);
+    bx(g,[19,3,-2],[29,13,0],HULL2); glows.push(bx(g,[21,5,-2.6],[27,11,-2],PLASMAL,true)); bx(g,[18,-6,2],[30,0,14],HULL2);
+    const H=hole(g,[24,24,8],5.8,null,false); const outer=wire(H.h,new THREE.DodecahedronGeometry(12),COPPER); const inner=wire(H.h,new THREE.IcosahedronGeometry(8),PLASMA); H.cage=outer; H.inner=inner;
+    const jets=[bx(H.h,[-.6,6,-.6],[.6,10.5,.6],PLASMAL,true,.9), bx(H.h,[-.6,-10.5,-.6],[.6,-6,.6],PLASMAL,true,.9)]; H.jets=jets;
+    const X=60; bx(g,[X+2,2,2],[X+14,14,14],HULL,false,.0); for(const z of [3,8,13]) { const r=torus(g,7.6,1.1,COPPER); r.position.set(X+8,8,z); } bx(g,[X+7,0,0],[X+9,1.5,16],HULL2); bx(g,[X+7,14.5,0],[X+9,16,16],HULL2);
+    const h2=hole(g,[X+8,8,8],2.4,null,false); h2.cage=wire(h2.h,new THREE.DodecahedronGeometry(4.6),COPPER); h2.inner=wire(h2.h,new THREE.IcosahedronGeometry(3.2),PLASMA);
+    bx(g,[X,0,16],[X+16,16,32],HULL2); for(const z of [17,29]) bx(g,[X-.3,-.3,z],[X+16.3,16.3,z+2],COPPER); glows.push(bx(g,[X+5,5,32],[X+11,11,32.4],PLASMA,true));
+    return t=>{ const on=state.fed; const k=on?.7+.3*Math.sin(t*4):.15; for(const s of glows){ s.material.transparent=true; s.material.opacity=k; }
+      for(const H2 of [H,h2]){ if(!reduce){ H2.cage.rotation.y=t*.2; H2.cage.rotation.x=t*.05; H2.inner.rotation.y=-t*.6; H2.inner.rotation.z=t*.3; } H2.halo.visible=on; H2.inner.visible=on; }
+      for(const j of H.jets){ j.visible=on&&(reduce||Math.sin(t*9+j.position.y)>-.4); } }; }
+
+  // ---- one WebGL context
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:2.9,rx:.35,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.002; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['A. Containment Ring','Bolted hull blocks with a steel band, a plasma seam round the hole, the intake a drum with a porthole. In the hole a black sphere in a brass wire dodecahedron, turning slowly, with a flat blue accretion disc spinning round it. The de-accelerator is an open frame with four claws gripping a small dodecahedron, its port a solid block with a porthole.',containment],
+    ['B. Illyrium Gate','Pale casing blocks with turquoise seams and a violet crystal on each outer corner, the intake a casing block with a violet socket. In the hole a black sphere inside a solid dodecahedron of translucent turquoise glass with violet edges and a thin pale lensing ring. The de-accelerator is a cradle of three violet spikes pointing at a small glass dodecahedron, its port a casing block with a turquoise ring.',gate],
+    ['C. Arc Coils','Eight copper coils wound round hull cores, their windings facing the hole, a copper bus bar round the outside, the intake with a lit capacitor. In the hole a black sphere in a double cage, copper dodecahedron one way and blue icosahedron the other, with two short jets that flicker. The de-accelerator is a copper barrel of three rings round the small cage, its port a hull block with copper caps.',coils]],{dist:150,target:[36,20,10]});
+  el('night').onchange=e=>state.night=e.target.checked; el('fed').onchange=e=>state.fed=e.target.checked;
+})();
+</script></body></html>

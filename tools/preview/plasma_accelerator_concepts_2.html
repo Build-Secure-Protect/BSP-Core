@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accelerator Ring Round 2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Round 2 of the Plasma Accelerator look: the owner picked C Arc Coils and wants the formed ring to stop looking like blocks and read as an octagon or hexagon, with more detail and an animation for "RF connected" and "link established". Three takes, each with the de-accelerator beside it. One WebGL context draws every view. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.hb{ font-family:var(--display); font-size:13px; color:var(--fg); background:var(--panel); border:2px solid var(--line); padding:3px 10px; cursor:pointer; letter-spacing:.03em; } .hb.on{ border-color:var(--acc); color:var(--acc); }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:600px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ color:var(--muted); font-weight:600; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+button:focus-visible,input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+</style></head><body>
+<div class="wrap">
+<section><h1>Accelerator Ring, Round 2</h1>
+<p class="lede">The Arc Coils look, reworked: the eight blocks still have to be placed as a 3 x 3 ring, but once the ring forms their cubes vanish and the controller draws the whole machine as one shape. Three takes on that shape below, each with its de-accelerator beside it. The buttons step the machine through its three states: formed but without RF, RF connected (the coils wake), and a link established with plasma flowing (the full show). Drag a view to turn it.</p>
+<div class="card"><div class="ctl"><span style="color:var(--muted)">State:</span><button type="button" class="hb" data-s="0">Formed, no RF</button><button type="button" class="hb" data-s="1">RF connected</button><button type="button" class="hb on" data-s="2">Linked, delivering</button><label><input type="checkbox" id="night"> Night</label></div></div></section>
+
+<section><h2>1. Three shapes</h2><div class="grid3" id="blocks"></div></section>
+
+<section><h2>2. What each is made of</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>C1. Octagon Synchrotron</th><th>C2. Hexagon Gate</th><th>C3. Octagon Tokamak</th></tr></thead><tbody>
+<tr><td><b>Shape</b></td><td>A thick hull octagon with flat sides against the block edges, a thin copper octagon inside it, and eight coil heads on the inner face pointing at the centre.</td><td>Six hull girders meeting in copper knuckles, flats at top and bottom; six electromagnet heads at the corners; a thin copper bus hexagon round the outside.</td><td>A fat octagonal torus of hull plates wound with copper: five turns on every segment, the winding feet showing on the inner face.</td></tr>
+<tr><td><b>Formed, no RF</b></td><td>All dark: the black hole sits still in its cage, heads unlit.</td><td>Dark girders, the bus ring still, the cage still.</td><td>Copper windings dull, the plasma channel inside empty.</td></tr>
+<tr><td><b>RF connected</b></td><td>The coil heads light one after another round the ring, a slow chase; the cage begins to turn.</td><td>The windings glow and a standing ring of light appears inside the hexagon; the bus ring starts to creep round.</td><td>The windings warm up in sequence round the torus; a faint plasma ring fills the channel; the cage begins to turn.</td></tr>
+<tr><td><b>Linked, delivering</b></td><td>Charge pulses race round the copper octagon, arcs jump from the heads to the cage, the accretion disc spins, the cage turns fast.</td><td>The bus ring and the inner cage counter-rotate, jets fire up and down from the hole, the standing ring pulses with the flow.</td><td>A bright bead circulates in the plasma channel, the windings pulse in a wave, the disc spins; the faster the flow, the faster the bead.</td></tr>
+<tr><td><b>De-accelerator</b></td><td>An octagonal barrel of eight hull staves with copper hoops, the small cage inside; a hull port with a porthole.</td><td>A hexagonal barrel of six girders with copper knuckles; a port with a copper ring.</td><td>A fat wound barrel, five copper turns, the bead circulating when fed; a port with copper caps.</td></tr>
+<tr><td><b>Built with</b></td><td colspan="3">Frame and Intake blocks get a `formed` state that makes them invisible (as the crucible parts do); the Intake's block entity renderer draws the whole ring from baked parts (the shape from a generator, turned about the ring's axis) plus the moving pieces (cage, disc, pulses, arcs) in code. The render box is inflated to the ring. The de-accelerator core draws its barrel the same way over its two blocks.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>3. Decisions, with defaults</h2>
+<div class="card"><ol>
+<li><b>Shape.</b> C1, C2 or C3. Default C1, Octagon Synchrotron: the octagon fills the 3 x 3 best and the chase of lights reads as "accelerator".</li>
+<li><b>Idle.</b> Default: nothing moves without RF; with RF the ring wakes but the black hole only turns slowly; the full animation needs a link delivering.</li>
+<li><b>Sound.</b> Default: a low hum while RF is connected, the portal ambient on top while delivering.</li>
+<li><b>Light.</b> Default: light level 7 from the intake while delivering, 3 with RF only.</li>
+</ol></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x1e222b, HULL2=0x2b313d, MID=0x565c6b, TRIM=0x8a909c, COPPER=0xb87333, COPPERL=0xe8a05a, PLASMA=0x4fb8ff, PLASMAD=0x124f9c, PLASMAL=0xd8f1ff, CABLE=0x3b4252, AMBER=0xffb347;
+  const state={night:false, s:2};
+  function bx(g,f,t,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; }
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function box(g,size,at,c,glow,op){ return bx(g,[at[0]-size[0]/2,at[1]-size[1]/2,at[2]-size[2]/2],[at[0]+size[0]/2,at[1]+size[1]/2,at[2]+size[2]/2],c,glow,op); }
+  function grp(g,pos,rz){ const s=new THREE.Group(); s.position.set(...pos); if(rz) s.rotation.z=rz; g.add(s); return s; }
+  function wire(g,geo,c){ const m=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:c})); g.add(m); return m; }
+  function sphere(g,r,c,glow,op){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshPhongMaterial({color:c,shininess:10}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; } const m=new THREE.Mesh(new THREE.SphereGeometry(r,20,14),mat); g.add(m); return m; }
+  function torus(g,r,tube,c,op){ const mat=new THREE.MeshBasicMaterial({color:c}); if(op!==undefined){ mat.transparent=true; mat.opacity=op; } const m=new THREE.Mesh(new THREE.TorusGeometry(r,tube,8,48),mat); g.add(m); return m; }
+  function floor(g){ bx(g,[-24,-1,-30],[104,0,50],0x1c2026); bx(g,[-1,0,-1],[49,0.6,17],0x242933); } // the ring's footprint on the floor
+  function stubs(g){ bx(g,[21,-14,5],[27,-6,11],CABLE); bx(g,[22,-14,6],[26,-6,10],PLASMAD,true); bx(g,[65,5,32],[71,11,42],CABLE); bx(g,[66,5,33],[70,11,42],PLASMAD,true); }
+  // a regular polygon of n box segments in the XY plane at centre c, apothem a, each segment size [thick, len, depth]; off turns the whole polygon
+  function poly(g,n,a,thick,depth,c,colour,off,glow){ const segs=[], len=2*a*Math.tan(Math.PI/n)+thick*0.8; const G=grp(g,c);
+    for(let i=0;i<n;i++){ const s=grp(G,[0,0,0],i*2*Math.PI/n+(off||0)); segs.push(box(s,[thick,len,depth],[a,0,0],colour,glow)); } G.segs=segs; return G; }
+  // a point on that polygon's path at angle th (same centre and apothem)
+  function onPoly(n,a,th,off){ const k=2*Math.PI/n; const local=((th-(off||0))%k+k)%k-k/2; const r=a/Math.cos(local); return [Math.cos(th)*r, Math.sin(th)*r]; }
+  function hole(g,at,r,disc){ const h=grp(g,at); sphere(h,r,0x000000,true); const halo=sphere(h,r*1.1,PLASMAD,true,.35); const d=disc?torus(h,r*1.4,r*.08,PLASMA):null; if(d) d.rotation.x=1.25; return {h,halo,disc:d}; }
+  function setOp(m,k){ m.material.transparent=true; m.material.opacity=k; }
+  const C=[24,24,8], X=60;
+
+  // C1. Octagon Synchrotron
+  function synchrotron(g){ floor(g); stubs(g);
+    const outer=poly(g,8,21,5.5,12,C,HULL2,0); poly(g,8,23.6,0.8,1.6,[24,24,1],TRIM,0); poly(g,8,23.6,0.8,1.6,[24,24,15],TRIM,0); // hull octagon with trim rings on both faces
+    const inner=poly(g,8,13.5,1.4,1.4,C,COPPER,0); // the copper track the pulses run on
+    const heads=[]; for(let i=0;i<8;i++){ const s=grp(g,C,i*Math.PI/4); box(s,[4,6,6],[16,0,0],HULL); const h=box(s,[1.2,4,4],[13.6,0,0],AMBER,true); for(const dx of [15,17]) { const t=torus(s,3.4,.6,COPPER); t.position.set(dx,0,0); t.rotation.y=Math.PI/2; } heads.push(h); }
+    box(g,[12,8,4],[24,2,-2],HULL2); const cap=box(g,[6,4,1],[24,2,-4.4],PLASMAL,true); // the intake drum below the ring, with its lit window
+    const H=hole(g,C,5.6,true); const cage=wire(H.h,new THREE.DodecahedronGeometry(10.5),COPPER); const icos=wire(H.h,new THREE.IcosahedronGeometry(7),PLASMA);
+    const pulses=[]; for(let i=0;i<6;i++) pulses.push(sphere(g,1.1,PLASMAL,true));
+    const arcs=[]; for(let i=0;i<8;i++){ const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]); const l=new THREE.Line(geo,new THREE.LineBasicMaterial({color:PLASMAL})); g.add(l); arcs.push(l); }
+    // de-accelerator: octagonal barrel along z, copper hoops
+    for(let i=0;i<8;i++){ const s=new THREE.Group(); s.position.set(X+8,8,8); s.rotation.z=i*Math.PI/4+Math.PI/8; g.add(s); box(s,[1.6,6.2,15],[7,0,0],HULL2); }
+    for(const z of [2.5,8,13.5]) { const t=torus(g,8.2,.7,COPPER); t.position.set(X+8,8,z); }
+    const h2=hole(g,[X+8,8,8],2.4,false); const cage2=wire(h2.h,new THREE.DodecahedronGeometry(4.4),COPPER);
+    bx(g,[X,0,16],[X+16,16,32],HULL2); bx(g,[X-.3,6,18],[X+16.3,10,30],TRIM); const port=bx(g,[X+4,4,32],[X+12,12,32.4],PLASMA,true);
+    return t=>{ const s=state.s, rf=s>=1, on=s>=2;
+      heads.forEach((h,i)=>{ const chase=rf?Math.max(.15,Math.sin(t*3-i*Math.PI/4)):0; setOp(h,on?.8+.2*Math.sin(t*6+i):Math.max(.08,chase)); });
+      setOp(cap,rf?.9:.15); setOp(port,on?1:.2); H.halo.visible=on; H.disc.visible=on; icos.visible=on; h2.halo.visible=on;
+      if(!reduce){ const w=on?.9:rf?.15:0; cage.rotation.y+=w*.016; cage.rotation.x+=w*.007; icos.rotation.y-=.02; cage2.rotation.y+=w*.016; }
+      pulses.forEach((p,i)=>{ p.visible=on; if(on){ const th=t*2.2+i*Math.PI/3; const [x,y]=onPoly(8,13.5,th,0); p.position.set(C[0]+x,C[1]+y,8); } });
+      arcs.forEach((l,i)=>{ const show=on&&Math.sin(t*7+i*1.7)>.55; l.visible=show; if(show){ const a=i*Math.PI/4; const pos=l.geometry.attributes.position; pos.setXYZ(0,C[0]+Math.cos(a)*13,C[1]+Math.sin(a)*13,8); pos.setXYZ(1,C[0]+Math.cos(a+Math.sin(t*9+i))*7,C[1]+Math.sin(a+Math.cos(t*8+i))*7,8+Math.sin(t*11+i)*2); pos.needsUpdate=true; } }); }; }
+
+  // C2. Hexagon Gate
+  function hexgate(g){ floor(g); stubs(g); const OFF=Math.PI/6;
+    const girders=poly(g,6,21,6,12,C,HULL2,OFF); const bands=[]; for(let i=0;i<6;i++){ const s=grp(g,C,i*Math.PI/3+OFF); for(const dy of [-7,0,7]) bands.push(box(s,[7.2,1.6,13.2],[21,dy,0],COPPER,true)); }
+    for(let i=0;i<6;i++){ const s=grp(g,C,i*Math.PI/3+OFF+Math.PI/6); box(s,[6,6,13],[24.2,0,0],MID); const k=torus(s,3.2,.8,COPPER); k.position.set(24.2,0,0); k.rotation.y=Math.PI/2; } // knuckles
+    const heads=[]; for(let i=0;i<6;i++){ const s=grp(g,C,i*Math.PI/3+OFF+Math.PI/6); box(s,[5,4,4],[18.5,0,0],HULL); heads.push(box(s,[1,3,3],[15.8,0,0],PLASMA,true)); }
+    const bus=poly(g,6,27.5,1.2,2,[24,24,-1],COPPER,OFF); const bus2=poly(g,6,27.5,1.2,2,[24,24,17],COPPER,OFF);
+    const standing=torus(g,13,.5,PLASMA,.7); standing.position.set(...C);
+    box(g,[12,8,4],[24,2,-2],HULL2); const sock=box(g,[5,4,1],[24,2,-4.4],PLASMA,true);
+    const H=hole(g,C,5.4,false); const cage=wire(H.h,new THREE.DodecahedronGeometry(10),COPPER); const icos=wire(H.h,new THREE.IcosahedronGeometry(6.8),PLASMA);
+    const jets=[box(H.h,[1.2,6,1.2],[0,9,0],PLASMAL,true,.9), box(H.h,[1.2,6,1.2],[0,-9,0],PLASMAL,true,.9)];
+    for(let i=0;i<6;i++){ const s=new THREE.Group(); s.position.set(X+8,8,8); s.rotation.z=i*Math.PI/3; g.add(s); box(s,[2,8.2,15],[6.8,0,0],HULL2); const k=torus(s,1.6,.5,COPPER); k.position.set(6.8,4.1,8); k.rotation.y=Math.PI/2; }
+    const h2=hole(g,[X+8,8,8],2.3,false); const cage2=wire(h2.h,new THREE.DodecahedronGeometry(4.2),COPPER);
+    bx(g,[X,0,16],[X+16,16,32],HULL2); const ring=torus(g,6.4,.9,COPPER); ring.position.set(X+8,8,32.2); const port=bx(g,[X+5,5,31],[X+11,11,32.5],PLASMA,true);
+    return t=>{ const s=state.s, rf=s>=1, on=s>=2;
+      bands.forEach((b,i)=>{ b.material.color.setHex(rf?COPPERL:COPPER); setOp(b,rf?(on?.75+.25*Math.sin(t*4+i*.6):.6+.15*Math.sin(t*1.5+i*.4)):1); });
+      heads.forEach((h,i)=>setOp(h,on?.9:rf?.35+.2*Math.sin(t*2+i):.08)); standing.visible=rf; setOp(standing,on?.6+.3*Math.sin(t*5):.35); setOp(sock,rf?.9:.15); setOp(port,on?1:.2);
+      H.halo.visible=on; icos.visible=on; h2.halo.visible=on; jets.forEach((j,i)=>j.visible=on&&(reduce||Math.sin(t*9+i*2)>-.3));
+      if(!reduce){ const w=on?.9:rf?.15:0; cage.rotation.y+=w*.016; cage.rotation.z+=w*.005; icos.rotation.y-=.025; cage2.rotation.y+=w*.016; bus.rotation.z+=w*.006; bus2.rotation.z-=w*.006; } }; }
+
+  // C3. Octagon Tokamak
+  function tokamak(g){ floor(g); stubs(g);
+    const body=poly(g,8,20.5,9,14,C,HULL,0); const turns=[]; for(let i=0;i<8;i++){ const s=grp(g,C,i*Math.PI/4); const len=2*20.5*Math.tan(Math.PI/8); for(let k=0;k<5;k++){ const dy=-len/2+len*(k+.5)/5; turns.push(box(s,[9.4,1.5,15.6],[19.3,dy,0],COPPER)); } box(s,[2,len+1,2],[15.6,0,-7.5],MID); box(s,[2,len+1,2],[15.6,0,7.5],MID); } // winding feet on the inner face
+    const channel=torus(g,20.5,2.2,PLASMA,.35); channel.position.set(...C); const bead=sphere(g,1.6,PLASMAL,true);
+    box(g,[12,8,4],[24,2,-2],HULL2); const capb=box(g,[6,4,1],[24,2,-4.4],AMBER,true); box(g,[1,3,1],[30,4,-3],TRIM); box(g,[1,1,3],[30,5.5,-3],TRIM); // a lever on the intake
+    const H=hole(g,C,5,true); const cage=wire(H.h,new THREE.DodecahedronGeometry(9),COPPER); const icos=wire(H.h,new THREE.IcosahedronGeometry(6.2),PLASMA);
+    for(let i=0;i<8;i++){ const s=new THREE.Group(); s.position.set(X+8,8,8); s.rotation.z=i*Math.PI/4+Math.PI/8; g.add(s); box(s,[3,5.8,16],[6.5,0,0],HULL); }
+    const turns2=[]; for(const z of [1.5,4.5,8,11.5,14.5]) { const t=torus(g,8.6,.9,COPPER); t.position.set(X+8,8,z); turns2.push(t); }
+    const h2=hole(g,[X+8,8,8],2.2,false); const cage2=wire(h2.h,new THREE.DodecahedronGeometry(4),COPPER); const bead2=sphere(g,.8,PLASMAL,true);
+    bx(g,[X,0,16],[X+16,16,32],HULL2); for(const z of [17,29]) bx(g,[X-.3,-.3,z],[X+16.3,16.3,z+2],COPPER); const port=bx(g,[X+5,5,32],[X+11,11,32.4],PLASMA,true);
+    return t=>{ const s=state.s, rf=s>=1, on=s>=2;
+      turns.forEach((b,i)=>{ const seg=Math.floor(i/5); const warm=rf?(on?.5+.5*Math.max(0,Math.sin(t*4-seg*Math.PI/4-(i%5)*.2)):.3+.3*Math.max(0,Math.sin(t*1.2-seg*Math.PI/4))):0; b.material.color.setHex(COPPER).lerp(new THREE.Color(COPPERL),warm); });
+      turns2.forEach((b,i)=>b.material.color.setHex(COPPER).lerp(new THREE.Color(COPPERL),on?.5+.5*Math.sin(t*4-i):rf?.3:0));
+      channel.visible=rf; setOp(channel,on?.45+.15*Math.sin(t*3):.2); setOp(capb,rf?.9:.15); setOp(port,on?1:.2); bead.visible=on; bead2.visible=on;
+      if(on){ const th=t*2.6; const [x,y]=onPoly(8,20.5,th,0); bead.position.set(C[0]+x,C[1]+y,8); const th2=-t*3; bead2.position.set(X+8+Math.cos(th2)*6.2,8+Math.sin(th2)*6.2,8); }
+      H.halo.visible=on; H.disc.visible=on; icos.visible=on; h2.halo.visible=on;
+      if(!reduce){ const w=on?.9:rf?.15:0; cage.rotation.y+=w*.016; cage.rotation.x+=w*.006; icos.rotation.z-=.02; cage2.rotation.y+=w*.016; } }; }
+
+  // ---- one WebGL context
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,2000); const amb=new THREE.AmbientLight(0xffffff,.75); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={view,scene,cam,tick,opts,amb,d,ry:2.75,rx:.3,drag:false}; let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth, H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; v.amb.intensity=state.night?.14:.75; v.d.intensity=state.night?.12:.7; v.tick(t); if(!reduce&&!v.drag) v.ry+=.0015; const D=v.opts.dist, T=v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); } }
+  cards('blocks',[['C1. Octagon Synchrotron','A thick hull octagon with trim rings on both faces and a thin copper track inside it; eight coil heads with copper rings point at the centre. With RF the heads light in a chase round the ring. Delivering, charge pulses race round the track, arcs jump from the heads to the cage, the disc spins.',synchrotron],
+    ['C2. Hexagon Gate','Six hull girders banded with copper, copper knuckles at the corners, six electromagnet heads pointing in, a copper bus hexagon round the outside. With RF the bands glow and a standing ring of light appears inside. Delivering, the bus ring and the inner cage counter-rotate and jets fire from the hole.',hexgate],
+    ['C3. Octagon Tokamak','A fat octagonal torus of hull plates wound with five copper turns a segment, the winding feet on the inner face, a plasma channel inside the torus. With RF the windings warm in sequence and the channel fills faintly. Delivering, a bright bead circulates in the channel, the windings pulse in a wave, the disc spins.',tokamak]],{dist:150,target:[36,20,10]});
+  el('night').onchange=e=>state.night=e.target.checked;
+  for(const b of document.querySelectorAll('.hb[data-s]')) b.onclick=()=>{ state.s=+b.dataset.s; for(const o of document.querySelectorAll('.hb[data-s]')) o.classList.toggle('on',o===b); };
+})();
+</script></body></html>

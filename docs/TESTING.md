@@ -975,3 +975,81 @@ Setup: creative, the guide book, a second account that is not an admin.
 - [ ] The Scores entry no longer has a Score Screen recipe page; the points, seasons and counting pages are still there.
 - [ ] JEI and EMI show no recipe for the Score Screen.
 - [ ] The Score Screen is still in the BSP creative tab. An admin places it as before. The second account, holding one from the creative menu, cannot place it and sees the red admin message.
+
+## Plasma Accelerator, part 1: forming (2026-10-16)
+
+Setup: creative, the four new blocks from the BSP tab (Accelerator Intake, Accelerator Frame, Decelerator Core, Decelerator Port). Nothing flows yet: this part is the shapes only. The cube looks are placeholders.
+
+- [ ] Place an Accelerator Intake. It faces you. Put seven Accelerator Frames round it so they make a 3 x 3 standing up across your view (two beside the intake, two above those, three along the top), leaving the middle empty. Within a second the intake and every frame switch to the formed look (lit orange bands on the frames, the intake's porthole lit) and the intake gives light.
+- [ ] Put any block in the middle of the ring: within a second the ring un-forms (bands grey). Break that block: it forms again.
+- [ ] Break a frame: the ring un-forms at once. Put it back: formed again within a second. Break the intake: the frames un-form at once.
+- [ ] A ring built in the wrong plane (frames in front of and behind the intake instead of beside it) never forms.
+- [ ] Place a Decelerator Core (it faces you) and a Decelerator Port directly behind it: within a second both show the formed look (the core's arms lit, the port's windows blue). A port in front of or beside the core does nothing. Break either block: the other un-forms at once.
+- [ ] Jade shows the block names; nothing more yet.
+
+## Plasma Accelerator, part 2: Link Cards and Link Expanders (2026-10-16)
+
+Setup: creative, a formed accelerator (part 1), Link Cards and Link Expanders from the BSP tab, two or three Decelerators (core with a port behind it), one of them in the Nether if you like. Nothing flows yet.
+
+- [ ] Right-click the Accelerator Intake with a stack of blank Link Cards: one card is written ("Link Card written: Overworld 12, 64, -30"), glints, and its tooltip names the accelerator; the rest of the stack stays blank. Right-click again with the written card: red, "already names".
+- [ ] Right-click a Decelerator Core with the written card: "Linked to the accelerator at ...", the card is taken. Right-click the core empty-handed: "Plasma Decelerator, linked to ...". Sneak and right-click it empty-handed: the card comes back and the core says "Unlinked".
+- [ ] Link the first core again, then try a second core: red, "no free link". Right-click the intake with a Link Expander: "Link Expander fitted (1 of 2): 2 links now". The second core links. A third expander is refused ("already holds 2").
+- [ ] Sneak and right-click the intake empty-handed with every link in use: red "Every link is in use". Unlink a core, try again: an expander comes back.
+- [ ] Break a linked core: its card drops and the intake's count (right-click it empty-handed) goes down by one. Break the intake: fitted expanders drop.
+- [ ] A core in the Nether linked with a card written in the Overworld reports the Overworld accelerator by world and coordinates, and the intake counts it.
+- [ ] Leave and rejoin the world: the intake's links and expanders and the cores' cards are still there.
+
+## Plasma Accelerator, part 3: the hop (2026-10-16)
+
+Setup: creative, a totem with Output and Overclock on an extractor, an interface and a cable into a formed Accelerator Intake, a formed Decelerator in the Nether linked with a card, an RF source on both ends (any mod's generator and cable into a Frame and into the Core). Nothing leaves the Decelerator yet: this part is the hop only.
+
+- [ ] Right-click the intake empty-handed: "taking N mB/t" shows the run's pressure, "sending N mB/t" matches it once the far side has RF, "RF x / 200,000" falls while sending. Right-click the core: "N mB/t arriving, RF x / 200,000" falls while receiving.
+- [ ] Cut the RF to the core: within a second the intake sends nothing (its line says sending 0) and the core's RF stops falling. Restore it: sending resumes. Cut the RF to the intake: the same from the other side.
+- [ ] Link a second Decelerator (fit a Link Expander): the intake's sending figure splits between them. Cut RF to one: the other gets the whole flow.
+- [ ] Leave the Nether chunk (walk far away or go to the Overworld with nothing keeping it loaded): within a minute the intake sends a second's worth (`linkWakeSeconds` 60), then sleeps again. Lower `linkWakeSeconds` to 5 in the server config to watch it.
+- [ ] A stranger (second account) cannot write a Link Card at an intake that has been fed by your totem: red "Only the users of the totem...". A friend with Machines access on the totem can.
+- [ ] Leave and rejoin: the intake's and the core's buffers, RF and anchor totem survive.
+
+## Plasma Accelerator, part 4: the far side sends it on (2026-10-16)
+
+Setup: the part 3 setup, plus in the Nether a cable from the Decelerator Port's back into a Projector Base with a Projector on it, and a Plasma Injector on a machine on another cable from the port's side. The totem has Anchor II and Overclock.
+
+- [ ] Cables snap onto the Accelerator Intake and the Decelerator Port on any face (the pipe arms appear).
+- [ ] The core's line reads "N mB/t arriving, N mB/t sent on". The base fills, the projector's screen offers the totem's powers (Anchor and the rest); pick Anchor: the projector's chunk loading screen shows the Overworld totem's allowance and the projector's chunk goes in. Leave the Nether and look at the chunk from the Overworld side (Jade on the totem, or a hopper clock in the Nether chunk): it stays loaded.
+- [ ] The injector in the Nether speeds its machine, with the Overclock bonus from the Overworld totem (Jade: "Injecting N mB/t: xN speed").
+- [ ] Cut the Overworld cable: within a few seconds the base runs dry, the projector stops and the Nether chunks unload (unless something else keeps them). Reconnect: the accelerator wakes the far side within a minute and the projector relights its chunk.
+- [ ] A Decelerator Port's cable into another Accelerator Intake (Nether to End) chains: the End decelerator receives, each hop burning its own RF.
+
+## Plasma Accelerator, part 5: the Worlds board and Jade (2026-10-16)
+
+Setup: the part 4 setup with two or three Decelerators linked, in two worlds if you can (one Nether, one Overworld), Jade installed.
+
+- [ ] Right-click the Accelerator Intake empty-handed: the Worlds board opens. One column per world in play (Overworld, Nether, The End in that order, others after), the accelerator a gold pip under "this accelerator", each link a pip in its world's column with its coordinates and state under it, a line from the accelerator to each. A delivering link's line is blue and its state reads "N mB/t" in green; a sleeping one's line is grey and dashed with "Asleep: far side unloaded" in red; no RF there, no port, full and gone each say so.
+- [ ] The status line reads "Taking N mB/t, sending N mB/t, RF x / 200,000" and updates every second; top right "N of M links" (red "Ring unfinished" if a frame is missing); the foot lists the powers the plasma carries ("Carries Overclock III, Anchor II") in gold or "Carries no powers yet".
+- [ ] Nothing on the board runs past the frame with three links in one column or with a long world name (a mining dimension); long lines shrink.
+- [ ] Hover a link pip: a tooltip with the world, the coordinates and the state. Click it: it turns gold and UNLINK lights. UNLINK: the pip goes within a second and the card drops beside that Decelerator Core (go and look). ESC and DONE close the board.
+- [ ] WAKE with a link asleep: within a second the line lights for a few seconds and the far side's base fills; then it sleeps again.
+- [ ] A second account without Machines access on the totem can open the board but UNLINK and WAKE do nothing for them.
+- [ ] Jade on the intake: "Links 2 of 3: taking N mB/t, sending N mB/t" and "RF x / 200,000"; on an unfinished ring "Ring unfinished: N frame(s) missing" (or "the middle must be empty"). On a frame: "Part of a Plasma Accelerator" or "Not part of a ring yet". On a core: "Linked to Overworld 12, 64, -30: N mB/t arriving, N mB/t sent on" and the RF line, or "No Link Card in it", or "No Decelerator Port behind it". On a port: "Sending N mB/t into its cables", "Nothing to send" or "No Decelerator Core in front of it".
+
+## Plasma Accelerator, part 6: the look (2026-10-16)
+
+Setup: the part 4 setup. The looks were built from the round-2 mock-up (`tools/preview/plasma_accelerator_concepts_2.html`, C1) without a client run, so check sizes, overlaps and directions first.
+
+- [ ] Place the eight blocks: cubes until the ring forms, then they vanish and the octagon appears in their place, flats at the top and bottom, the intake's window at the front (the side you placed it from) on the bottom segment, nothing poking out of the 3 x 3 x 1 space; the hole shows the black sphere in a still brass cage. The ring draws from far away (96 blocks) and when only its corner is on screen.
+- [ ] Break any frame: the cubes come back at once. Replace it: the octagon again within a second.
+- [ ] Connect RF with no link delivering: within a second the heads light one after another round the ring, the window brightens, the cage turns slowly, the intake gives light 3 (F3 light level) and hums every three seconds.
+- [ ] A link delivering: pulses race round the copper track, arcs flicker from the heads, the blue inner cage turns against the brass one, the disc spins, the hole gives light 7, portal particles drift, the portal murmur plays now and then. Cut the RF: everything stops within a second and the heads go dark.
+- [ ] The Decelerator: core and port cubes until formed, then the barrel with its three copper hoops and the port block behind with a band and portholes. With RF the hoops glow copper; while plasma arrives the small hole's blue halo and the cage's second ring show; while plasma leaves, the portholes glow blue. Break the port: cubes again.
+- [ ] Both machines from four facings: the window and the port stay on the right sides; nothing is mirrored.
+- [ ] Performance: with three rings and six decelerators in view the frame rate holds.
+
+## Plasma Accelerator, part 7: recipes, JEI, EMI and the guide (2026-10-16)
+
+Setup: survival or creative with JEI (or EMI) and the guide book.
+
+- [ ] JEI shows a crafting recipe for each of the six: Accelerator Frame (makes 2), Accelerator Intake (with a Nether Star), Decelerator Core, Decelerator Port, Link Card, Link Expander; every ingredient is a known item (no missing-texture squares).
+- [ ] JEI's information page on the intake, a frame, a card and an expander reads the accelerator text; on the core and the port, the decelerator text. EMI shows the same two pages.
+- [ ] The guide book's Totems category has "Plasma Across Worlds" after "The Plasma Injector": nine pages, three recipe pages showing two recipes each, no page title running off the edge, nothing that reads like a change log.
+- [ ] Crafting in survival: the frame recipe gives two.
+

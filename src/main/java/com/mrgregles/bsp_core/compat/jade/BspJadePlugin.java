@@ -47,6 +47,9 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.machine.MachineBlockEntity.class);
         registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.LinkPartBlockEntity.class);
+        registration.registerBlockDataProvider(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.DeceleratorBlockEntity.class);
         registration.registerBlockDataProvider(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.MarketStallBlockEntity.class);
         registration.registerBlockDataProvider(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.VendorPostBlockEntity.class);
     }
@@ -61,6 +64,10 @@ public class BspJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.machine.MachineBlock.class);
         registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.coin.CoinFactoryBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.AcceleratorFrameBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.DeceleratorCoreBlock.class);
+        registration.registerBlockComponent(PlasmaLine.INSTANCE, com.mrgregles.bsp_core.link.DeceleratorPortBlock.class);
         registration.registerBlockComponent(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.MarketStallBlock.class);
         registration.registerBlockComponent(VenueLine.INSTANCE, com.mrgregles.bsp_core.shop.VendorPostBlock.class);
         registration.addRayTraceCallback((hit, accessor, original) -> redirect(registration, accessor));
@@ -195,6 +202,27 @@ public class BspJadePlugin implements IWailaPlugin {
                     data.putInt("PortIn", port.in());
                     data.putInt("PortOut", port.out());
                 }
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.link.AcceleratorBlockEntity intake) {
+                data.putBoolean("AccFormed", intake.isFormed());
+                data.putInt("AccMissing", intake.missingFrames().size());
+                data.putInt("AccLinks", intake.links().size());
+                data.putInt("AccMax", intake.maxLinks());
+                data.putInt("AccIn", intake.inRate());
+                data.putInt("AccOut", intake.outRate());
+                data.putInt("LinkRf", intake.energy().getEnergyStored());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.link.DeceleratorPortBlockEntity port) {
+                data.putBoolean("PortFormed", port.controller() != null);
+                data.putInt("PortOut", port.out());
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.link.LinkPartBlockEntity frame) {
+                data.putBoolean("FrameFormed", frame.controller() != null);
+            } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.link.DeceleratorBlockEntity core) {
+                data.putBoolean("DecFormed", core.isFormed());
+                if (core.accelerator() != null) {
+                    data.putString("DecLink", com.mrgregles.bsp_core.link.Links.describe(core.accelerator()).getString());
+                }
+                data.putInt("DecIn", core.inRate());
+                data.putInt("DecOut", core.outRate());
+                data.putInt("LinkRf", core.energy().getEnergyStored());
             } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity injector) {
                 data.putInt("InjRate", injector.rate());
                 data.putDouble("InjFactor", injector.factor());
@@ -251,6 +279,35 @@ public class BspJadePlugin implements IWailaPlugin {
                     var mode = com.mrgregles.bsp_core.tank.TankPortBlockEntity.Mode.values()[Math.min(2, Math.max(0, d.getByte("PortMode")))];
                     tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_port", net.minecraft.network.chat.Component.translatable(mode.key()), d.getInt("PortIn"), d.getInt("PortOut"))
                             .withStyle(net.minecraft.ChatFormatting.GOLD));
+                }
+            } else if (d.contains("AccFormed")) {
+                if (d.getBoolean("AccFormed")) {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.accelerator", d.getInt("AccLinks"), d.getInt("AccMax"), d.getInt("AccIn"), d.getInt("AccOut"))
+                            .withStyle(d.getInt("AccOut") > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.link_rf", String.format("%,d", d.getInt("LinkRf")), String.format("%,d", com.mrgregles.bsp_core.link.LinkEnergy.capacity())).withStyle(net.minecraft.ChatFormatting.GOLD));
+                } else {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable(d.getInt("AccMissing") > 0 ? "jade.bsp_core.accelerator_unformed" : "jade.bsp_core.accelerator_hole", d.getInt("AccMissing")).withStyle(net.minecraft.ChatFormatting.YELLOW));
+                }
+            } else if (d.contains("PortFormed")) {
+                if (!d.getBoolean("PortFormed")) {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.decelerator_port_loose").withStyle(net.minecraft.ChatFormatting.YELLOW));
+                } else {
+                    int out = d.getInt("PortOut");
+                    tooltip.add(net.minecraft.network.chat.Component.translatable(out > 0 ? "jade.bsp_core.decelerator_port" : "jade.bsp_core.decelerator_port_idle", out).withStyle(out > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+                }
+            } else if (d.contains("FrameFormed")) {
+                tooltip.add(net.minecraft.network.chat.Component.translatable(d.getBoolean("FrameFormed") ? "jade.bsp_core.accelerator_frame" : "jade.bsp_core.accelerator_frame_loose")
+                        .withStyle(d.getBoolean("FrameFormed") ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.YELLOW));
+            } else if (d.contains("DecFormed")) {
+                if (!d.getBoolean("DecFormed")) {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.decelerator_unformed").withStyle(net.minecraft.ChatFormatting.YELLOW));
+                }
+                if (d.contains("DecLink")) {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.decelerator_linked", d.getString("DecLink"), d.getInt("DecIn"), d.getInt("DecOut"))
+                            .withStyle(d.getInt("DecIn") > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.link_rf", String.format("%,d", d.getInt("LinkRf")), String.format("%,d", com.mrgregles.bsp_core.link.LinkEnergy.capacity())).withStyle(net.minecraft.ChatFormatting.GOLD));
+                } else {
+                    tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.decelerator_unlinked").withStyle(net.minecraft.ChatFormatting.GRAY));
                 }
             } else if (d.contains("InjRate")) {
                 int rate = d.getInt("InjRate");

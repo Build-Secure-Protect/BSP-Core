@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RSR",
+    "ZCZ",
+    "PHP"
+  ],
+  "key": {
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "S": {
+      "item": "minecraft:nether_star"
+    },
+    "Z": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "C": {
+      "item": "bsp_core:charged_illyrium_core_cable"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "H": {
+      "item": "bsp_core:machine_chassis"
+    }
+  },
+  "result": {
+    "item": "bsp_core:accelerator_intake"
+  }
+}

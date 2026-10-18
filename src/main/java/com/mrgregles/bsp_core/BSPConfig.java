@@ -105,6 +105,10 @@ public final class BSPConfig {
             PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX, INTERFACE_SIDE_MAX, TANK_PER_BLOCK, TANK_MAX;
     /** Plasma Injector: the speed curve (mB/t points and the factor at each), and whether other mods' machines may be ticked extra. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> INJECTOR_RATES;
+    /** Plasma between worlds: the Accelerator's links and the worlds a link may not touch. */
+    public static final ForgeConfigSpec.IntValue ACCELERATOR_LINKS, LINK_EXPANDER_MAX, ACCELERATOR_MAX, ACCELERATOR_RF, DECELERATOR_RF, LINK_RF_CAPACITY, LINK_WAKE_SECONDS;
+    public static final ForgeConfigSpec.DoubleValue LINK_LOSS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LINK_DIMENSION_BLACKLIST;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> INJECTOR_FACTORS;
     public static final ForgeConfigSpec.BooleanValue INJECTOR_FOREIGN;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> INJECTOR_BLACKLIST;
@@ -423,6 +427,17 @@ public final class BSPConfig {
                 .define("injectorForeign", true);
         INJECTOR_BLACKLIST = BUILDER.comment("Blocks an injector must not tick extra (registry names, e.g. \"mekanism:digital_miner\").")
                 .defineListAllowEmpty(List.of("injectorBlacklist"), List::of, o -> o instanceof String);
+        ACCELERATOR_LINKS = BUILDER.comment("Links a Plasma Accelerator holds with no Link Expander fitted (one Decelerator per link).").defineInRange("acceleratorLinks", 1, 1, 16);
+        LINK_EXPANDER_MAX = BUILDER.comment("Most Link Expanders one Accelerator Intake takes; each adds one link.").defineInRange("linkExpanderMax", 2, 0, 16);
+        ACCELERATOR_MAX = BUILDER.comment("Most mB per tick a Plasma Accelerator takes in over every run feeding it; each run gives a face's worth at most.").defineInRange("acceleratorMax", 3000, 10, 1_000_000);
+        ACCELERATOR_RF = BUILDER.comment("RF per tick a Plasma Accelerator burns while any link is delivering.").defineInRange("acceleratorRfPerTick", 1000, 0, 1_000_000);
+        DECELERATOR_RF = BUILDER.comment("RF per tick a Plasma Decelerator burns while receiving.").defineInRange("deceleratorRfPerTick", 100, 0, 1_000_000);
+        LINK_RF_CAPACITY = BUILDER.comment("RF an Accelerator Intake or a Decelerator Core holds.").defineInRange("linkRfCapacity", 200_000, 1000, Integer.MAX_VALUE);
+        LINK_WAKE_SECONDS = BUILDER.comment("How often, in seconds, an accelerator loads a sleeping far side (an unloaded chunk) for a moment and delivers, so a projector there can relight its own chunk loading. 0 never wakes it.")
+                .defineInRange("linkWakeSeconds", 60, 0, 86_400);
+        LINK_LOSS = BUILDER.comment("Share of the plasma lost on every hop through a link (0 = none).").defineInRange("linkLoss", 0.0, 0.0, 0.99);
+        LINK_DIMENSION_BLACKLIST = BUILDER.comment("Worlds a plasma link may not start or end in (dimension ids, e.g. \"minecraft:the_end\").")
+                .defineListAllowEmpty(List.of("linkDimensionBlacklist"), List::of, o -> o instanceof String);
         BUILDER.pop();
 
         BUILDER.comment("The Coin Vault: a safe for Shatter Coins. Vault blocks of one owner that touch join into one vault of up to 3 x 3 x 3.").push("vault");

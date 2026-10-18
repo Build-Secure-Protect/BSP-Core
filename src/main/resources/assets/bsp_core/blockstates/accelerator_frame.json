@@ -1,0 +1,10 @@
+{
+ "variants": {
+  "formed=false": {
+   "model": "bsp_core:block/accelerator_frame"
+  },
+  "formed=true": {
+   "model": "bsp_core:block/accelerator_frame_formed"
+  }
+ }
+}

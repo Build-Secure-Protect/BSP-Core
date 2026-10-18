@@ -166,7 +166,7 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
     }
 
     @Override
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
         source = master.immutable();
         System.arraycopy(offeredByOrdinal, 0, offered, 0, offered.length);
         delivered = deliveredPerTick;

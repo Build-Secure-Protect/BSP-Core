@@ -17,6 +17,8 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -1273,5 +1275,356 @@ public class BspGameTests {
             h.assertTrue(!r.ok() && r.message().contains("not installed"), "and a plain answer why: " + r.message());
         }
         h.succeed();
+    }
+
+    // ------------------------------------------------------------------ plasma between worlds
+
+    /** The seven frames of a ring whose intake at {@code intake} faces north: right is east. */
+    private static List<BlockPos> ringFrames(BlockPos intake) {
+        List<BlockPos> out = new ArrayList<>();
+        for (int[] c : new int[][]{{-1, 0}, {1, 0}, {-1, 1}, {1, 1}, {-1, 2}, {0, 2}, {1, 2}}) {
+            out.add(intake.east(c[0]).above(c[1]));
+        }
+        return out;
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void accelerator_ring_forms_when_seven_frames_stand_round_an_empty_middle(GameTestHelper h) {
+        BlockPos intake = new BlockPos(4, 1, 4), hole = intake.above();
+        h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
+        for (BlockPos p : ringFrames(intake)) {
+            h.setBlock(p, ModBlocks.ACCELERATOR_FRAME.get());
+        }
+        h.setBlock(hole, Blocks.STONE); // the middle must be empty: with a block there the ring stays unformed
+        h.runAfterDelay(45, () -> {
+            var be = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
+            h.assertTrue(!be.isFormed(), "not formed while the middle is blocked");
+            h.assertTrue(be.hole().equals(h.absolutePos(hole)), "the controller knows where the middle is");
+            h.setBlock(hole, Blocks.AIR);
+            h.runAfterDelay(25, () -> {
+                h.assertTrue(be.isFormed(), "formed once the middle is clear");
+                h.assertBlockProperty(intake, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
+                for (BlockPos p : ringFrames(intake)) {
+                    h.assertBlockProperty(p, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
+                    h.assertTrue(h.absolutePos(intake).equals(entity(h, p, com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller()), "every frame knows the intake");
+                }
+                h.assertTrue(be.missingFrames().isEmpty(), "nothing missing");
+                BlockPos corner = intake.east().above(2);
+                h.setBlock(corner, Blocks.AIR);
+                h.runAfterDelay(3, () -> {
+                    h.assertTrue(!be.isFormed(), "a broken frame un-forms the ring at once");
+                    h.assertBlockProperty(intake, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
+                    h.assertBlockProperty(intake.west(), com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
+                    h.assertTrue(entity(h, intake.west(), com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "the frames are freed");
+                    h.assertTrue(be.missingFrames().size() == 1 && be.missingFrames().get(0).equals(h.absolutePos(corner)), "the missing frame is named");
+                    h.setBlock(corner, ModBlocks.ACCELERATOR_FRAME.get());
+                    h.runAfterDelay(25, () -> {
+                        h.assertTrue(be.isFormed(), "whole again");
+                        h.setBlock(intake, Blocks.AIR);
+                        h.runAfterDelay(3, () -> {
+                            h.assertBlockProperty(intake.west(), com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
+                            h.assertTrue(entity(h, intake.west(), com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "breaking the intake frees the frames");
+                            h.succeed();
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 300)
+    public void decelerator_forms_from_a_core_with_a_port_behind_it(GameTestHelper h) {
+        BlockPos core = new BlockPos(8, 1, 8), behind = core.south(), inFront = core.north();
+        h.setBlock(core, ModBlocks.DECELERATOR_CORE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.DeceleratorCoreBlock.FACING, net.minecraft.core.Direction.NORTH));
+        h.setBlock(inFront, ModBlocks.DECELERATOR_PORT.get()); // in front of the core, not behind it: does not count
+        h.runAfterDelay(45, () -> {
+            var be = entity(h, core, com.mrgregles.bsp_core.link.DeceleratorBlockEntity.class);
+            h.assertTrue(!be.isFormed(), "a port in front does not form it");
+            h.assertTrue(be.portPos().equals(h.absolutePos(behind)), "the port belongs behind the core");
+            h.setBlock(behind, ModBlocks.DECELERATOR_PORT.get());
+            h.runAfterDelay(25, () -> {
+                h.assertTrue(be.isFormed(), "formed with the port behind");
+                h.assertBlockProperty(core, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
+                h.assertBlockProperty(behind, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
+                h.assertBlockProperty(inFront, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
+                h.assertTrue(h.absolutePos(core).equals(entity(h, behind, com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller()), "the port knows its core");
+                h.setBlock(behind, Blocks.AIR);
+                h.runAfterDelay(3, () -> {
+                    h.assertTrue(!be.isFormed(), "breaking the port un-forms it at once");
+                    h.assertBlockProperty(core, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
+                    h.setBlock(behind, ModBlocks.DECELERATOR_PORT.get());
+                    h.runAfterDelay(25, () -> {
+                        h.assertTrue(be.isFormed(), "whole again");
+                        h.setBlock(core, Blocks.AIR);
+                        h.runAfterDelay(3, () -> {
+                            h.assertBlockProperty(behind, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
+                            h.assertTrue(entity(h, behind, com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "breaking the core frees the port");
+                            h.succeed();
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void link_cards_bind_decelerators_to_an_accelerator_within_its_link_limit(GameTestHelper h) {
+        BlockPos intake = new BlockPos(3, 1, 3);
+        h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
+        List<com.mrgregles.bsp_core.link.DeceleratorBlockEntity> cores = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            BlockPos core = new BlockPos(10, 1, 3 + i * 3);
+            h.setBlock(core, ModBlocks.DECELERATOR_CORE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.DeceleratorCoreBlock.FACING, net.minecraft.core.Direction.NORTH));
+            h.setBlock(core.south(), ModBlocks.DECELERATOR_PORT.get());
+            cores.add(entity(h, core, com.mrgregles.bsp_core.link.DeceleratorBlockEntity.class));
+        }
+        var a = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
+        // writing a card through the block: a mock player right-clicks the intake with a blank card
+        var player = h.makeMockPlayer();
+        ItemStack hand = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.LINK_CARD.get());
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, hand);
+        BlockPos abs = h.absolutePos(intake);
+        h.getBlockState(intake).use(h.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND,
+                new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(abs), net.minecraft.core.Direction.NORTH, abs, false));
+        ItemStack card = player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND);
+        h.assertTrue(com.mrgregles.bsp_core.link.LinkCardItem.isWritten(card), "the card in hand is written");
+        h.assertTrue(a.here().equals(com.mrgregles.bsp_core.link.LinkCardItem.target(card)), "it names this intake in this world");
+        h.assertTrue(com.mrgregles.bsp_core.link.LinkCardItem.target(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.LINK_CARD.get())) == null, "a blank card names nothing");
+        // one link without expanders
+        ItemStack cards = card.copyWithCount(5);
+        h.assertTrue(cores.get(0).plug(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.LINK_CARD.get())) == com.mrgregles.bsp_core.link.Links.Plug.BLANK, "a blank card is refused");
+        h.assertTrue(cores.get(0).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.LINKED && cards.getCount() == 4, "the first core links and takes one card");
+        h.assertTrue(cores.get(0).isLinked() && a.links().size() == 1 && a.hasLink(cores.get(0).here()), "the accelerator lists the core");
+        h.assertTrue(cores.get(0).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.ALREADY, "a linked core takes no second card");
+        h.assertTrue(cores.get(1).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.FULL && cards.getCount() == 4 && !cores.get(1).isLinked(), "the second core finds no free link");
+        // expanders raise the limit to three
+        h.assertTrue(a.fitExpander() && a.maxLinks() == 2, "one expander: two links");
+        h.assertTrue(cores.get(1).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.LINKED && a.links().size() == 2, "the second core links now");
+        h.assertTrue(cores.get(2).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.FULL, "the third waits");
+        h.assertTrue(a.fitExpander() && a.maxLinks() == 3 && !a.fitExpander(), "two expanders at most");
+        h.assertTrue(cores.get(2).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.LINKED && a.links().size() == 3, "three links");
+        h.assertTrue(cores.get(3).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.FULL && cards.getCount() == 2, "no fourth");
+        h.assertTrue(!a.takeExpander(), "an expander whose link is in use cannot be taken out");
+        // unlinking frees the slot and returns the card; breaking a core does the same
+        ItemStack back = cores.get(1).unplug();
+        h.assertTrue(com.mrgregles.bsp_core.link.LinkCardItem.isWritten(back) && !cores.get(1).isLinked() && a.links().size() == 2, "the card comes back and the slot is free");
+        h.assertTrue(cores.get(3).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.LINKED && a.links().size() == 3, "the fourth core takes the free slot");
+        h.setBlock(new BlockPos(10, 1, 12), Blocks.AIR);
+        h.runAfterDelay(2, () -> {
+            h.assertTrue(a.links().size() == 2 && !a.hasLink(cores.get(3).here()), "a broken core is forgotten");
+            h.assertTrue(a.takeExpander() && a.maxLinks() == 2, "with a slot free an expander comes out");
+            var saved = a.saveWithoutMetadata();
+            h.assertTrue(saved.getList("Links", net.minecraft.nbt.Tag.TAG_COMPOUND).size() == 2 && saved.getInt("Expanders") == 1, "links and expanders are saved");
+            h.assertTrue(com.mrgregles.bsp_core.link.LinkCardItem.isWritten(ItemStack.of(cores.get(0).saveWithoutMetadata().getCompound("Card"))), "a core saves its card");
+            h.succeed();
+        });
+    }
+
+    /** A fed, formed accelerator: Output 3 totem on an extractor at {@code start}, interface and an Illyrium cable east of it, the intake east of that facing east (the ring stands north to south). */
+    private static com.mrgregles.bsp_core.link.AcceleratorBlockEntity fedAccelerator(GameTestHelper h, BlockPos start, ShatterTotemBlockEntity[] totemOut) {
+        ShatterTotemBlockEntity totem = totemOnExtractor(h, start, 3);
+        if (totemOut != null) {
+            totemOut[0] = totem;
+        }
+        h.setBlock(start.east(), ModBlocks.PLASMA_INTERFACE.get());
+        h.setBlock(start.east(2), cable(TotemCableBlock.Kind.ILLYRIUM));
+        BlockPos intake = start.east(3);
+        h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.EAST));
+        for (int[] c : new int[][]{{-1, 0}, {1, 0}, {-1, 1}, {1, 1}, {-1, 2}, {0, 2}, {1, 2}}) {
+            h.setBlock(intake.relative(net.minecraft.core.Direction.SOUTH, c[0]).above(c[1]), ModBlocks.ACCELERATOR_FRAME.get());
+        }
+        var a = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
+        a.energy().fill(com.mrgregles.bsp_core.link.LinkEnergy.capacity());
+        return a;
+    }
+
+    /** A decelerator (core facing north, port behind it) in {@code level} at {@code pos}, with a full RF pool and a card for {@code a}. */
+    private static com.mrgregles.bsp_core.link.DeceleratorBlockEntity linkedDecelerator(GameTestHelper h, ServerLevel level, BlockPos pos, com.mrgregles.bsp_core.link.AcceleratorBlockEntity a) {
+        // the test world persists between runs: a core left by a failed run would still hold its card
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+        level.setBlock(pos.south(), Blocks.AIR.defaultBlockState(), 3);
+        level.setBlock(pos, ModBlocks.DECELERATOR_CORE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.DeceleratorCoreBlock.FACING, net.minecraft.core.Direction.NORTH), 3);
+        level.setBlock(pos.south(), ModBlocks.DECELERATOR_PORT.get().defaultBlockState(), 3);
+        var core = (com.mrgregles.bsp_core.link.DeceleratorBlockEntity) level.getBlockEntity(pos);
+        h.assertTrue(core != null, "a core stands at " + pos);
+        core.energy().fill(com.mrgregles.bsp_core.link.LinkEnergy.capacity());
+        ItemStack card = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.LINK_CARD.get());
+        com.mrgregles.bsp_core.link.LinkCardItem.write(card, a.here());
+        var r = core.plug(card);
+        h.assertTrue(r == com.mrgregles.bsp_core.link.Links.Plug.LINKED, "linked: " + r);
+        return core;
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void accelerator_sends_plasma_to_the_nether_with_its_powers_when_both_ends_have_rf(GameTestHelper h) {
+        var server = server(h);
+        ShatterTotemBlockEntity[] totem = new ShatterTotemBlockEntity[1];
+        BlockPos start = new BlockPos(1, 1, 3);
+        var a = fedAccelerator(h, start, totem);
+        totem[0].setUpgradeLevel(TotemUpgrades.Buff.OVERCLOCK, 2);
+        totem[0].setUpgradeLevel(TotemUpgrades.Buff.ANCHOR, 1);
+        ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
+        h.assertTrue(nether != null, "the server has a Nether");
+        BlockPos far = new BlockPos(1000, 100, 1000);
+        nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, true);
+        var core = linkedDecelerator(h, nether, far, a);
+        int oc = TotemUpgrades.Buff.OVERCLOCK.ordinal(), cap = com.mrgregles.bsp_core.link.LinkEnergy.capacity();
+        Runnable cleanUp = () -> {
+            nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
+            nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
+            nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
+        };
+        h.runAfterDelay(100, () -> {
+            h.assertTrue(a.isFormed(), "ring formed");
+            h.assertTrue(a.inRate() > 0, "plasma arrives at the intake");
+            h.assertTrue(core.isFormed(), "the Nether core is formed in its forced chunk");
+            h.assertTrue(core.store().stored() > 0, "plasma arrived in the Nether: " + core.store().stored());
+            h.assertTrue(core.store().offered()[oc] == 2, "Overclock II crossed with it");
+            var totemAt = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(start.above()));
+            h.assertTrue(totemAt.equals(core.anchorTotem()), "the anchor totem is named with its world: " + core.anchorTotem());
+            h.assertTrue(core.access().users.contains(totem[0].getOwner().get().uuid()), "the totem's access list came along");
+            var report = a.report(core.here());
+            h.assertTrue(report.state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING && report.rate() > 0, "the link reports delivering: " + report);
+            h.assertTrue(a.outRate() > 0 && a.energy().getEnergyStored() < cap && core.energy().getEnergyStored() < cap, "both ends paid RF");
+            h.assertTrue(!a.mayLink(h.makeMockPlayer()), "a stranger may not write a card at a fed intake");
+            long before = core.store().stored();
+            core.energy().fill(0);
+            h.runAfterDelay(45, () -> {
+                h.assertTrue(a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_THERE, "no RF there stops the hop: " + a.report(core.here()));
+                h.assertTrue(core.store().stored() == before, "nothing more arrived");
+                core.energy().fill(cap);
+                a.energy().fill(0);
+                h.runAfterDelay(45, () -> {
+                    h.assertTrue(a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_HERE, "no RF here stops it too: " + a.report(core.here()));
+                    h.assertTrue(core.store().stored() == before, "still nothing more");
+                    cleanUp.run();
+                    h.succeed();
+                });
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void accelerator_shares_its_flow_equally_between_live_links(GameTestHelper h) {
+        var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
+        h.assertTrue(a.fitExpander(), "two links");
+        var core1 = linkedDecelerator(h, h.getLevel(), h.absolutePos(new BlockPos(9, 1, 1)), a);
+        var core2 = linkedDecelerator(h, h.getLevel(), h.absolutePos(new BlockPos(9, 1, 6)), a);
+        h.runAfterDelay(100, () -> {
+            long s1 = core1.store().stored(), s2 = core2.store().stored();
+            h.assertTrue(s1 > 0 && s2 > 0, "both received: " + s1 + " and " + s2);
+            h.assertTrue(Math.abs(s1 - s2) <= Math.max(s1, s2) / 5, "about equal shares: " + s1 + " and " + s2);
+            core2.energy().fill(0);
+            h.runAfterDelay(45, () -> {
+                long before = core1.store().stored();
+                h.runAfterDelay(20, () -> {
+                    long gained = core1.store().stored() - before;
+                    h.assertTrue(a.report(core2.here()).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_THERE, "the unpowered link sleeps");
+                    h.assertTrue(gained >= 9_000 && gained <= 11_000, "the whole flow (500 mB/t) goes to the other link now: " + gained);
+                    h.assertTrue(a.report(core1.here()).rate() >= 450, "and its rate says so: " + a.report(core1.here()));
+                    h.succeed();
+                });
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 500)
+    public void accelerator_wakes_a_sleeping_far_side_and_delivers(GameTestHelper h) {
+        var server = server(h);
+        var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
+        ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
+        BlockPos far = new BlockPos(2000, 100, 2000); // nothing keeps this chunk loaded
+        var core = linkedDecelerator(h, nether, far, a);
+        h.runAfterDelay(120, () -> {
+            var before = a.report(core.here()).state();
+            h.assertTrue(before == com.mrgregles.bsp_core.link.Links.State.ASLEEP || before == com.mrgregles.bsp_core.link.Links.State.DELIVERING || before == com.mrgregles.bsp_core.link.Links.State.UNFORMED_THERE,
+                    "an unforced far side is asleep (or still loaded): " + before);
+            a.wakeNow();
+            h.runAfterDelay(65, () -> {
+                nether.getChunk(far);
+                var woken = (com.mrgregles.bsp_core.link.DeceleratorBlockEntity) nether.getBlockEntity(far);
+                h.assertTrue(woken != null && woken.isFormed() && woken.store().stored() > 0, "the woken far side formed and received: " + (woken == null ? "gone" : woken.store().stored()));
+                h.assertTrue(a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING, "and the link delivers while the wake ticket holds: " + a.report(core.here()));
+                nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
+                nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
+                h.succeed();
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 500)
+    public void nether_projector_keeps_its_chunk_loaded_from_an_overworld_totem_through_a_link(GameTestHelper h) {
+        var server = server(h);
+        ShatterTotemBlockEntity[] totem = new ShatterTotemBlockEntity[1];
+        BlockPos start = new BlockPos(1, 1, 3);
+        var a = fedAccelerator(h, start, totem);
+        totem[0].setOwner(new TotemOwner(UUID.randomUUID(), "Anchorite")); // its owner's only totem, so it is the main one with the full Anchor allowance
+        totem[0].setUpgradeLevel(TotemUpgrades.Buff.ANCHOR, 2); // three chunks: its own and two to spare for projectors
+        ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
+        BlockPos far = new BlockPos(3000, 100, 3000), basePos = far.south(3), projPos = basePos.above();
+        nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, true);
+        for (int i = 0; i <= 4; i++) { // the world persists between runs
+            nether.setBlock(far.south(i).above(), Blocks.AIR.defaultBlockState(), 3);
+            nether.setBlock(far.south(i), Blocks.AIR.defaultBlockState(), 3);
+        }
+        var core = linkedDecelerator(h, nether, far, a);
+        nether.setBlock(far.south(2), cable(TotemCableBlock.Kind.ILLYRIUM).defaultBlockState(), 3); // out of the port's back face
+        nether.setBlock(basePos, ModBlocks.PROJECTOR_BASE.get().defaultBlockState(), 3);
+        nether.setBlock(projPos, ModBlocks.TOTEM_PROJECTOR.get().defaultBlockState(), 3);
+        var base = (com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity) nether.getBlockEntity(basePos);
+        var projector = (com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity) nether.getBlockEntity(projPos);
+        var totemAt = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(start.above()));
+        var projAt = net.minecraft.core.GlobalPos.of(nether.dimension(), projPos);
+        Runnable cleanUp = () -> {
+            for (int i = 0; i <= 4; i++) {
+                nether.setBlock(far.south(i).above(), Blocks.AIR.defaultBlockState(), 3);
+                nether.setBlock(far.south(i), Blocks.AIR.defaultBlockState(), 3);
+            }
+            nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
+        };
+        h.runAfterDelay(120, () -> {
+            var portBe = nether.getBlockEntity(far.south());
+            h.assertTrue(core.outRate() > 0, "the port sends the plasma on into its cable: out " + core.outRate() + ", stored " + core.store().stored() + ", formed " + core.isFormed()
+                    + ", in " + core.inRate() + ", port " + (portBe == null ? "none" : portBe.getClass().getSimpleName() + " controller " + ((com.mrgregles.bsp_core.link.LinkPartBlockEntity) portBe).controller())
+                    + ", base tank " + base.tank() + ", link " + a.report(core.here()));
+            h.assertTrue(base.tank() > 0, "the Projector Base fills");
+            h.assertTrue(totemAt.equals(base.anchorTotem()), "the base names the Overworld totem with its world: " + base.anchorTotem());
+            h.assertTrue(base.offered()[TotemUpgrades.Buff.ANCHOR.ordinal()] == 2, "Anchor II is offered in the Nether");
+            int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(TotemUpgrades.Buff.ANCHOR);
+            projector.toggle(anchorIndex); // the player picks Anchor on the projector
+            h.runAfterDelay(60, () -> {
+                var ledger = com.mrgregles.bsp_core.chunk.ChunkLedger.get(server);
+                var entry = ledger.projectors.get(projAt);
+                h.assertTrue(entry != null && entry.on && totemAt.equals(entry.totem), "the ledger lists the Nether projector under the Overworld totem: " + (entry == null ? "none" : entry.totem + " on=" + entry.on));
+                h.assertTrue(!entry.chunks.isEmpty(), "and it holds its own chunk");
+                cleanUp.run();
+                h.succeed();
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void accelerator_view_travels_whole_and_unlink_drops_the_card_at_the_far_end(GameTestHelper h) {
+        BlockPos intake = new BlockPos(3, 1, 3), corePos = new BlockPos(10, 1, 3);
+        h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
+        var a = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
+        h.assertTrue(a.fitExpander(), "an expander");
+        var core = linkedDecelerator(h, h.getLevel(), h.absolutePos(corePos), a);
+        core.energy().fill(0); // no RF there: the link reports it
+        h.runAfterDelay(45, () -> {
+            var view = a.view();
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.LinkViewPacket.encode(view, buf);
+            var back = com.mrgregles.bsp_core.network.LinkViewPacket.decode(buf);
+            h.assertTrue(back.pos().equals(h.absolutePos(intake)) && back.world().equals(h.getLevel().dimension().location().toString()), "position and world travel");
+            h.assertTrue(!back.formed() && back.maxLinks() == 2 && back.expanders() == 1 && back.energyCap() == com.mrgregles.bsp_core.link.LinkEnergy.capacity(), "ring state, links and RF travel: " + back);
+            h.assertTrue(back.links().size() == 1 && back.links().get(0).pos().equals(h.absolutePos(corePos)) && back.links().get(0).world().equals(back.world()), "the link travels with its world and position");
+            h.assertTrue(back.links().get(0).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_THERE.ordinal(), "and its state: " + com.mrgregles.bsp_core.link.Links.State.values()[back.links().get(0).state()]);
+            a.unlink(0);
+            h.assertTrue(a.links().isEmpty() && !core.isLinked(), "unlink from the accelerator's side takes the card out of the core");
+            h.assertItemEntityPresent(com.mrgregles.bsp_core.registry.ModItems.LINK_CARD.get(), corePos, 2.0);
+            h.assertTrue(a.view().links().isEmpty(), "the view follows");
+            h.succeed();
+        });
     }
 }

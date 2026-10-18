@@ -71,6 +71,8 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.STALL_DISPLAY.get(), StallDisplayRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.MARKET_STALL.get(), MarketStallRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LAND_OFFICE.get(), LandOfficeRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ACCELERATOR.get(), AcceleratorRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.DECELERATOR_CORE.get(), DeceleratorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TETRIUM_CRUCIBLE.get(), TetriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMBINATION_FORGE.get(), CombinationForgeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), IllyriumCrucibleRenderer::new);

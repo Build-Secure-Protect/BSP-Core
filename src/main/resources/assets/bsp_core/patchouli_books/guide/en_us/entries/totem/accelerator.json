@@ -1,0 +1,71 @@
+{
+  "name": "Plasma Across Worlds",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:accelerator_intake",
+  "sortnum": 12,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:accelerator_intake",
+      "text": "Wave Plasma can cross into another world on the same server, the Nether, the End or a mining world, so a $(item)Projector$() there keeps chunks loaded with $(l)Anchor$() from a totem that stays safe at home. The $(item)Plasma Accelerator$() sends it; a $(item)Plasma Decelerator$() receives it. Plasma goes one way only, and every power it carried arrives with it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The accelerator is a ring, three blocks high and wide, one deep: an $(item)Accelerator Intake$() at the bottom middle, placed facing you, and seven $(item)Accelerator Frames$() round it with the middle left empty. It forms within a second, the blocks vanish and the ring takes their place. Run a plasma cable into the intake (any face) and RF into any frame. It takes up to 3,000 mB/t over every run feeding it.",
+      "title": "The ring"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:accelerator_intake",
+      "recipe2": "bsp_core:accelerator_frame"
+    },
+    {
+      "type": "patchouli:image",
+      "title": "A formed accelerator",
+      "images": [
+        "bsp_core:textures/gui/book/plasma_accelerator.png"
+      ],
+      "border": true,
+      "text": "The ring stands across the intake's facing, the cable in at the intake's socket, the black hole in its cage in the middle. With RF the coil heads light in turn round the ring; while a link delivers, pulses race round the copper track and arcs jump to the cage."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The decelerator is two blocks: a $(item)Decelerator Core$(), placed facing you, with a $(item)Decelerator Port$() directly behind it. RF goes into the core; cables leave the port's free faces, carrying the plasma on to bases, chargers, injectors, tanks or another accelerator.",
+      "title": "The far end"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:decelerator_core",
+      "recipe2": "bsp_core:decelerator_port"
+    },
+    {
+      "type": "patchouli:image",
+      "title": "Port into a projector",
+      "images": [
+        "bsp_core:textures/gui/book/plasma_decelerator.png"
+      ],
+      "border": true,
+      "text": "The core's barrel holds the small black hole; the port behind it has a socket on every free face. Here a cable leaves its back into a Projector Base, so the projector keeps its chunks with the far totem's Anchor."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A blank $(item)Link Card$() right-clicked on an intake takes that accelerator's world and position. Right-click a Decelerator Core with it and the two are linked, in whatever world the core stands. Sneak and right-click the core empty-handed to take the card out.$(br2)An accelerator holds one link. Each $(item)Link Expander$() right-clicked onto the intake adds one, two at most, and the flow is shared equally between the links that can take it.",
+      "title": "Linking"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:link_card",
+      "recipe2": "bsp_core:link_expander"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Both ends burn RF: 1,000 RF/t at the intake while any link delivers, 100 RF/t at a core while it receives, from pools of 200,000. Without RF on either side nothing crosses and the plasma stays with the source.$(br2)Once the plasma arrives it is ordinary plasma: an Overworld totem's $(l)Overclock$() speeds a Nether injector, its $(l)Anchor$() holds a Nether projector's chunks. Only the users of the totem feeding an intake may write cards there.",
+      "title": "RF and powers"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A far side whose chunk is not loaded sleeps, and its share goes to the other links. Once a minute the accelerator loads it for a moment and delivers, so a projector there relights its own chunk loading by itself; after that the projector keeps the chunk and the link runs on its own.$(br2)Right-click the intake empty-handed for the $(l)Worlds board$(): a column per world, every link as a pip with its state, UNLINK for the one you pick and WAKE to load every sleeping far side at once.",
+      "title": "Sleeping and waking"
+    }
+  ]
+}

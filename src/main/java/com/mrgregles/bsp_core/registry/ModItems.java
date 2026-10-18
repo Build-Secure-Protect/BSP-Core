@@ -160,7 +160,7 @@ public final class ModItems {
 
     /** The plasma chain: extractor, interface, repeater, projector, the four cables and the Channel Expander, in creative-tab order. */
     public static final List<RegistryObject<Item>> PROJECTOR_ITEMS = new ArrayList<>();
-    public static final RegistryObject<Item> CHANNEL_EXPANDER;
+    public static final RegistryObject<Item> CHANNEL_EXPANDER, LINK_CARD, LINK_EXPANDER;
 
     static {
         List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.PLASMA_EXTRACTOR, ModBlocks.PLASMA_INTERFACE, ModBlocks.PLASMA_REPEATER, ModBlocks.PLASMA_VALVE, ModBlocks.PROJECTOR_BASE, ModBlocks.TOTEM_PROJECTOR, ModBlocks.TANK_CASING, ModBlocks.TANK_GLASS, ModBlocks.TANK_PORT, ModBlocks.TETRIUM_GLASS, ModBlocks.PLASMA_INJECTOR));
@@ -181,6 +181,13 @@ public final class ModItems {
         }
         PROJECTOR_ITEMS.add(ITEMS.register("wave_emitter", com.mrgregles.bsp_core.plasma.WaveEmitterItem::new));
         PROJECTOR_ITEMS.add(ITEMS.register("wrench", com.mrgregles.bsp_core.plasma.WrenchItem::new));
+        for (var block : List.of(ModBlocks.ACCELERATOR_INTAKE, ModBlocks.ACCELERATOR_FRAME, ModBlocks.DECELERATOR_CORE, ModBlocks.DECELERATOR_PORT)) {
+            PROJECTOR_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
+        }
+        LINK_CARD = ITEMS.register("link_card", com.mrgregles.bsp_core.link.LinkCardItem::new);
+        LINK_EXPANDER = ITEMS.register("link_expander", com.mrgregles.bsp_core.link.LinkExpanderItem::new);
+        PROJECTOR_ITEMS.add(LINK_CARD);
+        PROJECTOR_ITEMS.add(LINK_EXPANDER);
     }
 
     public static final RegistryObject<Item> CHARGED_RESONANCE_CRYSTAL = ITEMS.register("charged_resonance_crystal", () -> new Item(new Item.Properties()));

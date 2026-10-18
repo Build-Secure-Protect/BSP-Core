@@ -120,6 +120,9 @@ public class TotemCableBlock extends Block implements net.minecraft.world.level.
         if (other instanceof TotemCableBlock) {
             return mine == PlasmaCableBlockEntity.End.LINK || theirs == PlasmaCableBlockEntity.End.LINK || sameColour(level.getBlockState(pos), there);
         }
+        if (other instanceof com.mrgregles.bsp_core.link.AcceleratorIntakeBlock || other instanceof com.mrgregles.bsp_core.link.DeceleratorPortBlock) {
+            return true; // plasma into an accelerator, out of a decelerator: any face
+        }
         if (other instanceof com.mrgregles.bsp_core.plasma.ProjectorBaseBlock || other instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock) {
             return true;
         }

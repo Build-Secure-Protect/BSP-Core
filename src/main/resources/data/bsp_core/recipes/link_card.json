@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NEN",
+    "QBQ"
+  ],
+  "key": {
+    "N": {
+      "item": "bsp_core:illyrium_nugget"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "Q": {
+      "item": "minecraft:paper"
+    },
+    "B": {
+      "item": "bsp_core:basic_control_circuit"
+    }
+  },
+  "result": {
+    "item": "bsp_core:link_card"
+  }
+}

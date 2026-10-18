@@ -25,7 +25,9 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
     private final int[] offered = new int[Buff.values().length];
     private PlasmaAccess access = new PlasmaAccess();
     @Nullable
-    private BlockPos source, anchorTotem;
+    private BlockPos source;
+    @Nullable
+    private net.minecraft.core.GlobalPos anchorTotem;
     private long fedAt = -1000;
     private boolean signal;
     private int syncedTank = -1;
@@ -66,7 +68,7 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
     }
 
     @Nullable
-    public BlockPos anchorTotem() {
+    public net.minecraft.core.GlobalPos anchorTotem() {
         return anchorTotem;
     }
 
@@ -86,7 +88,7 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
     }
 
     @Override
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable BlockPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
         source = master.immutable();
         System.arraycopy(offeredByOrdinal, 0, offered, 0, offered.length);
         this.repeaters = repeaters;
@@ -136,9 +138,7 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
         if (source != null) {
             tag.putLong("Source", source.asLong());
         }
-        if (anchorTotem != null) {
-            tag.putLong("Totem", anchorTotem.asLong());
-        }
+        com.mrgregles.bsp_core.link.Links.save(tag, "Totem", anchorTotem);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
             System.arraycopy(o, 0, offered, 0, o.length);
         }
         source = tag.contains("Source") ? BlockPos.of(tag.getLong("Source")) : null;
-        anchorTotem = tag.contains("Totem") ? BlockPos.of(tag.getLong("Totem")) : null;
+        anchorTotem = com.mrgregles.bsp_core.link.Links.load(tag, "Totem");
     }
 
     @Override

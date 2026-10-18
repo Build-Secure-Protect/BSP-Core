@@ -52,7 +52,9 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     private boolean expander;
     private int repeaters, delivered, tank;
     @Nullable
-    private BlockPos source, anchorTotem;
+    private BlockPos source;
+    @Nullable
+    private net.minecraft.core.GlobalPos anchorTotem;
     private com.mrgregles.bsp_core.plasma.PlasmaAccess access = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
     private long fedAt = -1000;
     private boolean active, signal, powered;
@@ -65,7 +67,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     // ------------------------------------------------------------------ what the interface tells it
 
     /** Fed from the Projector Base below once a second: {@code deliveredPerTick} is what the base could give this second. */
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable BlockPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
         int[] was = offered.clone();
         for (int i = 0; i < SENDABLE.length; i++) {
             offered[i] = offeredByOrdinal[SENDABLE[i].ordinal()];
@@ -324,9 +326,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         write(tag);
         // fedAt and the anchor totem are saved (not synced) so a restart does not look like a lost signal and drop the projector's chunks
         tag.putLong("FedAt", fedAt);
-        if (anchorTotem != null) {
-            tag.putLong("Totem", anchorTotem.asLong());
-        }
+        com.mrgregles.bsp_core.link.Links.save(tag, "Totem", anchorTotem);
     }
 
     @Override
@@ -354,7 +354,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         }
         if (tag.contains("FedAt")) {
             fedAt = tag.getLong("FedAt");
-            anchorTotem = tag.contains("Totem") ? BlockPos.of(tag.getLong("Totem")) : null;
+            anchorTotem = com.mrgregles.bsp_core.link.Links.load(tag, "Totem");
         }
     }
 

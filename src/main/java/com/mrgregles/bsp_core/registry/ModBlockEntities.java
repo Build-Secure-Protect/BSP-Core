@@ -144,6 +144,18 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("battery_charger", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.BatteryChargerBlockEntity::new, ModBlocks.BATTERY_CHARGER.get()).build(null));
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.link.AcceleratorBlockEntity>> ACCELERATOR =
+            BLOCK_ENTITIES.register("accelerator", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.link.AcceleratorBlockEntity::new, ModBlocks.ACCELERATOR_INTAKE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.link.LinkPartBlockEntity>> ACCELERATOR_FRAME =
+            BLOCK_ENTITIES.register("accelerator_frame", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.link.LinkPartBlockEntity::new, ModBlocks.ACCELERATOR_FRAME.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.link.DeceleratorBlockEntity>> DECELERATOR_CORE =
+            BLOCK_ENTITIES.register("decelerator_core", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.link.DeceleratorBlockEntity::new, ModBlocks.DECELERATOR_CORE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.link.DeceleratorPortBlockEntity>> DECELERATOR_PORT =
+            BLOCK_ENTITIES.register("decelerator_port", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.link.DeceleratorPortBlockEntity::new, ModBlocks.DECELERATOR_PORT.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity>> PLASMA_INJECTOR =
             BLOCK_ENTITIES.register("plasma_injector", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity::new, ModBlocks.PLASMA_INJECTOR.get()).build(null));

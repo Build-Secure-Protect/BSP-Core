@@ -54,6 +54,12 @@ public final class PlasmaNetwork {
         BlockPos totemPos();
 
         int cloak();
+
+        /** The totem whose Anchor travels with this reservoir's plasma, in its own world: a source that got it through a link passes it on. */
+        @javax.annotation.Nullable
+        default net.minecraft.core.GlobalPos anchor() {
+            return null;
+        }
     }
 
     private final net.minecraft.world.level.block.entity.BlockEntity home;
@@ -76,7 +82,7 @@ public final class PlasmaNetwork {
     private int supply, cloak;
     private final int[] offered = new int[Buff.values().length];
     private PlasmaAccess access = new PlasmaAccess();
-    private BlockPos anchorTotem;
+    private net.minecraft.core.GlobalPos anchorTotem;
 
     PlasmaNetwork(PlasmaInterfaceBlockEntity home) {
         this.home = home;
@@ -364,6 +370,7 @@ public final class PlasmaNetwork {
             clusterAll = members;
             extractors.add(source);
             supply = source.flow();
+            anchorTotem = source.anchor();
             int[] o = source.offered(); // a tank passes on the powers its plasma still carries
             for (int i = 0; i < o.length && i < offered.length; i++) {
                 offered[i] = Math.max(offered[i], o[i]);
@@ -405,7 +412,7 @@ public final class PlasmaNetwork {
                     }
                     if (o[Buff.ANCHOR.ordinal()] > bestAnchor && extractor.totemPos() != null) {
                         bestAnchor = o[Buff.ANCHOR.ordinal()];
-                        anchorTotem = extractor.totemPos();
+                        anchorTotem = net.minecraft.core.GlobalPos.of(sl.dimension(), extractor.totemPos());
                     }
                 }
             }

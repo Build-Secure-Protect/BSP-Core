@@ -489,6 +489,52 @@ Your placed totem's panel has an **ACCESS** tab. Type an online player's name an
 
 Up to eight people. The list stays with the totem when you pick it up, and is wiped when the totem is stolen. Friends still cannot pick the totem up, and they do not get its Carried powers.
 
+## Plasma Across Worlds
+
+**Page 1**  `[item shown] accelerator_intake`
+
+Wave Plasma can cross into another world on the same server, the Nether, the End or a mining world, so a *Projector* there keeps chunks loaded with **Anchor** from a totem that stays safe at home. The *Plasma Accelerator* sends it; a *Plasma Decelerator* receives it. Plasma goes one way only, and every power it carried arrives with it.
+
+**Page 2: The ring**
+
+The accelerator is a ring, three blocks high and wide, one deep: an *Accelerator Intake* at the bottom middle, placed facing you, and seven *Accelerator Frames* round it with the middle left empty. It forms within a second, the blocks vanish and the ring takes their place. Run a plasma cable into the intake (any face) and RF into any frame. It takes up to 3,000 mB/t over every run feeding it.
+
+**Page 3**  `[recipe] accelerator_intake, accelerator_frame`
+
+**Page 4**  `[picture] A formed accelerator`
+
+The ring stands across the intake's facing, the cable in at the intake's socket, the black hole in its cage in the middle. With RF the coil heads light in turn round the ring; while a link delivers, pulses race round the copper track and arcs jump to the cage.
+
+**Page 5: The far end**
+
+The decelerator is two blocks: a *Decelerator Core*, placed facing you, with a *Decelerator Port* directly behind it. RF goes into the core; cables leave the port's free faces, carrying the plasma on to bases, chargers, injectors, tanks or another accelerator.
+
+**Page 6**  `[recipe] decelerator_core, decelerator_port`
+
+**Page 7**  `[picture] Port into a projector`
+
+The core's barrel holds the small black hole; the port behind it has a socket on every free face. Here a cable leaves its back into a Projector Base, so the projector keeps its chunks with the far totem's Anchor.
+
+**Page 8: Linking**
+
+A blank *Link Card* right-clicked on an intake takes that accelerator's world and position. Right-click a Decelerator Core with it and the two are linked, in whatever world the core stands. Sneak and right-click the core empty-handed to take the card out.
+
+An accelerator holds one link. Each *Link Expander* right-clicked onto the intake adds one, two at most, and the flow is shared equally between the links that can take it.
+
+**Page 9**  `[recipe] link_card, link_expander`
+
+**Page 10: RF and powers**
+
+Both ends burn RF: 1,000 RF/t at the intake while any link delivers, 100 RF/t at a core while it receives, from pools of 200,000. Without RF on either side nothing crosses and the plasma stays with the source.
+
+Once the plasma arrives it is ordinary plasma: an Overworld totem's **Overclock** speeds a Nether injector, its **Anchor** holds a Nether projector's chunks. Only the users of the totem feeding an intake may write cards there.
+
+**Page 11: Sleeping and waking**
+
+A far side whose chunk is not loaded sleeps, and its share goes to the other links. Once a minute the accelerator loads it for a moment and delivers, so a projector there relights its own chunk loading by itself; after that the projector keeps the chunk and the link runs on its own.
+
+Right-click the intake empty-handed for the **Worlds board**: a column per world, every link as a pip with its state, UNLINK for the one you pick and WAKE to load every sleeping far side at once.
+
 ## Powers in Detail
 
 **Page 1**
@@ -820,34 +866,6 @@ Rent is paid by the day, in pieces or coins, for as long ahead as you like. A bo
 When the rent runs out nothing is lost: your slots and their contents are kept, but the drawer is locked until you pay rent again, plus a **holding fee** for every day the box sat unpaid. Leave it long and it costs more to get back.
 
 Shatter Coins and totems cannot be stored in a box. The bank keeps coins; totems belong in the world.
-
-## Shops and Vendors
-
-**Page 1**
-
-Shops sell and buy for **Shatter Pieces** (some lots ask for Shatter Coins instead). You find them at a *Vendor Post*, at a stall, or at an NPC in the world: right-click to see the shelves.
-
-Each card shows the lot, **buy** and **sell** prices and the stock left. Left click buys, right click sells, shift and right click sells every full lot you hold.
-
-**Page 2: Selling and hours**
-
-**Sell here** opens a tray: drop items in and close it; every full lot the shop buys is paid for in one go and the rest comes back.
-
-Some shops keep **opening hours**. A closed vendor shows when it opens and how long is left. A vendor's post powers the block beneath it while the shop is open, so signs and lamps can follow.
-
-A *Stall Display* beside a vendor floats its wares in the air, one after another, while the shop is open. Right-click it to open the shop.
-
-**Page 3: Market Stalls**
-
-A *Market Stall* is a shop front in one of eight styles: a timber booth, a vending terminal, a boiler booth, a player-built stall, a blackstone shrine, a street cart, a dockside stall or a mage's pedestal. Right-click it for its shop.
-
-Two lamps tell you the state before you click: the left one is **green** while the shop has stock and **red** when it is sold out, the right one **amber** while the shop is open. The shop's first item sits on the counter. A stall with no shop stands broken and out of order.
-
-**Page 4: The Shopping Network**
-
-Buy the **Shopping Network** on your *Portable Banker* with Shatter Coins and the shops marked remote open from anywhere. It stays with your account, whatever happens to the device; admins may clear it at a season end.
-
-Special offers show a chip with the discount; rotating shops change their shelves on a timer.
 
 ## The Land Office
 
