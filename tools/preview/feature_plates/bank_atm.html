@@ -1,0 +1,195 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+</style><title>Bank UI Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&family=VT323&family=Oswald:wght@400;600&family=Cabin+Sketch:wght@400;700&family=Patrick+Hand&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the same four bank screens rendered in the chosen skin (B, Cash Machine) at the top, then the two skins not chosen, kept as future vendor skins. A tab row picks the screen, toggles pick the state. The board is themed; each skin commits to its own single look. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.card.decided{ border-color:var(--acc); }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; }
+.tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:560px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+ol,ul{ margin:0; padding-left:20px; } li{ margin-bottom:6px; max-width:78ch; } li b{ color:var(--fg); }
+
+/* ---------- the screen: one structure, three skins. Every part has an explicit grid area. ---------- */
+.stage{ background:var(--board); border-radius:4px; padding:12px; display:flex; justify-content:center; }
+.screen{ position:relative; width:100%; max-width:560px; aspect-ratio:560/400; display:grid; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 104px; gap:7px; padding:12px; box-sizing:border-box; font-size:12px; line-height:1.25; overflow:hidden; }
+.screen .hdr{ grid-area:1/1/2/2; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.screen .hdr .title{ font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.screen .hdr .who{ font-size:11px; opacity:.8; white-space:nowrap; }
+.screen .side{ grid-area:1/2/3/3; display:flex; flex-direction:column; justify-content:space-between; gap:7px; min-width:0; }
+.screen .side .grp{ display:flex; flex-direction:column; gap:7px; }
+.screen .main{ grid-area:2/1/3/2; min-width:0; display:flex; flex-direction:column; gap:7px; }
+.screen .foot{ grid-area:3/1/4/3; display:flex; justify-content:space-between; gap:8px; font-size:10px; opacity:.75; }
+.btn{ display:block; padding:6px 5px; text-align:center; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; cursor:default; line-height:1.15; }
+.btn.locked{ opacity:.55; } .btn.blank{ opacity:.35; }
+.btn small{ display:block; font-weight:400; text-transform:none; letter-spacing:0; font-size:9.5px; opacity:.85; }
+.big{ font-size:34px; font-weight:700; line-height:1; letter-spacing:-.01em; font-variant-numeric:tabular-nums; text-align:center; padding-block:6px 2px; }
+.big small{ font-size:11px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; margin-left:6px; }
+.coins{ display:flex; gap:5px; } .coin{ flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10px; padding:4px 0; min-width:0; }
+.coin i{ width:16px; height:16px; border-radius:50%; display:block; border:2px solid currentColor; box-sizing:border-box; } .coin b{ font-variant-numeric:tabular-nums; } .coin span{ font-size:8px; letter-spacing:.04em; text-transform:uppercase; opacity:.75; }
+.coin.c1 i{ background:#c87a4a } .coin.c2 i{ background:#e4b84a } .coin.c3 i{ background:#7fd8e8 } .coin.c4 i{ background:#4a4552 } .coin.c5 i{ background:#b07cf0 }
+.sA .coin.zero i,.sC .coin.zero i{ border-style:dashed; }
+.field{ display:flex; justify-content:space-between; align-items:center; padding:3px 6px; font-size:11px; } .field span:last-child{ opacity:.7; }
+.list{ display:flex; flex-direction:column; } .row{ display:flex; justify-content:space-between; gap:6px; padding:2px 4px; font-size:10.5px; align-items:baseline; } .row .m{ opacity:.7; } .row .amt{ font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:700; }
+.row.sel{ font-weight:700; }
+.pos{ color:var(--k-pos) } .neg{ color:var(--k-neg) }
+.chips{ display:flex; flex-wrap:wrap; gap:3px; } .chip{ font-size:9px; padding:1px 6px; letter-spacing:.04em; text-transform:uppercase; } .chip.on{ font-weight:700; }
+.slots{ display:grid; grid-template-columns:repeat(9,1fr); gap:4px; } .slot{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:10px; } .slot.lk{ opacity:.45; }
+.hint{ font-size:9.5px; opacity:.75; text-align:center; }
+.pg{ display:flex; justify-content:space-between; font-size:10px; opacity:.8; }
+
+/* Skin B (chosen): Cash Machine. Beige bezel, black inset screen, green phosphor type, scanlines, physical keys beside and below the screen. */
+.sB .screen{ --k-pos:#58f29a; --k-neg:#f2b544; background:#cfc8b8; color:#58f29a; font-family:"VT323","Courier New",monospace; font-size:14px; border:4px solid #8f877a; border-radius:8px; box-shadow:inset 0 2px 0 #ece6d8, inset 0 -3px 0 #a79e8e; }
+.sB .screen .hdr,.sB .screen .main,.sB .screen .foot{ background:#061008; padding:6px 10px; box-shadow:inset 0 0 14px #0d3b22; }
+.sB .screen .hdr{ border-radius:4px 4px 0 0; margin-bottom:-7px; padding-bottom:0; }
+.sB .screen .main{ border-radius:0 0 4px 4px; padding-top:8px; }
+.sB .screen .foot{ border-radius:4px; color:#3fb97a; padding-top:6px; }
+.sB .screen .hdr .title{ letter-spacing:.14em; } .sB .screen .hdr .title::before{ content:"> "; } .sB .screen .hdr .who{ color:#3fb97a; }
+.sB .screen::after{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(transparent 0 2px,#00000022 2px 3px); mix-blend-mode:multiply; }
+.sB .btn{ background:#eae4d5; color:#2b2823; border:1px solid #9a9183; border-bottom-width:3px; border-radius:4px; font-family:"Oswald",system-ui,sans-serif; font-weight:600; font-size:10px; letter-spacing:.08em; }
+.sB .btn.locked{ color:#8f877a; } .sB .btn.blank{ background:#ddd6c6; }
+.sB .big{ text-shadow:0 0 6px #58f29a88; font-weight:400; font-size:40px; }
+.sB .coin{ color:#58f29a; } .sB .coin i{ border:2px solid #58f29a; box-shadow:0 0 5px #58f29a55; } .sB .coin.zero i{ border-style:dashed; background:none; box-shadow:none; } .sB .coin.zero{ opacity:.7; }
+.sB .field{ border:1px solid #1f6b43; } .sB .row{ border-bottom:1px dotted #1f6b43; } .sB .row.sel{ background:#0f2d1c; }
+.sB .chip{ border:1px solid #3fb97a; color:#3fb97a; } .sB .chip.on{ background:#58f29a; color:#061008; }
+.sB .slot{ border:1px solid #3fb97a; } .sB .slot.lk{ border-style:dashed; color:#3fb97a; }
+@media (prefers-reduced-motion: no-preference){ .sB .big{ animation:flick 6s steps(1) infinite; } @keyframes flick{ 0%,96%,100%{ opacity:1 } 97%{ opacity:.85 } } }
+
+/* Skin A (not chosen): Passbook. Cream ledger paper, ruled lines, navy ink, rubber-stamp buttons. */
+.sA .screen{ --k-pos:#2f6b4f; --k-neg:#a33b2a; background:#f1e9d6 repeating-linear-gradient(transparent 0 15px,#d8cdb2 15px 16px); color:#1e2a44; font-family:"Courier Prime","Courier New",monospace; border:6px solid #3b2f2a; box-shadow:inset 0 0 0 2px #c9b98f; }
+.sA .screen .hdr .title{ font-family:"Libre Baskerville",Georgia,serif; letter-spacing:.14em; border-bottom:2px double #1e2a44; padding-bottom:2px; }
+.sA .screen .hdr .who{ font-style:italic; font-family:"Libre Baskerville",Georgia,serif; }
+.sA .btn{ border:2px solid #a33b2a; color:#a33b2a; background:#f6efdf; transform:rotate(-1.2deg); box-shadow:1px 1px 0 #a33b2a55; }
+.sA .side .grp:last-child .btn{ transform:rotate(1deg); border-color:#1e2a44; color:#1e2a44; box-shadow:1px 1px 0 #1e2a4455; }
+.sA .big{ font-family:"Libre Baskerville",Georgia,serif; border-bottom:1px solid #1e2a44; }
+.sA .coin{ color:#1e2a44; background:#efe4ca; border:1px solid #c9b98f; } .sA .coin i{ background:none!important; border:2px double #1e2a44; }
+.sA .field{ border-bottom:1px solid #1e2a44; background:#f6efdf; } .sA .row{ border-bottom:1px dotted #c9b98f; } .sA .row.sel{ background:#efe4ca; }
+.sA .chip{ border:1px solid #1e2a44; } .sA .chip.on{ background:#1e2a44; color:#f1e9d6; }
+.sA .slot{ background:#f6efdf; border:1px solid #c9b98f; } .sA .slot.lk{ background:repeating-linear-gradient(45deg,#e4d8bc 0 3px,#f1e9d6 3px 6px); }
+.sA .foot{ font-family:"Libre Baskerville",Georgia,serif; font-style:italic; }
+
+/* Skin C (not chosen): Market Board. Slate chalkboard in a wooden frame, chalk type, kraft price tags on string. */
+.sC .screen{ --k-pos:#ffd97a; --k-neg:#ff9c9c; background:#243029 radial-gradient(ellipse at 30% 20%,#2e3b33 0,#243029 60%); color:#f4f1e8; font-family:"Patrick Hand","Comic Sans MS",cursive; font-size:13.5px; border:9px solid #6b4a2b; box-shadow:inset 0 0 0 2px #4a321c, inset 0 0 30px #00000066; }
+.sC .screen .hdr .title{ font-family:"Cabin Sketch","Patrick Hand",cursive; font-size:15px; letter-spacing:.06em; text-transform:none; }
+.sC .screen .hdr .who{ color:#ffd97a; }
+.sC .btn{ background:#d9b98a; color:#4a321c; border:1px solid #b08a57; border-radius:3px 3px 6px 6px; font-family:"Patrick Hand",cursive; text-transform:none; font-size:11.5px; letter-spacing:0; position:relative; margin-top:6px; }
+.sC .btn::before{ content:""; position:absolute; top:-6px; left:50%; width:2px; height:6px; background:#c9c3b4; transform:translateX(-50%); }
+.sC .btn.locked{ background:#9c8a6c; }
+.sC .big{ font-family:"Cabin Sketch","Patrick Hand",cursive; font-weight:700; color:#ffd97a; }
+.sC .coin{ color:#f4f1e8; } .sC .coin i{ background:none!important; border:2px solid #f4f1e8; border-radius:50% 45% 50% 48%; }
+.sC .field{ border-bottom:2px solid #f4f1e855; } .sC .row{ border-bottom:1px dashed #f4f1e833; } .sC .row.sel{ background:#f4f1e81a; }
+.sC .chip{ border:1px solid #f4f1e8; border-radius:10px; text-transform:none; font-size:10px; } .sC .chip.on{ background:#f4f1e8; color:#243029; }
+.sC .slot{ border:1px dashed #f4f1e899; } .sC .slot.lk{ border-style:dotted; }
+.sC .foot{ color:#c9c3b4; }
+</style>
+<div class="wrap">
+<section><h1>Bank UI Concepts</h1>
+<p class="lede">Three looks for the banking screens, chosen to sit apart from the machines' Holo HUD (dark navy, turquoise, gold, pixel type). Each panel is the same screen drawn in a skin: the ATM's account screen, the pay screen, the transaction log and the safety deposit box. In game the layout is drawn with textures and the Minecraft font; the mock-ups show material, palette, where things sit and how states read, not the exact lettering. The screens are one layout with swappable skins, so a stall can pick its own look later.</p>
+<div class="card decided"><h3>Decided (owner, 2026-10-11)</h3><ul>
+<li><b>Skin B, Cash Machine.</b> Passbook and Market Board stay on this page as candidate vendor skins.</li>
+<li><b>Layout (revised twice with the owner):</b> all keys in one column on the right, navigation at the top (Pay players, Transaction log) and the screen's own actions at the bottom (Deposit, Withdraw); the screen fills the left and middle; the status strip (bank, server, sync) runs across the whole bottom.</li>
+<li><b>Coins:</b> all five tiers with counts; green outline with the tier's own colour in the centre; a broken outline and no fill when the bank holds none of that tier.</li>
+<li><b>Portable item:</b> Portable Banker. Same screens, a Shopping Network side key instead of the deposit keys.</li>
+</ul></div>
+<div class="card"><div class="ctl"><span class="key"><b>Screen:</b></span><button type="button" class="tb on" data-scr="first">Account</button><button type="button" class="tb" data-scr="pay">Pay a player</button><button type="button" class="tb" data-scr="log">Transaction log</button><button type="button" class="tb" data-scr="box">Deposit box</button>
+<span class="key" id="tog-first"><b>State:</b> <label><input type="checkbox" id="portable"> Portable Banker (adds Shopping Network)</label> <label><input type="checkbox" id="unlocked"> Network unlocked</label></span>
+<span class="key" id="tog-box" hidden><b>State:</b> <label><input type="checkbox" id="expired"> Rent ran out 5 days ago</label></span>
+<span class="key" id="tog-pay" hidden><b>State:</b> <label><input type="checkbox" id="confirm" checked> Over 1,000 pieces: confirmation step</label></span>
+</div></div></section>
+
+<section><h2>1. Chosen: B. Cash Machine</h2><div id="chosen"></div></section>
+
+<section><h2>2. Not chosen, kept as vendor skins</h2><div class="grid2" id="others"></div></section>
+
+<section><h2>3. What every skin has to carry</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th>Screen</th><th>Shows</th><th>Actions</th></tr></thead><tbody>
+<tr><td>Account (ATM and Portable Banker)</td><td>Pieces balance; coins held in the bank by tier (Copper, Gold, Diamond, Netherite, Illyrium); which server you are on and that the balance is synced; the reminder that banked coins earn no interest.</td><td>Right column, top: Pay players, Transaction log (Portable Banker adds Shopping Network, locked until bought with coins). Right column, bottom (ATM only): Deposit (keep as coins or convert to pieces, one way), Withdraw coins.</td></tr>
+<tr><td>Pay a player</td><td>Search across every account on the network, online or not; the recipient; the amount; your balance after.</td><td>Pay; a confirmation step above 1,000 pieces; a switch to refuse incoming payments.</td></tr>
+<tr><td>Transaction log</td><td>Bought, sold, paid, received, deposits and conversions; where or with whom; the amount signed; 90 days, pages of 50.</td><td>Type chips, date range, shop or player, amount sort, search.</td></tr>
+<tr><td>Safety deposit box</td><td>Rented-until date, unlocked slots (6 to 18), locked slots; when expired: days lapsed, rent plus holding fee owed.</td><td>Extend rent (coins or pieces, as many days as wanted), Add 3 slots, Pay to open when expired. Coins and totems refused.</td></tr>
+</tbody></table></div></div></section>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const state={scr:'first', portable:false, unlocked:false, expired:false, confirm:true};
+  const COINS=[['c1','Copper',10],['c2','Gold',0],['c3','Diamond',3],['c4','Netherite',0],['c5','Illyrium',1]];
+  const LOG=[['11 Oct 14:02','Bought 16 Tetrium Plate','Spawn Smith',-2400],['11 Oct 13:40','Paid Lena','player',-1500],['10 Oct 21:15','Received from Kai','player',+600],['10 Oct 18:03','Sold 64 Cobblestone','Quarry Stall',+128],['9 Oct 09:30','Converted 2 Copper coins','Spawn Bank',+2000],['8 Oct 22:11','Bought Coin Blank','Spawn Smith',-800]];
+  function btn(t,sub,cls){ return '<span class="btn'+(cls?' '+cls:'')+'">'+t+(sub?'<small>'+sub+'</small>':'')+'</span>'; }
+  function side(nav,act){ return '<div class="side"><div class="grp">'+nav+'</div><div class="grp">'+act+'</div></div>'; }
+  function coins(){ return '<div class="coins">'+COINS.map(c=>'<div class="coin '+c[0]+(c[2]?'':' zero')+'"><i></i><b>'+c[2]+'</b><span>'+c[1]+'</span></div>').join('')+'</div>'; }
+  function first(){
+    const dev=state.portable;
+    return '<div class="hdr"><span class="title">'+(dev?'Portable Banker':'Shatter Bank')+'</span><span class="who">Mrgregles</span></div>'
+    +''
+    +'<div class="main"><div class="big">24,350<small>pieces</small></div>'+coins()+'<div class="hint">Coins held in the bank earn no interest, unlike a vault. 1 Copper coin = 1,000 pieces when converted; conversion is one way.</div></div>'
+    +side(btn('Pay players')+btn('Transaction log')+(dev?btn('Shopping Network',state.unlocked?'3 shops open':'Unlock: 1 Diamond coin',state.unlocked?'':'locked'):''), dev?btn('Convert and withdraw','at a bank','locked'):btn('Deposit coins','keep or convert')+btn('Withdraw coins'))
+    +''
+    +'<div class="foot"><span>'+(dev?'anywhere':'spawn bank')+' / survival-1</span><span>synced 1 s ago</span></div>';
+  }
+  function pay(){
+    const c=state.confirm;
+    return '<div class="hdr"><span class="title">Pay a player</span><span class="who">balance 24,350</span></div>'
+    +''
+    +'<div class="main"><div class="field"><span>Find: len</span><span>network, offline too</span></div><div class="list"><div class="row sel"><span>Lena</span><span class="m">online, survival-2</span></div><div class="row"><span>Lenny_B</span><span class="m">offline 2 d</span></div><div class="row"><span>Leno</span><span class="m">offline 11 d</span></div></div><div class="field"><span>Amount</span><span><b>1,500</b> pieces</span></div>'+(c?'<div class="hint">Over 1,000 pieces: check the name. Lena gets the pieces at once and a notice at login.</div>':'<div class="hint">Balance after: 22,850 pieces</div>')+'</div>'
+    +side(btn('Back')+btn('Accept payments','on'), c?btn('Confirm','pay 1,500 to Lena')+btn('Cancel'):btn('Pay 1,500'))
+    +'<div class="foot"><span>payments go through the network ledger</span><span>fee: none</span></div>';
+  }
+  function log(){
+    const rows=LOG.map(r=>'<div class="row"><span>'+r[0]+'<span class="m"> &middot; '+r[1]+'</span></span><span class="m">'+r[2]+'</span><span class="amt '+(r[3]<0?'neg':'pos')+'">'+(r[3]<0?'-':'+')+Math.abs(r[3]).toLocaleString()+'</span></div>').join('');
+    return '<div class="hdr"><span class="title">Transaction log</span><span class="who">last 90 days</span></div>'
+    +''
+    +'<div class="main"><div class="chips"><span class="chip on">All</span><span class="chip">Bought</span><span class="chip">Sold</span><span class="chip">Paid</span><span class="chip">Received</span><span class="chip">Deposits</span></div><div class="list">'+rows+'</div><div class="pg"><span>page 1 of 4</span><span>174 entries</span></div></div>'
+    +side(btn('Back')+btn('Search','plate')+btn('Next page'), btn('Dates','7 days')+btn('Shop / player','any')+btn('Sort','amount, high to low'))
+    +''
+    +'<div class="foot"><span>kept 90 days on the network</span><span>+ in, - out</span></div>';
+  }
+  function box(){
+    const ex=state.expired, open=9;
+    let slots=''; for(let i=0;i<18;i++){ const lk=i>=open; slots+='<div class="slot'+(lk?' lk':'')+'">'+(lk?'&#x1F512;':(i<4?['&#x25A0;','&#x25C6;','&#x2726;','&#x25A0;'][i]:''))+'</div>'; }
+    return '<div class="hdr"><span class="title">Safety deposit box</span><span class="who">'+(ex?'rent ran out 5 days ago':'rented until 24 Oct, 13 days')+'</span></div>'
+    +'<div class="main">'+(ex?'<div class="big">1,250<small>owed</small></div><div class="hint">Rent 7 days (350) plus a holding fee for 5 unpaid days (900). Your 9 slots and their items are kept; they open when you pay.</div>':'<div class="slots">'+slots+'</div><div class="hint">9 of 18 slots unlocked. Shatter Coins and Shatter Totems cannot be stored here.</div>')+'</div>'
+    +side(btn('Back'), ex?btn('Pay to open','1,250 pieces or 2 Copper'):btn('Extend rent','7 d = 350 pieces or 1 Copper')+btn('Add 3 slots','2 Gold coins'))
+    +'<div class="foot"><span>one box per player, any bank</span><span>'+(ex?'items safe, locked':'items safe at all times')+'</span></div>';
+  }
+  const SCR={first,pay,log,box};
+  const chosen=['sB','B. Cash Machine','A 1980s ATM: beige bezel, a black inset screen with green phosphor type and faint scanlines, one column of keys to the right of the screen, navigation at the top and the screen\'s own actions at the bottom, with the status strip across the base. That is also how the two-block ATM reads in the world. Debits in amber. Retro-industrial rather than sci-fi, so it stays clear of the Holo HUD.'];
+  const others=[['sA','A. Passbook (not chosen)','A paper ledger in a dark wooden frame: cream ruled pages, navy ink, serif headings, typewriter figures, buttons as rubber stamps. Credits in green ink, debits in red. A candidate skin for a bank-like vendor later.'],
+    ['sC','C. Market Board (not chosen)','A slate chalkboard in a wooden frame with chalk lettering and kraft price tags on string. Warm and hand-made; the natural first vendor skin for stalls.']];
+  function card(cls,name,text){ const c=document.createElement('div'); c.className='card '+cls; c.innerHTML='<h3>'+name+'</h3><div class="stage"><div class="screen"></div></div><p>'+text+'</p>'; return c; }
+  $('chosen').appendChild(card(...chosen)); for(const o of others){ $('others').appendChild(card(...o)); }
+  function render(){ const html=SCR[state.scr](); document.querySelectorAll('.screen').forEach(s=>s.innerHTML=html);
+    $('tog-first').hidden=state.scr!=='first'; $('tog-box').hidden=state.scr!=='box'; $('tog-pay').hidden=state.scr!=='pay'; }
+  document.querySelectorAll('[data-scr]').forEach(b=>b.onclick=()=>{ state.scr=b.dataset.scr; document.querySelectorAll('[data-scr]').forEach(x=>x.classList.toggle('on',x===b)); render(); });
+  $('portable').onchange=e=>{ state.portable=e.target.checked; render(); };
+  $('unlocked').onchange=e=>{ state.unlocked=e.target.checked; render(); };
+  $('expired').onchange=e=>{ state.expired=e.target.checked; render(); };
+  $('confirm').onchange=e=>{ state.confirm=e.target.checked; render(); };
+  render();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · The Shatter Bank</div><div class="bsp-cap">Your account on the ATM: pieces, the coins you keep by tier, and the keys for paying, the log, deposits and withdrawals.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelector('.screen')); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script>

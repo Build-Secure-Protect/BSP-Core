@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Popup Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: set 2 of the Teams mock-ups. Section 1 the invite popup in three placements on a mock game view; section 2 the team chat badge in three styles; section 3 the Team screen look C refined to the owner's picks (rows, MESSAGES view). */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+.grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+code{ font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; }
+
+/* ---------- mock game view ---------- */
+.game{ position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:4px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; color:#e8eaf0;
+  background:linear-gradient(#5c86b8 0 46%,#3a5a3a 46% 48%,#2f4a2d 48% 62%,#4b3b2a 62% 100%); }
+.game::before{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent 0 31px,#00000012 31px 32px),repeating-linear-gradient(transparent 0 31px,#00000012 31px 32px); }
+.cross{ position:absolute; left:50%; top:50%; width:9px; height:9px; transform:translate(-50%,-50%); } .cross::before,.cross::after{ content:""; position:absolute; background:#ffffffcc; } .cross::before{ left:4px; top:0; width:1px; height:9px; } .cross::after{ top:4px; left:0; height:1px; width:9px; }
+.hotbar{ position:absolute; left:50%; bottom:6px; transform:translateX(-50%); display:flex; gap:1px; background:#00000088; padding:2px; border:1px solid #ffffff44; } .hotbar i{ width:18px; height:18px; display:block; border:1px solid #8b8b8b55; background:#1a1a1a66; } .hotbar i:first-child{ outline:2px solid #fff; }
+.xp{ position:absolute; left:50%; bottom:30px; width:182px; height:3px; transform:translateX(-50%); background:#00000088; } .xp::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:40%; background:#7fff5a; }
+.chat{ position:absolute; left:4px; bottom:34px; display:flex; flex-direction:column; gap:1px; max-width:62%; } .chat div{ background:#00000080; padding:1px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .chat .team{ color:#55ffff; } .chat .btn{ color:#58f29a; text-decoration:underline; } .chat .btn.no{ color:#ff6b5c; } .chat .dim{ color:#9aa3b5; }
+.chatbox{ position:absolute; left:4px; right:4px; bottom:4px; height:12px; background:#00000080; padding:1px 4px; display:flex; gap:6px; align-items:center; } .chatbox .cur::after{ content:"_"; animation:bl 1s steps(1) infinite; } @keyframes bl{50%{opacity:0}}
+.hud{ position:absolute; background:#10151Cf0; border:1px solid #b58cff; color:#e8eaf0; display:grid; gap:2px 6px; padding:4px 6px; box-sizing:border-box; }
+.hud .t{ color:#b58cff; font-weight:600; letter-spacing:.06em; font-size:8.5px; } .hud .l{ font-size:8px; white-space:nowrap; } .hud .l .tm{ color:#55ffff; font-weight:600; } .hud .m{ color:#9aa3b5; font-size:8px; } .hud .k{ color:#19d3b0; font-size:8px; }
+.hud .ring{ width:30px; height:30px; border-radius:50%; background:conic-gradient(#b58cff 0 324deg,#2a2f3a 324deg 360deg); display:grid; place-items:center; grid-row:1/5; } .hud .ring span{ width:22px; height:22px; border-radius:50%; background:#10151C; display:grid; place-items:center; font-size:8px; }
+.hud .head{ width:14px; height:14px; background:#8a6a3c; box-shadow:inset 0 -6px 0 #5a3d22, inset 0 0 0 2px #c79a62; grid-row:1/4; align-self:start; }
+.hud .bar{ position:absolute; left:0; bottom:0; height:2px; width:90%; background:#b58cff; }
+.chip{ display:inline-block; border:1px solid #19d3b0; color:#19d3b0; padding:0 3px; font-size:7.5px; margin-right:3px; border-radius:2px; } .chip.no{ border-color:#ff6b5c; color:#ff6b5c; }
+.badge{ position:absolute; font-size:8px; font-weight:600; letter-spacing:.08em; padding:1px 5px; border:1px solid #55ffff; color:#55ffff; background:#10151Cf0; border-radius:2px; }
+.stack{ position:absolute; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:3px; align-items:center; }
+.p1{ position:static; width:200px; min-height:46px; grid-template-columns:30px 1fr; align-content:start; }
+.p1.recall{ border-color:#ff6b5c; } .p1.recall .t{ color:#ff6b5c; } .p1.recall .ring{ background:conic-gradient(#ff6b5c 0 200deg,#2a2f3a 200deg 360deg); }
+.p2{ left:0; top:14px; width:230px; grid-template-columns:14px 1fr; border-left:0; border-radius:0 3px 3px 0; }
+.p3{ right:6px; top:28px; width:170px; grid-template-columns:14px 1fr; }
+.p3.second{ top:86px; opacity:.85; border-color:#ff6b5c; } .p3.second .t{ color:#ff6b5c; }
+
+/* ---------- refined C ---------- */
+.screen{ position:relative; width:100%; max-width:500px; aspect-ratio:500/360; box-sizing:border-box; font-size:10.5px; line-height:1.3; overflow:hidden; display:grid; gap:6px; background:#10151Cf0; border:1px solid #b58cff; color:#e8eaf0; font-family:"IBM Plex Sans",system-ui,sans-serif; padding:8px 10px; grid-template-rows:auto 1fr auto; grid-template-columns:minmax(0,1fr); }
+.screen .hdr{ display:flex; justify-content:space-between; align-items:center; gap:6px; } .screen .hdr .ttl{ font-weight:600; letter-spacing:.04em; color:#b58cff; } .screen .hdr .who{ font-size:9.5px; color:#9aa3b5; } .screen .tn{ color:#55ffff; font-weight:600; }
+.screen .main{ background:#0c0e12; border:1px solid #2a2f3a; padding:6px; display:flex; flex-direction:column; gap:4px; min-width:0; min-height:0; }
+.row{ display:flex; align-items:center; gap:6px; min-width:0; padding:2px 0; border-bottom:1px solid #1a1f29; } .row .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .row .st{ font-size:9px; color:#9aa3b5; white-space:nowrap; } .row .tot{ font-size:8.5px; color:#9aa3b5; }
+.dot{ width:7px; height:7px; border-radius:50%; flex:none; } .dot.here{ background:#58f29a; } .dot.else{ background:#f2b544; } .dot.off{ background:#555c6a; } .crown{ font-size:9px; color:#ffd23a; }
+.keys{ display:flex; gap:4px; min-width:0; } .keys .grp{ display:flex; gap:4px; flex:1; min-width:0; } .keys .gap{ width:8px; flex:none; } .k{ display:block; flex:1; min-width:0; padding:5px 3px; text-align:center; font-size:8.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; background:#0c0e12; border:1px solid #2a2f3a; color:#9aa3b5; border-radius:2px; position:relative; } .k.on{ border-color:#b58cff; color:#b58cff; } .k.warn{ border-color:#ff6b5c; color:#ff6b5c; } .k.locked{ color:#555c6a; } .k small{ display:block; font-weight:400; text-transform:none; letter-spacing:0; font-size:8px; opacity:.85; } .k .n{ position:absolute; top:-5px; right:-5px; background:#b58cff; color:#10151c; font-size:7.5px; padding:0 4px; border-radius:8px; }
+.rt{ font-size:8.5px; letter-spacing:.08em; text-transform:uppercase; color:#9aa3b5; display:flex; justify-content:space-between; }
+.pin{ font-size:9px; padding:4px 6px; border-left:3px solid #ffd23a; background:#141a22; } .pin b{ font-size:8px; letter-spacing:.08em; text-transform:uppercase; display:block; opacity:.8; }
+.msg{ display:grid; grid-template-columns:auto 1fr; gap:0 6px; font-size:9px; } .msg .t{ opacity:.6; font-variant-numeric:tabular-nums; } .msg .w{ font-weight:600; color:#b58cff; } .msg.new .w::after{ content:" •"; color:#58f29a; }
+.input{ font-size:9px; padding:4px 6px; color:#9aa3b5; border:1px dashed #9aa3b5; border-radius:2px; } .input::after{ content:"▏"; animation:bl 1s steps(1) infinite; }
+.hint{ font-size:8.5px; color:#9aa3b5; }
+</style>
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+</style></head>
+<body><div class="wrap">
+
+<section><h1>Team Popup Concepts</h1>
+<p class="lede">Mock-up set 2 of the Teams line: the invite popup an invited player sees, and the badge that shows while their chat goes to the team. Both are drawn on a mock game view with the hotbar, the chat and the existing BSP overlays in their real places (the Recall offer sits 100 px above the bottom, centred; the Sentinel strip slides in at the top left). Section 3 shows the Team screen look C refined to the picks from set 1: member rows and the board as its own MESSAGES view.</p></section>
+
+<section><h2>1. The invite popup</h2>
+<div class="card"><p>The invite arrives from <b>Avenn</b> for team <b>Nightwatch</b>. It lasts 60 s; the player answers with two keys (shown as R and N, the Recall offer's keys, rebindable in Controls) or clicks the chat line. The three placements differ in where the panel sits and how it counts down. In every one, a second prompt (here a Recall offer) queues behind or beside it instead of covering it.</p></div>
+<div class="grid3">
+<div class="card"><h3>P1. The Recall's spot</h3><div class="game"><div class="cross"></div>
+ <div class="stack" style="bottom:100px"><div class="hud p1 recall"><div class="ring"><span>20</span></div><div class="t">RECALL OFFER</div><div class="l">Your totem, 212 blocks away</div><div class="m">Lands within 8 blocks</div><div class="k">R accept · N decline</div></div>
+ <div class="hud p1"><div class="ring"><span>54</span></div><div class="t">TEAM INVITE</div><div class="l">Avenn invites you to <span class="tm">Nightwatch</span></div><div class="m">4 members · leader Mrgregles</div><div class="k">R accept · N decline</div></div></div>
+ <div class="chat"><div><span class="team">[Team]</span> Avenn invited you to join <span class="team">Nightwatch</span> <span class="btn">[Accept]</span> <span class="btn no">[Decline]</span></div></div>
+ <div class="xp"></div><div class="hotbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<p>The same 190 x 46 panel the Recall offer uses, violet instead of red, the countdown as the ring on the left. Prompts stack upward: the newest is at the bottom and answers first; the keys always act on the lowest. Consistent with what players already know from Recall.</p></div>
+<div class="card"><h3>P2. Top-left strip</h3><div class="game"><div class="cross"></div>
+ <div class="hud p2"><div class="head"></div><div class="t">TEAM INVITE · 54 s</div><div class="l">Avenn invites you to <span class="tm">Nightwatch</span></div><div class="k"><span class="chip">R ACCEPT</span><span class="chip no">N DECLINE</span></div><div class="bar"></div></div>
+ <div class="chat"><div><span class="team">[Team]</span> Avenn invited you to join <span class="team">Nightwatch</span> <span class="btn">[Accept]</span> <span class="btn no">[Decline]</span></div></div>
+ <div class="xp"></div><div class="hotbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<p>Slides in from the left edge like the Sentinel strip, with the inviter's head; the line along its bottom shrinks as the minute runs out. Out of the way of the crosshair and the hotbar; a second prompt slides in beneath it.</p></div>
+<div class="card"><h3>P3. Right-edge card</h3><div class="game"><div class="cross"></div>
+ <div class="hud p3"><div class="head"></div><div class="t">TEAM INVITE</div><div class="l">Avenn · <span class="tm">Nightwatch</span></div><div class="k"><span class="chip">R</span>accept <span class="chip no" style="margin-left:4px">N</span>decline · 54 s</div></div>
+ <div class="hud p3 second"><div class="head" style="background:#555c6a;box-shadow:none"></div><div class="t">RECALL OFFER</div><div class="l">212 blocks away</div><div class="k"><span class="chip">R</span> <span class="chip no">N</span> · 20 s</div></div>
+ <div class="chat"><div><span class="team">[Team]</span> Avenn invited you to join <span class="team">Nightwatch</span> <span class="btn">[Accept]</span> <span class="btn no">[Decline]</span></div></div>
+ <div class="xp"></div><div class="hotbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<p>A small card where the game's own toasts appear (top right), the countdown in the text. Prompts stack downward, the active one on top and bright, the waiting ones dimmed. Smallest footprint of the three; furthest from where the eye rests.</p></div>
+</div></section>
+
+<section><h2>2. The team chat badge</h2>
+<div class="card"><p>While TEAM CHAT is on, everything the player types goes to the team. The badge is the reminder. It is drawn in the team's colour (aqua here) and disappears when the player switches back. <code>/t message</code> sends one line without switching; a team line reads <span style="color:#19a3a3">[Team] Avenn: message</span> in the team colour.</p></div>
+<div class="grid3">
+<div class="card"><h3>B1. Pill above the chat</h3><div class="game"><div class="cross"></div>
+ <div class="chat" style="bottom:48px"><div class="dim">&lt;Pell&gt; anyone selling lava?</div><div><span class="team">[Team] Avenn:</span> Nether hub chunks are loaded again</div></div>
+ <span class="badge" style="left:4px;bottom:36px">TEAM CHAT</span>
+ <div class="chatbox"><span class="cur">Put Ward II on the east totem</span></div>
+ <div class="xp"></div><div class="hotbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<p>A small pill sitting just above the chat lines, visible whether the chat box is open or not. Clear at a glance before typing.</p></div>
+<div class="card"><h3>B2. Tag in the chat box</h3><div class="game"><div class="cross"></div>
+ <div class="chat"><div class="dim">&lt;Pell&gt; anyone selling lava?</div><div><span class="team">[Team] Avenn:</span> Nether hub chunks are loaded again</div></div>
+ <div class="chatbox" style="border-left:3px solid #55ffff"><span style="color:#55ffff;font-weight:600">to Nightwatch</span><span class="cur">Put Ward II on the east totem</span></div>
+ <div class="xp"></div><div class="hotbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<p>Nothing on the HUD; the chat box itself carries a team-coloured edge and "to Nightwatch" in front of the text when it is open. Zero clutter in play, seen exactly when it matters: as you type.</p></div>
+<div class="card"><h3>B3. Tag by the hotbar</h3><div class="game"><div class="cross"></div>
+ <div class="chat"><div class="dim">&lt;Pell&gt; anyone selling lava?</div><div><span class="team">[Team] Avenn:</span> Nether hub chunks are loaded again</div></div>
+ <span class="badge" style="left:calc(50% + 96px);bottom:10px">TEAM</span>
+ <div class="xp"></div><div class="hotbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+<p>A tag to the right of the hotbar, where the eye goes for the item in hand. Always visible while on, away from the chat column; the team name shows when the chat box opens.</p></div>
+</div></section>
+
+<section><h2>3. Look C refined to the picks</h2>
+<div class="card"><p>Look C's violet frame and key bar, now with member rows (where they are, last seen, how many totems they hold) and the message board as its own MESSAGES view with a new-count badge on the key. The screen opens from the TEAM tab, the held totem's TEAM key or the key binding; without a placed totem it looks the same.</p></div>
+<div class="grid2">
+<div class="card"><h3>Members view</h3><div style="background:var(--board);padding:12px;border-radius:4px;display:flex;justify-content:center"><div class="screen">
+ <div class="hdr"><span class="ttl">Team</span><span class="who">you lead this team</span></div>
+ <div class="main"><div class="rt"><span><span class="tn">Nightwatch</span></span><span>4 of 5 members</span></div>
+  <div class="row"><span class="dot here"></span><span class="nm">Mrgregles <span class="crown">♛</span></span><span class="tot">2 totems</span><span class="st">online here</span></div>
+  <div class="row"><span class="dot else"></span><span class="nm">Avenn</span><span class="tot">1 totem</span><span class="st">on survival-2</span></div>
+  <div class="row"><span class="dot off"></span><span class="nm">Kestrel_Vane</span><span class="tot">1 totem</span><span class="st">2 h ago</span></div>
+  <div class="row"><span class="dot off"></span><span class="nm">Doro</span><span class="tot">no totem placed</span><span class="st">3 d ago</span></div>
+  <div class="hint" style="margin-top:auto">Members may open, upgrade and pass the wards of each other's totems. Nobody in the team can steal from it.</div></div>
+ <div class="keys"><div class="grp" style="flex:3"><span class="k on">members</span><span class="k">invite</span><span class="k">messages<span class="n">3</span></span></div><div class="gap"></div><div class="grp" style="flex:1.3"><span class="k on">team chat<small>on</small></span></div><div class="gap"></div><div class="grp" style="flex:1"><span class="k">settings</span></div><div class="gap"></div><div class="grp" style="flex:2"><span class="k locked">leave<small>hand over first</small></span><span class="k warn">disband</span></div></div>
+</div></div></div>
+<div class="card"><h3>Messages view</h3><div style="background:var(--board);padding:12px;border-radius:4px;display:flex;justify-content:center"><div class="screen">
+ <div class="hdr"><span class="ttl">Team</span><span class="who"><span class="tn">Nightwatch</span> · 3 new since Friday</span></div>
+ <div class="main"><div class="pin"><b>Pinned by Mrgregles</b>Meet at the Nether hub Saturday 20:00, bring lava</div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:2px;justify-content:flex-end;min-height:0;overflow:hidden">
+  <div class="msg"><span class="t">Fri 21:04</span><span><span class="w">Avenn</span> Nether hub chunks are loaded again</span></div>
+  <div class="msg"><span class="t">Fri 21:06</span><span><span class="w">Mrgregles</span> Put Ward II on the east totem</span></div>
+  <div class="msg new"><span class="t">Sat 09:12</span><span><span class="w">Kestrel_Vane</span> Anyone have spare Tetrium Plates?</span></div>
+  <div class="msg new"><span class="t">Sat 09:40</span><span><span class="w">Doro</span> 12 in the deposit box, take them</span></div>
+  <div class="msg new"><span class="t">Sat 10:02</span><span><span class="w">Avenn</span> Steal alarm on my totem last night, nothing taken</span></div></div>
+  <div class="input">Type to the team</div></div>
+ <div class="keys"><div class="grp" style="flex:3"><span class="k">members</span><span class="k">invite</span><span class="k on">messages</span></div><div class="gap"></div><div class="grp" style="flex:1.3"><span class="k on">team chat<small>on</small></span></div><div class="gap"></div><div class="grp" style="flex:1"><span class="k">settings</span></div><div class="gap"></div><div class="grp" style="flex:2"><span class="k locked">leave<small>hand over first</small></span><span class="k warn">disband</span></div></div>
+</div></div></div>
+</div></section>
+
+<section><h2>4. Decisions for this round</h2><div class="card"><ol>
+<li><b>Popup placement:</b> P1 the Recall's spot (stacking upward), P2 the top-left strip, or P3 the right-edge card. Default: <b>P1</b>, one prompt panel for Recall and invites alike.</li>
+<li><b>Keys:</b> share the Recall offer's accept and decline keys (R and N today, rebindable) for every prompt, so a player learns two keys. Default: yes. Alternative: a separate pair for team prompts.</li>
+<li><b>Chat line as well:</b> every invite also prints the clickable line in chat, which is how a player in an inventory or another screen answers (HUD panels do not draw over screens). Default: yes.</li>
+<li><b>Sound:</b> a quiet note when an invite arrives (a note block chime at low volume). Default: yes.</li>
+<li><b>Badge:</b> B1 the pill above the chat, B2 the tag in the chat box, or B3 the tag by the hotbar. Default: <b>B1</b>.</li>
+<li><b>What the inviter sees:</b> one chat line when the invite is accepted, declined or runs out, and the "waiting" row on the invite view meanwhile. Default: yes.</li>
+<li><b>Refined C:</b> the members view with totem counts and the hint line, the MESSAGES view with the badge on the key, as drawn. Default: yes.</li>
+</ol></div></section>
+
+</div><div class="bsp-band"><b>BSP-Core</b> · An invite arrives</div><div class="bsp-cap">A card at the top right with the inviter, the team, two keys and the seconds left, plus a clickable chat line.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = ([...document.querySelectorAll('h3')].find(h => h.textContent.startsWith('P3')).parentElement.querySelector('.game')); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script></body>
+</html>

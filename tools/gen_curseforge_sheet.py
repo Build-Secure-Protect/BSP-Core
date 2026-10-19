@@ -424,10 +424,14 @@ GROUPS = [
     ("Batteries", ["battery_charger", "plasma_battery_1", "plasma_battery_2", "plasma_battery_3", "plasma_battery_4", "power_cell_1", "power_cell_2", "power_cell_3", "wave_emitter"]),
     ("Decoys and traps", ["magnet_core", "decoy_power_base", "decoy_totem", "range_coil_mk1", "range_coil_mk2", "range_coil_mk3", "blast_charge", "hex_charge", "poison_charge", "fatigue_charge",
                           "warp_charge", "trap_amplifier", "reinforced_casing"]),
+    ("Across worlds", ["accelerator_frame", "accelerator_intake", "decelerator_core", "decelerator_port", "link_card", "link_expander"]),
 ]
+# the bank's one recipe joins the coins' chunk, the link recipes follow the plasma ones
+GROUPS.insert([g for g, _ in GROUPS].index("Wave Plasma"), ("Bank", ["portable_banker"]))
+GROUPS.insert([g for g, _ in GROUPS].index("Decoys and traps"), GROUPS.pop([g for g, _ in GROUPS].index("Across worlds")))
 # where each group's recipe plates go: after this plate
 ANCHOR = {"Tetrium": "machines_single", "Illyrium Crucible": "machine_illyrium_crucible", "Illyrium Refinery": "machine_illyrium_refinery", "Illyrium": "machine_illyrium_refinery",
-          "Magnetic Centrifuge": "machine_magnetic_centrifuge", "Shatter Coins": "machine_coin_factory", "Wave Plasma": "cable_colours", "Batteries": "cable_colours", "Decoys and traps": "raiding"}
+          "Magnetic Centrifuge": "machine_magnetic_centrifuge", "Shatter Coins": "machine_coin_factory", "Wave Plasma": "cable_colours", "Batteries": "cable_colours", "Decoys and traps": "raiding", "Across worlds": "cable_colours", "Bank": "machine_coin_factory"}
 NO_RECIPE = [("shatter_totem", "given on your first join"), ("tetrium_nugget", "Tetrium Crucible"), ("tetrium_slag", "Tetrium Crucible"), ("tetrium_dust", "crushing"),
              ("dirty_illyrium_ingot", "Illyrium Crucible"), ("pure_illyrium_dust", "Illyrium Refinery"), ("illyrium_nugget", "Illyrium Crucible"), ("magnatite_nugget", "Magnetic Centrifuge"),
              ("carbon_dust", "Magnetic Centrifuge"), ("charged_magnatite_ingot", "Magnetic Centrifuge"), ("charged_resonance_crystal", "Magnetic Centrifuge"),
@@ -571,6 +575,18 @@ def description(plates):
             wanted = [by_slug[m[12:-4]]]
         elif m.startswith("<!-- recipes: ") and m.endswith(" -->"):
             wanted = [p for p in plates if p.get("after") == m[14:-4]]
+        elif m.startswith("<!-- render: ") and m.endswith(" -->"):
+            # a 3D view from plasma_renders.html (capture_images.py renders)
+            slug = m[13:-4]
+            assert (ROOT / "docs/curseforge/images" / f"render_{slug}.jpg").exists(), f"no render_{slug}.jpg"
+            out.append(f'![{slug.replace("_", " ")}]({URL}render_{slug}.jpg)')
+            continue
+        elif m.startswith("<!-- feature: ") and m.endswith(" -->"):
+            # a screen plate from gen_feature_plates.py
+            slug = m[14:-4]
+            assert (ROOT / "docs/curseforge/images" / f"feature_{slug}.jpg").exists(), f"no feature_{slug}.jpg"
+            out.append(f'![{slug.replace("_", " ")}]({URL}feature_{slug}.jpg)')
+            continue
         else:
             out.append(line)
             continue

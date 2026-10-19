@@ -28,6 +28,7 @@ ICONS = [["shatter_totem", "item", {}], ["wave_emitter", "item", {}], ["tetrium_
          ["plasma_repeater", "block", {"facing": "west"}], ["plasma_valve", "block", {"axis": "x"}], ["projector_base", "block", {}],
          ["battery_charger", "block", {"facing": "north"}], ["plasma_injector", "block", {"facing": "north"}], ["tank_port", "block", {}]]
 ICONS += [[f"plasma_battery_{i}", "block", {"axis": "x"}] for i in range(1, 5)]
+ICONS += [["accelerator_frame", "block", {"formed": "false"}], ["accelerator_intake", "block", {"facing": "north", "formed": "false", "glow": "0"}], ["decelerator_core", "block", {"facing": "north", "formed": "false"}], ["decelerator_port", "block", {"formed": "false"}]]  # the link blocks, unformed, for the recipe cards
 ICONS += [[c, "block", {"east": True, "west": True}] for c in ("tetrium_core_cable", "magnatite_core_cable", "illyrium_core_cable", "charged_illyrium_core_cable")]
 CUBE_ALL = [{"from": [0, 0, 0], "to": [16, 16, 16], "faces": {f: {"uv": [0, 0, 16, 16], "texture": "#all", "cullface": f} for f in ("north", "south", "east", "west", "up", "down")}}]
 ITEMS = ["wave_emitter", "power_cell_1", "power_cell_2", "power_cell_3", "wrench"]
