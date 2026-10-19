@@ -1,0 +1,942 @@
+{
+  "shatter_totem": {
+    "file": "shatter_totem.png",
+    "name": "Shatter Totem",
+    "kind": "block"
+  },
+  "copper_shatter_coin": {
+    "file": "copper_shatter_coin.png",
+    "name": "Copper Shatter Coin",
+    "kind": "item"
+  },
+  "copper_coin_blank": {
+    "file": "copper_coin_blank.png",
+    "name": "Copper Coin Blank",
+    "kind": "item"
+  },
+  "gold_shatter_coin": {
+    "file": "gold_shatter_coin.png",
+    "name": "Gold Shatter Coin",
+    "kind": "item"
+  },
+  "gold_coin_blank": {
+    "file": "gold_coin_blank.png",
+    "name": "Gold Coin Blank",
+    "kind": "item"
+  },
+  "diamond_shatter_coin": {
+    "file": "diamond_shatter_coin.png",
+    "name": "Diamond Shatter Coin",
+    "kind": "item"
+  },
+  "diamond_coin_blank": {
+    "file": "diamond_coin_blank.png",
+    "name": "Diamond Coin Blank",
+    "kind": "item"
+  },
+  "netherite_shatter_coin": {
+    "file": "netherite_shatter_coin.png",
+    "name": "Netherite Shatter Coin",
+    "kind": "item"
+  },
+  "netherite_coin_blank": {
+    "file": "netherite_coin_blank.png",
+    "name": "Netherite Coin Blank",
+    "kind": "item"
+  },
+  "shatter_coin_factory": {
+    "file": "shatter_coin_factory.png",
+    "name": "Shatter Coin Factory Controller",
+    "kind": "block"
+  },
+  "illyrium_shatter_coin": {
+    "file": "illyrium_shatter_coin.png",
+    "name": "Illyrium Shatter Coin",
+    "kind": "item"
+  },
+  "illyrium_coin_blank": {
+    "file": "illyrium_coin_blank.png",
+    "name": "Illyrium Coin Blank",
+    "kind": "item"
+  },
+  "tetrium_ore": {
+    "file": "tetrium_ore.png",
+    "name": "Tetrium Ore",
+    "kind": "block"
+  },
+  "deepslate_tetrium_ore": {
+    "file": "deepslate_tetrium_ore.png",
+    "name": "Deepslate Tetrium Ore",
+    "kind": "block"
+  },
+  "illyrium_ore": {
+    "file": "illyrium_ore.png",
+    "name": "Illyrium Ore",
+    "kind": "block"
+  },
+  "deepslate_illyrium_ore": {
+    "file": "deepslate_illyrium_ore.png",
+    "name": "Deepslate Illyrium Ore",
+    "kind": "block"
+  },
+  "end_stone_illyrium_ore": {
+    "file": "end_stone_illyrium_ore.png",
+    "name": "End Stone Illyrium Ore",
+    "kind": "block"
+  },
+  "tetrium_slag": {
+    "file": "tetrium_slag.png",
+    "name": "Tetrium Slag",
+    "kind": "item"
+  },
+  "tetrium_nugget": {
+    "file": "tetrium_nugget.png",
+    "name": "Tetrium Nugget",
+    "kind": "item"
+  },
+  "tetrium_ingot": {
+    "file": "tetrium_ingot.png",
+    "name": "Tetrium Ingot",
+    "kind": "item"
+  },
+  "tetrium_dust": {
+    "file": "tetrium_dust.png",
+    "name": "Tetrium Dust",
+    "kind": "item"
+  },
+  "dirty_illyrium_ingot": {
+    "file": "dirty_illyrium_ingot.png",
+    "name": "Dirty Illyrium Ingot",
+    "kind": "item"
+  },
+  "dirty_illyrium_dust": {
+    "file": "dirty_illyrium_dust.png",
+    "name": "Dirty Illyrium Dust",
+    "kind": "item"
+  },
+  "pure_illyrium_dust": {
+    "file": "pure_illyrium_dust.png",
+    "name": "Pure Illyrium Dust",
+    "kind": "item"
+  },
+  "illyrium_nugget": {
+    "file": "illyrium_nugget.png",
+    "name": "Illyrium Nugget",
+    "kind": "item"
+  },
+  "illyrium_ingot": {
+    "file": "illyrium_ingot.png",
+    "name": "Illyrium Ingot",
+    "kind": "item"
+  },
+  "iron_filter": {
+    "file": "iron_filter.png",
+    "name": "Iron Filter",
+    "kind": "item"
+  },
+  "diamond_filter": {
+    "file": "diamond_filter.png",
+    "name": "Diamond Filter",
+    "kind": "item"
+  },
+  "netherite_filter": {
+    "file": "netherite_filter.png",
+    "name": "Netherite Filter",
+    "kind": "item"
+  },
+  "illyrium_filter": {
+    "file": "illyrium_filter.png",
+    "name": "Illyrium Filter",
+    "kind": "item"
+  },
+  "illyrium_forge_upgrade": {
+    "file": "illyrium_forge_upgrade.png",
+    "name": "Illyrium Forge Upgrade",
+    "kind": "item"
+  },
+  "shatter_blank": {
+    "file": "shatter_blank.png",
+    "name": "Shatter Blank",
+    "kind": "item"
+  },
+  "tetrium_crucible": {
+    "file": "tetrium_crucible.png",
+    "name": "Tetrium Crucible",
+    "kind": "block"
+  },
+  "combination_forge": {
+    "file": "combination_forge.png",
+    "name": "Combination Forge",
+    "kind": "block"
+  },
+  "illyrium_casing": {
+    "file": "illyrium_casing.png",
+    "name": "Illyrium Casing",
+    "kind": "block"
+  },
+  "illyrium_glass": {
+    "file": "illyrium_glass.png",
+    "name": "Illyrium Tank Glass",
+    "kind": "block"
+  },
+  "illyrium_crucible": {
+    "file": "illyrium_crucible.png",
+    "name": "Illyrium Crucible Controller",
+    "kind": "block"
+  },
+  "illyrium_refinery": {
+    "file": "illyrium_refinery.png",
+    "name": "Illyrium Refinery Controller",
+    "kind": "block"
+  },
+  "lava_pylon": {
+    "file": "lava_pylon.png",
+    "name": "Lava Pylon",
+    "kind": "block"
+  },
+  "refinery_pump": {
+    "file": "refinery_pump.png",
+    "name": "Refinery Pump",
+    "kind": "block"
+  },
+  "item_hatch": {
+    "file": "item_hatch.png",
+    "name": "Item Hatch",
+    "kind": "block"
+  },
+  "rf_upgrade_mk1": {
+    "file": "rf_upgrade_mk1.png",
+    "name": "RF Upgrade Mk I (Flux Coil)",
+    "kind": "item"
+  },
+  "rf_upgrade_mk2": {
+    "file": "rf_upgrade_mk2.png",
+    "name": "RF Upgrade Mk II (Power Cell)",
+    "kind": "item"
+  },
+  "rf_upgrade_mk3": {
+    "file": "rf_upgrade_mk3.png",
+    "name": "RF Upgrade Mk III (Induction Core)",
+    "kind": "item"
+  },
+  "totem_compass": {
+    "file": "totem_compass.png",
+    "name": "Totem Compass",
+    "kind": "item"
+  },
+  "crushed_tetrium": {
+    "file": "crushed_tetrium.png",
+    "name": "Crushed Tetrium Ingot",
+    "kind": "item"
+  },
+  "crushed_dirty_illyrium": {
+    "file": "crushed_dirty_illyrium.png",
+    "name": "Crushed Dirty Illyrium Ingot",
+    "kind": "item"
+  },
+  "dirty_illyrium_nugget": {
+    "file": "dirty_illyrium_nugget.png",
+    "name": "Dirty Illyrium Nugget",
+    "kind": "item"
+  },
+  "illyrium_core": {
+    "file": "illyrium_core.png",
+    "name": "Illyrium Core",
+    "kind": "block"
+  },
+  "factory_frame": {
+    "file": "factory_frame.png",
+    "name": "Factory Frame",
+    "kind": "block"
+  },
+  "factory_press": {
+    "file": "factory_press.png",
+    "name": "Factory Press",
+    "kind": "block"
+  },
+  "factory_blank_hatch": {
+    "file": "factory_blank_hatch.png",
+    "name": "Factory Blank Hatch",
+    "kind": "block"
+  },
+  "factory_power_port": {
+    "file": "factory_power_port.png",
+    "name": "Factory Power Port",
+    "kind": "block"
+  },
+  "factory_motivator": {
+    "file": "factory_motivator.png",
+    "name": "Motivator",
+    "kind": "block"
+  },
+  "slag_brick": {
+    "file": "slag_brick.png",
+    "name": "Slag Brick",
+    "kind": "item"
+  },
+  "tetrium_plate": {
+    "file": "tetrium_plate.png",
+    "name": "Tetrium Plate",
+    "kind": "item"
+  },
+  "machine_chassis": {
+    "file": "machine_chassis.png",
+    "name": "Machine Chassis",
+    "kind": "item"
+  },
+  "tetrium_coil": {
+    "file": "tetrium_coil.png",
+    "name": "Tetrium Coil",
+    "kind": "item"
+  },
+  "drive_motor": {
+    "file": "drive_motor.png",
+    "name": "Drive Motor",
+    "kind": "item"
+  },
+  "circuit_substrate": {
+    "file": "circuit_substrate.png",
+    "name": "Circuit Substrate",
+    "kind": "item"
+  },
+  "basic_control_circuit": {
+    "file": "basic_control_circuit.png",
+    "name": "Basic Control Circuit",
+    "kind": "item"
+  },
+  "crucible_control_circuit": {
+    "file": "crucible_control_circuit.png",
+    "name": "Crucible Control Circuit",
+    "kind": "item"
+  },
+  "refinery_control_circuit": {
+    "file": "refinery_control_circuit.png",
+    "name": "Refinery Control Circuit",
+    "kind": "item"
+  },
+  "mint_control_circuit": {
+    "file": "mint_control_circuit.png",
+    "name": "Mint Control Circuit",
+    "kind": "item"
+  },
+  "thermal_lining": {
+    "file": "thermal_lining.png",
+    "name": "Thermal Lining",
+    "kind": "item"
+  },
+  "conveyor_belt": {
+    "file": "conveyor_belt.png",
+    "name": "Conveyor Belt",
+    "kind": "item"
+  },
+  "press_die": {
+    "file": "press_die.png",
+    "name": "Press Die",
+    "kind": "item"
+  },
+  "resonance_crystal": {
+    "file": "resonance_crystal.png",
+    "name": "Resonance Crystal",
+    "kind": "item"
+  },
+  "illyrium_processor": {
+    "file": "illyrium_processor.png",
+    "name": "Illyrium Processor",
+    "kind": "item"
+  },
+  "score_screen": {
+    "file": "score_screen.png",
+    "name": "Score Screen",
+    "kind": "block"
+  },
+  "coin_vault": {
+    "file": "coin_vault.png",
+    "name": "Coin Vault",
+    "kind": "block"
+  },
+  "admin_rack": {
+    "file": "admin_rack.png",
+    "name": "Admin Rack",
+    "kind": "block"
+  },
+  "anti_totem": {
+    "file": "anti_totem.png",
+    "name": "Anti Totem Block",
+    "kind": "block"
+  },
+  "magnatite_ore": {
+    "file": "magnatite_ore.png",
+    "name": "Magnatite Ore",
+    "kind": "block"
+  },
+  "deepslate_magnatite_ore": {
+    "file": "deepslate_magnatite_ore.png",
+    "name": "Deepslate Magnatite Ore",
+    "kind": "block"
+  },
+  "magnatite_nugget": {
+    "file": "magnatite_nugget.png",
+    "name": "Magnatite Nugget",
+    "kind": "item"
+  },
+  "magnatite_ingot": {
+    "file": "magnatite_ingot.png",
+    "name": "Magnatite Ingot",
+    "kind": "item"
+  },
+  "charged_magnatite_ingot": {
+    "file": "charged_magnatite_ingot.png",
+    "name": "Charged Magnatite Ingot",
+    "kind": "item"
+  },
+  "carbon_dust": {
+    "file": "carbon_dust.png",
+    "name": "Carbon Dust",
+    "kind": "item"
+  },
+  "copper_tetrium_coil": {
+    "file": "copper_tetrium_coil.png",
+    "name": "Copper Tetrium Coil",
+    "kind": "item"
+  },
+  "magnetic_centrifuge": {
+    "file": "magnetic_centrifuge.png",
+    "name": "Magnetic Centrifuge Controller",
+    "kind": "block"
+  },
+  "centrifuge_casing": {
+    "file": "centrifuge_casing.png",
+    "name": "Centrifuge Casing",
+    "kind": "block"
+  },
+  "centrifuge_rotor": {
+    "file": "centrifuge_rotor.png",
+    "name": "Centrifuge Rotor",
+    "kind": "block"
+  },
+  "centrifuge_power_port": {
+    "file": "centrifuge_power_port.png",
+    "name": "Centrifuge Power Port",
+    "kind": "block"
+  },
+  "decoy_totem": {
+    "file": "decoy_totem.png",
+    "name": "Decoy Totem",
+    "kind": "block"
+  },
+  "decoy_power_base": {
+    "file": "decoy_power_base.png",
+    "name": "Decoy Power Base",
+    "kind": "block"
+  },
+  "magnet_core": {
+    "file": "magnet_core.png",
+    "name": "Magnet Core",
+    "kind": "item"
+  },
+  "range_coil_mk1": {
+    "file": "range_coil_mk1.png",
+    "name": "Range Coil Mk I",
+    "kind": "item"
+  },
+  "range_coil_mk2": {
+    "file": "range_coil_mk2.png",
+    "name": "Range Coil Mk II",
+    "kind": "item"
+  },
+  "range_coil_mk3": {
+    "file": "range_coil_mk3.png",
+    "name": "Range Coil Mk III",
+    "kind": "item"
+  },
+  "blast_charge": {
+    "file": "blast_charge.png",
+    "name": "Blast Charge",
+    "kind": "item"
+  },
+  "hex_charge": {
+    "file": "hex_charge.png",
+    "name": "Hex Charge",
+    "kind": "item"
+  },
+  "poison_charge": {
+    "file": "poison_charge.png",
+    "name": "Poison Charge",
+    "kind": "item"
+  },
+  "fatigue_charge": {
+    "file": "fatigue_charge.png",
+    "name": "Fatigue Charge",
+    "kind": "item"
+  },
+  "warp_charge": {
+    "file": "warp_charge.png",
+    "name": "Warp Charge",
+    "kind": "item"
+  },
+  "trap_amplifier": {
+    "file": "trap_amplifier.png",
+    "name": "Trap Amplifier",
+    "kind": "item"
+  },
+  "reinforced_casing": {
+    "file": "reinforced_casing.png",
+    "name": "Reinforced Casing",
+    "kind": "item"
+  },
+  "totem_projector": {
+    "file": "totem_projector.png",
+    "name": "Projector",
+    "kind": "block"
+  },
+  "tetrium_core_cable": {
+    "file": "tetrium_core_cable.png",
+    "name": "Tetrium Plasma Cable",
+    "kind": "block"
+  },
+  "magnatite_core_cable": {
+    "file": "magnatite_core_cable.png",
+    "name": "Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "illyrium_core_cable": {
+    "file": "illyrium_core_cable.png",
+    "name": "Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "charged_illyrium_core_cable": {
+    "file": "charged_illyrium_core_cable.png",
+    "name": "Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "channel_expander": {
+    "file": "channel_expander.png",
+    "name": "Channel Expander",
+    "kind": "item"
+  },
+  "plasma_extractor": {
+    "file": "plasma_extractor.png",
+    "name": "Plasma Extractor",
+    "kind": "block"
+  },
+  "plasma_interface": {
+    "file": "plasma_interface.png",
+    "name": "Plasma Interface",
+    "kind": "block"
+  },
+  "plasma_repeater": {
+    "file": "plasma_repeater.png",
+    "name": "Plasma Repeater",
+    "kind": "block"
+  },
+  "battery_charger": {
+    "file": "battery_charger.png",
+    "name": "Battery Charger",
+    "kind": "block"
+  },
+  "plasma_battery_1": {
+    "file": "plasma_battery_1.png",
+    "name": "Plasma Battery I",
+    "kind": "block"
+  },
+  "plasma_battery_2": {
+    "file": "plasma_battery_2.png",
+    "name": "Plasma Battery II",
+    "kind": "block"
+  },
+  "plasma_battery_3": {
+    "file": "plasma_battery_3.png",
+    "name": "Plasma Battery III",
+    "kind": "block"
+  },
+  "plasma_battery_4": {
+    "file": "plasma_battery_4.png",
+    "name": "Plasma Battery IV",
+    "kind": "block"
+  },
+  "power_cell_1": {
+    "file": "power_cell_1.png",
+    "name": "Power Cell I",
+    "kind": "item"
+  },
+  "power_cell_2": {
+    "file": "power_cell_2.png",
+    "name": "Power Cell II",
+    "kind": "item"
+  },
+  "power_cell_3": {
+    "file": "power_cell_3.png",
+    "name": "Power Cell III",
+    "kind": "item"
+  },
+  "charged_resonance_crystal": {
+    "file": "charged_resonance_crystal.png",
+    "name": "Charged Resonance Crystal",
+    "kind": "item"
+  },
+  "wave_emitter": {
+    "file": "wave_emitter.png",
+    "name": "Wave Emitter",
+    "kind": "item"
+  },
+  "raw_tetrium": {
+    "file": "raw_tetrium.png",
+    "name": "Raw Tetrium",
+    "kind": "item"
+  },
+  "raw_illyrium": {
+    "file": "raw_illyrium.png",
+    "name": "Raw Illyrium",
+    "kind": "item"
+  },
+  "raw_magnatite": {
+    "file": "raw_magnatite.png",
+    "name": "Raw Magnatite",
+    "kind": "item"
+  },
+  "wrench": {
+    "file": "wrench.png",
+    "name": "Wrench",
+    "kind": "item"
+  },
+  "projector_base": {
+    "file": "projector_base.png",
+    "name": "Projector Base",
+    "kind": "block"
+  },
+  "plasma_valve": {
+    "file": "plasma_valve.png",
+    "name": "Plasma Valve",
+    "kind": "block"
+  },
+  "white_magnatite_core_cable": {
+    "file": "white_magnatite_core_cable.png",
+    "name": "White Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "orange_magnatite_core_cable": {
+    "file": "orange_magnatite_core_cable.png",
+    "name": "Orange Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "magenta_magnatite_core_cable": {
+    "file": "magenta_magnatite_core_cable.png",
+    "name": "Magenta Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "light_blue_magnatite_core_cable": {
+    "file": "light_blue_magnatite_core_cable.png",
+    "name": "Light Blue Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "yellow_magnatite_core_cable": {
+    "file": "yellow_magnatite_core_cable.png",
+    "name": "Yellow Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "lime_magnatite_core_cable": {
+    "file": "lime_magnatite_core_cable.png",
+    "name": "Lime Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "pink_magnatite_core_cable": {
+    "file": "pink_magnatite_core_cable.png",
+    "name": "Pink Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "gray_magnatite_core_cable": {
+    "file": "gray_magnatite_core_cable.png",
+    "name": "Gray Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "light_gray_magnatite_core_cable": {
+    "file": "light_gray_magnatite_core_cable.png",
+    "name": "Light Gray Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "cyan_magnatite_core_cable": {
+    "file": "cyan_magnatite_core_cable.png",
+    "name": "Cyan Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "purple_magnatite_core_cable": {
+    "file": "purple_magnatite_core_cable.png",
+    "name": "Purple Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "blue_magnatite_core_cable": {
+    "file": "blue_magnatite_core_cable.png",
+    "name": "Blue Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "brown_magnatite_core_cable": {
+    "file": "brown_magnatite_core_cable.png",
+    "name": "Brown Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "green_magnatite_core_cable": {
+    "file": "green_magnatite_core_cable.png",
+    "name": "Green Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "red_magnatite_core_cable": {
+    "file": "red_magnatite_core_cable.png",
+    "name": "Red Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "black_magnatite_core_cable": {
+    "file": "black_magnatite_core_cable.png",
+    "name": "Black Magnatite Plasma Cable",
+    "kind": "block"
+  },
+  "white_illyrium_core_cable": {
+    "file": "white_illyrium_core_cable.png",
+    "name": "White Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "orange_illyrium_core_cable": {
+    "file": "orange_illyrium_core_cable.png",
+    "name": "Orange Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "magenta_illyrium_core_cable": {
+    "file": "magenta_illyrium_core_cable.png",
+    "name": "Magenta Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "light_blue_illyrium_core_cable": {
+    "file": "light_blue_illyrium_core_cable.png",
+    "name": "Light Blue Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "yellow_illyrium_core_cable": {
+    "file": "yellow_illyrium_core_cable.png",
+    "name": "Yellow Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "lime_illyrium_core_cable": {
+    "file": "lime_illyrium_core_cable.png",
+    "name": "Lime Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "pink_illyrium_core_cable": {
+    "file": "pink_illyrium_core_cable.png",
+    "name": "Pink Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "gray_illyrium_core_cable": {
+    "file": "gray_illyrium_core_cable.png",
+    "name": "Gray Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "light_gray_illyrium_core_cable": {
+    "file": "light_gray_illyrium_core_cable.png",
+    "name": "Light Gray Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "cyan_illyrium_core_cable": {
+    "file": "cyan_illyrium_core_cable.png",
+    "name": "Cyan Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "purple_illyrium_core_cable": {
+    "file": "purple_illyrium_core_cable.png",
+    "name": "Purple Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "blue_illyrium_core_cable": {
+    "file": "blue_illyrium_core_cable.png",
+    "name": "Blue Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "brown_illyrium_core_cable": {
+    "file": "brown_illyrium_core_cable.png",
+    "name": "Brown Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "green_illyrium_core_cable": {
+    "file": "green_illyrium_core_cable.png",
+    "name": "Green Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "red_illyrium_core_cable": {
+    "file": "red_illyrium_core_cable.png",
+    "name": "Red Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "black_illyrium_core_cable": {
+    "file": "black_illyrium_core_cable.png",
+    "name": "Black Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "white_charged_illyrium_core_cable": {
+    "file": "white_charged_illyrium_core_cable.png",
+    "name": "White Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "orange_charged_illyrium_core_cable": {
+    "file": "orange_charged_illyrium_core_cable.png",
+    "name": "Orange Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "magenta_charged_illyrium_core_cable": {
+    "file": "magenta_charged_illyrium_core_cable.png",
+    "name": "Magenta Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "light_blue_charged_illyrium_core_cable": {
+    "file": "light_blue_charged_illyrium_core_cable.png",
+    "name": "Light Blue Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "yellow_charged_illyrium_core_cable": {
+    "file": "yellow_charged_illyrium_core_cable.png",
+    "name": "Yellow Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "lime_charged_illyrium_core_cable": {
+    "file": "lime_charged_illyrium_core_cable.png",
+    "name": "Lime Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "pink_charged_illyrium_core_cable": {
+    "file": "pink_charged_illyrium_core_cable.png",
+    "name": "Pink Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "gray_charged_illyrium_core_cable": {
+    "file": "gray_charged_illyrium_core_cable.png",
+    "name": "Gray Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "light_gray_charged_illyrium_core_cable": {
+    "file": "light_gray_charged_illyrium_core_cable.png",
+    "name": "Light Gray Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "cyan_charged_illyrium_core_cable": {
+    "file": "cyan_charged_illyrium_core_cable.png",
+    "name": "Cyan Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "purple_charged_illyrium_core_cable": {
+    "file": "purple_charged_illyrium_core_cable.png",
+    "name": "Purple Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "blue_charged_illyrium_core_cable": {
+    "file": "blue_charged_illyrium_core_cable.png",
+    "name": "Blue Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "brown_charged_illyrium_core_cable": {
+    "file": "brown_charged_illyrium_core_cable.png",
+    "name": "Brown Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "green_charged_illyrium_core_cable": {
+    "file": "green_charged_illyrium_core_cable.png",
+    "name": "Green Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "red_charged_illyrium_core_cable": {
+    "file": "red_charged_illyrium_core_cable.png",
+    "name": "Red Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "black_charged_illyrium_core_cable": {
+    "file": "black_charged_illyrium_core_cable.png",
+    "name": "Black Charged Illyrium Plasma Cable",
+    "kind": "block"
+  },
+  "tank_casing": {
+    "file": "tank_casing.png",
+    "name": "Tank Casing",
+    "kind": "block"
+  },
+  "tank_glass": {
+    "file": "tank_glass.png",
+    "name": "Tank Glass",
+    "kind": "block"
+  },
+  "tank_port": {
+    "file": "tank_port.png",
+    "name": "Tank Port",
+    "kind": "block"
+  },
+  "tetrium_glass": {
+    "file": "tetrium_glass.png",
+    "name": "Tetrium Glass",
+    "kind": "block"
+  },
+  "plasma_injector": {
+    "file": "plasma_injector.png",
+    "name": "Plasma Injector",
+    "kind": "block"
+  },
+  "bank_atm": {
+    "file": "bank_atm.png",
+    "name": "Shatter Bank",
+    "kind": "block"
+  },
+  "portable_banker": {
+    "file": "portable_banker.png",
+    "name": "Portable Banker",
+    "kind": "item"
+  },
+  "safety_deposit_box": {
+    "file": "safety_deposit_box.png",
+    "name": "Safety Deposit Box",
+    "kind": "block"
+  },
+  "vendor_post": {
+    "file": "vendor_post.png",
+    "name": "Vendor Post",
+    "kind": "block"
+  },
+  "stall_display": {
+    "file": "stall_display.png",
+    "name": "Stall Display",
+    "kind": "block"
+  },
+  "market_stall": {
+    "file": "market_stall.png",
+    "name": "Market Stall",
+    "kind": "block"
+  },
+  "land_office": {
+    "file": "land_office.png",
+    "name": "Land Office",
+    "kind": "block"
+  },
+  "accelerator_intake": {
+    "file": "accelerator_intake.png",
+    "name": "Accelerator Intake",
+    "kind": "block"
+  },
+  "accelerator_frame": {
+    "file": "accelerator_frame.png",
+    "name": "Accelerator Frame",
+    "kind": "block"
+  },
+  "decelerator_core": {
+    "file": "decelerator_core.png",
+    "name": "Decelerator Core",
+    "kind": "block"
+  },
+  "decelerator_port": {
+    "file": "decelerator_port.png",
+    "name": "Decelerator Port",
+    "kind": "block"
+  },
+  "link_card": {
+    "file": "link_card.png",
+    "name": "Link Card",
+    "kind": "item"
+  },
+  "link_expander": {
+    "file": "link_expander.png",
+    "name": "Link Expander",
+    "kind": "item"
+  }
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Captures the CurseForge pictures with headless Chrome, so no hand screenshots are needed:
 
-  python3 tools/capture_images.py icons             -> docs/curseforge/icons/<block>.png (inventory-style icons of the blocks with no flat texture)
+  python3 tools/capture_images.py icons             -> docs/curseforge/icons/<id>.png for every item and block (tools/gen_icons.py; no browser)
   python3 tools/capture_images.py renders [slug...]  -> docs/curseforge/images/render_<slug>.jpg (the 3D views of tools/preview/plasma_renders.html)
   python3 tools/capture_images.py plates             -> docs/curseforge/images/NN_<slug>.jpg (every plate of tools/preview/curseforge_sheet.html)
 
@@ -43,6 +43,12 @@ def jpeg(png, jpg):
 
 
 def icons():
+    """Headless Chrome stopped drawing WebGL (Chrome 155), so the icons come from tools/gen_icons.py, drawn in Python from the models."""
+    import gen_icons
+    gen_icons.main()
+
+
+def icons_chrome():
     cols, cell = 8, 96
     rows = (len(ICONS) + cols - 1) // cols
     tmp = Path(tempfile.gettempdir()) / "bsp_icons.png"
