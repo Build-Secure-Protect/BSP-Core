@@ -4,6 +4,7 @@ import net.minecraft.core.GlobalPos;
 
 import java.sql.Connection;
 import java.sql.Driver;
+import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -151,6 +152,14 @@ final class MySqlStore implements AutoCloseable {
                     + "joined_ms BIGINT NOT NULL, read_seq INT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, online_server VARCHAR(64) NOT NULL DEFAULT '', INDEX (team))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("team_messages") + " (team CHAR(36) NOT NULL, seq INT NOT NULL, ms BIGINT NOT NULL, uuid CHAR(36) NOT NULL, "
                     + "name VARCHAR(16) NOT NULL, text VARCHAR(512) NOT NULL, PRIMARY KEY (team, seq))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kits") + " (id VARCHAR(24) NOT NULL PRIMARY KEY, name VARCHAR(24) NOT NULL, description VARCHAR(80) NOT NULL DEFAULT '', "
+                    + "icon TEXT NOT NULL, in_browser TINYINT NOT NULL DEFAULT 1, once TINYINT NOT NULL DEFAULT 0, cooldown BIGINT NOT NULL DEFAULT 0, price BIGINT NOT NULL DEFAULT 0, "
+                    + "ranks VARCHAR(512) NOT NULL DEFAULT '', servers VARCHAR(512) NOT NULL DEFAULT '', grant_kind VARCHAR(16) NOT NULL DEFAULT 'NONE', grant_servers VARCHAR(512) NOT NULL DEFAULT '', "
+                    + "enabled TINYINT NOT NULL DEFAULT 1, created_ms BIGINT NOT NULL, taken INT NOT NULL DEFAULT 0, last_by VARCHAR(16) NOT NULL DEFAULT '', last_ms BIGINT NOT NULL DEFAULT 0, "
+                    + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kit_items") + " (kit VARCHAR(24) NOT NULL, slot INT NOT NULL, item VARCHAR(128) NOT NULL, count INT NOT NULL, nbt MEDIUMTEXT NOT NULL, PRIMARY KEY (kit, slot))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kit_redeems") + " (uuid CHAR(36) NOT NULL, kit VARCHAR(24) NOT NULL, scope VARCHAR(64) NOT NULL DEFAULT '', count INT NOT NULL DEFAULT 0, "
+                    + "last_ms BIGINT NOT NULL DEFAULT 0, owed INT NOT NULL DEFAULT 0, PRIMARY KEY (uuid, kit, scope), INDEX (kit))");
         }
     }
 
@@ -237,6 +246,13 @@ final class MySqlStore implements AutoCloseable {
     }
 
     /** Takes out, and returns, everything waiting for the given players. */
+    void clearPending(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("pending_items") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            ps.executeUpdate();
+        }
+    }
+
     Map<UUID, java.util.List<String>> takePending(Collection<UUID> players) throws SQLException {
         Map<UUID, java.util.List<String>> out = new java.util.HashMap<>();
         if (players.isEmpty()) {
@@ -1047,5 +1063,188 @@ final class MySqlStore implements AutoCloseable {
             }
             connection = null;
         }
+    }
+
+    // ------------------------------------------------------------------ kits, one record for the network
+
+    /** Writes the kit's row and its item rows (the old item rows go first). */
+    void kitWrite(com.mrgregles.bsp_core.kit.Kit k) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kits") + " (id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), icon = VALUES(icon), in_browser = VALUES(in_browser), "
+                + "once = VALUES(once), cooldown = VALUES(cooldown), price = VALUES(price), ranks = VALUES(ranks), servers = VALUES(servers), grant_kind = VALUES(grant_kind), grant_servers = VALUES(grant_servers), "
+                + "enabled = VALUES(enabled), taken = GREATEST(taken, VALUES(taken)), last_by = IF(VALUES(last_ms) >= last_ms, VALUES(last_by), last_by), last_ms = GREATEST(last_ms, VALUES(last_ms))")) {
+            ps.setString(1, k.id);
+            ps.setString(2, k.name);
+            ps.setString(3, k.description);
+            ps.setString(4, k.icon.isEmpty() ? "" : k.icon.save(new net.minecraft.nbt.CompoundTag()).toString());
+            ps.setInt(5, k.inBrowser ? 1 : 0);
+            ps.setInt(6, k.once ? 1 : 0);
+            ps.setLong(7, k.cooldownSeconds);
+            ps.setLong(8, k.price);
+            ps.setString(9, com.mrgregles.bsp_core.kit.Kit.joined(k.ranks));
+            ps.setString(10, com.mrgregles.bsp_core.kit.Kit.joined(k.servers));
+            ps.setString(11, k.grant.name());
+            ps.setString(12, com.mrgregles.bsp_core.kit.Kit.joined(k.grantServers));
+            ps.setInt(13, k.enabled ? 1 : 0);
+            ps.setLong(14, k.createdMs);
+            ps.setInt(15, k.taken);
+            ps.setString(16, k.lastTakenBy);
+            ps.setLong(17, k.lastTakenMs);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("kit_items") + " WHERE kit = ?")) {
+            ps.setString(1, k.id);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kit_items") + " (kit, slot, item, count, nbt) VALUES (?, ?, ?, ?, ?)")) {
+            for (int i = 0; i < k.items.size(); i++) {
+                com.mrgregles.bsp_core.kit.Kit.ItemRow row = com.mrgregles.bsp_core.kit.Kit.rowOf(k.items.get(i));
+                ps.setString(1, k.id);
+                ps.setInt(2, i);
+                ps.setString(3, row.item());
+                ps.setInt(4, row.count());
+                ps.setString(5, row.nbt());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    void kitDelete(String id) throws SQLException {
+        for (String table : new String[] {"kit_redeems", "kit_items", "kits"}) {
+            try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t(table) + " WHERE " + (table.equals("kits") ? "id" : "kit") + " = ?")) {
+                ps.setString(1, id);
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    /** The taken count and the last taker move on, never back. */
+    void kitTaken(String id, String by, long ms) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("kits") + " SET taken = taken + 1, last_by = ?, last_ms = ? WHERE id = ?")) {
+            ps.setString(1, by);
+            ps.setLong(2, ms);
+            ps.setString(3, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /** One kit by id, or every kit, with its items; items this server cannot resolve are dropped and counted. */
+    List<com.mrgregles.bsp_core.kit.Kit> kitRead(@Nullable String id) throws SQLException {
+        List<com.mrgregles.bsp_core.kit.Kit> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms FROM " + t("kits")
+                + (id == null ? " ORDER BY created_ms" : " WHERE id = ?"))) {
+            if (id != null) {
+                ps.setString(1, id);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.mrgregles.bsp_core.kit.Kit k = new com.mrgregles.bsp_core.kit.Kit(rs.getString(1), rs.getString(2), rs.getLong(14));
+                    k.description = rs.getString(3);
+                    String icon = rs.getString(4);
+                    if (!icon.isEmpty()) {
+                        try {
+                            k.icon = net.minecraft.world.item.ItemStack.of(net.minecraft.nbt.TagParser.parseTag(icon));
+                        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException ignored) {
+                            // no icon then
+                        }
+                    }
+                    k.inBrowser = rs.getInt(5) != 0;
+                    k.once = rs.getInt(6) != 0;
+                    k.cooldownSeconds = rs.getLong(7);
+                    k.price = rs.getLong(8);
+                    k.ranks.addAll(com.mrgregles.bsp_core.kit.Kit.split(rs.getString(9)));
+                    k.servers.addAll(com.mrgregles.bsp_core.kit.Kit.split(rs.getString(10)));
+                    k.grant = com.mrgregles.bsp_core.kit.Kit.Grant.of(rs.getString(11));
+                    k.grantServers.addAll(com.mrgregles.bsp_core.kit.Kit.split(rs.getString(12)));
+                    k.enabled = rs.getInt(13) != 0;
+                    k.taken = rs.getInt(15);
+                    k.lastTakenBy = rs.getString(16);
+                    k.lastTakenMs = rs.getLong(17);
+                    out.add(k);
+                }
+            }
+        }
+        for (com.mrgregles.bsp_core.kit.Kit k : out) {
+            try (PreparedStatement ps = conn().prepareStatement("SELECT item, count, nbt FROM " + t("kit_items") + " WHERE kit = ? ORDER BY slot")) {
+                ps.setString(1, k.id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        net.minecraft.world.item.ItemStack stack = com.mrgregles.bsp_core.kit.Kit.stackOf(new com.mrgregles.bsp_core.kit.Kit.ItemRow(rs.getString(1), rs.getInt(2), rs.getString(3)));
+                        if (stack.isEmpty()) {
+                            k.missing++;
+                        } else {
+                            k.items.add(stack);
+                        }
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** A player's redeem row: count and the last time move on, the owed count is what this server says. */
+    void kitRedeemWrite(UUID player, com.mrgregles.bsp_core.kit.KitLedger.Redeem r) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kit_redeems") + " (uuid, kit, scope, count, last_ms, owed) VALUES (?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE count = GREATEST(count, VALUES(count)), last_ms = GREATEST(last_ms, VALUES(last_ms)), owed = VALUES(owed)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, r.kit);
+            ps.setString(3, r.scope);
+            ps.setInt(4, r.count);
+            ps.setLong(5, r.lastMs);
+            ps.setInt(6, r.owed);
+            ps.executeUpdate();
+        }
+    }
+
+    /** A first-join claim: true when this server's row landed first (no row existed for the player, kit and scope). */
+    boolean kitRedeemClaim(UUID player, com.mrgregles.bsp_core.kit.KitLedger.Redeem r) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("kit_redeems") + " (uuid, kit, scope, count, last_ms, owed) VALUES (?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, r.kit);
+            ps.setString(3, r.scope);
+            ps.setInt(4, r.count);
+            ps.setLong(5, r.lastMs);
+            ps.setInt(6, r.owed);
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    List<com.mrgregles.bsp_core.kit.KitLedger.Redeem> kitRedeemsRead(UUID player) throws SQLException {
+        List<com.mrgregles.bsp_core.kit.KitLedger.Redeem> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT kit, scope, count, last_ms, owed FROM " + t("kit_redeems") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(com.mrgregles.bsp_core.kit.KitLedger.Redeem.of(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getLong(4), rs.getInt(5)));
+                }
+            }
+        }
+        return out;
+    }
+
+    void kitRedeemReset(UUID player, @Nullable String kit) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("kit_redeems") + " WHERE uuid = ?" + (kit == null ? "" : " AND kit = ?"))) {
+            ps.setString(1, player.toString());
+            if (kit != null) {
+                ps.setString(2, kit);
+            }
+            ps.executeUpdate();
+        }
+    }
+
+    /** Every server id the network has seen: the totem grants' server column and the kit rows' scopes. */
+    List<String> serverIds() throws SQLException {
+        List<String> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT DISTINCT server_id FROM " + t("grants") + " UNION SELECT DISTINCT scope FROM " + t("kit_redeems") + " WHERE scope <> ''");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String id = rs.getString(1);
+                if (id != null && !id.isBlank()) {
+                    out.add(id);
+                }
+            }
+        }
+        return out;
     }
 }

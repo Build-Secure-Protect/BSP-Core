@@ -1,0 +1,27 @@
+{
+  "name": "Kits",
+  "category": "bsp_core:coins",
+  "icon": "minecraft:chest",
+  "sortnum": 10,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A kit is a bundle of items the server hands out. Open the kit browser with the KITS button above your inventory, a key you bind in Controls, or $(l)/kits$().$(br2)Every kit you may see is a card: its picture, its name, and what stands between you and it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A green card is ready: press REDEEM on it and the items land in your inventory.$(br2)A grey card is one you took lately. It says how long until it is ready again, or that it was once only.$(br2)A card with a rank on it needs that rank; the steps show where you stand and how far there is to go. A card naming a server is taken on that server. A price in pieces comes from your bank account. A card counting slots needs that much room in your inventory first.",
+      "title": "Reading a card"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A kit given to you as a reward, or at your first login, waits in violet when it did not fit or came while you were away. Free the slots it names and press TAKE IT.$(br2)Nothing is lost: a kit that cannot fit stays waiting until it can.",
+      "title": "Waiting for you"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Click a card's picture to see what is in the kit, with the counts, and every condition ticked or crossed. BACK returns to the wall.$(br2)On a network your kits and what you have taken are the same on every server.",
+      "title": "Looking inside"
+    }
+  ]
+}

@@ -15,9 +15,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * A TEAM button above the inventory, so a player with no key bound and no totem in reach can still
- * open the Team screen. It follows the inventory panel when the recipe book slides it. Hidden with
- * {@code teamButton = false} in the client config.
+ * TEAM and KITS buttons above the inventory, so a player with no key bound and no totem in reach can
+ * still open the Team screen and the kit browser. They follow the inventory panel when the recipe
+ * book slides it. Hidden with {@code teamButton} / {@code kitsButton} = false in the client config.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID, value = Dist.CLIENT)
 public final class TeamInventoryButton {
@@ -27,13 +27,25 @@ public final class TeamInventoryButton {
 
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (!BSPClientConfig.teamButton()) {
+        if (!BSPClientConfig.teamButton() && !BSPClientConfig.kitsButton()) {
             return;
         }
         if (event.getScreen() instanceof InventoryScreen inv) {
-            event.addListener(new Follower(inv, 0));
+            add(event, inv);
         } else if (event.getScreen() instanceof CreativeModeInventoryScreen inv) {
-            event.addListener(new Follower(inv, 0));
+            add(event, inv);
+        }
+    }
+
+    /** TEAM, then KITS beside it (the kits button has its own switch). */
+    private static void add(ScreenEvent.Init.Post event, AbstractContainerScreen<?> inv) {
+        int dx = 0;
+        if (BSPClientConfig.teamButton()) {
+            event.addListener(new Follower(inv, dx, Component.translatable("gui.bsp_core.team.key"), Component.translatable("gui.bsp_core.team.button.tip"), TeamKeys::open));
+            dx += W + 4;
+        }
+        if (BSPClientConfig.kitsButton()) {
+            event.addListener(new Follower(inv, dx, Component.translatable("gui.bsp_core.kits.key"), Component.translatable("gui.bsp_core.kits.button.tip"), KitKeys::open));
         }
     }
 
@@ -42,11 +54,11 @@ public final class TeamInventoryButton {
         private final AbstractContainerScreen<?> screen;
         private final int dx;
 
-        Follower(AbstractContainerScreen<?> screen, int dx) {
-            super(screen.getGuiLeft() + dx, screen.getGuiTop() - H - 2, W, H, Component.translatable("gui.bsp_core.team.key"), b -> TeamKeys.open(), DEFAULT_NARRATION);
+        Follower(AbstractContainerScreen<?> screen, int dx, Component label, Component tip, Runnable open) {
+            super(screen.getGuiLeft() + dx, screen.getGuiTop() - H - 2, W, H, label, b -> open.run(), DEFAULT_NARRATION);
             this.screen = screen;
             this.dx = dx;
-            setTooltip(Tooltip.create(Component.translatable("gui.bsp_core.team.button.tip")));
+            setTooltip(Tooltip.create(tip));
         }
 
         private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5;

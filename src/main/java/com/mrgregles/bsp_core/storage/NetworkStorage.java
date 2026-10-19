@@ -160,6 +160,22 @@ public final class NetworkStorage {
                         shopReload(payload);
                     }
                 }
+                case "kit" -> {
+                    if (payload.startsWith("-")) {
+                        com.mrgregles.bsp_core.kit.KitSync.apply(srv, List.of(), payload.substring(1));
+                    } else if (payload.startsWith("r:")) {
+                        try {
+                            UUID id = UUID.fromString(payload.substring(2));
+                            if (srv.getPlayerList().getPlayer(id) != null) {
+                                kitRedeemsReload(id, null);
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                            // not a player id
+                        }
+                    } else {
+                        kitReload(payload);
+                    }
+                }
                 default -> { } // shops and later kinds
             }
         });
@@ -193,6 +209,7 @@ public final class NetworkStorage {
                 shopReload(null);
                 s.teamClearOnline();
                 teamReload(null);
+                kitReload(null);
                 s.clearSteals();
                 stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis()));
             } catch (SQLException | RuntimeException e) {
@@ -543,6 +560,11 @@ public final class NetworkStorage {
     }
 
     /** Takes whatever is waiting for the given players and hands it to {@code then} on the server thread. */
+    /** Drops every item still owed to a player across the network (an admin wipe). */
+    public static void clearPending(UUID player) {
+        async("drop the items owed to a player", s -> s.clearPending(player));
+    }
+
     public static void takePending(List<UUID> players, Consumer<Map<UUID, List<String>>> then) {
         List<UUID> copy = List.copyOf(players);
         async("collect items owed to players", s -> {
@@ -588,6 +610,12 @@ public final class NetworkStorage {
         FactoryLedger factories = FactoryLedger.get(srv);
         Set<UUID> grants = new HashSet<>(totems.allGranted());
         Map<UUID, Set<GlobalPos>> placed = copy(totems.allPlaced()), slices = copy(factories.all());
+        List<com.mrgregles.bsp_core.kit.Kit> kits = new java.util.ArrayList<>();
+        for (com.mrgregles.bsp_core.kit.Kit k : com.mrgregles.bsp_core.kit.KitLedger.get(srv).all()) {
+            kits.add(k.copy());
+        }
+        Map<UUID, List<com.mrgregles.bsp_core.kit.KitLedger.Redeem>> kitRows = new HashMap<>();
+        com.mrgregles.bsp_core.kit.KitLedger.get(srv).allRedeems().forEach((id, rows) -> kitRows.put(id, List.copyOf(rows)));
         worker().execute(() -> {
             List<String> lines;
             try (MySqlStore s = fromConfig()) {
@@ -596,9 +624,20 @@ public final class NetworkStorage {
                     lines = List.of("This server has already migrated to " + s.describe() + ".", "Nothing was changed. Use /bsp storage migrate force to copy the local records again.");
                 } else {
                     int[] n = s.migrate(grants, placed, slices);
+                    int kitRowCount = 0;
+                    for (com.mrgregles.bsp_core.kit.Kit k : kits) {
+                        s.kitWrite(k);
+                    }
+                    for (var e : kitRows.entrySet()) {
+                        for (com.mrgregles.bsp_core.kit.KitLedger.Redeem r : e.getValue()) {
+                            s.kitRedeemWrite(e.getKey(), r);
+                            kitRowCount++;
+                        }
+                    }
                     lines = List.of("Migrated to " + s.describe() + ".",
                             "First-join grants: " + n[0] + " added, " + n[1] + " already in the database.",
                             "Placed totems written: " + n[2] + ". Factory slices written: " + n[3] + ".",
+                            "Kits written: " + kits.size() + ", kit records: " + kitRowCount + ".",
                             "The local records were not changed and stay as a backup.",
                             enabled() ? "Network storage is on." : "Now set storage.mode = \"mysql\" in the server config and restart the server.");
                 }
@@ -865,6 +904,121 @@ public final class NetworkStorage {
             if (team != null) {
                 publish("team", team.id.toString());
             }
+        });
+    }
+
+    // ------------------------------------------------------------------ kits, one record for the network
+
+    private static volatile List<String> kitServers = List.of();
+
+    /** Server ids the network has seen (read with the kits at start); empty without network storage. */
+    public static List<String> knownServers() {
+        return kitServers;
+    }
+
+    public static void kitWrite(com.mrgregles.bsp_core.kit.Kit kit) {
+        async("write a kit", s -> {
+            s.kitWrite(kit);
+            publish("kit", kit.id);
+        });
+    }
+
+    public static void kitDelete(String id) {
+        async("remove a kit", s -> {
+            s.kitDelete(id);
+            publish("kit", "-" + id);
+        });
+    }
+
+    public static void kitTaken(String id, String by, long ms) {
+        async("count a kit taken", s -> {
+            s.kitTaken(id, by, ms);
+            publish("kit", id);
+        });
+    }
+
+    public static void kitRedeem(UUID player, com.mrgregles.bsp_core.kit.KitLedger.Redeem row) {
+        async("write a kit record", s -> {
+            s.kitRedeemWrite(player, row);
+            publish("kit", "r:" + player);
+        });
+    }
+
+    public static void kitRedeemReset(UUID player, @Nullable String kit) {
+        async("forget kit records", s -> {
+            s.kitRedeemReset(player, kit);
+            publish("kit", "r:" + player);
+        });
+    }
+
+    /** A first-join claim; {@code then} gets true on the server thread when this server's row landed first. Answers true at once without network storage. */
+    public static void kitRedeemClaim(UUID player, com.mrgregles.bsp_core.kit.KitLedger.Redeem row, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(true);
+            return;
+        }
+        worker().execute(() -> {
+            boolean won;
+            try {
+                won = s.kitRedeemClaim(player, row);
+                if (won) {
+                    publish("kit", "r:" + player);
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not claim a first-join kit: {}", e.toString());
+                return;
+            }
+            onServer(() -> then.accept(won));
+        });
+    }
+
+    /** Reads a player's kit rows and puts them in place of the local ones, on the server thread; {@code then} runs after, and at once without network storage. */
+    public static void kitRedeemsReload(UUID player, @Nullable Runnable then) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            if (then != null) {
+                then.run();
+            }
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.kit.KitLedger.Redeem> rows;
+            try {
+                rows = s.kitRedeemsRead(player);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read kit records: {}", e.toString());
+                return;
+            }
+            onServer(() -> {
+                com.mrgregles.bsp_core.kit.KitSync.applyRows(srv, player, rows, then == null);
+                if (then != null) {
+                    then.run();
+                }
+            });
+        });
+    }
+
+    /** Reads one kit (or every kit) and the server list from the database and puts them in place of the local copy, on the server thread. */
+    public static void kitReload(@Nullable String id) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.kit.Kit> kits;
+            try {
+                kits = s.kitRead(id);
+                if (id == null) {
+                    kitServers = List.copyOf(s.serverIds());
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read kits: {}", e.toString());
+                return;
+            }
+            onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id));
         });
     }
 

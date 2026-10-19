@@ -1170,7 +1170,8 @@ Setup: two accounts in a team; BSP-Teleport with its T-1 and T-3 rows built (wit
 Setup: two backends behind the Velocity proxy with BSP-Velocity Additions handling `bsp_core:proxy`; `proxy.relayChat = true` on both; two accounts on different backends, a third on the same backend as the first, in a team with it.
 
 - [ ] With `relayChat` false (the default), nothing on the channel: the proxy plugin's log shows no relay and the other backend sees no lines.
-- [ ] `relayChat` true: a plain chat line on backend A arrives on backend B through the proxy in D6's format, once, with the right name; players on A see it once (the backend's own broadcast), not twice.
+- [ ] `relayChat` true: a plain chat line on backend A arrives on backend B through the proxy, once, with the right name, shown to players exactly as A formatted it (the proxy renders the JSON field; by the plugin's D18 only staff with `bspva.players.servers` see it as `[A] <line>`); players on A see it once (the backend's own broadcast), not twice; the proxy console logs it as `[A] line`.
+- [ ] A's `storage.serverId` is the same as its name in the Velocity config; if not, the proxy warns once at the first line and tags with the Velocity name instead.
 - [ ] Team chat on A (TEAM CHAT on, or `/t`): the teammate on A sees it, nobody on B does, and the proxy log shows nothing relayed for it.
 - [ ] Stand where Region Guard denies `send-chat` and speak: "You can't chat here." and nothing relayed.
 - [ ] `/me`, `/say`: not relayed (commands, not chat).
@@ -1188,4 +1189,97 @@ Setup: an admin, a Score Screen of at least 4 x 2 panels, BSP-Teleport with its 
 - [ ] A board with more lines than fit scrolls at the screen's speed; speed 0 holds still.
 - [ ] Log in with a client that lacks the registering mod (or unregister it): the page says "Board ... is not installed here" once, then the rotation goes on without it.
 - [ ] Relog: the screen keeps its mode, board, look, pages and seconds (saved on the block and sent with its data).
+
+## Kits, part 1: the kit, its rules and the commands (2026-10-19)
+
+Setup: an admin and a second account. No screens yet: kits are made from the console in this part (the KITS tab comes in part 3), so make one with a data command or wait for the panel; `/bsp kit list` shows what exists. The four game tests cover the rules headlessly (`./gradlew runGameTestServer`, 77 pass).
+
+- [ ] `/bsp kit list` with no kits says to make one in the panel; `/bsp kit info <id>` names the items, the rule and how often it was taken.
+- [ ] `/bsp kit give <player> <id>` on an online player with room: the items land at once with "You received the kit ..."; on a full inventory: a chat line says it waits and how many slots to free; on an offline name: "it waits for their next login" (delivery itself is part 5).
+- [ ] `/bsp kit test <id>` gives the admin the kit and records nothing (`info` shows the same taken count).
+- [ ] `/bsp kit reset <player> [<id>]` forgets the player's cooldown, once and owed records.
+- [ ] `/bsp kit delete <id>` removes the kit and every record of it.
+- [ ] Config `[kit]` in `bsp_core-server.toml`: `enabled`, `grantDelayTicks`, `showRedeemed`, `maxItems`.
+
+## Kits, part 3: the KITS tab and the editor (2026-10-19)
+
+Setup: an admin (in `[admin] admins` or op), a second account online, a few items in the admin's hand and inventory including an enchanted one. Nothing here has run in a client: the tab, the editor, the browser and the chips are all drawn by hand and need a look.
+
+- [ ] `/bsp admin`: a fourth tab KITS to the right of SETTINGS; the title and the REFRESH key still fit left of the four tabs. `/bsp admin kits` opens the panel straight on it.
+- [ ] Empty tab: "No kits yet. NEW KIT makes one." on the left, "Pick a kit on the left." on the right; only NEW KIT is lit.
+- [ ] NEW KIT: the panel grows to 310 tall, the title reads "Kit: New kit", the Name box has focus; the id under the name follows what you type (lower-case, underscores). Type a name, add items from the browser (click one, shift-click a stack; the wheel over a kit slot changes its count, shift by eight; a click takes it out), FROM HAND adds the held item with its enchantment, FROM INVENTORY replaces the slots with your inventory. SAVE: "Saved" bottom right, the kit appears in the list and the editor stays open with the title updated; CLOSE returns to the list at the normal height.
+- [ ] Browser: the search line narrows by name or id; the mod chips (all, minecraft, bsp_core, then four more per page with ›) filter; the wheel scrolls the grid and the scrollbar moves; hover names the item and its id under the grid; "Nothing matches" for a hopeless search.
+- [ ] Icon: "pick…" then click an item in the browser or a kit slot: it shows beside the chips; "first slot" clears it. The list shows the icon.
+- [ ] Settings: Given chips (servers… shows the Grant on row with every server / this server's id / +); Browser shown or hidden; Take once hides the number box, every shows it with min / h / d; Price box digits only; Servers chips with + and Enter to type an id; Ranks: with no LuckPerms or RankUp, anyone and + (type one); Enabled on or off. Press Enter in a box to leave it. Every chip state survives SAVE and reopening with EDIT.
+- [ ] TEST ON ME: the kit lands in your inventory, "Given to you, nothing recorded"; EDIT again shows the taken count unchanged. With a full inventory the note reads "Refused: see chat" and chat says how many slots.
+- [ ] GIVE TO… on the list: the other player's name as a chip; click it: they get the items (or the waiting line) and the note says Given; with nobody online, "Nobody else is online here".
+- [ ] DELETE on the list and in the editor: SURE? then gone; the list drops it and the right pane shows the next kit.
+- [ ] Moderator (in `[admin] moderators`, not an admin): the tab shows the list and summaries; every key is dim; "read only" beside the title.
+- [ ] Other mods' letter keys do nothing while typing in the boxes (ScreenKeys); Escape closes the panel.
+- [ ] A kit with an item from a mod not installed on this server (made elsewhere): the summary says "N items this server cannot give" in red.
+
+## Kits, part 4: the kit browser (2026-10-19)
+
+Setup: a few kits made in the panel (one ready and free, one priced above the account, one with a rank the account lacks, one limited to another server id, one once-only, one with a 2 minute cooldown, one with 30 stacks) and a second account. Nothing here has run in a client.
+
+- [ ] A KITS button sits beside TEAM above the inventory (survival and creative) and follows the panel when the recipe book opens; `kitsButton = false` in `bsp_core-client.toml` hides it. A key bound in Controls > BSP-Core and `/kits` open the same screen.
+- [ ] The wall: four cards a row, each with its icon drawn large, the name and a chip; the header at the top right reads name · pieces · free slots (with the rank between when LuckPerms knows it). The CLOSE key and the hint line at the bottom.
+- [ ] The free kit: Ready chip, REDEEM on the card, "N items" line; REDEEM puts the items in the inventory and the card turns grey with "again in 1 m 59 s" (for the cooldown kit) or "once only" (for the once kit); the grey card brightens on its own when the cooldown ends.
+- [ ] The priced kit: the price chip in gold, a bar of your balance against it, "you have N"; after `/bank` gives you enough the card turns Ready on the next refresh.
+- [ ] The ranked kit: "reach X" chip; without RankUp "needs the rank X"; with RankUp the ladder steps with your step teal and the needed one gold and "you are A · N to go".
+- [ ] The other-server kit: the server chip and "Join X to take this one".
+- [ ] The big kit with a full inventory: "N slots short" chip and "Free N more slots, then REDEEM"; freeing them turns it Ready.
+- [ ] `/bsp kit give <you> <kit>` with a full inventory: a violet card "Waiting for you" with TAKE IT dim and "needs N slots · you have M"; free the slots: TAKE IT lights and delivers; the card leaves if the kit is kept out of the browser.
+- [ ] Click a card's icon: it flips over the wall with the items, the description and rule, the ticked "to get it" lines, the card's key (or LOCKED · reason) and BACK; a click outside the card or Escape goes back; Escape again closes the screen.
+- [ ] More than eight kits: the wheel scrolls the wall and the scrollbar moves.
+- [ ] Letters bound by other mods do nothing in the screen (ScreenKeys).
+
+## Kits, part 5: first-join kits and delivery after login (2026-10-19)
+
+Setup: a kit set to Given: first join · network, another set to first join · servers… with this server's id, a third set to servers… with another id; a fresh account (or `/bsp kit reset <you>`). With and without BSP-InventorySync on the server.
+
+- [ ] Log in fresh: about two seconds after the world appears (40 ticks), "You received the kit ..." for the network kit and this server's kit; the other server's kit does not come. Log out and in again: nothing more.
+- [ ] `/bsp kit reset <you>` and relog: both come again (no record counts as a first join).
+- [ ] Log in with a full inventory: the chat line says each kit waits and how many slots to free; the browser shows them violet with TAKE IT; free the slots and TAKE IT (or relog) delivers them.
+- [ ] With BSP-InventorySync: the log says "Kits are delivered on BSP-InventorySync's restore event" at server start; on a login that restores a snapshot the kits land after the restore, not before (nothing is wiped); with `kit.deliverOnRestore = false` the tick delay is used instead.
+- [ ] A network first-join kit set once-only: after the grant it shows as Redeemed in the browser when it is also shown there; a repeatable one shows its cooldown.
+- [ ] `kit.enabled = false`: nothing is granted or delivered at login.
+
+## Kits, part 6: kits across the network (2026-10-19)
+
+Setup: two backends sharing the MySQL database and Redis (`storage.mode = "mysql"`, different `serverId`), an admin on A, a player account that can move between them. Part of the MySQL live test.
+
+- [ ] Start both servers: the log shows the kit tables created (`bsp_kits`, `bsp_kit_items`, `bsp_kit_redeems`); `/bsp storage migrate` on a server with local kits reports "Kits written: N, kit records: M".
+- [ ] Make a kit on A's panel (with an enchanted item): within a moment `/bsp kit list` on B shows it with the enchantment; edit it on A: B's panel shows the change; delete it on A: gone on B.
+- [ ] A kit's server chips on either panel list both server ids.
+- [ ] Redeem a cooldown kit on A, switch to B: B's browser shows it grey with the time left; a once-only kit taken on A is Redeemed on B.
+- [ ] `/bsp kit give <player> <kit>` on A while the player is on B: it lands on B within a moment (or waits if it does not fit). Give it while the player is offline: it lands at their next login on either server.
+- [ ] A kit set to first join · network: a brand new account gets it on whichever server it logs into first, and never again on the other. A kit set to first join · servers… with both ids: once on each server.
+- [ ] A kit limited to server B (Servers chips): on A the card says "Join B to take this one"; on B it redeems.
+- [ ] A kit with an item from a mod only A has: B's `/bsp kit info` says "1 items this server cannot give"; the kit still redeems on B without that item? (no: B gives what it has; check the count in chat) and the panel on B shows the warning.
+- [ ] Stop Redis: a change on A reaches B at B's next restart (the full load at start); the game goes on.
+
+## Kits, part 7: ranks (2026-10-19)
+
+Setup: a server with LuckPerms (the Bukkit plugin on Mohist, or the Forge mod) and groups `member`, `vip`, `elite`; with and without BSP-RankUp and a ladder set up in it; an account in `member`, another in `vip`.
+
+- [ ] Server start: the log says "LuckPerms reached through the Bukkit edition" (or Forge). Without LuckPerms, the first ranked kit logs "LuckPerms is not reachable; ranked kits stay locked" once.
+- [ ] The panel's Ranks row without RankUp: chips of every loaded group plus "anyone" and +; with RankUp's ladder: the steps in ladder order, the chosen step and everything above lit, "X and up" beside them; "anyone" clears.
+- [ ] A kit set to vip: the member account's card says "reach vip" with the ladder (member's step teal, vip gold) and "you are member · 1 to go"; the vip account's card is Ready. Promote the member in LuckPerms: on the next refresh (two seconds) their card turns Ready.
+- [ ] A kit set to two groups ("vip" and "builder"): a player in either takes it.
+- [ ] The header of the browser names the rank (the highest rung the player is on, or any group when there is no ladder).
+- [ ] Mohist: the same checks through the Bukkit plugin (no LuckPerms Forge jar on the server).
+
+## Kits, part 8: the guide (2026-10-19)
+
+- [ ] The guide book's Shatter Coins category has a "Kits" entry with a chest icon and four pages; nothing in it reads as history.
+
+## Quiet logout reports and the totem wipe (2026-10-19)
+
+Setup: a creative admin account and a second account.
+
+- [ ] Log out carrying a totem (it is placed), log back in: "back with you" as before.
+- [ ] Log out carrying a totem, break the placed block yourself in creative (or delete the totem in the creative inventory), log back in: no red line at all.
+- [ ] Log out carrying a totem, have the second account steal it, log back in: the red "no longer stands at ..., someone took it" line, as before.
+- [ ] `/bsp totem wipe <you>` while carrying two totems with one placed: both carried ones vanish, the placed block is gone, the chat line counts them, and one fresh Tier I totem is in your inventory; `/bsp totem locate <you>` finds nothing; the leaderboard drops your points within a few seconds; log out and in: no lines about old totems.
 

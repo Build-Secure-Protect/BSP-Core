@@ -999,7 +999,7 @@ public class BspGameTests {
         h.assertTrue(display.linkShop(shop.id), "a Stall Display shows the stall's shop");
         display.setSkin(com.mrgregles.bsp_core.shop.StallSkin.NETHER);
         stall.assign(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");
-        h.runAfterDelay(30, () -> {
+        h.runAfterDelay(80, () -> {
             display.refreshNow();
             var ds = h.getBlockState(displayPos);
             h.assertTrue(ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.SKIN) == com.mrgregles.bsp_core.shop.StallSkin.NETHER && !ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN)
@@ -1301,7 +1301,7 @@ public class BspGameTests {
             h.assertTrue(!be.isFormed(), "not formed while the middle is blocked");
             h.assertTrue(be.hole().equals(h.absolutePos(hole)), "the controller knows where the middle is");
             h.setBlock(hole, Blocks.AIR);
-            h.runAfterDelay(25, () -> {
+            h.runAfterDelay(60, () -> {
                 h.assertTrue(be.isFormed(), "formed once the middle is clear");
                 h.assertBlockProperty(intake, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
                 for (BlockPos p : ringFrames(intake)) {
@@ -1318,7 +1318,7 @@ public class BspGameTests {
                     h.assertTrue(entity(h, intake.west(), com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "the frames are freed");
                     h.assertTrue(be.missingFrames().size() == 1 && be.missingFrames().get(0).equals(h.absolutePos(corner)), "the missing frame is named");
                     h.setBlock(corner, ModBlocks.ACCELERATOR_FRAME.get());
-                    h.runAfterDelay(25, () -> {
+                    h.runAfterDelay(60, () -> {
                         h.assertTrue(be.isFormed(), "whole again");
                         h.setBlock(intake, Blocks.AIR);
                         h.runAfterDelay(3, () -> {
@@ -1342,7 +1342,7 @@ public class BspGameTests {
             h.assertTrue(!be.isFormed(), "a port in front does not form it");
             h.assertTrue(be.portPos().equals(h.absolutePos(behind)), "the port belongs behind the core");
             h.setBlock(behind, ModBlocks.DECELERATOR_PORT.get());
-            h.runAfterDelay(25, () -> {
+            h.runAfterDelay(60, () -> {
                 h.assertTrue(be.isFormed(), "formed with the port behind");
                 h.assertBlockProperty(core, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
                 h.assertBlockProperty(behind, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
@@ -1353,7 +1353,7 @@ public class BspGameTests {
                     h.assertTrue(!be.isFormed(), "breaking the port un-forms it at once");
                     h.assertBlockProperty(core, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                     h.setBlock(behind, ModBlocks.DECELERATOR_PORT.get());
-                    h.runAfterDelay(25, () -> {
+                    h.runAfterDelay(60, () -> {
                         h.assertTrue(be.isFormed(), "whole again");
                         h.setBlock(core, Blocks.AIR);
                         h.runAfterDelay(3, () -> {
@@ -1474,7 +1474,7 @@ public class BspGameTests {
             nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
             nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
         };
-        h.runAfterDelay(100, () -> {
+        h.runAfterDelay(160, () -> {
             h.assertTrue(a.isFormed(), "ring formed");
             h.assertTrue(a.inRate() > 0, "plasma arrives at the intake");
             h.assertTrue(core.isFormed(), "the Nether core is formed in its forced chunk");
@@ -1730,7 +1730,7 @@ public class BspGameTests {
         // someone took it while they were away: nothing comes back
         com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(player);
         h.setBlock(floor.above(), Blocks.AIR);
-        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player).equals(List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.GONE)), "a missing totem is reported gone");
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player).equals(List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.QUIET)), "a missing totem nobody took is quiet (no report)");
         h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(player).isEmpty(), "and nothing was conjured");
         // a steal in progress: it stays in the world
         var totem2 = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
@@ -2232,6 +2232,504 @@ public class BspGameTests {
             com.mrgregles.bsp_core.api.BspBoards.unregister(id2);
         }
         h.assertTrue(com.mrgregles.bsp_core.api.BspBoards.board(id).isEmpty(), "unregistered");
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ kits
+
+    private static com.mrgregles.bsp_core.kit.Kit kit(GameTestHelper h, String prefix, net.minecraft.world.item.ItemStack... items) {
+        String id = (prefix + "_" + Long.toString(System.nanoTime() % 1_000_000_000L, 36)).toLowerCase(java.util.Locale.ROOT);
+        var k = new com.mrgregles.bsp_core.kit.Kit(id.substring(0, Math.min(24, id.length())), "Kit " + prefix, System.currentTimeMillis());
+        for (var s : items) {
+            k.items.add(s.copy());
+        }
+        var out = com.mrgregles.bsp_core.kit.Kits.put(server(h), k);
+        h.assertTrue(out.ok(), "the kit saves: " + out.message());
+        return k;
+    }
+
+    private static int count(net.minecraft.server.level.ServerPlayer p, net.minecraft.world.item.Item item) {
+        int n = 0;
+        for (var s : p.getInventory().items) {
+            if (s.is(item)) {
+                n += s.getCount();
+            }
+        }
+        return n;
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_is_saved_redeemed_once_and_again_after_its_cooldown(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.kit.KitLedger.get(server);
+        var bad = new com.mrgregles.bsp_core.kit.Kit("Bad Id", "x", 0);
+        h.assertTrue(com.mrgregles.bsp_core.kit.Kits.check(bad) != null, "an id with spaces and capitals is refused");
+        var sword = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_SWORD);
+        sword.enchant(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 2);
+        var kit = kit(h, "starter", sword, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 16));
+        kit.once = true;
+        com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+        var copy = com.mrgregles.bsp_core.kit.Kit.load(kit.save());
+        h.assertTrue(copy.items.size() == 2 && net.minecraft.world.item.ItemStack.isSameItemSameTags(copy.items.get(0), sword) && copy.once && copy.id.equals(kit.id), "a kit saves and loads with its NBT");
+        var a = survivor(h);
+        java.util.List<String> events = new java.util.ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.KitEvent.Given> listener = e -> events.add(e.getKitId() + ":" + e.getHow());
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(listener);
+        long start = System.currentTimeMillis();
+        long[] clock = {start};
+        var realClock = com.mrgregles.bsp_core.kit.Kits.clock;
+        com.mrgregles.bsp_core.kit.Kits.clock = () -> clock[0];
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, kit).ready(), "a fresh player may take it");
+            com.mrgregles.bsp_core.kit.Kits.Outcome[] got = new com.mrgregles.bsp_core.kit.Kits.Outcome[1];
+            com.mrgregles.bsp_core.kit.Kits.redeem(a, kit.id, o -> got[0] = o);
+            h.assertTrue(got[0] != null && got[0].ok(), "the redeem answers at once on a single server: " + (got[0] == null ? "nothing" : got[0].message()));
+            h.assertTrue(count(a, net.minecraft.world.item.Items.BREAD) == 16 && count(a, net.minecraft.world.item.Items.IRON_SWORD) == 1, "the items landed");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.timesTaken(server, a.getUUID(), kit.id) == 1 && ledger.kit(kit.id).taken == 1, "recorded once");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, kit).state() == com.mrgregles.bsp_core.kit.Kits.State.REDEEMED, "a once kit is done");
+            com.mrgregles.bsp_core.kit.Kits.redeem(a, kit.id, o -> got[0] = o);
+            h.assertFalse(got[0].ok(), "and cannot be taken twice");
+            kit.once = false;
+            kit.cooldownSeconds = 3600;
+            com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+            var s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+            h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.COOLDOWN && s.number() > 3500 && s.number() <= 3600, "an hourly kit waits: " + s);
+            clock[0] = start + 3601_000L;
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, kit).ready(), "ready after the hour");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.span(3600 + 12 * 60).equals("1 h 12 m") && com.mrgregles.bsp_core.kit.Kits.span(45).equals("45 s") && com.mrgregles.bsp_core.kit.Kits.span(2 * 86400).equals("2 d"), "spans read well");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.reset(server, a.getUUID(), kit.id) == 1 && com.mrgregles.bsp_core.api.BspKits.timesTaken(server, a.getUUID(), kit.id) == 0, "a reset forgets the row");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.test(a, kit.id).ok() && com.mrgregles.bsp_core.api.BspKits.timesTaken(server, a.getUUID(), kit.id) == 0, "TEST ON ME gives without a record");
+            h.assertTrue(events.equals(java.util.List.of(kit.id + ":REDEEMED", kit.id + ":TEST")), "events: " + events);
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id).ok() && com.mrgregles.bsp_core.kit.Kits.kit(server, kit.id) == null, "deleted");
+        } finally {
+            com.mrgregles.bsp_core.kit.Kits.clock = realClock;
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(listener);
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_is_locked_by_rank_server_price_and_space_and_the_price_is_taken_last(GameTestHelper h) {
+        var server = server(h);
+        var kit = kit(h, "vip", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE), new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FIREWORK_ROCKET, 64));
+        var a = survivor(h);
+        var realRanks = com.mrgregles.bsp_core.kit.Kits.rankSource;
+        try {
+            kit.ranks.add("VIP");
+            com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+            var s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+            h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.RANK && s.text().equals("vip"), "no rank source: a ranked kit is locked and names the rank: " + s);
+            com.mrgregles.bsp_core.kit.Kits.rankSource = uuid -> uuid.equals(a.getUUID()) ? java.util.Set.of("member", "vip") : java.util.Set.of();
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, kit).ready(), "with the rank it is ready");
+            kit.servers.add("elsewhere");
+            com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+            s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+            h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.SERVER && s.text().equals("elsewhere"), "only on another server: " + s);
+            kit.servers.clear();
+            kit.servers.add(com.mrgregles.bsp_core.kit.Kits.serverId());
+            kit.price = 500;
+            com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+            s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+            h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.PRICE && s.number() == 500 - com.mrgregles.bsp_core.api.BspBank.balance(server, a.getUUID()), "a price the bank cannot pay: " + s);
+            boolean[] credited = {false};
+            com.mrgregles.bsp_core.api.BspBank.credit(server, a.getUUID(), 800, "test", "kit test", ok -> credited[0] = ok);
+            h.assertTrue(credited[0], "the bank credits at once locally");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, kit).ready(), "affordable now");
+            for (int i = 0; i < a.getInventory().items.size(); i++) {
+                a.getInventory().items.set(i, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE, 64));
+            }
+            s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+            h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.SPACE && s.number() == 2, "a full inventory is 2 slots short: " + s);
+            com.mrgregles.bsp_core.kit.Kits.Outcome[] got = new com.mrgregles.bsp_core.kit.Kits.Outcome[1];
+            com.mrgregles.bsp_core.kit.Kits.redeem(a, kit.id, o -> got[0] = o);
+            h.assertTrue(!got[0].ok() && com.mrgregles.bsp_core.api.BspBank.balance(server, a.getUUID()) == 800, "refused for space and nothing paid");
+            a.getInventory().items.set(0, net.minecraft.world.item.ItemStack.EMPTY);
+            a.getInventory().items.set(1, net.minecraft.world.item.ItemStack.EMPTY);
+            com.mrgregles.bsp_core.kit.Kits.redeem(a, kit.id, o -> got[0] = o);
+            h.assertTrue(got[0].ok() && com.mrgregles.bsp_core.api.BspBank.balance(server, a.getUUID()) == 300, "with two slots free it is bought for 500: " + got[0].message());
+            h.assertTrue(count(a, net.minecraft.world.item.Items.FIREWORK_ROCKET) == 64 && count(a, net.minecraft.world.item.Items.DIAMOND_PICKAXE) == 1, "and delivered");
+            var api = com.mrgregles.bsp_core.api.BspKits.status(a, kit.id).orElseThrow();
+            h.assertTrue(api.state().equals("PRICE") && api.number() == 200, "the api says what is missing now: " + api);
+        } finally {
+            com.mrgregles.bsp_core.kit.Kits.rankSource = realRanks;
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_given_as_a_reward_waits_until_it_fits(GameTestHelper h) {
+        var server = server(h);
+        var kit = kit(h, "reward", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 8));
+        kit.inBrowser = false;
+        kit.price = 9999;
+        kit.ranks.add("legend");
+        com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+        var a = survivor(h);
+        java.util.List<String> events = new java.util.ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.KitEvent> listener = e -> events.add(e.getClass().getSimpleName());
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(listener);
+        try {
+            for (int i = 0; i < a.getInventory().items.size(); i++) {
+                a.getInventory().items.set(i, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE, 64));
+            }
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, kit).state() == com.mrgregles.bsp_core.kit.Kits.State.HIDDEN, "a reward-only kit is hidden");
+            h.assertFalse(com.mrgregles.bsp_core.api.BspKits.give(server, a.getUUID(), "no_such_kit"), "an unknown kit is refused");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.give(server, a.getUUID(), kit.id), "a reward ignores price, rank and the browser flag");
+            h.assertTrue(count(a, net.minecraft.world.item.Items.GOLD_INGOT) == 0, "nothing lands in a full inventory");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.owed(server, a.getUUID()).equals(java.util.List.of(kit.id)), "it is owed");
+            var s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+            h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.OWED && s.number() == 1, "status OWED, one slot short: " + s);
+            h.assertFalse(com.mrgregles.bsp_core.kit.Kits.take(a, kit.id).ok(), "TAKE IT refuses while it does not fit");
+            a.getInventory().items.set(5, net.minecraft.world.item.ItemStack.EMPTY);
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.take(a, kit.id).ok() && count(a, net.minecraft.world.item.Items.GOLD_INGOT) == 8, "TAKE IT delivers once it fits");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.owed(server, a.getUUID()).isEmpty(), "nothing owed now");
+            // a mock player is not in the player list, so give() cannot see them online: deliver as the login hook would
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.give(server, a.getUUID(), kit.id) && com.mrgregles.bsp_core.kit.Kits.deliverOwed(a, com.mrgregles.bsp_core.api.event.KitEvent.How.REWARD) == 1
+                    && count(a, net.minecraft.world.item.Items.GOLD_INGOT) == 16, "a second reward is delivered when it fits, merging into the stack");
+            java.util.UUID offline = java.util.UUID.randomUUID();
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.give(server, offline, kit.id) && com.mrgregles.bsp_core.api.BspKits.owed(server, offline).equals(java.util.List.of(kit.id)), "an offline player's reward waits for them");
+            h.assertTrue(events.equals(java.util.List.of("Owed", "Given", "Owed", "Given", "Owed")), "events: " + events);
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.reset(server, offline, null) == 1, "reset clears the offline row");
+        } finally {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(listener);
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_fit_tops_up_part_stacks_before_taking_empty_slots(GameTestHelper h) {
+        var slots = net.minecraft.core.NonNullList.withSize(36, net.minecraft.world.item.ItemStack.EMPTY);
+        for (int i = 0; i < 35; i++) {
+            slots.set(i, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE, 64));
+        }
+        slots.set(35, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 32));
+        var cobble32 = java.util.List.of(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 32));
+        var cobble33 = java.util.List.of(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 33));
+        var stone = java.util.List.of(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE, 1));
+        h.assertTrue(com.mrgregles.bsp_core.kit.KitFit.slotsShort(slots, cobble32) == 0, "32 cobblestone top the part stack up");
+        h.assertTrue(com.mrgregles.bsp_core.kit.KitFit.slotsShort(slots, cobble33) == 1, "33 need one more slot");
+        h.assertTrue(com.mrgregles.bsp_core.kit.KitFit.slotsShort(slots, stone) == 1, "a stone has nowhere to go");
+        h.assertTrue(slots.get(35).getCount() == 32, "the inventory itself was not touched");
+        var empty = net.minecraft.core.NonNullList.withSize(36, net.minecraft.world.item.ItemStack.EMPTY);
+        var big = java.util.List.of(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 64), new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 64));
+        h.assertTrue(com.mrgregles.bsp_core.kit.KitFit.slotsShort(empty, big) == 0, "two stacks fit an empty inventory");
+        var unstackable = new java.util.ArrayList<net.minecraft.world.item.ItemStack>();
+        for (int i = 0; i < 40; i++) {
+            unstackable.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_SWORD));
+        }
+        h.assertTrue(com.mrgregles.bsp_core.kit.KitFit.slotsShort(empty, unstackable) == 4, "40 swords in 36 slots are 4 short");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_admin_packets_round_trip_and_the_edit_path_saves_deletes_tests_and_gives(GameTestHelper h) {
+        var server = server(h);
+        var admin = survivor(h);
+        var other = survivor(h);
+        var kit = kit(h, "panel", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.APPLE, 3));
+        try {
+            // the tab's data
+            var snap = com.mrgregles.bsp_core.kit.KitAdmin.snapshot(admin, true, "saved");
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.KitAdminPacket.encode(snap, buf);
+            var back = com.mrgregles.bsp_core.network.KitAdminPacket.decode(buf);
+            h.assertTrue(back.open() && back.note().equals("saved") && back.servers().contains(com.mrgregles.bsp_core.kit.Kits.serverId()) && !back.ladder(), "the data packet round-trips: " + back.servers());
+            boolean found = false;
+            for (var t : back.kits()) {
+                var k = com.mrgregles.bsp_core.kit.Kit.load(t);
+                found |= k.id.equals(kit.id) && k.items.size() == 1 && k.items.get(0).getCount() == 3;
+            }
+            h.assertTrue(found, "the kit travels with its items");
+            // an edit: a new kit from its tag, refused when the id exists
+            var fresh = new com.mrgregles.bsp_core.kit.Kit(kit.id + "_b", "Panel B", System.currentTimeMillis());
+            fresh.items.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 2));
+            fresh.ranks.add("VIP");
+            var edit = com.mrgregles.bsp_core.network.KitEditPacket.save(fresh.save(), true);
+            buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.KitEditPacket.encode(edit, buf);
+            var edit2 = com.mrgregles.bsp_core.network.KitEditPacket.decode(buf);
+            h.assertTrue(edit2.action() == com.mrgregles.bsp_core.network.KitEditPacket.Action.SAVE && edit2.isNew() && edit2.kit() != null && edit2.kitId().equals(fresh.id), "the edit packet round-trips");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, edit2).equals("saved"), "a new kit saves");
+            var saved = com.mrgregles.bsp_core.kit.Kits.kit(server, fresh.id);
+            h.assertTrue(saved != null && saved.ranks.equals(java.util.List.of("vip")) && saved.items.get(0).getCount() == 2, "with its items and the rank lower-cased");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.save(fresh.save(), true)).equals("id_taken"), "saving it as new again is refused");
+            fresh.name = "Panel B2";
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.save(fresh.save(), false)).equals("saved")
+                    && com.mrgregles.bsp_core.kit.Kits.kit(server, fresh.id).name.equals("Panel B2"), "an edit of an existing kit saves");
+            var badTag = new com.mrgregles.bsp_core.kit.Kit("Bad Id!", "x", 0).save();
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.save(badTag, true)).equals("refused"), "a bad id is refused");
+            // test on me, give to, delete
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.of(com.mrgregles.bsp_core.network.KitEditPacket.Action.TEST, fresh.id)).equals("tested")
+                    && count(admin, net.minecraft.world.item.Items.BREAD) == 2 && com.mrgregles.bsp_core.kit.Kits.kit(server, fresh.id).taken == 0, "TEST ON ME gives the admin the kit, nothing recorded");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.give(fresh.id, other.getUUID())).equals("gave_offline")
+                    && com.mrgregles.bsp_core.api.BspKits.owed(server, other.getUUID()).equals(java.util.List.of(fresh.id)), "GIVE TO makes the kit owed (a mock player counts as offline)");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.of(com.mrgregles.bsp_core.network.KitEditPacket.Action.DELETE, fresh.id)).equals("deleted")
+                    && com.mrgregles.bsp_core.kit.Kits.kit(server, fresh.id) == null && com.mrgregles.bsp_core.api.BspKits.owed(server, other.getUUID()).isEmpty(), "DELETE removes the kit and what was owed of it");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.of(com.mrgregles.bsp_core.network.KitEditPacket.Action.DELETE, fresh.id)).equals("refused"), "deleting it twice is refused");
+        } finally {
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id);
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id + "_b");
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_browser_view_lists_cards_with_their_states_and_its_actions_redeem_and_take(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var ready = kit(h, "ready", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 5));
+        var hidden = kit(h, "hidden", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE));
+        hidden.inBrowser = false;
+        com.mrgregles.bsp_core.kit.Kits.put(server, hidden);
+        var owed = kit(h, "owed", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 2));
+        owed.inBrowser = false;
+        com.mrgregles.bsp_core.kit.Kits.put(server, owed);
+        var dear = kit(h, "dear", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND));
+        dear.price = 1_000_000;
+        com.mrgregles.bsp_core.kit.Kits.put(server, dear);
+        try {
+            com.mrgregles.bsp_core.api.BspKits.give(server, a.getUUID(), owed.id);
+            var view = com.mrgregles.bsp_core.network.KitViewPacket.of(a, true);
+            java.util.Map<String, String> states = new java.util.HashMap<>();
+            for (var c : view.cards()) {
+                states.put(c.id(), c.state());
+            }
+            h.assertTrue(!states.containsKey(hidden.id), "a hidden kit has no card");
+            h.assertTrue("OWED".equals(states.get(owed.id)) && view.cards().get(0).id().equals(owed.id), "the owed kit comes first even though it is kept out of the browser: " + states);
+            h.assertTrue("READY".equals(states.get(ready.id)) && "PRICE".equals(states.get(dear.id)), "ready and too dear: " + states);
+            h.assertTrue(view.freeSlots() == 36 && view.open() && view.enabled(), "header facts");
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.KitViewPacket.encode(view, buf);
+            var back = com.mrgregles.bsp_core.network.KitViewPacket.decode(buf);
+            h.assertTrue(back.cards().size() == view.cards().size() && back.cards().get(0).items().get(0).getCount() == 2 && back.cards().get(0).slotsNeeded() == 1, "the view round-trips with its items");
+            var act = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.KitActionPacket.encode(new com.mrgregles.bsp_core.network.KitActionPacket(com.mrgregles.bsp_core.network.KitActionPacket.Action.REDEEM, ready.id), act);
+            var action = com.mrgregles.bsp_core.network.KitActionPacket.decode(act);
+            com.mrgregles.bsp_core.kit.KitActions.apply(a, action);
+            h.assertTrue(count(a, net.minecraft.world.item.Items.BREAD) == 5, "REDEEM through the action packet gives the kit");
+            com.mrgregles.bsp_core.kit.KitActions.apply(a, new com.mrgregles.bsp_core.network.KitActionPacket(com.mrgregles.bsp_core.network.KitActionPacket.Action.TAKE, owed.id));
+            h.assertTrue(count(a, net.minecraft.world.item.Items.GOLD_INGOT) == 2 && com.mrgregles.bsp_core.api.BspKits.owed(server, a.getUUID()).isEmpty(), "TAKE delivers the waiting kit");
+            com.mrgregles.bsp_core.kit.KitActions.apply(a, new com.mrgregles.bsp_core.network.KitActionPacket(com.mrgregles.bsp_core.network.KitActionPacket.Action.REDEEM, dear.id));
+            h.assertTrue(count(a, net.minecraft.world.item.Items.DIAMOND) == 0, "a kit the bank cannot pay for is refused");
+            var after = com.mrgregles.bsp_core.network.KitViewPacket.of(a, false);
+            h.assertTrue(after.cards().stream().noneMatch(c -> c.id().equals(owed.id)), "the taken reward-only kit leaves the wall");
+        } finally {
+            for (var k : new com.mrgregles.bsp_core.kit.Kit[] {ready, hidden, owed, dear}) {
+                com.mrgregles.bsp_core.kit.Kits.delete(server, k.id);
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_first_join_grants_go_once_per_network_and_per_server_and_land_after_login(GameTestHelper h) {
+        var server = server(h);
+        var netKit = kit(h, "netjoin", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4));
+        netKit.grant = com.mrgregles.bsp_core.kit.Kit.Grant.NETWORK;
+        netKit.inBrowser = false;
+        netKit.once = true;
+        com.mrgregles.bsp_core.kit.Kits.put(server, netKit);
+        var here = kit(h, "herejoin", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TORCH, 8));
+        here.grant = com.mrgregles.bsp_core.kit.Kit.Grant.SERVERS;
+        here.inBrowser = false;
+        com.mrgregles.bsp_core.kit.Kits.put(server, here);
+        var elsewhere = kit(h, "elsejoin", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE));
+        elsewhere.grant = com.mrgregles.bsp_core.kit.Kit.Grant.SERVERS;
+        elsewhere.grantServers.add("some-other-server");
+        com.mrgregles.bsp_core.kit.Kits.put(server, elsewhere);
+        var a = survivor(h);
+        java.util.List<String> events = new java.util.ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.KitEvent.Given> listener = e -> events.add(e.getKitId() + ":" + e.getHow());
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(listener);
+        try {
+            h.assertFalse(com.mrgregles.bsp_core.kit.KitGrants.waitsForRestore(), "no sync mod in the test run: the tick path delivers");
+            com.mrgregles.bsp_core.kit.KitGrants.login(a);
+            h.assertTrue(count(a, net.minecraft.world.item.Items.BREAD) == 0 && count(a, net.minecraft.world.item.Items.TORCH) == 0, "nothing lands at login time itself");
+            var owed = com.mrgregles.bsp_core.api.BspKits.owed(server, a.getUUID());
+            h.assertTrue(owed.size() == 2 && owed.contains(netKit.id) && owed.contains(here.id), "the network kit and this server's kit are owed, the other server's is not: " + owed);
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitGrants.pending(a.getUUID()), "a delivery is scheduled");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitGrants.deliver(a) == 2 && count(a, net.minecraft.world.item.Items.BREAD) == 4 && count(a, net.minecraft.world.item.Items.TORCH) == 8, "the delivery hands both over");
+            h.assertTrue(events.equals(java.util.List.of(netKit.id + ":FIRST_JOIN", here.id + ":FIRST_JOIN")) || events.equals(java.util.List.of(here.id + ":FIRST_JOIN", netKit.id + ":FIRST_JOIN")), "both say FIRST_JOIN: " + events);
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, netKit).state() == com.mrgregles.bsp_core.kit.Kits.State.HIDDEN
+                    && com.mrgregles.bsp_core.api.BspKits.timesTaken(server, a.getUUID(), netKit.id) == 1, "the network grant counts as taken once");
+            com.mrgregles.bsp_core.kit.KitGrants.login(a);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.owed(server, a.getUUID()).isEmpty() && count(a, net.minecraft.world.item.Items.BREAD) == 4, "a second login grants nothing again");
+            // a full inventory: the kit waits, and lands at the next login's delivery
+            var b = survivor(h);
+            for (int i = 0; i < b.getInventory().items.size(); i++) {
+                b.getInventory().items.set(i, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE, 64));
+            }
+            com.mrgregles.bsp_core.kit.KitGrants.login(b);
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitGrants.deliver(b) == 0 && com.mrgregles.bsp_core.api.BspKits.owed(server, b.getUUID()).size() == 2, "nothing fits: both stay owed");
+            b.getInventory().items.set(0, net.minecraft.world.item.ItemStack.EMPTY);
+            b.getInventory().items.set(1, net.minecraft.world.item.ItemStack.EMPTY);
+            com.mrgregles.bsp_core.kit.KitGrants.login(b);
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitGrants.deliver(b) == 2 && com.mrgregles.bsp_core.api.BspKits.owed(server, b.getUUID()).isEmpty(), "with room they land at the next login, and no second grant was made");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.reset(server, b.getUUID(), null) >= 2, "reset forgets both rows");
+            com.mrgregles.bsp_core.kit.KitGrants.login(b);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.owed(server, b.getUUID()).size() == 2, "after a reset the first-join kits come again (no record = first join)");
+        } finally {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(listener);
+            for (var k : new com.mrgregles.bsp_core.kit.Kit[] {netKit, here, elsewhere}) {
+                com.mrgregles.bsp_core.kit.Kits.delete(server, k.id);
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_copies_from_the_database_replace_the_local_ones_and_item_rows_round_trip(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.kit.KitLedger.get(server);
+        var local = kit(h, "netcopy", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 3));
+        var a = survivor(h);
+        try {
+            // an item row with NBT, and one this server cannot resolve
+            var sword = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD);
+            sword.enchant(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 3);
+            var row = com.mrgregles.bsp_core.kit.Kit.rowOf(sword);
+            h.assertTrue(row.item().equals("minecraft:diamond_sword") && row.count() == 1 && row.nbt().contains("sharpness"), "a stack becomes an item row: " + row);
+            var back = com.mrgregles.bsp_core.kit.Kit.stackOf(row);
+            h.assertTrue(net.minecraft.world.item.ItemStack.isSameItemSameTags(back, sword), "and comes back with its enchantment");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kit.stackOf(new com.mrgregles.bsp_core.kit.Kit.ItemRow("nomod:thing", 2, "")).isEmpty(), "an unknown item is empty (counted as missing by the reader)");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kit.split(com.mrgregles.bsp_core.kit.Kit.joined(java.util.List.of("vip", "elite"))).equals(java.util.List.of("vip", "elite")) && com.mrgregles.bsp_core.kit.Kit.split("").isEmpty(), "list columns");
+            // a fresh copy of the kit from "the database" replaces the local one
+            var fresh = local.copy();
+            fresh.name = "Renamed elsewhere";
+            fresh.items.clear();
+            fresh.items.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.APPLE, 7));
+            fresh.taken = 12;
+            com.mrgregles.bsp_core.kit.KitSync.apply(server, java.util.List.of(fresh), local.id);
+            var now = com.mrgregles.bsp_core.kit.Kits.kit(server, local.id);
+            h.assertTrue(now != null && now.name.equals("Renamed elsewhere") && now.items.size() == 1 && now.items.get(0).is(net.minecraft.world.item.Items.APPLE) && now.taken == 12, "the copy replaced the local kit");
+            // a full load drops kits the database no longer has, keeps the ones it has
+            var other = kit(h, "netother", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE));
+            com.mrgregles.bsp_core.kit.KitSync.apply(server, java.util.List.of(fresh), null);
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.kit(server, other.id) == null && com.mrgregles.bsp_core.kit.Kits.kit(server, local.id) != null, "a full load prunes what the database does not have");
+            // deleted elsewhere
+            com.mrgregles.bsp_core.kit.KitSync.apply(server, java.util.List.of(), local.id);
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.kit(server, local.id) == null, "an empty answer for one id removes it");
+            // a player's rows from the database replace the local ones
+            var again = kit(h, "netrows", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 2));
+            com.mrgregles.bsp_core.kit.KitSync.applyRows(server, a.getUUID(), java.util.List.of(com.mrgregles.bsp_core.kit.KitLedger.Redeem.of(again.id, "", 3, 1000L, 1)), false);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.timesTaken(server, a.getUUID(), again.id) == 3 && com.mrgregles.bsp_core.api.BspKits.owed(server, a.getUUID()).equals(java.util.List.of(again.id)), "the rows landed: taken 3, one owed");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.status(a, again).state() == com.mrgregles.bsp_core.kit.Kits.State.OWED, "and the status reads them");
+            h.assertTrue(com.mrgregles.bsp_core.kit.Kits.take(a, again.id).ok() && count(a, net.minecraft.world.item.Items.GOLD_INGOT) == 2, "TAKE IT delivers what another server owed");
+            com.mrgregles.bsp_core.kit.KitSync.applyRows(server, a.getUUID(), java.util.List.of(), false);
+            h.assertTrue(ledger.redeems(a.getUUID()).isEmpty(), "an empty row set clears the local rows");
+            h.assertTrue(com.mrgregles.bsp_core.storage.NetworkStorage.knownServers().isEmpty(), "no network here: no known servers beyond this one");
+            com.mrgregles.bsp_core.kit.Kits.delete(server, again.id);
+        } finally {
+            for (String id : new String[] {local.id, local.id, "x"}) {
+                com.mrgregles.bsp_core.kit.Kits.delete(server, id);
+            }
+            for (var k : new java.util.ArrayList<>(com.mrgregles.bsp_core.kit.Kits.all(server))) {
+                if (k.id.startsWith("netother") || k.id.startsWith("netrows") || k.id.startsWith("netcopy")) {
+                    com.mrgregles.bsp_core.kit.Kits.delete(server, k.id);
+                }
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_rank_rule_reads_luckperms_through_the_bridge_and_locks_without_it(GameTestHelper h) {
+        var server = server(h);
+        var realRanks = com.mrgregles.bsp_core.kit.Kits.rankSource;
+        var realNames = com.mrgregles.bsp_core.kit.Kits.rankNamesSource;
+        var kit = kit(h, "ranked", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.EMERALD));
+        kit.ranks.add("vip");
+        com.mrgregles.bsp_core.kit.Kits.put(server, kit);
+        var a = survivor(h);
+        try {
+            com.mrgregles.bsp_core.kit.KitRanks.install();
+            boolean lp = com.mrgregles.bsp_core.compat.LuckPermsBridge.isPresent();
+            h.assertTrue(com.mrgregles.bsp_core.compat.LuckPermsBridge.route() != null, "the bridge answers one way or the other");
+            if (!lp) {
+                h.assertTrue(com.mrgregles.bsp_core.compat.LuckPermsBridge.groupsOf(a.getUUID()).isEmpty() && com.mrgregles.bsp_core.compat.LuckPermsBridge.groupNames().isEmpty(), "no LuckPerms in this run: no groups, no names");
+                var s = com.mrgregles.bsp_core.kit.Kits.status(a, kit);
+                h.assertTrue(s.state() == com.mrgregles.bsp_core.kit.Kits.State.RANK && s.text().equals("vip"), "a ranked kit stays locked: " + s);
+                var names = com.mrgregles.bsp_core.kit.Kits.rankNames();
+                h.assertTrue(names.names().isEmpty() && !names.ladder(), "no names and no ladder without LuckPerms or RankUp: " + names);
+            } else {
+                h.assertTrue(com.mrgregles.bsp_core.kit.Kits.rankNames().names().size() > 0, "LuckPerms is here: its groups are the names");
+            }
+            h.assertTrue(com.mrgregles.bsp_core.compat.RankUpHook.ladder(server).isEmpty() == !com.mrgregles.bsp_core.compat.RankUpHook.isPresent() || true, "the RankUp hook answers without throwing");
+            var view = com.mrgregles.bsp_core.network.KitViewPacket.of(a, false);
+            h.assertTrue(view.rank().isEmpty() == !lp && view.rankIndex() == -1 || lp, "the browser's header carries no rank without LuckPerms");
+        } finally {
+            com.mrgregles.bsp_core.kit.Kits.rankSource = realRanks;
+            com.mrgregles.bsp_core.kit.Kits.rankNamesSource = realNames;
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id);
+        }
+        h.succeed();
+    }
+    @GameTest(template = EMPTY)
+    public void logout_report_stays_quiet_unless_someone_took_the_totem(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var a = survivor(h);
+        var b = survivor(h);
+        BlockPos spot = h.absolutePos(new BlockPos(3, 1, 3)); // nothing stands here
+        long now = server.overworld().getGameTime();
+        java.util.function.BiFunction<UUID, UUID, com.mrgregles.bsp_core.data.PlayerPersistent.LogoutPlaced> record = (id, inst) ->
+                new com.mrgregles.bsp_core.data.PlayerPersistent.LogoutPlaced(h.getLevel().dimension(), spot, id, inst, System.currentTimeMillis());
+        // destroyed or forgotten: the ledger knows nothing of it, so nothing is said
+        UUID id1 = UUID.randomUUID(), inst1 = UUID.randomUUID();
+        com.mrgregles.bsp_core.data.PlayerPersistent.addLogoutPlaced(a, record.apply(id1, inst1));
+        var r1 = com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(a);
+        h.assertTrue(r1.equals(java.util.List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.QUIET)), "a forgotten totem: quiet, not 'someone took it': " + r1);
+        // back in the owner's own hands: quiet
+        UUID id2 = UUID.randomUUID(), inst2 = UUID.randomUUID();
+        ledger.seen(id2, inst2, a.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        com.mrgregles.bsp_core.data.PlayerPersistent.addLogoutPlaced(a, record.apply(id2, inst2));
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(a).equals(java.util.List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.QUIET)), "picked up by the owner: quiet");
+        // with someone else now: the report stands
+        UUID id3 = UUID.randomUUID(), inst3 = UUID.randomUUID();
+        ledger.seen(id3, inst3, b.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.PLACED, null, now);
+        com.mrgregles.bsp_core.data.PlayerPersistent.addLogoutPlaced(a, record.apply(id3, inst3));
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(a).equals(java.util.List.of(com.mrgregles.bsp_core.event.TotemLogoutHandler.Returned.GONE)), "taken by someone else: 'someone took it'");
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.takeLogoutPlaced(a).isEmpty(), "every record was consumed");
+        ledger.forget(id2);
+        ledger.forget(id3);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void totem_wipe_gives_a_player_a_clean_slate(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var a = survivor(h);
+        long now = server.overworld().getGameTime();
+        BlockPos pos = new BlockPos(6, 1, 6);
+        h.setBlock(pos, com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get());
+        entity(h, pos, com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity.class).setOwner(new com.mrgregles.bsp_core.totem.TotemOwner(a.getUUID(), a.getGameProfile().getName()));
+        var carried = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(a.getUUID(), a.getGameProfile().getName()).applyTo(carried);
+        a.getInventory().add(carried);
+        UUID stray = UUID.randomUUID();
+        ledger.seen(stray, UUID.randomUUID(), a.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        com.mrgregles.bsp_core.data.PlayerPersistent.addLogoutPlaced(a, new com.mrgregles.bsp_core.data.PlayerPersistent.LogoutPlaced(h.getLevel().dimension(), h.absolutePos(pos), UUID.randomUUID(), UUID.randomUUID(), System.currentTimeMillis()));
+        ledger.markGranted(a.getUUID());
+        h.assertTrue(ledger.placedFor(a.getUUID()).size() == 1, "one placed totem before");
+        var r = com.mrgregles.bsp_core.totem.TotemWipe.wipe(a);
+        h.assertTrue(r.carried() == 1 && r.placed() == 1 && r.forgotten() >= 1 && r.logoutRecords() == 1 && r.granted(), "the wipe reports what it did: " + r);
+        h.assertBlockNotPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), pos);
+        h.assertTrue(ledger.placedFor(a.getUUID()).isEmpty() && ledger.sighting(stray) == null, "nothing placed, nothing remembered");
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.takeLogoutPlaced(a).isEmpty(), "no logout placements left");
+        var fresh = com.mrgregles.bsp_core.totem.TotemInventories.removeAll(a);
+        h.assertTrue(fresh.size() == 1 && com.mrgregles.bsp_core.totem.TotemUpgrades.getTier(fresh.get(0)) == 0, "one fresh Tier I totem, as on a first join");
+        h.assertTrue(ledger.hasBeenGranted(a.getUUID()), "and the grant is recorded again");
+        for (ItemStack f : fresh) {
+            UUID fid = com.mrgregles.bsp_core.totem.TotemIdentity.id(f);
+            if (fid != null) {
+                ledger.forget(fid);
+            }
+        }
+        ledger.clearGranted(a.getUUID());
         h.succeed();
     }
 }

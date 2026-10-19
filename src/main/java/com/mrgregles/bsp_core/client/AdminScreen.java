@@ -31,6 +31,28 @@ public class AdminScreen extends Screen {
     private static final long CONFIRM_MS = 4000;
 
     private AdminDataPacket data;
+    /** The KITS tab: the kit list and the editor. */
+    private final KitAdminTab kits = new KitAdminTab(new KitAdminTab.Host() {
+        @Override
+        public net.minecraft.client.gui.Font font() {
+            return font;
+        }
+
+        @Override
+        public void addWidget(net.minecraft.client.gui.components.EditBox box) {
+            addRenderableWidget(box);
+        }
+
+        @Override
+        public void send(com.mrgregles.bsp_core.network.KitEditPacket packet) {
+            BSPNetwork.CHANNEL.sendToServer(packet);
+        }
+
+        @Override
+        public boolean canEdit() {
+            return data.canEdit();
+        }
+    });
     @Nullable
     private UUID selected;
     private int tab, scroll, confirm = -1;
@@ -56,6 +78,8 @@ public class AdminScreen extends Screen {
         hoursBox.setValue(data.holderHours() > 0 ? Integer.toString(data.holderHours()) : "");
         hoursBox.visible = tab == 1 && data.canEdit();
         addRenderableWidget(hoursBox);
+        kits.init(left(), top());
+        kits.setVisible(tab == 3);
     }
 
     /** Hours between automatic holder rewards, typed by the admin; 0 or empty turns it off. */
@@ -87,6 +111,10 @@ public class AdminScreen extends Screen {
             hoursBox.setFocused(false);
             hoursBox.visible = to == 1 && data.canEdit();
         }
+        kits.setVisible(to == 3);
+        if (to == 3) {
+            kits.refresh();
+        }
     }
 
     private AdminScreen(AdminDataPacket data) {
@@ -104,6 +132,22 @@ public class AdminScreen extends Screen {
         }
     }
 
+    /** Called when the KITS tab's data arrives: refreshes the tab, and turns the panel to it when asked. */
+    public static void receiveKits(com.mrgregles.bsp_core.network.KitAdminPacket packet) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof AdminScreen screen) {
+            screen.kits.take(packet);
+            if (packet.open() && screen.tab != 3) {
+                screen.setTab(3);
+            }
+        }
+    }
+
+    /** The panel's height: taller while the kit editor is open. */
+    private int h() {
+        return tab == 3 && kits.editing() ? KitAdminTab.H_EDIT : H;
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -114,7 +158,7 @@ public class AdminScreen extends Screen {
     }
 
     private int top() {
-        return (height - H) / 2;
+        return (height - h()) / 2;
     }
 
     private static Component tr(String key, Object... args) {
@@ -166,15 +210,25 @@ public class AdminScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int x = left(), y = top();
-        for (int i = 0; i < 3; i++) {
-            if (over(mx, my, x + W - 10 - (3 - i) * (TAB_W + 3) + 3, y + 6, TAB_W, TAB_H)) {
+        for (int i = 0; i < 4; i++) {
+            if (over(mx, my, x + W - 10 - (4 - i) * (TAB_W + 3) + 3, y + 6, TAB_W, TAB_H)) {
                 setTab(i);
                 return true;
             }
         }
-        if (over(mx, my, x + W - 10 - 3 * (TAB_W + 3) - 50, y + 6, 46, TAB_H)) {
-            send(new AdminActionPacket(AdminActionPacket.REFRESH));
+        if (over(mx, my, x + W - 10 - 4 * (TAB_W + 3) - 50, y + 6, 46, TAB_H)) {
+            if (tab == 3) {
+                kits.refresh();
+            } else {
+                send(new AdminActionPacket(AdminActionPacket.REFRESH));
+            }
             return true;
+        }
+        if (tab == 3) {
+            if (kits.mouseClicked(mx, my, button)) {
+                return true;
+            }
+            return super.mouseClicked(mx, my, button);
         }
         boolean edit = data.canEdit();
         if (tab == 2) {
@@ -250,6 +304,9 @@ public class AdminScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (tab == 3 && kits.keyPressed(key, scan, mods)) {
+            return true;
+        }
         if (hoursBox != null && hoursBox.isFocused() && (key == 257 || key == 335)) {
             sendHours();
             return true;
@@ -259,6 +316,9 @@ public class AdminScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
+        if (tab == 3) {
+            return kits.mouseScrolled(mx, my, delta);
+        }
         scroll = Mth.clamp(scroll - (int) Math.signum(delta), 0, Math.max(0, data.rows().size() - ROWS));
         return true;
     }
@@ -289,24 +349,28 @@ public class AdminScreen extends Screen {
         renderBackground(g);
         int x = left(), y = top();
         boolean edit = data.canEdit();
-        g.fill(x - 1, y - 1, x + W + 1, y + H + 1, VIO);
-        g.fill(x, y, x + W, y + H, BG);
-        g.drawString(font, title, x + 10, y + 9, VIO & 0xFFFFFF, false);
+        int hh = h();
+        g.fill(x - 1, y - 1, x + W + 1, y + hh + 1, VIO);
+        g.fill(x, y, x + W, y + hh, BG);
+        Component heading = tab == 3 && kits.editing() ? kits.title() : title;
+        g.drawString(font, font.plainSubstrByWidth(heading.getString(), W - 10 - 4 * (TAB_W + 3) - 62 - (edit ? 0 : 40)), x + 10, y + 9, VIO & 0xFFFFFF, false);
         if (!edit) {
-            small(g, tr("read_only"), x + 14 + font.width(title), y + 11, GOLD & 0xFFFFFF);
+            small(g, tr("read_only"), x + 14 + font.width(heading), y + 11, GOLD & 0xFFFFFF);
         }
-        button(g, x + W - 10 - 3 * (TAB_W + 3) - 50, y + 6, 46, TAB_H, tr("refresh"), true, TQ, mouseX, mouseY);
-        for (int i = 0; i < 3; i++) {
-            int tx = x + W - 10 - (3 - i) * (TAB_W + 3) + 3;
+        button(g, x + W - 10 - 4 * (TAB_W + 3) - 50, y + 6, 46, TAB_H, tr("refresh"), true, TQ, mouseX, mouseY);
+        for (int i = 0; i < 4; i++) {
+            int tx = x + W - 10 - (4 - i) * (TAB_W + 3) + 3;
             g.fill(tx, y + 6, tx + TAB_W, y + 6 + TAB_H, tab == i ? VIO : DIM);
             g.fill(tx + 1, y + 7, tx + TAB_W - 1, y + 5 + TAB_H, tab == i ? BG : SLOT_BG);
-            Component label = tr(i == 0 ? "tab.players" : i == 1 ? "tab.season" : "tab.settings");
+            Component label = tr(i == 0 ? "tab.players" : i == 1 ? "tab.season" : i == 2 ? "tab.settings" : "tab.kits");
             small(g, label, tx + TAB_W / 2 - Math.round(font.width(label) * 0.375f), y + 10, tab == i ? VIO & 0xFFFFFF : MUTED);
         }
         if (tab == 1) {
             season(g, x, y, edit, mouseX, mouseY);
         } else if (tab == 2) {
             settings(g, x, y, edit, mouseX, mouseY);
+        } else if (tab == 3) {
+            kits.render(g, x, y, mouseX, mouseY);
         } else {
             players(g, x, y, edit, mouseX, mouseY);
         }

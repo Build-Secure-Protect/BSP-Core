@@ -119,6 +119,8 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.BooleanValue TEAM_ENABLED, TEAM_MEMBERS_INVITE, TEAM_CHAT_TAG, TEAM_TEAMMATES_STEAL, TEAM_COMPASS_IGNORES;
     public static final ForgeConfigSpec.BooleanValue PROXY_RELAY_CHAT;
     public static final ForgeConfigSpec.IntValue TEAM_MAX_MEMBERS, TEAM_INVITE_SECONDS, TEAM_HISTORY_SIZE, TEAM_NAME_MIN, TEAM_NAME_MAX;
+    public static final ForgeConfigSpec.BooleanValue KIT_ENABLED, KIT_SHOW_REDEEMED, KIT_DELIVER_ON_RESTORE;
+    public static final ForgeConfigSpec.IntValue KIT_GRANT_DELAY_TICKS, KIT_MAX_ITEMS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
     /** Thief's Step, Siege and Harvest (the 1.0 buffs), by level. */
@@ -574,6 +576,14 @@ public final class BSPConfig {
         TEAM_COMPASS_IGNORES = BUILDER.comment("When true the Totem Compass does not count teammates' totems as rivals.").define("compassIgnoresTeam", true);
         TEAM_NAME_MIN = BUILDER.comment("Shortest team name.").defineInRange("nameMin", 3, 1, 32);
         TEAM_NAME_MAX = BUILDER.comment("Longest team name.").defineInRange("nameMax", 16, 3, 32);
+        BUILDER.pop();
+
+        BUILDER.comment("Kits: item bundles handed out at first login, redeemed from the kit browser, or given as rewards.").push("kit");
+        KIT_ENABLED = BUILDER.comment("Master switch. When false no kit is given or redeemed and the browser is empty.").define("enabled", true);
+        KIT_GRANT_DELAY_TICKS = BUILDER.comment("Ticks after a login before kits owed to the player are delivered, when no inventory sync mod says when the inventory is settled.").defineInRange("grantDelayTicks", 40, 1, 1200);
+        KIT_SHOW_REDEEMED = BUILDER.comment("When true a once-only kit the player already took stays in their browser, marked redeemed; when false it is hidden.").define("showRedeemed", true);
+        KIT_MAX_ITEMS = BUILDER.comment("Most stacks in one kit.").defineInRange("maxItems", 36, 1, 36);
+        KIT_DELIVER_ON_RESTORE = BUILDER.comment("With BSP-InventorySync installed, deliver kits owed to a player when its restore has run (its InventoryRestoredEvent) instead of grantDelayTicks after the login.").define("deliverOnRestore", true);
         BUILDER.pop();
 
         BUILDER.comment("The newer totem powers: Bouncy, X-ray, Cloaking, Recall and Recall Block. Lists have one entry per level.").push("effects");

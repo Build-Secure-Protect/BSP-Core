@@ -10,6 +10,7 @@ Package `com.mrgregles.bsp_core.api`. Compile against the BSP-Core jar; keep eve
 | `BspZones` | `isBlocked(level, pos, key)` for Anti Totem zone rules; keys `TOTEM_PLACE`, `TOTEM_DROP`, and for a teleport mod to enforce `TELEPORT_IN`, `TELEPORT_OUT`, `SET_HOME` (admins switch them on per zone in the Anti Totem block's Rules tab; off on a new block). |
 | `BspTransfer` | For server transfers: `beginTransfer(player)` just before sending them away takes their carried totems and stores them for the journey (the arrival server hands them back) and tells the player; `endTransfer(player)` when the teleport is cancelled hands them straight back; `isTransferring(uuid)`. A transfer that does not happen within `restrictions.transferSeconds` (10) returns the totems by itself; a stored totem whose owner never logs in anywhere is placed back at the departure point after `restrictions.transferTotemTimeoutHours` (48). Without a shared database the totems are held in memory and placed at the departure point on a real logout, as usual. |
 | `BspTeams` | Teams: `teamOf(server, uuid)` / `team(server, teamId)` as `Team(id, name, colour, leader, members)`; `sameTeam(server, a, b)` (teammates count as friends with every access flag on each other's totems; a player is not their own teammate); `teammates(server, uuid)`; `members(server, teamId)` as `Member(uuid, name, leader, onlineHere, server, seenMs)` (`server` is the network server they are online on, "" when offline; `seenMs` is wall-clock and never 0 for a member: at the latest it is the moment they joined, since they were online to accept, and it moves on at every login and logout seen on any server); `all(server)`. Team teleports: a teleport mod calls `teleportsHandledBy(modId)` once at setup and handles `TeamEvent.TeleportRequest`; `requestTeleport(player, target)` asks it the way the TELEPORT key does. Otherwise read-only: players run a team from the Team screen. |
+| `BspKits` | Kits: `kits(server)` / `kit(server, id)` as `Info(id, name, description, icon, items, inBrowser, once, cooldownSeconds, price, ranks, servers, grant, enabled)`; `status(player, id)` as `Status(state, number, text)` (states `READY`, `OWED`, `REDEEMED`, `COOLDOWN`, `RANK`, `SERVER`, `PRICE`, `SPACE`, `HIDDEN`; `number` is the seconds, pieces or slots the state names, `text` the ranks or servers); `redeem(player, id, then)` under every rule with the price charged; `give(server, uuid, id)` as a reward (no price, rank, cooldown, once or server rule; delivered when it fits, otherwise it waits for them); `owed(server, uuid)`; `timesTaken(server, uuid, id)`. Kits are made in the admin panel's KITS tab. |
 
 ## Events
 
@@ -30,6 +31,8 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 | `TeamEvent.LeaderChanged` | the lead passed on; `getPrevious`, `getLeader` |
 | `TeamEvent.Disbanded` | the team is gone (a `Left` with `DISBANDED` came first for every member); `getBy` is null for an admin command |
 | `TeamEvent.TeleportRequest` | a member pressed TELEPORT on a teammate's row: `getPlayer()` (the `ServerPlayer` to move), `getTarget()` / `getTargetName()`, `getTargetServer()` ("" when the target is on this server); the teleport mod moves them under its own rules (no price for a team teleport; its cooldown and warm-up, destination access, zone flags, and its raid rule, which refuses a landing within 150 blocks of any running steal on the network) and calls `setHandled()` on every request it receives, refusals included (it tells the player why in its own words); only when nothing handled the event does BSP-Core say no teleport mod answered, which in practice means a pack without BSP-Teleport |
+| `KitEvent.Given` | a kit's items landed in a player's inventory; `getPlayer`, `getKitId`, `getKitName`, `getHow()` is `FIRST_JOIN`, `REDEEMED`, `REWARD`, `ADMIN` or `TEST` (TEST keeps no record) |
+| `KitEvent.Owed` | a kit became owed to a player (a reward, an admin's gift or a first login that did not fit, or they were offline); it is delivered when it fits and they are settled in, or from the WAITING card in their browser |
 
 Upgrade names for `BspTotems.upgrade` are the constants of `TotemUpgrades.Buff` (for example `SWIFTNESS`, `RECALL`); the enum itself may be used directly.
 
@@ -44,6 +47,23 @@ Requests from other mods live in their own vault notes (for BSP-Teleport: `BSP-T
 ## Teams across the network
 
 With `storage.mode = "mysql"` the team record is the shared tables `teams`, `team_members` and `team_messages`; each server keeps a local copy (`bsp_core_teams`), writes every change through and announces it over Redis (kind `team`), and reads a team back when another server announces it. `BspTeams` and `TeamEvent` answer from the local copy, which is a moment behind a change made elsewhere; `TeamEvent`s fire only on the server where the change was made.
+
+## Kits (`BspKits`)
+
+A kit is an admin-made bundle of up to 36 stacks with full NBT, given at first login (per network or per server), redeemed from the players' kit browser, or given as a reward. The rules on a redeem, in the order they are checked and reported one at a time: enabled and in the browser, redeemable on this server, a rank the player has (LuckPerms group names, any of them), not already taken when once-only, the cooldown run out, the price affordable, and the space: a kit is never given to an inventory that cannot take it (the check simulates the insert into the 36 main slots, topping up part stacks first; armour and offhand slots are never used), and the price is charged only after that check. A reward (`give`) skips every rule but the space: the kit becomes owed, is delivered at once when the player is online here and it fits, otherwise waits for their next login or their TAKE IT in the browser, and `KitEvent.Owed` then `KitEvent.Given` say so.
+
+```java
+// a rank-up reward
+BspKits.give(server, player.getUUID(), "vip_toolkit");
+// what the browser would show for it
+BspKits.status(player, "vip_toolkit").ifPresent(s -> { if (!s.ready()) log(s.state() + " " + s.number() + " " + s.text()); });
+```
+
+**Login order.** Kits are never put into an inventory at login time. What is owed is delivered on BSP-InventorySync's `InventoryRestoredEvent` when that mod is loaded (BSP-Core listens to it by class name, no compile-time dependency; `kit.deliverOnRestore`), otherwise `kit.grantDelayTicks` after the login. A mod that gives kits at login should call `BspKits.give` and leave the delivery to BSP-Core.
+
+**Across the network.** With `storage.mode = "mysql"` the kits are the shared tables `kits`, `kit_items` and `kit_redeems` (with the usual prefix); each server keeps a local copy (`bsp_core_kits`), writes every change through, announces it over Redis (kind `kit`: a kit id, `-id` for a deletion, `r:<uuid>` for a player's records) and reads the fresh copy back. `BspKits` reads the local copy, which is current to within a moment; a player's own records are re-read at their login. Other mods never touch the tables.
+
+**Ranks.** A kit's ranks are LuckPerms group names, read through `compat/LuckPermsBridge` (the Forge edition directly, the Bukkit plugin on Mohist by reflection); with BSP-RankUp loaded the admin's rank picker and the players' cards use `RankUpApi.ladder(server)` read by name, so RankUp needs no change for kits. A `KIT` reward kind on RankUp's side would call `BspKits.give(server, uuid, kitId)`.
 
 ## Boards on the Score Screen (`BspBoards`, BSP-Teleport request R8)
 
@@ -70,7 +90,7 @@ Byte layout (Minecraft's `FriendlyByteBuf` encodings: `writeUtf` is a VarInt len
 | 4 | `name` | Utf (max 64) | their profile name |
 | 5 | `text` | Utf (max 32767) | the final message as plain text, after any listener's change (the team tag, say) |
 | 6 | `json` | Utf (max 32767) | the decorated line the server showed, as a Component JSON string: the chat type's `<Name> text` with any datapack decoration and the message's own styles |
-| 7 | `server` | Utf (max 64) | this backend's `storage.serverId`, for the `[Server]` tag of D6 |
+| 7 | `server` | Utf (max 64) | this backend's `storage.serverId`, for the `[Server]` tag the proxy shows staff and writes in its console (the plugin warns once and uses the Velocity server name when the two differ, so keep them the same) |
 
 `BspProxy` in the api: `CHANNEL`, `relayEnabled()`, and `relayChat(player, message)` for a mod that shows public chat another way and wants those lines relayed too (Region Guard's `receive-chat` re-send, if it ever wants them seen across the network). Commands such as `/me`, `/say` and `/tellraw` are not chat events and are not relayed.
 

@@ -118,6 +118,17 @@ public class TotemLedger extends SavedData {
         return fresh;
     }
 
+    /** Forgets every totem last seen with this player (held, dropped by them, in transit); returns how many. */
+    public int forgetHeldBy(UUID player) {
+        int before = totems.size();
+        totems.values().removeIf(s -> player.equals(s.holder()));
+        int n = before - totems.size();
+        if (n > 0) {
+            setDirty();
+        }
+        return n;
+    }
+
     public void forget(UUID id) {
         if (totems.remove(id) != null) {
             setDirty();

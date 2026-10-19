@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kit Screen Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Two sets. Set 1: the KITS tab on the admin panel (violet) and the kit editor, looks A B C. Set 2: the player's kit browser (teal), looks A B C.
+   Static snapshot drawn at 1.5x of the in-game pixel sizes (admin panel 344 x 210 -> 516 x 315). Item icons are coloured tiles with a letter. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; letter-spacing:-.01em; } h2{ font-size:18px; margin:0; color:var(--acc); } h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.stage{ background:var(--board); border-radius:4px; padding:14px; display:flex; justify-content:flex-start; overflow-x:auto; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(560px,1fr)); gap:14px; }
+.note{ font-size:12px; color:var(--muted); }
+
+/* ---------- panel skeleton, the in-game palette ---------- */
+.scr{ --P:#10151C; --S:#0C0E12; --D:#2A2F3A; --M:#9AA3B5; --T:#E6EAF2; --V:#B58CFF; --Q:#19D3B0; --G:#FFD23A; --R:#D63B2F; --OK:#58F29A; --W:#F2B544;
+  position:relative; background:var(--P); color:var(--T); font-family:var(--body); font-size:11px; line-height:1.25; box-sizing:border-box; flex:none; }
+.scr.v{ box-shadow:0 0 0 1.5px var(--V); } .scr.q{ box-shadow:0 0 0 1.5px var(--Q); }
+.ttl{ position:absolute; left:12px; top:8px; font:600 12px Oswald,var(--body); letter-spacing:.12em; text-transform:uppercase; }
+.ttl.v{ color:var(--V); } .ttl.q{ color:var(--Q); }
+.tabs{ position:absolute; right:12px; top:8px; display:flex; gap:4px; } .tab{ width:68px; height:19px; display:grid; place-items:center; background:var(--D); color:var(--M); font:600 9px Oswald,var(--body); letter-spacing:.08em; } .tab.on{ background:var(--V); color:#10151C; } .tab.q.on{ background:var(--Q); }
+.box{ position:absolute; background:var(--S); box-shadow:0 0 0 1px var(--D); }
+.lbl{ position:absolute; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--M); }
+.key{ position:absolute; height:27px; display:grid; place-items:center; font:700 9.5px Oswald,var(--body); letter-spacing:.08em; text-transform:uppercase; background:var(--D); color:var(--T); box-sizing:border-box; }
+.key.v{ background:var(--V); color:#10151C; } .key.q{ background:var(--Q); color:#10151C; } .key.warn{ background:#3a2a2a; color:#ff8f86; box-shadow:inset 0 0 0 1px var(--R); } .key.lock{ opacity:.45; } .key.ghost{ background:transparent; box-shadow:inset 0 0 0 1px var(--D); color:var(--M); }
+.txt{ position:absolute; white-space:nowrap; } .m{ color:var(--M); } .g{ color:var(--G); } .ok{ color:var(--OK); } .w{ color:var(--W); } .r{ color:#ff8f86; } .v{ color:var(--V); } .q{ color:var(--Q); } .sm{ font-size:9px; } .b{ font-weight:600; }
+.grid{ position:absolute; display:grid; gap:0; } .grid .s{ width:27px; height:27px; box-sizing:border-box; background:var(--S); box-shadow:inset 0 0 0 1px var(--D); display:grid; place-items:center; position:relative; }
+.it{ width:17px; height:17px; display:grid; place-items:center; font:700 9px var(--mono); color:#0b0d11; border-radius:2px; box-shadow:inset -3px -3px 0 rgba(0,0,0,.25), inset 2px 2px 0 rgba(255,255,255,.25); }
+.it.big{ width:26px; height:26px; font-size:12px; } .it.huge{ width:36px; height:36px; font-size:15px; }
+.cnt{ position:absolute; right:2px; bottom:1px; font:600 8px var(--mono); color:#fff; text-shadow:1px 1px 0 #000; }
+.c1{background:#c9a24a}.c2{background:#8ad0ff}.c3{background:#9c6b3c}.c4{background:#d9d9d9}.c5{background:#5ec47a}.c6{background:#e06c5a}.c7{background:#7b7f8a}.c8{background:#c96ad9}.c9{background:#ff9f45}.c10{background:#4fb3e6}
+.ser{ position:absolute; font-size:9px; padding:2px 5px; background:var(--S); box-shadow:inset 0 0 0 1px var(--D); color:var(--T); }
+.ser.on{ box-shadow:inset 0 0 0 1px var(--V); color:var(--V); } .ser.qon{ box-shadow:inset 0 0 0 1px var(--Q); color:var(--Q); }
+.row{ position:absolute; height:18px; display:flex; align-items:center; gap:6px; padding:0 6px; box-sizing:border-box; white-space:nowrap; overflow:hidden; }
+.row.sel{ background:#1b2230; box-shadow:inset 2px 0 0 var(--V); } .row.qsel{ background:#13211f; box-shadow:inset 2px 0 0 var(--Q); }
+.chip{ font-size:8px; letter-spacing:.08em; text-transform:uppercase; padding:1px 4px; border-radius:2px; font-weight:600; }
+.chip.ready{ background:#113d30; color:var(--OK); } .chip.wait{ background:#3b2f14; color:var(--W); } .chip.lock{ background:#2a2f3a; color:var(--M); } .chip.done{ background:#1b1e26; color:#6b7280; } .chip.owed{ background:#1f1a3a; color:var(--V); } .chip.off{ background:#3a2a2a; color:#ff8f86; }
+.gray{ filter:saturate(0) brightness(.7); }
+.inp{ position:absolute; height:16px; background:var(--S); box-shadow:inset 0 0 0 1px var(--D); color:var(--T); font-size:9.5px; padding:0 5px; box-sizing:border-box; display:flex; align-items:center; white-space:nowrap; overflow:hidden; }
+.inp.hint{ color:#5a6170; } .inp::after{ content:"▏"; animation:bl 1s steps(1) infinite; } @keyframes bl{50%{opacity:0}}
+.sb{ position:absolute; width:4px; background:var(--D); } .sb i{ position:absolute; left:0; right:0; background:var(--M); }
+.bar{ position:absolute; height:6px; background:var(--D); } .bar i{ position:absolute; left:0; top:0; bottom:0; background:var(--W); }
+.lad{ position:absolute; display:flex; align-items:flex-end; gap:3px; } .lad b{ display:block; width:22px; background:var(--D); position:relative; } .lad b.me{ background:var(--Q); } .lad b.need{ background:var(--G); } .lad b span{ position:absolute; left:50%; transform:translateX(-50%); bottom:100%; margin-bottom:2px; font-size:7px; color:var(--M); white-space:nowrap; text-transform:uppercase; letter-spacing:.05em; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; } .tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; background:var(--board); border:1px solid var(--line); color:var(--fg); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); }
+[data-view]{ display:none; } .show-list [data-view="list"], .show-edit [data-view="edit"]{ display:block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Kits: screen concepts</h1>
+  <p class="lede">Two sets, three looks each. Set 1 is the KITS tab on the admin panel (violet, the operator palette): the kit list and the editor an admin reaches through EDIT or NEW. Set 2 is the player's kit browser (teal). Everything is drawn at one and a half times the in-game size. Item icons are stand-ins. Pick one per set; combining is fine ("editor B with A's settings rows").</p>
+</header>
+
+<!-- ============================================================ SET 1 ============================================================ -->
+<section>
+  <h2>Set 1: the KITS tab and the editor (admin panel)</h2>
+  <p class="lede">The admin panel is 344 x 210 today with PLAYERS, SEASON and SETTINGS. A fourth tab KITS lists the kits; EDIT or NEW turns the panel into the editor. All three looks grow the panel to 344 x 290 while the editor is open and shrink back on CLOSE. <code>/bsp admin kits</code> opens the panel on the tab.</p>
+  <div class="ctl"><span class="note">Show:</span><button class="tb on" data-set="1" data-show="list">KITS tab (the list)</button><button class="tb" data-set="1" data-show="edit">The editor</button></div>
+
+  <div class="grid3" id="set1" data-state="show-list">
+
+  <!-- ---------------- A ---------------- -->
+  <div class="card">
+    <h3>A. Workbench (default)</h3>
+    <p>The kit's 36 slots top left, the item browser to their right with a search line and a wheel-scrolled grid, the settings as compact rows under the slots, keys along the bottom. One screen, nothing hidden.</p>
+    <div class="stage">
+      <div data-view="list" class="scr v" style="width:516px;height:315px">
+        <div class="ttl v">Admin</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="box" style="left:12px;top:36px;width:492px;height:222px"></div>
+        <div class="lbl" style="left:20px;top:40px">Kit</div><div class="lbl" style="left:190px;top:40px">Given</div><div class="lbl" style="left:300px;top:40px">Rule</div><div class="lbl" style="left:400px;top:40px">Taken</div>
+        <div class="row sel" style="left:12px;top:54px;width:492px"><span class="it c1">S</span><span class="b">Starter</span><span class="chip ready" style="margin-left:4px">On</span><span class="m" style="margin-left:auto;width:300px">first join · network &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;once &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;412</span></div>
+        <div class="row" style="left:12px;top:74px;width:492px"><span class="it c5">D</span><span class="b">Daily</span><span class="chip ready" style="margin-left:4px">On</span><span class="m" style="margin-left:auto;width:300px">browser &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;every 24 h &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1,930</span></div>
+        <div class="row" style="left:12px;top:94px;width:492px"><span class="it c8">V</span><span class="b">VIP Toolkit</span><span class="chip ready" style="margin-left:4px">On</span><span class="m" style="margin-left:auto;width:300px">browser · rank vip &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;every 7 d · 1,500 pcs &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;88</span></div>
+        <div class="row" style="left:12px;top:114px;width:492px"><span class="it c9">N</span><span class="b">Nether Pass</span><span class="chip ready" style="margin-left:4px">On</span><span class="m" style="margin-left:auto;width:300px">first join · server-2 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;once &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;57</span></div>
+        <div class="row" style="left:12px;top:134px;width:492px"><span class="it c6">E</span><span class="b">Event Chest</span><span class="chip off" style="margin-left:4px">Off</span><span class="m" style="margin-left:auto;width:300px">reward only &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;once &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</span></div>
+        <div class="txt sm m" style="left:20px;top:236px">5 kits · one is given at first join on the network · 2,487 kits taken</div>
+        <div class="key v" style="left:12px;top:270px;width:90px">New kit</div>
+        <div class="key" style="left:108px;top:270px;width:90px">Edit</div>
+        <div class="key" style="left:204px;top:270px;width:90px">Give to…</div>
+        <div class="key warn" style="left:312px;top:270px;width:90px">Delete</div>
+        <div class="key ghost" style="left:414px;top:270px;width:90px">Refresh</div>
+      </div>
+
+      <div data-view="edit" class="scr v" style="width:516px;height:435px">
+        <div class="ttl v">Admin · Kit: Starter</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="lbl" style="left:12px;top:34px">Contents · 11 of 36</div>
+        <div class="grid" style="left:12px;top:46px;grid-template-columns:repeat(9,27px)">
+          <div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c7">S</span><span class="cnt">16</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c1">T</span><span class="cnt">8</span></div><div class="s"><span class="it c4">B</span><span class="cnt">32</span></div><div class="s"><span class="it c6">F</span><span class="cnt">4</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c9">C</span><span class="cnt">64</span></div><div class="s"></div>
+          <div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c3">O</span></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+        </div>
+        <div class="txt sm m" style="left:12px;top:157px">Click takes a slot out · wheel sets the count · shift-click clears</div>
+        <div class="key" style="left:12px;top:172px;width:118px;height:22px">From hand</div>
+        <div class="key" style="left:136px;top:172px;width:118px;height:22px">From inventory</div>
+
+        <div class="lbl" style="left:270px;top:34px">Add items</div>
+        <div class="inp hint" style="left:270px;top:46px;width:234px">search every item…</div>
+        <div class="grid" style="left:270px;top:66px;grid-template-columns:repeat(8,27px)">
+          <div class="s"><span class="it c1">T</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div>
+          <div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div>
+          <div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div>
+          <div class="s"><span class="it c5">O</span></div><div class="s"><span class="it c6">V</span></div><div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div><div class="s"><span class="it c9">T</span></div><div class="s"><span class="it c10">A</span></div><div class="s"><span class="it c1">C</span></div><div class="s"><span class="it c2">W</span></div>
+        </div>
+        <div class="sb" style="left:488px;top:66px;height:108px"><i style="top:0;height:14px"></i></div>
+        <div class="txt sm m" style="left:270px;top:178px">Click adds one · shift-click a stack · hover names it</div>
+
+        <div class="box" style="left:12px;top:204px;width:492px;height:176px"></div>
+        <div class="lbl" style="left:20px;top:208px">Settings</div>
+        <div class="txt m" style="left:20px;top:224px">Name</div><div class="inp" style="left:90px;top:222px;width:120px">Starter</div>
+        <div class="txt m" style="left:224px;top:224px">Icon</div><div class="ser on" style="left:256px;top:221px">first slot</div><div class="ser" style="left:316px;top:221px">pick…</div>
+        <div class="txt m" style="left:20px;top:246px">Describe</div><div class="inp" style="left:90px;top:244px;width:414px">Tools, food and a bed to start with</div>
+        <div class="txt m" style="left:20px;top:268px">Given</div><div class="ser" style="left:90px;top:265px">never</div><div class="ser on" style="left:134px;top:265px">first join · network</div><div class="ser" style="left:238px;top:265px">first join · servers…</div>
+        <div class="txt m" style="left:20px;top:290px">Browser</div><div class="ser" style="left:90px;top:287px">shown</div><div class="ser on" style="left:134px;top:287px">hidden</div>
+        <div class="txt m" style="left:224px;top:290px">Take</div><div class="ser on" style="left:256px;top:287px">once</div><div class="ser" style="left:296px;top:287px">every</div><div class="inp" style="left:338px;top:286px;width:34px">24</div><div class="ser" style="left:376px;top:287px">min</div><div class="ser on" style="left:408px;top:287px">h</div><div class="ser" style="left:430px;top:287px">d</div>
+        <div class="txt m" style="left:20px;top:312px">Price</div><div class="inp" style="left:90px;top:310px;width:60px">0</div><div class="txt sm m" style="left:156px;top:313px">pieces</div>
+        <div class="txt m" style="left:224px;top:312px">Ranks</div><div class="ser" style="left:256px;top:309px">anyone</div><div class="ser" style="left:304px;top:309px">member</div><div class="ser" style="left:352px;top:309px">vip</div><div class="ser" style="left:378px;top:309px">elite</div><div class="txt sm m" style="left:414px;top:312px">from RankUp's ladder</div>
+        <div class="txt m" style="left:20px;top:334px">Servers</div><div class="ser on" style="left:90px;top:331px">everywhere</div><div class="ser" style="left:158px;top:331px">server-1</div><div class="ser" style="left:208px;top:331px">server-2</div><div class="ser" style="left:258px;top:331px">wild</div>
+        <div class="txt m" style="left:20px;top:356px">Enabled</div><div class="ser on" style="left:90px;top:353px">on</div><div class="ser" style="left:118px;top:353px">off</div>
+        <div class="txt sm m" style="left:224px;top:356px">Taken 412 times · last by Mrgregles 2 h ago</div>
+
+        <div class="key v" style="left:12px;top:392px;width:90px">Save</div>
+        <div class="key" style="left:108px;top:392px;width:90px">Test on me</div>
+        <div class="key warn" style="left:216px;top:392px;width:90px">Delete</div>
+        <div class="key ghost" style="left:414px;top:392px;width:90px">Close</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- B ---------------- -->
+  <div class="card">
+    <h3>B. Pages</h3>
+    <p>The editor has its own small tabs, ITEMS and SETTINGS. ITEMS gives the slots and the browser the whole height, with a larger browser grid and a filter line by mod; SETTINGS has the rows full width with room for the rank ladder drawn as steps. Less on screen at once, bigger targets.</p>
+    <div class="stage">
+      <div data-view="list" class="scr v" style="width:516px;height:315px">
+        <div class="ttl v">Admin</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="box" style="left:12px;top:36px;width:160px;height:222px"></div>
+        <div class="row sel" style="left:12px;top:40px;width:160px"><span class="it c1">S</span><span class="b">Starter</span></div>
+        <div class="row" style="left:12px;top:60px;width:160px"><span class="it c5">D</span><span class="b">Daily</span></div>
+        <div class="row" style="left:12px;top:80px;width:160px"><span class="it c8">V</span><span class="b">VIP Toolkit</span></div>
+        <div class="row" style="left:12px;top:100px;width:160px"><span class="it c9">N</span><span class="b">Nether Pass</span></div>
+        <div class="row" style="left:12px;top:120px;width:160px"><span class="it c6 gray">E</span><span class="m">Event Chest</span><span class="chip off" style="margin-left:auto">off</span></div>
+        <div class="box" style="left:184px;top:36px;width:320px;height:222px"></div>
+        <div class="txt b" style="left:194px;top:42px;font-size:13px">Starter</div><div class="txt sm m" style="left:194px;top:58px">Tools, food and a bed to start with</div>
+        <div class="grid" style="left:194px;top:76px;grid-template-columns:repeat(9,27px)">
+          <div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c7">S</span><span class="cnt">16</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c1">T</span><span class="cnt">8</span></div><div class="s"><span class="it c4">B</span><span class="cnt">32</span></div><div class="s"><span class="it c6">F</span><span class="cnt">4</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c9">C</span><span class="cnt">64</span></div><div class="s"></div>
+          <div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c3">O</span></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+        </div>
+        <div class="txt sm" style="left:194px;top:140px"><span class="m">Given</span> first join · network &nbsp;&nbsp;<span class="m">Take</span> once &nbsp;&nbsp;<span class="m">Browser</span> hidden</div>
+        <div class="txt sm" style="left:194px;top:156px"><span class="m">Ranks</span> anyone &nbsp;&nbsp;<span class="m">Servers</span> everywhere &nbsp;&nbsp;<span class="m">Price</span> free</div>
+        <div class="txt sm m" style="left:194px;top:176px">Taken 412 times · last by Mrgregles 2 h ago</div>
+        <div class="txt sm" style="left:194px;top:236px"><span class="chip ready">Enabled</span></div>
+        <div class="key v" style="left:12px;top:270px;width:90px">New kit</div>
+        <div class="key" style="left:108px;top:270px;width:90px">Edit</div>
+        <div class="key" style="left:204px;top:270px;width:90px">Give to…</div>
+        <div class="key warn" style="left:312px;top:270px;width:90px">Delete</div>
+        <div class="key ghost" style="left:414px;top:270px;width:90px">Refresh</div>
+      </div>
+
+      <div data-view="edit" class="scr v" style="width:516px;height:435px">
+        <div class="ttl v">Admin · Kit: Starter</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="tabs" style="left:12px;right:auto;top:36px"><div class="tab on" style="width:60px;height:16px">Items</div><div class="tab" style="width:60px;height:16px">Settings</div></div>
+        <div class="lbl" style="left:12px;top:60px">Contents · 11 of 36</div>
+        <div class="grid" style="left:12px;top:72px;grid-template-columns:repeat(6,27px)">
+          <div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c7">S</span><span class="cnt">16</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c1">T</span><span class="cnt">8</span></div><div class="s"><span class="it c4">B</span><span class="cnt">32</span></div><div class="s"><span class="it c6">F</span><span class="cnt">4</span></div>
+          <div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c9">C</span><span class="cnt">64</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c3">O</span></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+        </div>
+        <div class="txt sm m" style="left:12px;top:238px;width:160px;white-space:normal">Click takes a slot out, the wheel changes its count, shift-click clears it.</div>
+        <div class="key" style="left:12px;top:272px;width:162px;height:22px">From hand</div>
+        <div class="key" style="left:12px;top:298px;width:162px;height:22px">From inventory</div>
+        <div class="txt sm m" style="left:12px;top:330px;width:160px;white-space:normal">Enchanted and named items come in this way.</div>
+
+        <div class="lbl" style="left:190px;top:60px">Add items</div>
+        <div class="inp hint" style="left:190px;top:72px;width:314px">search every item…</div>
+        <div class="ser on" style="left:190px;top:94px">all</div><div class="ser" style="left:218px;top:94px">minecraft</div><div class="ser" style="left:272px;top:94px">bsp_core</div><div class="ser" style="left:326px;top:94px">create</div><div class="ser" style="left:368px;top:94px">mekanism</div><div class="ser" style="left:426px;top:94px">tconstruct</div>
+        <div class="grid" style="left:190px;top:116px;grid-template-columns:repeat(11,27px)">
+          <div class="s"><span class="it c1">T</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div>
+          <div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div><div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div>
+          <div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div><div class="s"><span class="it c5">O</span></div><div class="s"><span class="it c6">V</span></div><div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div><div class="s"><span class="it c9">T</span></div><div class="s"><span class="it c10">A</span></div><div class="s"><span class="it c1">C</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div>
+          <div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div>
+          <div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div><div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div><div class="s"><span class="it c5">O</span></div>
+          <div class="s"><span class="it c6">V</span></div><div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div><div class="s"><span class="it c9">T</span></div><div class="s"><span class="it c10">A</span></div><div class="s"><span class="it c1">C</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div>
+          <div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div><div class="s"><span class="it c7">D</span></div>
+          <div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div><div class="s"><span class="it c5">O</span></div><div class="s"><span class="it c6">V</span></div><div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div>
+        </div>
+        <div class="sb" style="left:490px;top:116px;height:216px"><i style="top:0;height:20px"></i></div>
+        <div class="txt sm m" style="left:190px;top:338px">Iron Pickaxe · minecraft:iron_pickaxe · click adds one, shift-click a stack</div>
+
+        <div class="txt sm" style="left:12px;top:366px"><span class="m">Given</span> first join · network &nbsp;&nbsp;<span class="m">Take</span> once &nbsp;&nbsp;<span class="m">Browser</span> hidden &nbsp;&nbsp;<span class="m">Ranks</span> anyone &nbsp;&nbsp;<span class="m">Servers</span> everywhere &nbsp;&nbsp;<span class="m">Price</span> free &nbsp;<span class="v">· edit on SETTINGS</span></div>
+        <div class="key v" style="left:12px;top:392px;width:90px">Save</div>
+        <div class="key" style="left:108px;top:392px;width:90px">Test on me</div>
+        <div class="key warn" style="left:216px;top:392px;width:90px">Delete</div>
+        <div class="key ghost" style="left:414px;top:392px;width:90px">Close</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- C ---------------- -->
+  <div class="card">
+    <h3>C. Three columns</h3>
+    <p>The panel widens to 420 wide for the editor: the kit's slots and the settings in the left column, the item browser as a tall column on the right that keeps its place while the settings scroll. The kit list stays as in A. Most room for the browser, the busiest control.</p>
+    <div class="stage">
+      <div data-view="list" class="scr v" style="width:516px;height:315px">
+        <div class="ttl v">Admin</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="box" style="left:12px;top:36px;width:492px;height:222px"></div>
+        <div class="grid" style="left:20px;top:44px;grid-template-columns:repeat(5,92px);gap:6px">
+          <div style="width:88px;height:98px;background:#1b2230;box-shadow:inset 0 0 0 1px var(--V);position:relative"><span class="it c1 huge" style="position:absolute;left:26px;top:10px">S</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Starter</div><div class="txt sm m" style="left:0;right:0;top:66px;text-align:center">first join · net</div><div class="txt sm" style="left:0;right:0;top:80px;text-align:center"><span class="chip ready">on</span></div></div>
+          <div style="width:88px;height:98px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c5 huge" style="position:absolute;left:26px;top:10px">D</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Daily</div><div class="txt sm m" style="left:0;right:0;top:66px;text-align:center">every 24 h</div><div class="txt sm" style="left:0;right:0;top:80px;text-align:center"><span class="chip ready">on</span></div></div>
+          <div style="width:88px;height:98px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c8 huge" style="position:absolute;left:26px;top:10px">V</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">VIP Toolkit</div><div class="txt sm m" style="left:0;right:0;top:66px;text-align:center">vip · 7 d · 1,500</div><div class="txt sm" style="left:0;right:0;top:80px;text-align:center"><span class="chip ready">on</span></div></div>
+          <div style="width:88px;height:98px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c9 huge" style="position:absolute;left:26px;top:10px">N</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Nether Pass</div><div class="txt sm m" style="left:0;right:0;top:66px;text-align:center">first join · server-2</div><div class="txt sm" style="left:0;right:0;top:80px;text-align:center"><span class="chip ready">on</span></div></div>
+          <div style="width:88px;height:98px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c6 huge gray" style="position:absolute;left:26px;top:10px">E</span><div class="txt b m" style="left:0;right:0;top:52px;text-align:center">Event Chest</div><div class="txt sm m" style="left:0;right:0;top:66px;text-align:center">reward only</div><div class="txt sm" style="left:0;right:0;top:80px;text-align:center"><span class="chip off">off</span></div></div>
+        </div>
+        <div style="position:absolute;left:20px;top:150px;width:88px;height:98px;background:transparent;box-shadow:inset 0 0 0 1px var(--D);display:grid;place-items:center;color:var(--M);font:600 9px Oswald,var(--body);letter-spacing:.08em;text-transform:uppercase">+ New kit</div>
+        <div class="txt sm m" style="left:20px;top:236px">5 kits · 2,487 taken · click a card to edit</div>
+        <div class="key" style="left:204px;top:270px;width:90px">Give to…</div>
+        <div class="key ghost" style="left:414px;top:270px;width:90px">Refresh</div>
+      </div>
+
+      <div data-view="edit" class="scr v" style="width:630px;height:435px">
+        <div class="ttl v">Admin · Kit: Starter</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="lbl" style="left:12px;top:34px">Contents · 11 of 36</div>
+        <div class="grid" style="left:12px;top:46px;grid-template-columns:repeat(9,27px)">
+          <div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c7">S</span><span class="cnt">16</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c1">T</span><span class="cnt">8</span></div><div class="s"><span class="it c4">B</span><span class="cnt">32</span></div><div class="s"><span class="it c6">F</span><span class="cnt">4</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c9">C</span><span class="cnt">64</span></div><div class="s"></div>
+          <div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c3">O</span></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+        </div>
+        <div class="key" style="left:12px;top:158px;width:118px;height:22px">From hand</div>
+        <div class="key" style="left:136px;top:158px;width:118px;height:22px">From inventory</div>
+
+        <div class="box" style="left:12px;top:192px;width:360px;height:188px"></div>
+        <div class="txt m" style="left:20px;top:200px">Name</div><div class="inp" style="left:80px;top:198px;width:120px">Starter</div>
+        <div class="txt m" style="left:210px;top:200px">Icon</div><div class="ser on" style="left:240px;top:197px">first slot</div>
+        <div class="txt m" style="left:20px;top:222px">Describe</div><div class="inp" style="left:80px;top:220px;width:284px">Tools, food and a bed to start with</div>
+        <div class="txt m" style="left:20px;top:244px">Given</div><div class="ser" style="left:80px;top:241px">never</div><div class="ser on" style="left:124px;top:241px">first join · network</div><div class="ser" style="left:228px;top:241px">servers…</div>
+        <div class="txt m" style="left:20px;top:266px">Browser</div><div class="ser" style="left:80px;top:263px">shown</div><div class="ser on" style="left:124px;top:263px">hidden</div>
+        <div class="txt m" style="left:210px;top:266px">Take</div><div class="ser on" style="left:240px;top:263px">once</div><div class="ser" style="left:280px;top:263px">every…</div>
+        <div class="txt m" style="left:20px;top:288px">Price</div><div class="inp" style="left:80px;top:286px;width:60px">0</div>
+        <div class="txt m" style="left:20px;top:310px">Ranks</div>
+        <div class="lad" style="left:80px;top:304px;height:22px;gap:6px"><b style="height:8px;width:34px"><span>default</span></b><b style="height:12px;width:34px"><span>member</span></b><b class="need" style="height:16px;width:34px"><span>vip</span></b><b style="height:20px;width:34px"><span>elite</span></b><b style="height:22px;width:34px"><span>legend</span></b></div>
+        <div class="txt sm m" style="left:290px;top:312px">RankUp's ladder · click a step</div>
+        <div class="txt m" style="left:20px;top:336px">Servers</div><div class="ser on" style="left:80px;top:333px">everywhere</div><div class="ser" style="left:148px;top:333px">server-1</div><div class="ser" style="left:198px;top:333px">server-2</div><div class="ser" style="left:248px;top:333px">wild</div>
+        <div class="txt m" style="left:20px;top:358px">Enabled</div><div class="ser on" style="left:80px;top:355px">on</div><div class="ser" style="left:108px;top:355px">off</div>
+
+        <div class="lbl" style="left:390px;top:34px">Add items</div>
+        <div class="inp hint" style="left:390px;top:46px;width:228px">search…</div>
+        <div class="grid" style="left:390px;top:66px;grid-template-columns:repeat(8,27px)">
+          <div class="s"><span class="it c1">T</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div>
+          <div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div>
+          <div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div>
+          <div class="s"><span class="it c5">O</span></div><div class="s"><span class="it c6">V</span></div><div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div><div class="s"><span class="it c9">T</span></div><div class="s"><span class="it c10">A</span></div><div class="s"><span class="it c1">C</span></div><div class="s"><span class="it c2">W</span></div>
+          <div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div>
+          <div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div><div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div>
+          <div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div><div class="s"><span class="it c5">O</span></div><div class="s"><span class="it c6">V</span></div>
+          <div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div><div class="s"><span class="it c9">T</span></div><div class="s"><span class="it c10">A</span></div><div class="s"><span class="it c1">C</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div>
+          <div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div>
+          <div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div><div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div>
+          <div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div><div class="s"><span class="it c5">O</span></div><div class="s"><span class="it c6">V</span></div><div class="s"><span class="it c7">P</span></div><div class="s"><span class="it c8">B</span></div>
+        </div>
+        <div class="sb" style="left:608px;top:66px;height:297px"><i style="top:0;height:26px"></i></div>
+        <div class="txt sm m" style="left:390px;top:368px">Iron Pickaxe · minecraft:iron_pickaxe</div>
+
+        <div class="key v" style="left:12px;top:392px;width:90px">Save</div>
+        <div class="key" style="left:108px;top:392px;width:90px">Test on me</div>
+        <div class="key warn" style="left:216px;top:392px;width:90px">Delete</div>
+        <div class="key ghost" style="left:528px;top:392px;width:90px">Close</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="card">
+    <h3>Picks for set 1</h3>
+    <ol>
+      <li><b>Look</b>: A workbench, B pages, or C three columns (or a mix).</li>
+      <li><b>The list</b>: rows with columns (A), a list with a detail pane (B), or cards (C).</li>
+      <li><b>Mod filter chips</b> over the browser (B shows them): yes or no.</li>
+      <li><b>Rank picker</b>: chips of the group names (A), or RankUp's ladder drawn as steps (C) with chips as the fallback when RankUp is absent.</li>
+      <li><b>TEST ON ME</b> (gives the admin the kit at once, no record): keep or drop.</li>
+      <li><b>GIVE TO…</b> on the list (pick an online player, the kit becomes owed to them): keep or drop.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================================================ SET 2 ============================================================ -->
+<section>
+  <h2>Set 2: the player's kit browser</h2>
+  <p class="lede">Opened by the KITS button above the inventory, a key binding or <code>/kits</code>. Teal frame like the other player screens. Each kit shows one of: READY, a cooldown left, the rank to reach, the server to be on, the price, the slots short, WAITING (owed: a reward or grant that did not fit yet), or REDEEMED greyed out until it is ready again. Drawn with the player at rank <i>member</i>, 620 pieces in the bank, 3 free slots.</p>
+  <div class="grid3">
+
+  <!-- ---------------- A ---------------- -->
+  <div class="card">
+    <h3>A. Catalogue (default)</h3>
+    <p>The kits in rows on the left with icon, name and a status chip; the chosen kit on the right: its items in the 9-wide grid, the description, the requirement line and one key, REDEEM or the reason in its place. Redeemed rows are greyed.</p>
+    <div class="stage">
+      <div class="scr q" style="width:516px;height:354px">
+        <div class="ttl q">Kits</div>
+        <div class="txt sm m" style="right:12px;top:9px">Mrgregles · member · 620 pieces · 3 free slots</div>
+        <div class="box" style="left:12px;top:30px;width:184px;height:276px"></div>
+        <div class="row" style="left:12px;top:34px;width:184px"><span class="it c5 gray">D</span><span class="m">Daily</span><span class="chip done" style="margin-left:auto">in 6 h 12 m</span></div>
+        <div class="row qsel" style="left:12px;top:54px;width:184px"><span class="it c8">V</span><span class="b">VIP Toolkit</span><span class="chip lock" style="margin-left:auto">rank vip</span></div>
+        <div class="row" style="left:12px;top:74px;width:184px"><span class="it c2">B</span><span class="b">Builder</span><span class="chip ready" style="margin-left:auto">Ready</span></div>
+        <div class="row" style="left:12px;top:94px;width:184px"><span class="it c9">N</span><span class="b">Nether Pass</span><span class="chip lock" style="margin-left:auto">server-2</span></div>
+        <div class="row" style="left:12px;top:114px;width:184px"><span class="it c6">E</span><span class="b">Event Chest</span><span class="chip owed" style="margin-left:auto">Waiting</span></div>
+        <div class="row" style="left:12px;top:134px;width:184px"><span class="it c1 gray">S</span><span class="m">Starter</span><span class="chip done" style="margin-left:auto">Redeemed</span></div>
+        <div class="row" style="left:12px;top:154px;width:184px"><span class="it c10">F</span><span class="b">Farmer</span><span class="chip wait" style="margin-left:auto">1,200 pcs</span></div>
+
+        <div class="box" style="left:208px;top:30px;width:296px;height:276px"></div>
+        <div class="txt b" style="left:218px;top:36px;font-size:13px"><span class="it c8 big" style="display:inline-grid;vertical-align:middle;margin-right:6px">V</span>VIP Toolkit</div>
+        <div class="txt sm m" style="left:218px;top:58px">Diamond tools, an elytra and a stack of rockets.</div>
+        <div class="grid" style="left:218px;top:76px;grid-template-columns:repeat(9,27px)">
+          <div class="s"><span class="it c2">P</span></div><div class="s"><span class="it c2">A</span></div><div class="s"><span class="it c2">S</span></div><div class="s"><span class="it c7">E</span></div><div class="s"><span class="it c6">R</span><span class="cnt">64</span></div><div class="s"><span class="it c1">G</span><span class="cnt">16</span></div><div class="s"></div><div class="s"></div><div class="s"></div>
+          <div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div>
+        </div>
+        <div class="txt sm m" style="left:218px;top:136px">6 items · needs 6 free slots · every 7 days · 1,500 pieces</div>
+        <div class="lbl" style="left:218px;top:160px">To get it</div>
+        <div class="txt" style="left:218px;top:172px"><span class="g">Reach rank VIP.</span> <span class="m">You are member; two ranks to go.</span></div>
+        <div class="lad" style="left:218px;top:198px;height:24px"><b style="height:8px"><span>default</span></b><b class="me" style="height:12px"><span>you</span></b><b style="height:16px"></b><b class="need" style="height:20px"><span>vip</span></b><b style="height:24px"></b><b style="height:24px"></b></div>
+        <div class="txt sm m" style="left:370px;top:206px">RankUp's ladder</div>
+        <div class="txt sm m" style="left:218px;top:236px">Then 1,500 pieces from your bank and 6 free slots.</div>
+        <div class="key lock q" style="left:218px;top:270px;width:276px">Locked · rank vip</div>
+
+        <div class="key q" style="left:12px;top:316px;width:120px">Redeem</div>
+        <div class="key ghost" style="left:384px;top:316px;width:120px">Close</div>
+        <div class="txt sm m" style="left:140px;top:324px">the big key follows the chosen kit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- B ---------------- -->
+  <div class="card">
+    <h3>B. Card wall</h3>
+    <p>Every kit as a card with a large icon, its name and its status on the card itself: a thin cooldown bar draining, the rank step, the price, or a REDEEM key right on a ready card. No second pane; a click on a card flips it to its items. Redeemed cards sit grey and bloom back when ready.</p>
+    <div class="stage">
+      <div class="scr q" style="width:516px;height:354px">
+        <div class="ttl q">Kits</div>
+        <div class="txt sm m" style="right:12px;top:9px">member · 620 pieces · 3 free slots</div>
+        <div class="grid" style="left:12px;top:30px;grid-template-columns:repeat(4,118px);gap:6px">
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative" class="gray"><span class="it c5 huge" style="position:absolute;left:40px;top:10px">D</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Daily</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip done">Redeemed</span></div><div class="bar" style="left:10px;right:10px;top:92px"><i style="width:74%"></i></div><div class="txt sm m" style="left:0;right:0;top:102px;text-align:center">ready in 6 h 12 m</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c8 huge" style="position:absolute;left:40px;top:10px">V</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">VIP Toolkit</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip lock">rank vip</span></div><div class="lad" style="left:22px;top:88px;height:16px"><b style="height:6px;width:12px"></b><b class="me" style="height:8px;width:12px"></b><b style="height:10px;width:12px"></b><b class="need" style="height:12px;width:12px"></b><b style="height:14px;width:12px"></b><b style="height:16px;width:12px"></b></div><div class="txt sm m" style="left:0;right:0;top:108px;text-align:center">two ranks to go</div></div>
+          <div style="width:116px;height:130px;background:#13211f;box-shadow:inset 0 0 0 1px var(--Q);position:relative"><span class="it c2 huge" style="position:absolute;left:40px;top:10px">B</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Builder</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip ready">Ready</span></div><div class="key q" style="left:10px;right:10px;top:92px;height:22px">Redeem</div><div class="txt sm m" style="left:0;right:0;top:116px;text-align:center">8 items · every 3 d</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c9 huge" style="position:absolute;left:40px;top:10px">N</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Nether Pass</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip lock">server-2</span></div><div class="txt sm m" style="left:6px;right:6px;top:92px;text-align:center;white-space:normal">Join server-2 to take this one</div></div>
+          <div style="width:116px;height:130px;background:#1a1630;box-shadow:inset 0 0 0 1px var(--V);position:relative"><span class="it c6 huge" style="position:absolute;left:40px;top:10px">E</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Event Chest</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip owed">Waiting for you</span></div><div class="key" style="left:10px;right:10px;top:92px;height:22px;background:var(--V);color:#10151C">Take it</div><div class="txt sm r" style="left:0;right:0;top:116px;text-align:center">needs 7 slots · you have 3</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative" class="gray"><span class="it c1 huge" style="position:absolute;left:40px;top:10px">S</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Starter</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip done">Redeemed</span></div><div class="txt sm m" style="left:0;right:0;top:92px;text-align:center">once only</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c10 huge" style="position:absolute;left:40px;top:10px">F</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Farmer</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip wait">1,200 pieces</span></div><div class="bar" style="left:10px;right:10px;top:92px"><i style="width:52%;background:var(--G)"></i></div><div class="txt sm m" style="left:0;right:0;top:102px;text-align:center">you have 620</div></div>
+          <div style="width:116px;height:130px;background:transparent;box-shadow:inset 0 0 0 1px var(--D);position:relative;display:grid;place-items:center;color:var(--M)" class="sm">a card flips to its items</div>
+        </div>
+        <div class="key ghost" style="left:384px;top:316px;width:120px">Close</div>
+        <div class="txt sm m" style="left:12px;top:324px">wheel scrolls the wall when there are more than eight</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- C ---------------- -->
+  <div class="card">
+    <h3>C. Rail</h3>
+    <p>A rail of kit icons along the top, ready ones lit, redeemed ones grey, the chosen one raised; the whole lower half belongs to that kit: its items large, the description, and a "to get it" strip drawn as a path of steps (rank, price, slots) with each step ticked or named. Most room for the requirement story.</p>
+    <div class="stage">
+      <div class="scr q" style="width:516px;height:354px">
+        <div class="ttl q">Kits</div>
+        <div class="txt sm m" style="right:12px;top:9px">member · 620 pieces · 3 free slots</div>
+        <div class="box" style="left:12px;top:30px;width:492px;height:62px"></div>
+        <div style="position:absolute;left:24px;top:40px;display:flex;gap:14px;align-items:flex-end">
+          <div style="text-align:center" class="gray"><span class="it c5 big" style="display:inline-grid">D</span><div class="sm m">Daily</div><div class="sm m">6 h</div></div>
+          <div style="text-align:center;transform:translateY(-6px)"><span class="it c8 huge" style="display:inline-grid;box-shadow:0 0 0 2px var(--Q)">V</span><div class="sm b">VIP Toolkit</div></div>
+          <div style="text-align:center"><span class="it c2 big" style="display:inline-grid;box-shadow:0 0 0 1px var(--OK)">B</span><div class="sm ok">Builder</div><div class="sm ok">ready</div></div>
+          <div style="text-align:center"><span class="it c9 big" style="display:inline-grid">N</span><div class="sm m">Nether Pass</div><div class="sm m">server-2</div></div>
+          <div style="text-align:center"><span class="it c6 big" style="display:inline-grid;box-shadow:0 0 0 1px var(--V)">E</span><div class="sm v">Event Chest</div><div class="sm v">waiting</div></div>
+          <div style="text-align:center" class="gray"><span class="it c1 big" style="display:inline-grid">S</span><div class="sm m">Starter</div><div class="sm m">done</div></div>
+          <div style="text-align:center"><span class="it c10 big" style="display:inline-grid">F</span><div class="sm m">Farmer</div><div class="sm w">1,200</div></div>
+        </div>
+        <div class="txt b" style="left:12px;top:102px;font-size:14px">VIP Toolkit</div>
+        <div class="txt sm m" style="left:12px;top:120px">Diamond tools, an elytra and a stack of rockets. Every 7 days.</div>
+        <div class="grid" style="left:12px;top:140px;grid-template-columns:repeat(6,36px)">
+          <div class="s" style="width:36px;height:36px"><span class="it c2 big">P</span></div><div class="s" style="width:36px;height:36px"><span class="it c2 big">A</span></div><div class="s" style="width:36px;height:36px"><span class="it c2 big">S</span></div><div class="s" style="width:36px;height:36px"><span class="it c7 big">E</span></div><div class="s" style="width:36px;height:36px"><span class="it c6 big">R</span><span class="cnt">64</span></div><div class="s" style="width:36px;height:36px"><span class="it c1 big">G</span><span class="cnt">16</span></div>
+        </div>
+        <div class="box" style="left:250px;top:140px;width:254px;height:118px"></div>
+        <div class="lbl" style="left:258px;top:144px">To get it</div>
+        <div class="txt" style="left:258px;top:160px"><span class="r">✗</span> <span class="g">Rank VIP</span> <span class="m">· you are member, two ranks to go</span></div>
+        <div class="lad" style="left:272px;top:178px;height:14px"><b style="height:5px;width:14px"></b><b class="me" style="height:7px;width:14px"></b><b style="height:9px;width:14px"></b><b class="need" style="height:11px;width:14px"></b><b style="height:13px;width:14px"></b><b style="height:14px;width:14px"></b></div>
+        <div class="txt" style="left:258px;top:200px"><span class="r">✗</span> <span class="g">1,500 pieces</span> <span class="m">· you have 620</span></div>
+        <div class="txt" style="left:258px;top:218px"><span class="r">✗</span> <span class="g">6 free slots</span> <span class="m">· you have 3</span></div>
+        <div class="txt" style="left:258px;top:236px"><span class="ok">✓</span> <span class="m">Any server</span></div>
+        <div class="key lock q" style="left:12px;top:270px;width:226px">Locked · reach rank vip</div>
+        <div class="txt sm m" style="left:12px;top:302px">A ready kit's key reads REDEEM; a waiting kit's reads TAKE IT.</div>
+        <div class="key ghost" style="left:384px;top:316px;width:120px">Close</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="card">
+    <h3>Picks for set 2</h3>
+    <ol>
+      <li><b>Look</b>: A catalogue, B card wall, or C rail (or a mix: "B's cards with A's detail pane").</li>
+      <li><b>Requirement story</b>: one line plus the ladder (A), on the card (B), or the ticked list of steps (C).</li>
+      <li><b>The ladder</b>: RankUp's ladder as steps with "you" and the needed rank marked (all three show it); when RankUp is absent the line names the group only.</li>
+      <li><b>Redeemed look</b>: greyed icon and name with "in 6 h 12 m" (A), the draining bar (B), or the rail's small time (C).</li>
+      <li><b>The redeem key</b>: one big key at the bottom that follows the chosen kit (A, C), or on the card (B).</li>
+      <li><b>Owed kits</b>: shown in violet as WAITING with TAKE IT (all three): keep, or teal like the rest.</li>
+      <li><b>Header line</b> (rank, pieces, free slots): keep or drop.</li>
+    </ol>
+  </div>
+</section>
+</div>
+<script>
+document.querySelectorAll('[data-set="1"]').forEach(function(b){ b.addEventListener('click', function(){
+  document.querySelectorAll('[data-set="1"]').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on');
+  document.getElementById('set1').className = 'grid3 show-' + b.dataset.show; }); });
+document.getElementById('set1').className = 'grid3 show-list';
+</script>
+</body>
+</html>

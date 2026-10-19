@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kit Screens Refined</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Two sets. Set 1: the KITS tab on the admin panel (violet) and the kit editor, looks A B C. Set 2: the player's kit browser (teal), looks A B C.
+   Static snapshot drawn at 1.5x of the in-game pixel sizes (admin panel 344 x 210 -> 516 x 315). Item icons are coloured tiles with a letter. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; letter-spacing:-.01em; } h2{ font-size:18px; margin:0; color:var(--acc); } h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.stage{ background:var(--board); border-radius:4px; padding:14px; display:flex; justify-content:flex-start; overflow-x:auto; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(560px,1fr)); gap:14px; }
+.note{ font-size:12px; color:var(--muted); }
+
+/* ---------- panel skeleton, the in-game palette ---------- */
+.scr{ --P:#10151C; --S:#0C0E12; --D:#2A2F3A; --M:#9AA3B5; --T:#E6EAF2; --V:#B58CFF; --Q:#19D3B0; --G:#FFD23A; --R:#D63B2F; --OK:#58F29A; --W:#F2B544;
+  position:relative; background:var(--P); color:var(--T); font-family:var(--body); font-size:11px; line-height:1.25; box-sizing:border-box; flex:none; }
+.scr.v{ box-shadow:0 0 0 1.5px var(--V); } .scr.q{ box-shadow:0 0 0 1.5px var(--Q); }
+.ttl{ position:absolute; left:12px; top:8px; font:600 12px Oswald,var(--body); letter-spacing:.12em; text-transform:uppercase; }
+.ttl.v{ color:var(--V); } .ttl.q{ color:var(--Q); }
+.tabs{ position:absolute; right:12px; top:8px; display:flex; gap:4px; } .tab{ width:68px; height:19px; display:grid; place-items:center; background:var(--D); color:var(--M); font:600 9px Oswald,var(--body); letter-spacing:.08em; } .tab.on{ background:var(--V); color:#10151C; } .tab.q.on{ background:var(--Q); }
+.box{ position:absolute; background:var(--S); box-shadow:0 0 0 1px var(--D); }
+.lbl{ position:absolute; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--M); }
+.key{ position:absolute; height:27px; display:grid; place-items:center; font:700 9.5px Oswald,var(--body); letter-spacing:.08em; text-transform:uppercase; background:var(--D); color:var(--T); box-sizing:border-box; }
+.key.v{ background:var(--V); color:#10151C; } .key.q{ background:var(--Q); color:#10151C; } .key.warn{ background:#3a2a2a; color:#ff8f86; box-shadow:inset 0 0 0 1px var(--R); } .key.lock{ opacity:.45; } .key.ghost{ background:transparent; box-shadow:inset 0 0 0 1px var(--D); color:var(--M); }
+.txt{ position:absolute; white-space:nowrap; } .m{ color:var(--M); } .g{ color:var(--G); } .ok{ color:var(--OK); } .w{ color:var(--W); } .r{ color:#ff8f86; } .v{ color:var(--V); } .q{ color:var(--Q); } .sm{ font-size:9px; } .b{ font-weight:600; }
+.grid{ position:absolute; display:grid; gap:0; } .grid .s{ width:27px; height:27px; box-sizing:border-box; background:var(--S); box-shadow:inset 0 0 0 1px var(--D); display:grid; place-items:center; position:relative; }
+.it{ width:17px; height:17px; display:grid; place-items:center; font:700 9px var(--mono); color:#0b0d11; border-radius:2px; box-shadow:inset -3px -3px 0 rgba(0,0,0,.25), inset 2px 2px 0 rgba(255,255,255,.25); }
+.it.big{ width:26px; height:26px; font-size:12px; } .it.huge{ width:36px; height:36px; font-size:15px; }
+.cnt{ position:absolute; right:2px; bottom:1px; font:600 8px var(--mono); color:#fff; text-shadow:1px 1px 0 #000; }
+.c1{background:#c9a24a}.c2{background:#8ad0ff}.c3{background:#9c6b3c}.c4{background:#d9d9d9}.c5{background:#5ec47a}.c6{background:#e06c5a}.c7{background:#7b7f8a}.c8{background:#c96ad9}.c9{background:#ff9f45}.c10{background:#4fb3e6}
+.ser{ position:absolute; font-size:9px; padding:2px 5px; background:var(--S); box-shadow:inset 0 0 0 1px var(--D); color:var(--T); }
+.ser.on{ box-shadow:inset 0 0 0 1px var(--V); color:var(--V); } .ser.qon{ box-shadow:inset 0 0 0 1px var(--Q); color:var(--Q); }
+.row{ position:absolute; height:18px; display:flex; align-items:center; gap:6px; padding:0 6px; box-sizing:border-box; white-space:nowrap; overflow:hidden; }
+.row.sel{ background:#1b2230; box-shadow:inset 2px 0 0 var(--V); } .row.qsel{ background:#13211f; box-shadow:inset 2px 0 0 var(--Q); }
+.chip{ font-size:8px; letter-spacing:.08em; text-transform:uppercase; padding:1px 4px; border-radius:2px; font-weight:600; }
+.chip.ready{ background:#113d30; color:var(--OK); } .chip.wait{ background:#3b2f14; color:var(--W); } .chip.lock{ background:#2a2f3a; color:var(--M); } .chip.done{ background:#1b1e26; color:#6b7280; } .chip.owed{ background:#1f1a3a; color:var(--V); } .chip.off{ background:#3a2a2a; color:#ff8f86; }
+.gray{ filter:saturate(0) brightness(.7); }
+.inp{ position:absolute; height:16px; background:var(--S); box-shadow:inset 0 0 0 1px var(--D); color:var(--T); font-size:9.5px; padding:0 5px; box-sizing:border-box; display:flex; align-items:center; white-space:nowrap; overflow:hidden; }
+.inp.hint{ color:#5a6170; } .inp::after{ content:"▏"; animation:bl 1s steps(1) infinite; } @keyframes bl{50%{opacity:0}}
+.sb{ position:absolute; width:4px; background:var(--D); } .sb i{ position:absolute; left:0; right:0; background:var(--M); }
+.bar{ position:absolute; height:6px; background:var(--D); } .bar i{ position:absolute; left:0; top:0; bottom:0; background:var(--W); }
+.lad{ position:absolute; display:flex; align-items:flex-end; gap:3px; } .lad b{ display:block; width:22px; background:var(--D); position:relative; } .lad b.me{ background:var(--Q); } .lad b.need{ background:var(--G); } .lad b span{ position:absolute; left:50%; transform:translateX(-50%); bottom:100%; margin-bottom:2px; font-size:7px; color:var(--M); white-space:nowrap; text-transform:uppercase; letter-spacing:.05em; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; } .tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; background:var(--board); border:1px solid var(--line); color:var(--fg); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); }
+
+</style>
+<style>.grid3{ grid-template-columns:1fr; } .stage{ justify-content:center; } @media (max-width:600px){ .stage{ justify-content:flex-start; } }</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Kits: the refined screens</h1>
+  <p class="lede">The owner's picks drawn together. Admin side: the KITS tab lists the kits beside a detail pane (look B), and EDIT or NEW opens the workbench editor (look A) with mod chips over the item browser and RankUp's ladder as the rank picker. Player side: the card wall (look B), the reason on each card, a redeemed kit greyed with the time left, REDEEM on a ready card, a waiting kit in violet with TAKE IT, and the header line. Drawn at one and a half times the in-game size; icons are stand-ins.</p>
+</header>
+
+<section>
+  <h2>1. The KITS tab on the admin panel</h2>
+  <div class="card">
+    <p>The panel stays 344 x 210. Kits on the left, the chosen kit's summary on the right: its items, how it is given, the take rule, ranks, servers, price, and how often it was taken. GIVE TO… lists the players online here; DELETE asks SURE?. <code>/bsp admin kits</code> opens the panel on this tab.</p>
+    <div class="stage">
+      <div class="scr v" style="width:516px;height:315px">
+        <div class="ttl v">Admin</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="box" style="left:12px;top:36px;width:160px;height:222px"></div>
+        <div class="row sel" style="left:12px;top:40px;width:160px"><span class="it c1">S</span><span class="b">Starter</span></div>
+        <div class="row" style="left:12px;top:60px;width:160px"><span class="it c5">D</span><span class="b">Daily</span></div>
+        <div class="row" style="left:12px;top:80px;width:160px"><span class="it c8">V</span><span class="b">VIP Toolkit</span></div>
+        <div class="row" style="left:12px;top:100px;width:160px"><span class="it c9">N</span><span class="b">Nether Pass</span></div>
+        <div class="row" style="left:12px;top:120px;width:160px"><span class="it c6 gray">E</span><span class="m">Event Chest</span><span class="chip off" style="margin-left:auto">off</span></div>
+        <div class="txt sm m" style="left:20px;top:240px">5 kits · 2,487 taken</div>
+        <div class="box" style="left:184px;top:36px;width:320px;height:222px"></div>
+        <div class="txt b" style="left:194px;top:42px;font-size:13px">Starter</div><div class="txt sm m" style="left:194px;top:58px">Tools, food and a bed to start with</div>
+        <div class="grid" style="left:194px;top:76px;grid-template-columns:repeat(9,27px)"><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c7">S</span><span class="cnt">16</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c1">T</span><span class="cnt">8</span></div><div class="s"><span class="it c4">B</span><span class="cnt">32</span></div><div class="s"><span class="it c6">F</span><span class="cnt">4</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c9">C</span><span class="cnt">64</span></div><div class="s"></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c3">O</span></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div></div>
+        <div class="txt sm" style="left:194px;top:140px"><span class="m">Given</span> first join · network &nbsp;&nbsp;<span class="m">Take</span> once &nbsp;&nbsp;<span class="m">Browser</span> hidden</div>
+        <div class="txt sm" style="left:194px;top:156px"><span class="m">Ranks</span> anyone &nbsp;&nbsp;<span class="m">Servers</span> everywhere &nbsp;&nbsp;<span class="m">Price</span> free</div>
+        <div class="txt sm m" style="left:194px;top:176px">Taken 412 times · last by Mrgregles 2 h ago</div>
+        <div class="txt sm" style="left:194px;top:236px"><span class="chip ready">Enabled</span> <span class="m" style="margin-left:8px">11 items · 2 this server cannot give</span></div>
+        <div class="key v" style="left:12px;top:270px;width:90px">New kit</div>
+        <div class="key" style="left:108px;top:270px;width:90px">Edit</div>
+        <div class="key" style="left:204px;top:270px;width:90px">Give to…</div>
+        <div class="key warn" style="left:312px;top:270px;width:90px">Delete</div>
+        <div class="key ghost" style="left:414px;top:270px;width:90px">Refresh</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2. The editor (workbench)</h2>
+  <div class="card">
+    <p>The panel grows to 344 x 290 while the editor is open. The kit's 36 slots top left (click takes a slot out, the wheel sets its count, shift-click clears it; FROM HAND and FROM INVENTORY bring in enchanted or named items). The item browser top right: a search line, the mod chips, a wheel-scrolled grid (click adds one, shift-click a stack, hover names the item). The settings rows under both; the Ranks row is RankUp's ladder drawn as steps, the chosen step and everything above it lit; without RankUp the row shows the LuckPerms group names as chips. SAVE writes the kit to every server; TEST ON ME gives the admin the kit at once with no record; DELETE asks SURE?.</p>
+    <div class="stage">
+      <div class="scr v" style="width:516px;height:447px">
+        <div class="ttl v">Admin · Kit: VIP Toolkit</div>
+        <div class="tabs"><div class="tab">Players</div><div class="tab">Season</div><div class="tab">Settings</div><div class="tab on">Kits</div></div>
+        <div class="lbl" style="left:12px;top:34px">Contents · 6 of 36</div>
+        <div class="grid" style="left:12px;top:46px;grid-template-columns:repeat(9,27px)"><div class="s"><span class="it c2">P</span></div><div class="s"><span class="it c2">A</span></div><div class="s"><span class="it c2">S</span></div><div class="s"><span class="it c7">E</span></div><div class="s"><span class="it c6">R</span><span class="cnt">64</span></div><div class="s"><span class="it c1">G</span><span class="cnt">16</span></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div><div class="s"></div></div>
+        <div class="txt sm m" style="left:12px;top:157px">Click takes a slot out · wheel sets the count · shift-click clears</div>
+        <div class="key" style="left:12px;top:172px;width:118px;height:22px">From hand</div>
+        <div class="key" style="left:136px;top:172px;width:118px;height:22px">From inventory</div>
+
+        <div class="lbl" style="left:270px;top:34px">Add items</div>
+        <div class="inp" style="left:270px;top:46px;width:234px">diamond</div>
+        <div class="ser on" style="left:270px;top:66px">all</div><div class="ser" style="left:298px;top:66px">minecraft</div><div class="ser" style="left:352px;top:66px">bsp_core</div><div class="ser" style="left:406px;top:66px">create</div><div class="ser" style="left:448px;top:66px">more…</div>
+        <div class="grid" style="left:270px;top:86px;grid-template-columns:repeat(8,27px)"><div class="s"><span class="it c1">T</span></div><div class="s"><span class="it c2">W</span></div><div class="s"><span class="it c3">P</span></div><div class="s"><span class="it c4">B</span></div><div class="s"><span class="it c5">A</span></div><div class="s"><span class="it c6">F</span></div><div class="s"><span class="it c7">S</span></div><div class="s"><span class="it c8">E</span></div><div class="s"><span class="it c9">C</span></div><div class="s"><span class="it c10">H</span></div><div class="s"><span class="it c1">I</span></div><div class="s"><span class="it c2">G</span></div><div class="s"><span class="it c3">L</span></div><div class="s"><span class="it c4">Q</span></div><div class="s"><span class="it c5">M</span></div><div class="s"><span class="it c6">R</span></div><div class="s"><span class="it c7">D</span></div><div class="s"><span class="it c8">K</span></div><div class="s"><span class="it c9">N</span></div><div class="s"><span class="it c10">U</span></div><div class="s"><span class="it c1">Y</span></div><div class="s"><span class="it c2">Z</span></div><div class="s"><span class="it c3">X</span></div><div class="s"><span class="it c4">J</span></div></div>
+        <div class="sb" style="left:488px;top:86px;height:81px"><i style="top:0;height:18px"></i></div>
+        <div class="txt sm m" style="left:270px;top:172px">Diamond Pickaxe · minecraft:diamond_pickaxe</div>
+        <div class="txt sm m" style="left:270px;top:184px">Click adds one · shift-click a stack</div>
+
+        <div class="box" style="left:12px;top:204px;width:492px;height:188px"></div>
+        <div class="lbl" style="left:20px;top:208px">Settings</div>
+        <div class="txt m" style="left:20px;top:224px">Name</div><div class="inp" style="left:90px;top:222px;width:120px">VIP Toolkit</div>
+        <div class="txt m" style="left:224px;top:224px">Icon</div><div class="ser on" style="left:256px;top:221px">first slot</div><div class="ser" style="left:316px;top:221px">pick…</div>
+        <div class="txt m" style="left:20px;top:246px">Describe</div><div class="inp" style="left:90px;top:244px;width:414px">Diamond tools, an elytra and a stack of rockets.</div>
+        <div class="txt m" style="left:20px;top:268px">Given</div><div class="ser on" style="left:90px;top:265px">never</div><div class="ser" style="left:134px;top:265px">first join · network</div><div class="ser" style="left:238px;top:265px">first join · servers…</div>
+        <div class="txt m" style="left:20px;top:290px">Browser</div><div class="ser on" style="left:90px;top:287px">shown</div><div class="ser" style="left:134px;top:287px">hidden</div>
+        <div class="txt m" style="left:224px;top:290px">Take</div><div class="ser" style="left:256px;top:287px">once</div><div class="ser on" style="left:296px;top:287px">every</div><div class="inp" style="left:338px;top:286px;width:34px">7</div><div class="ser" style="left:376px;top:287px">min</div><div class="ser" style="left:408px;top:287px">h</div><div class="ser on" style="left:430px;top:287px">d</div>
+        <div class="txt m" style="left:20px;top:312px">Price</div><div class="inp" style="left:90px;top:310px;width:60px">1500</div><div class="txt sm m" style="left:156px;top:313px">pieces</div>
+        <div class="txt m" style="left:224px;top:312px">Servers</div><div class="ser on" style="left:270px;top:309px">everywhere</div><div class="ser" style="left:338px;top:309px">server-1</div><div class="ser" style="left:388px;top:309px">server-2</div><div class="ser" style="left:438px;top:309px">wild</div>
+        <div class="txt m" style="left:20px;top:346px">Ranks</div>
+        <div class="lad" style="left:90px;top:340px;height:22px;gap:5px"><b style="height:8px;width:36px"><span>default</span></b><b style="height:12px;width:36px"><span>member</span></b><b class="need" style="height:16px;width:36px"><span>vip</span></b><b class="need" style="height:20px;width:36px;opacity:.7"><span>elite</span></b><b class="need" style="height:22px;width:36px;opacity:.7"><span>legend</span></b></div>
+        <div class="txt sm m" style="left:304px;top:350px">vip and up · RankUp's ladder, click a step</div>
+        <div class="txt m" style="left:20px;top:372px">Enabled</div><div class="ser on" style="left:90px;top:369px">on</div><div class="ser" style="left:118px;top:369px">off</div>
+        <div class="txt sm m" style="left:224px;top:372px">Taken 88 times · last by Steve 3 d ago</div>
+
+        <div class="key v" style="left:12px;top:404px;width:90px">Save</div>
+        <div class="key" style="left:108px;top:404px;width:90px">Test on me</div>
+        <div class="key warn" style="left:216px;top:404px;width:90px">Delete</div>
+        <div class="key ghost" style="left:414px;top:404px;width:90px">Close</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>3. The player's kit browser (card wall)</h2>
+  <div class="card">
+    <p>Opened by the KITS button above the inventory, a key binding or <code>/kits</code>. Four cards a row, the wheel scrolls when there are more than eight. Each card carries its reason: a ready kit has REDEEM on the card; a redeemed kit sits grey with the time left and brightens back when ready; a locked kit shows the rank step, the server, or the price with what you have; a waiting kit (a reward or grant that did not fit yet) is violet with TAKE IT and the slots it needs. Clicking a card's icon or name flips it to its items (below).</p>
+    <div class="stage">
+      <div class="scr q" style="width:516px;height:354px">
+        <div class="ttl q">Kits</div>
+        <div class="txt sm m" style="right:12px;top:9px">Mrgregles · member · 620 pieces · 3 free slots</div>
+        <div class="grid" style="left:12px;top:30px;grid-template-columns:repeat(4,118px);gap:6px">
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative" class="gray"><span class="it c5 huge" style="position:absolute;left:40px;top:10px">D</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Daily</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip done">Redeemed</span></div><div class="txt sm m" style="left:0;right:0;top:96px;text-align:center">again in 6 h 12 m</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c8 huge" style="position:absolute;left:40px;top:10px">V</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">VIP Toolkit</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip lock">reach vip</span></div><div class="lad" style="left:22px;top:88px;height:16px"><b style="height:6px;width:12px"></b><b class="me" style="height:8px;width:12px"></b><b style="height:10px;width:12px"></b><b class="need" style="height:12px;width:12px"></b><b style="height:14px;width:12px"></b><b style="height:16px;width:12px"></b></div><div class="txt sm m" style="left:0;right:0;top:108px;text-align:center">you are member · 2 to go</div></div>
+          <div style="width:116px;height:130px;background:#13211f;box-shadow:inset 0 0 0 1px var(--Q);position:relative"><span class="it c2 huge" style="position:absolute;left:40px;top:10px">B</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Builder</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip ready">Ready</span></div><div class="key q" style="left:10px;right:10px;top:92px;height:22px">Redeem</div><div class="txt sm m" style="left:0;right:0;top:116px;text-align:center">8 items · every 3 d</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c9 huge" style="position:absolute;left:40px;top:10px">N</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Nether Pass</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip lock">server-2</span></div><div class="txt sm m" style="left:6px;right:6px;top:92px;text-align:center;white-space:normal">Join server-2 to take this one</div></div>
+          <div style="width:116px;height:130px;background:#1a1630;box-shadow:inset 0 0 0 1px var(--V);position:relative"><span class="it c6 huge" style="position:absolute;left:40px;top:10px">E</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Event Chest</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip owed">Waiting for you</span></div><div class="key" style="left:10px;right:10px;top:92px;height:22px;background:var(--V);color:#10151C">Take it</div><div class="txt sm r" style="left:0;right:0;top:116px;text-align:center">needs 7 slots · you have 3</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative" class="gray"><span class="it c1 huge" style="position:absolute;left:40px;top:10px">S</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Starter</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip done">Redeemed</span></div><div class="txt sm m" style="left:0;right:0;top:96px;text-align:center">once only</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c10 huge" style="position:absolute;left:40px;top:10px">F</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Farmer</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip wait">1,200 pieces</span></div><div class="bar" style="left:10px;right:10px;top:92px"><i style="width:52%;background:var(--G)"></i></div><div class="txt sm m" style="left:0;right:0;top:102px;text-align:center">you have 620</div></div>
+          <div style="width:116px;height:130px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);position:relative"><span class="it c4 huge" style="position:absolute;left:40px;top:10px">M</span><div class="txt b" style="left:0;right:0;top:52px;text-align:center">Miner</div><div class="txt sm" style="left:0;right:0;top:68px;text-align:center"><span class="chip wait">6 slots short</span></div><div class="txt sm m" style="left:6px;right:6px;top:92px;text-align:center;white-space:normal">Free 6 more slots, then REDEEM</div></div>
+        </div>
+        <div class="sb" style="left:498px;top:30px;height:268px"><i style="top:0;height:200px"></i></div>
+        <div class="key ghost" style="left:384px;top:316px;width:120px">Close</div>
+        <div class="txt sm m" style="left:12px;top:324px">click a card's icon to see what is in it</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>A card flipped to its items</h3>
+    <p>The card grows over the wall: the items in a 9-wide grid with counts, the description, the full "to get it" lines (ticked or named), and the same key the card had. BACK or clicking outside returns to the wall.</p>
+    <div class="stage">
+      <div class="scr q" style="width:516px;height:354px">
+        <div class="ttl q">Kits</div>
+        <div class="txt sm m" style="right:12px;top:9px">Mrgregles · member · 620 pieces · 3 free slots</div>
+        <div style="position:absolute;left:12px;top:30px;width:492px;height:268px;background:var(--S);box-shadow:inset 0 0 0 1px var(--D);opacity:.35"></div>
+        <div style="position:absolute;left:60px;top:48px;width:396px;height:236px;background:var(--P);box-shadow:0 0 0 1px var(--Q), 0 12px 30px rgba(0,0,0,.6)"></div>
+        <span class="it c8 huge" style="position:absolute;left:72px;top:60px">V</span>
+        <div class="txt b" style="left:116px;top:62px;font-size:14px">VIP Toolkit</div>
+        <div class="txt sm m" style="left:116px;top:80px">Diamond tools, an elytra and a stack of rockets. Every 7 days.</div>
+        <div class="grid" style="left:72px;top:104px;grid-template-columns:repeat(9,27px)"><div class="s"><span class="it c2">P</span></div><div class="s"><span class="it c2">A</span></div><div class="s"><span class="it c2">S</span></div><div class="s"><span class="it c7">E</span></div><div class="s"><span class="it c6">R</span><span class="cnt">64</span></div><div class="s"><span class="it c1">G</span><span class="cnt">16</span></div><div class="s"></div><div class="s"></div><div class="s"></div></div>
+        <div class="txt sm m" style="left:72px;top:136px">6 items · needs 6 free slots</div>
+        <div class="lbl" style="left:72px;top:156px">To get it</div>
+        <div class="txt" style="left:72px;top:170px"><span class="r">✗</span> <span class="g">Reach rank VIP</span> <span class="m">· you are member, two ranks to go</span></div>
+        <div class="lad" style="left:86px;top:188px;height:14px"><b style="height:5px;width:14px"></b><b class="me" style="height:7px;width:14px"></b><b style="height:9px;width:14px"></b><b class="need" style="height:11px;width:14px"></b><b style="height:13px;width:14px"></b><b style="height:14px;width:14px"></b></div>
+        <div class="txt" style="left:72px;top:208px"><span class="r">✗</span> <span class="g">1,500 pieces</span> <span class="m">· you have 620</span></div>
+        <div class="txt" style="left:72px;top:224px"><span class="r">✗</span> <span class="g">6 free slots</span> <span class="m">· you have 3</span></div>
+        <div class="txt" style="left:72px;top:238px"><span class="ok">✓</span> <span class="m">Any server</span></div>
+        <div class="key lock q" style="left:72px;top:256px;width:200px;height:22px">Locked · reach vip</div>
+        <div class="key ghost" style="left:376px;top:256px;width:68px;height:22px">Back</div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+</body>
+</html>

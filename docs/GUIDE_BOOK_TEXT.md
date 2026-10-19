@@ -907,3 +907,31 @@ For open ground, mark the corners with the land wand (**/claim tool**); the offi
 
 **Enlarge** grows one of your plots to an outline that covers it, paying for the new ground. **Give up** returns part of what you paid and frees the land.
 
+## Kits
+
+**Page 1**
+
+A kit is a bundle of items the server hands out. Open the kit browser with the KITS button above your inventory, a key you bind in Controls, or **/kits**.
+
+Every kit you may see is a card: its picture, its name, and what stands between you and it.
+
+**Page 2: Reading a card**
+
+A green card is ready: press REDEEM on it and the items land in your inventory.
+
+A grey card is one you took lately. It says how long until it is ready again, or that it was once only.
+
+A card with a rank on it needs that rank; the steps show where you stand and how far there is to go. A card naming a server is taken on that server. A price in pieces comes from your bank account. A card counting slots needs that much room in your inventory first.
+
+**Page 3: Waiting for you**
+
+A kit given to you as a reward, or at your first login, waits in violet when it did not fit or came while you were away. Free the slots it names and press TAKE IT.
+
+Nothing is lost: a kit that cannot fit stays waiting until it can.
+
+**Page 4: Looking inside**
+
+Click a card's picture to see what is in the kit, with the counts, and every condition ticked or crossed. BACK returns to the wall.
+
+On a network your kits and what you have taken are the same on every server.
+

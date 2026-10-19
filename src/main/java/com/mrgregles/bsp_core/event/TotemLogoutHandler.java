@@ -75,7 +75,14 @@ public final class TotemLogoutHandler {
     }
 
     /** What became of a totem the logout placed, when its owner came back. */
-    public enum Returned { BACK, BEING_STOLEN, GONE, TOO_LATE }
+    /** QUIET: the placement is gone but nobody took it (destroyed, forgotten, reissued, or back in the owner's own hands), so nothing is said. */
+    public enum Returned { BACK, BEING_STOLEN, GONE, TOO_LATE, QUIET }
+
+    /** Whether the ledger says the totem of a logout placement is now with someone else (a completed steal); anything else is nobody's doing. */
+    private static boolean takenByOther(ServerPlayer player, PlayerPersistent.LogoutPlaced placed) {
+        var sighting = com.mrgregles.bsp_core.data.TotemLedger.get(player.server).sighting(placed.id());
+        return sighting != null && sighting.instance().equals(placed.instance()) && sighting.holder() != null && !sighting.holder().equals(player.getUUID());
+    }
 
     /** After the identity scan and the pending-item hand-backs: the totems the logout placed come back if they still stand untouched. */
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -106,17 +113,20 @@ public final class TotemLogoutHandler {
                 continue;
             }
             level.getChunk(placed.pos()); // the chunk may have unloaded while they were away
-            if (!(level.getBlockEntity(placed.pos()) instanceof com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity totem) || !totem.isOwner(player.getUUID())) {
-                player.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.gone", where).withStyle(ChatFormatting.RED), false);
-                out.add(Returned.GONE);
+            boolean standing = level.getBlockEntity(placed.pos()) instanceof com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity totem0 && totem0.isOwner(player.getUUID());
+            ItemStack stack = standing ? com.mrgregles.bsp_core.totem.ShatterTotemBlock.toItemStack(level, placed.pos()) : ItemStack.EMPTY;
+            if (!standing || !placed.id().equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack)) || !placed.instance().equals(com.mrgregles.bsp_core.totem.TotemIdentity.instance(stack))) {
+                // the placement is not there as it was: say so only when the ledger shows someone else has that totem now
+                if (takenByOther(player, placed)) {
+                    player.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.gone", where).withStyle(ChatFormatting.RED), false);
+                    out.add(Returned.GONE);
+                } else {
+                    BSPCore.LOGGER.debug("{}'s logout placement at {} is gone but nobody took it; nothing said", player.getGameProfile().getName(), placed.pos());
+                    out.add(Returned.QUIET);
+                }
                 continue;
             }
-            ItemStack stack = com.mrgregles.bsp_core.totem.ShatterTotemBlock.toItemStack(level, placed.pos());
-            if (!placed.id().equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack)) || !placed.instance().equals(com.mrgregles.bsp_core.totem.TotemIdentity.instance(stack))) {
-                player.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.gone", where).withStyle(ChatFormatting.RED), false);
-                out.add(Returned.GONE);
-                continue;
-            }
+            var totem = (com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity) level.getBlockEntity(placed.pos());
             if (totem.getSteal().isPresent()) {
                 player.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.being_stolen", where).withStyle(ChatFormatting.RED), false);
                 out.add(Returned.BEING_STOLEN);

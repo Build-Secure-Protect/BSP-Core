@@ -41,6 +41,18 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(AdminActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(AdminActionPacket::encode).decoder(AdminActionPacket::decode)
                 .consumerMainThread(AdminActionPacket::handle).add();
+        CHANNEL.messageBuilder(KitAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(KitAdminPacket::encode).decoder(KitAdminPacket::decode)
+                .consumerMainThread(KitAdminPacket::handle).add();
+        CHANNEL.messageBuilder(KitEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(KitEditPacket::encode).decoder(KitEditPacket::decode)
+                .consumerMainThread(KitEditPacket::handle).add();
+        CHANNEL.messageBuilder(KitViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(KitViewPacket::encode).decoder(KitViewPacket::decode)
+                .consumerMainThread(KitViewPacket::handle).add();
+        CHANNEL.messageBuilder(KitActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(KitActionPacket::encode).decoder(KitActionPacket::decode)
+                .consumerMainThread(KitActionPacket::handle).add();
         CHANNEL.messageBuilder(PrizeSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(PrizeSyncPacket::encode).decoder(PrizeSyncPacket::decode)
                 .consumerMainThread(PrizeSyncPacket::handle).add();

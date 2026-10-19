@@ -45,12 +45,20 @@ public final class BSPCommands {
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(TeamCommands.playerTree());
         dispatcher.register(TeamCommands.chatTree());
+        dispatcher.register(KitCommands.playerTree());
         dispatcher.register(Commands.literal("bsp")
                 .requires(src -> src.hasPermission(2) || src.getEntity() instanceof ServerPlayer p && com.mrgregles.bsp_core.admin.Admins.isModerator(p))
                 .then(Commands.literal("admin").executes(ctx -> {
                     com.mrgregles.bsp_core.admin.AdminService.open(ctx.getSource().getPlayerOrException());
                     return 1;
-                }))
+                }).then(Commands.literal("kits").executes(ctx -> {
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                    com.mrgregles.bsp_core.admin.AdminService.open(p);
+                    if (com.mrgregles.bsp_core.admin.Admins.isModerator(p)) {
+                        com.mrgregles.bsp_core.kit.KitAdmin.send(p, true, "");
+                    }
+                    return 1;
+                })))
                 .then(Commands.literal("totem").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("give")
                                 .then(Commands.argument("player", EntityArgument.player())
@@ -61,6 +69,9 @@ public final class BSPCommands {
                         .then(Commands.literal("locate")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::locate)))
+                        .then(Commands.literal("wipe")
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(BSPCommands::wipe)))
                         .then(Commands.literal("owner")
                                 .executes(BSPCommands::owner))
                         // testing: set a power's level or the tier on the totem you hold (either hand) or, with none held, the placed one you look at
@@ -104,6 +115,7 @@ public final class BSPCommands {
                 .then(com.mrgregles.bsp_core.bank.BankCommands.admin())
                 .then(com.mrgregles.bsp_core.shop.ShopCommands.tree())
                 .then(TeamCommands.tree())
+                .then(KitCommands.tree())
                 .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(com.mrgregles.bsp_core.storage.NetworkStorage.status()), false);
@@ -227,6 +239,16 @@ public final class BSPCommands {
         com.mrgregles.bsp_core.storage.NetworkStorage.clearGrant(target.getUUID());
         PlayerPersistent.setTotemGranted(target, false);
         ctx.getSource().sendSuccess(() -> Component.translatable("command.bsp_core.totem.reset", target.getDisplayName()), true);
+        return 1;
+    }
+
+    /** A clean slate for a player: carried and placed totems gone, every record forgotten, a fresh first-join totem given. */
+    private static int wipe(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        var r = com.mrgregles.bsp_core.totem.TotemWipe.wipe(target);
+        String line = target.getGameProfile().getName() + ": " + r.carried() + " carried and " + r.placed() + " placed totems gone, " + r.forgotten() + " ledger records and "
+                + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + "; a fresh Tier I totem given, as on a first join.";
+        ctx.getSource().sendSuccess(() -> Component.literal(line), true);
         return 1;
     }
 

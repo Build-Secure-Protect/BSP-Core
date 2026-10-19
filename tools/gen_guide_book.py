@@ -93,6 +93,12 @@ CATEGORIES = [
 GUIDE_TIP = "$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
 
 ENTRIES = [
+    ("coins", "kits", "Kits", "minecraft:chest", 10, [
+        text("A kit is a bundle of items the server hands out. Open the kit browser with the KITS button above your inventory, a key you bind in Controls, or $(l)/kits$().$(br2)Every kit you may see is a card: its picture, its name, and what stands between you and it."),
+        text("A green card is ready: press REDEEM on it and the items land in your inventory.$(br2)A grey card is one you took lately. It says how long until it is ready again, or that it was once only.$(br2)A card with a rank on it needs that rank; the steps show where you stand and how far there is to go. A card naming a server is taken on that server. A price in pieces comes from your bank account. A card counting slots needs that much room in your inventory first.", "Reading a card"),
+        text("A kit given to you as a reward, or at your first login, waits in violet when it did not fit or came while you were away. Free the slots it names and press TAKE IT.$(br2)Nothing is lost: a kit that cannot fit stays waiting until it can.", "Waiting for you"),
+        text("Click a card's picture to see what is in the kit, with the counts, and every condition ticked or crossed. BACK returns to the wall.$(br2)On a network your kits and what you have taken are the same on every server.", "Looking inside"),
+    ]),
     ("coins", "land_office", "The Land Office", "bsp_core:land_office", 9, [
         text("The $(item)Land Office$() sells land. Right-click it for a map of the plots around you: $(l)amber$() plots are for sale at a set price, $(l)dashed$() areas are open ground where you mark out your own plot, and $(l)green$() plots are yours.$(br2)Click a plot to see its size and price, then press $(l)Buy$() and confirm. The price comes out of your bank account."),
         text("For open ground, mark the corners with the land wand ($(l)/claim tool$()); the office opens by itself with the price of what you marked, and shows how near it lies to other plots.$(br2)$(l)Enlarge$() grows one of your plots to an outline that covers it, paying for the new ground. $(l)Give up$() returns part of what you paid and frees the land.", "Open ground"),
