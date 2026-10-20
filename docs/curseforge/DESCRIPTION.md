@@ -134,7 +134,7 @@ Click a card's picture to see what is inside, with the counts, and every conditi
 
 <!-- feature: score_boards -->
 
-Every totem you own scores by its tier, so stealing and upgrading both move you up. Score Screens at spawn show the live leaderboard, the season's rules and the prizes, and can carry boards from the other BSP mods and turn through all of it, page by page. When a season ends the top three take the prizes, every totem is removed and everyone starts again with a fresh Tier I totem; prizes wait for you if you were offline.
+Every totem you own scores by its tier, so stealing and upgrading both move you up. Score Screens at spawn show the live leaderboard, the season's rules and the prizes, and can carry boards from the other BSP mods, such as BSP-Teleport's Home Servers, and turn through all of it, page by page. An admin sneaks and right-clicks a screen for its settings: Show it as the scoreboard, the rules, the prizes, one Board, or Rotate through pages; pick the board, its look (Ledger rows, Tiles, or a Side column beside the leaderboard), which pages are in the rotation and how many seconds each stays. When a season ends the top three take the prizes, every totem is removed and everyone starts again with a fresh Tier I totem; prizes wait for you if you were offline.
 
 ## For server owners
 

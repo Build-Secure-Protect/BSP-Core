@@ -45,7 +45,7 @@ Everything since 1.0.1: a bank and shops with their own money, land for sale, pl
 
 ## Score Screens and seasons
 
-- **Boards from other mods.** A Score Screen can show a board another mod registers (BSP-Teleport's "Home servers", say) in a Ledger, Tiles or Side column look, and **rotate** through the scoreboard, the rules, the prizes and every board, so many seconds each, with a fade and a row of dots.
+- **Boards from other mods.** A Score Screen can show a board another mod registers (BSP-Teleport 0.2.0's "Home Servers", which needs this version: on 1.3.0 the board never shows). Sneak and right-click the screen for its settings: **Show** gains **Board** (one board, picked in the **Board** row) and **Rotate** (turn through pages); **Board look** is Ledger (rows with an icon, the text and a gold value), Tiles (the icon over the value in large type) or Side column (the leaderboard keeps two thirds, the boards turn in a column on the right); **In rotation** ticks the scoreboard, the rules, the prizes and every registered board (the scoreboard and the boards are in by default); **Every** sets the seconds a page stays (10; 5 to 120). A rotating screen fades each page in and shows a row of dots under the title. A board a client does not have says so once and is then left out.
 
 ## Your totem, kept safe
 
