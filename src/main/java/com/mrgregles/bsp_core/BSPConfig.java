@@ -155,7 +155,8 @@ public final class BSPConfig {
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
     public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS,
             BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS;
-    public static final ForgeConfigSpec.BooleanValue STORAGE_SSL;
+    public static final ForgeConfigSpec.BooleanValue STORAGE_SSL, STORAGE_DELIVER_ON_RESTORE;
+    public static final ForgeConfigSpec.IntValue STORAGE_RESTORE_WAIT_SECONDS;
 
     // ------------------------------------------------------------------ visuals
 
@@ -506,6 +507,12 @@ public final class BSPConfig {
         STORAGE_NOTICE_SECONDS = BUILDER.comment("How often this server collects messages left for its players by other servers, such as \"your totem is being stolen\".",
                         "Lower is quicker to warn but asks the database more often.")
                 .defineInRange("noticeSeconds", 3, 1, 60);
+        STORAGE_DELIVER_ON_RESTORE = BUILDER.comment("With BSP-InventorySync installed, wait at login for its restore (its InventoryRestoredEvent) before stripping coins",
+                        "from an older season, running the season check and handing over items owed to the player, since the restore replaces the inventory.",
+                        "When false (or without that mod) this happens at login.")
+                .define("deliverOnRestore", true);
+        STORAGE_RESTORE_WAIT_SECONDS = BUILDER.comment("Longest wait for that restore, in seconds; after it the owed items are handed over anyway.")
+                .defineInRange("restoreWaitSeconds", 30, 5, 300);
         BUILDER.comment("Redis, optional: with it, balance changes, deposit boxes, shop edits and messages reach the other servers at once",
                         "instead of at the next poll. Without it (or while it is down) everything still works through the database.")
                .push("redis");

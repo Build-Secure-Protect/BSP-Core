@@ -411,8 +411,8 @@ public final class Kits {
 
     /** As above, with the event's {@code how} chosen per kit id. */
     public static int deliverOwed(ServerPlayer player, Function<String, KitEvent.How> how) {
-        if (!enabled()) {
-            return 0;
+        if (!enabled() || player.isDeadOrDying()) {
+            return 0; // a dead player's inventory is not carried to the respawned one: the kits stay owed until the respawn
         }
         KitLedger ledger = KitLedger.get(player.server);
         int delivered = 0;

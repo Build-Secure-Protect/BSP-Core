@@ -4,8 +4,25 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.4.2] - 2026-10-21
+
+### Fixed
+- **A totem kept for a player arrives the way a transferred totem does** (BSP-InventorySync request R5). Since logins wait for the inventory restore and for a respawn, a Shatter Totem collected from the shared database for a player who is still waiting, or dead, is kept on the server and handed over later. It was then handed over like any other item: in a full inventory it could be dropped on the ground, and its arrival was not written in the totem ledger, so a totem reissued on another server could be spent as a stale copy. Kept totems (and totems in any delivery to a player online) now go through the same hand-back as a transfer: the ledger records the arrival, the player's departure record is cleared, and the totem goes into the selected or first free slot, moving another stack aside if it must, never dropped. Other owed items are handed over as before. Two game tests.
+
+## [1.4.1] - 2026-10-21
+
+### Added
+- **Totem calls for inventory sync mods** (BSP-InventorySync requests R1 and R2). `BspTotems.isTotem(ItemStack)` says whether a stack is a live Shatter Totem (not a spent husk), so a snapshot can leave every live totem out; `BspTotems.giveBack(ServerPlayer, ItemStack)` hands a totem back into the selected or the first free slot and never drops the totem, so a restore can return the totems it finds through BSP-Core. Both use the rules BSP-Core already applies to every inventory. Two game tests.
+
 ### Changed
+- **Logins wait for BSP-InventorySync's restore** (its request R3). With that mod installed, the part of a login that touches the inventory and the player's saved data waits for its `InventoryRestoredEvent`: Shatter Coins from an older epoch are stripped, the season check runs (last season's totems out, a fresh one in) and the items owed to the player are handed over only once the restored inventory is in place, so a restore can no longer overwrite a delivery or bring old coins back. While a player waits, the items waiting for them in the shared database stay there. The prize list is still sent at once. Config `storage.deliverOnRestore` (true) and `storage.restoreWaitSeconds` (30: after it the login settles anyway, with a line in the log). Without the mod, logins work as before. Two game tests.
 - The compile-time dependency on BSP-Region Guard reads its 0.3.0 jar (the 0.2.0 jar is gone from its checkout; its API is unchanged at version 5); nothing BSP-Core calls changed.
+
+### Fixed
+- **Nothing is handed to a player on the death screen** (BSP-InventorySync request R4). A player who logged out dead logs back in dead, and a dead player's inventory does not pass to the respawned one unless keepInventory is on, so coins, owed items and handed-back Shatter Totems given at that moment were lost. A login is never settled on a dead player: without BSP-InventorySync it is settled on the respawned player at the respawn; with it, the `storage.restoreWaitSeconds` countdown stands still while the player is dead and starts again from the respawn, a player still waiting at the respawn keeps waiting for the restore (which comes after it), and every settle goes to the player's current entity. Items that come for a player while they are dead (a delivery, the shared database's regular collection) wait and are handed over at the respawn. Three game tests.
+- **Kits and the logout totem wait for the respawn too.** A kit owed to a player on the death screen (a first-join kit, a reward, a gift) stays owed and is delivered to the respawned player, or by BSP-InventorySync's restore when the login still waits for it; a Shatter Totem placed at the player's logout stays standing while they log back in dead and comes back to them at the respawn. Two game tests.
 
 ## [1.4.0] - 2026-10-19
 

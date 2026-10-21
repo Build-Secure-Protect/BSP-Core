@@ -1283,3 +1283,43 @@ Setup: a creative admin account and a second account.
 - [ ] Log out carrying a totem, have the second account steal it, log back in: the red "no longer stands at ..., someone took it" line, as before.
 - [ ] `/bsp totem wipe <you>` while carrying two totems with one placed: both carried ones vanish, the placed block is gone, the chat line counts them, and one fresh Tier I totem is in your inventory; `/bsp totem locate <you>` finds nothing; the leaderboard drops your points within a few seconds; log out and in: no lines about old totems.
 
+
+## Totem calls for inventory sync mods: `BspTotems.isTotem(ItemStack)` and `giveBack` (2026-10-21)
+
+Covered by GameTests `api_is_totem_knows_a_live_totem_item_from_a_husk` and `api_give_back_keeps_the_totem_even_in_a_full_inventory`. In game they run only through BSP-InventorySync, so these checks need it installed beside BSP-Core 1.4.1 on two servers.
+
+- [ ] InventorySync's start-up log names the BSP-Core api for the totem rule and the hand-back (not "internal").
+- [ ] Carry a totem and move to the other server: the totem arrives once, through BSP-Core's transfer, and the restored inventory holds no second copy.
+- [ ] Carry a spent husk and move: the husk travels with the inventory like any item.
+- [ ] Arrive with a full inventory while a totem is handed back: the totem is in the inventory, and only the stack it displaced lies at your feet.
+
+## Logins wait for the inventory restore (BSP-InventorySync R3, 2026-10-21)
+
+Covered by GameTests `login_waits_for_the_inventory_restore_before_coins_and_owed_items` and `login_wait_ends_by_itself_when_no_restore_comes`. Needs BSP-InventorySync on two servers with BSP-Core 1.4.1.
+
+- [ ] Server start log: "Coins, the season check and owed items wait for BSP-InventorySync's restore event at login".
+- [ ] Give an offline player something that waits for them (a season prize or an admin delivery), then log in on another server: it lands in the restored inventory and is not wiped a moment later.
+- [ ] Travel between servers with a totem: it arrives once and stays.
+- [ ] After a coin wipe, log in with coins in the synced inventory: they are removed after the restore, not brought back by it.
+- [ ] Stop BSP-InventorySync on one server (or block its database) and log in: after about 30 seconds the log says no restore came, and what is owed is handed over.
+- [ ] Without BSP-InventorySync: owed items arrive at login as before.
+
+## Logging in on the death screen (BSP-InventorySync R4, 2026-10-21)
+
+Covered by GameTests `dead_waiting_player_is_settled_only_after_the_respawn`, `dead_login_without_the_sync_mod_settles_at_the_respawn` and `totem_owed_to_a_dead_player_arrives_after_the_respawn_once`. keepInventory off.
+
+- [ ] With BSP-InventorySync: die and log out on the death screen; while you are away, get something owed (a season prize or an admin delivery; a totem left waiting after a transfer is the case that matters most); log back in, wait more than 30 seconds on the death screen, respawn: it is in your inventory, once, and the server log has no "No inventory restore" line for you before the respawn.
+- [ ] The same without BSP-InventorySync: respawn after logging in dead and the owed items arrive then, not before.
+- [ ] Die mid-session and stay on the death screen while something is delivered to you: it arrives when you respawn.
+- [ ] Returning from the End (the credits) hands nothing over and changes nothing.
+- [ ] With `/gamerule keepInventory true` (the only way a dead player still carries a totem): carry a totem, die, log out on the death screen: the totem is placed where you stood. Log back in (still dead): it keeps standing. Respawn: it comes back to your hand. (GameTest `logout_totem_of_a_dead_login_comes_back_at_the_respawn`.)
+- [ ] Give yourself a kit with `/bsp kit give` while you are on the death screen: nothing happens until you respawn, then it is in your inventory once. With BSP-InventorySync it arrives after the restore. (GameTest `kit_owed_to_a_dead_player_waits_for_the_respawn`.)
+
+## A kept totem arrives like a transferred one (BSP-InventorySync R5, 2026-10-21)
+
+Covered by GameTests `parked_totem_goes_back_by_the_totem_route_even_into_a_full_inventory` and `network_totem_parked_for_a_waiting_player_arrives_by_the_totem_route_after_release`. Needs two servers with network storage and BSP-InventorySync, BSP-Core 1.4.2 on both.
+
+- [ ] Fill every inventory slot (hotbar included) with ordinary items, carry a totem, and switch servers: on arrival the totem is in your inventory, one ordinary stack lies at your feet, and no totem is on the ground.
+- [ ] The totem still works afterwards: it shows its powers, can be placed, and is not turned into a spent husk after a minute.
+- [ ] Do the same while dead on arrival (log out on the death screen with keepInventory on, or let an admin delivery wait for you): the totem arrives at the respawn, the same way.
+- [ ] Owed ordinary items (a season prize) still arrive as before, dropped at your feet only when there is no room.

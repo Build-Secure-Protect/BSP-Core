@@ -257,7 +257,7 @@ public class BspGameTests {
 
     // ------------------------------------------------------------------ the 1.0 buffs
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 800)
     public void overclock_travels_with_the_plasma(GameTestHelper h) {
         // Output 0 totem with Overclock IV, interface, two cables into an injector standing on a Tetrium Crucible: the injector's factor is the plain curve scaled by 2
         BlockPos start = new BlockPos(1, 1, 1);
@@ -272,12 +272,34 @@ public class BspGameTests {
         BlockPos injector = start.east(4);
         h.setBlock(injector.below(), ModBlocks.TETRIUM_CRUCIBLE.get());
         h.setBlock(injector, ModBlocks.PLASMA_INJECTOR.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.FACING, net.minecraft.core.Direction.DOWN));
-        h.runAfterDelay(100, () -> {
+        // checked every tick until the timeout: a test late in a big batch may wait 250 ticks or more before its chunk ticks (the server is catching up)
+        h.succeedWhen(() -> {
             var inj = entity(h, injector, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
-            h.assertTrue(inj.rate() > 0, "plasma arrives at the injector, rate " + inj.rate());
+            if (inj.rate() <= 0) { // say what each link of the chain sees, so a failure can be read
+                var ex = h.getLevel().getBlockEntity(h.absolutePos(start)) instanceof com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity e ? e : null;
+                var tot = h.getLevel().getBlockEntity(h.absolutePos(start.above())) instanceof ShatterTotemBlockEntity t ? t : null;
+                var itf = h.getLevel().getBlockEntity(h.absolutePos(start.east())) instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity i ? i : null;
+                StringBuilder why = new StringBuilder("plasma arrives at the injector, rate 0 at ").append(h.absolutePos(injector))
+                        .append(" t=").append(h.getLevel().getGameTime());
+                BlockPos absEx = h.absolutePos(start);
+                long ck = net.minecraft.world.level.ChunkPos.asLong(absEx.getX() >> 4, absEx.getZ() >> 4);
+                why.append(" | chunk ").append(absEx.getX() >> 4).append(',').append(absEx.getZ() >> 4)
+                        .append(" forced=").append(h.getLevel().getForcedChunks().contains(ck))
+                        .append(" blockTicking=").append(h.getLevel().shouldTickBlocksAt(ck))
+                        .append(" entityTicking=").append(h.getLevel().isPositionEntityTicking(absEx))
+                        .append(" loaded=").append(h.getLevel().isLoaded(absEx))
+                        .append(" forcedTotal=").append(h.getLevel().getForcedChunks().size());
+                why.append(" | totem ").append(tot == null ? "GONE " + h.getLevel().getBlockState(h.absolutePos(start.above())) : "owner=" + tot.getOwner().isPresent() + " out=" + tot.plasmaOutput());
+                why.append(" | extractor ").append(ex == null ? "GONE" : "flow=" + ex.flow() + " tank=" + ex.tank() + " servedBy=" + ex.servedBy());
+                why.append(" | interface ").append(itf == null ? "GONE" : "lit=" + itf.lit() + " master=" + itf.master() + " supply=" + itf.network().supply()
+                        + " members=" + itf.network().members() + " delivered=" + itf.network().lastDeliveredTotal());
+                for (BlockPos c : List.of(start.east(2), start.east(3), start.east(3).above(), start.east(4).above(), injector, injector.below())) {
+                    why.append(" | ").append(c.toShortString()).append('=').append(net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(h.getBlockState(c).getBlock()).getPath());
+                }
+                h.fail(why.toString());
+            }
             double plain = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(inj.rate());
             h.assertTrue(Math.abs(inj.factor() - com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plain, 2.0)) < 1e-9, "Overclock IV doubles the speed-up: " + inj.factor() + " from " + plain);
-            h.succeed();
         });
     }
 
@@ -430,24 +452,23 @@ public class BspGameTests {
     }
 
     /** A Tetrium Crucible under a fed injector finishes an ore in a third of its ticks (300 -> 100); checked at half the plain time. */
-    @GameTest(template = EMPTY, timeoutTicks = 600)
+    @GameTest(template = EMPTY, timeoutTicks = 1400)
     public void injector_speeds_the_tetrium_crucible(GameTestHelper h) {
         BlockPos start = new BlockPos(2, 3, 2), inj = new BlockPos(7, 2, 2), crucible = inj.below();
         plasmaLineTo(h, start, 3, inj.above().east());
         injectorDown(h, inj);
         h.setBlock(crucible, ModBlocks.TETRIUM_CRUCIBLE.get());
         int ticks = com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.get();
-        h.runAfterDelay(100, () -> {
-            var be = entity(h, crucible, com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity.class);
+        // polled, not timed from the test's start: a test late in a big batch may wait 250 ticks or more before its chunk ticks
+        var be = entity(h, crucible, com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity.class);
+        pollThen(h, 700, () -> be.plasmaFactor() >= 2.9, () -> {
             net.minecraft.world.item.Item raw = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "raw_tetrium"));
             be.getItems().insertItem(0, new net.minecraft.world.item.ItemStack(raw), false);
             be.getItems().insertItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL), false);
-            h.runAfterDelay(ticks / 2, () -> {
-                h.assertTrue(be.plasmaFactor() >= 2.9, "the crucible reads x3 from its injector, got x" + be.plasmaFactor());
-                h.assertTrue(!be.getItems().getStackInSlot(2).isEmpty(), "nuggets out in half the plain time");
-                h.succeed();
-            });
-        });
+            long t0 = h.getLevel().getGameTime();
+            pollThen(h, ticks / 2, () -> !be.getItems().getStackInSlot(2).isEmpty(), h::succeed,
+                    () -> h.fail("nuggets out in half the plain time: none after " + (h.getLevel().getGameTime() - t0) + " ticks at x" + be.plasmaFactor()));
+        }, () -> h.fail("the crucible reads x3 from its injector, got x" + be.plasmaFactor()));
     }
 
     /** An injector in a factory slice's Motivator cell gives that slice the curve's factor. */
@@ -1528,28 +1549,42 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 500)
+    @GameTest(template = EMPTY, timeoutTicks = 1000)
     public void accelerator_wakes_a_sleeping_far_side_and_delivers(GameTestHelper h) {
         var server = server(h);
         var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
         ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
         BlockPos far = new BlockPos(2000, 100, 2000); // nothing keeps this chunk loaded
         var core = linkedDecelerator(h, nether, far, a);
-        h.runAfterDelay(120, () -> {
-            var before = a.report(core.here()).state();
-            h.assertTrue(before == com.mrgregles.bsp_core.link.Links.State.ASLEEP || before == com.mrgregles.bsp_core.link.Links.State.DELIVERING || before == com.mrgregles.bsp_core.link.Links.State.UNFORMED_THERE,
-                    "an unforced far side is asleep (or still loaded): " + before);
+        // each step is checked every tick within the test's timeout: a test late in a big batch may wait 250 ticks or more before its chunk ticks
+        var settled = java.util.Set.of(com.mrgregles.bsp_core.link.Links.State.ASLEEP, com.mrgregles.bsp_core.link.Links.State.DELIVERING, com.mrgregles.bsp_core.link.Links.State.UNFORMED_THERE);
+        pollThen(h, 700, () -> settled.contains(a.report(core.here()).state()), () -> {
             a.wakeNow();
-            h.runAfterDelay(65, () -> {
+            pollThen(h, 160, () -> {
                 nether.getChunk(far);
                 var woken = (com.mrgregles.bsp_core.link.DeceleratorBlockEntity) nether.getBlockEntity(far);
-                h.assertTrue(woken != null && woken.isFormed() && woken.store().stored() > 0, "the woken far side formed and received: " + (woken == null ? "gone" : woken.store().stored()));
-                h.assertTrue(a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING, "and the link delivers while the wake ticket holds: " + a.report(core.here()));
+                return woken != null && woken.isFormed() && woken.store().stored() > 0 && a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING;
+            }, () -> {
                 nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
                 nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
                 h.succeed();
+            }, () -> {
+                var woken = nether.getBlockEntity(far) instanceof com.mrgregles.bsp_core.link.DeceleratorBlockEntity d ? d : null;
+                h.fail("the woken far side formed, received and the link delivers while the wake ticket holds: "
+                        + (woken == null ? "gone" : woken.isFormed() + " " + woken.store().stored()) + " " + a.report(core.here()));
             });
-        });
+        }, () -> h.fail("an unforced far side is asleep (or still loaded): " + a.report(core.here()).state()));
+    }
+
+    /** Runs {@code then} on the first tick {@code ok} holds, checking once a tick for up to {@code ticks}; {@code fail} after that. */
+    private static void pollThen(GameTestHelper h, int ticks, java.util.function.BooleanSupplier ok, Runnable then, Runnable fail) {
+        if (ok.getAsBoolean()) {
+            then.run();
+        } else if (ticks <= 0) {
+            fail.run();
+        } else {
+            h.runAfterDelay(1, () -> pollThen(h, ticks - 1, ok, then, fail));
+        }
     }
 
     @GameTest(template = EMPTY, timeoutTicks = 500)
@@ -1644,7 +1679,7 @@ public class BspGameTests {
         h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player) == 1, "the totem is taken for the transfer");
         var s = ledger.sighting(id);
         h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.IN_TRANSIT && s.instance().equals(instance), "the ledger marks it in transit, same instance: " + s);
-        h.assertTrue(ledger.lostHeld(now + 10_000, 60).isEmpty(), "a totem in transit is never lost, however long the proxy takes");
+        h.assertFalse(ledger.lostHeld(now + 10_000, 60).contains(id), "a totem in transit is never lost, however long the proxy takes"); // its own: the ledger is shared by every test
         h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.endTransfer(player), "the teleport is cancelled");
         s = ledger.sighting(id);
         h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && s.instance().equals(instance) && who.equals(s.holder()), "back in hand: held again with the same instance");
@@ -1701,6 +1736,399 @@ public class BspGameTests {
         h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.place(target.level(), target.pos(), totem), "and is placed there");
         h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
         h.setBlock(floor.above(), Blocks.AIR);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_is_totem_knows_a_live_totem_item_from_a_husk(GameTestHelper h) {
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var live = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.isTotem(live), "a totem not yet given its identity counts as live");
+        new TotemOwner(player.getUUID(), "Rowan").applyTo(live);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(live);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.isTotem(live), "a live totem is a totem");
+        var husk = live.copy();
+        com.mrgregles.bsp_core.totem.TotemIdentity.spend(husk);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.isSpent(husk), "the copy is a husk");
+        h.assertFalse(com.mrgregles.bsp_core.api.BspTotems.isTotem(husk), "a spent husk is not");
+        h.assertFalse(com.mrgregles.bsp_core.api.BspTotems.isTotem(new ItemStack(net.minecraft.world.item.Items.DIRT)), "a plain item is not");
+        h.assertFalse(com.mrgregles.bsp_core.api.BspTotems.isTotem(ItemStack.EMPTY), "the empty stack is not");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.isTotem(live) == com.mrgregles.bsp_core.totem.TotemInventories.isTotem(live)
+                && com.mrgregles.bsp_core.api.BspTotems.isTotem(husk) == com.mrgregles.bsp_core.totem.TotemInventories.isTotem(husk), "the api answers as the internal rule");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 800)
+    public void api_give_back_keeps_the_totem_even_in_a_full_inventory(GameTestHelper h) {
+        BlockPos floor = new BlockPos(12, 1, 12);
+        h.setBlock(floor, Blocks.STONE);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        BlockPos stand = h.absolutePos(floor.above());
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(player.getUUID(), "Sage").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        var inv = player.getInventory();
+        java.util.function.IntSupplier totemsHeld = () -> {
+            int n = 0;
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack s = inv.getItem(i);
+                if (com.mrgregles.bsp_core.api.BspTotems.isTotem(s) && id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(s))) {
+                    n++;
+                }
+            }
+            return n;
+        };
+        // room to spare: into the empty selected slot, and nothing else in the inventory to drop
+        inv.selected = 0;
+        com.mrgregles.bsp_core.api.BspTotems.giveBack(player, totem.copy());
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.isTotem(inv.getItem(0)) && totemsHeld.getAsInt() == 1, "the totem is in the selected slot");
+        for (int i = 1; i < inv.getContainerSize(); i++) {
+            h.assertTrue(inv.getItem(i).isEmpty(), "nothing else moved");
+        }
+        h.assertTrue(player.containerMenu.getCarried().isEmpty(), "nothing on the cursor");
+        // every main slot full of this run's marked dirt; first wait until the test's chunk ticks entities, so a dropped stack can be seen
+        pollThen(h, 600, () -> h.getLevel().isPositionEntityTicking(stand), () -> {
+        // the totem is still kept, once, and one dirt stack makes room
+        UUID run = UUID.randomUUID();
+        inv.clearContent();
+        for (int i = 0; i < inv.items.size(); i++) {
+            ItemStack dirt = new ItemStack(net.minecraft.world.item.Items.DIRT, 64);
+            dirt.getOrCreateTag().putUUID("BspTestRun", run);
+            inv.items.set(i, dirt);
+        }
+        com.mrgregles.bsp_core.api.BspTotems.giveBack(player, totem.copy());
+        h.assertTrue(totemsHeld.getAsInt() == 1, "the totem is in the full inventory, once");
+        h.assertTrue(player.containerMenu.getCarried().isEmpty(), "and not left on the cursor");
+        h.assertTrue(inv.items.stream().filter(st -> st.is(net.minecraft.world.item.Items.DIRT)).count() == inv.items.size() - 1, "exactly one dirt stack made room");
+        // the displaced stack is on the ground (an entity added at the start of a batch may take a few ticks to be seen); no totem is
+        var area = new net.minecraft.world.phys.AABB(stand).inflate(6);
+        h.succeedWhen(() -> {
+            List<net.minecraft.world.entity.item.ItemEntity> near = h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, area);
+            h.assertTrue(near.stream().noneMatch(e -> id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(e.getItem()))), "no totem was dropped");
+            List<net.minecraft.world.entity.item.ItemEntity> ours = near.stream()
+                    .filter(e -> e.getItem().getTag() != null && e.getItem().getTag().hasUUID("BspTestRun") && run.equals(e.getItem().getTag().getUUID("BspTestRun"))).toList();
+            long ck = net.minecraft.world.level.ChunkPos.asLong(stand.getX() >> 4, stand.getZ() >> 4);
+            h.assertTrue(ours.size() == 1 && ours.get(0).getItem().getCount() == 64, "only the displaced stack is at the player's feet: " + ours.size()
+                    + " | at " + stand + " chunk " + (stand.getX() >> 4) + "," + (stand.getZ() >> 4) + " forced=" + h.getLevel().getForcedChunks().contains(ck)
+                    + " blockTicking=" + h.getLevel().shouldTickBlocksAt(ck) + " entityTicking=" + h.getLevel().isPositionEntityTicking(stand)
+                    + " loaded=" + h.getLevel().isLoaded(stand) + " itemsNear=" + near.size()
+                    + " player=" + player.blockPosition() + " allItemsLevel=" + h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(stand).inflate(64)).size());
+            ours.forEach(net.minecraft.world.entity.Entity::discard);
+            inv.clearContent();
+        });
+        }, () -> h.fail("the test's chunk never ticked entities: " + stand + " forced=" + h.getLevel().getForcedChunks().contains(net.minecraft.world.level.ChunkPos.asLong(stand.getX() >> 4, stand.getZ() >> 4))));
+    }
+
+    @GameTest(template = EMPTY)
+    public void login_waits_for_the_inventory_restore_before_coins_and_owed_items(GameTestHelper h) {
+        h.assertFalse(com.mrgregles.bsp_core.admin.LoginSettle.waitsForRestore(), "without BSP-InventorySync a login settles at once");
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        UUID uuid = player.getUUID();
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(h.getLevel().getServer());
+        int epoch = season.coinEpoch;
+        var coin = com.mrgregles.bsp_core.registry.ModItems.COINS.get(com.mrgregles.bsp_core.coin.CoinTier.COPPER).get();
+        var inv = player.getInventory();
+        java.util.function.IntSupplier coins = () -> inv.countItem(coin);
+        java.util.function.IntSupplier diamonds = () -> inv.countItem(net.minecraft.world.item.Items.DIAMOND);
+        // logs in with coins from an older epoch and three diamonds owed
+        com.mrgregles.bsp_core.data.PlayerPersistent.setCoinEpoch(player, epoch - 1);
+        inv.setItem(0, new ItemStack(coin, 5));
+        season.pendingItems.put(uuid, new ArrayList<>(List.of(new ItemStack(net.minecraft.world.item.Items.DIAMOND, 3))));
+        com.mrgregles.bsp_core.admin.LoginSettle.hold(player, 1200);
+        h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(uuid), "the player waits for the restore");
+        h.assertTrue(coins.getAsInt() == 5 && diamonds.getAsInt() == 0, "nothing is touched while waiting");
+        h.assertTrue(season.pendingItems.containsKey(uuid), "the owed items stay owed");
+        // the restore replaces the inventory and the saved data with the snapshot's: old coins again
+        inv.clearContent();
+        inv.setItem(3, new ItemStack(coin, 2));
+        com.mrgregles.bsp_core.data.PlayerPersistent.setCoinEpoch(player, epoch - 1);
+        h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.release(player), "the restore ends the wait");
+        h.assertTrue(coins.getAsInt() == 0, "the restored coins of the older epoch are stripped");
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.coinEpoch(player) == epoch, "and the player is on this epoch");
+        h.assertTrue(diamonds.getAsInt() == 3 && !season.pendingItems.containsKey(uuid), "the owed items land in the restored inventory");
+        h.assertFalse(com.mrgregles.bsp_core.admin.LoginSettle.release(player), "a second restore event does nothing");
+        h.assertTrue(diamonds.getAsInt() == 3, "nothing is handed over twice");
+        inv.clearContent();
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void login_wait_ends_by_itself_when_no_restore_comes(GameTestHelper h) {
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        UUID uuid = player.getUUID();
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(h.getLevel().getServer());
+        season.pendingItems.put(uuid, new ArrayList<>(List.of(new ItemStack(net.minecraft.world.item.Items.EMERALD, 2))));
+        com.mrgregles.bsp_core.admin.LoginSettle.hold(player, 5);
+        h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.EMERALD) == 0, "nothing yet");
+        h.succeedWhen(() -> {
+            h.assertFalse(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(uuid), "the wait has ended");
+            h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.EMERALD) == 2 && !season.pendingItems.containsKey(uuid), "the owed items were handed over");
+            player.getInventory().clearContent();
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void dead_waiting_player_is_settled_only_after_the_respawn(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        // two players log in dead with something owed; both wait for their restore with a 5-tick limit
+        var byEvent = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var byClock = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        for (var p : List.of(byEvent, byClock)) {
+            season.pendingItems.put(p.getUUID(), new ArrayList<>(List.of(new ItemStack(net.minecraft.world.item.Items.DIAMOND, 2))));
+            p.setHealth(0);
+            com.mrgregles.bsp_core.admin.LoginSettle.hold(p, 5);
+        }
+        h.runAfterDelay(30, () -> {
+            for (var p : List.of(byEvent, byClock)) {
+                h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(p.getUUID()), "a dead player's wait does not run out");
+                h.assertTrue(season.pendingItems.containsKey(p.getUUID()) && p.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 0, "nothing went to the dead entity");
+            }
+            // both respawn; still waiting for their restore
+            var newByEvent = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, byEvent);
+            var newByClock = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, byClock);
+            com.mrgregles.bsp_core.admin.LoginSettle.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(newByEvent, false));
+            com.mrgregles.bsp_core.admin.LoginSettle.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(newByClock, false));
+            h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(newByEvent.getUUID()) && newByEvent.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 0,
+                    "a player still waiting at the respawn stays waiting: the restore comes after it");
+            // the restore event releases one at once
+            h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.release(newByEvent), "the restore ends the wait");
+            h.assertTrue(newByEvent.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 2 && !season.pendingItems.containsKey(newByEvent.getUUID()), "settled on the respawned entity");
+            h.assertTrue(byEvent.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 0, "not on the dead one");
+            // the other has no restore: the countdown, started again from the respawn, settles the new entity
+            h.succeedWhen(() -> {
+                h.assertFalse(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(newByClock.getUUID()), "the countdown from the respawn has run out");
+                h.assertTrue(newByClock.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 2 && byClock.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 0,
+                        "settled on the respawned entity, not the dead one");
+                newByEvent.getInventory().clearContent();
+                newByClock.getInventory().clearContent();
+            });
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void dead_login_without_the_sync_mod_settles_at_the_respawn(GameTestHelper h) {
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(h.getLevel().getServer());
+        var dead = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        season.pendingItems.put(dead.getUUID(), new ArrayList<>(List.of(new ItemStack(net.minecraft.world.item.Items.EMERALD, 3))));
+        dead.setHealth(0);
+        h.assertFalse(com.mrgregles.bsp_core.admin.LoginSettle.waitsForRestore(), "no sync mod in this run");
+        com.mrgregles.bsp_core.admin.AdminService.settle(dead); // what a login does without the sync mod (the prize list aside)
+        h.assertTrue(dead.getInventory().countItem(net.minecraft.world.item.Items.EMERALD) == 0 && season.pendingItems.containsKey(dead.getUUID()), "a dead login is not settled");
+        h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(dead.getUUID()), "it waits for the respawn");
+        // a return from the End is not a respawn
+        var home = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, dead);
+        com.mrgregles.bsp_core.admin.LoginSettle.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(home, true));
+        h.assertTrue(home.getInventory().countItem(net.minecraft.world.item.Items.EMERALD) == 0, "nothing on the way home from the End");
+        var alive = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, dead);
+        com.mrgregles.bsp_core.admin.LoginSettle.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive, false));
+        h.assertTrue(alive.getInventory().countItem(net.minecraft.world.item.Items.EMERALD) == 3 && !season.pendingItems.containsKey(alive.getUUID()), "settled on the new entity at the respawn");
+        h.assertFalse(com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(alive.getUUID()), "and no longer waiting");
+        alive.getInventory().clearContent();
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void totem_owed_to_a_dead_player_arrives_after_the_respawn_once(GameTestHelper h) {
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(h.getLevel().getServer());
+        var dead = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(dead.getUUID(), "Lark").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        season.pendingItems.put(dead.getUUID(), new ArrayList<>(List.of(totem)));
+        dead.setHealth(0);
+        com.mrgregles.bsp_core.admin.AdminService.settle(dead); // what a login does without the sync mod (the prize list aside)
+        java.util.function.ToIntFunction<net.minecraft.server.level.ServerPlayer> held = p -> {
+            int n = 0;
+            for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+                ItemStack s = p.getInventory().getItem(i);
+                if (com.mrgregles.bsp_core.api.BspTotems.isTotem(s) && id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(s))) {
+                    n++;
+                }
+            }
+            return n;
+        };
+        h.assertTrue(held.applyAsInt(dead) == 0 && season.pendingItems.containsKey(dead.getUUID()), "the totem stays owed while they are dead");
+        var alive = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, dead);
+        com.mrgregles.bsp_core.admin.LoginSettle.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive, false));
+        h.assertTrue(held.applyAsInt(alive) == 1, "the totem is in the respawned player's inventory");
+        h.assertTrue(held.applyAsInt(dead) == 0 && !season.pendingItems.containsKey(dead.getUUID()), "and nowhere else, nothing left owed");
+        com.mrgregles.bsp_core.admin.LoginSettle.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive, false));
+        h.assertTrue(held.applyAsInt(alive) == 1, "a second respawn gives nothing twice");
+        alive.getInventory().clearContent();
+        com.mrgregles.bsp_core.data.TotemLedger.get(h.getLevel().getServer()).forget(id); // the hand-back recorded its arrival
+        h.succeed();
+    }
+
+    /** A live totem owned by {@code player} whose identity this server's ledger knows under another instance, as after a reissue elsewhere. */
+    private static ItemStack arrivingTotem(GameTestHelper h, net.minecraft.server.level.ServerPlayer player, String name) {
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(player.getUUID(), name).applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        com.mrgregles.bsp_core.data.TotemLedger.get(server(h)).inTransit(id, UUID.randomUUID(), player.getUUID(), totem.getTag(), h.getLevel().getGameTime());
+        return totem;
+    }
+
+    private static int totemsHeld(net.minecraft.server.level.ServerPlayer p, UUID id) {
+        int n = 0;
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack s = p.getInventory().getItem(i);
+            if (com.mrgregles.bsp_core.totem.TotemInventories.isTotem(s) && id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(s))) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    @GameTest(template = EMPTY)
+    public void parked_totem_goes_back_by_the_totem_route_even_into_a_full_inventory(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        var player = survivor(h);
+        UUID who = player.getUUID();
+        BlockPos stand = h.absolutePos(new BlockPos(4, 2, 16));
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = arrivingTotem(h, player, "Juniper");
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem), instance = com.mrgregles.bsp_core.totem.TotemIdentity.instance(totem);
+        h.assertFalse(instance.equals(ledger.currentInstance(id)), "this server's ledger remembers another instance");
+        com.mrgregles.bsp_core.totem.TransferLedger.get(server).put(who, System.currentTimeMillis(), net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), stand));
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.items.size(); i++) {
+            inv.items.set(i, new ItemStack(net.minecraft.world.item.Items.DIRT, 64));
+        }
+        inv.selected = 0;
+        season.pendingItems.put(who, new ArrayList<>(List.of(totem.copy())));
+        com.mrgregles.bsp_core.admin.AdminService.handOverOwed(player);
+        h.assertTrue(totemsHeld(player, id) == 1 && player.containerMenu.getCarried().isEmpty(), "the parked totem is in the full inventory, once, not on the cursor");
+        h.assertTrue(inv.items.stream().filter(st -> st.is(net.minecraft.world.item.Items.DIRT)).count() == inv.items.size() - 1, "a dirt stack made room for it");
+        var s = ledger.sighting(id);
+        h.assertTrue(s != null && instance.equals(s.instance()) && s.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && who.equals(s.holder()),
+                "its arrival is in the ledger as on the direct path: " + s);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TransferLedger.get(server).departure(who) == null, "and the departure record is cleared, as on the direct path");
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(player);
+        h.assertTrue(totemsHeld(player, id) == 1, "the identity check does not spend it");
+        h.assertFalse(season.pendingItems.containsKey(who), "nothing left parked");
+        // a totem that reaches giveItems anyway is never dropped either
+        var second = arrivingTotem(h, player, "Juniper");
+        UUID id2 = com.mrgregles.bsp_core.totem.TotemIdentity.id(second);
+        com.mrgregles.bsp_core.admin.AdminService.giveItems(player, List.of(second), "message.bsp_core.season.delivery");
+        h.assertTrue(totemsHeld(player, id2) == 1 && totemsHeld(player, id) == 1, "giveItems keeps a totem in a full inventory too");
+        inv.clearContent();
+        ledger.forget(id);
+        ledger.forget(id2);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void network_totem_parked_for_a_waiting_player_arrives_by_the_totem_route_after_release(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        var player = survivor(h);
+        UUID who = player.getUUID();
+        var totem = arrivingTotem(h, player, "Rook");
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem), instance = com.mrgregles.bsp_core.totem.TotemIdentity.instance(totem);
+        com.mrgregles.bsp_core.admin.LoginSettle.hold(player, 1200);
+        // the network fetch brings the totem and two emeralds while they wait: both are parked
+        com.mrgregles.bsp_core.admin.SeasonSync.deliver(server, java.util.Map.of(who, List.of(totem.save(new net.minecraft.nbt.CompoundTag()).toString(),
+                new ItemStack(net.minecraft.world.item.Items.EMERALD, 2).save(new net.minecraft.nbt.CompoundTag()).toString())));
+        h.assertTrue(season.pendingItems.getOrDefault(who, List.of()).size() == 2 && totemsHeld(player, id) == 0, "parked while waiting");
+        h.assertTrue(com.mrgregles.bsp_core.admin.LoginSettle.release(player), "the restore releases them");
+        h.assertTrue(totemsHeld(player, id) == 1 && player.getInventory().countItem(net.minecraft.world.item.Items.EMERALD) == 2, "the totem and the emeralds arrive");
+        var s = ledger.sighting(id);
+        h.assertTrue(s != null && instance.equals(s.instance()) && s.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD, "recorded as arrived: " + s);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(player);
+        h.assertTrue(totemsHeld(player, id) == 1, "and not spent by the identity check");
+        // non-totem owed items as before
+        season.pendingItems.put(who, new ArrayList<>(List.of(new ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 5))));
+        com.mrgregles.bsp_core.admin.AdminService.handOverOwed(player);
+        h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.GOLD_INGOT) == 5 && !season.pendingItems.containsKey(who), "other owed items are added as before");
+        player.getInventory().clearContent();
+        ledger.forget(id);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void logout_totem_of_a_dead_login_comes_back_at_the_respawn(GameTestHelper h) {
+        BlockPos floor = new BlockPos(16, 1, 4);
+        h.setBlock(floor, Blocks.STONE);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        BlockPos stand = h.absolutePos(floor.above());
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(player.getUUID(), "Wren").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        player.getInventory().setItem(0, totem);
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(player);
+        h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        // they log back in on the death screen: the totem stays standing
+        player.setHealth(0);
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.onLogin(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent(player));
+        h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(player).isEmpty(), "nothing went into the dead entity");
+        var home = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, player);
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(home, true));
+        h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        // the respawn: it comes back to the new entity
+        var alive = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, player);
+        com.mrgregles.bsp_core.event.TotemLogoutHandler.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive, false));
+        h.assertBlockNotPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        var back = alive.getInventory().getItem(alive.getInventory().selected);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.isTotem(back) && id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(back)), "the same totem is in the respawned player's hand");
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(alive).isEmpty(), "nothing is remembered twice");
+        alive.getInventory().clearContent();
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void kit_owed_to_a_dead_player_waits_for_the_respawn(GameTestHelper h) {
+        var server = server(h);
+        var kit = kit(h, "deadkit", new ItemStack(net.minecraft.world.item.Items.BREAD, 4));
+        var bread = net.minecraft.world.item.Items.BREAD;
+        UUID[] ids = new UUID[2];
+        try {
+            // with the sync mod: dead at login, respawned, and the kit still waits for the restore, which delivers it
+            var dead = survivor(h);
+            ids[0] = dead.getUUID();
+            dead.setHealth(0);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.give(server, dead.getUUID(), kit.id), "a kit is owed");
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitGrants.deliver(dead) == 0 && com.mrgregles.bsp_core.kit.Kits.deliverOwed(dead, com.mrgregles.bsp_core.api.event.KitEvent.How.REWARD) == 0
+                    && count(dead, bread) == 0, "nothing is handed to a dead player");
+            com.mrgregles.bsp_core.kit.KitGrants.awaitRestore(dead.getUUID(), true);
+            var waiting = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, dead);
+            com.mrgregles.bsp_core.kit.KitGrants.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(waiting, false));
+            h.assertTrue(count(waiting, bread) == 0 && com.mrgregles.bsp_core.api.BspKits.owed(server, dead.getUUID()).equals(List.of(kit.id)),
+                    "a respawn before the restore leaves it owed: the restore would land on top");
+            com.mrgregles.bsp_core.kit.KitGrants.awaitRestore(dead.getUUID(), false); // what the restore event does, then it delivers
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitGrants.deliver(waiting) == 1 && count(waiting, bread) == 4, "the restore delivers it to the respawned player");
+            // without the sync mod: delivered at the respawn, to the new entity, once
+            var dead2 = survivor(h);
+            ids[1] = dead2.getUUID();
+            dead2.setHealth(0);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspKits.give(server, dead2.getUUID(), kit.id), "another is owed");
+            var home = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, dead2);
+            com.mrgregles.bsp_core.kit.KitGrants.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(home, true));
+            h.assertTrue(count(home, bread) == 0, "nothing on the way home from the End");
+            var alive = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, dead2);
+            com.mrgregles.bsp_core.kit.KitGrants.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive, false));
+            h.assertTrue(count(alive, bread) == 4 && count(dead2, bread) == 0 && com.mrgregles.bsp_core.api.BspKits.owed(server, dead2.getUUID()).isEmpty(), "delivered at the respawn to the new entity");
+            com.mrgregles.bsp_core.kit.KitGrants.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive, false));
+            h.assertTrue(count(alive, bread) == 4, "and only once");
+        } finally {
+            for (UUID u : ids) {
+                if (u != null) {
+                    com.mrgregles.bsp_core.kit.KitGrants.awaitRestore(u, false);
+                    com.mrgregles.bsp_core.kit.Kits.reset(server, u, null);
+                }
+            }
+            com.mrgregles.bsp_core.kit.Kits.delete(server, kit.id);
+        }
         h.succeed();
     }
 

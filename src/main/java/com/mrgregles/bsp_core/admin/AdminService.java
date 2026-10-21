@@ -342,8 +342,18 @@ public final class AdminService {
             return;
         }
         ServerPlayer online = server.getPlayerList().getPlayer(id);
-        if (online != null) {
-            giveItems(online, items, messageKey);
+        if (online != null && !LoginSettle.canReceive(online)) {
+            SeasonData season = SeasonData.get(server); // not settled yet, or dead: handed over at the settle or the respawn
+            List<ItemStack> owed = season.pendingItems.computeIfAbsent(id, k -> new ArrayList<>());
+            items.forEach(stack -> owed.add(stack.copy()));
+            season.setDirty();
+        } else if (online != null) {
+            List<ItemStack> totems = new ArrayList<>(), rest = new ArrayList<>();
+            items.forEach(stack -> (TotemInventories.isTotem(stack) ? totems : rest).add(stack));
+            com.mrgregles.bsp_core.api.BspTransfer.handBack(online, totems, rest.isEmpty() ? messageKey : null);
+            if (!rest.isEmpty()) {
+                giveItems(online, rest, messageKey);
+            }
         } else if (NetworkStorage.enabled()) {
             List<String> encoded = new ArrayList<>();
             items.forEach(stack -> encoded.add(stack.save(new CompoundTag()).toString()));
@@ -356,10 +366,13 @@ public final class AdminService {
         }
     }
 
+    /** Adds the items, dropping what does not fit; a live totem that reaches it anyway goes in by {@link TotemInventories#giveBack}, never dropped. */
     public static void giveItems(ServerPlayer player, List<ItemStack> items, String messageKey) {
         for (ItemStack stack : items) {
             ItemStack out = stack.copy();
-            if (!player.getInventory().add(out)) {
+            if (TotemInventories.isTotem(out)) {
+                TotemInventories.giveBack(player, out);
+            } else if (!player.getInventory().add(out)) {
                 player.drop(out, false);
             }
         }
@@ -520,22 +533,58 @@ public final class AdminService {
         return (int) Math.max(0, (season.lastHolderMs + season.holderHours * 3_600_000L - System.currentTimeMillis()) / 60_000L);
     }
 
-    /** Hands over whatever a player missed while offline. */
+    /**
+     * Hands over whatever a player missed while offline. The prizes are sent at once; everything that touches the inventory or
+     * the player's saved data waits for an inventory sync mod's restore when one is installed ({@link LoginSettle}).
+     */
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        SeasonData season = SeasonData.get(player.server);
         BSPNetwork.sendTo(player, prizePacket(player.server));
+        if (LoginSettle.waitsForRestore()) {
+            LoginSettle.hold(player);
+        } else {
+            settle(player);
+        }
+    }
+
+    /**
+     * The part of a login that touches the inventory, once it is settled: coins from an older epoch are stripped, the season
+     * check runs, and the items owed to the player (kept here, then from the shared database) are handed over. Never on a
+     * dead player (they logged in on the death screen): a dead entity's inventory does not pass to the respawned one, so the
+     * settle waits for the respawn and runs on the new entity ({@link LoginSettle#onRespawn}).
+     */
+    public static void settle(ServerPlayer player) {
+        if (player.isDeadOrDying()) {
+            LoginSettle.afterRespawn(player);
+            return;
+        }
+        SeasonData season = SeasonData.get(player.server);
         if (PlayerPersistent.coinEpoch(player) < season.coinEpoch) {
             stripCoins(player, season.coinEpoch); // a full reset happened while they were away
         }
         seasonCheck(player);
+        handOverOwed(player);
+    }
+
+    /** Hands a living, settled player the items kept here for them, then collects what the shared database holds. */
+    public static void handOverOwed(ServerPlayer player) {
+        if (!LoginSettle.canReceive(player)) {
+            return;
+        }
+        SeasonData season = SeasonData.get(player.server);
         List<ItemStack> owed = season.pendingItems.remove(player.getUUID());
         if (owed != null && !owed.isEmpty()) {
-            giveItems(player, owed, "message.bsp_core.season.delivery");
             season.setDirty();
+            // as the network fetch does: totems by the totem route (ledger, departure record, never dropped), the rest as before
+            List<ItemStack> totems = new ArrayList<>(), rest = new ArrayList<>();
+            owed.forEach(stack -> (TotemInventories.isTotem(stack) ? totems : rest).add(stack));
+            com.mrgregles.bsp_core.api.BspTransfer.handBack(player, totems, "message.bsp_core.transfer.arrived");
+            if (!rest.isEmpty()) {
+                giveItems(player, rest, "message.bsp_core.season.delivery");
+            }
         }
         SeasonSync.fetchPending(player.server);
     }

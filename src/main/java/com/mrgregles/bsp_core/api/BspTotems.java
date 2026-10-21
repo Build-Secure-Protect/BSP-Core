@@ -79,6 +79,32 @@ public final class BspTotems {
         return state.is(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get());
     }
 
+    /**
+     * Whether an item stack is a live Shatter Totem: {@code bsp_core:shatter_totem} and not a spent husk. A totem that has not
+     * been given its identity yet counts as live; a husk (a stale copy left behind when the totem was reissued), any other
+     * item and the empty stack do not. The same rule BSP-Core applies to every inventory it checks.
+     *
+     * <p>For inventory sync mods (BSP-InventorySync request R1): a snapshot must never carry a live totem, or the totem is
+     * duplicated, one in the world or waiting in BSP-Core's records and one in the synced inventory. Drop every stack this
+     * says yes to before saving.
+     */
+    public static boolean isTotem(ItemStack stack) {
+        return TotemInventories.isTotem(stack);
+    }
+
+    /**
+     * Hands a totem back to a player without ever dropping the totem: into the selected hotbar slot when it is empty, else
+     * the first free slot. When the inventory is full, the item in the selected slot (or, when that holds a totem, the
+     * first slot that does not) is dropped at the player's feet to make room; when every slot holds a totem, the totem
+     * goes on the cursor. Server thread only.
+     *
+     * <p>For inventory sync mods (BSP-InventorySync request R2): live totems found in an inventory that a restore is about
+     * to replace are handed back through this call, so they stay with the player and BSP-Core's rules see them arrive.
+     */
+    public static void giveBack(net.minecraft.server.level.ServerPlayer player, ItemStack stack) {
+        TotemInventories.giveBack(player, stack);
+    }
+
     /** The steal running on the totem at {@code pos}, if one is. */
     public static Optional<Steal> thiefAt(ServerLevel level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof ShatterTotemBlockEntity be) {

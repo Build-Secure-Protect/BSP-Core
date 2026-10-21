@@ -42,6 +42,8 @@ public final class KitGrants {
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
     /** Kits granted at this login, so their delivery says FIRST_JOIN. */
     private static final Map<UUID, Set<String>> GRANTED_NOW = new HashMap<>();
+    /** Players logged in since their last restore event: kits wait for it, even past a respawn. */
+    private static final Set<UUID> AWAITING_RESTORE = new HashSet<>();
     private static boolean hooked;
 
     private record Pending(ServerPlayer player, int[] ticks) {}
@@ -54,6 +56,9 @@ public final class KitGrants {
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            if (waitsForRestore()) {
+                AWAITING_RESTORE.add(player.getUUID());
+            }
             login(player);
         }
     }
@@ -62,6 +67,31 @@ public final class KitGrants {
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         PENDING.remove(event.getEntity().getUUID());
         GRANTED_NOW.remove(event.getEntity().getUUID());
+        AWAITING_RESTORE.remove(event.getEntity().getUUID());
+    }
+
+    /**
+     * A respawn (not the trip home from the End): kits that waited because the player was dead are delivered to the respawned
+     * player, unless their login still waits for the sync mod's restore, which comes after the respawn and delivers them then.
+     */
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.isEndConquered() || !(event.getEntity() instanceof ServerPlayer player) || AWAITING_RESTORE.contains(player.getUUID())) {
+            return;
+        }
+        PENDING.remove(player.getUUID());
+        if (!Kits.owed(player.server, player.getUUID()).isEmpty()) {
+            deliver(player);
+        }
+    }
+
+    /** Marks the player's login as still waiting for the sync mod's restore (tests). */
+    public static void awaitRestore(UUID player, boolean waiting) {
+        if (waiting) {
+            AWAITING_RESTORE.add(player);
+        } else {
+            AWAITING_RESTORE.remove(player);
+        }
     }
 
     @SubscribeEvent
@@ -166,8 +196,15 @@ public final class KitGrants {
         PENDING.put(player.getUUID(), new Pending(player, new int[] {Math.max(1, BSPConfig.getOr(BSPConfig.KIT_GRANT_DELAY_TICKS, 40))}));
     }
 
-    /** Delivers what is owed, FIRST_JOIN for the kits granted at this login. Public for the tests. */
+    /**
+     * Delivers what is owed, FIRST_JOIN for the kits granted at this login. Never to a dead player (they logged in on the death
+     * screen): a dead entity's inventory does not pass to the respawned one, so the kits stay owed and {@link #onRespawn} delivers
+     * them. Public for the tests.
+     */
     public static int deliver(ServerPlayer player) {
+        if (player.isDeadOrDying()) {
+            return 0;
+        }
         Set<String> first = GRANTED_NOW.remove(player.getUUID());
         return Kits.deliverOwed(player, id -> first != null && first.contains(id) ? KitEvent.How.FIRST_JOIN : KitEvent.How.REWARD);
     }
@@ -187,6 +224,7 @@ public final class KitGrants {
             Class<Event> type = (Class<Event>) Class.forName(RESTORE_EVENT);
             MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, type, e -> {
                 if (e instanceof PlayerEvent pe && pe.getEntity() instanceof ServerPlayer player && BSPConfig.getOr(BSPConfig.KIT_DELIVER_ON_RESTORE, true)) {
+                    AWAITING_RESTORE.remove(player.getUUID());
                     PENDING.remove(player.getUUID());
                     deliver(player);
                 }

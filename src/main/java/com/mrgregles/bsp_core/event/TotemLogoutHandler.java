@@ -84,12 +84,36 @@ public final class TotemLogoutHandler {
         return sighting != null && sighting.instance().equals(placed.instance()) && sighting.holder() != null && !sighting.holder().equals(player.getUUID());
     }
 
-    /** After the identity scan and the pending-item hand-backs: the totems the logout placed come back if they still stand untouched. */
+    /** Players who logged in dead: the totems their logout placed come back at the respawn instead. */
+    private static final java.util.Set<java.util.UUID> AFTER_RESPAWN = new java.util.HashSet<>();
+
+    /**
+     * After the identity scan and the pending-item hand-backs: the totems the logout placed come back if they still stand untouched.
+     * Never into a dead player (they logged out on the death screen): a dead entity's inventory does not pass to the respawned one,
+     * so the totems stay standing until the respawn. The placements are kept in the data that survives death.
+     */
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            if (player.isDeadOrDying()) {
+                AFTER_RESPAWN.add(player.getUUID());
+            } else {
+                returnPlaced(player);
+            }
+        }
+    }
+
+    /** A respawn (not the trip home from the End) after a dead login: the totems the logout placed come back now. */
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!event.isEndConquered() && event.getEntity() instanceof ServerPlayer player && AFTER_RESPAWN.remove(player.getUUID())) {
             returnPlaced(player);
         }
+    }
+
+    @SubscribeEvent
+    public static void onLogoutForget(PlayerEvent.PlayerLoggedOutEvent event) {
+        AFTER_RESPAWN.remove(event.getEntity().getUUID()); // the placements stay recorded for their next login
     }
 
     /**

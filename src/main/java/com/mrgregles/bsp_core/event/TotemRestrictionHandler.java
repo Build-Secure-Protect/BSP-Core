@@ -76,7 +76,7 @@ public final class TotemRestrictionHandler {
      * Every tick: every totem in the player's inventory (and on their cursor) gets its id if it has none, is spent if it is a stale
      * copy, and is otherwise recorded as seen in this player's hands.
      */
-    private static void trackIdentity(ServerPlayer player) {
+    public static void trackIdentity(ServerPlayer player) {
         TotemLedger ledger = TotemLedger.get(player.server);
         long now = player.server.overworld().getGameTime();
         Inventory inv = player.getInventory();

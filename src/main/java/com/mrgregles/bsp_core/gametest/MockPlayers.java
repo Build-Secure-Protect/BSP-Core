@@ -29,4 +29,17 @@ public final class MockPlayers {
         player.setGameMode(mode);
         return player;
     }
+
+    /** The entity a respawn would make for {@code dead}: a fresh player with the same profile (and so the same UUID), alive, empty, with the persisted data. */
+    public static ServerPlayer respawned(GameTestHelper h, ServerPlayer dead) {
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        new EmbeddedChannel(connection);
+        ServerPlayer player = new ServerPlayer(h.getLevel().getServer(), h.getLevel(), dead.getGameProfile());
+        player.connection = new ServerGamePacketListenerImpl(h.getLevel().getServer(), connection, player);
+        player.setGameMode(dead.gameMode.getGameModeForPlayer());
+        // as Forge does on a respawn: the persisted part of the player's data passes to the new entity
+        player.getPersistentData().put(net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG,
+                dead.getPersistentData().getCompound(net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG).copy());
+        return player;
+    }
 }

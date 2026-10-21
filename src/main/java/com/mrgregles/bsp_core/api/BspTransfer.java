@@ -150,9 +150,10 @@ public final class BspTransfer {
     /**
      * Totems go back through {@link TotemInventories#giveBack} (never dropped); anything else is added or dropped. A totem that
      * arrives is recorded as held with the instance it carries: it came through the database, so it is the real one even when this
-     * server's ledger remembers another (a reissue on another server), and the identity check must not spend it.
+     * server's ledger remembers another (a reissue on another server), and the identity check must not spend it. The player's
+     * departure record here is cleared (they are back). {@code messageKey} null says nothing (the caller tells the player itself).
      */
-    public static void handBack(Player player, List<ItemStack> items, String messageKey) {
+    public static void handBack(Player player, List<ItemStack> items, @Nullable String messageKey) {
         if (items.isEmpty()) {
             return;
         }
@@ -171,7 +172,9 @@ public final class BspTransfer {
                 player.drop(stack.copy(), false);
             }
         }
-        player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.GOLD), false);
+        if (messageKey != null) {
+            player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.GOLD), false);
+        }
     }
 
     /**

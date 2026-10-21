@@ -153,7 +153,8 @@ public final class SeasonSync {
         }
     }
 
-    private static void deliver(MinecraftServer server, Map<UUID, List<String>> owed) {
+    /** Hands what the database held to the players online here who can take it, and parks the rest in {@code pendingItems}. Public for the tests. */
+    public static void deliver(MinecraftServer server, Map<UUID, List<String>> owed) {
         SeasonData season = SeasonData.get(server);
         owed.forEach((id, encoded) -> {
             List<ItemStack> items = new ArrayList<>();
@@ -168,7 +169,7 @@ public final class SeasonSync {
                 }
             }
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player != null) {
+            if (player != null && LoginSettle.canReceive(player)) {
                 // a totem that travelled with a transferring player goes back into their hand; prizes and the like are added as before
                 List<ItemStack> totems = new ArrayList<>(), rest = new ArrayList<>();
                 items.forEach(stack -> (com.mrgregles.bsp_core.totem.TotemInventories.isTotem(stack) ? totems : rest).add(stack));
@@ -177,7 +178,8 @@ public final class SeasonSync {
                     AdminService.giveItems(player, rest, "message.bsp_core.season.delivery");
                 }
             } else if (!items.isEmpty()) {
-                season.pendingItems.computeIfAbsent(id, k -> new ArrayList<>()).addAll(items); // they left in the meantime: keep it here for their next login
+                // they left in the meantime (kept for their next login), or wait for their restore or a respawn (handed over then)
+                season.pendingItems.computeIfAbsent(id, k -> new ArrayList<>()).addAll(items);
                 season.setDirty();
             }
         });
@@ -187,7 +189,11 @@ public final class SeasonSync {
     public static void fetchPending(MinecraftServer server) {
         if (NetworkStorage.enabled()) {
             List<UUID> online = new ArrayList<>();
-            server.getPlayerList().getPlayers().forEach(p -> online.add(p.getUUID()));
+            server.getPlayerList().getPlayers().forEach(p -> {
+                if (LoginSettle.canReceive(p)) {
+                    online.add(p.getUUID()); // a player waiting for their restore, or dead, collects after it or at the respawn
+                }
+            });
             NetworkStorage.takePending(online, owed -> deliver(server, owed));
         }
     }
