@@ -160,7 +160,7 @@ dependencies {
 
     // JEI: the API is compile-only, so BSP-Core runs without JEI; the full mod is loaded in dev runs only.
     // BSP Region Guard (optional at run time): BSP-Core asks its regions about totem-place and totem-drop when it is installed.
-    compileOnly fg.deobf("blank:bsp-region-guard:0.3.0")
+    compileOnly fg.deobf("blank:bsp-region-guard:0.4.0")
     // LuckPerms API (optional at run time): kits may be limited to LuckPerms groups; compat/LuckPermsBridge reaches the Forge or the Bukkit edition.
     compileOnly "net.luckperms:api:5.4"
     compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.20.0.112")

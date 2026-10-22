@@ -4,7 +4,8 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- The compile-time dependency on BSP-Region Guard reads its 0.4.0 jar (the 0.3.0 jar is gone from its checkout; its API is unchanged at version 5); nothing BSP-Core calls changed.
 
 ## [1.4.2] - 2026-10-21
 
