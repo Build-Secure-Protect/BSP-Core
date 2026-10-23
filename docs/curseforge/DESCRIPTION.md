@@ -76,7 +76,7 @@ Shops are wherever the server puts them: a Vendor Post with a figure of the serv
 
 <!-- feature: land_office -->
 
-With BSP Region Guard on the server, the Land Office sells land. Its screen is a map of the ground around you drawn from the terrain: plots for sale in amber, open ground dashed, your own claims in green, the outline you drew with the wand in white. Click a plot for its size and price, then BUY, ENLARGE or GIVE UP.
+With BSP Region Guard on the server, the Land Office sells land. Its screen is a map of the ground around you drawn from the terrain: plots for sale in amber, open ground dashed, your own claims in green, the outline you drew with the wand in white. Click a plot for its size and price, then BUY, ENLARGE or GIVE UP. When Region Guard sells land for Shatter Coins, every price reads in coins ("3 gold coins") and the foot of the screen shows the coins you carry: you pay from your inventory and get change.
 
 ## Wave Plasma: your totem, on tap
 
@@ -152,9 +152,10 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 <!-- render: anti_totem_block -->
 
 - **Anti Totem Block:** keeps totems and chosen machines out of spawn, hubs and arenas, and tells BSP-Teleport where homes and teleports are not allowed.
+- **Servers without totem placement:** list the safe servers of the network (spawn, a saferoom, a sanctuary) in `restrictions.noTotemServers`. Totems can be carried there but never placed or dropped, and one carried at logout goes back to its owner's last spot on a server that allows placement, so nobody parks a totem out of reach by logging off somewhere safe.
 - **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops, teams and kits across every server; add Redis and all of it is live. A kit taken on one server is taken everywhere; a team made on one exists on all.
 - **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams, kits, the bank, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards, BSP-Teleport moves teammates and lands Recall across servers, Region Guard sells the land, BSP-Velocity Additions carries the chat between servers.
 
 ## Status
 
-1.4.0 is the current release: the bank and shops, plasma across worlds, teams, kits and the boards on the Score Screens, on top of 1.0. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
+1.4.3 is the current release: the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins, on top of 1.0. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
