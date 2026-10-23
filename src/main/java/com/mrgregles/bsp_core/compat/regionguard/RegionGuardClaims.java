@@ -68,6 +68,31 @@ public final class RegionGuardClaims {
         }
     }
 
+    /** Whether Region Guard prices claims in Shatter Coins ({@code claims.currency = coins}); false when absent or older than API 6. */
+    public static boolean paysInCoins() {
+        if (!present()) {
+            return false;
+        }
+        try {
+            return Api.claims().paysInCoins();
+        } catch (LinkageError | RuntimeException e) {
+            return false; // a Region Guard before API 6: pieces, as always
+        }
+    }
+
+    /** An amount for a plot or open area as Region Guard words it ("5 gold coins"); null when it cannot say (older than API 6). */
+    @Nullable
+    public static String priceText(ServerLevel level, String regionId, long amount) {
+        if (!present()) {
+            return null;
+        }
+        try {
+            return Api.claims().priceText(level, regionId, amount);
+        } catch (LinkageError | RuntimeException e) {
+            return null;
+        }
+    }
+
     /** Plots for sale, open areas, the player's own claims, and other players' claims within {@link Plot#LOOK} blocks of {@code around}. */
     public static List<Plot> listings(ServerLevel level, UUID player, net.minecraft.core.BlockPos around) {
         if (!present()) {

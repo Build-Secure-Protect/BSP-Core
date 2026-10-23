@@ -49,8 +49,8 @@ public final class TotemRestrictionHandler {
         event.setCanceled(true);
         TotemInventories.giveBack(event.getPlayer(), stack.copy());
         if (event.getPlayer() instanceof ServerPlayer player) {
-            player.displayClientMessage(
-                    Component.translatable("message.bsp_core.shatter_totem.dimension_blocked").withStyle(ChatFormatting.RED), true);
+            player.displayClientMessage(Component.translatable(com.mrgregles.bsp_core.totem.NoTotemServers.here() ? "message.bsp_core.no_totem.no_place"
+                    : "message.bsp_core.shatter_totem.dimension_blocked").withStyle(ChatFormatting.RED), true);
         }
     }
 

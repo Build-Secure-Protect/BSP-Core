@@ -135,8 +135,8 @@ public class ShatterTotemItem extends BlockItem {
         if (!BSPConfig.isDimensionAllowed(ctx.getLevel().dimension().location())) {
             Player player = ctx.getPlayer();
             if (player != null && !ctx.getLevel().isClientSide) {
-                player.displayClientMessage(
-                        Component.translatable("message.bsp_core.shatter_totem.dimension_blocked").withStyle(ChatFormatting.RED), true);
+                player.displayClientMessage(Component.translatable(NoTotemServers.here() ? "message.bsp_core.no_totem.no_place"
+                        : "message.bsp_core.shatter_totem.dimension_blocked").withStyle(ChatFormatting.RED), true);
             }
             return InteractionResult.FAIL;
         }

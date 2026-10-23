@@ -15,6 +15,25 @@ public final class BspZones {
     /** For a teleport mod to enforce: no teleporting into the zone, none out of it, no setting a home in it. */
     public static final String TELEPORT_IN = ZoneLedger.TELEPORT_IN, TELEPORT_OUT = ZoneLedger.TELEPORT_OUT, SET_HOME = ZoneLedger.SET_HOME;
 
+    /**
+     * Whether this server allows no Shatter Totem placement anywhere ({@code restrictions.noTotemServers} lists its
+     * {@code storage.serverId}). Totems may still be held there; placing and dropping are refused in every world, so
+     * {@link BspPlayers#isDimensionAllowed} answers false for every dimension. For a region mod to show the rule.
+     */
+    public static boolean isNoTotemServer() {
+        return com.mrgregles.bsp_core.BSPConfig.isNoTotemServer();
+    }
+
+    /** Whether the server with this {@code storage.serverId} allows no Shatter Totem placement anywhere. */
+    public static boolean isNoTotemServer(String serverId) {
+        return com.mrgregles.bsp_core.BSPConfig.isNoTotemServer(serverId);
+    }
+
+    /** Every server listed in {@code restrictions.noTotemServers} (the same list is kept on every server). */
+    public static java.util.List<String> noTotemServers() {
+        return java.util.List.copyOf(com.mrgregles.bsp_core.BSPConfig.NO_TOTEM_SERVERS.get());
+    }
+
     /** True when an Anti Totem zone covering {@code pos} has the rule {@code key} switched on. Unknown keys are never blocked. */
     public static boolean isBlocked(ServerLevel level, BlockPos pos, String key) {
         return ZoneLedger.isBlocked(level, pos, key);

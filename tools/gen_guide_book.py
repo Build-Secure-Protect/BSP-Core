@@ -115,6 +115,7 @@ ENTRIES = [
     ("totem", "your_totem", "Your Shatter Totem", "bsp_core:shatter_totem", 0, [
         text("Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be crafted and it cannot be destroyed.$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."),
         text("Only one totem is ever yours by right, but you can hold others: any totem you steal becomes yours.$(br2)If you die to another player while carrying your totem, it is placed where you fell. A totem dropped on the ground places itself after a short while.", "Keeping it"),
+        text("A totem never goes offline with you. When you log out, every totem you carry is placed where you stood, so it can still be stolen; if it is still there, untouched, when you come back, it returns to you.", "Logging out"),
     ]),
     ("totem", "stealing", "Stealing and Defending", "minecraft:iron_sword", 1, [
         text("Right-click another player's placed totem and choose to steal it. A timer starts, and the owner is warned.$(br2)Stay close to the totem until the timer runs out and it is yours, with every upgrade on it."),

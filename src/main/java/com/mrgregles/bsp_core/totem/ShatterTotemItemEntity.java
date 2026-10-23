@@ -142,6 +142,16 @@ public class ShatterTotemItemEntity extends Entity {
 
     private void tryPlace() {
         ServerLevel level = (ServerLevel) level();
+        if (NoTotemServers.here()) {
+            // no placement on this server: the totem goes to its owner (into their hands here, or waiting for their next login)
+            var owner = TotemOwner.fromStack(getItem());
+            if (owner.isPresent()) {
+                com.mrgregles.bsp_core.admin.AdminService.deliver(level.getServer(), owner.get().uuid(), java.util.List.of(getItem().copy()), "message.bsp_core.transfer.returned");
+                discard();
+                return;
+            }
+            return; // an ownerless totem stays on the ground here: never placed on a server without totem placement
+        }
         if (TotemPlacer.place(level, blockPosition(), getItem())) {
             discard();
         } else {

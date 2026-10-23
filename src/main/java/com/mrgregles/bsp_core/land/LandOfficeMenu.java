@@ -34,6 +34,9 @@ public class LandOfficeMenu extends AbstractContainerMenu {
     @Nullable
     public int[] selection;
     public String message = "";
+    /** When Region Guard prices claims in Shatter Coins: the coin wording for the screen; null for pieces. */
+    @Nullable
+    public com.mrgregles.bsp_core.network.LandOfficeDataPacket.CoinTexts coins;
     public boolean messageOk = true;
     public int serial;
 
@@ -115,6 +118,48 @@ public class LandOfficeMenu extends AbstractContainerMenu {
         }
         List<Plot> plots = RegionGuardClaims.listings(sp.serverLevel(), sp.getUUID(), sp.blockPosition());
         BSPNetwork.sendTo(sp, new LandOfficeDataPacket(plots, Bank.pieces(sp.server, sp.getUUID()), RegionGuardClaims.present(),
-                RegionGuardClaims.claimsAllowed(sp.serverLevel()), menu.selection, message, ok));
+                RegionGuardClaims.claimsAllowed(sp.serverLevel()), menu.selection, message, ok, coinTexts(sp, plots, menu.selection)));
+    }
+
+    /**
+     * When Region Guard prices claims in Shatter Coins (API 6): its wording for every plot's price, cost per block and the quote for
+     * the outlined ground, and the coins the player carries. Null for pieces, or a Region Guard too old to word coin prices. Public for the tests.
+     */
+    @Nullable
+    public static LandOfficeDataPacket.CoinTexts coinTexts(ServerPlayer sp, List<Plot> plots, @Nullable int[] selection) {
+        if (!RegionGuardClaims.paysInCoins()) {
+            return null;
+        }
+        var level = sp.serverLevel();
+        List<String> price = new ArrayList<>(), perBlock = new ArrayList<>(), outline = new ArrayList<>();
+        for (Plot p : plots) {
+            String pt = p.kind() == Plot.FOR_SALE ? RegionGuardClaims.priceText(level, p.id(), p.price()) : "";
+            String bt = p.kind() == Plot.OPEN ? RegionGuardClaims.priceText(level, p.id(), p.costPerBlock()) : "";
+            String ot = "";
+            if (p.kind() == Plot.OPEN && selection != null && p.contains(selection)) {
+                long w = selection[2] - selection[0] + 1, d = selection[3] - selection[1] + 1;
+                ot = RegionGuardClaims.priceText(level, p.id(), w * d * p.costPerBlock());
+            }
+            if (pt == null || bt == null || ot == null) {
+                return null; // Region Guard could not word it: pieces, as before
+            }
+            price.add(pt);
+            perBlock.add(bt);
+            outline.add(ot);
+        }
+        return new LandOfficeDataPacket.CoinTexts(carried(sp), price, perBlock, outline);
+    }
+
+    /** The coins the player carries, largest first ("3 gold, 12 copper"), or "" for none. */
+    public static String carried(ServerPlayer sp) {
+        List<String> parts = new ArrayList<>();
+        var tiers = com.mrgregles.bsp_core.coin.CoinTier.values();
+        for (int i = tiers.length - 1; i >= 0; i--) {
+            int n = sp.getInventory().countItem(tiers[i].coin());
+            if (n > 0) {
+                parts.add(n + " " + tiers[i].key);
+            }
+        }
+        return String.join(", ", parts);
     }
 }

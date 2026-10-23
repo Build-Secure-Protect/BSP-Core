@@ -131,6 +131,9 @@ final class MySqlStore implements AutoCloseable {
                     + "message MEDIUMTEXT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX (uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("pending_items") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, "
                     + "item MEDIUMTEXT NOT NULL, INDEX (uuid))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("totem_spots") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, " + place + ", ms BIGINT NOT NULL)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("totem_returns") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, " + place
+                    + ", ms BIGINT NOT NULL, INDEX (server_id))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("steals") + " (" + place + ", owner_uuid CHAR(36) NULL, thief_uuid CHAR(36) NOT NULL, "
                     + "thief_name VARCHAR(32) NOT NULL, started_ms BIGINT NOT NULL, ends_ms BIGINT NOT NULL, "
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
@@ -277,6 +280,84 @@ final class MySqlStore implements AutoCloseable {
                 }
             }
             try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("pending_items") + " WHERE id = ?")) {
+                for (long id : ids) {
+                    ps.setLong(1, id);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            c.commit();
+            return out;
+        } catch (SQLException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    // ------------------------------------------------------------------ servers without totem placement
+
+    /** A player's last spot on a server that allows totem placement: the server, the world and the block. */
+    record TotemSpot(String serverId, String dimension, int x, int y, int z) {}
+
+    /** A request to the server named in {@code spot}: place the totems waiting for {@code player} at that spot. */
+    record TotemReturn(UUID player, TotemSpot spot) {}
+
+    void saveTotemSpot(UUID player, TotemSpot spot, long ms) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("REPLACE INTO " + t("totem_spots") + " (uuid, server_id, dimension, x, y, z, ms) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, spot.serverId());
+            ps.setString(3, spot.dimension());
+            ps.setInt(4, spot.x());
+            ps.setInt(5, spot.y());
+            ps.setInt(6, spot.z());
+            ps.setLong(7, ms);
+            ps.executeUpdate();
+        }
+    }
+
+    @javax.annotation.Nullable
+    TotemSpot readTotemSpot(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT server_id, dimension, x, y, z FROM " + t("totem_spots") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new TotemSpot(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getInt(4), rs.getInt(5)) : null;
+            }
+        }
+    }
+
+    void addTotemReturn(UUID player, TotemSpot spot, long ms) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("totem_returns") + " (uuid, server_id, dimension, x, y, z, ms) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, spot.serverId());
+            ps.setString(3, spot.dimension());
+            ps.setInt(4, spot.x());
+            ps.setInt(5, spot.y());
+            ps.setInt(6, spot.z());
+            ps.setLong(7, ms);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Takes out, and returns, the return requests addressed to this server. */
+    java.util.List<TotemReturn> takeTotemReturns() throws SQLException {
+        java.util.List<TotemReturn> out = new java.util.ArrayList<>();
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            java.util.List<Long> ids = new java.util.ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement("SELECT id, uuid, server_id, dimension, x, y, z FROM " + t("totem_returns") + " WHERE server_id = ? ORDER BY id FOR UPDATE")) {
+                ps.setString(1, serverId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        ids.add(rs.getLong(1));
+                        out.add(new TotemReturn(UUID.fromString(rs.getString(2)), new TotemSpot(rs.getString(3), rs.getString(4), rs.getInt(5), rs.getInt(6), rs.getInt(7))));
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("totem_returns") + " WHERE id = ?")) {
                 for (long id : ids) {
                     ps.setLong(1, id);
                     ps.addBatch();

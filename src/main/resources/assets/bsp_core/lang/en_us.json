@@ -1928,5 +1928,15 @@
   "gui.bsp_core.kits.f.cooldown": "Ready again in %s",
   "gui.bsp_core.kits.f.redeemed": "Taken already",
   "gui.bsp_core.kits.f.waiting": "Waiting for you",
-  "gui.bsp_core.kits.f.ladder": "RankUp's ladder"
+  "gui.bsp_core.kits.f.ladder": "RankUp's ladder",
+  "message.bsp_core.no_totem.held": "Shatter Totems cannot be placed down anywhere on this server. If you log out, it will go back to your previous position on a server where totem placement is allowed.",
+  "message.bsp_core.no_totem.held_kept": "Shatter Totems cannot be placed down anywhere on this server. If you log out, it will be kept for you and given back when you next log in.",
+  "message.bsp_core.no_totem.no_place": "No Shatter Totem placement anywhere on this server",
+  "message.bsp_core.no_totem.kept_on_death": "Shatter Totems cannot be placed down on this server: yours stays with you through the death.",
+  "message.bsp_core.no_totem.admin": "This server allows no Shatter Totem placement (restrictions.noTotemServers). The command runs anyway.",
+  "message.bsp_core.no_totem.placed_back": "The Shatter Totem you logged out with on a server without totem placement stands at %s on %s.",
+  "gui.bsp_core.land.coins": "coins %s",
+  "gui.bsp_core.land.coins_none": "none",
+  "gui.bsp_core.land.price_coins": "%s",
+  "gui.bsp_core.land.outline_coins": "Outline %s x %s: %s"
 }

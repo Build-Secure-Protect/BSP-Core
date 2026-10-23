@@ -1323,3 +1323,39 @@ Covered by GameTests `parked_totem_goes_back_by_the_totem_route_even_into_a_full
 - [ ] The totem still works afterwards: it shows its powers, can be placed, and is not turned into a spent husk after a minute.
 - [ ] Do the same while dead on arrival (log out on the death screen with keepInventory on, or let an admin delivery wait for you): the totem arrives at the respawn, the same way.
 - [ ] Owed ordinary items (a season prize) still arrive as before, dropped at your feet only when there is no room.
+
+## Servers without totem placement, part 1 (2026-10-23)
+
+Covered by GameTests `no_totem_server_bans_placement_but_not_holding_and_keeps_a_logged_out_totem` and `death_on_a_no_totem_server_keeps_the_totem_through_it`. Setup: put the test server's `storage.serverId` in `restrictions.noTotemServers` (server config), restart.
+
+- [ ] The server log at start says "No Shatter Totem placement anywhere on this server" and lists any totem already standing.
+- [ ] Holding a totem there: one gold line, "Shatter Totems cannot be placed down anywhere on this server. If you log out, it will be kept for you and given back when you next log in." Once per login, again after a respawn.
+- [ ] Right-click to place, or press Q: refused with "No Shatter Totem placement anywhere on this server"; the totem stays in hand.
+- [ ] Log out holding it, log back in: nothing was placed; the totem is back in your inventory.
+- [ ] Die there holding it: it is not dropped or placed; it is back in hand at the respawn.
+- [ ] `/bsp totem give <you>` there: a yellow warning line, and the totem is given.
+- [ ] Remove the server from the list and restart: placing works again.
+
+## Servers without totem placement, part 2: back to the previous position (2026-10-23)
+
+Covered by GameTests `no_totem_server_knows_the_previous_spot_and_says_where_a_totem_goes` and `returned_totem_is_placed_at_the_previous_spot_and_other_items_wait`; the SQL (`totem_spots`, `totem_returns`) is untested until the MySQL live test. Setup: two servers on one MySQL (and Redis), server B listed in `restrictions.noTotemServers` on both, server A not.
+
+- [ ] Stand somewhere on A holding a totem for more than 30 seconds, move to B (a teleport or `/server`): the totem is in your inventory on B, and the gold line ends "it will go back to your previous position on a server where totem placement is allowed".
+- [ ] Log out on B holding it: within a few seconds (at once with Redis) A's log says it placed the totem back at your last spot there; the block stands there.
+- [ ] Log in on A: a line tells you where the totem stands.
+- [ ] Log out on B holding a totem and log in on A at once (before A acts): the totem is in your hand and nothing is placed.
+- [ ] Stop A, log out on B holding a totem, start A: A places it when it starts.
+- [ ] A brand-new player who joins B first: the line ends "it will be kept for you and given back when you next log in"; logging out and back in gives the totem back.
+
+## Guide: logging out (2026-10-23)
+
+- [ ] The guide book's "Your Shatter Totem" entry has three pages; page 3 ("Logging out") fits on its page without being cut off. The book says nothing about servers without totem placement.
+
+## The Land Office with Shatter Coin prices (BSP Region Guard RG-C9, 2026-10-23)
+
+Covered by GameTests `api_coins_count_pay_with_change_and_give_like_the_wallet` and `land_office_sends_coin_prices_only_when_region_guard_prices_in_coins` (Region Guard is not loaded in the test server, so the coin display itself is checked here). Needs Region Guard 0.4.0 with API 6.
+
+- [ ] Region Guard in coin mode (`claims.currency = coins`), a plot priced 3 in gold: the office shows "3 gold coins" for it; the strip at the foot shows the coins you carry ("coins 5 gold, 12 copper"), not the bank balance; no "left after" line.
+- [ ] An open area shows its cost per block in coins, and an outline inside it quotes the total in coins.
+- [ ] Buy the plot: coins leave the inventory with change back; the bank balance does not move.
+- [ ] Region Guard in pieces mode: the office shows pieces, the balance and "left after", as before.

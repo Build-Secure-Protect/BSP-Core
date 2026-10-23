@@ -89,6 +89,11 @@ public final class ZoneHandler {
      * data, which survives death.
      */
     public static void holdTotems(ServerPlayer player) {
+        holdTotems(player, "message.bsp_core.zone.kept_on_death");
+    }
+
+    /** As {@link #holdTotems(ServerPlayer)}, telling the player with {@code messageKey}. */
+    public static void holdTotems(ServerPlayer player, String messageKey) {
         List<ItemStack> totems = TotemInventories.removeAll(player);
         if (totems.isEmpty()) {
             return;
@@ -97,7 +102,7 @@ public final class ZoneHandler {
         ListTag held = data.getList(HELD, Tag.TAG_COMPOUND);
         totems.forEach(t -> held.add(t.save(new CompoundTag())));
         data.put(HELD, held);
-        player.displayClientMessage(Component.translatable("message.bsp_core.zone.kept_on_death").withStyle(ChatFormatting.GOLD), false);
+        player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.GOLD), false);
     }
 
     /** Takes back, and clears, the totems held for a player since they died in a zone. */

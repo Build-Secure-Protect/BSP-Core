@@ -227,6 +227,7 @@ public final class BSPCommands {
     }
 
     private static int give(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        com.mrgregles.bsp_core.totem.NoTotemServers.warnAdmin(ctx.getSource());
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         FirstJoinHandler.grant(target, TotemLedger.get(ctx.getSource().getServer()));
         ctx.getSource().sendSuccess(() -> Component.translatable("command.bsp_core.totem.give", target.getDisplayName()), true);
@@ -234,6 +235,7 @@ public final class BSPCommands {
     }
 
     private static int reset(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        com.mrgregles.bsp_core.totem.NoTotemServers.warnAdmin(ctx.getSource());
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         TotemLedger.get(ctx.getSource().getServer()).clearGranted(target.getUUID());
         com.mrgregles.bsp_core.storage.NetworkStorage.clearGrant(target.getUUID());
@@ -244,6 +246,7 @@ public final class BSPCommands {
 
     /** A clean slate for a player: carried and placed totems gone, every record forgotten, a fresh first-join totem given. */
     private static int wipe(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        com.mrgregles.bsp_core.totem.NoTotemServers.warnAdmin(ctx.getSource());
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         var r = com.mrgregles.bsp_core.totem.TotemWipe.wipe(target);
         String line = target.getGameProfile().getName() + ": " + r.carried() + " carried and " + r.placed() + " placed totems gone, " + r.forgotten() + " ledger records and "

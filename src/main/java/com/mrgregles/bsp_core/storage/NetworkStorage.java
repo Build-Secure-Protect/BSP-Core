@@ -141,6 +141,11 @@ public final class NetworkStorage {
                     }
                 }
                 case "notice" -> collectNotices(srv);
+                case "totem_return" -> {
+                    if (payload.equals(BSPConfig.STORAGE_SERVER_ID.get())) {
+                        collectTotemReturns(srv);
+                    }
+                }
                 case "steal" -> refreshSteals();
                 case "team" -> {
                     try {
@@ -394,7 +399,63 @@ public final class NetworkStorage {
         }
         noticeTicks = 0;
         collectNotices(event.getServer());
+        collectTotemReturns(event.getServer());
         refreshSteals();
+    }
+
+    // ------------------------------------------------------------------ servers without totem placement
+
+    /** Records the player's latest spot on this server (one that allows totem placement), for a logout on a no-totem server to send a totem back to. */
+    public static void saveTotemSpot(UUID player, com.mrgregles.bsp_core.totem.NoTotemServers.Spot spot) {
+        long now = System.currentTimeMillis();
+        async("record a player's spot for totem returns", s -> s.saveTotemSpot(player, toRow(spot), now));
+    }
+
+    /** Reads the player's last spot on a server that allows totem placement; {@code then} gets null when there is none (server thread). */
+    public static void readTotemSpot(UUID player, Consumer<com.mrgregles.bsp_core.totem.NoTotemServers.Spot> then) {
+        async("read a player's spot for totem returns", s -> {
+            MySqlStore.TotemSpot row = s.readTotemSpot(player);
+            onServer(() -> then.accept(row == null ? null : fromRow(row)));
+        });
+    }
+
+    /**
+     * Asks the server named in {@code spot} to place the totems waiting for {@code player} at that spot. The totems must already be in
+     * {@code pending_items}: requests and items are written by the same storage thread, in order.
+     */
+    public static void requestTotemReturn(UUID player, com.mrgregles.bsp_core.totem.NoTotemServers.Spot spot) {
+        long now = System.currentTimeMillis();
+        async("ask a server to place a totem back", s -> {
+            s.addTotemReturn(player, toRow(spot), now);
+            publish("totem_return", spot.serverId());
+        });
+    }
+
+    /** Takes the return requests addressed to this server, with the items waiting for those players, and places the totems (server thread). */
+    private static void collectTotemReturns(MinecraftServer srv) {
+        async("collect totem return requests", s -> {
+            List<MySqlStore.TotemReturn> requests = s.takeTotemReturns();
+            if (requests.isEmpty()) {
+                return;
+            }
+            Map<UUID, com.mrgregles.bsp_core.totem.NoTotemServers.Spot> latest = new java.util.LinkedHashMap<>();
+            requests.forEach(r -> latest.put(r.player(), fromRow(r.spot()))); // a later request wins
+            Map<UUID, List<String>> owed = s.takePending(latest.keySet());
+            onServer(() -> latest.forEach((id, spot) -> {
+                List<String> left = com.mrgregles.bsp_core.totem.NoTotemServers.placeReturned(srv, id, spot, owed.getOrDefault(id, List.of()));
+                if (!left.isEmpty()) {
+                    addPending(id, left);
+                }
+            }));
+        });
+    }
+
+    private static MySqlStore.TotemSpot toRow(com.mrgregles.bsp_core.totem.NoTotemServers.Spot spot) {
+        return new MySqlStore.TotemSpot(spot.serverId(), spot.dimension(), spot.pos().getX(), spot.pos().getY(), spot.pos().getZ());
+    }
+
+    private static com.mrgregles.bsp_core.totem.NoTotemServers.Spot fromRow(MySqlStore.TotemSpot row) {
+        return new com.mrgregles.bsp_core.totem.NoTotemServers.Spot(row.serverId(), row.dimension(), new net.minecraft.core.BlockPos(row.x(), row.y(), row.z()));
     }
 
     // ------------------------------------------------------------------ steals in progress, visible from every server

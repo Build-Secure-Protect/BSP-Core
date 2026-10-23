@@ -4,8 +4,19 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.4.3] - 2026-10-23
+
+### Added
+- **Servers without totem placement** (no-totem servers, part 1). `restrictions.noTotemServers` lists servers of the network by their `storage.serverId` (empty by default; keep the same list on every server). On a listed server a Shatter Totem cannot be placed or dropped anywhere, in any world, but may be held. A player holding one there is told so once per login and after each respawn. A totem carried at logout there is never placed: it is kept in the database (or, without one, on that server) and comes back into the inventory at the next login. A death there keeps the totems with the player through it, as in an Anti Totem zone. A totem item lying on the ground there goes to its owner instead of placing itself. Totems already standing there stay and are listed in the log at start; `/bsp totem give`, `reset` and `wipe` still work there, with a warning. `BspZones.isNoTotemServer()`, `isNoTotemServer(serverId)` and `noTotemServers()` in the api; Region Guard's PvP-world fallback, which follows the allowed totem worlds, sees no PvP worlds on such a server. Two game tests.
+- **Servers without totem placement, part 2: back to the previous position.** With `storage.mode = "mysql"`, every server that allows totem placement records where each player last stood in a world that allows it (every 30 seconds while they play there, and at logout) in the shared table `totem_spots`. A server without totem placement reads that record at login: a totem the player logs out with there is kept in the database and the server they last stood on is asked to place it back at that spot (table `totem_returns`, announced over Redis kind `totem_return` and collected every `storage.noticeSeconds`, so a server that was down acts when it starts). The player is told where it stands, at their next login if they are away. A player who logs in somewhere before that collects the totem in hand, and nothing is placed. The line a holder reads ends with the matching promise: back to the previous position when one is known, kept for the next login when it is not. Two game tests (the SQL waits for the MySQL live test).
+- Guide book: "Your Shatter Totem" has a page on logging out (a totem never goes offline with you).
+- **Shatter Coins in the api** (BSP Region Guard request RG-C9): `BspCoins.tiers()`, `value(tier)`, `worth(player)`, `pay(player, value)` and `give(player, value)`, the coins a player carries counted as one balance in copper units, with the wallet's rules (smallest coins spent first with change, largest given first).
+- **The Land Office shows Shatter Coin prices** when BSP Region Guard prices claims in coins (its `claims.currency = coins`, API 6): a plot's price, an open area's cost per block and the quote for the outlined ground read as Region Guard words them ("3 gold coins"), the strip at the foot shows the coins the player carries instead of the bank balance, and the "left after" line is left out. With pieces, or a Region Guard older than API 6, the office looks as it always has. Two game tests.
+
 ### Changed
-- The compile-time dependency on BSP-Region Guard reads its 0.4.0 jar (the 0.3.0 jar is gone from its checkout; its API is unchanged at version 5); nothing BSP-Core calls changed.
+- The compile-time dependency on BSP-Region Guard reads its 0.4.0 jar (API 6 since 2026-10-23: rebuilt with `--refresh-dependencies`) (the 0.3.0 jar is gone from its checkout; its API is unchanged at version 5); nothing BSP-Core calls changed.
 
 ## [1.4.2] - 2026-10-21
 

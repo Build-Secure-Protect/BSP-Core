@@ -42,6 +42,11 @@ public final class TotemDeathHandler {
             com.mrgregles.bsp_core.zone.ZoneHandler.holdTotems(player); // in an Anti Totem zone the player keeps them through the death
             return;
         }
+        if (com.mrgregles.bsp_core.totem.NoTotemServers.here()) {
+            // no totem may be placed or dropped on this server: the player keeps them through the death, as in an Anti Totem zone
+            com.mrgregles.bsp_core.zone.ZoneHandler.holdTotems(player, "message.bsp_core.no_totem.kept_on_death");
+            return;
+        }
         List<ItemStack> totems = TotemInventories.removeAll(player);
         if (totems.isEmpty()) {
             return;

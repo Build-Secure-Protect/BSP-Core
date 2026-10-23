@@ -34,6 +34,11 @@ public final class TotemPlacer {
     /** As {@link #place}, returning where the block went, or null when no spot was free. */
     @Nullable
     public static BlockPos placeAt(ServerLevel level, BlockPos around, ItemStack totem) {
+        if (NoTotemServers.here()) {
+            // a server without totem placement places nothing; every caller keeps the totem another way when no spot is found
+            BSPCore.LOGGER.warn("Not placing a Shatter Totem at {} in {}: this server allows no totem placement (restrictions.noTotemServers)", around, level.dimension().location());
+            return null;
+        }
         // never inside an Anti Totem zone: the nearest spot outside it instead
         BlockPos pos = findSpot(level, com.mrgregles.bsp_core.zone.ZoneLedger.get(level.getServer()).outside(level, around));
         if (pos == null) {

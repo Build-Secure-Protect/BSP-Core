@@ -129,10 +129,10 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY)
+    @GameTest(template = EMPTY, timeoutTicks = 800)
     public void tank_rejects_glass_on_an_edge(GameTestHelper h) {
         buildTank(h, TANK, 3, 3, 3, Set.of(), TANK.offset(1, 0, 0));
-        h.runAfterDelay(5, () -> {
+        afterTicking(h, 5, () -> {
             for (BlockPos p : shell(TANK, 3, 3, 3)) {
                 h.assertBlockProperty(p, TankBlock.FORMED, false);
             }
@@ -140,7 +140,7 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY)
+    @GameTest(template = EMPTY, timeoutTicks = 800)
     public void tank_keeps_plasma_while_a_block_is_missing(GameTestHelper h) {
         buildTank(h, TANK, 3, 3, 3, Set.of(), null);
         TankPartBlockEntity master = entity(h, TANK, TankPartBlockEntity.class);
@@ -148,11 +148,11 @@ public class BspGameTests {
         master.add(1_000_000);
         BlockPos face = TANK.offset(1, 1, 0);
         h.setBlock(face, Blocks.AIR);
-        h.runAfterDelay(2, () -> {
+        afterTicking(h, 2, () -> {
             h.assertBlockProperty(TANK, TankBlock.FORMED, false);
             h.assertBlockProperty(TANK, TankBlock.ALONG_X, false);
             h.setBlock(face, ModBlocks.TANK_GLASS.get());
-            h.runAfterDelay(2, () -> {
+            afterTicking(h, 2, () -> {
                 h.assertBlockProperty(TANK, TankBlock.FORMED, true);
                 TankPartBlockEntity again = entity(h, TANK, TankPartBlockEntity.class);
                 h.assertTrue(again.stored() == 1_000_000, "plasma remembered: " + again.stored());
@@ -178,11 +178,11 @@ public class BspGameTests {
         h.succeed();
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void plasma_reaches_a_base(GameTestHelper h) {
         BlockPos start = new BlockPos(1, 1, 1);
         BlockPos base = lineToBase(h, start, TotemCableBlock.Kind.TETRIUM, 3, 0);
-        h.runAfterDelay(100, () -> {
+        afterTicking(h, 100, () -> {
             PlasmaExtractorBlockEntity extractor = entity(h, start, PlasmaExtractorBlockEntity.class);
             h.assertTrue(extractor.flow() == 100, "an Output 0 totem gives 100 mB/t, got " + extractor.flow());
             ProjectorBaseBlockEntity b = entity(h, base, ProjectorBaseBlockEntity.class);
@@ -191,19 +191,19 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void tetrium_reaches_fifteen_cables(GameTestHelper h) {
         BlockPos base = lineToBase(h, new BlockPos(1, 1, 1), TotemCableBlock.Kind.TETRIUM, 15, 0);
-        h.runAfterDelay(100, () -> {
+        afterTicking(h, 100, () -> {
             h.assertTrue(entity(h, base, ProjectorBaseBlockEntity.class).tank() > 0, "15 Tetrium cables are within reach");
             h.succeed();
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void tetrium_stops_at_sixteen_cables(GameTestHelper h) {
         BlockPos base = lineToBase(h, new BlockPos(1, 1, 1), TotemCableBlock.Kind.TETRIUM, 16, 0);
-        h.runAfterDelay(100, () -> {
+        afterTicking(h, 100, () -> {
             h.assertTrue(entity(h, base, ProjectorBaseBlockEntity.class).tank() == 0, "16 Tetrium cables are out of reach");
             h.succeed();
         });
@@ -211,7 +211,7 @@ public class BspGameTests {
 
     // ------------------------------------------------------------------ the totem stays in play
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void dropped_totem_ignores_hoppers(GameTestHelper h) {
         // a hopper over a chest: a dropped stone goes through; a dropped totem lies on the hopper untouched
         BlockPos chest = new BlockPos(2, 1, 2), hopper = chest.above();
@@ -222,7 +222,7 @@ public class BspGameTests {
         new TotemOwner(UUID.nameUUIDFromBytes("gametest".getBytes()), "Tester").applyTo(totem);
         BlockPos abs = h.absolutePos(hopper.above());
         h.getLevel().addFreshEntity(new com.mrgregles.bsp_core.totem.ShatterTotemItemEntity(h.getLevel(), abs.getX() + 0.5, abs.getY() + 0.5, abs.getZ() + 0.5, totem));
-        h.runAfterDelay(80, () -> {
+        afterTicking(h, 80, () -> {
             h.assertContainerContains(chest, net.minecraft.world.item.Items.STONE);
             if (h.getBlockEntity(chest) instanceof net.minecraft.world.Container c) {
                 for (int i = 0; i < c.getContainerSize(); i++) {
@@ -359,7 +359,7 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 240)
+    @GameTest(template = EMPTY, timeoutTicks = 940)
     public void extractor_moves_the_full_output(GameTestHelper h) {
         // Output 10 totem (6,000 mB/t), interface, one Illyrium cable into a port of a 3 x 3 x 3 tank: the face gives 1,000 mB/t, 20,000 mB a second
         BlockPos start = new BlockPos(1, 1, 2);
@@ -370,10 +370,10 @@ public class BspGameTests {
         buildTank(h, tank, 3, 3, 3, Set.of(port), null);
         TankPartBlockEntity master = entity(h, tank, TankPartBlockEntity.class);
         h.assertTrue(master.isMaster(), "tank formed");
-        h.runAfterDelay(100, () -> {
+        afterTicking(h, 100, () -> {
             long before = master.stored();
             h.assertTrue(before > 0, "plasma arrived, stored " + before);
-            h.runAfterDelay(20, () -> {
+            afterTicking(h, 20, () -> {
                 long gained = master.stored() - before;
                 TankPortBlockEntity p = entity(h, port, TankPortBlockEntity.class);
                 h.assertTrue(p.in() == 1000, "the port reads 1,000 mB/t, got " + p.in());
@@ -390,7 +390,7 @@ public class BspGameTests {
      * one slag have 30 ticks after. The shipped default must be 300. The timing itself is read from the loaded config, because the game
      * test server keeps a world copy in {@code run/world/serverconfig/bsp_core-server.toml} that does not follow a changed default.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 1200)
+    @GameTest(template = EMPTY, timeoutTicks = 1900)
     public void tetrium_crucible_takes_300_ticks(GameTestHelper h) {
         h.assertTrue(com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.getDefault() == 300, "the shipped default is 300 ticks per ore, got " + com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.getDefault());
         int ticks = com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.get();
@@ -400,8 +400,8 @@ public class BspGameTests {
         net.minecraft.world.item.Item raw = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "raw_tetrium"));
         h.assertTrue(be.getItems().insertItem(0, new net.minecraft.world.item.ItemStack(raw), false).isEmpty(), "the ore slot takes Raw Tetrium");
         h.assertTrue(be.getItems().insertItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL), false).isEmpty(), "the fuel slot takes coal");
-        h.runAfterDelay(ticks - 50, () -> h.assertTrue(be.getItems().getStackInSlot(2).isEmpty(), "no nuggets before " + ticks + " ticks"));
-        h.runAfterDelay(ticks + 30, () -> {
+        afterTicking(h, ticks - 50, () -> h.assertTrue(be.getItems().getStackInSlot(2).isEmpty(), "no nuggets before " + ticks + " ticks"));
+        afterTicking(h, ticks + 30, () -> {
             net.minecraft.world.item.ItemStack nuggets = be.getItems().getStackInSlot(2), slag = be.getItems().getStackInSlot(3);
             h.assertTrue(nuggets.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_NUGGET.get()) && nuggets.getCount() == 2, "two Tetrium Nuggets after " + ticks + " ticks, got " + nuggets);
             h.assertTrue(slag.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_SLAG.get()) && slag.getCount() == 1, "one Tetrium Slag after " + ticks + " ticks, got " + slag);
@@ -425,7 +425,7 @@ public class BspGameTests {
     }
 
     /** A vanilla furnace under a fed injector smelts in a third of its 200 ticks (Output 3 = 500 mB/t = x3); a plain one beside it has not finished. */
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1700)
     public void injector_speeds_a_furnace(GameTestHelper h) {
         BlockPos start = new BlockPos(2, 3, 2), inj = new BlockPos(7, 2, 2), furnace = inj.below(), control = new BlockPos(7, 1, 6);
         plasmaLineTo(h, start, 3, inj.above().east());
@@ -433,9 +433,8 @@ public class BspGameTests {
         h.setBlock(furnace, Blocks.FURNACE);
         h.setBlock(control, Blocks.FURNACE);
         h.setBlock(inj.east(), cable(TotemCableBlock.Kind.ILLYRIUM)); // a cable on a side: the injector only takes cables through its port
-        h.runAfterDelay(100, () -> {
-            var be = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
-            h.assertTrue(be.rate() >= 450, "plasma arriving at the injector, got " + be.rate() + " mB/t");
+        // polled, not timed from the test's start: a test late in a big batch may wait 250 ticks or more before its chunk ticks
+        pollThen(h, 700, () -> entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).rate() >= 450, () -> {
             h.assertBlockProperty(inj.above(), TotemCableBlock.SIDES[net.minecraft.core.Direction.DOWN.ordinal()], true); // the cable over the port reaches into it
             h.assertBlockProperty(inj.east(), TotemCableBlock.SIDES[net.minecraft.core.Direction.WEST.ordinal()], false); // the side cable does not
             for (BlockPos f : List.of(furnace, control)) {
@@ -443,12 +442,12 @@ public class BspGameTests {
                 fe.setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RAW_IRON));
                 fe.setItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL));
             }
-            h.runAfterDelay(120, () -> {
+            afterTicking(h, 120, () -> {
                 h.assertTrue(!entity(h, furnace, net.minecraft.world.level.block.entity.FurnaceBlockEntity.class).getItem(2).isEmpty(), "the injected furnace smelted within 120 ticks");
                 h.assertTrue(entity(h, control, net.minecraft.world.level.block.entity.FurnaceBlockEntity.class).getItem(2).isEmpty(), "the plain furnace needs 200 ticks");
                 h.succeed();
             });
-        });
+        }, () -> h.fail("plasma arriving at the injector, got " + entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).rate() + " mB/t"));
     }
 
     /** A Tetrium Crucible under a fed injector finishes an ore in a third of its ticks (300 -> 100); checked at half the plain time. */
@@ -472,7 +471,7 @@ public class BspGameTests {
     }
 
     /** An injector in a factory slice's Motivator cell gives that slice the curve's factor. */
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1100)
     public void injector_boosts_a_factory_slice(GameTestHelper h) {
         BlockPos c = new BlockPos(10, 1, 10); // controller facing north: the slice runs south (back) from it
         h.setBlock(c, ModBlocks.COIN_FACTORY.get().defaultBlockState().setValue(com.mrgregles.bsp_core.coin.CoinFactoryBlock.FACING, net.minecraft.core.Direction.NORTH));
@@ -484,7 +483,7 @@ public class BspGameTests {
         BlockPos inj = c.above(2).south(2); // the back Motivator cell
         plasmaLineTo(h, new BlockPos(2, 4, 12), 3, inj.above().east());
         injectorDown(h, inj);
-        h.runAfterDelay(120, () -> {
+        afterTicking(h, 120, () -> {
             var slice = entity(h, c, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
             h.assertTrue(slice.isFormed(), "the slice is formed");
             h.assertTrue(slice.plasmaRate() >= 450, "the slice reads its injector, got " + slice.plasmaRate() + " mB/t");
@@ -608,7 +607,7 @@ public class BspGameTests {
         h.succeed();
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void bank_atm_is_two_halves_that_stand_and_fall_together(GameTestHelper h) {
         BlockPos lower = new BlockPos(5, 1, 5), upper = lower.above();
         var block = com.mrgregles.bsp_core.registry.ModBlocks.BANK_ATM.get();
@@ -619,7 +618,7 @@ public class BspGameTests {
         h.assertTrue(h.getBlockEntity(upper) == null, "the upper half has none");
         h.assertTrue(state.getLightEmission(h.getLevel(), h.absolutePos(lower)) == 7, "it gives off light like a machine");
         h.setBlock(upper, Blocks.AIR);
-        h.runAfterDelay(2, () -> {
+        afterTicking(h, 2, () -> {
             h.assertBlock(lower, b -> b == Blocks.AIR, () -> "taking the upper half away removes the lower half too");
             h.succeed();
         });
@@ -891,7 +890,7 @@ public class BspGameTests {
         h.succeed();
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 1200)
     public void vendor_post_powers_the_block_beneath_while_open(GameTestHelper h) {
         var server = server(h);
         var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "post_" + Long.toHexString(System.nanoTime()), "Post Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
@@ -901,19 +900,17 @@ public class BspGameTests {
         var be = entity(h, post, com.mrgregles.bsp_core.shop.VendorPostBlockEntity.class);
         h.assertTrue(!be.assigned() && !h.getBlockState(post).getValue(com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN), "unassigned: closed");
         be.set(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "minecraft:villager", "");
-        h.runAfterDelay(25, () -> {
-            h.assertBlockProperty(post, com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN, true);
-            h.assertBlockProperty(lamp, net.minecraft.world.level.block.RedstoneLampBlock.LIT, true);
+        // polled, not timed from the test's start: a test late in a big batch may wait 250 ticks or more before its chunk ticks
+        var open = com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN;
+        var lit = net.minecraft.world.level.block.RedstoneLampBlock.LIT;
+        pollThen(h, 600, () -> h.getBlockState(post).getValue(open) && h.getBlockState(lamp).getValue(lit), () -> {
             // a game-time window that is closed now: it opens a quarter day from the current day time (the test world is
             // reused between runs with the daylight cycle on, so a fixed window would sometimes be open)
             int now = (int) (h.getLevel().getDayTime() % 24000);
             be.set(shop.id, new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, (now + 6000) % 24000, (now + 9000) % 24000), "minecraft:villager", "");
-            h.runAfterDelay(25, () -> {
-                h.assertBlockProperty(post, com.mrgregles.bsp_core.shop.VendorPostBlock.OPEN, false);
-                h.assertBlockProperty(lamp, net.minecraft.world.level.block.RedstoneLampBlock.LIT, false);
-                h.succeed();
-            });
-        });
+            pollThen(h, 400, () -> !h.getBlockState(post).getValue(open) && !h.getBlockState(lamp).getValue(lit), h::succeed,
+                    () -> h.fail("closed hours: the post closes and the lamp goes out; open=" + h.getBlockState(post).getValue(open) + " lit=" + h.getBlockState(lamp).getValue(lit)));
+        }, () -> h.fail("assigned and always open: the post opens and lights the lamp; open=" + h.getBlockState(post).getValue(open) + " lit=" + h.getBlockState(lamp).getValue(lit)));
     }
 
     @GameTest(template = EMPTY)
@@ -989,7 +986,7 @@ public class BspGameTests {
         h.succeedWhen(() -> h.assertTrue(display.shown.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && display.shopName.equals("Display Shop"), "the golden apple floats: " + display.shown));
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1100)
     public void market_stall_is_broken_until_assigned_then_lights_lamps_and_powers_below(GameTestHelper h) {
         var server = server(h);
         var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "stall_" + Long.toHexString(System.nanoTime()), "Stall Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
@@ -1020,7 +1017,7 @@ public class BspGameTests {
         h.assertTrue(display.linkShop(shop.id), "a Stall Display shows the stall's shop");
         display.setSkin(com.mrgregles.bsp_core.shop.StallSkin.NETHER);
         stall.assign(shop.id, com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");
-        h.runAfterDelay(80, () -> {
+        afterTicking(h, 80, () -> {
             display.refreshNow();
             var ds = h.getBlockState(displayPos);
             h.assertTrue(ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.SKIN) == com.mrgregles.bsp_core.shop.StallSkin.NETHER && !ds.getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN)
@@ -1031,15 +1028,15 @@ public class BspGameTests {
             h.assertTrue(h.getBlockState(lower).getLightEmission(h.getLevel(), h.absolutePos(lower)) == 7, "a whole nether stall glows");
             h.assertTrue(h.getBlockState(lamp).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT), "the lamp beneath is lit while open");
             com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, 0).left = 0;
-            h.runAfterDelay(25, () -> {
+            afterTicking(h, 25, () -> {
                 h.assertTrue(stall.open && !stall.stocked, "sold out: the stock lamp goes red, still open");
                 stall.assign("", com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");
-                h.runAfterDelay(25, () -> {
+                afterTicking(h, 25, () -> {
                     h.assertTrue(h.getBlockState(lower).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN) && h.getBlockState(upper).getValue(com.mrgregles.bsp_core.shop.MarketStallBlock.BROKEN), "unassigned: broken again");
                     h.assertTrue(!stall.open && stall.shown.isEmpty(), "dark counter");
                     h.assertTrue(!h.getBlockState(lamp).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT), "the lamp beneath is off");
                     h.setBlock(upper, Blocks.AIR);
-                    h.runAfterDelay(2, () -> {
+                    afterTicking(h, 2, () -> {
                         h.assertBlock(lower, b -> b == Blocks.AIR, () -> "taking the upper half away removes the lower half too");
                         h.succeed();
                     });
@@ -1074,7 +1071,7 @@ public class BspGameTests {
         h.succeed();
     }
 
-    @GameTest(template = EMPTY)
+    @GameTest(template = EMPTY, timeoutTicks = 800)
     public void api_totem_events_fire_for_other_mods(GameTestHelper h) {
         var server = server(h);
         UUID erin = UUID.randomUUID(), sam = UUID.randomUUID();
@@ -1103,7 +1100,7 @@ public class BspGameTests {
         totem.setOwner(new com.mrgregles.bsp_core.totem.TotemOwner(sam, "Sam"));
         h.assertTrue(seen.contains("changed"), "OwnerChanged fired from Erin to Sam: " + seen);
         h.setBlock(pos, Blocks.AIR);
-        h.runAfterDelay(2, () -> {
+        afterTicking(h, 2, () -> {
             h.assertTrue(seen.contains("removed"), "Removed fired for Sam's totem: " + seen);
             h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placed(server, sam).isEmpty(), "and the API no longer lists it");
             h.succeed();
@@ -1309,7 +1306,7 @@ public class BspGameTests {
         return out;
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1100)
     public void accelerator_ring_forms_when_seven_frames_stand_round_an_empty_middle(GameTestHelper h) {
         BlockPos intake = new BlockPos(4, 1, 4), hole = intake.above();
         h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
@@ -1317,12 +1314,12 @@ public class BspGameTests {
             h.setBlock(p, ModBlocks.ACCELERATOR_FRAME.get());
         }
         h.setBlock(hole, Blocks.STONE); // the middle must be empty: with a block there the ring stays unformed
-        h.runAfterDelay(45, () -> {
+        afterTicking(h, 45, () -> {
             var be = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
             h.assertTrue(!be.isFormed(), "not formed while the middle is blocked");
             h.assertTrue(be.hole().equals(h.absolutePos(hole)), "the controller knows where the middle is");
             h.setBlock(hole, Blocks.AIR);
-            h.runAfterDelay(60, () -> {
+            afterTicking(h, 60, () -> {
                 h.assertTrue(be.isFormed(), "formed once the middle is clear");
                 h.assertBlockProperty(intake, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
                 for (BlockPos p : ringFrames(intake)) {
@@ -1332,17 +1329,17 @@ public class BspGameTests {
                 h.assertTrue(be.missingFrames().isEmpty(), "nothing missing");
                 BlockPos corner = intake.east().above(2);
                 h.setBlock(corner, Blocks.AIR);
-                h.runAfterDelay(3, () -> {
+                afterTicking(h, 3, () -> {
                     h.assertTrue(!be.isFormed(), "a broken frame un-forms the ring at once");
                     h.assertBlockProperty(intake, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                     h.assertBlockProperty(intake.west(), com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                     h.assertTrue(entity(h, intake.west(), com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "the frames are freed");
                     h.assertTrue(be.missingFrames().size() == 1 && be.missingFrames().get(0).equals(h.absolutePos(corner)), "the missing frame is named");
                     h.setBlock(corner, ModBlocks.ACCELERATOR_FRAME.get());
-                    h.runAfterDelay(60, () -> {
+                    afterTicking(h, 60, () -> {
                         h.assertTrue(be.isFormed(), "whole again");
                         h.setBlock(intake, Blocks.AIR);
-                        h.runAfterDelay(3, () -> {
+                        afterTicking(h, 3, () -> {
                             h.assertBlockProperty(intake.west(), com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                             h.assertTrue(entity(h, intake.west(), com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "breaking the intake frees the frames");
                             h.succeed();
@@ -1353,31 +1350,31 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 300)
+    @GameTest(template = EMPTY, timeoutTicks = 1000)
     public void decelerator_forms_from_a_core_with_a_port_behind_it(GameTestHelper h) {
         BlockPos core = new BlockPos(8, 1, 8), behind = core.south(), inFront = core.north();
         h.setBlock(core, ModBlocks.DECELERATOR_CORE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.DeceleratorCoreBlock.FACING, net.minecraft.core.Direction.NORTH));
         h.setBlock(inFront, ModBlocks.DECELERATOR_PORT.get()); // in front of the core, not behind it: does not count
-        h.runAfterDelay(45, () -> {
+        afterTicking(h, 45, () -> {
             var be = entity(h, core, com.mrgregles.bsp_core.link.DeceleratorBlockEntity.class);
             h.assertTrue(!be.isFormed(), "a port in front does not form it");
             h.assertTrue(be.portPos().equals(h.absolutePos(behind)), "the port belongs behind the core");
             h.setBlock(behind, ModBlocks.DECELERATOR_PORT.get());
-            h.runAfterDelay(60, () -> {
+            afterTicking(h, 60, () -> {
                 h.assertTrue(be.isFormed(), "formed with the port behind");
                 h.assertBlockProperty(core, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
                 h.assertBlockProperty(behind, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, true);
                 h.assertBlockProperty(inFront, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                 h.assertTrue(h.absolutePos(core).equals(entity(h, behind, com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller()), "the port knows its core");
                 h.setBlock(behind, Blocks.AIR);
-                h.runAfterDelay(3, () -> {
+                afterTicking(h, 3, () -> {
                     h.assertTrue(!be.isFormed(), "breaking the port un-forms it at once");
                     h.assertBlockProperty(core, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                     h.setBlock(behind, ModBlocks.DECELERATOR_PORT.get());
-                    h.runAfterDelay(60, () -> {
+                    afterTicking(h, 60, () -> {
                         h.assertTrue(be.isFormed(), "whole again");
                         h.setBlock(core, Blocks.AIR);
-                        h.runAfterDelay(3, () -> {
+                        afterTicking(h, 3, () -> {
                             h.assertBlockProperty(behind, com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED, false);
                             h.assertTrue(entity(h, behind, com.mrgregles.bsp_core.link.LinkPartBlockEntity.class).controller() == null, "breaking the core frees the port");
                             h.succeed();
@@ -1388,7 +1385,7 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void link_cards_bind_decelerators_to_an_accelerator_within_its_link_limit(GameTestHelper h) {
         BlockPos intake = new BlockPos(3, 1, 3);
         h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
@@ -1431,7 +1428,7 @@ public class BspGameTests {
         h.assertTrue(com.mrgregles.bsp_core.link.LinkCardItem.isWritten(back) && !cores.get(1).isLinked() && a.links().size() == 2, "the card comes back and the slot is free");
         h.assertTrue(cores.get(3).plug(cards) == com.mrgregles.bsp_core.link.Links.Plug.LINKED && a.links().size() == 3, "the fourth core takes the free slot");
         h.setBlock(new BlockPos(10, 1, 12), Blocks.AIR);
-        h.runAfterDelay(2, () -> {
+        afterTicking(h, 2, () -> {
             h.assertTrue(a.links().size() == 2 && !a.hasLink(cores.get(3).here()), "a broken core is forgotten");
             h.assertTrue(a.takeExpander() && a.maxLinks() == 2, "with a slot free an expander comes out");
             var saved = a.saveWithoutMetadata();
@@ -1476,7 +1473,7 @@ public class BspGameTests {
         return core;
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1800)
     public void accelerator_sends_plasma_to_the_nether_with_its_powers_when_both_ends_have_rf(GameTestHelper h) {
         var server = server(h);
         ShatterTotemBlockEntity[] totem = new ShatterTotemBlockEntity[1];
@@ -1495,7 +1492,9 @@ public class BspGameTests {
             nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
             nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
         };
-        h.runAfterDelay(160, () -> {
+        // polled, not timed from the test's start: a test late in a big batch may wait 250 ticks or more before its chunk ticks
+        pollThen(h, 700, () -> a.isFormed() && a.inRate() > 0 && core.isFormed() && core.store().stored() > 0
+                && a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING, () -> {
             h.assertTrue(a.isFormed(), "ring formed");
             h.assertTrue(a.inRate() > 0, "plasma arrives at the intake");
             h.assertTrue(core.isFormed(), "the Nether core is formed in its forced chunk");
@@ -1510,35 +1509,38 @@ public class BspGameTests {
             h.assertTrue(!a.mayLink(h.makeMockPlayer()), "a stranger may not write a card at a fed intake");
             long before = core.store().stored();
             core.energy().fill(0);
-            h.runAfterDelay(45, () -> {
+            afterTicking(h, 45, () -> {
                 h.assertTrue(a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_THERE, "no RF there stops the hop: " + a.report(core.here()));
                 h.assertTrue(core.store().stored() == before, "nothing more arrived");
                 core.energy().fill(cap);
                 a.energy().fill(0);
-                h.runAfterDelay(45, () -> {
+                afterTicking(h, 45, () -> {
                     h.assertTrue(a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_HERE, "no RF here stops it too: " + a.report(core.here()));
                     h.assertTrue(core.store().stored() == before, "still nothing more");
                     cleanUp.run();
                     h.succeed();
                 });
             });
+        }, () -> {
+            cleanUp.run();
+            h.fail("the link did not start delivering: ring " + a.isFormed() + ", intake " + a.inRate() + ", core " + core.isFormed() + " " + core.store().stored() + ", " + a.report(core.here()));
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 400)
+    @GameTest(template = EMPTY, timeoutTicks = 1100)
     public void accelerator_shares_its_flow_equally_between_live_links(GameTestHelper h) {
         var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
         h.assertTrue(a.fitExpander(), "two links");
         var core1 = linkedDecelerator(h, h.getLevel(), h.absolutePos(new BlockPos(9, 1, 1)), a);
         var core2 = linkedDecelerator(h, h.getLevel(), h.absolutePos(new BlockPos(9, 1, 6)), a);
-        h.runAfterDelay(100, () -> {
+        afterTicking(h, 100, () -> {
             long s1 = core1.store().stored(), s2 = core2.store().stored();
             h.assertTrue(s1 > 0 && s2 > 0, "both received: " + s1 + " and " + s2);
             h.assertTrue(Math.abs(s1 - s2) <= Math.max(s1, s2) / 5, "about equal shares: " + s1 + " and " + s2);
             core2.energy().fill(0);
-            h.runAfterDelay(45, () -> {
+            afterTicking(h, 45, () -> {
                 long before = core1.store().stored();
-                h.runAfterDelay(20, () -> {
+                afterTicking(h, 20, () -> {
                     long gained = core1.store().stored() - before;
                     h.assertTrue(a.report(core2.here()).state() == com.mrgregles.bsp_core.link.Links.State.NO_RF_THERE, "the unpowered link sleeps");
                     h.assertTrue(gained >= 9_000 && gained <= 11_000, "the whole flow (500 mB/t) goes to the other link now: " + gained);
@@ -1576,6 +1578,19 @@ public class BspGameTests {
         }, () -> h.fail("an unforced far side is asleep (or still loaded): " + a.report(core.here()).state()));
     }
 
+    /**
+     * Runs {@code then} {@code ticks} ticks after the test's own area ticks blocks and entities. A test late in a big batch can wait 250
+     * ticks or more for that (the server, catching up, promotes chunks late), so a fixed delay counted from the test's start may run
+     * out before anything ticked. Once the area ticks, this is a plain delay.
+     */
+    private static void afterTicking(GameTestHelper h, int ticks, Runnable then) {
+        List<BlockPos> corners = List.of(h.absolutePos(new BlockPos(0, 1, 0)), h.absolutePos(new BlockPos(23, 1, 0)),
+                h.absolutePos(new BlockPos(0, 1, 23)), h.absolutePos(new BlockPos(23, 1, 23)));
+        pollThen(h, 700, () -> corners.stream().allMatch(c -> h.getLevel().shouldTickBlocksAt(net.minecraft.world.level.ChunkPos.asLong(c.getX() >> 4, c.getZ() >> 4))
+                        && h.getLevel().isPositionEntityTicking(c)),
+                () -> h.runAfterDelay(ticks, then), () -> h.fail("the test's area never started ticking"));
+    }
+
     /** Runs {@code then} on the first tick {@code ok} holds, checking once a tick for up to {@code ticks}; {@code fail} after that. */
     private static void pollThen(GameTestHelper h, int ticks, java.util.function.BooleanSupplier ok, Runnable then, Runnable fail) {
         if (ok.getAsBoolean()) {
@@ -1587,7 +1602,7 @@ public class BspGameTests {
         }
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 500)
+    @GameTest(template = EMPTY, timeoutTicks = 1200)
     public void nether_projector_keeps_its_chunk_loaded_from_an_overworld_totem_through_a_link(GameTestHelper h) {
         var server = server(h);
         ShatterTotemBlockEntity[] totem = new ShatterTotemBlockEntity[1];
@@ -1617,7 +1632,7 @@ public class BspGameTests {
             }
             nether.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
         };
-        h.runAfterDelay(120, () -> {
+        afterTicking(h, 120, () -> {
             var portBe = nether.getBlockEntity(far.south());
             h.assertTrue(core.outRate() > 0, "the port sends the plasma on into its cable: out " + core.outRate() + ", stored " + core.store().stored() + ", formed " + core.isFormed()
                     + ", in " + core.inRate() + ", port " + (portBe == null ? "none" : portBe.getClass().getSimpleName() + " controller " + ((com.mrgregles.bsp_core.link.LinkPartBlockEntity) portBe).controller())
@@ -1627,7 +1642,7 @@ public class BspGameTests {
             h.assertTrue(base.offered()[TotemUpgrades.Buff.ANCHOR.ordinal()] == 2, "Anchor II is offered in the Nether");
             int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(TotemUpgrades.Buff.ANCHOR);
             projector.toggle(anchorIndex); // the player picks Anchor on the projector
-            h.runAfterDelay(60, () -> {
+            afterTicking(h, 60, () -> {
                 var ledger = com.mrgregles.bsp_core.chunk.ChunkLedger.get(server);
                 var entry = ledger.projectors.get(projAt);
                 h.assertTrue(entry != null && entry.on && totemAt.equals(entry.totem), "the ledger lists the Nether projector under the Overworld totem: " + (entry == null ? "none" : entry.totem + " on=" + entry.on));
@@ -1638,7 +1653,7 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 200)
+    @GameTest(template = EMPTY, timeoutTicks = 900)
     public void accelerator_view_travels_whole_and_unlink_drops_the_card_at_the_far_end(GameTestHelper h) {
         BlockPos intake = new BlockPos(3, 1, 3), corePos = new BlockPos(10, 1, 3);
         h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
@@ -1646,7 +1661,7 @@ public class BspGameTests {
         h.assertTrue(a.fitExpander(), "an expander");
         var core = linkedDecelerator(h, h.getLevel(), h.absolutePos(corePos), a);
         core.energy().fill(0); // no RF there: the link reports it
-        h.runAfterDelay(45, () -> {
+        afterTicking(h, 45, () -> {
             var view = a.view();
             var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
             com.mrgregles.bsp_core.network.LinkViewPacket.encode(view, buf);
@@ -2050,6 +2065,223 @@ public class BspGameTests {
         h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.GOLD_INGOT) == 5 && !season.pendingItems.containsKey(who), "other owed items are added as before");
         player.getInventory().clearContent();
         ledger.forget(id);
+        h.succeed();
+    }
+
+    /** Runs {@code body} with this server listed in {@code restrictions.noTotemServers}, and puts the list back after (all in one tick, so no other test sees it). */
+    private static void asNoTotemServer(Runnable body) {
+        var before = new ArrayList<String>(com.mrgregles.bsp_core.BSPConfig.NO_TOTEM_SERVERS.get());
+        try {
+            var list = new ArrayList<String>(before);
+            list.add(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get());
+            com.mrgregles.bsp_core.BSPConfig.NO_TOTEM_SERVERS.set(list);
+            body.run();
+        } finally {
+            com.mrgregles.bsp_core.BSPConfig.NO_TOTEM_SERVERS.set(before);
+        }
+    }
+
+    @GameTest(template = EMPTY)
+    public void no_totem_server_bans_placement_but_not_holding_and_keeps_a_logged_out_totem(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        String here = com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get();
+        h.assertFalse(com.mrgregles.bsp_core.api.BspZones.isNoTotemServer(), "off until the server is listed");
+        BlockPos floor = new BlockPos(20, 1, 20);
+        h.setBlock(floor, Blocks.STONE);
+        var player = survivor(h);
+        UUID who = player.getUUID();
+        BlockPos stand = h.absolutePos(floor.above());
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(who, "Hazel").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        try {
+            asNoTotemServer(() -> {
+                h.assertTrue(com.mrgregles.bsp_core.api.BspZones.isNoTotemServer() && com.mrgregles.bsp_core.api.BspZones.isNoTotemServer(here)
+                        && com.mrgregles.bsp_core.api.BspZones.noTotemServers().contains(here), "the server is listed");
+                h.assertFalse(com.mrgregles.bsp_core.api.BspPlayers.isDimensionAllowed(h.getLevel().dimension().location()), "no world allows placement");
+                h.assertFalse(com.mrgregles.bsp_core.totem.TotemPlacer.place(h.getLevel(), stand, totem.copy()), "nothing places a totem here");
+                h.assertBlockNotPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+                // dropping is refused, and the totem stays in hand
+                player.getInventory().setItem(0, totem.copy());
+                var tossed = new net.minecraft.world.entity.item.ItemEntity(h.getLevel(), stand.getX(), stand.getY(), stand.getZ(), player.getInventory().removeItem(0, 1));
+                var toss = new net.minecraftforge.event.entity.item.ItemTossEvent(tossed, player);
+                com.mrgregles.bsp_core.event.TotemRestrictionHandler.onToss(toss);
+                h.assertTrue(toss.isCanceled() && totemsHeld(player, id) == 1, "a totem cannot be dropped, and holding it is fine");
+                // the rule is told once per login
+                com.mrgregles.bsp_core.totem.NoTotemServers.forgetTold(who);
+                h.assertTrue(com.mrgregles.bsp_core.totem.NoTotemServers.tellOnce(player), "the holder is told the rule");
+                h.assertFalse(com.mrgregles.bsp_core.totem.NoTotemServers.tellOnce(player), "once");
+                com.mrgregles.bsp_core.totem.NoTotemServers.forgetTold(who);
+                // logout with it: nothing is placed; it is kept for the next login and counted in transit
+                com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(player);
+                h.assertBlockNotPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+                h.assertTrue(totemsHeld(player, id) == 0, "it left the inventory");
+                var kept = season.pendingItems.getOrDefault(who, List.of());
+                h.assertTrue(kept.size() == 1 && id.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(kept.get(0))), "it waits for the next login");
+                var s = ledger.sighting(id);
+                h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.IN_TRANSIT, "counted in transit, never lost: " + s);
+                // the next login: back in the inventory, held
+                com.mrgregles.bsp_core.admin.AdminService.handOverOwed(player);
+                h.assertTrue(totemsHeld(player, id) == 1 && !season.pendingItems.containsKey(who), "given back at the next login");
+                s = ledger.sighting(id);
+                h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && who.equals(s.holder()), "held again: " + s);
+            });
+            h.assertTrue(com.mrgregles.bsp_core.api.BspPlayers.isDimensionAllowed(h.getLevel().dimension().location()), "unlisted again: placement allowed");
+        } finally {
+            player.getInventory().clearContent();
+            season.pendingItems.remove(who);
+            ledger.forget(id);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void api_coins_count_pay_with_change_and_give_like_the_wallet(GameTestHelper h) {
+        var tiers = com.mrgregles.bsp_core.api.BspCoins.tiers();
+        h.assertTrue(tiers.equals(List.of("copper", "gold", "diamond", "netherite", "illyrium")), "the tiers, cheapest first: " + tiers);
+        for (var t : com.mrgregles.bsp_core.coin.CoinTier.values()) {
+            h.assertTrue(com.mrgregles.bsp_core.api.BspCoins.value(t.key) == t.value() && com.mrgregles.bsp_core.api.BspCoins.value(t.key.toUpperCase()) == t.value(),
+                    "a coin's worth follows the tier: " + t.key);
+        }
+        h.assertTrue(com.mrgregles.bsp_core.api.BspCoins.value("emerald") == 0, "an unknown tier is worth nothing");
+        var player = survivor(h);
+        int gold = com.mrgregles.bsp_core.coin.CoinTier.GOLD.value(), diamond = com.mrgregles.bsp_core.coin.CoinTier.DIAMOND.value();
+        com.mrgregles.bsp_core.api.BspCoins.give(player, 3 * gold);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspCoins.worth(player) == 3 * gold && com.mrgregles.bsp_core.api.BspCoins.worth(player) == com.mrgregles.bsp_core.coin.CoinWallet.totalValue(player),
+                "give hands out the value; worth counts it as the wallet does");
+        h.assertFalse(com.mrgregles.bsp_core.api.BspCoins.pay(player, 3 * gold + diamond), "short: refused");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspCoins.worth(player) == 3 * gold, "and nothing taken");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspCoins.pay(player, gold + 1) && com.mrgregles.bsp_core.api.BspCoins.worth(player) == 2 * gold - 1,
+                "paying takes the value with change back");
+        h.assertTrue(com.mrgregles.bsp_core.api.BspCoins.pay(player, 0) && com.mrgregles.bsp_core.api.BspCoins.worth(player) == 2 * gold - 1, "nothing to pay takes nothing");
+        player.getInventory().clearContent();
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void land_office_sends_coin_prices_only_when_region_guard_prices_in_coins(GameTestHelper h) {
+        var player = survivor(h);
+        var plots = List.of(new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot("plot1", "Plot One", 0, 0, 15, 15, 3, 0, 0, 0,
+                        com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot.FOR_SALE, ""),
+                new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot("open1", "Open One", -50, -50, 50, 50, 0, 2, 8, 32,
+                        com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot.OPEN, ""));
+        // without Region Guard in coin mode (absent in this run): no coin wording, the screen shows pieces as always
+        h.assertTrue(com.mrgregles.bsp_core.land.LandOfficeMenu.coinTexts(player, plots, new int[]{0, 0, 9, 9}) == null, "pieces: no coin texts");
+        // the coins the player carries, largest first
+        h.assertTrue(com.mrgregles.bsp_core.land.LandOfficeMenu.carried(player).isEmpty(), "no coins: empty");
+        player.getInventory().add(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.COINS.get(com.mrgregles.bsp_core.coin.CoinTier.COPPER).get(), 12));
+        player.getInventory().add(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.COINS.get(com.mrgregles.bsp_core.coin.CoinTier.GOLD).get(), 3));
+        h.assertTrue(com.mrgregles.bsp_core.land.LandOfficeMenu.carried(player).equals("3 gold, 12 copper"), "carried: " + com.mrgregles.bsp_core.land.LandOfficeMenu.carried(player));
+        // the coin wording travels with the office's data, plot by plot
+        var coins = new com.mrgregles.bsp_core.network.LandOfficeDataPacket.CoinTexts("3 gold, 12 copper", List.of("3 gold coins", ""), List.of("", "2 copper coins"), List.of("", "200 copper coins"));
+        var out = new com.mrgregles.bsp_core.network.LandOfficeDataPacket(plots, 500, true, true, new int[]{0, 0, 9, 9}, "", true, coins);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.LandOfficeDataPacket.encode(out, buf);
+        var in = com.mrgregles.bsp_core.network.LandOfficeDataPacket.decode(buf);
+        h.assertTrue(coins.equals(in.coins()), "coin texts round-trip: " + in.coins());
+        var plain = new com.mrgregles.bsp_core.network.LandOfficeDataPacket(plots, 500, true, true, null, "", true);
+        buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.LandOfficeDataPacket.encode(plain, buf);
+        h.assertTrue(com.mrgregles.bsp_core.network.LandOfficeDataPacket.decode(buf).coins() == null, "and none when pricing in pieces");
+        player.getInventory().clearContent();
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void no_totem_server_knows_the_previous_spot_and_says_where_a_totem_goes(GameTestHelper h) {
+        var player = survivor(h);
+        UUID who = player.getUUID();
+        BlockPos stand = h.absolutePos(new BlockPos(8, 2, 20));
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        String here = com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get();
+        // on a server that allows placement the spot is recorded with this server's id
+        var spot = com.mrgregles.bsp_core.totem.NoTotemServers.spotHere(player);
+        h.assertTrue(spot != null && spot.serverId().equals(here) && spot.dimension().equals(h.getLevel().dimension().location().toString()),
+                "the spot here is recorded: " + spot);
+        asNoTotemServer(() -> {
+            h.assertTrue(com.mrgregles.bsp_core.totem.NoTotemServers.spotHere(player) == null, "never on a server without totem placement");
+            // the lookup at login found nothing: the line says the totem is kept for the next login
+            com.mrgregles.bsp_core.totem.NoTotemServers.lookedUp(who, null);
+            h.assertFalse(com.mrgregles.bsp_core.totem.NoTotemServers.previousPositionKnown(player), "no previous spot");
+            h.assertTrue(com.mrgregles.bsp_core.totem.NoTotemServers.rule(player).getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t
+                    && t.getKey().equals("message.bsp_core.no_totem.held_kept"), "the kept-for-you ending");
+            // it found one: the line says it goes back to the previous position
+            var previous = new com.mrgregles.bsp_core.totem.NoTotemServers.Spot("survival-1", "minecraft:overworld", new BlockPos(100, 64, -40));
+            com.mrgregles.bsp_core.totem.NoTotemServers.lookedUp(who, previous);
+            h.assertTrue(com.mrgregles.bsp_core.totem.NoTotemServers.previousPositionKnown(player) && previous.equals(com.mrgregles.bsp_core.totem.NoTotemServers.previous(who)), "the previous spot is known");
+            h.assertTrue(com.mrgregles.bsp_core.totem.NoTotemServers.rule(player).getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t
+                    && t.getKey().equals("message.bsp_core.no_totem.held"), "the owner's line: it goes back to the previous position");
+        });
+        com.mrgregles.bsp_core.totem.NoTotemServers.onLogout(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent(player));
+        h.assertFalse(com.mrgregles.bsp_core.totem.NoTotemServers.previousPositionKnown(player), "forgotten at logout");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void returned_totem_is_placed_at_the_previous_spot_and_other_items_wait(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        BlockPos floor = new BlockPos(14, 1, 20);
+        h.setBlock(floor, Blocks.STONE);
+        UUID owner = UUID.randomUUID();
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(owner, "Briar").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        var spot = new com.mrgregles.bsp_core.totem.NoTotemServers.Spot(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get(),
+                h.getLevel().dimension().location().toString(), h.absolutePos(floor.above()));
+        var emerald = new ItemStack(net.minecraft.world.item.Items.EMERALD, 3);
+        List<String> left = com.mrgregles.bsp_core.totem.NoTotemServers.placeReturned(server, owner, spot,
+                List.of(totem.save(new net.minecraft.nbt.CompoundTag()).toString(), emerald.save(new net.minecraft.nbt.CompoundTag()).toString()));
+        try {
+            h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+            var be = entity(h, floor.above(), ShatterTotemBlockEntity.class);
+            h.assertTrue(be.isOwner(owner), "the owner's totem stands at the previous spot");
+            h.assertTrue(ledger.placedFor(owner) != null && ledger.placedFor(owner).contains(net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(floor.above()))),
+                    "and the ledger knows it is placed there");
+            h.assertTrue(left.size() == 1 && ItemStack.of(net.minecraft.nbt.TagParser.parseTag(left.get(0))).is(net.minecraft.world.item.Items.EMERALD),
+                    "other items go back to wait for the player: " + left);
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            h.fail("unreadable item left over: " + e);
+        } finally {
+            h.setBlock(floor.above(), Blocks.AIR);
+            ledger.forget(id);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void death_on_a_no_totem_server_keeps_the_totem_through_it(GameTestHelper h) {
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server(h));
+        var player = survivor(h);
+        BlockPos stand = h.absolutePos(new BlockPos(20, 2, 4));
+        player.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(player.getUUID(), "Ash").applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        player.getInventory().setItem(0, totem);
+        net.minecraft.server.level.ServerPlayer[] alive = new net.minecraft.server.level.ServerPlayer[1];
+        try {
+            asNoTotemServer(() -> {
+                com.mrgregles.bsp_core.event.TotemDeathHandler.onDeath(new net.minecraftforge.event.entity.living.LivingDeathEvent(player, player.damageSources().generic()));
+                h.assertTrue(totemsHeld(player, id) == 0, "taken out before the drops");
+                h.assertTrue(h.getLevel().getEntitiesOfClass(com.mrgregles.bsp_core.totem.ShatterTotemItemEntity.class, new net.minecraft.world.phys.AABB(stand).inflate(8)).isEmpty(),
+                        "not dropped on the ground");
+                alive[0] = com.mrgregles.bsp_core.gametest.MockPlayers.respawned(h, player);
+                com.mrgregles.bsp_core.zone.ZoneHandler.onRespawn(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent(alive[0], false));
+                h.assertTrue(totemsHeld(alive[0], id) == 1, "back in hand at the respawn");
+            });
+        } finally {
+            if (alive[0] != null) {
+                alive[0].getInventory().clearContent();
+            }
+            ledger.forget(id);
+        }
         h.succeed();
     }
 

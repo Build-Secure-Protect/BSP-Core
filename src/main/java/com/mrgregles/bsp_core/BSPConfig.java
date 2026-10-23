@@ -43,6 +43,7 @@ public final class BSPConfig {
 
     /** Dimensions in which a Shatter Totem may be placed, dropped or auto-placed. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_DIMENSIONS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> NO_TOTEM_SERVERS;
 
     /** Seconds a dropped totem lies on the ground before it places itself as a block. */
     public static final ForgeConfigSpec.IntValue GROUND_SECONDS_BEFORE_PLACE;
@@ -254,6 +255,11 @@ public final class BSPConfig {
                 .defineListAllowEmpty("allowedDimensions",
                         List.of("minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"),
                         o -> o instanceof String);
+        NO_TOTEM_SERVERS = BUILDER
+                .comment("Servers of the network (their storage.serverId) where a Shatter Totem cannot be placed or dropped anywhere. Totems may still be held there;",
+                        "one carried at logout goes back to the player's previous position on a server that allows placement (or, if they never stood on one,",
+                        "waits in the database and is handed back at their next login). Keep the same list on every server.")
+                .defineListAllowEmpty("noTotemServers", List.of(), o -> o instanceof String);
         GROUND_SECONDS_BEFORE_PLACE = BUILDER
                 .comment("Seconds a dropped totem waits on the ground before placing itself as a block.")
                 .defineInRange("groundSecondsBeforePlace", 30, 1, 3600);
@@ -627,8 +633,22 @@ public final class BSPConfig {
         SPEC = BUILDER.build();
     }
 
+    /** Whether this server is listed in {@code restrictions.noTotemServers}: no Shatter Totem may be placed or dropped anywhere on it. */
+    public static boolean isNoTotemServer() {
+        return isNoTotemServer(getOr(STORAGE_SERVER_ID, ""));
+    }
+
+    /** Whether the server with this {@code storage.serverId} is listed in {@code restrictions.noTotemServers}. */
+    public static boolean isNoTotemServer(String serverId) {
+        try {
+            return serverId != null && !serverId.isEmpty() && NO_TOTEM_SERVERS.get().contains(serverId);
+        } catch (IllegalStateException notLoaded) {
+            return false;
+        }
+    }
+
     public static boolean isDimensionAllowed(net.minecraft.resources.ResourceLocation dimension) {
-        return ALLOWED_DIMENSIONS.get().contains(dimension.toString());
+        return !isNoTotemServer() && ALLOWED_DIMENSIONS.get().contains(dimension.toString()); // a no-totem server allows placement nowhere
     }
 
     private static boolean isFraction(Object o) {

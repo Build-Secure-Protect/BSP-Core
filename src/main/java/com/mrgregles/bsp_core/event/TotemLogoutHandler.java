@@ -57,6 +57,10 @@ public final class TotemLogoutHandler {
         if (totems.isEmpty()) {
             return;
         }
+        if (com.mrgregles.bsp_core.totem.NoTotemServers.here()) {
+            com.mrgregles.bsp_core.totem.NoTotemServers.keepForNextLogin(player, totems); // nothing is placed on a server without totem placement
+            return;
+        }
         TotemPlacer.Target target = TotemPlacer.safeTargetFor(player);
         for (ItemStack totem : totems) {
             com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);

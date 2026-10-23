@@ -64,6 +64,7 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
             menu.selection = m.selection();
             menu.message = m.message();
             menu.messageOk = m.ok();
+            menu.coins = m.coins();
             menu.serial++;
         }
     }
@@ -320,7 +321,9 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
         g.fill(x + SX - 2, y + SY + SH + 6, x + W - SX + 2, y + H - 6, SCREEN_EDGE);
         g.fill(x + SX, y + SY + SH + 8, x + W - SX, y + H - 8, SCREEN);
         String strip = tr(menu.present ? (menu.allowed ? "strip" : "strip_no_claims") : "strip_absent").getString() + " / " + Bank.serverId();
-        String bal = tr("balance", Bank.format(menu.balance)).getString();
+        String bal = menu.coins != null
+                ? tr("coins", menu.coins.carried().isEmpty() ? tr("coins_none").getString() : menu.coins.carried()).getString() // coin prices: the coins that pay
+                : tr("balance", Bank.format(menu.balance)).getString();
         CashMachine.fit(g, font, strip, x + SX + 6, y + SY + SH + 12, W - 2 * SX - 16 - font.width(bal), PHOS_DIM);
         g.drawString(font, bal, x + W - SX - 6 - font.width(bal), y + SY + SH + 12, PHOS_DIM, false);
     }
@@ -357,14 +360,21 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
         ty += CashMachine.wrap(g, font, Component.literal(sel.name()), PX + 3, ty, PW - 6, sel.kind() == Plot.MINE ? PHOS : AMBER) + 3;
         ty += CashMachine.wrap(g, font, sel.kind() == Plot.OTHER ? tr("kind_other", sel.owner()) : tr(sel.kind() == Plot.MINE ? "kind_mine" : sel.kind() == Plot.OPEN ? "kind_open" : "kind_sale"), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
         ty += CashMachine.wrap(g, font, tr("size", sel.width(), sel.depth()), PX + 3, ty, PW - 6, PHOS) + 3;
+        int at = menu.plots.indexOf(sel);
+        var coins = menu.coins != null && at >= 0 && at < menu.coins.price().size() ? menu.coins : null; // Region Guard prices in Shatter Coins
         if (sel.kind() == Plot.FOR_SALE) {
-            ty += CashMachine.wrap(g, font, tr("price", Bank.format(sel.price())), PX + 3, ty, PW - 6, AMBER) + 3;
-            ty += CashMachine.wrap(g, font, tr("after", Bank.format(Math.max(0, menu.balance - sel.price()))), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+            if (coins != null) {
+                ty += CashMachine.wrap(g, font, tr("price_coins", coins.price().get(at)), PX + 3, ty, PW - 6, AMBER) + 3;
+            } else {
+                ty += CashMachine.wrap(g, font, tr("price", Bank.format(sel.price())), PX + 3, ty, PW - 6, AMBER) + 3;
+                ty += CashMachine.wrap(g, font, tr("after", Bank.format(Math.max(0, menu.balance - sel.price()))), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+            }
         } else if (sel.kind() == Plot.OPEN) {
-            ty += CashMachine.wrap(g, font, tr("per_block", Bank.format(sel.costPerBlock()), sel.minSize(), sel.maxSize()), PX + 3, ty, PW - 6, AMBER) + 3;
+            ty += CashMachine.wrap(g, font, tr("per_block", coins != null ? coins.perBlock().get(at) : Bank.format(sel.costPerBlock()), sel.minSize(), sel.maxSize()), PX + 3, ty, PW - 6, AMBER) + 3;
             if (menu.selection != null && sel.contains(menu.selection)) {
                 int w = menu.selection[2] - menu.selection[0] + 1, d = menu.selection[3] - menu.selection[1] + 1;
-                ty += CashMachine.wrap(g, font, tr("outline", w, d, Bank.format((long) w * d * sel.costPerBlock())), PX + 3, ty, PW - 6, PHOS) + 3;
+                ty += CashMachine.wrap(g, font, coins != null ? tr("outline_coins", w, d, coins.outline().get(at))
+                        : tr("outline", w, d, Bank.format((long) w * d * sel.costPerBlock())), PX + 3, ty, PW - 6, PHOS) + 3;
                 // how close the outline lies to the nearest other plot or claim
                 Plot near = null;
                 int best = Integer.MAX_VALUE;

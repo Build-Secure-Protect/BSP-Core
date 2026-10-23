@@ -27,6 +27,10 @@ Only one totem is ever yours by right, but you can hold others: any totem you st
 
 If you die to another player while carrying your totem, it is placed where you fell. A totem dropped on the ground places itself after a short while.
 
+**Page 3: Logging out**
+
+A totem never goes offline with you. When you log out, every totem you carry is placed where you stood, so it can still be stolen; if it is still there, untouched, when you come back, it returns to you.
+
 ## Stealing and Defending
 
 **Page 1**
