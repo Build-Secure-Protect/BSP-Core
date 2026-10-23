@@ -89,10 +89,10 @@ public final class PromptHud implements IGuiOverlay {
         Component line = Component.literal(m.inviterName() + " · ").withStyle(s -> s.withColor(active ? TEXT : MUTED))
                 .append(Component.literal(m.team()).withStyle(c == null ? ChatFormatting.AQUA : c));
         CashMachine.fit(g, font, line.getString(), tx, y + 12, tw, active ? TEXT : MUTED);
-        small(g, font, Component.translatable("hud.bsp_core.team.invite.about", m.members(), m.maxMembers(), m.leader()).getString(), tx, y + 23, MUTED);
+        small(g, font, Component.translatable("hud.bsp_core.team.invite.about", m.members(), m.maxMembers(), m.leader()).getString(), tx, y + 23, tw, MUTED);
         String accept = TeamKeys.ACCEPT.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
         String decline = TeamKeys.DECLINE.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
-        small(g, font, Component.translatable("hud.bsp_core.team.invite.keys", accept, decline, seconds).getString(), tx, y + 31, active ? TQ & 0xFFFFFF : MUTED);
+        small(g, font, Component.translatable("hud.bsp_core.team.invite.keys", accept, decline, seconds).getString(), tx, y + 31, tw, active ? TQ & 0xFFFFFF : MUTED);
         // the time left, as a line along the bottom edge
         int full = Math.max(1, m.seconds());
         int w = (int) ((long) CW * Math.min(seconds, full) / full);
@@ -100,9 +100,15 @@ public final class PromptHud implements IGuiOverlay {
     }
 
     private static void small(GuiGraphics g, Font font, String text, int x, int y, int colour) {
+        small(g, font, text, x, y, Integer.MAX_VALUE, colour);
+    }
+
+    /** Three-quarter size, shrunk further when wider than {@code maxW}. */
+    private static void small(GuiGraphics g, Font font, String text, int x, int y, int maxW, int colour) {
+        float scale = Math.min(0.75f, maxW / (float) Math.max(1, font.width(text)));
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
-        g.pose().scale(0.75f, 0.75f, 1f);
+        g.pose().scale(scale, scale, 1f);
         g.drawString(font, text, 0, 0, colour, false);
         g.pose().popPose();
     }

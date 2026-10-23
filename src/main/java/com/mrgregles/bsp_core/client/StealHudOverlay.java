@@ -22,7 +22,7 @@ public final class StealHudOverlay implements IGuiOverlay {
     @Override
     public void render(ForgeGui gui, GuiGraphics g, float partialTick, int width, int height) {
         Font font = gui.getFont();
-        int y = 6;
+        int y = 6 + SentinelHud.bottom(); // under the Sentinel strip, which is drawn after this
         for (ClientStealState.Entry entry : ClientStealState.entries()) {
             StealStatusPacket p = entry.packet();
             Component line1;

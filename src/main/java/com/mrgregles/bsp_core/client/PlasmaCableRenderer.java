@@ -32,7 +32,7 @@ public class PlasmaCableRenderer implements BlockEntityRenderer<PlasmaCableBlock
     private static final float LO = 6.3f, HI = 9.7f; // the cavity inside the 5..11 px pipe, in model pixels
     private static final int SLICES = 8;
     /** Reports come about every two seconds; after this many ticks without one the pipe is taken as cut and drains. */
-    private static final int STALE = 55, DRAIN = 20;
+    private static final int STALE = com.mrgregles.bsp_core.projector.PlasmaCableBlockEntity.KEEP_ALIVE + 15, DRAIN = 20;
 
     public PlasmaCableRenderer(BlockEntityRendererProvider.Context ctx) {}
 
@@ -168,6 +168,12 @@ public class PlasmaCableRenderer implements BlockEntityRenderer<PlasmaCableBlock
                 box(vc, pose, sprite, sx0, y0, sz0, sx1, y0 + d, sz1, bright);
             }
         }
+    }
+
+    /** The flowing plasma is fine detail: a long run is drawn within 40 blocks instead of 64 (the cable block itself is always drawn). */
+    @Override
+    public int getViewDistance() {
+        return 40;
     }
 
     private static void box(VertexConsumer vc, PoseStack pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1, float bright) {

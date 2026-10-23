@@ -19,7 +19,7 @@ import java.util.Locale;
  * The Plasma Valve's screen: a dial you drag to set the limit, a box to type it, nudge buttons, a redstone switch,
  * and what is passing. The server refreshes it once a second and applies every change at once.
  */
-public class PlasmaValveScreen extends Screen {
+public class PlasmaValveScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 220, H = 128, DIAL_X = 56, DIAL_Y = 70, DIAL_R = 38, RIGHT = 112;
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, BAD = 0xFF6B5C, ION = 0xFF4FB8FF;
     private static final double SWEEP = Math.PI * 1.5; // the dial runs three quarters of a turn, from lower left to lower right
@@ -277,7 +277,17 @@ public class PlasmaValveScreen extends Screen {
         if (v != null) {
             small(g, tr("passing", v.in(), v.out()), x + RIGHT, y + 106, v.out() > 0 ? TEXT : MUTED);
         }
-        small(g, tr(redstone ? "hint_redstone" : "hint_free"), x + 10, y + H - 12, MUTED);
+        CashMachine.smallWrap(g, font, tr(redstone ? "hint_redstone" : "hint_free"), x + 10, y + H - 15, W - 20, MUTED); // two lines, under the dial and the passing line
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

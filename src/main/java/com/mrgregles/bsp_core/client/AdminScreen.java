@@ -23,7 +23,7 @@ import java.util.UUID;
  * controls. Moderators see everything but every action is greyed out. Destructive buttons ask
  * for a second click.
  */
-public class AdminScreen extends Screen {
+public class AdminScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 344, H = 210, BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, VIO = 0xFFB58CFF, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F,
             GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A2140;
     private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 12, ROWS = 14, DX = 130, TOTEM_Y = 62, TOTEM_H = 11, TOTEM_ROWS = 6,
@@ -353,9 +353,10 @@ public class AdminScreen extends Screen {
         g.fill(x - 1, y - 1, x + W + 1, y + hh + 1, VIO);
         g.fill(x, y, x + W, y + hh, BG);
         Component heading = tab == 3 && kits.editing() ? kits.title() : title;
-        g.drawString(font, font.plainSubstrByWidth(heading.getString(), W - 10 - 4 * (TAB_W + 3) - 62 - (edit ? 0 : 40)), x + 10, y + 9, VIO & 0xFFFFFF, false);
+        String head = font.plainSubstrByWidth(heading.getString(), W - 10 - 4 * (TAB_W + 3) - 62 - (edit ? 0 : 40));
+        g.drawString(font, head, x + 10, y + 9, VIO & 0xFFFFFF, false);
         if (!edit) {
-            small(g, tr("read_only"), x + 14 + font.width(heading), y + 11, GOLD & 0xFFFFFF);
+            small(g, tr("read_only"), x + 14 + font.width(head), y + 11, GOLD & 0xFFFFFF);
         }
         button(g, x + W - 10 - 4 * (TAB_W + 3) - 50, y + 6, 46, TAB_H, tr("refresh"), true, TQ, mouseX, mouseY);
         for (int i = 0; i < 4; i++) {
@@ -458,7 +459,8 @@ public class AdminScreen extends Screen {
             AdminDataPacket.Totem t = sel.totems().get(i);
             int ty = y + TOTEM_Y + i * TOTEM_H;
             g.drawString(font, TotemUpgrades.roman(t.tier()), x + DX, ty, GOLD & 0xFFFFFF, false);
-            small(g, t.carried() ? tr("carried", where(t)) : Component.literal(where(t)), x + DX + 22, ty + 1, TEXT);
+            String at = (t.carried() ? tr("carried", where(t)) : Component.literal(where(t))).getString();
+            small(g, Component.literal(font.plainSubstrByWidth(at, Math.round((W - 34 - 4 - DX - 22) / 0.75f))), x + DX + 22, ty + 1, TEXT); // clear of the TP button
             button(g, x + W - 34, ty - 1, 24, 10, tr("tp"), edit, TQ, mouseX, mouseY);
         }
         if (sel.totems().isEmpty()) {
@@ -471,9 +473,28 @@ public class AdminScreen extends Screen {
             int cx = x + DX + tier.ordinal() * 40;
             g.renderItem(new ItemStack(tier.coin()), cx, y + 150);
             int n = tier.ordinal() < sel.coins().length ? sel.coins()[tier.ordinal()] : 0;
-            g.drawString(font, Integer.toString(n), cx + 18, y + 154, n > 0 ? TEXT : MUTED, false);
+            String count = Integer.toString(n);
+            if (font.width(count) <= 21) {
+                g.drawString(font, count, cx + 18, y + 154, n > 0 ? TEXT : MUTED, false);
+            } else { // a big count shrinks rather than run under the next coin
+                g.pose().pushPose();
+                g.pose().translate(cx + 18, y + 155, 0);
+                g.pose().scale(21f / font.width(count), 21f / font.width(count), 1f);
+                g.drawString(font, count, 0, 0, n > 0 ? TEXT : MUTED, false);
+                g.pose().popPose();
+            }
         }
         button(g, x + DX, y + BTN_Y, BTN_W, BTN_H, tr("tp_player"), edit && sel.online(), TQ, mouseX, mouseY);
         button(g, x + DX + BTN_W + 8, y + BTN_Y, BTN_W, BTN_H, tr(arming(AdminActionPacket.RESET_TOTEMS) ? "confirm" : "reset_totems"), edit && sel.totemCount() > 0, BAD, mouseX, mouseY);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return h();
     }
 }

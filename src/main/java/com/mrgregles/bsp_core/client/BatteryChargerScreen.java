@@ -12,7 +12,7 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.Locale;
 
 /** The Battery Charger screen: the tank and the item filling on the left, the powers to stamp on the right. */
-public class BatteryChargerScreen extends AbstractContainerScreen<BatteryChargerMenu> {
+public class BatteryChargerScreen extends AbstractContainerScreen<BatteryChargerMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, BAD = 0xFF6B5C, ION = 0xFF4FB8FF;
     private static final int LIST_X = 120, LIST_Y = 32, ROW = 12, BTN_X = 236, BTN_W = 54;
 
@@ -36,7 +36,7 @@ public class BatteryChargerScreen extends AbstractContainerScreen<BatteryCharger
     public boolean mouseClicked(double mx, double my, int button) {
         Buff[] list = BatteryChargerMenu.list(menu.kind());
         for (int i = 0; i < list.length; i++) {
-            if (canStamp(i) && over(mx, my, leftPos + BTN_X, topPos + LIST_Y + i * ROW - 2, BTN_W, ROW - 2)) {
+            if (canStamp(i) && over(mx, my, leftPos + BTN_X, topPos + LIST_Y + i * row(list) - 2, BTN_W, row(list) - 2)) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, i);
                 return true;
             }
@@ -46,6 +46,11 @@ public class BatteryChargerScreen extends AbstractContainerScreen<BatteryCharger
 
     private static Component tr(String key, Object... args) {
         return Component.translatable("gui.bsp_core.charger." + key, args);
+    }
+
+    /** Row height: a cell's eleven Carried powers take tighter rows, so the list and its note end above the inventory. */
+    private static int row(Buff[] list) {
+        return list.length > 9 ? 10 : ROW;
     }
 
     private void small(GuiGraphics g, Component text, int x, int y, int colour) {
@@ -88,10 +93,10 @@ public class BatteryChargerScreen extends AbstractContainerScreen<BatteryCharger
         }
         Buff[] list = BatteryChargerMenu.list(menu.kind());
         for (int i = 0; i < list.length; i++) {
-            int by = y + LIST_Y + i * ROW - 2;
+            int by = y + LIST_Y + i * row(list) - 2;
             boolean on = menu.stamped(i) > 0, can = canStamp(i);
-            g.fill(x + BTN_X, by, x + BTN_X + BTN_W, by + ROW - 2, on ? TQ : can ? 0xFF4A5568 : DIM);
-            g.fill(x + BTN_X + 1, by + 1, x + BTN_X + BTN_W - 1, by + ROW - 3, can && over(mouseX, mouseY, x + BTN_X, by, BTN_W, ROW - 2) ? 0xFF14362F : SLOT_BG);
+            g.fill(x + BTN_X, by, x + BTN_X + BTN_W, by + row(list) - 2, on ? TQ : can ? 0xFF4A5568 : DIM);
+            g.fill(x + BTN_X + 1, by + 1, x + BTN_X + BTN_W - 1, by + row(list) - 3, can && over(mouseX, mouseY, x + BTN_X, by, BTN_W, row(list) - 2) ? 0xFF14362F : SLOT_BG);
         }
     }
 
@@ -103,7 +108,15 @@ public class BatteryChargerScreen extends AbstractContainerScreen<BatteryCharger
         small(g, tr("tank", menu.tankPermille() / 10, BSPConfig.getOr(BSPConfig.CHARGER_TANK, 4000)), 10, 74, MUTED);
         small(g, tr("arriving", menu.delivered()), 10, 95, MUTED);
         if (menu.kind() == 0) {
-            small(g, tr("empty"), 10, 104, MUTED);
+            int ly = 104; // wrapped to the left column, clear of the power list
+            for (var line : CashMachine.lines(font, tr("empty"), Math.round((LIST_X - 14) / 0.75f))) {
+                g.pose().pushPose();
+                g.pose().translate(10, ly, 0);
+                g.pose().scale(0.75f, 0.75f, 1f);
+                g.drawString(font, line, 0, 0, MUTED, false);
+                g.pose().popPose();
+                ly += 8;
+            }
         } else {
             small(g, tr(menu.kind() == 1 ? "battery" : "cell", menu.fillPermille() / 10), 10, 104, TEXT);
             small(g, menu.maxPowers() == 0 ? tr("plasma_only") : tr("stamps", menu.stampedCount(), menu.maxPowers()), 10, 123, MUTED);
@@ -112,17 +125,27 @@ public class BatteryChargerScreen extends AbstractContainerScreen<BatteryCharger
         small(g, tr("col.offered"), LIST_X + 76, 24, MUTED);
         Buff[] list = BatteryChargerMenu.list(menu.kind());
         for (int i = 0; i < list.length; i++) {
-            int ry = LIST_Y + i * ROW, off = menu.offered(i), st = menu.stamped(i);
+            int ry = LIST_Y + i * row(list), off = menu.offered(i), st = menu.stamped(i);
             g.drawString(font, Component.translatable(list[i].translationKey()), LIST_X, ry, off > 0 || st > 0 ? TEXT : 0x6B7385, false);
             g.drawString(font, off > 0 ? Integer.toString(off) : "-", LIST_X + 84, ry, off > 0 ? GOLD & 0xFFFFFF : 0x6B7385, false);
             Component label = tr(st > 0 ? "stamped" : off > 0 ? "stamp" : "not_offered");
             small(g, label, BTN_X + BTN_W / 2 - Math.round(font.width(label) * 0.375f), ry + 1, st > 0 ? TQ & 0xFFFFFF : off > 0 ? MUTED : 0x6B7385);
         }
         if (!menu.mayEdit()) {
-            small(g, tr("not_owner"), LIST_X, LIST_Y + list.length * ROW + 2, BAD);
+            small(g, tr("not_owner"), LIST_X, LIST_Y + list.length * row(list) + 2, BAD);
         } else if (menu.kind() == 2) {
-            small(g, tr("cell_note"), LIST_X, LIST_Y + list.length * ROW + 2, MUTED);
+            small(g, tr("cell_note"), LIST_X, LIST_Y + list.length * row(list) + 2, MUTED);
         }
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, MUTED, false);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

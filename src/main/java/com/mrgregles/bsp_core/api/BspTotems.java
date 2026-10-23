@@ -105,9 +105,9 @@ public final class BspTotems {
         TotemInventories.giveBack(player, stack);
     }
 
-    /** The steal running on the totem at {@code pos}, if one is. */
+    /** The steal running on the totem at {@code pos}, if one is. Never loads a chunk: a steal needs a thief standing there. */
     public static Optional<Steal> thiefAt(ServerLevel level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof ShatterTotemBlockEntity be) {
+        if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof ShatterTotemBlockEntity be) {
             Optional<StealState> steal = be.getSteal();
             if (steal.isPresent()) {
                 StealState s = steal.get();
@@ -134,10 +134,16 @@ public final class BspTotems {
         return level != null && level.getBlockEntity(where.pos()) instanceof ShatterTotemBlockEntity be ? Optional.of(be) : Optional.empty();
     }
 
-    /** The steal in progress on any of the owner's placed totems, if there is one. */
+    /** The block entity of a placed totem only when its chunk is already loaded: lookups that must not load chunks (request R10). */
+    private static Optional<ShatterTotemBlockEntity> loadedTotemAt(MinecraftServer server, GlobalPos where) {
+        ServerLevel level = server.getLevel(where.dimension());
+        return level != null && level.isLoaded(where.pos()) && level.getBlockEntity(where.pos()) instanceof ShatterTotemBlockEntity be ? Optional.of(be) : Optional.empty();
+    }
+
+    /** The steal in progress on any of the owner's placed totems, if there is one. Never loads a chunk: a steal needs a thief standing there. */
     public static Optional<Steal> beingStolen(MinecraftServer server, UUID owner) {
         for (GlobalPos where : placed(server, owner)) {
-            Optional<ShatterTotemBlockEntity> be = totemAt(server, where);
+            Optional<ShatterTotemBlockEntity> be = loadedTotemAt(server, where);
             if (be.isPresent()) {
                 Optional<StealState> steal = be.get().getSteal();
                 if (steal.isPresent()) {
@@ -152,14 +158,15 @@ public final class BspTotems {
     /**
      * Every steal running on this server (read live from the totems) and on the other servers of
      * the network (as last read from the shared database; see {@code storage.noticeSeconds}).
-     * Without network storage only this server's steals are listed.
+     * Without network storage only this server's steals are listed. Never loads a chunk: totems in unloaded chunks are
+     * skipped, since a steal needs a thief standing there.
      */
     public static java.util.List<StealAnywhere> stealsAnywhere(MinecraftServer server) {
         java.util.List<StealAnywhere> out = new java.util.ArrayList<>();
         String here = com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get();
         TotemLedger.get(server).allPlaced().forEach((owner, set) -> {
             for (GlobalPos where : set) {
-                Optional<ShatterTotemBlockEntity> be = totemAt(server, where);
+                Optional<ShatterTotemBlockEntity> be = loadedTotemAt(server, where);
                 if (be.isPresent() && be.get().getSteal().isPresent()) {
                     StealState s = be.get().getSteal().get();
                     out.add(new StealAnywhere(here, true, where.dimension(), where.pos(), owner, s.thief(), s.thiefName(), s.fractionLeft()));
@@ -193,6 +200,18 @@ public final class BspTotems {
         return out;
     }
 
+    /**
+     * Leaves nothing of a player's totems and gives nothing back (BSP-Stress Test request ST-C1): their carried totems are taken
+     * (when they are online here), their placed totems removed from the world, every ledger, logout, transfer, owed-item and
+     * network record of their totems dropped, and their first-join grant cleared (a returning player is given a totem as on a
+     * first join). Works for an online or an offline player; an offline player's saved inventory is not opened. Server thread
+     * only. Returns how many totems were taken out of inventories and the world. The command is {@code /bsp totem forget <player>}.
+     */
+    public static int forgetPlayer(MinecraftServer server, UUID player) {
+        var r = com.mrgregles.bsp_core.totem.TotemWipe.forget(server, player);
+        return r.carried() + r.placed();
+    }
+
     /** The upgrade named like the enum constant ("SWIFTNESS", case does not matter); null when there is no such upgrade. */
     @Nullable
     public static TotemUpgrades.Buff upgrade(String name) {
@@ -223,9 +242,15 @@ public final class BspTotems {
         return online != null ? highestLevel(online, buff) : highestPlacedLevel(server, player, buff);
     }
 
+    /** Placed totems are read from the ledger, which keeps their levels; a totem's chunk is loaded only when its levels were never kept (once, after updating from 1.4.4 or earlier). */
     private static int highestPlacedLevel(MinecraftServer server, UUID owner, TotemUpgrades.Buff buff) {
         int best = 0;
+        TotemLedger ledger = TotemLedger.get(server);
         for (GlobalPos where : placed(server, owner)) {
+            if (ledger.hasLevels(where)) {
+                best = Math.max(best, ledger.levelAt(where, buff.key));
+                continue;
+            }
             Optional<ShatterTotemBlockEntity> be = totemAt(server, where);
             if (be.isPresent() && be.get().isOwner(owner)) {
                 best = Math.max(best, be.get().getUpgradeLevel(buff));

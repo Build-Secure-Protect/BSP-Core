@@ -22,7 +22,7 @@ import java.util.List;
  * it is drawn, the rotation's pages and seconds, the scoreboard layout, font, text size, scroll speed
  * and title. Every change is sent at once, so the screen in the world updates while this is open.
  */
-public class ScoreScreenConfigScreen extends Screen {
+public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, VIO = 0xFFB58CFF, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5;
     private static final int W = 330, H = 276, LABEL_X = 10, OPT_X = 86, ROW = 22, FIRST = 26, ROWS = 10;
     private static final String[] LABELS = {"show", "board", "look", "rotation", "every", "layout", "font", "size", "speed", "heading"};
@@ -245,5 +245,15 @@ public class ScoreScreenConfigScreen extends Screen {
         if (mc.level != null && mc.level.getBlockEntity(origin) instanceof ScoreScreenBlockEntity screen) {
             mc.setScreen(new ScoreScreenConfigScreen(origin, screen));
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

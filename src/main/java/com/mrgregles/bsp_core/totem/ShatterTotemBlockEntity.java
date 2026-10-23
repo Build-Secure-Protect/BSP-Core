@@ -374,8 +374,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             cloakTick(level);
             reportToLedger(level);
             harvestTick(level);
-        } else if (!sentinelInside.isEmpty() && getUpgradeLevel(TotemUpgrades.Buff.SENTINEL) >= 4) {
-            sentinelSend(level); // level 4 is live: positions every tick while someone is inside
+        } else if (!sentinelInside.isEmpty() && level.getGameTime() % 2 == 0 && getUpgradeLevel(TotemUpgrades.Buff.SENTINEL) >= 4) {
+            sentinelSend(level); // level 4 is live: positions ten times a second while someone is inside
         }
         if (cloakBuilder != null && cloakBuilder.step()) {
             cloak = cloakBuilder.result();
@@ -663,10 +663,20 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         BSPCore.LOGGER.info("{} bought {} level {} at {}", player.getGameProfile().getName(), buff.key, lvl + 1, worldPosition);
     }
 
-    /** Keeps the ledger's owner and tier for this totem current; scores are worked out from the ledger. */
+    /** Keeps the ledger's owner, tier and upgrade levels for this totem current; scores and other mods' lookups read the ledger. */
     private void recordInLedger(ServerLevel serverLevel) {
         if (owner != null) {
-            TotemLedger.get(serverLevel.getServer()).recordPlaced(owner.uuid(), GlobalPos.of(serverLevel.dimension(), worldPosition), getTier());
+            TotemLedger ledger = TotemLedger.get(serverLevel.getServer());
+            GlobalPos here = GlobalPos.of(serverLevel.dimension(), worldPosition);
+            ledger.recordPlaced(owner.uuid(), here, getTier());
+            java.util.Map<String, Integer> levels = new java.util.HashMap<>();
+            for (TotemUpgrades.Buff buff : TotemUpgrades.Buff.values()) {
+                int l = getUpgradeLevel(buff);
+                if (l > 0) {
+                    levels.put(buff.key, l);
+                }
+            }
+            ledger.recordLevels(here, levels);
         }
     }
 
@@ -781,6 +791,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     public void setUpgradeLevel(TotemUpgrades.Buff buff, int level) {
         TotemUpgrades.stamp(upgrades).putInt(buff.key, Math.max(0, Math.min(level, buff.maxLevel())));
+        if (this.level instanceof ServerLevel serverLevel) {
+            recordInLedger(serverLevel);
+        }
         setChanged();
         sync();
         updateBlockState();
@@ -789,6 +802,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     public void resetUpgrades() {
         upgrades = new CompoundTag();
+        if (level instanceof ServerLevel serverLevel) {
+            recordInLedger(serverLevel);
+        }
         setChanged();
         sync();
         updateBlockState();
@@ -868,12 +884,25 @@ public class ShatterTotemBlockEntity extends BlockEntity {
      */
     private void sync() {
         if (level instanceof ServerLevel sl) {
-            var packet = getUpdatePacket();
-            if (packet != null) {
-                sl.getChunkSource().chunkMap.getPlayers(new net.minecraft.world.level.ChunkPos(worldPosition), false).forEach(p -> p.connection.send(packet));
-            }
+            // the Cloaking snapshot (up to 33^3 cells) goes only when it changed: a steal syncs every second, and the players tracking
+            // the chunk already hold it (a chunk sent to a newcomer carries the full tag, snapshot included)
+            boolean keepCloak = cloak != null && cloak == cloakSent;
+            var packet = ClientboundBlockEntityDataPacket.create(this, be -> {
+                CompoundTag tag = getUpdateTag();
+                if (keepCloak) {
+                    tag.remove("Cloak");
+                    tag.putBoolean("CloakKept", true);
+                }
+                return tag;
+            });
+            cloakSent = cloak;
+            sl.getChunkSource().chunkMap.getPlayers(new net.minecraft.world.level.ChunkPos(worldPosition), false).forEach(p -> p.connection.send(packet));
         }
     }
+
+    /** The snapshot the tracking players were last sent, so an unchanged one is not sent again. */
+    @Nullable
+    private CloakSnapshot cloakSent;
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
@@ -930,7 +959,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 teammates.add(net.minecraft.nbt.NbtUtils.loadUUID(raw));
             }
         }
-        cloak = tag.contains("Cloak") && level != null ? CloakSnapshot.load(tag.getCompound("Cloak"), CloakSnapshot.blocks(level)) : null;
+        if (!tag.getBoolean("CloakKept")) { // a sync that left the unchanged snapshot out keeps the one this client holds
+            cloak = tag.contains("Cloak") && level != null ? CloakSnapshot.load(tag.getCompound("Cloak"), CloakSnapshot.blocks(level)) : null;
+        }
         steal = StealState.load(tag);
         upgrades = TotemUpgrades.current(tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy());
     }

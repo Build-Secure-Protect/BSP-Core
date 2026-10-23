@@ -80,13 +80,18 @@ public final class BlockShells {
         }
     }
 
+    @Nullable
+    private static BufferBuilder builder;
+
     /** The shells of {@code blocks}, relative to {@code origin}; null when there is nothing to draw. */
     @Nullable
     public static VertexBuffer build(ClientLevel level, Map<BlockPos, BlockState> blocks, BlockPos origin) {
         View view = new View(level, blocks);
         RandomSource random = RandomSource.create();
         PoseStack pose = new PoseStack();
-        BufferBuilder builder = new BufferBuilder(1 << 16);
+        if (builder == null) {
+            builder = new BufferBuilder(1 << 16); // one, kept: a BufferBuilder's native memory is never given back
+        }
         builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
         var dispatcher = Minecraft.getInstance().getBlockRenderer();
         for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {

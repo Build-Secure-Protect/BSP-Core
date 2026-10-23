@@ -23,7 +23,7 @@ import java.util.Locale;
  * interval and the style through set values. Shops view (the SHOP key): every shop to pick from.
  * Every key sends its change at once; Done closes.
  */
-public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu> {
+public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu> implements ScreenFit.Fitted {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             AMBER = 0xF2B544, RED = 0xFF6B5C;
@@ -267,5 +267,15 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
                 (iv == 0 ? StallDisplayBlockEntity.defaultIntervalSec() + "*" : String.valueOf(iv))).getString(), SX + 8, ty + 3, SW - 16, PHOS);
         StallSkin skin = d == null ? StallSkin.VANILLA : d.skin();
         CashMachine.wrap(g, font, tr("default_note", Component.translatable("gui.bsp_core.stall.skin." + skin.id)), SX + 8, ty + 14, SW - 16, PHOS_DIM);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

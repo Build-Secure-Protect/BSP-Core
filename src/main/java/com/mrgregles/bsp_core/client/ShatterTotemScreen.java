@@ -31,7 +31,7 @@ import java.util.Locale;
  * Operators get a second tab, OPERATOR, where the same tree sets levels directly and buttons
  * unclaim, assign, cancel or finish a steal, so one player can test the whole steal flow.
  */
-public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu> {
+public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, VIO = 0xFFB58CFF, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5;
     private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40, STATUS_Y = TREE_Y + TotemTree.H + 5, TAB_X = 214, TAB_W = 40, AURAS_W = 56, SWITCH_W = 26, SWITCH_H = 11;
 
@@ -428,8 +428,10 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             g.drawString(font, "x", rx + 4, ry + 3, 0xFF6B5C, false);
         }
         small(g, Component.translatable("gui.bsp_core.access.count", list.size(), com.mrgregles.bsp_core.totem.TotemAccess.MAX), x + 10, y + ACC_Y + list.size() * ACC_ROW + 4, MUTED);
-        for (int i = 0; i < 4; i++) {
-            small(g, Component.translatable("gui.bsp_core.access.help." + i), x + 10, y + STATUS_Y - 40 + i * 9, MUTED);
+        if (ACC_Y + list.size() * ACC_ROW + 12 <= STATUS_Y - 40) { // a long friends list takes the help lines' place
+            for (int i = 0; i < 4; i++) {
+                small(g, Component.translatable("gui.bsp_core.access.help." + i), x + 10, y + STATUS_Y - 40 + i * 9, MUTED);
+            }
         }
     }
 
@@ -491,7 +493,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (tabs().length < 2) {
             head += "  " + Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier())).getString();
         }
-        g.drawString(font, head, 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false);
+        g.drawString(font, CashMachine.cut(font, head, aurasX() - 14), 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false); // clear of the AURAS switch
         boolean shown = com.mrgregles.bsp_core.BSPClientConfig.showAuras();
         Component auras = Component.translatable("gui.bsp_core.tree.auras.label");
         small(g, auras, aurasX(), 7, shown ? TQ & 0xFFFFFF : MUTED);
@@ -526,5 +528,15 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 g.drawString(font, Component.translatable("gui.bsp_core.shatter_totem.plasma", totem.plasmaOutput(), level, max), 10, STATUS_Y + 22, 0x4FB8FF, false);
             }
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

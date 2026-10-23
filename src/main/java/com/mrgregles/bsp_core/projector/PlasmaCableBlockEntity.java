@@ -44,6 +44,8 @@ public class PlasmaCableBlockEntity extends BlockEntity {
     private Direction in, out;
     /** Game time of the last report (synced about every two seconds while flowing): a cable nobody reports to any more drains on the client. */
     private long at = -1000, syncedAt = -1000;
+    /** Ticks between confirmations of an unchanged flow; the cable renderer drains a cable it has not heard of for longer. */
+    public static final int KEEP_ALIVE = 100;
 
     public PlasmaCableBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PLASMA_CABLE.get(), pos, state);
@@ -109,7 +111,7 @@ public class PlasmaCableBlockEntity extends BlockEntity {
         this.in = in;
         this.out = out;
         at = now;
-        if (changed || (flow > 0 && now - syncedAt >= 40)) {
+        if (changed || (flow > 0 && now - syncedAt >= KEEP_ALIVE)) { // unchanged flow is only confirmed now and then, so a cut-off cable still drains on clients
             syncedAt = now;
             setChanged();
             if (level != null && !level.isClientSide) {

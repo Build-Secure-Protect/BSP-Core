@@ -431,6 +431,11 @@ public final class NetworkStorage {
         });
     }
 
+    /** Drops the player's recorded spot and any return waiting for them (a forget). */
+    public static void clearTotemSpots(UUID player) {
+        async("drop a player's totem spot", s -> s.clearTotemSpots(player));
+    }
+
     /** Takes the return requests addressed to this server, with the items waiting for those players, and places the totems (server thread). */
     private static void collectTotemReturns(MinecraftServer srv) {
         async("collect totem return requests", s -> {

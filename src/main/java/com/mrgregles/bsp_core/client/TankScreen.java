@@ -27,7 +27,7 @@ import java.util.Locale;
  * going in or out, and the first few cables leaving each port, but not the network beyond them. Drag to turn, right-drag to pan,
  * scroll to zoom. The server refreshes it once a second.
  */
-public class TankScreen extends Screen {
+public class TankScreen extends Screen implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, GOLD = 0xFFFFD23A, BAD = 0xFF6B5C, ION = 0xFF4FB8FF;
     private static final int W = 380, H = 214, VIEW_X = 10, VIEW_Y = 22, VIEW_W = 200, VIEW_H = 164, LIST_X = 218, COL_W = W - LIST_X - 10, RESET_W = 64;
     @Nullable
@@ -137,7 +137,7 @@ public class TankScreen extends Screen {
         float span = Math.max(1f, Math.max(maxY - minY, Mth.sqrt(Mth.square(maxX - minX) + Mth.square(maxZ - minZ))));
         float scale = Math.min(VIEW_W, VIEW_H) / (span * 1.2f) * zoom;
         var blocks = Minecraft.getInstance().getBlockRenderer();
-        g.enableScissor(x, y, x + VIEW_W, y + VIEW_H);
+        ScreenFit.scissor(g, x, y, x + VIEW_W, y + VIEW_H);
         var pose = g.pose();
         pose.pushPose();
         pose.translate(x + VIEW_W / 2f + panX, y + VIEW_H / 2f + panY, 300);
@@ -229,7 +229,7 @@ public class TankScreen extends Screen {
         int cx = x + LIST_X, row = y + VIEW_Y;
         if (v == null || v.w() < 3) {
             small(g, tr("unformed"), cx, row, BAD);
-            for (var line : font.split(tr("unformed.help"), Math.round(COL_W / 0.75f))) {
+            for (var line : CashMachine.lines(font, tr("unformed.help"), Math.round(COL_W / 0.75f))) {
                 row += 9;
                 g.pose().pushPose();
                 g.pose().translate(cx, row, 0);
@@ -278,7 +278,7 @@ public class TankScreen extends Screen {
             }
         }
         row += 4;
-        for (var line : font.split(tr("help"), Math.round(COL_W / 0.75f))) {
+        for (var line : CashMachine.lines(font, tr("help"), Math.round(COL_W / 0.75f))) {
             g.pose().pushPose();
             g.pose().translate(cx, row, 0);
             g.pose().scale(0.75f, 0.75f, 1f);
@@ -297,5 +297,15 @@ public class TankScreen extends Screen {
         small(g, Component.literal(reset), bx + RESET_W / 2 - Math.round(font.width(reset) * 0.375f), by + 3, hover ? TQ & 0xFFFFFF : TEXT);
         small(g, Component.translatable("gui.bsp_core.interface.zoom", Math.round(zoom * 100)), bx + RESET_W + 6, by + 3, MUTED);
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

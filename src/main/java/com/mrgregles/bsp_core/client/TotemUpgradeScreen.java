@@ -17,7 +17,7 @@ import java.util.Locale;
  * Upgrade tree of the totem in your hand. Carried and Raid upgrades and the totem's tier can be
  * bought here; Base upgrades are shown with their levels but are bought at the placed totem.
  */
-public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu> {
+public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, MUTED = 0x9AA3B5;
     private static final int WALLET_Y = 18, TREE_X = 10, TREE_Y = 38, DETAIL_X = 188, DETAIL_Y = 40;
     private final TotemTree tree = new TotemTree();
@@ -131,5 +131,15 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         g.pose().scale(0.75f, 0.75f, 1f);
         g.drawString(font, Component.translatable(menu.getTotem().isEmpty() ? "gui.bsp_core.tree.no_totem" : "gui.bsp_core.tree.carried_hint"), 0, 0, MUTED, false);
         g.pose().popPose();
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

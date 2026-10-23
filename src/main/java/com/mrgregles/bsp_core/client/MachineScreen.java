@@ -27,7 +27,7 @@ import java.util.Locale;
  * Bottom left: the power switch. Blue is input, orange output, turquoise both, grey off, violet an
  * upgrade slot, red something missing.
  */
-public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
+public class MachineScreen extends AbstractContainerScreen<MachineMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, EDGE = 0xFF19D3B0, SLOT_BG = 0xFF0C0E12, SLOT_EDGE = 0xFF3A3F4B, DIM = 0xFF2A2F3A, GHOST = 0xA010151C;
     private static final int TQ = 0xFF19D3B0, IN = 0xFF3A8BFF, OUT = 0xFFFF8A3A, OFF = 0xFF565C6B, VIO = 0xFFB58CFF, BAD = 0xFFD63B2F, GOLD = 0xFFFFD23A, LAVA = 0xFFFF7A1A, MUTED = 0x9AA3B5;
     private static final int DIAL_X = 105, DIAL_Y = 39, DIAL_R = 15, GAUGE_X = 14, GAUGE_Y = 76, PORT_X = 196, PORT_Y = 32, STATUS_X = 284, POWER_X = 14, POWER_Y = 118, POWER_W = 38, POWER_H = 16;
@@ -325,5 +325,15 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         if (menu.fluidCapacity() > 0 && over(mouseX, mouseY, x + GAUGE_X, y + GAUGE_Y - 2, 140, 40)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.machine.tank", String.format("%,d", menu.fluid()), String.format("%,d", menu.fluidCapacity())), mouseX, mouseY);
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

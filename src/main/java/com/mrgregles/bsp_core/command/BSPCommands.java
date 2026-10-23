@@ -72,6 +72,10 @@ public final class BSPCommands {
                         .then(Commands.literal("wipe")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::wipe)))
+                        // leaves nothing and gives nothing back, online or offline (test bots)
+                        .then(Commands.literal("forget")
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .executes(BSPCommands::forget)))
                         .then(Commands.literal("owner")
                                 .executes(BSPCommands::owner))
                         // testing: set a power's level or the tier on the totem you hold (either hand) or, with none held, the placed one you look at
@@ -253,6 +257,18 @@ public final class BSPCommands {
                 + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + "; a fresh Tier I totem given, as on a first join.";
         ctx.getSource().sendSuccess(() -> Component.literal(line), true);
         return 1;
+    }
+
+    private static int forget(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        int n = 0;
+        for (com.mojang.authlib.GameProfile profile : net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles(ctx, "player")) {
+            var r = com.mrgregles.bsp_core.totem.TotemWipe.forget(ctx.getSource().getServer(), profile.getId());
+            String line = profile.getName() + ": " + r.carried() + " carried and " + r.placed() + " placed totems gone, " + r.forgotten() + " ledger records and "
+                    + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + "; nothing given back.";
+            ctx.getSource().sendSuccess(() -> Component.literal(line), true);
+            n++;
+        }
+        return n;
     }
 
     private static int locate(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

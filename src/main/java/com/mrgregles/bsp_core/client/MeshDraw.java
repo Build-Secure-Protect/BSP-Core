@@ -55,15 +55,28 @@ public final class MeshDraw {
      * full bright and writing depth, so a glow sits properly among the things round it (the emissive entity type writes no depth and
      * lets anything drawn later paint over it). The plasma skin: the translucent beacon beam type.
      */
-    private final VertexConsumer solid, emissive, skin;
+    private final VertexConsumer solid;
+    private final MultiBufferSource buffers;
     private final TextureAtlasSprite atlas, plasma;
+    private static final RenderType EMISSIVE = RenderType.beaconBeam(InventoryMenu.BLOCK_ATLAS, false), SKIN = RenderType.beaconBeam(InventoryMenu.BLOCK_ATLAS, true);
 
     public MeshDraw(MultiBufferSource buffers) {
-        this.solid = buffers.getBuffer(RenderType.entityCutout(InventoryMenu.BLOCK_ATLAS));
-        this.emissive = buffers.getBuffer(RenderType.beaconBeam(InventoryMenu.BLOCK_ATLAS, false));
-        this.skin = buffers.getBuffer(RenderType.beaconBeam(InventoryMenu.BLOCK_ATLAS, true));
+        this.buffers = buffers;
+        this.solid = buffers.getBuffer(RenderType.entityCutout(InventoryMenu.BLOCK_ATLAS)); // a fixed buffer: other types never take it over
         this.atlas = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS);
         this.plasma = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(PLASMA);
+    }
+
+    /**
+     * The two beacon beam types share the one buffer of the main source, so each is fetched just before it is written: a buffer kept
+     * from earlier may by now belong to the other type (and glow drawn into the see-through skin batch shows through things).
+     */
+    private VertexConsumer emissive() {
+        return buffers.getBuffer(EMISSIVE);
+    }
+
+    private VertexConsumer skin() {
+        return buffers.getBuffer(SKIN);
     }
 
     public static int scale(int rgb, float k) {
@@ -125,7 +138,7 @@ public final class MeshDraw {
 
     /** A flat-coloured quad that ignores the world's light. */
     public void glowQuad(PoseStack pose, float[] a, float[] b, float[] c, float[] d, int rgb, int alpha) {
-        skinned(emissive, pose, a, b, c, d, Mat.PANEL, scale(rgb, 1.2f), alpha, LightTexture.FULL_BRIGHT);
+        skinned(emissive(), pose, a, b, c, d, Mat.PANEL, scale(rgb, 1.2f), alpha, LightTexture.FULL_BRIGHT);
     }
 
     /**
@@ -179,9 +192,10 @@ public final class MeshDraw {
                 {x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1, 0, -1, 0},
         };
         float[] us = {u0, u0, u1, u1}, vs = {v0, v1, v1, v0};
+        VertexConsumer glow = emissive();
         for (float[] q : quads) {
             for (int k = 0; k < 4; k++) {
-                vertex(emissive, m, nm, q[k * 3], q[k * 3 + 1], q[k * 3 + 2], c, 255, us[k], vs[k], LightTexture.FULL_BRIGHT, q[12], q[13], q[14]);
+                vertex(glow, m, nm, q[k * 3], q[k * 3 + 1], q[k * 3 + 2], c, 255, us[k], vs[k], LightTexture.FULL_BRIGHT, q[12], q[13], q[14]);
             }
         }
     }
@@ -258,6 +272,7 @@ public final class MeshDraw {
         Matrix4f m = pose.last().pose();
         Matrix3f nm = pose.last().normal();
         float uc = tu(Mat.PANEL, 0.5f), vc = tv(Mat.PANEL, 0.5f);
+        VertexConsumer core = emissive();
         for (int i = 0; i < lat; i++) {
             double p0 = Math.PI * i / lat - Math.PI / 2, p1 = Math.PI * (i + 1) / lat - Math.PI / 2;
             for (int j = 0; j < lon; j++) {
@@ -270,7 +285,7 @@ public final class MeshDraw {
                     float rim = (float) Math.pow(1 - facing, 3);
                     int colour = lerp(0x000000, 0x3A1E8C, Math.min(1f, rim * 1.4f));
                     colour = lerp(colour, 0x4FB8FF, (float) Math.pow(1 - facing, 9) * (0.5f + 0.5f * heat));
-                    vertex(emissive, m, nm, p[0], p[1], p[2], colour, 255, uc, vc, LightTexture.FULL_BRIGHT, (float) nx, (float) ny, (float) nz);
+                    vertex(core, m, nm, p[0], p[1], p[2], colour, 255, uc, vc, LightTexture.FULL_BRIGHT, (float) nx, (float) ny, (float) nz);
                 }
             }
         }
@@ -280,7 +295,8 @@ public final class MeshDraw {
         pose.mulPose(Axis.ZP.rotation(0.5f));
         m = pose.last().pose();
         nm = pose.last().normal();
-        int skin = heat > 0.5f ? 0x9A7CFF : 0x5A3FB0; // the tint of the skin (the field of the same name is its buffer)
+        int skin = heat > 0.5f ? 0x9A7CFF : 0x5A3FB0; // the tint of the skin
+        VertexConsumer skinBuffer = skin();
         int alpha = Math.round(70 + 90 * heat);
         float rs = r * 1.07f;
         for (int i = 0; i < lat; i++) {
@@ -292,7 +308,7 @@ public final class MeshDraw {
                 float[] vs = {plasma.getV(16f * i / lat), plasma.getV(16f * (i + 1) / lat), plasma.getV(16f * (i + 1) / lat), plasma.getV(16f * i / lat)};
                 for (int k = 0; k < 4; k++) {
                     float[] p = c[k];
-                    vertex(this.skin, m, nm, p[0], p[1], p[2], skin, alpha, us[k], vs[k], LightTexture.FULL_BRIGHT, p[0] / rs, p[1] / rs, p[2] / rs);
+                    vertex(skinBuffer, m, nm, p[0], p[1], p[2], skin, alpha, us[k], vs[k], LightTexture.FULL_BRIGHT, p[0] / rs, p[1] / rs, p[2] / rs);
                 }
             }
         }

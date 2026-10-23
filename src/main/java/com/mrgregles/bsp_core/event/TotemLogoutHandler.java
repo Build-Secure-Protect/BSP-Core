@@ -41,8 +41,30 @@ public final class TotemLogoutHandler {
         }
     }
 
-    /** Takes every carried totem and places it in the world (or lets it travel with an announced transfer). */
+    /**
+     * Whether this logout should count as a server transfer: an admin (when {@code restrictions.adminTotemsTravel} is on) carrying
+     * a totem and not already in an announced transfer. The proxy's {@code /server} switch, which only admins use, tells this server
+     * nothing; without this the admin's totem would be placed here instead of travelling with them.
+     */
+    public static boolean travelsWithAdmin(ServerPlayer player) {
+        if (!com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.ADMIN_TOTEMS_TRAVEL, true) || !com.mrgregles.bsp_core.admin.Admins.isAdmin(player)
+                || com.mrgregles.bsp_core.api.BspTransfer.isTransferring(player.getUUID())) {
+            return false;
+        }
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (TotemInventories.isTotem(inv.getItem(i))) {
+                return true;
+            }
+        }
+        return TotemInventories.isTotem(player.containerMenu.getCarried());
+    }
+
+    /** Takes every carried totem and places it in the world (or lets it travel with an announced transfer, or an admin's). */
     public static void placeOnLogout(ServerPlayer player) {
+        if (travelsWithAdmin(player)) {
+            com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player); // stored for the journey, as a teleport mod's transfer is
+        }
         List<ItemStack> totems = TotemInventories.removeAll(player);
         totems.addAll(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(player)); // left while dead in an Anti Totem zone
         List<ItemStack> transferring = com.mrgregles.bsp_core.api.BspTransfer.takeOnLogout(player.getUUID());

@@ -17,7 +17,7 @@ import java.util.Locale;
  * spend one coin of that tier), the stored time, a Start button, and the cooldown with its upgrade.
  * The header shows whether the compass is ready, tracking a rival totem, or cooling down.
  */
-public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu> {
+public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, GOLD = 0xFFFFD23A, BAD = 0xFFFF6B5C, MUTED = 0x9AA3B5;
     private static final int TILE_X = 10, TILE_Y = 36, TILE_W = 41, TILE_H = 34, TILE_GAP = 3, BTN_Y = 98, BTN_W = 106, BTN_H = 18;
 
@@ -149,5 +149,15 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
 
     private static String clock(int seconds) {
         return String.format("%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

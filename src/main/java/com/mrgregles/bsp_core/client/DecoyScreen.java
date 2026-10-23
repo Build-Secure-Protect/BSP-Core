@@ -26,7 +26,7 @@ import java.util.Locale;
  * it takes. The column on the right gives the decoy's state, power, range, traps and toughness,
  * and the Repair button when it is broken.
  */
-public class DecoyScreen extends AbstractContainerScreen<DecoyMenu> {
+public class DecoyScreen extends AbstractContainerScreen<DecoyMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, BLUE = 0xFF7FB3FF, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, BAD = 0xFFD63B2F, MUTED = 0x9AA3B5,
             TEXT = 0xE6EAF2, GHOST = 0xB010151C;
     private static final int STAT_X = 186, BTN_Y = 112, BTN_W = 104, BTN_H = 18;
@@ -150,5 +150,15 @@ public class DecoyScreen extends AbstractContainerScreen<DecoyMenu> {
             small(g, repair, STAT_X + BTN_W / 2 - Math.round(font.width(repair) * 0.375f), BTN_Y + 6, TQ & 0xFFFFFF);
         }
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, MUTED, false);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

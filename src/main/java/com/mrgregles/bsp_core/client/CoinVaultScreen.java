@@ -29,7 +29,7 @@ import java.util.Locale;
  * </ul>
  * A player without access gets the locked view instead: what picking the lock takes, and the button to start.
  */
-public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> {
+public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, GOLD = 0xFFFFD23A, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F, MUTED = 0x9AA3B5,
             TEXT = 0xE6EAF2, HOVER = 0xFF3A3210;
     private static final int X0 = CoinVaultMenu.SLOT_X, RIGHT = X0 + 162, TAB_Y = 20, TAB_W = 52, TAB_H = 13, TAB_GAP = 3, BODY_Y = 37,
@@ -349,5 +349,15 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> {
             small(g, tr("illyrium_rule", BSPConfig.getOr(BSPConfig.VAULT_ILLYRIUM_SAFE, 3)), X0, BODY_Y + 71, MUTED);
             small(g, tr(manager() ? "break_rule" : "access_owner_only"), X0, BODY_Y + 80, MUTED);
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

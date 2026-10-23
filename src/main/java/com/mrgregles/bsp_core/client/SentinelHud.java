@@ -66,6 +66,11 @@ public final class SentinelHud implements IGuiOverlay {
         VIEWS.values().removeIf(v -> now - v.at > STALE_TICKS);
     }
 
+    /** How far down the screen the strip reaches now (0 when it is hidden), so the steal countdown can sit under it. */
+    static int bottom() {
+        return VIEWS.isEmpty() || slide <= 0.01f ? 0 : Math.round(H * slide);
+    }
+
     @Override
     public void render(ForgeGui gui, GuiGraphics g, float partialTick, int width, int height) {
         Minecraft mc = Minecraft.getInstance();

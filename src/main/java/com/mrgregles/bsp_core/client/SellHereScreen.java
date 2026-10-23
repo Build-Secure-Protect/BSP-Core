@@ -10,7 +10,7 @@ import net.minecraft.world.inventory.Slot;
 import java.util.Locale;
 
 /** "Sell here": the 14-slot drop-in grid over the player's inventory in the Cash Machine skin; closing sells. */
-public class SellHereScreen extends AbstractContainerScreen<SellHereMenu> {
+public class SellHereScreen extends AbstractContainerScreen<SellHereMenu> implements ScreenFit.Fitted {
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, SLOT_BG = 0xFF0C1A10;
     private static final int SX = 10, SY = 10, SW = 206, SH = 100, KX = 226, KW = 64, KH = 20;
@@ -67,5 +67,15 @@ public class SellHereScreen extends AbstractContainerScreen<SellHereMenu> {
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
         CashMachine.wrapUp(g, font, Component.translatable("gui.bsp_core.shop.sell_here_hint"), SX + 6, SY + SH - 4, SW - 12, PHOS_DIM);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, KEY_TEXT, false);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

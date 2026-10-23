@@ -12,9 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
-import java.util.EnumMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.function.ToIntFunction;
 
 /**
@@ -27,24 +25,11 @@ import java.util.function.ToIntFunction;
  */
 public final class TotemTree {
     public static final int W = 170, H = 170, DETAIL_W = 128, BUY_Y = 108, BTN_H = 16, GATE_Y = 144, GATE_BTN_X = 78, GATE_BTN_W = 50, WALLET_H = 16;
-    private static final int CX = 85, CY = 85, NODE = 14;
-    private static final int[] RING = {20, 35, 50, 65, 78};
-    /** Spokes are spread wide enough that neighbouring nodes on the innermost ring do not touch. */
-    private static final float[] SPOKE = {-128f, -52f, 12f, 78f, 180f, 129f};
+    private static final int CX = TreeLayout.CX, CY = TreeLayout.CY, NODE = TreeLayout.NODE;
+    private static final int[] RING = TreeLayout.RING;
     private static final int SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, RING_ON = 0xFF27566B, TQ = 0xFF19D3B0, XP = 0x8FE04A, MUTED = 0x9AA3B5, BAD = 0xFF6B5C;
     /** Branch colours: Carried (XP green), Base (coin gold), Raid (red). */
     private static final int[] COLOUR = {0xFF8FE04A, 0xFFFFD23A, 0xFFFF6B5C};
-    private static final Map<Buff, int[]> POS = new EnumMap<>(Buff.class);
-
-    static {
-        for (Buff b : Buff.values()) {
-            // two nodes on one ring of one path sit either side of the spoke
-            double a = Math.toRadians(SPOKE[b.path] + (b == Buff.BOUNCY || b == Buff.CLOAKING || b == Buff.THIEF_STEP || b == Buff.SENTINEL ? 22 : b == Buff.NIGHT_SIGHT || b == Buff.DEADLOCK ? -14 : 0));
-            int r = RING[Math.min(b.tier, RING.length - 1)];
-            POS.put(b, new int[]{CX + (int) Math.round(Math.cos(a) * r), CY + (int) Math.round(Math.sin(a) * r)});
-        }
-    }
-
     public Buff selected = Buff.MINING_SPEED;
 
     public static int colour(Buff buff) {
@@ -52,7 +37,7 @@ public final class TotemTree {
     }
 
     private static String abbr(Buff buff) {
-        return buff.key.substring(0, 2).toUpperCase(Locale.ROOT);
+        return TreeLayout.abbr(buff);
     }
 
     private static void dots(GuiGraphics g, int x0, int y0, int x1, int y1, int colour) {
@@ -81,16 +66,16 @@ public final class TotemTree {
         }
         // spokes: from the totem, or from the previous upgrade on the path, out to each node
         for (Buff b : Buff.values()) {
-            int[] p = POS.get(b);
+            int[] p = TreeLayout.at(b);
             Buff parent = b.parent();
-            int[] from = parent == null ? new int[]{CX, CY} : POS.get(parent);
+            int[] from = parent == null ? new int[]{CX, CY} : TreeLayout.at(parent);
             dots(g, ox + from[0], oy + from[1], ox + p[0], oy + p[1], level.applyAsInt(b) > 0 ? TQ : DIM);
         }
         g.fill(ox + CX - 8, oy + CY - 8, ox + CX + 8, oy + CY + 8, TQ);
         String t = TotemUpgrades.roman(tier);
         g.drawString(font, t, ox + CX - font.width(t) / 2, oy + CY - 4, 0x0B0D11, false);
         for (Buff b : Buff.values()) {
-            int[] p = POS.get(b);
+            int[] p = TreeLayout.at(b);
             int x = ox + p[0] - NODE / 2, y = oy + p[1] - NODE / 2, lvl = level.applyAsInt(b), c = colour(b);
             boolean open = TotemUpgrades.unlocked(b, level, tier), maxed = lvl >= b.maxLevel();
             if (b == selected) {
@@ -107,13 +92,7 @@ public final class TotemTree {
     /** The upgrade whose node is under the mouse, or null. */
     @Nullable
     public Buff nodeAt(double mouseX, double mouseY, int ox, int oy) {
-        for (Buff b : Buff.values()) {
-            int[] p = POS.get(b);
-            if (mouseX >= ox + p[0] - NODE / 2 && mouseX < ox + p[0] + NODE / 2 && mouseY >= oy + p[1] - NODE / 2 && mouseY < oy + p[1] + NODE / 2) {
-                return b;
-            }
-        }
-        return null;
+        return TreeLayout.nodeAt(mouseX - ox, mouseY - oy);
     }
 
     // ------------------------------------------------------------------ text helpers

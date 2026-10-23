@@ -64,7 +64,7 @@ public final class RecallHud implements IGuiOverlay {
             return;
         }
         Font font = gui.getFont();
-        int w = 190, h = 46, x = width / 2 - w / 2, y = height - 100;
+        int w = 190, h = 46, x = width / 2 - w / 2, y = height - 134; // above the action bar and the held item's name
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, RED);
         g.fill(x, y, x + w, y + h, BG);
         // the draining ring, drawn as a wedge of dots
@@ -86,12 +86,13 @@ public final class RecallHud implements IGuiOverlay {
             ang = Mth.wrapDegrees(ang);
             arrow = ang > -22.5 && ang <= 22.5 ? "^" : ang > 22.5 && ang <= 67.5 ? "/" : ang > 67.5 && ang <= 112.5 ? ">" : ang > 112.5 && ang <= 157.5 ? "\\" : ang < -22.5 && ang >= -67.5 ? "\\" : ang < -67.5 && ang >= -112.5 ? "<" : ang < -112.5 && ang >= -157.5 ? "/" : "v";
         }
-        g.drawString(font, Component.translatable("hud.bsp_core.recall.title").getString().toUpperCase(Locale.ROOT), x + 44, y + 5, RED & 0xFFFFFF, false);
+        int tw = w - 48;
+        CashMachine.fit(g, font, Component.translatable("hud.bsp_core.recall.title").getString().toUpperCase(Locale.ROOT), x + 44, y + 5, tw, RED & 0xFFFFFF);
         String dist = here ? Component.translatable("hud.bsp_core.recall.distance", arrow, (int) Math.sqrt(mc.player.blockPosition().distSqr(offer.pos()))).getString()
                 : Component.translatable("hud.bsp_core.recall.elsewhere").getString();
-        g.drawString(font, dist, x + 44, y + 16, TEXT, false);
-        g.drawString(font, Component.translatable("hud.bsp_core.recall.lands", offer.radius()), x + 44, y + 27, MUTED, false);
-        g.drawString(font, Component.translatable("hud.bsp_core.recall.keys", ACCEPT.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT), DECLINE.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT)), x + 44, y + 37, TQ & 0xFFFFFF, false);
+        CashMachine.fit(g, font, dist, x + 44, y + 16, tw, TEXT);
+        CashMachine.fit(g, font, Component.translatable("hud.bsp_core.recall.lands", offer.radius()).getString(), x + 44, y + 27, tw, MUTED);
+        CashMachine.fit(g, font, Component.translatable("hud.bsp_core.recall.keys", ACCEPT.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT), DECLINE.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT)).getString(), x + 44, y + 37, tw, TQ & 0xFFFFFF);
     }
 
     @Mod.EventBusSubscriber(modid = BSPCore.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

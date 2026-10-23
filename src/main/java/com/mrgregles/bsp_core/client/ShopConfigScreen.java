@@ -32,7 +32,7 @@ import java.util.Locale;
  * browser, the shop's settings, the style preset. The TEST key opens the real shop in test mode.
  * Moderators see it all and may change nothing.
  */
-public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
+public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> implements ScreenFit.Fitted {
     private static final int W = 360, H = 232;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, CARD = 0xFF0A1A10, CARD_SEL = 0xFF0F2D1C, CARD_EMPTY = 0xFF07100A;
@@ -344,6 +344,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float partial) {
+        colsCache = -1;
         if (menu.messageSerial != lastSerial) {
             lastSerial = menu.messageSerial;
             String key = menu.messageKey;
@@ -555,8 +556,13 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
 
     /** The preview grid follows the shop's layout, as players see it. */
     private int cols() {
-        return menu.shop == null ? Shop.MAX_COLUMNS : menu.shop.effectiveColumns(menu.shop.all());
+        if (colsCache < 0) { // worked out once a frame: it copies every card and formats every price
+            colsCache = menu.shop == null ? Shop.MAX_COLUMNS : menu.shop.effectiveColumns(menu.shop.all());
+        }
+        return colsCache;
     }
+
+    private int colsCache = -1;
 
     private int rows() {
         return menu.shop == null ? 3 : menu.shop.rows();
@@ -580,5 +586,15 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> {
 
     private int labelY() {
         return rows() >= 3 ? 21 : 32;
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

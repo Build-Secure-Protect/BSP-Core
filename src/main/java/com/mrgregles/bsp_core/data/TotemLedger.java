@@ -41,6 +41,8 @@ public class TotemLedger extends SavedData {
     private final Map<UUID, Set<GlobalPos>> placed = new HashMap<>();
     /** Tier (0 = I) of each placed totem, so scores can be worked out while its chunk is unloaded. */
     private final Map<GlobalPos, Integer> tiers = new HashMap<>();
+    /** Upgrade levels of each placed totem (non-zero only), so other mods can read them without loading the totem's chunk. */
+    private final Map<GlobalPos, Map<String, Integer>> levels = new HashMap<>();
 
     // --- identity: where each totem (by id) was last seen, and which instance of it is the real one ---
 
@@ -75,7 +77,8 @@ public class TotemLedger extends SavedData {
             return;
         }
         UUID keep = holder != null ? holder : old == null ? null : old.holder();
-        CompoundTag tagCopy = copy != null ? copy.copy() : old == null ? null : old.copy();
+        // a held totem is seen every tick: its tag is copied only when it differs from the copy kept (comparing allocates nothing)
+        CompoundTag tagCopy = copy == null ? old == null ? null : old.copy() : old != null && copy.equals(old.copy()) ? old.copy() : copy.copy();
         totems.put(id, new Sighting(instance, keep, now, where, tagCopy));
         if (old == null || old.where() != where || !java.util.Objects.equals(old.holder(), keep)) {
             setDirty();
@@ -192,6 +195,26 @@ public class TotemLedger extends SavedData {
         com.mrgregles.bsp_core.storage.NetworkStorage.totemPlaced(owner, pos);
     }
 
+    /** Keeps the upgrade levels of the placed totem at {@code pos} (non-zero levels by upgrade key). */
+    public void recordLevels(GlobalPos pos, Map<String, Integer> now) {
+        if (!tiers.containsKey(pos) || now.equals(levels.get(pos))) {
+            return;
+        }
+        levels.put(pos, Map.copyOf(now));
+        setDirty();
+    }
+
+    /** Whether the levels of the totem at {@code pos} are known (false only for totems not loaded since the levels were first kept). */
+    public boolean hasLevels(GlobalPos pos) {
+        return levels.containsKey(pos);
+    }
+
+    /** The level of upgrade {@code key} on the placed totem at {@code pos}; 0 when it has none or is unknown. */
+    public int levelAt(GlobalPos pos, String key) {
+        Map<String, Integer> l = levels.get(pos);
+        return l == null ? 0 : l.getOrDefault(key, 0);
+    }
+
     public void recordRemoved(GlobalPos pos) {
         boolean changed = false;
         for (Set<GlobalPos> positions : placed.values()) {
@@ -200,6 +223,7 @@ public class TotemLedger extends SavedData {
         placed.values().removeIf(Set::isEmpty);
         if (changed) {
             tiers.remove(pos);
+            levels.remove(pos);
             com.mrgregles.bsp_core.score.ScoreService.markDirty();
             setDirty();
             com.mrgregles.bsp_core.storage.NetworkStorage.totemRemoved(pos);
@@ -232,6 +256,12 @@ public class TotemLedger extends SavedData {
             entry.putString("Dim", pos.dimension().location().toString());
             entry.putLong("Pos", pos.pos().asLong());
             entry.putInt("Tier", tierAt(pos));
+            Map<String, Integer> l = levels.get(pos);
+            if (l != null) {
+                CompoundTag lt = new CompoundTag();
+                l.forEach(lt::putInt);
+                entry.put("Levels", lt);
+            }
             placedList.add(entry);
         }));
         tag.put(TAG_PLACED, placedList);
@@ -268,6 +298,14 @@ public class TotemLedger extends SavedData {
             GlobalPos pos = GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(entry.getLong("Pos")));
             ledger.placed.computeIfAbsent(entry.getUUID("Owner"), k -> new HashSet<>()).add(pos);
             ledger.tiers.put(pos, entry.getInt("Tier"));
+            if (entry.contains("Levels", Tag.TAG_COMPOUND)) {
+                CompoundTag lt = entry.getCompound("Levels");
+                Map<String, Integer> l = new HashMap<>();
+                for (String key : lt.getAllKeys()) {
+                    l.put(key, lt.getInt(key));
+                }
+                ledger.levels.put(pos, Map.copyOf(l));
+            }
         }
         for (Tag raw : tag.getList(TAG_TOTEMS, Tag.TAG_COMPOUND)) {
             CompoundTag entry = (CompoundTag) raw;

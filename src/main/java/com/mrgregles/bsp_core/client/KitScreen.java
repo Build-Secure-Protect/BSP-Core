@@ -25,7 +25,7 @@ import java.util.List;
  * wall to show its items and the full "to get it" lines. Everything shown comes from the server's
  * {@link KitViewPacket}; the screen never works a rule out itself.
  */
-public class KitScreen extends Screen {
+public class KitScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 344, H = 236, CARD_W = 77, CARD_H = 86, GAP = 4, COLS = 4, ROWS = 2, GRID_X = 8, GRID_Y = 22, KEY_H = 18;
     private static final int BG = 0xF010151C, SLOT = 0xFF0C0E12, DIM = 0xFF2A2F3A, TQ = 0xFF19D3B0, VIO = 0xFFB58CFF, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2,
             OK = 0x58F29A, WARN = 0xF2B544, RED = 0xFF8F86, READY_BG = 0xFF13211F, OWED_BG = 0xFF1A1630, HOVER = 0xFF1B2230;
@@ -437,5 +437,15 @@ public class KitScreen extends Screen {
             }
         }
         key(g, fx + FW - 8 - 56, ky, 56, 16, tr("k.back"), MUTED | 0xFF000000, true, mx, my, () -> flipped = null);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

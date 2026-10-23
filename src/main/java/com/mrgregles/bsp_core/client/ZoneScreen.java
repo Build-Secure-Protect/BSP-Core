@@ -27,7 +27,7 @@ import java.util.Set;
  * Zone tab has the six distances (0 to 256), a map of the zone from above and the outline colour.
  * Every change is sent to the server at once.
  */
-public class ZoneScreen extends Screen {
+public class ZoneScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 300, H = 222, BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, BAD = 0xFFFF4B3C, VIO = 0xFFB58CFF, TQ = 0xFF19D3B0,
             MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A1A1A;
     private static final int LIST_Y = 26, ROW_H = 13, ROWS = 14, BTN_W = 64, MAP = 110, STEP_Y = 34, STEP_H = 16;
@@ -254,5 +254,15 @@ public class ZoneScreen extends Screen {
             small(g, tr("outline_hint"), x + 160, y + 190, MUTED);
         }
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

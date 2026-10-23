@@ -188,15 +188,18 @@ public final class XrayClient implements IGuiOverlay {
             BlockPos p = e.getKey();
             if (!level.isLoaded(p)) {
                 it.remove();
+                ghostsChanged = true;
             } else if (Math.abs(p.getX() - centre.getX()) > radius || Math.abs(p.getY() - centre.getY()) > radius || Math.abs(p.getZ() - centre.getZ()) > radius) {
                 if (level.getBlockState(p).getBlock() instanceof GhostBlock) {
                     level.setBlock(p, e.getValue(), FLAGS);
                 }
                 it.remove();
+                ghostsChanged = true;
             }
         }
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         List<BlockPos> oreList = new ArrayList<>();
+        int budget = GHOSTS_PER_SCAN;
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dy = -radius; dy <= radius; dy++) {
                 for (int dz = -radius; dz <= radius; dz++) {
@@ -212,8 +215,11 @@ public final class XrayClient implements IGuiOverlay {
                         continue;
                     }
                     if (hides(level, p, st)) {
-                        GHOSTS.put(p.immutable(), st); // new, or the server sent a different block: remember and ghost it
-                        level.setBlock(p, ghost, FLAGS);
+                        if (budget-- > 0) {
+                            GHOSTS.put(p.immutable(), st); // new, or the server sent a different block: remember and ghost it
+                            level.setBlock(p, ghost, FLAGS);
+                            ghostsChanged = true;
+                        }
                     } else if (st.is(Tags.Blocks.ORES)) {
                         oreList.add(p.immutable());
                     } else if (st.is(Blocks.SPAWNER)) {
@@ -224,7 +230,24 @@ public final class XrayClient implements IGuiOverlay {
                 }
             }
         }
-        rebuild(level, centre, oreList);
+        if (ghostsChanged || origin == null || !centre.equals(origin) || !oreList.equals(lastOres) || nothingBuilt()) {
+            rebuild(level, centre, oreList);
+            ghostsChanged = false;
+            lastOres = oreList;
+        }
+    }
+
+    /** True when nothing has been built yet (after a world change or switching off). */
+    private static boolean nothingBuilt() {
+        if (ores != null) {
+            return false;
+        }
+        for (VertexBuffer v : SHELLS) {
+            if (v != null) {
+                return false;
+            }
+        }
+        return !GHOSTS.isEmpty();
     }
 
     /** Puts every real block back and drops the buffers. */
@@ -240,6 +263,7 @@ public final class XrayClient implements IGuiOverlay {
         GHOSTS.clear();
         MARKS.clear();
         dropBuffers();
+        ghostsChanged = true;
     }
 
     private static void dropBuffers() {
@@ -310,6 +334,15 @@ public final class XrayClient implements IGuiOverlay {
         }
     }
 
+    private static final BufferBuilder[] BUILDERS = new BufferBuilder[BANDS];
+    @Nullable
+    private static BufferBuilder oreBuilder;
+    /** What the buffers were last built from: a scan that finds the same ghosts, ores and centre builds nothing. */
+    private static boolean ghostsChanged = true;
+    private static List<BlockPos> lastOres = List.of();
+    /** New ghosts per scan, so switching on spreads the block changes over a few scans instead of one frame. */
+    private static final int GHOSTS_PER_SCAN = 4096;
+
     /** Builds the shells of the ghosted blocks (faces culled against the real neighbours, so only surfaces are drawn) by depth band, and the ores. */
     private static void rebuild(ClientLevel level, BlockPos centre, List<BlockPos> oreList) {
         dropBuffers();
@@ -317,9 +350,11 @@ public final class XrayClient implements IGuiOverlay {
         RealView view = new RealView(level);
         RandomSource random = RandomSource.create();
         PoseStack pose = new PoseStack();
-        BufferBuilder[] builders = new BufferBuilder[BANDS];
+        BufferBuilder[] builders = BUILDERS;
         for (int i = 0; i < BANDS; i++) {
-            builders[i] = new BufferBuilder(1 << 16);
+            if (builders[i] == null) {
+                builders[i] = new BufferBuilder(1 << 16); // made once and kept: a BufferBuilder's native memory is never given back
+            }
             builders[i].begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
         }
         for (Map.Entry<BlockPos, BlockState> e : GHOSTS.entrySet()) {
@@ -331,7 +366,9 @@ public final class XrayClient implements IGuiOverlay {
         for (int i = 0; i < BANDS; i++) {
             SHELLS[i] = upload(builders[i]);
         }
-        BufferBuilder oreBuilder = new BufferBuilder(1 << 14);
+        if (oreBuilder == null) {
+            oreBuilder = new BufferBuilder(1 << 14);
+        }
         oreBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
         for (BlockPos p : oreList) {
             emit(view, p, level.getBlockState(p), pose, oreBuilder, random);
@@ -384,6 +421,7 @@ public final class XrayClient implements IGuiOverlay {
                 GHOSTS.clear();
                 MARKS.clear();
                 dropBuffers();
+                ghostsChanged = true;
                 onUntil = 0;
                 readyAt = 0;
                 lastHeld = XrayHint.Held.NOTHING;

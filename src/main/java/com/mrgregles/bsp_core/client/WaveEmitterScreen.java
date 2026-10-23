@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.Locale;
 
 /** The Wave Emitter screen: the cell slot and the switch on the left, what the cell holds and how long it lasts on the right. */
-public class WaveEmitterScreen extends AbstractContainerScreen<WaveEmitterMenu> {
+public class WaveEmitterScreen extends AbstractContainerScreen<WaveEmitterMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, BAD = 0xFF6B5C, ION = 0xFF4FB8FF;
     private static final int BTN_X = 18, BTN_Y = 72, BTN_W = 56, INFO_X = 90;
 
@@ -138,5 +138,15 @@ public class WaveEmitterScreen extends AbstractContainerScreen<WaveEmitterMenu> 
             small(g, tr("no_powers"), ix, iy + 56, MUTED);
         }
         small(g, tr("slots", row, PlasmaItems.maxPowers(cell)), ix + 70, iy + 46, MUTED);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

@@ -19,7 +19,7 @@ import java.util.Locale;
  * and a RECEIVE switch per power; CHUNKS is the chunk picker; STATUS shows the plasma arriving
  * against what is needed, the run, and the Channel Expander. The server refreshes it once a second.
  */
-public class ProjectorScreen extends Screen {
+public class ProjectorScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 300, H = 200, TILE = 20, TAB_W = 50, TAB_X = W - 10 - 3 * (TAB_W + 2) + 2, ROW = 14, LIST_Y = 36, BTN_X = 206, BTN_W = 84;
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, BAD = 0xFF6B5C, ION = 0xFF4FB8FF;
     private static final String[] TABS = {"powers", "chunks", "status"};
@@ -159,9 +159,9 @@ public class ProjectorScreen extends Screen {
         }
         int fy = y + LIST_Y + TotemProjectorBlockEntity.SENDABLE.length * ROW + 4;
         small(g, tr(signal ? "channels" : "no_signal_help", Integer.bitCount(v.chosen()), v.channels()), x + 10, fy, signal ? TEXT : BAD);
-        small(g, v.repeaters() == 0 ? tr("no_repeaters") : tr("repeaters", v.repeaters()), x + 10, fy + 9, MUTED);
+        int rh = CashMachine.smallWrap(g, font, v.repeaters() == 0 ? tr("no_repeaters") : tr("repeaters", v.repeaters()), x + 10, fy + 9, W - 20, MUTED);
         if (!edit) {
-            small(g, tr("chunks.not_owner"), x + 10, fy + 18, MUTED);
+            small(g, tr("chunks.not_owner"), x + 10, fy + 11 + rh, MUTED);
         }
         return tip;
     }
@@ -191,11 +191,21 @@ public class ProjectorScreen extends Screen {
         small(g, tr("pressure_text", v.delivered(), need), x + 10, y + 60, TEXT);
         small(g, tr("tank", v.tank(), cap), x + 10, y + 72, MUTED);
         small(g, signal ? tr("channels", Integer.bitCount(v.chosen()), v.channels()) : tr("no_signal_help"), x + 10, y + 86, TEXT);
-        small(g, v.repeaters() == 0 ? tr("no_repeaters") : tr("repeaters", v.repeaters()), x + 10, y + 95, MUTED);
+        CashMachine.smallWrap(g, font, v.repeaters() == 0 ? tr("no_repeaters") : tr("repeaters", v.repeaters()), x + 10, y + 95, W - 20, MUTED); // two lines fit above the expander line
         small(g, tr(v.has(ChunkViewPacket.EXPANDER) ? "expander_fitted" : "expander_none"), x + 10, y + 108, v.has(ChunkViewPacket.EXPANDER) ? TQ & 0xFFFFFF : MUTED);
         small(g, tr("expander_help"), x + 10, y + 117, MUTED);
         for (int i = 0; i < 4; i++) {
             small(g, tr("rule." + i), x + 10, y + 136 + i * 9, MUTED);
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

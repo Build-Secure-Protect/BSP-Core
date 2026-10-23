@@ -4,10 +4,49 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.4.5] - 2026-10-23
+
+### Added
+- **The MySQL driver through the api** (BSP-Teleport request R9). `BspStorage.jdbcDriver()` hands out a new instance of the JDBC driver BSP-Core itself uses (the one bundled, relocated, in the full jar; the server's own MySQL driver with the slim jar; else MariaDB's), `jdbcDriverClass()` its class name and `jdbcUrlPrefix()` the URL scheme it takes. Other mods no longer need the hidden relocated class name. One game test.
+- **The leaderboard through the api** (BSP-RankUp request RU-R1). `BspScores.score(server, uuid)` (rank, points, totems held, best tier), `points`, `totemsHeld`, `bestTier` (1 for Tier I to 5 for Tier V, 0 for none) and `board(server)`, read from the last board (every server's combined on a network). A `ScoreEvent.Changed` is posted on the server thread whenever a rebuilt board gives a player different points (with the difference); none for the first board after a start. One game test.
+- **`/bsp totem forget <player>` and `BspTotems.forgetPlayer(server, uuid)`** (BSP-Stress Test request ST-C1): the totem wipe without the fresh totem, for an online or an offline player (named by profile, so a bot that has left can be cleaned). Carried totems (when online), placed totems, ledger, logout, transfer, owed-item and network records and the first-join grant all go; nothing is given back. One game test.
+- **BSP-Core's teams count for BSP-RankUp's kill rule** (website question 4). At start BSP-Core registers its teams as RankUp's team provider, so kills between teammates count for nothing towards ranks, as RankUp intends once a teams mod is present. One game test.
+- **Screens fit a small window.** When the window is smaller than a screen's panel (a high GUI scale, or a small window, down to 320 x 240), the screen is drawn scaled down to fit, mouse and all, instead of running off the edges. At sizes where the panel fits nothing changes.
+
+### Fixed
+- **Extra Homes and Swift Travel can be bought on the tree.** Extra Homes was drawn on top of Sanctuary on the Home path, and a click there always chose Sanctuary, so neither it nor Swift Travel after it could be selected. Both sit beside the spoke now, clear of every other node, and Recall, Recall Block and Swift Travel have their own two letters (RC, RB, ST) instead of repeating RE and SW. One game test.
+- **The kit editor's text boxes sit on their fields.** The editor's panel is taller than the kit list's, and the boxes were placed for the list's, about 50 pixels low. The cooldown box no longer overlaps the "every" chip, a new kit's id stays clear of the Icon label, the chips of a long server or rank list leave room for the + box inside the panel, and the slot hint is short enough to stay beside the slots ("Click: out · wheel: count · shift: clear").
+- Text that ran past its box: the bank's balance at 1,000,000,000 pieces and more, the player's name in the bank header, the bank status strip with a long server id, big coin counts in the bank and the admin panel, the admin panel's totem places, the kit list's rule lines, the projector's repeater line, the Plasma Valve's hint, the Battery Charger's empty-slot line, the team invite card, the Recall card, assembly guide tips over the buttons, and the totem screen's title under the AURAS switch.
+- Things drawn over other things: the shop's special-offer badge over the first row of cards (it sits in the header now), the shop's hint over the last row while a message shows, the Coin Factory's RF intake line over the plasma gauge (it is in the RF gauge's tooltip now), the Land Office legend over the bottom of the map (it is in the side panel while no plot is chosen; the side panel is clipped and scrolls with the wheel), Deposit Box messages over the rent lines, the Battery Charger's eleven Carried powers running into the inventory, a long friends list over the access help, the LEAD tag over a teammate's totem count, crowded Plasma Accelerator link pips over the text at the foot, and the Sentinel strip over the steal countdown.
+- The Plasma Tank's port streams went into another render batch (drawn as solid cutout or in the beacon layer) whenever the level gauge or the forming sweep was drawn first.
+- The glowing parts of the Plasma Accelerator and Decelerator were drawn in the see-through skin's batch, so they could show through things or be painted over.
+- The projector's status line showed a raw key ("gui.bsp_core.projector.active_reserve") while it ran on the base's tank.
+- The guide book said a Plasma Tank holds plasma only and that tank plasma carries no Overclock; a tank keeps the powers of the totem that filled it and passes them to injectors (website question 6).
+
+### Changed
+- **Less work per frame and per tick.**
+  - X-ray reuses its buffers instead of making new ones every half second (their memory was never given back, a few MB a second while X-ray was on), rebuilds only when the ghosts, ores or centre change, and ghosts at most 4,096 blocks a scan, so switching on spreads over a few scans.
+  - The Cloaking fade buffer is made once.
+  - A totem under steal no longer re-sends its whole Cloaking snapshot (up to 33 x 33 x 33 cells) every second; the snapshot goes only when it changes, and to newcomers with the chunk.
+  - Working machines send their progress to clients as data only, once a second, instead of a block update that made every client rebuild the chunk section.
+  - A flowing cable confirms its unchanged flow every 5 s instead of 2 s, and the flowing plasma is drawn within 40 blocks instead of 64.
+  - Sentinel level 4 sends intruder positions ten times a second instead of twenty.
+  - The leaderboard is sent to players only when it changed.
+  - A carried totem's tag is copied into the ledger only when it changed, not every tick.
+  - The Land Office map keeps what is still in view when dragged and works out only the new strip; its refresh tries only the land that had not arrived, with a full redraw every 30 s.
+  - Wrapped text and key labels on the cash-machine screens, and the tank and interface help, are laid out once instead of every frame; the shop workbench's column count once a frame instead of once per card; the interface screen's run labels once per view.
+  - An Anti Totem is culled with its zone instead of never.
+  - Steal checks for other mods (`BspTotems.stealsAnywhere`, `beingStolen`, `thiefAt`) never load a chunk (BSP-Teleport request R10): a steal needs a thief standing there. `highestLevel` reads placed totems' upgrade levels from the ledger, which keeps them now; a totem whose levels were never kept is read from its block once. One game test.
+
+## [1.4.4] - 2026-10-23
+
 ### Added
 - **An X-ray hint every time it comes into the offhand.** Equipping a totem or a running Wave Emitter that carries X-ray, swapping one in, or switching an emitter on in the offhand puts a line on the action bar saying what the power can do right then: ready ("X-ray ready: press X", with the key it is bound to), recharging and for how long, already on and for how long, or that its key needs binding in Controls. X-ray itself is still switched on with its key. One game test, and one that pins down that a Wave Emitter gives its cell's powers to whoever holds it while the cell has plasma.
 
 ### Fixed
+- **An admin's totem goes along with the proxy's `/server` switch.** The proxy tells the server being left nothing, so the switch looked like a logout and the totem was placed there. An admin's logout now counts as a server transfer: their carried totems are stored for the journey and arrive in their inventory on the server they join next; if they join nowhere within `restrictions.transferTotemTimeoutHours` (48), the totems are placed back where they left. Other players' logouts place the totem as always. `restrictions.adminTotemsTravel` (on) switches it off. One game test.
 - **The TEAM and KITS buttons no longer sit on the inventory's tabs.** They stand in the top left corner of the window, on the survival and the creative inventory, and step aside for anything else there: other mods' buttons and the inventory panel with its tab rows. JEI and EMI are told where they are, so their bookmark lists and panels leave them free. One game test.
 - **The upgrade orbs round a placed totem are spaced evenly all the way round the plinth**, laid out symmetrically from the back, and turn with the totem, so they sit the same way whichever way it was placed. They no longer bunch up or overlap when a totem has only a few upgrades. One game test.
 

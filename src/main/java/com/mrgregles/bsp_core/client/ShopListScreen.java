@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.Locale;
 
 /** The Shopping Network list in the Cash Machine skin: one line per remote shop; click to open it. */
-public class ShopListScreen extends AbstractContainerScreen<ShopListMenu> {
+public class ShopListScreen extends AbstractContainerScreen<ShopListMenu> implements ScreenFit.Fitted {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A;
@@ -99,5 +99,15 @@ public class ShopListScreen extends AbstractContainerScreen<ShopListMenu> {
         }
         String pg = Component.translatable("gui.bsp_core.network.page", page + 1, pages()).getString();
         g.drawString(font, pg, SX + SW - 6 - font.width(pg), SY + SH - 12, PHOS_DIM, false);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

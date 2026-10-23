@@ -28,7 +28,7 @@ import java.util.Locale;
  * transaction log, deposit coins, withdraw coins. The Portable Banker shows the same screen with a
  * Shopping Network key in place of the deposit keys.
  */
-public class BankScreen extends AbstractContainerScreen<BankMenu> {
+public class BankScreen extends AbstractContainerScreen<BankMenu> implements ScreenFit.Fitted {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A,
             PHOS_DIM = 0x3FB97A, AMBER = 0xF2B544, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, ROW_SEL = 0xFF0F2D1C;
@@ -408,8 +408,8 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         g.fill(x + SX - 2, y + STRIP_Y - 2, x + W - SX + 2, y + STRIP_Y + STRIP_H + 2, SCREEN_EDGE);
         g.fill(x + SX, y + STRIP_Y, x + W - SX, y + STRIP_Y + STRIP_H, SCREEN);
         String where = menu.portable() ? tr("anywhere").getString() : tr("at_bank").getString();
-        g.drawString(font, where + " / " + Bank.serverId(), x + SX + 6, y + STRIP_Y + 7, PHOS_DIM, false);
         String synced = tr("synced").getString();
+        g.drawString(font, font.plainSubstrByWidth(where + " / " + Bank.serverId(), W - 2 * SX - 18 - font.width(synced)), x + SX + 6, y + STRIP_Y + 7, PHOS_DIM, false);
         g.drawString(font, synced, x + W - SX - 6 - font.width(synced), y + STRIP_Y + 7, PHOS_DIM, false);
     }
 
@@ -418,7 +418,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         // header line of the screen
         String head = "> " + (menu.portable() ? tr("title_portable") : tr("title_bank")).getString().toUpperCase(Locale.ROOT);
         g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
-        String who = minecraft.player.getGameProfile().getName();
+        String who = font.plainSubstrByWidth(minecraft.player.getGameProfile().getName(), SW - 18 - font.width(head));
         g.drawString(font, who, SX + SW - 6 - font.width(who), SY + 6, PHOS_DIM, false);
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
         // the message sits at the foot of the screen; the view is clipped to the space above it
@@ -439,13 +439,17 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
 
     private void drawAccount(GuiGraphics g) {
         String big = Bank.format(account().pieces);
+        String unit = tr("pieces").getString().toUpperCase(Locale.ROOT);
+        // the balance at double size with the unit after it, smaller when a long balance would run past the screen's edge
+        float scale = Math.min(2f, (SW - 16 - 4 - font.width(unit)) / (float) Math.max(1, font.width(big)));
+        float bigW = font.width(big) * scale;
+        float bx = SX + SW / 2f - (bigW + 4 + font.width(unit)) / 2f + (scale < 2f ? 0 : (font.width(unit) + 4) / 2f);
         g.pose().pushPose();
-        g.pose().translate(SX + SW / 2f - font.width(big), SY + 30, 0);
-        g.pose().scale(2f, 2f, 1f);
+        g.pose().translate(bx, SY + 30 + (2f - scale) * 4.5f, 0);
+        g.pose().scale(scale, scale, 1f);
         g.drawString(font, big, 0, 0, PHOS, false);
         g.pose().popPose();
-        String unit = tr("pieces").getString().toUpperCase(Locale.ROOT);
-        g.drawString(font, unit, SX + SW / 2 + font.width(big) + 4, SY + 38, PHOS_DIM, false);
+        g.drawString(font, unit, Math.round(bx + bigW + 4), SY + 38, PHOS_DIM, false);
         coinRow(g, SY + 58, true);
         int hy = SY + 100 + CashMachine.wrap(g, font, tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SX + 8, SY + 100, SW - 16, PHOS_DIM);
         if (menu.portable()) {
@@ -479,7 +483,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
             }
             g.renderItem(new ItemStack(t.coin()), bx, y);
             String cnt = String.valueOf(n);
-            g.drawString(font, cnt, cx + 17 - font.width(cnt) / 2, y + 20, n > 0 ? PHOS : PHOS_DIM, false);
+            CashMachine.fit(g, font, cnt, cx + 17 - Math.min(36, font.width(cnt)) / 2, y + 20, 36, n > 0 ? PHOS : PHOS_DIM);
             String name = Bank.tierName(t).toUpperCase(Locale.ROOT);
             g.pose().pushPose();
             g.pose().translate(cx + 17 - font.width(name) * 0.5f * 0.75f, y + 30, 0);
@@ -563,5 +567,15 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> {
         if (dep) {
             CashMachine.wrap(g, font, tr(convert ? "convert_hint" : "keep_hint"), SX + 8, py + 4, SW - 16, PHOS_DIM);
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

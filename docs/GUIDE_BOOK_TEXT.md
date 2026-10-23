@@ -325,7 +325,7 @@ Sneak and right-click the **core** of a cable to pick it up with its settings ke
 
 Wave Plasma can be kept in bulk. A *Plasma Tank* is a hollow box you build from three blocks: *Tank Casing* on every edge, *Tank Glass* or casing on the faces, and *Tank Ports* wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.
 
-Every block of the shell holds 2,500,000 mB. It holds plasma only, no powers.
+Every block of the shell holds 2,500,000 mB.
 
 **Page 2**  `[picture] A 5 x 4 x 5 tank, formed`
 
@@ -345,7 +345,13 @@ Right-click any block of the tank: the screen shows the tank in 3D with its plas
 
 When the tank forms, a sweep of light runs over it and the casing turns to glass with a lit outline along the edges; the four uprights glow as high as the plasma stands, so the level can be read from outside. Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.
 
-**Page 6: Breaking and rebuilding**
+**Page 6: Powers in the plasma**
+
+Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest. The tank's Output ports pass them on to injectors with every mB they give, with or without the totem, until that plasma is used up.
+
+Plain plasma fed in mixes with it, and the powers fade as the mix runs down. The tank screen lists the powers the plasma carries.
+
+**Page 7: Breaking and rebuilding**
 
 Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.
 
@@ -475,7 +481,7 @@ The cable comes in at the far end, the nozzle end touches the machine. The barre
 
 **Page 5: Overclock**
 
-**Overclock** on a totem travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank carries no Overclock, and a projector cannot send it.
+**Overclock** on a totem travels with the plasma. Every injector fed from that totem's extractors, however far the cables run, is stronger: the speed-up above normal is multiplied by 1.25, 1.5, 1.75 or 2 by level, so a run that gives a machine twice its speed gives three times at Overclock IV. Plasma from a tank keeps the Overclock of the totem that filled it, and a projector cannot send it.
 
 ## Letting Friends In
 

@@ -149,6 +149,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<String> REDIS_HOST, REDIS_PASSWORD, REDIS_CHANNEL;
     public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER;
     public static final ForgeConfigSpec.IntValue TRANSFER_SECONDS, TRANSFER_TIMEOUT_HOURS, LOGOUT_RETURN_MINUTES;
+    public static final ForgeConfigSpec.BooleanValue ADMIN_TOTEMS_TRAVEL;
     public static final ForgeConfigSpec.IntValue REDIS_PORT, REDIS_DB;
 
     // ------------------------------------------------------------------ bank
@@ -269,6 +270,11 @@ public final class BSPConfig {
         TRANSFER_TIMEOUT_HOURS = BUILDER
                 .comment("A totem stored for a server transfer whose owner never logs in anywhere is placed back at the departure point after this many hours.")
                 .defineInRange("transferTotemTimeoutHours", 48, 1, 24 * 365);
+        ADMIN_TOTEMS_TRAVEL = BUILDER
+                .comment("When true an admin's logout counts as a server transfer: their carried totems travel with them to the server they join next",
+                        "(the proxy's /server switch tells this server nothing, so it looks like a logout). Totems nobody collects go back to where",
+                        "the admin left after transferTotemTimeoutHours. Other players' logouts place the totem as always.")
+                .define("adminTotemsTravel", true);
         LOGOUT_RETURN_MINUTES = BUILDER
                 .comment("A totem the logout rule placed comes back into its owner's inventory when they log in again on this server, if it still stands where it was put,",
                         "untouched and not being stolen, within this many minutes of the logout. 0 = however long ago. It stands in the world and can be stolen the whole time.")

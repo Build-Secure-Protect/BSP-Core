@@ -24,7 +24,7 @@ import java.util.Map;
  * and Next (or the arrow keys) move through the steps. Opened by sneak + right-click on an
  * unfinished controller, or by holding Shift over a multiblock block in JEI.
  */
-public class AssemblyGuideScreen extends Screen {
+public class AssemblyGuideScreen extends Screen implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, TQ = 0xFF19D3B0, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, OUT = 0xFFFF8A3A, MUTED = 0x9AA3B5;
     private static final int W = 326, H = 206, VIEW_X = 10, VIEW_Y = 22, VIEW_W = 188, VIEW_H = 124, PARTS_X = 206, BTN_Y = 186;
     private static final String[] BUTTONS = {"back", "play", "next"};
@@ -170,7 +170,7 @@ public class AssemblyGuideScreen extends Screen {
         };
         var blocks = Minecraft.getInstance().getBlockRenderer();
         float pulse = 0.9f + 0.1f * Mth.sin((ticks + partialTick) * 0.35f);
-        g.enableScissor(x, y, x + VIEW_W, y + VIEW_H);
+        ScreenFit.scissor(g, x, y, x + VIEW_W, y + VIEW_H);
         PoseStack pose = g.pose();
         pose.pushPose();
         pose.translate(x + VIEW_W / 2f, y + VIEW_H / 2f, 300);
@@ -251,8 +251,13 @@ public class AssemblyGuideScreen extends Screen {
 
         // caption and controls
         g.drawString(font, current.title(), x + 10, y + 150, OUT & 0xFFFFFF, false);
-        if (current.tip() != null) {
-            g.drawWordWrap(font, current.tip(), x + 10, y + 162, W - 20, MUTED);
+        if (current.tip() != null) { // two lines at full size; a longer tip in small type, so it ends above the buttons
+            var lines = CashMachine.lines(font, current.tip(), W - 20);
+            if (lines.size() <= 2) {
+                CashMachine.wrap(g, font, current.tip(), x + 10, y + 162, W - 20, MUTED);
+            } else {
+                CashMachine.smallWrap(g, font, current.tip(), x + 10, y + 162, W - 20, MUTED);
+            }
         }
         for (int i = 0; i < BUTTONS.length; i++) {
             int bx = buttonX(i), by = y + BTN_Y;
@@ -328,5 +333,15 @@ public class AssemblyGuideScreen extends Screen {
         if (guide != null) {
             mc.setScreen(new AssemblyGuideScreen(guide));
         }
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

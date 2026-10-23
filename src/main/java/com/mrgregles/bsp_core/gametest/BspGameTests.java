@@ -2140,6 +2140,47 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void an_admins_logout_takes_their_totem_along_as_a_transfer(GameTestHelper h) {
+        BlockPos floor = new BlockPos(18, 1, 10);
+        h.setBlock(floor, Blocks.STONE);
+        var admin = survivor(h);
+        var player = survivor(h);
+        BlockPos stand = h.absolutePos(floor.above());
+        admin.setPos(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5);
+        var totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(admin.getUUID(), admin.getGameProfile().getName()).applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(totem);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        var adminsBefore = new ArrayList<String>(com.mrgregles.bsp_core.BSPConfig.ADMINS.get());
+        boolean travelBefore = com.mrgregles.bsp_core.BSPConfig.ADMIN_TOTEMS_TRAVEL.get();
+        try {
+            com.mrgregles.bsp_core.BSPConfig.ADMINS.set(List.of(admin.getGameProfile().getName()));
+            com.mrgregles.bsp_core.BSPConfig.ADMIN_TOTEMS_TRAVEL.set(true);
+            h.assertFalse(com.mrgregles.bsp_core.event.TotemLogoutHandler.travelsWithAdmin(admin), "an admin with no totem: nothing to carry");
+            player.getInventory().setItem(0, totem.copy());
+            h.assertFalse(com.mrgregles.bsp_core.event.TotemLogoutHandler.travelsWithAdmin(player), "anyone else's logout places the totem as always");
+            player.getInventory().clearContent();
+            admin.getInventory().setItem(0, totem.copy());
+            h.assertTrue(com.mrgregles.bsp_core.event.TotemLogoutHandler.travelsWithAdmin(admin), "an admin carrying a totem: it travels with them");
+            com.mrgregles.bsp_core.BSPConfig.ADMIN_TOTEMS_TRAVEL.set(false);
+            h.assertFalse(com.mrgregles.bsp_core.event.TotemLogoutHandler.travelsWithAdmin(admin), "switched off: placed as always");
+            com.mrgregles.bsp_core.BSPConfig.ADMIN_TOTEMS_TRAVEL.set(true);
+            // the logout: with no shared database (this test server) the transfer keeps the totem here and the logout places it, so nothing is lost
+            com.mrgregles.bsp_core.event.TotemLogoutHandler.placeOnLogout(admin);
+            h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(admin).isEmpty(), "the totem left the inventory");
+            h.assertFalse(com.mrgregles.bsp_core.api.BspTransfer.isTransferring(admin.getUUID()), "the transfer was used up by the logout");
+            h.assertBlockPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), floor.above());
+        } finally {
+            com.mrgregles.bsp_core.BSPConfig.ADMINS.set(adminsBefore);
+            com.mrgregles.bsp_core.BSPConfig.ADMIN_TOTEMS_TRAVEL.set(travelBefore);
+            h.setBlock(floor.above(), Blocks.AIR);
+            com.mrgregles.bsp_core.data.TotemLedger.get(server(h)).forget(id);
+            com.mrgregles.bsp_core.data.PlayerPersistent.takeLogoutPlaced(admin);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public void xray_hint_shows_whenever_xray_comes_into_the_offhand_with_its_state(GameTestHelper h) {
         var none = com.mrgregles.bsp_core.client.XrayHint.Held.NOTHING;
         var totemA = new com.mrgregles.bsp_core.client.XrayHint.Held("bsp_core:shatter_totem#a", 2);
@@ -3499,6 +3540,168 @@ public class BspGameTests {
             }
         }
         ledger.clearGranted(a.getUUID());
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void the_storage_api_hands_out_the_mysql_driver_bsp_core_uses(GameTestHelper h) {
+        var driver = com.mrgregles.bsp_core.api.BspStorage.jdbcDriver();
+        h.assertTrue(driver.isPresent(), "Connector/J is on the dev run's classpath, so a driver is found");
+        String name = com.mrgregles.bsp_core.api.BspStorage.jdbcDriverClass().orElse("");
+        h.assertTrue(name.endsWith("mysql.cj.jdbc.Driver") && name.equals(driver.get().getClass().getName()), "the MySQL driver comes first: " + name);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspStorage.jdbcUrlPrefix().orElse("").equals("jdbc:mysql://"), "and takes jdbc:mysql:// URLs");
+        java.util.Properties props = new java.util.Properties();
+        props.setProperty("user", "nobody");
+        props.setProperty("password", "");
+        try {
+            h.assertTrue(driver.get().acceptsURL("jdbc:mysql://127.0.0.1:1/x"), "it accepts a MySQL URL");
+            driver.get().connect("jdbc:mysql://127.0.0.1:1/x?connectTimeout=1500", props);
+            h.fail("nothing listens on port 1, so the connection must fail");
+        } catch (java.sql.SQLException expected) {
+            h.assertFalse(String.valueOf(expected.getMessage()).contains("No suitable driver"), "the failure comes from inside the driver: " + expected.getMessage());
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void the_scores_api_reads_the_board_and_posts_a_change_when_points_move(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        List<com.mrgregles.bsp_core.api.event.ScoreEvent.Changed> seen = new ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.ScoreEvent.Changed> listener = e -> {
+            if (e.getPlayer().equals(a.getUUID())) {
+                seen.add(e);
+            }
+        };
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(listener);
+        BlockPos pos = new BlockPos(2, 1, 2);
+        try {
+            com.mrgregles.bsp_core.score.ScoreService.refresh(server); // a baseline board
+            h.assertTrue(com.mrgregles.bsp_core.api.BspScores.score(server, a.getUUID()).isEmpty(), "no totem, no line");
+            h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+            entity(h, pos, ShatterTotemBlockEntity.class).setOwner(new TotemOwner(a.getUUID(), a.getGameProfile().getName()));
+            com.mrgregles.bsp_core.score.ScoreService.refresh(server);
+            int one = com.mrgregles.bsp_core.score.ScoreService.tierPoints(0);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspScores.points(server, a.getUUID()) == one, "a Tier I totem is worth its points");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspScores.totemsHeld(server, a.getUUID()) == 1 && com.mrgregles.bsp_core.api.BspScores.bestTier(server, a.getUUID()) == 1, "one totem, best Tier I");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspScores.board(server).stream().anyMatch(s -> s.player().equals(a.getUUID()) && s.rank() >= 1), "and a ranked line on the board");
+            h.assertTrue(seen.size() == 1 && seen.get(0).getPoints() == one && seen.get(0).getDelta() == one && seen.get(0).getTotems() == 1, "one change event: " + seen.size());
+            com.mrgregles.bsp_core.score.ScoreService.refresh(server);
+            h.assertTrue(seen.size() == 1, "an unchanged board posts nothing");
+            h.setBlock(pos, Blocks.AIR);
+            com.mrgregles.bsp_core.score.ScoreService.refresh(server);
+            h.assertTrue(seen.size() == 2 && seen.get(1).getPoints() == 0 && seen.get(1).getDelta() == -one && seen.get(1).getBestTier() == 0, "losing the totem posts the drop to 0");
+        } finally {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(listener);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void totem_forget_leaves_nothing_and_gives_nothing_back_online_or_offline(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var a = survivor(h);
+        BlockPos pos = new BlockPos(2, 1, 2);
+        h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+        entity(h, pos, ShatterTotemBlockEntity.class).setOwner(new TotemOwner(a.getUUID(), a.getGameProfile().getName()));
+        var carried = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new TotemOwner(a.getUUID(), a.getGameProfile().getName()).applyTo(carried);
+        a.getInventory().add(carried);
+        ledger.markGranted(a.getUUID());
+        // a mock player is not in the player list, so this is the offline path: placed totems go, the inventory is not opened
+        var offline = com.mrgregles.bsp_core.totem.TotemWipe.forget(server, a.getUUID());
+        h.assertTrue(offline.placed() == 1 && offline.carried() == 0 && !offline.granted(), "offline: the placed totem goes, nothing given: " + offline);
+        h.assertBlockNotPresent(ModBlocks.SHATTER_TOTEM.get(), pos);
+        h.assertTrue(ledger.placedFor(a.getUUID()).isEmpty() && !ledger.hasBeenGranted(a.getUUID()), "no placed record and no grant left");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(a).size() == 1, "the offline path left the saved inventory alone");
+        // a placed totem of someone who never joined this run
+        UUID ghost = UUID.randomUUID();
+        BlockPos pos2 = new BlockPos(4, 1, 4);
+        h.setBlock(pos2, ModBlocks.SHATTER_TOTEM.get());
+        entity(h, pos2, ShatterTotemBlockEntity.class).setOwner(new TotemOwner(ghost, "SSTBot_0001"));
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.forgetPlayer(server, ghost) == 1, "the api reports one totem taken");
+        h.assertBlockNotPresent(ModBlocks.SHATTER_TOTEM.get(), pos2);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.placed(server, ghost).isEmpty(), "and nothing of it is left");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void steal_and_level_lookups_never_load_a_totems_chunk(GameTestHelper h) {
+        var server = server(h);
+        var level = h.getLevel();
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        UUID owner = UUID.randomUUID();
+        // a totem the ledger knows of, far off in a chunk nobody has loaded
+        BlockPos far = new BlockPos(2_900_000, 64, 2_900_000);
+        net.minecraft.core.GlobalPos where = net.minecraft.core.GlobalPos.of(level.dimension(), far);
+        h.assertFalse(level.hasChunk(far.getX() >> 4, far.getZ() >> 4), "the far chunk starts unloaded");
+        ledger.recordPlaced(owner, where, 2);
+        ledger.recordLevels(where, Map.of(TotemUpgrades.Buff.EXTRA_HOMES.key, 3));
+        try {
+            com.mrgregles.bsp_core.api.BspTotems.stealsAnywhere(server);
+            com.mrgregles.bsp_core.api.BspTotems.beingStolen(server, owner);
+            com.mrgregles.bsp_core.api.BspTotems.thiefAt(level, far);
+            int homes = com.mrgregles.bsp_core.api.BspTotems.highestLevel(server, owner, TotemUpgrades.Buff.EXTRA_HOMES);
+            h.assertTrue(homes == 3, "the level comes from the ledger: " + homes);
+            h.assertFalse(level.hasChunk(far.getX() >> 4, far.getZ() >> 4), "and no lookup loaded the chunk");
+        } finally {
+            ledger.recordRemoved(where);
+        }
+        // a loaded totem keeps the ledger's levels current as upgrades are bought
+        BlockPos pos = new BlockPos(2, 1, 2);
+        h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+        var be = entity(h, pos, ShatterTotemBlockEntity.class);
+        UUID a = UUID.randomUUID();
+        be.setOwner(new TotemOwner(a, "levels"));
+        be.setUpgradeLevel(TotemUpgrades.Buff.SWIFT_TRAVEL, 2);
+        var here = net.minecraft.core.GlobalPos.of(level.dimension(), h.absolutePos(pos));
+        h.assertTrue(ledger.hasLevels(here) && ledger.levelAt(here, TotemUpgrades.Buff.SWIFT_TRAVEL.key) == 2, "the ledger follows the bought level");
+        be.resetUpgrades();
+        h.assertTrue(ledger.levelAt(here, TotemUpgrades.Buff.SWIFT_TRAVEL.key) == 0, "and a reset");
+        h.setBlock(pos, Blocks.AIR);
+        h.succeed();
+    }
+
+    /** Stands in for BSP-RankUp's TeamProvider, which is not loaded in this run. */
+    public interface SameTeamQuestion {
+        boolean sameTeam(UUID a, UUID b);
+    }
+
+    @GameTest(template = EMPTY)
+    public void rankup_team_provider_answers_with_bsp_cores_teams(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        var c = survivor(h);
+        var provider = (SameTeamQuestion) com.mrgregles.bsp_core.compat.RankUpHook.teamProvider(SameTeamQuestion.class);
+        h.assertFalse(provider.sameTeam(a.getUUID(), b.getUUID()), "no team yet");
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Kill"), net.minecraft.ChatFormatting.GOLD).ok(), "a team is made");
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, b).ok() && com.mrgregles.bsp_core.team.Teams.accept(b).ok(), "b joins");
+            h.assertTrue(provider.sameTeam(a.getUUID(), b.getUUID()) && provider.sameTeam(b.getUUID(), a.getUUID()), "teammates either way round");
+            h.assertFalse(provider.sameTeam(a.getUUID(), c.getUUID()) || provider.sameTeam(a.getUUID(), a.getUUID()), "an outsider is not, nor is a player their own teammate");
+            h.assertTrue(provider.equals(provider) && !provider.toString().isEmpty(), "the object methods answer");
+        } finally {
+            com.mrgregles.bsp_core.team.Teams.disband(a);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void every_upgrade_on_the_tree_can_be_clicked_and_has_its_own_label(GameTestHelper h) {
+        java.util.Set<String> labels = new java.util.HashSet<>();
+        for (TotemUpgrades.Buff b : TotemUpgrades.Buff.values()) {
+            int[] p = com.mrgregles.bsp_core.client.TreeLayout.at(b);
+            h.assertTrue(com.mrgregles.bsp_core.client.TreeLayout.nodeAt(p[0], p[1]) == b, "clicking " + b + "'s node picks it, not a node drawn on the same spot");
+            h.assertTrue(labels.add(com.mrgregles.bsp_core.client.TreeLayout.abbr(b)), "two nodes read " + com.mrgregles.bsp_core.client.TreeLayout.abbr(b));
+            for (TotemUpgrades.Buff o : TotemUpgrades.Buff.values()) {
+                int[] q = com.mrgregles.bsp_core.client.TreeLayout.at(o);
+                h.assertTrue(o == b || Math.abs(p[0] - q[0]) >= 9 || Math.abs(p[1] - q[1]) >= 9, b + " and " + o + " sit almost on one spot");
+            }
+        }
+        int[] home = com.mrgregles.bsp_core.client.TreeLayout.at(TotemUpgrades.Buff.EXTRA_HOMES), sanct = com.mrgregles.bsp_core.client.TreeLayout.at(TotemUpgrades.Buff.SANCTUARY);
+        h.assertTrue(Math.abs(home[0] - sanct[0]) >= 14 || Math.abs(home[1] - sanct[1]) >= 14, "Extra Homes no longer sits under Sanctuary");
         h.succeed();
     }
 }

@@ -55,7 +55,7 @@ KEYS = {
     "gui.bsp_core.kit.items_of": "Contents · %s of %s",
     "gui.bsp_core.kit.add_items": "Add items",
     "gui.bsp_core.kit.search_hint": "search every item…",
-    "gui.bsp_core.kit.slot_hint": "Click takes a slot out · wheel sets the count · shift-click clears",
+    "gui.bsp_core.kit.slot_hint": "Click: out · wheel: count · shift: clear",
     "gui.bsp_core.kit.browse_hint": "Click adds one · shift-click a stack",
     "gui.bsp_core.kit.pick_icon": "Click an item to make it the icon",
     "gui.bsp_core.kit.no_match": "Nothing matches",

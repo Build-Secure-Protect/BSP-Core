@@ -25,7 +25,7 @@ import java.util.Locale;
  * then one pip per Motivator. A lane framed red needs a blank or RF, orange has a full tray. Under
  * the lanes: the shared RF gauge with its intake, the power switch and the owner line.
  */
-public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> {
+public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, GHOST = 0xA010151C;
     private static final int TQ = 0xFF19D3B0, IN = 0xFF3A8BFF, OUT = 0xFFFF8A3A, VIO = 0xFFB58CFF, BAD = 0xFFD63B2F, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5;
     private static final int LANE_TOP = 20, LANE_BOTTOM = 102, BAR_TOP = 50, BAR_H = 22, PIP_Y = 95, GAUGE_X = 14, GAUGE_Y = 108, POWER_X = 274, POWER_Y = 104, POWER_W = 38, POWER_H = 16;
@@ -152,13 +152,14 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
 
         g.drawString(font, Component.translatable("gui.bsp_core.hud.rf"), GAUGE_X, GAUGE_Y, MUTED, false);
         // plasma arriving at the slices' injectors: one cell per 100 mB/t, beside the RF gauge
-        int ION = 0xFF4CB2FA, px = GAUGE_X + 150;
-        g.drawString(font, Component.translatable("gui.bsp_core.factory.plasma_label"), px, GAUGE_Y, plasma > 0 ? ION & 0xFFFFFF : MUTED, false);
-        int lit = Math.min(6, Math.round(plasma / 100f));
+        // (the RF intake is in the RF gauge's tooltip: the row has no room for it beside the plasma cells and the power label)
+        int ION = 0xFF4CB2FA, px = GAUGE_X + 144;
+        Component plasmaLabel = Component.translatable("gui.bsp_core.factory.plasma_label");
+        g.drawString(font, plasmaLabel, px, GAUGE_Y, plasma > 0 ? ION & 0xFFFFFF : MUTED, false);
+        int lit = Math.min(6, Math.round(plasma / 100f)), cx = px + font.width(plasmaLabel) + 4;
         for (int i = 0; i < 6; i++) {
-            g.fill(px + 42 + i * 9, GAUGE_Y - 1, px + 49 + i * 9, GAUGE_Y + 7, i < lit ? ION : DIM);
+            g.fill(cx + i * 7, GAUGE_Y - 1, cx + 5 + i * 7, GAUGE_Y + 7, i < lit ? ION : DIM); // ends clear of the POWER label
         }
-        small(g, Component.translatable("gui.bsp_core.factory.intake", String.format("%,d", menu.intake()), menu.cables()), GAUGE_X + 142, GAUGE_Y + 1, MUTED);
         Component power = Component.translatable("gui.bsp_core.hud.power");
         small(g, power, POWER_X - 4 - Math.round(font.width(power) * 0.75f), POWER_Y + 5, MUTED);
 
@@ -218,8 +219,9 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
             }
         }
         if (over(mouseX, mouseY, x + GAUGE_X, y + GAUGE_Y - 2, 140, 11)) {
-            g.renderTooltip(font, Component.translatable("gui.bsp_core.factory.energy",
-                    String.format("%,d", menu.energy()), String.format("%,d", menu.energyCapacity())), mouseX, mouseY);
+            g.renderComponentTooltip(font, List.of(Component.translatable("gui.bsp_core.factory.energy",
+                    String.format("%,d", menu.energy()), String.format("%,d", menu.energyCapacity())),
+                    Component.translatable("gui.bsp_core.factory.intake", String.format("%,d", menu.intake()), menu.cables())), mouseX, mouseY);
         }
         if (over(mouseX, mouseY, x + POWER_X, y + POWER_Y, POWER_W, POWER_H)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.hud.power_tip"), mouseX, mouseY);
@@ -234,5 +236,15 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         if (d > 0) return d + "d " + h + "h " + m + "m";
         if (h > 0) return h + "h " + m + "m " + s + "s";
         return m + "m " + s + "s";
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

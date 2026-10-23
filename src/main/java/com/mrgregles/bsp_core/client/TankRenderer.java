@@ -66,6 +66,7 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
         BlockPos min = part.getBlockPos();
         gauge(part, pose, buffers, light, surface, t);
         sweep(part, pose, buffers, light, partialTick);
+        vc = PlasmaRender.buffer(buffers); // the gauge and sweep switched batches; the streams go back into the plasma's own
         for (Map.Entry<BlockPos, int[]> e : part.ports().entrySet()) {
             int in = e.getValue()[1];
             if (in <= 0 || frac >= 0.995f) {

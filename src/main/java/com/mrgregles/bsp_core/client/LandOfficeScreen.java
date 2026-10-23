@@ -26,7 +26,7 @@ import java.util.Locale;
  * and what it costs; BUY, ENLARGE and GIVE UP ask once more before they act. Region Guard keeps the
  * plots and the money moves through it.
  */
-public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
+public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> implements ScreenFit.Fitted {
     private static final int W = 360, H = 232;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             AMBER = 0xF2B544, RED = 0xFF6B5C, WHITE = 0xF4F1E8;
@@ -221,9 +221,18 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
+        if (over(mx, my, leftPos + PX, topPos + SIDE_TOP, PW, SY + SH - SIDE_TOP)) {
+            int room = SY + SH - SIDE_TOP - 2;
+            sideScroll = Math.max(0, Math.min(Math.max(0, sideHeight - room), sideScroll - (int) Math.signum(delta) * 9));
+            return true;
+        }
         zoom = Math.max(0, Math.min(ZOOMS.length - 1, zoom - (int) Math.signum(delta)));
         return true;
     }
+
+    private static final int SIDE_TOP = SY + 18;
+    private int sideScroll, sideHeight;
+    private String sideFor = "";
 
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx < x + w && my >= y && my < y + h;
@@ -345,16 +354,24 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
         }
         if (confirming != null) {
             bottom = CashMachine.wrapUp(g, font, tr("confirm_hint"), SX + 6, bottom, SW - 12, AMBER) - 2;
-        } else {
-            CashMachine.wrapUp(g, font, tr("legend"), SX + 6, Math.min(bottom, SY + SH - 4), SW - 12, PHOS_DIM);
         }
-        // the side panel: the chosen plot
+        // the side panel: the chosen plot, clipped to the panel and scrolled with the wheel when it is longer
         g.drawString(font, tr("side").getString().toUpperCase(Locale.ROOT), PX + 3, SY + 6, PHOS, false);
         g.fill(PX + 2, SY + 16, PX + PW - 2, SY + 17, SCREEN_EDGE);
         Plot sel = selected();
-        int ty = SY + 22;
-        if (sel == null) {
-            CashMachine.wrap(g, font, tr(menu.plots.isEmpty() ? (menu.present ? "none_here" : "absent") : "side_hint"), PX + 3, ty, PW - 6, PHOS_DIM);
+        String selId = sel == null ? "" : sel.id();
+        if (!selId.equals(sideFor)) {
+            sideFor = selId;
+            sideScroll = 0;
+        }
+        CashMachine.clip(g, leftPos, topPos, PX, SIDE_TOP, PW, SY + SH - SIDE_TOP);
+        g.pose().pushPose();
+        g.pose().translate(0, -sideScroll, 0);
+        int ty = SIDE_TOP + 4;
+        if (sel == null) { // the map's legend lives here while no plot is chosen, clear of the map
+            ty += CashMachine.wrap(g, font, tr(menu.plots.isEmpty() ? (menu.present ? "none_here" : "absent") : "side_hint"), PX + 3, ty, PW - 6, PHOS_DIM) + 4;
+            ty += CashMachine.smallWrap(g, font, tr("legend"), PX + 3, ty, PW - 6, PHOS_DIM);
+            endSide(g, ty);
             return;
         }
         ty += CashMachine.wrap(g, font, Component.literal(sel.name()), PX + 3, ty, PW - 6, sel.kind() == Plot.MINE ? PHOS : AMBER) + 3;
@@ -403,7 +420,30 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> {
         if (player != null) {
             int dx = Math.max(0, Math.max(sel.minX() - player.getBlockX(), player.getBlockX() - sel.maxX()));
             int dz = Math.max(0, Math.max(sel.minZ() - player.getBlockZ(), player.getBlockZ() - sel.maxZ()));
-            CashMachine.wrap(g, font, tr("distance", Math.round(Math.sqrt((double) dx * dx + dz * dz))), PX + 3, ty, PW - 6, PHOS_DIM);
+            ty += CashMachine.wrap(g, font, tr("distance", Math.round(Math.sqrt((double) dx * dx + dz * dz))), PX + 3, ty, PW - 6, PHOS_DIM);
         }
+        endSide(g, ty);
+    }
+
+    /** Ends the side panel's clip and remembers how tall its text ran, for the wheel. */
+    private void endSide(GuiGraphics g, int bottom) {
+        g.pose().popPose();
+        g.disableScissor();
+        sideHeight = bottom - SIDE_TOP;
+        int room = SY + SH - SIDE_TOP - 2;
+        if (sideHeight > room) { // a sliver on the panel's edge says there is more
+            int track = room, knob = Math.max(6, track * room / sideHeight), ky = (track - knob) * sideScroll / Math.max(1, sideHeight - room);
+            g.fill(PX + PW - 2, SIDE_TOP + ky, PX + PW - 1, SIDE_TOP + ky + knob, PHOS_DIM | 0xFF000000);
+        }
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

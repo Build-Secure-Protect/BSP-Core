@@ -1381,3 +1381,73 @@ Covered by GameTests `xray_hint_shows_whenever_xray_comes_into_the_offhand_with_
 - [ ] Unbind the X-ray key in Controls and equip again: the line says to bind it.
 - [ ] A totem without X-ray, or an emitter that is off: no line.
 - [ ] Give a running emitter with an X-ray cell to a player who has no totem: they get the hint and X-ray works for them.
+
+## An admin's totem and the proxy's /server (2026-10-23)
+
+Covered by GameTest `an_admins_logout_takes_their_totem_along_as_a_transfer` (the database path is BspTransfer's own, as for BSP-Teleport's transfers). Needs two servers on MySQL behind Velocity.
+
+- [ ] As an admin carrying your totem, `/server <other>`: the totem is in your inventory on the other server; nothing is placed on the one you left.
+- [ ] As an admin, quit the game carrying your totem and log in on any server: the totem is back in your inventory.
+- [ ] As a normal player, log out carrying a totem: it is placed where you stood, as always.
+- [ ] `restrictions.adminTotemsTravel = false` (restart): an admin's `/server` places the totem on the server left.
+
+## Requests: the driver, the scores, forget, steal lookups, RankUp teams (2026-10-23)
+
+Covered by GameTests `the_storage_api_hands_out_the_mysql_driver_bsp_core_uses`, `the_scores_api_reads_the_board_and_posts_a_change_when_points_move`, `totem_forget_leaves_nothing_and_gives_nothing_back_online_or_offline`, `steal_and_level_lookups_never_load_a_totems_chunk` and `rankup_team_provider_answers_with_bsp_cores_teams`. The rest needs the other mods or a real network.
+
+- [ ] Forge server with the full jar and BSP-Teleport on MySQL: Teleport connects through `BspStorage.jdbcDriver()` (its log names the driver class).
+- [ ] With BSP-RankUp: two teammates kill each other; no kill counts towards either's rank. A kill of an outsider counts.
+- [ ] With BSP-RankUp reading `BspScores`: place a totem, wait for the board (30 s, or a second on a single server); RankUp's PLAYERS tab shows the new points.
+- [ ] `/bsp totem forget <bot>` for a bot that left: its placed totem is gone, nothing is given to anyone, and the bot gets a fresh first-join totem if it joins again.
+- [ ] `/bsp totem forget <player>` for an online player: carried and placed totems gone, nothing in their hands afterwards.
+- [ ] A player with Extra Homes on a totem whose chunk is unloaded: BSP-Teleport still gives the extra home (the level comes from the ledger). After updating, load each base once so its levels are kept.
+- [ ] Portal and teleport use near many unloaded bases: no lag spike (steal checks no longer load chunks).
+
+## UI and performance check (2026-10-23)
+
+The tree is covered by GameTest `every_upgrade_on_the_tree_can_be_clicked_and_has_its_own_label`; everything else is drawing and needs the client. Check at a normal window and again at the smallest: Video Settings, GUI scale at its largest, or a 854 x 480 window.
+
+Small windows
+- [ ] At the largest GUI scale, open the admin panel (and the kit editor), the Score Screen settings, the totem screen, the Plasma Tank and Interface screens, the Land Office and the Battery Charger: each shows whole, scaled down, nothing cut at the edges, and every button, box, slot and scroll works where it is drawn (drag items, type in boxes, scroll lists).
+- [ ] At a normal GUI scale the same screens look exactly as before.
+
+The tree
+- [ ] On the Home path, Sanctuary and Extra Homes are two nodes side by side; click each: the detail panel names the one clicked. Buy Extra Homes, then Swift Travel.
+- [ ] Recall reads RC, Recall Block RB, Swift Travel ST.
+
+Text in its box
+- [ ] Bank: give yourself a balance of 1,000,000,000 pieces (and more): the number shrinks to fit, with PIECES beside it, inside the screen. A 16-letter player name sits in the header without touching the title.
+- [ ] Bank: a long `storage.serverId`: the status strip cuts it before "synced". Hold 1,000,000 coins of a tier in the bank: the count fits its column.
+- [ ] Admin panel: a player with a totem far out (coordinates in the millions) in a modded dimension: the line stops before the TP button. Big coin counts shrink under their coin.
+- [ ] Kit list: a kit granted on several servers with several ranks: the two rule lines end in "..." inside the panel.
+- [ ] Kit editor: every text box sits on its field (name, description, price, cooldown, search). The cooldown box is clear of the "every" chip. A long new kit name: its id stays left of "Icon". Many servers or ranks: the + chip and its box stay inside the panel.
+- [ ] Projector with repeaters: the repeater line wraps to two lines on both tabs, nothing past the edge.
+- [ ] Plasma Valve: the hint at the foot wraps to two lines under the dial, clear of the "passing" line.
+- [ ] Battery Charger empty: the hint wraps in the left column, clear of the power list. With a Power Cell: eleven powers and the note end above the inventory.
+- [ ] Team invite card with a 16-letter leader name and long key names: every line inside the card.
+- [ ] Recall offer: the card sits above the action bar and the held item's name; "Recall lands you within N blocks" fits.
+- [ ] Assembly guide: a step with a long tip shows it in small type above the Back/Play/Next buttons.
+- [ ] Totem screen as an operator with five tabs: the title ends in "..." before the AURAS switch.
+
+Nothing drawn over another thing
+- [ ] Shop with a special offer: the badge is in the header beside the page, and the first row of cards (stock counts, the instant star) is clear. Buy something: while the message shows, the hint under the cards is gone, not over the last row.
+- [ ] Coin Factory: the gauge row reads RF, its cells, PLASMA and its cells, then POWER, none touching. Hover the RF cells: the tooltip has the energy and the intake.
+- [ ] Land Office: no plot chosen: the legend is in the side panel, the whole map is clear. Choose an open plot and outline ground: the side panel scrolls with the wheel when the text is longer than the panel and never runs into the strip below. Drag the map: it moves smoothly.
+- [ ] Deposit Box rented: a long message hides the rent lines it would cover instead of drawing over them. Lapsed: the terms start with their first line.
+- [ ] Totem ACCESS tab with 6 to 8 friends: the help lines step aside, nothing over the rows.
+- [ ] Team screen: a leader with a long name: LEAD is clear of the totem count.
+- [ ] Plasma Accelerator with three or more links to one world: the pips sit closer, with only their state under them, above the text at the foot; hovering one names its place.
+- [ ] Owner with Sentinel, while a thief steals: the steal countdown sits under the Sentinel strip.
+
+Drawing
+- [ ] Plasma Tank below full with a side or top port feeding: the streams and ripples look like plasma (see-through, glowing), during the forming sweep as well.
+- [ ] Plasma Accelerator and Decelerator: the glowing parts are solid glow and never show through the hull; the black hole's skin is see-through over the core.
+- [ ] Projector running on the base's tank: the status reads "PROJECTING (on the base's tank)", not a key.
+
+Performance
+- [ ] X-ray on for a few minutes (F3: memory): no steady climb; standing still, no stutter every half second. Switching on in a cave shows the ghosts over a second or so.
+- [ ] A cloaked totem under steal, watched by other players: no network spike every second; the cloak stays hidden for them all through the steal; a player who arrives during the steal sees the cloak.
+- [ ] A row of working machines: no chunk flicker or stutter once a second; their animations still run.
+- [ ] A long flowing cable run: the flow shows within 40 blocks; break the interface: the cables drain within about 6 s.
+- [ ] Sentinel level 4 with an intruder: the positions still move smoothly.
+- [ ] The Anti Totem outline (admin holding the block) still shows when the block itself is out of view.

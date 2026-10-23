@@ -28,7 +28,7 @@ import java.util.Locale;
  * grey and dashed while the link sleeps. Click a link to select it; UNLINK takes its card out at the far end, WAKE loads every
  * sleeping far side for a moment. The server refreshes the board once a second.
  */
-public class AcceleratorScreen extends Screen {
+public class AcceleratorScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 360, H = 206, TOP_ROW = 46, PIP = 8;
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, LINE = 0xFF1F2430, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, BAD = 0xFF6B5C, ION = 0xFF4FB8FF, GREEN = 0xFF58F29A;
     @Nullable
@@ -132,13 +132,28 @@ public class AcceleratorScreen extends Screen {
         int[][] out = new int[v.links().size()][2];
         int home = cols.indexOf(v.world());
         count[home] = 1;
+        int step = step(v, cols);
         for (int i = 0; i < v.links().size(); i++) {
             int c = Math.max(0, cols.indexOf(v.links().get(i).world()));
             out[i][0] = colX(n, c);
-            out[i][1] = top() + TOP_ROW + 22 + count[c] * 34;
+            out[i][1] = top() + TOP_ROW + 22 + count[c] * step;
             count[c]++;
         }
         return out;
+    }
+
+    /** Space between pips in a column: 34, closer when a crowded column would run into the text at the foot. */
+    private int step(LinkViewPacket v, List<String> cols) {
+        int[] count = new int[Math.max(1, cols.size())];
+        int home = Math.max(0, cols.indexOf(v.world()));
+        count[home] = 1;
+        int most = 1;
+        for (LinkViewPacket.Link l : v.links()) {
+            int c = Math.max(0, cols.indexOf(l.world()));
+            most = Math.max(most, ++count[c]);
+        }
+        int room = H - 52 - 21 - (TOP_ROW + 22); // from the first pip to where the last one's labels must end
+        return most <= 1 ? 34 : Math.min(34, room / (most - 1));
     }
 
     private int[] homePip(LinkViewPacket v, List<String> cols) {
@@ -251,6 +266,7 @@ public class AcceleratorScreen extends Screen {
         g.fill(x + 10, y + TOP_ROW - 1, x + W - 10, y + TOP_ROW, LINE);
         int[] home = homePip(v, cols);
         int[][] at = pips(v, cols);
+        int step = step(v, cols);
         // lines first, pips over them
         for (int i = 0; i < at.length; i++) {
             Links.State s = state(v.links().get(i));
@@ -268,9 +284,12 @@ public class AcceleratorScreen extends Screen {
             int edge = s == Links.State.DELIVERING ? ION : s.live() ? MUTED | 0xFF000000 : DIM | 0xFF5A6272;
             dot(g, at[i][0], at[i][1], PIP + (sel || isOver ? 4 : 0), sel ? GOLD : edge);
             dot(g, at[i][0], at[i][1], PIP - 4 + (sel || isOver ? 4 : 0), sel ? GOLD : BG);
-            smallCentred(g, Component.literal(l.pos().getX() + " " + l.pos().getY() + " " + l.pos().getZ()), at[i][0], at[i][1] + 7, cw - 6, TEXT);
+            boolean roomy = step >= 24; // crowded columns keep only the state under each pip; the hover still names the place
+            if (roomy) {
+                smallCentred(g, Component.literal(l.pos().getX() + " " + l.pos().getY() + " " + l.pos().getZ()), at[i][0], at[i][1] + 7, cw - 6, TEXT);
+            }
             Component stateText = s == Links.State.DELIVERING ? tr("rate", l.rate()) : Component.translatable(s.key());
-            smallCentred(g, stateText, at[i][0], at[i][1] + 15, cw - 6, stateColour(s) & 0xFFFFFF);
+            smallCentred(g, stateText, at[i][0], at[i][1] + (roomy ? 15 : 7), cw - 6, stateColour(s) & 0xFFFFFF);
             if (isOver) {
                 hover = List.of(Component.literal(worldName(l.world()).getString() + " " + l.pos().getX() + ", " + l.pos().getY() + ", " + l.pos().getZ()),
                         Component.translatable(s.key()).append(s == Links.State.DELIVERING ? ", " + tr("rate", l.rate()).getString() : ""));
@@ -347,5 +366,15 @@ public class AcceleratorScreen extends Screen {
             return true;
         }
         return super.keyPressed(key, scan, mods);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

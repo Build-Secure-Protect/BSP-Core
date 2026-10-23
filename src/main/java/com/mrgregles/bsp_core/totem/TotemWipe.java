@@ -28,11 +28,30 @@ public final class TotemWipe {
     public record Result(int carried, int placed, int forgotten, int logoutRecords, boolean owedDropped, boolean granted) {}
 
     public static Result wipe(ServerPlayer player) {
-        MinecraftServer server = player.server;
-        UUID id = player.getUUID();
+        Result r = clear(player.server, player.getUUID(), player);
+        FirstJoinHandler.grant(player, TotemLedger.get(player.server));
+        BSPCore.LOGGER.info("Totem wipe for {}: {} carried, {} placed, {} records forgotten, {} logout placements, owed items {}; a fresh totem given",
+                player.getGameProfile().getName(), r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped() ? "dropped" : "none");
+        return new Result(r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped(), true);
+    }
+
+    /**
+     * Leaves nothing of a player's totems and gives nothing back ({@code /bsp totem forget}, BSP-Stress Test request ST-C1): the
+     * wipe without the fresh totem, for an online or an offline player. An offline player's saved inventory is not opened; they
+     * normally carry no totem (a logout places them), except one kept by a logout on a no-totem server, which comes back with them.
+     * Their first-join grant is cleared too, so a returning player is given a totem again as on a first join.
+     */
+    public static Result forget(MinecraftServer server, UUID id) {
+        Result r = clear(server, id, server.getPlayerList().getPlayer(id));
+        BSPCore.LOGGER.info("Totem forget for {}: {} carried, {} placed, {} records forgotten, {} logout placements, owed items {}; nothing given",
+                id, r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped() ? "dropped" : "none");
+        return r;
+    }
+
+    private static Result clear(MinecraftServer server, UUID id, @javax.annotation.Nullable ServerPlayer player) {
         TotemLedger ledger = TotemLedger.get(server);
         // carried totems
-        List<ItemStack> carried = TotemInventories.removeAll(player);
+        List<ItemStack> carried = player == null ? List.of() : TotemInventories.removeAll(player);
         for (ItemStack stack : carried) {
             UUID totemId = TotemIdentity.id(stack);
             if (totemId != null) {
@@ -60,20 +79,20 @@ public final class TotemWipe {
             }
         }
         int forgotten = ledger.forgetHeldBy(id);
-        int logoutRecords = PlayerPersistent.takeLogoutPlaced(player).size();
+        int logoutRecords = player == null ? 0 : PlayerPersistent.takeLogoutPlaced(player).size();
         TransferLedger.get(server).remove(id);
         boolean owed = com.mrgregles.bsp_core.admin.SeasonData.get(server).pendingItems.remove(id) != null;
         if (owed) {
             com.mrgregles.bsp_core.admin.SeasonData.get(server).setDirty();
         }
         NetworkStorage.clearPending(id);
+        NetworkStorage.clearTotemSpots(id);
         ledger.clearGranted(id);
         NetworkStorage.clearGrant(id);
-        PlayerPersistent.setTotemGranted(player, false);
+        if (player != null) {
+            PlayerPersistent.setTotemGranted(player, false);
+        }
         com.mrgregles.bsp_core.score.ScoreService.markDirty();
-        FirstJoinHandler.grant(player, ledger);
-        BSPCore.LOGGER.info("Totem wipe for {}: {} carried, {} placed, {} records forgotten, {} logout placements, owed items {}; a fresh totem given",
-                player.getGameProfile().getName(), carried.size(), placed, forgotten, logoutRecords, owed ? "dropped" : "none");
-        return new Result(carried.size(), placed, forgotten, logoutRecords, owed, true);
+        return new Result(carried.size(), placed, forgotten, logoutRecords, owed, false);
     }
 }

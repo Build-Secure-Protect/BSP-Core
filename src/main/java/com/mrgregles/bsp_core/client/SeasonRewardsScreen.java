@@ -11,7 +11,7 @@ import net.minecraft.world.inventory.Slot;
 import java.util.Locale;
 
 /** The season prize rows (first, second, third place; ten slots each) above the admin's own inventory, in the violet Holo style. */
-public class SeasonRewardsScreen extends AbstractContainerScreen<SeasonRewardsMenu> {
+public class SeasonRewardsScreen extends AbstractContainerScreen<SeasonRewardsMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, VIO = 0xFFB58CFF, MUTED = 0x9AA3B5;
     private static final int[] PLACE = {0xFFFFD23A, 0xFFC9CED8, 0xFFC87A3C, 0xFF19D3B0};
 
@@ -59,5 +59,15 @@ public class SeasonRewardsScreen extends AbstractContainerScreen<SeasonRewardsMe
         g.drawString(font, Component.translatable("gui.bsp_core.rewards.note"), 0, 0, MUTED, false);
         g.pose().popPose();
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, MUTED, false);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

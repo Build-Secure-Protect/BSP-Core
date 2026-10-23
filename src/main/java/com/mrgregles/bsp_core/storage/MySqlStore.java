@@ -66,20 +66,13 @@ final class MySqlStore implements AutoCloseable {
     }
 
     private Connection open() throws SQLException {
-        // The driver is created directly: java.sql.DriverManager refuses drivers that were loaded by a mod class loader.
-        String[][] drivers = {{"com.mysql.cj.jdbc.Driver", "jdbc:mysql://"}, {"org.mariadb.jdbc.Driver", "jdbc:mariadb://"}};
         Properties props = new Properties();
         props.setProperty("user", user);
         props.setProperty("password", password);
         SQLException last = null;
-        for (String[] d : drivers) {
-            Driver driver;
-            try {
-                driver = (Driver) Class.forName(d[0]).getDeclaredConstructor().newInstance();
-            } catch (ReflectiveOperationException | LinkageError notInstalled) {
-                continue;
-            }
-            String url = d[1] + host + ":" + port + "/" + database + "?useSSL=" + ssl + "&allowPublicKeyRetrieval=true&characterEncoding=utf8"
+        for (JdbcDrivers.Found d : JdbcDrivers.available()) {
+            Driver driver = d.driver();
+            String url = d.urlPrefix() + host + ":" + port + "/" + database + "?useSSL=" + ssl + "&allowPublicKeyRetrieval=true&characterEncoding=utf8"
                     + "&connectTimeout=5000&socketTimeout=15000";
             try {
                 Connection c = driver.connect(url, props);
@@ -556,6 +549,16 @@ final class MySqlStore implements AutoCloseable {
         return out;
     }
 
+
+    /** Drops the player's spot and any totem return addressed for them (a forget). */
+    void clearTotemSpots(UUID player) throws SQLException {
+        for (String table : new String[]{"totem_spots", "totem_returns"}) {
+            try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t(table) + " WHERE uuid = ?")) {
+                ps.setString(1, player.toString());
+                ps.executeUpdate();
+            }
+        }
+    }
 
     void clearGrant(UUID player) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("grants") + " WHERE uuid = ?")) {

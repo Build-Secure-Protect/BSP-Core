@@ -2,6 +2,7 @@ package com.mrgregles.bsp_core.score;
 
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
+import com.mrgregles.bsp_core.api.event.ScoreEvent;
 import com.mrgregles.bsp_core.data.TotemLedger;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.ScoreSyncPacket;
@@ -12,6 +13,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
@@ -53,6 +55,8 @@ public final class ScoreService {
     private static final int SENT = 100;
 
     private static volatile List<Entry> board = List.of();
+    private static boolean published;
+    private static List<Entry> lastSent = List.of();
     private static boolean dirty = true;
     private static int ticks;
 
@@ -115,10 +119,40 @@ public final class ScoreService {
     private static void publish(MinecraftServer server, List<Entry> entries) {
         List<Entry> sorted = new ArrayList<>(entries);
         sorted.sort(ORDER);
+        List<Entry> before = board;
         board = List.copyOf(sorted);
-        ScoreSyncPacket packet = new ScoreSyncPacket(sorted.subList(0, Math.min(SENT, sorted.size())));
+        if (published) {
+            postChanges(server, before, board);
+        }
+        published = true;
+        List<Entry> top = List.copyOf(sorted.subList(0, Math.min(SENT, sorted.size())));
+        if (top.equals(lastSent)) {
+            return; // the screens already show this board (a newcomer is sent it at login)
+        }
+        lastSent = top;
+        ScoreSyncPacket packet = new ScoreSyncPacket(top);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             BSPNetwork.sendTo(player, packet);
+        }
+    }
+
+    /** Posts a {@link ScoreEvent.Changed} for every player whose points differ between two boards. */
+    private static void postChanges(MinecraftServer server, List<Entry> before, List<Entry> after) {
+        Map<UUID, Entry> old = new HashMap<>();
+        for (Entry e : before) {
+            old.put(e.id(), e);
+        }
+        for (Entry e : after) {
+            Entry was = old.remove(e.id());
+            int previous = was == null ? 0 : was.points();
+            if (previous != e.points()) {
+                MinecraftForge.EVENT_BUS.post(new ScoreEvent.Changed(server, e.id(), e.name(), e.points(), e.points() - previous, e.totems(), e.bestTier() + 1));
+            }
+        }
+        for (Entry gone : old.values()) {
+            if (gone.points() != 0) {
+                MinecraftForge.EVENT_BUS.post(new ScoreEvent.Changed(server, gone.id(), gone.name(), 0, -gone.points(), 0, 0));
+            }
         }
     }
 
@@ -164,6 +198,8 @@ public final class ScoreService {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         board = List.of();
+        lastSent = List.of();
+        published = false;
         dirty = true;
         ticks = 0;
     }

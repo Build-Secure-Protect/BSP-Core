@@ -20,7 +20,7 @@ import java.util.Locale;
  * mob and its villager profession (or, for a Market Stall, its skin), the opening hours (always,
  * real clock, game time) with open and close boxes, and Done. Moderators see it read-only.
  */
-public class VendorScreen extends AbstractContainerScreen<VendorMenu> {
+public class VendorScreen extends AbstractContainerScreen<VendorMenu> implements ScreenFit.Fitted {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A, PHOS_DIM = 0x3FB97A,
             AMBER = 0xF2B544, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A;
@@ -224,5 +224,15 @@ public class VendorScreen extends AbstractContainerScreen<VendorMenu> {
             CashMachine.fit(g, font, tr("figure", mob + (VendorMenu.MOBS[mobIndex].endsWith("villager") && profIndex > 0 ? ", " + VendorMenu.PROFESSIONS[profIndex] : "")).getString(), SX + 8, SY + 142, SW - 16, PHOS);
         }
         CashMachine.wrap(g, font, tr(shopId.isEmpty() ? (menu.skin >= 0 ? "unassigned_stall" : "unassigned") : "assigned", shopId), SX + 8, SY + 152, SW - 16, shopId.isEmpty() ? 0xFF6B5C : PHOS_DIM);
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

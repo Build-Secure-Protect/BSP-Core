@@ -25,7 +25,7 @@ import java.util.Locale;
  * (locked ones hatched) or the locked notice with what is owed, a key column (days up and down at
  * the top; rent with pieces or coins, add slots, pay to open at the bottom) and the player's inventory.
  */
-public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
+public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> implements ScreenFit.Fitted {
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A,
             PHOS_DIM = 0x3FB97A, AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, SLOT_BG = 0xFF0C1A10, SLOT_LOCKED = 0xFF0A120C;
     private static final int SX = 10, SY = 10, SW = 206, KX = 226, KW = 64, KH = 20, KGAP = 4;
@@ -235,12 +235,17 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
             // a rented box shows only how long the rent has left under the slots
             CashMachine.fit(g, font, tr("slots", menu.account.boxSlots, DepositBox.SLOTS_MAX).getString(), SX + 6, SY + 30, SW - 12, PHOS_DIM);
             long left = Math.max(0, menu.account.boxUntilMs - now), d = left / 86_400_000L, hh = left / 3_600_000L % 24, mm = left / 60_000L % 60;
-            CashMachine.fit(g, font, tr("time_left", d, hh, mm).getString(), SX + 6, DepositBoxMenu.SLOT_Y + 40, SW - 12, PHOS);
+            // a long message rises from the foot over these two lines: while it shows, the lines it reaches are left out
+            if (bottom >= DepositBoxMenu.SLOT_Y + 49) {
+                CashMachine.fit(g, font, tr("time_left", d, hh, mm).getString(), SX + 6, DepositBoxMenu.SLOT_Y + 40, SW - 12, PHOS);
+            }
             // what the keys would charge for more days, in pieces and in the smallest coin that covers it
             int tier = coinTier();
             Component costLine = tier < 0 ? tr("cost_pieces", days, Bank.format(cost()))
                     : tr("cost_both", days, Bank.format(cost()), DepositBox.coinsFor(cost(), CoinTier.values()[tier]), Bank.tierName(CoinTier.values()[tier]));
-            CashMachine.fit(g, font, costLine.getString(), SX + 6, DepositBoxMenu.SLOT_Y + 51, SW - 12, PHOS_DIM);
+            if (bottom >= DepositBoxMenu.SLOT_Y + 60) {
+                CashMachine.fit(g, font, costLine.getString(), SX + 6, DepositBoxMenu.SLOT_Y + 51, SW - 12, PHOS_DIM);
+            }
             return;
         } else {
             int ty = SY + 32;
@@ -255,8 +260,24 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> {
             top = ty;
         }
         CashMachine.clip(g, leftPos, topPos, SX, top, SW, Math.max(0, bottom - top));
-        int y2 = CashMachine.wrapUp(g, font, tr("forbidden"), SX + 6, bottom, SW - 12, PHOS_DIM);
-        CashMachine.wrapUp(g, font, tr(menu.open ? "terms_open" : "terms", days, Bank.format(cost()), Bank.format(DepositBox.rentPerDay())), SX + 6, y2 - 2, SW - 12, PHOS_DIM);
+        Component terms = tr(menu.open ? "terms_open" : "terms", days, Bank.format(cost()), Bank.format(DepositBox.rentPerDay()));
+        Component forbidden = tr("forbidden");
+        if (CashMachine.height(font, terms, SW - 12) + 2 + CashMachine.height(font, forbidden, SW - 12) <= bottom - top) {
+            int y2 = CashMachine.wrapUp(g, font, forbidden, SX + 6, bottom, SW - 12, PHOS_DIM);
+            CashMachine.wrapUp(g, font, terms, SX + 6, y2 - 2, SW - 12, PHOS_DIM);
+        } else { // no room for both: the terms from their first line, the forbidden-items note left out
+            CashMachine.wrap(g, font, terms, SX + 6, top, SW - 12, PHOS_DIM);
+        }
         g.disableScissor();
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }

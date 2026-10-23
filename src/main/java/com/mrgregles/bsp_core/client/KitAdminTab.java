@@ -154,16 +154,26 @@ public final class KitAdminTab {
         Font font = host.font();
         String q = search == null ? "" : search.getValue(), n = nameBox == null ? "" : nameBox.getValue(), d = descBox == null ? "" : descBox.getValue(),
                 p = priceBox == null ? "" : priceBox.getValue(), c = cdBox == null ? "" : cdBox.getValue(), a = addBox == null ? "" : addBox.getValue();
-        search = box(font, left + BROWSE_X + 2, top + 31, 152, 64, tr("search_hint"), q);
+        search = box(font, 0, 0, 152, 64, tr("search_hint"), q);
         search.setResponder(s -> browseScroll = 0);
-        nameBox = box(font, left + 58, top + 150, 88, Kit.NAME_MAX, tr("name"), n);
-        descBox = box(font, left + 58, top + 165, 272, Kit.DESCRIPTION_MAX, tr("describe"), d);
-        priceBox = box(font, left + 58, top + 225, 42, 9, Component.literal("0"), p);
+        nameBox = box(font, 0, 0, 88, Kit.NAME_MAX, tr("name"), n);
+        descBox = box(font, 0, 0, 272, Kit.DESCRIPTION_MAX, tr("describe"), d);
+        priceBox = box(font, 0, 0, 42, 9, Component.literal("0"), p);
         priceBox.setFilter(s -> s.matches("\\d{0,9}"));
-        cdBox = box(font, left + 228, top + 210, 22, 3, Component.literal("1"), c);
+        cdBox = box(font, 0, 0, 22, 3, Component.literal("1"), c);
         cdBox.setFilter(s -> s.matches("\\d{0,3}"));
         addBox = box(font, left, top, 60, 32, tr("v.add_hint"), a);
+        place(left, top);
         setVisible(false);
+    }
+
+    /** Puts the editor's boxes on their fields of a panel whose corner is {@code left, top}: the editor's panel is taller than the list's, so its corner moves. */
+    private void place(int left, int top) {
+        search.setPosition(left + BROWSE_X + 2, top + 31);
+        nameBox.setPosition(left + 58, top + 150);
+        descBox.setPosition(left + 58, top + 165);
+        priceBox.setPosition(left + 58, top + 225);
+        cdBox.setPosition(left + 236, top + 210);
     }
 
     private EditBox box(Font font, int x, int y, int w, int max, Component hint, String value) {
@@ -512,6 +522,9 @@ public final class KitAdminTab {
 
     void render(GuiGraphics g, int x, int y, int mx, int my) {
         hits.clear();
+        if (x != left || y != top) {
+            place(x, y);
+        }
         left = x;
         top = y;
         if (editing && draft != null) {
@@ -601,8 +614,9 @@ public final class KitAdminTab {
             if (sel.items.size() > 18) {
                 small(g, Component.literal("+" + (sel.items.size() - 18)), gx + 9 * 18 + 3, gy + 24, MUTED);
             }
-            small(g, Component.literal(ruleLine(sel)), x + DX + 6, gy + 40, TEXT);
-            small(g, Component.literal(ruleLine2(sel)), x + DX + 6, gy + 50, TEXT);
+            int ruleW = (int) ((W - 22 - DX) / 0.75f);
+            small(g, Component.literal(CashMachine.cut(font, ruleLine(sel), ruleW)), x + DX + 6, gy + 40, TEXT);
+            small(g, Component.literal(CashMachine.cut(font, ruleLine2(sel), ruleW)), x + DX + 6, gy + 50, TEXT);
             small(g, sel.lastTakenBy.isEmpty() ? tr("taken", sel.taken) : tr("taken_last", sel.taken, sel.lastTakenBy), x + DX + 6, gy + 64, MUTED);
             int cy = y + LIST_Y + ROWS * ROW_H - 12;
             chip(g, x + DX + 6, cy, tr(sel.enabled ? "enabled" : "v.off"), sel.enabled, false, mx, my, () -> {});
@@ -726,7 +740,7 @@ public final class KitAdminTab {
         small(g, tr("name"), lx, y + 151, MUTED);
         inset(g, x + 56, y + 148, 92, 12);
         if (isNew) {
-            small(g, Component.literal(slug(nameBox.getValue())), x + 152, y + 151, 0x6B7385);
+            small(g, Component.literal(CashMachine.cut(font, slug(nameBox.getValue()), (int) (44 / 0.75f))), x + 152, y + 151, 0x6B7385); // clear of "Icon"
         }
         small(g, tr("icon"), x + 200, y + 151, MUTED);
         cx = x + 226;
@@ -760,9 +774,9 @@ public final class KitAdminTab {
         cx = x + 172;
         cx += chip(g, cx, y + 208, tr("v.once"), d.once, edit, mx, my, () -> d.once = true);
         chip(g, cx, y + 208, tr("v.every"), !d.once, edit, mx, my, () -> d.once = false);
-        inset(g, x + 226, y + 208, 26, 12);
+        inset(g, x + 234, y + 208, 26, 12); // clear of the "every" chip
         cdBox.visible = cdBox.active = !d.once;
-        cx = x + 256;
+        cx = x + 264;
         String[] units = {"v.min", "v.h", "v.d"};
         for (int u = 0; u < 3; u++) {
             final int unit = u;
@@ -820,7 +834,7 @@ public final class KitAdminTab {
                 all.add(c);
             }
         }
-        int limit = left + W - 40;
+        int limit = left + W - 12 - 66; // room left for the + chip or the 62-wide box it opens
         for (String v : all) {
             Component label = Component.literal(v.length() > 12 ? v.substring(0, 11) + "…" : v);
             int w = smallWidth(label) + 11;

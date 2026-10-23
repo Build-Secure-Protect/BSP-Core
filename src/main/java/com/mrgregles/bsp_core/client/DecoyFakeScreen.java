@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
  * What a player who does not own a Decoy Totem gets on right-clicking it: a panel in the style of
  * a Shatter Totem's, with the owner's name and a Steal button. Pressing Steal is what springs the decoy.
  */
-public class DecoyFakeScreen extends Screen {
+public class DecoyFakeScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 220, H = 118, BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, BAD = 0xFFD63B2F, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2;
     private final BlockPos pos;
     private final String owner;
@@ -63,5 +63,15 @@ public class DecoyFakeScreen extends Screen {
         Component steal = Component.translatable("gui.bsp_core.decoy.fake.steal");
         g.drawString(font, steal, x + 110 - font.width(steal) / 2, y + 88, 0xFF6B5C, false);
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

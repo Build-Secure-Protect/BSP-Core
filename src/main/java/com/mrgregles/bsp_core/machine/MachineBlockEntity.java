@@ -357,7 +357,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         }
         boolean working = work || burnTime > 0;
         if (working && level.getGameTime() % 20 == 0) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            sendData(); // progress for the renderers: the data alone, since a block update makes every client re-mesh the chunk section
         }
         if (working != wasWorking) {
             wasWorking = working;
@@ -570,6 +570,16 @@ public abstract class MachineBlockEntity extends BlockEntity {
         int[] modes = tag.getIntArray("Sides");
         for (int i = 0; i < 6 && i < modes.length; i++) {
             sides[i] = SideMode.values()[Math.floorMod(modes[i], SideMode.values().length)];
+        }
+    }
+
+    /** Sends this block entity's data to the players tracking its chunk, without a block update. */
+    private void sendData() {
+        if (level instanceof net.minecraft.server.level.ServerLevel sl) {
+            var packet = getUpdatePacket();
+            if (packet != null) {
+                sl.getChunkSource().chunkMap.getPlayers(new net.minecraft.world.level.ChunkPos(worldPosition), false).forEach(p -> p.connection.send(packet));
+            }
         }
     }
 

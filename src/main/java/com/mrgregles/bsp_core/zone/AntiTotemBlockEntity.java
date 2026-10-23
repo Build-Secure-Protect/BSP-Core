@@ -94,10 +94,10 @@ public class AntiTotemBlockEntity extends BlockEntity {
         }
     }
 
-    /** The zone outline is drawn from this block and can reach far beyond it, so it is never culled with the block. */
+    /** The zone outline is drawn from this block and reaches out to the zone's edges: culled with the whole zone, not the block. */
     @Override
     public AABB getRenderBoundingBox() {
-        return INFINITE_EXTENT_AABB;
+        return box().inflate(1);
     }
 
     @Override

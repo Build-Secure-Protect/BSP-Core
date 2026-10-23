@@ -26,7 +26,7 @@ import java.util.UUID;
  * (messages) and the leader's settings. Fed by {@link TeamViewPacket}; every key sends a
  * {@link TeamActionPacket} and the server answers with the fresh view.
  */
-public class TeamScreen extends Screen {
+public class TeamScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 340, H = 236, KEY_H = 20, ROW = 13, SW = 12;
     private static final int BG = 0xF010151C, VIO = 0xFFB58CFF, SLOT = 0xFF0C0E12, DIM = 0xFF2A2F3A, LINE = 0xFF1A1F29, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2,
             GREEN = 0xFF58F29A, AMBER = 0xFFF2B544, GREY = 0xFF555C6A, RED = 0xFFFF6B5C, GOLD = 0xFFFFD23A, AQUA = 0xFF55FFFF;
@@ -250,10 +250,12 @@ public class TeamScreen extends Screen {
         g.fill(mx + 4, yy + ROW - 1, mx + (W - 16) - 4, yy + ROW, LINE);
         int dot = m.state() == TeamViewPacket.HERE ? GREEN : m.state() == TeamViewPacket.ELSEWHERE ? AMBER : GREY;
         g.fill(mx + 7, yy + 3, mx + 12, yy + 8, dot);
-        int nameW = mw - 12 - 10 - 160;
+        Component lead = Component.translatable("gui.bsp_core.team.lead");
+        int leadW = m.leader() ? Math.round(font.width(lead) * 0.75f) + 4 : 0;
+        int nameW = mw - 12 - 10 - 160 - leadW; // a leader's name leaves room for the tag before the totem count
         CashMachine.fit(g, font, m.name(), mx + 17, yy + 2, nameW, TEXT);
         if (m.leader()) {
-            small(g, Component.translatable("gui.bsp_core.team.lead"), mx + 17 + Math.min(nameW, font.width(m.name())) + 4, yy + 3, GOLD & 0xFFFFFF);
+            small(g, lead, mx + 17 + Math.min(nameW, font.width(m.name())) + 4, yy + 3, GOLD & 0xFFFFFF);
         }
         String totems = (m.totems() == 0 ? Component.translatable("gui.bsp_core.team.totems.none") : m.totems() == 1 ? Component.translatable("gui.bsp_core.team.totems.one") : Component.translatable("gui.bsp_core.team.totems.n", m.totems())).getString();
         small(g, Component.literal(totems), mx + mw - 6 - 150, yy + 3, MUTED);
@@ -526,5 +528,15 @@ public class TeamScreen extends Screen {
             return true;
         }
         return super.keyPressed(key, scan, mods);
+    }
+
+    @Override
+    public int panelWidth() {
+        return W;
+    }
+
+    @Override
+    public int panelHeight() {
+        return H;
     }
 }

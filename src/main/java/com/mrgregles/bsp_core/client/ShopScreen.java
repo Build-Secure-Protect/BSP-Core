@@ -24,7 +24,7 @@ import java.util.Locale;
  * or a sell, the closed view (name, CLOSED, when it opens, the countdown), keys in the right-hand
  * column (Back and pages at the top; Sell here, Sell all and Admin at the bottom) and the status strip.
  */
-public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
+public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements ScreenFit.Fitted {
     private static final int W = 300, H = 216;
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A,
             PHOS_DIM = 0x3FB97A, AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, CARD = 0xFF0A1A10, CARD_SEL = 0xFF0F2D1C, CARD_OUT = 0xFF070D09;
@@ -311,9 +311,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     @Override
     protected void renderLabels(GuiGraphics g, int mx, int my) {
         String right = !menu.open ? tr("closed").getString() : menu.kind == Shop.Kind.ROTATING ? tr("rotates_in", clock(menu.rotatesIn)).getString() : tr("page", menu.page + 1, menu.pages).getString();
-        String head = "> " + font.plainSubstrByWidth(menu.path.toUpperCase(Locale.ROOT), SW - 20 - font.width(right));
+        // a special offer sits in the header beside the page, clear of the cards
+        String offer = menu.open && menu.offerPercent > 0 && view != View.QTY ? tr("offer", menu.offerPercent).getString() : "";
+        int offerW = offer.isEmpty() ? 0 : font.width(offer) + 10;
+        String head = "> " + font.plainSubstrByWidth(menu.path.toUpperCase(Locale.ROOT), SW - 20 - font.width(right) - offerW);
         g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
         g.drawString(font, right, SX + SW - 6 - font.width(right), SY + 6, menu.open ? PHOS_DIM : RED, false);
+        if (!offer.isEmpty()) {
+            int ox = SX + SW - 6 - font.width(right) - offerW;
+            g.fill(ox, SY + 4, ox + offerW - 4, SY + 15, AMBER | 0xFF000000);
+            g.drawString(font, offer, ox + 3, SY + 6, SCREEN & 0xFFFFFF, false);
+        }
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
         int msgH = CashMachine.height(font, message, SW - 12);
         int bottom = SY + SH - (msgH > 0 ? msgH + 4 : 4);
@@ -345,11 +353,6 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
                 CashMachine.wrap(g, font, tr(selling ? "max_sell_hint" : "max_buy_hint"), SX + 8, SY + 108, SW - 16, PHOS_DIM);
             }
         } else {
-            if (menu.offerPercent > 0) {
-                String offer = tr("offer", menu.offerPercent).getString();
-                g.fill(SX + 6, SY + 18, SX + 10 + font.width(offer), SY + 28, AMBER | 0xFF000000);
-                g.drawString(font, offer, SX + 8, SY + 19, SCREEN & 0xFFFFFF, false);
-            }
             for (int k = 0; k < menu.cards.size(); k++) {
                 ShopMenu.Card c = menu.cards.get(k);
                 int cx = CX + (k % menu.columns) * (cw() + CGAP), cy = CY + (k / menu.columns) * (ch() + CGAP);
@@ -367,7 +370,9 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
             if (menu.cards.isEmpty()) {
                 g.drawString(font, tr("empty"), SX + 8, SY + 40, PHOS_DIM, false);
             }
-            CashMachine.wrapUp(g, font, tr("hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
+            if (msgH == 0) { // a message takes the hint's place, so neither runs into the last row of cards
+                CashMachine.wrapUp(g, font, tr("hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
+            }
         }
         g.disableScissor();
         if (msgH > 0) {
@@ -405,5 +410,15 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> {
     private static String clock(long ms) {
         long m = ms / 60_000;
         return m >= 60 ? (m / 60) + " h " + (m % 60) + " m" : m + " m";
+    }
+
+    @Override
+    public int panelWidth() {
+        return imageWidth;
+    }
+
+    @Override
+    public int panelHeight() {
+        return imageHeight;
     }
 }
