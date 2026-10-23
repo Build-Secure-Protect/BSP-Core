@@ -104,6 +104,17 @@ public class BspJeiPlugin implements IModPlugin {
     /** Clicking the progress dial on a machine screen shows that machine's jobs. */
     @Override
     public void registerGuiHandlers(mezz.jei.api.registration.IGuiHandlerRegistration reg) {
+        // the TEAM and KITS buttons in the inventory's top left corner: JEI's bookmarks and lists leave them free
+        reg.addGlobalGuiHandler(new mezz.jei.api.gui.handlers.IGlobalGuiHandler() {
+            @Override
+            public java.util.Collection<net.minecraft.client.renderer.Rect2i> getGuiExtraAreas() {
+                List<net.minecraft.client.renderer.Rect2i> out = new java.util.ArrayList<>();
+                for (int[] r : com.mrgregles.bsp_core.client.TeamInventoryButton.areas(net.minecraft.client.Minecraft.getInstance().screen)) {
+                    out.add(new net.minecraft.client.renderer.Rect2i(r[0], r[1], r[2], r[3]));
+                }
+                return out;
+            }
+        });
         reg.addGuiContainerHandler(com.mrgregles.bsp_core.client.MachineScreen.class, new mezz.jei.api.gui.handlers.IGuiContainerHandler<>() {
             @Override
             public java.util.Collection<mezz.jei.api.gui.handlers.IGuiClickableArea> getGuiClickableAreas(com.mrgregles.bsp_core.client.MachineScreen screen, double mouseX, double mouseY) {

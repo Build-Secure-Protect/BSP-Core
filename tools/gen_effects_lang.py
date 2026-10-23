@@ -61,6 +61,10 @@ KEYS = {
     "message.bsp_core.recall.done": "Recalled to within %s blocks of your totem",
     "message.bsp_core.xray.none": "You carry no X-ray power",
     "message.bsp_core.xray.recharging": "X-ray recharges in %s s",
+    "message.bsp_core.xray.hint.ready": "X-ray ready: press %s",
+    "message.bsp_core.xray.hint.recharging": "X-ray recharges in %s s, then press %s",
+    "message.bsp_core.xray.hint.on": "X-ray on for %s s more (%s switches it off)",
+    "message.bsp_core.xray.hint.unbound": "X-ray ready: bind its key in Controls (BSP-Core, X-ray)",
 }
 lang = json.loads(LANG.read_text())
 lang.update(KEYS)

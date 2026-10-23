@@ -35,6 +35,12 @@ public class BspEmiPlugin implements EmiPlugin {
 
     @Override
     public void register(EmiRegistry registry) {
+        // the TEAM and KITS buttons in the inventory's top left corner: EMI's panels leave them free
+        registry.addGenericExclusionArea((screen, out) -> {
+            for (int[] r : com.mrgregles.bsp_core.client.TeamInventoryButton.areas(screen)) {
+                out.accept(new dev.emi.emi.api.widget.Bounds(r[0], r[1], r[2], r[3]));
+            }
+        });
         for (String machine : BspProcesses.MACHINES) {
             EmiRecipeCategory category = category(machine);
             registry.addCategory(category);

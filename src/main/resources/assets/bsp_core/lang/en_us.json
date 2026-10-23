@@ -1938,5 +1938,9 @@
   "gui.bsp_core.land.coins": "coins %s",
   "gui.bsp_core.land.coins_none": "none",
   "gui.bsp_core.land.price_coins": "%s",
-  "gui.bsp_core.land.outline_coins": "Outline %s x %s: %s"
+  "gui.bsp_core.land.outline_coins": "Outline %s x %s: %s",
+  "message.bsp_core.xray.hint.ready": "X-ray ready: press %s",
+  "message.bsp_core.xray.hint.recharging": "X-ray recharges in %s s, then press %s",
+  "message.bsp_core.xray.hint.on": "X-ray on for %s s more (%s switches it off)",
+  "message.bsp_core.xray.hint.unbound": "X-ray ready: bind its key in Controls (BSP-Core, X-ray)"
 }

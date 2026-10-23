@@ -88,6 +88,8 @@ public final class XrayClient implements IGuiOverlay {
     private static int radius;
     @Nullable
     private static ClientLevel lastLevel;
+    /** What the offhand held last tick, for the hint shown whenever something with X-ray comes into it. */
+    private static XrayHint.Held lastHeld = XrayHint.Held.NOTHING;
 
     private XrayClient() {}
 
@@ -126,6 +128,39 @@ public final class XrayClient implements IGuiOverlay {
         onUntil = now + seconds * 20L;
         readyAt = onUntil + recharge * 20L;
         scan();
+    }
+
+    /**
+     * Every time something that carries X-ray comes into the offhand, the action bar says what it can do right now: ready (press
+     * the key), recharging (and when), already on (and for how long), or that the key needs binding.
+     */
+    private static void hint() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) {
+            lastHeld = XrayHint.Held.NOTHING;
+            return;
+        }
+        net.minecraft.world.item.ItemStack off = mc.player.getOffhandItem();
+        String kind = off.isEmpty() ? "" : String.valueOf(net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(off.getItem()));
+        java.util.UUID totemId = com.mrgregles.bsp_core.totem.TotemInventories.isTotem(off) ? com.mrgregles.bsp_core.totem.TotemIdentity.id(off) : null;
+        if (totemId != null) {
+            kind += "#" + totemId;
+        }
+        XrayHint.Held now = new XrayHint.Held(kind, level());
+        boolean due = XrayHint.due(lastHeld, now);
+        lastHeld = now;
+        if (!due) {
+            return;
+        }
+        long t = mc.level.getGameTime();
+        Component key = TOGGLE.getTranslatedKeyMessage();
+        Component line = switch (XrayHint.state(t, onUntil, readyAt, !TOGGLE.isUnbound())) {
+            case UNBOUND -> Component.translatable("message.bsp_core.xray.hint.unbound");
+            case ON -> Component.translatable("message.bsp_core.xray.hint.on", XrayHint.secondsUntil(t, onUntil), key);
+            case RECHARGING -> Component.translatable("message.bsp_core.xray.hint.recharging", XrayHint.secondsUntil(t, readyAt), key);
+            case READY -> Component.translatable("message.bsp_core.xray.hint.ready", key);
+        };
+        mc.player.displayClientMessage(line.copy().withStyle(ChatFormatting.AQUA), true);
     }
 
     /** Whether a block is one X-ray hides: a full opaque block that is not an ore, a container or a spawner, and not under a cloak. */
@@ -351,10 +386,12 @@ public final class XrayClient implements IGuiOverlay {
                 dropBuffers();
                 onUntil = 0;
                 readyAt = 0;
+                lastHeld = XrayHint.Held.NOTHING;
             }
             while (TOGGLE.consumeClick()) {
                 toggle();
             }
+            hint();
             if (mc.level == null) {
                 return;
             }

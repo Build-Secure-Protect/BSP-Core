@@ -4,7 +4,15 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **An X-ray hint every time it comes into the offhand.** Equipping a totem or a running Wave Emitter that carries X-ray, swapping one in, or switching an emitter on in the offhand puts a line on the action bar saying what the power can do right then: ready ("X-ray ready: press X", with the key it is bound to), recharging and for how long, already on and for how long, or that its key needs binding in Controls. X-ray itself is still switched on with its key. One game test, and one that pins down that a Wave Emitter gives its cell's powers to whoever holds it while the cell has plasma.
+
+### Fixed
+- **The TEAM and KITS buttons no longer sit on the inventory's tabs.** They stand in the top left corner of the window, on the survival and the creative inventory, and step aside for anything else there: other mods' buttons and the inventory panel with its tab rows. JEI and EMI are told where they are, so their bookmark lists and panels leave them free. One game test.
+- **The upgrade orbs round a placed totem are spaced evenly all the way round the plinth**, laid out symmetrically from the back, and turn with the totem, so they sit the same way whichever way it was placed. They no longer bunch up or overlap when a totem has only a few upgrades. One game test.
+
+### Changed
+- The compile-time dependency on BSP Region Guard reads its 0.5.0 jar (API 6, unchanged; the 0.4.0 jar is gone from its checkout); nothing BSP-Core calls changed.
 
 ## [1.4.3] - 2026-10-23
 

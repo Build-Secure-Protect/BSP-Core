@@ -48,14 +48,20 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             if (totem.getUpgradeLevel(b) > 0) active++;
         }
 
-        // --- orbs: evenly spaced around the plinth, bobbing gently, full-bright
+        // --- orbs: the bought upgrades spaced evenly all round the plinth, bobbing gently, full-bright. The ring turns with the
+        // totem's facing (as the blockstate turns the model), so the orbs sit the same way round whichever way it was placed.
         if (active > 0) {
             VertexConsumer vc = buffers.getBuffer(RenderType.cutout());
-            int n = buffs.length;
-            for (int i = 0; i < n; i++) {
+            pose.pushPose();
+            pose.translate(0.5, 0, 0.5);
+            pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-com.mrgregles.bsp_core.totem.TotemOrbLayout.modelTurn(totem.getBlockState().hasProperty(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING)
+                    ? totem.getBlockState().getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING) : net.minecraft.core.Direction.NORTH)));
+            pose.translate(-0.5, 0, -0.5);
+            int k = 0;
+            for (int i = 0; i < buffs.length; i++) {
                 int lvl = totem.getUpgradeLevel(buffs[i]);
                 if (lvl <= 0) continue;
-                double a = Math.PI / 2 + (2 * Math.PI * i / n) + Math.PI / n;
+                double a = com.mrgregles.bsp_core.totem.TotemOrbLayout.angle(k++, active);
                 float x = 0.5f + (float) Math.cos(a) * ORB_RING_RADIUS;
                 float z = 0.5f - (float) Math.sin(a) * ORB_RING_RADIUS;   // model was mirrored to face north
                 float y = 2f / 16f + ORB_HEIGHT + Mth.sin(time * 0.1f + i * 2.1f) * 0.04f;
@@ -66,6 +72,7 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
                 cube(vc, pose, sprite, ORB_SIZE, rgb);
                 pose.popPose();
             }
+            pose.popPose();
         }
 
         // --- aura cubes, only when the viewer is close to the totem and has not hidden them

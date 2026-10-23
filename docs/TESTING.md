@@ -1359,3 +1359,25 @@ Covered by GameTests `api_coins_count_pay_with_change_and_give_like_the_wallet` 
 - [ ] An open area shows its cost per block in coins, and an outline inside it quotes the total in coins.
 - [ ] Buy the plot: coins leave the inventory with change back; the bank balance does not move.
 - [ ] Region Guard in pieces mode: the office shows pieces, the balance and "left after", as before.
+
+## Inventory buttons in the corner, orbs round the totem (2026-10-23)
+
+Covered by GameTests `corner_buttons_take_the_top_left_and_step_past_other_widgets` and `totem_orbs_are_spaced_evenly_all_round_and_turn_with_the_totem`; the drawing itself needs the client.
+
+- [ ] Survival inventory: TEAM and KITS sit in the window's top left corner, clear of the inventory tabs above the panel, and JEI's bookmarks start below or beside them instead of under them.
+- [ ] Creative inventory: the same, clear of the creative tabs.
+- [ ] A mod that puts its own button in the top left corner: TEAM and KITS stand beside it, not on it.
+- [ ] A small window (GUI scale high): the buttons still find a free place and work.
+- [ ] A placed totem with 2, 3 and 4 upgrades: the orbs are evenly spaced round the plinth and none overlap.
+- [ ] Place the same totem facing north, east, south and west: the orbs sit the same way round relative to the totem's face each time.
+
+## The X-ray hint (2026-10-23)
+
+Covered by GameTests `xray_hint_shows_whenever_xray_comes_into_the_offhand_with_its_state` and `wave_emitter_gives_its_powers_to_whoever_holds_it_while_its_cell_has_plasma`; the action bar itself needs the client.
+
+- [ ] Put a totem with X-ray in the offhand: "X-ray ready: press X" (or your key). Take it out and put it back: the line shows again.
+- [ ] Press X, then swap the totem out and back in while it is on: "X-ray on for N s more". After it ends, swap again: "X-ray recharges in N s, then press X".
+- [ ] A running Wave Emitter with an X-ray cell: the same lines when it goes into the offhand, and when you switch it on there.
+- [ ] Unbind the X-ray key in Controls and equip again: the line says to bind it.
+- [ ] A totem without X-ray, or an emitter that is off: no line.
+- [ ] Give a running emitter with an X-ray cell to a player who has no totem: they get the hint and X-ray works for them.

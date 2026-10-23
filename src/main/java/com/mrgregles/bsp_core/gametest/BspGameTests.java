@@ -2140,6 +2140,115 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void xray_hint_shows_whenever_xray_comes_into_the_offhand_with_its_state(GameTestHelper h) {
+        var none = com.mrgregles.bsp_core.client.XrayHint.Held.NOTHING;
+        var totemA = new com.mrgregles.bsp_core.client.XrayHint.Held("bsp_core:shatter_totem#a", 2);
+        var totemB = new com.mrgregles.bsp_core.client.XrayHint.Held("bsp_core:shatter_totem#b", 1);
+        var plain = new com.mrgregles.bsp_core.client.XrayHint.Held("bsp_core:shatter_totem#c", 0);
+        var emitterOff = new com.mrgregles.bsp_core.client.XrayHint.Held("bsp_core:wave_emitter", 0);
+        var emitterOn = new com.mrgregles.bsp_core.client.XrayHint.Held("bsp_core:wave_emitter", 2);
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.due(none, totemA), "equipping a totem with X-ray: hint");
+        h.assertFalse(com.mrgregles.bsp_core.client.XrayHint.due(totemA, totemA), "still holding it: no repeat every tick");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.due(totemA, totemB), "swapping in another totem with X-ray: hint again");
+        h.assertFalse(com.mrgregles.bsp_core.client.XrayHint.due(none, plain), "a totem without X-ray: no hint");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.due(emitterOff, emitterOn), "switching on an emitter in the offhand: hint");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.due(none, totemA) && com.mrgregles.bsp_core.client.XrayHint.due(totemA, none) == false,
+                "taking it out: nothing to say");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.due(none, totemA), "and every time it is equipped again");
+        var S = com.mrgregles.bsp_core.client.XrayHint.State.class;
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.state(100, 0, 0, true) == com.mrgregles.bsp_core.client.XrayHint.State.READY, "ready");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.state(100, 50, 400, true) == com.mrgregles.bsp_core.client.XrayHint.State.RECHARGING, "recharging");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.state(100, 300, 2700, true) == com.mrgregles.bsp_core.client.XrayHint.State.ON, "on");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.state(100, 0, 0, false) == com.mrgregles.bsp_core.client.XrayHint.State.UNBOUND, "no key bound: say so first");
+        h.assertTrue(com.mrgregles.bsp_core.client.XrayHint.secondsUntil(100, 400) == 15 && com.mrgregles.bsp_core.client.XrayHint.secondsUntil(100, 101) == 1
+                && com.mrgregles.bsp_core.client.XrayHint.secondsUntil(100, 50) == 0, "seconds, rounded up");
+        h.assertTrue(S.getEnumConstants().length == 4, "four states");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void wave_emitter_gives_its_powers_to_whoever_holds_it_while_its_cell_has_plasma(GameTestHelper h) {
+        var emitterItem = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "wave_emitter"));
+        var cellItem = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "power_cell_1"));
+        var cell = new ItemStack(cellItem);
+        com.mrgregles.bsp_core.plasma.PlasmaItems.setPower(cell, TotemUpgrades.Buff.XRAY, 2);
+        com.mrgregles.bsp_core.plasma.PlasmaItems.setStored(cell, 1000);
+        var emitter = new ItemStack(emitterItem);
+        com.mrgregles.bsp_core.plasma.WaveEmitterItem.setCell(emitter, cell);
+        com.mrgregles.bsp_core.plasma.WaveEmitterItem.setOn(emitter, true);
+        // a friend with no totem of their own, who never owned the one the cell's powers came from
+        var friend = survivor(h);
+        friend.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, emitter);
+        h.assertTrue(com.mrgregles.bsp_core.plasma.CarriedPowers.level(friend, TotemUpgrades.Buff.XRAY) == 2, "anyone holding a running emitter has its X-ray");
+        com.mrgregles.bsp_core.plasma.WaveEmitterItem.setOn(friend.getOffhandItem(), false);
+        h.assertTrue(com.mrgregles.bsp_core.plasma.CarriedPowers.level(friend, TotemUpgrades.Buff.XRAY) == 0, "switched off: nothing");
+        com.mrgregles.bsp_core.plasma.WaveEmitterItem.setOn(friend.getOffhandItem(), true);
+        var drained = com.mrgregles.bsp_core.plasma.WaveEmitterItem.cell(friend.getOffhandItem());
+        com.mrgregles.bsp_core.plasma.PlasmaItems.setStored(drained, 0);
+        com.mrgregles.bsp_core.plasma.WaveEmitterItem.setCell(friend.getOffhandItem(), drained);
+        h.assertTrue(com.mrgregles.bsp_core.plasma.CarriedPowers.level(friend, TotemUpgrades.Buff.XRAY) == 0, "an empty cell: nothing (the plasma is the price)");
+        friend.getInventory().clearContent();
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void totem_orbs_are_spaced_evenly_all_round_and_turn_with_the_totem(GameTestHelper h) {
+        for (int m = 1; m <= com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values().length; m++) {
+            List<Double> angles = new ArrayList<>();
+            for (int k = 0; k < m; k++) {
+                angles.add(com.mrgregles.bsp_core.totem.TotemOrbLayout.angle(k, m));
+            }
+            for (int k = 0; k < m; k++) {
+                double step = angles.get((k + 1) % m) - angles.get(k) + (k == m - 1 ? 2 * Math.PI : 0);
+                h.assertTrue(Math.abs(step - 2 * Math.PI / m) < 1e-9, "orb " + k + " of " + m + " is one even step from the next: " + step);
+                // mirrored across the front-back line (x to -x is a to pi - a) every orb lands on another orb
+                double mirror = Math.PI - angles.get(k);
+                h.assertTrue(angles.stream().anyMatch(a -> Math.abs(Math.cos(a) - Math.cos(mirror)) < 1e-9 && Math.abs(Math.sin(a) - Math.sin(mirror)) < 1e-9),
+                        "the ring of " + m + " is symmetric left to right");
+            }
+        }
+        h.assertTrue(Math.abs(Math.sin(com.mrgregles.bsp_core.totem.TotemOrbLayout.angle(0, 1)) + 1) < 1e-9, "one orb alone sits at the back");
+        // the ring turns as the blockstate turns the model
+        try (var in = BspGameTests.class.getResourceAsStream("/assets/bsp_core/blockstates/shatter_totem.json")) {
+            h.assertTrue(in != null, "the totem's blockstate file is in the jar");
+            var variants = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in)).getAsJsonObject().getAsJsonObject("variants");
+            for (var d : List.of(net.minecraft.core.Direction.NORTH, net.minecraft.core.Direction.EAST, net.minecraft.core.Direction.SOUTH, net.minecraft.core.Direction.WEST)) {
+                var v = variants.getAsJsonObject("facing=" + d.getName() + ",glow=owned");
+                int y = v.has("y") ? v.get("y").getAsInt() : 0;
+                h.assertTrue(com.mrgregles.bsp_core.totem.TotemOrbLayout.modelTurn(d) == y, "facing " + d + ": the ring turns " + y + " degrees like the model");
+            }
+        } catch (java.io.IOException e) {
+            h.fail("could not read the blockstate: " + e);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void corner_buttons_take_the_top_left_and_step_past_other_widgets(GameTestHelper h) {
+        int w = 40, hh = 14, gap = 2, margin = 2;
+        int[] a = com.mrgregles.bsp_core.client.CornerLayout.place(List.of(), 480, 270, 0, w, hh, gap, margin);
+        int[] b = com.mrgregles.bsp_core.client.CornerLayout.place(List.of(), 480, 270, 1, w, hh, gap, margin);
+        h.assertTrue(a[0] == 2 && a[1] == 2 && b[0] == 44 && b[1] == 2, "nothing there: the corner, the second beside the first");
+        // another mod's button in the corner: both step past it
+        List<int[]> other = List.of(new int[]{0, 0, 20, 20});
+        a = com.mrgregles.bsp_core.client.CornerLayout.place(other, 480, 270, 0, w, hh, gap, margin);
+        b = com.mrgregles.bsp_core.client.CornerLayout.place(other, 480, 270, 1, w, hh, gap, margin);
+        h.assertTrue(a[0] == 22 && a[1] == 2 && b[0] == 64 && b[1] == 2, "past the other button: " + a[0] + "," + a[1] + " and " + b[0] + "," + b[1]);
+        // the top edge's left half taken: a row down
+        a = com.mrgregles.bsp_core.client.CornerLayout.place(List.of(new int[]{0, 0, 240, 16}), 480, 270, 0, w, hh, gap, margin);
+        h.assertTrue(a[0] == 2 && a[1] == 18, "a row down: " + a[0] + "," + a[1]);
+        // nothing a button overlaps, ever
+        List<int[]> crowded = List.of(new int[]{0, 0, 30, 10}, new int[]{50, 0, 30, 30}, new int[]{0, 20, 100, 10});
+        for (int slot = 0; slot < 3; slot++) {
+            int[] p = com.mrgregles.bsp_core.client.CornerLayout.place(crowded, 480, 270, slot, w, hh, gap, margin);
+            for (int[] o : crowded) {
+                h.assertFalse(p[0] < o[0] + o[2] && p[0] + w > o[0] && p[1] < o[1] + o[3] && p[1] + hh > o[1], "button " + slot + " at " + p[0] + "," + p[1] + " clears every widget");
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public void api_coins_count_pay_with_change_and_give_like_the_wallet(GameTestHelper h) {
         var tiers = com.mrgregles.bsp_core.api.BspCoins.tiers();
         h.assertTrue(tiers.equals(List.of("copper", "gold", "diamond", "netherite", "illyrium")), "the tiers, cheapest first: " + tiers);
