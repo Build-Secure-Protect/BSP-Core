@@ -23,9 +23,9 @@ public final class TreeLayout {
     static {
         for (Buff b : Buff.values()) {
             // two nodes on one ring of one path sit either side of the spoke; Extra Homes shares Sanctuary's ring on the Home
-            // path, so it and Swift Travel after it sit 26 degrees off the spoke
+            // path, so it and Swift Travel after it sit 26 degrees off the spoke; Herald shares Alarm's ring, 30 degrees towards the Fight path
             double a = Math.toRadians(SPOKE[b.path] + (b == Buff.BOUNCY || b == Buff.CLOAKING || b == Buff.THIEF_STEP || b == Buff.SENTINEL ? 22
-                    : b == Buff.EXTRA_HOMES || b == Buff.SWIFT_TRAVEL ? 26 : b == Buff.NIGHT_SIGHT || b == Buff.DEADLOCK ? -14 : 0));
+                    : b == Buff.EXTRA_HOMES || b == Buff.SWIFT_TRAVEL ? 26 : b == Buff.NIGHT_SIGHT || b == Buff.DEADLOCK ? -14 : b == Buff.HERALD ? -30 : 0));
             int r = RING[Math.min(b.tier, RING.length - 1)];
             POS.put(b, new int[]{CX + (int) Math.round(Math.cos(a) * r), CY + (int) Math.round(Math.sin(a) * r)});
         }
@@ -42,6 +42,7 @@ public final class TreeLayout {
             case RECALL -> "RC";
             case RECALL_BLOCK -> "RB";
             case SWIFT_TRAVEL -> "ST";
+            case HERALD -> "HR"; // HE is Healing
             default -> buff.key.substring(0, 2).toUpperCase(Locale.ROOT);
         };
     }

@@ -142,7 +142,7 @@ public final class TotemTree {
             case SWIFTNESS -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.SWIFTNESS_BONUS.get(), level, 0.0)));
             case VITALITY -> Component.translatable(key, fmt(BSPConfig.levelValue(BSPConfig.VITALITY_HEALTH.get(), level, 0) / 2.0));
             case FEATHERFALL -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.FEATHERFALL_REDUCTION.get(), level, 0.0)));
-            case NIGHT_SIGHT -> Component.translatable(key);
+            case NIGHT_SIGHT, HERALD -> Component.translatable(key);
             case FORTIFY -> Component.translatable(key, pct(BSPConfig.levelValue(BSPConfig.FORTIFY_EXPLOSION_PROTECTION.get(), level, 0.0)), b.radius(level));
             case HEALING -> Component.translatable(key, fmt(BSPConfig.levelValue(BSPConfig.HEALING_PER_SECOND.get(), level, 0.0)), b.radius(level));
             case WARD -> Component.translatable(key, (level - 1) / 2 + 1, b.reach(level));
@@ -246,6 +246,59 @@ public final class TotemTree {
             g.drawString(font, price.xp() + " XP", x + 17, y + GATE_Y + 19, XP, false);
         }
         button(g, font, x + GATE_BTN_X, y + GATE_Y + 11, GATE_BTN_W, button, enabled, mouseX, mouseY);
+    }
+
+    // ------------------------------------------------------------------ Herald's Discord line
+
+    public static final int LINK_W = 34, LINK_H = 9;
+
+    /** The Discord line's top, under Buy: lower when a reason why Buy is off sits above it. */
+    private static int discordY(@Nullable Component reason) {
+        return BUY_Y + BTN_H + (reason == null ? 4 : 10);
+    }
+
+    /**
+     * Herald's card under Buy: one line of why Buy is off (if it is), then the player's own Discord link: "not linked" with
+     * LINK, the code and its minutes with where to type it, or "linked" with UNLINK. Never a Discord name: the game has none.
+     */
+    public static void discordLine(GuiGraphics g, Font font, int x, int y, @Nullable Component reason, @Nullable com.mrgregles.bsp_core.discord.DiscordLinks.State state,
+                                   String code, int secondsLeft, int mouseX, int mouseY) {
+        if (state == com.mrgregles.bsp_core.discord.DiscordLinks.State.CODE) {
+            // the code takes both lines: the player is in the middle of linking
+            g.drawString(font, code, x, y + BUY_Y + BTN_H + 2, 0xFFD23A, false);
+            small(g, font, Component.translatable("gui.bsp_core.discord.left", secondsLeft / 60 + ":" + String.format(Locale.ROOT, "%02d", secondsLeft % 60)),
+                    x + font.width(code) + 4, y + BUY_Y + BTN_H + 3, MUTED);
+            small(g, font, Component.translatable("gui.bsp_core.discord.type", code), x, y + BUY_Y + BTN_H + 11, MUTED);
+            return;
+        }
+        if (reason != null) {
+            small(g, font, Component.literal(CashMachine.cut(font, reason.getString(), (int) (DETAIL_W / 0.75f))), x, y + BUY_Y + BTN_H + 2, BAD);
+        }
+        int ry = y + discordY(reason);
+        Component label = Component.translatable("gui.bsp_core.discord.label");
+        small(g, font, label, x, ry, MUTED);
+        int lx = x + (int) Math.ceil(font.width(label) * 0.75f) + 3;
+        String status = state == null ? "gui.bsp_core.discord.checking" : switch (state) {
+            case LINKED -> "gui.bsp_core.discord.linked";
+            case UNKNOWN -> "gui.bsp_core.discord.unknown";
+            default -> "gui.bsp_core.discord.not_linked";
+        };
+        small(g, font, Component.translatable(status), lx, ry, state == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED ? TQ & 0xFFFFFF
+                : state == com.mrgregles.bsp_core.discord.DiscordLinks.State.NOT_LINKED ? BAD : MUTED);
+        if (state == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED || state == com.mrgregles.bsp_core.discord.DiscordLinks.State.NOT_LINKED) {
+            int bx = x + DETAIL_W - LINK_W, by = ry - 2;
+            boolean hover = mouseX >= bx && mouseX < bx + LINK_W && mouseY >= by && mouseY < by + LINK_H;
+            g.fill(bx, by, bx + LINK_W, by + LINK_H, TQ);
+            g.fill(bx + 1, by + 1, bx + LINK_W - 1, by + LINK_H - 1, hover ? 0xFF14362F : SLOT_BG);
+            Component text = Component.translatable(state == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED ? "gui.bsp_core.discord.unlink" : "gui.bsp_core.discord.link");
+            small(g, font, text, bx + LINK_W / 2 - (int) (font.width(text) * 0.375f), by + 2, TQ & 0xFFFFFF);
+        }
+    }
+
+    /** Whether the point is on the line's LINK / UNLINK button (only drawn while linked or not linked). */
+    public static boolean overDiscordButton(double mouseX, double mouseY, int x, int y, @Nullable Component reason) {
+        int bx = x + DETAIL_W - LINK_W, by = y + discordY(reason) - 2;
+        return mouseX >= bx && mouseX < bx + LINK_W && mouseY >= by && mouseY < by + LINK_H;
     }
 
     public static boolean overBuy(double mouseX, double mouseY, int x, int y) {

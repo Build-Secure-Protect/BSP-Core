@@ -51,6 +51,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     protected void init() {
         super.init();
         admin = minecraft.player != null && minecraft.player.hasPermissions(2);
+        DiscordClient.opened();
         stealButton = Button.builder(Component.translatable("gui.bsp_core.shatter_totem.steal"), b -> {
             BSPNetwork.CHANNEL.sendToServer(new StealRequestPacket(menu.getPos()));
             onClose();
@@ -231,6 +232,11 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         return TotemUpgrades.whyNot(b, this::level, tier(), minecraft.player);
     }
 
+    /** Herald's card carries the viewer's own Discord line wherever Discord is on (where it is off, the card says so instead). */
+    private static boolean heraldLine(Buff b) {
+        return b == Buff.HERALD && com.mrgregles.bsp_core.discord.Herald.available();
+    }
+
     private boolean canBuy(Buff b) {
         return level(b) < b.maxLevel() && blocked(b) == null;
     }
@@ -298,6 +304,11 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 send(AdminTotemActionPacket.Action.SET_BUFF, mx < x + DETAIL_X + TotemTree.GATE_BTN_X + TotemTree.GATE_BTN_W / 2.0 ? "-" : "+", UpgradeRequestPacket.RAISE_TIER);
                 return true;
             }
+        } else if (heraldLine(b) && TotemTree.overDiscordButton(mx, my, x + DETAIL_X, y + DETAIL_Y, blocked(b))
+                && (DiscordClient.shown() == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED || DiscordClient.shown() == com.mrgregles.bsp_core.discord.DiscordLinks.State.NOT_LINKED)) {
+            DiscordClient.send(DiscordClient.shown() == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED
+                    ? com.mrgregles.bsp_core.discord.DiscordLinks.Action.UNLINK : com.mrgregles.bsp_core.discord.DiscordLinks.Action.LINK);
+            return true;
         } else if (buy && canBuy(b)) {
             BSPNetwork.CHANNEL.sendToServer(new PlacedUpgradeRequestPacket(menu.getPos(), b.ordinal()));
             return true;
@@ -386,8 +397,13 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), null, set, true, mouseX, mouseY);
             tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, Math.min(tier(), TotemUpgrades.MAX_TIER - 1), Component.literal("-  +"), true, mouseX, mouseY);
         } else {
-            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), blocked(b),
+            boolean discordLine = heraldLine(b);
+            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), discordLine ? null : blocked(b),
                     Component.translatable(level(b) >= b.maxLevel() ? "gui.bsp_core.upgrades.maxed" : "gui.bsp_core.tree.buy"), canBuy(b), mouseX, mouseY);
+            if (discordLine) {
+                DiscordClient.refresh();
+                TotemTree.discordLine(g, font, x + DETAIL_X, y + DETAIL_Y, blocked(b), DiscordClient.shown(), DiscordClient.code(), DiscordClient.secondsLeft(), mouseX, mouseY);
+            }
             tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, tier(), Component.translatable("gui.bsp_core.tree.raise"), canRaise(), mouseX, mouseY);
         }
     }

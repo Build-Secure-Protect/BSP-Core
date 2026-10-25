@@ -136,6 +136,47 @@ public final class NetworkStorage {
         }
     }
 
+    /**
+     * Hands a message to a listener outside the game servers (the Discord bot) on its own Redis channel, on the storage thread.
+     * False when this server has no Redis link, so nothing can reach the listener.
+     */
+    public static boolean publishTo(String channel, String message) {
+        RedisLink r = redis;
+        if (r == null) {
+            return false;
+        }
+        worker().execute(() -> {
+            if (!r.publishTo(channel, message)) {
+                BSPCore.LOGGER.warn("BSP-Core redis: could not publish on {} ({})", channel, r.lastError());
+            }
+        });
+        return true;
+    }
+
+    /** Work on the Redis link, run on the storage thread. */
+    public interface RedisWork<T> {
+        T run(RedisLink redis) throws java.io.IOException;
+    }
+
+    /** Runs {@code work} on the storage thread and hands its answer back on the server thread: null when Redis is off here or the work failed (logged). */
+    public static <T> void redis(String what, RedisWork<T> work, Consumer<T> then) {
+        RedisLink r = redis;
+        if (r == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            T answer = null;
+            try {
+                answer = work.run(r);
+            } catch (java.io.IOException | RuntimeException e) {
+                BSPCore.LOGGER.warn("BSP-Core redis: could not {}: {}", what, e.toString());
+            }
+            T done = answer;
+            onServer(() -> then.accept(done));
+        });
+    }
+
     /** A message from another server (Redis thread): refresh what it names, on the server thread. */
     private static void onRedisMessage(String[] msg) {
         MinecraftServer srv = server;

@@ -1,0 +1,303 @@
+<title>Herald Discord Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: mock-up set 1 of the Discord steal warnings (Herald). Section 1 the Discord messages in three looks, each with the warning DM, the outcome DM, the #totem-alerts line and the /link reply; section 2 the Herald card in the totem screen in three placements of the link control, drawn at the screen's real 326 x 261 coordinates. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  /* Discord's dark theme, drawn; fixed in both page themes because the mock shows Discord itself */
+  --dc-bg:#313338; --dc-side:#2b2d31; --dc-embed:#2b2d31; --dc-fg:#dbdee1; --dc-head:#f2f3f5; --dc-muted:#949ba4; --dc-link:#00a8fc; --dc-bot:#5865f2; --dc-line:#3f4147;
+  /* BSP board palette, fixed (the game's look) */
+  --b-bg:#10151c; --b-slot:#0c0e12; --b-dim:#2a2f3a; --b-tq:#19d3b0; --b-vio:#b58cff; --b-gold:#ffd23a; --b-red:#ff6b5c; --b-xp:#8fe04a; --b-fg:#e8eaf0; --b-muted:#9aa3b5;
+  --ok:#3ba55d; --bad:#ed4245; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+.tag{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+code{ font-family:var(--mono); font-size:12px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; }
+.tb.on{ border-color:var(--acc); color:var(--acc); }
+.tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+
+/* ---------- drawn Discord ---------- */
+.dc{ background:var(--dc-bg); color:var(--dc-fg); border-radius:6px; overflow:hidden; font-family:"gg sans","Noto Sans","IBM Plex Sans",system-ui,sans-serif; font-size:13.5px; line-height:1.35; }
+.dc .bar{ background:var(--dc-side); color:var(--dc-head); font-weight:600; font-size:13px; padding:8px 12px; border-bottom:1px solid #1e1f22; display:flex; gap:6px; align-items:center; }
+.dc .bar .h{ color:var(--dc-muted); font-weight:400; }
+.dc .feed{ padding:6px 0 10px; display:flex; flex-direction:column; }
+.m{ display:grid; grid-template-columns:36px minmax(0,1fr); gap:0 12px; padding:6px 12px; }
+.m + .m.cont{ padding-top:0; } .m.cont .av{ visibility:hidden; height:0; } .m.cont .who{ display:none; }
+.av{ width:36px; height:36px; border-radius:50%; background:var(--b-bg); display:grid; place-items:center; border:1px solid var(--b-vio); }
+.av i{ width:12px; height:18px; background:linear-gradient(var(--b-tq),var(--b-vio)); clip-path:polygon(50% 0,100% 30%,80% 100%,20% 100%,0 30%); display:block; }
+.who{ display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; }
+.who b{ color:var(--dc-head); font-weight:600; }
+.who .app{ background:var(--dc-bot); color:#fff; font-size:10px; font-weight:600; padding:0 4px; border-radius:3px; line-height:15px; }
+.who .t{ color:var(--dc-muted); font-size:11.5px; }
+.txt{ min-width:0; overflow-wrap:anywhere; }
+.txt strong{ color:var(--dc-head); }
+.txt .cd{ font-family:var(--mono); background:#1e1f22; padding:0 3px; border-radius:3px; font-size:12px; }
+.ts{ background:#ffffff14; padding:0 3px; border-radius:3px; }
+.eph{ color:var(--dc-muted); font-size:11.5px; display:flex; gap:4px; align-items:center; margin-top:4px; }
+.eph::before{ content:"👁"; font-size:11px; }
+.cmd{ color:var(--dc-muted); font-size:12px; padding:2px 12px 0 60px; }
+.cmd b{ color:var(--dc-link); font-weight:500; }
+.embed{ margin-top:4px; background:var(--dc-embed); border-left:4px solid var(--bar,#5865f2); border-radius:4px; padding:8px 12px 10px; display:flex; flex-direction:column; gap:6px; max-width:420px; min-width:0; }
+.embed .au{ font-size:12px; color:var(--dc-head); font-weight:600; display:flex; gap:6px; align-items:center; }
+.embed .ti{ font-weight:600; color:var(--dc-head); font-size:14.5px; }
+.embed .de{ font-size:13px; }
+.flds{ display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:6px 10px; }
+.flds .f b{ display:block; color:var(--dc-head); font-size:12px; font-weight:600; }
+.flds .f span{ font-size:13px; }
+.embed .ft{ color:var(--dc-muted); font-size:11px; }
+.bigclock{ font-family:var(--mono); font-size:22px; color:var(--dc-head); letter-spacing:.04em; }
+.meter{ font-family:var(--mono); color:#b58cff; letter-spacing:1px; font-size:13px; }
+.sep{ display:flex; align-items:center; gap:8px; color:var(--dc-muted); font-size:11px; padding:6px 12px 2px; }
+.sep::before,.sep::after{ content:""; flex:1; height:1px; background:var(--dc-line); }
+.pane-tag{ font-size:11px; color:var(--muted); }
+.notif{ background:#1c1d20; color:#e8eaf0; border-radius:10px; padding:8px 10px; font-size:12px; display:grid; grid-template-columns:22px minmax(0,1fr); gap:2px 8px; font-family:system-ui,sans-serif; }
+.notif .ic{ width:22px; height:22px; border-radius:5px; background:#5865f2; grid-row:1/3; }
+.notif b{ font-weight:600; }
+.notif span{ color:#c3c6cc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ---------- drawn totem screen (326 x 261 game pixels) ---------- */
+.mcbox{ position:relative; width:100%; max-width:100%; aspect-ratio:326/261; overflow:hidden; }
+.mc{ position:absolute; left:0; top:0; width:326px; height:261px; transform-origin:0 0; background:#10151cf0; border:1px solid var(--b-dim); color:var(--b-fg); font-family:var(--mono); font-size:7px; line-height:1.2; box-sizing:border-box; }
+.mc .ab{ position:absolute; white-space:nowrap; }
+.mc .ttl{ color:var(--b-vio); font-weight:600; letter-spacing:.04em; font-size:7.5px; }
+.mc .mut{ color:var(--b-muted); font-size:6px; }
+.mc .tab{ position:absolute; top:4px; width:40px; height:11px; border:1px solid var(--b-dim); background:var(--b-slot); color:var(--b-muted); font-size:5.5px; font-weight:600; display:grid; place-items:center; letter-spacing:.05em; }
+.mc .tab.on{ border-color:var(--b-tq); color:var(--b-tq); }
+.mc .coin{ width:7px; height:7px; border-radius:50%; display:inline-block; vertical-align:-1px; margin-right:2px; }
+.tree{ position:absolute; left:10px; top:38px; width:170px; height:170px; }
+.tree svg{ width:100%; height:100%; display:block; }
+.mc .btn{ position:absolute; height:16px; border:1px solid #5a6170; background:#2a2f3a; color:#fff; font-size:6.5px; display:grid; place-items:center; box-sizing:border-box; letter-spacing:.03em; }
+.mc .btn.hot{ border-color:var(--b-tq); color:var(--b-tq); background:#0c2a26; }
+.mc .btn.off{ color:#5f6574; background:#181c24; border-color:#2a2f3a; }
+.mc .wrapt{ position:absolute; white-space:normal; width:128px; }
+.mc .pips i{ display:inline-block; width:5px; height:5px; margin-right:2px; background:var(--b-dim); }
+.mc .gate{ position:absolute; left:185px; top:181px; width:134px; height:35px; background:var(--b-slot); }
+.mc .code{ font-size:12px; letter-spacing:.18em; color:var(--b-gold); font-weight:600; }
+.mc .chip{ position:absolute; height:11px; border:1px solid; font-size:5.5px; font-weight:600; letter-spacing:.06em; display:grid; place-items:center; padding:0 4px; box-sizing:border-box; }
+.mc .pop{ position:absolute; background:var(--b-bg); border:1px solid var(--b-vio); box-shadow:0 0 0 400px #0006; padding:6px 7px; box-sizing:border-box; display:flex; flex-direction:column; gap:4px; }
+.chatline{ font-family:var(--mono); font-size:11.5px; background:#000000c0; color:#fff; padding:4px 8px; border-radius:2px; overflow-wrap:anywhere; }
+.chatline .y{ color:#ffd23a; } .chatline .a{ color:#55ffff; text-decoration:underline; } .chatline .g{ color:#aaa; }
+@media (prefers-reduced-motion: reduce){ *{ animation:none!important; transition:none!important; } }
+</style>
+
+<div class="wrap">
+
+<section>
+  <h1>Herald Discord Concepts</h1>
+  <p class="lede">Mock-up set 1 for the Discord steal warnings. Section 1 is the look of the messages in Discord: the warning DM, the outcome DM, the one public line in <code>#totem-alerts</code>, and the bot's answer to <code>/link</code>. Section 2 is Herald's card in the totem screen, where the player links their Discord. Each look follows the 17 decisions: a DM to the owner only, one line in the channel naming only the server, sent when the game warns the owner (after the thief's Shroud), and nothing in game or Discord shows anyone's Discord name or number.</p>
+</section>
+
+<section>
+  <h2>1. The messages in Discord</h2>
+  <div class="card"><p>The same steal in every look: <b>Steve</b> is stealing <b>Mrgregles</b>'s totem at <b>120 64 -340</b> on <b>Frostwarf</b>, 45 seconds left; then the steal fails because Steve walked away. Each look also shows how the warning reads as a phone notification, since that is where an offline player sees it first. Every look puts the key sentence in the message text itself, so the notification reads well even when a card follows.</p></div>
+  <div class="grid3">
+
+    <!-- A -->
+    <div class="card">
+      <h3>A. Red alarm card</h3>
+      <p>A short text line, then a card with a red edge and four labelled boxes (server, where, thief, time left). The outcome is a second card, green when saved and red when lost. The channel line is a small grey card with the server's name only.</p>
+      <div class="notif"><div class="ic"></div><b>BSP Herald</b><span>Your totem on Frostwarf is being stolen!</span></div>
+      <span class="pane-tag">Direct message</span>
+      <div class="dc"><div class="bar"><span class="h">@</span>BSP Herald</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:04</span></div>
+          Your totem on Frostwarf is being stolen!
+          <div class="embed" style="--bar:#ed4245"><div class="ti">⚠ Totem under attack</div>
+            <div class="flds"><div class="f"><b>Server</b><span>Frostwarf</span></div><div class="f"><b>Where</b><span>120 64 -340</span></div><div class="f"><b>Thief</b><span>Steve</span></div><div class="f"><b>Time left</b><span>45 seconds</span></div></div>
+            <div class="ft">Log in and stand by your totem to stop the steal.</div></div></div></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:05</span></div>
+          Your totem on Frostwarf is safe.
+          <div class="embed" style="--bar:#3ba55d"><div class="ti">✔ Steal failed</div><div class="de">Steve left the totem for too long.</div></div></div></div>
+      </div></div>
+      <span class="pane-tag">If the steal had worked, the second card would read:</span>
+      <div class="dc"><div class="feed"><div class="m cont"><div class="av"></div><div class="txt"><div class="embed" style="--bar:#ed4245"><div class="ti">✖ Totem stolen</div><div class="de">Steve now owns your totem at 120 64 -340 on Frostwarf.</div></div></div></div></div></div>
+      <span class="pane-tag">#totem-alerts (everyone)</span>
+      <div class="dc"><div class="bar"><span class="h">#</span>totem-alerts</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:04</span></div>
+          <div class="embed" style="--bar:#80848e"><div class="de">A totem is being stolen on <strong>Frostwarf</strong></div></div></div></div>
+      </div></div>
+      <span class="pane-tag">/link in the BSP Discord (only the player sees the answer)</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">Mrgregles used <b>/link</b></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed" style="--bar:#3ba55d"><div class="ti">Linked</div><div class="de">Steal warnings for <strong>Mrgregles</strong> will come to your DMs. A test message is on its way.</div></div>
+          <div class="eph">Only you can see this · Dismiss message</div></div></div>
+      </div></div>
+    </div>
+
+    <!-- B -->
+    <div class="card">
+      <h3>B. Short lines</h3>
+      <p>No cards at all: one bold line and one plain line, like a text message. It reads the same in the notification, on a watch and in the chat. The outcome and the channel line are single lines too.</p>
+      <div class="notif"><div class="ic"></div><b>BSP Herald</b><span>🛡 Frostwarf: your totem is being stolen</span></div>
+      <span class="pane-tag">Direct message</span>
+      <div class="dc"><div class="bar"><span class="h">@</span>BSP Herald</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:04</span></div>
+          <strong>🛡 Frostwarf: your totem is being stolen</strong><br>Steve · 120 64 -340 · 45 seconds left</div></div>
+        <div class="m cont"><div class="av"></div><div class="txt"><div class="who"></div>
+          <strong>✔ Saved:</strong> Steve left your totem on Frostwarf.</div></div>
+      </div></div>
+      <span class="pane-tag">If the steal had worked, the second line would read:</span>
+      <div class="dc"><div class="feed"><div class="m cont"><div class="av"></div><div class="txt"><strong>✖ Stolen:</strong> Steve now owns your totem at 120 64 -340 on Frostwarf.</div></div></div></div>
+      <span class="pane-tag">#totem-alerts (everyone)</span>
+      <div class="dc"><div class="bar"><span class="h">#</span>totem-alerts</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:04</span></div>
+          🔔 A totem is being stolen on <strong>Frostwarf</strong></div></div>
+      </div></div>
+      <span class="pane-tag">/link in the BSP Discord (only the player sees the answer)</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">Mrgregles used <b>/link</b></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          ✔ Linked to <strong>Mrgregles</strong>. Check your DMs for a test message.
+          <div class="eph">Only you can see this · Dismiss message</div></div></div>
+      </div></div>
+    </div>
+
+    <!-- C -->
+    <div class="card">
+      <h3>C. Live countdown card</h3>
+      <p>A violet card in the BSP board colours, headed with the server. Its big line is a Discord clock that counts down by itself in every reader's app ("in 45 seconds", "in 44 seconds"...), so the player sees how long is left without the bot editing anything. The channel line and the outcome use the same violet edge.</p>
+      <div class="notif"><div class="ic"></div><b>BSP Herald</b><span>Your totem on Frostwarf is being stolen. Ends in 45 seconds.</span></div>
+      <span class="pane-tag">Direct message</span>
+      <div class="dc"><div class="bar"><span class="h">@</span>BSP Herald</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:04</span></div>
+          Your totem on Frostwarf is being stolen. Ends <span class="ts js-rel">in 45 seconds</span>.
+          <div class="embed" style="--bar:#b58cff"><div class="au">BSP · FROSTWARF</div>
+            <div class="bigclock">ENDS <span class="js-rel">in 45 seconds</span></div>
+            <div class="de">Steve is at your totem, <strong>120 64 -340</strong>.</div>
+            <div class="ft">Herald · log in and stand by your totem to stop the steal</div></div></div></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:05</span></div>
+          <div class="embed" style="--bar:#19d3b0"><div class="au">BSP · FROSTWARF</div><div class="ti">Saved</div><div class="de">Steve left the totem for too long.</div></div></div></div>
+      </div></div>
+      <span class="pane-tag">If the steal had worked, the second card would read:</span>
+      <div class="dc"><div class="feed"><div class="m cont"><div class="av"></div><div class="txt"><div class="embed" style="--bar:#ff6b5c"><div class="au">BSP · FROSTWARF</div><div class="ti">Stolen</div><div class="de">Steve now owns your totem at 120 64 -340.</div></div></div></div></div></div>
+      <span class="pane-tag">#totem-alerts (everyone)</span>
+      <div class="dc"><div class="bar"><span class="h">#</span>totem-alerts</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:04</span></div>
+          <div class="embed" style="--bar:#b58cff"><div class="au">BSP · FROSTWARF</div><div class="de">A totem is being stolen on <strong>Frostwarf</strong></div></div></div></div>
+      </div></div>
+      <span class="pane-tag">/link in the BSP Discord (only the player sees the answer)</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">Mrgregles used <b>/link</b></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed" style="--bar:#19d3b0"><div class="au">BSP · HERALD</div><div class="ti">Linked to Mrgregles</div><div class="de">Steal warnings will come to your DMs. A test message is on its way.</div></div>
+          <div class="eph">Only you can see this · Dismiss message</div></div></div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>2. Herald in the totem screen</h2>
+  <div class="card"><p>Herald sits beside Sentinel off Alarm, at tier II (decision 2). The screen is drawn at its real size, 326 by 261 game pixels, scaled up. Choose a state to see how each placement handles it: <b>not linked</b>, <b>code shown</b> after the player presses Link, <b>linked</b>, and a <b>server with no Discord</b>. In every placement the code also goes to chat as a line the player can click to copy, because they have to type it in Discord.</p>
+    <div class="ctl" role="group" aria-label="Link state">
+      <button class="tb on" id="st-none" data-st="none" type="button">Not linked</button>
+      <button class="tb" id="st-code" data-st="code" type="button">Code shown</button>
+      <button class="tb" id="st-linked" data-st="linked" type="button">Linked</button>
+      <button class="tb" id="st-off" data-st="off" type="button">No Discord on this server</button>
+    </div>
+    <div class="chatline" id="chatline"><span class="y">[Herald]</span> Your Discord link code is <b>K7PQ2M</b>. In the BSP Discord, type <span class="g">/link K7PQ2M</span> within 10 minutes. <span class="a">[Copy]</span></div>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3>A. Inside the card, under Buy</h3><p>A Discord line and a small LINK button sit right under the Buy button, in the space the red "blocked" line uses on other upgrades. The code replaces that line while it is valid.</p><div class="mcbox" data-opt="a"></div></div>
+    <div class="card"><h3>B. A Discord box in place of the tier box</h3><p>While Herald is the chosen upgrade, the dark box under the card (where "Raise to tier III" usually is) becomes a Discord box with the status and a big code. Picking any other upgrade brings the tier box back.</p><div class="mcbox" data-opt="b"></div></div>
+    <div class="card"><h3>C. A Discord chip in the top bar</h3><p>A small DISCORD chip beside the tabs shows the link on every page of the totem screen. Clicking it opens a small card over the tree with the code, the time left and Unlink. Herald's own card only says when a link is needed.</p><div class="mcbox" data-opt="c"></div></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  // live countdown for look C
+  var left = 45;
+  function rel(){ var s = left > 0 ? "in " + left + (left === 1 ? " second" : " seconds") : "a few seconds ago"; document.querySelectorAll(".js-rel").forEach(function(e){ e.textContent = s; }); }
+  setInterval(function(){ left = left > 0 ? left - 1 : 45; rel(); }, 1000); rel();
+
+  // the upgrade tree, simplified: rings and the Walls path with Herald beside Sentinel
+  var TREE = '<svg viewBox="0 0 170 170" aria-hidden="true"><g fill="none" stroke="#2a2f3a" stroke-width="1"><circle cx="85" cy="85" r="22"/><circle cx="85" cy="85" r="44"/><circle cx="85" cy="85" r="66"/></g>' +
+    '<g stroke="#27566b" stroke-width="1.5"><line x1="85" y1="85" x2="85" y2="63"/><line x1="85" y1="63" x2="85" y2="41"/><line x1="85" y1="41" x2="62" y2="28"/><line x1="85" y1="41" x2="108" y2="28"/><line x1="85" y1="41" x2="85" y2="18"/></g>' +
+    '<g stroke="#2a2f3a" stroke-width="1.5"><line x1="85" y1="85" x2="107" y2="94"/><line x1="85" y1="85" x2="63" y2="94"/><line x1="85" y1="85" x2="99" y2="104"/><line x1="85" y1="85" x2="71" y2="104"/><line x1="85" y1="85" x2="106" y2="76"/></g>' +
+    node(85,85,"#ffd23a","",1) + node(85,63,"#ff6b5c","FO",1) + node(85,41,"#ff6b5c","AL",1) + node(62,28,"#ff6b5c","WA",0) + node(108,28,"#ff6b5c","SE",0) + node(85,14,"#19d3b0","HE",2) +
+    node(107,94,"#ffd23a","",0) + node(63,94,"#8fe04a","",0) + node(99,104,"#b58cff","",0) + node(71,104,"#8fe04a","",0) + node(106,76,"#55ffff","",0) + '</svg>';
+  function node(x,y,c,t,s){ var r = s === 2 ? 8 : 6.5; return '<rect x="'+(x-r)+'" y="'+(y-r)+'" width="'+(2*r)+'" height="'+(2*r)+'" fill="#0c0e12" stroke="'+c+'" stroke-width="'+(s===2?1.8:s?1.2:.8)+'" opacity="'+(s?1:.55)+'"/>' + (s === 2 ? '<rect x="'+(x-r-2.5)+'" y="'+(y-r-2.5)+'" width="'+(2*r+5)+'" height="'+(2*r+5)+'" fill="none" stroke="#fff" stroke-width=".6"/>' : '') + (t ? '<text x="'+x+'" y="'+(y+2)+'" font-size="5" fill="'+c+'" text-anchor="middle" font-family="IBM Plex Mono,monospace">'+t+'</text>' : ''); }
+
+  function frame(opt, st){
+    var h = '';
+    h += '<div class="ab ttl" style="left:10px;top:6px">SHATTER TOTEM · TIER II</div>';
+    ["TOTEM","CHUNKS","ACCESS","TEAM"].forEach(function(t,i){ h += '<div class="tab'+(i===0?' on':'')+'" style="left:'+(150+i*44)+'px">'+t+'</div>'; });
+    h += '<div class="ab" style="left:10px;top:21px;color:#8fe04a">XP 34</div>';
+    [["#c77b3f",24],["#ffd23a",9],["#5fe0e8",2],["#4a4045",0],["#b58cff",0]].forEach(function(c,i){ h += '<div class="ab" style="left:'+(54+i*26)+'px;top:21px"><span class="coin" style="background:'+c[0]+'"></span>'+c[1]+'</div>'; });
+    h += '<div class="tree">'+TREE+'</div>';
+    // detail panel at 188,40
+    var X = 188, Y = 40;
+    h += '<div class="ab" style="left:'+X+'px;top:'+Y+'px;color:#19d3b0;font-weight:600">Herald</div>';
+    h += '<div class="ab mut" style="left:'+X+'px;top:'+(Y+10)+'px">Base · Tier II</div>';
+    var bought = st === 'linked' || st === 'code';
+    h += '<div class="ab pips" style="left:'+X+'px;top:'+(Y+19)+'px"><i style="background:'+(bought?'#19d3b0':'#4a5160')+'"></i></div>';
+    h += '<div class="ab mut" style="left:'+X+'px;top:'+(Y+27)+'px">Level '+(bought?1:0)+' / 1</div>';
+    h += '<div class="ab mut" style="left:'+X+'px;top:'+(Y+37)+'px">Now:</div>';
+    h += '<div class="wrapt" style="left:'+X+'px;top:'+(Y+45)+'px">'+(bought?'A Discord DM when this totem is being stolen':'No Discord warnings')+'</div>';
+    if (!bought) {
+      h += '<div class="ab mut" style="left:'+X+'px;top:'+(Y+63)+'px">Next:</div>';
+      h += '<div class="wrapt" style="left:'+X+'px;top:'+(Y+71)+'px">A Discord DM when this totem is being stolen</div>';
+      h += '<div class="ab" style="left:'+X+'px;top:'+(Y+91)+'px"><span class="coin" style="background:#ffd23a"></span>x6 &nbsp;<span style="color:#8fe04a">12 XP</span></div>';
+    }
+    var buyLabel = bought ? 'MAXED' : 'BUY';
+    var buyCls = st === 'off' || bought ? ' off' : ' hot';
+    h += '<div class="btn'+buyCls+'" style="left:'+X+'px;top:'+(Y+108)+'px;width:128px">'+buyLabel+'</div>';
+    var gateHtml = '<div class="gate"></div><div class="ab mut" style="left:188px;top:184px">Raise to tier III</div><div class="ab" style="left:188px;top:195px"><span class="coin" style="background:#ffd23a"></span>x24 <span style="color:#8fe04a">30 XP</span></div><div class="btn" style="left:266px;top:195px;width:50px">RAISE</div>';
+
+    if (opt === 'a') {
+      var ly = Y + 127;
+      if (st === 'off') h += '<div class="wrapt" style="left:'+X+'px;top:'+ly+'px;color:#ff6b5c">This server is not linked to Discord</div>';
+      else if (st === 'none') h += '<div class="ab" style="left:'+X+'px;top:'+(ly+2)+'px;color:#9aa3b5">Discord: <span style="color:#ff6b5c">not linked</span></div><div class="btn hot" style="left:'+(X+88)+'px;top:'+ly+'px;width:40px;height:12px">LINK</div>';
+      else if (st === 'code') h += '<div class="ab" style="left:'+X+'px;top:'+(ly-2)+'px"><span class="code" style="font-size:7.5px">K7PQ2M</span> <span class="mut">9:41 left</span></div><div class="ab mut" style="left:'+X+'px;top:'+(ly+7)+'px;font-size:5.5px">/link in the BSP Discord</div>';
+      else h += '<div class="ab" style="left:'+X+'px;top:'+(ly+2)+'px;color:#9aa3b5">Discord: <span style="color:#19d3b0">linked ✓</span></div><div class="btn" style="left:'+(X+88)+'px;top:'+ly+'px;width:40px;height:12px">UNLINK</div>';
+      h += gateHtml;
+    } else if (opt === 'b') {
+      h += '<div class="gate" style="border:1px solid '+(st==='off'?'#ff6b5c':'#19d3b0')+';box-sizing:border-box"></div>';
+      h += '<div class="ab" style="left:188px;top:184px;color:#19d3b0;font-weight:600;letter-spacing:.06em;font-size:6px">DISCORD</div>';
+      if (st === 'off') h += '<div class="wrapt" style="left:188px;top:194px;color:#ff6b5c">This server is not linked to Discord</div>';
+      else if (st === 'none') h += '<div class="ab mut" style="left:188px;top:198px">Not linked</div><div class="btn hot" style="left:266px;top:195px;width:50px">LINK</div>';
+      else if (st === 'code') h += '<div class="ab" style="left:188px;top:192px"><span class="code">K7P Q2M</span></div><div class="ab mut" style="left:188px;top:207px">/link in the BSP Discord · 9:41 left</div><div class="btn" style="left:266px;top:192px;width:50px;height:12px">NEW CODE</div>';
+      else h += '<div class="ab" style="left:188px;top:198px;color:#19d3b0">Linked ✓</div><div class="btn" style="left:266px;top:195px;width:50px">UNLINK</div>';
+    } else {
+      var c = st === 'off' ? ['#5f6574','DISCORD OFF'] : st === 'linked' ? ['#19d3b0','DISCORD ✓'] : ['#ff6b5c','DISCORD ·'];
+      h += '<div class="chip" style="left:272px;top:19px;width:44px;border-color:'+c[0]+';color:'+c[0]+'">'+c[1]+'</div>';
+      var ly2 = Y + 127;
+      if (st === 'off') h += '<div class="wrapt" style="left:'+X+'px;top:'+ly2+'px;color:#ff6b5c">This server is not linked to Discord</div>';
+      else if (st === 'none') h += '<div class="wrapt" style="left:'+X+'px;top:'+ly2+'px;color:#ff6b5c">Link your Discord with the DISCORD chip above</div>';
+      h += gateHtml;
+      if (st === 'code') {
+        h += '<div class="pop" style="left:22px;top:60px;width:150px;height:96px"><div style="color:#b58cff;font-weight:600;letter-spacing:.06em;font-size:6.5px">LINK DISCORD</div><div class="code" style="font-size:14px">K7P Q2M</div><div class="mut" style="font-size:6px;white-space:normal">In the BSP Discord, type /link K7PQ2M. Valid for 9:41.</div><div class="mut" style="font-size:5.5px;white-space:normal">The code is also in your chat to copy. Nobody else can use it.</div><div style="display:flex;gap:4px"><div class="btn" style="position:static;width:66px;height:13px">NEW CODE</div><div class="btn" style="position:static;width:66px;height:13px">CLOSE</div></div></div>';
+      }
+    }
+    // status strip under the tree
+    h += '<div class="ab mut" style="left:10px;top:214px">Owner: Mrgregles · placed on Frostwarf</div>';
+    h += '<div class="btn off" style="left:214px;top:229px;width:102px;height:20px">STEAL</div>';
+    return '<div class="mc">'+h+'</div>';
+  }
+
+  var boxes = document.querySelectorAll(".mcbox"), state = "none";
+  function draw(){ boxes.forEach(function(b){ b.innerHTML = frame(b.getAttribute("data-opt"), state); }); fit(); document.getElementById("chatline").hidden = state !== "code"; }
+  function fit(){ boxes.forEach(function(b){ var m = b.firstChild; if (m) m.style.transform = "scale(" + (b.clientWidth / 326) + ")"; }); }
+  document.querySelectorAll("[data-st]").forEach(function(btn){ btn.addEventListener("click", function(){ state = btn.getAttribute("data-st"); document.querySelectorAll("[data-st]").forEach(function(o){ o.classList.toggle("on", o === btn); }); draw(); }); });
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(document.body); else window.addEventListener("resize", fit);
+  draw();
+})();
+</script>

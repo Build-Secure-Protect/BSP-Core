@@ -147,9 +147,9 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue STORAGE_PORT;
     public static final ForgeConfigSpec.BooleanValue REDIS_ENABLED, REDIS_SSL;
     public static final ForgeConfigSpec.ConfigValue<String> REDIS_HOST, REDIS_PASSWORD, REDIS_CHANNEL;
-    public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER;
+    public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER, DISCORD_SERVER_NAME, DISCORD_REDIS_CHANNEL;
     public static final ForgeConfigSpec.IntValue TRANSFER_SECONDS, TRANSFER_TIMEOUT_HOURS, LOGOUT_RETURN_MINUTES;
-    public static final ForgeConfigSpec.BooleanValue ADMIN_TOTEMS_TRAVEL;
+    public static final ForgeConfigSpec.BooleanValue ADMIN_TOTEMS_TRAVEL, DISCORD_ENABLED;
     public static final ForgeConfigSpec.IntValue REDIS_PORT, REDIS_DB;
 
     // ------------------------------------------------------------------ bank
@@ -629,6 +629,15 @@ public final class BSPConfig {
         HARVEST_DRAW = BUILDER.comment("mB per tick of the totem's Wave Plasma output Harvest uses while ores are waiting to grow back.").defineInRange("harvestDraw", 25, 0, 100_000);
         SENTINEL_MARKER_RANGE = BUILDER.comment("Sentinel level 4: intruders within this many blocks of the viewer, in the same dimension, get a marker through walls. 0 turns the markers off.").defineInRange("sentinelMarkerRange", 128, 0, 1024);
         RECALL_BLOCK_SECONDS = BUILDER.comment("Seconds a thief's Recall Block delays the owner's Recall offer, by level, on top of Shroud.").defineList("recallBlockSeconds", List.of(10, 20, 30, 45), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
+        BUILDER.comment("Discord steal warnings (the Herald upgrade). The bot's token never goes in this file: it lives only on the machine that runs the bot.").push("discord");
+        DISCORD_ENABLED = BUILDER.comment("True on a server of a network whose Discord bot is set up. While false, Herald stays locked in the totem's tree and nothing is sent. Always off in a single-player or LAN world.")
+                .define("enabled", false);
+        DISCORD_SERVER_NAME = BUILDER.comment("This server's name in the public Discord line (\"A totem is being stolen on <name>\") and in the owner's message. Empty uses storage.serverId.")
+                .define("serverName", "");
+        DISCORD_REDIS_CHANNEL = BUILDER.comment("Redis channel the alerts go out on for the Discord bot (needs storage.mode \"mysql\" and storage.redis.enabled). Kept apart from the storage channel, so the bot's Redis user can be limited to this one.")
+                .define("redisChannel", "bsp_core:discord");
         BUILDER.pop();
 
         BUILDER.comment("How the totem is drawn").push("visuals");

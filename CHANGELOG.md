@@ -6,6 +6,23 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 Nothing yet.
 
+## [1.5.0] - 2026-10-25
+
+### Added
+- **Herald, a new totem upgrade** (the first part of the Discord steal warnings). A one-level Base power on the Walls path, after Alarm at tier II, priced like Sentinel (Raid prices); its node reads HR. It is locked, with "This server is not linked to Discord", unless the server's new `discord.enabled` is on, and always in a single-player or LAN world. It sends nothing by itself: the Discord bot reads the alerts below. One game test.
+- **Discord steal alerts go out over Redis for the bot** (the second part). When the game warns an owner that their totem is being stolen (after the thief's Shroud), the totem's server publishes a public line for the alert channel ("a totem is being stolen on <server>", nothing more) and, when the totem has Herald, a message for the owner with the server, place, thief and time left; when the steal ends, the owner who was told gets the outcome (stolen, or saved and why). One of each per steal, and at most one warning per player every 30 seconds. New settings `discord.serverName` and `discord.redisChannel` (default `bsp_core:discord`); the format is in `docs/API.md`. Nothing reaches Discord until the bot (BSP-Velocity Additions) reads the channel. Two game tests.
+- **Linking a Discord account** (the third part). `/bsp discord link` (or LINK on Herald's card) gives a six-character code for ten minutes; the player types `/link CODE` in the BSP Discord, where the bot learns who they are from Discord itself. The player never types a Discord name, id or password in the game, and the game never holds one. A new code replaces the last; five an hour. `/bsp discord status` says linked, not linked or the waiting code; `/bsp discord unlink` ends the link and tells the bot to forget it. Herald's card shows the player's own line under Buy: "Discord: not linked" with LINK, the code with its minutes and where to type it, or "Discord: linked ✓" with UNLINK. Codes and the linked flag live on Redis under `discord.redisChannel` (see `docs/API.md`). Two game tests.
+- **A player whose Discord message could not be delivered is told at their next login** (DMs closed, or not in the BSP Discord any more): one line, "Your Discord warning could not reach you: allow DMs from the BSP server", and nothing public. The bot leaves the note on Redis (`<channel>:undelivered:<uuid>`); the game takes it at login so the line shows once. One game test.
+- **The guide book covers Herald**: a line in the Base walls list, and two pages in Powers in Detail ("Herald" and "Linking Discord"). Setting up the game servers is in `docs/DISCORD_SETUP.md`.
+
+### Changed
+- **An owner on another server no longer gets a clickable "recall to it" chat line** when their totem is being stolen. That line ran `/bsp recall <server>`, a staff-only command, so it failed for players. They still get the steal warning wherever they are; the Recall popup is for an owner on the totem's own server. One game test.
+- `/bsp` is open to every player so they reach `/bsp discord`; every other `/bsp` command keeps the operator-or-moderator rule it had (a game test checks a plain player can use `discord` and nothing else).
+
+### Fixed
+- **Harvest, Sentinel, Extra Homes, Swift Travel and Herald have their own orb colours** round a placed totem (yellow-green, violet, sea green, amber and rose). They all drew plain red, the same as Lockpick, because the colour list stopped at the first 26 upgrades. One game test checks every upgrade has a colour of its own.
+- A projector base or battery charger saved before an upgrade was added no longer forgets which plasma powers it offers until its next refresh.
+
 ## [1.4.6] - 2026-10-25
 
 ### Fixed

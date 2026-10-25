@@ -1,0 +1,64 @@
+<title>Orb Colour Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: the five upgrades whose orbs fall off the colour list (all red today). Each option shows every upgrade's orb at full level, sorted round the colour wheel, with the five new ones ringed, and the five as they grow from level 1 to their top level. Colours use UpgradeOrbColors' own formula. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; --board:#10151c; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:22px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b,.card p b{ color:var(--fg); }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.board{ background:var(--board); border-radius:4px; padding:12px; overflow-x:auto; }
+.strip{ display:flex; gap:6px; min-width:max-content; align-items:flex-end; }
+.orb{ display:flex; flex-direction:column; align-items:center; gap:4px; width:30px; }
+.orb i{ width:22px; height:22px; border-radius:50%; display:block; box-shadow:0 0 10px var(--c), inset -3px -4px 6px #0006, inset 2px 2px 4px #fff5; background:var(--c); }
+.orb.new i{ outline:2px solid #fff; outline-offset:3px; }
+.orb span{ font:600 9px var(--mono); color:#9aa3b5; letter-spacing:.04em; }
+.orb.new span{ color:#fff; }
+.ramps{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px 16px; }
+.ramp{ display:flex; align-items:center; gap:6px; font:12px var(--mono); color:#e8eaf0; }
+.ramp b{ width:92px; font-weight:600; flex:none; }
+.ramp i{ width:16px; height:16px; border-radius:50%; display:block; background:var(--c); }
+.note{ font-size:12px; color:#9aa3b5; font-family:var(--mono); }
+</style>
+
+<div class="wrap">
+  <h1>Orb Colour Concepts</h1>
+  <p class="lede">The orbs around a placed totem take their colour from a list that covers the first 26 upgrades. <b>Harvest, Sentinel, Extra Homes, Swift Travel and Herald</b> fall off its end, so all five draw plain red, the same as Lockpick. Each option gives those five their own hues; the other 26 stay as they are. Every orb is drawn with the game's own formula (pale at level 1, deep at the top level). The ringed orbs are the five.</p>
+  <div id="opts" style="display:flex;flex-direction:column;gap:16px"></div>
+</div>
+
+<script>
+(function(){
+  var NAMES = ["damage","resistance","mining_speed","fortify","healing","swiftness","vitality","featherfall","night_sight","ward","alarm","sanctuary","deadlock","overclock","lockpick","shroud","anchor","survey","output","bouncy","xray","cloaking","recall","recall_block","thief_step","siege","harvest","sentinel","extra_homes","swift_travel","herald"];
+  var ABBR = {recall:"RC",recall_block:"RB",swift_travel:"ST",herald:"HR"};
+  var MAX = {anchor:3,survey:2,output:10,bouncy:4,cloaking:4,recall_block:4,thief_step:4,siege:4,harvest:4,sentinel:4,extra_homes:3,swift_travel:3,xray:5,recall:7,night_sight:1,herald:1};
+  var HUES = [8,218,48,275,130,165,345,195,60,300,25,100,240,180,0,260,205,90,215,110,55,230,20,350,140,320];
+  var OPTIONS = [
+    {t:"A. In the widest gaps", p:"Each of the five takes the middle of one of the largest empty stretches of the colour wheel, so it is as far as possible from every other orb: Harvest yellow-green, Sentinel violet, Extra Homes sea green, Swift Travel amber, Herald rose.", h:[75,288,150,37,335]},
+    {t:"B. By what they do", p:"Each colour says what the power is about, even where it sits close to a neighbour: Harvest leaf green (near Healing and Bouncy), Sentinel watchful amber (near Mining Speed), Extra Homes warm teal, Swift Travel sky blue, Herald rose like an alert.", h:[120,42,150,185,335]},
+    {t:"C. Herald in Discord's blurple", p:"As A, but Herald takes Discord's own blue-violet, so it reads as the Discord power at a glance. It sits close to Cloaking and Deadlock, which are on the same Walls path.", h:[75,288,150,37,234]}
+  ];
+  function hsl(h,s,l){ var q=l<.5?l*(1+s):l+s-l*s, p=2*l-q; function f(t){ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; } var r=Math.round(f(h+1/3)*255),g=Math.round(f(h)*255),b=Math.round(f(h-1/3)*255); return "#"+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1); }
+  function level(hue,lv,max){ var t=max<=1?1:(lv-1)/(max-1); t=Math.max(0,Math.min(1,t)); return hsl(hue/360,.25+.75*t,.82-.27*t); }
+  function maxOf(k,i){ return MAX[k] || 2*(5-[0,1,0,0,0,1,2,2,3,2,1,1,3,3,1,2,1,2,0,2,4,3,4,3,3,4,3,2,1,2,1][i]); }
+  var root = document.getElementById("opts");
+  OPTIONS.forEach(function(o){
+    var hues = HUES.concat(o.h);
+    var list = NAMES.map(function(n,i){ return {n:n, i:i, h:hues[i], isNew:i>=26}; }).sort(function(a,b){ return a.h-b.h; });
+    var strip = list.map(function(e){ return '<div class="orb'+(e.isNew?' new':'')+'" title="'+e.n.replace("_"," ")+' ('+e.h+'°)"><i style="--c:'+level(e.h,maxOf(e.n,e.i),maxOf(e.n,e.i))+'"></i><span>'+(ABBR[e.n]||e.n.slice(0,2).toUpperCase())+'</span></div>'; }).join("");
+    var ramps = NAMES.slice(26).map(function(n,j){ var i=26+j, m=maxOf(n,i), dots=""; for(var lv=1;lv<=m;lv++) dots+='<i style="--c:'+level(o.h[j],lv,m)+'" title="level '+lv+'"></i>'; return '<div class="ramp"><b>'+n.replace("_"," ")+'</b>'+dots+'</div>'; }).join("");
+    var near = o.h.map(function(h,j){ var best=999,who=""; hues.forEach(function(x,i){ if(i!==26+j){ var d=Math.min(Math.abs(x-h),360-Math.abs(x-h)); if(d<best){best=d;who=NAMES[i];} } }); return NAMES[26+j].replace("_"," ")+" "+h+"° (nearest "+who.replace("_"," ")+", "+best+"° away)"; }).join(" · ");
+    var c = document.createElement("div"); c.className="card";
+    c.innerHTML = '<h3>'+o.t+'</h3><p>'+o.p+'</p><div class="board"><div class="strip">'+strip+'</div></div><div class="board"><div class="ramps">'+ramps+'</div></div><div class="note">'+near+'</div>';
+    root.appendChild(c);
+  });
+})();
+</script>

@@ -7,8 +7,17 @@ import com.mrgregles.bsp_core.totem.TotemUpgrades;
  * hue; saturation and depth rise from level 1 (pale) to level 5 (vivid).
  */
 public final class UpgradeOrbColors {
-    /** Hue in degrees per buff, in {@link TotemUpgrades.Buff} order. */
-    private static final float[] HUES = {8f, 218f, 48f, 275f, 130f, 165f, 345f, 195f, 60f, 300f, 25f, 100f, 240f, 180f, 0f, 260f, 205f, 90f, 215f, 110f, 55f, 230f, 20f, 350f, 140f, 320f};
+    /**
+     * Hue in degrees per buff, in {@link TotemUpgrades.Buff} order: one for every buff (a game test checks), all different.
+     * The last five (Harvest, Sentinel, Extra Homes, Swift Travel, Herald) sit in the widest gaps the others left.
+     */
+    private static final float[] HUES = {8f, 218f, 48f, 275f, 130f, 165f, 345f, 195f, 60f, 300f, 25f, 100f, 240f, 180f, 0f, 260f, 205f, 90f, 215f, 110f, 55f, 230f, 20f, 350f, 140f, 320f,
+            75f, 288f, 150f, 37f, 335f};
+
+    /** How many buffs have their own hue. */
+    public static int hues() {
+        return HUES.length;
+    }
 
     private UpgradeOrbColors() {}
 

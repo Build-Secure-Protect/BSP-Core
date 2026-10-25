@@ -83,6 +83,7 @@ Work only while the totem is **placed**. Paid in Shatter Coins.
 - Fortify: blocks nearby resist explosions and intruders mine slower
 - Alarm: outlines intruders and warns you
 - Sentinel: tells you who is inside, from anywhere
+- Herald: calls you on Discord
 - Ward: weakens intruders
 - Deadlock: your totem takes longer to steal
 - Cloaking: outsiders see untouched land
@@ -602,6 +603,16 @@ The higher-tier powers, one by one. Auras are cubes: a radius of 5 covers 11 by 
 **Sentinel** (Base, Walls path beside Ward after Alarm, Tier III, priced like a Raid power): while anyone is inside your Alarm cube, a strip at the top of your screen tells you, from anywhere on the server: how many (level 1), who (2), how far from the totem (3), and at level 4 where they are right now, with a marker through the walls when they are near you. A steal in progress shows the thief and the seconds left. Friends with the Alarm switch see it too.
 
 **Harvest** (Base, Anchor path after Survey, Tier IV): BSP ores you mine within its reach grow back where they were, one at a time, as long as the totem has plasma to spare for it.
+
+**Page 6: Herald**
+
+**Herald** (Base, Walls path after Alarm, Tier II, one level): when your totem is being stolen, the BSP Discord bot sends you a direct message with the server, the place, the thief and the time left, and another when the steal ends. It comes when the game warns you, so a thief's Shroud delays it too. Where the server has no Discord link, Herald stays locked.
+
+**Page 7: Linking Discord**
+
+Type **/bsp discord link**, or press LINK on Herald's card, for a six-letter code that lasts ten minutes. In the BSP Discord, type **/link** and the code. Only you see the bot's answer.
+
+You never type a Discord name or password in the game. **/bsp discord status** shows the link; **/bsp discord unlink** ends it.
 
 ---
 

@@ -176,10 +176,16 @@ public final class RedisLink implements AutoCloseable {
 
     /** Publishes {@code kind:self:payload}. Blocks briefly; call from the storage thread, never the server thread. */
     public synchronized void publish(String kind, String payload) {
-        if (closed) {
-            return;
+        if (!closed && !publishTo(channel, kind + ":" + serverId + ":" + payload)) {
+            BSPCore.LOGGER.warn("BSP-Core redis: could not publish ({}); the database polling covers it", lastError);
         }
-        String msg = kind + ":" + serverId + ":" + payload;
+    }
+
+    /** Publishes {@code message} as it is on {@code toChannel}. False when Redis could not be reached or the link is closed. Storage thread only. */
+    public synchronized boolean publishTo(String toChannel, String message) {
+        if (closed) {
+            return false;
+        }
         for (int attempt = 0; attempt < 2; attempt++) {
             try {
                 if (pub == null || pub.isClosed()) {
@@ -187,17 +193,50 @@ public final class RedisLink implements AutoCloseable {
                     pubIn = new BufferedInputStream(pub.getInputStream());
                     pubOut = pub.getOutputStream();
                 }
-                pubOut.write(encode("PUBLISH", channel, msg));
+                pubOut.write(encode("PUBLISH", toChannel, message));
                 pubOut.flush();
                 decode(pubIn);
-                return;
+                return true;
             } catch (IOException e) {
                 lastError = e.getMessage() == null ? e.toString() : e.getMessage();
                 closeQuietly(pub);
                 pub = null;
             }
         }
-        BSPCore.LOGGER.warn("BSP-Core redis: could not publish ({}); the database polling covers it", lastError);
+        return false;
+    }
+
+    /** Runs one command on the publishing connection and returns Redis's answer. Storage thread only. */
+    public synchronized Object call(String... args) throws IOException {
+        if (closed) {
+            throw new IOException("closed");
+        }
+        IOException failed = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try {
+                if (pub == null || pub.isClosed()) {
+                    pub = open();
+                    pubIn = new BufferedInputStream(pub.getInputStream());
+                    pubOut = pub.getOutputStream();
+                }
+                pubOut.write(encode(args));
+                pubOut.flush();
+                return decode(pubIn);
+            } catch (IOException e) {
+                if (String.valueOf(e.getMessage()).startsWith("Redis error")) {
+                    throw e; // Redis answered: the connection is fine, the command was not
+                }
+                failed = e;
+                lastError = e.getMessage() == null ? e.toString() : e.getMessage();
+                closeQuietly(pub);
+                pub = null;
+            }
+        }
+        throw failed;
+    }
+
+    public String lastError() {
+        return lastError;
     }
 
     /** Starts the subscriber thread. */

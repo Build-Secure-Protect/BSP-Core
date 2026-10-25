@@ -12,7 +12,6 @@ KEYS = {
     "message.bsp_core.transfer.returned": "Your Shatter Totem is back with you.",
     "message.bsp_core.transfer.timeout": "The transfer did not happen. Your Shatter Totem is back with you.",
     "message.bsp_core.transfer.arrived": "Your Shatter Totem arrived with you.",
-    "message.bsp_core.recall.remote": "Your totem on %s is being stolen. Click here to recall to it (you have %s s).",
     "message.bsp_core.recall.remote_going": "Taking you to %s; you land near your totem on arrival.",
     "message.bsp_core.recall.remote_none": "No teleport mod can take you to %s from here.",
     "gui.bsp_core.zone.group.teleport": "Teleports (the pack's teleport mod)",

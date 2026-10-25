@@ -253,9 +253,8 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
         fedAt = tag.contains("FedAt") ? tag.getLong("FedAt") : -1000;
         delivered = tag.getInt("Delivered");
         int[] o = tag.getIntArray("Offered");
-        if (o.length == offered.length) {
-            System.arraycopy(o, 0, offered, 0, o.length);
-        }
+        // a save from before a power was added is shorter: keep what it has
+        System.arraycopy(o, 0, offered, 0, Math.min(o.length, offered.length));
         source = tag.contains("Source") ? BlockPos.of(tag.getLong("Source")) : null;
     }
 

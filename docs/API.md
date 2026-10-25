@@ -113,6 +113,39 @@ Byte layout (Minecraft's `FriendlyByteBuf` encodings: `writeUtf` is a VarInt len
 
 `BspProxy` in the api: `CHANNEL`, `relayEnabled()`, and `relayChat(player, message)` for a mod that shows public chat another way and wants those lines relayed too (Region Guard's `receive-chat` re-send, if it ever wants them seen across the network). Commands such as `/me`, `/say` and `/tellraw` are not chat events and are not relayed.
 
+## Discord alerts: `bsp_core:discord` on Redis (for the Discord bot)
+
+With `discord.enabled = true` (default false; never in a single-player or LAN world) BSP-Core publishes one JSON object per alert on the Redis channel **`discord.redisChannel`** (default `bsp_core:discord`), through the same Redis link as network storage (so it needs `storage.mode = "mysql"` and `storage.redis.enabled`). The channel is separate from the storage channel, so the bot's Redis user can be allowed this channel only. The message is the bare JSON, with no `kind:server:` prefix. Pub/sub keeps nothing: an alert sent while the bot is down is lost. The game servers never hold a Discord token or a Discord id: the bot looks the player up by Minecraft UUID in its own links.
+
+When: at the moment the game warns the owner of a steal (after the thief's Shroud), the server where the totem stands sends a `channel` alert for every steal of an owned totem, and a `warning` to the owner when the totem has Herald; at most one `warning` per player every 30 s (other totems raided in that window get the public line only). When that steal ends, an owner who got the `warning` gets one `saved` or `stolen`. Unclaimed totems send nothing.
+
+| Field | In | Meaning |
+|---|---|---|
+| `v` | all | `1`. Ignore a version you do not know. |
+| `type` | all | `warning`, `saved`, `stolen` or `channel`. Ignore unknown types. |
+| `server` | all | `discord.serverName`, else `storage.serverId` |
+| `sentAt` | all | epoch milliseconds |
+| `player` | not `channel` | the owner's Minecraft UUID |
+| `world`, `x`, `y`, `z` | not `channel` | the totem's dimension id and block position |
+| `thief` | not `channel` | the thief's profile name |
+| `secondsLeft` | `warning` | seconds of the steal left when it was sent (it ends at `sentAt + secondsLeft * 1000`, a little later when the thief steps away) |
+| `reason` | `saved` | `left` (the thief stayed away too long), `interrupted` (the thief logged out, died or changed world), `totem_gone` (the totem was taken down), `cancelled` (an operator stopped it), `ended` (anything else) |
+
+A `channel` alert holds exactly `v`, `type`, `server` and `sentAt`: the public line names the server and nothing else.
+
+Example: `{"v":1,"type":"warning","server":"Frostwarf","sentAt":1761419040000,"player":"0f3c...","world":"minecraft:overworld","x":120,"y":64,"z":-340,"thief":"Steve","secondsLeft":45}`
+
+**Linking (the bot's side of `/bsp discord`).** All keys sit under the channel's name, so the bot's Redis user needs only `&bsp_core:discord` and `~bsp_core:discord:*`:
+
+| Key or message | Written by | Meaning |
+|---|---|---|
+| `<channel>:code:<CODE>` | BSP-Core, `SET ... EX 600` | a code waiting for `/link CODE` in Discord. Value `{"v":1,"player":"<uuid>","name":"<profile name>","server":"<server>","expiresAt":<ms>}`. Six characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`; a player's new code deletes their last. The bot takes it with `GETDEL` (single use) and links the Discord user who ran the command to `player`. |
+| `<channel>:linked:<uuid>` | the bot | set (any value, no Discord id in it) while the player is linked; BSP-Core only checks `EXISTS` for `/bsp discord status` and Herald's card. |
+| `<channel>:undelivered:<uuid>` | the bot (suggested `EX 604800`) | a direct message to the player could not be delivered (Discord error 50007 or 403). BSP-Core deletes it at the player's next login (`DEL`, any Redis version) and, if it was there, tells them once to allow DMs from the BSP server. |
+| `{"v":1,"type":"unlink","player":"<uuid>","sentAt":<ms>}` on the channel | BSP-Core | the player unlinked in game: BSP-Core has already deleted the `linked` key; the bot deletes its own link. |
+
+The Discord user id stays with the bot. BSP-Core shows a player only "linked" or "not linked".
+
 ## Region Guard
 
 `BspLandOffice.open(player)` opens the Land Office for a player; `BspLandOffice.open(player, x1, z1, x2, z2)` opens it with ground the player outlined (Region Guard calls this when the wand selection is complete), drawn on the map and priced when it lies in an open area. The office lists plots for sale, open areas, the player's own claims and other players' claims within 160 blocks (`claimsNear`) from `RegionGuardApi.get().claims()`, reads the wand outline with `selection(player)` when opened from the block, buys, enlarges and abandons through it, and redraws every open office on `ClaimPurchasedEvent` / `ClaimAbandonedEvent`; the outlined ground is held on the server for the purchase. Needs Region Guard API version 4. When Region Guard prices claims in Shatter Coins (`claims().paysInCoins()`, API 6), the office shows `claims().priceText(level, id, amount)` for prices, the cost per block and the quote, and the coins the player carries instead of the bank balance; an older Region Guard keeps the pieces display.

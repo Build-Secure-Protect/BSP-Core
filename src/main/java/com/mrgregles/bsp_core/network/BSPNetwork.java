@@ -182,6 +182,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(TeamChatPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(TeamChatPacket::encode).decoder(TeamChatPacket::decode)
                 .consumerMainThread(TeamChatPacket::handle).add();
+        CHANNEL.messageBuilder(DiscordActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DiscordActionPacket::encode).decoder(DiscordActionPacket::decode)
+                .consumerMainThread(DiscordActionPacket::handle).add();
+        CHANNEL.messageBuilder(DiscordStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DiscordStatusPacket::encode).decoder(DiscordStatusPacket::decode)
+                .consumerMainThread(DiscordStatusPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

@@ -1474,3 +1474,71 @@ Covered by GameTest `shops_kits_and_prizes_refuse_inventory_sync_placeholders` (
 - [ ] Kit editor: put it in a kit and SAVE: refused (chat line, "Refused" on the panel); the kit keeps its old contents.
 - [ ] Season prizes: it will not go into a prize slot.
 - [ ] Put it in a safety deposit box, take it out on a server with the mod: it turns back into the original.
+
+## Herald, the upgrade (Discord steal warnings, part 1, 2026-10-25)
+
+Covered by GameTests `herald_is_one_level_after_alarm_and_locked_where_discord_is_off` (place, price, the switch, the real buy path) and `every_upgrade_on_the_tree_can_be_clicked_and_has_its_own_label` (the new node). Herald sends nothing yet.
+
+- [ ] Open a placed tier II totem's screen with Alarm at level 2: an HR node sits on the tier II ring just above Alarm, gold-outlined, and touches nothing.
+- [ ] Click it: the card reads "Herald", Base, tier II, Level 0 / 1, "Next: Your totem calls you on Discord when it is being stolen", the price in Gold Shatter Coins and XP (the same as Sentinel's first level would be at tier II).
+- [ ] With `discord.enabled = false` (the default): the Buy button is off and the red line says "This server is not linked to Discord"; clicking it changes nothing.
+- [ ] Set `discord.enabled = true` in `serverconfig/bsp_core-server.toml` and restart: Herald can be bought once; its node fills gold; the card says "Now: Your totem calls you on Discord when it is being stolen".
+- [ ] In a single-player world with the same config copied in (`enabled = true`): Herald is still locked.
+- [ ] With Alarm at level 1, or on a tier I totem: Herald shows the usual "needs Alarm level 2" or "needs tier II" line instead.
+
+## Discord alerts over Redis (Discord steal warnings, part 2, 2026-10-25)
+
+Covered by GameTests `discord_alerts_go_out_when_the_game_warns_once_per_steal` (the real steal start and end, Shroud, Herald or not, the public line's fields) and `discord_alerts_give_a_player_one_warning_at_a_time_and_name_the_server` (the 30 s rule, outcomes and reasons, the server name). Needs network storage with Redis; no bot yet, so read the channel with `redis-cli`.
+
+- [ ] On a server with `storage.mode = "mysql"`, `storage.redis.enabled = true` and `discord.enabled = true`, run `redis-cli -a <password> SUBSCRIBE bsp_core:discord` on the main machine.
+- [ ] Steal a totem that has Herald, no Shroud on the thief: at once two lines arrive, `"type":"channel"` (only v, type, server, sentAt) and `"type":"warning"` (owner UUID, place, thief, seconds left).
+- [ ] Walk away until the steal fails: one `"type":"saved"` with `"reason":"left"`. Finish a steal instead: one `"type":"stolen"`.
+- [ ] A thief with Shroud in the offhand: nothing arrives until the owner's in-game warning appears; then both lines.
+- [ ] A totem without Herald: the `channel` line only, and nothing when the steal ends.
+- [ ] Raid two of one player's totems within 30 s: two `channel` lines, one `warning`.
+- [ ] Set `discord.serverName = "Frostwarf"`: `"server":"Frostwarf"`; empty: the `storage.serverId`.
+- [ ] With `discord.enabled = true` but Redis off: one warning in the log ("no Discord alert can reach the bot"), nothing else.
+- [ ] `discord.enabled = false` (the default): nothing on the channel.
+
+## Linking a Discord account (Discord steal warnings, part 3, 2026-10-25)
+
+Covered by GameTests `discord_link_codes_work_once_and_hold_no_discord_details` (codes, replacing, five an hour, linked, unlink, Redis away) and `any_player_reaches_bsp_discord_and_nothing_else_under_bsp` (the command tree). No bot yet: stand in for it with `redis-cli`. Needs `discord.enabled = true`, `storage.mode = "mysql"` and `storage.redis.enabled = true`.
+
+- [ ] As a plain player: `/bsp` tab-completes only `discord`; `/bsp totem owner` is refused. As an operator or BSP moderator every branch still works.
+- [ ] `/bsp discord link`: a yellow line with the code in gold, "type /link CODE within 10 minutes", and [Copy]; clicking [Copy] puts `/link CODE` on the clipboard. `redis-cli GET bsp_core:discord:code:CODE` shows your UUID, name, server and expiry; `TTL` about 600.
+- [ ] Run link again: a new code; the old key is gone. A sixth code within the hour is refused with the five-an-hour line.
+- [ ] `/bsp discord status`: "code CODE waits ... (N min left)".
+- [ ] Stand in for the bot: `redis-cli GETDEL bsp_core:discord:code:CODE`, then `SET bsp_core:discord:linked:<your uuid> 1`. `/bsp discord status`: "linked".
+- [ ] `/bsp discord unlink` while `redis-cli SUBSCRIBE bsp_core:discord` runs: "Your Discord is unlinked"; the channel shows `{"v":1,"type":"unlink",...}`; the `linked` key is gone.
+- [ ] Herald's card (any placed totem, Herald selected): "Discord: not linked" with LINK; click LINK: the code and its minutes on the card and the chat line; after the stand-in link above, within about 5 s the card reads "Discord: linked ✓" with UNLINK; UNLINK puts it back to not linked.
+- [ ] Herald's card while Buy is off for coins: the reason on one line, the Discord line under it, nothing overlapping the tier box.
+- [ ] `discord.enabled = false`: the card shows only "This server is not linked to Discord"; `/bsp discord link` answers the same.
+- [ ] Redis stopped: status says the link cannot be checked; link says the code could not be saved.
+
+## No /bsp recall line for an owner elsewhere (2026-10-25)
+
+Covered by GameTest `a_recall_for_an_owner_elsewhere_waits_without_a_chat_line`. Needs two servers on the network.
+
+- [ ] Owner on server A, their totem with Recall on server B; a thief starts a steal on B. On A the owner sees the red steal warning and no "click here to recall" line.
+- [ ] Owner on server B away from the totem: the Recall popup ("Totem under attack") appears as before, after the thief's Shroud and Recall Block.
+- [ ] As a plain player, `/bsp recall B` is refused; as staff it still runs.
+
+## The undelivered line at login (Discord steal warnings, 2026-10-25)
+
+Covered by GameTest `a_player_whose_discord_message_bounced_is_told_once_at_login`. Needs `discord.enabled = true` and network storage with Redis; stand in for the bot with `redis-cli`.
+
+- [ ] `redis-cli SET bsp_core:discord:undelivered:<your uuid> 1`, then log in: one yellow line, "Your Discord warning could not reach you: allow DMs from the BSP server ...". The key is gone (`EXISTS` answers 0).
+- [ ] Log out and in again: no line.
+- [ ] With `discord.enabled = false`: no line, and the key stays.
+
+## Herald in the guide book (2026-10-25)
+
+- [ ] The Upgrade Tree entry, "Base: walls" page: the list includes "Herald: calls you on Discord" and the page does not run over.
+- [ ] Powers in Detail: the "Herald" and "Linking Discord" pages read in full, nothing cut off at the bottom.
+
+## Orb colours for the five newest upgrades (2026-10-25)
+
+Covered by GameTest `every_upgrade_orb_has_its_own_colour`. Picked from `tools/preview/orb_colour_concepts.html`, option A.
+
+- [ ] A placed totem with Harvest, Sentinel, Extra Homes, Swift Travel and Herald (`/bsp totem buff <power> <level>`): their orbs are yellow-green, violet, sea green, amber and rose, none of them red, each pale at level 1 and deeper at higher levels.
+- [ ] The same totem with Lockpick on a held totem nearby: Lockpick's red no longer has a twin.

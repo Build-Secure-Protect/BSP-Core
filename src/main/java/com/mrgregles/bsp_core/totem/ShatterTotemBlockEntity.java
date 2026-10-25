@@ -288,6 +288,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             // reaches the owner on whichever server of the network they are on
             com.mrgregles.bsp_core.storage.NetworkStorage.tell(serverLevel.getServer(), owner.uuid(), Component.translatable("message.bsp_core.steal.warning", steal.thiefName(),
                     worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+            // and on Discord, at the same moment (so Shroud hides it there too)
+            com.mrgregles.bsp_core.discord.DiscordAlerts.warned(serverLevel, worldPosition, owner.uuid(), getUpgradeLevel(TotemUpgrades.Buff.HERALD), steal.thiefName(), steal.ticksLeft() / 20);
         }
     }
 

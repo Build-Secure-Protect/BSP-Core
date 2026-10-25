@@ -150,9 +150,8 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
         delivered = tag.getInt("Delivered");
         repeaters = tag.getInt("Repeaters");
         int[] o = tag.getIntArray("Offered");
-        if (o.length == offered.length) {
-            System.arraycopy(o, 0, offered, 0, o.length);
-        }
+        // a save from before a power was added is shorter: keep what it has
+        System.arraycopy(o, 0, offered, 0, Math.min(o.length, offered.length));
         source = tag.contains("Source") ? BlockPos.of(tag.getLong("Source")) : null;
         anchorTotem = com.mrgregles.bsp_core.link.Links.load(tag, "Totem");
     }

@@ -3706,6 +3706,367 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void herald_is_one_level_after_alarm_and_locked_where_discord_is_off(GameTestHelper h) {
+        var herald = TotemUpgrades.Buff.HERALD;
+        h.assertTrue(herald.parent() == TotemUpgrades.Buff.ALARM && herald.branch() == TotemUpgrades.Branch.BASE && herald.placedOnly && herald.single && herald.maxLevel() == 1,
+                "a one-level Base power after Alarm");
+        h.assertTrue(herald.ordinal() == TotemUpgrades.Buff.values().length - 1, "appended last, so the ordinals already saved and sent keep their meaning");
+        // priced like Sentinel: Raid coins and XP, in the coin of its own tier, once
+        var price = TotemUpgrades.price(herald, 0);
+        int coins = com.mrgregles.bsp_core.BSPConfig.RAID_LEVEL_COINS.get().get(0), xp = com.mrgregles.bsp_core.BSPConfig.RAID_LEVEL_XP.get().get(0) * (herald.tier + 1);
+        h.assertTrue(price != null && price.coin() == com.mrgregles.bsp_core.coin.CoinTier.values()[herald.tier] && price.coins() == coins && price.xp() == xp,
+                "Raid prices: " + (price == null ? null : price.coins() + " x " + price.coin() + ", " + price.xp() + " XP"));
+        h.assertTrue(TotemUpgrades.price(herald, 1) == null, "nothing more to buy after level 1");
+        // the switch: on only where the network's bot is set up, never in a single-player or LAN world
+        h.assertTrue(com.mrgregles.bsp_core.discord.Herald.available(true, false), "on with discord.enabled on a server");
+        h.assertFalse(com.mrgregles.bsp_core.discord.Herald.available(true, true), "never in single player");
+        h.assertFalse(com.mrgregles.bsp_core.discord.Herald.available(false, false), "off by default");
+        h.assertFalse(com.mrgregles.bsp_core.discord.Herald.available(), "this test server has discord.enabled off");
+        // at a placed tier II totem with Alarm at level 2, through the real buy path
+        BlockPos pos = new BlockPos(2, 1, 2);
+        h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+        var be = entity(h, pos, ShatterTotemBlockEntity.class);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.CREATIVE); // creative: nothing to pay
+        be.setOwner(new TotemOwner(player.getUUID(), player.getGameProfile().getName()));
+        be.setTier(herald.tier);
+        be.setUpgradeLevel(TotemUpgrades.Buff.ALARM, 2);
+        boolean before = com.mrgregles.bsp_core.BSPConfig.DISCORD_ENABLED.get();
+        try {
+            com.mrgregles.bsp_core.BSPConfig.DISCORD_ENABLED.set(false);
+            h.assertTrue(whyKey(TotemUpgrades.whyNot(herald, be::getUpgradeLevel, be.getTier(), player)).equals("gui.bsp_core.tree.why.discord"), "locked: the server is not linked to Discord");
+            be.tryBuy(player, herald.ordinal());
+            h.assertTrue(be.getUpgradeLevel(herald) == 0, "the server refuses to sell it");
+            com.mrgregles.bsp_core.BSPConfig.DISCORD_ENABLED.set(true);
+            h.assertTrue(whyKey(TotemUpgrades.whyNot(herald, b -> b == TotemUpgrades.Buff.ALARM ? 1 : 0, herald.tier, player)).equals("gui.bsp_core.tree.why.parent"), "Alarm must reach level 2 first");
+            h.assertTrue(whyKey(TotemUpgrades.whyNot(herald, be::getUpgradeLevel, herald.tier - 1, player)).equals("gui.bsp_core.tree.why.tier"), "and the totem its tier");
+            h.assertTrue(TotemUpgrades.whyNot(herald, be::getUpgradeLevel, be.getTier(), player) == null, "open once Discord is on");
+            be.tryBuy(player, herald.ordinal());
+            h.assertTrue(be.getUpgradeLevel(herald) == 1, "bought");
+            be.tryBuy(player, herald.ordinal());
+            h.assertTrue(be.getUpgradeLevel(herald) == 1, "one level only");
+        } finally {
+            com.mrgregles.bsp_core.BSPConfig.DISCORD_ENABLED.set(before);
+        }
+        h.setBlock(pos, Blocks.AIR);
+        h.succeed();
+    }
+
+    /** A placed totem owned by a stranger who is not online, with Herald at {@code herald}. */
+    private static ShatterTotemBlockEntity heraldTotem(GameTestHelper h, BlockPos pos, int herald) {
+        h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+        var be = entity(h, pos, ShatterTotemBlockEntity.class);
+        be.setOwner(new TotemOwner(UUID.randomUUID(), "Owner"));
+        be.setTier(1);
+        be.setUpgradeLevel(TotemUpgrades.Buff.ALARM, 2);
+        be.setUpgradeLevel(TotemUpgrades.Buff.HERALD, herald);
+        return be;
+    }
+
+    /** A thief standing a block from the totem at {@code pos}, holding {@code offhand}. */
+    private static net.minecraft.server.level.ServerPlayer thiefAt(GameTestHelper h, BlockPos pos, ItemStack offhand) {
+        var thief = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        BlockPos at = h.absolutePos(pos);
+        thief.setPos(at.getX() + 1.5, at.getY(), at.getZ() + 0.5);
+        thief.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, offhand);
+        return thief;
+    }
+
+    @GameTest(template = EMPTY)
+    public void discord_alerts_go_out_when_the_game_warns_once_per_steal(GameTestHelper h) {
+        // mock players are not on the player list, so a steal ends at its first tick: everything here happens in this one tick
+        var sent = new ArrayList<com.mrgregles.bsp_core.discord.DiscordAlert>();
+        com.mrgregles.bsp_core.discord.AlertSender recorder = sent::add;
+        var CHANNEL = com.mrgregles.bsp_core.discord.DiscordAlert.Type.CHANNEL;
+        BlockPos p1 = new BlockPos(2, 1, 2), p2 = new BlockPos(9, 1, 2), p3 = new BlockPos(16, 1, 2);
+        com.mrgregles.bsp_core.discord.DiscordAlerts.listen(recorder);
+        try {
+            // a totem with Herald: the public line and the owner's message, at the moment the game warns (no Shroud: at once)
+            var t1 = heraldTotem(h, p1, 1);
+            UUID o1 = t1.getOwner().orElseThrow().uuid();
+            var thief = thiefAt(h, p1, ItemStack.EMPTY);
+            int n = sent.size();
+            t1.tryStartSteal(thief);
+            h.assertTrue(t1.getSteal().isPresent(), "the steal started");
+            var got = List.copyOf(sent.subList(n, sent.size()));
+            h.assertTrue(got.size() == 2, "the public line and one direct message: " + got);
+            var line = got.stream().filter(a -> a.type() == CHANNEL).findFirst().orElseThrow();
+            String json = line.toJson();
+            var keys = com.google.gson.JsonParser.parseString(json).getAsJsonObject().keySet();
+            h.assertTrue(keys.equals(java.util.Set.of("v", "type", "server", "sentAt")) && line.player() == null, "the public line names the server and nothing else: " + json);
+            h.assertFalse(json.contains(thief.getGameProfile().getName()) || json.contains(o1.toString()), "no thief and no owner in it");
+            var dm = got.stream().filter(a -> a.type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.WARNING).findFirst().orElseThrow();
+            BlockPos at = h.absolutePos(p1);
+            h.assertTrue(o1.equals(dm.player()) && dm.thief().equals(thief.getGameProfile().getName()) && dm.x() == at.getX() && dm.y() == at.getY() && dm.z() == at.getZ()
+                    && dm.secondsLeft() > 0 && dm.world().equals(h.getLevel().dimension().location().toString()), "the owner's message: who, where and how long: " + dm.toJson());
+            n = sent.size();
+            t1.tryStartSteal(thief);
+            h.assertTrue(sent.size() == n, "trying again sends nothing");
+            // a totem without Herald: the public line only
+            var t2 = heraldTotem(h, p2, 0);
+            n = sent.size();
+            t2.tryStartSteal(thiefAt(h, p2, ItemStack.EMPTY));
+            got = List.copyOf(sent.subList(n, sent.size()));
+            h.assertTrue(t2.getSteal().isPresent() && got.size() == 1 && got.get(0).type() == CHANNEL, "no Herald, no direct message: " + got);
+            // a thief with Shroud: the game has not warned the owner yet, so neither has Discord
+            var t3 = heraldTotem(h, p3, 1);
+            var raid = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+            TotemUpgrades.setLevel(raid, TotemUpgrades.Buff.SHROUD, 1);
+            n = sent.size();
+            t3.tryStartSteal(thiefAt(h, p3, raid));
+            h.assertTrue(t3.getSteal().isPresent() && sent.size() == n, "Shroud hides the steal on Discord too: " + sent.subList(n, sent.size()));
+            // the ends: only the owner who was told hears the outcome
+            n = sent.size();
+            h.setBlock(p1, Blocks.AIR);
+            got = List.copyOf(sent.subList(n, sent.size()));
+            h.assertTrue(got.size() == 1 && got.get(0).type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.SAVED && o1.equals(got.get(0).player())
+                    && got.get(0).reason().equals("totem_gone"), "the outcome, once: " + got);
+            n = sent.size();
+            h.setBlock(p2, Blocks.AIR);
+            h.setBlock(p3, Blocks.AIR);
+            h.assertTrue(sent.size() == n, "no outcome for an owner who got no message: " + sent.subList(n, sent.size()));
+        } finally {
+            com.mrgregles.bsp_core.discord.DiscordAlerts.stopListening(recorder);
+            h.setBlock(p1, Blocks.AIR);
+            h.setBlock(p2, Blocks.AIR);
+            h.setBlock(p3, Blocks.AIR);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void discord_alerts_give_a_player_one_warning_at_a_time_and_name_the_server(GameTestHelper h) {
+        h.assertFalse(com.mrgregles.bsp_core.discord.DiscordAlerts.on(), "off on a server with discord.enabled off");
+        var sent = new ArrayList<com.mrgregles.bsp_core.discord.DiscordAlert>();
+        com.mrgregles.bsp_core.discord.AlertSender recorder = sent::add;
+        var dim = h.getLevel().dimension();
+        // far-off spots no other test uses
+        var a = net.minecraft.core.GlobalPos.of(dim, new BlockPos(2_000_001, 64, 1));
+        var b = net.minecraft.core.GlobalPos.of(dim, new BlockPos(2_000_001, 64, 2));
+        var c = net.minecraft.core.GlobalPos.of(dim, new BlockPos(2_000_001, 64, 3));
+        UUID owner = UUID.randomUUID();
+        String nameBefore = com.mrgregles.bsp_core.BSPConfig.DISCORD_SERVER_NAME.get();
+        com.mrgregles.bsp_core.discord.DiscordAlerts.listen(recorder);
+        try {
+            long t0 = 1_000_000;
+            com.mrgregles.bsp_core.discord.DiscordAlerts.warned(a, owner, 1, "Ann", 60, t0);
+            h.assertTrue(sent.size() == 2, "first raid: the line and the message: " + sent);
+            com.mrgregles.bsp_core.discord.DiscordAlerts.warned(b, owner, 1, "Ann", 60, t0 + 5_000);
+            h.assertTrue(sent.size() == 3 && sent.get(2).type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.CHANNEL, "a second totem raided 5 s later: the line, but no second message: " + sent);
+            com.mrgregles.bsp_core.discord.DiscordAlerts.ended(b, owner, "Ann", true, "", t0 + 6_000);
+            h.assertTrue(sent.size() == 3, "no outcome for the steal they were not told about");
+            com.mrgregles.bsp_core.discord.DiscordAlerts.ended(a, owner, "Ann", true, "", t0 + 7_000);
+            var stolen = sent.get(3);
+            h.assertTrue(stolen.type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.STOLEN && owner.equals(stolen.player()) && !stolen.toJson().contains("\"reason\""),
+                    "the steal worked: " + stolen.toJson());
+            com.mrgregles.bsp_core.discord.DiscordAlerts.warned(c, owner, 1, "Ann", 60, t0 + com.mrgregles.bsp_core.discord.DiscordAlerts.PLAYER_GAP_MS);
+            h.assertTrue(sent.size() == 6 && sent.get(5).type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.WARNING, "30 s on, a new raid gets its message: " + sent);
+            com.mrgregles.bsp_core.discord.DiscordAlerts.ended(c, owner, "Ann", false, "message.bsp_core.steal.failed_left", t0 + 40_000);
+            h.assertTrue(sent.get(6).type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.SAVED && sent.get(6).reason().equals("left"), "saved: the thief walked away: " + sent.get(6).toJson());
+            for (var reason : new String[][]{{"message.bsp_core.steal.failed_thief_gone", "interrupted"}, {"message.bsp_core.steal.totem_gone", "totem_gone"},
+                    {"message.bsp_core.steal.cancelled_admin", "cancelled"}, {"something.else", "ended"}}) {
+                var o = com.mrgregles.bsp_core.discord.DiscordAlert.outcome(owner, "s", a, "Ann", false, reason[0], t0);
+                h.assertTrue(o.reason().equals(reason[1]), reason[0] + " reads " + o.reason());
+            }
+            // the server's name: discord.serverName, else storage.serverId
+            com.mrgregles.bsp_core.BSPConfig.DISCORD_SERVER_NAME.set("");
+            h.assertTrue(com.mrgregles.bsp_core.discord.DiscordAlerts.serverName().equals(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID.get()), "empty: the server id");
+            com.mrgregles.bsp_core.BSPConfig.DISCORD_SERVER_NAME.set("Frostwarf");
+            int n = sent.size();
+            com.mrgregles.bsp_core.discord.DiscordAlerts.warned(a, UUID.randomUUID(), 0, "Bo", 60, t0);
+            h.assertTrue(sent.size() == n + 1 && sent.get(n).server().equals("Frostwarf"), "the line names the server as set: " + sent.get(n).toJson());
+            com.mrgregles.bsp_core.discord.DiscordAlerts.ended(a, null, "Bo", false, "", t0);
+        } finally {
+            com.mrgregles.bsp_core.BSPConfig.DISCORD_SERVER_NAME.set(nameBefore);
+            com.mrgregles.bsp_core.discord.DiscordAlerts.stopListening(recorder);
+        }
+        h.succeed();
+    }
+
+    /** Stands in for Redis: answers at once, keeps what the bot would see. */
+    private static final class FakeLinkStore implements com.mrgregles.bsp_core.discord.LinkStore {
+        final java.util.Map<String, UUID> codes = new java.util.HashMap<>();
+        final java.util.Set<UUID> linked = new java.util.HashSet<>(), unlinked = new java.util.HashSet<>();
+        boolean down;
+
+        @Override
+        public void putCode(String code, @javax.annotation.Nullable String previous, UUID player, String name, int seconds, java.util.function.Consumer<Boolean> then) {
+            if (down) {
+                then.accept(false);
+                return;
+            }
+            if (previous != null) {
+                codes.remove(previous);
+            }
+            codes.put(code, player);
+            then.accept(true);
+        }
+
+        @Override
+        public void isLinked(UUID player, java.util.function.Consumer<Boolean> then) {
+            then.accept(down ? null : linked.contains(player));
+        }
+
+        @Override
+        public void unlink(UUID player, @javax.annotation.Nullable String code, java.util.function.Consumer<Boolean> then) {
+            linked.remove(player);
+            if (code != null) {
+                codes.remove(code);
+            }
+            unlinked.add(player);
+            then.accept(!down);
+        }
+
+        final java.util.Set<UUID> undelivered = new java.util.HashSet<>();
+
+        @Override
+        public void takeUndelivered(UUID player, java.util.function.Consumer<Boolean> then) {
+            then.accept(down ? null : undelivered.remove(player));
+        }
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_player_whose_discord_message_bounced_is_told_once_at_login(GameTestHelper h) {
+        UUID who = UUID.randomUUID();
+        var told = new ArrayList<net.minecraft.network.chat.Component>();
+        com.mrgregles.bsp_core.discord.DiscordLinks.atLogin(who, told::add);
+        h.assertTrue(told.isEmpty(), "nothing where Discord is off");
+        var fake = new FakeLinkStore();
+        com.mrgregles.bsp_core.discord.DiscordLinks.useStore(fake);
+        try {
+            com.mrgregles.bsp_core.discord.DiscordLinks.atLogin(who, told::add);
+            h.assertTrue(told.isEmpty(), "no note from the bot, no line");
+            fake.undelivered.add(who);
+            com.mrgregles.bsp_core.discord.DiscordLinks.atLogin(who, told::add);
+            h.assertTrue(told.size() == 1 && whyKey(told.get(0)).equals("message.bsp_core.discord.undelivered"), "the line: " + told);
+            h.assertFalse(fake.undelivered.contains(who), "the note is taken");
+            com.mrgregles.bsp_core.discord.DiscordLinks.atLogin(who, told::add);
+            h.assertTrue(told.size() == 1, "and told only once");
+            fake.down = true;
+            fake.undelivered.add(who);
+            com.mrgregles.bsp_core.discord.DiscordLinks.atLogin(who, told::add);
+            h.assertTrue(told.size() == 1, "Redis away: nothing, and the note waits for a later login");
+        } finally {
+            com.mrgregles.bsp_core.discord.DiscordLinks.useStore(null);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void discord_link_codes_work_once_and_hold_no_discord_details(GameTestHelper h) {
+        for (int i = 0; i < 300; i++) {
+            String code = com.mrgregles.bsp_core.discord.DiscordLinks.newCode();
+            h.assertTrue(com.mrgregles.bsp_core.discord.DiscordLinks.isCode(code) && code.chars().noneMatch(c -> "0O1IL".indexOf(c) >= 0), "a code is six easy characters: " + code);
+        }
+        UUID who = UUID.randomUUID();
+        var last = new com.mrgregles.bsp_core.discord.DiscordLinks.Status[1];
+        java.util.function.Consumer<com.mrgregles.bsp_core.discord.DiscordLinks.Status> keep = s -> last[0] = s;
+        long now = 5_000_000;
+        h.assertFalse(com.mrgregles.bsp_core.discord.DiscordLinks.on(), "off on a server with discord.enabled off");
+        com.mrgregles.bsp_core.discord.DiscordLinks.link(who, "Ann", now, keep);
+        h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.OFF, "no code where Discord is off");
+        var fake = new FakeLinkStore();
+        com.mrgregles.bsp_core.discord.DiscordLinks.useStore(fake);
+        try {
+            com.mrgregles.bsp_core.discord.DiscordLinks.link(who, "Ann", now, keep);
+            String first = last[0].code();
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.CODE && who.equals(fake.codes.get(first)) && last[0].secondsLeft() == 600, "a code for ten minutes: " + last[0]);
+            var value = com.google.gson.JsonParser.parseString(com.mrgregles.bsp_core.discord.RedisLinkStore.codeValue(who, "Ann", now)).getAsJsonObject();
+            h.assertTrue(value.keySet().equals(java.util.Set.of("v", "player", "name", "server", "expiresAt")), "the bot learns whose code it is, nothing more: " + value);
+            com.mrgregles.bsp_core.discord.DiscordLinks.status(who, now + 60_000, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.CODE && last[0].code().equals(first) && last[0].secondsLeft() == 540, "the code waits: " + last[0]);
+            com.mrgregles.bsp_core.discord.DiscordLinks.link(who, "Ann", now + 61_000, keep);
+            h.assertTrue(!last[0].code().equals(first) && !fake.codes.containsKey(first) && fake.codes.size() == 1, "a new code replaces the old one");
+            for (int i = 3; i <= com.mrgregles.bsp_core.discord.DiscordLinks.CODES_PER_HOUR; i++) {
+                com.mrgregles.bsp_core.discord.DiscordLinks.link(who, "Ann", now + i * 1000L, keep);
+                h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.CODE, "code " + i);
+            }
+            String fifth = last[0].code();
+            com.mrgregles.bsp_core.discord.DiscordLinks.link(who, "Ann", now + 10_000, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.TOO_MANY && fake.codes.containsKey(fifth), "five codes an hour; the last still works");
+            // the bot took the code and marked the player linked
+            fake.codes.clear();
+            fake.linked.add(who);
+            com.mrgregles.bsp_core.discord.DiscordLinks.status(who, now + 20_000, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED && last[0].code().isEmpty(), "linked, and no code shown any more");
+            com.mrgregles.bsp_core.discord.DiscordLinks.unlink(who, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.NOT_LINKED && fake.unlinked.contains(who) && !fake.linked.contains(who), "unlinked, and the bot is told");
+            var bye = com.google.gson.JsonParser.parseString(com.mrgregles.bsp_core.discord.RedisLinkStore.unlinkMessage(who, now)).getAsJsonObject();
+            h.assertTrue(bye.keySet().equals(java.util.Set.of("v", "type", "player", "sentAt")) && bye.get("type").getAsString().equals("unlink"), "the unlink message: " + bye);
+            com.mrgregles.bsp_core.discord.DiscordLinks.status(who, now + 30_000, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.NOT_LINKED, "not linked");
+            // Redis away: the link cannot be checked, and a code is not handed out unsaved
+            fake.down = true;
+            UUID other = UUID.randomUUID();
+            com.mrgregles.bsp_core.discord.DiscordLinks.status(other, now, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.UNKNOWN, "cannot check");
+            com.mrgregles.bsp_core.discord.DiscordLinks.link(other, "Bo", now, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.FAILED, "a code that was not saved is not shown");
+            com.mrgregles.bsp_core.discord.DiscordLinks.status(other, now, keep);
+            h.assertTrue(last[0].state() == com.mrgregles.bsp_core.discord.DiscordLinks.State.UNKNOWN, "and is not remembered");
+            com.mrgregles.bsp_core.discord.DiscordLinks.forget(other);
+        } finally {
+            com.mrgregles.bsp_core.discord.DiscordLinks.useStore(null);
+            com.mrgregles.bsp_core.discord.DiscordLinks.forget(who);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void any_player_reaches_bsp_discord_and_nothing_else_under_bsp(GameTestHelper h) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var dispatcher = server(h).getCommands().getDispatcher();
+        var bsp = dispatcher.getRoot().getChild("bsp");
+        var player = survivor(h).createCommandSourceStack();
+        h.assertTrue(bsp != null && bsp.canUse(player), "a player may type /bsp");
+        int staffBranches = 0;
+        for (var branch : bsp.getChildren()) {
+            boolean discord = branch.getName().equals("discord");
+            h.assertTrue(branch.canUse(player) == discord, "a player " + (discord ? "may" : "may not") + " use /bsp " + branch.getName());
+            h.assertTrue(branch.canUse(server(h).createCommandSourceStack()), "the console may use /bsp " + branch.getName());
+            staffBranches += discord ? 0 : 1;
+        }
+        h.assertTrue(staffBranches >= 10, "the staff branches are all still there: " + staffBranches);
+        var discord = bsp.getChild("discord");
+        h.assertTrue(discord.getChild("link") != null && discord.getChild("unlink") != null && discord.getChild("status") != null, "link, unlink and status");
+        h.assertTrue(dispatcher.execute("bsp discord status", player) == 1, "a player runs it (here it answers that the server is not linked to Discord)");
+        boolean refused = false;
+        try {
+            dispatcher.execute("bsp totem owner", player);
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            refused = true;
+        }
+        h.assertTrue(refused, "and still cannot run a staff command");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void every_upgrade_orb_has_its_own_colour(GameTestHelper h) {
+        var buffs = TotemUpgrades.Buff.values();
+        h.assertTrue(com.mrgregles.bsp_core.client.UpgradeOrbColors.hues() == buffs.length,
+                "one hue per upgrade: " + com.mrgregles.bsp_core.client.UpgradeOrbColors.hues() + " hues for " + buffs.length + " upgrades (a new upgrade needs its hue added)");
+        java.util.Map<Float, TotemUpgrades.Buff> seen = new java.util.HashMap<>();
+        for (var b : buffs) {
+            var other = seen.put(com.mrgregles.bsp_core.client.UpgradeOrbColors.hue(b), b);
+            h.assertTrue(other == null, b + " and " + other + " share a colour");
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_recall_for_an_owner_elsewhere_waits_without_a_chat_line(GameTestHelper h) {
+        UUID owner = UUID.randomUUID(); // not on this server
+        com.mrgregles.bsp_core.totem.RecallService.offer(h.getLevel(), h.absolutePos(new BlockPos(2, 1, 2)), owner, 1);
+        h.assertTrue(com.mrgregles.bsp_core.totem.RecallService.hasRemoteOffer(owner), "the offer waits here in case they arrive");
+        var lang = net.minecraft.locale.Language.getInstance();
+        h.assertTrue(lang.has("message.bsp_core.recall.remote_going"), "the server reads BSP-Core's wording");
+        h.assertFalse(lang.has("message.bsp_core.recall.remote"), "the clickable /bsp recall line is gone: an owner elsewhere sees only the steal warning");
+        h.succeed();
+    }
+
+    private static String whyKey(@javax.annotation.Nullable net.minecraft.network.chat.Component why) {
+        return why != null && why.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t ? t.getKey() : String.valueOf(why);
+    }
+
+    @GameTest(template = EMPTY)
     public void a_single_player_world_never_joins_the_network_database(GameTestHelper h) {
         h.assertFalse(com.mrgregles.bsp_core.storage.NetworkStorage.singlePlayer(), "the GameTest server counts as a dedicated server");
         h.assertTrue(com.mrgregles.bsp_core.storage.NetworkStorage.networkWanted("mysql", false), "a dedicated server with storage.mode mysql joins the database");

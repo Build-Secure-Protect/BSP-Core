@@ -83,7 +83,9 @@ public final class TotemUpgrades {
         /** Carried, on the Home spoke: more home slots in the pack's teleport mod, which reads the level; BSP-Core only keeps it. */
         EXTRA_HOMES("extra_homes", Branch.CARRIED, 1, "healing", 3, false),
         /** Carried, on the Home spoke: a shorter teleport cooldown in the teleport mod, which reads the level. */
-        SWIFT_TRAVEL("swift_travel", Branch.CARRIED, 2, "extra_homes", 3, false);
+        SWIFT_TRAVEL("swift_travel", Branch.CARRIED, 2, "extra_homes", 3, false),
+        /** Base, on the Walls path after Alarm, one level: a Discord message to the owner when the totem is being stolen. Locked where Discord is off ({@link com.mrgregles.bsp_core.discord.Herald}). */
+        HERALD("herald", Branch.BASE, 1, "alarm", 2, true);
 
         public final String key;
         private final Branch branch;
@@ -93,7 +95,7 @@ public final class TotemUpgrades {
         private final String parentKey;
         /** Which of the five paths it sits on: 0 Dig, 1 Fight, 2 Walls, 3 Home, 4 Raid, 5 Anchor. */
         public final int path;
-        /** A single-level upgrade (Night Sight). */
+        /** A single-level upgrade (Night Sight, Herald). */
         public final boolean single;
         /** True for Base upgrades: they work, and are bought, only while the totem is placed. */
         public final boolean placedOnly;
@@ -192,7 +194,7 @@ public final class TotemUpgrades {
         }
         // powers with their own level counts (Recall, X-ray, Output, ...) never price past the top tier's coin
         int tier = Math.min(MAX_TIER, buff.single ? buff.tier : buff.tier + level / LEVELS_PER_TIER), step = buff.single ? 0 : level % LEVELS_PER_TIER;
-        Branch pricing = buff == Buff.SENTINEL ? Branch.RAID : buff.branch(); // Sentinel is a Base power at Raid prices (owner's rule)
+        Branch pricing = buff == Buff.SENTINEL || buff == Buff.HERALD ? Branch.RAID : buff.branch(); // Sentinel and Herald are Base powers at Raid prices (owner's rule)
         var coins = switch (pricing) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_COINS;
             case BASE -> BSPConfig.BASE_LEVEL_COINS;
@@ -247,6 +249,9 @@ public final class TotemUpgrades {
     /** Why {@code player} cannot buy the next level of {@code buff} right now, or null if they can (or it is maxed). */
     @Nullable
     public static Component whyNot(Buff buff, ToIntFunction<Buff> levels, int totemTier, Player player) {
+        if (buff == Buff.HERALD && !com.mrgregles.bsp_core.discord.Herald.available()) {
+            return Component.translatable("gui.bsp_core.tree.why.discord");
+        }
         if (totemTier < buff.tier) {
             return Component.translatable("gui.bsp_core.tree.why.tier", roman(buff.tier));
         }

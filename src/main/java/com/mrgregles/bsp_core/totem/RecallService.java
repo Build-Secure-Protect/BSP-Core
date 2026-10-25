@@ -72,23 +72,15 @@ public final class RecallService {
     }
 
     /**
-     * The owner is not on this server: the offer waits here for them, and on a network they get a
-     * clickable message wherever they are; clicking it runs {@code /bsp recall <this server>},
-     * which asks a teleport mod to bring them (see {@link com.mrgregles.bsp_core.api.event.RecallEvent}).
+     * The owner is not on this server: the offer waits here, and finishes if they arrive before it runs out. Nothing is sent
+     * to them on the other server: the Recall popup is only for an owner on the totem's own server (they still get the steal
+     * warning wherever they are). {@code /bsp recall <server>} stays a staff command.
      */
     private static void offerRemote(ServerLevel level, BlockPos pos, UUID owner, int recallLevel) {
         int seconds = BSPConfig.getOr(BSPConfig.RECALL_PROMPT_SECONDS, 20) + REMOTE_EXTRA_SECONDS;
         OFFERS.put(owner, new Offer(level, pos.immutable(), radius(recallLevel), level.getGameTime() + seconds * 20L));
         REMOTE.add(owner);
-        if (!com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
-            return;
-        }
-        String here = BSPConfig.STORAGE_SERVER_ID.get();
-        Component offer = Component.translatable("message.bsp_core.recall.remote", here, seconds)
-                .withStyle(st -> st.withColor(ChatFormatting.AQUA).withUnderlined(true)
-                        .withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND, "/bsp recall " + here)));
-        com.mrgregles.bsp_core.storage.NetworkStorage.tell(level.getServer(), owner, offer);
-        BSPCore.LOGGER.info("Recall offered to {} on another server for the totem at {}", owner, pos);
+        BSPCore.LOGGER.info("Recall waits for {} (on another server or offline) for the totem at {}", owner, pos);
     }
 
     public static boolean hasRemoteOffer(UUID owner) {

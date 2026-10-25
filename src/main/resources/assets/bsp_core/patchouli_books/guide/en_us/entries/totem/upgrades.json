@@ -20,7 +20,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Alarm: outlines intruders and warns you$(li)Sentinel: tells you who is inside, from anywhere$(li)Ward: weakens intruders$(li)Deadlock: your totem takes longer to steal$(li)Cloaking: outsiders see untouched land",
+      "text": "Work only while the totem is $(l)placed$(). Paid in $(l:coins/shatter_coins)Shatter Coins$().$(br2)$(li)Fortify: blocks nearby resist explosions and intruders mine slower$(li)Alarm: outlines intruders and warns you$(li)Sentinel: tells you who is inside, from anywhere$(li)Herald: calls you on Discord$(li)Ward: weakens intruders$(li)Deadlock: your totem takes longer to steal$(li)Cloaking: outsiders see untouched land",
       "title": "Base: walls"
     },
     {

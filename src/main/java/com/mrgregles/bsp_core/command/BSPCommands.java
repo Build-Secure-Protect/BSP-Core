@@ -1,6 +1,9 @@
 package com.mrgregles.bsp_core.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.context.CommandContext;
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.data.PlayerPersistent;
@@ -46,8 +49,7 @@ public final class BSPCommands {
         dispatcher.register(TeamCommands.playerTree());
         dispatcher.register(TeamCommands.chatTree());
         dispatcher.register(KitCommands.playerTree());
-        dispatcher.register(Commands.literal("bsp")
-                .requires(src -> src.hasPermission(2) || src.getEntity() instanceof ServerPlayer p && com.mrgregles.bsp_core.admin.Admins.isModerator(p))
+        LiteralArgumentBuilder<CommandSourceStack> staffOnly = Commands.literal("bsp")
                 .then(Commands.literal("admin").executes(ctx -> {
                     com.mrgregles.bsp_core.admin.AdminService.open(ctx.getSource().getPlayerOrException());
                     return 1;
@@ -133,7 +135,35 @@ public final class BSPCommands {
                         }))
                         .then(Commands.literal("migrate")
                                 .executes(ctx -> migrate(ctx.getSource(), false))
-                                .then(Commands.literal("force").executes(ctx -> migrate(ctx.getSource(), true))))));
+                                .then(Commands.literal("force").executes(ctx -> migrate(ctx.getSource(), true)))));
+        // the root is open so any player reaches /bsp discord; every other branch keeps the staff rule the root used to hold
+        LiteralArgumentBuilder<CommandSourceStack> bsp = Commands.literal("bsp").then(discord());
+        for (CommandNode<CommandSourceStack> branch : staffOnly.getArguments()) {
+            ArgumentBuilder<CommandSourceStack, ?> copy = branch.createBuilder();
+            java.util.function.Predicate<CommandSourceStack> own = branch.getRequirement();
+            copy.requires(src -> staff(src) && own.test(src));
+            branch.getChildren().forEach(copy::then);
+            bsp.then(copy);
+        }
+        dispatcher.register(bsp);
+    }
+
+    /** Operators and BSP moderators: everything under /bsp except discord. */
+    public static boolean staff(CommandSourceStack src) {
+        return src.hasPermission(2) || src.getEntity() instanceof ServerPlayer p && com.mrgregles.bsp_core.admin.Admins.isModerator(p);
+    }
+
+    /** {@code /bsp discord link | unlink | status}: any player, for Herald's Discord messages. */
+    private static LiteralArgumentBuilder<CommandSourceStack> discord() {
+        return Commands.literal("discord")
+                .then(Commands.literal("link").executes(ctx -> discord(ctx.getSource(), com.mrgregles.bsp_core.discord.DiscordLinks.Action.LINK)))
+                .then(Commands.literal("unlink").executes(ctx -> discord(ctx.getSource(), com.mrgregles.bsp_core.discord.DiscordLinks.Action.UNLINK)))
+                .then(Commands.literal("status").executes(ctx -> discord(ctx.getSource(), com.mrgregles.bsp_core.discord.DiscordLinks.Action.STATUS)));
+    }
+
+    private static int discord(CommandSourceStack src, com.mrgregles.bsp_core.discord.DiscordLinks.Action action) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        com.mrgregles.bsp_core.discord.DiscordLinks.act(src.getPlayerOrException(), action, true);
+        return 1;
     }
 
     /** The placed totem the player is looking at, within 8 blocks, or null. */

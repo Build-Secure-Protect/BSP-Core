@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the wording for the newer totem powers (Bouncy, X-ray, Cloaking, Recall, Recall Block) into en_us.json, and the
+"""Writes the wording for the newer totem powers (Bouncy, X-ray, Cloaking, Recall, Recall Block, Herald) into en_us.json, and the
 Ghost Block's empty blockstate and model (X-ray's stand-in block).
 
   python3 tools/gen_effects_lang.py
@@ -26,6 +26,9 @@ KEYS = {
     "buff.bsp_core.cloaking.effect": "Outsiders see the land as the world generated it in a %1$s x %1$s x %1$s box, and nobody inside it; uses %2$s mB/t of plasma",
     "buff.bsp_core.recall": "Recall",
     "buff.bsp_core.recall.effect": "While the totem is being stolen you may teleport to within %s blocks of it",
+    "buff.bsp_core.herald": "Herald",
+    "buff.bsp_core.herald.effect": "Your totem calls you on Discord when it is being stolen",
+    "gui.bsp_core.tree.why.discord": "This server is not linked to Discord",
     "buff.bsp_core.recall_block": "Recall Block",
     "buff.bsp_core.recall_block.effect": "Delays the owner's Recall offer by %s s while you steal with this totem in your offhand",
     "key.bsp_core.recall_accept": "Accept a Recall",
