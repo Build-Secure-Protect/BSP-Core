@@ -1,6 +1,8 @@
 # Discord steal warnings: setting up the game servers
 
-BSP-Core's half of the Discord steal warnings (the Herald upgrade, the alerts, linking). The Discord bot runs on the proxy in BSP-Velocity Additions, which has its own setup guide for the Discord application, the token and the bot's permissions. Nothing here asks for a Discord token: no game server ever holds one.
+BSP-Core's half of the Discord steal warnings (the Herald upgrade, the alerts, linking). The Discord bot runs on the proxy in BSP-Velocity Additions (built 2026-10-25), whose `docs/DISCORD.md` covers the Discord application, the token (`BSP_DISCORD_TOKEN`), the bot's Redis login (`BSP_REDIS_PASSWORD`) and its permissions. Nothing here asks for a Discord token: no game server ever holds one.
+
+**Redis 6.2 or newer** is needed: the bot takes link codes with `GETDEL`. Check on the main machine with `redis-cli -a <password> INFO server`, line `redis_version`.
 
 ## What every backend needs
 
@@ -20,7 +22,7 @@ In `serverconfig/bsp_core-server.toml` (or the world's copy) on **every** server
 ```
 
 - Forge fills in the `[discord]` section by itself at the first start with the new jar; edit it after.
-- Turn `discord.enabled` on only once the bot is running on the proxy. Before that, players could buy Herald and link codes would wait for a bot that is not there.
+- Turn `discord.enabled` on only once the bot is running on the proxy (and Redis is 6.2 or newer). Before that, players could buy Herald and link codes would wait for a bot that is not there.
 - `serverName` is public: it is the only detail in the alert channel's line ("A totem is being stolen on Frostwarf").
 - Single-player and LAN worlds ignore all of this: Herald stays locked there and nothing is sent.
 - The client pack must not ship this file. Keep `bsp_core-server.toml` out of the pack's `defaultconfigs` (it also holds the database and Redis passwords).

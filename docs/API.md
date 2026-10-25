@@ -128,7 +128,7 @@ When: at the moment the game warns the owner of a steal (after the thief's Shrou
 | `player` | not `channel` | the owner's Minecraft UUID |
 | `world`, `x`, `y`, `z` | not `channel` | the totem's dimension id and block position |
 | `thief` | not `channel` | the thief's profile name |
-| `secondsLeft` | `warning` | seconds of the steal left when it was sent (it ends at `sentAt + secondsLeft * 1000`, a little later when the thief steps away) |
+| `secondsLeft` | `warning` | seconds of the steal left when it was sent (it ends about `secondsLeft` seconds later, a little later when the thief steps away). The bot counts that from when it receives the alert, not from `sentAt`, so clocks that differ between machines never drop a live warning; it drops an outcome or a channel line 60 s after it arrived. |
 | `reason` | `saved` | `left` (the thief stayed away too long), `interrupted` (the thief logged out, died or changed world), `totem_gone` (the totem was taken down), `cancelled` (an operator stopped it), `ended` (anything else) |
 
 A `channel` alert holds exactly `v`, `type`, `server` and `sentAt`: the public line names the server and nothing else.
@@ -144,7 +144,7 @@ Example: `{"v":1,"type":"warning","server":"Frostwarf","sentAt":1761419040000,"p
 | `<channel>:undelivered:<uuid>` | the bot (suggested `EX 604800`) | a direct message to the player could not be delivered (Discord error 50007 or 403). BSP-Core deletes it at the player's next login (`DEL`, any Redis version) and, if it was there, tells them once to allow DMs from the BSP server. |
 | `{"v":1,"type":"unlink","player":"<uuid>","sentAt":<ms>}` on the channel | BSP-Core | the player unlinked in game: BSP-Core has already deleted the `linked` key; the bot deletes its own link. |
 
-The Discord user id stays with the bot. BSP-Core shows a player only "linked" or "not linked".
+The Discord user id stays with the bot. BSP-Core shows a player only "linked" or "not linked". The bot's `GETDEL` needs Redis 6.2 or newer; BSP-Core's own calls (`SET`, `DEL`, `EXISTS`, `PUBLISH`) work on any version.
 
 ## Region Guard
 
