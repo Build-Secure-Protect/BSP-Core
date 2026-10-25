@@ -42,6 +42,10 @@ PLATES = [
      "Admins make kits in the admin panel: the list, the chosen kit's summary, NEW KIT, EDIT, GIVE TO and DELETE.", None),
     ("kits_editor", "kit_refined.html", "document.querySelectorAll('.scr.v')[1]", "The kit editor",
      "The kit's slots, FROM HAND and FROM INVENTORY, an item browser with search and mod chips, and every rule as a row of chips.", None),
+    ("herald_discord", "discord_herald_concepts.html", "document.querySelectorAll('.grid3')[0].children[0].querySelectorAll('.dc')[0]", "Herald on Discord",
+     "A message from the BSP bot when your totem is being stolen, and another when it is over. The alert channel only ever reads \"A totem is being stolen on Frostwarf\".", 560),
+    ("herald_card", "herald_tree_concepts.html", "document.getElementById('cv-a')", "Herald on the tree",
+     "Herald sits off Alarm on the tier II ring. Its card carries your own Discord line: LINK gives a code for /link in the BSP Discord.", 700),
 ]
 
 CSS = """

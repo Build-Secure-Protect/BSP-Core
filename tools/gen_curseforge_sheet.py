@@ -195,18 +195,20 @@ def totem_plates():
         return f'<div class="path"><h3>{html.escape(title)}</h3>{boxes}</div>'
 
     body = ('<div class="paths">'
-            + path("Carried: body", [("damage", "+0.8 attack a level, to +8"), ("resistance", "Less damage taken"), ("vitality", "Extra hearts")])
+            + '<div class="pcol">' + path("Carried: body", [("damage", "+0.8 attack a level, to +8"), ("resistance", "Less damage taken"), ("vitality", "Extra hearts")])
+            + path("Carried: travel", [("extra_homes", "More homes in BSP-Teleport"), ("swift_travel", "Shorter teleport cooldown")]) + '</div>'
             + path("Carried: feet, eyes", [("mining_speed", "Faster mining"), ("swiftness", "Faster running"), ("featherfall", "Less fall damage"), ("night_sight", "Night vision while held"),
                                            ("xray", "Blocks turn to glass, ores shine through"), ("bouncy", "Off Featherfall: bounce back up")])
             + path("Base: walls", [("fortify", "Blocks survive blasts; intruders mine slower"), ("alarm", "Intruders outlined, you are warned"), ("ward", "Intruders get Weakness"),
-                                   ("deadlock", "Stealing takes longer"), ("cloaking", "Outsiders see empty land"), ("sentinel", "Off Alarm: who is inside, from anywhere")])
+                                   ("deadlock", "Stealing takes longer"), ("cloaking", "Outsiders see empty land"), ("sentinel", "Off Alarm: who is inside, from anywhere"),
+                                   ("herald", "Off Alarm: a Discord message when it is stolen")])
             + path("Base: aura, plasma", [("healing", "Heals you near the totem"), ("sanctuary", "No hostile mobs spawn"), ("overclock", "Its injectors speed machines up more"),
                                           ("recall", "Teleport home during a steal"), ("output", "Wave Plasma, to 6,000 mB/t"), ("anchor", "Keeps chunks loaded"), ("survey", "Pick which chunks"),
                                           ("harvest", "Mined BSP ores grow back")])
             + path("Raid", [("lockpick", "Shorter steals"), ("shroud", "The owner is warned late"), ("recall_block", "Delays the owner's Recall"), ("thief_step", "Silent; low Alarms miss you"),
                             ("siege", "Press V: mine at full speed in Fortify")])
             + '</div>')
-    plate("totem_powers", "28 powers on five tiers",
+    plate("totem_powers", "31 powers on five tiers",
           body, "Each power opens the next on its path at level 2. Raising the totem's tier costs 4 coins of the tier you are leaving; Mining Speed to Night Sight cost half the usual XP.")
 
 
@@ -541,7 +543,7 @@ CSS = """
 .ic{ position:relative; display:inline-grid; place-items:center; flex:none; vertical-align:middle; } .ic img{ image-rendering:pixelated; display:block; } .ic b{ position:absolute; right:-4px; bottom:-5px; font:700 11px Silkscreen,monospace; color:#fff; text-shadow:0 0 3px #000,0 0 3px #000; }
 .tile{ display:grid; place-items:center; border:2px solid #8a909c; color:#8a909c; background:#0c0e12; font-family:Silkscreen,monospace; }
 .facts{ margin:0; padding:0 0 0 16px; display:flex; flex-direction:column; gap:9px; font-size:12.5px; color:#c9ced8; } .facts b{ color:#e8eaf0; }
-.paths{ display:grid; grid-template-columns:1.6fr 2fr 2.2fr 2.2fr 2fr; gap:0 10px; flex:1; } .path{ display:flex; flex-direction:column; align-items:stretch; gap:2px; } .path h3{ margin-bottom:4px; }
+.paths{ display:grid; grid-template-columns:1.6fr 2fr 2.2fr 2.2fr 2fr; gap:0 10px; flex:1; } .path{ display:flex; flex-direction:column; align-items:stretch; gap:2px; } .path h3{ margin-bottom:4px; } .pcol{ display:flex; flex-direction:column; gap:12px; }
 .pw{ background:#171a21; border:1px solid #2a2f3a; border-left:3px solid #19d3b0; padding:4px 7px; display:flex; flex-direction:column; } .pw b{ font-size:12px; color:#e8eaf0; } .pw span{ font-size:11px; color:#9aa3b5; line-height:1.2; }
 .varr{ display:block; margin:0 auto; }
 .layers{ display:flex; gap:12px; flex-wrap:wrap; } .layers figure{ margin:0; display:flex; flex-direction:column; gap:4px; align-items:center; } .layers figcaption{ font-size:11px; color:#9aa3b5; max-width:130px; text-align:center; }

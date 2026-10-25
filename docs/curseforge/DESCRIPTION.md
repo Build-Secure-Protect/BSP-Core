@@ -14,7 +14,7 @@ The moment you join you get a Shatter Totem, the guide book and 500 Shatter Piec
 
 <!-- plate: totem_powers -->
 
-Twenty-eight powers on six paths, bought with Shatter Coins and XP. Carried powers work while the totem is on you, Base powers come from a placed totem, and Raid powers help you take someone else's. Up to eight friends on the ACCESS tab can pass your Alarm and Ward and use your machines, and your whole team can do all of that and upgrade your totem too.
+Thirty-one powers on six paths, bought with Shatter Coins and XP. Carried powers work while the totem is on you, Base powers come from a placed totem, and Raid powers help you take someone else's. Up to eight friends on the ACCESS tab can pass your Alarm and Ward and use your machines, and your whole team can do all of that and upgrade your totem too.
 
 ## The road ahead
 
@@ -106,6 +106,16 @@ A Decoy Totem looks like the real thing to everyone but you, pulls rival compass
 
 <!-- recipes: raiding -->
 
+## Herald: your totem calls you on Discord
+
+<!-- feature: herald_discord -->
+
+Not in the game when someone starts on your totem? Give it Herald, the Base power straight after Alarm, and the BSP Discord bot messages you the moment the game would warn you: the server, the spot, the thief and the seconds left. When it is over you get another: stolen, or saved and why. A thief's Shroud holds the message back exactly as it holds back the in-game warning. Every steal on the network also gets one line in the BSP Discord's alert channel, "A totem is being stolen on Frostwarf", and not a word more.
+
+<!-- feature: herald_card -->
+
+Linking takes ten seconds: `/bsp discord link`, or LINK on Herald's card, gives you a six-letter code, and you type `/link` and the code in the BSP Discord. You never type a Discord name or password into the game, and the game never sees your Discord details. If your DMs are closed, nothing is posted anywhere; the game tells you at your next login.
+
 ## Teams
 
 <!-- feature: teams_screen -->
@@ -154,8 +164,9 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 - **Anti Totem Block:** keeps totems and chosen machines out of spawn, hubs and arenas, and tells BSP-Teleport where homes and teleports are not allowed.
 - **Servers without totem placement:** list the safe servers of the network (spawn, a saferoom, a sanctuary) in `restrictions.noTotemServers`. Totems can be carried there but never placed or dropped, and one carried at logout goes back to its owner's last spot on a server that allows placement, so nobody parks a totem out of reach by logging off somewhere safe.
 - **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops, teams and kits across every server; add Redis and all of it is live. A kit taken on one server is taken everywhere; a team made on one exists on all.
-- **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams, kits, the bank, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards, BSP-Teleport moves teammates and lands Recall across servers, Region Guard sells the land, BSP-Velocity Additions carries the chat between servers.
+- **Discord steal warnings:** turn on `discord.enabled` and give each server its `discord.serverName`. The alerts travel over the network's Redis to the Discord bot in BSP-Velocity Additions on the proxy, which alone holds the bot's token: no game server ever has one.
+- **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams, kits, the bank, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards, BSP-Teleport moves teammates between servers, Region Guard sells the land, BSP-Velocity Additions carries the chat between servers and runs the Discord bot.
 
 ## Status
 
-1.4.3 is the current release: the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins, on top of 1.0. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
+1.5.0 is the current release: Herald and the Discord steal warnings, on top of the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
