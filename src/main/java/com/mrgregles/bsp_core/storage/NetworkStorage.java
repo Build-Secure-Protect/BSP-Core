@@ -83,6 +83,24 @@ public final class NetworkStorage {
                 BSPConfig.STORAGE_PASSWORD.get(), BSPConfig.STORAGE_TABLE_PREFIX.get(), BSPConfig.STORAGE_SSL.get(), BSPConfig.STORAGE_SERVER_ID.get());
     }
 
+    /**
+     * True on the server built into a game client: a single-player or LAN world (BSP-InventorySync request R7). The client pack
+     * ships the servers' configs as defaults, so such a world would otherwise join the network's database as the server its
+     * config names. Not {@code isDedicatedServer()}: the GameTest server answers false to that too, and counts as dedicated here.
+     */
+    public static boolean singlePlayer() {
+        net.minecraftforge.api.distmarker.Dist dist = net.minecraftforge.fml.loading.FMLEnvironment.dist;
+        return dist != null && dist.isClient() && net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer() != null;
+    }
+
+    /** Whether a server joins the network database: {@code storage.mode = "mysql"}, and never in a single-player or LAN world. */
+    public static boolean networkWanted(String mode, boolean singlePlayer) {
+        return !singlePlayer && "mysql".equalsIgnoreCase(mode);
+    }
+
+    private static final String SINGLE_PLAYER = "Network storage stays off in a single-player or LAN world: records are kept in this world only, "
+            + "whatever storage.mode and the database settings say.";
+
     /** True while this server is writing to and reading from the network database. */
     public static boolean enabled() {
         return store != null;
@@ -191,7 +209,11 @@ public final class NetworkStorage {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         server = event.getServer();
-        if (!"mysql".equalsIgnoreCase(BSPConfig.STORAGE_MODE.get())) {
+        boolean single = singlePlayer();
+        if (!networkWanted(BSPConfig.STORAGE_MODE.get(), single)) {
+            if (single && "mysql".equalsIgnoreCase(BSPConfig.STORAGE_MODE.get())) {
+                BSPCore.LOGGER.info("BSP-Core storage: {} (storage.mode \"mysql\", serverId \"{}\" ignored)", SINGLE_PLAYER, BSPConfig.STORAGE_SERVER_ID.get());
+            }
             return;
         }
         worker().execute(() -> {
@@ -645,6 +667,10 @@ public final class NetworkStorage {
 
     /** Tries to connect with the configured credentials and reports the outcome on the server thread. */
     public static void test(MinecraftServer srv, Consumer<String> report) {
+        if (singlePlayer()) {
+            report.accept(SINGLE_PLAYER);
+            return;
+        }
         worker().execute(() -> {
             String line;
             try (MySqlStore s = fromConfig()) {
@@ -672,6 +698,10 @@ public final class NetworkStorage {
      * time unless {@code force} is set. The local records are left as they are.
      */
     public static void migrate(MinecraftServer srv, boolean force, Consumer<List<String>> report) {
+        if (singlePlayer()) {
+            report.accept(List.of(SINGLE_PLAYER, "Nothing was copied."));
+            return;
+        }
         TotemLedger totems = TotemLedger.get(srv);
         FactoryLedger factories = FactoryLedger.get(srv);
         Set<UUID> grants = new HashSet<>(totems.allGranted());
@@ -1137,6 +1167,9 @@ public final class NetworkStorage {
 
     /** One-line state for /bsp storage status. */
     public static String status() {
+        if (singlePlayer()) {
+            return "Network storage: off. " + SINGLE_PLAYER;
+        }
         MySqlStore s = store;
         if (s != null) {
             RedisLink r = redis;

@@ -15,6 +15,7 @@ KEYS = {
     M + "bad_description": "Keep the description under %s characters",
     M + "too_many_items": "A kit holds at most %s stacks",
     M + "empty_item": "A kit slot is empty",
+    M + "placeholder": "A kit cannot hold a placeholder for a missing mod's item: every redeem would copy the item inside it",
     M + "negative": "A cooldown or a price cannot be below zero",
     M + "saved": "Saved the kit %s",
     M + "deleted": "Deleted the kit %s",

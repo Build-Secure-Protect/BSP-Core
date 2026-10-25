@@ -98,7 +98,7 @@ public class SellHereMenu extends AbstractContainerMenu {
             return null;
         }
         for (ShopItem it : shop.all()) {
-            if (it.sellable() && it.currency < 0 && ItemStack.isSameItemSameTags(s, it.stack)) {
+            if (it.sellable() && it.currency < 0 && !com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(s) && ItemStack.isSameItemSameTags(s, it.stack)) { // a placeholder is handed back
                 return it;
             }
         }

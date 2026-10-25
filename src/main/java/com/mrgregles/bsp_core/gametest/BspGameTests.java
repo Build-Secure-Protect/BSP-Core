@@ -3704,4 +3704,77 @@ public class BspGameTests {
         h.assertTrue(Math.abs(home[0] - sanct[0]) >= 14 || Math.abs(home[1] - sanct[1]) >= 14, "Extra Homes no longer sits under Sanctuary");
         h.succeed();
     }
+
+    @GameTest(template = EMPTY)
+    public void a_single_player_world_never_joins_the_network_database(GameTestHelper h) {
+        h.assertFalse(com.mrgregles.bsp_core.storage.NetworkStorage.singlePlayer(), "the GameTest server counts as a dedicated server");
+        h.assertTrue(com.mrgregles.bsp_core.storage.NetworkStorage.networkWanted("mysql", false), "a dedicated server with storage.mode mysql joins the database");
+        h.assertTrue(com.mrgregles.bsp_core.storage.NetworkStorage.networkWanted("MySQL", false), "the mode is read in any case");
+        h.assertFalse(com.mrgregles.bsp_core.storage.NetworkStorage.networkWanted("mysql", true), "a single-player or LAN world never does, whatever its config says");
+        h.assertFalse(com.mrgregles.bsp_core.storage.NetworkStorage.networkWanted("local", false) || com.mrgregles.bsp_core.storage.NetworkStorage.networkWanted("local", true), "local stays local");
+        h.assertFalse(com.mrgregles.bsp_core.storage.NetworkStorage.status().contains("single-player"), "a dedicated server's status line is its usual one");
+        // the no-totem list still applies on a dedicated server
+        asNoTotemServer(() -> h.assertTrue(com.mrgregles.bsp_core.BSPConfig.isNoTotemServer(), "a listed dedicated server allows no totem placement"));
+        h.succeed();
+    }
+
+    /** A BSP-InventorySync placeholder as it makes one: a named barrier holding the original item. */
+    private static ItemStack placeholder(int count) {
+        ItemStack ph = new ItemStack(net.minecraft.world.item.Items.BARRIER, count);
+        net.minecraft.nbt.CompoundTag original = new net.minecraft.nbt.CompoundTag();
+        original.putString("id", "nosuchmod:widget");
+        original.putByte("Count", (byte) count);
+        ph.getOrCreateTag().put(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.TAG, original);
+        return ph;
+    }
+
+    @GameTest(template = EMPTY)
+    public void shops_kits_and_prizes_refuse_inventory_sync_placeholders(GameTestHelper h) {
+        var server = server(h);
+        h.assertTrue(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(placeholder(1)), "a barrier holding an original is a placeholder");
+        ItemStack paper = new ItemStack(net.minecraft.world.item.Items.PAPER);
+        paper.getOrCreateTag().put(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.TAG, new net.minecraft.nbt.CompoundTag());
+        h.assertTrue(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(paper), "so is the older paper kind");
+        ItemStack plain = new ItemStack(net.minecraft.world.item.Items.BARRIER);
+        ItemStack wrongType = new ItemStack(net.minecraft.world.item.Items.BARRIER);
+        wrongType.getOrCreateTag().putString(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.TAG, "x");
+        h.assertFalse(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(plain) || com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(wrongType) || com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(ItemStack.EMPTY), "a plain barrier, another tag type and nothing are not");
+
+        // a shop whose card was made from a placeholder neither sells copies nor takes them
+        var player = survivor(h);
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Ivy", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, id, 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "ph_" + Long.toHexString(System.nanoTime()), "Placeholders", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var card = new com.mrgregles.bsp_core.shop.ShopItem();
+        card.stack = placeholder(1);
+        card.buy = 10;
+        card.sell = 5;
+        int index = shop.add(card);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("placeholder") && player.getInventory().countItem(net.minecraft.world.item.Items.BARRIER) == 0, "buying refused, nothing given: " + o[0]);
+        player.getInventory().add(placeholder(3));
+        com.mrgregles.bsp_core.shop.Shops.sell(server, player, shop, index, 3, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("placeholder"), "selling refused: " + o[0]);
+        com.mrgregles.bsp_core.shop.Shops.sellAll(server, player, shop, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && player.getInventory().countItem(net.minecraft.world.item.Items.BARRIER) == 3 && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start, "sell-all leaves the placeholders and pays nothing: " + o[0]);
+
+        // a kit with a placeholder in it is not saved
+        var k = kit(h, "phkit", new ItemStack(net.minecraft.world.item.Items.APPLE));
+        var draft = k.copy(); // the editor sends a changed copy
+        draft.items.add(placeholder(1));
+        String note = com.mrgregles.bsp_core.kit.KitAdmin.apply(player, com.mrgregles.bsp_core.network.KitEditPacket.save(draft.save(), false));
+        h.assertTrue(note.equals("refused"), "the kit editor refuses it: " + note);
+        h.assertTrue(com.mrgregles.bsp_core.kit.Kits.kit(server, k.id).items.size() == 1, "the saved kit keeps only the apple");
+        com.mrgregles.bsp_core.kit.Kits.delete(server, k.id);
+
+        // a season prize slot does not take one
+        var menu = new com.mrgregles.bsp_core.admin.SeasonRewardsMenu(0, player.getInventory(), new net.minecraftforge.items.ItemStackHandler(com.mrgregles.bsp_core.admin.SeasonData.REWARD_SLOTS), true);
+        h.assertFalse(menu.slots.get(0).mayPlace(placeholder(1)), "a prize slot refuses a placeholder");
+        h.assertTrue(menu.slots.get(0).mayPlace(new ItemStack(net.minecraft.world.item.Items.DIAMOND)), "and takes a diamond");
+        h.succeed();
+    }
 }

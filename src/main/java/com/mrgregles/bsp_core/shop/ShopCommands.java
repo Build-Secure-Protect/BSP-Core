@@ -128,6 +128,10 @@ public final class ShopCommands {
             ctx.getSource().sendFailure(tr("hold_item"));
             return 0;
         }
+        if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(held)) {
+            ctx.getSource().sendFailure(tr("placeholder"));
+            return 0;
+        }
         ShopItem item = new ShopItem();
         item.stack = held.copy();
         item.buy = LongArgumentType.getLong(ctx, "buy");

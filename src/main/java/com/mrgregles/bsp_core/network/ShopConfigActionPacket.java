@@ -130,6 +130,9 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 if (player == null || player.getMainHandItem().isEmpty()) {
                     return "hold_item";
                 }
+                if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(player.getMainHandItem())) {
+                    return "placeholder";
+                }
                 ShopItem it = new ShopItem();
                 it.stack = player.getMainHandItem().copy();
                 place(shop, it, msg.i);

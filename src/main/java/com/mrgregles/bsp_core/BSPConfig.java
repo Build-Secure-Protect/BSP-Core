@@ -639,9 +639,12 @@ public final class BSPConfig {
         SPEC = BUILDER.build();
     }
 
-    /** Whether this server is listed in {@code restrictions.noTotemServers}: no Shatter Totem may be placed or dropped anywhere on it. */
+    /**
+     * Whether this server is listed in {@code restrictions.noTotemServers}: no Shatter Totem may be placed or dropped anywhere on it.
+     * Never in a single-player or LAN world, which is no server of the network whatever {@code storage.serverId} its config names.
+     */
     public static boolean isNoTotemServer() {
-        return isNoTotemServer(getOr(STORAGE_SERVER_ID, ""));
+        return !com.mrgregles.bsp_core.storage.NetworkStorage.singlePlayer() && isNoTotemServer(getOr(STORAGE_SERVER_ID, ""));
     }
 
     /** Whether the server with this {@code storage.serverId} is listed in {@code restrictions.noTotemServers}. */

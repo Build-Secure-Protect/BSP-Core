@@ -176,6 +176,10 @@ public final class Shops {
             then.accept(Outcome.fail("not_for_sale"));
             return;
         }
+        if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(item.stack)) { // a card made from a placeholder would hand out copies of the item inside it
+            then.accept(Outcome.fail("placeholder"));
+            return;
+        }
         if (shop.kind == Shop.Kind.ROTATING && !visible(server, shop, now).contains(index)) {
             then.accept(Outcome.fail("not_drawn"));
             return;
@@ -242,6 +246,10 @@ public final class Shops {
             then.accept(Outcome.fail("not_bought"));
             return;
         }
+        if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(item.stack)) { // sold, the original inside a placeholder would be gone for good
+            then.accept(Outcome.fail("placeholder"));
+            return;
+        }
         int held = 0;
         for (ItemStack s : player.getInventory().items) {
             if (ItemStack.isSameItemSameTags(s, item.stack)) {
@@ -277,7 +285,7 @@ public final class Shops {
         List<Integer> indexes = new ArrayList<>();
         List<ShopItem> all = shop.all();
         for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).sellable() && all.get(i).currency < 0) {
+            if (all.get(i).sellable() && all.get(i).currency < 0 && !com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(all.get(i).stack)) {
                 indexes.add(i);
             }
         }

@@ -70,6 +70,10 @@ public final class KitAdmin {
                 if (msg.isNew() && Kits.kit(server, kit.id) != null) {
                     return "id_taken";
                 }
+                if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(kit.icon) || kit.items.stream().anyMatch(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders::is)) {
+                    // every redeem would hand out a copy of the item inside the placeholder
+                    return note(admin, Kits.Outcome.fail("placeholder"), "saved");
+                }
                 Kits.Outcome out = Kits.put(server, kit);
                 return note(admin, out, "saved");
             }

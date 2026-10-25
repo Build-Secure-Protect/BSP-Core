@@ -1451,3 +1451,26 @@ Performance
 - [ ] A long flowing cable run: the flow shows within 40 blocks; break the interface: the cables drain within about 6 s.
 - [ ] Sentinel level 4 with an intruder: the positions still move smoothly.
 - [ ] The Anti Totem outline (admin holding the block) still shows when the block itself is out of view.
+
+## A single-player world stays off the network (BSP-InventorySync R7, 2026-10-25)
+
+Covered by GameTest `a_single_player_world_never_joins_the_network_database` for the dedicated side (the GameTest server cannot be a client's own server); the single-player side needs the client.
+
+- [ ] With the client pack's default configs (`storage.mode = "mysql"`, a `serverId`, the database reachable), create a single-player world: the log says "Network storage stays off in a single-player or LAN world", and no "connected to MySQL" line follows.
+- [ ] In that world: `/bsp storage` says storage is off in a single-player or LAN world; `/bsp storage test` and `/bsp storage migrate` refuse with the same line.
+- [ ] Deposit coins, place a totem and redeem a kit in that world, then check the database (or the audit queries in the vault note "R7 - Audit of the Test World's Rows"): nothing new under that `serverId`.
+- [ ] With the config's `serverId` listed in `restrictions.noTotemServers`: a totem can still be placed in the single-player world.
+- [ ] Open the world to LAN: still no connection.
+- [ ] A dedicated server with the same config: connects as before ("connected to MySQL" in the log), and a listed no-totem server still refuses placement.
+
+## Placeholders are refused (BSP-InventorySync R6, 2026-10-25)
+
+Covered by GameTest `shops_kits_and_prizes_refuse_inventory_sync_placeholders` (shops buying and selling, sell-all, the kit save, the prize slot). Needs BSP-InventorySync on two servers, one without some mod, to make a real placeholder.
+
+- [ ] Carry an item from a mod the next server lacks; on that server it is a placeholder (a named barrier).
+- [ ] Hold it and run `/bsp shop add <shop> <buy> <sell>`: refused, "That is a placeholder for a missing mod's item. Shops never take or sell one."
+- [ ] Shop workbench, ADD FROM HAND with it: refused with the workbench's line.
+- [ ] Drop it in a shop's Sell Here box with other items and close: the others sell, the placeholder comes back.
+- [ ] Kit editor: put it in a kit and SAVE: refused (chat line, "Refused" on the panel); the kit keeps its old contents.
+- [ ] Season prizes: it will not go into a prize slot.
+- [ ] Put it in a safety deposit box, take it out on a server with the mod: it turns back into the original.

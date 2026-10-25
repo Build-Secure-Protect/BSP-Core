@@ -34,7 +34,8 @@ public class SeasonRewardsMenu extends AbstractContainerMenu {
                 addSlot(new SlotItemHandler(rewards, place * SeasonData.PER_PLACE + col, ROW_X + col * 18, ROW_Y + place * ROW_GAP) {
                     @Override
                     public boolean mayPlace(ItemStack stack) {
-                        return editable && super.mayPlace(stack);
+                        // a placeholder as a prize would hand the item inside it to every winner
+                        return editable && !com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(stack) && super.mayPlace(stack);
                     }
 
                     @Override

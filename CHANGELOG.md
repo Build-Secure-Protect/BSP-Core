@@ -6,6 +6,12 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 Nothing yet.
 
+## [1.4.6] - 2026-10-25
+
+### Fixed
+- **BSP-InventorySync's placeholders are refused wherever an item would be lost or copied** (BSP-InventorySync request R6). An item whose mod a server lacks travels as a placeholder holding the original; sold, the original was gone for good, and made into a shop card, a kit or a season prize it would hand copies of the original to everyone. A shop card cannot be made from one (`/bsp shop add` and the shop workbench), a shop whose card is one neither sells nor buys it (sell-all and the Sell Here box hand placeholders back), a kit holding one is not saved, and a season prize slot does not take one; each refusal says it is a placeholder for a missing mod's item. Storage (the safety deposit box, vaults) keeps placeholders as they are. One game test.
+- **A single-player or LAN world never joins the network's database** (BSP-InventorySync request R7). The client pack ships the servers' configs as defaults, so a new single-player world started with `storage.mode = "mysql"` and a server's `storage.serverId`, and joined the network's MySQL and Redis as that server: bank changes, placed totems, first-join grants, kits redeemed and owed items collected in that world landed on the real network. The server built into a game client now keeps every record in the world save whatever the storage settings say, writes one line to the log saying so, and refuses `/bsp storage test` and `/bsp storage migrate`; `/bsp storage` says why storage is off. The no-totem server list is ignored there too, so a test world named after a no-totem server still allows placement. Dedicated servers (and the GameTest server) are unchanged. One game test.
+
 ## [1.4.5] - 2026-10-23
 
 ### Added

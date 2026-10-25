@@ -1943,5 +1943,8 @@
   "message.bsp_core.xray.hint.recharging": "X-ray recharges in %s s, then press %s",
   "message.bsp_core.xray.hint.on": "X-ray on for %s s more (%s switches it off)",
   "message.bsp_core.xray.hint.unbound": "X-ray ready: bind its key in Controls (BSP-Core, X-ray)",
-  "gui.bsp_core.projector.active_reserve": "PROJECTING (on the base's tank)"
+  "gui.bsp_core.projector.active_reserve": "PROJECTING (on the base's tank)",
+  "message.bsp_core.kit.placeholder": "A kit cannot hold a placeholder for a missing mod's item: every redeem would copy the item inside it",
+  "message.bsp_core.shop.placeholder": "That is a placeholder for a missing mod's item. Shops never take or sell one.",
+  "message.bsp_core.config.placeholder": "That is a placeholder for a missing mod's item. A shop card cannot be made from one."
 }
