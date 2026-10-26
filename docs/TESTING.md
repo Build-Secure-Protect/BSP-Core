@@ -1741,3 +1741,13 @@ Covered by GameTests `edits_restart_counts_only_when_what_is_counted_changes_and
 - [ ] Set a card's lot size to 64 on ender pearls: it shows 16.
 - [ ] On a network with the database stopped, `/bsp shop report`: "The database could not be read for the report" (not this server's figures). On a server alone, the report has the grey line about the newest log rows.
 - [ ] The first start on the network logs no error for the `bank_log` index.
+
+## Distant Horizons after a Velocity server switch (2026-10-26)
+
+BSP-Core's client mixin `ClientResetServerDataMixin` keeps the server's entry when Forge Client Reset Packet resets the client on a switch, so Distant Horizons no longer takes the next server for a Replay Mod recording. Checked in a dev client with Forge Client Reset Packet 0.3.1 loaded: both injections land (the save at the head of `handleClear`, the hand-back where `handleReset` stores its server entry). A dev client without that mod reaches the title screen (Mixin skips the missing class with one WARN line), and the GameTest server does not apply the mixin. Untested: a real switch through Velocity.
+
+- [ ] In the client's `Distant_Horizons_server_data/`, delete the `REPLAY` folder.
+- [ ] Join through Velocity, then switch backend (`/server <name>` or a portal), more than once and back.
+- [ ] No "Replay detected" message after any switch, and no new `REPLAY` folder.
+- [ ] LODs are written under `Distant_Horizons_server_data/BSP+Official/...` for each backend.
+- [ ] The client's `latest.log` has no mixin error naming `bsp_core.mixins.json`.

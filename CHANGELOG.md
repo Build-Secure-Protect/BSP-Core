@@ -6,6 +6,11 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 Nothing yet.
 
+## [1.6.1] - 2026-10-26
+
+### Fixed
+- **Distant Horizons no longer takes a Velocity server switch for a Replay Mod recording.** On a switch, Forge Client Reset Packet (`clientresetpacket`) clears the client's level and then starts the next login with no server entry, so for the rest of the session the game said it was on no server; Distant Horizons read that as a replay ("Replay detected") and filed LODs under `Distant_Horizons_server_data/REPLAY`. A small client-only mixin (`bsp_core.mixins.json`, BSP-Core's first) reads the entry before the clear and hands it to the new login. It does nothing without Forge Client Reset Packet and is not loaded on servers. Checked in a dev client with Forge Client Reset Packet 0.3.1; the switch through Velocity is the owner's in-game test (`docs/TESTING.md`).
+
 ## [1.6.0] - 2026-10-26
 
 ### Added
