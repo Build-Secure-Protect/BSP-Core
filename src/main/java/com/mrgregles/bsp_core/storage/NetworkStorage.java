@@ -471,8 +471,15 @@ public final class NetworkStorage {
     /** Ticks to the next sweep of shop counts that are full again: five minutes after the start, then daily. */
     private static int sweepTicks = 5 * 60 * 20;
 
+    /** Ticks to the next check of rotating shops that announce (every minute, network or not). */
+    private static int rotationTicks = 20 * 60;
+
     @SubscribeEvent
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && --rotationTicks <= 0) {
+            rotationTicks = 20 * 60;
+            com.mrgregles.bsp_core.shop.Shops.tickRotations(event.getServer());
+        }
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && store != null && --sweepTicks <= 0) {
             sweepTicks = 24 * 60 * 60 * 20;
             com.mrgregles.bsp_core.shop.Shops.sweep(event.getServer());
@@ -986,6 +993,25 @@ public final class NetworkStorage {
             s.countsReset(id, 0, Integer.MAX_VALUE);
             s.dropDraw(id);
             publish("shop", "-" + id);
+        });
+    }
+
+    /** Every shop trade since {@code since} from the database (every server), for the shop report; null when it could not be read. */
+    public static void shopTrades(long since, Consumer<List<com.mrgregles.bsp_core.shop.ShopReport.Row>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.shop.ShopReport.Row> rows = null;
+            try {
+                rows = s.shopTrades(since);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the shop trades: {}", e.toString());
+            }
+            var done = rows;
+            onServer(() -> then.accept(done));
         });
     }
 

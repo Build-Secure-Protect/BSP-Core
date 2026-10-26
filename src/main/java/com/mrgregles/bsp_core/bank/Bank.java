@@ -113,20 +113,30 @@ public final class Bank {
 
     /** Adds pieces (a sale, a refund, an admin gift). */
     public static void give(MinecraftServer server, UUID id, long pieces, BankTransaction.Type type, String with, String detail, Consumer<BankResult> then) {
+        give(server, id, pieces, type, with, detail, "", "", then);
+    }
+
+    /** As {@link #give}, for a shop trade: the row names the shop and the item, for the shop report. */
+    public static void give(MinecraftServer server, UUID id, long pieces, BankTransaction.Type type, String with, String detail, String shopId, String itemId, Consumer<BankResult> then) {
         if (pieces <= 0) {
             then.accept(BankResult.fail("amount"));
             return;
         }
-        adjust(server, id, pieces, null, tx(type, with, detail, pieces), then);
+        adjust(server, id, pieces, null, tx(type, with, detail, pieces, shopId, itemId), then);
     }
 
     /** Takes pieces (a purchase, a fee); fails with "short" when the balance is too small and takes nothing. */
     public static void take(MinecraftServer server, UUID id, long pieces, BankTransaction.Type type, String with, String detail, Consumer<BankResult> then) {
+        take(server, id, pieces, type, with, detail, "", "", then);
+    }
+
+    /** As {@link #take}, for a shop trade: the row names the shop and the item, for the shop report. */
+    public static void take(MinecraftServer server, UUID id, long pieces, BankTransaction.Type type, String with, String detail, String shopId, String itemId, Consumer<BankResult> then) {
         if (pieces <= 0) {
             then.accept(BankResult.fail("amount"));
             return;
         }
-        adjust(server, id, -pieces, null, tx(type, with, detail, -pieces), then);
+        adjust(server, id, -pieces, null, tx(type, with, detail, -pieces, shopId, itemId), then);
     }
 
     /** Moves pieces from one player to another. Fails with "short", "refused" (they do not accept payments) or "self". */
@@ -399,7 +409,11 @@ public final class Bank {
     // ------------------------------------------------------------------ inside
 
     private static BankTransaction tx(BankTransaction.Type type, String with, String detail, long pieces) {
-        return new BankTransaction(System.currentTimeMillis(), type, with, detail, pieces, -1, 0, serverId());
+        return tx(type, with, detail, pieces, "", "");
+    }
+
+    private static BankTransaction tx(BankTransaction.Type type, String with, String detail, long pieces, String shopId, String itemId) {
+        return new BankTransaction(System.currentTimeMillis(), type, with, detail, pieces, -1, 0, serverId(), shopId, itemId);
     }
 
     /** Writes a log line locally and, on a network, to the database. */

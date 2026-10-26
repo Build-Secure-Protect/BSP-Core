@@ -1,0 +1,160 @@
+<title>Card Note Lines</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of three concepts; each draws the Challenge shop screen over a game view at GUI pixel size (scaled 3x), with Steel Casing hovered and its tooltip open. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; color:var(--muted); max-width:82ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:1000px; height:auto; image-rendering:pixelated; display:block; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Card Note Lines</h1>
+    <p class="lede">Spawn shops task 5 (SS-10). A card can carry a note of up to three short lines, shown in its tooltip on the shop screen and never put on the item the player gets. Three places and looks for it, on the weekly Challenge shop with Steel Casing hovered. The note here is two lines: "The Challenge buys up to 4 each per week." and "Used machines welcome; empty them first."</p>
+  </header>
+
+  <section>
+    <h2>A. Under the name, like an item's own lore</h2>
+    <div class="card">
+      <p>The note sits right under the item's name and mod, in the purple italic the game uses for an item's lore, before the shop's own lines (price, match, limits, refill). It reads as part of the item's description.</p>
+      <div class="stage"><canvas id="a" width="1260" height="720"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. A note at the foot</h2>
+    <div class="card">
+      <p>The shop's lines come first; after a blank line, the note closes the tooltip in amber, the Cash Machine's own colour, so it reads as the shopkeeper speaking.</p>
+      <div class="stage"><canvas id="b" width="1260" height="720"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. A marked block between item and shop</h2>
+    <div class="card">
+      <p>Between the item's lines and the shop's, each note line starts with a grey bar and sits in plain white, set apart like a quoted remark.</p>
+      <div class="stage"><canvas id="c" width="1260" height="720"></canvas></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const S = 3, GW = 420, GH = 240, OX = 30, OY = 12;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', CARD:'#0a1a10', CARD_SEL:'#0f2d1c' };
+  const MC = { white:'#FFFFFF', gray:'#AAAAAA', dgray:'#555555', gold:'#FFAA00', blue:'#5555FF', dpurple:'#AA00AA', amber:'#F2B544' };
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, ';':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '[':4, ']':4, '│':2 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  function text(g, s, x, y, colour, scale, italic){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (italic ? 'italic ' : '') + (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    if (italic) g.transform(1, 0, -0.18, 1, 0, 0);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour; g.fillText(s, 0, 0); g.restore();
+    return target;
+  }
+  function shadowText(g, s, x, y, colour, italic){
+    const n = parseInt(colour.slice(1), 16);
+    text(g, s, x + 1, y + 1, 'rgb(' + (((n >> 16) & 255) >> 2) + ',' + (((n >> 8) & 255) >> 2) + ',' + ((n & 255) >> 2) + ')', 1, italic);
+    return text(g, s, x, y, colour, 1, italic);
+  }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+  function icon(g, x, y, base, light, dark, kind){
+    let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  const CARDS = [['#7d8590','#aab2bc','#4b5159','casing','3/4'], ['#6b4a2b','#b7894f','#3a2615','frame','4/4'], ['#b98a34','#e7c06a','#6d4f17','casing','8/8'], ['#5b3fa8','#9f7cf0','#2c1d5e','noise','FULL']];
+  const SELL = ['sell 2,500', 'sell 1,800', 'sell 900', 'sell 1,200'];
+
+  function screen(g){
+    // game behind
+    const grd = g.createLinearGradient(0, 0, 0, GH * S); grd.addColorStop(0, '#2b3442'); grd.addColorStop(1, '#151a22');
+    g.fillStyle = grd; g.fillRect(0, 0, GW * S, GH * S);
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 0, GW * S, GH * S);
+    const W = 300, H = 216, SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20;
+    const x = OX, y = OY;
+    fill(g, x, y, x + W, y + H, C.BEZEL_DARK); fill(g, x + 2, y + 2, x + W - 2, y + H - 2, C.BEZEL); fill(g, x + 2, y + 2, x + W - 2, y + 4, C.BEZEL_LIGHT);
+    fill(g, x + SX - 2, y + SY - 2, x + SX + SW + 2, y + SY + SH + 2, C.EDGE); fill(g, x + SX, y + SY, x + SX + SW, y + SY + SH, C.SCREEN);
+    text(g, '> CHALLENGE', x + SX + 6, y + SY + 6, C.PHOS);
+    text(g, 'rotates in 6d 23h', x + SX + SW - 6 - mcWidth('rotates in 6d 23h'), y + SY + 6, C.DIM);
+    fill(g, x + SX + 4, y + SY + 16, x + SX + SW - 4, y + SY + 17, C.EDGE);
+    const cw = 47;
+    CARDS.forEach((cd, k) => {
+      const cx = x + SX + 6 + k * (cw + 1), cy = y + SY + 22, full = cd[4] === 'FULL';
+      fill(g, cx, cy, cx + cw, cy + 36, full ? '#070d09' : k === 0 ? C.CARD_SEL : C.CARD);
+      fill(g, cx, cy, cx + cw, cy + 1, full ? '#1f6b43' : C.DIM); fill(g, cx, cy + 35, cx + cw, cy + 36, full ? '#1f6b43' : C.DIM);
+      g.globalAlpha = full ? 0.45 : 1; icon(g, cx + cw / 2 - 8, cy + 3, cd[0], cd[1], cd[2], cd[3]); g.globalAlpha = 1;
+      text(g, '--', cx + 2, cy + 21, C.DIM, .75);
+      text(g, SELL[k], cx + 2, cy + 28, C.DIM, .75);
+      const corner = cd[4]; text(g, corner, cx + cw - 3 - mcWidth(corner) * .75, cy + 2, full ? C.RED : C.AMBER, .75);
+    });
+    [['Back', 0], ['Previous', 1], ['Next page', 2]].forEach(([l, i]) => { const ky = y + SY + i * 24; fill(g, x + KX, ky, x + KX + KW, ky + KH, C.KEY_EDGE); fill(g, x + KX, ky, x + KX + KW, ky + KH - 2, C.KEY); text(g, l, x + KX + (KW - mcWidth(l)) / 2, ky + 6, i ? '#8f877a' : C.KEY_TEXT); });
+    [['Sell all', 0], ['Sell here', 1]].forEach(([l, i]) => { const ky = y + SY + SH - KH - i * 24; fill(g, x + KX, ky, x + KX + KW, ky + KH, C.KEY_EDGE); fill(g, x + KX, ky, x + KX + KW, ky + KH - 2, C.KEY); text(g, l, x + KX + (KW - mcWidth(l)) / 2, ky + 6, C.KEY_TEXT); });
+    fill(g, x + SX - 2, y + 178, x + W - SX + 2, y + 204, C.EDGE); fill(g, x + SX, y + 180, x + W - SX, y + 202, C.SCREEN);
+    text(g, 'open / shopping network', x + SX + 6, y + 187, C.DIM);
+    text(g, 'balance 3,420 pieces', x + W - SX - 6 - mcWidth('balance 3,420 pieces'), y + 187, C.DIM);
+    for (let ly = y + SY; ly < y + SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect((x + SX) * S, ly * S, SW * S, S); }
+  }
+
+  // a tooltip: lines of [text, colour, italic]; "" is a blank line
+  function tooltip(g, x, y, lines){
+    const w = Math.max(...lines.map(l => l ? mcWidth(l[0]) : 0)) + 6;
+    const h = lines.length * 10 + 2;
+    fill(g, x - 1, y, x + w + 1, y + h, 'rgba(16,0,16,0.94)'); fill(g, x, y - 1, x + w, y + h + 1, 'rgba(16,0,16,0.94)');
+    const grd = g.createLinearGradient(0, y * S, 0, (y + h) * S); grd.addColorStop(0, 'rgba(80,0,255,0.6)'); grd.addColorStop(1, 'rgba(40,0,127,0.6)');
+    g.fillStyle = grd; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    let ty = y + 3;
+    lines.forEach((l, i) => {
+      if (l) {
+        if (l[3] === 'bar') { fill(g, x + 3, ty - 1, x + 4, ty + 8, '#8a8a8a'); shadowText(g, l[0], x + 3 + 5, ty, l[1], l[2]); }
+        else shadowText(g, l[0], x + 3, ty, l[1], l[2]);
+      }
+      ty += i === 0 ? 12 : 10;
+    });
+  }
+
+  const ITEM = [['Steel Casing', MC.white], ['Mekanism', MC.blue, true]];
+  const SHOP = [['Sell: 2,500 pieces per lot (right click; shift for all)', MC.white], ['Takes any Steel Casing, used or new (not damaged)', MC.gray],
+    ['You can sell 3 more of 4', MC.gold], ['The shop takes 182 more from everyone', MC.gray], ['Refills every Monday at 00:00 (in 6d 23h)', MC.gray]];
+  const NOTE = ['The Challenge buys up to 4 each per week.', 'Used machines welcome; empty them first.'];
+
+  function draw(id, lines){
+    const cv = document.getElementById(id), g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
+    screen(g);
+    tooltip(g, OX + 56, OY + 52, lines);
+  }
+  function drawAll(){
+    draw('a', [...ITEM, ...NOTE.map(n => [n, MC.dpurple, true]), ...SHOP]);
+    draw('b', [...ITEM, ...SHOP, '', ...NOTE.map(n => [n, MC.amber])]);
+    draw('c', [...ITEM, ...NOTE.map(n => [n, MC.white, false, 'bar']), ...SHOP]);
+  }
+  drawAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>

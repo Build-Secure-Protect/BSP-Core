@@ -112,6 +112,16 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                         case "columns" -> shop.columns = Integer.parseInt(v.trim()) < Shop.MIN_COLUMNS ? 0 : Math.min(Shop.MAX_COLUMNS, Integer.parseInt(v.trim()));
                         case "rows" -> shop.rows = Math.max(2, Math.min(3, Integer.parseInt(v.trim())));
                         case "slots" -> shop.displaySlots = Math.max(1, Integer.parseInt(v.trim()));
+                        case "rotateat" -> {
+                            var at = v.trim().equalsIgnoreCase("none") ? com.mrgregles.bsp_core.shop.Refill.NEVER : com.mrgregles.bsp_core.shop.Refill.parse(v);
+                            if (at == null || !at.fixedTime() && at.kind() != com.mrgregles.bsp_core.shop.Refill.Kind.NEVER) {
+                                return "bad_value"; // a fixed time (day 06:00, monday 00:00) or none
+                            }
+                            shop.rotateAt = at.fixedTime() ? at : com.mrgregles.bsp_core.shop.Refill.NEVER;
+                            shop.rotateSince = Shops.now(); // the draw on show stays until the next change time
+                        }
+                        case "norepeat" -> shop.noRepeat = Boolean.parseBoolean(v);
+                        case "broadcast" -> shop.broadcast = Boolean.parseBoolean(v);
                         case "interval" -> shop.intervalMs = Math.max(1, Long.parseLong(v.trim())) * 3_600_000L;
                         case "offer" -> shop.offerPercent = Math.max(0, Math.min(99, Integer.parseInt(v.trim())));
                         case "hoursmode" -> shop.hours = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.valueOf(v.toUpperCase(Locale.ROOT)), shop.hours.openMin(), shop.hours.closeMin());
@@ -175,6 +185,9 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                         case "instant" -> it.instant = Boolean.parseBoolean(v);
                         case "hidden" -> it.hidden = Boolean.parseBoolean(v);
                         case "section" -> it.section = v.trim().toLowerCase(Locale.ROOT);
+                        case "note" -> it.setNote(v);
+                        case "match" -> it.matchItem = v.trim().equalsIgnoreCase("item");
+                        case "weight" -> it.weight = Math.max(0, Math.min(100, Integer.parseInt(v.trim())));
                         default -> {
                             return "bad_field";
                         }
@@ -197,6 +210,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                     return "no_item";
                 }
                 Shops.resetCounts(server, shop, msg.i, size); // the cards after it moved up a place
+                Shops.restartCycle(server, shop);
             }
             case MOVE_ITEM -> {
                 List<ShopItem> all = new ArrayList<>(shop.all());
@@ -209,6 +223,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 shop.pages.add(new ArrayList<>());
                 all.forEach(shop::add);
                 Shops.resetCounts(server, shop, Math.min(msg.i, msg.j), Math.max(msg.i, msg.j)); // every card between moved
+                Shops.restartCycle(server, shop);
             }
             default -> {
                 return "";
@@ -233,6 +248,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
         int at = Math.max(0, Math.min(index, all.size()));
         if (at < all.size()) {
             Shops.resetCounts(server, shop, at, all.size());
+            Shops.restartCycle(server, shop);
         }
         all.add(at, it);
         shop.pages.clear();

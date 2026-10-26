@@ -21,7 +21,8 @@ import java.util.Map;
 /**
  * "Sell here": a 14-slot grid the player drops items into. Closing it, or the Sell now key, sells
  * every full lot the shop buys at its sell prices, up to each card's sell limit (a rotating shop
- * buys only what is on show), and hands everything else back.
+ * buys only what is on show), and hands everything else back. Each card's sale is its own line in
+ * the bank log.
  */
 public class SellHereMenu extends AbstractContainerMenu {
     public static final int GRID = 14, WIDTH = 300, SLOT_X = 24, SLOT_Y = 40, INV_X = 24, INV_Y = 132, HEIGHT = INV_Y + 82;
@@ -39,6 +40,8 @@ public class SellHereMenu extends AbstractContainerMenu {
     public boolean capped;
     public String name = "";
     private final java.util.UUID player;
+    /** The player using the box, for the cards' requirements. */
+    private final Player user;
 
     public SellHereMenu(int id, Inventory inv, String shopId, @Nullable BlockPos at, boolean remote, @Nullable OpenHours hours) {
         super(ModMenus.SELL_HERE.get(), id);
@@ -47,6 +50,7 @@ public class SellHereMenu extends AbstractContainerMenu {
         this.remote = remote;
         this.hours = hours;
         this.player = inv.player.getUUID();
+        this.user = inv.player;
         for (int i = 0; i < GRID; i++) {
             addSlot(new SlotItemHandler(grid, i, SLOT_X + 1 + (i % 7) * 18, SLOT_Y + 1 + (i / 7) * 18));
         }
@@ -90,7 +94,7 @@ public class SellHereMenu extends AbstractContainerMenu {
         List<Integer> shown = shown(server, shop, now);
         for (int i = 0; i < GRID; i++) {
             ItemStack s = grid.getStackInSlot(i);
-            int index = s.isEmpty() ? -1 : match(shop, s, shown);
+            int index = s.isEmpty() ? -1 : match(shop, s, shown, user);
             if (index >= 0) {
                 int n = take(server, shop, index, s.getCount() / shop.item(index).stack.getCount(), room, now);
                 lots += n;
@@ -117,14 +121,20 @@ public class SellHereMenu extends AbstractContainerMenu {
     }
 
     /** The index of the card this stack sells to, or -1. */
-    private static int match(Shop shop, ItemStack s, @Nullable List<Integer> shown) {
+    private static int match(Shop shop, ItemStack s, @Nullable List<Integer> shown, Player user) {
         if (shop.buyOnly || com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(s)) { // a placeholder is handed back
             return -1;
         }
         List<ShopItem> all = shop.all();
+        for (int i = 0; i < all.size(); i++) { // exact cards first, then those that match by item (Shops.sells keeps that order too)
+            ShopItem it = all.get(i);
+            if (!it.matchItem && it.sellable() && it.currency < 0 && (shown == null || shown.contains(i)) && Shops.sells(shop, i, s) && Shops.lock(shop, i, user) == null) {
+                return i;
+            }
+        }
         for (int i = 0; i < all.size(); i++) {
             ShopItem it = all.get(i);
-            if (it.sellable() && it.currency < 0 && (shown == null || shown.contains(i)) && ItemStack.isSameItemSameTags(s, it.stack)) {
+            if (it.matchItem && it.sellable() && it.currency < 0 && (shown == null || shown.contains(i)) && Shops.sells(shop, i, s) && Shops.lock(shop, i, user) == null) {
                 return i;
             }
         }
@@ -138,7 +148,7 @@ public class SellHereMenu extends AbstractContainerMenu {
 
     /**
      * Sells the grid's full lots up to the sell limits and hands the rest back, then runs {@code done}.
-     * On a server alone the pieces are paid in one bank credit, at once. On a network (counts held in
+     * On a server alone the pieces are paid at once, one bank credit a card. On a network (counts held in
      * the database) everything goes back to the inventory first and each card's lots are then sold
      * from it as a Sell would, so nothing waits in the grid for the database's answer.
      */
@@ -152,13 +162,13 @@ public class SellHereMenu extends AbstractContainerMenu {
         long paid = 0;
         int lots = 0;
         boolean held = false;
-        StringBuilder what = new StringBuilder();
+        Map<Integer, long[]> perCard = new java.util.LinkedHashMap<>(); // index -> {items, pieces}: one bank line a card, for the shop report
         if (shop != null && (hours == null || hours.isOpen(player.level()))) {
             Map<Integer, Integer> room = new HashMap<>();
             List<Integer> shown = shown(player.server, shop, now);
             for (int i = 0; i < GRID; i++) {
                 ItemStack s = grid.getStackInSlot(i);
-                int index = s.isEmpty() ? -1 : match(shop, s, shown);
+                int index = s.isEmpty() ? -1 : match(shop, s, shown, user);
                 if (index < 0) {
                     continue;
                 }
@@ -174,7 +184,9 @@ public class SellHereMenu extends AbstractContainerMenu {
                 Shops.hold(player.server, shop, index, player.getUUID(), true, n, now, got -> {}); // this server's counts: taken at once
                 paid += n * Shops.price(shop, it, false, now);
                 lots += n;
-                what.append(what.length() > 0 ? ", " : "").append(n * it.stack.getCount()).append(' ').append(it.stack.getHoverName().getString());
+                long[] c = perCard.computeIfAbsent(index, k -> new long[2]);
+                c[0] += (long) n * it.stack.getCount();
+                c[1] += n * Shops.price(shop, it, false, now);
             }
         }
         for (int i = 0; i < GRID; i++) {
@@ -186,8 +198,14 @@ public class SellHereMenu extends AbstractContainerMenu {
                 grid.setStackInSlot(i, ItemStack.EMPTY);
             }
         }
-        if (paid > 0 && shop != null) {
-            Bank.give(player.server, player.getUUID(), paid, com.mrgregles.bsp_core.bank.BankTransaction.Type.SOLD, shop.name, what.toString(), r -> {});
+        if (shop != null) {
+            for (var e : perCard.entrySet()) {
+                ShopItem it = shop.item(e.getKey());
+                if (e.getValue()[1] > 0) {
+                    Bank.give(player.server, player.getUUID(), e.getValue()[1], com.mrgregles.bsp_core.bank.BankTransaction.Type.SOLD, shop.name,
+                            e.getValue()[0] + " " + it.stack.getHoverName().getString(), shop.id, Shops.itemId(it), r -> {});
+                }
+            }
         }
         this.lots = lots;
         this.total = paid;
@@ -201,7 +219,7 @@ public class SellHereMenu extends AbstractContainerMenu {
         List<Integer> shown = shown(player.server, shop, now);
         for (int i = 0; i < GRID; i++) {
             ItemStack s = grid.getStackInSlot(i);
-            int index = s.isEmpty() || !open ? -1 : match(shop, s, shown);
+            int index = s.isEmpty() || !open ? -1 : match(shop, s, shown, user);
             if (index >= 0) {
                 wanted.merge(index, s.getCount() / shop.item(index).stack.getCount(), Integer::sum);
             }

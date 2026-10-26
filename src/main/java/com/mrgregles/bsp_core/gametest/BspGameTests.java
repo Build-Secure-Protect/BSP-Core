@@ -1304,6 +1304,632 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void a_rotating_shop_changes_at_its_fixed_time_without_repeats_by_weight_and_says_so(GameTestHelper h) {
+        var server = server(h);
+        String id = "weekly_" + Long.toHexString(System.nanoTime());
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Challenge", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        shop.displaySlots = 2;
+        shop.rotateAt = com.mrgregles.bsp_core.shop.Refill.parse("monday 00:00");
+        shop.noRepeat = true;
+        shop.broadcast = true;
+        var kinds = List.of(net.minecraft.world.item.Items.PAPER, net.minecraft.world.item.Items.BOOK, net.minecraft.world.item.Items.FEATHER, net.minecraft.world.item.Items.STRING, net.minecraft.world.item.Items.BONE);
+        for (var k : kinds) {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(k, 1);
+            it.sell = 50;
+            shop.add(it);
+        }
+        shop.item(4).weight = 0; // never drawn
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var zone = com.mrgregles.bsp_core.shop.Shops.zone();
+        long t0 = java.time.ZonedDateTime.of(2026, 10, 26, 12, 0, 0, 0, zone).toInstant().toEpochMilli(); // Monday noon
+        long week = 7 * 86_400_000L, mondayMidnight = t0 - 12 * 3_600_000L;
+        long[] clock = {t0};
+        List<net.minecraft.network.chat.Component> said = new ArrayList<>();
+        com.mrgregles.bsp_core.shop.Shops.useClock(() -> clock[0]);
+        com.mrgregles.bsp_core.shop.Shops.listenAnnouncements(said::add);
+        try {
+            var first = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            h.assertTrue(first.size() == 2 && said.isEmpty(), "the first draw is made and only noted: " + first);
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.nextChange(server, shop, clock[0]) == mondayMidnight + week, "the next change is next Monday 00:00");
+            clock[0] = t0 + 86_400_000L;
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]).equals(first), "Tuesday: the same cards");
+            clock[0] = mondayMidnight + week + 60_000L;
+            var second = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            h.assertTrue(second.size() == 2 && second.stream().noneMatch(first::contains) && !second.contains(4), "next Monday: two cards not shown yet this cycle, never the weight-0 one: " + first + " " + second);
+            h.assertTrue(said.size() == 1, "one announcement: " + said.size());
+            String line = said.get(0).getString();
+            h.assertTrue(line.startsWith("[Shops] Challenge now buys ") && line.contains(shop.item(second.get(0)).stack.getHoverName().getString()) && line.endsWith("Next change Monday 00:00."), "it names the shop, the cards and the next change: " + line);
+            com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            h.assertTrue(said.size() == 1, "and it is said once");
+            clock[0] = mondayMidnight + 2 * week + 60_000L;
+            var third = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            java.util.Set<Integer> cycle = new java.util.HashSet<>(first);
+            cycle.addAll(second);
+            h.assertTrue(cycle.equals(java.util.Set.of(0, 1, 2, 3)) && third.size() == 2 && new java.util.HashSet<>(third).size() == 2 && !third.contains(4), "the first cycle showed all four; a new one begins: " + third);
+            // switching an interval shop to a fixed time: the draw on show waits for the next fixed time
+            var timed = com.mrgregles.bsp_core.shop.Shops.create(server, "timed_" + Long.toHexString(System.nanoTime()), "Timed", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+            timed.intervalMs = 3_600_000L;
+            for (var k : kinds) {
+                var it = new com.mrgregles.bsp_core.shop.ShopItem();
+                it.stack = new net.minecraft.world.item.ItemStack(k, 1);
+                it.buy = 5;
+                timed.add(it);
+            }
+            clock[0] = t0;
+            var before = com.mrgregles.bsp_core.shop.Shops.visible(server, timed, clock[0]);
+            h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "rotateat", "day 06:00", 0, 0), timed.id).equals("saved")
+                    && timed.rotateAt.text().equals("day 06:00"), "the Workbench sets a fixed time");
+            clock[0] = t0 + 2 * 3_600_000L;
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.visible(server, timed, clock[0]).equals(before), "two hours on (the old interval up): the same cards until 06:00");
+            clock[0] = t0 + 18 * 3_600_000L + 60_000L;
+            com.mrgregles.bsp_core.shop.Shops.visible(server, timed, clock[0]);
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.ledger(server).draw(timed.id).drawnAt == clock[0], "Tuesday 06:01: a new draw");
+            h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "rotateat", "12h", 0, 0), timed.id).equals("bad_value")
+                    && com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "rotateat", "none", 0, 0), timed.id).equals("saved")
+                    && !timed.rotateAt.fixedTime(), "a countdown is not a change time; none goes back to the interval");
+            h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM, "weight", "250", 0, 0), timed.id).equals("saved")
+                    && timed.item(0).weight == 100, "a weight is kept to 100");
+            // weights: 100 against 1
+            var heavy = new java.util.Random(7);
+            int picked = 0;
+            timed.item(1).weight = 1;
+            for (int i = 0; i < 1000; i++) {
+                if (com.mrgregles.bsp_core.shop.Shops.pick(timed, List.of(0, 1), 1, heavy).get(0) == 0) {
+                    picked++;
+                }
+            }
+            h.assertTrue(picked > 950, "a weight-100 card is picked about a hundred times as often: " + picked);
+            // on a network: the cycle is kept with the network's draw, and every server tells its own players
+            var store = new MemoryCounts();
+            com.mrgregles.bsp_core.shop.Shops.useCountStore(store);
+            try {
+                clock[0] = mondayMidnight + 3 * week + 30_000L;
+                store.drawLocked(id, row -> {
+                    row.shown.clear();
+                    row.shown.addAll(List.of(0, 1));
+                    row.used.clear();
+                    row.used.addAll(List.of(0, 1));
+                    row.drawnAt = clock[0];
+                    row.nextAt = mondayMidnight + 4 * week;
+                    return row;
+                });
+                clock[0] += 30_000L;
+                int before2 = said.size();
+                var net = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+                h.assertTrue(net.equals(List.of(0, 1)) && said.size() == before2 + 1, "another server drew first: this one takes its draw and tells its own players: " + net);
+                clock[0] = mondayMidnight + 4 * week + 60_000L;
+                var next = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+                h.assertTrue(next.stream().noneMatch(List.of(0, 1)::contains) && store.draws.get(id).used.containsAll(next), "the network's cycle goes on from its own record: " + next + " " + store.draws.get(id).used);
+                h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.MOVE_ITEM, "", "", 0, 1), id).equals("saved")
+                        && store.draws.get(id).used.isEmpty(), "moving cards starts the cycle again on the network");
+            } finally {
+                com.mrgregles.bsp_core.shop.Shops.useCountStore(null);
+            }
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.useClock(null);
+            com.mrgregles.bsp_core.shop.Shops.listenAnnouncements(null);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_card_matching_by_item_takes_used_items_but_keeps_what_an_item_is(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, player.getUUID(), "Uma", g -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "used_" + Long.toHexString(System.nanoTime()), "Used Goods", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        java.util.function.BiFunction<net.minecraft.world.item.ItemStack, Long, Integer> card = (stack, sell) -> {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = stack;
+            it.sell = sell;
+            it.matchItem = true;
+            return shop.add(it);
+        };
+        var exact = new com.mrgregles.bsp_core.shop.ShopItem();
+        exact.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE);
+        exact.sell = 10;
+        int pe = shop.add(exact);
+        int pi = card.apply(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE), 4L);
+        int po = card.apply(net.minecraft.world.item.alchemy.PotionUtils.setPotion(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), net.minecraft.world.item.alchemy.Potions.STRENGTH), 20L);
+        int bo = card.apply(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(new net.minecraft.world.item.enchantment.EnchantmentInstance(net.minecraft.world.item.enchantment.Enchantments.MENDING, 1)), 30L);
+        int sh = card.apply(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SHULKER_BOX), 5L);
+        int fu = card.apply(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FURNACE), 3L);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var clean = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE);
+        var named = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE);
+        named.setHoverName(net.minecraft.network.chat.Component.literal("Old Pick"));
+        var damaged = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE);
+        damaged.setDamageValue(40);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sells(shop, pe, clean) && !com.mrgregles.bsp_core.shop.Shops.sells(shop, pi, clean), "a clean pickaxe goes to its exact card, not the item card");
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sells(shop, pi, named) && !com.mrgregles.bsp_core.shop.Shops.sells(shop, pe, named), "a renamed one goes to the item card only");
+        h.assertTrue(!com.mrgregles.bsp_core.shop.Shops.sells(shop, pi, damaged) && "damaged".equals(shop.item(pi).refusal(damaged)), "a damaged one is refused");
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        player.getInventory().add(damaged.copy());
+        com.mrgregles.bsp_core.shop.Shops.sell(server, player, shop, pi, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("damaged"), "selling only a damaged one says why: " + o[0]);
+        player.getInventory().add(clean.copy());
+        player.getInventory().add(named.copy());
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, player.getUUID());
+        com.mrgregles.bsp_core.shop.Shops.sellAll(server, player, shop, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].lots() == 2 && o[0].amount() == 14 && com.mrgregles.bsp_core.bank.Bank.pieces(server, player.getUUID()) == start + 14, "Sell all: the clean one for 10 at its exact card, the renamed one for 4: " + o[0]);
+        h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.IRON_PICKAXE) == 1, "the damaged one is kept");
+        var water = net.minecraft.world.item.alchemy.PotionUtils.setPotion(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), net.minecraft.world.item.alchemy.Potions.WATER);
+        var strength = net.minecraft.world.item.alchemy.PotionUtils.setPotion(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), net.minecraft.world.item.alchemy.Potions.STRENGTH);
+        strength.setHoverName(net.minecraft.network.chat.Component.literal("Gym Juice"));
+        h.assertTrue(!com.mrgregles.bsp_core.shop.Shops.sells(shop, po, water) && com.mrgregles.bsp_core.shop.Shops.sells(shop, po, strength), "a water bottle is not a Potion of Strength; a renamed Strength is");
+        var sharpness = net.minecraft.world.item.EnchantedBookItem.createForEnchantment(new net.minecraft.world.item.enchantment.EnchantmentInstance(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 1));
+        var mending = net.minecraft.world.item.EnchantedBookItem.createForEnchantment(new net.minecraft.world.item.enchantment.EnchantmentInstance(net.minecraft.world.item.enchantment.Enchantments.MENDING, 1));
+        mending.getOrCreateTag().putInt("RepairCost", 3);
+        h.assertTrue(!com.mrgregles.bsp_core.shop.Shops.sells(shop, bo, sharpness) && com.mrgregles.bsp_core.shop.Shops.sells(shop, bo, mending), "a Sharpness book is not a Mending book; a worked Mending book is");
+        var full = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SHULKER_BOX);
+        var inside = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND).save(new net.minecraft.nbt.CompoundTag());
+        inside.putByte("Slot", (byte) 0);
+        var items = new net.minecraft.nbt.ListTag();
+        items.add(inside);
+        full.getOrCreateTagElement("BlockEntityTag").put("Items", items);
+        var empty = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SHULKER_BOX);
+        empty.getOrCreateTagElement("BlockEntityTag").put("Items", new net.minecraft.nbt.ListTag());
+        h.assertTrue("holds_items".equals(shop.item(sh).refusal(full)) && com.mrgregles.bsp_core.shop.Shops.sells(shop, sh, empty), "a shulker box holding a diamond is refused; an emptied one sells");
+        player.getInventory().add(full.copy());
+        com.mrgregles.bsp_core.shop.Shops.sell(server, player, shop, sh, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("holds_items") && player.getInventory().countItem(net.minecraft.world.item.Items.SHULKER_BOX) == 1, "and selling it says to empty it first: " + o[0]);
+        var used = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FURNACE);
+        used.getOrCreateTagElement("BlockEntityTag").putInt("BurnTime", 120);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sells(shop, fu, used), "a used machine (data, no items inside) sells to its item card");
+        var menu = new com.mrgregles.bsp_core.shop.SellHereMenu(1, player.getInventory(), shop.id, null, false, null);
+        menu.grid.setStackInSlot(0, named.copy());
+        menu.grid.setStackInSlot(1, clean.copy());
+        long[] q = menu.quote(server, shop, System.currentTimeMillis());
+        h.assertTrue(q[0] == 2 && q[1] == 14, "the Sell Here box sends each to the right card: " + q[0] + ", " + q[1]);
+        var copy = com.mrgregles.bsp_core.shop.ShopItem.load(shop.item(pi).save());
+        h.assertTrue(copy.matchItem && !com.mrgregles.bsp_core.shop.ShopItem.load(shop.item(pe).save()).matchItem, "the match is saved with the card");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM, "match", "exact", pi, 0), shop.id).equals("saved")
+                && !shop.item(pi).matchItem, "the Workbench's Match line sets it");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_card_note_is_three_short_lines_that_never_reach_the_item(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, player.getUUID(), "Noa", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, player.getUUID(), 1_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        String id = "noted_" + Long.toHexString(System.nanoTime());
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Noted", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var it = new com.mrgregles.bsp_core.shop.ShopItem();
+        it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LANTERN);
+        it.buy = 5;
+        String long61 = "x".repeat(61);
+        it.setNote("The Challenge buys up to 4 each per week.| |Used machines welcome; empty them first.|" + long61 + "|a fourth line");
+        h.assertTrue(it.note.size() == 3 && it.note.get(1).equals("Used machines welcome; empty them first.") && it.note.get(2).length() == 60 && it.note.get(2).endsWith("…"),
+                "three lines at most, blank ones dropped, a long one cut at 60 with an ellipsis: " + it.note);
+        int i = shop.add(it);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        h.assertTrue(com.mrgregles.bsp_core.shop.ShopItem.load(it.save()).note.equals(it.note), "the note is saved with the card");
+        var card = new com.mrgregles.bsp_core.shop.ShopMenu.Card(i, it.stack.copy(), 5, -1, -1, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, false, "", false, List.copyOf(it.note), null);
+        var packet = new com.mrgregles.bsp_core.network.ShopDataPacket("Noted", "Noted", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP, false, true, false, 0, 0, 0, 0, 1, 7, 3, 0, "", 0, List.of(card), "", new String[0], false);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.ShopDataPacket.encode(packet, buf);
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopDataPacket.decode(buf).cards().get(0).note().equals(it.note), "the note reaches the shop screen");
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, i, 1, false, x -> o[0] = x);
+        var got = player.getInventory().items.stream().filter(s2 -> s2.is(net.minecraft.world.item.Items.LANTERN)).findFirst().orElse(net.minecraft.world.item.ItemStack.EMPTY);
+        h.assertTrue(o[0].ok() && !got.isEmpty() && got.getTag() == null, "the lantern a player buys carries no note: " + got.getTag());
+        var A = com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM;
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "note", "Only at spawn|Ask an admin", i, 0), id).equals("saved")
+                && shop.item(i).note.equals(List.of("Only at spawn", "Ask an admin")), "the Workbench's Note line takes lines with | between them");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "note", "", i, 0), id).equals("saved")
+                && shop.item(i).note.isEmpty(), "and an empty field clears it");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_import_checks_the_whole_file_then_creates_or_replaces_shops(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.shop.Shops.ledger(server);
+        String tag = Long.toHexString(System.nanoTime()), main = "imp_" + tag, sub = "imps_" + tag, rot = "impr_" + tag, file = "gametest_" + tag;
+        java.util.function.Function<String, String> builder = buy -> "{\"id\": \"" + main + "\", \"name\": \"Builder\", \"kind\": \"shop\", \"remote\": true, \"buyOnly\": true, "
+                + "\"hours\": {\"mode\": \"real\", \"open\": \"09:00\", \"close\": \"21:00\"}, \"pages\": [[{\"section\": \"" + sub + "\", \"item\": \"minecraft:oak_planks\", \"note\": \"opens Woods\"}, "
+                + "{\"item\": \"minecraft:white_concrete\", \"count\": 64, \"buy\": " + buy + ", \"stockPlayer\": 16, \"stockRefill\": {\"every\": \"day\", \"at\": \"00:00\"}, \"lore\": [\"Daily limit\"], \"note\": \"for people\"}]]}";
+        String woods = "{\"id\": \"" + sub + "\", \"name\": \"Woods\", \"kind\": \"sub\", \"parent\": \"" + main + "\", \"pages\": [[{\"item\": \"minecraft:birch_planks\", \"count\": 64, \"buy\": 200}]]}";
+        String challenge = "{\"id\": \"" + rot + "\", \"name\": \"Challenge\", \"kind\": \"rotating\", \"displaySlots\": 4, \"rotateAt\": {\"every\": \"monday\", \"at\": \"00:00\"}, \"noRepeat\": true, \"broadcast\": true, "
+                + "\"pages\": [[{\"item\": \"minecraft:iron_block\", \"sell\": 2500, \"sellPlayer\": 4, \"sellRefill\": \"rotation\", \"match\": \"item\", \"weight\": 3, \"sparkle\": true}]]}";
+        java.util.function.BiConsumer<String, String> put = (name, json) -> {
+            try {
+                java.nio.file.Files.createDirectories(com.mrgregles.bsp_core.shop.ShopImport.folder());
+                java.nio.file.Files.writeString(com.mrgregles.bsp_core.shop.ShopImport.file(name), json);
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        try {
+            put.accept(file, "{\"format\": 1, \"shops\": [" + builder.apply("320") + ", " + woods + ", " + challenge + "]}");
+            var r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, true);
+            h.assertTrue(r.ok() && r.shops().size() == 3 && r.cards() == 4 && ledger.shop(main) == null && java.nio.file.Files.exists(com.mrgregles.bsp_core.shop.ShopImport.folder().resolve(file + "-report.txt")),
+                    "test reads the whole file, writes the report and changes nothing: " + r.errors());
+            h.assertTrue(r.warnings().stream().anyMatch(w -> w.contains("\"sparkle\"")) && r.warnings().stream().noneMatch(w -> w.contains("\"note\"")), "a key this version does not know is a warning; note is for people: " + r.warnings());
+            r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, false);
+            var b = ledger.shop(main);
+            var w = ledger.shop(sub);
+            var c = ledger.shop(rot);
+            h.assertTrue(r.ok() && b != null && w != null && c != null && r.replaced().isEmpty(), "three shops created");
+            h.assertTrue(b.remote && b.buyOnly && b.hours.mode() == com.mrgregles.bsp_core.shop.OpenHours.Mode.REAL && b.hours.openMin() == 540 && b.hours.closeMin() == 1260
+                    && b.item(0).section.equals(sub) && b.item(1).stack.getCount() == 64 && b.item(1).buy == 320 && b.item(1).stockPlayer == 16
+                    && b.item(1).stockPlayerRule().text().equals("day 00:00") && b.item(1).note.equals(List.of("Daily limit")), "the shop's and its cards' keys arrive");
+            h.assertTrue(w.kind == com.mrgregles.bsp_core.shop.Shop.Kind.SUB && w.parent.equals(main), "the sub-section hangs under its parent");
+            var ci = c.item(0);
+            h.assertTrue(c.rotateAt.text().equals("monday 00:00") && c.noRepeat && c.broadcast && c.displaySlots == 4 && ci.sell == 2500 && ci.sellPlayer == 4
+                    && ci.sellRefill == com.mrgregles.bsp_core.shop.Refill.ROTATION && ci.matchItem && ci.weight == 3, "the rotation keys arrive, in the object form");
+            // replacing: the shop is replaced whole and its counts start again
+            ledger.stock(main, 1).buyers.put(UUID.randomUUID(), new com.mrgregles.bsp_core.shop.ShopLedger.Count(3, 0));
+            put.accept(file, "{\"format\": 1, \"shops\": [" + builder.apply("400") + "]}");
+            r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, false);
+            h.assertTrue(r.ok() && r.replaced().contains(main) && ledger.shop(main).item(1).buy == 400 && ledger.stock(main, 1).buyers.isEmpty() && ledger.shop(sub) != null,
+                    "a shop in the file replaces the one on the server and its counts start again; shops not in the file stay");
+            // one bad card refuses the whole file
+            put.accept(file, "{\"format\": 1, \"shops\": [" + builder.apply("999").replace("]]}", ", {\"item\": \"minecraft:not_an_item\", \"buy\": 1}]]}") + "]}");
+            r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, false);
+            h.assertTrue(!r.ok() && ledger.shop(main).item(1).buy == 400 && r.errors().stream().anyMatch(e -> e.contains("page 1 card 3") && e.contains("minecraft:not_an_item")),
+                    "an unknown item refuses the file, says where, and nothing changes: " + r.errors());
+            // coins paid out, rotation off a rotating shop, a full page, a loop
+            String coins = "{\"id\": \"" + main + "\", \"pages\": [[{\"item\": \"minecraft:gold_ingot\", \"sell\": 1, \"currency\": \"copper\"}, {\"item\": \"minecraft:stone\", \"buy\": 10, \"sell\": 10}, "
+                    + "{\"item\": \"minecraft:dirt\", \"sell\": 1, \"sellRefill\": \"rotation\"}]]}";
+            put.accept(file, "{\"format\": 1, \"shops\": [" + coins + "]}");
+            r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, true);
+            h.assertTrue(r.errors().stream().anyMatch(e -> e.contains("coins made outside the Coin Factory")) && r.errors().stream().anyMatch(e -> e.contains("does not rotate")),
+                    "a coin sell price and a rotation refill off a rotating shop are errors: " + r.errors());
+            h.assertTrue(r.warnings().stream().anyMatch(x -> x.contains("buy-and-sell-back loop")), "selling back at the buy price is a warning");
+            put.accept(file, "{\"format\": 1, \"allowCoinPayouts\": true, \"shops\": [" + coins.replace(", {\"item\": \"minecraft:dirt\", \"sell\": 1, \"sellRefill\": \"rotation\"}", "") + "]}");
+            r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, true);
+            h.assertTrue(r.ok(), "allowCoinPayouts lets a coin sell price through: " + r.errors());
+            StringBuilder page = new StringBuilder();
+            for (int i = 0; i < 22; i++) {
+                page.append(i == 0 ? "" : ", ").append("{\"item\": \"minecraft:stone\", \"buy\": 1}");
+            }
+            put.accept(file, "{\"format\": 1, \"shops\": [{\"id\": \"" + main + "\", \"pages\": [[" + page + "]]}]}");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopImport.run(server, file, true).errors().stream().anyMatch(e -> e.contains("a page holds 21")), "22 cards on a page is an error");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopImport.file("../server") == null && com.mrgregles.bsp_core.shop.ShopImport.file("a/b") == null && !com.mrgregles.bsp_core.shop.ShopImport.run(server, "../ops", true).ok(),
+                    "a path out of the folder is refused");
+            put.accept(file, "{\"format\": 2, \"shops\": []}");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopImport.run(server, file, true).errors().stream().anyMatch(e -> e.contains("\"format\" must be 1")), "only format 1 is read");
+        } finally {
+            for (String id : List.of(main, sub, rot)) {
+                if (ledger.shop(id) != null) {
+                    com.mrgregles.bsp_core.shop.Shops.delete(server, id);
+                }
+            }
+            try {
+                java.nio.file.Files.deleteIfExists(com.mrgregles.bsp_core.shop.ShopImport.file(file));
+                java.nio.file.Files.deleteIfExists(com.mrgregles.bsp_core.shop.ShopImport.folder().resolve(file + "-report.txt"));
+            } catch (java.io.IOException ignored) {
+                // a leftover test file in the run folder
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_export_then_import_gives_the_same_shops_back(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.shop.Shops.ledger(server);
+        String tag = Long.toHexString(System.nanoTime()), top = "exp_" + tag, sub = "exps_" + tag, rot = "expr_" + tag, file = "gametest_exp_" + tag;
+        var a = com.mrgregles.bsp_core.shop.Shops.create(server, top, "Builder's Yard", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        a.remote = true;
+        a.style = "passbook";
+        a.columns = 5;
+        a.rows = 2;
+        a.hours = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.REAL, 540, 1260);
+        a.offerPercent = 15;
+        a.offerEndMs = java.time.LocalDateTime.of(2026, 12, 31, 23, 59).atZone(com.mrgregles.bsp_core.shop.Shops.zone()).toInstant().toEpochMilli();
+        var section = new com.mrgregles.bsp_core.shop.ShopItem();
+        section.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_PLANKS);
+        section.section = sub;
+        a.add(section);
+        var full = new com.mrgregles.bsp_core.shop.ShopItem();
+        full.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 4);
+        full.stack.setHoverName(net.minecraft.network.chat.Component.literal("Yard Iron"));
+        full.buy = 120;
+        full.sell = 30;
+        full.stockGlobal = 10;
+        full.stockPlayer = 3;
+        full.stockRefill = com.mrgregles.bsp_core.shop.Refill.after(90);
+        full.stockPlayerRefill = com.mrgregles.bsp_core.shop.Refill.parse("day 06:00");
+        full.sellGlobal = 20;
+        full.sellPlayer = 4;
+        full.sellRefill = com.mrgregles.bsp_core.shop.Refill.parse("monday 00:00");
+        full.instant = true;
+        full.hidden = true;
+        full.matchItem = true;
+        full.weight = 7;
+        full.setNote("Yard prices|Ask at the gate");
+        a.add(full);
+        var coin = new com.mrgregles.bsp_core.shop.ShopItem();
+        coin.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT);
+        coin.buy = 2;
+        coin.sell = 1;
+        coin.currency = 0;
+        a.add(coin);
+        var b = com.mrgregles.bsp_core.shop.Shops.create(server, sub, "Woods", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        b.parent = top;
+        b.hours = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, 0, 12000);
+        var plank = new com.mrgregles.bsp_core.shop.ShopItem();
+        plank.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BIRCH_PLANKS, 64);
+        plank.buy = 200;
+        b.add(plank);
+        var c = com.mrgregles.bsp_core.shop.Shops.create(server, rot, "Weekend", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        c.parent = top;
+        c.displaySlots = 3;
+        c.intervalMs = 48 * 3_600_000L;
+        c.rotateAt = com.mrgregles.bsp_core.shop.Refill.parse("friday 18:00");
+        c.noRepeat = true;
+        c.broadcast = true;
+        var bones = new com.mrgregles.bsp_core.shop.ShopItem();
+        bones.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BONE, 16);
+        bones.sell = 8;
+        bones.sellPlayer = 2;
+        bones.sellRefill = com.mrgregles.bsp_core.shop.Refill.ROTATION;
+        c.add(bones);
+        for (var s0 : List.of(a, b, c)) {
+            com.mrgregles.bsp_core.shop.Shops.save(server, s0);
+        }
+        java.util.function.Function<com.mrgregles.bsp_core.shop.Shop, net.minecraft.nbt.CompoundTag> record = s0 -> {
+            var t0 = s0.save();
+            t0.remove("RotateSince"); // set when a change time is set, so an import sets it afresh
+            return t0;
+        };
+        Map<String, net.minecraft.nbt.CompoundTag> before = new HashMap<>();
+        List.of(a, b, c).forEach(s0 -> before.put(s0.id, record.apply(s0)));
+        try {
+            var r = com.mrgregles.bsp_core.shop.ShopExport.run(server, top, file, false);
+            h.assertTrue(r.ok() && r.shops() == 3 && r.cards() == 5, "the shop is written with its two sub-shops: " + r);
+            String json = java.nio.file.Files.readString(com.mrgregles.bsp_core.shop.ShopImport.file(file));
+            h.assertTrue(json.contains("\"allowCoinPayouts\": true") && json.contains("\"every\": \"friday\"") && json.contains("\"after\": 90") && !json.contains("\"note\""),
+                    "rules in the object form; the coin sell price lets the file allow coin payouts; no people's notes");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopExport.run(server, top, file, false).key().equals("exists") && com.mrgregles.bsp_core.shop.ShopExport.run(server, top, file, true).ok(),
+                    "an existing file is kept unless overwrite is given");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopExport.run(server, "no_such_" + tag, file + "x", false).key().equals("no_shop")
+                    && com.mrgregles.bsp_core.shop.ShopExport.run(server, top, "../escape", false).key().equals("bad_name"), "an unknown shop and a path out of the folder are refused");
+            // change and remove, then import the file back
+            a.item(1).buy = 999;
+            a.name = "Changed";
+            com.mrgregles.bsp_core.shop.Shops.save(server, a);
+            com.mrgregles.bsp_core.shop.Shops.delete(server, sub);
+            var back = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, false);
+            h.assertTrue(back.ok() && back.shops().size() == 3 && back.replaced().containsAll(List.of(top, rot)) && !back.replaced().contains(sub), "the file imports back: " + back.errors());
+            for (String id : List.of(top, sub, rot)) {
+                var now = ledger.shop(id);
+                h.assertTrue(now != null && record.apply(now).equals(before.get(id)), "shop " + id + " is the same as before the export, key for key:\n" + (now == null ? "missing" : record.apply(now)) + "\n" + before.get(id));
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            for (String id : List.of(top, sub, rot)) {
+                if (ledger.shop(id) != null) {
+                    com.mrgregles.bsp_core.shop.Shops.delete(server, id);
+                }
+            }
+            try {
+                java.nio.file.Files.deleteIfExists(com.mrgregles.bsp_core.shop.ShopImport.file(file));
+                java.nio.file.Files.deleteIfExists(com.mrgregles.bsp_core.shop.ShopImport.folder().resolve(file + "-report.txt"));
+            } catch (java.io.IOException ignored) {
+                // a leftover test file in the run folder
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void cards_and_shops_can_need_a_permission_or_playtime_and_lock_or_hide(GameTestHelper h) {
+        var server = server(h);
+        var plain = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var gold = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        for (var p : List.of(plain, gold)) {
+            com.mrgregles.bsp_core.bank.Bank.ensure(server, p.getUUID(), "Req", g -> {});
+            com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        }
+        String tag = Long.toHexString(System.nanoTime());
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "req_" + tag, "Advanced", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        shop.remote = true;
+        java.util.function.BiFunction<net.minecraft.world.item.Item, com.mrgregles.bsp_core.shop.Requirement, Integer> card = (item, req) -> {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(item);
+            it.buy = 10;
+            it.sell = 2;
+            it.requires = req;
+            return shop.add(it);
+        };
+        int open = card.apply(net.minecraft.world.item.Items.STONE, com.mrgregles.bsp_core.shop.Requirement.NONE);
+        int rank = card.apply(net.minecraft.world.item.Items.DIAMOND, com.mrgregles.bsp_core.shop.Requirement.parse("permission bsp.shop.gold reason Gold rank and up"));
+        int hours = card.apply(net.minecraft.world.item.Items.EMERALD, com.mrgregles.bsp_core.shop.Requirement.parse("playtime 10 hide"));
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Requirement.usePermissions((id, node) -> id.equals(gold.getUUID()) && node.equals("bsp.shop.gold"));
+        try {
+            var lock = com.mrgregles.bsp_core.shop.Shops.lock(shop, rank, plain);
+            h.assertTrue(lock != null && lock.permission() && lock.reason().equals("Gold rank and up") && !lock.hide(), "the Gold card is locked for a plain player, shown with its reason: " + lock);
+            com.mrgregles.bsp_core.shop.Shops.buy(server, plain, shop, rank, 1, false, x -> o[0] = x);
+            h.assertTrue(!o[0].ok() && o[0].key().equals("locked"), "and cannot be bought by them: " + o[0]);
+            com.mrgregles.bsp_core.shop.Shops.buy(server, gold, shop, rank, 1, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok(), "a player with the node buys it: " + o[0]);
+            plain.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 3));
+            com.mrgregles.bsp_core.shop.Shops.sell(server, plain, shop, rank, 1, false, x -> o[0] = x);
+            h.assertTrue(!o[0].ok() && o[0].key().equals("locked"), "nor sold to by them: " + o[0]);
+            com.mrgregles.bsp_core.shop.Shops.sellAll(server, plain, shop, false, x -> o[0] = x);
+            h.assertTrue(plain.getInventory().countItem(net.minecraft.world.item.Items.DIAMOND) == 3, "Sell all leaves a locked card's items alone");
+            var box = new com.mrgregles.bsp_core.shop.SellHereMenu(1, plain.getInventory(), shop.id, null, false, null);
+            box.grid.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 2));
+            h.assertTrue(box.quote(server, shop, System.currentTimeMillis())[0] == 0, "and so does the Sell Here box");
+            var play = com.mrgregles.bsp_core.shop.Shops.lock(shop, hours, plain);
+            h.assertTrue(play != null && play.hide() && play.hours() == 10 && play.playedMinutes() == 0, "with no playtime the 10-hour card is hidden: " + play);
+            plain.getStats().setValue(plain, net.minecraft.stats.Stats.CUSTOM.get(net.minecraft.stats.Stats.PLAY_TIME), 10 * 72_000);
+            h.assertTrue(com.mrgregles.bsp_core.shop.Requirement.playMinutes(plain) == 600 && com.mrgregles.bsp_core.shop.Shops.lock(shop, hours, plain) == null,
+                    "ten hours on this server's Time Played opens it (no BSP-RankUp here)");
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.lock(shop, open, plain) == null, "a card with no requirement is open to all");
+            // a whole shop: hidden from those without the node, or shown with every card locked
+            shop.requires = com.mrgregles.bsp_core.shop.Requirement.parse("permission bsp.shop.gold hide");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopListMenu.remote(server, h.getLevel(), plain).stream().noneMatch(e -> e.id().equals(shop.id))
+                    && com.mrgregles.bsp_core.shop.ShopListMenu.remote(server, h.getLevel(), gold).stream().anyMatch(e -> e.id().equals(shop.id)), "a hidden shop is left off the Shopping Network list of those it is hidden from");
+            com.mrgregles.bsp_core.shop.ShopOpener.open(plain, shop, null);
+            h.assertTrue(plain.containerMenu == plain.inventoryMenu, "and does not open for them");
+            shop.requires = com.mrgregles.bsp_core.shop.Requirement.parse("permission bsp.shop.gold show");
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.lock(shop, open, plain) != null && com.mrgregles.bsp_core.shop.Shops.lock(shop, open, gold) == null, "a shown shop locks every card for them");
+            com.mrgregles.bsp_core.shop.Requirement.usePermissions(null);
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.lock(shop, open, plain) != null, "without LuckPerms only operators pass a permission");
+            // the command form, the record and the file
+            var spec = com.mrgregles.bsp_core.shop.Requirement.parse("playtime 10 permission bsp.shop.gold hide reason Gold and ten hours");
+            h.assertTrue(spec != null && spec.text().equals("permission bsp.shop.gold playtime 10 hide reason Gold and ten hours") && com.mrgregles.bsp_core.shop.Requirement.parse("permission") == null
+                    && com.mrgregles.bsp_core.shop.Requirement.parse("none") == com.mrgregles.bsp_core.shop.Requirement.NONE, "the command form reads and writes back");
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shop.load(shop.save()).requires.equals(shop.requires) && com.mrgregles.bsp_core.shop.ShopItem.load(shop.item(rank).save()).requires.equals(shop.item(rank).requires),
+                    "requirements are saved with the shop and the card");
+            String json = com.mrgregles.bsp_core.shop.ShopExport.write(List.of(shop)).toString();
+            h.assertTrue(json.contains("\"requires\":{\"permission\":\"bsp.shop.gold\",\"whenLocked\":\"show\"}") && json.contains("\"reason\":\"Gold rank and up\""), "the export writes them: " + json);
+        } finally {
+            com.mrgregles.bsp_core.shop.Requirement.usePermissions(null);
+            com.mrgregles.bsp_core.shop.Shops.delete(server, shop.id);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_search_sends_the_shops_tree_and_finds_a_cards_page(GameTestHelper h) {
+        var server = server(h);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        String tag = Long.toHexString(System.nanoTime());
+        var top = com.mrgregles.bsp_core.shop.Shops.create(server, "srch_" + tag, "Decor", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var woods = com.mrgregles.bsp_core.shop.Shops.create(server, "srchw_" + tag, "Woods", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var weekly = com.mrgregles.bsp_core.shop.Shops.create(server, "srchr_" + tag, "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        woods.parent = top.id;
+        weekly.parent = top.id;
+        weekly.displaySlots = 1;
+        var open = new com.mrgregles.bsp_core.shop.ShopItem();
+        open.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_PLANKS);
+        open.section = woods.id;
+        top.add(open);
+        for (int i = 0; i < 24; i++) {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(i == 23 ? net.minecraft.world.item.Items.DARK_OAK_STAIRS : net.minecraft.world.item.Items.OAK_LOG, i + 1);
+            it.buy = 10 + i;
+            woods.add(it);
+        }
+        var hidden = new com.mrgregles.bsp_core.shop.ShopItem();
+        hidden.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_BLOCK);
+        hidden.buy = 1;
+        hidden.requires = com.mrgregles.bsp_core.shop.Requirement.parse("playtime 100 hide");
+        woods.add(hidden);
+        var shown = new com.mrgregles.bsp_core.shop.ShopItem();
+        shown.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.EMERALD_BLOCK);
+        shown.buy = 1;
+        shown.requires = com.mrgregles.bsp_core.shop.Requirement.parse("playtime 100 show");
+        woods.add(shown);
+        for (var item : List.of(net.minecraft.world.item.Items.PAPER, net.minecraft.world.item.Items.BOOK, net.minecraft.world.item.Items.FEATHER)) {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(item);
+            it.sell = 3;
+            weekly.add(it);
+        }
+        for (var s0 : List.of(top, woods, weekly)) {
+            com.mrgregles.bsp_core.shop.Shops.save(server, s0);
+        }
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopSearch.searchable(server, top) && !com.mrgregles.bsp_core.shop.ShopSearch.searchable(server, weekly), "a tree of more than a page shows the box; a small shop does not");
+            var tree = com.mrgregles.bsp_core.shop.ShopSearch.tree(server, top, player);
+            h.assertTrue(tree.size() == 24 + 1 + 1, "the tree: 24 wood cards, the shown locked card, one card on show in the rotating shop, no section card, no hidden card: " + tree.size());
+            h.assertTrue(tree.stream().noneMatch(e -> e.stack().is(net.minecraft.world.item.Items.DIAMOND_BLOCK)) && tree.stream().anyMatch(e -> e.stack().is(net.minecraft.world.item.Items.EMERALD_BLOCK) && e.locked()),
+                    "a card hidden by its requirement is not found; a shown locked one is, marked locked");
+            var stairs = tree.stream().filter(e -> e.stack().is(net.minecraft.world.item.Items.DARK_OAK_STAIRS)).findFirst().orElseThrow();
+            h.assertTrue(stairs.shop().equals(woods.id) && stairs.path().equals("Decor > Woods") && stairs.section().equals("Woods") && stairs.buy() == 33, "a result knows its section and its path: " + stairs);
+            int drawn = com.mrgregles.bsp_core.shop.Shops.visible(server, weekly, System.currentTimeMillis()).get(0);
+            h.assertTrue(tree.stream().filter(e -> e.shop().equals(weekly.id)).allMatch(e -> e.index() == drawn && e.sell() == 3), "a rotating section gives only its card on show");
+            woods.columns = 7;
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopSearch.pageOf(server, woods, player, stairs.index()) == 1 && com.mrgregles.bsp_core.shop.ShopSearch.pageOf(server, woods, player, 0) == 0,
+                    "the 24th card of Woods is on its second page (21 a page)");
+            var packet = new com.mrgregles.bsp_core.network.ShopTreePacket(tree);
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.ShopTreePacket.encode(packet, buf);
+            h.assertTrue(com.mrgregles.bsp_core.network.ShopTreePacket.decode(buf).entries().size() == tree.size(), "the tree reaches the player's game");
+        } finally {
+            for (var s0 : List.of(top, woods, weekly)) {
+                com.mrgregles.bsp_core.shop.Shops.delete(server, s0.id);
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_report_adds_up_the_bank_logs_shop_trades(GameTestHelper h) {
+        var server = server(h);
+        var ann = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var bob = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        String tag = Long.toHexString(System.nanoTime());
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, ann.getUUID(), "Ann" + tag.substring(0, 4), g -> {});
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, bob.getUUID(), "Bob" + tag.substring(0, 4), g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, ann.getUUID(), 1_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "rep_" + tag, "Report Shop " + tag, com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var iron = new com.mrgregles.bsp_core.shop.ShopItem();
+        iron.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT);
+        iron.buy = 10;
+        iron.sell = 4;
+        int ii = shop.add(iron);
+        var gold = new com.mrgregles.bsp_core.shop.ShopItem();
+        gold.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT);
+        gold.sell = 1;
+        gold.currency = 0;
+        int gi = shop.add(gold);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Shops.buy(server, ann, shop, ii, 3, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok(), "Ann buys three iron: " + o[0]);
+        var row = com.mrgregles.bsp_core.bank.BankLedger.get(server).log(ann.getUUID()).get(0);
+        h.assertTrue(row.shopId().equals(shop.id) && row.itemId().equals("minecraft:iron_ingot") && com.mrgregles.bsp_core.bank.BankTransaction.load(row.save()).equals(row),
+                "a buy's bank row names the shop and the item, and keeps them when saved: " + row);
+        bob.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 2));
+        bob.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT, 1));
+        com.mrgregles.bsp_core.shop.Shops.sell(server, bob, shop, ii, 2, false, x -> o[0] = x);
+        com.mrgregles.bsp_core.shop.Shops.sell(server, bob, shop, gi, 1, false, x -> o[0] = x);
+        // a row from before rows named the shop: only the shop's name and the text
+        com.mrgregles.bsp_core.bank.Bank.record(server, ann.getUUID(), new com.mrgregles.bsp_core.bank.BankTransaction(System.currentTimeMillis(), com.mrgregles.bsp_core.bank.BankTransaction.Type.SOLD,
+                shop.name, "3 Iron Ingot", 12, -1, 0, com.mrgregles.bsp_core.bank.Bank.serverId()));
+        // the Sell Here box writes a line per card, naming the shop
+        var box = new com.mrgregles.bsp_core.shop.SellHereMenu(1, bob.getInventory(), shop.id, null, false, null);
+        box.grid.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 1));
+        box.sellAll(bob);
+        var boxRow = com.mrgregles.bsp_core.bank.BankLedger.get(server).log(bob.getUUID()).get(0);
+        h.assertTrue(boxRow.shopId().equals(shop.id) && boxRow.detail().startsWith("1 ") && boxRow.pieces() == 4, "the Sell Here box's sale is its own row with the shop: " + boxRow);
+        com.mrgregles.bsp_core.shop.ShopReport.Report[] rep = new com.mrgregles.bsp_core.shop.ShopReport.Report[1];
+        com.mrgregles.bsp_core.shop.ShopReport.rows(server, System.currentTimeMillis() - 86_400_000L, rows -> rep[0] = com.mrgregles.bsp_core.shop.ShopReport.build(server, rows, 1, false, shop));
+        var r = rep[0];
+        try {
+            h.assertTrue(r != null && r.rows() == 5, "five trades for this shop: " + (r == null ? "none" : r.rows()));
+            var line = r.shops().stream().filter(l -> l.shop.equals(shop.id)).findFirst().orElseThrow();
+            h.assertTrue(line.in == 30 && line.out == 12 && line.net() == -18 && line.itemsBought == 3 && line.itemsSold == 4 && line.coinsOut[0] == 1, "the shop's line: in 30, out 12 (8 and 4), net -18, coins apart: in "
+                    + line.in + " out " + line.out + " sold " + line.itemsSold + " coins " + line.coinsOut[0]);
+            var older = r.shops().stream().filter(l -> l.shop.isEmpty()).findFirst().orElseThrow();
+            h.assertTrue(older.out == 12 && older.shopName.endsWith("(older rows)") && r.items().stream().anyMatch(l -> l.shop.isEmpty() && l.item.equals("Iron Ingot")),
+                    "an older row counts by the shop's name, its item from the text");
+            h.assertTrue(r.total().out == 24 && r.total().in == 30, "the total: out 24, in 30");
+            h.assertTrue(r.sellers().get(0).getValue() == 12 && r.sellers().get(1).getValue() == 12, "the sellers, most first: " + r.sellers());
+            var csv = java.nio.file.Files.readAllLines(com.mrgregles.bsp_core.shop.ShopImport.folder().resolve(r.file()));
+            h.assertTrue(csv.get(0).startsWith("shop,shop_name,item,") && csv.stream().anyMatch(l -> l.contains("\"minecraft:iron_ingot\"")) && csv.get(csv.size() - 1).contains("\"all shops\""),
+                    "the CSV has a row per shop and item and a total");
+            h.assertTrue(com.mrgregles.bsp_core.shop.ShopReport.days(1000) == 90 && com.mrgregles.bsp_core.shop.ShopReport.leadingCount("64 Oak Planks, 3 Copper coins") == 64
+                    && com.mrgregles.bsp_core.shop.ShopReport.itemText("64 Oak Planks, 3 Copper coins").equals("Oak Planks"), "the period stops at the log's 90 days; counts and names come out of the text");
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.delete(server, shop.id);
+            try {
+                if (r != null && !r.file().isEmpty()) {
+                    java.nio.file.Files.deleteIfExists(com.mrgregles.bsp_core.shop.ShopImport.folder().resolve(r.file()));
+                }
+            } catch (java.io.IOException ignored) {
+                // a leftover test file in the run folder
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public void shop_configurator_edits_save_through_the_shop_record(GameTestHelper h) {
         var server = server(h);
         String id = "cfg_" + Long.toHexString(System.nanoTime());

@@ -137,11 +137,21 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_log") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, ms BIGINT NOT NULL, "
                     + "type VARCHAR(16) NOT NULL, with_name VARCHAR(64) NOT NULL, detail VARCHAR(255) NOT NULL, pieces BIGINT NOT NULL, coin_tier INT NOT NULL, coin_count INT NOT NULL, "
                     + "server_id VARCHAR(64) NOT NULL, INDEX (uuid, ms))");
+            for (String column : List.of("shop_id VARCHAR(32) NOT NULL DEFAULT ''", "item_id VARCHAR(128) NOT NULL DEFAULT ''")) {
+                try { // the shop report's columns, added to a bank_log made before them
+                    st.executeUpdate("ALTER TABLE " + t("bank_log") + " ADD COLUMN " + column);
+                } catch (SQLException e) {
+                    if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                        throw e;
+                    }
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shops") + " (id VARCHAR(32) NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, "
                     + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_counts") + " (shop VARCHAR(32) NOT NULL, card INT NOT NULL, side CHAR(1) NOT NULL, who VARCHAR(36) NOT NULL, "
                     + "left_lots INT NOT NULL, at_ms BIGINT NOT NULL, PRIMARY KEY (shop, card, side, who))");
-            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_draws") + " (shop VARCHAR(32) NOT NULL PRIMARY KEY, shown VARCHAR(1024) NOT NULL, drawn_at BIGINT NOT NULL, next_at BIGINT NOT NULL)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_draws") + " (shop VARCHAR(32) NOT NULL PRIMARY KEY, shown VARCHAR(1024) NOT NULL, used VARCHAR(4096) NOT NULL DEFAULT '', "
+                    + "drawn_at BIGINT NOT NULL, next_at BIGINT NOT NULL)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_boxes") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, slots INT NOT NULL, rent_until BIGINT NOT NULL, "
                     + "items MEDIUMTEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("teams") + " (id CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(32) NOT NULL, colour VARCHAR(16) NOT NULL, "
@@ -881,7 +891,7 @@ final class MySqlStore implements AutoCloseable {
     }
 
     void bankLog(UUID id, BankTransaction tx) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             ps.setString(1, id.toString());
             ps.setLong(2, tx.ms());
             ps.setString(3, tx.type().name());
@@ -891,6 +901,8 @@ final class MySqlStore implements AutoCloseable {
             ps.setInt(7, tx.coinTier());
             ps.setInt(8, tx.coinCount());
             ps.setString(9, tx.server());
+            ps.setString(10, tx.shopId());
+            ps.setString(11, tx.itemId().length() > 128 ? tx.itemId().substring(0, 128) : tx.itemId());
             ps.executeUpdate();
         }
     }
@@ -904,7 +916,7 @@ final class MySqlStore implements AutoCloseable {
             ps.executeUpdate();
         }
         List<BankTransaction> out = new ArrayList<>();
-        try (PreparedStatement ps = conn().prepareStatement("SELECT ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id FROM " + t("bank_log")
+        try (PreparedStatement ps = conn().prepareStatement("SELECT ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id FROM " + t("bank_log")
                 + " WHERE uuid = ? ORDER BY ms DESC, id DESC LIMIT ?")) {
             ps.setString(1, id.toString());
             ps.setInt(2, limit);
@@ -916,7 +928,23 @@ final class MySqlStore implements AutoCloseable {
                     } catch (IllegalArgumentException e) {
                         type = BankTransaction.Type.ADMIN;
                     }
-                    out.add(new BankTransaction(rs.getLong(1), type, rs.getString(3), rs.getString(4), rs.getLong(5), rs.getInt(6), rs.getInt(7), rs.getString(8)));
+                    out.add(new BankTransaction(rs.getLong(1), type, rs.getString(3), rs.getString(4), rs.getLong(5), rs.getInt(6), rs.getInt(7), rs.getString(8), rs.getString(9), rs.getString(10)));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Every shop trade (BOUGHT and SOLD rows) since {@code since}, with the player's name, for the shop report. */
+    List<com.mrgregles.bsp_core.shop.ShopReport.Row> shopTrades(long since) throws SQLException {
+        List<com.mrgregles.bsp_core.shop.ShopReport.Row> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT l.uuid, COALESCE(a.name, ''), l.ms, l.type, l.with_name, l.detail, l.pieces, l.coin_tier, l.coin_count, l.server_id, l.shop_id, l.item_id FROM "
+                + t("bank_log") + " l LEFT JOIN " + t("bank_accounts") + " a ON a.uuid = l.uuid WHERE l.type IN ('BOUGHT', 'SOLD') AND l.ms >= ?")) {
+            ps.setLong(1, since);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new com.mrgregles.bsp_core.shop.ShopReport.Row(UUID.fromString(rs.getString(1)), rs.getString(2), new BankTransaction(rs.getLong(3),
+                            BankTransaction.Type.valueOf(rs.getString(4)), rs.getString(5), rs.getString(6), rs.getLong(7), rs.getInt(8), rs.getInt(9), rs.getString(10), rs.getString(11), rs.getString(12))));
                 }
             }
         }
@@ -1047,26 +1075,24 @@ final class MySqlStore implements AutoCloseable {
                 ps.executeUpdate();
             }
             var d = new com.mrgregles.bsp_core.shop.ShopLedger.Draw();
-            try (PreparedStatement ps = c.prepareStatement("SELECT shown, drawn_at, next_at FROM " + t("shop_draws") + " WHERE shop = ? FOR UPDATE")) {
+            try (PreparedStatement ps = c.prepareStatement("SELECT shown, used, drawn_at, next_at FROM " + t("shop_draws") + " WHERE shop = ? FOR UPDATE")) {
                 ps.setString(1, shop);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        for (String n : rs.getString(1).split(",")) {
-                            if (!n.isBlank()) {
-                                d.shown.add(Integer.parseInt(n.trim()));
-                            }
-                        }
-                        d.drawnAt = rs.getLong(2);
-                        d.nextAt = rs.getLong(3);
+                        ints(rs.getString(1), d.shown);
+                        ints(rs.getString(2), d.used);
+                        d.drawnAt = rs.getLong(3);
+                        d.nextAt = rs.getLong(4);
                     }
                 }
             }
             var out = change.apply(d);
-            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("shop_draws") + " SET shown = ?, drawn_at = ?, next_at = ? WHERE shop = ?")) {
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("shop_draws") + " SET shown = ?, used = ?, drawn_at = ?, next_at = ? WHERE shop = ?")) {
                 ps.setString(1, String.join(",", out.shown.stream().map(String::valueOf).toList()));
-                ps.setLong(2, out.drawnAt);
-                ps.setLong(3, out.nextAt);
-                ps.setString(4, shop);
+                ps.setString(2, String.join(",", out.used.stream().map(String::valueOf).toList()));
+                ps.setLong(3, out.drawnAt);
+                ps.setLong(4, out.nextAt);
+                ps.setString(5, shop);
                 ps.executeUpdate();
             }
             c.commit();
@@ -1076,6 +1102,15 @@ final class MySqlStore implements AutoCloseable {
             throw e;
         } finally {
             c.setAutoCommit(auto);
+        }
+    }
+
+    /** "3,0,5" into numbers. */
+    private static void ints(String text, List<Integer> into) {
+        for (String n : text.split(",")) {
+            if (!n.isBlank()) {
+                into.add(Integer.parseInt(n.trim()));
+            }
         }
     }
 

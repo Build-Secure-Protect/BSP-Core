@@ -32,6 +32,16 @@ public final class Shop {
     /** Rotating: how many of the pool show, and how often a new draw happens. */
     public int displaySlots = 4;
     public long intervalMs = 12 * 3_600_000L;
+    /**
+     * Rotating: a fixed change time ({@code day 06:00} or {@code monday 00:00}) in place of the
+     * interval, NEVER for none; and when it was set (a draw from before waits for the next time).
+     */
+    public Refill rotateAt = Refill.NEVER;
+    public long rotateSince;
+    /** Rotating: every card shows once before any shows again; and a chat line to every player when the cards change. */
+    public boolean noRepeat, broadcast;
+    /** What a player needs for the whole shop: hidden from them (not on the network list, not opened) or shown with every card locked. */
+    public Requirement requires = Requirement.NONE;
     /** Special offer: the discount and when it ends (0 = no end). */
     public int offerPercent;
     public long offerEndMs;
@@ -140,6 +150,11 @@ public final class Shop {
         t.putInt("Columns", columns);
         t.putInt("Rows", rows);
         t.putLong("Interval", intervalMs);
+        t.putString("RotateAt", rotateAt.text());
+        t.putLong("RotateSince", rotateSince);
+        t.putBoolean("NoRepeat", noRepeat);
+        t.putBoolean("Broadcast", broadcast);
+        t.put("Requires", requires.save());
         t.putInt("OfferPercent", offerPercent);
         t.putLong("OfferEnd", offerEndMs);
         t.put("Hours", hours.save());
@@ -173,6 +188,12 @@ public final class Shop {
         s.columns = t.getInt("Columns");
         s.rows = t.contains("Rows") ? t.getInt("Rows") : 3;
         s.intervalMs = t.contains("Interval") ? t.getLong("Interval") : 12 * 3_600_000L;
+        Refill at = Refill.parse(t.getString("RotateAt"));
+        s.rotateAt = at != null && at.fixedTime() ? at : Refill.NEVER;
+        s.rotateSince = t.getLong("RotateSince");
+        s.noRepeat = t.getBoolean("NoRepeat");
+        s.broadcast = t.getBoolean("Broadcast");
+        s.requires = Requirement.load(t.getCompound("Requires"));
         s.offerPercent = t.getInt("OfferPercent");
         s.offerEndMs = t.getLong("OfferEnd");
         s.hours = OpenHours.load(t.getCompound("Hours"));

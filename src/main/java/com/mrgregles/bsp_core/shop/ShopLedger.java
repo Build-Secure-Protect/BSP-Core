@@ -62,7 +62,11 @@ public class ShopLedger extends SavedData {
     /** A rotating shop's draw: the item indexes shown, when it was drawn and when the next draw is due. */
     public static final class Draw {
         public final List<Integer> shown = new ArrayList<>();
+        /** No repeats: the cards shown so far in this cycle. */
+        public final List<Integer> used = new ArrayList<>();
         public long drawnAt, nextAt;
+        /** The draw this server last told its players about (0: none seen yet, so the first is not announced). */
+        public long announcedAt;
         /** On a network, not saved: a new draw has been asked of the database; and no asking again before this time after a failure. */
         public boolean asking;
         public long askAfter;
@@ -70,6 +74,7 @@ public class ShopLedger extends SavedData {
         public Draw copy() {
             Draw d = new Draw();
             d.shown.addAll(shown);
+            d.used.addAll(used);
             d.drawnAt = drawnAt;
             d.nextAt = nextAt;
             return d;
@@ -79,6 +84,8 @@ public class ShopLedger extends SavedData {
         public void set(Draw from) {
             shown.clear();
             shown.addAll(from.shown);
+            used.clear();
+            used.addAll(from.used);
             drawnAt = from.drawnAt;
             nextAt = from.nextAt;
         }
@@ -130,6 +137,12 @@ public class ShopLedger extends SavedData {
         setDirty();
     }
 
+    /** Forgets a rotating shop's draw (a replaced shop draws afresh). */
+    public void clearDraw(String shopId) {
+        draws.remove(shopId);
+        setDirty();
+    }
+
     public Draw draw(String shopId) {
         return draws.computeIfAbsent(shopId, k -> new Draw());
     }
@@ -158,6 +171,8 @@ public class ShopLedger extends SavedData {
             t.putString("Shop", e.getKey());
             t.putIntArray("Shown", e.getValue().shown.stream().mapToInt(Integer::intValue).toArray());
             t.putLong("DrawnAt", e.getValue().drawnAt);
+            t.putIntArray("Used", e.getValue().used.stream().mapToInt(Integer::intValue).toArray());
+            t.putLong("AnnouncedAt", e.getValue().announcedAt);
             t.putLong("NextAt", e.getValue().nextAt);
             dl.add(t);
         }
@@ -191,6 +206,10 @@ public class ShopLedger extends SavedData {
                 d.shown.add(i);
             }
             d.drawnAt = c.getLong("DrawnAt");
+            for (int i : c.getIntArray("Used")) {
+                d.used.add(i);
+            }
+            d.announcedAt = c.getLong("AnnouncedAt");
             d.nextAt = c.getLong("NextAt");
             l.draws.put(c.getString("Shop"), d);
         }

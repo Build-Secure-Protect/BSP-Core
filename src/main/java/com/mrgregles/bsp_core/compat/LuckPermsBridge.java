@@ -135,6 +135,43 @@ public final class LuckPermsBridge {
         }
     }
 
+    /**
+     * Whether LuckPerms grants this player the node (any node, typed at any time), or null when
+     * LuckPerms is absent or the user is not loaded (online players always are).
+     */
+    @javax.annotation.Nullable
+    public static Boolean hasPermission(UUID player, String node) {
+        switch (route()) {
+            case FORGE -> {
+                try {
+                    net.luckperms.api.model.user.User user = net.luckperms.api.LuckPermsProvider.get().getUserManager().getUser(player);
+                    return user == null ? null : user.getCachedData().getPermissionData().checkPermission(node).asBoolean();
+                } catch (RuntimeException e) {
+                    BSPCore.LOGGER.warn("LuckPerms permission lookup failed", e);
+                    return null;
+                }
+            }
+            case BUKKIT -> {
+                try {
+                    Object userManager = call(bukkitApi, "getUserManager");
+                    Object user = userManager.getClass().getMethod("getUser", UUID.class).invoke(userManager, player);
+                    if (user == null) {
+                        return null;
+                    }
+                    Object data = call(call(user, "getCachedData"), "getPermissionData");
+                    Object result = find(data.getClass(), "checkPermission").invoke(data, node);
+                    return (Boolean) call(result, "asBoolean");
+                } catch (ReflectiveOperationException | RuntimeException e) {
+                    BSPCore.LOGGER.warn("LuckPerms (Bukkit) permission lookup failed", e);
+                    return null;
+                }
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
     /** Names of every loaded group (rank). Empty when LuckPerms is absent. */
     public static List<String> groupNames() {
         switch (route()) {

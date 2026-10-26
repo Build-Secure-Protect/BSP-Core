@@ -188,6 +188,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(DiscordStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(DiscordStatusPacket::encode).decoder(DiscordStatusPacket::decode)
                 .consumerMainThread(DiscordStatusPacket::handle).add();
+        CHANNEL.messageBuilder(ShopSearchPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ShopSearchPacket::encode).decoder(ShopSearchPacket::decode)
+                .consumerMainThread(ShopSearchPacket::handle).add();
+        CHANNEL.messageBuilder(ShopTreePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ShopTreePacket::encode).decoder(ShopTreePacket::decode)
+                .consumerMainThread(ShopTreePacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

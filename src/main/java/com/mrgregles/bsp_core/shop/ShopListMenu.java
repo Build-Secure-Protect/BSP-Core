@@ -39,9 +39,15 @@ public class ShopListMenu extends AbstractContainerMenu {
 
     /** Every shop on the network, top-level only (sub-sections open from their parents). */
     public static List<Entry> remote(MinecraftServer server, net.minecraft.world.level.Level level) {
+        return remote(server, level, null);
+    }
+
+    /** As {@link #remote(MinecraftServer, net.minecraft.world.level.Level)}, leaving out shops hidden from this player by their requirements. */
+    public static List<Entry> remote(MinecraftServer server, net.minecraft.world.level.Level level, @javax.annotation.Nullable Player viewer) {
         List<Entry> out = new ArrayList<>();
         for (Shop s : Shops.ledger(server).all().values()) {
-            if (s.remote && s.kind != Shop.Kind.SUB) {
+            Requirement.Lock lock = viewer == null ? null : s.requires.check(viewer);
+            if (s.remote && s.kind != Shop.Kind.SUB && (lock == null || !lock.hide())) {
                 out.add(new Entry(s.id, s.name, s.kind, s.all().size(), s.hours.isOpen(level)));
             }
         }
@@ -54,7 +60,7 @@ public class ShopListMenu extends AbstractContainerMenu {
     }
 
     public static void open(ServerPlayer sp) {
-        List<Entry> list = remote(sp.server, sp.level());
+        List<Entry> list = remote(sp.server, sp.level(), sp);
         NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> new ShopListMenu(id, inv, list), Component.translatable("gui.bsp_core.network.title")), buf -> {
             buf.writeVarInt(list.size());
             for (Entry e : list) {

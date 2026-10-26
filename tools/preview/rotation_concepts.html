@@ -1,0 +1,272 @@
+<title>Rotation Announcements</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: two groups of three concepts (the chat line, the Workbench Settings rows), each drawn at Minecraft's GUI pixel size, scaled 3x; then the card's Weight row. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --label:"Oswald",system-ui,sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:20px; margin:0; text-wrap:balance; }
+h3{ font-size:16px; margin:0; color:var(--acc); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; color:var(--muted); max-width:82ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:900px; height:auto; image-rendering:pixelated; display:block; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Rotation Announcements</h1>
+    <p class="lede">Spawn shops task 3 (SS-6). Two looks to pick before code: the chat line every player gets when a rotating shop changes its cards, and the Workbench's Settings view for a rotating shop, which needs room for three new rows (rotate at, no repeats, announce). The example is the weekly Challenge shop changing on Monday at 00:00.</p>
+  </header>
+
+  <section>
+    <h2>The chat line</h2>
+    <div class="card">
+      <h3>A. One sentence</h3>
+      <p>A gold <b>[Shops]</b> tag, then a plain sentence naming the shop and its new cards in aqua, and the next change in grey. Hover a card name for the item's tooltip. It runs to two lines in a normal chat width.</p>
+      <div class="stage"><canvas id="ca" width="1080" height="390"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>B. Headline and list</h3>
+      <p>Three short lines: a gold headline, <b>CHALLENGE: NEW CARDS</b>, then the cards in aqua separated by dots, then the next change in grey. It stands out from player chat and is easy to scan.</p>
+      <div class="stage"><canvas id="cb" width="1080" height="390"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>C. Item links</h3>
+      <p>Green shop name, then each card in square brackets as vanilla shows a linked item, coloured by its rarity, and the next change in dark grey. The shortest of the three, and it looks like the item links players already know.</p>
+      <div class="stage"><canvas id="cc" width="1080" height="390"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The Workbench's Settings for a rotating shop</h2>
+    <div class="card">
+      <h3>A. One column, grouped</h3>
+      <p>Only the rows for the shop's kind, in one column with a thin rule between the groups: the shop, rotation, opening hours. Rows sit a pixel closer than today (nine instead of ten) so fourteen fit above the hint.</p>
+      <div class="stage"><canvas id="sa" width="1080" height="696"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>B. Two columns</h3>
+      <p>The shop's own rows on the left (name, kind, parent, network, buy only, id), the rotation rows and the opening hours on the right, each under a small heading, in three-quarter text.</p>
+      <div class="stage"><canvas id="sb" width="1080" height="696"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>C. Three tabs</h3>
+      <p>Tabs across the top of Settings, <b>SHOP</b>, <b>ROTATION</b> and <b>HOURS</b>, like the side panel's CARD and LIMITS tabs. Each holds a few rows at today's size and spacing. Shown here on ROTATION.</p>
+      <div class="stage"><canvas id="sc" width="1080" height="696"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>The card's Weight row (the same with every look)</h3>
+      <p>On a rotating shop, the side panel's CARD tab gains <b>Weight</b> under Opens section: 0 never drawn, 1 by default, up to 100.</p>
+      <div class="stage"><canvas id="w" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const S = 3;
+  const MC = { gold:'#FFAA00', aqua:'#55FFFF', gray:'#AAAAAA', dgray:'#555555', white:'#FFFFFF', yellow:'#FFFF55', green:'#55FF55', dgreen:'#00AA00', blue:'#5555FF', purple:'#AA00AA', lpurple:'#FF55FF' };
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', KEY_LOCKED:'#8f877a', CARD:'#0a1a10', CARD_SEL:'#0f2d1c', CARD_EMPTY:'#07100a', OUT_EDGE:'#1f6b43' };
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '[':4, ']':4, '·':2, '-':6 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  function text(g, s, x, y, colour, scale, shadow, bold){
+    scale = scale || 1;
+    const target = (mcWidth(s) + (bold ? s.length : 0)) * scale;
+    const draw = (dx, dy, col) => {
+      g.save();
+      g.font = (bold ? 'bold ' : '') + (10 * S * scale) + 'px VT323, "Courier New", monospace';
+      g.textBaseline = 'top';
+      const m = g.measureText(s).width || 1;
+      g.translate((x + dx) * S, (y + dy - 1.5 * scale) * S);
+      g.scale(target * S / m, 1);
+      g.fillStyle = col; g.fillText(s, 0, 0); g.restore();
+    };
+    if (shadow) draw(scale, scale, shade(colour));
+    draw(0, 0, colour);
+    return target;
+  }
+  function shade(hex){ const n = parseInt(hex.slice(1), 16); const r = (n >> 16) & 255, gg = (n >> 8) & 255, b = n & 255; return 'rgb(' + (r >> 2) + ',' + (gg >> 2) + ',' + (b >> 2) + ')'; }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+
+  // ---------- chat ----------
+  const W = 360, CH = 130, CHAT_W = 320;
+  function scene(g){
+    const grd = g.createLinearGradient(0, 0, 0, CH * S); grd.addColorStop(0, '#7fb2e6'); grd.addColorStop(.62, '#a9cdee'); grd.addColorStop(.63, '#5d8a3a'); grd.addColorStop(1, '#3f6527');
+    g.fillStyle = grd; g.fillRect(0, 0, W * S, CH * S);
+    // a few spawn buildings in the distance
+    [[40, 50, 30, 32, '#9a8f7d'], [80, 58, 22, 24, '#7d6a52'], [250, 46, 40, 36, '#a59a86'], [300, 56, 26, 26, '#6e5a44']].forEach(([x, y, w, h, c]) => { fill(g, x, y, x + w, y + h, c); fill(g, x, y, x + w, y + 3, '#5a4a38'); });
+    // hotbar
+    fill(g, W / 2 - 91, CH - 22, W / 2 + 91, CH, 'rgba(0,0,0,0.55)');
+    for (let i = 0; i < 9; i++) fill(g, W / 2 - 90 + i * 20, CH - 21, W / 2 - 90 + i * 20 + 19, CH - 1, i === 0 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)');
+  }
+  // a chat line is a list of [text, colour, bold]
+  function chat(g, lines, hover){
+    const lh = 9, bottom = CH - 40;
+    let y = bottom - lines.length * lh;
+    const spots = [];
+    lines.forEach(parts => {
+      fill(g, 2, y, 2 + CHAT_W + 4, y + lh, 'rgba(0,0,0,0.5)');
+      let x = 4;
+      parts.forEach(([t, col, bold, tag]) => { const w = text(g, t, x, y + 1, col, 1, true, bold); if (tag) spots.push([tag, x, y, w]); x += w; });
+      y += lh;
+    });
+    if (hover) {
+      const spot = spots.find(s => s[0] === hover.tag);
+      if (spot) tooltip(g, spot[1] + 10, spot[2] - 9 * (lines.length) - 18, hover.lines);
+    }
+  }
+  function tooltip(g, x, y, lines){
+    const w = Math.max(...lines.map(l => mcWidth(l[0]))) + 6, h = lines.length * 10 + 4;
+    fill(g, x - 1, y, x + w + 1, y + h, 'rgba(16,0,16,0.94)'); fill(g, x, y - 1, x + w, y + h + 1, 'rgba(16,0,16,0.94)');
+    g.fillStyle = 'rgba(80,0,255,0.6)'; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    lines.forEach((l, i) => text(g, l[0], x + 3, y + 3 + i * 10 + (i ? 2 : 0), l[1], 1, true));
+  }
+  const TIP = { tag:'steel', lines:[['Steel Casing', MC.white], ['Mekanism', MC.blue]] };
+  const PLAYER = [[['<Gus> ', MC.white], ['anyone got steel casings going spare?', MC.white]]];
+
+  function chatA(g){
+    scene(g);
+    chat(g, [...PLAYER,
+      [['[Shops] ', MC.gold], ['The Challenge now buys ', MC.white], ['Steel Casing', MC.aqua, false, 'steel'], [', ', MC.white], ['Machine Frame', MC.aqua], [',', MC.white]],
+      [['Brass Casing', MC.aqua], [' and ', MC.white], ['Fluix Block', MC.aqua], ['. ', MC.white], ['Next change Monday 00:00.', MC.gray]],
+    ], TIP);
+  }
+  function chatB(g){
+    scene(g);
+    chat(g, [...PLAYER,
+      [['CHALLENGE: NEW CARDS', MC.gold, true]],
+      [['Steel Casing', MC.aqua, false, 'steel'], [' · ', MC.gray], ['Machine Frame', MC.aqua], [' · ', MC.gray], ['Brass Casing', MC.aqua], [' · ', MC.gray], ['Fluix Block', MC.aqua]],
+      [['Next change Monday 00:00 (in 7d)', MC.gray]],
+    ], TIP);
+  }
+  function chatC(g){
+    scene(g);
+    chat(g, [...PLAYER,
+      [['The Challenge » ', MC.green], ['[Steel Casing]', MC.white, false, 'steel'], [' ', MC.white], ['[Machine Frame]', MC.white], [' ', MC.white], ['[Brass Casing]', MC.white]],
+      [['[Fluix Block]', MC.aqua], [' until Monday 00:00', MC.dgray]],
+    ], TIP);
+  }
+
+  // ---------- workbench ----------
+  const WW = 360, WH = 232, SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3;
+  function small(g, s, x, y, colour, maxW){ const sc = Math.min(0.75, (maxW || 999) / Math.max(1, mcWidth(s))); return text(g, s, x, y, colour, sc); }
+  function key(g, x, y, label, enabled, lit){
+    fill(g, x, y, x + KW, y + KH, C.KEY_EDGE); fill(g, x, y, x + KW, y + KH - 2, lit ? '#fff6d8' : C.KEY);
+    const w = Math.min(mcWidth(label), KW - 4), sc = w / mcWidth(label);
+    text(g, label, x + (KW - w) / 2, y + 5, enabled ? C.KEY_TEXT : C.KEY_LOCKED, sc);
+  }
+  function bench(g, topLit, bottomKeys){
+    fill(g, 0, 0, WW, WH, C.BEZEL_DARK); fill(g, 2, 2, WW - 2, WH - 2, C.BEZEL); fill(g, 2, 2, WW - 2, 4, C.BEZEL_LIGHT);
+    fill(g, SX - 2, SY - 2, SX + SW + 2, SY + SH + 2, C.EDGE); fill(g, SX, SY, SX + SW, SY + SH, C.SCREEN);
+    fill(g, PX - 2, SY - 2, PX + PW + 2, SY + SH + 2, C.EDGE); fill(g, PX, SY, PX + PW, SY + SH, C.SCREEN);
+    let ky = SY; ['Shops', 'Page', 'Settings', 'Style'].forEach(l => { key(g, KX, ky, l, true, l === topLit); ky += KH + KGAP; });
+    ky = SY + SH - KH; for (let i = bottomKeys.length - 1; i >= 0; i--) { key(g, KX, ky, bottomKeys[i], true); ky -= KH + KGAP; }
+    fill(g, SX - 2, SY + SH + 6, WW - SX + 2, WH - 6, C.EDGE); fill(g, SX, SY + SH + 8, WW - SX, WH - 8, C.SCREEN);
+    text(g, 'admin: changes save at once / bsp-spawn', SX + 6, SY + SH + 12, C.DIM);
+    text(g, '> SHOP WORKBENCH: CHALLENGE', SX + 6, SY + 6, C.PHOS);
+    fill(g, SX + 4, SY + 16, SX + SW - 4, SY + 17, C.EDGE);
+  }
+  function scan(g){ for (let ly = SY; ly < SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(SX * S, ly * S, (PX + PW - SX) * S, S); } }
+  function line(g, x, y, label, value, w, sc, valueColour){
+    sc = sc || 1;
+    text(g, label, x, y, C.DIM, sc);
+    const vw = mcWidth(value) * sc;
+    text(g, value, x + w - vw, y, valueColour || C.PHOS, sc);
+  }
+  function sideHint(g){
+    small(g, 'CARD', PX + 3, SY + 6, C.PHOS); fill(g, PX + 2, SY + 16, PX + PW - 2, SY + 17, C.EDGE);
+    ['Click a card on', 'the page to edit', 'it here.'].forEach((l, i) => small(g, l, PX + 3, SY + 22 + i * 7, C.DIM, PW - 6));
+  }
+  const SHOP_ROWS = [['Name', 'Challenge'], ['Kind', 'rotating'], ['Parent shop', '-'], ['Shopping Network', 'on'], ['Buy only', 'off']];
+  const ROT_ROWS = [['Slots shown', '4'], ['Interval', '168 h (unused)'], ['Rotate at', 'monday 00:00'], ['No repeats', 'on'], ['Announce', 'on']];
+  const HOUR_ROWS = [['Hours', 'always'], ['Opens', '-'], ['Closes', '-']];
+
+  function setA(g){
+    bench(g, 'Settings', ['Delete shop']); sideHint(g);
+    let y = SY + 21;
+    const groups = [SHOP_ROWS, ROT_ROWS, [...HOUR_ROWS, ['Id', 'spawn_challenge']]];
+    groups.forEach((rows, gi) => {
+      rows.forEach(([l, v]) => { line(g, SX + 8, y, l, v, SW - 16, 1, l === 'Rotate at' ? C.AMBER : C.PHOS); y += 9; });
+      if (gi < groups.length - 1) { fill(g, SX + 8, y, SX + SW - 8, y + 1, C.EDGE); y += 3; }
+    });
+    small(g, 'Click a line to change it. Kind, network and buy only toggle.', SX + 6, SY + SH - 9, C.DIM, SW - 12);
+    scan(g);
+  }
+  function setB(g){
+    bench(g, 'Settings', ['Delete shop']); sideHint(g);
+    const cw = (SW - 18) / 2, lx = SX + 6, rx = SX + 12 + cw;
+    small(g, 'SHOP', lx, SY + 21, C.PHOS); fill(g, lx, SY + 28, lx + cw, SY + 29, C.EDGE);
+    let y = SY + 32;
+    [...SHOP_ROWS, ['Id', 'spawn_challenge']].forEach(([l, v]) => { small(g, l, lx, y, C.DIM, cw); small(g, v, lx, y + 6, C.PHOS, cw); y += 14; });
+    small(g, 'ROTATION', rx, SY + 21, C.PHOS); fill(g, rx, SY + 28, rx + cw, SY + 29, C.EDGE);
+    y = SY + 32;
+    ROT_ROWS.forEach(([l, v]) => { small(g, l, rx, y, C.DIM, cw); small(g, v, rx, y + 6, l === 'Rotate at' ? C.AMBER : C.PHOS, cw); y += 14; });
+    small(g, 'HOURS', rx, y + 2, C.PHOS); fill(g, rx, y + 9, rx + cw, y + 10, C.EDGE);
+    y += 13;
+    HOUR_ROWS.forEach(([l, v]) => { small(g, l + ': ' + v, rx, y, C.DIM, cw); y += 8; });
+    small(g, 'Click a line to change it. Kind, network and buy only toggle.', SX + 6, SY + SH - 9, C.DIM, SW - 12);
+    scan(g);
+  }
+  function setC(g){
+    bench(g, 'Settings', ['Delete shop']); sideHint(g);
+    const tabs = ['SHOP', 'ROTATION', 'HOURS'], tw = (SW - 16) / 3;
+    tabs.forEach((t, i) => {
+      const x = SX + 6 + i * (tw + 2), on = i === 1;
+      fill(g, x, SY + 20, x + tw, SY + 31, on ? C.DIM : C.CARD);
+      small(g, t, x + (tw - mcWidth(t) * 0.75) / 2, SY + 23, on ? C.SCREEN : C.DIM);
+    });
+    let y = SY + 38;
+    ROT_ROWS.forEach(([l, v]) => { line(g, SX + 8, y, l, v, SW - 16, 1, l === 'Rotate at' ? C.AMBER : C.PHOS); y += 12; });
+    y += 4;
+    small(g, 'Rotate at: day 06:00 or monday 00:00,', SX + 8, y, C.DIM, SW - 16); y += 7;
+    small(g, 'or none to change every interval.', SX + 8, y, C.DIM, SW - 16);
+    small(g, 'Click a line to change it. No repeats and announce toggle.', SX + 6, SY + SH - 9, C.DIM, SW - 12);
+    scan(g);
+  }
+  function icon(g, x, y){
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      const edge = px === 0 || py === 0 || px === 15 || py === 15, rim = px < 3 || py < 3 || px > 12 || py > 12;
+      g.fillStyle = edge ? '#4b5159' : rim ? '#aab2bc' : ((px * 7 + py * 13) % 9 === 0 ? '#4b5159' : '#7d8590');
+      g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  function weight(g){
+    bench(g, 'Page', ['Hand to slot', 'Browse items', 'Remove card', 'Test shop']);
+    // the page with the selected card
+    const cols = 4, cw = Math.floor((SW - 12 - 3) / cols);
+    for (let k = 0; k < 8; k++) {
+      const cx = SX + 6 + (k % cols) * (cw + 1), cy = SY + 22 + Math.floor(k / cols) * 37;
+      fill(g, cx, cy, cx + cw, cy + 36, k === 0 ? C.CARD_SEL : k < 6 ? C.CARD : C.CARD_EMPTY);
+      fill(g, cx, cy, cx + cw, cy + 1, C.DIM); fill(g, cx, cy + 35, cx + cw, cy + 36, C.DIM);
+      if (k === 0) icon(g, cx + cw / 2 - 8, cy + 3);
+    }
+    const tw = (PW - 6) / 2;
+    fill(g, PX + 2, SY + 3, PX + 2 + tw, SY + 14, C.DIM); small(g, 'CARD', PX + 2 + (tw - mcWidth('CARD') * .75) / 2, SY + 6, C.SCREEN);
+    fill(g, PX + 4 + tw, SY + 3, PX + 4 + 2 * tw, SY + 14, C.CARD); small(g, 'LIMITS', PX + 4 + tw + (tw - mcWidth('LIMITS') * .75) / 2, SY + 6, C.DIM);
+    fill(g, PX + 2, SY + 16, PX + PW - 2, SY + 17, C.EDGE);
+    icon(g, PX + PW / 2 - 8, SY + 20);
+    const rows = [['Lot size', '1'], ['Buy price', 'off'], ['Sell price', '2,500'], ['Currency', 'pieces'], ['Instant buy', 'off'], ['Hidden', 'off'], ['Opens section', '-'], ['Weight', '3']];
+    rows.forEach(([l, v], i) => { small(g, l, PX + 3, SY + 38 + i * 11, l === 'Weight' ? C.AMBER : C.DIM, PW - 6); small(g, v, PX + 3, SY + 44 + i * 11, C.PHOS, PW - 6); });
+    scan(g);
+  }
+
+  function drawAll(){
+    for (const [id, fn] of [['ca', chatA], ['cb', chatB], ['cc', chatC], ['sa', setA], ['sb', setB], ['sc', setC], ['w', weight]]) {
+      const cv = document.getElementById(id), g = cv.getContext('2d');
+      g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height); fn(g);
+    }
+  }
+  drawAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>

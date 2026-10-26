@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /** Server → client: one page of a shop as the player may see it now, with their balance and an outcome message. */
 public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean buyOnly, boolean open, boolean admin, int offerPercent, long offerEnd, long rotatesIn,
-                             int page, int pages, int columns, int rows, long balance, String opensAt, int untilOpen, List<ShopMenu.Card> cards, String messageKey, String[] messageArgs) {
+                             int page, int pages, int columns, int rows, long balance, String opensAt, int untilOpen, List<ShopMenu.Card> cards, String messageKey, String[] messageArgs, boolean searchable) {
     public static void encode(ShopDataPacket m, FriendlyByteBuf buf) {
         buf.writeUtf(m.name, 64);
         buf.writeUtf(m.path, 128);
@@ -42,7 +42,19 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
             c.selling().write(buf);
             buf.writeBoolean(c.instant());
             buf.writeUtf(c.section(), 32);
+            buf.writeBoolean(c.anyData());
+            buf.writeVarInt(c.note().size());
+            c.note().forEach(l -> buf.writeUtf(l, 128));
+            buf.writeBoolean(c.lock() != null);
+            if (c.lock() != null) {
+                buf.writeBoolean(c.lock().permission());
+                buf.writeUtf(c.lock().node(), 128);
+                buf.writeVarInt(c.lock().hours());
+                buf.writeVarLong(c.lock().playedMinutes());
+                buf.writeUtf(c.lock().reason(), 64);
+            }
         }
+        buf.writeBoolean(m.searchable);
         buf.writeUtf(m.messageKey, 64);
         buf.writeVarInt(m.messageArgs.length);
         for (String s : m.messageArgs) {
@@ -63,14 +75,25 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
         int n = buf.readVarInt();
         List<ShopMenu.Card> cards = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            cards.add(new ShopMenu.Card(buf.readVarInt(), buf.readItem(), buf.readLong(), buf.readLong(), buf.readVarInt() - 1, ShopMenu.Limit.read(buf), ShopMenu.Limit.read(buf), buf.readBoolean(), buf.readUtf(32)));
+            cards.add(new ShopMenu.Card(buf.readVarInt(), buf.readItem(), buf.readLong(), buf.readLong(), buf.readVarInt() - 1, ShopMenu.Limit.read(buf), ShopMenu.Limit.read(buf), buf.readBoolean(), buf.readUtf(32), buf.readBoolean(), readNote(buf),
+                    buf.readBoolean() ? new com.mrgregles.bsp_core.shop.Requirement.Lock(buf.readBoolean(), buf.readUtf(128), buf.readVarInt(), buf.readVarLong(), buf.readUtf(64), false) : null));
         }
+        boolean searchable = buf.readBoolean();
         String key = buf.readUtf(64);
         String[] args = new String[buf.readVarInt()];
         for (int i = 0; i < args.length; i++) {
             args[i] = buf.readUtf(64);
         }
-        return new ShopDataPacket(name, path, kind, buyOnly, open, admin, offer, offerEnd, rotatesIn, page, pages, columns, rows, balance, opensAt, until, cards, key, args);
+        return new ShopDataPacket(name, path, kind, buyOnly, open, admin, offer, offerEnd, rotatesIn, page, pages, columns, rows, balance, opensAt, until, cards, key, args, searchable);
+    }
+
+    private static List<String> readNote(FriendlyByteBuf buf) {
+        int n = Math.min(com.mrgregles.bsp_core.shop.ShopItem.NOTE_LINES, buf.readVarInt());
+        List<String> note = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            note.add(buf.readUtf(128));
+        }
+        return note;
     }
 
     public static void handle(ShopDataPacket msg, Supplier<NetworkEvent.Context> ctx) {

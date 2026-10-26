@@ -18,7 +18,8 @@ import java.util.List;
  */
 public class ShopMenu extends AbstractContainerMenu {
     /** One card on the page as the client sees it: the buy side's stock limit and the sell side's limit as this player has them. */
-    public record Card(int index, ItemStack stack, long buy, long sell, int currency, Limit stock, Limit selling, boolean instant, String section) {}
+    public record Card(int index, ItemStack stack, long buy, long sell, int currency, Limit stock, Limit selling, boolean instant, String section, boolean anyData, List<String> note,
+                       @Nullable Requirement.Lock lock) {}
 
     /**
      * One side's limit as this player sees it: lots left (-1 no limit) out of how many, what is left
@@ -60,6 +61,8 @@ public class ShopMenu extends AbstractContainerMenu {
     public String name = "", path = "";
     public Shop.Kind kind = Shop.Kind.SHOP;
     public boolean buyOnly, open = true, admin;
+    /** The shop's tree holds more than a page of cards: the screen shows its search box. */
+    public boolean searchable;
     public int offerPercent, page, pages = 1, untilOpen, columns = 7, rows = 3;
     public long offerEnd, rotatesIn, balance;
     public String opensAt = "";

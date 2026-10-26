@@ -43,11 +43,102 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     private boolean selling;
     private Component message = Component.empty();
     private int messageColour = AMBER;
+    // the search (SS-9): the box in the header, this shop's tree once asked for, the page of results shown
+    private net.minecraft.client.gui.components.EditBox search;
+    private boolean treeAsked;
+    private int resultPage;
+    private static List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> tree;
+    private static String treeShop = "";
+    /** The card a search result opened, picked out for a moment on the page that holds it. */
+    private static String markShop = "";
+    private static int markIndex = -1;
+    private static long markUntil;
+    private static final int RCOLS = 7, RROWS = 3, RW = 26, RH = 36;
 
     public ShopScreen(ShopMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
         this.imageWidth = W;
         this.imageHeight = H;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        if (!menu.shopId.equals(treeShop)) {
+            tree = null;
+        }
+        search = new net.minecraft.client.gui.components.EditBox(font, leftPos + SX + SW - 74, topPos + SY + 3, 68, 11, tr("search"));
+        search.setMaxLength(32);
+        search.setHint(tr("search").withStyle(ChatFormatting.DARK_GRAY));
+        search.setResponder(t -> {
+            resultPage = 0;
+            if (t.strip().length() >= 2 && tree == null && !treeAsked) {
+                treeAsked = true;
+                BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.ShopSearchPacket("", 0));
+            }
+        });
+        addRenderableWidget(search);
+    }
+
+    /** Client: the open shop's tree, for the search. */
+    public static void receiveTree(List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> entries) {
+        var player = Minecraft.getInstance().player;
+        if (player != null && player.containerMenu instanceof ShopMenu menu) {
+            tree = List.copyOf(entries);
+            treeShop = menu.shopId;
+        }
+    }
+
+    /** True while the search box holds a query: the grid shows results. */
+    private boolean searching() {
+        return search != null && search.visible && search.getValue().strip().length() >= 2;
+    }
+
+    /**
+     * The tree's cards matching every word typed: a word is found in the item's name as this game
+     * shows it; a word starting with @ in its mod's id or name ("@create").
+     */
+    private List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> results() {
+        if (tree == null) {
+            return List.of();
+        }
+        String[] words = search.getValue().toLowerCase(Locale.ROOT).strip().split("\\s+");
+        List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> out = new ArrayList<>();
+        for (var e : tree) {
+            String name = e.stack().getHoverName().getString().toLowerCase(Locale.ROOT);
+            var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(e.stack().getItem());
+            String mod = key == null ? "" : key.getNamespace();
+            String modName = net.minecraftforge.fml.ModList.get().getModContainerById(mod).map(c -> c.getModInfo().getDisplayName().toLowerCase(Locale.ROOT)).orElse(mod);
+            boolean all = true;
+            for (String w : words) {
+                boolean hit = w.startsWith("@") ? w.length() == 1 || mod.contains(w.substring(1)) || modName.contains(w.substring(1)) : name.contains(w);
+                all &= hit;
+            }
+            if (all) {
+                out.add(e);
+            }
+        }
+        return out;
+    }
+
+    private List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> resultPageEntries(List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> all) {
+        int from = Math.min(all.size(), resultPage * RCOLS * RROWS);
+        return all.subList(from, Math.min(all.size(), from + RCOLS * RROWS));
+    }
+
+    @Override
+    public boolean keyPressed(int key, int scan, int mods) {
+        if (search != null && search.isFocused()) {
+            if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE && !search.getValue().isEmpty()) {
+                search.setValue(""); // Escape empties the search first; a second Escape closes the screen
+                return true;
+            }
+            if (key != org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+                search.keyPressed(key, scan, mods);
+                return true; // typed letters go to the box, not to the inventory key
+            }
+        }
+        return super.keyPressed(key, scan, mods);
     }
 
     /** Client: a page packet for the open shop screen. */
@@ -72,6 +163,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
             menu.untilOpen = m.untilOpen();
             menu.cards.clear();
             menu.cards.addAll(m.cards());
+            menu.searchable = m.searchable();
             if (!m.messageKey().isEmpty()) {
                 menu.messageKey = m.messageKey();
                 menu.messageArgs = m.messageArgs();
@@ -116,8 +208,14 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         }
         top.add(new Key("back", true, () -> send(ShopActionPacket.Action.BACK, 0, 0, 0)));
         if (menu.open) {
-            top.add(new Key("prev_page", menu.page > 0, () -> send(ShopActionPacket.Action.PAGE, 0, 0, menu.page - 1)));
-            top.add(new Key("next_page", menu.page < menu.pages - 1, () -> send(ShopActionPacket.Action.PAGE, 0, 0, menu.page + 1)));
+            if (searching()) { // the results' own pages
+                int pages = Math.max(1, (results().size() + RCOLS * RROWS - 1) / (RCOLS * RROWS));
+                top.add(new Key("prev_page", resultPage > 0, () -> resultPage--));
+                top.add(new Key("next_page", resultPage < pages - 1, () -> resultPage++));
+            } else {
+                top.add(new Key("prev_page", menu.page > 0, () -> send(ShopActionPacket.Action.PAGE, 0, 0, menu.page - 1)));
+                top.add(new Key("next_page", menu.page < menu.pages - 1, () -> send(ShopActionPacket.Action.PAGE, 0, 0, menu.page + 1)));
+            }
             if (!menu.buyOnly) {
                 bottom.add(new Key("sell_here", true, () -> send(ShopActionPacket.Action.SELL_HERE, 0, 0, 0)));
                 bottom.add(new Key("sell_all", true, () -> send(ShopActionPacket.Action.SELL_ALL, 0, 0, menu.page)));
@@ -135,7 +233,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         if (selling) {
             int held = 0;
             for (var s : minecraft.player.getInventory().items) {
-                if (net.minecraft.world.item.ItemStack.isSameItemSameTags(s, c.stack())) {
+                if (com.mrgregles.bsp_core.shop.ShopItem.sameKind(s, c.stack(), c.anyData()) && !(c.anyData() && (s.isDamaged() || com.mrgregles.bsp_core.shop.ShopItem.holdsItems(s)))) {
                     held += s.getCount();
                 }
             }
@@ -193,7 +291,27 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
             }
             ky -= KH + KGAP;
         }
-        if (view == View.PAGE && menu.open) {
+        if (view == View.PAGE && menu.open && searching()) {
+            var page = resultPageEntries(results());
+            for (int k = 0; k < page.size(); k++) {
+                int cx = x + CX + (k % RCOLS) * (RW + CGAP), cy = y + CY + (k / RCOLS) * (RH + CGAP);
+                if (over(mx, my, cx, cy, RW, RH)) {
+                    var e = page.get(k);
+                    click();
+                    markShop = e.shop();
+                    markIndex = e.index();
+                    markUntil = System.currentTimeMillis() + 2000;
+                    search.setValue("");
+                    BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.ShopSearchPacket(e.shop(), e.index()));
+                    return true;
+                }
+            }
+        }
+        if (search != null && search.visible && search.mouseClicked(mx, my, button)) {
+            setFocused(search);
+            return true;
+        }
+        if (view == View.PAGE && menu.open && !searching()) {
             for (int k = 0; k < menu.cards.size(); k++) {
                 int cx = x + CX + (k % menu.columns) * (cw() + CGAP), cy = y + CY + (k / menu.columns) * (ch() + CGAP);
                 if (over(mx, my, cx, cy, cw(), ch())) {
@@ -238,10 +356,35 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     @Override
     public void render(GuiGraphics g, int mx, int my, float partial) {
         pollMessage();
+        if (search != null) {
+            search.visible = view == View.PAGE && menu.open && menu.searchable;
+        }
         keys();
         renderBackground(g);
         super.render(g, mx, my, partial);
-        if (view == View.PAGE && menu.open) {
+        if (view == View.PAGE && menu.open && searching()) {
+            var page = resultPageEntries(results());
+            for (int k = 0; k < page.size(); k++) {
+                int cx = leftPos + CX + (k % RCOLS) * (RW + CGAP), cy = topPos + CY + (k / RCOLS) * (RH + CGAP);
+                if (over(mx, my, cx, cy, RW, RH)) {
+                    var e = page.get(k);
+                    List<Component> tip = new ArrayList<>(getTooltipFromItem(minecraft, e.stack()));
+                    if (e.buy() >= 0) {
+                        tip.add(tr("tip_buy", Bank.format(e.buy()), unitName(e.currency())));
+                    }
+                    if (e.sell() >= 0) {
+                        tip.add(tr("tip_sell", Bank.format(e.sell()), unitName(e.currency())));
+                    }
+                    if (e.locked()) {
+                        tip.add(tr("tip_result_locked").withStyle(ChatFormatting.RED));
+                    }
+                    tip.add(tr("tip_in", e.path()).withStyle(ChatFormatting.GRAY));
+                    tip.add(tr("tip_open", e.section()).withStyle(ChatFormatting.GRAY));
+                    g.renderComponentTooltip(font, tip, mx, my);
+                }
+            }
+        }
+        if (view == View.PAGE && menu.open && !searching()) {
             for (int k = 0; k < menu.cards.size(); k++) {
                 int cx = leftPos + CX + (k % menu.columns) * (cw() + CGAP), cy = topPos + CY + (k / menu.columns) * (ch() + CGAP);
                 if (over(mx, my, cx, cy, cw(), ch())) {
@@ -255,9 +398,19 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                         }
                         if (c.sell() >= 0) {
                             tip.add(tr("tip_sell", Bank.format(c.sell()), unitName(c.currency())));
+                            if (c.anyData()) {
+                                tip.add(tr("tip_any", c.stack().getHoverName()).withStyle(ChatFormatting.GRAY));
+                            }
+                        }
+                        if (c.lock() != null) {
+                            lockLines(tip, c.lock());
                         }
                         limitLines(tip, c.stock(), false);
                         limitLines(tip, c.selling(), true);
+                        if (!c.note().isEmpty()) { // the shop's note closes the tooltip, in the Cash Machine's amber, after a blank line
+                            tip.add(Component.empty());
+                            c.note().forEach(l -> tip.add(Component.literal(l).withStyle(st -> st.withColor(AMBER))));
+                        }
                     }
                     g.renderComponentTooltip(font, tip, mx, my);
                 }
@@ -293,6 +446,46 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         }
     }
 
+    /** A locked card's face: its reason, or "Rank" or "10 h play". */
+    private static String lockFace(com.mrgregles.bsp_core.shop.Requirement.Lock l) {
+        return !l.reason().isEmpty() ? l.reason() : l.permission() ? tr("lock_rank").getString() : tr("lock_play", l.hours()).getString();
+    }
+
+    /** A locked card's tooltip: what it needs in red, the reason, and for playtime how far the player is. */
+    private static void lockLines(List<Component> tip, com.mrgregles.bsp_core.shop.Requirement.Lock l) {
+        if (l.permission()) {
+            tip.add(tr("tip_locked_perm", l.node()).withStyle(ChatFormatting.RED));
+        }
+        if (l.hours() > 0) {
+            tip.add(tr("tip_locked_play", l.hours()).withStyle(ChatFormatting.RED));
+        }
+        if (!l.reason().isEmpty()) {
+            tip.add(Component.literal("(" + l.reason() + ")").withStyle(ChatFormatting.GRAY));
+        }
+        if (l.hours() > 0) {
+            tip.add(tr("tip_played", l.playedMinutes() / 60 + " h " + l.playedMinutes() % 60 + " m", l.hours()).withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    /** Small text on a search result, shrunk to the result's width. */
+    private void resultSmall(GuiGraphics g, String s, int x, int y, int colour) {
+        float scale = Math.min(0.75f, (RW - 4) / (float) Math.max(1, font.width(s)));
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, s, 0, 0, colour, false);
+        g.pose().popPose();
+    }
+
+    /** A small padlock, 7 by 7 GUI pixels, its top-left at x, y. */
+    private static void padlock(GuiGraphics g, int x, int y) {
+        int c = 0xFF8A8A8A;
+        g.fill(x + 1, y, x + 4, y + 1, c);
+        g.fill(x, y + 1, x + 1, y + 3, c);
+        g.fill(x + 4, y + 1, x + 5, y + 3, c);
+        g.fill(x - 1, y + 3, x + 6, y + 7, c);
+    }
+
     /** A wait as "2d 4h", "9h 12m" or "42m". */
     private static String span(long ms) {
         long m = Math.max(1, (ms + 59_999) / 60_000), h = m / 60, d = h / 24;
@@ -314,12 +507,27 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         for (int ly = y + SY; ly < y + SY + SH; ly += 3) {
             g.fill(x + SX, ly, x + SX + SW, ly + 1, 0x14000000);
         }
-        if (view == View.PAGE && menu.open) {
+        if (view == View.PAGE && menu.open && searching()) {
+            var page = resultPageEntries(results());
+            for (int k = 0; k < page.size(); k++) {
+                var e = page.get(k);
+                int cx = x + CX + (k % RCOLS) * (RW + CGAP), cy = y + CY + (k / RCOLS) * (RH + CGAP);
+                g.fill(cx, cy, cx + RW, cy + RH, e.locked() ? CARD_OUT : over(mx, my, cx, cy, RW, RH) ? CARD_SEL : CARD);
+                g.fill(cx, cy, cx + RW, cy + 1, e.locked() ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
+                g.fill(cx, cy + RH - 1, cx + RW, cy + RH, e.locked() ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
+                g.renderItem(e.stack(), cx + RW / 2 - 8, cy + 3);
+                g.renderItemDecorations(font, e.stack(), cx + RW / 2 - 8, cy + 3);
+            }
+        }
+        if (view == View.PAGE && menu.open && !searching()) {
             for (int k = 0; k < menu.cards.size(); k++) {
                 ShopMenu.Card c = menu.cards.get(k);
                 int cx = x + CX + (k % menu.columns) * (cw() + CGAP), cy = y + CY + (k / menu.columns) * (ch() + CGAP);
+                if (c.index() == markIndex && menu.shopId.equals(markShop) && System.currentTimeMillis() < markUntil) { // the card a search result opened
+                    g.fill(cx - 1, cy - 1, cx + cw() + 1, cy + ch() + 1, AMBER | 0xFF000000);
+                }
                 // dark when nothing is left to do with it: no stock to buy and no room to sell
-                boolean out = c.section().isEmpty() && (c.buy() >= 0 || c.sell() >= 0) && !(c.buy() >= 0 && c.stock().left() != 0) && !(c.sell() >= 0 && c.selling().left() != 0);
+                boolean out = c.lock() != null || c.section().isEmpty() && (c.buy() >= 0 || c.sell() >= 0) && !(c.buy() >= 0 && c.stock().left() != 0) && !(c.sell() >= 0 && c.selling().left() != 0);
                 g.fill(cx, cy, cx + cw(), cy + ch(), out ? CARD_OUT : over(mx, my, cx, cy, cw(), ch()) ? CARD_SEL : CARD);
                 g.fill(cx, cy, cx + cw(), cy + 1, out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
                 g.fill(cx, cy + ch() - 1, cx + cw(), cy + ch(), out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
@@ -352,12 +560,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     @Override
     protected void renderLabels(GuiGraphics g, int mx, int my) {
         String right = !menu.open ? tr("closed").getString() : menu.kind == Shop.Kind.ROTATING ? tr("rotates_in", clock(menu.rotatesIn)).getString() : tr("page", menu.page + 1, menu.pages).getString();
+        boolean box = search != null && search.visible;
+        if (box) { // the search box holds the header's right end; the page count sits left of it, and goes while there is a search
+            right = searching() ? "" : right;
+        }
+        int boxW = box ? 76 : 0;
         // a special offer sits in the header beside the page, clear of the cards
         String offer = menu.open && menu.offerPercent > 0 && view != View.QTY ? tr("offer", menu.offerPercent).getString() : "";
         int offerW = offer.isEmpty() ? 0 : font.width(offer) + 10;
-        String head = "> " + font.plainSubstrByWidth(menu.path.toUpperCase(Locale.ROOT), SW - 20 - font.width(right) - offerW);
+        String head = "> " + font.plainSubstrByWidth(menu.path.toUpperCase(Locale.ROOT), SW - 20 - font.width(right) - offerW - boxW);
         g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
-        g.drawString(font, right, SX + SW - 6 - font.width(right), SY + 6, menu.open ? PHOS_DIM : RED, false);
+        g.drawString(font, right, SX + SW - 6 - boxW - font.width(right), SY + 6, menu.open ? PHOS_DIM : RED, false);
         if (!offer.isEmpty()) {
             int ox = SX + SW - 6 - font.width(right) - offerW;
             g.fill(ox, SY + 4, ox + offerW - 4, SY + 15, AMBER | 0xFF000000);
@@ -393,10 +606,29 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                 CashMachine.fit(g, font, total, SX + SW / 2 - Math.min(font.width(total), SW - 16) / 2, SY + 92, SW - 16, AMBER);
                 CashMachine.wrap(g, font, tr(selling ? "max_sell_hint" : "max_buy_hint"), SX + 8, SY + 108, SW - 16, PHOS_DIM);
             }
+        } else if (searching()) {
+            var all = results();
+            var page = resultPageEntries(all);
+            for (int k = 0; k < page.size(); k++) {
+                var e = page.get(k);
+                int cx = CX + (k % RCOLS) * (RW + CGAP), cy = CY + (k / RCOLS) * (RH + CGAP);
+                String label = e.buy() >= 0 ? Shop.priceLabel("buy", e.buy(), e.currency()) : e.sell() >= 0 ? Shop.priceLabel("sell", e.sell(), e.currency()) : "--";
+                resultSmall(g, label, cx + 2, cy + 21, e.buy() >= 0 ? AMBER : PHOS_DIM);
+                if (e.locked()) {
+                    padlock(g, cx + RW - 8, cy + 2);
+                }
+            }
+            Component hint = tree == null ? tr("search_wait") : all.isEmpty() ? tr("search_none") : tr("search_hint", all.size());
+            CashMachine.wrapUp(g, font, hint, SX + 6, bottom, SW - 12, PHOS_DIM);
         } else {
             for (int k = 0; k < menu.cards.size(); k++) {
                 ShopMenu.Card c = menu.cards.get(k);
                 int cx = CX + (k % menu.columns) * (cw() + CGAP), cy = CY + (k / menu.columns) * (ch() + CGAP);
+                if (c.lock() != null) { // locked: what it needs, in place of the price, and a grey padlock in the corner
+                    small(g, lockFace(c.lock()), cx + 2, cy + labelY(), AMBER);
+                    padlock(g, cx + cw() - 8, cy + 2);
+                    continue;
+                }
                 small(g, c.section().isEmpty() ? (c.buy() >= 0 ? Shop.priceLabel("buy", c.buy(), c.currency()) : "--") : "> open", cx + 2, cy + labelY(), c.buy() >= 0 ? AMBER : PHOS_DIM);
                 if (c.section().isEmpty()) {
                     small(g, c.sell() >= 0 ? Shop.priceLabel("sell", c.sell(), c.currency()) : "", cx + 2, cy + labelY() + 7, PHOS_DIM);

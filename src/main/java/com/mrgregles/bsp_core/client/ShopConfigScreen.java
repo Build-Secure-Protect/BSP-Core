@@ -39,7 +39,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, CARD = 0xFF0A1A10, CARD_SEL = 0xFF0F2D1C, CARD_EMPTY = 0xFF07100A;
     private static final int SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3, CX = SX + 6, CY = SY + 22, CGAP = 1;
     private static final String[] STYLES = {"cash_machine", "passbook", "market_board"};
-    private static final int LIST_ROWS = 7, LIST_Y = SY + 34, SIDE_Y = 38, SIDE_STEP = 11, SET_STEP = 10;
+    private static final int LIST_ROWS = 7, LIST_Y = SY + 34, SIDE_Y = 38, SIDE_STEP = 11, SET_STEP = 9;
     /** Shop list columns: name, kind, cards, network. */
     private static final int[] COL = {SX + 6, SX + 104, SX + 146, SX + 174};
 
@@ -320,6 +320,13 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             case 4 -> send(Action.SET_ITEM, "instant", String.valueOf(!it.instant), sel, 0);
             case 5 -> send(Action.SET_ITEM, "hidden", String.valueOf(!it.hidden), sel, 0);
             case 6 -> edit("item.section", it.section);
+            case 7 -> send(Action.SET_ITEM, "match", it.matchItem ? "exact" : "item", sel, 0);
+            case 8 -> edit("item.note", it.noteText());
+            case 9 -> {
+                if (menu.shop.kind == Shop.Kind.ROTATING) {
+                    edit("item.weight", String.valueOf(it.weight));
+                }
+            }
             default -> { }
         }
     }
@@ -349,22 +356,71 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
 
     private void settingsClick(double ry) {
         Shop s = menu.shop;
-        int row = (int) (ry / SET_STEP);
-        switch (row) {
-            case 0 -> edit("name", s.name);
-            case 1 -> send(Action.SET, "kind", Shop.Kind.values()[(s.kind.ordinal() + 1) % Shop.Kind.values().length].name(), 0, 0);
-            case 2 -> edit("parent", s.parent);
-            case 3 -> send(Action.SET, "remote", String.valueOf(!s.remote), 0, 0);
-            case 4 -> send(Action.SET, "buyonly", String.valueOf(!s.buyOnly), 0, 0);
-            case 5 -> edit("slots", String.valueOf(s.displaySlots));
-            case 6 -> edit("interval", String.valueOf(s.intervalMs / 3_600_000L));
-            case 7 -> edit("offer", String.valueOf(s.offerPercent));
-            case 8 -> edit("offerhours", s.offerEndMs == 0 ? "0" : String.valueOf(Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L)));
-            case 9 -> send(Action.SET, "hoursmode", com.mrgregles.bsp_core.shop.OpenHours.Mode.values()[(s.hours.mode().ordinal() + 1) % 3].name(), 0, 0);
-            case 10 -> edit("hoursopen", hm(s.hours.openMin(), s.hours.mode()));
-            case 11 -> edit("hoursclose", hm(s.hours.closeMin(), s.hours.mode()));
-            default -> { }
+        double y = ry + 20;
+        for (SetRow r : settingsRows(s)) {
+            if (r.field().isEmpty() || y < r.y() || y >= r.y() + SET_STEP) {
+                continue;
+            }
+            switch (r.field()) {
+                case "name" -> edit("name", s.name);
+                case "kind" -> send(Action.SET, "kind", Shop.Kind.values()[(s.kind.ordinal() + 1) % Shop.Kind.values().length].name(), 0, 0);
+                case "parent" -> edit("parent", s.parent);
+                case "remote" -> send(Action.SET, "remote", String.valueOf(!s.remote), 0, 0);
+                case "buyonly" -> send(Action.SET, "buyonly", String.valueOf(!s.buyOnly), 0, 0);
+                case "slots" -> edit("slots", String.valueOf(s.displaySlots));
+                case "interval" -> edit("interval", String.valueOf(s.intervalMs / 3_600_000L));
+                case "rotateat" -> edit("rotateat", s.rotateAt.fixedTime() ? s.rotateAt.text() : "none");
+                case "norepeat" -> send(Action.SET, "norepeat", String.valueOf(!s.noRepeat), 0, 0);
+                case "broadcast" -> send(Action.SET, "broadcast", String.valueOf(!s.broadcast), 0, 0);
+                case "offer" -> edit("offer", String.valueOf(s.offerPercent));
+                case "offerhours" -> edit("offerhours", s.offerEndMs == 0 ? "0" : String.valueOf(Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L)));
+                case "hoursmode" -> send(Action.SET, "hoursmode", com.mrgregles.bsp_core.shop.OpenHours.Mode.values()[(s.hours.mode().ordinal() + 1) % 3].name(), 0, 0);
+                case "hoursopen" -> edit("hoursopen", hm(s.hours.openMin(), s.hours.mode()));
+                case "hoursclose" -> edit("hoursclose", hm(s.hours.closeMin(), s.hours.mode()));
+                default -> { }
+            }
+            return;
         }
+    }
+
+    /** A Settings line (y from the screen's top), or a rule between groups (no field). */
+    private record SetRow(int y, String field, String value) {}
+
+    /**
+     * The Settings view: the shop's own lines, then the lines its kind has (a rotating shop's
+     * rotation, a special offer's discount), then the opening hours and the id, in groups with a
+     * thin rule between them.
+     */
+    private List<SetRow> settingsRows(Shop s) {
+        List<String[]> shopGroup = List.of(new String[]{"name", s.name}, new String[]{"kind", s.kind.name().toLowerCase(Locale.ROOT)}, new String[]{"parent", s.parent.isEmpty() ? "-" : s.parent},
+                new String[]{"remote", s.remote ? "on" : "off"}, new String[]{"buyonly", s.buyOnly ? "on" : "off"});
+        List<String[]> kindGroup = switch (s.kind) {
+            case ROTATING -> List.of(new String[]{"slots", String.valueOf(s.displaySlots)},
+                    new String[]{"interval", s.intervalMs / 3_600_000L + " h" + (s.rotateAt.fixedTime() ? tr("unused").getString() : "")},
+                    new String[]{"rotateat", s.rotateAt.fixedTime() ? s.rotateAt.text() : tr("none").getString()}, new String[]{"norepeat", s.noRepeat ? "on" : "off"},
+                    new String[]{"broadcast", s.broadcast ? "on" : "off"});
+            case OFFER -> List.of(new String[]{"offer", s.offerPercent + "%"},
+                    new String[]{"offerhours", s.offerEndMs == 0 ? tr("no_end").getString() : Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L) + " h"});
+            default -> List.of();
+        };
+        List<String[]> hourGroup = List.of(new String[]{"hoursmode", s.hours.mode().name().toLowerCase(Locale.ROOT)}, new String[]{"hoursopen", hm(s.hours.openMin(), s.hours.mode())},
+                new String[]{"hoursclose", hm(s.hours.closeMin(), s.hours.mode())}, new String[]{"id", s.id});
+        List<SetRow> out = new ArrayList<>();
+        int y = 21;
+        for (List<String[]> group : List.of(shopGroup, kindGroup, hourGroup)) {
+            if (group.isEmpty()) {
+                continue;
+            }
+            if (!out.isEmpty()) {
+                out.add(new SetRow(y, "", ""));
+                y += 3;
+            }
+            for (String[] r : group) {
+                out.add(new SetRow(y, r[0], r[1]));
+                y += SET_STEP;
+            }
+        }
+        return out;
     }
 
     private static String hm(int v, com.mrgregles.bsp_core.shop.OpenHours.Mode mode) {
@@ -529,12 +585,12 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             case BROWSER -> CashMachine.wrapUp(g, font, tr("browser", found.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
             case SETTINGS -> {
                 if (s != null) {
-                    String[][] rows = {{"name", s.name}, {"kind", s.kind.name().toLowerCase(Locale.ROOT)}, {"parent", s.parent.isEmpty() ? "-" : s.parent}, {"remote", s.remote ? "on" : "off"},
-                            {"buyonly", s.buyOnly ? "on" : "off"}, {"slots", String.valueOf(s.displaySlots)}, {"interval", s.intervalMs / 3_600_000L + " h"}, {"offer", s.offerPercent + "%"},
-                            {"offerhours", s.offerEndMs == 0 ? tr("no_end").getString() : Math.max(0, (s.offerEndMs - System.currentTimeMillis()) / 3_600_000L) + " h"},
-                            {"hoursmode", s.hours.mode().name().toLowerCase(Locale.ROOT)}, {"hoursopen", hm(s.hours.openMin(), s.hours.mode())}, {"hoursclose", hm(s.hours.closeMin(), s.hours.mode())}, {"id", s.id}};
-                    for (int i = 0; i < rows.length; i++) {
-                        line(g, SX + 8, SY + 22 + i * SET_STEP, tr("f_" + rows[i][0]).getString(), rows[i][1], SW - 16);
+                    for (SetRow r : settingsRows(s)) {
+                        if (r.field().isEmpty()) {
+                            g.fill(SX + 8, SY + r.y(), SX + SW - 8, SY + r.y() + 1, SCREEN_EDGE);
+                        } else {
+                            line(g, SX + 8, SY + r.y(), tr("f_" + r.field()).getString(), r.value(), SW - 16);
+                        }
                     }
                     CashMachine.wrapUp(g, font, tr("settings_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
                 }
@@ -589,7 +645,12 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         } else if (view == View.PAGE && it != null) {
             String[][] rows = {{"count", String.valueOf(it.stack.getCount())}, {"buy", it.buy < 0 ? "off" : String.valueOf(it.buy)}, {"sell", it.sell < 0 ? "off" : String.valueOf(it.sell)},
                     {"currency", it.currency < 0 ? "pieces" : Bank.tierName(CoinTier.values()[it.currency])}, {"instant", it.instant ? "on" : "off"},
-                    {"hidden", it.hidden ? "on" : "off"}, {"section", it.section.isEmpty() ? "-" : it.section}};
+                    {"hidden", it.hidden ? "on" : "off"}, {"section", it.section.isEmpty() ? "-" : it.section}, {"match", it.matchItem ? "item" : "exact"},
+                    {"note", it.note.isEmpty() ? "-" : it.note.get(0) + (it.note.size() > 1 ? " (+" + (it.note.size() - 1) + ")" : "")}};
+            if (menu.shop.kind == Shop.Kind.ROTATING) { // how likely the draw picks it
+                rows = java.util.Arrays.copyOf(rows, rows.length + 1);
+                rows[rows.length - 1] = new String[]{"weight", String.valueOf(it.weight)};
+            }
             g.renderItem(it.stack, PX + PW / 2 - 8, SY + 20);
             for (int i = 0; i < rows.length; i++) {
                 boolean editing = fieldName.equals("item." + rows[i][0]);

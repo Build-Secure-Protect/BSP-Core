@@ -1598,3 +1598,88 @@ Covered by GameTest `a_rotating_shop_has_one_draw_for_the_network` (stand-in dat
 - [ ] A sell limit with `refill sell rotation` on a card of that shop: sell it out on A; after the next draw both servers show it full again, once.
 - [ ] Deleting the shop removes its draw row.
 
+## Rotation at fixed times, no repeats, weights, the announcement (spawn shops SS-6, 2026-10-26)
+
+Covered by GameTest `a_rotating_shop_changes_at_its_fixed_time_without_repeats_by_weight_and_says_so` (the fixed time, the cycle, weight 0, the weights' odds, the line's words, once per draw, switching from an interval, the network's cycle). Looks A of `tools/preview/rotation_concepts.html`. Untested in a client: the Settings lines, the Weight line, the chat line and its hover.
+
+- [ ] Workbench, a rotating shop, Settings: one column in three groups with thin rules (Name to Buy only; Slots shown, Interval, Rotate at, No repeats, Announce; Hours, Opens, Closes, Id); nothing overlaps the hint at the foot. A plain shop has no middle group; a special offer has Discount and Ends in.
+- [ ] Rotate at: type `monday 00:00`: the line reads monday 00:00 and Interval adds "(unused)"; `12h` is refused; `none` goes back to the interval. The shop screen's header "rotates in" counts to Monday 00:00.
+- [ ] No repeats and Announce toggle on a click.
+- [ ] A card's Card tab on a rotating shop has Weight under Opens section; 0 keeps it out of every draw; a plain shop shows no Weight line.
+- [ ] Set Rotate at a minute or two ahead (`day HH:MM`), Announce on: at the time, without opening the shop, every player gets one line: gold [Shops], "<shop> now buys <cards>." with the names in aqua, and the next change in grey. Hovering a name shows the item's tooltip. It comes once.
+- [ ] On a network: both servers' players get the line once, each from their own server; the draw is the same on both.
+- [ ] No repeats with 5 cards and 2 on show over three changes: no card comes back before all five have shown (the third draw shows the one left and one from a new cycle).
+
+## Cards matching by item (spawn shops SS-7, 2026-10-26)
+
+Covered by GameTest `a_card_matching_by_item_takes_used_items_but_keeps_what_an_item_is` (exact card wins, renamed and used items, damaged refused, potions and enchanted books keep their kind, a filled shulker box refused, Sell all and the Sell Here box order, the Workbench line). Untested in a client and with modded items: the tooltip line, the Match line, and real used machines.
+
+- [ ] Workbench, a card's Card tab: Match reads exact; a click makes it item. With a Weight line on a rotating shop, nothing reaches the field at the panel's foot.
+- [ ] The card's tooltip in the shop: a grey line "Takes any <item>, used or new (not damaged)".
+- [ ] A Mekanism machine used and broken (energy and upgrades in it, its slots empty) sells to an item card made from a clean one. The same machine with items left in its slots: "Empty it first: it holds items."
+- [ ] A damaged tool: "That one is damaged; this shop only takes it whole."
+- [ ] A shop with an exact card and an item card for the same machine: Sell all puts the clean ones on the exact card and the used ones on the item card.
+- [ ] A potion card set to item: a different potion is not taken.
+
+## A note on a card (spawn shops SS-10, 2026-10-26)
+
+Covered by GameTest `a_card_note_is_three_short_lines_that_never_reach_the_item` (three lines, 60 characters, blank lines dropped, saved, sent to the screen, not on the bought item, the Workbench line). Look B of `tools/preview/card_note_concepts.html`. Untested in a client: the tooltip and the Workbench line.
+
+- [ ] Workbench, a card's Card tab: a Note line under Match reads "-". Click it, type `The Challenge buys up to 4 each per week.|Used machines welcome; empty them first.`, Enter: it reads the first line and "(+1)". On a rotating shop the Weight line still sits clear of the field at the foot.
+- [ ] Open the shop and hover the card: after its price, limit and refill lines, a blank line, then the two note lines in amber.
+- [ ] Buy the item: its own tooltip in the inventory shows no note.
+- [ ] `/bsp shop item <id> <index> note none` clears it; the tooltip ends at the shop's lines again.
+
+## Shop import (spawn shops SS-1 part 1, 2026-10-26)
+
+Covered by GameTest `shop_import_checks_the_whole_file_then_creates_or_replaces_shops` (test mode and the report, three shops with every kind of key, replacing with counts starting again, an unknown item refusing the file with nothing changed, coin payouts with and without the flag, a rotation refill off a rotating shop, 22 cards on a page, a path with `..`, the format number). The spawn shops file `BSP-Servers/BSP-Shops/spawn_shops.json` was run through `test` on the game test server: no format errors; only the items of mods that server does not load were refused (all those mods are in the pack). Untested on BSP-Spawn itself and on a network.
+
+- [ ] Copy `spawn_shops.json` to BSP-Spawn's `config/bsp_core/shops/`. `/bsp shop import spawn_shops test`: "Test of spawn_shops: clean." with the shop count; `config/bsp_core/shops/spawn_shops-report.txt` lists every shop and its cards. Any error names the shop, page and card.
+- [ ] `/bsp shop import spawn_shops`: "Imported ..." The shops show in `/bsp shop list` and in the Workbench with their sections, prices, limits, notes and rotation settings.
+- [ ] A Vendor Post assigned to a shop before a second import of that shop still opens it, with the new cards.
+- [ ] On a network: the other server lists the imported shops a moment later; a replaced shop's counts are full on both.
+- [ ] From the server console (no player): the same command works and prints the report lines.
+- [ ] `/bsp shop import ../server` is refused as not a file name.
+
+## Shop export (spawn shops SS-1 part 2, 2026-10-26)
+
+Covered by GameTest `shop_export_then_import_gives_the_same_shops_back` (a shop with a sub-shop and a rotating child using every key, written, changed, imported back and compared key for key; overwrite; an unknown shop; a path out of the folder). Untested on BSP-Spawn.
+
+- [ ] After importing `spawn_shops`, change a card in the Workbench, then `/bsp shop export spawn_decor decor_backup`: "Exported N shop(s) ..." and `config/bsp_core/shops/decor_backup.json` holds Decor and its five sections, with the change.
+- [ ] The same command again: refused, "is there already"; with `overwrite` it writes.
+- [ ] `/bsp shop export all everything`, then `/bsp shop import everything test`: clean, replacing every shop.
+
+## Requirements on cards and shops (spawn shops SS-8, 2026-10-26)
+
+Covered by GameTest `cards_and_shops_can_need_a_permission_or_playtime_and_lock_or_hide` (a stand-in for LuckPerms; this server's Time Played). Look C of `tools/preview/locked_card_concepts.html`. Untested: the look in a client, LuckPerms (Forge and Mohist), BSP-RankUp's playtime.
+
+- [ ] `/bsp shop item <id> <index> requires permission bsp.shop.gold reason Gold rank and up`. As a player without the node: the card is dark, reads "Gold rank and up" in amber where the price was, with a grey padlock top right; the tooltip has "Locked: needs permission bsp.shop.gold" in red and "(Gold rank and up)". Clicking it says it is locked. `/lp user <name> permission set bsp.shop.gold true`, reopen: the card is normal and buys.
+- [ ] `requires playtime 10`: the card reads "10 h play"; the tooltip shows "Played: X h Y m of 10 h". With BSP-RankUp installed the minutes are RankUp's (the same on every server when its storage is shared).
+- [ ] `requires playtime 10 hide`: the card is not on the page at all for a newer player.
+- [ ] `/bsp shop set <id> requires permission bsp.shop.gold hide`: the shop is gone from the Portable Banker's Shopping Network list for a player without the node; its Vendor Post says "This shop is not open to you."; with `show` it opens with every card locked.
+- [ ] On Mohist with the LuckPerms Bukkit plugin: the same node check works.
+- [ ] Without LuckPerms: an operator passes, a player does not.
+
+## Search on the shop screen (spawn shops SS-9, 2026-10-26)
+
+Covered by GameTest `shop_search_sends_the_shops_tree_and_finds_a_cards_page` (the box shows only for trees of more than a page; the tree leaves out section cards, hidden cards and rotating cards not on show, keeps locked shown cards marked; each result's section and path; the page holding a card; the packet). Look B of `tools/preview/shop_search_concepts.html`. Untested in a client: everything below.
+
+- [ ] The Decor shop (after importing the spawn file): a boxed field at the right of the header reads "search..."; "page 1 / N" sits to its left. A small shop (one page) has no box.
+- [ ] Click the box and type "oak": from the second letter the grid shows oak cards from every section; the hint at the foot says how many; the page count goes. Typing "e" or other letters goes into the box, not the inventory key.
+- [ ] Previous and Next step through the results' pages when there are more than 21.
+- [ ] "@create" in a mod shop lists Create's cards; "@create shaft" narrows them.
+- [ ] Hover a result: its tooltip ends with "In Decor > Woods" and "Click to open Woods". Click it: Woods opens on the page with that card, outlined in amber for a moment.
+- [ ] Escape empties the box (the shop's page is back); a second Escape closes the screen.
+- [ ] A card locked by a requirement shows with a padlock and "Locked for you" in its tooltip; a hidden one is not found.
+- [ ] In another language, names match as the game shows them.
+
+## Shop report (spawn shops SS-11, 2026-10-26)
+
+Covered by GameTest `shop_report_adds_up_the_bank_logs_shop_trades` (rows naming the shop and item, kept when saved; an older row by name; coins apart; the totals; the sellers; the CSV; the Sell Here box's row per card; the 90-day cap). Untested: the MySQL query and the new `bank_log` columns on a live network.
+
+- [ ] After some trades, `/bsp shop report`: a gold head line, a line per shop (out, in, net, items), "Busiest cards", "Sold most", the total, and the CSV's name. Open the CSV in a spreadsheet.
+- [ ] `/bsp shop report 30 spawn_challenge`: only the Challenge; its net is the pieces it put into the economy.
+- [ ] `/bsp shop report 500`: says the log keeps 90 days (or `bank.logDays`) and reports that far.
+- [ ] On a network: the first start with this jar logs no error for `bank_log` (the two columns are added); a report on one server counts trades made on the others.
+- [ ] From the server console: the same lines print.
+

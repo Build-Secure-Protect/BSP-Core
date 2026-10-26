@@ -1,0 +1,141 @@
+<title>Shop Screen Search</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of three concepts; each draws the Challenge shop screen over a game view at GUI pixel size (scaled 3x), with a search typed and a result hovered. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; color:var(--muted); max-width:82ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:1000px; height:auto; image-rendering:pixelated; display:block; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Shop Screen Search</h1>
+    <p class="lede">Spawn shops task 8 (SS-9). A search on the player's shop screen that looks through the shop and all its sub-sections at once, by the item's name as the player's game shows it, or by mod with "@create". Three places for the search box, on the Decor shop (five sections, 271 cards) with "oak" typed. Results fill the card grid; hovering one says which section it is in, and clicking it opens that section with the card picked out.</p>
+  </header>
+  <section><h2>A. A Search key</h2><div class="card">
+    <p>A <b>Search</b> key in its own group between the page keys and the sell keys. Pressed, the header turns into the search line ("&gt; DECOR search: oak_") with the count of results on the right; Back clears the search. The page header is unchanged until then. (With an admin's two extra keys the column is full; the key moves into the Admin group for them.)</p>
+    <div class="stage"><canvas id="a" width="1260" height="720"></canvas></div></div></section>
+  <section><h2>B. A box in the header</h2><div class="card">
+    <p>A small boxed field always sits at the right of the header, in place of "page 1 / 13" while it holds text. Click it and type; the page count comes back when it is emptied. Nothing else on the screen moves.</p>
+    <div class="stage"><canvas id="b" width="1260" height="720"></canvas></div></div></section>
+  <section><h2>C. The bottom strip</h2><div class="card">
+    <p>The strip under the screen ("open / shopping network") becomes the search line when clicked or when the player starts typing: "search: oak_ (9 found)", the balance staying on the right. The header keeps the shop's path.</p>
+    <div class="stage"><canvas id="c" width="1260" height="720"></canvas></div></div></section>
+</div>
+<script>
+(function(){
+  const S = 3, GW = 420, GH = 240, OX = 30, OY = 12;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', CARD:'#0a1a10', CARD_SEL:'#0f2d1c' };
+  const MC = { white:'#FFFFFF', gray:'#AAAAAA', dgray:'#555555', gold:'#FFAA00', blue:'#5555FF', dpurple:'#AA00AA', amber:'#F2B544' };
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, ';':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '[':4, ']':4, '│':2 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  function text(g, s, x, y, colour, scale, italic){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (italic ? 'italic ' : '') + (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    if (italic) g.transform(1, 0, -0.18, 1, 0, 0);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour; g.fillText(s, 0, 0); g.restore();
+    return target;
+  }
+  function shadowText(g, s, x, y, colour, italic){
+    const n = parseInt(colour.slice(1), 16);
+    text(g, s, x + 1, y + 1, 'rgb(' + (((n >> 16) & 255) >> 2) + ',' + (((n >> 8) & 255) >> 2) + ',' + ((n & 255) >> 2) + ')', 1, italic);
+    return text(g, s, x, y, colour, 1, italic);
+  }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+  function icon(g, x, y, base, light, dark, kind){
+    let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  const NAMES = ['Oak Planks','Oak Log','Oak Stairs','Oak Slab','Oak Fence','Oak Door','Stripped Oak Log','Oak Trapdoor','Dark Oak Planks'];
+  const PRICES = ['buy 24','buy 30','buy 36','buy 18','buy 32','buy 40','buy 34','buy 38','buy 28'];
+  function plank(g, x, y, k){
+    const base = k === 8 ? '#4a3420' : '#a2834f', light = k === 8 ? '#5f4429' : '#c29d62', dark = k === 8 ? '#2f2112' : '#7a6136';
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = (py % 4 === 0) ? dark : ((px * 7 + py * 3 + k) % 11 === 0 ? light : base);
+      if (k === 1 || k === 6) c = (px < 2 || px > 13) ? (k === 6 ? '#b8935a' : '#5e4527') : c;
+      if (k === 2 && py < 8 && px > 7) continue;
+      if (k === 3 && py < 8) continue;
+      if (k === 4 && (px % 6 > 1) && py > 3) continue;
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  const W = 300, H = 216, SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20;
+  function key(g, x, y, label, on, lit){ fill(g, x, y, x + KW, y + KH, C.KEY_EDGE); fill(g, x, y, x + KW, y + KH - 2, lit ? '#fff6d8' : C.KEY); text(g, label, x + (KW - mcWidth(label)) / 2, y + 6, on ? C.KEY_TEXT : '#8f877a'); }
+  function screen(g, look){
+    const grd = g.createLinearGradient(0, 0, 0, GH * S); grd.addColorStop(0, '#2b3442'); grd.addColorStop(1, '#151a22');
+    g.fillStyle = grd; g.fillRect(0, 0, GW * S, GH * S); g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 0, GW * S, GH * S);
+    const x = OX, y = OY;
+    fill(g, x, y, x + W, y + H, C.BEZEL_DARK); fill(g, x + 2, y + 2, x + W - 2, y + H - 2, C.BEZEL); fill(g, x + 2, y + 2, x + W - 2, y + 4, C.BEZEL_LIGHT);
+    fill(g, x + SX - 2, y + SY - 2, x + SX + SW + 2, y + SY + SH + 2, C.EDGE); fill(g, x + SX, y + SY, x + SX + SW, y + SY + SH, C.SCREEN);
+    // header
+    if (look === 'A') {
+      text(g, '> DECOR', x + SX + 6, y + SY + 6, C.PHOS);
+      text(g, 'search: oak_', x + SX + 54, y + SY + 6, C.AMBER);
+      text(g, '9 found', x + SX + SW - 6 - mcWidth('9 found'), y + SY + 6, C.DIM);
+    } else if (look === 'B') {
+      text(g, '> DECOR', x + SX + 6, y + SY + 6, C.PHOS);
+      const fx = x + SX + SW - 74; fill(g, fx, y + SY + 3, fx + 68, y + SY + 14, C.DIM); fill(g, fx + 1, y + SY + 4, fx + 67, y + SY + 13, '#000000');
+      text(g, 'oak_', fx + 3, y + SY + 6, '#e0e0e0'); text(g, '9', fx + 66 - mcWidth('9') - 2, y + SY + 6, C.DIM);
+    } else {
+      text(g, '> DECOR', x + SX + 6, y + SY + 6, C.PHOS);
+      text(g, '9 found', x + SX + SW - 6 - mcWidth('9 found'), y + SY + 6, C.DIM);
+    }
+    fill(g, x + SX + 4, y + SY + 16, x + SX + SW - 4, y + SY + 17, C.EDGE);
+    const cols = 7, cw = 26;
+    for (let k = 0; k < 9; k++) {
+      const cx = x + SX + 6 + (k % cols) * (cw + 1), cy = y + SY + 22 + Math.floor(k / cols) * 37;
+      fill(g, cx, cy, cx + cw, cy + 36, k === 2 ? C.CARD_SEL : C.CARD);
+      fill(g, cx, cy, cx + cw, cy + 1, C.DIM); fill(g, cx, cy + 35, cx + cw, cy + 36, C.DIM);
+      plank(g, cx + cw / 2 - 8, cy + 3, k);
+      const sc = Math.min(.75, (cw - 4) / mcWidth(PRICES[k])); text(g, PRICES[k], cx + 2, cy + 21, C.AMBER, sc);
+    }
+    text(g, 'Click a result to open its section.', x + SX + 6, y + SY + SH - 10, C.DIM, .75);
+    let ky = y + SY;
+    [['Back', true], ['Previous', false], ['Next page', false]].forEach(([l, on]) => { key(g, x + KX, ky, l, on); ky += 24; });
+    if (look === 'A') key(g, x + KX, y + SY + 84, 'Search', true, true);
+    [['Sell here', 1], ['Sell all', 0]].forEach(([l, i]) => key(g, x + KX, y + SY + SH - KH - i * 24, l, true));
+    fill(g, x + SX - 2, y + 178, x + W - SX + 2, y + 204, C.EDGE); fill(g, x + SX, y + 180, x + W - SX, y + 202, C.SCREEN);
+    if (look === 'C') { fill(g, x + SX + 2, y + 182, x + SX + 140, y + 200, '#0f2d1c'); text(g, 'search: oak_  (9 found)', x + SX + 6, y + 187, C.AMBER); }
+    else text(g, 'open / shopping network', x + SX + 6, y + 187, C.DIM);
+    text(g, 'balance 3,420 pieces', x + W - SX - 6 - mcWidth('balance 3,420 pieces'), y + 187, C.DIM);
+    for (let ly = y + SY; ly < y + SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect((x + SX) * S, ly * S, SW * S, S); }
+  }
+  function tooltip(g, x, y, lines){
+    const w = Math.max(...lines.map(l => mcWidth(l[0]))) + 6, h = lines.length * 10 + 2;
+    fill(g, x - 1, y, x + w + 1, y + h, 'rgba(16,0,16,0.94)'); fill(g, x, y - 1, x + w, y + h + 1, 'rgba(16,0,16,0.94)');
+    g.fillStyle = 'rgba(80,0,255,0.6)'; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    let ty = y + 3; lines.forEach((l, i) => { shadowText(g, l[0], x + 3, ty, l[1], l[2]); ty += i === 0 ? 12 : 10; });
+  }
+  const TIP = [['Oak Stairs', MC.white], ['Minecraft', MC.blue, true], ['Buy: 36 pieces per lot (left click)', MC.white], ['In Decor > Woods', MC.gray], ['Click to open Woods', MC.gray]];
+  function draw(id, look){ const cv = document.getElementById(id), g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height); screen(g, look); tooltip(g, OX + 30, OY + 104, TIP); }
+  function drawAll(){ draw('a', 'A'); draw('b', 'B'); draw('c', 'C'); }
+  drawAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>

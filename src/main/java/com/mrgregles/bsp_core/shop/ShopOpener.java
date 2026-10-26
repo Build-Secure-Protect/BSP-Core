@@ -32,6 +32,11 @@ public final class ShopOpener {
     }
 
     public static void open(ServerPlayer player, Shop shop, @Nullable BlockPos at, boolean remote, @Nullable OpenHours hours, boolean test) {
+        Requirement.Lock lock = shop.requires.check(player);
+        if (lock != null && lock.hide()) { // a shop hidden from them: not opened, wherever they reach it
+            player.displayClientMessage(Component.translatable("message.bsp_core.shop.not_open_to_you").withStyle(net.minecraft.ChatFormatting.RED), true);
+            return;
+        }
         NetworkHooks.openScreen(player, new MenuProvider() {
             @Override
             public Component getDisplayName() {
@@ -82,7 +87,11 @@ public final class ShopOpener {
         }
         long now = Shops.now();
         boolean open = menu.hours == null || menu.hours.isOpen(player.level());
-        List<Integer> shown = open ? Shops.visible(server, shop, now) : List.of();
+        List<Integer> shown = new ArrayList<>(open ? Shops.visible(server, shop, now) : List.of());
+        shown.removeIf(i -> { // cards hidden from this player by their requirements are not on their page at all
+            Requirement.Lock l = Shops.lock(shop, i, player);
+            return l != null && l.hide();
+        });
         List<ShopItem> shownItems = new ArrayList<>();
         for (int i : shown) {
             shownItems.add(shop.item(i));
@@ -98,13 +107,13 @@ public final class ShopOpener {
             boolean sells = it.sellable() && !shop.buyOnly;
             cards.add(new ShopMenu.Card(i, it.stack.copy(), it.buyable() ? Shops.price(shop, it, true, now) : -1, sells ? it.sell : -1, it.currency,
                     it.buyable() ? Shops.limit(server, shop, i, player.getUUID(), false, now) : ShopMenu.Limit.NONE,
-                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section));
+                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section, it.matchItem, List.copyOf(it.note), Shops.lock(shop, i, player)));
         }
         StringBuilder path = new StringBuilder(shop.name);
         for (Shop p = shop.parent.isEmpty() ? null : Shops.ledger(server).shop(shop.parent); p != null; p = p.parent.isEmpty() ? null : Shops.ledger(server).shop(p.parent)) {
             path.insert(0, p.name + " > ");
         }
-        long rotatesIn = shop.kind == Shop.Kind.ROTATING ? Math.max(0, Shops.ledger(server).draw(shop.id).nextAt - now) : 0;
+        long rotatesIn = shop.kind == Shop.Kind.ROTATING ? Math.max(0, Shops.nextChange(server, shop, now) - now) : 0;
         String opensAt = "";
         int until = 0;
         if (!open && menu.hours != null) {
@@ -114,6 +123,7 @@ public final class ShopOpener {
         }
         boolean admin = Admins.isAdmin(player) || Admins.isModerator(player);
         BSPNetwork.sendTo(player, new ShopDataPacket(shop.name, path.toString(), shop.kind, shop.buyOnly, open, admin, shop.offerActive(now) ? shop.offerPercent : 0, shop.offerEndMs, rotatesIn,
-                page, pages, columns, rows, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args));
+                page, pages, columns, rows, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args,
+                open && ShopSearch.searchable(server, shop)));
     }
 }

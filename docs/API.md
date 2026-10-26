@@ -80,7 +80,7 @@ BspKits.status(player, "vip_toolkit").ifPresent(s -> { if (!s.ready()) log(s.sta
 
 **Login order.** Kits are never put into an inventory at login time. What is owed is delivered on BSP-InventorySync's `InventoryRestoredEvent` when that mod is loaded (BSP-Core listens to it by class name, no compile-time dependency; `kit.deliverOnRestore`), otherwise `kit.grantDelayTicks` after the login. A mod that gives kits at login should call `BspKits.give` and leave the delivery to BSP-Core.
 
-**Shop counts across the network.** With `storage.mode = "mysql"` every shop card's stock and sell room are rows of `shop_counts` (with the usual prefix): `shop`, `card` (its place in the shop), `side` (`B` stock, `S` sell room), `who` (empty for everyone, else a player UUID), `left_lots` (-1 full), `at_ms` (the countdown's end, or the refill time or draw it was filled for). A trade holds both rows of a card side with `SELECT ... FOR UPDATE` in one transaction. Redis kind `shopcount` (payload a shop id) tells the other servers to re-read that shop's rows. The state row `shop_counts_moved` names the server whose counts were moved in at the first start. A rotating shop's draw is a row of `shop_draws`: `shop`, `shown` (card places, comma separated), `drawn_at`, `next_at`; it is changed under `SELECT ... FOR UPDATE`, and the same `shopcount` notice follows. Other mods never touch the tables.
+**Shop counts across the network.** With `storage.mode = "mysql"` every shop card's stock and sell room are rows of `shop_counts` (with the usual prefix): `shop`, `card` (its place in the shop), `side` (`B` stock, `S` sell room), `who` (empty for everyone, else a player UUID), `left_lots` (-1 full), `at_ms` (the countdown's end, or the refill time or draw it was filled for). A trade holds both rows of a card side with `SELECT ... FOR UPDATE` in one transaction. Redis kind `shopcount` (payload a shop id) tells the other servers to re-read that shop's rows. The state row `shop_counts_moved` names the server whose counts were moved in at the first start. A rotating shop's draw is a row of `shop_draws`: `shop`, `shown` (card places, comma separated), `used` (no repeats: the places shown so far this cycle), `drawn_at`, `next_at`; it is changed under `SELECT ... FOR UPDATE`, and the same `shopcount` notice follows. Other mods never touch the tables.
 
 **Across the network.** With `storage.mode = "mysql"` the kits are the shared tables `kits`, `kit_items` and `kit_redeems` (with the usual prefix); each server keeps a local copy (`bsp_core_kits`), writes every change through, announces it over Redis (kind `kit`: a kit id, `-id` for a deletion, `r:<uuid>` for a player's records) and reads the fresh copy back. `BspKits` reads the local copy, which is current to within a moment; a player's own records are re-read at their login. Other mods never touch the tables.
 
@@ -153,3 +153,43 @@ The Discord user id stays with the bot. BSP-Core shows a player only "linked" or
 `BspLandOffice.open(player)` opens the Land Office for a player; `BspLandOffice.open(player, x1, z1, x2, z2)` opens it with ground the player outlined (Region Guard calls this when the wand selection is complete), drawn on the map and priced when it lies in an open area. The office lists plots for sale, open areas, the player's own claims and other players' claims within 160 blocks (`claimsNear`) from `RegionGuardApi.get().claims()`, reads the wand outline with `selection(player)` when opened from the block, buys, enlarges and abandons through it, and redraws every open office on `ClaimPurchasedEvent` / `ClaimAbandonedEvent`; the outlined ground is held on the server for the purchase. Needs Region Guard API version 4. When Region Guard prices claims in Shatter Coins (`claims().paysInCoins()`, API 6), the office shows `claims().priceText(level, id, amount)` for prices, the cost per block and the quote, and the coins the player carries instead of the bank balance; an older Region Guard keeps the pieces display.
 
 When BSP Region Guard is installed, BSP-Core's Anti Totem checks (placing a totem, dropping one, and the "stands in a totem zone" rule) also ask Region Guard's regions through `RegionGuardApi.get().regions().allows(level, pos, Flags.TOTEM_PLACE / TOTEM_DROP, player)`, and a no from either side refuses. The adapter is `compat.regionguard.RegionGuardZones`; Region Guard is an optional dependency, compiled against its jar in `../BSP-Region Guard/build/libs` and reached only when loaded.
+
+## Shop import file (format 1)
+
+`/bsp shop import <file> [test]` reads `config/bsp_core/shops/<file>.json` (letters, digits, `_`, `-`, `.` only; no folders). All or nothing: one error refuses the file. A shop whose id is on the server is replaced whole (its counts and draw start again); shops not named are untouched; nothing is deleted. The full report is written to `<file>-report.txt` beside it.
+
+```json
+{
+  "format": 1,
+  "allowCoinPayouts": false,
+  "shops": [
+    {
+      "id": "spawn_challenge", "name": "Challenge", "kind": "rotating", "parent": "", "remote": true, "buyOnly": false,
+      "style": "cash_machine", "columns": 0, "rows": 3, "hours": {"mode": "always"},
+      "displaySlots": 4, "intervalHours": 168, "rotateAt": {"every": "monday", "at": "00:00"}, "noRepeat": true, "broadcast": true,
+      "pages": [[
+        {"item": "mekanism:steel_casing", "count": 1, "sell": 2500, "currency": "pieces",
+         "sellGlobal": 200, "sellPlayer": 4, "sellRefill": "rotation", "match": "item", "weight": 1,
+         "lore": ["The Challenge buys up to 4 each per week."], "note": "for people; ignored"}
+      ]]
+    }
+  ]
+}
+```
+
+**Shop keys** (all but `id` optional; a missing key takes the value a new shop has): `id` (`[a-z0-9_]{1,32}`), `name`, `kind` (`shop`, `sub`, `rotating`, `offer`), `parent` (a sub-shop's parent, in the file or on the server), `remote`, `buyOnly`, `style` (`cash_machine`, `passbook`, `market_board`), `columns` (0 automatic, or 4 to 7), `rows` (2 or 3), `hours` (`{"mode": "always"}`, `{"mode": "real", "open": "09:00", "close": "21:00"}`, `{"mode": "game", "open": 0, "close": 12000}`), `displaySlots`, `intervalHours`, `rotateAt` (a day or weekday time), `noRepeat`, `broadcast`, `offerPercent`, `offerEnd` (`2026-12-31T23:59` in `shop.timeZone`, or empty), `requires`, `pages` (lists of up to 21 cards), `note` (ignored).
+
+**Card keys**: `item` (registry id), `count` (lot size, 1 to the stack size), `nbt` (SNBT), `buy` and `sell` (-1 or absent for off), `currency` (`pieces`, `copper`, `gold`, `diamond`, `netherite`, `illyrium`; a `sell` in coins needs `allowCoinPayouts`), `stockGlobal`, `stockPlayer`, `sellGlobal`, `sellPlayer` (lots, -1 none), `restockMinutes` (the old form of `stockRefill: {"after": N}`), `stockRefill`, `stockPlayerRefill`, `sellRefill`, `sellPlayerRefill`, `instant`, `hidden`, `section` (a sub-shop's id: the card opens it and `item` is its picture), `match` (`exact` or `item`), `weight` (0 to 100), `lore` (up to three lines of 60 characters), `requires`, `note` (ignored).
+
+**`requires`** (on a shop or a card): `{"permission": "bsp.shop.gold", "playtimeHours": 10, "whenLocked": "show", "reason": "Gold rank and up"}`, every key optional. The permission is asked of LuckPerms (any node; without LuckPerms only operators pass); playtime is BSP-RankUp's minutes when it is installed, else the server's Time Played. `show` greys the card with what it needs; `hide` leaves it off the player's page (a shop: off their Shopping Network list, and it does not open for them).
+
+**Refill and rotation rules**: an object, `{"after": 720}` (minutes from running out), `{"every": "day", "at": "06:00"}`, `{"every": "monday", "at": "00:00"}`, or text: `"rotation"` (a rotating shop's cards only), `"same"` (per-player rules: follow the shop-wide one; the default), `"never"`, `"12h"`, `"90m"`, `"2d"`, `"day 06:00"`, `"monday 00:00"`.
+
+A key this version does not know is a warning, not an error, so a file written for a later version still imports.
+
+`/bsp shop export <id|all> <file> [overwrite]` writes the same format with every key (rules as objects; `"never"`, `"same"` and `"rotation"` as text; `rotateAt` only when set; `allowCoinPayouts: true` when a card pays out coins). One shop is written with its sub-sections (shops whose parent chain leads to it). Counts and draws are never written. An existing file is kept unless `overwrite` is given.
+
+## Shop report and the bank log
+
+Buy and sell rows of the bank log name the shop and the item: `BankTransaction.shopId()` and `itemId()` (empty on rows from before, and on rows that are not shop trades); on a network the `bank_log` table has the columns `shop_id` and `item_id`, added at start-up to a table made before them. `/bsp shop report [days] [shop]` (admins, console) adds them up and writes `config/bsp_core/shops/report-<days>d-<date>[-shop].csv` with the columns `shop, shop_name, item, items_bought, items_sold, pieces_in, pieces_out, net_out, coins_in, coins_out`.
+
