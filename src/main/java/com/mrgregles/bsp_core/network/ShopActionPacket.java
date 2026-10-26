@@ -51,7 +51,8 @@ public record ShopActionPacket(Action action, int index, int lots, int page) {
                     ShopOpener.sync(player, menu, msg.page, "closed", null);
                     return;
                 }
-                java.util.function.Consumer<Shops.Outcome> then = o -> ShopOpener.sync(player, menu, msg.page, o.key(), new String[]{String.valueOf(o.lots()), com.mrgregles.bsp_core.bank.Bank.format(o.amount())});
+                java.util.function.Consumer<Shops.Outcome> then = o -> ShopOpener.sync(player, menu, msg.page, o.key(), new String[]{String.valueOf(o.lots()), com.mrgregles.bsp_core.bank.Bank.format(o.amount()),
+                        com.mrgregles.bsp_core.bank.Bank.format((o.pieces() >= 0 ? o.pieces() : com.mrgregles.bsp_core.bank.Bank.pieces(server, player.getUUID())) - (o.key().equals("test_bought") ? o.amount() : 0))});
                 if (msg.action == Action.BUY) {
                     Shops.buy(server, player, shop, msg.index, msg.lots, menu.test, then);
                 } else if (msg.action == Action.SELL) {

@@ -17,8 +17,36 @@ import java.util.List;
  * stall (the player stays within reach), from the Shopping Network (no position) or by command.
  */
 public class ShopMenu extends AbstractContainerMenu {
-    /** One card on the page as the client sees it. */
-    public record Card(int index, ItemStack stack, long buy, long sell, int currency, int stock, boolean instant, String section) {}
+    /** One card on the page as the client sees it: the buy side's stock limit and the sell side's limit as this player has them. */
+    public record Card(int index, ItemStack stack, long buy, long sell, int currency, Limit stock, Limit selling, boolean instant, String section) {}
+
+    /**
+     * One side's limit as this player sees it: lots left (-1 no limit) out of how many, what is left
+     * for everyone when a per-player limit is the one shown (-1 none), the refill rule as text
+     * ({@link Refill#parse}) and milliseconds to the next refill (-1 unknown).
+     */
+    public record Limit(int left, int of, int everyone, String rule, long refillIn) {
+        public static final Limit NONE = new Limit(-1, -1, -1, "", -1);
+
+        public boolean limited() {
+            return left >= 0;
+        }
+
+        public void write(net.minecraft.network.FriendlyByteBuf buf) {
+            buf.writeVarInt(left + 1);
+            if (left >= 0) {
+                buf.writeVarInt(of + 1);
+                buf.writeVarInt(everyone + 1);
+                buf.writeUtf(rule, 32);
+                buf.writeLong(refillIn);
+            }
+        }
+
+        public static Limit read(net.minecraft.network.FriendlyByteBuf buf) {
+            int left = buf.readVarInt() - 1;
+            return left < 0 ? NONE : new Limit(left, buf.readVarInt() - 1, buf.readVarInt() - 1, buf.readUtf(32), buf.readLong());
+        }
+    }
 
     public final String shopId;
     @Nullable

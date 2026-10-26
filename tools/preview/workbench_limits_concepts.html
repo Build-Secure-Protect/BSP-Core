@@ -1,0 +1,264 @@
+<title>Workbench Limit Rows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of three concepts; each draws the real shop Workbench (360 x 232 GUI pixels, scaled 3x) with the Challenge shop open and a card selected. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --label:"Oswald",system-ui,sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; color:var(--muted); max-width:82ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.ctl{ display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:13px; }
+.ctl .lab{ font:600 11px var(--label); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:4px; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:6px 10px; cursor:pointer; border-radius:3px; }
+.tb.on{ border-color:var(--acc); color:var(--acc); }
+.tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:900px; height:auto; image-rendering:pixelated; display:block; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Workbench Limit Rows</h1>
+    <p class="lede">Where the shop Workbench sets a card's limits: stock and sell room, each for everyone and per player, and the four refill rules. The side panel is already full (ten rows), so each look finds room a different way. Drawn at the Workbench's real size with the Challenge shop open and the Steel Casing card selected (sell 2,500; the shop takes 5 from everyone and 3 from each player; refills every Monday at 00:00).</p>
+  </header>
+
+  <div class="card">
+    <div class="ctl" role="group" aria-label="State">
+      <span class="lab">State</span>
+      <button class="tb on" id="st0" data-s="0">Looking at the card</button>
+      <button class="tb" id="st1" data-s="1">Typing a refill rule</button>
+    </div>
+  </div>
+
+  <section>
+    <h2>A. Two tabs on the side panel</h2>
+    <div class="card">
+      <p>The side panel's heading becomes two tabs, <b>CARD</b> and <b>LIMITS</b>. CARD keeps the lot size, prices, currency, instant, hidden and section. LIMITS lists a <b>BUY</b> group and a <b>SELL</b> group, each with everyone, each player, refill and player refill, and the shop-wide count left beside the limit. Click a row to edit it in the field at the foot of the panel, as every row works today. The page of cards stays in view.</p>
+      <div class="stage"><canvas id="a" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. One list that scrolls</h2>
+    <div class="card">
+      <p>The side panel keeps a single list of every row, under the headings <b>CARD</b>, <b>BUY LIMITS</b> and <b>SELL LIMITS</b>, and scrolls with the mouse wheel. A thin bar on the panel's right edge shows where you are. Nothing else on the screen changes; here it is scrolled down to the sell limits.</p>
+      <div class="stage"><canvas id="b" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. A limits table on the main screen</h2>
+    <div class="card">
+      <p>A <b>Limits</b> key, in its own group in the key column, swaps the page of cards for a table of the selected card's limits: <b>Buy</b> and <b>Sell</b> columns, with rows for everyone, each player, both refill rules and what is left now. Click a cell, then type, or pick one of the rule buttons under the table (never, 1h, 12h, day 00:00, mon 00:00, rotation, same). <b>Back</b> returns to the page. The side panel stays as the card's own rows.</p>
+      <div class="stage"><canvas id="c" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const S = 3, W = 360, H = 232;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', KEY_LOCKED:'#8f877a', CARD:'#0a1a10', CARD_SEL:'#0f2d1c', CARD_EMPTY:'#07100a', OUT_EDGE:'#1f6b43' };
+  const SX=10, SY=10, SW=206, SH=176, PX=222, PW=66, KX=292, KW=58, KH=18, KGAP=3, CX=SX+6, CY=SY+22, CGAP=1;
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '·':2 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  let state = 0;
+
+  function text(g, s, x, y, colour, scale){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour;
+    g.fillText(s, 0, 0);
+    g.restore();
+    return target;
+  }
+  function small(g, s, x, y, colour, maxW){ const sc = Math.min(0.75, (maxW || 999) / Math.max(1, mcWidth(s))); return text(g, s, x, y, colour, sc); }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+
+  function icon(g, x, y, spec){
+    const [base, light, dark, kind] = spec;
+    let seed = 0; for (const ch of base + kind) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); if ((px === 4 || px === 11) && (py === 4 || py === 11)) c = light; }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  const ICONS = { steel:['#7d8590','#aab2bc','#4b5159','casing'], frame:['#6b4a2b','#b7894f','#3a2615','frame'], brass:['#b98a34','#e7c06a','#6d4f17','casing'], fluix:['#5b3fa8','#9f7cf0','#2c1d5e','noise'],
+    plate:['#9aa0a6','#c9ced3','#62676c','casing'], cell:['#3e7d4f','#7fd39a','#20402a','noise'] };
+  const CARDS = ['steel','frame','brass','fluix','plate','cell'];
+
+  function key(g, x, y, label, enabled, lit){
+    fill(g, x, y, x + KW, y + KH, C.KEY_EDGE);
+    fill(g, x, y, x + KW, y + KH - 2, lit ? '#fff6d8' : C.KEY);
+    const w = Math.min(mcWidth(label), KW - 4), sc = w / mcWidth(label);
+    text(g, label, x + (KW - w) / 2, y + 5, enabled ? C.KEY_TEXT : C.KEY_LOCKED, sc);
+  }
+
+  function frame(g, keysTop, keysBottom){
+    fill(g, 0, 0, W, H, C.BEZEL_DARK); fill(g, 2, 2, W - 2, H - 2, C.BEZEL); fill(g, 2, 2, W - 2, 4, C.BEZEL_LIGHT);
+    fill(g, SX - 2, SY - 2, SX + SW + 2, SY + SH + 2, C.EDGE); fill(g, SX, SY, SX + SW, SY + SH, C.SCREEN);
+    fill(g, PX - 2, SY - 2, PX + PW + 2, SY + SH + 2, C.EDGE); fill(g, PX, SY, PX + PW, SY + SH, C.SCREEN);
+    let ky = SY; keysTop.forEach(([l, e, lit]) => { key(g, KX, ky, l, e, lit); ky += KH + KGAP; });
+    ky = SY + SH - KH; for (let i = keysBottom.length - 1; i >= 0; i--) { const k = keysBottom[i]; if (k === null) { ky -= 8; continue; } key(g, KX, ky, k[0], k[1], k[2]); ky -= KH + KGAP; }
+    fill(g, SX - 2, SY + SH + 6, W - SX + 2, H - 6, C.EDGE); fill(g, SX, SY + SH + 8, W - SX, H - 8, C.SCREEN);
+    text(g, 'admin: changes save at once / bsp-spawn', SX + 6, SY + SH + 12, C.DIM);
+  }
+  function scan(g){ for (let ly = SY; ly < SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(SX * S, ly * S, (PX + PW - SX) * S, S); } }
+
+  function page(g){
+    text(g, '> CHALLENGE', SX + 6, SY + 6, C.PHOS);
+    const r = 'page 1 / 1'; text(g, r, SX + SW - 6 - mcWidth(r), SY + 6, C.DIM);
+    fill(g, SX + 4, SY + 16, SX + SW - 4, SY + 17, C.EDGE);
+    const cols = 4, cw = Math.floor((SW - 12 - (cols - 1) * CGAP) / cols), ch = 36;
+    for (let k = 0; k < 12; k++) {
+      const cx = CX + (k % cols) * (cw + CGAP), cy = CY + Math.floor(k / cols) * (ch + CGAP), has = k < CARDS.length;
+      fill(g, cx, cy, cx + cw, cy + ch, k === 0 ? C.CARD_SEL : has ? C.CARD : C.CARD_EMPTY);
+      fill(g, cx, cy, cx + cw, cy + 1, has ? C.DIM : C.OUT_EDGE); fill(g, cx, cy + ch - 1, cx + cw, cy + ch, has ? C.DIM : C.OUT_EDGE);
+      if (has) icon(g, cx + Math.floor(cw / 2) - 8, cy + 3, ICONS[CARDS[k]]);
+    }
+    small(g, '6 cards. Click a card to edit it, an empty slot to add there.', SX + 6, SY + SH - 10, C.DIM, SW - 12);
+  }
+
+  // the field at the foot of the side panel, open when a row is being edited
+  function field(g, x, y, w, value, hint){
+    fill(g, x, y - 1, x + w, y, C.DIM);
+    fill(g, x, y + 1, x + w, y + 11, '#000000'); fill(g, x, y + 1, x + w, y + 2, '#a0a0a0');
+    small(g, value + '_', x + 2, y + 3, '#e0e0e0', w - 4);
+    if (hint) { let yy = y + 13; hint.forEach(h => { small(g, h, x, yy, C.DIM, w); yy += 6; }); }
+  }
+
+  function rows(g, list, x, y0, step, w, editing){
+    let y = y0;
+    list.forEach(r => {
+      if (r.head) { small(g, r.head, x, y + 1, C.PHOS, w); fill(g, x, y + 8, x + w, y + 9, C.EDGE); y += 11; return; }
+      small(g, r.label, x, y, editing === r.key ? C.AMBER : C.DIM, w);
+      small(g, r.value, x, y + 6, r.colour || C.PHOS, w);
+      if (r.extra) { const ew = mcWidth(r.extra) * 0.75; small(g, r.extra, x + w - Math.min(ew, w / 2), y + 6, r.extraColour || C.AMBER, w / 2); }
+      y += step;
+    });
+    return y;
+  }
+
+  const CARD_ROWS = [{label:'Lot size', value:'1'}, {label:'Buy price', value:'off'}, {label:'Sell price', value:'2,500'}, {label:'Currency', value:'pieces'}, {label:'Instant buy', value:'off'}, {label:'Hidden', value:'off'}, {label:'Opens section', value:'-'}];
+  const BUY_ROWS = [{label:'Everyone', value:'no limit', key:'bg'}, {label:'Each player', value:'no limit', key:'bp'}, {label:'Refill', value:'never', key:'br'}, {label:'Player refill', value:'same', key:'bpr'}];
+  const SELL_ROWS = [{label:'Everyone', value:'5', extra:'2 left', key:'sg'}, {label:'Each player', value:'3', key:'sp'}, {label:'Refill', value:'monday 00:00', key:'sr'}, {label:'Player refill', value:'same', key:'spr'}];
+  const HINT = ['never, 12h, day 06:00,', 'monday 00:00, rotation,', 'same. Enter saves.'];
+
+  function drawA(g){
+    frame(g, [['Shops', true], ['Page', true, true], ['Settings', true], ['Style', true]], [['Hand to slot', false], ['Browse items', true], ['Remove card', true], ['Test shop', true]]);
+    page(g);
+    // tabs
+    const tw = (PW - 6) / 2;
+    fill(g, PX + 2, SY + 3, PX + 2 + tw, SY + 14, C.CARD); small(g, 'CARD', PX + 2 + (tw - mcWidth('CARD') * .75) / 2, SY + 6, C.DIM);
+    fill(g, PX + 4 + tw, SY + 3, PX + 4 + 2 * tw, SY + 14, C.DIM); small(g, 'LIMITS', PX + 4 + tw + (tw - mcWidth('LIMITS') * .75) / 2, SY + 6, C.SCREEN);
+    fill(g, PX + 2, SY + 16, PX + PW - 2, SY + 17, C.EDGE);
+    const list = [{head:'BUY'}, ...BUY_ROWS, {head:'SELL'}, ...SELL_ROWS];
+    rows(g, list, PX + 3, SY + 20, 13, PW - 6, state ? 'sr' : null);
+    if (state) field(g, PX + 2, SY + 151, PW - 4, 'monday 00:00', null), small(g, 'Enter saves.', PX + 3, SY + 165, C.DIM, PW - 6);
+    scan(g);
+    if (state) tipBox(g, SX + 92, SY + 120, HINT);
+  }
+
+  function drawB(g){
+    frame(g, [['Shops', true], ['Page', true, true], ['Settings', true], ['Style', true]], [['Hand to slot', false], ['Browse items', true], ['Remove card', true], ['Test shop', true]]);
+    page(g);
+    small(g, 'CARD', PX + 3, SY + 6, C.PHOS);
+    fill(g, PX + 2, SY + 16, PX + PW - 2, SY + 17, C.EDGE);
+    // the list, scrolled to the sell limits; clipped to the panel
+    const g2 = g; g2.save(); g2.beginPath(); g2.rect(PX * S, (SY + 18) * S, PW * S, (state ? 132 : 156) * S); g2.clip();
+    const list = [...CARD_ROWS, {head:'BUY LIMITS'}, ...BUY_ROWS, {head:'SELL LIMITS'}, ...SELL_ROWS];
+    rows(g, list, PX + 3, SY + 20 - 77, 11, PW - 9, state ? 'sr' : null);
+    g2.restore();
+    // scroll bar
+    fill(g, PX + PW - 3, SY + 19, PX + PW - 1, SY + SH - 2, '#0d2417');
+    fill(g, PX + PW - 3, SY + 19 + 66, PX + PW - 1, SY + SH - 2, C.DIM);
+    if (state) field(g, PX + 2, SY + 151, PW - 6, 'monday 00:00', null), small(g, 'Enter saves.', PX + 3, SY + 165, C.DIM, PW - 6);
+    scan(g);
+    if (state) tipBox(g, SX + 92, SY + 120, HINT);
+  }
+
+  function drawC(g){
+    frame(g, [['Shops', true], ['Page', true], ['Settings', true], ['Style', true]], [['Limits', true, true], null, ['Back', true], ['Remove card', true], ['Test shop', true]]);
+    // the main screen: the selected card's limits
+    icon(g, SX + 6, SY + 4, ICONS.steel);
+    text(g, 'STEEL CASING  limits', SX + 26, SY + 8, C.PHOS);
+    fill(g, SX + 4, SY + 22, SX + SW - 4, SY + 23, C.EDGE);
+    const c0 = SX + 6, c1 = SX + 82, c2 = SX + 146, top = SY + 28, rh = 16;
+    small(g, 'BUY', c1, top, C.PHOS); small(g, 'SELL', c2, top, C.AMBER);
+    const tbl = [['Everyone', 'no limit', '5'], ['Each player', 'no limit', '3'], ['Refill', 'never', 'monday 00:00'], ['Player refill', 'same', 'same'], ['Left now', '-', '2 of 5']];
+    tbl.forEach((r, i) => {
+      const y = top + 10 + i * rh;
+      const selRow = i === 2;
+      text(g, r[0], c0, y + 3, C.DIM);
+      [[c1, r[1], C.PHOS], [c2, r[2], i === 4 ? C.AMBER : C.PHOS]].forEach(([x, v, col], j) => {
+        const sel = selRow && j === 1;
+        fill(g, x - 2, y, x + 58, y + 13, sel ? C.CARD_SEL : C.CARD);
+        if (sel) { fill(g, x - 2, y, x + 58, y + 1, C.AMBER); fill(g, x - 2, y + 12, x + 58, y + 13, C.AMBER); }
+        small(g, (sel && state) ? 'monday 00:00_' : v, x + 1, y + 4, i === 4 ? C.AMBER : col, 56);
+      });
+    });
+    // rule buttons
+    const by = top + 10 + 5 * rh + 6;
+    small(g, 'Rules:', c0, by + 3, C.DIM);
+    let bx = c0 + 26;
+    ['never', '1h', '12h', 'day 00:00', 'mon 00:00', 'rotation', 'same'].forEach((b, i) => {
+      const w = Math.ceil(mcWidth(b) * 0.75) + 6;
+      if (bx + w > SX + SW - 4) { bx = c0 + 26; }
+      const row = (b === 'mon 00:00' || b === 'rotation' || b === 'same') ? 1 : 0;
+      const x = row ? [c0 + 26, c0 + 26 + 46, c0 + 26 + 46 + 40][['mon 00:00', 'rotation', 'same'].indexOf(b)] : bx;
+      const y = by + row * 12;
+      const lit = b === 'mon 00:00';
+      fill(g, x, y, x + w, y + 10, lit ? C.DIM : C.CARD);
+      fill(g, x, y + 9, x + w, y + 10, C.EDGE);
+      small(g, b, x + 3, y + 2, lit ? C.SCREEN : C.PHOS);
+      if (!row) bx += w + 3;
+    });
+    small(g, state ? 'Type a rule, or click one above. Enter saves.' : 'Click a cell to change it.', c0, SY + SH - 10, C.DIM, SW - 12);
+    // the side panel: the card's own rows
+    small(g, 'CARD', PX + 3, SY + 6, C.PHOS);
+    fill(g, PX + 2, SY + 16, PX + PW - 2, SY + 17, C.EDGE);
+    icon(g, PX + PW / 2 - 8, SY + 20, ICONS.steel);
+    rows(g, CARD_ROWS, PX + 3, SY + 38, 11, PW - 6, null);
+    scan(g);
+  }
+
+  function tipBox(g, x, y, lines){
+    const w = Math.max(...lines.map(l => mcWidth(l))) * 0.75 + 6, h = lines.length * 7 + 4;
+    fill(g, x, y, x + w, y + h, 'rgba(16,0,16,0.94)');
+    g.fillStyle = 'rgba(80,0,255,0.6)'; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    lines.forEach((l, i) => small(g, l, x + 3, y + 3 + i * 7, i === lines.length - 1 ? '#aaaaaa' : '#ffffff'));
+  }
+
+  function drawAll(){
+    for (const [id, fn] of [['a', drawA], ['b', drawB], ['c', drawC]]) {
+      const cv = document.getElementById(id), g = cv.getContext('2d');
+      g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height); fn(g);
+    }
+  }
+  document.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => {
+    state = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); drawAll();
+  }));
+  drawAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>

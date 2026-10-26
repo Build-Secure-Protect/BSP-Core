@@ -26,8 +26,9 @@ import java.util.Locale;
 
 /**
  * The shop configurator, "Workbench" in the Cash Machine skin. The live page of the selected shop
- * sits on the screen: click a card to edit it in the side panel (prices, currency, stock, restock,
- * lot size, instant, hidden, section), click an empty slot to add the item in hand or open the
+ * sits on the screen: click a card to edit it in the side panel, whose CARD tab holds the lot size,
+ * prices, currency, instant, hidden and section and whose LIMITS tab the stock and sell limits with
+ * their refill rules and what is left of them now, click an empty slot to add the item in hand or open the
  * browser (every item in the game, searched by name). Views: the shop list, the page, the item
  * browser, the shop's settings, the style preset. The TEST key opens the real shop in test mode.
  * Moderators see it all and may change nothing.
@@ -51,6 +52,11 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
     private int sel = -1, lastSerial = -1, browserPage, listPage;
     private EditBox field, search, newId;
     private String fieldName = "";
+    /** The side panel shows the card's limits rather than its own rows. */
+    private boolean limitsTab;
+    /** The LIMITS tab's rows: a heading, or a field with its label, value and the count left beside it. */
+    private record Row(int y, String field, String label, String value, String extra) {}
+    private static final int TAB_Y = 3, TAB_H = 11, REFILL_Y = 140, REFILL_H = 10;
     private List<Item> found = new ArrayList<>();
     private Component message = Component.empty();
     private int messageColour = AMBER;
@@ -67,6 +73,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             menu.list.clear();
             menu.list.addAll(m.list());
             menu.shop = m.shop() == null ? null : Shop.load(m.shop());
+            menu.stockLeft = m.stockLeft();
+            menu.sellLeft = m.sellLeft();
             if (!m.messageKey().isEmpty()) {
                 menu.messageKey = m.messageKey();
                 menu.messageArgs = m.messageArgs();
@@ -244,7 +252,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                 }
             }
             if (item() != null && over(mx, my, x + PX, y + SY, PW, SH)) {
-                sideClick(my - y - SY);
+                sideClick(mx - x - PX, my - y - SY);
                 return true;
             }
         } else if (view == View.BROWSER && menu.editable) {
@@ -279,8 +287,27 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         return super.mouseClicked(mx, my, button);
     }
 
-    private void sideClick(double ry) {
+    private void sideClick(double rx, double ry) {
         ShopItem it = item();
+        if (ry >= TAB_Y && ry < TAB_Y + TAB_H) {
+            commit();
+            limitsTab = rx >= PW / 2.0;
+            return;
+        }
+        if (limitsTab) {
+            if (ry >= REFILL_Y && ry < REFILL_Y + REFILL_H) {
+                if (menu.editable) {
+                    send(Action.REFILL_ITEM, "", "", sel, 0);
+                }
+                return;
+            }
+            for (Row r : limitRows(it)) {
+                if (!r.field().isEmpty() && ry >= r.y() && ry < r.y() + 12) {
+                    edit("item." + r.field(), r.field().endsWith("refill") ? r.value().equals(none()) ? "never" : r.value() : r.value().equals(none()) ? "-1" : r.value());
+                }
+            }
+            return;
+        }
         if (ry < SIDE_Y) {
             return;
         }
@@ -290,14 +317,34 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             case 1 -> edit("item.buy", String.valueOf(it.buy));
             case 2 -> edit("item.sell", String.valueOf(it.sell));
             case 3 -> send(Action.SET_ITEM, "currency", String.valueOf(it.currency >= 4 ? -1 : it.currency + 1), sel, 0);
-            case 4 -> edit("item.stockglobal", String.valueOf(it.stockGlobal));
-            case 5 -> edit("item.stockplayer", String.valueOf(it.stockPlayer));
-            case 6 -> edit("item.restock", String.valueOf(it.restockMs / 60_000));
-            case 7 -> send(Action.SET_ITEM, "instant", String.valueOf(!it.instant), sel, 0);
-            case 8 -> send(Action.SET_ITEM, "hidden", String.valueOf(!it.hidden), sel, 0);
-            case 9 -> edit("item.section", it.section);
+            case 4 -> send(Action.SET_ITEM, "instant", String.valueOf(!it.instant), sel, 0);
+            case 5 -> send(Action.SET_ITEM, "hidden", String.valueOf(!it.hidden), sel, 0);
+            case 6 -> edit("item.section", it.section);
             default -> { }
         }
+    }
+
+    private static String none() {
+        return tr("none").getString();
+    }
+
+    /** The LIMITS tab: a BUY group and a SELL group, each with everyone, each player and the two refill rules. */
+    private List<Row> limitRows(ShopItem it) {
+        List<Row> out = new ArrayList<>();
+        int y = 20;
+        int stockNow = sel >= 0 && sel < menu.stockLeft.length ? menu.stockLeft[sel] : -1, sellNow = sel >= 0 && sel < menu.sellLeft.length ? menu.sellLeft[sel] : -1;
+        for (boolean selling : new boolean[]{false, true}) {
+            out.add(new Row(y, "", tr(selling ? "l_sell" : "l_buy").getString(), "", ""));
+            y += 11;
+            int all = selling ? it.sellGlobal : it.stockGlobal, each = selling ? it.sellPlayer : it.stockPlayer, now = selling ? sellNow : stockNow;
+            String p = selling ? "sell" : "stock";
+            out.add(new Row(y, p + "global", tr("f_everyone").getString(), all < 0 ? none() : String.valueOf(all), all >= 0 && now >= 0 ? tr("left", now).getString() : ""));
+            out.add(new Row(y + 12, p + "player", tr("f_each").getString(), each < 0 ? none() : String.valueOf(each), ""));
+            out.add(new Row(y + 24, p + "refill", tr("f_refill").getString(), (selling ? it.sellRefill : it.stockRefill).text(), ""));
+            out.add(new Row(y + 36, p + "playerrefill", tr("f_playerrefill").getString(), (selling ? it.sellPlayerRefill : it.stockPlayerRefill).text(), ""));
+            y += 48;
+        }
+        return out;
     }
 
     private void settingsClick(double ry) {
@@ -348,7 +395,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         if (menu.messageSerial != lastSerial) {
             lastSerial = menu.messageSerial;
             String key = menu.messageKey;
-            messageColour = key.equals("saved") || key.equals("created") || key.equals("deleted") ? AMBER : RED;
+            messageColour = key.equals("saved") || key.equals("created") || key.equals("deleted") || key.equals("refilled") ? AMBER : RED;
             message = key.isEmpty() ? Component.empty() : Component.translatable("message.bsp_core.config." + key, (Object[]) menu.messageArgs);
         }
         keys();
@@ -361,6 +408,9 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                     g.renderTooltip(font, new ItemStack(found.get(k)), mx, my);
                 }
             }
+        }
+        if (fieldName.endsWith("refill")) { // while a refill rule is typed, the forms it may take
+            g.renderComponentTooltip(font, List.of(tr("refill_hint1"), tr("refill_hint2"), tr("refill_hint3").withStyle(net.minecraft.ChatFormatting.GRAY)), leftPos + SX + 80, topPos + SY + 130);
         }
     }
 
@@ -507,14 +557,38 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         if (msgH > 0) {
             CashMachine.wrap(g, font, message, SX + 6, SY + SH - 4 - msgH, SW - 12, messageColour);
         }
-        // the side panel: the selected card
+        // the side panel: the selected card, on two tabs (its own rows, and its limits)
         ShopItem it = item();
-        g.drawString(font, tr("side").getString().toUpperCase(Locale.ROOT), PX + 3, SY + 6, PHOS, false);
-        g.fill(PX + 2, SY + 16, PX + PW - 2, SY + 17, SCREEN_EDGE);
         if (view == View.PAGE && it != null) {
+            int tw = (PW - 6) / 2;
+            tab(g, PX + 2, tw, tr("tab_card").getString(), !limitsTab);
+            tab(g, PX + 4 + tw, tw, tr("tab_limits").getString(), limitsTab);
+        } else {
+            g.drawString(font, tr("side").getString().toUpperCase(Locale.ROOT), PX + 3, SY + 6, PHOS, false);
+        }
+        g.fill(PX + 2, SY + 16, PX + PW - 2, SY + 17, SCREEN_EDGE);
+        if (view == View.PAGE && it != null && limitsTab) {
+            for (Row r : limitRows(it)) {
+                if (r.field().isEmpty()) {
+                    small(g, r.label(), PX + 3, SY + r.y() + 1, PHOS, PW - 6);
+                    g.fill(PX + 2, SY + r.y() + 8, PX + PW - 2, SY + r.y() + 9, SCREEN_EDGE);
+                    continue;
+                }
+                small(g, r.label(), PX + 3, SY + r.y(), fieldName.equals("item." + r.field()) ? AMBER : PHOS_DIM, PW - 6);
+                small(g, r.value(), PX + 3, SY + r.y() + 6, PHOS, r.extra().isEmpty() ? PW - 6 : PW / 2 - 4);
+                if (!r.extra().isEmpty()) {
+                    int ew = (int) Math.min(font.width(r.extra()) * 0.75f, PW / 2f - 4);
+                    small(g, r.extra(), PX + PW - 3 - ew, SY + r.y() + 6, AMBER, PW / 2 - 4);
+                }
+            }
+            // Refill now: every count on this card full again
+            int ry = SY + REFILL_Y;
+            g.fill(PX + 3, ry, PX + PW - 3, ry + REFILL_H, menu.editable ? PHOS_DIM | 0xFF000000 : CARD);
+            String label = tr("refill_now").getString();
+            small(g, label, PX + (PW - (int) (font.width(label) * 0.75f)) / 2, ry + 2, menu.editable ? SCREEN & 0xFFFFFF : PHOS_DIM, PW - 8);
+        } else if (view == View.PAGE && it != null) {
             String[][] rows = {{"count", String.valueOf(it.stack.getCount())}, {"buy", it.buy < 0 ? "off" : String.valueOf(it.buy)}, {"sell", it.sell < 0 ? "off" : String.valueOf(it.sell)},
-                    {"currency", it.currency < 0 ? "pieces" : Bank.tierName(CoinTier.values()[it.currency])}, {"stockglobal", it.stockGlobal < 0 ? "inf" : String.valueOf(it.stockGlobal)},
-                    {"stockplayer", it.stockPlayer < 0 ? "inf" : String.valueOf(it.stockPlayer)}, {"restock", it.restockMs / 60_000 + " m"}, {"instant", it.instant ? "on" : "off"},
+                    {"currency", it.currency < 0 ? "pieces" : Bank.tierName(CoinTier.values()[it.currency])}, {"instant", it.instant ? "on" : "off"},
                     {"hidden", it.hidden ? "on" : "off"}, {"section", it.section.isEmpty() ? "-" : it.section}};
             g.renderItem(it.stack, PX + PW / 2 - 8, SY + 20);
             for (int i = 0; i < rows.length; i++) {
@@ -538,6 +612,12 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                 py += 7;
             }
         }
+    }
+
+    /** One of the side panel's two tabs: lit when it is the one showing. */
+    private void tab(GuiGraphics g, int x, int w, String label, boolean on) {
+        g.fill(x, SY + TAB_Y, x + w, SY + TAB_Y + TAB_H, on ? PHOS_DIM | 0xFF000000 : CARD);
+        small(g, label, x + (w - (int) Math.min(font.width(label) * 0.75f, w - 2)) / 2, SY + TAB_Y + 3, on ? SCREEN & 0xFFFFFF : PHOS_DIM, w - 2);
     }
 
     private void small(GuiGraphics g, String s, int x, int y, int colour) {

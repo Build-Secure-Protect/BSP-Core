@@ -114,15 +114,12 @@ public class StallDisplayBlockEntity extends BlockEntity {
                 return it.stack.copy();
             }
         }
-        List<Integer> visible = Shops.visible(level.getServer(), shop, System.currentTimeMillis());
+        long now = Shops.now();
+        List<Integer> visible = Shops.visible(level.getServer(), shop, now);
         for (int tries = 0; tries < visible.size(); tries++) {
             int i = visible.get((cursor++) % visible.size());
-            ShopItem it = shop.item(i);
-            if (it != null && it.section.isEmpty() && !it.stack.isEmpty()) {
-                var st = Shops.ledger(level.getServer()).stock(shop.id, i);
-                if (it.stockGlobal < 0 || st.left != 0) {
-                    return it.stack.copy();
-                }
+            if (Shops.live(level.getServer(), shop, i, now)) {
+                return shop.item(i).stack.copy();
             }
         }
         return ItemStack.EMPTY;

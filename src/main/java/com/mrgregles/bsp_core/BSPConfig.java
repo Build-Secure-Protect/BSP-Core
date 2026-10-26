@@ -157,6 +157,7 @@ public final class BSPConfig {
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
     public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS,
             BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS;
+    public static ForgeConfigSpec.ConfigValue<String> SHOP_TIME_ZONE;
     public static final ForgeConfigSpec.BooleanValue STORAGE_SSL, STORAGE_DELIVER_ON_RESTORE;
     public static final ForgeConfigSpec.IntValue STORAGE_RESTORE_WAIT_SECONDS;
 
@@ -565,6 +566,8 @@ public final class BSPConfig {
 
         BUILDER.comment("Shops.").push("shop");
         DISPLAY_SECONDS = BUILDER.comment("Seconds a Stall Display shows each item before moving to the next.").defineInRange("displaySeconds", 4, 1, 600);
+        SHOP_TIME_ZONE = BUILDER.comment("The time zone fixed refill times (\"day 00:00\", \"monday 00:00\") are read in, such as Europe/London or UTC. Empty uses the server machine's own.",
+                "Set it the same on every server of a network.").define("timeZone", "");
         BUILDER.pop();
 
         BUILDER.comment("Chunk loading: the totem's Anchor and Survey upgrades.").push("chunks");

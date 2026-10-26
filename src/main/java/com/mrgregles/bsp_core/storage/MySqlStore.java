@@ -139,6 +139,9 @@ final class MySqlStore implements AutoCloseable {
                     + "server_id VARCHAR(64) NOT NULL, INDEX (uuid, ms))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shops") + " (id VARCHAR(32) NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, "
                     + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_counts") + " (shop VARCHAR(32) NOT NULL, card INT NOT NULL, side CHAR(1) NOT NULL, who VARCHAR(36) NOT NULL, "
+                    + "left_lots INT NOT NULL, at_ms BIGINT NOT NULL, PRIMARY KEY (shop, card, side, who))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_draws") + " (shop VARCHAR(32) NOT NULL PRIMARY KEY, shown VARCHAR(1024) NOT NULL, drawn_at BIGINT NOT NULL, next_at BIGINT NOT NULL)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_boxes") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, slots INT NOT NULL, rent_until BIGINT NOT NULL, "
                     + "items MEDIUMTEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("teams") + " (id CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(32) NOT NULL, colour VARCHAR(16) NOT NULL, "
@@ -960,6 +963,199 @@ final class MySqlStore implements AutoCloseable {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("shops") + " WHERE id = ?")) {
             ps.setString(1, id);
             ps.executeUpdate();
+        }
+    }
+
+    // ------------------------------------------------------------------ shop counts (SS-5)
+
+    /**
+     * One card side's everyone count and one player's count under row locks: both rows are made if
+     * missing (left -1, full), read FOR UPDATE, handed to {@code change}, and written back; a player
+     * row left at -1 is deleted. All in one transaction, so two servers cannot both take the last lot.
+     */
+    <T> T countsLocked(String shop, int card, boolean selling, UUID player, java.util.function.BiFunction<com.mrgregles.bsp_core.shop.ShopLedger.Count, com.mrgregles.bsp_core.shop.ShopLedger.Count, T> change) throws SQLException {
+        String side = selling ? "S" : "B", who = player.toString();
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("shop_counts") + " (shop, card, side, who, left_lots, at_ms) VALUES (?, ?, ?, '', -1, 0), (?, ?, ?, ?, -1, 0)")) {
+                ps.setString(1, shop);
+                ps.setInt(2, card);
+                ps.setString(3, side);
+                ps.setString(4, shop);
+                ps.setInt(5, card);
+                ps.setString(6, side);
+                ps.setString(7, who);
+                ps.executeUpdate();
+            }
+            var all = new com.mrgregles.bsp_core.shop.ShopLedger.Count();
+            var mine = new com.mrgregles.bsp_core.shop.ShopLedger.Count();
+            try (PreparedStatement ps = c.prepareStatement("SELECT who, left_lots, at_ms FROM " + t("shop_counts") + " WHERE shop = ? AND card = ? AND side = ? AND who IN ('', ?) FOR UPDATE")) {
+                ps.setString(1, shop);
+                ps.setInt(2, card);
+                ps.setString(3, side);
+                ps.setString(4, who);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        var into = rs.getString(1).isEmpty() ? all : mine;
+                        into.left = rs.getInt(2);
+                        into.at = rs.getLong(3);
+                    }
+                }
+            }
+            T out = change.apply(all, mine);
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("shop_counts") + " SET left_lots = ?, at_ms = ? WHERE shop = ? AND card = ? AND side = ? AND who = ''")) {
+                ps.setInt(1, all.left);
+                ps.setLong(2, all.at);
+                ps.setString(3, shop);
+                ps.setInt(4, card);
+                ps.setString(5, side);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement(mine.left < 0 ? "DELETE FROM " + t("shop_counts") + " WHERE shop = ? AND card = ? AND side = ? AND who = ?"
+                    : "UPDATE " + t("shop_counts") + " SET left_lots = ?, at_ms = ? WHERE shop = ? AND card = ? AND side = ? AND who = ?")) {
+                int i = 1;
+                if (mine.left >= 0) {
+                    ps.setInt(i++, mine.left);
+                    ps.setLong(i++, mine.at);
+                }
+                ps.setString(i++, shop);
+                ps.setInt(i++, card);
+                ps.setString(i++, side);
+                ps.setString(i, who);
+                ps.executeUpdate();
+            }
+            c.commit();
+            return out;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** A rotating shop's draw under a row lock (made empty if missing), changed by {@code change} and written back, in one transaction. */
+    com.mrgregles.bsp_core.shop.ShopLedger.Draw drawLocked(String shop, java.util.function.UnaryOperator<com.mrgregles.bsp_core.shop.ShopLedger.Draw> change) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("shop_draws") + " (shop, shown, drawn_at, next_at) VALUES (?, '', 0, 0)")) {
+                ps.setString(1, shop);
+                ps.executeUpdate();
+            }
+            var d = new com.mrgregles.bsp_core.shop.ShopLedger.Draw();
+            try (PreparedStatement ps = c.prepareStatement("SELECT shown, drawn_at, next_at FROM " + t("shop_draws") + " WHERE shop = ? FOR UPDATE")) {
+                ps.setString(1, shop);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        for (String n : rs.getString(1).split(",")) {
+                            if (!n.isBlank()) {
+                                d.shown.add(Integer.parseInt(n.trim()));
+                            }
+                        }
+                        d.drawnAt = rs.getLong(2);
+                        d.nextAt = rs.getLong(3);
+                    }
+                }
+            }
+            var out = change.apply(d);
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("shop_draws") + " SET shown = ?, drawn_at = ?, next_at = ? WHERE shop = ?")) {
+                ps.setString(1, String.join(",", out.shown.stream().map(String::valueOf).toList()));
+                ps.setLong(2, out.drawnAt);
+                ps.setLong(3, out.nextAt);
+                ps.setString(4, shop);
+                ps.executeUpdate();
+            }
+            c.commit();
+            return out;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    void dropDraw(String shop) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("shop_draws") + " WHERE shop = ?")) {
+            ps.setString(1, shop);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Every count of a shop, keyed "card:B|S:player" (an empty player for the everyone count). */
+    Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> countsRead(String shop) throws SQLException {
+        Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> out = new java.util.HashMap<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT card, side, who, left_lots, at_ms FROM " + t("shop_counts") + " WHERE shop = ?")) {
+            ps.setString(1, shop);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.put(rs.getInt(1) + ":" + rs.getString(2) + ":" + rs.getString(3), new com.mrgregles.bsp_core.shop.ShopLedger.Count(rs.getInt(4), rs.getLong(5)));
+                }
+            }
+        }
+        return out;
+    }
+
+    void countsReset(String shop, int from, int to) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("shop_counts") + " WHERE shop = ? AND card BETWEEN ? AND ?")) {
+            ps.setString(1, shop);
+            ps.setInt(2, from);
+            ps.setInt(3, to);
+            ps.executeUpdate();
+        }
+    }
+
+    void countsDropIf(String shop, int card, boolean selling, UUID player, int left, long at) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("shop_counts") + " WHERE shop = ? AND card = ? AND side = ? AND who = ? AND left_lots = ? AND at_ms = ?")) {
+            ps.setString(1, shop);
+            ps.setInt(2, card);
+            ps.setString(3, selling ? "S" : "B");
+            ps.setString(4, player.toString());
+            ps.setInt(5, left);
+            ps.setLong(6, at);
+            ps.executeUpdate();
+        }
+    }
+
+    /** The first server to call it (a state row records which) copies its counts in; true for that server only. */
+    boolean countsMoveOnce(String serverId, Map<String, Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count>> counts) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            boolean won;
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("state") + " (k, v) VALUES ('shop_counts_moved', ?)")) {
+                ps.setString(1, serverId);
+                won = ps.executeUpdate() == 1;
+            }
+            if (won) {
+                try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("shop_counts") + " (shop, card, side, who, left_lots, at_ms) VALUES (?, ?, ?, ?, ?, ?)")) {
+                    for (var shop : counts.entrySet()) {
+                        for (var row : shop.getValue().entrySet()) {
+                            String[] k = row.getKey().split(":", 3);
+                            ps.setString(1, shop.getKey());
+                            ps.setInt(2, Integer.parseInt(k[0]));
+                            ps.setString(3, k[1]);
+                            ps.setString(4, k[2]);
+                            ps.setInt(5, row.getValue().left);
+                            ps.setLong(6, row.getValue().at);
+                            ps.addBatch();
+                        }
+                    }
+                    ps.executeBatch();
+                }
+            }
+            c.commit();
+            return won;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
         }
     }
 

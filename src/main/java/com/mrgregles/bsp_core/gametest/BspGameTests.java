@@ -749,7 +749,7 @@ public class BspGameTests {
         item.buy = 120;
         item.sell = 30;
         item.stockGlobal = 3;
-        item.restockMs = 60_000;
+        item.stockRefill = com.mrgregles.bsp_core.shop.Refill.after(1);
         int index = shop.add(item);
         com.mrgregles.bsp_core.shop.Shops.save(server, shop);
         long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
@@ -764,7 +764,7 @@ public class BspGameTests {
         h.assertTrue(o[0].ok() && o[0].lots() == 1, "a buy is cut to the stock left: " + o[0]);
         com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 1, false, x -> o[0] = x);
         h.assertTrue(!o[0].ok() && o[0].key().equals("sold_out"), "sold out: " + o[0]);
-        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, index).restockAt = System.currentTimeMillis() - 1;
+        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, index).stock.at = System.currentTimeMillis() - 1;
         h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, index, id, System.currentTimeMillis()) == 3, "restocked after the countdown");
         com.mrgregles.bsp_core.bank.Bank.set(server, id, 100, "test", r -> {});
         com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 1, false, x -> o[0] = x);
@@ -861,11 +861,445 @@ public class BspGameTests {
         menu.grid.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 10));
         menu.grid.setStackInSlot(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TORCH, 5));
         menu.grid.setStackInSlot(2, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 1));
-        long[] q = menu.quote(shop, System.currentTimeMillis());
+        long[] q = menu.quote(server, shop, System.currentTimeMillis());
         h.assertTrue(q[0] == 2 && q[1] == 6, "ten bread is two full lots for 6; torches (no sell price) and diamonds count nothing: " + q[0] + ", " + q[1]);
         shop.buyOnly = true;
-        q = menu.quote(shop, System.currentTimeMillis());
+        q = menu.quote(server, shop, System.currentTimeMillis());
         h.assertTrue(q[0] == 0, "a buy-only shop quotes nothing");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_per_player_limits_refill_on_their_own_by_countdown_and_fixed_time(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Ida", g -> {});
+        com.mrgregles.bsp_core.bank.Bank.give(server, id, 100_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "daily_" + Long.toHexString(System.nanoTime()), "Daily", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var lantern = new com.mrgregles.bsp_core.shop.ShopItem();
+        lantern.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LANTERN, 1);
+        lantern.buy = 10;
+        lantern.stockPlayer = 2;
+        lantern.stockRefill = com.mrgregles.bsp_core.shop.Refill.after(60); // no shop-wide stock: the per-player rule follows this one (same)
+        int li = shop.add(lantern);
+        var bread = new com.mrgregles.bsp_core.shop.ShopItem();
+        bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 1);
+        bread.buy = 5;
+        bread.stockPlayer = 1;
+        bread.stockPlayerRefill = com.mrgregles.bsp_core.shop.Refill.parse("day 06:00");
+        int bi = shop.add(bread);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var zone = com.mrgregles.bsp_core.shop.Shops.zone();
+        long t0 = java.time.ZonedDateTime.of(2026, 10, 26, 12, 0, 0, 0, zone).toInstant().toEpochMilli(); // a Monday, noon
+        long[] clock = {t0};
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Shops.useClock(() -> clock[0]);
+        try {
+            com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, li, 5, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && o[0].lots() == 2, "the per-player limit caps the buy at 2: " + o[0]);
+            com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, li, 1, false, x -> o[0] = x);
+            h.assertTrue(!o[0].ok() && o[0].key().equals("sold_out"), "then sold out for this player: " + o[0]);
+            clock[0] = t0 + 59 * 60_000L;
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, li, id, clock[0]) == 0, "59 minutes on: still none");
+            var limit = com.mrgregles.bsp_core.shop.Shops.limit(server, shop, li, id, false, clock[0]);
+            h.assertTrue(limit.left() == 0 && limit.of() == 2 && limit.refillIn() == 60_000L && limit.rule().equals("1h"), "the card says none of 2, refilling in a minute: " + limit);
+            clock[0] = t0 + 61 * 60_000L;
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, li, id, clock[0]) == 2, "an hour after running out it refills on its own, with no shop-wide stock");
+            clock[0] = t0;
+            com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, bi, 1, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, bi, id, clock[0]) == 0, "one bread a day, bought");
+            clock[0] = t0 + 17 * 3_600_000L + 59 * 60_000L; // Tuesday 05:59
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, bi, id, clock[0]) == 0, "not before 06:00 the next day");
+            var dayLimit = com.mrgregles.bsp_core.shop.Shops.limit(server, shop, bi, id, false, clock[0]);
+            h.assertTrue(dayLimit.refillIn() == 60_000L && dayLimit.rule().equals("day 06:00"), "and the card counts down to 06:00: " + dayLimit);
+            clock[0] = t0 + 18 * 3_600_000L; // Tuesday 06:00
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, bi, id, clock[0]) == 1, "refilled at 06:00");
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.useClock(null);
+        }
+        var weekly = com.mrgregles.bsp_core.shop.Refill.parse("Mon 00:00");
+        long monday = java.time.ZonedDateTime.of(2026, 10, 26, 0, 0, 0, 0, zone).toInstant().toEpochMilli();
+        h.assertTrue(weekly != null && weekly.text().equals("monday 00:00") && weekly.periodStart(t0, zone) == monday && weekly.nextAt(t0, zone) == java.time.ZonedDateTime.of(2026, 11, 2, 0, 0, 0, 0, zone).toInstant().toEpochMilli(),
+                "a weekly rule's last and next refill are this Monday and next Monday at 00:00");
+        h.assertTrue(com.mrgregles.bsp_core.shop.Refill.parse("720").text().equals("12h") && com.mrgregles.bsp_core.shop.Refill.parse("90m").text().equals("90m") && com.mrgregles.bsp_core.shop.Refill.parse("rotation") == com.mrgregles.bsp_core.shop.Refill.ROTATION
+                && com.mrgregles.bsp_core.shop.Refill.parse("sometimes") == null && com.mrgregles.bsp_core.shop.Refill.parse("day 25:00") == null, "rules read back as written; nonsense is refused");
+        var old = lantern.save();
+        old.remove("StockRefill");
+        old.remove("StockPlayerRefill");
+        old.putLong("Restock", 30 * 60_000L);
+        var loaded = com.mrgregles.bsp_core.shop.ShopItem.load(old);
+        h.assertTrue(loaded.stockRefill.kind() == com.mrgregles.bsp_core.shop.Refill.Kind.AFTER && loaded.stockRefill.minutes() == 30 && loaded.stockPlayerRule() == loaded.stockRefill && loaded.sellGlobal == -1 && loaded.sellPlayer == -1,
+                "a card saved before the rules: its restock minutes become the rule for both stock counts, and it has no sell limits");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_sell_limits_cap_sales_per_player_and_for_everyone(GameTestHelper h) {
+        var server = server(h);
+        var ann = h.makeMockPlayer();
+        var bob = h.makeMockPlayer();
+        for (var p : List.of(ann, bob)) {
+            com.mrgregles.bsp_core.bank.Bank.ensure(server, p.getUUID(), "Seller", g -> {});
+            com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        }
+        String id = "challenge_" + Long.toHexString(System.nanoTime());
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Challenge", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var cobble = new com.mrgregles.bsp_core.shop.ShopItem();
+        cobble.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16);
+        cobble.buy = 100;
+        cobble.sell = 20;
+        cobble.stockGlobal = 10;
+        cobble.sellPlayer = 3;
+        cobble.sellGlobal = 5;
+        int ci = shop.add(cobble);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var items = net.minecraft.world.item.Items.COBBLESTONE;
+        long now = System.currentTimeMillis();
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        ann.getInventory().add(new net.minecraft.world.item.ItemStack(items, 64));
+        ann.getInventory().add(new net.minecraft.world.item.ItemStack(items, 16));
+        com.mrgregles.bsp_core.shop.Shops.sell(server, ann, shop, ci, 4, true, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].lots() == 3 && com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, ci, ann.getUUID(), now) == 3, "test mode quotes the capped sale and counts nothing: " + o[0]);
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, ann.getUUID());
+        com.mrgregles.bsp_core.shop.Shops.sell(server, ann, shop, ci, 10, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].key().equals("sold_capped") && o[0].lots() == 3 && o[0].amount() == 60, "Ann's limit of 3 sells three lots and says so: " + o[0]);
+        h.assertTrue(ann.getInventory().countItem(items) == 32 && com.mrgregles.bsp_core.bank.Bank.pieces(server, ann.getUUID()) == start + 60, "the other two lots stay with her; 60 paid");
+        com.mrgregles.bsp_core.shop.Shops.sell(server, ann, shop, ci, 1, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("sell_full") && ann.getInventory().countItem(items) == 32, "then the shop takes no more from her: " + o[0]);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, ci, bob.getUUID(), now) == 2, "two left for everyone, so Bob may sell two");
+        bob.getInventory().add(new net.minecraft.world.item.ItemStack(items, 64));
+        com.mrgregles.bsp_core.shop.Shops.sell(server, bob, shop, ci, 4, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].key().equals("sold_capped") && o[0].lots() == 2 && bob.getInventory().countItem(items) == 32, "Bob sells the two the shop-wide limit leaves: " + o[0]);
+        var limit = com.mrgregles.bsp_core.shop.Shops.limit(server, shop, ci, bob.getUUID(), true, now);
+        h.assertTrue(limit.left() == 0 && limit.of() == 5 && limit.everyone() == -1, "the card shows the shop-wide limit, used up: " + limit);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, ci, ann.getUUID(), now) == 10, "selling never refills or uses stock");
+        com.mrgregles.bsp_core.shop.Shops.buy(server, ann, shop, ci, 1, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, ci, ann.getUUID(), now) == 9 && com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, ci, ann.getUUID(), now) == 0, "and buying never gives back sell room");
+        var copy = com.mrgregles.bsp_core.shop.ShopLedger.load(com.mrgregles.bsp_core.shop.Shops.ledger(server).save(new net.minecraft.nbt.CompoundTag()));
+        h.assertTrue(copy.stock(id, ci).sell.left == 0 && copy.stock(id, ci).sellers.get(ann.getUUID()).left == 0 && copy.stock(id, ci).stock.left == 9, "the counts are saved with the world");
+        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(id, ci).reset();
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, ci, ann.getUUID(), now) == 3 && com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, ci, ann.getUUID(), now) == 10, "a reset fills every count on the card");
+        var A = com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM;
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "sellrefill", "monday 00:00", ci, 0), id).equals("saved")
+                && com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "sellplayerrefill", "same", ci, 0), id).equals("saved")
+                && shop.item(ci).sellPlayerRule().text().equals("monday 00:00"), "the Workbench sets the refill rules; a per-player rule may follow the shop-wide one");
+        h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "sellrefill", "same", ci, 0), id).equals("bad_value")
+                && com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "sellglobal", "1", ci, 0), id).equals("saved") && shop.item(ci).sellGlobal == 1,
+                "a shop-wide rule cannot be same; the limits are set by value");
+        // a card the shop only buys counts as out for stalls once its shop-wide sell room is used up
+        var stall = com.mrgregles.bsp_core.shop.Shops.create(server, "stall_" + Long.toHexString(System.nanoTime()), "Buyer", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var wanted = new com.mrgregles.bsp_core.shop.ShopItem();
+        wanted.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16);
+        wanted.sell = 20;
+        wanted.sellGlobal = 1;
+        int wi = stall.add(wanted);
+        com.mrgregles.bsp_core.shop.Shops.save(server, stall);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.anyStock(server, stall), "a stall buying cobblestone is live");
+        com.mrgregles.bsp_core.shop.Shops.sell(server, ann, stall, wi, 1, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && !com.mrgregles.bsp_core.shop.Shops.anyStock(server, stall) && !com.mrgregles.bsp_core.shop.Shops.live(server, stall, wi, System.currentTimeMillis()), "and out once it takes no more");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void sell_all_and_sell_here_stop_at_sell_limits_and_hand_back_the_rest(GameTestHelper h) {
+        var server = server(h);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Kit", g -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "bakery_" + Long.toHexString(System.nanoTime()), "Bakery", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var bread = new com.mrgregles.bsp_core.shop.ShopItem();
+        bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4);
+        bread.sell = 3;
+        bread.sellPlayer = 2;
+        int bi = shop.add(bread);
+        var coal = new com.mrgregles.bsp_core.shop.ShopItem();
+        coal.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL, 8);
+        coal.sell = 5;
+        shop.add(coal);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 20));
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL, 16));
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Shops.sellAll(server, player, shop, false, x -> o[0] = x);
+        h.assertTrue(o[0].ok() && o[0].key().equals("sold_all_capped") && o[0].lots() == 4 && o[0].amount() == 16, "two lots of bread (its limit) and two of coal: " + o[0]);
+        h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.BREAD) == 12 && player.getInventory().countItem(net.minecraft.world.item.Items.COAL) == 0, "the rest of the bread stays in the inventory");
+        com.mrgregles.bsp_core.shop.Shops.sellAll(server, player, shop, false, x -> o[0] = x);
+        h.assertTrue(!o[0].ok() && o[0].key().equals("sell_full"), "a second Sell all says the shop takes no more: " + o[0]);
+        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, bi).reset();
+        var menu = new com.mrgregles.bsp_core.shop.SellHereMenu(1, player.getInventory(), shop.id, null, false, null);
+        player.getInventory().clearContent();
+        menu.grid.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4));
+        menu.grid.setStackInSlot(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 12));
+        long[] q = menu.quote(server, shop, System.currentTimeMillis());
+        h.assertTrue(q[0] == 2 && q[1] == 6, "the grid quotes two lots across both slots (the limit), for 6: " + q[0] + ", " + q[1]);
+        long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+        menu.sellAll(player);
+        h.assertTrue(menu.lots == 2 && menu.total == 6 && menu.capped && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start + 6, "two lots sold, the limit noted");
+        h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.BREAD) == 8 && menu.grid.getStackInSlot(1).isEmpty(), "the other eight bread are handed back");
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, bi, id, System.currentTimeMillis()) == 0, "and the grid's sale counted against the limit");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void rotating_shop_trades_only_the_cards_on_show_and_refills_each_rotation(GameTestHelper h) {
+        var server = server(h);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        UUID id = player.getUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Rae", g -> {});
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "weekly_" + Long.toHexString(System.nanoTime()), "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        shop.displaySlots = 1;
+        shop.intervalMs = 3_600_000L;
+        var kinds = List.of(net.minecraft.world.item.Items.PAPER, net.minecraft.world.item.Items.BOOK, net.minecraft.world.item.Items.FEATHER);
+        for (var k : kinds) {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(k, 1);
+            it.buy = 5;
+            it.sell = 2;
+            it.sellPlayer = 1;
+            it.sellRefill = com.mrgregles.bsp_core.shop.Refill.ROTATION;
+            shop.add(it);
+        }
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        long t0 = System.currentTimeMillis();
+        long[] clock = {t0};
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        com.mrgregles.bsp_core.shop.Shops.useClock(() -> clock[0]);
+        try {
+            int shown = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, t0).get(0), other = (shown + 1) % 3;
+            for (var k : kinds) {
+                player.getInventory().add(new net.minecraft.world.item.ItemStack(k, 2));
+            }
+            com.mrgregles.bsp_core.shop.Shops.sell(server, player, shop, other, 1, false, x -> o[0] = x);
+            h.assertTrue(!o[0].ok() && o[0].key().equals("not_drawn"), "a card of the pool that is not on show is not bought: " + o[0]);
+            com.mrgregles.bsp_core.shop.Shops.sellAll(server, player, shop, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && o[0].lots() == 1 && o[0].key().equals("sold_all_capped"), "Sell all takes only the card on show, up to its limit: " + o[0]);
+            h.assertTrue(player.getInventory().countItem(kinds.get(shown)) == 1 && player.getInventory().countItem(kinds.get(other)) == 2 && player.getInventory().countItem(kinds.get((shown + 2) % 3)) == 2, "nothing else was taken");
+            var menu = new com.mrgregles.bsp_core.shop.SellHereMenu(1, player.getInventory(), shop.id, null, false, null);
+            menu.grid.setStackInSlot(0, new net.minecraft.world.item.ItemStack(kinds.get(other), 2));
+            h.assertTrue(menu.quote(server, shop, t0)[0] == 0, "the Sell Here grid quotes nothing for a card not on show");
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, shown, id, t0) == 0, "the card on show takes no more this rotation");
+            clock[0] = t0 + 3_600_000L + 1;
+            com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.ledger(server).draw(shop.id).drawnAt == clock[0], "a new draw is made when the interval is up");
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, shown, id, clock[0]) == 1, "and a limit that refills each rotation is full again");
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.useClock(null);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void workbench_sets_limits_refills_a_card_and_keeps_rotation_to_rotating_shops(GameTestHelper h) {
+        var server = server(h);
+        String id = "wb_" + Long.toHexString(System.nanoTime()), rid = "wbr_" + Long.toHexString(System.nanoTime());
+        java.util.function.BiFunction<String, com.mrgregles.bsp_core.network.ShopConfigActionPacket, String> run = (shopId, m) -> com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, m, shopId);
+        java.util.function.Function<String[], com.mrgregles.bsp_core.network.ShopConfigActionPacket> set = f -> new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET_ITEM, f[0], f[1], 0, 0);
+        h.assertTrue(run.apply(id, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.CREATE, id, "SHOP", 0, 0)).equals("created")
+                && run.apply(id, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.ADD_ITEM, "minecraft:bread", "", 0, 4)).equals("saved"), "a shop with a bread card");
+        var shop = com.mrgregles.bsp_core.shop.Shops.ledger(server).shop(id);
+        h.assertTrue(run.apply(id, set.apply(new String[]{"sellglobal", "5"})).equals("saved") && run.apply(id, set.apply(new String[]{"sellplayer", "none"})).equals("saved")
+                && shop.item(0).sellGlobal == 5 && shop.item(0).sellPlayer == -1, "the LIMITS tab sets a shop-wide sell limit, and none clears the per-player one");
+        h.assertTrue(run.apply(id, set.apply(new String[]{"sellrefill", "rotation"})).equals("rotation_only") && shop.item(0).sellRefill.kind() == com.mrgregles.bsp_core.shop.Refill.Kind.NEVER,
+                "a shop that does not rotate refuses a rotation refill");
+        h.assertTrue(run.apply(id, set.apply(new String[]{"sellrefill", "day 00:00"})).equals("saved") && run.apply(id, set.apply(new String[]{"stockplayerrefill", "12h"})).equals("saved")
+                && shop.item(0).sellRefill.text().equals("day 00:00") && shop.item(0).stockPlayerRule().text().equals("12h"), "fixed-time and countdown rules are taken");
+        long now = System.currentTimeMillis();
+        com.mrgregles.bsp_core.shop.Shops.everyoneLeft(server, shop, 0, true, now);
+        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(id, 0).sell.left = 2;
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.everyoneLeft(server, shop, 0, true, now) == 2 && com.mrgregles.bsp_core.shop.Shops.everyoneLeft(server, shop, 0, false, now) == -1, "the tab's count: 2 left to sell, no stock limit");
+        h.assertTrue(run.apply(id, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.REFILL_ITEM, "", "", 0, 0)).equals("refilled")
+                && com.mrgregles.bsp_core.shop.Shops.everyoneLeft(server, shop, 0, true, now) == 5, "Refill now fills the card's counts");
+        var packet = new com.mrgregles.bsp_core.network.ShopConfigDataPacket(List.of(), shop.save(), new int[]{-1}, new int[]{5}, "saved", new String[0]);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.ShopConfigDataPacket.encode(packet, buf);
+        var back = com.mrgregles.bsp_core.network.ShopConfigDataPacket.decode(buf);
+        h.assertTrue(back.stockLeft()[0] == -1 && back.sellLeft()[0] == 5 && com.mrgregles.bsp_core.shop.Shop.load(back.shop()).item(0).sellRefill.text().equals("day 00:00"), "the counts and rules reach the Workbench");
+        h.assertTrue(run.apply(rid, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.CREATE, rid, "ROTATING", 0, 0)).equals("created")
+                && run.apply(rid, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.ADD_ITEM, "minecraft:paper", "", 0, 1)).equals("saved")
+                && run.apply(rid, set.apply(new String[]{"sellrefill", "rotation"})).equals("saved"), "a rotating shop takes a rotation refill");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void shop_counts_on_a_network_are_held_in_the_shared_store_before_a_trade(GameTestHelper h) {
+        var server = server(h);
+        var ann = h.makeMockPlayer();
+        var bob = h.makeMockPlayer();
+        var cal = h.makeMockPlayer();
+        for (var p : List.of(ann, bob, cal)) {
+            com.mrgregles.bsp_core.bank.Bank.ensure(server, p.getUUID(), "Net", g -> {});
+            com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
+        }
+        String id = "net_" + Long.toHexString(System.nanoTime());
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Net Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var iron = new com.mrgregles.bsp_core.shop.ShopItem();
+        iron.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 1);
+        iron.buy = 10;
+        iron.sell = 5;
+        iron.stockGlobal = 3;
+        iron.stockPlayer = 2;
+        iron.sellGlobal = 2;
+        shop.add(iron);
+        var torch = new com.mrgregles.bsp_core.shop.ShopItem();
+        torch.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TORCH, 1);
+        torch.buy = 1;
+        shop.add(torch);
+        var lamp = new com.mrgregles.bsp_core.shop.ShopItem();
+        lamp.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LANTERN, 1);
+        lamp.buy = 2;
+        lamp.stockPlayer = 1;
+        lamp.stockRefill = com.mrgregles.bsp_core.shop.Refill.after(1);
+        shop.add(lamp);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var store = new MemoryCounts();
+        long t0 = System.currentTimeMillis();
+        long[] clock = {t0};
+        com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
+        String all = com.mrgregles.bsp_core.shop.CountStore.key(0, false, null), sold = com.mrgregles.bsp_core.shop.CountStore.key(0, true, null);
+        com.mrgregles.bsp_core.shop.Shops.useCountStore(store);
+        com.mrgregles.bsp_core.shop.Shops.useClock(() -> clock[0]);
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sharedCounts(), "with a store the counts are the network's");
+            com.mrgregles.bsp_core.shop.Shops.buy(server, ann, shop, 0, 5, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && o[0].lots() == 2 && store.read(id).get(all).left == 1 && store.read(id).get(com.mrgregles.bsp_core.shop.CountStore.key(0, false, ann.getUUID())).left == 0,
+                    "Ann's two lots are taken from the shared counts: one left for everyone: " + o[0] + " " + store.read(id).keySet());
+            com.mrgregles.bsp_core.shop.Shops.ledger(server).clearCounts(id); // as a server whose own copy is out of date
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, 0, bob.getUUID(), clock[0]) == 2, "that server's copy still says two for Bob");
+            com.mrgregles.bsp_core.shop.Shops.buy(server, bob, shop, 0, 2, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && o[0].lots() == 1, "but the shared counts give him only the last lot: " + o[0]);
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, 0, bob.getUUID(), clock[0]) == 0, "and this server's copy now says none");
+            com.mrgregles.bsp_core.shop.Shops.resetCounts(server, shop, 0, 0);
+            h.assertTrue(!store.read(id).containsKey(all), "a reset drops the shared counts too");
+            com.mrgregles.bsp_core.bank.Bank.set(server, cal.getUUID(), 0, "test", r -> {});
+            com.mrgregles.bsp_core.shop.Shops.buy(server, cal, shop, 0, 1, false, x -> o[0] = x);
+            h.assertTrue(!o[0].ok() && o[0].key().equals("short") && store.read(id).get(all).left == 3 && !store.read(id).containsKey(com.mrgregles.bsp_core.shop.CountStore.key(0, false, cal.getUUID())),
+                    "a payment that fails gives the held lot back: " + o[0]);
+            ann.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 1));
+            com.mrgregles.bsp_core.shop.Shops.sell(server, ann, shop, 0, 3, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && o[0].key().equals("sold_capped") && o[0].lots() == 2 && store.read(id).get(sold).left == 0 && ann.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 1,
+                    "a sale holds the shared sell room first: two of three sold: " + o[0]);
+            store.reset(id, 0, 0); // refilled on another server
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, 0, ann.getUUID(), clock[0]) == 0, "this server's copy has not heard yet");
+            com.mrgregles.bsp_core.shop.Shops.pull(server, shop, () -> {});
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.sellLeft(server, shop, 0, ann.getUUID(), clock[0]) == 2, "pulling the shop's counts brings the network's in");
+            com.mrgregles.bsp_core.shop.Shops.buy(server, ann, shop, 1, 1, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && !store.read(id).containsKey(com.mrgregles.bsp_core.shop.CountStore.key(1, false, null)), "a card without limits never touches the shared counts");
+            com.mrgregles.bsp_core.shop.Shops.buy(server, ann, shop, 2, 1, false, x -> o[0] = x);
+            String annLamp = com.mrgregles.bsp_core.shop.CountStore.key(2, false, ann.getUUID());
+            h.assertTrue(o[0].ok() && store.read(id).get(annLamp).left == 0, "Ann's one lantern is counted on the network");
+            clock[0] = t0 + 2 * 60_000L;
+            com.mrgregles.bsp_core.shop.Shops.sweep(server);
+            h.assertTrue(!store.read(id).containsKey(annLamp), "the daily sweep drops a player's count that is full again");
+            com.mrgregles.bsp_core.shop.Shops.buy(server, ann, shop, 0, 1, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok() && store.read(id).containsKey(all), "card 0 is counted again");
+            h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.MOVE_ITEM, "", "", 0, 2), id).equals("saved")
+                    && store.read(id).isEmpty(), "moving a card restarts the counts of every card that changed place: " + store.read(id).keySet());
+            h.assertTrue(store.moveOnce("a", Map.of(id, Map.of(all, new com.mrgregles.bsp_core.shop.ShopLedger.Count(1, 0)))) && !store.moveOnce("b", Map.of()) && store.read(id).get(all).left == 1,
+                    "only the first server's counts are moved in");
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.useCountStore(null);
+            com.mrgregles.bsp_core.shop.Shops.useClock(null);
+        }
+        var down = new com.mrgregles.bsp_core.shop.CountStore() {
+            @Override
+            public <T> T locked(String s, int c, boolean sel, UUID p, java.util.function.BiFunction<com.mrgregles.bsp_core.shop.ShopLedger.Count, com.mrgregles.bsp_core.shop.ShopLedger.Count, T> f) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+
+            @Override
+            public Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> read(String s) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+
+            @Override
+            public void reset(String s, int f, int t) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+
+            @Override
+            public void dropIf(String s, int c, boolean sel, UUID p, int l, long a) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+
+            @Override
+            public boolean moveOnce(String s, Map<String, Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count>> m) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+
+            @Override
+            public com.mrgregles.bsp_core.shop.ShopLedger.Draw drawLocked(String s, java.util.function.UnaryOperator<com.mrgregles.bsp_core.shop.ShopLedger.Draw> f) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+
+            @Override
+            public void dropDraw(String s) throws Exception {
+                throw new java.sql.SQLException("down");
+            }
+        };
+        com.mrgregles.bsp_core.shop.Shops.useCountStore(down);
+        try {
+            com.mrgregles.bsp_core.shop.Shops.buy(server, bob, shop, 2, 1, false, x -> o[0] = x);
+            h.assertTrue(!o[0].ok() && o[0].key().equals("counts_unreachable"), "with the database down a limited card (the iron, last since the move) refuses and changes nothing: " + o[0]);
+            com.mrgregles.bsp_core.shop.Shops.buy(server, bob, shop, 0, 1, false, x -> o[0] = x);
+            h.assertTrue(o[0].ok(), "a card without limits (the torch, first since the move) still trades: " + o[0]);
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.useCountStore(null);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_rotating_shop_has_one_draw_for_the_network(GameTestHelper h) {
+        var server = server(h);
+        String id = "netrot_" + Long.toHexString(System.nanoTime());
+        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Net Rotation", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        shop.displaySlots = 2;
+        shop.intervalMs = 3_600_000L;
+        for (int i = 0; i < 6; i++) {
+            var it = new com.mrgregles.bsp_core.shop.ShopItem();
+            it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER, i + 1);
+            it.buy = 5;
+            shop.add(it);
+        }
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        var store = new MemoryCounts();
+        long t0 = System.currentTimeMillis();
+        long[] clock = {t0};
+        var local = com.mrgregles.bsp_core.shop.Shops.ledger(server).draw(id);
+        com.mrgregles.bsp_core.shop.Shops.useCountStore(store);
+        com.mrgregles.bsp_core.shop.Shops.useClock(() -> clock[0]);
+        try {
+            // a draw this server made before the network kept draws: the database has none, so it takes this one
+            local.shown.addAll(List.of(4, 5));
+            local.drawnAt = t0 - 1000;
+            local.nextAt = t0 + 3_600_000L;
+            com.mrgregles.bsp_core.shop.Shops.pull(server, shop, () -> {});
+            h.assertTrue(store.draws.get(id).shown.equals(List.of(4, 5)) && store.draws.get(id).drawnAt == t0 - 1000, "the network adopts the first draw it is shown: " + store.draws.get(id).shown);
+            // another server's copy says something else: pulling the shop brings the network's in
+            local.shown.clear();
+            local.shown.addAll(List.of(0, 1));
+            com.mrgregles.bsp_core.shop.Shops.pull(server, shop, () -> {});
+            h.assertTrue(local.shown.equals(List.of(4, 5)) && com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]).equals(List.of(4, 5)), "and every server shows the network's draw: " + local.shown);
+            // another server reached the due time first and drew
+            store.drawLocked(id, row -> {
+                row.shown.clear();
+                row.shown.addAll(List.of(2, 3));
+                row.drawnAt = t0 + 3_600_000L + 5;
+                row.nextAt = t0 + 7_200_000L + 5;
+                return row;
+            });
+            clock[0] = t0 + 3_600_000L + 10;
+            var shown = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            h.assertTrue(shown.equals(List.of(2, 3)) && local.nextAt == t0 + 7_200_000L + 5, "this server, due too, takes that draw instead of making its own: " + shown);
+            // nobody has drawn when the time comes: this server makes the network's draw
+            clock[0] = t0 + 7_200_000L + 10;
+            shown = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
+            h.assertTrue(shown.size() == 2 && store.draws.get(id).shown.equals(shown) && store.draws.get(id).drawnAt == clock[0], "a new draw goes to the network: " + shown + " " + store.draws.get(id).shown);
+        } finally {
+            com.mrgregles.bsp_core.shop.Shops.useCountStore(null);
+            com.mrgregles.bsp_core.shop.Shops.useClock(null);
+        }
         h.succeed();
     }
 
@@ -1027,7 +1461,7 @@ public class BspGameTests {
             h.assertTrue(stall.open && stall.stocked && stall.shown.is(net.minecraft.world.item.Items.APPLE), "open, in stock, the apple on the counter: " + stall.open + " " + stall.stocked + " " + stall.shown);
             h.assertTrue(h.getBlockState(lower).getLightEmission(h.getLevel(), h.absolutePos(lower)) == 7, "a whole nether stall glows");
             h.assertTrue(h.getBlockState(lamp).getValue(net.minecraft.world.level.block.RedstoneLampBlock.LIT), "the lamp beneath is lit while open");
-            com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, 0).left = 0;
+            com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, 0).stock.left = 0;
             afterTicking(h, 25, () -> {
                 h.assertTrue(stall.open && !stall.stocked, "sold out: the stock lamp goes red, still open");
                 stall.assign("", com.mrgregles.bsp_core.shop.OpenHours.ALWAYS, "", "");

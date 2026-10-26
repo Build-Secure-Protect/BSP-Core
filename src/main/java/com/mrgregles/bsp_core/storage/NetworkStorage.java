@@ -101,6 +101,12 @@ public final class NetworkStorage {
     private static final String SINGLE_PLAYER = "Network storage stays off in a single-player or LAN world: records are kept in this world only, "
             + "whatever storage.mode and the database settings say.";
 
+    /** True when this server is meant to keep its records on the network (a dedicated server with storage.mode "mysql"), connected or not. */
+    public static boolean countsWanted() {
+        MinecraftServer s = server;
+        return s != null && networkWanted(BSPConfig.STORAGE_MODE.get(), singlePlayer());
+    }
+
     /** True while this server is writing to and reading from the network database. */
     public static boolean enabled() {
         return store != null;
@@ -217,6 +223,12 @@ public final class NetworkStorage {
                         // not a team id
                     }
                 }
+                case "shopcount" -> {
+                    var shop = com.mrgregles.bsp_core.shop.ShopLedger.get(srv).shop(payload);
+                    if (shop != null) {
+                        com.mrgregles.bsp_core.shop.Shops.pull(srv, shop, () -> com.mrgregles.bsp_core.shop.ShopOpener.resyncOpen(srv, shop.id));
+                    }
+                }
                 case "shop" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
@@ -275,6 +287,8 @@ public final class NetworkStorage {
                     BSPCore.LOGGER.warn("BSP-Core storage: this server's local records are not in the database yet. Run /bsp storage migrate.");
                 }
                 shopReload(null);
+                MinecraftServer started = server;
+                onServer(() -> com.mrgregles.bsp_core.shop.Shops.moveCountsOnce(started, BSPConfig.STORAGE_SERVER_ID.get()));
                 s.teamClearOnline();
                 teamReload(null);
                 kitReload(null);
@@ -454,8 +468,15 @@ public final class NetworkStorage {
         });
     }
 
+    /** Ticks to the next sweep of shop counts that are full again: five minutes after the start, then daily. */
+    private static int sweepTicks = 5 * 60 * 20;
+
     @SubscribeEvent
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && store != null && --sweepTicks <= 0) {
+            sweepTicks = 24 * 60 * 60 * 20;
+            com.mrgregles.bsp_core.shop.Shops.sweep(event.getServer());
+        }
         if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || store == null
                 || ++noticeTicks < Math.max(1, BSPConfig.getOr(BSPConfig.STORAGE_NOTICE_SECONDS, 3)) * 20) {
             return;
@@ -962,8 +983,79 @@ public final class NetworkStorage {
     public static void shopDelete(String id) {
         async("delete a shop", s -> {
             s.shopDelete(id);
+            s.countsReset(id, 0, Integer.MAX_VALUE);
+            s.dropDraw(id);
             publish("shop", "-" + id);
         });
+    }
+
+    /** Work on the shop counts in the database (or a GameTest's stand-in), on the storage thread. */
+    public interface CountWork<T> {
+        T run(com.mrgregles.bsp_core.shop.CountStore counts) throws Exception;
+    }
+
+    /**
+     * Runs {@code work} on the database's shop counts on the storage thread and hands its answer back
+     * on the server thread: null when the database is not connected or the work failed (logged).
+     * With {@code notifyShop}, the other servers are told that shop's counts changed.
+     */
+    public static <T> void shopCounts(String what, CountWork<T> work, @Nullable String notifyShop, Consumer<T> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            T answer = null;
+            try {
+                answer = work.run(new DbCounts(s));
+                if (notifyShop != null) {
+                    publish("shopcount", notifyShop);
+                }
+            } catch (Exception e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not {}: {}", what, e.toString());
+            }
+            T done = answer;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** The database as a {@link com.mrgregles.bsp_core.shop.CountStore}. */
+    private record DbCounts(MySqlStore s) implements com.mrgregles.bsp_core.shop.CountStore {
+        @Override
+        public <T> T locked(String shop, int card, boolean selling, UUID player, java.util.function.BiFunction<com.mrgregles.bsp_core.shop.ShopLedger.Count, com.mrgregles.bsp_core.shop.ShopLedger.Count, T> change) throws SQLException {
+            return s.countsLocked(shop, card, selling, player, change);
+        }
+
+        @Override
+        public Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> read(String shop) throws SQLException {
+            return s.countsRead(shop);
+        }
+
+        @Override
+        public void reset(String shop, int from, int to) throws SQLException {
+            s.countsReset(shop, from, to);
+        }
+
+        @Override
+        public void dropIf(String shop, int card, boolean selling, UUID player, int left, long at) throws SQLException {
+            s.countsDropIf(shop, card, selling, player, left, at);
+        }
+
+        @Override
+        public boolean moveOnce(String serverId, Map<String, Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count>> counts) throws SQLException {
+            return s.countsMoveOnce(serverId, counts);
+        }
+
+        @Override
+        public com.mrgregles.bsp_core.shop.ShopLedger.Draw drawLocked(String shop, java.util.function.UnaryOperator<com.mrgregles.bsp_core.shop.ShopLedger.Draw> change) throws SQLException {
+            return s.drawLocked(shop, change);
+        }
+
+        @Override
+        public void dropDraw(String shop) throws SQLException {
+            s.dropDraw(shop);
+        }
     }
 
     /** Loads one shop (or all with null) from the database into this server's ledger. */

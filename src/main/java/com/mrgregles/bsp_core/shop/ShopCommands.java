@@ -17,6 +17,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -27,6 +28,9 @@ import java.util.Locale;
  * /bsp shop delete &lt;id&gt;
  * /bsp shop add &lt;id&gt; &lt;buy&gt; &lt;sell&gt;                  add the held stack as a lot (-1 = that side off), pieces
  * /bsp shop item &lt;id&gt; &lt;index&gt; stock &lt;global&gt; &lt;perPlayer&gt; &lt;restockMinutes&gt;
+ * /bsp shop item &lt;id&gt; &lt;index&gt; sell &lt;global&gt; &lt;perPlayer&gt;     sell limits in lots (-1 none)
+ * /bsp shop item &lt;id&gt; &lt;index&gt; refill stock|stockplayer|sell|sellplayer &lt;rule&gt;
+ *                                                never, 12h, 90m, day 00:00, monday 00:00, rotation, same
  * /bsp shop set &lt;id&gt; remote|buyonly on|off
  * /bsp shop buy &lt;id&gt; &lt;index&gt; &lt;lots&gt; [test]        buy as yourself (test: nothing moves)
  * /bsp shop sell &lt;id&gt; &lt;index&gt; &lt;lots&gt;
@@ -75,7 +79,11 @@ public final class ShopCommands {
                         .executes(ShopCommands::add)))))
                 .then(Commands.literal("item").requires(ShopCommands::admin).then(Commands.argument("id", StringArgumentType.word()).then(Commands.argument("index", IntegerArgumentType.integer(0))
                         .then(Commands.literal("stock").then(Commands.argument("global", IntegerArgumentType.integer(-1)).then(Commands.argument("perPlayer", IntegerArgumentType.integer(-1)).then(Commands.argument("restockMinutes", IntegerArgumentType.integer(0))
-                                .executes(ShopCommands::stock))))))))
+                                .executes(ShopCommands::stock)))))
+                        .then(Commands.literal("sell").then(Commands.argument("global", IntegerArgumentType.integer(-1)).then(Commands.argument("perPlayer", IntegerArgumentType.integer(-1))
+                                .executes(ShopCommands::sellLimits))))
+                        .then(Commands.literal("refill").then(Commands.argument("count", StringArgumentType.word()).suggests((c, b) -> net.minecraft.commands.SharedSuggestionProvider.suggest(REFILLS, b))
+                                .then(Commands.argument("rule", StringArgumentType.greedyString()).executes(ShopCommands::refill)))))))
                 .then(Commands.literal("set").requires(ShopCommands::admin).then(Commands.argument("id", StringArgumentType.word())
                         .then(Commands.literal("remote").then(Commands.literal("on").executes(ctx -> flag(ctx, "remote", true))).then(Commands.literal("off").executes(ctx -> flag(ctx, "remote", false))))
                         .then(Commands.literal("buyonly").then(Commands.literal("on").executes(ctx -> flag(ctx, "buyonly", true))).then(Commands.literal("off").executes(ctx -> flag(ctx, "buyonly", false))))))
@@ -154,10 +162,62 @@ public final class ShopCommands {
         }
         item.stockGlobal = IntegerArgumentType.getInteger(ctx, "global");
         item.stockPlayer = IntegerArgumentType.getInteger(ctx, "perPlayer");
-        item.restockMs = IntegerArgumentType.getInteger(ctx, "restockMinutes") * 60_000L;
-        Shops.ledger(ctx.getSource().getServer()).stock(s.id, IntegerArgumentType.getInteger(ctx, "index")).left = -1;
+        item.stockRefill = Refill.after(IntegerArgumentType.getInteger(ctx, "restockMinutes"));
+        Shops.resetCounts(ctx.getSource().getServer(), s, IntegerArgumentType.getInteger(ctx, "index"), IntegerArgumentType.getInteger(ctx, "index"));
         Shops.save(ctx.getSource().getServer(), s);
         ctx.getSource().sendSuccess(() -> tr("stock_set"), true);
+        return 1;
+    }
+
+    /** The four counts a refill rule can be set for. */
+    private static final List<String> REFILLS = List.of("stock", "stockplayer", "sell", "sellplayer");
+
+    private static int sellLimits(CommandContext<CommandSourceStack> ctx) {
+        Shop s = shop(ctx);
+        ShopItem item = s == null ? null : s.item(IntegerArgumentType.getInteger(ctx, "index"));
+        if (item == null) {
+            if (s != null) {
+                ctx.getSource().sendFailure(tr("no_item"));
+            }
+            return 0;
+        }
+        item.sellGlobal = IntegerArgumentType.getInteger(ctx, "global");
+        item.sellPlayer = IntegerArgumentType.getInteger(ctx, "perPlayer");
+        Shops.resetCounts(ctx.getSource().getServer(), s, IntegerArgumentType.getInteger(ctx, "index"), IntegerArgumentType.getInteger(ctx, "index"));
+        Shops.save(ctx.getSource().getServer(), s);
+        ctx.getSource().sendSuccess(() -> tr("sell_limits_set"), true);
+        return 1;
+    }
+
+    private static int refill(CommandContext<CommandSourceStack> ctx) {
+        Shop s = shop(ctx);
+        ShopItem item = s == null ? null : s.item(IntegerArgumentType.getInteger(ctx, "index"));
+        if (item == null) {
+            if (s != null) {
+                ctx.getSource().sendFailure(tr("no_item"));
+            }
+            return 0;
+        }
+        String count = StringArgumentType.getString(ctx, "count").toLowerCase(java.util.Locale.ROOT);
+        Refill rule = Refill.parse(StringArgumentType.getString(ctx, "rule"));
+        boolean perPlayer = count.endsWith("player");
+        if (!REFILLS.contains(count) || rule == null || !perPlayer && rule.kind() == Refill.Kind.SAME) {
+            ctx.getSource().sendFailure(tr("bad_refill"));
+            return 0;
+        }
+        if (rule.kind() == Refill.Kind.ROTATION && s.kind != Shop.Kind.ROTATING) {
+            ctx.getSource().sendFailure(tr("rotation_only"));
+            return 0;
+        }
+        switch (count) {
+            case "stock" -> item.stockRefill = rule;
+            case "stockplayer" -> item.stockPlayerRefill = rule;
+            case "sell" -> item.sellRefill = rule;
+            default -> item.sellPlayerRefill = rule;
+        }
+        Shops.resetCounts(ctx.getSource().getServer(), s, IntegerArgumentType.getInteger(ctx, "index"), IntegerArgumentType.getInteger(ctx, "index"));
+        Shops.save(ctx.getSource().getServer(), s);
+        ctx.getSource().sendSuccess(() -> tr("refill_set", count, rule.text()), true);
         return 1;
     }
 

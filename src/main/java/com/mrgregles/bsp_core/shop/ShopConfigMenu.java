@@ -23,6 +23,8 @@ public class ShopConfigMenu extends AbstractContainerMenu {
     public final List<Summary> list = new ArrayList<>();
     @Nullable
     public Shop shop;
+    /** The selected shop's cards: what is left of each shop-wide stock and sell limit (-1 none), for the Limits tab. */
+    public int[] stockLeft = new int[0], sellLeft = new int[0];
     public String messageKey = "";
     public String[] messageArgs = new String[0];
     public int messageSerial;

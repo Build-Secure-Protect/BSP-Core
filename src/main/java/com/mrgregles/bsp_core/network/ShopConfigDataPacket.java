@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** Server → client: the shop list and the selected shop in full (as its NBT record) for the configurator. */
-public record ShopConfigDataPacket(List<ShopConfigMenu.Summary> list, @Nullable CompoundTag shop, String messageKey, String[] messageArgs) {
+/** Server → client: the shop list and the selected shop in full (as its NBT record) for the configurator, with each card's shop-wide counts left. */
+public record ShopConfigDataPacket(List<ShopConfigMenu.Summary> list, @Nullable CompoundTag shop, int[] stockLeft, int[] sellLeft, String messageKey, String[] messageArgs) {
     public static void encode(ShopConfigDataPacket m, FriendlyByteBuf buf) {
         buf.writeVarInt(m.list.size());
         for (ShopConfigMenu.Summary s : m.list) {
@@ -25,6 +25,8 @@ public record ShopConfigDataPacket(List<ShopConfigMenu.Summary> list, @Nullable 
             buf.writeBoolean(s.remote());
         }
         buf.writeNbt(m.shop == null ? new CompoundTag() : m.shop);
+        buf.writeVarIntArray(m.stockLeft);
+        buf.writeVarIntArray(m.sellLeft);
         buf.writeUtf(m.messageKey, 64);
         buf.writeVarInt(m.messageArgs.length);
         for (String s : m.messageArgs) {
@@ -39,12 +41,13 @@ public record ShopConfigDataPacket(List<ShopConfigMenu.Summary> list, @Nullable 
             list.add(new ShopConfigMenu.Summary(buf.readUtf(32), buf.readUtf(64), buf.readEnum(Shop.Kind.class), buf.readVarInt(), buf.readBoolean()));
         }
         CompoundTag shop = buf.readNbt();
+        int[] stockLeft = buf.readVarIntArray(), sellLeft = buf.readVarIntArray();
         String key = buf.readUtf(64);
         String[] args = new String[buf.readVarInt()];
         for (int i = 0; i < args.length; i++) {
             args[i] = buf.readUtf(64);
         }
-        return new ShopConfigDataPacket(list, shop == null || shop.isEmpty() ? null : shop, key, args);
+        return new ShopConfigDataPacket(list, shop == null || shop.isEmpty() ? null : shop, stockLeft, sellLeft, key, args);
     }
 
     public static void handle(ShopConfigDataPacket msg, Supplier<NetworkEvent.Context> ctx) {

@@ -1542,3 +1542,59 @@ Covered by GameTest `every_upgrade_orb_has_its_own_colour`. Picked from `tools/p
 
 - [ ] A placed totem with Harvest, Sentinel, Extra Homes, Swift Travel and Herald (`/bsp totem buff <power> <level>`): their orbs are yellow-green, violet, sea green, amber and rose, none of them red, each pale at level 1 and deeper at higher levels.
 - [ ] The same totem with Lockpick on a held totem nearby: Lockpick's red no longer has a twin.
+
+## Shop limits and refills (spawn shops task 1: SS-2, SS-3, SS-4, 2026-10-25)
+
+Covered by GameTests `shop_per_player_limits_refill_on_their_own_by_countdown_and_fixed_time`, `shop_sell_limits_cap_sales_per_player_and_for_everyone`, `sell_all_and_sell_here_stop_at_sell_limits_and_hand_back_the_rest` and `rotating_shop_trades_only_the_cards_on_show_and_refills_each_rotation`. The card's look was picked from `tools/preview/shop_limit_concepts.html`, look A. Untested in a client: the corner counts, the dark card and the tooltip lines.
+
+Setup: `/bsp shop create lt_test Limits`, hold 16 cobblestone and `/bsp shop add lt_test 100 20` (index 0), hold a lantern and `/bsp shop add lt_test 40 -1` (index 1).
+- [ ] `/bsp shop item lt_test 0 sell 5 3`. Open the shop (`/bsp shop open lt_test`): the cobblestone card's top-right corner reads 3/3 in amber (it has no buy limit; with one, the sell count moves to the top left). Hover it: "You can sell 3 more of 3", "The shop takes 5 more from everyone".
+- [ ] Hold 80 cobblestone and shift-right-click the card: the message says 3 lots were sold and the rest is still in your inventory; 32 cobblestone are left; the corner reads FULL in red.
+- [ ] Right-click again: "The shop takes no more of that for now." The card is not dark (it can still be bought).
+- [ ] A second player sells: only 2 lots go (the shop-wide 5 is used up); the card then shows FULL for them too and the tooltip shows the shop-wide count.
+- [ ] `/bsp shop item lt_test 1 stock -1 2 0` then `/bsp shop item lt_test 1 refill stockplayer 2m`: the lantern card reads 2/2 in green; buy two: OUT in red, the card dark, the tooltip "None left to buy for now" and "Refills in 2m". Two minutes later, reopen: 2/2 again.
+- [ ] `/bsp shop item lt_test 0 refill sell day 00:00`: the tooltip says "Refills every day at 00:00 (in ...)". `refill sell same` is refused (a shop-wide rule cannot be same); `refill sellplayer same` is taken.
+- [ ] Sell Here (with the shop not buy-only): drop 5 lots of cobblestone in after a refill; closing sells 3 and hands 2 back, with the yellow line "Some items reached their sell limit".
+- [ ] A rotating shop with three sellable cards and 1 on show: Sell all and the Sell Here box take only the card on show; right-clicking a card of the pool is impossible (it is not on screen) and `/bsp shop sell <id> <index> 1` for one not on show says "That item is not on show this rotation."
+- [ ] A Market Stall assigned to a shop whose only card is sell-only with `sell 1 -1`: its stock lamp is green; after one sale it turns red.
+- [ ] `shop.timeZone = "UTC"` in the server toml: a `day 00:00` rule's countdown follows UTC midnight.
+- [ ] The Workbench's stock refill shows as text (`1h`, `day 06:00`) on the Limits tab and takes one typed the same way.
+
+## Workbench Limits tab (spawn shops, 2026-10-25)
+
+Covered by GameTest `workbench_sets_limits_refills_a_card_and_keeps_rotation_to_rotating_shops` (the fields, the refusal, Refill now, the counts reaching the client). Look A from `tools/preview/workbench_limits_concepts.html`. Untested in a client: everything below.
+
+- [ ] Open the Workbench (`/bsp shop`), pick a shop, click a card: the side panel's heading is two tabs, CARD (lit) and LIMITS. CARD lists lot size, buy price, sell price, currency, instant buy, hidden and opens section, with the item's icon; no stock rows.
+- [ ] Click LIMITS: a BUY group and a SELL group, each with Everyone, Each player, Refill and Player refill; nothing runs into the Refill now button or past the panel's foot.
+- [ ] Click Everyone under SELL, type 5, Enter: it reads 5 with "5 left" in amber beside it. Type `none` in Each player: it reads none.
+- [ ] Click Refill under SELL: while typing, a tooltip lists never, 90m, 12h, 2d, day 06:00, monday 00:00, rotation, same. `monday 00:00` saves; `rotation` on a plain shop gives "Only a rotating shop refills each rotation." in red; on a rotating shop it saves.
+- [ ] Sell two lots to the card in its shop, reopen the Workbench: "3 left". Refill now: the message "Every count on this card is full again." and "5 left".
+- [ ] Switching tabs while a field is open saves what was typed (as clicking elsewhere does).
+- [ ] As a moderator: both tabs show; clicking a row opens no field; Refill now is dim and does nothing.
+
+## Shop counts across the network (spawn shops SS-5 part 1, 2026-10-26)
+
+Covered by GameTest `shop_counts_on_a_network_are_held_in_the_shared_store_before_a_trade`, which runs the rules through a stand-in for the database (one shared map). **The SQL itself, the locking and the Redis notices are untested until this live test** (two servers on the same MySQL and Redis).
+
+- [ ] Start both servers with this jar: the log shows the table `bsp_shop_counts` created, and one server logs "this server's shop counts are now the network's", the other "another server's shop counts were moved first; this server's were dropped". `SELECT * FROM bsp_state WHERE k = 'shop_counts_moved'` names the first.
+- [ ] A shop on both servers with a card `/bsp shop item <id> 0 stock 3 2 0`. On server A, buy 2: the corner reads 0/2 for you and 1 left for everyone (tooltip). On server B, a second player opens the shop: the tooltip says 1 left for everyone; they buy 2 and get 1.
+- [ ] With the shop open on server B, buy on server A: B's page refreshes on its own within a moment (Redis on). With Redis off it refreshes the next time the page is opened.
+- [ ] Two players on the two servers click the last lot at the same moment: only one gets it; the other is told it is sold out. `SELECT * FROM bsp_shop_counts WHERE shop = '<id>'` shows left_lots 0 for the everyone row (`who` empty).
+- [ ] A sell limit (`/bsp shop item <id> 0 sell 2 -1`): sell 1 on each server; a third sale anywhere says the shop takes no more.
+- [ ] The Sell Here box on a network: drop 3 lots in with 2 left; closing puts everything back in the inventory for a moment and then sells 2; the yellow line says some items reached their sell limit.
+- [ ] Stop MySQL (or block it) and buy a limited card: "The shop's records cannot be reached right now; nothing was changed." An unlimited card still sells if the bank answers. Start MySQL again: trades work without a restart.
+- [ ] A per-player limit with `refill stockplayer 1m`: buy it out, wait a day (or set the server clock), and the player's row is gone from `bsp_shop_counts` after the daily sweep (five minutes after a start, then every 24 hours).
+- [ ] In the Workbench, move a card (or add one before others): the rows of every card that changed place are gone from `bsp_shop_counts`, and those cards show full again.
+- [ ] Deleting a shop removes its rows.
+
+## A rotating shop's draw across the network (spawn shops SS-5 part 2, 2026-10-26)
+
+Covered by GameTest `a_rotating_shop_has_one_draw_for_the_network` (stand-in database). The SQL and Redis paths are part of the MySQL live test.
+
+- [ ] Start both servers: the log shows `bsp_shop_draws` created. A rotating shop with 6 cards, 2 on show, interval 1 hour (`/bsp shop edit` → Settings).
+- [ ] Open it on server A, then on server B: both show the same two cards. `SELECT * FROM bsp_shop_draws` shows them.
+- [ ] Set the interval to 1 hour and wait it out (or move `next_at` into the past in the table with Redis on): open it on either server; within a moment both show the same new two cards, and the other server's open screen changes by itself.
+- [ ] A shop that had a draw on server A before this version: after the update, the first open on A puts A's draw in the table; B then shows A's cards.
+- [ ] A sell limit with `refill sell rotation` on a card of that shop: sell it out on A; after the next draw both servers show it full again, once.
+- [ ] Deleting the shop removes its draw row.
+

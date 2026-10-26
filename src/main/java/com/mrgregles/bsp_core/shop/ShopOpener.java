@@ -54,6 +54,21 @@ public final class ShopOpener {
         });
         if (player.containerMenu instanceof ShopMenu menu) {
             sync(player, menu, 0, "", null);
+            // on a network the counts shown come from the database a moment later
+            Shops.pull(player.server, shop, () -> {
+                if (Shops.sharedCounts() && player.containerMenu == menu) {
+                    sync(player, menu, menu.page, "", null);
+                }
+            });
+        }
+    }
+
+    /** Sends the open page again to everyone looking at this shop (its counts changed on another server). */
+    public static void resyncOpen(net.minecraft.server.MinecraftServer server, String shopId) {
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (p.containerMenu instanceof ShopMenu menu && menu.shopId.equals(shopId)) {
+                sync(p, menu, menu.page, "", null);
+            }
         }
     }
 
@@ -65,7 +80,7 @@ public final class ShopOpener {
             player.closeContainer();
             return;
         }
-        long now = System.currentTimeMillis();
+        long now = Shops.now();
         boolean open = menu.hours == null || menu.hours.isOpen(player.level());
         List<Integer> shown = open ? Shops.visible(server, shop, now) : List.of();
         List<ShopItem> shownItems = new ArrayList<>();
@@ -75,12 +90,15 @@ public final class ShopOpener {
         int columns = shop.effectiveColumns(shownItems), rows = shop.rows();
         int perPage = columns * rows, pages = Math.max(1, (shown.size() + perPage - 1) / perPage);
         page = Math.max(0, Math.min(page, pages - 1));
+        menu.page = page; // remembered on the server too, to send the same page again
         List<ShopMenu.Card> cards = new ArrayList<>();
         for (int k = page * perPage; k < Math.min(shown.size(), (page + 1) * perPage); k++) {
             int i = shown.get(k);
             ShopItem it = shop.item(i);
-            cards.add(new ShopMenu.Card(i, it.stack.copy(), it.buyable() ? Shops.price(shop, it, true, now) : -1, it.sellable() && !shop.buyOnly ? it.sell : -1, it.currency,
-                    Shops.stockLeft(server, shop, i, player.getUUID(), now), it.instant, it.section));
+            boolean sells = it.sellable() && !shop.buyOnly;
+            cards.add(new ShopMenu.Card(i, it.stack.copy(), it.buyable() ? Shops.price(shop, it, true, now) : -1, sells ? it.sell : -1, it.currency,
+                    it.buyable() ? Shops.limit(server, shop, i, player.getUUID(), false, now) : ShopMenu.Limit.NONE,
+                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section));
         }
         StringBuilder path = new StringBuilder(shop.name);
         for (Shop p = shop.parent.isEmpty() ? null : Shops.ledger(server).shop(shop.parent); p != null; p = p.parent.isEmpty() ? null : Shops.ledger(server).shop(p.parent)) {

@@ -38,7 +38,8 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
             buf.writeLong(c.buy());
             buf.writeLong(c.sell());
             buf.writeVarInt(c.currency() + 1);
-            buf.writeVarInt(c.stock() + 1);
+            c.stock().write(buf);
+            c.selling().write(buf);
             buf.writeBoolean(c.instant());
             buf.writeUtf(c.section(), 32);
         }
@@ -62,7 +63,7 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
         int n = buf.readVarInt();
         List<ShopMenu.Card> cards = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            cards.add(new ShopMenu.Card(buf.readVarInt(), buf.readItem(), buf.readLong(), buf.readLong(), buf.readVarInt() - 1, buf.readVarInt() - 1, buf.readBoolean(), buf.readUtf(32)));
+            cards.add(new ShopMenu.Card(buf.readVarInt(), buf.readItem(), buf.readLong(), buf.readLong(), buf.readVarInt() - 1, ShopMenu.Limit.read(buf), ShopMenu.Limit.read(buf), buf.readBoolean(), buf.readUtf(32)));
         }
         String key = buf.readUtf(64);
         String[] args = new String[buf.readVarInt()];

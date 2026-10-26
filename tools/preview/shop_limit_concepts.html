@@ -1,0 +1,301 @@
+<title>Shop Card Limits</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of three concepts; each concept draws the real Cash Machine shop screen twice (the Challenge shop, a Decor page) at the game's GUI pixel sizes, scaled 3x. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --label:"Oswald",system-ui,sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1240px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; color:var(--muted); max-width:80ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.ctl{ display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:13px; }
+.ctl .lab{ font:600 11px var(--label); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:4px; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:6px 10px; cursor:pointer; border-radius:3px; }
+.tb.on{ border-color:var(--acc); color:var(--acc); }
+.tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:12px; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center; min-width:0; }
+.stage canvas{ width:100%; max-width:600px; height:auto; image-rendering:pixelated; display:block; }
+.stage .cap{ font-size:12px; color:var(--muted); text-align:center; max-width:60ch; }
+ul{ margin:0; padding-left:20px; color:var(--muted); } ul li{ max-width:80ch; margin-bottom:4px; } ul b{ color:var(--fg); font-weight:600; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Shop Card Limits</h1>
+    <p class="lede">Spawn shops task 1 (SS-2 sell limits, SS-4 per-player refills). Three ways for a shop card to show how much a player can still buy or sell before the limit refills. Each look is drawn on the real Cash Machine shop screen at its in-game size: the weekly Challenge shop (4 cards on show, sell only, 4 lots each per player a week) and a Decor page at 7 cards a row (some cards limited to 16 lots a day per player). Change the state to see the counts move.</p>
+  </header>
+
+  <div class="card">
+    <div class="ctl" role="group" aria-label="State">
+      <span class="lab">State</span>
+      <button class="tb on" id="st0" data-s="0">Monday morning, nothing used</button>
+      <button class="tb" id="st1" data-s="1">Mid-week, some used</button>
+      <button class="tb" id="st2" data-s="2">Limits used up</button>
+    </div>
+    <div class="ctl" role="group" aria-label="Tooltip">
+      <span class="lab">Tooltip</span>
+      <button class="tb on" id="tip1" data-t="1">Show the hover tooltip</button>
+      <button class="tb" id="tip0" data-t="0">Hide it</button>
+    </div>
+  </div>
+
+  <section>
+    <h2>A. Count in the corner</h2>
+    <div class="card">
+      <p>The card's top-right corner shows what is left of the limit as a fraction, <b>3/4</b>: green when it is how many you can still buy, amber when it is how many the shop will still take from you. At zero it reads <b>OUT</b> (nothing left to buy) or <b>FULL</b> (the shop takes no more) in red, and the card goes dark. Today's corner number for stock becomes the same fraction.</p>
+      <div class="pair"><div class="stage"><canvas id="a1" width="900" height="648"></canvas><div class="cap">Challenge shop</div></div><div class="stage"><canvas id="a2" width="900" height="648"></canvas><div class="cap">Decor, 7 cards a row</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. Gauge on the bottom edge</h2>
+    <div class="card">
+      <p>No new text on the card. Its bottom edge becomes a 2-pixel gauge that empties from right to left as the limit is used: green for what you can still buy, amber for what the shop will still take. A used-up limit leaves a short red stub and the card goes dark. Today's stock number stays in the corner; the exact counts and the refill time are in the tooltip.</p>
+      <div class="pair"><div class="stage"><canvas id="b1" width="900" height="648"></canvas><div class="cap">Challenge shop</div></div><div class="stage"><canvas id="b2" width="900" height="648"></canvas><div class="cap">Decor, 7 cards a row</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. Price line that flips</h2>
+    <div class="card">
+      <p>The price line takes turns, like a cash machine display: 3 seconds of the price (<b>sell 2,500</b>), then 1.5 seconds of the count (<b>3 of 4 left</b>). At zero the line stays on <b>full</b> or <b>sold out</b> in red and the card goes dark. Cards with no limit never flip. With reduced motion turned on, the count shows on its own line in place of the empty "--".</p>
+      <div class="pair"><div class="stage"><canvas id="c1" width="900" height="648"></canvas><div class="cap">Challenge shop</div></div><div class="stage"><canvas id="c2" width="900" height="648"></canvas><div class="cap">Decor, 7 cards a row</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The same in every look</h2>
+    <div class="card">
+      <ul>
+        <li><b>The tooltip</b> gives the full sentence: "You can sell 1 more of 4. Refills Monday 00:00 (in 2d 4h)", and for a shop-wide limit "The shop takes 182 more from everyone".</li>
+        <li><b>A sale that runs into the limit</b> sells what is left and says so in the message line: "Sold 1 lot for 2,500 pieces. The shop takes no more Steel Casing from you this week; the rest is still in your inventory."</li>
+        <li><b>Sell all and Sell here</b> stop at the limits and hand back the rest.</li>
+        <li><b>The quantity screen's Max</b> also counts the limit left.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const S = 3, W = 300, H = 216;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', KEY_LOCKED:'#8f877a', CARD:'#0a1a10', CARD_SEL:'#0f2d1c', CARD_OUT:'#070d09', OUT_EDGE:'#1f6b43' };
+  const SX=10, SY=10, SW=206, SH=160, KX=226, KW=64, KH=20, KGAP=4, STRIP_Y=180, STRIP_H=22, CX=SX+6, CY=SY+22, CGAP=1;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Minecraft's font widths (advance, in GUI pixels) for the characters used here
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+
+  function text(g, s, x, y, colour, scale){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour;
+    g.fillText(s, 0, 0);
+    g.restore();
+    return target;
+  }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+
+  // small pixel icons: a block with a pattern, from a seed
+  function icon(g, x, y, spec){
+    const [base, light, dark, kind] = spec;
+    let seed = 0; for (const ch of base + kind) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); if ((px === 4 || px === 11) && (py === 4 || py === 11)) c = light; }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else if (kind === 'planks') { c = (py % 4 === 0) ? dark : (rnd() < .2 ? light : base); if ((py >> 2) % 2 === 0 && px === 7 && py % 4) c = dark; }
+      else if (kind === 'lantern') { c = 'transparent'; if (px > 3 && px < 12 && py > 3 && py < 14) c = (px > 4 && px < 11 && py > 5 && py < 12) ? light : dark; if (px > 5 && px < 10 && py < 4 && py > 0) c = dark; }
+      else if (kind === 'glass') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px - py === 3 || px - py === 4) ? light : 'transparent'; }
+      else if (kind === 'bricks') { const row = py >> 2, off = row % 2 ? 4 : 0; c = (py % 4 === 3 || (px + off) % 8 === 7) ? light : (rnd() < .25 ? dark : base); }
+      else if (kind === 'ingot') { c = 'transparent'; if (py > 5 && py < 12 && px > 1 + (11 - py) && px < 14 - (py - 6) ) c = py < 8 ? light : (py > 10 ? dark : base); }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      if (c !== 'transparent') { g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S); }
+    }
+  }
+
+  const ICONS = {
+    steel:['#7d8590','#aab2bc','#4b5159','casing'], frame:['#6b4a2b','#b7894f','#3a2615','frame'], brass:['#b98a34','#e7c06a','#6d4f17','casing'], fluix:['#5b3fa8','#9f7cf0','#2c1d5e','noise'],
+    oak:['#a2834f','#c29d62','#7a6136','planks'], spruce:['#6e5130','#86643d','#4b371f','planks'], birch:['#c8b77a','#ddd09a','#a8985e','planks'], concrete:['#cfd5d6','#e5e9ea','#b4babb','noise'],
+    terracotta:['#9f5e45','#b46e52','#7f4834','noise'], glass:['#c7e3ea','#ffffff','#9fbfc8','glass'], bricks:['#96503f','#c3b4a8','#6e3a2d','bricks'], stonebricks:['#7b7b7b','#a3a3a3','#5c5c5c','bricks'],
+    lantern:['#3a3a44','#ffd27a','#3a3a44','lantern'], copper:['#c36f4c','#e89a72','#8c4a2f','casing'], quartz:['#e9e3da','#ffffff','#cfc5b8','noise'], moss:['#596d2b','#7b913a','#3e4d1c','noise'],
+    deep:['#4d4d55','#6b6b75','#2f2f35','bricks'], iron:['#d8d8d8','#ffffff','#9d9d9d','ingot']
+  };
+
+  // card data per state: [left now, limit] for the side the card trades; null = no limit
+  const CHALLENGE = { title:'CHALLENGE', right:'rotates in 2d 4h', columns:4, sellOnly:true, cards:[
+    { icon:'steel', name:'Steel Casing', sell:2500, lim:4, left:[4,1,0], global:[200,182,140] },
+    { icon:'frame', name:'Machine Frame', sell:1800, lim:4, left:[4,3,0], global:[200,190,150] },
+    { icon:'brass', name:'Brass Casing', sell:900, lim:8, left:[8,8,8], global:[300,240,0] },
+    { icon:'fluix', name:'Fluix Block', sell:1200, lim:4, left:[4,0,0], global:[200,170,96] } ] };
+  const DECOR_NAMES = [['oak','Oak Planks',24],['spruce','Spruce Planks',24],['birch','Birch Planks',24],['concrete','White Concrete',36],['terracotta','Terracotta',30],['glass','Glass',20],['bricks','Bricks',48],
+    ['stonebricks','Stone Bricks',32],['lantern','Lantern',40,16],['copper','Copper Block',160,8],['quartz','Quartz Block',64],['moss','Moss Block',28],['deep','Deepslate Tiles',36],['iron','Iron Ingot',90,16]];
+  const DECOR_LEFT = { lantern:[16,12,0], copper:[8,8,0], iron:[16,5,0] };
+  const DECOR = { title:'DECOR', right:'page 1 / 3', columns:7, sellOnly:false, cards: DECOR_NAMES.map(([ic, name, buy, lim]) => ({ icon:ic, name, buy, lim: lim || null, left: DECOR_LEFT[ic] || null })) };
+
+  let state = 0, showTip = true;
+
+  function fmt(n){ return n.toLocaleString('en-GB'); }
+
+  function key(g, x, y, label, enabled){
+    fill(g, x, y, x + KW, y + KH, C.KEY_EDGE);
+    fill(g, x, y, x + KW, y + KH - 2, C.KEY);
+    const w = mcWidth(label);
+    text(g, label, x + (KW - w) / 2, y + 6, enabled ? C.KEY_TEXT : C.KEY_LOCKED);
+  }
+
+  function draw(canvas, shop, look, now){
+    const g = canvas.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    // bezel and screen
+    fill(g, 0, 0, W, H, C.BEZEL_DARK); fill(g, 2, 2, W - 2, H - 2, C.BEZEL); fill(g, 2, 2, W - 2, 4, C.BEZEL_LIGHT);
+    fill(g, SX - 2, SY - 2, SX + SW + 2, SY + SH + 2, C.EDGE); fill(g, SX, SY, SX + SW, SY + SH, C.SCREEN);
+    const cols = shop.columns, cw = Math.floor((SW - 12 - (cols - 1) * CGAP) / cols), ch = 36, iconY = 3, labelY = 21;
+    const hover = shop.sellOnly ? 0 : 8; // the card under the mouse
+    function small(s, x, y, colour){ const scale = Math.min(0.75, (cw - 4) / Math.max(1, mcWidth(s))); text(g, s, x, y, colour, scale); return mcWidth(s) * scale; }
+    shop.cards.forEach((c, k) => {
+      const cx = CX + (k % cols) * (cw + CGAP), cy = CY + Math.floor(k / cols) * (ch + CGAP);
+      const left = c.left ? c.left[state] : null, globalLeft = c.global ? c.global[state] : null;
+      const mine = left, shopFull = globalLeft === 0;
+      const room = c.lim == null ? null : (shopFull ? 0 : mine);
+      const out = room === 0;
+      const over = showTip && k === hover;
+      fill(g, cx, cy, cx + cw, cy + ch, out ? C.CARD_OUT : over ? C.CARD_SEL : C.CARD);
+      fill(g, cx, cy, cx + cw, cy + 1, out ? C.OUT_EDGE : C.DIM);
+      fill(g, cx, cy + ch - 1, cx + cw, cy + ch, out ? C.OUT_EDGE : C.DIM);
+      g.globalAlpha = out ? 0.45 : 1;
+      icon(g, cx + Math.floor(cw / 2) - 8, cy + iconY, ICONS[c.icon]);
+      g.globalAlpha = 1;
+      const selling = shop.sellOnly;
+      const sideColour = selling ? C.AMBER : C.PHOS;
+      let buyLine = selling ? '--' : 'buy ' + fmt(c.buy), sellLine = selling ? 'sell ' + fmt(c.sell) : '';
+      let buyColour = selling ? C.DIM : C.AMBER, sellColour = C.DIM;
+      if (look === 'C' && room != null) {
+        const zeroWord = selling ? 'full' : 'sold out';
+        const count = room === 0 ? zeroWord : room + ' of ' + c.lim + ' left';
+        if (reduce) {
+          if (selling) { buyLine = count; buyColour = room === 0 ? C.RED : C.AMBER; }
+          else { sellLine = count; sellColour = room === 0 ? C.RED : C.PHOS; }
+        } else {
+          const phase = (now / 1000) % 4.5, showCount = room === 0 || phase >= 3;
+          if (showCount) {
+            if (selling) { sellLine = count; sellColour = room === 0 ? C.RED : C.AMBER; }
+            else { buyLine = count; buyColour = room === 0 ? C.RED : C.PHOS; }
+          }
+        }
+      }
+      small(buyLine, cx + 2, cy + labelY, buyColour);
+      if (sellLine) small(sellLine, cx + 2, cy + labelY + 7, sellColour);
+      if (look === 'A' && room != null) {
+        const s = room === 0 ? (selling ? 'FULL' : 'OUT') : room + '/' + c.lim;
+        const scale = Math.min(0.75, (cw - 4) / Math.max(1, mcWidth(s)));
+        text(g, s, cx + cw - 3 - mcWidth(s) * scale, cy + 2, room === 0 ? C.RED : sideColour, scale);
+      }
+      if (look === 'B' && room != null) {
+        if (!selling) { const s = room === 0 ? 'OUT' : String(room); const scale = Math.min(0.75, (cw - 4) / mcWidth(s)); text(g, s, cx + cw - 3 - mcWidth(s) * scale, cy + 2, room === 0 ? C.RED : C.PHOS, scale); }
+        const inner = cw - 2;
+        fill(g, cx + 1, cy + ch - 3, cx + cw - 1, cy + ch - 1, '#0d2417');
+        if (room === 0) fill(g, cx + 1, cy + ch - 3, cx + 4, cy + ch - 1, C.RED);
+        else fill(g, cx + 1, cy + ch - 3, cx + 1 + Math.max(2, Math.round(inner * room / c.lim)), cy + ch - 1, sideColour);
+      }
+      if (look === 'C' && room != null && !reduce) {
+        // nothing else: the line itself carries the count
+      }
+    });
+    // header
+    text(g, '> ' + shop.title, SX + 6, SY + 6, C.PHOS);
+    text(g, shop.right, SX + SW - 6 - mcWidth(shop.right), SY + 6, C.DIM);
+    fill(g, SX + 4, SY + 16, SX + SW - 4, SY + 17, C.EDGE);
+    // the hint or a message at the foot of the screen
+    const msg = shop.sellOnly && state === 1 ? 'Sold 1 lot for 2,500 pieces. The shop takes no more Steel Casing from you this week; the rest is still in your inventory.' : null;
+    const footY = SY + SH - 4;
+    if (msg) wrap(g, msg, SX + 6, footY, SW - 12, C.AMBER);
+    else wrap(g, 'left: buy  right: sell  shift+right: sell all of it  *: instant', SX + 6, footY, SW - 12, C.DIM);
+    // keys
+    let ky = SY;
+    [['Back', true], ['Previous', false], ['Next page', !shop.sellOnly]].forEach(([l, e]) => { key(g, KX, ky, l, e); ky += KH + KGAP; });
+    ky = SY + SH - KH;
+    (shop.sellOnly ? [['Sell all', true], ['Sell here', true]] : []).forEach(([l, e]) => { key(g, KX, ky, l, e); ky -= KH + KGAP; });
+    // strip
+    fill(g, SX - 2, STRIP_Y - 2, W - SX + 2, STRIP_Y + STRIP_H + 2, C.EDGE); fill(g, SX, STRIP_Y, W - SX, STRIP_Y + STRIP_H, C.SCREEN);
+    text(g, 'open / shopping network', SX + 6, STRIP_Y + 7, C.DIM);
+    const bal = 'balance 3,420 pieces'; text(g, bal, W - SX - 6 - mcWidth(bal), STRIP_Y + 7, C.DIM);
+    // scanlines
+    for (let ly = SY; ly < SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(SX * S, ly * S, SW * S, S); }
+    if (showTip) tooltip(g, shop, hover, cw, ch, cols);
+  }
+
+  function wrap(g, s, x, bottom, width, colour){
+    const words = s.split(' '), lines = []; let line = '';
+    for (const w of words) { const t = line ? line + ' ' + w : w; if (mcWidth(t) > width && line) { lines.push(line); line = w; } else line = t; }
+    if (line) lines.push(line);
+    let y = bottom - lines.length * 9;
+    for (const l of lines) { text(g, l, x, y, colour); y += 9; }
+  }
+
+  function tooltip(g, shop, k, cw, ch, cols){
+    const c = shop.cards[k];
+    const cx = CX + (k % cols) * (cw + CGAP), cy = CY + Math.floor(k / cols) * (ch + CGAP);
+    const lines = [[c.name, '#ffffff']];
+    if (shop.sellOnly) {
+      const mine = c.left[state], all = c.global[state];
+      lines.push(['Sell: ' + fmt(c.sell) + ' pieces per lot (right click; shift for all)', '#ffffff']);
+      if (all === 0) lines.push(['The shop takes no more from anyone this week', '#ff6b5c']);
+      else lines.push([mine === 0 ? 'You can sell no more of ' + c.lim + ' this week' : 'You can sell ' + mine + ' more of ' + c.lim, mine === 0 ? '#ff6b5c' : '#f2b544']);
+      lines.push(['Refills Monday 00:00 (in 2d 4h)', '#aaaaaa']);
+      if (all > 0) lines.push(['The shop takes ' + all + ' more from everyone', '#aaaaaa']);
+    } else {
+      lines.push(['Buy: ' + fmt(c.buy) + ' pieces per lot (left click)', '#ffffff']);
+      const mine = c.left[state];
+      lines.push([mine === 0 ? 'Sold out for you today' : 'You can buy ' + mine + ' more of ' + c.lim + ' today', mine === 0 ? '#ff6b5c' : '#58f29a']);
+      lines.push(['Refills at 00:00 (in 9h 12m)', '#aaaaaa']);
+    }
+    const w = Math.max(...lines.map(l => mcWidth(l[0]))), h = lines.length * 10 + 2 - 2 + (lines.length > 1 ? 2 : 0);
+    // drawn under the hovered card's row, as with the mouse at the card's foot, so the cards stay in view
+    let x = cx + 4, y = cy + ch + 6;
+    if (x + w + 4 > W) x = Math.max(4, W - w - 4);
+    if (y + h + 4 > H) y = H - h - 4;
+    fill(g, x - 3, y - 4, x + w + 3, y + h + 4, 'rgba(16,0,16,0.94)');
+    fill(g, x - 4, y - 3, x + w + 4, y + h + 3, 'rgba(16,0,16,0.94)');
+    const grad = g.createLinearGradient(0, (y - 3) * S, 0, (y + h + 3) * S); grad.addColorStop(0, 'rgba(80,0,255,0.6)'); grad.addColorStop(1, 'rgba(40,0,127,0.6)');
+    g.fillStyle = grad;
+    g.fillRect((x - 3) * S, (y - 3) * S, (w + 6) * S, S); g.fillRect((x - 3) * S, (y + h + 2) * S, (w + 6) * S, S);
+    g.fillRect((x - 3) * S, (y - 3) * S, S, (h + 6) * S); g.fillRect((x + w + 2) * S, (y - 3) * S, S, (h + 6) * S);
+    let ty = y;
+    lines.forEach((l, i) => { text(g, l[0], x, ty, l[1]); ty += i === 0 ? 12 : 10; });
+  }
+
+  const views = [['a1', CHALLENGE, 'A'], ['a2', DECOR, 'A'], ['b1', CHALLENGE, 'B'], ['b2', DECOR, 'B'], ['c1', CHALLENGE, 'C'], ['c2', DECOR, 'C']];
+  function drawAll(now){ for (const [id, shop, look] of views) draw(document.getElementById(id), shop, look, now); }
+  function loop(now){ drawAll(now); if (!reduce) requestAnimationFrame(loop); }
+
+  document.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => {
+    state = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); if (reduce) drawAll(0);
+  }));
+  document.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => {
+    showTip = b.dataset.t === '1'; document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b)); if (reduce) drawAll(0);
+  }));
+  drawAll(0);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawAll(0));
+  if (!reduce) requestAnimationFrame(loop);
+})();
+</script>

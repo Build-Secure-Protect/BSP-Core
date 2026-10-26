@@ -6,7 +6,9 @@ import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.ShopActionPacket;
 import com.mrgregles.bsp_core.network.ShopDataPacket;
 import com.mrgregles.bsp_core.shop.Shop;
+import com.mrgregles.bsp_core.shop.Refill;
 import com.mrgregles.bsp_core.shop.ShopMenu;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -14,6 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.player.Inventory;
 
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -136,13 +139,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                     held += s.getCount();
                 }
             }
-            return Math.max(1, held / c.stack().getCount());
+            int n = held / c.stack().getCount();
+            if (c.selling().limited()) {
+                n = Math.min(n, c.selling().left());
+            }
+            return Math.max(1, n);
         }
         long afford = c.buy() <= 0 ? 999 : c.currency() < 0 ? menu.balance / c.buy() : 999;
         int fits = com.mrgregles.bsp_core.shop.Shops.fits(minecraft.player, c.stack(), 999);
         long n = Math.min(afford, fits);
-        if (c.stock() >= 0) {
-            n = Math.min(n, c.stock());
+        if (c.stock().limited()) {
+            n = Math.min(n, c.stock().left());
         }
         return (int) Math.max(1, n);
     }
@@ -153,7 +160,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         }
         lastSerial = menu.messageSerial;
         String key = menu.messageKey;
-        boolean good = key.equals("bought") || key.equals("sold") || key.equals("sold_all");
+        boolean good = key.equals("bought") || key.equals("sold") || key.equals("sold_all") || key.equals("sold_capped") || key.equals("sold_all_capped");
         messageColour = good ? AMBER : RED;
         message = key.isEmpty() ? Component.empty() : Component.translatable("message.bsp_core.shop." + key, (Object[]) menu.messageArgs);
     }
@@ -201,7 +208,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                         selling = true;
                         lots = 1;
                         view = View.QTY;
-                    } else if (button == 0 && c.buy() >= 0 && c.stock() != 0) {
+                    } else if (button == 0 && c.buy() >= 0 && c.stock().left() != 0) {
                         if (c.instant()) {
                             send(ShopActionPacket.Action.BUY, c.index(), 1, menu.page);
                         } else {
@@ -249,14 +256,47 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                         if (c.sell() >= 0) {
                             tip.add(tr("tip_sell", Bank.format(c.sell()), unitName(c.currency())));
                         }
-                        if (c.stock() >= 0) {
-                            tip.add(tr(c.stock() == 0 ? "tip_out" : "tip_stock", c.stock()));
-                        }
+                        limitLines(tip, c.stock(), false);
+                        limitLines(tip, c.selling(), true);
                     }
                     g.renderComponentTooltip(font, tip, mx, my);
                 }
             }
         }
+    }
+
+    /** A limit's tooltip lines: what this player has left, what is left for everyone, when it refills. */
+    private static void limitLines(List<Component> tip, ShopMenu.Limit l, boolean selling) {
+        if (!l.limited()) {
+            return;
+        }
+        tip.add(l.left() == 0 ? tr(selling ? "tip_sell_none" : "tip_buy_none").withStyle(ChatFormatting.RED)
+                : tr(selling ? "tip_sell_left" : "tip_buy_left", l.left(), l.of()).withStyle(selling ? ChatFormatting.GOLD : ChatFormatting.GREEN));
+        if (l.everyone() >= 0) {
+            tip.add(tr(selling ? "tip_sell_everyone" : "tip_buy_everyone", l.everyone()).withStyle(ChatFormatting.GRAY));
+        }
+        Refill r = Refill.parse(l.rule());
+        String in = l.refillIn() >= 0 ? span(l.refillIn()) : "";
+        if (r == null) {
+            return;
+        }
+        switch (r.kind()) {
+            case AFTER -> tip.add((l.refillIn() >= 0 ? tr("tip_refill_in", in) : tr("tip_refill_after", r.text())).withStyle(ChatFormatting.GRAY));
+            case DAILY -> tip.add(tr("tip_refill_day", r.clock(), in).withStyle(ChatFormatting.GRAY));
+            case WEEKLY -> tip.add(tr("tip_refill_week", r.day().getDisplayName(TextStyle.FULL, Locale.ENGLISH), r.clock(), in).withStyle(ChatFormatting.GRAY));
+            case ROTATION -> {
+                if (l.refillIn() >= 0) {
+                    tip.add(tr("tip_refill_rotation", in).withStyle(ChatFormatting.GRAY));
+                }
+            }
+            default -> { }
+        }
+    }
+
+    /** A wait as "2d 4h", "9h 12m" or "42m". */
+    private static String span(long ms) {
+        long m = Math.max(1, (ms + 59_999) / 60_000), h = m / 60, d = h / 24;
+        return d > 0 ? d + "d " + h % 24 + "h" : h > 0 ? h + "h " + m % 60 + "m" : m + "m";
     }
 
     private static String unitName(int currency) {
@@ -278,7 +318,8 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
             for (int k = 0; k < menu.cards.size(); k++) {
                 ShopMenu.Card c = menu.cards.get(k);
                 int cx = x + CX + (k % menu.columns) * (cw() + CGAP), cy = y + CY + (k / menu.columns) * (ch() + CGAP);
-                boolean out = c.stock() == 0;
+                // dark when nothing is left to do with it: no stock to buy and no room to sell
+                boolean out = c.section().isEmpty() && (c.buy() >= 0 || c.sell() >= 0) && !(c.buy() >= 0 && c.stock().left() != 0) && !(c.sell() >= 0 && c.selling().left() != 0);
                 g.fill(cx, cy, cx + cw(), cy + ch(), out ? CARD_OUT : over(mx, my, cx, cy, cw(), ch()) ? CARD_SEL : CARD);
                 g.fill(cx, cy, cx + cw(), cy + 1, out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
                 g.fill(cx, cy + ch() - 1, cx + cw(), cy + ch(), out ? 0xFF1F6B43 : PHOS_DIM | 0xFF000000);
@@ -360,8 +401,13 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                 if (c.section().isEmpty()) {
                     small(g, c.sell() >= 0 ? Shop.priceLabel("sell", c.sell(), c.currency()) : "", cx + 2, cy + labelY() + 7, PHOS_DIM);
                 }
-                if (c.stock() >= 0) {
-                    small(g, c.stock() == 0 ? "OUT" : String.valueOf(c.stock()), cx + cw() - 3 - (int) (font.width(c.stock() == 0 ? "OUT" : String.valueOf(c.stock())) * 0.75f), cy + 2, c.stock() == 0 ? RED : PHOS);
+                // the limits left, as "3/4": what you can still buy (green, top right) and what the shop still takes (amber; top left beside a buy count)
+                boolean both = c.stock().limited() && c.selling().limited();
+                if (c.stock().limited()) {
+                    corner(g, c.stock().left() == 0 ? "OUT" : c.stock().left() + "/" + c.stock().of(), cx, cy, true, both, c.stock().left() == 0 ? RED : PHOS);
+                }
+                if (c.selling().limited()) {
+                    corner(g, c.selling().left() == 0 ? "FULL" : c.selling().left() + "/" + c.selling().of(), cx + (both && c.instant() ? 5 : 0), cy, !both, both, c.selling().left() == 0 ? RED : AMBER);
                 }
                 if (c.instant()) {
                     small(g, "*", cx + 2, cy + 2, AMBER);
@@ -395,6 +441,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
 
     private int labelY() {
         return menu.rows >= 3 ? 21 : 32;
+    }
+
+    /** A count in a top corner of the card: small text, shrunk to half the card when both corners hold one. */
+    private void corner(GuiGraphics g, String s, int cx, int cy, boolean right, boolean half, int colour) {
+        float scale = Math.min(0.75f, ((half ? cw() / 2 : cw()) - 4) / (float) Math.max(1, font.width(s)));
+        int x = right ? cx + cw() - 3 - (int) (font.width(s) * scale) : cx + 2;
+        g.pose().pushPose();
+        g.pose().translate(x, cy + 2, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, s, 0, 0, colour, false);
+        g.pose().popPose();
     }
 
     /** Small (three-quarter) text, shrunk further if it would leave the card. */
