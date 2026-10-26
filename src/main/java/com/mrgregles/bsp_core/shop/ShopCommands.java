@@ -283,6 +283,9 @@ public final class ShopCommands {
             if (r.capped()) {
                 src.sendSystemMessage(tr("report_capped", days).withStyle(ChatFormatting.GRAY));
             }
+            if (!com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) { // alone, each player's log keeps only its newest rows
+                src.sendSystemMessage(tr("report_local", com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.BANK_LOG_ENTRIES, 500)).withStyle(ChatFormatting.GRAY));
+            }
             if (r.rows() == 0) {
                 src.sendSystemMessage(tr("report_empty").withStyle(ChatFormatting.GRAY));
                 return;
@@ -323,6 +326,9 @@ public final class ShopCommands {
             src.sendFailure(tr("import_refused", name, r.errors().size(), r.warnings().size()));
         } else {
             src.sendSuccess(() -> tr(test ? "import_test_ok" : "import_done", name, created, r.replaced().size(), r.cards(), r.warnings().size()).withStyle(ChatFormatting.GOLD), true);
+            if (!r.kept().isEmpty()) {
+                src.sendSystemMessage(tr("import_kept", r.kept().size(), String.join(", ", r.kept())).withStyle(ChatFormatting.GRAY));
+            }
         }
         List<String> problems = new java.util.ArrayList<>(r.errors());
         problems.addAll(r.warnings());
@@ -400,7 +406,10 @@ public final class ShopCommands {
             }
             return 0;
         }
-        item.matchItem = byItem;
+        if (item.matchItem != byItem) { // what the card takes changed: its counts start again, as in the Workbench
+            item.matchItem = byItem;
+            Shops.resetCounts(ctx.getSource().getServer(), s, IntegerArgumentType.getInteger(ctx, "index"), IntegerArgumentType.getInteger(ctx, "index"));
+        }
         Shops.save(ctx.getSource().getServer(), s);
         ctx.getSource().sendSuccess(() -> tr("match_set", byItem ? "item" : "exact"), true);
         return 1;

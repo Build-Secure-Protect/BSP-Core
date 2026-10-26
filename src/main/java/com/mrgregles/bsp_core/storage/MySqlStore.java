@@ -77,6 +77,11 @@ final class MySqlStore implements AutoCloseable {
             try {
                 Connection c = driver.connect(url, props);
                 if (c != null) {
+                    try (Statement st = c.createStatement()) { // a locked shop count waits at most 5 s for another server, well inside the socket timeout
+                        st.execute("SET SESSION innodb_lock_wait_timeout = 5");
+                    } catch (SQLException e) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.debug("BSP-Core storage: could not shorten the lock wait: {}", e.toString());
+                    }
                     return c;
                 }
             } catch (SQLException e) {
@@ -146,12 +151,26 @@ final class MySqlStore implements AutoCloseable {
                     }
                 }
             }
+            try { // the shop report reads buy and sell rows by time across every player
+                st.executeUpdate("ALTER TABLE " + t("bank_log") + " ADD INDEX bsp_shop_report (type, ms)");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1061) { // 1061: the index is there already
+                    throw e;
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shops") + " (id VARCHAR(32) NOT NULL PRIMARY KEY, name VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, "
                     + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_counts") + " (shop VARCHAR(32) NOT NULL, card INT NOT NULL, side CHAR(1) NOT NULL, who VARCHAR(36) NOT NULL, "
                     + "left_lots INT NOT NULL, at_ms BIGINT NOT NULL, PRIMARY KEY (shop, card, side, who))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("shop_draws") + " (shop VARCHAR(32) NOT NULL PRIMARY KEY, shown VARCHAR(1024) NOT NULL, used VARCHAR(4096) NOT NULL DEFAULT '', "
-                    + "drawn_at BIGINT NOT NULL, next_at BIGINT NOT NULL)");
+                    + "drawn_at BIGINT NOT NULL, next_at BIGINT NOT NULL, for_shop BIGINT NOT NULL DEFAULT 0)");
+            try { // the record a draw was made for, added to a shop_draws made before it
+                st.executeUpdate("ALTER TABLE " + t("shop_draws") + " ADD COLUMN for_shop BIGINT NOT NULL DEFAULT 0");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                    throw e;
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_boxes") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, slots INT NOT NULL, rent_until BIGINT NOT NULL, "
                     + "items MEDIUMTEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("teams") + " (id CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(32) NOT NULL, colour VARCHAR(16) NOT NULL, "
@@ -1000,14 +1019,22 @@ final class MySqlStore implements AutoCloseable {
      * One card side's everyone count and one player's count under row locks: both rows are made if
      * missing (left -1, full), read FOR UPDATE, handed to {@code change}, and written back; a player
      * row left at -1 is deleted. All in one transaction, so two servers cannot both take the last lot.
+     * The rows are locked exclusively from the first statement (an INSERT IGNORE of a row that is
+     * there would take a shared lock, and two servers upgrading theirs would deadlock); a transaction
+     * MySQL ends over a lock runs once more.
      */
     <T> T countsLocked(String shop, int card, boolean selling, UUID player, java.util.function.BiFunction<com.mrgregles.bsp_core.shop.ShopLedger.Count, com.mrgregles.bsp_core.shop.ShopLedger.Count, T> change) throws SQLException {
+        return SqlRetry.once(() -> countsLockedOnce(shop, card, selling, player, change));
+    }
+
+    private <T> T countsLockedOnce(String shop, int card, boolean selling, UUID player, java.util.function.BiFunction<com.mrgregles.bsp_core.shop.ShopLedger.Count, com.mrgregles.bsp_core.shop.ShopLedger.Count, T> change) throws SQLException {
         String side = selling ? "S" : "B", who = player.toString();
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
         try {
-            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("shop_counts") + " (shop, card, side, who, left_lots, at_ms) VALUES (?, ?, ?, '', -1, 0), (?, ?, ?, ?, -1, 0)")) {
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("shop_counts") + " (shop, card, side, who, left_lots, at_ms) VALUES (?, ?, ?, '', -1, 0), (?, ?, ?, ?, -1, 0) "
+                    + "ON DUPLICATE KEY UPDATE left_lots = left_lots")) {
                 ps.setString(1, shop);
                 ps.setInt(2, card);
                 ps.setString(3, side);
@@ -1064,18 +1091,22 @@ final class MySqlStore implements AutoCloseable {
         }
     }
 
-    /** A rotating shop's draw under a row lock (made empty if missing), changed by {@code change} and written back, in one transaction. */
+    /** A rotating shop's draw under a row lock (made empty if missing), changed by {@code change} and written back, in one transaction; locked and retried as {@link #countsLocked}. */
     com.mrgregles.bsp_core.shop.ShopLedger.Draw drawLocked(String shop, java.util.function.UnaryOperator<com.mrgregles.bsp_core.shop.ShopLedger.Draw> change) throws SQLException {
+        return SqlRetry.once(() -> drawLockedOnce(shop, change));
+    }
+
+    private com.mrgregles.bsp_core.shop.ShopLedger.Draw drawLockedOnce(String shop, java.util.function.UnaryOperator<com.mrgregles.bsp_core.shop.ShopLedger.Draw> change) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
         try {
-            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("shop_draws") + " (shop, shown, drawn_at, next_at) VALUES (?, '', 0, 0)")) {
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("shop_draws") + " (shop, shown, drawn_at, next_at) VALUES (?, '', 0, 0) ON DUPLICATE KEY UPDATE drawn_at = drawn_at")) {
                 ps.setString(1, shop);
                 ps.executeUpdate();
             }
             var d = new com.mrgregles.bsp_core.shop.ShopLedger.Draw();
-            try (PreparedStatement ps = c.prepareStatement("SELECT shown, used, drawn_at, next_at FROM " + t("shop_draws") + " WHERE shop = ? FOR UPDATE")) {
+            try (PreparedStatement ps = c.prepareStatement("SELECT shown, used, drawn_at, next_at, for_shop FROM " + t("shop_draws") + " WHERE shop = ? FOR UPDATE")) {
                 ps.setString(1, shop);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
@@ -1083,16 +1114,18 @@ final class MySqlStore implements AutoCloseable {
                         ints(rs.getString(2), d.used);
                         d.drawnAt = rs.getLong(3);
                         d.nextAt = rs.getLong(4);
+                        d.forShop = rs.getLong(5);
                     }
                 }
             }
             var out = change.apply(d);
-            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("shop_draws") + " SET shown = ?, used = ?, drawn_at = ?, next_at = ? WHERE shop = ?")) {
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("shop_draws") + " SET shown = ?, used = ?, drawn_at = ?, next_at = ?, for_shop = ? WHERE shop = ?")) {
                 ps.setString(1, String.join(",", out.shown.stream().map(String::valueOf).toList()));
                 ps.setString(2, String.join(",", out.used.stream().map(String::valueOf).toList()));
                 ps.setLong(3, out.drawnAt);
                 ps.setLong(4, out.nextAt);
-                ps.setString(5, shop);
+                ps.setLong(5, out.forShop);
+                ps.setString(6, shop);
                 ps.executeUpdate();
             }
             c.commit();
@@ -1114,6 +1147,24 @@ final class MySqlStore implements AutoCloseable {
         }
     }
 
+    /** A rotating shop's draw as it stands, without a lock (empty, with times 0, when there is none). */
+    com.mrgregles.bsp_core.shop.ShopLedger.Draw drawRead(String shop) throws SQLException {
+        var d = new com.mrgregles.bsp_core.shop.ShopLedger.Draw();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT shown, used, drawn_at, next_at, for_shop FROM " + t("shop_draws") + " WHERE shop = ?")) {
+            ps.setString(1, shop);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ints(rs.getString(1), d.shown);
+                    ints(rs.getString(2), d.used);
+                    d.drawnAt = rs.getLong(3);
+                    d.nextAt = rs.getLong(4);
+                    d.forShop = rs.getLong(5);
+                }
+            }
+        }
+        return d;
+    }
+
     void dropDraw(String shop) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("shop_draws") + " WHERE shop = ?")) {
             ps.setString(1, shop);
@@ -1126,6 +1177,23 @@ final class MySqlStore implements AutoCloseable {
         Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> out = new java.util.HashMap<>();
         try (PreparedStatement ps = conn().prepareStatement("SELECT card, side, who, left_lots, at_ms FROM " + t("shop_counts") + " WHERE shop = ?")) {
             ps.setString(1, shop);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.put(rs.getInt(1) + ":" + rs.getString(2) + ":" + rs.getString(3), new com.mrgregles.bsp_core.shop.ShopLedger.Count(rs.getInt(4), rs.getLong(5)));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** One card side's everyone row and one player's, keyed as {@link #countsRead}. */
+    Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> countsReadCard(String shop, int card, boolean selling, UUID player) throws SQLException {
+        Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> out = new java.util.HashMap<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT card, side, who, left_lots, at_ms FROM " + t("shop_counts") + " WHERE shop = ? AND card = ? AND side = ? AND who IN ('', ?)")) {
+            ps.setString(1, shop);
+            ps.setInt(2, card);
+            ps.setString(3, selling ? "S" : "B");
+            ps.setString(4, player.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.put(rs.getInt(1) + ":" + rs.getString(2) + ":" + rs.getString(3), new com.mrgregles.bsp_core.shop.ShopLedger.Count(rs.getInt(4), rs.getLong(5)));

@@ -37,7 +37,8 @@ public record ShopActionPacket(Action action, int index, int lots, int page) {
         ctx.get().setPacketHandled(true);
     }
 
-    private static void run(ServerPlayer player, ShopMenu menu, ShopActionPacket msg) {
+    /** Acts on a key or card the player pressed on their open shop screen; public for the game tests. */
+    public static void run(ServerPlayer player, ShopMenu menu, ShopActionPacket msg) {
         var server = player.server;
         Shop shop = Shops.ledger(server).shop(menu.shopId);
         if (shop == null) {
@@ -65,13 +66,17 @@ public record ShopActionPacket(Action action, int index, int lots, int page) {
                 var item = shop.item(msg.index);
                 Shop sub = item == null || item.section.isEmpty() ? null : Shops.ledger(server).shop(item.section);
                 if (sub != null) {
-                    ShopOpener.open(player, sub, menu.at, menu.remote, menu.hours);
+                    if (!menu.test && Shops.lock(shop, msg.index, player) != null) { // the card or the shop it opens is locked or hidden for them
+                        ShopOpener.sync(player, menu, msg.page, "locked", null);
+                        return;
+                    }
+                    ShopOpener.open(player, sub, menu.at, menu.remote, menu.hours, menu.test);
                 }
             }
             case BACK -> {
                 Shop parent = shop.parent.isEmpty() ? null : Shops.ledger(server).shop(shop.parent);
                 if (parent != null) {
-                    ShopOpener.open(player, parent, menu.at, menu.remote, menu.hours);
+                    ShopOpener.open(player, parent, menu.at, menu.remote, menu.hours, menu.test);
                 } else {
                     player.closeContainer();
                 }

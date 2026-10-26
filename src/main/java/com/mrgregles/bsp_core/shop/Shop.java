@@ -20,6 +20,9 @@ public final class Shop {
     /** The card grid's width on the Cash Machine screen and the gap between cards, in GUI pixels. */
     public static final int GRID_WIDTH = 194, GRID_GAP = 1, MIN_COLUMNS = 4, MAX_COLUMNS = 7;
 
+    /** The longest name a shop may have: what the database column and the shop screen's packet hold. */
+    public static final int NAME_MAX = 64;
+
     public final String id;
     public String name = "";
     public Kind kind = Kind.SHOP;
@@ -49,6 +52,8 @@ public final class Shop {
     public OpenHours hours = OpenHours.ALWAYS;
     /** The card layout players see: cards per row (0 = automatic, from the longest price label) and rows per page. */
     public int columns, rows = 3;
+    /** When this record was last saved (only ever grows): a network draw names the record it was made for, so a server holding an older copy never draws for it. */
+    public long edited;
 
     public Shop(String id) {
         this.id = id;
@@ -62,9 +67,18 @@ public final class Shop {
         return out;
     }
 
+    /** The card at {@code index} across pages, or null; walks the pages without copying them (it is asked for in loops). */
     public ShopItem item(int index) {
-        List<ShopItem> all = all();
-        return index >= 0 && index < all.size() ? all.get(index) : null;
+        if (index < 0) {
+            return null;
+        }
+        for (List<ShopItem> page : pages) {
+            if (index < page.size()) {
+                return page.get(index);
+            }
+            index -= page.size();
+        }
+        return null;
     }
 
     /** Appends an item to the last page with room, opening a new page when full; returns its index. */
@@ -158,6 +172,7 @@ public final class Shop {
         t.putInt("OfferPercent", offerPercent);
         t.putLong("OfferEnd", offerEndMs);
         t.put("Hours", hours.save());
+        t.putLong("Edited", edited);
         return t;
     }
 
@@ -197,6 +212,7 @@ public final class Shop {
         s.offerPercent = t.getInt("OfferPercent");
         s.offerEndMs = t.getLong("OfferEnd");
         s.hours = OpenHours.load(t.getCompound("Hours"));
+        s.edited = t.getLong("Edited");
         return s;
     }
 }

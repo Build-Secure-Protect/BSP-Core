@@ -52,16 +52,28 @@ public final class Shops {
             return null;
         }
         Shop s = new Shop(id);
-        s.name = name;
+        s.name = name.length() > Shop.NAME_MAX ? name.substring(0, Shop.NAME_MAX) : name;
         s.kind = kind;
         save(server, s);
         return s;
     }
 
+    /** {@code text} cut from the front to at most {@code max} characters, with "…" where it was cut (a long path of section names). */
+    public static String fit(String text, int max) {
+        return text.length() <= max ? text : "…" + text.substring(text.length() - (max - 1));
+    }
+
     /** Writes a shop locally and, on a network, to the database (which tells the other servers). */
     public static void save(MinecraftServer server, Shop shop) {
+        touch(shop);
         ledger(server).put(shop);
         NetworkStorage.shopWrite(shop.id, shop.name, shop.save().toString());
+    }
+
+    /** Marks the record changed: its edit stamp moves on (never back, whatever the clocks of the servers say) and is returned. */
+    static long touch(Shop shop) {
+        shop.edited = Math.max(now(), shop.edited + 1);
+        return shop.edited;
     }
 
     /** Deletes a shop here and on the network, with its counts. */
@@ -334,7 +346,7 @@ public final class Shops {
             return;
         }
         counted("hold shop stock", store -> store.locked(shop.id, index, selling, player, (all, mine) -> new Held(take(all, mine, maxAll, maxPlayer, allRule, playerRule, want, now, drawn), all.copy(), mine.copy())),
-                shop.id, h -> {
+                countNotice(shop.id, index, selling, player), h -> {
                     if (h == null) {
                         then.accept(-1);
                         return;
@@ -369,7 +381,7 @@ public final class Shops {
         counted("give back shop stock", store -> store.locked(shop.id, index, selling, player, (all, mine) -> {
             giveBack(all, mine, maxAll, maxPlayer, allRule, playerRule, lots);
             return new Held(lots, all.copy(), mine.copy());
-        }), shop.id, h -> {
+        }), countNotice(shop.id, index, selling, player), h -> {
             if (h != null) {
                 cache(server, shop, index, selling, player, h.all(), h.mine());
             }
@@ -401,8 +413,12 @@ public final class Shops {
             return;
         }
         if (shop.kind == Shop.Kind.ROTATING && !ledger(server).draw(shop.id).asking) {
-            ShopLedger.Draw mine = ledger(server).draw(shop.id);
-            syncDraw(server, shop, now(), mine.shown.isEmpty() ? null : mine.copy());
+            // the network's draw as it stands, read without a lock; a draw that is due is made by the next look (visible)
+            counted("read a rotating shop's draw", store -> store.readDraw(shop.id), null, row -> {
+                if (row != null && (row.drawnAt != 0 || row.forShop != 0)) { // a row never drawn and never emptied by an import says nothing
+                    took(server, shop, row);
+                }
+            });
         }
         counted("read shop counts", store -> store.read(shop.id), null, rows -> {
             if (rows != null) {
@@ -429,16 +445,70 @@ public final class Shops {
         });
     }
 
-    /** A shop replaced whole (an import): all its counts and its draw start again, here and on the network. */
+    /**
+     * The notice other servers hear after a trade: the shop, the card side and the player whose counts
+     * changed ("shop|card|B or S|player"), so they read just those two rows. A notice of the shop id
+     * alone (a reset, a moved card, a new draw) has them read the whole shop.
+     */
+    public static String countNotice(String shopId, int card, boolean selling, UUID player) {
+        return shopId + "|" + card + "|" + (selling ? "S" : "B") + "|" + player;
+    }
+
+    /** Another server changed a shop's counts or draw (Redis kind {@code shopcount}): read what the notice names, then send open screens of the shop again. */
+    public static void heard(MinecraftServer server, String notice) {
+        String[] p = notice.split("\\|");
+        Shop shop = ledger(server).shop(p[0]);
+        if (shop == null) {
+            return;
+        }
+        if (p.length != 4) {
+            pull(server, shop, () -> ShopOpener.resyncOpen(server, shop.id));
+            return;
+        }
+        int card;
+        boolean selling = p[2].equals("S");
+        UUID player;
+        try {
+            card = Integer.parseInt(p[1]);
+            player = UUID.fromString(p[3]);
+        } catch (RuntimeException e) {
+            return; // not a notice this version reads
+        }
+        counted("read a card's counts", store -> store.readCard(shop.id, card, selling, player), null, rows -> {
+            if (rows == null) {
+                return;
+            }
+            ShopLedger.Stock st = ledger(server).stock(shop.id, card);
+            ShopLedger.Count all = rows.get(CountStore.key(card, selling, null)), mine = rows.get(CountStore.key(card, selling, player));
+            ShopLedger.Count here = selling ? st.sell : st.stock;
+            here.left = all == null ? -1 : all.left; // no row: full
+            here.at = all == null ? 0 : all.at;
+            if (mine == null) {
+                (selling ? st.sellers : st.buyers).remove(player);
+            } else {
+                (selling ? st.sellers : st.buyers).put(player, mine.copy());
+            }
+            ledger(server).setDirty();
+            ShopOpener.resyncOpen(server, shop.id);
+        });
+    }
+
+    /**
+     * A shop replaced whole (an import), with {@code shop} the new record already saved: all its
+     * counts and its draw start again, here and on the network. The network's draw is emptied for
+     * this record, so a server still holding the old one cannot draw for the old cards.
+     */
     public static void restart(MinecraftServer server, Shop shop) {
         resetCounts(server, shop, 0, Integer.MAX_VALUE);
         ledger(server).clearCounts(shop.id);
         ledger(server).clearDraw(shop.id);
         if (sharedCounts()) {
-            counted("start a replaced shop's draw again", store -> {
-                store.dropDraw(shop.id);
-                return Boolean.TRUE;
-            }, shop.id, ok -> {});
+            long record = shop.edited;
+            counted("start a replaced shop's draw again", store -> store.drawLocked(shop.id, row -> {
+                row.clear();
+                row.forShop = record;
+                return row;
+            }), shop.id, row -> {});
         }
     }
 
@@ -476,6 +546,9 @@ public final class Shops {
         if (ledger.countsMoved || !sharedCounts()) {
             return;
         }
+        for (Shop shop : List.copyOf(ledger.all().values())) {
+            offerDraw(server, shop);
+        }
         Map<String, Map<String, ShopLedger.Count>> mine = new java.util.HashMap<>();
         for (var e : ledger.counts().entrySet()) {
             int cut = e.getKey().lastIndexOf(':');
@@ -510,6 +583,18 @@ public final class Shops {
             ledger.setDirty();
             com.mrgregles.bsp_core.BSPCore.LOGGER.info("BSP-Core shops: {}", won ? "this server's shop counts are now the network's" : "another server's shop counts were moved first; this server's were dropped");
         });
+    }
+
+    /**
+     * The first start with network storage: offers a rotating shop's draw from before the network kept
+     * draws; the network takes it only when it has none yet. Never later: a server's own draw may be
+     * for cards an import or the Workbench has since moved.
+     */
+    public static void offerDraw(MinecraftServer server, Shop shop) {
+        ShopLedger.Draw mine = ledger(server).draw(shop.id);
+        if (shop.kind == Shop.Kind.ROTATING && sharedCounts() && !mine.asking && !mine.shown.isEmpty()) {
+            syncDraw(server, shop, now(), mine.copy());
+        }
     }
 
     /** The daily sweep: drops players' counts that are full again by their rule (lifetime limits stay). */
@@ -601,9 +686,10 @@ public final class Shops {
             return out;
         }
         ShopLedger.Draw d = ledger(server).draw(shop.id);
-        if (due(d, shop, now)) {
+        Pool pool = Pool.of(shop);
+        if (due(d, pool, now)) {
             if (!sharedCounts()) {
-                redraw(d, shop, now);
+                redraw(d, pool, now);
                 ledger(server).setDirty();
                 announce(server, shop, d);
             } else if (!d.asking && now >= d.askAfter) {
@@ -621,19 +707,46 @@ public final class Shops {
     }
 
     /**
-     * True when a draw must be made: none yet; it names cards the shop no longer has; its time is up.
-     * With a fixed change time, the time is up once that time has passed since the draw was made and
-     * since the fixed time was set (a draw from before waits for the next one); otherwise at the
-     * interval's end.
+     * What a draw reads of a shop, copied on the server thread so a draw made on the storage thread
+     * never reads the record while the Workbench changes it: how many cards, each card's weight (-1
+     * hidden), the places on show, no repeats, the change time and since when, the interval, the
+     * record's edit stamp, and the shop's own seed for the draw.
      */
-    private static boolean due(ShopLedger.Draw d, Shop shop, long now) {
-        int size = shop.all().size();
-        if (d.shown.isEmpty() || d.shown.stream().anyMatch(i -> i >= size)) {
+    record Pool(int size, int[] weights, int slots, boolean noRepeat, Refill rotateAt, long rotateSince, long intervalMs, long edited, int seed) {
+        static Pool of(Shop shop) {
+            List<ShopItem> all = shop.all();
+            int[] w = new int[all.size()];
+            for (int i = 0; i < w.length; i++) {
+                w[i] = all.get(i).hidden ? -1 : all.get(i).weight;
+            }
+            return new Pool(w.length, w, shop.displaySlots, shop.noRepeat, shop.rotateAt, shop.rotateSince, shop.intervalMs, shop.edited, shop.id.hashCode());
+        }
+
+        /** True when any card can be drawn. */
+        boolean any() {
+            for (int w : weights) {
+                if (w > 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
+     * True when a draw must be made: none yet; it names cards the shop no longer has; it is empty while
+     * cards could be drawn; its time is up. With a fixed change time, the time is up once that time
+     * has passed since the draw was made and since the fixed time was set (a draw from before waits
+     * for the next one); otherwise at the interval's end. An empty draw of a shop with nothing to draw
+     * waits for its time like any other.
+     */
+    private static boolean due(ShopLedger.Draw d, Pool pool, long now) {
+        if (d.drawnAt == 0 || d.shown.stream().anyMatch(i -> i >= pool.size()) || d.shown.isEmpty() && pool.any()) {
             return true;
         }
-        if (shop.rotateAt.fixedTime()) {
-            long last = shop.rotateAt.periodStart(now, zone());
-            return last > d.drawnAt && last > shop.rotateSince;
+        if (pool.rotateAt().fixedTime()) {
+            long last = pool.rotateAt().periodStart(now, zone());
+            return last > d.drawnAt && last > pool.rotateSince();
         }
         return now >= d.nextAt;
     }
@@ -649,55 +762,58 @@ public final class Shops {
      * fewer are left than there are places, those show and the rest come from a fresh cycle, never
      * the same card twice in one draw.
      */
-    private static void redraw(ShopLedger.Draw d, Shop shop, long now) {
-        List<ShopItem> all = shop.all();
+    private static void redraw(ShopLedger.Draw d, Pool p, long now) {
         List<Integer> pool = new ArrayList<>();
-        for (int i = 0; i < all.size(); i++) {
-            if (!all.get(i).hidden && all.get(i).weight > 0) {
+        for (int i = 0; i < p.size(); i++) {
+            if (p.weights()[i] > 0) {
                 pool.add(i);
             }
         }
-        Random random = new Random(now ^ shop.id.hashCode());
-        int slots = Math.min(shop.displaySlots, pool.size());
+        Random random = new Random(now ^ p.seed());
+        int slots = Math.min(p.slots(), pool.size());
         List<Integer> picks;
-        if (shop.noRepeat) {
+        if (p.noRepeat()) {
             List<Integer> left = new ArrayList<>(pool);
             left.removeAll(d.used);
             if (left.size() >= slots) {
-                picks = pick(shop, left, slots, random);
+                picks = pick(p.weights(), left, slots, random);
                 d.used.retainAll(pool);
                 d.used.addAll(picks);
             } else {
-                picks = pick(shop, left, left.size(), random);
+                picks = pick(p.weights(), left, left.size(), random);
                 List<Integer> fresh = new ArrayList<>(pool);
                 fresh.removeAll(picks);
-                List<Integer> more = pick(shop, fresh, slots - picks.size(), random);
+                List<Integer> more = pick(p.weights(), fresh, slots - picks.size(), random);
                 picks.addAll(more);
                 d.used.clear(); // a new cycle, begun with the cards that filled the places
                 d.used.addAll(more);
             }
         } else {
-            picks = pick(shop, pool, slots, random);
+            picks = pick(p.weights(), pool, slots, random);
             d.used.clear();
         }
         d.shown.clear();
         d.shown.addAll(picks);
         d.drawnAt = now;
-        d.nextAt = shop.rotateAt.fixedTime() ? shop.rotateAt.nextAt(now, zone()) : now + Math.max(60_000L, shop.intervalMs);
+        d.nextAt = p.rotateAt().fixedTime() ? p.rotateAt().nextAt(now, zone()) : now + Math.max(60_000L, p.intervalMs());
     }
 
     /** Picks {@code n} of {@code from}, each pick by the cards' weights, none twice. */
     public static List<Integer> pick(Shop shop, List<Integer> from, int n, Random random) {
+        return pick(Pool.of(shop).weights(), from, n, random);
+    }
+
+    private static List<Integer> pick(int[] weights, List<Integer> from, int n, Random random) {
         List<Integer> left = new ArrayList<>(from), out = new ArrayList<>();
         while (out.size() < n && !left.isEmpty()) {
             int total = 0;
             for (int i : left) {
-                total += Math.max(0, shop.item(i).weight);
+                total += Math.max(0, weights[i]);
             }
             int r = total <= 0 ? random.nextInt(left.size()) : random.nextInt(total), at = 0;
             if (total > 0) {
                 for (int k = 0; k < left.size(); k++) {
-                    r -= Math.max(0, shop.item(left.get(k)).weight);
+                    r -= Math.max(0, weights[left.get(k)]);
                     if (r < 0) {
                         at = k;
                         break;
@@ -711,18 +827,50 @@ public final class Shops {
         return out;
     }
 
-    /** No repeats: the cycle starts again (cards changed place in the Workbench), here and on the network. */
-    public static void restartCycle(MinecraftServer server, Shop shop) {
+    /**
+     * Cards changed place in the Workbench ({@code before}: the cards as they were): a rotating shop's
+     * draw on show and its no-repeat cycle follow the cards to their new places, here and on the
+     * network, so the same cards stay on show; a removed card leaves the draw one short until the next
+     * change.
+     */
+    public static void cardsMoved(MinecraftServer server, Shop shop, List<ShopItem> before) {
         if (shop.kind != Shop.Kind.ROTATING) {
             return;
         }
-        ledger(server).draw(shop.id).used.clear();
+        List<ShopItem> after = shop.all();
+        int[] to = new int[before.size()];
+        for (int i = 0; i < to.length; i++) {
+            to[i] = -1;
+            for (int k = 0; k < after.size(); k++) {
+                if (after.get(k) == before.get(i)) {
+                    to[i] = k;
+                    break;
+                }
+            }
+        }
+        long record = touch(shop);
+        move(ledger(server).draw(shop.id), to);
         ledger(server).setDirty();
         if (sharedCounts()) {
-            counted("start a rotating shop's cycle again", store -> store.drawLocked(shop.id, row -> {
-                row.used.clear();
+            counted("move a rotating shop's draw with its cards", store -> store.drawLocked(shop.id, row -> {
+                move(row, to);
+                row.forShop = record;
                 return row;
-            }), null, row -> {});
+            }), shop.id, row -> {});
+        }
+    }
+
+    /** Each place in the draw and the cycle to where its card went ({@code to}: old place to new, -1 removed). */
+    private static void move(ShopLedger.Draw d, int[] to) {
+        for (List<Integer> places : List.of(d.shown, d.used)) {
+            List<Integer> moved = new ArrayList<>();
+            for (int i : places) {
+                if (i >= 0 && i < to.length && to[i] >= 0) {
+                    moved.add(to[i]);
+                }
+            }
+            places.clear();
+            places.addAll(moved);
         }
     }
 
@@ -809,41 +957,190 @@ public final class Shops {
     private static void syncDraw(MinecraftServer server, Shop shop, long now, @Nullable ShopLedger.Draw adopt) {
         ShopLedger.Draw d = ledger(server).draw(shop.id);
         d.asking = true;
+        Pool pool = Pool.of(shop); // the storage thread reads this copy, never the record
+        java.util.concurrent.atomic.AtomicBoolean made = new java.util.concurrent.atomic.AtomicBoolean();
         counted("draw a rotating shop", store -> store.drawLocked(shop.id, row -> {
-            if (adopt != null && row.shown.isEmpty() && row.nextAt == 0 && !adopt.shown.isEmpty()) {
+            if (adopt != null && row.shown.isEmpty() && row.drawnAt == 0 && row.forShop <= pool.edited() && !adopt.shown.isEmpty()) {
                 row.set(adopt);
+                row.forShop = pool.edited();
+                made.set(true);
             }
-            if (due(row, shop, now)) {
-                redraw(row, shop, now);
+            if (pool.edited() >= row.forShop && due(row, pool, now)) { // a server with an older record of the shop never draws
+                redraw(row, pool, now);
+                row.forShop = pool.edited();
+                made.set(true);
             }
             return row;
-        }), shop.id, row -> {
+        }), null, row -> {
             d.asking = false;
             if (row == null) {
                 d.askAfter = now + 10_000L; // the database did not answer: ask again in a while
                 return;
             }
-            boolean changed = row.drawnAt != d.drawnAt || !row.shown.equals(d.shown);
-            d.set(row);
-            ledger(server).setDirty();
-            announce(server, shop, d); // each server tells its own players, once, whoever made the draw
-            if (changed) {
-                ShopOpener.resyncOpen(server, shop.id);
+            if (made.get()) {
+                tell(shop.id); // only the server that made or adopted the draw tells the others
             }
+            took(server, shop, row);
         });
+    }
+
+    /** This server's copy takes the network's draw; its players hear of a new one once, and open screens are sent again when it changed. */
+    private static void took(MinecraftServer server, Shop shop, ShopLedger.Draw row) {
+        ShopLedger.Draw d = ledger(server).draw(shop.id);
+        boolean changed = row.drawnAt != d.drawnAt || !row.shown.equals(d.shown);
+        d.set(row);
+        ledger(server).setDirty();
+        announce(server, shop, d); // each server tells its own players, once, whoever made the draw
+        if (changed) {
+            ShopOpener.resyncOpen(server, shop.id);
+        }
+    }
+
+    /** Tells the other servers a shop's counts or draw changed (nothing with a GameTest's stand-in). */
+    private static void tell(String notice) {
+        if (testStore == null) {
+            com.mrgregles.bsp_core.storage.NetworkStorage.tellShopCount(notice);
+        }
     }
 
     // ------------------------------------------------------------------ buying and selling
 
-    /** What locks card {@code index} for this player: the shop's own requirement first, then the card's; null when it is open to them. */
+    // ------------------------------------------------------------------ the shop tree and requirements
+
+    /** The most steps a walk up a shop's parents takes, and the deepest a tree may be: a loop the checks missed can never hang the server. */
+    public static final int MAX_DEPTH = 16;
+
+    /** The shop's parents, nearest first: at most {@link #MAX_DEPTH}, ending at a missing parent or one already passed. */
+    public static List<Shop> parents(MinecraftServer server, Shop shop) {
+        List<Shop> out = new ArrayList<>();
+        Shop p = shop;
+        while (out.size() < MAX_DEPTH && !p.parent.isEmpty()) {
+            p = ledger(server).shop(p.parent);
+            if (p == null || p == shop || out.contains(p)) {
+                break;
+            }
+            out.add(p);
+        }
+        return out;
+    }
+
+    /**
+     * True when shop {@code id} under {@code parent} would make its parents go round in a loop (or
+     * deeper than {@link #MAX_DEPTH}), with {@code parentOf} giving each shop's parent (null for a
+     * shop it does not know).
+     */
+    public static boolean loops(String id, String parent, java.util.function.Function<String, String> parentOf) {
+        String p = parent;
+        for (int step = 0; step <= MAX_DEPTH; step++) {
+            if (p == null || p.isEmpty()) {
+                return false;
+            }
+            if (p.equals(id)) {
+                return true;
+            }
+            p = parentOf.apply(p);
+        }
+        return true;
+    }
+
+    /** What locks a whole shop for this player: its own requirement, then each parent's (a shop's requirement covers everything under it); null when it is open to them. */
+    @Nullable
+    public static Requirement.Lock shopLock(@Nullable MinecraftServer server, Shop shop, Player player) {
+        Requirement.Lock l = shop.requires.check(player);
+        if (l != null || server == null) {
+            return l;
+        }
+        for (Shop p : parents(server, shop)) {
+            l = p.requires.check(player);
+            if (l != null) {
+                return l;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * What locks card {@code index} for this player: the shop's requirement and its parents' first,
+     * then the card's; a section card is also locked as the shop it opens. Null when it is open to them.
+     */
     @Nullable
     public static Requirement.Lock lock(Shop shop, int index, Player player) {
-        Requirement.Lock l = shop.requires.check(player);
+        MinecraftServer server = player.getServer();
+        return cardLock(server, shopLock(server, shop, player), shop, index, player);
+    }
+
+    /** As {@link #lock}, with the shop's own lock ({@link #shopLock}) already known: one look-up of the shop for a whole page. */
+    @Nullable
+    public static Requirement.Lock cardLock(@Nullable MinecraftServer server, @Nullable Requirement.Lock shopLock, Shop shop, int index, Player player) {
+        Requirement.Lock l = shopLock;
         if (l != null) {
             return l;
         }
         ShopItem it = shop.item(index);
-        return it == null ? null : it.requires.check(player);
+        if (it == null) {
+            return null;
+        }
+        l = it.requires.check(player);
+        if (l != null || it.section.isEmpty() || server == null) {
+            return l;
+        }
+        Shop opens = ledger(server).shop(it.section);
+        return opens == null ? null : shopLock(server, opens, player);
+    }
+
+    /**
+     * True when a requirement hides card {@code index} from some players (its own, or its shop's or a
+     * parent's): such a card never shows on a stall's counter or a Stall Display, which every
+     * passer-by sees, and does not count as the venue's stock.
+     */
+    public static boolean hiddenFromSome(MinecraftServer server, Shop shop, int index) {
+        if (hides(shop.requires) || parents(server, shop).stream().anyMatch(p -> hides(p.requires))) {
+            return true;
+        }
+        ShopItem it = shop.item(index);
+        return it != null && hides(it.requires);
+    }
+
+    private static boolean hides(Requirement r) {
+        return r.any() && r.hide();
+    }
+
+    /**
+     * True when the player has left: logged out, gone to another server, or replaced by a respawn.
+     * Their inventory is saved by then, so a trade answered later must not touch this old copy.
+     */
+    public static boolean gone(Player player) {
+        return player.isRemoved() || player instanceof net.minecraft.server.level.ServerPlayer sp && sp.hasDisconnected();
+    }
+
+    /** GameTests: sees every bank answer to a trade first and may change it (null: as the bank answered). Set and put back within one tick. */
+    @Nullable
+    private static java.util.function.UnaryOperator<BankResult> bankAnswer;
+
+    public static void useBankAnswer(@Nullable java.util.function.UnaryOperator<BankResult> answer) {
+        bankAnswer = answer;
+    }
+
+    private static BankResult answered(BankResult r) {
+        var a = bankAnswer;
+        return a == null ? r : a.apply(r);
+    }
+
+    /**
+     * Items owed to a player whose trade ended after they could take them: into their inventory
+     * (dropped if full) while they are here, otherwise handed over where they next log in.
+     */
+    private static void owe(MinecraftServer server, Player player, List<ItemStack> items) {
+        if (gone(player)) {
+            com.mrgregles.bsp_core.admin.AdminService.deliver(server, player.getUUID(), items, "message.bsp_core.shop.owed");
+            return;
+        }
+        for (ItemStack s : items) {
+            if (!player.getInventory().add(s)) {
+                player.drop(s, false);
+            }
+        }
+        player.inventoryMenu.broadcastChanges();
     }
 
     /** How many lots of {@code stack} fit in the player's inventory now. */
@@ -921,22 +1218,36 @@ public final class Shops {
                 then.accept(Outcome.fail("sold_out"));
                 return;
             }
+            if (gone(player)) { // left while the network answered: nothing is paid or handed out
+                release(server, shop, index, player.getUUID(), false, held);
+                then.accept(Outcome.fail("gone"));
+                return;
+            }
             pay(server, player, shop, item, index, held, now, then);
         });
     }
 
     private static void pay(MinecraftServer server, Player player, Shop shop, ShopItem item, int index, int count, long now, Consumer<Outcome> then) {
         long cost = price(shop, item, true, now) * count;
-        Consumer<BankResult> paid = r -> {
+        Consumer<BankResult> paid = answer -> {
+            BankResult r = answered(answer);
             if (!r.ok()) {
                 release(server, shop, index, player.getUUID(), false, count);
                 then.accept(Outcome.fail(r.key().equals("short") ? "short" : r.key()));
                 return;
             }
-            for (int i = 0; i < count; i++) {
-                ItemStack give = item.stack.copy();
-                if (!player.getInventory().add(give)) {
-                    player.drop(give, false);
+            if (gone(player)) { // paid after they left (the network's bank answers a moment later): the items wait for their next login
+                List<ItemStack> items = new ArrayList<>();
+                for (int i = 0; i < count; i++) {
+                    items.add(item.stack.copy());
+                }
+                owe(server, player, items);
+            } else {
+                for (int i = 0; i < count; i++) {
+                    ItemStack give = item.stack.copy();
+                    if (!player.getInventory().add(give)) {
+                        player.drop(give, false);
+                    }
                 }
             }
             then.accept(new Outcome(true, "bought", count, cost, r.pieces()));
@@ -1006,6 +1317,11 @@ public final class Shops {
                 then.accept(Outcome.fail("sell_full"));
                 return;
             }
+            if (gone(player)) { // left while the network answered: their saved inventory keeps the items, so nothing is taken or paid
+                release(server, shop, index, player.getUUID(), true, got);
+                then.accept(Outcome.fail("gone"));
+                return;
+            }
             int lots2 = Math.min(got, held(player, shop, index) / item.stack.getCount());
             if (lots2 < got) {
                 release(server, shop, index, player.getUUID(), true, got - lots2);
@@ -1016,11 +1332,20 @@ public final class Shops {
             }
             String done = lots2 < want ? "sold_capped" : "sold";
             long paid = unit * lots2;
-            player.getInventory().clearOrCountMatchingItems(s -> sells(shop, index, s), lots2 * item.stack.getCount(), player.inventoryMenu.getCraftSlots());
+            List<ItemStack> taken = takeItems(player, shop, index, lots2 * item.stack.getCount());
             player.inventoryMenu.broadcastChanges();
             String what = lots2 * item.stack.getCount() + " " + item.stack.getHoverName().getString();
             if (item.currency < 0) {
-                Bank.give(server, player.getUUID(), paid, BankTransaction.Type.SOLD, shop.name, what, shop.id, itemId(item), r -> then.accept(new Outcome(r.ok(), r.ok() ? done : r.key(), lots2, paid, r.pieces())));
+                Bank.give(server, player.getUUID(), paid, BankTransaction.Type.SOLD, shop.name, what, shop.id, itemId(item), answer -> {
+                    BankResult r = answered(answer);
+                    if (!r.ok()) { // the bank did not take the credit: the items and the room go back
+                        owe(server, player, taken);
+                        release(server, shop, index, player.getUUID(), true, lots2);
+                        then.accept(Outcome.fail("credit_failed"));
+                        return;
+                    }
+                    then.accept(new Outcome(true, done, lots2, paid, r.pieces()));
+                });
             } else {
                 CoinTier tier = CoinTier.values()[item.currency];
                 CoinWallet.give(player, (int) Math.min(Integer.MAX_VALUE, paid * tier.value()));
@@ -1047,6 +1372,22 @@ public final class Shops {
         return held;
     }
 
+    /** Takes {@code count} of the items {@link #held} counts from the inventory and returns them as taken, to give back if the sale fails. */
+    private static List<ItemStack> takeItems(Player player, Shop shop, int index, int count) {
+        List<ItemStack> taken = new ArrayList<>();
+        for (ItemStack s : player.getInventory().items) {
+            if (count <= 0) {
+                break;
+            }
+            if (sells(shop, index, s)) {
+                ItemStack part = s.split(Math.min(count, s.getCount()));
+                count -= part.getCount();
+                taken.add(part);
+            }
+        }
+        return taken;
+    }
+
     /**
      * True when {@code s} may be sold to card {@code index}: the card takes it and does not refuse
      * it, and, for a card matching by item, no card of the shop takes it exactly (the exact card wins).
@@ -1057,9 +1398,11 @@ public final class Shops {
             return false;
         }
         if (item.matchItem) {
-            for (ShopItem other : shop.all()) {
-                if (other != item && !other.matchItem && other.sellable() && ItemStack.isSameItemSameTags(s, other.stack)) {
-                    return false;
+            for (List<ShopItem> page : shop.pages) {
+                for (ShopItem other : page) {
+                    if (other != item && !other.matchItem && other.sellable() && ItemStack.isSameItemSameTags(s, other.stack)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -1086,9 +1429,10 @@ public final class Shops {
         List<Integer> indexes = new ArrayList<>();
         List<ShopItem> all = shop.all();
         List<Integer> shown = shop.kind == Shop.Kind.ROTATING ? visible(server, shop, now()) : null;
+        Requirement.Lock shopLock = shopLock(server, shop, player);
         for (int i = 0; i < all.size(); i++) {
             if (all.get(i).sellable() && all.get(i).currency < 0 && !com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(all.get(i).stack) && (shown == null || shown.contains(i))
-                    && lock(shop, i, player) == null) {
+                    && cardLock(server, shopLock, shop, i, player) == null) {
                 indexes.add(i);
             }
         }
@@ -1102,8 +1446,8 @@ public final class Shops {
             then.accept(new Outcome(lots > 0, key, lots, total, Bank.pieces(server, player.getUUID())));
             return;
         }
-        sell(server, player, shop, indexes.get(at), Integer.MAX_VALUE, test, o -> sellNext(server, player, shop, indexes, at + 1, lots + (o.ok() ? o.lots() : 0), total + (o.ok() ? o.amount() : 0),
-                capped || o.key().equals("sold_capped") || o.key().equals("sell_full"), test, then));
+        sell(server, player, shop, indexes.get(at), Integer.MAX_VALUE, test, o -> sellNext(server, player, shop, indexes, o.key().equals("gone") ? indexes.size() : at + 1, // they left: no more cards
+                lots + (o.ok() ? o.lots() : 0), total + (o.ok() ? o.amount() : 0), capped || o.key().equals("sold_capped") || o.key().equals("sell_full"), test, then));
     }
 
     private static boolean canPay(MinecraftServer server, Player player, int currency, long cost) {
@@ -1113,7 +1457,7 @@ public final class Shops {
         return CoinWallet.totalValue(player) >= cost * CoinTier.values()[currency].value();
     }
 
-    /** True while any visible item card can still trade (see {@link #live}). */
+    /** True while any visible item card can still trade (see {@link #live}; cards a requirement hides from some players never count). */
     public static boolean anyStock(MinecraftServer server, Shop shop) {
         long now = now();
         for (int i : visible(server, shop, now)) {
@@ -1131,7 +1475,7 @@ public final class Shops {
      */
     public static boolean live(MinecraftServer server, Shop shop, int index, long now) {
         ShopItem it = shop.item(index);
-        if (it == null || !it.section.isEmpty() || it.stack.isEmpty()) {
+        if (it == null || !it.section.isEmpty() || it.stack.isEmpty() || hiddenFromSome(server, shop, index)) {
             return false;
         }
         boolean buys = it.buyable(), sells = it.sellable() && !shop.buyOnly;
@@ -1141,11 +1485,11 @@ public final class Shops {
         return !sells || sellLeft(server, shop, index, net.minecraft.Util.NIL_UUID, now) != 0;
     }
 
-    /** The shop's first visible item card, for a stall's counter; empty if it has none. */
+    /** The shop's first visible item card that no requirement hides, for a stall's counter; empty if it has none. */
     public static net.minecraft.world.item.ItemStack firstItem(MinecraftServer server, Shop shop) {
         for (int i : visible(server, shop, now())) {
             ShopItem it = shop.item(i);
-            if (it != null && it.section.isEmpty() && !it.stack.isEmpty()) {
+            if (it != null && it.section.isEmpty() && !it.stack.isEmpty() && !hiddenFromSome(server, shop, i)) {
                 return it.stack.copy();
             }
         }

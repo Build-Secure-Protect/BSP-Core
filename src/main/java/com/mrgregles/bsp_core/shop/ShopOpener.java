@@ -32,8 +32,8 @@ public final class ShopOpener {
     }
 
     public static void open(ServerPlayer player, Shop shop, @Nullable BlockPos at, boolean remote, @Nullable OpenHours hours, boolean test) {
-        Requirement.Lock lock = shop.requires.check(player);
-        if (lock != null && lock.hide()) { // a shop hidden from them: not opened, wherever they reach it
+        Requirement.Lock lock = Shops.shopLock(player.server, shop, player);
+        if (lock != null && lock.hide() && !test) { // a shop hidden from them (by its own requirement or a parent's): not opened, wherever they reach it; the Workbench's TEST still shows it
             player.displayClientMessage(Component.translatable("message.bsp_core.shop.not_open_to_you").withStyle(net.minecraft.ChatFormatting.RED), true);
             return;
         }
@@ -88,9 +88,17 @@ public final class ShopOpener {
         long now = Shops.now();
         boolean open = menu.hours == null || menu.hours.isOpen(player.level());
         List<Integer> shown = new ArrayList<>(open ? Shops.visible(server, shop, now) : List.of());
-        shown.removeIf(i -> { // cards hidden from this player by their requirements are not on their page at all
-            Requirement.Lock l = Shops.lock(shop, i, player);
-            return l != null && l.hide();
+        Requirement.Lock shopLock = Shops.shopLock(server, shop, player); // asked once for the page
+        java.util.Map<Integer, Requirement.Lock> locks = new java.util.HashMap<>();
+        for (int i : shown) {
+            Requirement.Lock l = Shops.cardLock(server, shopLock, shop, i, player);
+            if (l != null) {
+                locks.put(i, l);
+            }
+        }
+        shown.removeIf(i -> { // cards hidden from this player by their requirements are not on their page at all (in TEST they show, locked)
+            Requirement.Lock l = locks.get(i);
+            return l != null && l.hide() && !menu.test;
         });
         List<ShopItem> shownItems = new ArrayList<>();
         for (int i : shown) {
@@ -107,10 +115,10 @@ public final class ShopOpener {
             boolean sells = it.sellable() && !shop.buyOnly;
             cards.add(new ShopMenu.Card(i, it.stack.copy(), it.buyable() ? Shops.price(shop, it, true, now) : -1, sells ? it.sell : -1, it.currency,
                     it.buyable() ? Shops.limit(server, shop, i, player.getUUID(), false, now) : ShopMenu.Limit.NONE,
-                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section, it.matchItem, List.copyOf(it.note), Shops.lock(shop, i, player)));
+                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section, it.matchItem, List.copyOf(it.note), locks.get(i)));
         }
         StringBuilder path = new StringBuilder(shop.name);
-        for (Shop p = shop.parent.isEmpty() ? null : Shops.ledger(server).shop(shop.parent); p != null; p = p.parent.isEmpty() ? null : Shops.ledger(server).shop(p.parent)) {
+        for (Shop p : Shops.parents(server, shop)) {
             path.insert(0, p.name + " > ");
         }
         long rotatesIn = shop.kind == Shop.Kind.ROTATING ? Math.max(0, Shops.nextChange(server, shop, now) - now) : 0;
@@ -122,7 +130,7 @@ public final class ShopOpener {
             opensAt = menu.hours.mode() == OpenHours.Mode.GAME ? String.format(Locale.ROOT, "tick %d", menu.hours.openMin()) : String.format(Locale.ROOT, "%02d:%02d", menu.hours.openMin() / 60, menu.hours.openMin() % 60);
         }
         boolean admin = Admins.isAdmin(player) || Admins.isModerator(player);
-        BSPNetwork.sendTo(player, new ShopDataPacket(shop.name, path.toString(), shop.kind, shop.buyOnly, open, admin, shop.offerActive(now) ? shop.offerPercent : 0, shop.offerEndMs, rotatesIn,
+        BSPNetwork.sendTo(player, new ShopDataPacket(shop.name, Shops.fit(path.toString(), 128), shop.kind, shop.buyOnly, open, admin, shop.offerActive(now) ? shop.offerPercent : 0, shop.offerEndMs, rotatesIn,
                 page, pages, columns, rows, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args,
                 open && ShopSearch.searchable(server, shop)));
     }

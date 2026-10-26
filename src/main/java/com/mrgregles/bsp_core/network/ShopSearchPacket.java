@@ -38,16 +38,18 @@ public record ShopSearchPacket(String shop, int index) {
                     return;
                 }
                 Shop target = Shops.ledger(player.server).shop(msg.shop);
-                // only a shop in the searched tree, so a search cannot open a shop the player has no way to
-                if (target != null && ShopSearch.tree(player.server, top, player).stream().anyMatch(e -> e.shop().equals(target.id) && e.index() == msg.index)) {
-                    int page = ShopSearch.pageOf(player.server, target, player, msg.index);
-                    if (target == top) {
-                        ShopOpener.sync(player, menu, page, "", null);
-                    } else {
-                        ShopOpener.open(player, target, menu.at, menu.remote, menu.hours, menu.test);
-                        if (player.containerMenu instanceof ShopMenu opened) {
-                            ShopOpener.sync(player, opened, page, "", null);
-                        }
+                // only a card the search could have found, so a search cannot open a shop the player has no way to
+                if (target == null || !ShopSearch.findable(player.server, top, target, msg.index, player)) {
+                    ShopOpener.sync(player, menu, menu.page, "search_gone", null); // the result went stale (a new draw, a change): say so
+                    return;
+                }
+                int page = ShopSearch.pageOf(player.server, target, player, msg.index);
+                if (target == top) {
+                    ShopOpener.sync(player, menu, page, "", null);
+                } else {
+                    ShopOpener.open(player, target, menu.at, menu.remote, menu.hours, menu.test);
+                    if (player.containerMenu instanceof ShopMenu opened) {
+                        ShopOpener.sync(player, opened, page, "", null);
                     }
                 }
             });

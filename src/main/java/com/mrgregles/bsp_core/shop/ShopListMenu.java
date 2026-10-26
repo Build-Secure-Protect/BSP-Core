@@ -46,7 +46,7 @@ public class ShopListMenu extends AbstractContainerMenu {
     public static List<Entry> remote(MinecraftServer server, net.minecraft.world.level.Level level, @javax.annotation.Nullable Player viewer) {
         List<Entry> out = new ArrayList<>();
         for (Shop s : Shops.ledger(server).all().values()) {
-            Requirement.Lock lock = viewer == null ? null : s.requires.check(viewer);
+            Requirement.Lock lock = viewer == null ? null : Shops.shopLock(server, s, viewer);
             if (s.remote && s.kind != Shop.Kind.SUB && (lock == null || !lock.hide())) {
                 out.add(new Entry(s.id, s.name, s.kind, s.all().size(), s.hours.isOpen(level)));
             }

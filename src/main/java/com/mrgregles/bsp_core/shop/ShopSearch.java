@@ -19,13 +19,48 @@ public final class ShopSearch {
     /** One card found in the tree: its shop and that shop's path, its place, the item, its prices, and whether it is locked for the player. */
     public record Entry(String shop, String path, String section, int index, ItemStack stack, long buy, long sell, int currency, boolean locked) {}
 
+    /** {@link #searchable} for each shop, kept while the ledger's shops stay as they are (it is asked at every page sent). */
+    private static final java.util.Map<String, Boolean> SEARCHABLE = new java.util.HashMap<>();
+    private static ShopLedger searchableOf;
+    private static long searchableAt = -1;
+
     /** True when a shop's tree holds more cards than one page: the search box shows. */
     public static boolean searchable(MinecraftServer server, Shop shop) {
-        int n = 0;
-        for (Shop s : ShopExport.shops(Shops.ledger(server), shop.id)) {
-            n += (int) s.all().stream().filter(it -> it.section.isEmpty()).count();
+        ShopLedger ledger = Shops.ledger(server);
+        if (ledger != searchableOf || ledger.version != searchableAt) {
+            SEARCHABLE.clear();
+            searchableOf = ledger;
+            searchableAt = ledger.version;
         }
-        return n > Shop.PER_PAGE;
+        return SEARCHABLE.computeIfAbsent(shop.id, k -> {
+            int n = 0;
+            for (Shop s : ShopExport.shops(ledger, shop.id)) {
+                n += (int) s.all().stream().filter(it -> it.section.isEmpty()).count();
+            }
+            return n > Shop.PER_PAGE;
+        });
+    }
+
+    /**
+     * True when a search of {@code top} could have found card {@code index} of {@code target} for this
+     * player (what a click on a result is checked against, without building the tree again): the
+     * shop is the searched one or under it and not hidden from them, the card is an item card on
+     * show, and no requirement hides it.
+     */
+    public static boolean findable(MinecraftServer server, Shop top, Shop target, int index, Player player) {
+        if (target != top && !Shops.parents(server, target).contains(top)) {
+            return false;
+        }
+        Requirement.Lock shopLock = Shops.shopLock(server, target, player);
+        if (shopLock != null && shopLock.hide()) {
+            return false;
+        }
+        ShopItem it = target.item(index);
+        if (it == null || !it.section.isEmpty() || it.stack.isEmpty() || !Shops.visible(server, target, Shops.now()).contains(index)) {
+            return false;
+        }
+        Requirement.Lock lock = Shops.cardLock(server, shopLock, target, index, player);
+        return lock == null || !lock.hide();
     }
 
     /**
@@ -36,7 +71,7 @@ public final class ShopSearch {
         List<Entry> out = new ArrayList<>();
         long now = Shops.now();
         for (Shop s : ShopExport.shops(Shops.ledger(server), top.id)) {
-            Requirement.Lock shopLock = s.requires.check(player);
+            Requirement.Lock shopLock = Shops.shopLock(server, s, player); // a shop hidden by a parent's requirement too
             if (shopLock != null && shopLock.hide()) {
                 continue;
             }
@@ -46,7 +81,7 @@ public final class ShopSearch {
                 if (it == null || !it.section.isEmpty() || it.stack.isEmpty()) {
                     continue;
                 }
-                Requirement.Lock lock = Shops.lock(s, i, player);
+                Requirement.Lock lock = Shops.cardLock(server, shopLock, s, i, player);
                 if (lock != null && lock.hide()) {
                     continue;
                 }
@@ -59,21 +94,24 @@ public final class ShopSearch {
     /** "Decor > Woods": the names from the searched shop down to this one. */
     private static String path(MinecraftServer server, Shop s, Shop top) {
         StringBuilder b = new StringBuilder(s.name);
-        for (Shop p = s; p != top && !p.parent.isEmpty(); ) {
-            p = Shops.ledger(server).shop(p.parent);
-            if (p == null) {
+        if (s == top) {
+            return b.toString();
+        }
+        for (Shop p : Shops.parents(server, s)) {
+            b.insert(0, p.name + " > ");
+            if (p == top) {
                 break;
             }
-            b.insert(0, p.name + " > ");
         }
-        return b.toString();
+        return Shops.fit(b.toString(), 160);
     }
 
     /** The page of the player's view of {@code shop} that holds card {@code index} (0 when it is not on show). */
     public static int pageOf(MinecraftServer server, Shop shop, Player player, int index) {
         List<Integer> shown = new ArrayList<>(Shops.visible(server, shop, Shops.now()));
+        Requirement.Lock shopLock = Shops.shopLock(server, shop, player);
         shown.removeIf(i -> {
-            Requirement.Lock l = Shops.lock(shop, i, player);
+            Requirement.Lock l = Shops.cardLock(server, shopLock, shop, i, player);
             return l != null && l.hide();
         });
         List<ShopItem> items = new ArrayList<>();

@@ -136,6 +136,22 @@ public final class ShopItem {
         return sell >= 0 && !stack.isEmpty() && section.isEmpty();
     }
 
+    /** The same card in an import's eyes: the same item and data, lot size and section (prices, notes and switches may differ). */
+    public boolean sameCard(ShopItem o) {
+        return ItemStack.isSameItemSameTags(stack, o.stack) && stack.getCount() == o.stack.getCount() && section.equals(o.section);
+    }
+
+    /** True when the card's counts mean the same on {@code o}: the same limits, refill rules and match rule. */
+    public boolean countsAlike(ShopItem o) {
+        return stockGlobal == o.stockGlobal && stockPlayer == o.stockPlayer && sellGlobal == o.sellGlobal && sellPlayer == o.sellPlayer && matchItem == o.matchItem
+                && stockRefill.equals(o.stockRefill) && stockPlayerRefill.equals(o.stockPlayerRefill) && sellRefill.equals(o.sellRefill) && sellPlayerRefill.equals(o.sellPlayerRefill);
+    }
+
+    /** True when any of the card's counts refills at each new draw, which only a rotating shop makes. */
+    public boolean refillsEachRotation() {
+        return java.util.stream.Stream.of(stockRefill, stockPlayerRefill, sellRefill, sellPlayerRefill).anyMatch(r -> r.kind() == Refill.Kind.ROTATION);
+    }
+
     public Refill stockPlayerRule() {
         return stockPlayerRefill.kind() == Refill.Kind.SAME ? stockRefill : stockPlayerRefill;
     }

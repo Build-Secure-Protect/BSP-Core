@@ -20,6 +20,8 @@ import java.util.UUID;
  */
 public record Requirement(String permission, int playtimeHours, boolean hide, String reason) {
     public static final Requirement NONE = new Requirement("", 0, false, "");
+    /** The longest reason and permission node a requirement may have: what the shop screen's packet holds. */
+    public static final int REASON_MAX = 64, NODE_MAX = 128;
 
     public boolean any() {
         return !permission.isEmpty() || playtimeHours > 0;
@@ -94,7 +96,7 @@ public record Requirement(String permission, int playtimeHours, boolean hide, St
             }
         }
         Requirement r = new Requirement(permission, Math.max(0, hours), hide, reason);
-        return r.any() ? r : null;
+        return r.any() && reason.length() <= REASON_MAX && permission.length() <= NODE_MAX ? r : null;
     }
 
     /** The command form back ("permission bsp.shop.gold playtime 10 hide reason Gold rank"), or "none". */
@@ -143,15 +145,28 @@ public record Requirement(String permission, int playtimeHours, boolean hide, St
         return player instanceof ServerPlayer sp ? sp.getStats().getValue(Stats.CUSTOM.get(Stats.PLAY_TIME)) / 1200L : 0;
     }
 
+    /** BSP-RankUp's methods, looked up once (a page of locked cards asks for every card). */
+    @Nullable
+    private static volatile java.lang.reflect.Method progressOf, countsOf;
+
     @Nullable
     private static Long rankUpMinutes(Player player) {
         if (!(player instanceof ServerPlayer sp) || !net.minecraftforge.fml.ModList.get().isLoaded("bsp_rankup")) {
             return null;
         }
         try {
-            Class<?> api = Class.forName("com.mrgregles.bsp_rankup.api.RankUpApi");
-            Object progress = api.getMethod("progressOf", net.minecraft.server.MinecraftServer.class, UUID.class).invoke(null, sp.server, sp.getUUID());
-            Object counts = progress.getClass().getMethod("counts").invoke(progress);
+            java.lang.reflect.Method of = progressOf;
+            if (of == null) {
+                of = Class.forName("com.mrgregles.bsp_rankup.api.RankUpApi").getMethod("progressOf", net.minecraft.server.MinecraftServer.class, UUID.class);
+                progressOf = of;
+            }
+            Object progress = of.invoke(null, sp.server, sp.getUUID());
+            java.lang.reflect.Method c = countsOf;
+            if (c == null || !c.getDeclaringClass().isInstance(progress)) {
+                c = progress.getClass().getMethod("counts");
+                countsOf = c;
+            }
+            Object counts = c.invoke(progress);
             Object minutes = ((Map<?, ?>) counts).get("playtime");
             return minutes instanceof Number n ? n.longValue() : 0L;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {

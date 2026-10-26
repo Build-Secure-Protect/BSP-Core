@@ -49,6 +49,11 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     private int resultPage;
     private static List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> tree;
     private static String treeShop = "";
+    /** The screen (container) the tree was sent for: every opening asks for it afresh (the draw, prices or locks may have changed). */
+    private static int treeMenu = -1;
+    /** The last query's results, kept while the query and the tree stay the same (they are asked for several times a frame). */
+    private String resultsFor;
+    private List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> resultsTree, results = List.of();
     /** The card a search result opened, picked out for a moment on the page that holds it. */
     private static String markShop = "";
     private static int markIndex = -1;
@@ -64,7 +69,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     @Override
     protected void init() {
         super.init();
-        if (!menu.shopId.equals(treeShop)) {
+        if (!menu.shopId.equals(treeShop) || menu.containerId != treeMenu) {
             tree = null;
         }
         search = new net.minecraft.client.gui.components.EditBox(font, leftPos + SX + SW - 74, topPos + SY + 3, 68, 11, tr("search"));
@@ -86,6 +91,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         if (player != null && player.containerMenu instanceof ShopMenu menu) {
             tree = List.copyOf(entries);
             treeShop = menu.shopId;
+            treeMenu = menu.containerId;
         }
     }
 
@@ -102,7 +108,18 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         if (tree == null) {
             return List.of();
         }
-        String[] words = search.getValue().toLowerCase(Locale.ROOT).strip().split("\\s+");
+        String query = search.getValue().toLowerCase(Locale.ROOT).strip();
+        if (query.equals(resultsFor) && tree == resultsTree) {
+            return results;
+        }
+        resultsFor = query;
+        resultsTree = tree;
+        results = find(query);
+        return results;
+    }
+
+    private List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> find(String query) {
+        String[] words = query.split("\\s+");
         List<com.mrgregles.bsp_core.shop.ShopSearch.Entry> out = new ArrayList<>();
         for (var e : tree) {
             String name = e.stack().getHoverName().getString().toLowerCase(Locale.ROOT);
@@ -258,6 +275,10 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         }
         lastSerial = menu.messageSerial;
         String key = menu.messageKey;
+        if (key.equals("search_gone")) { // a result went stale: the next letter typed asks for the tree again
+            tree = null;
+            treeAsked = false;
+        }
         boolean good = key.equals("bought") || key.equals("sold") || key.equals("sold_all") || key.equals("sold_capped") || key.equals("sold_all_capped");
         messageColour = good ? AMBER : RED;
         message = key.isEmpty() ? Component.empty() : Component.translatable("message.bsp_core.shop." + key, (Object[]) menu.messageArgs);

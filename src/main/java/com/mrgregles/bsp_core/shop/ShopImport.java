@@ -49,7 +49,8 @@ public final class ShopImport {
     private static final List<String> STYLES = List.of("cash_machine", "passbook", "market_board");
 
     /** What an import did or would do: the shops (in file order), whether each replaces one, the problems, and where the full report is. */
-    public record Result(boolean read, List<Shop> shops, Set<String> replaced, List<String> errors, List<String> warnings, String reportFile) {
+    /** {@code kept}: replaced shops with the same cards in the same places, which keep their counts and draw. */
+    public record Result(boolean read, List<Shop> shops, Set<String> replaced, Set<String> kept, List<String> errors, List<String> warnings, String reportFile) {
         public boolean ok() {
             return read && errors.isEmpty();
         }
@@ -80,7 +81,7 @@ public final class ShopImport {
         Path path = file(name);
         if (path == null) {
             errors.add("\"" + name + "\" is not a file name here: letters, digits, _ - and . only, no folders.");
-            return new Result(false, List.of(), Set.of(), errors, warnings, "");
+            return new Result(false, List.of(), Set.of(), Set.of(), errors, warnings, "");
         }
         Path report = path.resolveSibling(path.getFileName().toString().replace(".json", "-report.txt"));
         JsonObject root;
@@ -89,16 +90,16 @@ public final class ShopImport {
             root = e.isJsonObject() ? e.getAsJsonObject() : null;
         } catch (IOException | RuntimeException e) {
             errors.add(Files.exists(path) ? "The file is not readable JSON: " + e.getMessage() : "No file " + folder().relativize(path) + " in config/bsp_core/shops/.");
-            return finish(server, test, new Result(false, List.of(), Set.of(), errors, warnings, Files.exists(path) ? write(report, path, test, List.of(), Set.of(), errors, warnings) : ""));
+            return finish(server, test, new Result(false, List.of(), Set.of(), Set.of(), errors, warnings, Files.exists(path) ? write(report, path, test, List.of(), Set.of(), Set.of(), errors, warnings) : ""));
         }
         if (root == null) {
             errors.add("The file must hold one JSON object with \"format\" and \"shops\".");
-            return finish(server, test, new Result(false, List.of(), Set.of(), errors, warnings, write(report, path, test, List.of(), Set.of(), errors, warnings)));
+            return finish(server, test, new Result(false, List.of(), Set.of(), Set.of(), errors, warnings, write(report, path, test, List.of(), Set.of(), Set.of(), errors, warnings)));
         }
-        if (!root.has("format") || !root.get("format").isJsonPrimitive() || root.get("format").getAsInt() != FORMAT) {
+        if (lng(root, "format", -1, "The top", errors) != FORMAT) {
             errors.add("\"format\" must be " + FORMAT + ".");
         }
-        boolean coinPayouts = root.has("allowCoinPayouts") && root.get("allowCoinPayouts").getAsBoolean();
+        boolean coinPayouts = bool(root, "allowCoinPayouts", false, "The top", errors);
         for (String k : root.keySet()) {
             if (!Set.of("format", "shops", "allowCoinPayouts", "note").contains(k)) {
                 warnings.add("Unknown key \"" + k + "\" at the top: ignored.");
@@ -107,12 +108,12 @@ public final class ShopImport {
         JsonArray shops = root.has("shops") && root.get("shops").isJsonArray() ? root.getAsJsonArray("shops") : null;
         if (shops == null) {
             errors.add("\"shops\" must be a list.");
-            return finish(server, test, new Result(false, List.of(), Set.of(), errors, warnings, write(report, path, test, List.of(), Set.of(), errors, warnings)));
+            return finish(server, test, new Result(false, List.of(), Set.of(), Set.of(), errors, warnings, write(report, path, test, List.of(), Set.of(), Set.of(), errors, warnings)));
         }
         // the ids first, so sections and parents may name a shop further down the file
         Set<String> ids = new LinkedHashSet<>();
         for (JsonElement e : shops) {
-            if (e.isJsonObject() && e.getAsJsonObject().has("id")) {
+            if (e.isJsonObject() && e.getAsJsonObject().has("id") && e.getAsJsonObject().get("id").isJsonPrimitive()) {
                 ids.add(e.getAsJsonObject().get("id").getAsString());
             }
         }
@@ -126,7 +127,13 @@ public final class ShopImport {
                 errors.add("Shop " + n + ": not an object.");
                 continue;
             }
-            Shop shop = readShop(e.getAsJsonObject(), n, ids, ledger, coinPayouts, seen, errors, warnings);
+            Shop shop;
+            try {
+                shop = readShop(e.getAsJsonObject(), n, ids, ledger, coinPayouts, seen, errors, warnings);
+            } catch (RuntimeException ex) { // a value of a shape no check foresaw: reported, never thrown
+                errors.add("Shop " + n + ": could not be read (" + ex.getMessage() + ").");
+                shop = null;
+            }
             if (shop != null) {
                 out.add(shop);
                 if (ledger.shop(shop.id) != null) {
@@ -134,7 +141,37 @@ public final class ShopImport {
                 }
             }
         }
-        return finish(server, test, new Result(true, out, replaced, errors, warnings, write(report, path, test, out, replaced, errors, warnings)));
+        // parents as they would be after the import: the file's over the server's; none may go round in a loop
+        Map<String, String> parents = new HashMap<>();
+        ledger.all().values().forEach(s -> parents.put(s.id, s.parent));
+        out.forEach(s -> parents.put(s.id, s.parent));
+        for (Shop s : out) {
+            if (Shops.loops(s.id, s.parent, parents::get)) {
+                errors.add("Shop " + s.id + ": its parents go round in a loop back to it (or more than " + Shops.MAX_DEPTH + " deep): " + s.id + " > " + s.parent + " > ...");
+            }
+        }
+        Set<String> kept = new LinkedHashSet<>();
+        for (Shop s : out) {
+            Shop old = ledger.shop(s.id);
+            if (old != null && sameCards(old, s)) {
+                kept.add(s.id);
+            }
+        }
+        return finish(server, test, new Result(true, out, replaced, kept, errors, warnings, write(report, path, test, out, replaced, kept, errors, warnings)));
+    }
+
+    /** True when a replaced shop keeps its cards: as many, each the same item, data, lot size and section in the same place (prices, notes and switches may change). */
+    static boolean sameCards(Shop old, Shop now) {
+        List<ShopItem> a = old.all(), b = now.all();
+        if (a.size() != b.size()) {
+            return false;
+        }
+        for (int i = 0; i < a.size(); i++) {
+            if (!a.get(i).sameCard(b.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Puts the shops in place when the file is clean and this is not a test. */
@@ -145,9 +182,22 @@ public final class ShopImport {
         for (Shop shop : r.shops()) {
             Shop old = Shops.ledger(server).shop(shop.id);
             if (old != null) {
-                Shops.restart(server, old); // counts and draw start again: card places may have moved
+                shop.edited = old.edited; // the new record's stamp goes on from the old one's
+                if (old.rotateAt.equals(shop.rotateAt)) {
+                    shop.rotateSince = old.rotateSince; // the change time as before: the draw changes when it would have
+                }
             }
             Shops.save(server, shop);
+            if (old != null && r.kept().contains(shop.id)) {
+                // the same cards in the same places (owner's pick 14a): counts and draw stay; a card whose limits or rules changed starts its counts again
+                for (int i = 0; i < shop.all().size(); i++) {
+                    if (!old.item(i).countsAlike(shop.item(i))) {
+                        Shops.resetCounts(server, shop, i, i);
+                    }
+                }
+            } else if (old != null) {
+                Shops.restart(server, shop); // cards changed: counts and draw start again
+            }
             ShopOpener.resyncOpen(server, shop.id);
         }
         return r;
@@ -174,6 +224,9 @@ public final class ShopImport {
         Shop s = new Shop(id);
         s.pages.clear();
         s.name = str(o, "name", id.replace('_', ' '));
+        if (s.name.length() > Shop.NAME_MAX) {
+            errors.add(where + ": \"name\" is " + s.name.length() + " characters; a shop's name holds " + Shop.NAME_MAX + ".");
+        }
         try {
             s.kind = Shop.Kind.valueOf(str(o, "kind", "shop").toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
@@ -187,7 +240,7 @@ public final class ShopImport {
         }
         s.remote = bool(o, "remote", false, where, errors);
         s.buyOnly = bool(o, "buyOnly", false, where, errors);
-        s.style = str(o, "style", "cash_machine");
+        s.style = str(o, "style", "cash_machine").toLowerCase(Locale.ROOT);
         if (!STYLES.contains(s.style)) {
             errors.add(where + ": \"style\" must be cash_machine, passbook or market_board.");
         }
@@ -312,6 +365,10 @@ public final class ShopImport {
             if (!ids.contains(it.section) && ledger.shop(it.section) == null) {
                 errors.add(at + ": its section \"" + it.section + "\" is neither in the file nor on the server.");
             }
+            List<String> unused = o.keySet().stream().filter(k -> CARD_KEYS.contains(k) && !Set.of("item", "count", "nbt", "section", "note").contains(k)).toList();
+            if (!unused.isEmpty()) {
+                warnings.add(at + ": a section card only opens its section, so " + String.join(", ", unused) + " " + (unused.size() == 1 ? "is" : "are") + " ignored.");
+            }
             return errors.size() == before ? it : null; // a section card only opens the sub-shop: its item is the picture
         }
         it.buy = lng(o, "buy", -1, at, errors);
@@ -338,7 +395,7 @@ public final class ShopImport {
         it.instant = bool(o, "instant", false, at, errors);
         it.requires = requires(o, at, errors);
         it.hidden = bool(o, "hidden", false, at, errors);
-        String match = str(o, "match", "exact");
+        String match = str(o, "match", "exact").toLowerCase(Locale.ROOT);
         if (!match.equals("exact") && !match.equals("item")) {
             errors.add(at + ": \"match\" must be exact or item.");
         }
@@ -379,7 +436,7 @@ public final class ShopImport {
             return Requirement.NONE;
         }
         JsonObject r = o.getAsJsonObject("requires");
-        String when = str(r, "whenLocked", "show");
+        String when = str(r, "whenLocked", "show").toLowerCase(Locale.ROOT);
         if (!when.equals("show") && !when.equals("hide")) {
             errors.add(at + ": \"whenLocked\" must be show or hide.");
         }
@@ -387,7 +444,11 @@ public final class ShopImport {
         if (hours < 0) {
             errors.add(at + ": \"playtimeHours\" cannot be below 0.");
         }
-        return new Requirement(str(r, "permission", "").trim(), Math.max(0, hours), when.equals("hide"), str(r, "reason", "").trim());
+        String node = str(r, "permission", "").trim(), reason = str(r, "reason", "").trim();
+        if (node.length() > Requirement.NODE_MAX || reason.length() > Requirement.REASON_MAX) {
+            errors.add(at + ": a requirement's \"permission\" holds up to " + Requirement.NODE_MAX + " characters and its \"reason\" up to " + Requirement.REASON_MAX + ".");
+        }
+        return new Requirement(node, Math.max(0, hours), when.equals("hide"), reason);
     }
 
     /** A refill rule key: object or short text; SAME only for the per-player rules; "rotation" only in a rotating shop. */
@@ -495,7 +556,7 @@ public final class ShopImport {
     }
 
     /** Writes the full report beside the file; returns its name (empty when it could not be written). */
-    private static String write(Path report, Path file, boolean test, List<Shop> shops, Set<String> replaced, List<String> errors, List<String> warnings) {
+    private static String write(Path report, Path file, boolean test, List<Shop> shops, Set<String> replaced, Set<String> kept, List<String> errors, List<String> warnings) {
         List<String> lines = new ArrayList<>();
         lines.add("BSP-Core shop import report: " + file.getFileName() + (test ? " (test: nothing changed)" : ""));
         lines.add("Written " + LocalDateTime.now().withNano(0));
@@ -507,7 +568,8 @@ public final class ShopImport {
         shops.forEach(s -> cards.put(s.id, s.all().size()));
         if (!cards.isEmpty()) {
             lines.add("Shops (cards):");
-            cards.forEach((id, c) -> lines.add("  " + id + (replaced.contains(id) ? " (replaces the shop on the server)" : " (new)") + ": " + c));
+            cards.forEach((id, c) -> lines.add("  " + id + (!replaced.contains(id) ? " (new)" : kept.contains(id) ? " (replaces the shop on the server; the same cards: counts and draw kept)"
+                    : " (replaces the shop on the server; cards changed: counts and draw start again)") + ": " + c));
             lines.add("");
         }
         if (!errors.isEmpty()) {

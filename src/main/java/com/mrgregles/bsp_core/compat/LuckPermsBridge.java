@@ -214,10 +214,18 @@ public final class LuckPermsBridge {
         return m.invoke(target);
     }
 
+    /** Methods found by {@link #find}, by class and name: the Bukkit route is asked for every locked card on a page. */
+    private static final java.util.Map<String, Method> FOUND = new java.util.concurrent.ConcurrentHashMap<>();
+
     private static Method find(Class<?> type, String name) throws NoSuchMethodException {
+        Method known = FOUND.get(type.getName() + "#" + name);
+        if (known != null) {
+            return known;
+        }
         for (Method m : type.getMethods()) {
             if (m.getName().equals(name)) {
                 m.setAccessible(true);
+                FOUND.put(type.getName() + "#" + name, m);
                 return m;
             }
         }

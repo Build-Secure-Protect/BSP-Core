@@ -41,6 +41,22 @@ public interface CountStore {
     /** Forgets a shop's draw (the shop was deleted). */
     void dropDraw(String shop) throws Exception;
 
+    /** One card side's everyone count and this player's, keyed by {@link #key}: what another server's notice of a trade names. */
+    default Map<String, ShopLedger.Count> readCard(String shop, int card, boolean selling, UUID player) throws Exception {
+        Map<String, ShopLedger.Count> all = read(shop), out = new java.util.HashMap<>();
+        for (String k : java.util.List.of(key(card, selling, null), key(card, selling, player))) {
+            if (all.containsKey(k)) {
+                out.put(k, all.get(k));
+            }
+        }
+        return out;
+    }
+
+    /** A rotating shop's draw as it stands, without a lock or a change (empty, with times 0, when there is none). */
+    default ShopLedger.Draw readDraw(String shop) throws Exception {
+        return drawLocked(shop, d -> d);
+    }
+
     /** "card:B|S:player", with an empty player for the everyone count. */
     static String key(int card, boolean selling, @Nullable UUID player) {
         return card + ":" + (selling ? "S" : "B") + ":" + (player == null ? "" : player.toString());

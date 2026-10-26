@@ -103,9 +103,29 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 String v = msg.b;
                 try {
                     switch (msg.a) {
-                        case "name" -> shop.name = v.isBlank() ? shop.name : v.trim();
-                        case "kind" -> shop.kind = Shop.Kind.valueOf(v.toUpperCase(Locale.ROOT));
-                        case "parent" -> shop.parent = v.trim().toLowerCase(Locale.ROOT);
+                        case "name" -> {
+                            if (v.trim().length() > Shop.NAME_MAX) {
+                                return "too_long";
+                            }
+                            shop.name = v.isBlank() ? shop.name : v.trim();
+                        }
+                        case "kind" -> {
+                            Shop.Kind kind = Shop.Kind.valueOf(v.toUpperCase(Locale.ROOT));
+                            if (kind != Shop.Kind.ROTATING && shop.all().stream().anyMatch(ShopItem::refillsEachRotation)) {
+                                return "rotation_cards"; // those rules would never refill again
+                            }
+                            shop.kind = kind;
+                        }
+                        case "parent" -> {
+                            String parent = v.trim().toLowerCase(Locale.ROOT);
+                            if (Shops.loops(shop.id, parent, id -> {
+                                Shop s = Shops.ledger(server).shop(id);
+                                return s == null ? null : s.parent;
+                            })) {
+                                return "parent_loop";
+                            }
+                            shop.parent = parent;
+                        }
                         case "remote" -> shop.remote = Boolean.parseBoolean(v);
                         case "buyonly" -> shop.buyOnly = Boolean.parseBoolean(v);
                         case "style" -> shop.style = v.trim();
@@ -153,7 +173,8 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                     return "bad_item";
                 }
                 ShopItem it = new ShopItem();
-                it.stack = new ItemStack(item, Math.max(1, Math.min(64, msg.j)));
+                it.stack = new ItemStack(item, 1);
+                it.stack.setCount(Math.max(1, Math.min(it.stack.getMaxStackSize(), msg.j)));
                 place(server, shop, it, msg.i);
             }
             case SET_ITEM -> {
@@ -181,7 +202,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                         case "sellplayer" -> it.sellPlayer = limit(v);
                         case "sellrefill" -> it.sellRefill = refill(v, false);
                         case "sellplayerrefill" -> it.sellPlayerRefill = refill(v, true);
-                        case "count" -> it.stack.setCount(Math.max(1, Math.min(64, Integer.parseInt(v.trim()))));
+                        case "count" -> it.stack.setCount(Math.max(1, Math.min(it.stack.getMaxStackSize(), Integer.parseInt(v.trim())))); // a lot never more than a stack of the item
                         case "instant" -> it.instant = Boolean.parseBoolean(v);
                         case "hidden" -> it.hidden = Boolean.parseBoolean(v);
                         case "section" -> it.section = v.trim().toLowerCase(Locale.ROOT);
@@ -195,7 +216,9 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 } catch (NumberFormatException e) {
                     return "bad_value";
                 }
-                Shops.resetCounts(server, shop, msg.i, msg.i); // any edit starts the card's counts again
+                if (COUNTING.contains(msg.a)) { // a limit, a refill rule, the lot size or the match rule: the card's counts start again (a price or a note leaves them)
+                    Shops.resetCounts(server, shop, msg.i, msg.i);
+                }
             }
             case REFILL_ITEM -> {
                 if (shop.item(msg.i) == null) {
@@ -205,15 +228,15 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 return "refilled";
             }
             case REMOVE_ITEM -> {
-                int size = shop.all().size();
+                List<ShopItem> before = shop.all();
                 if (!shop.remove(msg.i)) {
                     return "no_item";
                 }
-                Shops.resetCounts(server, shop, msg.i, size); // the cards after it moved up a place
-                Shops.restartCycle(server, shop);
+                Shops.resetCounts(server, shop, msg.i, before.size()); // the cards after it moved up a place
+                Shops.cardsMoved(server, shop, before);
             }
             case MOVE_ITEM -> {
-                List<ShopItem> all = new ArrayList<>(shop.all());
+                List<ShopItem> before = shop.all(), all = new ArrayList<>(before);
                 if (msg.i < 0 || msg.i >= all.size() || msg.j < 0 || msg.j >= all.size()) {
                     return "no_item";
                 }
@@ -223,7 +246,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 shop.pages.add(new ArrayList<>());
                 all.forEach(shop::add);
                 Shops.resetCounts(server, shop, Math.min(msg.i, msg.j), Math.max(msg.i, msg.j)); // every card between moved
-                Shops.restartCycle(server, shop);
+                Shops.cardsMoved(server, shop, before);
             }
             default -> {
                 return "";
@@ -232,6 +255,10 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
         Shops.save(server, shop);
         return "saved";
     }
+
+    /** The card fields whose change starts the card's counts again: what is counted, how much, and when it refills. */
+    private static final java.util.Set<String> COUNTING = java.util.Set.of("stockglobal", "stockplayer", "restock", "stockrefill", "stockplayerrefill",
+            "sellglobal", "sellplayer", "sellrefill", "sellplayerrefill", "count", "match");
 
     /** "hh:mm" on the clock, or ticks in game time. */
     static int clock(String v, com.mrgregles.bsp_core.shop.OpenHours.Mode mode) {
@@ -244,16 +271,16 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
 
     /** Puts a new item at {@code index} (shifting the rest, whose counts start again) or at the end when the index is past the end. */
     private static void place(MinecraftServer server, Shop shop, ShopItem it, int index) {
-        List<ShopItem> all = new ArrayList<>(shop.all());
+        List<ShopItem> before = shop.all(), all = new ArrayList<>(before);
         int at = Math.max(0, Math.min(index, all.size()));
-        if (at < all.size()) {
-            Shops.resetCounts(server, shop, at, all.size());
-            Shops.restartCycle(server, shop);
-        }
         all.add(at, it);
         shop.pages.clear();
         shop.pages.add(new ArrayList<>());
         all.forEach(shop::add);
+        if (at < before.size()) {
+            Shops.resetCounts(server, shop, at, before.size());
+            Shops.cardsMoved(server, shop, before);
+        }
     }
 
     /** Sends the list and the selected shop. */

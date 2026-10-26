@@ -223,12 +223,7 @@ public final class NetworkStorage {
                         // not a team id
                     }
                 }
-                case "shopcount" -> {
-                    var shop = com.mrgregles.bsp_core.shop.ShopLedger.get(srv).shop(payload);
-                    if (shop != null) {
-                        com.mrgregles.bsp_core.shop.Shops.pull(srv, shop, () -> com.mrgregles.bsp_core.shop.ShopOpener.resyncOpen(srv, shop.id));
-                    }
-                }
+                case "shopcount" -> com.mrgregles.bsp_core.shop.Shops.heard(srv, payload);
                 case "shop" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
@@ -1046,6 +1041,11 @@ public final class NetworkStorage {
         });
     }
 
+    /** Tells the other servers a shop's counts or draw changed (Redis kind {@code shopcount}; see {@link com.mrgregles.bsp_core.shop.Shops#countNotice}). */
+    public static void tellShopCount(String notice) {
+        publish("shopcount", notice);
+    }
+
     /** The database as a {@link com.mrgregles.bsp_core.shop.CountStore}. */
     private record DbCounts(MySqlStore s) implements com.mrgregles.bsp_core.shop.CountStore {
         @Override
@@ -1081,6 +1081,16 @@ public final class NetworkStorage {
         @Override
         public void dropDraw(String shop) throws SQLException {
             s.dropDraw(shop);
+        }
+
+        @Override
+        public Map<String, com.mrgregles.bsp_core.shop.ShopLedger.Count> readCard(String shop, int card, boolean selling, UUID player) throws SQLException {
+            return s.countsReadCard(shop, card, selling, player);
+        }
+
+        @Override
+        public com.mrgregles.bsp_core.shop.ShopLedger.Draw readDraw(String shop) throws SQLException {
+            return s.drawRead(shop);
         }
     }
 

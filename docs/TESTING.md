@@ -1683,3 +1683,61 @@ Covered by GameTest `shop_report_adds_up_the_bank_logs_shop_trades` (rows naming
 - [ ] On a network: the first start with this jar logs no error for `bank_log` (the two columns are added); a report on one server counts trades made on the others.
 - [ ] From the server console: the same lines print.
 
+
+## Trades when a player leaves, and the Sell Here box at logout (shop code audit, task 1, 2026-10-26)
+
+Covered by GameTests `a_trade_answered_after_the_player_left_takes_and_pays_nothing` (a network sale and buy answered after the player disconnected move nothing and give the lots back; Sell all stops; a buy paid after the player left keeps the items for their next login; a refused credit gives the items and the sell room back) and `the_sell_here_box_is_settled_before_its_player_is_saved_at_logout` (alone the box sells at logout; on a network it hands everything back unsold; it takes no Shatter Totem). Untested: the real timing on the network's MySQL, BSP-InventorySync's save, and a `/server` switch through the proxy.
+
+- [ ] On a network, in a shop with a sell limit on a card: hold a stack, click Sell all and at once type `/server` to another server (or quit). Log back in: either the items are gone and the bank log shows the sale, or the items are still there and the bank shows no sale; never both.
+- [ ] The same with Buy: either the pieces were taken and the items are in the inventory (or arrive within half a minute of the next login, with "Items from a shop trade that finished after you left."), or neither.
+- [ ] Open the Sell Here box, drop in items the shop buys and some it does not, then quit without closing it. Log back in: alone, the shop's items were sold (bank log) and the rest is in the inventory; on a network everything is back in the inventory and nothing was sold.
+- [ ] Try to put a Shatter Totem in the Sell Here box: it does not go in (also not with shift-click).
+
+## The rotating draw: imports, Workbench moves, empty pools (shop code audit, task 2, 2026-10-26)
+
+Covered by GameTests `a_rotating_draw_follows_its_cards_and_starts_again_once_after_an_import` (moving, adding and removing cards keep the same cards on show and in the cycle with no new draw; a replaced shop's draw is announced on this server; on a network a server with the old record neither restores its old draw nor draws, and the server with the new record makes the draw for it), `a_rotating_draw_reads_a_copy_of_the_shop_and_waits_when_nothing_can_be_drawn` (an empty draw is made once, alone and on a network; a card that becomes drawable is drawn at once; a draw made while the Workbench empties the record uses the copy), and the updated `a_rotating_shop_has_one_draw_for_the_network` and `a_rotating_shop_changes_at_its_fixed_time_without_repeats_by_weight_and_says_so`. Untested: the MySQL `for_shop` column on the live network.
+
+- [ ] On a network, the first start with this jar logs no error for `shop_draws` (the column is added).
+- [ ] With the Challenge shop's cards on show, move a card in the Workbench (drag it to another place): the same four cards stay on show, on every server.
+- [ ] Remove a card that is on show: three stay; the fourth place fills at the next change.
+- [ ] `/bsp shop import spawn_challenge` with a changed card list while two servers are up: both show the same new draw, announced on both, and it contains only cards of the new list.
+
+## The shop tree and requirements (shop code audit, task 3, 2026-10-26)
+
+Covered by GameTests `a_shops_requirement_covers_its_sub_sections_and_stays_off_stalls` (a hidden section hides its own sub-sections' cards, the section card to it, and its search results, and does not open; TEST opens it; a shown-locked section's card is locked and pressing it opens nothing for a plain player but opens the wing for a Gold one; a stall with only a hidden card has no stock and no counter item) and `shop_parents_never_loop_and_rotation_rules_keep_a_shop_rotating` (the Workbench refuses a parent loop and a shop under itself; walks up a loop end; the import refuses both shops of a loop; a rotating shop keeps its kind while a card refills each rotation). Untested in a client: everything below.
+
+- [ ] In the Workbench, set shop A's Parent to B, then B's Parent to A: the second says the parent would put the shop under itself, and nothing changes.
+- [ ] `/bsp shop set <hall> requires permission bsp.shop.gold show`: as a player without the node, the hall's section cards are dark with "Rank" (or the reason) and a padlock; pressing one says it is locked. With the node they open.
+- [ ] With `hide` on a section: its card is not on the hall's page; search in the hall finds none of its cards or its sub-sections' cards.
+- [ ] As an admin without the node, the Workbench's TEST on that hidden section opens it, cards shown locked; a section key inside it keeps TEST.
+- [ ] A Market Stall or Stall Display on a shop whose only card has `requires ... hide`: the counter and the display stay empty; add an ordinary card and it shows that one.
+- [ ] In the Workbench, a rotating shop with a card whose sell refill is `rotation`: changing its kind to shop says to change the refill rule first.
+
+## MySQL locks and trade notices (shop code audit, task 4, 2026-10-26)
+
+Covered by GameTest `a_trade_notice_reads_one_card_and_a_lock_failure_is_tried_once_more` (a trade notice names the card side and player and updates only that; a shop notice reads the whole shop and takes the draw without a lock; a deadlock or lock wait is tried once more, another error and a second deadlock are not). Untested: the SQL itself (`ON DUPLICATE KEY UPDATE`, the session lock wait, the two new reads) and Redis, until the MySQL live test.
+
+- [ ] On a network, the first start logs no error about `innodb_lock_wait_timeout` (with `debug` logging on, no "could not shorten the lock wait" line).
+- [ ] Two players on two servers press Buy on the same limited card at the same second, several times: both trades go through (or one says sold out when the stock is gone), never "The shop's records cannot be reached"; the server logs show no deadlock.
+- [ ] With the Challenge shop open on server B, sell on server A: B's open screen updates the card's counts within a moment.
+- [ ] With MySQL's general log on for a minute of trading: a trade on one server makes each other server run one small `SELECT ... WHERE shop = ? AND card = ? AND side = ? AND who IN ('', ?)`, not a read of the whole shop, and no `shop_draws ... FOR UPDATE`.
+
+## Shop speed and the search (shop code audit, task 5, 2026-10-26)
+
+Covered by GameTest `a_page_asks_a_shops_requirement_once_and_a_search_click_is_checked_without_the_tree` (a card by its place across pages; the search box follows a shop's change; a 40-card locked page asks its permission at most twice when it opens; a search click is found for a sub-section's card, refused for a hidden card, a shop outside the tree and a rotating card not on show, and passes for every card the tree holds). Untested: the method caching with BSP-RankUp and with LuckPerms on Mohist (neither on the test server), and everything in the client below.
+
+- [ ] Search in Decor, close the screen, change a card's price in the Workbench, open Decor again and search: the new price shows.
+- [ ] On the Challenge shop's search (if it has enough cards), wait for a change of cards with the screen open, then click a result that is no longer on show: "That card is not there any more; search again." Typing again gives the new results.
+- [ ] Typing in the search box on the Defence shop (199 cards) stays smooth.
+- [ ] On Mohist with LuckPerms: a shop with a permission requirement opens as quickly as one without.
+
+## Edits, re-imports, text limits, the report (shop code audit, task 6, 2026-10-26)
+
+Covered by GameTests `edits_restart_counts_only_when_what_is_counted_changes_and_a_lot_fits_a_stack` (a note, price or switch keeps the counts; a limit and a match rule by command start them again; lots cut to a stack), `a_reimport_keeps_counts_and_draw_while_the_cards_stay_and_odd_files_are_reported` (the same cards keep draw, sold lots and change date, a card with a new limit starts again, the report says kept; a changed card restarts; odd values, long names and reasons are error lines, case-free keys, section card warning; Workbench and command refuse long text; the report's source), and the updated `shop_import_checks_the_whole_file_then_creates_or_replaces_shops`. Untested: the `bank_log` index on the live MySQL, and the Workbench in a client.
+
+- [ ] Sell to a Challenge card, then change its note in the Workbench: the card's corner count stays as it was. Change its sell limit: it is full again.
+- [ ] On BSP-Spawn, `/bsp shop import spawn_challenge` again with one price changed: chat says the Challenge kept its counts and draw; the same four cards are on show and players' counts stand. Change one card's item and import: the counts and draw start again.
+- [ ] In the Workbench, type a 65-character shop name: "A shop's name holds up to 64 characters."
+- [ ] Set a card's lot size to 64 on ender pearls: it shows 16.
+- [ ] On a network with the database stopped, `/bsp shop report`: "The database could not be read for the report" (not this server's figures). On a server alone, the report has the grey line about the newest log rows.
+- [ ] The first start on the network logs no error for the `bank_log` index.

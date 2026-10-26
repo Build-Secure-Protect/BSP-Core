@@ -70,6 +70,16 @@ public class ShopLedger extends SavedData {
         /** On a network, not saved: a new draw has been asked of the database; and no asking again before this time after a failure. */
         public boolean asking;
         public long askAfter;
+        /** On a network: the shop record ({@link Shop#edited}) this draw was made for; a server with an older record takes the draw but never makes one. */
+        public long forShop;
+
+        /** No draw: what a replaced shop starts from (the network then draws it afresh). */
+        public void clear() {
+            shown.clear();
+            used.clear();
+            drawnAt = 0;
+            nextAt = 0;
+        }
 
         public Draw copy() {
             Draw d = new Draw();
@@ -77,6 +87,7 @@ public class ShopLedger extends SavedData {
             d.used.addAll(used);
             d.drawnAt = drawnAt;
             d.nextAt = nextAt;
+            d.forShop = forShop;
             return d;
         }
 
@@ -88,6 +99,7 @@ public class ShopLedger extends SavedData {
             used.addAll(from.used);
             drawnAt = from.drawnAt;
             nextAt = from.nextAt;
+            forShop = from.forShop;
         }
     }
 
@@ -110,13 +122,18 @@ public class ShopLedger extends SavedData {
         return shops;
     }
 
+    /** Moves on whenever a shop record is put in or taken out, so what is worked out from the shop tree can be kept until then. */
+    public long version;
+
     public void put(Shop shop) {
         shops.put(shop.id, shop);
+        version++;
         setDirty();
     }
 
     public void remove(String id) {
         shops.remove(id);
+        version++;
         stock.keySet().removeIf(k -> k.startsWith(id + ":"));
         draws.remove(id);
         setDirty();
@@ -137,9 +154,12 @@ public class ShopLedger extends SavedData {
         setDirty();
     }
 
-    /** Forgets a rotating shop's draw (a replaced shop draws afresh). */
+    /** Forgets a rotating shop's draw (a replaced shop draws afresh); the last draw told stays, so the new one is announced. */
     public void clearDraw(String shopId) {
-        draws.remove(shopId);
+        Draw old = draws.remove(shopId);
+        if (old != null && old.announcedAt != 0) {
+            draw(shopId).announcedAt = old.announcedAt;
+        }
         setDirty();
     }
 
@@ -174,6 +194,7 @@ public class ShopLedger extends SavedData {
             t.putIntArray("Used", e.getValue().used.stream().mapToInt(Integer::intValue).toArray());
             t.putLong("AnnouncedAt", e.getValue().announcedAt);
             t.putLong("NextAt", e.getValue().nextAt);
+            t.putLong("ForShop", e.getValue().forShop);
             dl.add(t);
         }
         tag.put("Draws", dl);
@@ -211,6 +232,7 @@ public class ShopLedger extends SavedData {
             }
             d.announcedAt = c.getLong("AnnouncedAt");
             d.nextAt = c.getLong("NextAt");
+            d.forShop = c.getLong("ForShop");
             l.draws.put(c.getString("Shop"), d);
         }
         return l;

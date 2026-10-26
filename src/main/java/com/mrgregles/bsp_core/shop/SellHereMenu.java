@@ -32,7 +32,13 @@ public class SellHereMenu extends AbstractContainerMenu {
     public final boolean remote;
     @Nullable
     public final OpenHours hours;
-    public final ItemStackHandler grid = new ItemStackHandler(GRID);
+    /** The grid takes anything but a Shatter Totem (no shop buys one, and a totem must never wait in a box when its holder logs out). */
+    public final ItemStackHandler grid = new ItemStackHandler(GRID) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return !com.mrgregles.bsp_core.totem.TotemInventories.isTotem(stack);
+        }
+    };
     /** Client: the total the grid would fetch, kept up to date by the server. */
     public long total;
     public int lots;
@@ -252,8 +258,30 @@ public class SellHereMenu extends AbstractContainerMenu {
                 total += o.amount();
             }
             capped |= o.key().equals("sold_capped") || o.key().equals("sell_full") || o.key().equals("counts_unreachable");
-            sellNext(player, shop, cards, at + 1, done);
+            sellNext(player, shop, cards, o.key().equals("gone") ? cards.size() : at + 1, done); // they left: no more cards
         });
+    }
+
+    /**
+     * The player is logging out (or changing server) with the box open. Minecraft saves them before it
+     * closes the box, so the box is settled now, before the save: alone, it sells as closing would; on a
+     * network, where a sale waits for the database, everything goes back to the inventory unsold.
+     */
+    public void leaving(ServerPlayer player) {
+        Shop shop = Shops.ledger(player.server).shop(shopId);
+        if (shop != null && !Shops.sharedCounts()) {
+            sellAll(player);
+            return;
+        }
+        for (int i = 0; i < GRID; i++) {
+            ItemStack s = grid.getStackInSlot(i);
+            if (!s.isEmpty()) {
+                if (!player.getInventory().add(s)) {
+                    player.drop(s, false);
+                }
+                grid.setStackInSlot(i, ItemStack.EMPTY);
+            }
+        }
     }
 
     @Override

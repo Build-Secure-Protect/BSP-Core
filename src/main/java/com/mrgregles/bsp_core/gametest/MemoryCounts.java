@@ -13,9 +13,17 @@ final class MemoryCounts implements CountStore {
     final Map<String, Map<String, ShopLedger.Count>> rows = new HashMap<>();
     final Map<String, ShopLedger.Draw> draws = new HashMap<>();
     private boolean moved;
+    /** Runs inside each locked call, as if it happened while the database worked (a player leaving, say). */
+    Runnable duringLock = () -> {};
+    /** Runs inside each draw call before the change, as {@link #duringLock}; and how many draw calls were made. */
+    Runnable duringDraw = () -> {};
+    int drawCalls;
+    /** How many times a whole shop's counts were read. */
+    int fullReads;
 
     @Override
     public synchronized <T> T locked(String shop, int card, boolean selling, UUID player, BiFunction<ShopLedger.Count, ShopLedger.Count, T> change) {
+        duringLock.run();
         Map<String, ShopLedger.Count> m = rows.computeIfAbsent(shop, k -> new HashMap<>());
         String allKey = CountStore.key(card, selling, null), mineKey = CountStore.key(card, selling, player);
         ShopLedger.Count all = m.getOrDefault(allKey, new ShopLedger.Count()).copy(), mine = m.getOrDefault(mineKey, new ShopLedger.Count()).copy();
@@ -31,6 +39,7 @@ final class MemoryCounts implements CountStore {
 
     @Override
     public synchronized Map<String, ShopLedger.Count> read(String shop) {
+        fullReads++;
         Map<String, ShopLedger.Count> out = new HashMap<>();
         rows.getOrDefault(shop, Map.of()).forEach((k, v) -> out.put(k, v.copy()));
         return out;
@@ -55,10 +64,28 @@ final class MemoryCounts implements CountStore {
 
     @Override
     public synchronized ShopLedger.Draw drawLocked(String shop, java.util.function.UnaryOperator<ShopLedger.Draw> change) {
+        drawCalls++;
+        duringDraw.run();
         ShopLedger.Draw d = draws.getOrDefault(shop, new ShopLedger.Draw()).copy();
         ShopLedger.Draw out = change.apply(d);
         draws.put(shop, out.copy());
         return out.copy();
+    }
+
+    @Override
+    public synchronized Map<String, ShopLedger.Count> readCard(String shop, int card, boolean selling, UUID player) {
+        Map<String, ShopLedger.Count> m = rows.getOrDefault(shop, Map.of()), out = new HashMap<>();
+        for (String k : java.util.List.of(CountStore.key(card, selling, null), CountStore.key(card, selling, player))) {
+            if (m.containsKey(k)) {
+                out.put(k, m.get(k).copy());
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public synchronized ShopLedger.Draw readDraw(String shop) {
+        return draws.getOrDefault(shop, new ShopLedger.Draw()).copy();
     }
 
     @Override

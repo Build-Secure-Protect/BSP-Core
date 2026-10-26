@@ -110,7 +110,7 @@ public class StallDisplayBlockEntity extends BlockEntity {
     public ItemStack choose(ServerLevel level, Shop shop) {
         if (pinned >= 0) {
             ShopItem it = shop.item(pinned);
-            if (it != null && it.section.isEmpty() && !it.stack.isEmpty()) {
+            if (it != null && it.section.isEmpty() && !it.stack.isEmpty() && !Shops.hiddenFromSome(level.getServer(), shop, pinned)) {
                 return it.stack.copy();
             }
         }

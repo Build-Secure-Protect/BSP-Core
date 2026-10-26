@@ -52,11 +52,27 @@ public final class ShopReport {
 
     public record Report(int days, boolean capped, List<Line> shops, List<Line> items, List<Map.Entry<String, Long>> sellers, Line total, int rows, String file) {}
 
-    /** The rows since {@code since}: MySQL's on a network, this server's log alone; {@code then} gets null when the database could not be read. */
+    /** Where the report reads from: "network" (MySQL, every server), "unreachable" (network storage is wanted but not connected), or "local" (this server alone). */
+    public static String source(boolean connected, boolean wanted) {
+        return connected ? "network" : wanted ? "unreachable" : "local";
+    }
+
+    /**
+     * The rows since {@code since}: MySQL's on a network, this server's log alone; {@code then} gets
+     * null when the database could not be read, or is wanted and not connected (never this server's
+     * rows passed off as the network's).
+     */
     public static void rows(MinecraftServer server, long since, Consumer<List<Row>> then) {
-        if (com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
-            com.mrgregles.bsp_core.storage.NetworkStorage.shopTrades(since, then);
-            return;
+        switch (source(com.mrgregles.bsp_core.storage.NetworkStorage.enabled(), com.mrgregles.bsp_core.storage.NetworkStorage.countsWanted())) {
+            case "network" -> {
+                com.mrgregles.bsp_core.storage.NetworkStorage.shopTrades(since, then);
+                return;
+            }
+            case "unreachable" -> {
+                then.accept(null);
+                return;
+            }
+            default -> { }
         }
         List<Row> out = new ArrayList<>();
         var ledger = com.mrgregles.bsp_core.bank.BankLedger.get(server);
