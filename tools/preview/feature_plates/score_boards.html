@@ -115,5 +115,5 @@ body > * { visibility: hidden; }
 <li><b>Missing board</b> (the mod is not on this client): "Board not installed here" in muted text and the rotation skips it next time round (default). Alternative: skip silently.</li>
 </ol></div></section>
 
-</div><div class="bsp-band"><b>BSP-Core</b> · Boards on a Score Screen</div><div class="bsp-cap">A screen can show another mod's board, here the home servers, and turn through the scoreboard, the rules, the prizes and every board.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelectorAll('.scr')[0]); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script></body>
+</div><div class="bsp-band"><b>BSP-Core</b> · Boards on a Score Screen</div><div class="bsp-cap">A screen can show another mod's board, here the home servers, and turn through the scoreboard, the rules, the prizes and every board.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelectorAll('.scr')[0]); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script></body>
 </html>

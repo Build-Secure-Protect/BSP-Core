@@ -22,8 +22,10 @@ IMAGES = ROOT / "docs/curseforge/images"
 PLATES = [
     ("bank_atm", "bank_ui_concepts.html", "document.querySelector('.screen')", "The Shatter Bank",
      "Your account on the ATM: pieces, the coins you keep by tier, and the keys for paying, the log, deposits and withdrawals.", None),
-    ("shop_screen", "shop_ui_concepts.html", "document.querySelector('.screen')", "A shop",
-     "Cards with the item, buy in gold, sell dim, a stock badge and a star for instant buy. Left click buys, right click sells.", None),
+    ("shop_screen", "shop_market_plate.html", "document.getElementById('plate')", "A shop",
+     "What is left of a limit in each card's corner (green to buy, amber to sell, OUT or FULL at zero), cards that need a rank or hours of play, a note at the foot of the tooltip, and a search box for every section.", 760),
+    ("challenge_chat", "rotation_concepts.html", "document.getElementById('ca')", "The Challenge changes",
+     "A rotating shop can change at a fixed time, every card having its turn before any repeats, and every player hears it. Hover a name to see the item.", 780),
     ("land_office", "land_office_concepts.html", "document.querySelectorAll('.scr')[1]", "The Land Office",
      "The land around you drawn from the terrain: plots for sale in amber, your claims in green, your outline in white.", None),
     ("teams_screen", "team_popup_concepts.html", "document.querySelectorAll('.screen')[0]", "The Team screen",
@@ -67,7 +69,9 @@ def page(slug, source, pick, title, caption, width):
     head = f"<style id=\"bsp-plate\">{CSS}{extra}</style>"
     tail = (f"<div class=\"bsp-band\"><b>BSP-Core</b> · {title}</div><div class=\"bsp-cap\">{caption}</div>"
             f"<script>document.documentElement.setAttribute('data-theme','dark');"
-            f"setTimeout(function(){{ var el = ({pick}); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }}, 300);</script>")
+            f"setTimeout(function(){{ var el = ({pick}); if (!el) {{ document.title = 'NO TARGET'; return; }} el.classList.add('bsp-target');"
+            # a short element sits in the middle of the space between the band and the caption, not at its top
+            f" var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }}, 300);</script>")
     if "</head>" in src:
         html = src.replace("</head>", head + "</head>", 1)
     elif "<body" in src:

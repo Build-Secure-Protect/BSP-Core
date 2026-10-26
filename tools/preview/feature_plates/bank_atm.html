@@ -192,4 +192,4 @@ ol,ul{ margin:0; padding-left:20px; } li{ margin-bottom:6px; max-width:78ch; } l
   render();
 })();
 </script>
-<div class="bsp-band"><b>BSP-Core</b> · The Shatter Bank</div><div class="bsp-cap">Your account on the ATM: pieces, the coins you keep by tier, and the keys for paying, the log, deposits and withdrawals.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelector('.screen')); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script>
+<div class="bsp-band"><b>BSP-Core</b> · The Shatter Bank</div><div class="bsp-cap">Your account on the ATM: pieces, the coins you keep by tier, and the keys for paying, the log, deposits and withdrawals.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelector('.screen')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

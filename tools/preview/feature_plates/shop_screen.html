@@ -8,118 +8,141 @@ body > * { visibility: hidden; }
 .bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
 .bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
   transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
-</style><title>Shop Screen Concepts</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&family=VT323&family=Oswald:wght@400;600&family=Cabin+Sketch:wght@400;700&family=Patrick+Hand&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+.bsp-target { width: 760px !important; max-width: none !important; }</style><title>Shop Screen Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: the player's shop screens drawn once per preset skin (the bank's three skins are the three built-in presets). Views: the shop page, the quantity screen, the sell GUI, a rotating or special-offer page. Toggles pick the view and the state. */
+/* Layout: one canvas for the CurseForge shop picture: the looks picked for 1.6.0 on one shop screen at GUI pixel size (scaled 3x). */
 :root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
 :root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
-body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
-.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-inline:16px; display:flex; flex-direction:column; gap:30px; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:16px; }
 h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
-h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
-h3{ font-size:15px; margin:0; }
 .lede{ color:var(--muted); margin:0; max-width:78ch; }
-section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
-.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
-.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
-.ctl{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; font-size:13px; }
-.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
-.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:5px 10px; cursor:pointer; border-radius:3px; } .tb.on{ border-color:var(--acc); color:var(--acc); } .tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
-.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
-ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:78ch; } ol b{ color:var(--fg); }
-
-/* ---------- one screen structure, three skins (as on the bank page) ---------- */
-.stage{ background:var(--board); border-radius:4px; padding:12px; display:flex; justify-content:center; }
-.screen{ position:relative; width:100%; max-width:560px; aspect-ratio:560/400; display:grid; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 104px; gap:7px; padding:12px; box-sizing:border-box; font-size:12px; line-height:1.25; overflow:hidden; }
-.screen .hdr{ grid-area:1/1/2/2; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
-.screen .hdr .title{ font-weight:700; letter-spacing:.08em; text-transform:uppercase; } .screen .hdr .who{ font-size:11px; opacity:.8; white-space:nowrap; }
-.screen .side{ grid-area:1/2/3/3; display:flex; flex-direction:column; justify-content:space-between; gap:7px; min-width:0; } .screen .side .grp{ display:flex; flex-direction:column; gap:7px; }
-.screen .main{ grid-area:2/1/3/2; min-width:0; display:flex; flex-direction:column; gap:6px; }
-.screen .foot{ grid-area:3/1/4/3; display:flex; justify-content:space-between; gap:8px; font-size:10px; opacity:.75; }
-.btn{ display:block; padding:6px 5px; text-align:center; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; line-height:1.15; } .btn.locked{ opacity:.55; } .btn small{ display:block; font-weight:400; text-transform:none; letter-spacing:0; font-size:9.5px; opacity:.85; }
-.items{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; } .it{ aspect-ratio:1/1.15; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:8.5px; padding:2px; position:relative; min-width:0; } .it i{ width:16px; height:16px; display:block; border-radius:2px; } .it b{ font-size:8px; font-variant-numeric:tabular-nums; } .it .s{ font-size:7.5px; opacity:.75; } .it.sel{ outline:2px solid currentColor; } .it .n{ position:absolute; top:1px; right:2px; font-size:7px; opacity:.8; } .it.out{ opacity:.45; }
-.chips{ display:flex; flex-wrap:wrap; gap:3px; } .chip{ font-size:9px; padding:1px 6px; letter-spacing:.04em; text-transform:uppercase; } .chip.on{ font-weight:700; }
-.big{ font-size:30px; font-weight:700; line-height:1; text-align:center; padding-block:6px 2px; font-variant-numeric:tabular-nums; } .big small{ font-size:11px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; margin-left:6px; }
-.hint{ font-size:9.5px; opacity:.75; text-align:center; }
-.drop{ flex:1; display:grid; grid-template-columns:repeat(7,1fr); gap:5px; align-content:start; } .drop .it{ aspect-ratio:1; } .drop .e{ opacity:.35; }
-.qty{ display:flex; align-items:center; justify-content:center; gap:10px; } .qty .it{ width:52px; }
-.offer{ font-size:10px; padding:2px 6px; display:inline-block; }
-
-/* Skin B: Cash Machine (chosen base) */
-.sB .screen{ --k-pos:#58f29a; --k-neg:#f2b544; background:#cfc8b8; color:#58f29a; font-family:"VT323","Courier New",monospace; font-size:14px; border:4px solid #8f877a; border-radius:8px; box-shadow:inset 0 2px 0 #ece6d8, inset 0 -3px 0 #a79e8e; }
-.sB .screen .hdr,.sB .screen .main,.sB .screen .foot{ background:#061008; padding:6px 10px; box-shadow:inset 0 0 14px #0d3b22; }
-.sB .screen .hdr{ border-radius:4px 4px 0 0; margin-bottom:-7px; padding-bottom:0; } .sB .screen .main{ border-radius:0 0 4px 4px; padding-top:8px; } .sB .screen .foot{ border-radius:4px; color:#3fb97a; padding-top:6px; }
-.sB .screen .hdr .title{ letter-spacing:.14em; } .sB .screen .hdr .title::before{ content:"> "; } .sB .screen .hdr .who{ color:#3fb97a; }
-.sB .screen::after{ content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(transparent 0 2px,#00000022 2px 3px); mix-blend-mode:multiply; }
-.sB .btn{ background:#eae4d5; color:#2b2823; border:1px solid #9a9183; border-bottom-width:3px; border-radius:4px; font-family:"Oswald",system-ui,sans-serif; font-weight:600; font-size:10px; letter-spacing:.08em; } .sB .btn.locked{ color:#8f877a; }
-.sB .it{ border:1px solid #1f6b43; } .sB .it i{ background:#3fb97a; } .sB .it b{ color:#f2b544; } .sB .it.sel{ background:#0f2d1c; }
-.sB .chip{ border:1px solid #3fb97a; color:#3fb97a; } .sB .chip.on{ background:#58f29a; color:#061008; } .sB .offer{ background:#f2b544; color:#061008; } .sB .drop .e{ border-style:dashed; }
-/* Skin A: Passbook */
-.sA .screen{ --k-pos:#2f6b4f; --k-neg:#a33b2a; background:#f1e9d6 repeating-linear-gradient(transparent 0 15px,#d8cdb2 15px 16px); color:#1e2a44; font-family:"Courier Prime","Courier New",monospace; border:6px solid #3b2f2a; box-shadow:inset 0 0 0 2px #c9b98f; }
-.sA .screen .hdr .title{ font-family:"Libre Baskerville",Georgia,serif; letter-spacing:.14em; border-bottom:2px double #1e2a44; padding-bottom:2px; } .sA .screen .hdr .who{ font-style:italic; font-family:"Libre Baskerville",Georgia,serif; }
-.sA .btn{ border:2px solid #a33b2a; color:#a33b2a; background:#f6efdf; transform:rotate(-1.2deg); box-shadow:1px 1px 0 #a33b2a55; } .sA .side .grp:last-child .btn{ transform:rotate(1deg); border-color:#1e2a44; color:#1e2a44; box-shadow:1px 1px 0 #1e2a4455; }
-.sA .it{ background:#f6efdf; border:1px solid #c9b98f; } .sA .it i{ background:#1e2a44; } .sA .it b{ color:#a33b2a; } .sA .it.sel{ background:#efe4ca; }
-.sA .chip{ border:1px solid #1e2a44; } .sA .chip.on{ background:#1e2a44; color:#f1e9d6; } .sA .offer{ background:#a33b2a; color:#f1e9d6; } .sA .big{ font-family:"Libre Baskerville",Georgia,serif; } .sA .foot{ font-family:"Libre Baskerville",Georgia,serif; font-style:italic; } .sA .drop .e{ background:repeating-linear-gradient(45deg,#e4d8bc 0 3px,#f1e9d6 3px 6px); }
-/* Skin C: Market Board */
-.sC .screen{ --k-pos:#ffd97a; --k-neg:#ff9c9c; background:#243029 radial-gradient(ellipse at 30% 20%,#2e3b33 0,#243029 60%); color:#f4f1e8; font-family:"Patrick Hand","Comic Sans MS",cursive; font-size:13.5px; border:9px solid #6b4a2b; box-shadow:inset 0 0 0 2px #4a321c, inset 0 0 30px #00000066; }
-.sC .screen .hdr .title{ font-family:"Cabin Sketch","Patrick Hand",cursive; font-size:15px; letter-spacing:.06em; text-transform:none; } .sC .screen .hdr .who{ color:#ffd97a; }
-.sC .btn{ background:#d9b98a; color:#4a321c; border:1px solid #b08a57; border-radius:3px 3px 6px 6px; font-family:"Patrick Hand",cursive; text-transform:none; font-size:11.5px; letter-spacing:0; position:relative; margin-top:6px; } .sC .btn::before{ content:""; position:absolute; top:-6px; left:50%; width:2px; height:6px; background:#c9c3b4; transform:translateX(-50%); } .sC .btn.locked{ background:#9c8a6c; }
-.sC .it{ border:1px dashed #f4f1e899; } .sC .it i{ background:#c9c3b4; border-radius:40%; } .sC .it b{ color:#ffd97a; } .sC .it.sel{ background:#f4f1e81a; }
-.sC .chip{ border:1px solid #f4f1e8; border-radius:10px; text-transform:none; font-size:10px; } .sC .chip.on{ background:#f4f1e8; color:#243029; } .sC .offer{ background:#ffd97a; color:#243029; border-radius:10px; } .sC .big{ font-family:"Cabin Sketch","Patrick Hand",cursive; color:#ffd97a; } .sC .foot{ color:#c9c3b4; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:1000px; height:auto; image-rendering:pixelated; display:block; }
 </style>
+
 <div class="wrap">
-<section><h1>Shop Screen Concepts</h1>
-<p class="lede">What a player sees at a vendor, a stall or on the Shopping Network, drawn on the three built-in style presets. The presets are the bank's three skins: Cash Machine (the base you chose for the bank and the configurator), Passbook and Market Board. An admin assigns a preset per shop and can save palette and layout variations as presets of their own. Views: the shop page, the quantity screen for a buy or a sell, the sell GUI you drop items into, and a rotating or special-offer page. The admin key appears for admins and moderators.</p>
-<div class="card" style="border-color:var(--acc)"><h3>Decided (owner, 2026-10-11)</h3><p>Cards show the icon, <b>"buy" beside the buy price</b>, the sell price and the stock badge; a shop can be <b>buy-only</b>. The drop-in grid is called <b>Sell here</b>. Keys as shown. <b>A closed shop shows no contents</b>: only its name, CLOSED, when it opens and the time left. Cash Machine is built first; the other presets follow.</p></div>
-<div class="card"><div class="ctl"><span class="key"><b>Screen:</b></span><button type="button" class="tb on" data-scr="shop">Shop page</button><button type="button" class="tb" data-scr="qty">Quantity: buy</button><button type="button" class="tb" data-scr="sellqty">Quantity: sell</button><button type="button" class="tb" data-scr="sellgui">Sell here</button><button type="button" class="tb" data-scr="rot">Rotating / offer</button>
-<span class="key"><b>State:</b> <label><input type="checkbox" id="admin"> Viewer is an admin</label> <label><input type="checkbox" id="closed"> Shop closed now</label></span></div></div></section>
-
-<section><h2>1. The three presets</h2><div class="grid3" id="looks"></div></section>
-
-<section><h2>2. Rules every preset carries</h2><div class="card"><ol>
-<li>An item card shows the icon, the buy price (gold) and the sell price (dim) in its currency; a count badge for stock left (global, or yours); greyed when out of stock; a chip for instant buy.</li>
-<li>Left click a card: the buy quantity screen; right click: the sell quantity screen; shift-right click: sell all of that item from your inventory (the chosen ESGUI mappings, configurable per shop later).</li>
-<li>Quantity screen: -1, +1, +16, +32, Max (what you can afford and what fits, or what you hold for a sell), the total, Confirm, Cancel. Pay only for what fits.</li>
-<li>Sell here: drop items in; closing sells everything this shop buys at its sell prices and hands back the rest; the total updates as you drop.</li>
-<li>Sub-sections appear as cards with a folder mark; the header shows the path; Back climbs one level. Pages have Previous and Next.</li>
-<li>Rotating shops show "next rotation in" and only the drawn items; special offers show the chip with the percent and the end time, prices already reduced.</li>
-<li>A closed shop shows no contents: its name, CLOSED, when it opens and the time left; the Shopping Network list greys closed shops. A buy-only shop shows no sell prices and no Sell here or Sell all keys.</li>
-<li>Admins and moderators see an ADMIN key: it opens the configurator on this shop (moderators read-only) and the vendor's assignment and times.</li>
-</ol></div></section>
-
-<section><h2>3. Decisions</h2><div class="card"><ol>
-<li><b>Card content:</b> icon, buy price, sell price, stock badge (shown), or icon and buy price only with the rest in the tooltip.</li>
-<li><b>Sell GUI:</b> a 14-slot drop-in grid as shown, or the whole player inventory with a Sell all key.</li>
-<li><b>Keys on the shop page:</b> Back, page keys at the top; Sell GUI, Sell all, Admin at the bottom (shown), or page keys below the grid.</li>
-<li><b>Build order:</b> Cash Machine first, the other two presets once the screens work (default), or all three together.</li>
-</ol></div></section>
+  <h1>Shop Screen Plate</h1>
+  <p class="lede">The shop screen for the CurseForge page, with the looks picked for 1.6.0 together: limit counts in the card corners (look A of shop_limit_concepts), locked cards with what they need (look C of locked_card_concepts), the search box in the header (look B of shop_search_concepts) and a card note at the foot of the tooltip (look B of card_note_concepts). Drawn for tools/gen_feature_plates.py.</p>
+  <div class="stage"><canvas id="plate" width="1260" height="720"></canvas></div>
 </div>
 <script>
 (function(){
-  const $=id=>document.getElementById(id);
-  const state={scr:'shop', admin:false, closed:false};
-  const ITEMS=[['Tetrium Plate',120,30,63,false],['Coin Blank',800,-1,4,false],['Iron Ingot',40,10,0,true],['Oak Log',6,2,-1,true],['Diamond',900,300,12,false],['Bread',12,3,-1,true],['Torch',2,-1,-1,true],['Illyrium Ingot',2400,600,2,false],['Ender Pearl',150,40,-1,false],['Tools >',-2,-2,-1,false],['Armour >',-2,-2,-1,false]];
-  function btn(t,sub,cls){ return '<span class="btn'+(cls?' '+cls:'')+'">'+t+(sub?'<small>'+sub+'</small>':'')+'</span>'; }
-  function side(nav,act){ return '<div class="side"><div class="grp">'+nav+'</div><div class="grp">'+act+'</div></div>'; }
-  function card(it,sel){ const [n,b,s,st,inst]=it; const folder=b===-2; return '<div class="it'+(sel?' sel':'')+(st===0?' out':'')+'"><i></i><span>'+n.replace(' >','')+(folder?' &#9656;':'')+'</span>'+(folder?'':'<b>'+(b<0?'--':'buy '+b.toLocaleString())+'</b><span class="s">'+(s<0?'no sell':'sell '+s)+'</span>')+(st>=0?'<span class="n">'+(st===0?'OUT':st)+'</span>':'')+(inst?'<span class="n" style="top:auto;bottom:1px">&#9889;</span>':'')+'</div>'; }
-  function adminKey(){ return state.admin?btn('Admin','settings, times'):''; }
-  function head(title,right){ return '<div class="hdr"><span class="title">'+title+'</span><span class="who">'+right+'</span></div>'; }
-  function foot(){ return '<div class="foot"><span>'+(state.closed?'closed: opens 09:00':'open until 21:00')+' / spawn</span><span>balance 24,350 pieces</span></div>'; }
-  function closedView(name){ return head(name,'closed')+'<div class="main"><div class="big" style="padding-top:28px">CLOSED</div><div class="hint">opens at 09:00 &middot; in 6 h 40 m</div><div class="hint">open 09:00 to 21:00 every day</div></div>'+side(btn('Back'), state.admin?adminKey():'')+foot(); }
-  function shop(){ if(state.closed) return closedView('Spawn Smith'); return head('Spawn Smith','page 1 / 2')+'<div class="main"><div class="chips"><span class="chip on">All</span><span class="chip">Tools &#9656;</span><span class="chip">Armour &#9656;</span></div><div class="items">'+ITEMS.map(i=>card(i,false)).join('')+'</div><div class="hint">left click: buy &middot; right click: sell &middot; shift + right: sell all of it &middot; &#9889; instant buy</div></div>'+side(btn('Back')+btn('Previous','','locked')+btn('Next page'), btn('Sell here','drop items in')+btn('Sell all','this shop buys')+adminKey())+foot(); }
-  function qty(sell){ const it=ITEMS[0]; const unit=sell?it[2]:it[1]; const n=16; return head((sell?'Sell: ':'Buy: ')+it[0],sell?'you hold 40':'63 in stock')+'<div class="main"><div class="qty">'+card(it,true)+'<div><div class="big">'+n+'<small>x</small></div><div class="hint">'+(sell?'you get':'total')+' '+(unit*n).toLocaleString()+' pieces</div></div></div><div class="hint">'+(sell?'Max = all you hold that this shop buys':'Max = what you can afford and what fits in your inventory')+'</div><div class="hint">'+(sell?'':'after: 22,430 pieces')+'</div></div>'+side(btn('-1')+btn('+1')+btn('+16')+btn('+32')+btn('Max'), btn('Confirm',(sell?'sell ':'buy ')+n)+btn('Cancel'))+foot(); }
-  function sellgui(){ let h=''; for(let i=0;i<14;i++){ h+=i<3?card(ITEMS[[0,3,5][i]],false):'<div class="it e"><i style="opacity:.3"></i></div>'; } return head('Sell here: Spawn Smith','drop items in')+'<div class="main"><div class="drop">'+h+'</div><div class="hint">closing sells everything this shop buys: 3 lots, 1,470 pieces; the rest comes back to you</div></div>'+side(btn('Back','keeps your items'), btn('Sell now','1,470 pieces')+btn('Clear'))+foot(); }
-  function rot(){ if(state.closed) return closedView('Night Market'); return head('Night Market','rotates in 3 h 12 m')+'<div class="main"><span class="offer">SPECIAL OFFER -25% until Sun 20:00</span><div class="items">'+[ITEMS[4],ITEMS[7],ITEMS[8],ITEMS[1]].map(i=>card([i[0],Math.round(i[1]*0.75),i[2],i[3],i[4]],false)).join('')+'</div><div class="hint">four of twenty items drawn this rotation; prices already reduced</div></div>'+side(btn('Back'), btn('Sell here','drop items in')+adminKey())+foot(); }
-  const SCR={shop, qty:()=>qty(false), sellqty:()=>qty(true), sellgui, rot};
-  const looks=[['sB','Cash Machine (base)','The bank\'s look: beige bezel, phosphor screen, beige keys. Cards with a green frame, gold buy prices, dim sell prices; the stock badge top right.'],['sA','Passbook','Cream ledger paper and ink; cards as ruled tickets with red prices; stamp keys. Reads as an old counter.'],['sC','Market Board','Chalkboard in a wooden frame; cards chalked with yellow prices; kraft tags for keys. The natural stall look.']];
-  for(const [cls,name,text] of looks){ const c=document.createElement('div'); c.className='card '+cls; c.innerHTML='<h3>'+name+'</h3><div class="stage"><div class="screen"></div></div><p>'+text+'</p>'; $('looks').appendChild(c); }
-  function render(){ const html=SCR[state.scr](); document.querySelectorAll('.screen').forEach(s=>s.innerHTML=html); }
-  document.querySelectorAll('[data-scr]').forEach(b=>b.onclick=()=>{ state.scr=b.dataset.scr; document.querySelectorAll('[data-scr]').forEach(x=>x.classList.toggle('on',x===b)); render(); });
-  $('admin').onchange=e=>{ state.admin=e.target.checked; render(); }; $('closed').onchange=e=>{ state.closed=e.target.checked; render(); };
-  render();
+  const S = 3, GW = 420, GH = 240, OX = 24, OY = 10;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', CARD:'#0a1a10', CARD_SEL:'#0f2d1c', CARD_OUT:'#070d09', OUT_EDGE:'#1f6b43' };
+  const MC = { white:'#FFFFFF', gray:'#AAAAAA', gold:'#FFAA00', blue:'#5555FF', amber:'#F2B544' };
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, ';':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '[':4, ']':4, '/':5 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  function text(g, s, x, y, colour, scale, italic){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (italic ? 'italic ' : '') + (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    if (italic) g.transform(1, 0, -0.18, 1, 0, 0);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour; g.fillText(s, 0, 0); g.restore();
+    return target;
+  }
+  function shadowText(g, s, x, y, colour, italic){
+    const n = parseInt(colour.slice(1), 16);
+    text(g, s, x + 1, y + 1, 'rgb(' + (((n >> 16) & 255) >> 2) + ',' + (((n >> 8) & 255) >> 2) + ',' + ((n & 255) >> 2) + ')', 1, italic);
+    return text(g, s, x, y, colour, 1, italic);
+  }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+  function icon(g, x, y, base, light, dark, kind){
+    let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  function padlock(g, x, y, col){
+    fill(g, x + 1, y, x + 4, y + 1, col); fill(g, x, y + 1, x + 1, y + 3, col); fill(g, x + 4, y + 1, x + 5, y + 3, col);
+    fill(g, x - 1, y + 3, x + 6, y + 7, col);
+  }
+  // the cards: colours and pattern, the price line, the corner (count of a limit, OUT / FULL), a lock, and whether the shop buys it
+  const CARDS = [
+    {c:['#5b6f8a','#9fb6d6','#2c394a','casing'], line:'buy 9,000', corner:'3/4'},
+    {c:['#a83f3f','#f08a6a','#5a1e1e','frame'], line:'buy 48,000', lock:'Gold rank'},
+    {c:['#3f8a6a','#8ff0c4','#1e4a35','noise'], line:'buy 120,000', corner:'OUT'},
+    {c:['#7d8590','#aab2bc','#4b5159','frame'], line:'sell 2,500', corner:'2/4', sells:true},
+    {c:['#6a3f8a','#c48ff0','#351e4a','noise'], line:'buy 64,000', lock:'10 h play'},
+    {c:['#8a6a3f','#d6b88f','#4a351e','casing'], line:'buy 1,800', corner:'1/2'},
+    {c:['#3f6f8a','#8fd0f0','#1e384a','noise'], line:'sell 400', corner:'FULL', sells:true},
+    {c:['#4f8a3f','#a6f08f','#284a1e','casing'], line:'buy 12,000', corner:'4/4'}];
+  const HOVER = 3;
+  const W = 300, H = 216, SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20, COLS = 4, CW = 48, CH = 36, GAP = 1;
+  function key(g, x, y, label, on){ fill(g, x, y, x + KW, y + KH, C.KEY_EDGE); fill(g, x, y, x + KW, y + KH - 2, C.KEY); text(g, label, x + (KW - mcWidth(label)) / 2, y + 6, on ? C.KEY_TEXT : '#8f877a'); }
+  function small(g, s, x, y, colour, width){ const sc = Math.min(.75, (width - 4) / Math.max(1, mcWidth(s))); text(g, s, x, y, colour, sc); return mcWidth(s) * sc; }
+  function screen(g){
+    const grd = g.createLinearGradient(0, 0, 0, GH * S); grd.addColorStop(0, '#2b3442'); grd.addColorStop(1, '#151a22');
+    g.fillStyle = grd; g.fillRect(0, 0, GW * S, GH * S); g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 0, GW * S, GH * S);
+    const x = OX, y = OY;
+    fill(g, x, y, x + W, y + H, C.BEZEL_DARK); fill(g, x + 2, y + 2, x + W - 2, y + H - 2, C.BEZEL); fill(g, x + 2, y + 2, x + W - 2, y + 4, C.BEZEL_LIGHT);
+    fill(g, x + SX - 2, y + SY - 2, x + SX + SW + 2, y + SY + SH + 2, C.EDGE); fill(g, x + SX, y + SY, x + SX + SW, y + SY + SH, C.SCREEN);
+    // header: the shop, the page, and the search box (empty, with its hint)
+    text(g, '> MACHINES', x + SX + 6, y + SY + 6, C.PHOS);
+    const fx = x + SX + SW - 74;
+    fill(g, fx, y + SY + 3, fx + 68, y + SY + 14, C.DIM); fill(g, fx + 1, y + SY + 4, fx + 67, y + SY + 13, '#000000');
+    text(g, 'search...', fx + 3, y + SY + 6, '#555555');
+    text(g, 'page 1 / 3', fx - 5 - mcWidth('page 1 / 3') * .75, y + SY + 6, C.DIM, .75);
+    fill(g, x + SX + 4, y + SY + 16, x + SX + SW - 4, y + SY + 17, C.EDGE);
+    CARDS.forEach((cd, k) => {
+      const cx = x + SX + 6 + (k % COLS) * (CW + GAP), cy = y + SY + 22 + Math.floor(k / COLS) * (CH + GAP);
+      const zero = cd.corner === 'OUT' || cd.corner === 'FULL', dark = zero || !!cd.lock;
+      fill(g, cx, cy, cx + CW, cy + CH, dark ? C.CARD_OUT : k === HOVER ? C.CARD_SEL : C.CARD);
+      fill(g, cx, cy, cx + CW, cy + 1, dark ? C.OUT_EDGE : C.DIM); fill(g, cx, cy + CH - 1, cx + CW, cy + CH, dark ? C.OUT_EDGE : C.DIM);
+      g.globalAlpha = dark ? 0.42 : 1; icon(g, cx + CW / 2 - 8, cy + 3, cd.c[0], cd.c[1], cd.c[2], cd.c[3]); g.globalAlpha = 1;
+      if (cd.lock) {
+        small(g, cd.lock, cx + 2, cy + 21, C.AMBER, CW);
+        padlock(g, cx + CW - 8, cy + 2, '#8a8a8a');
+        return;
+      }
+      small(g, cd.line, cx + 2, cy + 21, cd.sells ? C.DIM : C.AMBER, CW);
+      if (cd.corner) {
+        const col = zero ? C.RED : cd.sells ? C.AMBER : C.PHOS, sc = .75;
+        text(g, cd.corner, cx + CW - 3 - mcWidth(cd.corner) * sc, cy + 2, col, sc);
+      }
+    });
+    text(g, 'left: buy   right: sell', x + SX + 6, y + SY + SH - 10, C.DIM, .75);
+    let ky = y + SY;
+    [['Back', true], ['Previous', false], ['Next page', true]].forEach(([l, on]) => { key(g, x + KX, ky, l, on); ky += 24; });
+    [['Sell all', 0], ['Sell here', 1]].forEach(([l, i]) => key(g, x + KX, y + SY + SH - KH - i * 24, l, true));
+    fill(g, x + SX - 2, y + 178, x + W - SX + 2, y + 204, C.EDGE); fill(g, x + SX, y + 180, x + W - SX, y + 202, C.SCREEN);
+    text(g, 'open / shopping network', x + SX + 6, y + 187, C.DIM);
+    text(g, 'balance 31,420 pieces', x + W - SX - 6 - mcWidth('balance 31,420 pieces'), y + 187, C.DIM);
+    for (let ly = y + SY; ly < y + SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect((x + SX) * S, ly * S, SW * S, S); }
+  }
+  function tooltip(g, x, y, lines){
+    const w = Math.max(...lines.map(l => l ? mcWidth(l[0]) : 0)) + 6, h = lines.length * 10 + 2;
+    fill(g, x - 1, y, x + w + 1, y + h, 'rgba(16,0,16,0.94)'); fill(g, x, y - 1, x + w, y + h + 1, 'rgba(16,0,16,0.94)');
+    const grd = g.createLinearGradient(0, y * S, 0, (y + h) * S); grd.addColorStop(0, 'rgba(80,0,255,0.6)'); grd.addColorStop(1, 'rgba(40,0,127,0.6)');
+    g.fillStyle = grd; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    let ty = y + 3; lines.forEach((l, i) => { if (l) shadowText(g, l[0], x + 3, ty, l[1], l[2]); ty += i === 0 ? 12 : 10; });
+  }
+  const TIP = [['Machine Frame', MC.white], ['Mekanism', MC.blue, true], ['Sell: 2,500 pieces per lot (right click; shift for all)', MC.white],
+    ['Takes any Machine Frame, used or new (not damaged)', MC.gray], ['You can sell 2 more of 4', MC.gold], ['Refills every Monday at 00:00 (in 6d 23h)', MC.gray],
+    null, ['Used machines welcome; empty them first.', MC.amber]];
+  function draw(){
+    const cv = document.getElementById('plate'), g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
+    screen(g);
+    const cx = OX + SX + 6 + (HOVER % COLS) * (CW + GAP);
+    tooltip(g, Math.min(cx + 10, GW - 6 - (Math.max(...TIP.map(l => l ? mcWidth(l[0]) : 0)) + 6)), OY + 104, TIP);
+  }
+  draw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 })();
 </script>
-<div class="bsp-band"><b>BSP-Core</b> · A shop</div><div class="bsp-cap">Cards with the item, buy in gold, sell dim, a stock badge and a star for instant buy. Left click buys, right click sells.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelector('.screen')); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script>
+<div class="bsp-band"><b>BSP-Core</b> · A shop</div><div class="bsp-cap">What is left of a limit in each card's corner (green to buy, amber to sell, OUT or FULL at zero), cards that need a rank or hours of play, a note at the foot of the tooltip, and a search box for every section.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('plate')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

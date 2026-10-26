@@ -205,5 +205,5 @@ body > * { visibility: hidden; }
   </div>
 </section>
 </div>
-<div class="bsp-band"><b>BSP-Core</b> · The kit editor</div><div class="bsp-cap">The kit's slots, FROM HAND and FROM INVENTORY, an item browser with search and mod chips, and every rule as a row of chips.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelectorAll('.scr.v')[1]); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script></body>
+<div class="bsp-band"><b>BSP-Core</b> · The kit editor</div><div class="bsp-cap">The kit's slots, FROM HAND and FROM INVENTORY, an item browser with search and mod chips, and every rule as a row of chips.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelectorAll('.scr.v')[1]); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script></body>
 </html>

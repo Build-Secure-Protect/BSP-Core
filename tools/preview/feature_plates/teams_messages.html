@@ -160,5 +160,5 @@ body > * { visibility: hidden; }
 <li><b>Refined C:</b> the members view with totem counts and the hint line, the MESSAGES view with the badge on the key, as drawn. Default: yes.</li>
 </ol></div></section>
 
-</div><div class="bsp-band"><b>BSP-Core</b> · The team's board</div><div class="bsp-cap">The leader's pinned note on top, the last fifty lines with a mark on the ones new to you, and a line to type.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelectorAll('.screen')[1]); if (el) el.classList.add('bsp-target'); else document.title = 'NO TARGET'; }, 300);</script></body>
+</div><div class="bsp-band"><b>BSP-Core</b> · The team's board</div><div class="bsp-cap">The leader's pinned note on top, the last fifty lines with a mark on the ones new to you, and a line to type.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.querySelectorAll('.screen')[1]); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script></body>
 </html>

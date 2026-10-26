@@ -1,0 +1,137 @@
+<title>Shop Screen Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one canvas for the CurseForge shop picture: the looks picked for 1.6.0 on one shop screen at GUI pixel size (scaled 3x). */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:16px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:1000px; height:auto; image-rendering:pixelated; display:block; }
+</style>
+
+<div class="wrap">
+  <h1>Shop Screen Plate</h1>
+  <p class="lede">The shop screen for the CurseForge page, with the looks picked for 1.6.0 together: limit counts in the card corners (look A of shop_limit_concepts), locked cards with what they need (look C of locked_card_concepts), the search box in the header (look B of shop_search_concepts) and a card note at the foot of the tooltip (look B of card_note_concepts). Drawn for tools/gen_feature_plates.py.</p>
+  <div class="stage"><canvas id="plate" width="1260" height="720"></canvas></div>
+</div>
+<script>
+(function(){
+  const S = 3, GW = 420, GH = 240, OX = 24, OY = 10;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', CARD:'#0a1a10', CARD_SEL:'#0f2d1c', CARD_OUT:'#070d09', OUT_EDGE:'#1f6b43' };
+  const MC = { white:'#FFFFFF', gray:'#AAAAAA', gold:'#FFAA00', blue:'#5555FF', amber:'#F2B544' };
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, ';':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '[':4, ']':4, '/':5 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  function text(g, s, x, y, colour, scale, italic){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (italic ? 'italic ' : '') + (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    if (italic) g.transform(1, 0, -0.18, 1, 0, 0);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour; g.fillText(s, 0, 0); g.restore();
+    return target;
+  }
+  function shadowText(g, s, x, y, colour, italic){
+    const n = parseInt(colour.slice(1), 16);
+    text(g, s, x + 1, y + 1, 'rgb(' + (((n >> 16) & 255) >> 2) + ',' + (((n >> 8) & 255) >> 2) + ',' + ((n & 255) >> 2) + ')', 1, italic);
+    return text(g, s, x, y, colour, 1, italic);
+  }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+  function icon(g, x, y, base, light, dark, kind){
+    let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  function padlock(g, x, y, col){
+    fill(g, x + 1, y, x + 4, y + 1, col); fill(g, x, y + 1, x + 1, y + 3, col); fill(g, x + 4, y + 1, x + 5, y + 3, col);
+    fill(g, x - 1, y + 3, x + 6, y + 7, col);
+  }
+  // the cards: colours and pattern, the price line, the corner (count of a limit, OUT / FULL), a lock, and whether the shop buys it
+  const CARDS = [
+    {c:['#5b6f8a','#9fb6d6','#2c394a','casing'], line:'buy 9,000', corner:'3/4'},
+    {c:['#a83f3f','#f08a6a','#5a1e1e','frame'], line:'buy 48,000', lock:'Gold rank'},
+    {c:['#3f8a6a','#8ff0c4','#1e4a35','noise'], line:'buy 120,000', corner:'OUT'},
+    {c:['#7d8590','#aab2bc','#4b5159','frame'], line:'sell 2,500', corner:'2/4', sells:true},
+    {c:['#6a3f8a','#c48ff0','#351e4a','noise'], line:'buy 64,000', lock:'10 h play'},
+    {c:['#8a6a3f','#d6b88f','#4a351e','casing'], line:'buy 1,800', corner:'1/2'},
+    {c:['#3f6f8a','#8fd0f0','#1e384a','noise'], line:'sell 400', corner:'FULL', sells:true},
+    {c:['#4f8a3f','#a6f08f','#284a1e','casing'], line:'buy 12,000', corner:'4/4'}];
+  const HOVER = 3;
+  const W = 300, H = 216, SX = 10, SY = 10, SW = 206, SH = 160, KX = 226, KW = 64, KH = 20, COLS = 4, CW = 48, CH = 36, GAP = 1;
+  function key(g, x, y, label, on){ fill(g, x, y, x + KW, y + KH, C.KEY_EDGE); fill(g, x, y, x + KW, y + KH - 2, C.KEY); text(g, label, x + (KW - mcWidth(label)) / 2, y + 6, on ? C.KEY_TEXT : '#8f877a'); }
+  function small(g, s, x, y, colour, width){ const sc = Math.min(.75, (width - 4) / Math.max(1, mcWidth(s))); text(g, s, x, y, colour, sc); return mcWidth(s) * sc; }
+  function screen(g){
+    const grd = g.createLinearGradient(0, 0, 0, GH * S); grd.addColorStop(0, '#2b3442'); grd.addColorStop(1, '#151a22');
+    g.fillStyle = grd; g.fillRect(0, 0, GW * S, GH * S); g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 0, GW * S, GH * S);
+    const x = OX, y = OY;
+    fill(g, x, y, x + W, y + H, C.BEZEL_DARK); fill(g, x + 2, y + 2, x + W - 2, y + H - 2, C.BEZEL); fill(g, x + 2, y + 2, x + W - 2, y + 4, C.BEZEL_LIGHT);
+    fill(g, x + SX - 2, y + SY - 2, x + SX + SW + 2, y + SY + SH + 2, C.EDGE); fill(g, x + SX, y + SY, x + SX + SW, y + SY + SH, C.SCREEN);
+    // header: the shop, the page, and the search box (empty, with its hint)
+    text(g, '> MACHINES', x + SX + 6, y + SY + 6, C.PHOS);
+    const fx = x + SX + SW - 74;
+    fill(g, fx, y + SY + 3, fx + 68, y + SY + 14, C.DIM); fill(g, fx + 1, y + SY + 4, fx + 67, y + SY + 13, '#000000');
+    text(g, 'search...', fx + 3, y + SY + 6, '#555555');
+    text(g, 'page 1 / 3', fx - 5 - mcWidth('page 1 / 3') * .75, y + SY + 6, C.DIM, .75);
+    fill(g, x + SX + 4, y + SY + 16, x + SX + SW - 4, y + SY + 17, C.EDGE);
+    CARDS.forEach((cd, k) => {
+      const cx = x + SX + 6 + (k % COLS) * (CW + GAP), cy = y + SY + 22 + Math.floor(k / COLS) * (CH + GAP);
+      const zero = cd.corner === 'OUT' || cd.corner === 'FULL', dark = zero || !!cd.lock;
+      fill(g, cx, cy, cx + CW, cy + CH, dark ? C.CARD_OUT : k === HOVER ? C.CARD_SEL : C.CARD);
+      fill(g, cx, cy, cx + CW, cy + 1, dark ? C.OUT_EDGE : C.DIM); fill(g, cx, cy + CH - 1, cx + CW, cy + CH, dark ? C.OUT_EDGE : C.DIM);
+      g.globalAlpha = dark ? 0.42 : 1; icon(g, cx + CW / 2 - 8, cy + 3, cd.c[0], cd.c[1], cd.c[2], cd.c[3]); g.globalAlpha = 1;
+      if (cd.lock) {
+        small(g, cd.lock, cx + 2, cy + 21, C.AMBER, CW);
+        padlock(g, cx + CW - 8, cy + 2, '#8a8a8a');
+        return;
+      }
+      small(g, cd.line, cx + 2, cy + 21, cd.sells ? C.DIM : C.AMBER, CW);
+      if (cd.corner) {
+        const col = zero ? C.RED : cd.sells ? C.AMBER : C.PHOS, sc = .75;
+        text(g, cd.corner, cx + CW - 3 - mcWidth(cd.corner) * sc, cy + 2, col, sc);
+      }
+    });
+    text(g, 'left: buy   right: sell', x + SX + 6, y + SY + SH - 10, C.DIM, .75);
+    let ky = y + SY;
+    [['Back', true], ['Previous', false], ['Next page', true]].forEach(([l, on]) => { key(g, x + KX, ky, l, on); ky += 24; });
+    [['Sell all', 0], ['Sell here', 1]].forEach(([l, i]) => key(g, x + KX, y + SY + SH - KH - i * 24, l, true));
+    fill(g, x + SX - 2, y + 178, x + W - SX + 2, y + 204, C.EDGE); fill(g, x + SX, y + 180, x + W - SX, y + 202, C.SCREEN);
+    text(g, 'open / shopping network', x + SX + 6, y + 187, C.DIM);
+    text(g, 'balance 31,420 pieces', x + W - SX - 6 - mcWidth('balance 31,420 pieces'), y + 187, C.DIM);
+    for (let ly = y + SY; ly < y + SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect((x + SX) * S, ly * S, SW * S, S); }
+  }
+  function tooltip(g, x, y, lines){
+    const w = Math.max(...lines.map(l => l ? mcWidth(l[0]) : 0)) + 6, h = lines.length * 10 + 2;
+    fill(g, x - 1, y, x + w + 1, y + h, 'rgba(16,0,16,0.94)'); fill(g, x, y - 1, x + w, y + h + 1, 'rgba(16,0,16,0.94)');
+    const grd = g.createLinearGradient(0, y * S, 0, (y + h) * S); grd.addColorStop(0, 'rgba(80,0,255,0.6)'); grd.addColorStop(1, 'rgba(40,0,127,0.6)');
+    g.fillStyle = grd; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    let ty = y + 3; lines.forEach((l, i) => { if (l) shadowText(g, l[0], x + 3, ty, l[1], l[2]); ty += i === 0 ? 12 : 10; });
+  }
+  const TIP = [['Machine Frame', MC.white], ['Mekanism', MC.blue, true], ['Sell: 2,500 pieces per lot (right click; shift for all)', MC.white],
+    ['Takes any Machine Frame, used or new (not damaged)', MC.gray], ['You can sell 2 more of 4', MC.gold], ['Refills every Monday at 00:00 (in 6d 23h)', MC.gray],
+    null, ['Used machines welcome; empty them first.', MC.amber]];
+  function draw(){
+    const cv = document.getElementById('plate'), g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
+    screen(g);
+    const cx = OX + SX + 6 + (HOVER % COLS) * (CW + GAP);
+    tooltip(g, Math.min(cx + 10, GW - 6 - (Math.max(...TIP.map(l => l ? mcWidth(l[0]) : 0)) + 6)), OY + 104, TIP);
+  }
+  draw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
