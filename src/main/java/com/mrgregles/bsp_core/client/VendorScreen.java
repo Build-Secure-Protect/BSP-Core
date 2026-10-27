@@ -235,4 +235,10 @@ public class VendorScreen extends AbstractContainerScreen<VendorMenu> implements
     public int panelHeight() {
         return imageHeight;
     }
+
+    /** Drawn bigger than its own size where the window has room: the client setting shop.screenPercent. */
+    @Override
+    public float grow() {
+        return com.mrgregles.bsp_core.BSPClientConfig.shopScreenScale();
+    }
 }

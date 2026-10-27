@@ -40,6 +40,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
     private static final int SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3, CX = SX + 6, CY = SY + 22, CGAP = 1;
     private static final String[] STYLES = {"cash_machine", "passbook", "market_board"};
     private static final int LIST_ROWS = 7, LIST_Y = SY + 34, SIDE_Y = 38, SIDE_STEP = 11, SET_STEP = 9;
+    /** The item browser's cell step: seven 26-pixel cells a row, inside the screen. */
+    private static final int BCELL = 27;
     /** Shop list columns: name, kind, cards, network. */
     private static final int[] COL = {SX + 6, SX + 104, SX + 146, SX + 174};
 
@@ -257,7 +259,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             }
         } else if (view == View.BROWSER && menu.editable) {
             for (int k = browserPage * 28; k < Math.min(found.size(), (browserPage + 1) * 28); k++) {
-                int n = k - browserPage * 28, cx = x + SX + 8 + (n % 7) * 28, cy = y + SY + 36 + (n / 7) * 28;
+                int n = k - browserPage * 28, cx = x + SX + 8 + (n % 7) * BCELL, cy = y + SY + 36 + (n / 7) * BCELL;
                 if (over(mx, my, cx, cy, 26, 26)) {
                     send(Action.ADD_ITEM, String.valueOf(ForgeRegistries.ITEMS.getKey(found.get(k))), "", sel < 0 ? 999 : sel, 1);
                     setView(View.PAGE);
@@ -459,7 +461,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         super.render(g, mx, my, partial);
         if (view == View.BROWSER) {
             for (int k = browserPage * 28; k < Math.min(found.size(), (browserPage + 1) * 28); k++) {
-                int n = k - browserPage * 28, cx = leftPos + SX + 8 + (n % 7) * 28, cy = topPos + SY + 36 + (n / 7) * 28;
+                int n = k - browserPage * 28, cx = leftPos + SX + 8 + (n % 7) * BCELL, cy = topPos + SY + 36 + (n / 7) * BCELL;
                 if (over(mx, my, cx, cy, 26, 26)) {
                     g.renderTooltip(font, new ItemStack(found.get(k)), mx, my);
                 }
@@ -498,7 +500,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             }
         } else if (view == View.BROWSER) {
             for (int k = browserPage * 28; k < Math.min(found.size(), (browserPage + 1) * 28); k++) {
-                int n = k - browserPage * 28, cx = x + SX + 8 + (n % 7) * 28, cy = y + SY + 36 + (n / 7) * 28;
+                int n = k - browserPage * 28, cx = x + SX + 8 + (n % 7) * BCELL, cy = y + SY + 36 + (n / 7) * BCELL;
                 g.fill(cx, cy, cx + 26, cy + 26, over(mx, my, cx, cy, 26, 26) ? CARD_SEL : CARD);
                 g.renderItem(new ItemStack(found.get(k)), cx + 5, cy + 5);
             }
@@ -545,8 +547,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         CashMachine.clip(g, leftPos, topPos, SX, SY + 18, SW, SH - 18);
         switch (view) {
             case LIST -> {
-                if (menu.list.isEmpty()) {
-                    g.drawString(font, tr("no_shops"), SX + 8, SY + 24, PHOS_DIM, false);
+                if (menu.list.isEmpty()) { // on the first row, under the column headings
+                    g.drawString(font, tr("no_shops"), COL[0], LIST_Y, PHOS_DIM, false);
                 }
                 String[] heads = {"col_name", "col_kind", "col_cards", "col_net"};
                 for (int c = 0; c < heads.length; c++) {
@@ -563,7 +565,9 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                     g.drawString(font, e.remote() ? tr("col_net_on").getString() : "-", COL[3], ry, colour, false);
                 }
                 if (menu.editable) {
-                    CashMachine.wrap(g, font, tr("new_hint"), SX + 8, SY + SH - 56, SW - 16, PHOS_DIM);
+                    if (msgH == 0) { // a message takes the hint's place, above the id box, so it never covers the box
+                        CashMachine.wrap(g, font, tr("new_hint"), SX + 8, SY + SH - 56, SW - 16, PHOS_DIM);
+                    }
                     g.drawString(font, tr("id_label"), SX + 8, SY + SH - 30, AMBER, false);
                 }
             }
@@ -579,10 +583,16 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                             small(g, "hid", cx + cw() - 12, cy + 2, RED, 12);
                         }
                     }
-                    CashMachine.wrapUp(g, font, tr(all.size() > perPage() ? "more_pages" : "page_hint", all.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    if (msgH == 0) {
+                        CashMachine.wrapUp(g, font, tr(all.size() > perPage() ? "more_pages" : "page_hint", all.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    }
                 }
             }
-            case BROWSER -> CashMachine.wrapUp(g, font, tr("browser", found.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
+            case BROWSER -> {
+                if (msgH == 0) {
+                    CashMachine.wrapUp(g, font, tr("browser", found.size()), SX + 6, bottom, SW - 12, PHOS_DIM);
+                }
+            }
             case SETTINGS -> {
                 if (s != null) {
                     for (SetRow r : settingsRows(s)) {
@@ -592,7 +602,9 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                             line(g, SX + 8, SY + r.y(), tr("f_" + r.field()).getString(), r.value(), SW - 16);
                         }
                     }
-                    CashMachine.wrapUp(g, font, tr("settings_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    if (msgH == 0) { // a message (after every save) takes the hint's place, so neither climbs onto the last lines
+                        CashMachine.wrapUp(g, font, tr("settings_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    }
                 }
             }
             case STYLE -> {
@@ -605,12 +617,16 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                     String colsValue = s.columns == 0 ? tr("auto", cols()).getString() : String.valueOf(s.columns);
                     line(g, SX + 8, SY + 86, tr("f_columns").getString(), colsValue, SW - 16);
                     line(g, SX + 8, SY + 100, tr("f_rows").getString(), String.valueOf(s.rows()), SW - 16);
-                    CashMachine.wrapUp(g, font, tr("style_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    if (msgH == 0) {
+                        CashMachine.wrapUp(g, font, tr("style_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
+                    }
                 }
             }
         }
         g.disableScissor();
-        if (msgH > 0) {
+        if (msgH > 0 && view == View.LIST && menu.editable) { // in the list, just above the id box
+            CashMachine.wrapUp(g, font, message, SX + 8, SY + SH - 38, SW - 16, messageColour);
+        } else if (msgH > 0) {
             CashMachine.wrap(g, font, message, SX + 6, SY + SH - 4 - msgH, SW - 12, messageColour);
         }
         // the side panel: the selected card, on two tabs (its own rows, and its limits)
@@ -654,8 +670,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             g.renderItem(it.stack, PX + PW / 2 - 8, SY + 20);
             for (int i = 0; i < rows.length; i++) {
                 boolean editing = fieldName.equals("item." + rows[i][0]);
-                small(g, tr("f_" + rows[i][0]).getString(), PX + 3, SY + SIDE_Y + i * SIDE_STEP, editing ? AMBER : PHOS_DIM);
-                small(g, rows[i][1], PX + 3, SY + SIDE_Y + 6 + i * SIDE_STEP, PHOS);
+                small(g, tr("f_" + rows[i][0]).getString(), PX + 3, SY + SIDE_Y + i * SIDE_STEP, editing ? AMBER : PHOS_DIM, PW - 6);
+                small(g, cut(rows[i][1], PW - 6), PX + 3, SY + SIDE_Y + 6 + i * SIDE_STEP, PHOS, PW - 6); // a long section id or note is cut to the panel
             }
         } else if (view == View.PAGE) {
             CashMachine.wrap(g, font, tr("side_hint"), PX + 3, SY + 22, PW - 6, PHOS_DIM);
@@ -681,8 +697,10 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         small(g, label, x + (w - (int) Math.min(font.width(label) * 0.75f, w - 2)) / 2, SY + TAB_Y + 3, on ? SCREEN & 0xFFFFFF : PHOS_DIM, w - 2);
     }
 
-    private void small(GuiGraphics g, String s, int x, int y, int colour) {
-        small(g, s, x, y, colour, Integer.MAX_VALUE);
+    /** {@code s} cut with "…" to what fits {@code maxW} pixels in small (three-quarter) text. */
+    private String cut(String s, int maxW) {
+        int room = (int) (maxW / 0.75f);
+        return font.width(s) <= room ? s : font.plainSubstrByWidth(s, room - font.width("…")) + "…";
     }
 
     /** Small (three-quarter) text, shrunk further if it would be wider than {@code maxW}. */
@@ -737,5 +755,11 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
     @Override
     public int panelHeight() {
         return imageHeight;
+    }
+
+    /** Drawn bigger than its own size where the window has room: the client setting shop.screenPercent. */
+    @Override
+    public float grow() {
+        return com.mrgregles.bsp_core.BSPClientConfig.shopScreenScale();
     }
 }

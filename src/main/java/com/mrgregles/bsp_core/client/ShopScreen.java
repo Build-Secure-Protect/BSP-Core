@@ -298,7 +298,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                 }
                 return true;
             }
-            ky += KH + KGAP;
+            ky += KH + gap();
         }
         ky = y + SY + SH - KH;
         for (int i = bottom.size() - 1; i >= 0; i--) {
@@ -310,7 +310,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                 }
                 return true;
             }
-            ky -= KH + KGAP;
+            ky -= KH + gap();
         }
         if (view == View.PAGE && menu.open && searching()) {
             var page = resultPageEntries(results());
@@ -410,10 +410,12 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                 int cx = leftPos + CX + (k % menu.columns) * (cw() + CGAP), cy = topPos + CY + (k / menu.columns) * (ch() + CGAP);
                 if (over(mx, my, cx, cy, cw(), ch())) {
                     ShopMenu.Card c = menu.cards.get(k);
-                    List<Component> tip = new ArrayList<>(getTooltipFromItem(minecraft, c.stack()));
-                    if (!c.section().isEmpty()) {
-                        tip.add(tr("tip_section"));
+                    List<Component> tip = new ArrayList<>();
+                    if (!c.section().isEmpty()) { // a section card is named after its section, not the item on its face
+                        tip.add(c.sectionName().isEmpty() ? c.stack().getHoverName() : Component.literal(c.sectionName()));
+                        tip.add(tr("tip_section").withStyle(ChatFormatting.GRAY));
                     } else {
+                        tip.addAll(getTooltipFromItem(minecraft, c.stack()));
                         if (c.buy() >= 0) {
                             tip.add(tr(c.instant() ? "tip_buy_instant" : "tip_buy", Bank.format(c.buy()), unitName(c.currency())));
                         }
@@ -559,12 +561,12 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         int ky = y + SY;
         for (Key k : top) {
             key(g, x + KX, ky, k, mx, my);
-            ky += KH + KGAP;
+            ky += KH + gap();
         }
         ky = y + SY + SH - KH;
         for (int i = bottom.size() - 1; i >= 0; i--) {
             key(g, x + KX, ky, bottom.get(i), mx, my);
-            ky -= KH + KGAP;
+            ky -= KH + gap();
         }
         g.fill(x + SX - 2, y + STRIP_Y - 2, x + W - SX + 2, y + STRIP_Y + STRIP_H + 2, SCREEN_EDGE);
         g.fill(x + SX, y + STRIP_Y, x + W - SX, y + STRIP_Y + STRIP_H, SCREEN);
@@ -593,12 +595,12 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
         g.drawString(font, head, SX + 6, SY + 6, PHOS, false);
         g.drawString(font, right, SX + SW - 6 - boxW - font.width(right), SY + 6, menu.open ? PHOS_DIM : RED, false);
         if (!offer.isEmpty()) {
-            int ox = SX + SW - 6 - font.width(right) - offerW;
+            int ox = SX + SW - 6 - boxW - font.width(right) - offerW; // left of the page count, and of the search box when there is one
             g.fill(ox, SY + 4, ox + offerW - 4, SY + 15, AMBER | 0xFF000000);
             g.drawString(font, offer, ox + 3, SY + 6, SCREEN & 0xFFFFFF, false);
         }
         g.fill(SX + 4, SY + 16, SX + SW - 4, SY + 17, SCREEN_EDGE);
-        int msgH = CashMachine.height(font, message, SW - 12);
+        int msgH = Math.min(MESSAGE_LINES, CashMachine.lines(font, message, SW - 12).size()) * CashMachine.LINE;
         int bottom = SY + SH - (msgH > 0 ? msgH + 4 : 4);
         CashMachine.clip(g, leftPos, topPos, SX, SY + 18, SW, SH - 18);
         if (!menu.open) {
@@ -674,9 +676,22 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
             }
         }
         g.disableScissor();
-        if (msgH > 0) {
-            CashMachine.wrap(g, font, message, SX + 6, SY + SH - 4 - msgH, SW - 12, messageColour);
+        if (msgH > 0) { // at most three lines, so a long message never reaches the last row of cards
+            int ty = SY + SH - 4 - msgH;
+            for (var line : CashMachine.lines(font, message, SW - 12).subList(0, msgH / CashMachine.LINE)) {
+                g.drawString(font, line, SX + 6, ty, messageColour, false);
+                ty += CashMachine.LINE;
+            }
         }
+    }
+
+    /** The most lines a message takes at the foot of the screen. */
+    private static final int MESSAGE_LINES = 3;
+
+    /** The gap between keys: closed up when the column is full (an admin's two keys at a post or stall), so no two keys touch. */
+    private int gap() {
+        int n = top.size() + bottom.size();
+        return n * (KH + KGAP) - KGAP + 2 > SH ? 2 : KGAP;
     }
 
     /** Card size from the shop's layout: cards per row and rows per page. */
@@ -730,5 +745,11 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     @Override
     public int panelHeight() {
         return imageHeight;
+    }
+
+    /** Drawn bigger than its own size where the window has room: the client setting shop.screenPercent. */
+    @Override
+    public float grow() {
+        return com.mrgregles.bsp_core.BSPClientConfig.shopScreenScale();
     }
 }

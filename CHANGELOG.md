@@ -6,6 +6,21 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 Nothing yet.
 
+## [1.6.2] - 2026-10-26
+
+### Changed
+- **The shop screens are drawn 30% bigger** where the window has room: the shop, Sell here, the Shopping Network, the Workbench, and the vendor, stall and Stall Display settings. They still shrink to fit a small window. Each player can set the size in `config/bsp_core-client.toml`, `[shop] screenPercent` (100 to 200, default 130).
+
+### Fixed
+- The Workbench's "No shops yet." was drawn over the shop list's column headings; it sits on the first row.
+- The Workbench's item browser ran its last column past the screen onto the side panel.
+- A long section id or note on the Workbench's Card tab ran past the side panel into the keys; it is cut with "…".
+- A message under the Workbench's shop list (a bad id, say) covered the new-id box; it sits above the box. On every Workbench page, a message now takes the hint's place instead of pushing it up onto the last lines (the Settings of a rotating shop after each save).
+- A shop's special-offer badge sat on its page count when the shop also had a search box.
+- An admin's keys at a post or stall of a shop that buys (seven keys) touched; the gap closes up when the column is full.
+- A long trade message reached the last row of cards; messages take at most three lines, and the two longest ("Sold ... the shop takes no more of it", "Sold ... some items reached their sell limit") are shorter.
+- A section card's tooltip named the item on its face ("Stone Bricks") instead of the section it opens; it shows the section's name.
+
 ## [1.6.1] - 2026-10-26
 
 ### Fixed

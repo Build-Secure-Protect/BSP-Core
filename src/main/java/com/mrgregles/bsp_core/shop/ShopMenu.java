@@ -17,8 +17,8 @@ import java.util.List;
  * stall (the player stays within reach), from the Shopping Network (no position) or by command.
  */
 public class ShopMenu extends AbstractContainerMenu {
-    /** One card on the page as the client sees it: the buy side's stock limit and the sell side's limit as this player has them. */
-    public record Card(int index, ItemStack stack, long buy, long sell, int currency, Limit stock, Limit selling, boolean instant, String section, boolean anyData, List<String> note,
+    /** One card on the page as the client sees it: the buy side's stock limit and the sell side's limit as this player has them; a section card carries its section's name for the tooltip. */
+    public record Card(int index, ItemStack stack, long buy, long sell, int currency, Limit stock, Limit selling, boolean instant, String section, String sectionName, boolean anyData, List<String> note,
                        @Nullable Requirement.Lock lock) {}
 
     /**

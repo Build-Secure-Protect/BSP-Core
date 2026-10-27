@@ -1751,3 +1751,19 @@ BSP-Core's client mixin `ClientResetServerDataMixin` keeps the server's entry wh
 - [ ] No "Replay detected" message after any switch, and no new `REPLAY` folder.
 - [ ] LODs are written under `Distant_Horizons_server_data/BSP+Official/...` for each backend.
 - [ ] The client's `latest.log` has no mixin error naming `bsp_core.mixins.json`.
+
+## Shop screens at 130%, and their overlaps (2026-10-26)
+
+No GameTest can see a screen: everything here is for the client. The fixes were found by reading each screen's layout against its texts; none has been looked at in game yet.
+
+- [ ] Open a shop, the Sell here box, the Shopping Network, the Workbench, a vendor's, a stall's and a Stall Display's settings: each is about 30% bigger than before, centred, nothing cut off. Clicking keys, cards, list lines, slots and the text boxes hits what is under the mouse; dragging items in Sell here works.
+- [ ] In `config/bsp_core-client.toml`, set `[shop] screenPercent = 100`: the screens are their old size. Set 200 on a small window or a high GUI scale: they grow only as far as the window allows.
+- [ ] Workbench with no shops: "No shops yet." sits under the Name / Kind / Cards / Network headings, not on them.
+- [ ] Workbench item browser: all seven columns sit inside the left screen, clear of the side panel.
+- [ ] A card with a long section id or a long note: the Card tab shows it cut with "…", inside the side panel.
+- [ ] Type a bad id (or one already used) and press New shop: the red message sits above the ID box, which stays clear.
+- [ ] Settings of a rotating shop: change a line; the "Saved" message shows at the foot and the hint is gone until the next page, nothing written over the hours or the id.
+- [ ] A special-offer shop with more than a page of cards (search box showing): the SPECIAL OFFER badge sits left of the page count, clear of the box.
+- [ ] As an admin at a Market Stall of a shop that buys: seven keys, none touching.
+- [ ] Sell a capped card (Sold ... the shop takes no more): the message is three lines at most and clear of the last row of cards.
+- [ ] Hover a section card (one that shows "> open"): the tooltip starts with the section's name, then "Click to open this section"; not the item's name and mod.

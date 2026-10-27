@@ -115,7 +115,7 @@ public final class ShopOpener {
             boolean sells = it.sellable() && !shop.buyOnly;
             cards.add(new ShopMenu.Card(i, it.stack.copy(), it.buyable() ? Shops.price(shop, it, true, now) : -1, sells ? it.sell : -1, it.currency,
                     it.buyable() ? Shops.limit(server, shop, i, player.getUUID(), false, now) : ShopMenu.Limit.NONE,
-                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section, it.matchItem, List.copyOf(it.note), locks.get(i)));
+                    sells ? Shops.limit(server, shop, i, player.getUUID(), true, now) : ShopMenu.Limit.NONE, it.instant, it.section, sectionName(server, it.section), it.matchItem, List.copyOf(it.note), locks.get(i)));
         }
         StringBuilder path = new StringBuilder(shop.name);
         for (Shop p : Shops.parents(server, shop)) {
@@ -133,5 +133,11 @@ public final class ShopOpener {
         BSPNetwork.sendTo(player, new ShopDataPacket(shop.name, Shops.fit(path.toString(), 128), shop.kind, shop.buyOnly, open, admin, shop.offerActive(now) ? shop.offerPercent : 0, shop.offerEndMs, rotatesIn,
                 page, pages, columns, rows, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args,
                 open && ShopSearch.searchable(server, shop)));
+    }
+
+    /** The name a section card shows in its tooltip: its section's name, empty for a card that opens nothing or a section that is gone. */
+    public static String sectionName(net.minecraft.server.MinecraftServer server, String section) {
+        Shop s = section.isEmpty() ? null : Shops.ledger(server).shop(section);
+        return s == null ? "" : Shops.fit(s.name, Shop.NAME_MAX);
     }
 }

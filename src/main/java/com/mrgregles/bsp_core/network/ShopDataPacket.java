@@ -42,6 +42,7 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
             c.selling().write(buf);
             buf.writeBoolean(c.instant());
             buf.writeUtf(c.section(), 32);
+            buf.writeUtf(c.sectionName(), 64);
             buf.writeBoolean(c.anyData());
             buf.writeVarInt(c.note().size());
             c.note().forEach(l -> buf.writeUtf(l, 128));
@@ -75,7 +76,7 @@ public record ShopDataPacket(String name, String path, Shop.Kind kind, boolean b
         int n = buf.readVarInt();
         List<ShopMenu.Card> cards = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            cards.add(new ShopMenu.Card(buf.readVarInt(), buf.readItem(), buf.readLong(), buf.readLong(), buf.readVarInt() - 1, ShopMenu.Limit.read(buf), ShopMenu.Limit.read(buf), buf.readBoolean(), buf.readUtf(32), buf.readBoolean(), readNote(buf),
+            cards.add(new ShopMenu.Card(buf.readVarInt(), buf.readItem(), buf.readLong(), buf.readLong(), buf.readVarInt() - 1, ShopMenu.Limit.read(buf), ShopMenu.Limit.read(buf), buf.readBoolean(), buf.readUtf(32), buf.readUtf(64), buf.readBoolean(), readNote(buf),
                     buf.readBoolean() ? new com.mrgregles.bsp_core.shop.Requirement.Lock(buf.readBoolean(), buf.readUtf(128), buf.readVarInt(), buf.readVarLong(), buf.readUtf(64), false) : null));
         }
         boolean searchable = buf.readBoolean();

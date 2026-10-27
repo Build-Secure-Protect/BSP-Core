@@ -13,7 +13,8 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Shrinks a BSP screen when the window is smaller than its panel (a high GUI scale or a small window, down to Minecraft's
  * 320 x 240), so no button or line is cut off at the edge. The screen is laid out in a larger virtual size and drawn scaled
- * down; mouse positions are scaled up to match. Where the panel fits, nothing here does anything.
+ * down; mouse positions are scaled up to match. A screen may also ask to grow ({@link Fitted#grow}, the shop screens): it is
+ * then drawn that much bigger, as far as the window has room. Where the panel fits at its own size, nothing here does anything.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID, value = Dist.CLIENT)
 public final class ScreenFit {
@@ -24,20 +25,25 @@ public final class ScreenFit {
         int panelWidth();
 
         int panelHeight();
+
+        /** How much bigger than its own size the screen would like to be drawn (1 for its own size). */
+        default float grow() {
+            return 1f;
+        }
     }
 
     private static final int MARGIN = 4;
     /** The scale of the screen being drawn, for scissor rectangles (which ignore the pose). */
     private static float drawing = 1f;
 
-    /** The scale the screen is drawn at: 1 when its panel fits the window. */
+    /** The scale the screen is drawn at: its {@link Fitted#grow} where the window has room for it, smaller where it does not (1 when it fits at its own size and does not grow). */
     static float scale(Screen screen) {
         if (!(screen instanceof Fitted f)) {
             return 1f;
         }
         Window w = Minecraft.getInstance().getWindow();
         float s = Math.min((w.getGuiScaledWidth() - MARGIN) / (float) f.panelWidth(), (w.getGuiScaledHeight() - MARGIN) / (float) f.panelHeight());
-        return Math.max(0.5f, Math.min(1f, s));
+        return Math.max(0.5f, Math.min(Math.max(1f, f.grow()), s));
     }
 
     /** {@link GuiGraphics#enableScissor} for a rectangle in the screen's own (possibly scaled) coordinates. */
@@ -67,7 +73,7 @@ public final class ScreenFit {
         if (screen.width != Math.round(w.getGuiScaledWidth() / s) || screen.height != Math.round(w.getGuiScaledHeight() / s)) {
             screen.resize(Minecraft.getInstance(), w.getGuiScaledWidth(), w.getGuiScaledHeight()); // the panel changed size: lay out again
         }
-        if (s >= 1f) {
+        if (s == 1f) {
             return;
         }
         event.setCanceled(true);
@@ -86,7 +92,7 @@ public final class ScreenFit {
     @SubscribeEvent
     public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
         float s = scale(event.getScreen());
-        if (s < 1f) {
+        if (s != 1f) {
             event.setCanceled(true);
             event.getScreen().mouseClicked(event.getMouseX() / s, event.getMouseY() / s, event.getButton());
         }
@@ -95,7 +101,7 @@ public final class ScreenFit {
     @SubscribeEvent
     public static void onRelease(ScreenEvent.MouseButtonReleased.Pre event) {
         float s = scale(event.getScreen());
-        if (s < 1f) {
+        if (s != 1f) {
             event.setCanceled(true);
             event.getScreen().mouseReleased(event.getMouseX() / s, event.getMouseY() / s, event.getButton());
         }
@@ -104,7 +110,7 @@ public final class ScreenFit {
     @SubscribeEvent
     public static void onDrag(ScreenEvent.MouseDragged.Pre event) {
         float s = scale(event.getScreen());
-        if (s < 1f) {
+        if (s != 1f) {
             event.setCanceled(true);
             event.getScreen().mouseDragged(event.getMouseX() / s, event.getMouseY() / s, event.getMouseButton(), event.getDragX() / s, event.getDragY() / s);
         }
@@ -113,7 +119,7 @@ public final class ScreenFit {
     @SubscribeEvent
     public static void onScroll(ScreenEvent.MouseScrolled.Pre event) {
         float s = scale(event.getScreen());
-        if (s < 1f) {
+        if (s != 1f) {
             event.setCanceled(true);
             event.getScreen().mouseScrolled(event.getMouseX() / s, event.getMouseY() / s, event.getScrollDelta());
         }

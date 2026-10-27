@@ -1821,6 +1821,24 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void a_section_card_carries_its_sections_name_to_the_screen(GameTestHelper h) {
+        var server = server(h);
+        String tag = Long.toHexString(System.nanoTime());
+        var sub = com.mrgregles.bsp_core.shop.Shops.create(server, "woods_" + tag, "Woods and Planks", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        h.assertTrue(com.mrgregles.bsp_core.shop.ShopOpener.sectionName(server, sub.id).equals("Woods and Planks"), "a section card is named after its section");
+        h.assertTrue(com.mrgregles.bsp_core.shop.ShopOpener.sectionName(server, "").isEmpty(), "a card that opens nothing has no section name");
+        h.assertTrue(com.mrgregles.bsp_core.shop.ShopOpener.sectionName(server, "gone_" + tag).isEmpty(), "nor one whose section is gone");
+        var card = new com.mrgregles.bsp_core.shop.ShopMenu.Card(0, new ItemStack(net.minecraft.world.item.Items.OAK_PLANKS), -1, -1, -1, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, false, sub.id, "Woods and Planks", false, List.of(), null);
+        var packet = new com.mrgregles.bsp_core.network.ShopDataPacket("Decor", "Decor", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP, false, true, false, 0, 0, 0, 0, 1, 7, 3, 0, "", 0, List.of(card), "", new String[0], false);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.ShopDataPacket.encode(packet, buf);
+        var got = com.mrgregles.bsp_core.network.ShopDataPacket.decode(buf).cards().get(0);
+        h.assertTrue(got.section().equals(sub.id) && got.sectionName().equals("Woods and Planks"), "the section's name reaches the shop screen: " + got);
+        com.mrgregles.bsp_core.shop.Shops.delete(server, sub.id);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public void a_card_note_is_three_short_lines_that_never_reach_the_item(GameTestHelper h) {
         var server = server(h);
         var player = h.makeMockPlayer();
@@ -1838,7 +1856,7 @@ public class BspGameTests {
         int i = shop.add(it);
         com.mrgregles.bsp_core.shop.Shops.save(server, shop);
         h.assertTrue(com.mrgregles.bsp_core.shop.ShopItem.load(it.save()).note.equals(it.note), "the note is saved with the card");
-        var card = new com.mrgregles.bsp_core.shop.ShopMenu.Card(i, it.stack.copy(), 5, -1, -1, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, false, "", false, List.copyOf(it.note), null);
+        var card = new com.mrgregles.bsp_core.shop.ShopMenu.Card(i, it.stack.copy(), 5, -1, -1, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, com.mrgregles.bsp_core.shop.ShopMenu.Limit.NONE, false, "", "", false, List.copyOf(it.note), null);
         var packet = new com.mrgregles.bsp_core.network.ShopDataPacket("Noted", "Noted", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP, false, true, false, 0, 0, 0, 0, 1, 7, 3, 0, "", 0, List.of(card), "", new String[0], false);
         var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
         com.mrgregles.bsp_core.network.ShopDataPacket.encode(packet, buf);

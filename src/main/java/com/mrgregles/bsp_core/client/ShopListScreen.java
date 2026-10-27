@@ -110,4 +110,10 @@ public class ShopListScreen extends AbstractContainerScreen<ShopListMenu> implem
     public int panelHeight() {
         return imageHeight;
     }
+
+    /** Drawn bigger than its own size where the window has room: the client setting shop.screenPercent. */
+    @Override
+    public float grow() {
+        return com.mrgregles.bsp_core.BSPClientConfig.shopScreenScale();
+    }
 }
