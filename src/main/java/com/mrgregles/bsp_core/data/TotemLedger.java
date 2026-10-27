@@ -57,6 +57,17 @@ public class TotemLedger extends SavedData {
     private final Map<UUID, Sighting> totems = new HashMap<>();
 
     @Nullable
+    /** Totems owned by {@code owner} lying in the world on this server, seen within {@code maxAge} ticks (a dropped totem reports every second until it places itself). */
+    public int droppedFor(UUID owner, long now, long maxAge) {
+        int n = 0;
+        for (Sighting s : totems.values()) {
+            if (s.where() == DROPPED && owner.equals(s.holder()) && now - s.lastSeen() <= maxAge) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     public UUID currentInstance(UUID id) {
         Sighting s = totems.get(id);
         return s == null ? null : s.instance();

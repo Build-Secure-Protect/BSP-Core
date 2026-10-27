@@ -40,6 +40,7 @@ public class BSPCore {
         ModCreativeTabs.TABS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
         com.mrgregles.bsp_core.plasma.ModFluids.register(modEventBus);
+        com.mrgregles.bsp_core.material.MoltenMetals.register(modEventBus);
         com.mrgregles.bsp_core.registry.ModRecipes.SERIALIZERS.register(modEventBus);
         com.mrgregles.bsp_core.loot.AddItemLootModifier.SERIALIZERS.register(modEventBus);
 
@@ -53,6 +54,7 @@ public class BSPCore {
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(BSPNetwork::register);
         event.enqueueWork(com.mrgregles.bsp_core.chunk.ChunkLoading::init);
+        event.enqueueWork(com.mrgregles.bsp_core.material.MoltenMetals::setup);
         LOGGER.info("BSP Core loaded");
     }
 }

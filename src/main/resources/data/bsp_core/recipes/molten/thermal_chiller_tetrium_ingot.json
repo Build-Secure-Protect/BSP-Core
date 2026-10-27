@@ -1,0 +1,25 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "thermal_expansion"
+  }
+ ],
+ "type": "thermal:chiller",
+ "ingredients": [
+  {
+   "fluid": "bsp_core:molten_tetrium",
+   "amount": 90
+  },
+  {
+   "item": "thermal:chiller_ingot_cast"
+  }
+ ],
+ "result": [
+  {
+   "item": "bsp_core:tetrium_ingot",
+   "count": 1
+  }
+ ],
+ "energy": 4800
+}

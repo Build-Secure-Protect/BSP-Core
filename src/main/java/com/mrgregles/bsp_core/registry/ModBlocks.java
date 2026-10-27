@@ -131,6 +131,20 @@ public final class ModBlocks {
     public static final RegistryObject<Block> REFINERY_PUMP = BLOCKS.register("refinery_pump", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
     public static final RegistryObject<Block> ITEM_HATCH = BLOCKS.register("item_hatch", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
 
+    // --- Totem Forge: 2 by 2 by 3 around a hollow (TotemForgeBlockEntity has the layout)
+    public static final RegistryObject<MachineBlock> TOTEM_FORGE =
+            BLOCKS.register("totem_forge", () -> new MachineBlock(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity::new));
+    /** Takes the ingots and molten metal. */
+    public static final RegistryObject<Block> METAL_INTAKE = BLOCKS.register("metal_intake", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
+    /** Burns lava; takes lava and RF. */
+    public static final RegistryObject<Block> FORGE_HEARTH = BLOCKS.register("forge_hearth", com.mrgregles.bsp_core.machine.MachinePortBlock::new);
+    public static final RegistryObject<Block> MELT_TANK = BLOCKS.register("melt_tank", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(4.0F, 8.0F).sound(SoundType.METAL).lightLevel(s -> 7).noOcclusion()));
+    public static final RegistryObject<Block> POUR_HEAD = BLOCKS.register("pour_head", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(4.0F, 8.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> FORGE_CAP = BLOCKS.register("forge_cap", () -> new com.mrgregles.bsp_core.machine.StructurePartBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(4.0F, 8.0F).sound(SoundType.METAL).noOcclusion()));
+
     // --- ores: they drop themselves, because the ore block is what the crucibles take
     public static final RegistryObject<Block> TETRIUM_ORE = ore("tetrium_ore", MapColor.STONE, 3.0F, SoundType.STONE);
     public static final RegistryObject<Block> DEEPSLATE_TETRIUM_ORE = ore("deepslate_tetrium_ore", MapColor.DEEPSLATE, 4.5F, SoundType.DEEPSLATE);

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SVS",
+    "TMT"
+  ],
+  "key": {
+    "S": {
+      "item": "bsp_core:mould_shell"
+    },
+    "V": {
+      "tag": "forge:ingots/vibranium"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "M": {
+      "item": "bsp_core:magnet_core"
+    }
+  },
+  "result": {
+    "item": "bsp_core:foot_mould"
+  }
+}

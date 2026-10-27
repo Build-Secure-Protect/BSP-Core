@@ -1,0 +1,338 @@
+<title>Totem Forge Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages. Four numbered features, each a section: the three looks side by side,
+   then the shared numbers (parity table, recipes, metal bill). The in-game screen keeps the Holo HUD colours in both themes. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --gold:#e3b341; --warn:#ff8a5c;
+  --h-bg:#10151c; --h-fg:#e8eaf0; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-ok:#8fe04a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --gold:#9a6f12; --warn:#b4471d; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --gold:#9a6f12; --warn:#b4471d; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1000px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); display:flex; flex-direction:column; gap:34px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.view{ width:100%; max-width:100%; aspect-ratio:3/4; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.big{ aspect-ratio:4/3; } .view canvas{ display:block; width:100%!important; height:100%!important; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); } .t td.num, .t th.num{ text-align:right; font-variant-numeric:tabular-nums; } .t tfoot td{ font-weight:600; border-bottom:none; }
+.t .no{ color:var(--warn); } .t .yes{ color:var(--tq); }
+button:focus-visible, input:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--bg); padding-block:8px; border-bottom:1px solid var(--line); }
+.ctl label{ display:flex; gap:8px; align-items:center; } .ctl input[type=range]{ accent-color:var(--tq); width:min(320px,60vw); }
+.btn{ font:600 12px var(--body); color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:5px 12px; cursor:pointer; } .btn[aria-pressed="true"]{ border-color:var(--tq); color:var(--tq); }
+#stage{ font-variant-numeric:tabular-nums; color:var(--gold); min-width:0; flex:1 1 260px; }
+.tiles{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; } .tiles figure{ margin:0; display:flex; flex-direction:column; gap:4px; align-items:center; font-size:11px; color:var(--muted); text-align:center; }
+.tiles canvas{ image-rendering:pixelated; width:64px; height:64px; background:#0c0e12; border:1px solid var(--line); } .tiles canvas.it{ width:48px; height:48px; }
+.facts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; } .facts ul{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:4px; } .facts b{ color:var(--fg); font-weight:600; }
+/* recipes */
+.recipes{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.rc{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.rc .top{ display:flex; gap:10px; align-items:center; } .cg{ display:grid; grid-template-columns:repeat(3,30px); gap:2px; } .arrow{ color:var(--muted); font-size:18px; }
+.cs{ width:30px; height:30px; box-sizing:border-box; background:#0c0e12; border:2px solid #3a3f4b; display:grid; place-items:center; position:relative; }
+.cs img, .cs canvas{ width:22px; height:22px; image-rendering:pixelated; } .cs .chip{ width:22px; height:22px; display:grid; place-items:center; font:700 9px var(--body); color:#fff; text-shadow:1px 1px 0 #000; border-radius:2px; }
+.cs b{ position:absolute; right:1px; bottom:-3px; font:400 10px var(--display); color:#fff; text-shadow:1px 1px 0 #000; }
+.rc h3{ font-size:12px; } .rc p{ margin:0; font-size:12px; color:var(--muted); }
+.sum{ font-size:13px; color:var(--muted); margin:0; max-width:90ch; } .sum b{ color:var(--fg); }
+.chk{ display:flex; gap:8px; align-items:center; font-size:13px; cursor:pointer; } .chk input{ accent-color:var(--tq); }
+.hotbar{ display:flex; flex-wrap:wrap; gap:6px; } .hotbar figure{ margin:0; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--muted); width:56px; text-align:center; }
+.hs{ width:56px; height:56px; box-sizing:border-box; background:#4a4e57; border:3px solid; border-color:#24272d #9aa0ab #9aa0ab #24272d; display:grid; place-items:center; } .hs canvas{ width:48px; height:48px; }
+.hud img.coin{ width:14px; height:14px; image-rendering:pixelated; vertical-align:-3px; }
+/* in-game screen */
+.hud{ width:668px; box-sizing:border-box; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--c,var(--h-gold)); padding:14px; font-family:var(--display); font-size:11px; display:flex; flex-direction:column; gap:12px; margin:0 auto; }
+.hud small{ color:var(--h-muted); font-size:10px; } .hud .hd{ display:flex; justify-content:space-between; gap:12px; color:var(--c,var(--h-gold)); font-size:12px; flex-wrap:wrap; }
+.hb{ font:inherit; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:5px 10px; cursor:pointer; } .hb.go{ border-color:var(--h-gold); color:var(--h-gold); } .hb[disabled]{ color:var(--h-dim); border-color:var(--h-dim); cursor:not-allowed; }
+.hrow{ display:flex; gap:14px; } .hcol{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.ms{ display:grid; grid-template-columns:repeat(4,52px); gap:4px; } .msl{ height:52px; background:var(--h-slot); border:2px solid var(--h-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:8px; color:var(--h-muted); text-align:center; } .msl.in{ border-color:var(--h-gold); color:var(--h-fg); } .msl canvas{ width:28px; height:28px; }
+.gauges{ display:flex; gap:6px; align-items:flex-end; } .g{ display:flex; flex-direction:column; align-items:center; gap:3px; width:34px; } .g .tube{ width:16px; height:96px; background:var(--h-slot); border:2px solid var(--h-dim); display:flex; align-items:flex-end; } .g .tube i{ display:block; width:100%; } .g img, .g .chip{ width:16px; height:16px; image-rendering:pixelated; } .g small{ font-size:8px; }
+.g .chip{ display:grid; place-items:center; font:700 7px var(--body); color:#fff; border-radius:2px; }
+.bar{ height:10px; background:var(--h-dim); } .bar i{ display:block; height:100%; background:var(--h-gold); }
+.hmsg{ color:var(--h-muted); line-height:1.6; } .hmsg.bad{ color:var(--h-bad); }
+.seg{ display:flex; gap:8px; flex-wrap:wrap; }
+</style>
+
+<div class="wrap">
+<section><h1>Totem Forge Concepts</h1>
+<p class="lede">Two pieces of work that meet in one machine. Section 1 gives BSP-Core's metals molten forms that Tinkers, Mekanism, AE2 and the rest can pump and store, without letting any other mod turn ore into more metal than BSP's own machines do. Sections 2 to 5 are the Totem Forge: a 2 by 2 by 3 multiblock that melts a large bill of metals and pours them into an eight-piece mould around a Totem Core, then lets the totem set: 5 days for a player who owns no totem, or 15 days after paying Shatter Coins for a player who already owns one. Nothing here is in the mod yet.</p></section>
+
+<section><h2>1. Molten metals</h2>
+<p class="lede">Three looks for the three molten metals, animated as they would flow in a tank or a smeltery, with each one's bucket. Only Tetrium, Illyrium and Magnatite get a fluid; Allthemodium and the others the forge takes as ingots.</p>
+<div class="grid3" id="fluids"></div>
+<div class="card"><h3>Same metal in, same metal out</h3>
+<p>Every number here is 90 mB to an ingot and 10 mB to a nugget, Tinkers' own scale. Ore melts to exactly the nuggets a BSP machine makes from it, in the same time, and the by-products (slag, Carbon Dust) only come from the BSP machine, so the BSP route stays the better one.</p>
+<div class="scroll"><table class="t" id="parity"><thead><tr><th>Put in</th><th>BSP machine gives</th><th>Tinkers melter or smeltery gives</th><th>Why</th></tr></thead><tbody></tbody></table></div></div>
+<div class="facts">
+ <div class="card"><h4>What other mods can do with them</h4><ul>
+  <li><b>Tinkers' Construct:</b> melt and cast as in the table. Casting a nugget or an ingot gives back exactly what went in.</li>
+  <li><b>Mekanism, AE2, Refined Storage, Thermal, Ender IO, Create, Pipez:</b> pump, pipe and store the fluids. None of them gets a recipe that makes or multiplies the metal.</li>
+  <li><b>Totem Forge:</b> takes the fluids straight from a pipe, so a player can melt in a smeltery and pump in.</li></ul></div>
+ <div class="card"><h4>What stays closed</h4><ul>
+  <li>No item tags such as <code>forge:ingots/tetrium</code> or <code>forge:ores/illyrium</code>. JAOPCA, Almost Unified, Mekanism and Thermal build ore doubling from those, so they stay off as they are today.</li>
+  <li>Only fluid tags (<code>forge:molten_tetrium</code> and so on), which Tinkers needs for casting.</li>
+  <li>The Tinkers recipes are plain melting recipes, not ore melting, so the smeltery's ore bonus and the foundry's by-products never apply.</li></ul></div>
+</div>
+</section>
+
+<section><h2>2. The Totem Forge (look A)</h2>
+<p class="lede">The Hearth and Crucible look, with its working parts. Eight part blocks in two layers of four: the bottom holds the Forge Controller, the Metal Intake and two Forge Hearths, the top two Melt Tanks, the Pour Head and the Forge Cap. The middle layer is the hollow where the mould stands at the totem's real size. Move the slider or press Play to place the eight pieces, pour and let the totem set. Drag the view to turn it.</p>
+<div class="ctl"><label for="prog">Progress <input type="range" id="prog" min="0" max="100" value="58"></label><button class="btn" id="play" type="button" aria-pressed="false">Play</button><label for="owns"><input type="checkbox" id="owns"> The player pouring already owns a totem</label><span id="stage"></span></div>
+<div class="card"><div id="forgeView"></div>
+<label class="chk" for="hook"><input type="checkbox" id="hook" checked> Show a chest, a tank of Molten Tetrium and a battery plugged in</label></div>
+<div class="facts">
+ <div class="card"><h4>Where things go in</h4><ul>
+  <li><b>Items (left side):</b> the Metal Intake's hatch, ringed in blue. Ingots from a hopper, a pipe or by hand.</li>
+  <li><b>Fluids (left side):</b> the flange with the turquoise ring and a red valve wheel. Molten metal from any pipe or tank.</li>
+  <li><b>Power (right side):</b> the gold socket wound with copper. RF from any cable; it speeds melting like the RF upgrades do on the other machines.</li>
+  <li><b>Mould pieces:</b> right-click the hollow with a piece in hand; it appears in place.</li></ul></div>
+ <div class="card"><h4>What you can read from outside</h4><ul>
+  <li><b>Front panel:</b> the screen, three lamps (mould complete, tanks full, owner check) and the red POUR button under a clear flip cover, with a lever beside it to lock the forge.</li>
+  <li><b>Tanks:</b> a window on the front and the left of the top layer, and glow strips up the front pillars.</li>
+  <li><b>Pipes:</b> the feed pipe climbs the back left corner from the intake to the tanks, with a pressure dial; the hot line up the back right glows as high as the metal stands.</li>
+  <li><b>Pour Head:</b> a nozzle under the top layer and a hand wheel on its front. The chimney smokes while the hearths burn.</li></ul></div>
+</div>
+</section>
+
+<section><h2>3. The Totem Mould</h2>
+<p class="lede">Each mould piece is an item drawn like the totem in your hotbar: the whole totem, with the piece it moulds picked out and the rest of the figure left translucent. Three ways to pick it out, each shown in hotbar slots.</p>
+<div class="grid3" id="moulds"></div>
+</section>
+
+<section><h2>4. Recipes</h2>
+<p class="lede">One draft set, built on what the pack already gates late: Illyrium, Charged Magnatite, the Allthemodium metals, Nether Stars and Totems of Undying. Hover a cell to see its name.</p>
+<h3>The forge's part blocks</h3><div class="recipes" id="r-forge"></div>
+<h3>The mould and the core</h3><div class="recipes" id="r-mould"></div>
+<p class="sum" id="mouldsum"></p>
+<h3>The metal bill for one totem</h3>
+<p class="sum">Three sizes for what the tanks must hold before the forge will pour. Minutes per ingot are one player's time with hand mining and one set of BSP machines (from the balance report and the spawn shop prices); quarries and Digital Miners cut the mining part to about a sixth.</p>
+<div class="scroll"><table class="t" id="bill"><thead><tr><th>Metal</th><th class="num">Minutes per ingot</th><th class="num">Light</th><th class="num">Standard</th><th class="num">Heavy</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+</section>
+
+<section><h2>5. The forge screen (one draft)</h2>
+<p class="lede">Right-click the controller. The mould slots fill as pieces go into the chamber and each tube is one metal of the Standard bill. When every tube is full, a player with no totem pours free and the totem sets in 5 days; a player who owns one pays Shatter Coins first and it sets in 15 days.</p>
+<div class="seg" role="group" aria-label="Screen state"><button class="btn" type="button" data-s="melt" aria-pressed="true">Melting</button><button class="btn" type="button" data-s="free" aria-pressed="false">Ready, you own no totem</button><button class="btn" type="button" data-s="pay" aria-pressed="false">Ready, you own a totem</button><button class="btn" type="button" data-s="set" aria-pressed="false">Setting</button></div>
+<div class="scroll"><div class="hud" id="hud"></div></div>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const TEX={"tetrium_plate": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA30lEQVR42t2SWQ6CMBRFWY9bcAMOIOCwARScwHEvqBGHKA6o0R+X47eJq3j2PuOfVuKfNmn60vae3ttWUf6rJRMOxelvxefgGqu/hDwBtwtRXZuTZ26ond9RVZ1SJTOiRm7BaxilACvls6BlbgUgEoAJ9YpHstI+193CQQ7ol04sBKRT2JOdHbMTz1iTkw3YmRSAjeX0gGN0hLCpL4WbiBz1IUYtBbh6yGJkhZuauAPEsYUjwODi4yWyUJtxFNdYCUdDzo81QKQAnIwIbbYf8itgDicDiIjSv/D1R/rddgchXhDpwa705QAAAABJRU5ErkJggg==", "slag_brick": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAmklEQVR42mNgGDJATkr5//8uq/9kaQJhb6eg/2XZ9f/tzFz+E9QEwzBNIANANIyNYQjMJmRNhDDcEJhmfIqR5bvqJ4MxyCKwITBbYYqwGQbTBNMI84aokBTCAGRDsGkCaYBhWMBiGADC2GzChrVU9BEGgARgBiCHND6NYM3IsQAzBBbCuDShaESPSpBimAuI0oQOYGmBJE0DDgBe0A5F55w5cQAAAABJRU5ErkJggg==", "tetrium_ingot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAj0lEQVR42mNgGDLAXD3+PwiTpQmE61O2gbGrUfF/kjQdWP0GBWM1hJAmvIaANL2885+gJhgGqYWpBxsCsxWfITBNyBpBelQknBEGoBuCrinEtg2sEYRBbKwGwAzBpgmGkdXCDYCZCAtAfBpBciCNYM3IsQAzBJtzkTWhaESPSpghINpEJZqwJlyJiCRNAw4AK1NWAOZQyGEAAAAASUVORK5CYII=", "illyrium_ingot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkElEQVR42mNgGDKAqznvPwiTpQmELe/vB2O+uS3/SdK0+P9rFIzVEEKa8BoC0vT+/2+CmmAYpBamHmwIzFZ8hsA0IWsE6WHzc0EYgG4IuiahzVPBGkEYxMZqAMwQbJpgGFkt3ACYibAAxKcRJAfSCNaMHAswQ7A5F1kTikb0qIQZAqI5qzMIa8KViEjSNOAAAHxCcxo82HPyAAAAAElFTkSuQmCC", "illyrium_nugget": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAV0lEQVR42mNgGAW0A1z12f9BmGzN/f+f/z/y/9N/mEFEGwZSCNL4/v9vMAaxg16eBmM2P5f/RBkA0wjTLLJzFhgTbcCU/y/AXgBhkCYYJjoMyNI0CsgHAJkCWDFWyVh9AAAAAElFTkSuQmCC", "illyrium_processor": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAiElEQVR42mNgGD5AVEHmPykYqwHv///+L3l5w399b8f/Bj5O/3Xdbf/rutn+1/dyAPNBciA1OA0AKQBhHkExrBgmj9MAkE0wA2CKkQ0F0QZA1+E0ACRJyAA9T3s8LiDCAFBY4DQAZDohA0DepF0gwqIRFH0g14CiUMfNBsyGBTDeaKQoIQ1dAACn19wVFfeGBgAAAABJRU5ErkJggg==", "magnatite_ingot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAj0lEQVR42mNgGDJAQVX3PwiTpQmEnX3jwFhD1/w/SZpSqheiYKyGENKE1xCQpvrN/wlqgmGQWph6sCEwW/EZAtOErBGkR0hMBmEAuiHomvRNHcEaQRjExmoAzBBsmmAYWS3cAJiJsADEpxEkB9II1owcCzBDsDkXWROKRvSohBkCouWUtAlrwpWISNI04AAAKoYMN5QcrGYAAAAASUVORK5CYII=", "charged_magnatite_ingot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAArklEQVR42mNgGDJAy7nkPwiTpQmEEyfe/Q8CpqET/xOtCQYWn0FgrIag24SsAVkjjA1SAzcEpOnFF1QFMDa67SCMrBZsCMypIAlkA9ANBMnD1IA0glwhpe4AMQDEAWFkQ2AaYGL2aavg/gexYYGKYgBMEFkTSAMyRlYHdwEMwAIQZhM2jSBDQRrBmmEApAHmLHSbYU4HaYDbiiv+kf0GU4xhGz4A0gTzEtGaBhwAABBPif9v8+uUAAAAAElFTkSuQmCC", "magnet_core": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAS0lEQVR42mNgGDSga8Kc/yBMtjpkCUtH///YMFEW+ddf+I8P43UeyBaQovrN/7FikBzMJQQNePEFFY9EA8gKRIqikeKERHFSHjAAAOUhHKzzQrWkAAAAAElFTkSuQmCC", "copper_tetrium_coil": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAARElEQVR42mNgGF6g30vpPwgTYuM04MXSrP8nqmz+E2IPQgPqN///b+noTxIG6aGeATAAcibMqfjYOMNg4A2gOCENTQAAtpnBWw/IezkAAAAASUVORK5CYII=", "charged_resonance_crystal": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAi0lEQVR42mNgGBJALHLuf3RMkuZDz/+jYG6bqv9Eaw7dhdD44df//zWniDQAZjPIABCGadasP0HYAJBmkGKYASA2SAykmaABMGfDDIDZCjOAKM0wA0DOhmkE0QQ1w5wIwjDnE2UzCIAUwBSDNMJogjYjGwDDyAYRHefImkE0Uc7GZQgs0ChK93TLaAAMwN9zk1N0dQAAAABJRU5ErkJggg==", "illyrium_core": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAfklEQVR42mPomjDnPyWYAUTIKWmThXEawN1fgRUTZQCyBsnLG/73/H+G0xAMA2CKQJpgmpFpdENQDMCm+f3/32CMyxCsBqBrRjcErwG4NGMzBKsBMGfiMgDZGwTDAJ9mosIA2RDkgMVpAC5DcGkmKiGhO5tgQqJKUiYrM1GCATwtXCnZbc9FAAAAAElFTkSuQmCC", "illyrium_shatter_coin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmnv+P0PBkpc3gDHMAAxD8Gnm7q+AG4BsSNeEOf8xDMBmM7oBIAzSDDcAl+24NCMbADYEmwEwzWQZgK4YnxcwDMBmGzbXoBiAHA64NOMNRJgBsOghZACG7TCAnEhweQWnZnRDkBViw3jzA0Wa8RmESx0AsTo6iVRgTJ4AAAAASUVORK5CYII="};
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el=id=>document.getElementById(id);
+  const clamp=v=>Math.max(0,Math.min(1,v));
+  const hex=c=>[(c>>16)&255,(c>>8)&255,c&255];
+  const mix=(a,b,k)=>{ const A=hex(a),B=hex(b); return (Math.round(A[0]+(B[0]-A[0])*k)<<16)|(Math.round(A[1]+(B[1]-A[1])*k)<<8)|Math.round(A[2]+(B[2]-A[2])*k); };
+  function hsh(x,y,s){ let h=(x*374761393+y*668265263+s*2147483647)>>>0; h=Math.imul(h^(h>>>13),1274126177)>>>0; return ((h^(h>>>16))>>>0)/4294967296; }
+  function vn(x,y,s){ const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,w=v=>((v%4)+4)%4, sm=v=>v*v*(3-2*v);
+    const a=hsh(w(xi),w(yi),s),b=hsh(w(xi+1),w(yi),s),c=hsh(w(xi),w(yi+1),s),d=hsh(w(xi+1),w(yi+1),s), u=sm(fx), v=sm(fy); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+  function paint(c,px){ const k=c.getContext('2d'), d=k.createImageData(16,16); for(let y=0;y<16;y++) for(let x=0;x<16;x++){ const p=px(x,y), i=(y*16+x)*4; if(p==null) continue; const q=hex(p); d.data[i]=q[0]; d.data[i+1]=q[1]; d.data[i+2]=q[2]; d.data[i+3]=255; } k.putImageData(d,0,0); }
+  const cv=cls=>{ const c=document.createElement('canvas'); c.width=c.height=16; if(cls) c.className=cls; return c; };
+
+  // ------------------------------------------------------------------ 1. molten metals
+  const METAL=[{n:'Molten Tetrium',d:0x3b2a63,m:0x7f64b6,h:0xc0abec,w:0xf3ecff},{n:'Molten Illyrium',d:0x0f5e52,m:0x39dfbf,h:0xa3ffeb,w:0xeafffb},{n:'Molten Magnatite',d:0x1c2029,m:0x434d5e,h:0x647ba1,w:0x9ec4ff}];
+  const LOOKS=[
+   {n:'A. Bright Melt (picked)',t:'Smooth glowing bands that flow downward, brightest where they fold. Reads as hot liquid metal at a glance, the way Tinkers\' own molten metals look.',
+    px:(P,x,y,t)=>{ const v=vn(x/4,(y+t*5)/4,1)*.7+vn(x/2,(y+t*9)/2,2)*.3; return v>.78?P.w:v>.55?mix(P.m,P.h,(v-.55)/.23):mix(P.d,P.m,v/.55); }},
+   {n:'B. Crusted Flow',t:'Dark cooled plates drifting on a bright core that shows through the cracks. Heavier and more dangerous; the cracks carry the metal\'s colour so each one stays recognisable.',
+    px:(P,x,y,t)=>{ const yy=y+t*2, cx=Math.floor((x+vn(x/3,yy/3,4)*2)/4), cy=Math.floor((yy+vn(yy/3,x/3,5)*2)/4), fx=((x+vn(x/3,yy/3,4)*2)%4+4)%4, fy=((yy+vn(yy/3,x/3,5)*2)%4+4)%4;
+      if(fx<.9||fy<.9) return vn(x/2,(y+t*6)/2,6)>.5?P.w:P.h; return mix(P.d,P.m,hsh(cx&3,cy&3,7)*.6); }},
+   {n:'C. Starlit',t:'A deep, slowly swirling pool with sparks that wink in and out. The most magical of the three, and it suits the totem being half magic, half machine.',
+    px:(P,x,y,t)=>{ if(hsh(x,y,Math.floor(t*3))>.965) return P.w; const v=vn((x+Math.sin((y+t*2)/3)*1.5)/4,(y+t)/4,8); return v>.7?P.h:mix(P.d,P.m,v/.7); }}];
+  function bucket(c,P){ paint(c,(x,y)=>{ const l=5-((y-4)>>2), r=10+((y-4)>>2); if(y<3||y>14) return null; if(y===3) return x>=4&&x<=11?0x6b6f78:null;
+      if(y===4||y===5){ if(x<3||x>12) return null; return x===3||x===12?0x8d929c:(y===4?P.h:P.m); } const L=3+((y-5)>>2), R=12-((y-5)>>2); if(x<L||x>R) return null; return x===L?0xc9ced8:x===R?0x5f646e:(y===14?0x6b6f78:0x9a9ea8); }); }
+  const animTiles=[];
+  LOOKS.forEach(L=>{ const card=document.createElement('div'); card.className='card'; card.innerHTML='<h3>'+L.n+'</h3>'; const row=document.createElement('div'); row.className='tiles';
+    METAL.forEach(P=>{ const f=document.createElement('figure'), c=cv(); f.appendChild(c); const b=cv('it'); bucket(b,P); f.appendChild(b); const cap=document.createElement('figcaption'); cap.textContent=P.n; f.appendChild(cap); row.appendChild(f); animTiles.push([c,P,L]); });
+    card.appendChild(row); const p=document.createElement('p'); p.textContent=L.t; card.appendChild(p); el('fluids').appendChild(card); });
+  const drawTiles=t=>animTiles.forEach(([c,P,L])=>paint(c,(x,y)=>L.px(P,x,y,t)));
+  drawTiles(1.5); if(!reduce){ const t0=performance.now(); setInterval(()=>drawTiles((performance.now()-t0)/1000),110); }
+  const PARITY=[
+   ['Raw Tetrium or Tetrium Ore','2 nuggets and 1 Tetrium Slag, 15 s (Tetrium Crucible)','<span class="yes">20 mB</span> (2 nuggets), 15 s, no slag','Same metal; slag for Illyrium still needs the crucible'],
+   ['Tetrium Nugget, Ingot','','<span class="yes">10 mB, 90 mB</span>','Storage form; casts back one for one'],
+   ['Raw Magnatite or Magnatite Ore','3 nuggets and 1 Carbon Dust, 30 s (Magnetic Centrifuge)','<span class="yes">30 mB</span> (3 nuggets), 30 s, no dust','Same metal; Carbon Dust still needs the centrifuge'],
+   ['Magnatite Nugget, Ingot','','<span class="yes">10 mB, 90 mB</span>','Storage form'],
+   ['Charged Magnatite Ingot','','<span class="no">does not melt</span>','The charge only comes from the centrifuge, and melting would throw it away'],
+   ['Raw Illyrium or Illyrium Ore','About 1 nugget per ore, through the Illyrium Crucible, Refinery and 4.5 Tetrium Ore','<span class="no">does not melt</span>','Any melt would skip the refinery, the filters, the water and the Tetrium'],
+   ['Dirty Illyrium Ingot, dusts','','<span class="no">does not melt</span>','Same reason: they are steps of the Illyrium chain'],
+   ['Illyrium Nugget, Ingot','','<span class="yes">10 mB, 90 mB</span>','Storage form; only finished Illyrium melts']];
+  el('parity').tBodies[0].innerHTML=PARITY.map(r=>'<tr><td>'+r[0]+'</td><td>'+(r[1]||'<span style="color:var(--muted)">(already metal)</span>')+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td></tr>').join('');
+
+  // ------------------------------------------------------------------ 2. the forge, look A in detail
+  const HULL=0x1e222b,HULL2=0x2b313d,PANEL=0xc9ced8,TRIM=0x8a909c,MID=0x565c6b,TQ=0x19d3b0,HOT=0xffb347,GOLDT=0xa6863c,ORB=0x2ec4b6,PIPE=0x6e7480,BLUE=0x3a8bff,GOLD=0xffd23a,COPPER=0xc87a3c,RED=0xd8322a;
+  const MC=[0xb58cff,0x19d3b0,0x7fb3ff,0xf0c23a,0x34c38f,0xc04cff];
+  // the Shatter Totem model's boxes (pixels), from shatter_totem_geometry.json; arms are arm + hand
+  const PARTS=[['Base',[[2,0,2],[14,2,14]]],['Left foot',[[3,2,3],[8,6,11]]],['Right foot',[[8,2,3],[13,6,11]]],['Torso',[[4,6,5],[12,16,10]]],
+    ['Left arm',[[1,8,2],[4,12,9],[2,7,-1],[5,13,3]]],['Right arm',[[12,8,2],[15,12,9],[11,7,-1],[14,13,3]]],['Head',[[4,16,4],[12,24,12]]],['Totem Core',[[5,7,-2],[11,13,4]]]];
+  const owns=()=>el('owns').checked, setDays=()=>owns()?15:5;
+  function phase(){ const p=+el('prog').value, fill=clamp((p-40)/30), cure=clamp((p-70)/25); return {p,n:Math.min(8,Math.floor(p/5)),fill,cure,done:p>=95,pour:fill>0&&fill<1,lvl:p<40?.3+.7*p/40:1-fill}; }
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]), glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(op!=null){ m.material.transparent=true; m.material.opacity=op; m.material.depthWrite=false; } m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // axis: 'y' upright (default), 'x' lying along x
+  function cyl(g,x,y,z,r,h,c,glow,op,axis){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!=null){ mat.transparent=true; mat.opacity=op; mat.depthWrite=false; }
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,24),mat); if(axis==='x') m.rotation.z=Math.PI/2; m.position.set(x,y,z); g.add(m); return m; }
+  // face: 'y' lies flat, 'x' faces along x, 'z' faces along z
+  function ring(g,x,y,z,r,tube,c,glow,face){ const m=new THREE.Mesh(new THREE.TorusGeometry(r,tube,8,40),glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+    if(face==='y') m.rotation.x=Math.PI/2; else if(face==='x') m.rotation.y=Math.PI/2; m.position.set(x,y,z); g.add(m); return m; }
+  // the mould and the cast, standing on the chamber floor at y 10
+  function totem(g,ph){ const H=ph.fill*24, at=(v,d)=>[v[0]+8+d,v[1]+10+d,v[2]+8+d];
+    const metal=ph.cure>0?mix(HOT,GOLDT,Math.min(1,ph.cure*1.15)):HOT, fade=ph.cure>.8?1-(ph.cure-.8)*5:1;
+    PARTS.forEach((pt,i)=>{ if(i>=ph.n) return; const B=pt[1];
+      if(i===7){ bx(g,at(B[0],0),at(B[1],0),ORB,true); return; }
+      for(let k=0;k<B.length;k+=2){ const f=B[k],t=B[k+1];
+        if(!ph.done) bx(g,at(f,-.6),at(t,.6),PANEL,false,.55*fade);
+        const top=ph.done?t[1]:Math.min(t[1],H); if(top>f[1]) bx(g,at(f,0),[t[0]+8,top+10,t[2]+8],metal,ph.cure<.55); } }); }
+  function puffs(g,n){ const s=[]; for(let i=0;i<n;i++){ const m=bx(g,[-1,-1,-1],[1,1,1],0xe8eef7,false,0); m.userData.i=i; s.push(m); } return s; }
+  function forgeA(g){ const ph=phase(), hook=el('hook').checked, hot=ph.p>0&&!ph.done;
+    // bottom layer: hearths, the controller's panel on the front
+    bx(g,[0,0,0],[32,10,32],HULL2); bx(g,[0,9.3,0],[32,10,32],TRIM);
+    bx(g,[2,1,-.4],[30,8.8,0],HULL); for(const [x,y] of [[2.6,1.6],[28.8,1.6],[2.6,7.6],[28.8,7.6]]) bx(g,[x,y,-.6],[x+.6,y+.6,-.4],MID);
+    const scr=bx(g,[11,4.4,-.7],[21,8.2,-.4],ph.done?0x8fe04a:TQ,true), vents=[];
+    for(let i=0;i<3;i++) vents.push(bx(g,[3.6,2+i*2,-.6],[9.6,2.8+i*2,-.4],0xff7a3a,true));
+    [[ph.n>=8,0x8fe04a],[ph.lvl>.98||ph.fill>0,GOLD],[!owns(),0x8fe04a]].forEach(([on,c],i)=>bx(g,[11.4+i*3.4,1.8,-.75],[13.4+i*3.4,3.3,-.4],on?c:(i===2?0xff6b5c:0x2a2f3a),true));
+    bx(g,[22.6,2,-.9],[25.4,4.8,-.4],RED); bx(g,[22.1,1.5,-1.7],[25.9,5.3,-.4],0xbfe6ff,false,.28);
+    bx(g,[26.8,2,-.6],[28.4,3.2,-.4],TRIM); bx(g,[27.2,3.2,-1.5],[28,6.8,-.8],RED);
+    // left side: the Metal Intake (items above, fluids below)
+    bx(g,[-.4,1.5,2.5],[0,8.8,12.5],TRIM); bx(g,[-.7,3,4],[-.4,7.4,11],0x101418);
+    for(const [f,t] of [[[-.85,7.4,4],[-.6,7.9,11]],[[-.85,2.5,4],[-.6,3,11]],[[-.85,3,3.5],[-.6,7.4,4]],[[-.85,3,11],[-.6,7.4,11.5]]]) bx(g,f,t,BLUE,true);
+    cyl(g,-1,5.4,19.5,2.4,2,TRIM,false,null,'x'); ring(g,-2.1,5.4,19.5,2.4,.3,TQ,true,'x'); cyl(g,-3,5.4,19.5,1,2,PIPE,false,null,'x'); const wheel=ring(g,-4.2,5.4,19.5,1.7,.28,RED,false,'x');
+    for(let k=0;k<4;k++){ const sp=bx(g,[-4.3,5.25,19.5-1.6],[-4.1,5.55,19.5+1.6],RED); sp.rotation.x=k*Math.PI/4; }
+    // right side: the power socket
+    bx(g,[32,1.5,10],[32.4,8.8,22],TRIM); bx(g,[32.4,3.2,12.5],[32.8,7.6,19.5],0x101418); const sock=bx(g,[32.5,4.4,14.5],[32.95,6.4,17.5],GOLD,true);
+    ring(g,32.8,5.4,16,3.1,.35,COPPER,false,'x'); ring(g,33.4,5.4,16,2.5,.35,COPPER,false,'x');
+    // the hollow: floor grate and four pillars, glow strips on the front two
+    bx(g,[5,10,5],[27,10.4,27],MID); for(let i=0;i<5;i++) bx(g,[5,10.4,7+i*4.4],[27,10.6,7.8+i*4.4],HULL);
+    for(const [x,z] of [[0,0],[28,0],[0,28],[28,28]]){ bx(g,[x,10,z],[x+4,38,z+4],TRIM); bx(g,[x-.2,10,z-.2],[x+4.2,11,z+4.2],HULL); bx(g,[x-.2,37,z-.2],[x+4.2,38,z+4.2],HULL);
+      if(z===0){ bx(g,[x+1,11.5,-.25],[x+3,36.5,0],0x101418); bx(g,[x+1.3,11.8,-.4],[x+2.7,11.8+24.4*ph.lvl,-.25],HOT,true); } }
+    // back pipes: feed line on the left, hot line on the right
+    cyl(g,-1.6,23,28,1,30,PIPE); cyl(g,-.8,8,28,1,1.6,PIPE,false,null,'x'); cyl(g,-.8,41,28,1,1.6,PIPE,false,null,'x'); for(const y of [12,24,36]) cyl(g,-1.6,y,28,1.35,.6,TRIM);
+    cyl(g,-2.9,30,28,1.5,.4,0xeef0f4,false,null,'x'); const needle=new THREE.Group(); needle.position.set(-3.15,30,28); g.add(needle); bx(needle,[-.05,-.15,-.1],[.05,1.2,.1],RED);
+    cyl(g,33.6,23,28,1,30,PIPE); cyl(g,32.8,8,28,1,1.6,PIPE,false,null,'x'); cyl(g,32.8,41,28,1,1.6,PIPE,false,null,'x');
+    if(hot) cyl(g,33.6,8+15*ph.lvl,28,1.08,30*ph.lvl,HOT,true,.55);
+    // top layer: melt tanks with windows, pour head, cap, chimney
+    bx(g,[0,38,0],[32,48,32],HULL2); bx(g,[0,38,0],[32,38.7,32],TRIM); bx(g,[0,47.3,0],[32,48,32],TRIM);
+    bx(g,[6,40,-.3],[26,46,0],0x101418); bx(g,[6.5,40.4,-.45],[25.5,40.4+5.2*ph.lvl,-.3],HOT,true);
+    bx(g,[-.3,40,6],[0,46,26],0x101418); bx(g,[-.45,40.4,6.5],[-.3,40.4+5.2*ph.lvl,25.5],HOT,true);
+    for(let i=0;i<6;i++) bx(g,[3+i*5.2,46.4,-.5],[3.6+i*5.2,47,-.3],MID);
+    cyl(g,28.5,43,-.6,.8,1.2,MID); const hw=ring(g,28.5,43,-1.3,1.6,.28,RED,false,'z');
+    for(let i=0;i<3;i++) bx(g,[6+i*8,48,12],[10+i*8,48.6,20],HULL);
+    cyl(g,25,51,25,1.8,6,HULL); cyl(g,25,54.2,25,2.4,.6,TRIM);
+    cyl(g,16,36.5,16,2.2,3,PANEL); cyl(g,16,34.7,16,1.1,.8,ph.pour?HOT:MID,ph.pour);
+    if(ph.pour){ const top=34.3, bot=10+ph.fill*24; cyl(g,16,(top+bot)/2,16,.6,top-bot,HOT,true); }
+    totem(g,ph);
+    // plugged in: a chest on the item hatch, a tank of Molten Tetrium on the valve, a battery on the socket
+    if(hook){ bx(g,[-12,0,2.5],[-4,8,12.5],0x8a5a2b); bx(g,[-12,5.4,2.5],[-4,6,12.5],0x5a3a1b); bx(g,[-8.6,4.4,2.1],[-7.4,6.4,2.5],0xcfcfcf); bx(g,[-4,4,6],[-.4,6.6,9],PIPE);
+      bx(g,[-17,0,15.5],[-10,12,23.5],0xbfe6ff,false,.22); bx(g,[-16.5,.5,16],[-10.5,8,23],0x7f64b6,true); bx(g,[-17.2,12,15.3],[-9.8,12.6,23.7],TRIM); cyl(g,-7.4,5.4,19.5,.9,5,PIPE,false,null,'x');
+      bx(g,[42,0,11],[50,10,21],HULL); bx(g,[41.8,4,11],[50.2,6,21],GOLD,true); bx(g,[33.4,5,15.4],[42,6,16.6],0x2a2a2a); bx(g,[33.4,6,15.8],[42,6.2,16.2],GOLD,true); }
+    const steam=ph.cure>0&&!ph.done?puffs(g,7):[], smoke=hot?puffs(g,5):[];
+    return t=>{ scr.material.color.setHex(ph.done?0x8fe04a:TQ).multiplyScalar(.75+.25*Math.sin(t*3)); vents.forEach((v,i)=>v.material.color.setHex(0xff7a3a).multiplyScalar(hot?.7+.3*Math.sin(t*5+i):.25));
+      sock.material.color.setHex(GOLD).multiplyScalar(.7+.3*Math.sin(t*2)); needle.rotation.x=-1.1+2.2*ph.lvl+(hot?Math.sin(t*9)*.05:0); if(ph.pour){ wheel.rotation.x=t; hw.rotation.z=t*2; }
+      steam.forEach(m=>{ const i=m.userData.i, k=((t*.35+i/7)%1); m.position.set(16+Math.sin(i*2.3)*5,30+k*8,16+Math.cos(i*1.7)*5); m.scale.setScalar(1+k*1.5); m.material.opacity=.45*(1-k)*(1-ph.cure*.6); });
+      smoke.forEach(m=>{ const i=m.userData.i, k=((t*.25+i/5)%1); m.position.set(25+Math.sin(i*1.9+t)*k*2,55+k*10,25); m.scale.setScalar(.8+k*1.6); m.material.opacity=.35*(1-k); }); }; }
+  function makeView(host,build){ const view=document.createElement('div'); view.className='view big'; host.appendChild(view);
+    const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); view.appendChild(r.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(-20,30,-20); scene.add(d);
+    let g=new THREE.Group(); scene.add(g); let tick=build(g), ry=Math.PI+.75, rx=.3, drag=false, lx=0, ly=0;
+    view.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!drag) return; ry+=(e.clientX-lx)*.01; rx=Math.max(-.2,Math.min(1.3,rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>drag=false); view.addEventListener('pointercancel',()=>drag=false);
+    const rs=()=>{ const w=view.clientWidth,h=view.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; new ResizeObserver(rs).observe(view); rs();
+    const t0=performance.now(); (function f(now){ const t=reduce?1:(now-t0)/1000; if(!reduce&&!drag) ry+=.002; tick(t); const D=el('hook').checked?200:160, T=[16,25,16];
+      cam.position.set(T[0]+Math.sin(ry)*D*Math.cos(rx),T[1]+Math.sin(rx)*D,T[2]+Math.cos(ry)*D*Math.cos(rx)); cam.lookAt(T[0],T[1],T[2]); r.render(scene,cam); requestAnimationFrame(f); })(t0);
+    return ()=>{ g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose(); }); scene.remove(g); g=new THREE.Group(); scene.add(g); tick=build(g); }; }
+  const rebuild=makeView(el('forgeView'),forgeA);
+  const dh=d=>{ const h=Math.round(d*24); return Math.floor(h/24)+' d '+(h%24)+' h'; };
+  function stage(){ const ph=phase(), D=setDays(); let s;
+    if(ph.p<40) s=ph.n===0?'Empty. Put the Base Mould in first; the tanks fill as ingots go in.':'Mould: '+ph.n+' of 8 pieces in, '+PARTS[ph.n-1][0]+' last. Tanks '+Math.round(ph.lvl*100)+' % full.';
+    else if(ph.fill<1) s=(owns()?'Paid 4 Illyrium coins. ':'Free pour. ')+'The mould is '+Math.round(ph.fill*100)+' % full.';
+    else if(!ph.done) s='Setting: '+dh(D*(1-ph.cure))+' left of '+D+' days.';
+    else s='Set: a new Shatter Totem, tier I, owned by the player who poured it.';
+    el('stage').textContent=s; }
+  function refresh(){ stage(); rebuild(); }
+  for(const id of ['prog','owns','hook']) el(id).addEventListener('input',refresh); stage();
+  let timer=null, hold=0; el('play').addEventListener('click',()=>{ const on=el('play').getAttribute('aria-pressed')!=='true'; el('play').setAttribute('aria-pressed',on); el('play').textContent=on?'Pause':'Play';
+    if(on){ timer=setInterval(()=>{ const p=+el('prog').value; if(p>=100){ if(++hold<12) return; hold=0; el('prog').value=0; } else el('prog').value=p+1; refresh(); },140); } else clearInterval(timer); });
+
+  // ------------------------------------------------------------------ 3. mould items, drawn like the totem in the hotbar
+  const PIECE_N=['Base Mould','Foot Mould (left)','Foot Mould (right)','Torso Mould','Arm Mould (left)','Arm Mould (right)','Head Mould','Totem Core'];
+  const SHELL={s:0xc9ced8,e:0xeef0f4,k:0x4a4f5b};
+  const off=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true}); off.setPixelRatio(1); off.setSize(128,128,false);
+  const icam=new THREE.OrthographicCamera(-12.5,12.5,12.5,-12.5,.1,300); { const C=[8,11.5,6], el30=.52, R=80; icam.position.set(C[0]-R*.707*Math.cos(el30),C[1]+R*Math.sin(el30),C[2]-R*.707*Math.cos(el30)); icam.lookAt(C[0],C[1],C[2]); }
+  function edges(g,f,t,c,op){ const m=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2])),new THREE.LineBasicMaterial({color:c,transparent:op!=null,opacity:op==null?1:op})); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); }
+  const LOOKM=[
+   {n:'A. Ghost Totem',t:'The piece is solid pale ceramic with a dark outline; the rest of the totem is a faint grey ghost. The simplest to read at hotbar size.',
+    ghost:(g,f,t)=>{ bx(g,f,t,0xd0d4dc,false,.3); edges(g,f,t,0xffffff,.3); }, piece:(g,f,t)=>{ bx(g,f,t,0xc9ced8); edges(g,f,t,0x3a3f4b); }},
+   {n:'B. Open Shell',t:'The piece is a ceramic shell opened toward you, its inside lit gold where the metal will go; the rest is a grey ghost. It reads as a mould, not as the part itself.',
+    ghost:(g,f,t)=>{ bx(g,f,t,0xd0d4dc,false,.3); edges(g,f,t,0xffffff,.3); }, piece:(g,f,t)=>{ const w=.7, c=0xc9ced8; bx(g,[f[0],f[1],t[2]-w],t,c); bx(g,f,[f[0]+w,t[1],t[2]],c); bx(g,[t[0]-w,f[1],f[2]],t,c); bx(g,f,[t[0],f[1]+w,t[2]],c); bx(g,[f[0],t[1]-w,f[2]],t,c);
+      bx(g,[f[0]+w,f[1]+w,t[2]-w-.05],[t[0]-w,t[1]-w,t[2]-w],0xe3b341,true); edges(g,f,t,0x3a3f4b,.8); }},
+   {n:'C. Blueprint',t:'The piece is solid Tetrium violet with bright edges; the rest of the totem is drawn only as grey outlines. The most technical, and the piece stands out most.',
+    ghost:(g,f,t)=>edges(g,f,t,0xc8cfdb,.75), piece:(g,f,t)=>{ bx(g,f,t,0x6b4fa0); edges(g,f,t,0xd9c9ff); }}];
+  function itemImage(c,idx,L){ const scene=new THREE.Scene(); scene.add(new THREE.AmbientLight(0xffffff,.8)); const d=new THREE.DirectionalLight(0xffffff,.6); d.position.set(-10,25,-15); scene.add(d); const g=new THREE.Group(); scene.add(g);
+    PARTS.forEach((pt,i)=>{ const B=pt[1]; for(let k=0;k<B.length;k+=2){ const f=B[k],t=B[k+1]; if(i===idx) (i===7?()=>{ bx(g,f,t,ORB,true); edges(g,f,t,0xeafffb,.7); }:()=>L.piece(g,f,t))(); else L.ghost(g,f,t); } });
+    off.render(scene,icam); c.width=c.height=128; c.getContext('2d').drawImage(off.domElement,0,0); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose(); }); }
+  LOOKM.forEach(L=>{ const card=document.createElement('div'); card.className='card'; card.innerHTML='<h3>'+L.n+'</h3>'; const bar=document.createElement('div'); bar.className='hotbar';
+    PIECE_N.forEach((n,i)=>{ const f=document.createElement('figure'), s=document.createElement('div'); s.className='hs'; const c=document.createElement('canvas'); itemImage(c,i,L); c.title=n; s.appendChild(c); f.appendChild(s);
+      const cap=document.createElement('figcaption'); cap.textContent=n.replace(' Mould','').replace(' (left)',' L').replace(' (right)',' R'); f.appendChild(cap); bar.appendChild(f); });
+    card.appendChild(bar); const p=document.createElement('p'); p.textContent=L.t; card.appendChild(p); el('moulds').appendChild(card); });
+
+  // ------------------------------------------------------------------ 4. recipes
+  const IT={tp:['Tetrium Plate','tetrium_plate'],sb:['Slag Brick','slag_brick'],ti:['Tetrium Ingot','tetrium_ingot'],ii:['Illyrium Ingot','illyrium_ingot'],in:['Illyrium Nugget','illyrium_nugget'],ip:['Illyrium Processor','illyrium_processor'],
+    mi:['Magnatite Ingot','magnatite_ingot'],cm:['Charged Magnatite Ingot','charged_magnatite_ingot'],mc:['Magnet Core','magnet_core'],ctc:['Copper Tetrium Coil','copper_tetrium_coil'],crc:['Charged Resonance Crystal','charged_resonance_crystal'],ic:['Illyrium Core','illyrium_core'],
+    bf:['Blast Furnace',null,0x5d5f63,'BF'],hp:['Hopper',null,0x4a4c50,'Ho'],ca:['Cauldron',null,0x3d3f44,'Ca'],ig:['Illyrium Glass',null,0x1f8f7d,'IG'],mb:['Magma Block',null,0xa8461c,'Mg'],di:['Dispenser',null,0x6e6e6e,'Di'],
+    ns:['Nether Star',null,0xb9c4d6,'NS'],tu:['Totem of Undying',null,0xc9a227,'TU'],nt:['Netherite Ingot',null,0x4a3f42,'Ne'],co:['Crying Obsidian',null,0x3b1e6b,'CO'],
+    atm:['Allthemodium Ingot',null,0xd9a520,'At'],vib:['Vibranium Ingot',null,0x2fa37a,'Vi'],uno:['Unobtainium Ingot',null,0x9b3fd6,'Un'],hs:['Heart of the Sea',null,0x2f6fc0,'HS'],es:['Echo Shard',null,0x0f5662,'Ec'],ws:['Wither Skeleton Skull',null,0x2a2a2a,'WS'],
+    fh:['Forge Hearth',null,0x2b313d,'FH'],sh:['Mould Shell','*shell']};
+  function cell(k,n){ const d=document.createElement('div'); d.className='cs'; if(!k) return d; const I=IT[k]; d.title=I[0];
+    if(I[1]==='*shell'){ const c=cv(); paint(c,(x,y)=>x<2||x>13||y<3||y>13?null:(x===2||y===3)?SHELL.e:(x===13||y===13)?0x8a909c:(x>4&&x<11&&y>5&&y<11)?SHELL.k:SHELL.s); d.appendChild(c); }
+    else if(I[1]&&TEX[I[1]]){ const im=new Image(); im.src=TEX[I[1]]; im.alt=I[0]; d.appendChild(im); }
+    else { const s=document.createElement('span'); s.className='chip'; s.style.background='#'+(I[2]||0x555555).toString(16).padStart(6,'0'); s.textContent=I[3]||'?'; d.appendChild(s); }
+    if(n>1){ const b=document.createElement('b'); b.textContent=n; d.appendChild(b); } return d; }
+  function recipe(host,name,grid,count,note){ const r=document.createElement('div'); r.className='rc'; const h=document.createElement('h3'); h.textContent=name+(count>1?' ×'+count:''); r.appendChild(h);
+    const top=document.createElement('div'); top.className='top'; const cg=document.createElement('div'); cg.className='cg'; grid.forEach(k=>cg.appendChild(cell(k))); top.appendChild(cg); r.appendChild(top);
+    const p=document.createElement('p'); const tally={}; grid.forEach(k=>{ if(k) tally[k]=(tally[k]||0)+1; }); p.textContent=Object.entries(tally).map(([k,n])=>n+' '+IT[k][0]).join(', ')+(note?'. '+note:''); r.appendChild(p); el(host).appendChild(r); }
+  const R_FORGE=[['Forge Hearth',['tp','sb','tp','sb','bf','sb','tp','sb','tp'],1,'Two in the bottom layer'],['Forge Controller',['ii','ip','ii','cm','fh','cm','tp','mc','tp'],1,'Validates the structure and holds the screen'],
+    ['Metal Intake',['tp','hp','tp','sb','ca','sb','tp','ctc','tp'],1,'Takes ingots and fluids from any side'],['Melt Tank',['mi','ig','mi','ig','ca','ig','mi','mb','mi'],1,'Two in the top layer'],
+    ['Pour Head',['tp','ii','tp','mi','di','mi',null,'in',null],1,''],['Forge Cap',['tp','tp','tp','tp','crc','tp','sb','sb','sb'],1,'']];
+  const R_MOULD={shell:['Mould Shell',['tp','atm','tp','atm','cm','atm','tp','atm','tp'],2,'Makes two'],base:['Base Mould',['sh','sh','sh','co','nt','co','tp','tp','tp'],1,''],
+    foot:['Foot Mould',['sh','vib','sh','tp','mc','tp',null,null,null],1,'Needed twice'],torso:['Torso Mould',['sh','uno','sh','sh','hs','sh','tp','uno','tp'],1,''],
+    arm:['Arm Mould',['sh','crc',null,'sh','vib',null,'tp','tp',null],1,'Needed twice'],head:['Head Mould',['sh','es','sh','ip','ws','ip','sh','es','sh'],1,''],
+    core:['Totem Core',['ii','crc','ii','ns','tu','ic','ii','crc','ii'],1,'Always used up: it becomes the totem\'s orb']};
+  R_FORGE.forEach(r=>recipe('r-forge',...r)); Object.values(R_MOULD).forEach(r=>recipe('r-mould',...r));
+  (function(){ const need={base:1,foot:2,torso:1,arm:2,head:1,core:1}, tot={}; let shells=0;
+    for(const [k,n] of Object.entries(need)) R_MOULD[k][1].forEach(i=>{ if(!i) return; if(i==='sh') shells+=n; else tot[i]=(tot[i]||0)+n; });
+    const crafts=Math.ceil(shells/2); R_MOULD.shell[1].forEach(i=>{ if(i) tot[i]=(tot[i]||0)+crafts; });
+    el('mouldsum').innerHTML='<b>One full mould and core:</b> '+shells+' Mould Shells ('+crafts+' crafts), then '+Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([k,n])=>n+' '+IT[k][0]).join(', ')+'.'; })();
+  const BILL=[['Tetrium Ingot','tetrium_ingot',4.5,[64,128,256]],['Magnatite Ingot','magnatite_ingot',10,[16,32,64]],['Charged Magnatite Ingot','charged_magnatite_ingot',13,[0,8,16]],['Illyrium Ingot','illyrium_ingot',60,[4,12,24]],
+    ['Allthemodium Ingot','atm',5,[16,32,64]],['Vibranium Ingot','vib',10,[4,16,32]],['Unobtainium Ingot','uno',15,[0,8,16]],['Netherite Ingot','nt',41,[0,2,4]]];
+  const ico=k=>{ const c=cell(k); c.style.cssText='display:inline-grid;vertical-align:middle;margin-right:8px;width:26px;height:26px;border-width:1px'; return c.outerHTML; };
+  el('bill').tBodies[0].innerHTML=BILL.map(([n,k,m,c])=>'<tr><td>'+ico(k in IT?k:Object.keys(IT).find(x=>IT[x][1]===k))+n+'</td><td class="num">'+m+'</td>'+c.map(v=>'<td class="num">'+(v||'·')+'</td>').join('')+'</tr>').join('');
+  const tl=[0,1,2].map(i=>BILL.reduce((s,b)=>s+b[2]*b[3][i],0)/60), ti=[0,1,2].map(i=>BILL.reduce((s,b)=>s+b[3][i],0));
+  el('bill').tFoot.innerHTML='<tr><td>Ingots (molten metal)</td><td></td>'+ti.map(v=>'<td class="num">'+v+' ('+(v*90).toLocaleString('en-GB')+' mB)</td>').join('')+'</tr><tr><td>One player\'s time, about</td><td></td>'+tl.map(v=>'<td class="num">'+Math.round(v)+' h</td>').join('')+'</tr>';
+
+  // ------------------------------------------------------------------ 5. screen
+  const STD=BILL.filter(b=>b[3][1]>0), COIN='illyrium_shatter_coin';
+  function hud(state){ const melt=state==='melt', fills=STD.map((b,i)=>melt?[1,.82,1,.55,1,.7,1,1][i]:1);
+    const slots=PIECE_N.map((n,i)=>'<div class="msl in"><canvas data-i="'+i+'"></canvas>'+n.replace(' Mould','').replace(' (left)',' L').replace(' (right)',' R').replace('Totem ','')+'</div>').join('');
+    const tubes=STD.map((b,i)=>{ const k=b[1] in IT?b[1]:Object.keys(IT).find(x=>IT[x][1]===b[1]); const I=IT[k]; const icon=I[1]&&TEX[I[1]]?'<img src="'+TEX[I[1]]+'" alt="">':'<span class="chip" style="background:#'+I[2].toString(16).padStart(6,'0')+'">'+I[3]+'</span>';
+      return '<div class="g" title="'+b[0]+'"><div class="tube"><i style="height:'+Math.round(fills[i]*100)+'%;background:#'+(MC[i%6]).toString(16).padStart(6,'0')+'"></i></div>'+icon+'<small>'+Math.round(fills[i]*b[3][1]*90/100)/10+'k</small></div>'; }).join('');
+    const coin='<img class="coin" src="'+TEX[COIN]+'" alt="">'; let msg, keys, tag;
+    if(state==='melt'){ tag='melting'; msg='<span class="hmsg">Mould complete. Waiting for 3 metals: Magnatite 26 of 32, Illyrium 7 of 12, Vibranium 11 of 16.</span>'; keys='<button class="hb" disabled>POUR</button>'; }
+    else if(state==='free'){ tag='ready'; msg='<span class="hmsg">You own no Shatter Totem. The pour is free, and the totem sets in 5 days.</span>'; keys='<button class="hb go">POUR</button>'; }
+    else if(state==='pay'){ tag='ready'; msg='<span class="hmsg">You own 1 Shatter Totem. Start the pour with 4 Illyrium Shatter Coins '+coin+' (you carry 5); the totem then sets in 15 days.</span>'; keys='<button class="hb go">PAY 4 '+coin+' AND POUR</button>'; }
+    else { tag='setting'; msg='<span class="hmsg">Setting: 3 d 7 h left of 5 days. Only you can take the totem out.</span><div class="bar"><i style="width:34%"></i></div>'; keys='<button class="hb" disabled>SETTING</button>'; }
+    el('hud').innerHTML='<div class="hd"><span>&gt; TOTEM FORGE</span><small>'+tag+'</small></div>'+
+      '<div class="hrow"><div class="hcol"><small>MOULD (8 OF 8)</small><div class="ms">'+slots+'</div></div><div class="hcol" style="flex:1"><small>METAL (STANDARD BILL, THOUSANDS OF mB)</small><div class="gauges">'+tubes+'</div></div></div>'+
+      '<div class="hcol">'+msg+'</div><div class="seg">'+keys+'<button class="hb">TAKE MOULD OUT</button><button class="hb">CLOSE</button></div>';
+    el('hud').querySelectorAll('canvas[data-i]').forEach(c=>itemImage(c,+c.dataset.i,LOOKM[0])); }
+  document.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-pressed',x===b)); hud(b.dataset.s); }));
+  hud('melt');
+})();
+</script>

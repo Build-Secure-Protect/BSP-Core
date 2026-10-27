@@ -39,6 +39,9 @@ Other useful tasks: `./gradlew runClient`, `./gradlew runServer`, `./gradlew run
 | `/bsp totem locate <player>` | List where that player's placed totems stand |
 | `/bsp totem owner` | Show the owner of the totem in your main hand |
 | `/bsp admin` | Open the admin panel (admins and moderators from the `admin` config section; no Admin Rack needed) |
+| `/bsp totemforge clear <player>` | Free a player's Totem Forge pour claim here and on the network, when the forge holding it is gone without being broken |
+| `/bsp totemforge fill` | Fill every tank of the Totem Forge you look at with its whole metal bill |
+| `/bsp totemforge finish` | Set the totem in the Totem Forge you look at at once |
 | `/bsp score top` | Show the top ten of the leaderboard |
 | `/bsp storage status` | Show whether records are local only or also in MySQL |
 | `/bsp storage test` | Try the MySQL connection from the config and create the tables |

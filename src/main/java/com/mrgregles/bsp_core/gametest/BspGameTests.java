@@ -5889,4 +5889,930 @@ public class BspGameTests {
         h.assertTrue(menu.slots.get(0).mayPlace(new ItemStack(net.minecraft.world.item.Items.DIAMOND)), "and takes a diamond");
         h.succeed();
     }
+
+    // ------------------------------------------------------------------ molten metals (Totem Forge, task 1)
+
+    /** The molten metals are fluids with blocks, buckets and their forge:molten_ tags, and no BSP item or block is on a material tag. */
+    @GameTest(template = EMPTY, batch = "totem_forge")
+    public void molten_metals_are_fluids_and_bsp_stays_off_material_tags(GameTestHelper h) {
+        for (var e : com.mrgregles.bsp_core.material.MoltenMetals.ALL.entrySet()) {
+            String id = e.getKey().id();
+            var m = e.getValue();
+            var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.FLUID, new net.minecraft.resources.ResourceLocation("forge", id));
+            h.assertTrue(m.source().get().is(tag) && m.flowing().get().is(tag), id + ": source and flowing carry forge:" + id);
+            h.assertTrue(m.bucket().get().getFluid() == m.source().get(), id + ": the bucket holds it");
+            BlockPos at = new BlockPos(2 + e.getKey().ordinal() * 3, 1, 2);
+            h.setBlock(at, m.block().get().defaultBlockState());
+            h.assertTrue(h.getBlockState(at).getFluidState().getType() == m.source().get(), id + ": the placed block is a source");
+        }
+        // JAOPCA, Almost Unified, Mekanism and Thermal build ore doubling from these; the BSP machines must stay the only way
+        List<String> material = List.of("ingots/", "nuggets/", "ores/", "dusts/", "raw_materials/", "storage_blocks/", "gems/", "plates/");
+        java.util.function.BiConsumer<net.minecraft.resources.ResourceLocation, java.util.stream.Stream<? extends net.minecraft.tags.TagKey<?>>> check = (key, tags) -> tags.forEach(t -> {
+            if (t.location().getNamespace().equals("forge") && material.stream().anyMatch(p -> t.location().getPath().startsWith(p))) {
+                h.fail(key + " is on " + t.location() + ": BSP metals stay off the material tags");
+            }
+        });
+        for (var e : net.minecraftforge.registries.ForgeRegistries.ITEMS.getEntries()) {
+            if (e.getKey().location().getNamespace().equals(BSPCore.MODID)) {
+                check.accept(e.getKey().location(), e.getValue().builtInRegistryHolder().tags());
+            }
+        }
+        for (var e : net.minecraftforge.registries.ForgeRegistries.BLOCKS.getEntries()) {
+            if (e.getKey().location().getNamespace().equals(BSPCore.MODID)) {
+                check.accept(e.getKey().location(), e.getValue().builtInRegistryHolder().tags());
+            }
+        }
+        h.succeed();
+    }
+
+    /** With Tinkers or Thermal Expansion loaded every molten-metal recipe loads (a wrong format would drop it); without them none does.
+     *  Run with -PpackMods to load the pack's jars (build.gradle). */
+    /** A dispenser pours a molten bucket as it does lava's; molten metal meets water as lava does: a source turns to Obsidian, a flowing block to Cobblestone (audit D7). */
+    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "totem_forge")
+    public void molten_metals_pour_from_dispensers_and_cool_in_water(GameTestHelper h) {
+        var tetrium = com.mrgregles.bsp_core.material.MoltenMetals.of(com.mrgregles.bsp_core.material.MoltenMetals.Metal.TETRIUM);
+        BlockPos disp = new BlockPos(2, 2, 2), front = disp.east();
+        h.setBlock(disp, Blocks.DISPENSER.defaultBlockState().setValue(net.minecraft.world.level.block.DispenserBlock.FACING, net.minecraft.core.Direction.EAST));
+        var box = (net.minecraft.world.level.block.entity.DispenserBlockEntity) h.getBlockEntity(disp);
+        box.setItem(0, new ItemStack(tetrium.bucket().get()));
+        h.setBlock(disp.west(), Blocks.REDSTONE_BLOCK);
+        h.setBlock(new BlockPos(2, 1, 8), Blocks.WATER);
+        h.setBlock(new BlockPos(3, 1, 8), tetrium.block().get().defaultBlockState());
+        h.assertBlockPresent(Blocks.OBSIDIAN, new BlockPos(3, 1, 8));
+        h.setBlock(new BlockPos(8, 1, 8), Blocks.WATER);
+        h.setBlock(new BlockPos(9, 1, 8), tetrium.block().get().defaultBlockState().setValue(net.minecraft.world.level.block.LiquidBlock.LEVEL, 3));
+        h.assertBlockPresent(Blocks.COBBLESTONE, new BlockPos(9, 1, 8));
+        h.succeedWhen(() -> {
+            h.assertTrue(h.getBlockState(front).getFluidState().getType() == tetrium.source().get(), "the dispenser poured a Molten Tetrium source: " + h.getBlockState(front));
+            h.assertTrue(box.getItem(0).is(net.minecraft.world.item.Items.BUCKET), "and kept the empty bucket: " + box.getItem(0));
+        });
+    }
+
+    @GameTest(template = EMPTY, batch = "totem_forge")
+    public void molten_recipes_load_only_with_their_mods(GameTestHelper h) {
+        int tinkers = 0, thermal = 0;
+        for (var r : h.getLevel().getServer().getRecipeManager().getRecipes()) {
+            var id = r.getId();
+            if (id.getNamespace().equals(BSPCore.MODID) && id.getPath().startsWith("molten/")) {
+                if (id.getPath().startsWith("molten/tinkers_")) {
+                    tinkers++;
+                } else {
+                    thermal++;
+                }
+            }
+        }
+        boolean tc = net.minecraftforge.fml.ModList.get().isLoaded("tconstruct"), te = net.minecraftforge.fml.ModList.get().isLoaded("thermal_expansion");
+        // tools/gen_molten_recipes.py: Tinkers 12 meltings and 12 castings; Thermal 12 crucible meltings and 3 chillings
+        h.assertTrue(tinkers == (tc ? 24 : 0), "Tinkers recipes: " + tinkers + (tc ? " of 24" : ", expected none without Tinkers"));
+        h.assertTrue(thermal == (te ? 15 : 0), "Thermal recipes: " + thermal + (te ? " of 15" : ", expected none without Thermal Expansion"));
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ Totem Forge structure (task 3)
+
+    /** A Totem Forge controller at {@code at} facing north, with every part its own structure lists (the hollow stays air). */
+    private static com.mrgregles.bsp_core.machine.TotemForgeBlockEntity buildTotemForge(GameTestHelper h, BlockPos at) {
+        h.setBlock(at, ModBlocks.TOTEM_FORGE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.machine.MachineBlock.FACING, net.minecraft.core.Direction.NORTH));
+        var forge = entity(h, at, com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.class);
+        for (var part : forge.parts()) {
+            if (part.block() != net.minecraft.world.level.block.Blocks.AIR) {
+                h.getLevel().setBlockAndUpdate(part.pos(), part.block().defaultBlockState());
+            }
+        }
+        return forge;
+    }
+
+    /** Eight parts in two layers of four round an empty middle layer; the hearths take lava, the intake takes items; formed, the parts hide. */
+    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "totem_forge")
+    public void totem_forge_forms_round_its_hollow(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var parts = forge.parts();
+        h.assertTrue(parts.size() == 11, "3 layers of 2 by 2 less the controller: 11 positions, got " + parts.size());
+        h.assertTrue(parts.stream().filter(p -> p.block() == net.minecraft.world.level.block.Blocks.AIR).allMatch(p -> p.pos().getY() == forge.getBlockPos().getY() + 1)
+                && parts.stream().filter(p -> p.block() == net.minecraft.world.level.block.Blocks.AIR).count() == 4, "the four hollow positions are the middle layer");
+        h.succeedWhen(() -> {
+            h.assertTrue(forge.isFormed(), "formed");
+            for (var part : parts) {
+                var be = h.getLevel().getBlockEntity(part.pos());
+                if (part.block() == ModBlocks.FORGE_HEARTH.get()) {
+                    h.assertTrue(be != null && be.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, net.minecraft.core.Direction.EAST).isPresent(), "a hearth takes lava");
+                } else if (part.block() == ModBlocks.METAL_INTAKE.get()) {
+                    h.assertTrue(be != null && be.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, net.minecraft.core.Direction.WEST).isPresent(), "the intake takes items");
+                }
+                if (part.block() != net.minecraft.world.level.block.Blocks.AIR) {
+                    h.assertTrue(h.getLevel().getBlockState(part.pos()).getValue(com.mrgregles.bsp_core.machine.StructurePartBlock.FORMED), part.block() + " hides for the formed forge's renderer");
+                }
+            }
+        });
+    }
+
+    /** A block in the hollow breaks the structure, and the forge forms again once it is gone. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_needs_its_hollow_empty(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        BlockPos hollow = forge.parts().stream().filter(p -> p.block() == net.minecraft.world.level.block.Blocks.AIR).findFirst().orElseThrow().pos();
+        h.getLevel().setBlockAndUpdate(hollow, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+        afterTicking(h, 45, () -> {
+            h.assertFalse(forge.isFormed(), "not formed with stone in the hollow");
+            h.assertTrue(forge.missingParts().stream().anyMatch(p -> p.pos().equals(hollow)), "the stone is named as the problem");
+            h.getLevel().setBlockAndUpdate(hollow, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        });
+        afterTicking(h, 90, () -> {
+            h.assertTrue(forge.isFormed(), "formed again once the hollow is clear");
+            h.succeed();
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Mould items (task 5)
+
+    /** Each mould piece lasts three pours and takes no enchantment or anvil repair; the pieces, the core and the shell all have recipes. */
+    @GameTest(template = EMPTY, batch = "totem_forge")
+    public void mould_pieces_last_three_pours_and_have_recipes(GameTestHelper h) {
+        var recipes = h.getLevel().getServer().getRecipeManager();
+        for (var e : com.mrgregles.bsp_core.registry.ModItems.MOULDS.entrySet()) {
+            ItemStack stack = new ItemStack(e.getValue().get());
+            h.assertTrue(stack.getMaxDamage() == com.mrgregles.bsp_core.material.TotemMouldItem.POURS && com.mrgregles.bsp_core.material.TotemMouldItem.poursLeft(stack) == 3, e.getKey() + ": three pours");
+            stack.setDamageValue(2);
+            h.assertTrue(com.mrgregles.bsp_core.material.TotemMouldItem.poursLeft(stack) == 1, e.getKey() + ": one pour left after two");
+            h.assertFalse(stack.isEnchantable() || stack.getItem().isValidRepairItem(stack, stack), e.getKey() + ": no Unbreaking, Mending or anvil repair");
+            h.assertTrue(recipes.byKey(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, e.getKey().id())).isPresent(), e.getKey() + ": has a recipe");
+        }
+        for (String id : List.of("mould_shell", "totem_core")) {
+            h.assertTrue(recipes.byKey(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, id)).isPresent(), id + " has a recipe");
+        }
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ Totem Forge melting and mould (task 6a)
+
+    private static com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Metal billLine(String key) {
+        return com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.bill().stream().filter(m -> m.key().equals(key)).findFirst().orElseThrow();
+    }
+
+    /** Ingots through the intake melt one at a time into their own tank, 90 mB each, burning lava from the hearths; an ingot off the bill is refused. */
+    @GameTest(template = EMPTY, timeoutTicks = 600, batch = "totem_forge")
+    public void totem_forge_melts_ingots_into_its_tanks(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var tetrium = billLine("bsp_core:tetrium_ingot");
+        var configured = com.mrgregles.bsp_core.BSPConfig.TFORGE_BILL.get();
+        long withItems = configured.stream().filter(l -> !l.startsWith("#") || !net.minecraft.core.registries.BuiltInRegistries.ITEM.getTag(net.minecraft.tags.TagKey.create(
+                net.minecraft.core.registries.Registries.ITEM, new net.minecraft.resources.ResourceLocation(l.substring(1, l.lastIndexOf('='))))).map(t -> t.size() == 0).orElse(true)).count();
+        h.assertTrue(configured.size() == 8 && tetrium.ingots() == 128, "the Standard bill: eight metals, 128 Tetrium Ingots");
+        h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.bill().size() == withItems, "the forge's bill leaves out only tag lines no item carries: "
+                + com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.bill().size() + " of " + configured.size());
+        int perIngot = com.mrgregles.bsp_core.BSPConfig.TFORGE_TICKS_PER_INGOT.get(), lavaEach = com.mrgregles.bsp_core.BSPConfig.TFORGE_LAVA_PER_INGOT.get();
+        afterTicking(h, 25, () -> {
+            h.assertTrue(forge.isFormed(), "formed");
+            BlockPos hearth = forge.parts().stream().filter(p -> p.block() == ModBlocks.FORGE_HEARTH.get()).findFirst().orElseThrow().pos();
+            BlockPos intake = forge.parts().stream().filter(p -> p.block() == ModBlocks.METAL_INTAKE.get()).findFirst().orElseThrow().pos();
+            var lava = h.getLevel().getBlockEntity(hearth).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, net.minecraft.core.Direction.EAST).orElseThrow(IllegalStateException::new);
+            h.assertTrue(lava.fill(new net.minecraftforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 1000), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE) == 1000, "a hearth takes a bucket of lava");
+            var items = h.getLevel().getBlockEntity(intake).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, net.minecraft.core.Direction.WEST).orElseThrow(IllegalStateException::new);
+            h.assertTrue(items.insertItem(0, new ItemStack(net.minecraft.world.item.Items.IRON_INGOT), true).getCount() == 1, "an Iron Ingot is not on the bill");
+            h.assertTrue(items.insertItem(0, new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_INGOT.get(), 3), false).isEmpty(), "the intake takes three Tetrium Ingots");
+        });
+        afterTicking(h, 25 + perIngot * 3 + 40, () -> {
+            h.assertTrue(forge.stored(tetrium) == 270, "three ingots melted to 270 mB, got " + forge.stored(tetrium));
+            h.assertTrue(forge.fluidAmount() == 1000 - 3 * lavaEach, "lava burned " + 3 * lavaEach + " mB, left " + forge.fluidAmount());
+            h.assertTrue(forge.metalFraction() > 0 && forge.metalFraction() < 0.05f, "the windows show a little metal: " + forge.metalFraction());
+            h.succeed();
+        });
+    }
+
+    /** Molten Tetrium, Magnatite and Illyrium pipe into the intake, each only up to its line of the bill; lava and the intake's drain do nothing. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_takes_molten_metal_through_the_intake(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        afterTicking(h, 25, () -> {
+            BlockPos intake = forge.parts().stream().filter(p -> p.block() == ModBlocks.METAL_INTAKE.get()).findFirst().orElseThrow().pos();
+            var tanks = h.getLevel().getBlockEntity(intake).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, net.minecraft.core.Direction.WEST).orElseThrow(IllegalStateException::new);
+            var exec = net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+            var molten = com.mrgregles.bsp_core.material.MoltenMetals.ALL;
+            h.assertTrue(tanks.fill(new net.minecraftforge.fluids.FluidStack(molten.get(com.mrgregles.bsp_core.material.MoltenMetals.Metal.TETRIUM).source().get(), 500), exec) == 500, "500 mB of Molten Tetrium goes in");
+            int magCap = billLine("bsp_core:magnatite_ingot").capacity();
+            h.assertTrue(tanks.fill(new net.minecraftforge.fluids.FluidStack(molten.get(com.mrgregles.bsp_core.material.MoltenMetals.Metal.MAGNATITE).source().get(), magCap + 1000), exec) == magCap,
+                    "Molten Magnatite stops at its bill, " + magCap + " mB");
+            h.assertTrue(tanks.fill(new net.minecraftforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 1000), exec) == 0, "the intake takes no lava");
+            h.assertTrue(tanks.drain(1000, exec).isEmpty(), "nothing drains back out");
+            h.assertTrue(forge.stored(billLine("bsp_core:tetrium_ingot")) == 500 && forge.stored(billLine("bsp_core:magnatite_ingot")) == magCap, "both tanks hold what went in");
+            h.succeed();
+        });
+    }
+
+    /** The mould goes in in order, base first and the Totem Core last; a wrong piece is refused; sneaking takes the last piece back out. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_mould_goes_in_in_order(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        afterTicking(h, 25, () -> {
+            var M = com.mrgregles.bsp_core.registry.ModItems.MOULDS;
+            ItemStack torso = new ItemStack(M.get(com.mrgregles.bsp_core.material.TotemMouldItem.Piece.TORSO).get());
+            h.assertTrue(forge.placeMould(torso) == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Placed.WRONG_PIECE && torso.getCount() == 1, "the torso cannot go in before the base");
+            var order = List.of(com.mrgregles.bsp_core.material.TotemMouldItem.Piece.BASE, com.mrgregles.bsp_core.material.TotemMouldItem.Piece.FOOT, com.mrgregles.bsp_core.material.TotemMouldItem.Piece.FOOT,
+                    com.mrgregles.bsp_core.material.TotemMouldItem.Piece.TORSO, com.mrgregles.bsp_core.material.TotemMouldItem.Piece.ARM, com.mrgregles.bsp_core.material.TotemMouldItem.Piece.ARM,
+                    com.mrgregles.bsp_core.material.TotemMouldItem.Piece.HEAD);
+            for (var piece : order) {
+                ItemStack s = new ItemStack(M.get(piece).get());
+                h.assertTrue(forge.placeMould(s) == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Placed.PLACED && s.isEmpty(), piece + " goes in");
+            }
+            ItemStack core = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TOTEM_CORE.get(), 2);
+            h.assertTrue(forge.placeMould(core) == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Placed.PLACED && core.getCount() == 1, "one Totem Core goes in last");
+            h.assertTrue(forge.mouldMask() == 0xFF && forge.nextMouldPiece().isEmpty(), "all eight places filled");
+            h.assertTrue(forge.placeMould(core) == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Placed.COMPLETE, "a second core is refused: the mould is complete");
+            h.assertTrue(forge.takeMould().is(com.mrgregles.bsp_core.registry.ModItems.TOTEM_CORE.get()) && forge.mouldMask() == 0x7F, "the core comes out first");
+            h.assertTrue(forge.mouldContents().size() == 7, "seven pieces left to drop if the forge is broken");
+            h.succeed();
+        });
+    }
+
+    /**
+     * The intake takes only the ingots a tank still needs, so a surplus never blocks the slot for the other metals; a tank
+     * a little short still melts its last ingot, the excess lost; a mould piece with no pours left is refused.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 600, batch = "totem_forge")
+    public void totem_forge_intake_takes_only_what_it_needs(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var tetrium = billLine("bsp_core:tetrium_ingot");
+        int perIngot = com.mrgregles.bsp_core.BSPConfig.TFORGE_TICKS_PER_INGOT.get();
+        afterTicking(h, 25, () -> {
+            BlockPos hearth = forge.parts().stream().filter(p -> p.block() == ModBlocks.FORGE_HEARTH.get()).findFirst().orElseThrow().pos();
+            BlockPos intake = forge.parts().stream().filter(p -> p.block() == ModBlocks.METAL_INTAKE.get()).findFirst().orElseThrow().pos();
+            var exec = net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+            h.getLevel().getBlockEntity(hearth).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, net.minecraft.core.Direction.EAST)
+                    .orElseThrow(IllegalStateException::new).fill(new net.minecraftforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 1000), exec);
+            var molten = h.getLevel().getBlockEntity(intake).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, net.minecraft.core.Direction.WEST)
+                    .orElseThrow(IllegalStateException::new);
+            molten.fill(new net.minecraftforge.fluids.FluidStack(com.mrgregles.bsp_core.material.MoltenMetals.ALL.get(com.mrgregles.bsp_core.material.MoltenMetals.Metal.TETRIUM).source().get(),
+                    tetrium.capacity() - 200), exec);
+            h.assertTrue(forge.ingotsNeeded(tetrium) == 3, "200 mB short: three ingots still needed, the last only partly, got " + forge.ingotsNeeded(tetrium));
+            var items = h.getLevel().getBlockEntity(intake).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, net.minecraft.core.Direction.WEST)
+                    .orElseThrow(IllegalStateException::new);
+            ItemStack left = items.insertItem(0, new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_INGOT.get(), 64), false);
+            h.assertTrue(left.getCount() == 61, "the intake takes only the three Tetrium Ingots needed, " + left.getCount() + " left over");
+            var base = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.MOULDS.get(com.mrgregles.bsp_core.material.TotemMouldItem.Piece.BASE).get());
+            base.setDamageValue(base.getMaxDamage());
+            h.assertTrue(forge.placeMould(base) == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Placed.CRACKED && base.getCount() == 1, "a piece with no pours left is refused");
+            afterTicking(h, perIngot * 3 + 40, () -> {
+                h.assertTrue(forge.stored(tetrium) == tetrium.capacity(), "the last ingot melted though only 20 mB of it fitted: " + forge.stored(tetrium) + " of " + tetrium.capacity());
+                h.assertTrue(items.getStackInSlot(0).isEmpty(), "the slot is empty again");
+                h.assertTrue(items.insertItem(0, new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_INGOT.get(), 5), true).getCount() == 5, "a full tank takes no more ingots");
+                var magnatite = billLine("bsp_core:magnatite_ingot");
+                h.assertTrue(items.insertItem(0, new ItemStack(com.mrgregles.bsp_core.registry.ModItems.MAGNATITE_INGOT.get(), 64), true).getCount() == 64 - magnatite.ingots(),
+                        "and the slot is free for the next metal, up to its " + magnatite.ingots() + " ingots");
+                h.succeed();
+            });
+        });
+    }
+
+    /** The bill's lines: a count out of range, an item that does not exist and a tag no item carries are left out; good item and tag lines stay. */
+    @GameTest(template = EMPTY, batch = "totem_forge")
+    public void totem_forge_bill_leaves_out_lines_it_cannot_use(GameTestHelper h) {
+        var value = com.mrgregles.bsp_core.BSPConfig.TFORGE_BILL;
+        var was = value.get();
+        List<com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Metal> bill;
+        try {
+            value.set(List.of("bsp_core:tetrium_ingot=12", "#forge:ingots/iron=2", "#forge:ingots/bsp_no_such_metal=4", "bsp_core:no_such_item=3",
+                    "bsp_core:illyrium_ingot=0", "bsp_core:magnatite_ingot=999999", "minecraft:netherite_ingot=99999999999"));
+            bill = com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.bill();
+        } finally {
+            value.set(was);
+        }
+        h.assertTrue(bill.size() == 2 && bill.get(0).key().equals("bsp_core:tetrium_ingot") && bill.get(0).ingots() == 12 && bill.get(1).key().equals("#forge:ingots/iron"),
+                "two lines kept: " + bill);
+        h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.bill().size() > 2, "the real bill is back");
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ Totem Forge pour rules (task 6b)
+
+    /** Every mould piece in order, then a Totem Core. */
+    private static void fullMould(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity forge) {
+        var P = com.mrgregles.bsp_core.material.TotemMouldItem.Piece.values();
+        for (var piece : List.of(P[0], P[1], P[1], P[2], P[3], P[3], P[4])) {
+            forge.placeMould(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.MOULDS.get(piece).get()));
+        }
+        forge.placeMould(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TOTEM_CORE.get()));
+    }
+
+    /** No totem: the pour is free and sets in 5 days; it needs the mould and the metal; it runs to the end and empties the tanks; one pour per player; a broken forge frees the claim and drops only the pieces that survive. */
+    @GameTest(template = EMPTY, timeoutTicks = 1000, batch = "totem_forge")
+    public void totem_forge_pour_is_free_without_a_totem(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var other = buildTotemForge(h, new BlockPos(14, 1, 4));
+        var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        afterTicking(h, 25, () -> {
+            h.assertTrue(forge.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.MOULD, "no pour without the mould");
+            fullMould(forge);
+            h.assertTrue(forge.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.METAL, "no pour without the metal");
+            forge.fillTanks();
+            var plan = forge.startPour(player);
+            h.assertTrue(plan.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.FREE && plan.coins() == 0, "free for a player with no totem: " + plan);
+            h.assertTrue(forge.setMillis() == com.mrgregles.bsp_core.BSPConfig.TFORGE_FREE_SET_HOURS.get() * 3_600_000L && !forge.paid() && player.getUUID().equals(forge.pourer()), "sets in the free time, poured by the player");
+            h.assertTrue(forge.pourFraction() > 0, "the pour has started");
+            h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeLedger.get(h.getLevel().getServer()).pourOf(player.getUUID()).isPresent(), "the player's one pour is claimed");
+            fullMould(other);
+            other.fillTanks();
+            h.assertTrue(other.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.ALREADY_POURING, "a second forge refuses the same player");
+            h.assertTrue(forge.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.BUSY, "the pouring forge refuses another pour");
+            h.assertTrue(forge.placeMould(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TOTEM_CORE.get())) == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.Placed.POURED
+                    && forge.takeMould().isEmpty(), "the mould is locked once poured");
+        });
+        afterTicking(h, 25 + com.mrgregles.bsp_core.BSPConfig.TFORGE_POUR_SECONDS.get() * 20 + 20, () -> {
+            h.assertTrue(forge.pourFraction() >= 1 && forge.metalFraction() == 0 && !forge.metalComplete(), "the pour ran to the end and emptied the tanks");
+            var drops = forge.mouldContents();
+            h.assertTrue(drops.size() == 7 && drops.stream().allMatch(s -> com.mrgregles.bsp_core.material.TotemMouldItem.poursLeft(s) == 2), "seven pieces with two pours left; the core is used up: " + drops);
+            forge.onBroken();
+            h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeLedger.get(h.getLevel().getServer()).pourOf(player.getUUID()).isEmpty(), "breaking the forge frees the claim");
+            h.succeed();
+        });
+    }
+
+    /** Owning a totem: the pour costs 4 Illyrium coins for each one owned and sets in 15 days; too few coins and nothing starts. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_pour_costs_coins_with_a_totem(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        afterTicking(h, 25, () -> {
+            fullMould(forge);
+            forge.fillTanks();
+            player.getInventory().add(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get()));
+            var coin = com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.pourCoin().coin();
+            h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.ownedTotems(player) == 1, "the carried totem counts");
+            player.getInventory().add(new ItemStack(coin, 3));
+            var plan = forge.startPour(player);
+            h.assertTrue(plan.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.COINS && plan.coins() == 4 && forge.pourFraction() == 0
+                    && player.getInventory().countItem(coin) == 3, "three coins are not enough and nothing is taken: " + plan);
+            player.getInventory().add(new ItemStack(coin, 2));
+            plan = forge.startPour(player);
+            h.assertTrue(plan.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.PAID && player.getInventory().countItem(coin) == 1, "four of five coins paid: " + plan);
+            h.assertTrue(forge.paid() && forge.setMillis() == com.mrgregles.bsp_core.BSPConfig.TFORGE_PAID_SET_HOURS.get() * 3_600_000L, "a paid pour sets in the paid time");
+            forge.onBroken();
+            h.succeed();
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Forge setting, take-out and steal (task 6c)
+
+    private static ItemStack carriedTotem(net.minecraft.server.level.ServerPlayer p) {
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            if (com.mrgregles.bsp_core.totem.TotemInventories.isTotem(p.getInventory().getItem(i))) {
+                return p.getInventory().getItem(i);
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private static void assertForgedFor(GameTestHelper h, ItemStack totem, net.minecraft.server.level.ServerPlayer owner) {
+        h.assertTrue(!totem.isEmpty() && com.mrgregles.bsp_core.totem.TotemIdentity.isForged(totem), "a forged totem");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemOwner.fromStack(totem).map(o -> o.uuid().equals(owner.getUUID())).orElse(false), "owned by " + owner.getGameProfile().getName());
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemUpgrades.getTier(totem) == 0, "tier I, no upgrades");
+        h.assertTrue(totem.getHoverName().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t && t.getKey().equals("item.bsp_core.forged_shatter_totem"), "named Forged Shatter Totem");
+    }
+
+    /** Once set, the pourer's right-click hands over a Forged Shatter Totem; the forge keeps the surviving pieces, frees the claim and can pour again. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_pourer_takes_the_set_totem(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        afterTicking(h, 25, () -> {
+            fullMould(forge);
+            forge.fillTanks();
+            forge.startPour(player);
+            h.assertFalse(forge.isSet(), "not set straight after the pour starts");
+            forge.use(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertTrue(carriedTotem(player).isEmpty(), "nothing to take before it has set");
+            forge.finishSetting();
+            h.assertTrue(forge.isSet() && forge.setFraction() >= 1, "set");
+            forge.use(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            assertForgedFor(h, carriedTotem(player), player);
+            h.assertTrue(forge.pourFraction() == 0 && forge.mouldMask() == 0x7F && forge.pourer() == null, "the forge is empty again, the seven pieces left in it");
+            h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeLedger.get(h.getLevel().getServer()).pourOf(player.getUUID()).isEmpty(), "the claim is free");
+            h.succeed();
+        });
+    }
+
+    /** Anyone else must steal a set totem: walking away fails the steal; staying by the forge for the steal time hands the thief the totem. Breaking a set forge drops the totem for its pourer. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_set_totem_can_be_stolen(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var other = buildTotemForge(h, new BlockPos(14, 1, 4));
+        var pourer = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var pourer2 = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var thief = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        afterTicking(h, 25, () -> {
+            for (var f : List.of(forge, other)) {
+                fullMould(f);
+                f.fillTanks();
+            }
+            forge.startPour(pourer);
+            other.startPour(pourer2);
+            forge.finishSetting();
+            other.finishSetting();
+            BlockPos at = forge.getBlockPos();
+            int steal = com.mrgregles.bsp_core.BSPConfig.TFORGE_STEAL_SECONDS.get() * 20, grace = com.mrgregles.bsp_core.BSPConfig.STEAL_GRACE_SECONDS.get() * 20;
+            thief.moveTo(at.getX() + 40.5, at.getY() + 1, at.getZ() + 0.5);
+            forge.use(thief, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertFalse(forge.stealing(), "a steal starts only within the steal radius");
+            thief.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            forge.use(thief, net.minecraft.world.InteractionHand.MAIN_HAND);
+            h.assertTrue(forge.stealing() && carriedTotem(thief).isEmpty(), "a stranger's click by the forge starts a steal, not a take-out");
+            forge.stealTick(h.getLevel(), 40);
+            thief.moveTo(at.getX() + 40.5, at.getY() + 1, at.getZ() + 0.5);
+            forge.stealTick(h.getLevel(), grace - 20);
+            h.assertTrue(forge.stealing() && forge.getSteal().orElseThrow().ticksLeft() == steal - 40 && forge.getSteal().orElseThrow().outside(),
+                    "outside the radius the timer stops while the grace runs down");
+            thief.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            forge.stealTick(h.getLevel(), 20);
+            h.assertTrue(forge.getSteal().orElseThrow().graceLeft() == grace && forge.getSteal().orElseThrow().ticksLeft() == steal - 60, "back in the radius: the grace refills and the timer runs");
+            thief.moveTo(at.getX() + 40.5, at.getY() + 1, at.getZ() + 0.5);
+            forge.stealTick(h.getLevel(), grace + 20);
+            h.assertFalse(forge.stealing(), "too far for longer than the grace: the steal fails");
+            thief.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            forge.use(thief, net.minecraft.world.InteractionHand.MAIN_HAND);
+            forge.stealTick(h.getLevel(), steal - 20);
+            h.assertTrue(forge.stealing() && carriedTotem(thief).isEmpty(), "not yet, a second before the end");
+            forge.stealTick(h.getLevel(), 20);
+            assertForgedFor(h, carriedTotem(thief), thief);
+            h.assertTrue(!forge.stealing() && forge.pourFraction() == 0, "the forge is empty again");
+            h.assertTrue(com.mrgregles.bsp_core.BSPConfig.STEAL_INVINCIBILITY_SECONDS.get() <= 0 || thief.hasEffect(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE),
+                    "the thief is shielded after the steal, as after a totem steal");
+            other.onBroken();
+            // Forge swaps the dropped item for the totem's own entity a tick later
+            afterTicking(h, 5, () -> {
+                // the test world keeps entities between runs, so look only for this pourer's totem
+                var dropped = h.getLevel().getEntitiesOfClass(com.mrgregles.bsp_core.totem.ShatterTotemItemEntity.class, new net.minecraft.world.phys.AABB(other.getBlockPos()).inflate(3),
+                        e -> com.mrgregles.bsp_core.totem.TotemOwner.fromStack(e.getItem()).map(o -> o.uuid().equals(pourer2.getUUID())).orElse(false));
+                h.assertTrue(dropped.size() == 1 && com.mrgregles.bsp_core.totem.TotemIdentity.isForged(dropped.get(0).getItem()), "breaking a set forge drops its totem for the pourer, got " + dropped.size());
+                h.getLevel().getEntitiesOfClass(com.mrgregles.bsp_core.totem.ShatterTotemItemEntity.class, new net.minecraft.world.phys.AABB(other.getBlockPos()).inflate(3)).forEach(net.minecraft.world.entity.Entity::discard);
+                h.succeed();
+            });
+        });
+    }
+
+    /**
+     * The forge steal follows the totem steal's rules (audit D1, D2): no creative thief, no teammate, the steal events
+     * fire, the pourer gets the direct Discord message, and the next steal at the same forge is announced again.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_steal_follows_the_totem_rules(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var server = server(h);
+        var pourer = survivor(h);
+        var mate = survivor(h);
+        var creative = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.CREATIVE);
+        var thief = survivor(h);
+        var sent = new ArrayList<com.mrgregles.bsp_core.discord.DiscordAlert>();
+        com.mrgregles.bsp_core.discord.AlertSender recorder = sent::add;
+        List<String> events = new ArrayList<>();
+        java.util.function.Consumer<com.mrgregles.bsp_core.api.event.TotemEvent> listener = e -> {
+            if (e.getWhere().pos().equals(forge.getBlockPos())) {
+                events.add(e.getClass().getSimpleName() + (e instanceof com.mrgregles.bsp_core.api.event.TotemEvent.StealEnded end ? ":" + end.isSuccess() : ""));
+            }
+        };
+        afterTicking(h, 25, () -> {
+            BlockPos at = forge.getBlockPos();
+            for (var p : List.of(mate, creative, thief)) {
+                p.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            }
+            fullMould(forge);
+            forge.fillTanks();
+            forge.startPour(pourer);
+            forge.finishSetting();
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(listener);
+            com.mrgregles.bsp_core.discord.DiscordAlerts.listen(recorder);
+            boolean teams = com.mrgregles.bsp_core.team.Teams.enabled();
+            try {
+                forge.use(creative, net.minecraft.world.InteractionHand.MAIN_HAND);
+                h.assertFalse(forge.stealing(), "a creative player cannot steal");
+                if (teams) {
+                    h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(pourer, teamName("Forge"), net.minecraft.ChatFormatting.GOLD).ok()
+                            && com.mrgregles.bsp_core.team.Teams.invite(pourer, mate).ok() && com.mrgregles.bsp_core.team.Teams.accept(mate).ok(), "pourer and mate share a team");
+                    forge.use(mate, net.minecraft.world.InteractionHand.MAIN_HAND);
+                    h.assertFalse(forge.stealing(), "a teammate cannot steal (teamTeammatesSteal is off)");
+                }
+                forge.use(thief, net.minecraft.world.InteractionHand.MAIN_HAND);
+                h.assertTrue(forge.stealing(), "a stranger can");
+                h.assertTrue(sent.stream().anyMatch(a -> a.type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.CHANNEL)
+                        && sent.stream().anyMatch(a -> a.type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.WARNING && pourer.getUUID().equals(a.player())),
+                        "the channel line and the pourer's direct message: " + sent);
+                thief.moveTo(at.getX() + 40.5, at.getY() + 1, at.getZ() + 0.5);
+                forge.stealTick(h.getLevel(), com.mrgregles.bsp_core.BSPConfig.STEAL_GRACE_SECONDS.get() * 20 + 20);
+                h.assertFalse(forge.stealing(), "the steal failed");
+                h.assertTrue(sent.stream().anyMatch(a -> a.type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.SAVED && pourer.getUUID().equals(a.player())),
+                        "the pourer hears on Discord that the steal failed: " + sent);
+                int n = sent.size();
+                thief.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+                forge.use(thief, net.minecraft.world.InteractionHand.MAIN_HAND);
+                h.assertTrue(forge.stealing() && sent.subList(n, sent.size()).stream().anyMatch(a -> a.type() == com.mrgregles.bsp_core.discord.DiscordAlert.Type.CHANNEL),
+                        "a second steal at the same forge is announced again: " + sent.subList(n, sent.size()));
+                forge.stealTick(h.getLevel(), com.mrgregles.bsp_core.BSPConfig.TFORGE_STEAL_SECONDS.get() * 20);
+                assertForgedFor(h, carriedTotem(thief), thief);
+                h.assertTrue(events.equals(List.of("StealStarted", "StealEnded:false", "StealStarted", "StealEnded:true")), "the steal events, in order: " + events);
+            } finally {
+                com.mrgregles.bsp_core.discord.DiscordAlerts.stopListening(recorder);
+                net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(listener);
+                if (teams) {
+                    com.mrgregles.bsp_core.team.Teams.leave(mate);
+                    com.mrgregles.bsp_core.team.Teams.leave(pourer);
+                }
+            }
+            h.succeed();
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Forge ownership and coins (audit fix task 6)
+
+    /** Owned counts every totem of the player's on this server: carried on the cursor, owed here, lying dropped (while it reports), held for a transfer (audit D9). */
+    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "totem_forge")
+    public void totem_forge_counts_every_totem_the_player_owns(GameTestHelper h) {
+        var player = survivor(h);
+        var server = server(h);
+        afterTicking(h, 5, () -> {
+            var owned = (java.util.function.IntSupplier) () -> com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.ownedTotems(player);
+            h.assertTrue(owned.getAsInt() == 0, "nothing yet");
+            ItemStack totem = new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+            new TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(totem);
+            player.containerMenu.setCarried(totem.copy());
+            h.assertTrue(owned.getAsInt() == 1, "a totem on the cursor counts");
+            player.containerMenu.setCarried(ItemStack.EMPTY);
+            var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+            season.pendingItems.put(player.getUUID(), new ArrayList<>(List.of(totem.copy(), new ItemStack(net.minecraft.world.item.Items.STONE))));
+            try {
+                h.assertTrue(owned.getAsInt() == 1, "a totem owed to them here counts, the stone does not");
+            } finally {
+                season.pendingItems.remove(player.getUUID());
+            }
+            var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+            long now = server.overworld().getGameTime();
+            UUID fresh = UUID.randomUUID(), stale = UUID.randomUUID();
+            ledger.seen(fresh, UUID.randomUUID(), player.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.DROPPED, null, now);
+            ledger.seen(stale, UUID.randomUUID(), player.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.DROPPED, null, now - 5000);
+            try {
+                h.assertTrue(owned.getAsInt() == 1, "a dropped totem that reported lately counts; one long silent does not");
+            } finally {
+                ledger.forget(fresh);
+                ledger.forget(stale);
+            }
+            player.getInventory().add(totem.copy());
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.beginTransfer(player) == 1 && carriedTotem(player).isEmpty(), "a transfer takes the totem from the inventory");
+            try {
+                h.assertTrue(owned.getAsInt() == 1, "and it still counts while held for the journey");
+            } finally {
+                com.mrgregles.bsp_core.api.BspTransfer.endTransfer(player);
+            }
+            h.assertTrue(owned.getAsInt() == 1 && !carriedTotem(player).isEmpty(), "back in the inventory, counted once");
+            h.succeed();
+        });
+    }
+
+    /** Any Shatter Coins pay the pour by value (audit D5): seven Netherite Coins are short of four Illyrium Coins' worth, eight pay it. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_pour_takes_any_coins_by_value(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = survivor(h);
+        afterTicking(h, 25, () -> {
+            fullMould(forge);
+            forge.fillTanks();
+            player.getInventory().add(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get()));
+            var netherite = com.mrgregles.bsp_core.coin.CoinTier.NETHERITE.coin();
+            player.getInventory().add(new ItemStack(netherite, 7));
+            var plan = forge.plan(player);
+            h.assertTrue(plan.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.COINS && plan.coins() == 4, "56 copper units do not pay 64: " + plan);
+            player.getInventory().add(new ItemStack(netherite, 3));
+            plan = forge.startPour(player);
+            h.assertTrue(plan.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.PAID && forge.pourFraction() > 0, "ten Netherite Coins pay: " + plan);
+            h.assertTrue(player.getInventory().countItem(netherite) == 2 && player.getInventory().countItem(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.pourCoin().coin()) == 0,
+                    "eight Netherite Coins taken, two left");
+            forge.onBroken();
+            h.succeed();
+        });
+    }
+
+    /** Totems the network says wait for the player count too; a pour that turns out dearer than the screen showed is not charged until pressed again. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_network_owed_totems_count_and_never_surprise(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = survivor(h);
+        var fake = new FakeForgeNetwork();
+        afterTicking(h, 25, () -> {
+            BlockPos at = forge.getBlockPos();
+            player.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            fullMould(forge);
+            forge.fillTanks();
+            var coin = com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.pourCoin().coin();
+            player.getInventory().add(new ItemStack(coin, 4));
+            h.assertTrue(forge.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.FREE, "the screen shows a free pour");
+            var old = com.mrgregles.bsp_core.machine.TotemForgeLedger.useNetwork(fake);
+            try {
+                fake.answer = "MINE";
+                fake.owed = 1;
+                forge.requestPour(player);
+                h.assertTrue(forge.pourFraction() == 0 && player.getInventory().countItem(coin) == 4, "one totem on its way makes it a paid pour: nothing poured, nothing taken");
+                String mine = com.mrgregles.bsp_core.machine.TotemForgeLedger.networkValue(net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), at));
+                h.assertTrue(fake.log.contains("release " + mine), "and the network row is given back: " + fake.log);
+                var plan = forge.plan(player);
+                h.assertTrue(plan.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.PAID && plan.owned() == 1 && plan.coins() == 4, "the screen now shows the price: " + plan);
+                forge.requestPour(player);
+            } finally {
+                com.mrgregles.bsp_core.machine.TotemForgeLedger.useNetwork(old);
+            }
+            h.assertTrue(forge.pourFraction() > 0 && forge.paid() && player.getInventory().countItem(coin) == 0, "pressed again at the price shown: paid and poured");
+            forge.onBroken();
+            h.succeed();
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Forge setting (audit fix task 5)
+
+    /**
+     * The ledger keeps when a claimed totem will have set and tells its pourer once it has, whether or not the forge is
+     * loaded; the forge's own notice and the ledger's never both go out.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_ledger_tells_the_pourer_once(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var server = server(h);
+        var away = survivor(h);
+        var pourer = survivor(h);
+        afterTicking(h, 25, () -> {
+            var ledger = com.mrgregles.bsp_core.machine.TotemForgeLedger.get(server);
+            long now = System.currentTimeMillis();
+            ledger.claim(away.getUUID(), net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), new BlockPos(29_000_000, 64, 29_000_000)));
+            ledger.readyAt(away.getUUID(), now + 60_000);
+            ledger.tellDue(server, now);
+            h.assertTrue(!ledger.told(away.getUUID()) && ledger.readyTime(away.getUUID()).orElse(0) == now + 60_000, "not set yet: nobody is told");
+            ledger.tellDue(server, now + 60_001);
+            h.assertTrue(ledger.told(away.getUUID()), "set in an unloaded forge: the ledger tells the pourer");
+            h.assertFalse(ledger.markTold(away.getUUID()), "and only once");
+            ledger.clear(away.getUUID());
+            h.assertFalse(ledger.told(away.getUUID()) || ledger.readyTime(away.getUUID()).isPresent(), "a cleared claim forgets its time");
+            fullMould(forge);
+            forge.fillTanks();
+            forge.startPour(pourer);
+            h.assertTrue(ledger.readyTime(pourer.getUUID()).isEmpty(), "no set time before the pour has ended");
+            forge.finishSetting();
+            h.assertTrue(forge.isSet() && ledger.told(pourer.getUUID()), "the forge that saw it set told the pourer, and the ledger knows");
+            forge.onBroken();
+            h.succeed();
+        });
+    }
+
+    /**
+     * The screen gets the setting's minutes left from the server's clock and the viewer's check as ordinal + 1, so a client
+     * that has heard nothing yet reads UNKNOWN (never FREE); the minutes travel in two 15-bit halves.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 1000, batch = "totem_forge")
+    public void totem_forge_screen_counts_down_by_the_server_clock(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var pourer = survivor(h);
+        afterTicking(h, 25, () -> {
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            buf.writeBlockPos(forge.getBlockPos());
+            var client = new com.mrgregles.bsp_core.machine.TotemForgeMenu(2, pourer.getInventory(), buf);
+            h.assertTrue(client.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.UNKNOWN, "a screen that has heard nothing reads UNKNOWN, not FREE: " + client.check());
+            for (int v : new int[]{0, 7200, 32_767, 32_768, 6_000_000}) {
+                int hi = com.mrgregles.bsp_core.machine.TotemForgeMenu.high(v), lo = com.mrgregles.bsp_core.machine.TotemForgeMenu.low(v);
+                h.assertTrue(hi <= 32_767 && lo <= 32_767 && com.mrgregles.bsp_core.machine.TotemForgeMenu.join(hi, lo) == v, v + " survives its two short halves");
+            }
+            fullMould(forge);
+            forge.fillTanks();
+            forge.startPour(pourer);
+            afterTicking(h, com.mrgregles.bsp_core.BSPConfig.TFORGE_POUR_SECONDS.get() * 20 + 20, () -> {
+                var menu = new com.mrgregles.bsp_core.machine.TotemForgeMenu(1, pourer.getInventory(), forge);
+                int full = com.mrgregles.bsp_core.BSPConfig.TFORGE_FREE_SET_HOURS.get() * 60;
+                h.assertTrue(forge.pourFraction() >= 1 && !forge.isSet(), "setting");
+                h.assertTrue(menu.minutesLeft() <= full && menu.minutesLeft() >= full - 1, "the setting's minutes left, by the server: " + menu.minutesLeft() + " of " + full);
+                h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeLedger.get(server(h)).readyTime(pourer.getUUID()).isPresent(), "the ledger has the set time");
+                forge.onBroken();
+                h.succeed();
+            });
+        });
+    }
+
+    /** Create's contraptions may not pick up a placed Shatter Totem or a Totem Forge controller: moving either would carry its block entity off (a stale claim, a doubled totem). */
+    @GameTest(template = EMPTY, batch = "totem_forge")
+    public void create_cannot_move_totems_or_the_forge(GameTestHelper h) {
+        var nonMovable = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, new net.minecraft.resources.ResourceLocation("create", "non_movable"));
+        h.assertTrue(ModBlocks.SHATTER_TOTEM.get().defaultBlockState().is(nonMovable), "the placed Shatter Totem is create:non_movable");
+        h.assertTrue(ModBlocks.TOTEM_FORGE.get().defaultBlockState().is(nonMovable), "the Totem Forge controller is create:non_movable");
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ Totem Forge efficiency and hygiene (audit fix task 8)
+
+    /** Pipes take the empty bucket a lava bucket leaves out through the intake (an input side) but never a full one; the screen hears no RF buffer without an upgrade. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_intake_gives_up_empty_buckets(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = survivor(h);
+        afterTicking(h, 25, () -> {
+            BlockPos intake = forge.parts().stream().filter(p -> p.block() == ModBlocks.METAL_INTAKE.get()).findFirst().orElseThrow().pos();
+            var items = h.getLevel().getBlockEntity(intake).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, net.minecraft.core.Direction.WEST)
+                    .orElseThrow(IllegalStateException::new);
+            h.assertTrue(items.insertItem(1, new ItemStack(net.minecraft.world.item.Items.LAVA_BUCKET), false).isEmpty(), "a lava bucket goes in");
+            h.assertTrue(items.extractItem(1, 1, true).isEmpty(), "a full lava bucket never comes back out");
+            afterTicking(h, 30, () -> {
+                h.assertTrue(forge.fluidAmount() >= 1000 && forge.getItems().getStackInSlot(1).is(net.minecraft.world.item.Items.BUCKET), "the lava is in the tank, the empty bucket left");
+                h.assertTrue(items.extractItem(1, 1, false).is(net.minecraft.world.item.Items.BUCKET) && forge.getItems().getStackInSlot(1).isEmpty(), "and a pipe takes the empty bucket out");
+                h.assertTrue(new com.mrgregles.bsp_core.machine.TotemForgeMenu(1, player.getInventory(), forge).energyPermille() == -1, "no RF buffer shown without an RF upgrade");
+                h.succeed();
+            });
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Forge clicks (audit fix task 4)
+
+    /**
+     * On a set forge only an empty hand takes the totem or starts a steal, on the controller or a port; a held item passes
+     * (the controller opens the screen, a port lets the item work), and the screen's key works with anything in hand. The
+     * ports tell clients their controller. A set forge with a broken part still shows as set, and its totem still comes out.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 400, batch = "totem_forge")
+    public void totem_forge_set_forge_takes_only_an_empty_hand(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var pourer = survivor(h);
+        var stranger = survivor(h);
+        afterTicking(h, 25, () -> {
+            BlockPos at = forge.getBlockPos();
+            BlockPos intake = forge.parts().stream().filter(p -> p.block() == ModBlocks.METAL_INTAKE.get()).findFirst().orElseThrow().pos();
+            h.assertTrue(h.getLevel().getBlockEntity(intake).getUpdateTag().contains("Controller"), "a port's update tag tells clients its controller");
+            for (var p : List.of(pourer, stranger)) {
+                p.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            }
+            fullMould(forge);
+            forge.fillTanks();
+            forge.startPour(pourer);
+            forge.finishSetting();
+            var main = net.minecraft.world.InteractionHand.MAIN_HAND;
+            var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(intake), net.minecraft.core.Direction.UP, intake, false);
+            stranger.setItemInHand(main, new ItemStack(net.minecraft.world.item.Items.STONE));
+            h.assertFalse(forge.use(stranger, main), "a held block on the controller opens the screen");
+            h.assertTrue(h.getLevel().getBlockState(intake).use(h.getLevel(), stranger, main, hit) == net.minecraft.world.InteractionResult.PASS && !forge.stealing(),
+                    "and on a port it passes on, with no steal");
+            stranger.setItemInHand(main, ItemStack.EMPTY);
+            h.assertTrue(h.getLevel().getBlockState(intake).use(h.getLevel(), stranger, main, hit).consumesAction() && forge.stealing(), "an empty hand on a port starts the steal");
+            pourer.setItemInHand(main, new ItemStack(net.minecraft.world.item.Items.STONE));
+            h.assertFalse(forge.use(pourer, main), "the pourer with a block in hand gets the screen too");
+            var menu = new com.mrgregles.bsp_core.machine.TotemForgeMenu(1, pourer.getInventory(), forge);
+            h.assertTrue(menu.clickMenuButton(pourer, com.mrgregles.bsp_core.machine.TotemForgeMenu.BTN_MAIN) && !forge.stealing(), "whose TAKE TOTEM ends the steal");
+            assertForgedFor(h, carriedTotem(pourer), pourer);
+            pourer.getInventory().clearContent();
+            fullMould(forge);
+            forge.fillTanks();
+            forge.startPour(pourer);
+            forge.finishSetting();
+            BlockPos hearth = forge.parts().stream().filter(p -> p.block() == ModBlocks.FORGE_HEARTH.get()).findFirst().orElseThrow().pos();
+            h.getLevel().setBlockAndUpdate(hearth, Blocks.STONE.defaultBlockState());
+            afterTicking(h, 45, () -> {
+                h.assertTrue(!forge.isFormed() && forge.screenState().equals("set"), "a set forge with a broken part still shows as set: " + forge.screenState());
+                h.assertTrue(forge.use(pourer, main), "and its totem still comes out");
+                assertForgedFor(h, carriedTotem(pourer), pourer);
+                h.assertTrue(forge.screenState().equals("unformed"), "then it is an unformed forge");
+                h.getLevel().setBlockAndUpdate(hearth, ModBlocks.FORGE_HEARTH.get().defaultBlockState());
+                h.succeed();
+            });
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Forge pour claims (audit fix task 2)
+
+    /**
+     * A claim left behind heals itself: one pointing at a loaded spot with no forge, or at this forge with nothing poured,
+     * is freed by the next pour check. One in an unloaded chunk is trusted until an operator's /bsp totemforge clear.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_stale_claims_heal_or_clear(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = survivor(h);
+        var server = server(h);
+        afterTicking(h, 25, () -> {
+            var ledger = com.mrgregles.bsp_core.machine.TotemForgeLedger.get(server);
+            var FREE = com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.FREE;
+            fullMould(forge);
+            forge.fillTanks();
+            var dim = h.getLevel().dimension();
+            ledger.claim(player.getUUID(), net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(20, 1, 20))));
+            h.assertTrue(forge.plan(player).check() == FREE && ledger.pourOf(player.getUUID()).isEmpty(), "a claim on a loaded spot with no forge is freed");
+            ledger.claim(player.getUUID(), net.minecraft.core.GlobalPos.of(dim, forge.getBlockPos()));
+            h.assertTrue(forge.plan(player).check() == FREE && ledger.pourOf(player.getUUID()).isEmpty(), "a claim on this forge with nothing poured is freed");
+            var far = net.minecraft.core.GlobalPos.of(dim, new BlockPos(29_000_000, 64, 29_000_000));
+            ledger.claim(player.getUUID(), far);
+            h.assertTrue(forge.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.ALREADY_POURING, "a claim in an unloaded chunk is trusted");
+            int n = com.mrgregles.bsp_core.command.TotemForgeCommands.clear(server.createCommandSourceStack().withSuppressedOutput(), List.of(player.getGameProfile()));
+            h.assertTrue(n == 1 && ledger.pourOf(player.getUUID()).isEmpty() && forge.plan(player).check() == FREE, "the operator's clear frees it");
+            h.assertTrue(forge.startPour(player).ok(), "and the player can pour");
+            h.assertTrue(forge.plan(player).check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.BUSY && ledger.pourOf(player.getUUID()).isPresent(),
+                    "a real pour keeps its claim through the next check");
+            forge.onBroken();
+            h.assertTrue(ledger.pourOf(player.getUUID()).isEmpty(), "breaking the forge frees it");
+            h.succeed();
+        });
+    }
+
+    /** A stand-in for the network's state table: answers claims as told, and records what is written. */
+    private static final class FakeForgeNetwork implements com.mrgregles.bsp_core.machine.TotemForgeLedger.Network {
+        /** What a claim answers: null holds the callback back (a database that does not answer). */
+        @javax.annotation.Nullable
+        String answer;
+        /** Shatter Totems the network says wait for the player. */
+        int owed;
+        java.util.function.BiConsumer<String, Integer> held;
+        final List<String> log = new ArrayList<>();
+
+        @Override
+        public boolean enabled() {
+            return true;
+        }
+
+        @Override
+        public void put(String key, String value) {
+            log.add("put " + value);
+        }
+
+        @Override
+        public void claim(String key, String value, UUID player, java.util.function.BiConsumer<String, Integer> then) {
+            log.add("claim " + value);
+            if (answer == null) {
+                held = then;
+            } else {
+                then.accept(answer.equals("MINE") ? value : answer, owed);
+            }
+        }
+
+        @Override
+        public void release(String key, String value) {
+            log.add("release " + value);
+        }
+    }
+
+    /**
+     * With network storage, POUR claims the player's row first: another server's claim refuses the pour; the claim won
+     * starts it; no answer within the wait calls it off, and a late answer gives back the row it won.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 400, batch = "totem_forge")
+    public void totem_forge_network_claim_answers_or_times_out(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = survivor(h);
+        var fake = new FakeForgeNetwork();
+        afterTicking(h, 25, () -> {
+            BlockPos at = forge.getBlockPos();
+            player.moveTo(at.getX() + 1.5, at.getY() + 1, at.getZ() + 0.5);
+            fullMould(forge);
+            forge.fillTanks();
+            String mine = com.mrgregles.bsp_core.machine.TotemForgeLedger.networkValue(net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), at));
+            var old = com.mrgregles.bsp_core.machine.TotemForgeLedger.useNetwork(fake);
+            try {
+                fake.answer = "other_server|minecraft:overworld|0,64,0";
+                forge.requestPour(player);
+                h.assertTrue(forge.pourFraction() == 0 && !forge.waitingForNetwork(), "a claim held on another server refuses the pour");
+                fake.answer = null;
+                forge.requestPour(player);
+                h.assertTrue(forge.waitingForNetwork() && forge.pourFraction() == 0, "waiting for the network's answer");
+                forge.requestPour(player);
+                h.assertTrue(fake.log.stream().filter(e -> e.startsWith("claim")).count() == 2, "a second click while waiting asks nothing more: " + fake.log);
+            } finally {
+                com.mrgregles.bsp_core.machine.TotemForgeLedger.useNetwork(old);
+            }
+            afterTicking(h, com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.NETWORK_WAIT_TICKS + 5, () -> {
+                h.assertTrue(!forge.waitingForNetwork() && forge.pourFraction() == 0, "no answer in time: the pour is called off");
+                fake.held.accept(mine, 0);
+                h.assertTrue(forge.pourFraction() == 0 && fake.log.contains("release " + mine), "a late answer gives back the row it won: " + fake.log);
+                var restore = com.mrgregles.bsp_core.machine.TotemForgeLedger.useNetwork(fake);
+                try {
+                    fake.answer = "MINE";
+                    forge.requestPour(player);
+                } finally {
+                    com.mrgregles.bsp_core.machine.TotemForgeLedger.useNetwork(restore);
+                }
+                h.assertTrue(forge.pourFraction() > 0 && player.getUUID().equals(forge.pourer()), "the claim won: the pour starts");
+                h.assertTrue(com.mrgregles.bsp_core.machine.TotemForgeLedger.get(server(h)).pourOf(player.getUUID()).isPresent(), "and is claimed here too");
+                forge.onBroken();
+                h.succeed();
+            });
+        });
+    }
+
+    // ------------------------------------------------------------------ Totem Forge screen (task 7)
+
+    /** The screen's menu: the viewer's pour check and cost come from the server; TAKE PIECE OUT and POUR do what the right-clicks and the old key did. */
+    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    public void totem_forge_screen_keys(GameTestHelper h) {
+        var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
+        var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        afterTicking(h, 25, () -> {
+            var menu = new com.mrgregles.bsp_core.machine.TotemForgeMenu(1, player.getInventory(), forge);
+            h.assertTrue(menu.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.MOULD, "the menu reports the mould missing");
+            fullMould(forge);
+            h.assertTrue(menu.clickMenuButton(player, com.mrgregles.bsp_core.machine.TotemForgeMenu.BTN_TAKE_PIECE)
+                    && player.getInventory().countItem(com.mrgregles.bsp_core.registry.ModItems.TOTEM_CORE.get()) == 1 && forge.mouldCount() == 7, "TAKE PIECE OUT hands back the core");
+            forge.placeMould(player.getInventory().getItem(player.getInventory().findSlotMatchingItem(new ItemStack(com.mrgregles.bsp_core.registry.ModItems.TOTEM_CORE.get()))));
+            forge.fillTanks();
+            afterTicking(h, 12, () -> {
+                h.assertTrue(menu.check() == com.mrgregles.bsp_core.machine.TotemForgeBlockEntity.PourCheck.FREE && menu.coins() == 0, "ready and free: " + menu.check());
+                h.assertTrue(menu.clickMenuButton(player, com.mrgregles.bsp_core.machine.TotemForgeMenu.BTN_MAIN) && forge.pourFraction() > 0, "POUR starts the pour");
+                h.assertTrue(menu.lavaCapacity() == com.mrgregles.bsp_core.BSPConfig.TFORGE_LAVA_TANK.get(), "the lava gauge's size");
+                forge.onBroken();
+                h.succeed();
+            });
+        });
+    }
 }

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TAT",
+    "ACA",
+    "TAT"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "A": {
+      "tag": "forge:ingots/allthemodium"
+    },
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    }
+  },
+  "result": {
+    "item": "bsp_core:mould_shell",
+    "count": 2
+  }
+}

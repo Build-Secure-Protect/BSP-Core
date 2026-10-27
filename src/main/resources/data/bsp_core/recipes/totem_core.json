@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ICI",
+    "NTO",
+    "ICI"
+  ],
+  "key": {
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "C": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "T": {
+      "item": "minecraft:totem_of_undying"
+    },
+    "O": {
+      "item": "bsp_core:illyrium_core"
+    }
+  },
+  "result": {
+    "item": "bsp_core:totem_core"
+  }
+}

@@ -83,6 +83,10 @@ public final class BSPConfig {
 
     /** Refinements a filter lasts: Iron, Diamond, Netherite, Illyrium. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FILTER_USES;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> TFORGE_BILL;
+    public static final ForgeConfigSpec.IntValue TFORGE_TICKS_PER_INGOT, TFORGE_LAVA_PER_INGOT, TFORGE_LAVA_TANK, TFORGE_POUR_SECONDS, TFORGE_FREE_SET_HOURS, TFORGE_PAID_SET_HOURS,
+            TFORGE_COINS_PER_TOTEM, TFORGE_STEAL_SECONDS;
+    public static final ForgeConfigSpec.ConfigValue<String> TFORGE_COIN_TIER;
 
     // ------------------------------------------------------------------ hand crushing
 
@@ -357,6 +361,27 @@ public final class BSPConfig {
         REFINERY_TANK = BUILDER.comment("Water tank size in millibuckets.").defineInRange("waterTank", 8000, 1000, 1_000_000);
         FILTER_USES = BUILDER.comment("Pure Illyrium Dust a filter can refine before it is used up: Iron, Diamond, Netherite, Illyrium.")
                 .defineList("filterUses", List.of(5, 20, 100, 1000), BSPConfig::isPositiveInt);
+        BUILDER.pop();
+
+        BUILDER.comment("Totem Forge (multiblock): melts a bill of metals into its tanks, then pours a totem into the mould.").push("totem_forge");
+        TFORGE_BILL = BUILDER.comment("The metal one totem takes: \"item=ingots\", or \"#tag=ingots\" for any item of a tag (1 to 99999 ingots). 90 mB of molten metal is one ingot.",
+                        "Molten Tetrium, Magnatite and Illyrium can also be piped into the Metal Intake.",
+                        "A line whose tag no item carries (a pack without that mod) is left out. Metal already in a forge for a line you remove is lost at its next pour.")
+                .defineList("bill", List.of("bsp_core:tetrium_ingot=128", "bsp_core:magnatite_ingot=32", "bsp_core:charged_magnatite_ingot=8", "bsp_core:illyrium_ingot=12",
+                        "#forge:ingots/allthemodium=32", "#forge:ingots/vibranium=16", "#forge:ingots/unobtainium=8", "minecraft:netherite_ingot=2"),
+                        o -> o instanceof String str && str.matches("#?[a-z0-9_.-]+:[a-z0-9_/.-]+=[0-9]{1,5}"));
+        TFORGE_TICKS_PER_INGOT = BUILDER.comment("Ticks to melt one ingot (an RF upgrade speeds it as on the other machines).").defineInRange("ticksPerIngot", 40, 1, 100_000);
+        TFORGE_LAVA_PER_INGOT = BUILDER.comment("Lava burned per ingot melted, in millibuckets.").defineInRange("lavaPerIngot", 25, 0, 100_000);
+        TFORGE_LAVA_TANK = BUILDER.comment("Lava tank size in millibuckets (at most 32,000, so the screen's gauge can show it).").defineInRange("lavaTank", 8000, 1000, 32_000);
+        TFORGE_POUR_SECONDS = BUILDER.comment("Seconds the pour takes, once started.").defineInRange("pourSeconds", 30, 1, 3600);
+        TFORGE_FREE_SET_HOURS = BUILDER.comment("Real hours a totem takes to set when the player who poured it owned no totem (owner: 5 days).")
+                .defineInRange("freeSetHours", 120, 0, 100_000);
+        TFORGE_PAID_SET_HOURS = BUILDER.comment("Real hours a totem takes to set when the player who poured it already owned one and paid coins (owner: 15 days).")
+                .defineInRange("paidSetHours", 360, 0, 100_000);
+        TFORGE_COINS_PER_TOTEM = BUILDER.comment("Shatter Coins a player pays to start a pour, for each totem they already own.").defineInRange("coinsPerOwnedTotem", 4, 0, 10_000);
+        TFORGE_COIN_TIER = BUILDER.comment("The coin tier the pour is paid in: copper, gold, diamond, netherite or illyrium.").define("coinTier", "illyrium");
+        TFORGE_STEAL_SECONDS = BUILDER.comment("Seconds another player must stay by a forge to steal a totem that has set (the radius and grace are the totem steal's).")
+                .defineInRange("stealSeconds", 150, 1, 3600);
         BUILDER.pop();
 
         BUILDER.comment("Crushing an ingot with a pickaxe on a crafting table, for packs without a crusher").push("hand_crushing");

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:molten_tetrium",
+    "bsp_core:flowing_molten_tetrium"
+  ]
+}

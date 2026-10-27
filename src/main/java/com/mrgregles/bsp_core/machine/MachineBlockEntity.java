@@ -83,6 +83,11 @@ public abstract class MachineBlockEntity extends BlockEntity {
                 Role role = layout.get(slot).role();
                 return role == Role.UPGRADE || role == Role.RF ? 1 : 64;
             }
+
+            @Override
+            protected int getStackLimit(int slot, @Nonnull ItemStack stack) {
+                return Math.min(super.getStackLimit(slot, stack), MachineBlockEntity.this.stackLimit(slot, stack));
+            }
         };
         for (Direction d : Direction.values()) {
             sides[d.get3DDataValue()] = d == Direction.DOWN ? SideMode.OUTPUT : d == Direction.UP ? SideMode.INPUT : SideMode.BOTH;
@@ -94,6 +99,16 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     /** Whether {@code stack} belongs in {@code slot}. Output slots should return false. */
     protected abstract boolean isItemValid(int slot, ItemStack stack);
+
+    /** Whether pipes may take {@code stack} out of {@code slot} even through a side set to input only (the Totem Forge's spent lava buckets). */
+    protected boolean alwaysExtractable(int slot, ItemStack stack) {
+        return false;
+    }
+
+    /** How many of {@code stack} the slot may hold at most, for pipes, hoppers and the screen alike; a machine lowers it to take only what it can use. */
+    protected int stackLimit(int slot, ItemStack stack) {
+        return 64;
+    }
 
     /** True when there is a job to do and room for its results. */
     protected abstract boolean canWork();
@@ -477,7 +492,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         @Nonnull
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (!mode().allowsOutput()) {
+            if (!mode().allowsOutput() && !alwaysExtractable(slot, items.getStackInSlot(slot))) {
                 return ItemStack.EMPTY;
             }
             Role role = layout.get(slot).role();
@@ -573,8 +588,8 @@ public abstract class MachineBlockEntity extends BlockEntity {
         }
     }
 
-    /** Sends this block entity's data to the players tracking its chunk, without a block update. */
-    private void sendData() {
+    /** Sends this block entity's data to the players tracking its chunk, without a block update (which would make every client re-mesh the chunk section). */
+    protected void sendData() {
         if (level instanceof net.minecraft.server.level.ServerLevel sl) {
             var packet = getUpdatePacket();
             if (packet != null) {

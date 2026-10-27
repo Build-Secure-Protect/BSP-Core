@@ -17,7 +17,7 @@ Your totem is the heart of BSP: build around it, protect it, and take other play
 
 **Page 1**
 
-Every player is given one *Shatter Totem* the first time they join. It cannot be crafted and it cannot be destroyed.
+Every player is given one *Shatter Totem* the first time they join. It cannot be destroyed, and the only way to make another is to pour one in a Totem Forge.
 
 Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it.
 
@@ -682,11 +682,27 @@ Nine nuggets make a *Magnatite Ingot* by hand or in the Combination Forge.
 
 Fit the *Copper Tetrium Coil* to a centrifuge and it can magnetise ingots into *Charged Magnatite Ingots*. Each try may fail; a failed try keeps the ingot.
 
+## Molten Metals
+
+**Page 1**
+
+Tetrium, Magnatite and Illyrium melt in a Tinkers' smeltery or a Thermal Magma Crucible, and pipe and store like any fluid. A nugget is 10 mB and an ingot 90 mB, and both cast back one for one.
+
+Ore melts to exactly what the BSP machines make from it: Tetrium ore 20 mB, two nuggets; Magnatite ore 30 mB, three. The slag and the Carbon Dust come only from the BSP machines.
+
+Illyrium ore, Dirty Illyrium and Charged Magnatite do not melt: the Crucible, the Refinery and the Centrifuge are their only way.
+
+**Page 2: Spills**
+
+Spilled, molten metal burns whatever wades into it, as lava does, and meets water as lava does: a still pool sets to *Obsidian*, a flowing edge to *Cobblestone*, and the metal is gone.
+
+A dispenser pours a molten bucket, and fills an empty one from a pool in front of it.
+
 ---
 
 # Machines
 
-The parts every machine is made of, and how to build the two Illyrium multiblocks.
+The parts every machine is made of, and how to build the multiblocks, the Totem Forge among them.
 
 ## Machine Parts
 
@@ -785,6 +801,68 @@ Every layer draws power, and charging draws far more than separating.
 **Page 4**  `[recipe] centrifuge_casing, centrifuge_rotor`
 
 **Page 5**  `[recipe] centrifuge_power_port, magnetic_centrifuge`
+
+## The Totem Forge
+
+**Page 1**
+
+A 2 x 2 x 3 multiblock that pours a new *Shatter Totem*. It melts a long bill of metals into its tanks, fills a mould of eight pieces standing in its hollow middle, and lets the totem set.
+
+Stuck on a build? Empty your hand and **sneak + right-click** the controller for the step-by-step Assembly Guide.
+
+**Page 2**  `[3D structure] Totem Forge`
+
+Bottom: the Totem Forge front left, the Metal Intake behind it, a Forge Hearth on the right of each. Middle: empty. Top: Melt Tanks left, Pour Head front right, Forge Cap behind it.
+
+**Page 3: The metal**
+
+The tanks must hold the whole metal bill before the forge pours. Its screen shows a tube for each metal; by default 128 Tetrium, 32 Magnatite, 8 Charged Magnatite, 12 Illyrium, 32 Allthemodium, 16 Vibranium, 8 Unobtainium and 2 Netherite Ingots.
+
+Ingots go into the Metal Intake or the screen's slot and melt one at a time, burning lava from the Forge Hearths. An RF Upgrade speeds it up. Molten Tetrium, Magnatite and Illyrium can be piped straight into the intake.
+
+**Page 4: The mould**
+
+The Totem Mould goes into the hollow one piece at a time, in order: the Base, two Feet, the Torso, two Arms, the Head, and the Totem Core last. Right-click the forge with each piece.
+
+**Sneak + right-click** with an empty hand, or TAKE PIECE OUT on the screen, takes the last piece back out, until the metal is poured.
+
+**Page 5: Pouring**
+
+With the mould complete and the tanks full, press **POUR**.
+
+If you own no Shatter Totem, the pour is free and the totem sets in 5 days. If you own any, you pay 4 Illyrium Shatter Coins for each one first (or their worth in any other Shatter Coins, with change), and it sets in 15 days.
+
+You can have one totem pouring or setting at a time, on any server.
+
+**Page 6: Setting and stealing**
+
+The totem sets on real time, even while you are away, and you are told when it is ready. Right-click the forge with an empty hand to take it out: a *Forged Shatter Totem*, tier I, yours.
+
+Anyone else must steal it the same way: they stay by the forge for two and a half minutes while you are warned. Break the forge before the totem has set and the pour is lost.
+
+**Page 7**  `[recipe] forge_hearth, totem_forge`
+
+**Page 8**  `[recipe] metal_intake, melt_tank`
+
+**Page 9**  `[recipe] pour_head, forge_cap`
+
+## The Totem Mould
+
+**Page 1**
+
+Seven mould pieces and a core make one mould. Each piece looks like the totem with its own part picked out: the Base, the Foot and Arm (two of each go in, left and right), the Torso and the Head.
+
+A piece lasts three pours, then cracks. It takes no enchantment and no repair. The *Totem Core* becomes the forged totem's orb, so every pour needs a new one.
+
+**Page 2**  `[recipe] mould_shell, base_mould`
+
+Mould Shells come two at a time; every piece is built from them.
+
+**Page 3**  `[recipe] foot_mould, torso_mould`
+
+**Page 4**  `[recipe] arm_mould, head_mould`
+
+**Page 5**  `[recipe] totem_core`
 
 ---
 

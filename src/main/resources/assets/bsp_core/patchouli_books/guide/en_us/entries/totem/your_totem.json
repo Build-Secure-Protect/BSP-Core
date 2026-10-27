@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be crafted and it cannot be destroyed.$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."
+      "text": "Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be destroyed, and the only way to make another is to pour one in a $(l:machines/totem_forge)Totem Forge$().$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."
     },
     {
       "type": "patchouli:text",

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SES",
+    "PWP",
+    "SES"
+  ],
+  "key": {
+    "S": {
+      "item": "bsp_core:mould_shell"
+    },
+    "E": {
+      "item": "minecraft:echo_shard"
+    },
+    "P": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "W": {
+      "item": "minecraft:wither_skeleton_skull"
+    }
+  },
+  "result": {
+    "item": "bsp_core:head_mould"
+  }
+}

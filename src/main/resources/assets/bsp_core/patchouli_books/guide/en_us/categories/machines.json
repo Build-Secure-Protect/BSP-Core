@@ -1,6 +1,6 @@
 {
   "name": "Machines",
-  "description": "The parts every machine is made of, and how to build the two Illyrium multiblocks.",
+  "description": "The parts every machine is made of, and how to build the multiblocks, the Totem Forge among them.",
   "icon": "bsp_core:illyrium_crucible",
   "sortnum": 2
 }

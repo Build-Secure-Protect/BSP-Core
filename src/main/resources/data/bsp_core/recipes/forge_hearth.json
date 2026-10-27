@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TST",
+    "SBS",
+    "TST"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "S": {
+      "item": "bsp_core:slag_brick"
+    },
+    "B": {
+      "item": "minecraft:blast_furnace"
+    }
+  },
+  "result": {
+    "item": "bsp_core:forge_hearth"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "MGM",
+    "GCG",
+    "MLM"
+  ],
+  "key": {
+    "M": {
+      "item": "bsp_core:magnatite_ingot"
+    },
+    "G": {
+      "item": "bsp_core:illyrium_glass"
+    },
+    "C": {
+      "item": "minecraft:cauldron"
+    },
+    "L": {
+      "item": "minecraft:magma_block"
+    }
+  },
+  "result": {
+    "item": "bsp_core:melt_tank"
+  }
+}

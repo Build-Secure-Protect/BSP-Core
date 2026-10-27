@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "THT",
+    "SCS",
+    "TKT"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "S": {
+      "item": "bsp_core:slag_brick"
+    },
+    "C": {
+      "item": "minecraft:cauldron"
+    },
+    "K": {
+      "item": "bsp_core:copper_tetrium_coil"
+    }
+  },
+  "result": {
+    "item": "bsp_core:metal_intake"
+  }
+}

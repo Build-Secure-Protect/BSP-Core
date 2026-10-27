@@ -454,7 +454,11 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         level.sendParticles(ParticleTypes.FLASH, x, y, z, 1, 0, 0, 0, 0);
         level.playSound(null, worldPosition, SoundEvents.TOTEM_USE, SoundSource.BLOCKS, 1.4F, 0.8F);
         level.playSound(null, worldPosition, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 0.8F, 1.3F);
+        shield(thief);
+    }
 
+    /** The thief's invincibility after a completed steal (a totem's, or a Totem Forge's set totem). */
+    public static void shield(ServerPlayer thief) {
         int seconds = BSPConfig.STEAL_INVINCIBILITY_SECONDS.get();
         if (seconds > 0) {
             // Resistance V makes all ordinary damage do nothing; fire resistance covers burning ticks.

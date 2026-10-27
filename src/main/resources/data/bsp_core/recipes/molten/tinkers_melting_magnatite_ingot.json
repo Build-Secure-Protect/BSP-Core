@@ -1,0 +1,18 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "tconstruct"
+  }
+ ],
+ "type": "tconstruct:melting",
+ "ingredient": {
+  "item": "bsp_core:magnatite_ingot"
+ },
+ "result": {
+  "fluid": "bsp_core:molten_magnatite",
+  "amount": 90
+ },
+ "temperature": 1000,
+ "time": 60
+}

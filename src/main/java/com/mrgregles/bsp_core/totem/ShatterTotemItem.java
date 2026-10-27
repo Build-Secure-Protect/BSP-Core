@@ -190,6 +190,11 @@ public class ShatterTotemItem extends BlockItem {
     }
 
     @Override
+    public Component getName(ItemStack stack) {
+        return TotemIdentity.isForged(stack) ? Component.translatable("item.bsp_core.forged_shatter_totem") : super.getName(stack);
+    }
+
+    @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
         if (TotemIdentity.isSpent(stack)) {

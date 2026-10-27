@@ -43,6 +43,9 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.TETRIUM_CRUCIBLE.get());
                 output.accept(ModItems.COMBINATION_FORGE.get());
                 ModItems.MULTIBLOCK_ITEMS.forEach(i -> output.accept(i.get()));
+                output.accept(ModItems.MOULD_SHELL.get());
+                ModItems.MOULDS.values().forEach(i -> output.accept(i.get()));
+                output.accept(ModItems.TOTEM_CORE.get());
                 ModItems.RF_UPGRADES.forEach(i -> output.accept(i.get()));
                 ModItems.ORE_ITEMS.forEach(i -> output.accept(i.get()));
                 for (var item : java.util.List.of(ModItems.TETRIUM_SLAG, ModItems.TETRIUM_NUGGET, ModItems.TETRIUM_INGOT, ModItems.TETRIUM_DUST,
@@ -51,6 +54,7 @@ public final class ModCreativeTabs {
                         ModItems.COPPER_TETRIUM_COIL, ModItems.SHATTER_BLANK, ModItems.ILLYRIUM_FORGE_UPGRADE)) {
                     output.accept(item.get());
                 }
+                com.mrgregles.bsp_core.material.MoltenMetals.ALL.values().forEach(m -> output.accept(m.bucket().get()));
                 ModItems.FILTERS.values().forEach(i -> output.accept(i.get()));
                 ModItems.COMPONENTS.values().forEach(i -> output.accept(i.get()));
             })

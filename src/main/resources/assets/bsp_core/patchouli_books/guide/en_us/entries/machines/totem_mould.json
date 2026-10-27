@@ -1,0 +1,32 @@
+{
+  "name": "The Totem Mould",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:torso_mould",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Seven mould pieces and a core make one mould. Each piece looks like the totem with its own part picked out: the Base, the Foot and Arm (two of each go in, left and right), the Torso and the Head.$(br2)A piece lasts three pours, then cracks. It takes no enchantment and no repair. The $(item)Totem Core$() becomes the forged totem's orb, so every pour needs a new one."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:mould_shell",
+      "recipe2": "bsp_core:base_mould",
+      "text": "Mould Shells come two at a time; every piece is built from them."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:foot_mould",
+      "recipe2": "bsp_core:torso_mould"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:arm_mould",
+      "recipe2": "bsp_core:head_mould"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:totem_core"
+    }
+  ]
+}

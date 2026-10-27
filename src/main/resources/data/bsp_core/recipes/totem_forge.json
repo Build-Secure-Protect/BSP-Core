@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IPI",
+    "CHC",
+    "TMT"
+  ],
+  "key": {
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "P": {
+      "item": "bsp_core:illyrium_processor"
+    },
+    "C": {
+      "item": "bsp_core:charged_magnatite_ingot"
+    },
+    "H": {
+      "item": "bsp_core:forge_hearth"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "M": {
+      "item": "bsp_core:magnet_core"
+    }
+  },
+  "result": {
+    "item": "bsp_core:totem_forge"
+  }
+}

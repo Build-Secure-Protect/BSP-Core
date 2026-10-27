@@ -24,6 +24,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.TOTEM_UPGRADES.get(), TotemUpgradeScreen::new);
             MenuScreens.register(ModMenus.COIN_FACTORY.get(), CoinFactoryScreen::new);
             MenuScreens.register(ModMenus.MACHINE.get(), MachineScreen::new);
+            MenuScreens.register(ModMenus.TOTEM_FORGE.get(), TotemForgeScreen::new);
             MenuScreens.register(ModMenus.TOTEM_COMPASS.get(), TotemCompassScreen::new);
             MenuScreens.register(ModMenus.COIN_VAULT.get(), CoinVaultScreen::new);
             MenuScreens.register(ModMenus.DECOY.get(), DecoyScreen::new);
@@ -78,6 +79,7 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_CRUCIBLE.get(), IllyriumCrucibleRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ILLYRIUM_REFINERY.get(), IllyriumRefineryRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.MAGNETIC_CENTRIFUGE.get(), MagneticCentrifugeRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_FORGE.get(), TotemForgeRenderer::new);
     }
 
     @SubscribeEvent

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "bsp_core:block/forge_hull",
+    "top": "bsp_core:block/forge_hull",
+    "bottom": "bsp_core:block/pour_head_bottom",
+    "particle": "bsp_core:block/forge_hull"
+  }
+}

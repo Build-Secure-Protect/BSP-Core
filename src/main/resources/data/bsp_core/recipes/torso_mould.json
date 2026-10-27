@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SUS",
+    "SHS",
+    "TUT"
+  ],
+  "key": {
+    "S": {
+      "item": "bsp_core:mould_shell"
+    },
+    "U": {
+      "tag": "forge:ingots/unobtainium"
+    },
+    "H": {
+      "item": "minecraft:heart_of_the_sea"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:torso_mould"
+  }
+}

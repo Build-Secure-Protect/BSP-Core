@@ -1,0 +1,18 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "tconstruct"
+  }
+ ],
+ "type": "tconstruct:melting",
+ "ingredient": {
+  "item": "bsp_core:tetrium_ingot"
+ },
+ "result": {
+  "fluid": "bsp_core:molten_tetrium",
+  "amount": 90
+ },
+ "temperature": 900,
+ "time": 60
+}

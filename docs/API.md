@@ -24,7 +24,7 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 | `TotemEvent.Placed` | a totem with an owner now stands (placed, or claimed where none stood); `getOwner`, `getWhere` |
 | `TotemEvent.Removed` | the totem is gone (picked up, mined, reissued, wiped); `getOwner` is who owned it |
 | `TotemEvent.OwnerChanged` | the owner changed while it stood (a completed steal or an operator); `getPrevious`, `getOwner` (null = unclaimed) |
-| `TotemEvent.StealStarted` | a steal began; `getThief`, `getThiefName`, `getSeconds` |
+| `TotemEvent.StealStarted` | a steal began; `getThief`, `getThiefName`, `getSeconds`. Also fired for the steal of a set totem in a Totem Forge (`getWhere` is the forge's controller, `getOwner` the pourer), as is `StealEnded`, so the network's `steals` table and the raid rules cover it; `BspTotems.thiefAt` and this server's own `stealsAnywhere` entries look at placed totems only |
 | `TotemEvent.StealEnded` | the steal ended; `isSuccess` (an `OwnerChanged` follows), or `getReasonKey` for why it failed |
 | `RecallEvent.CrossServer` | the owner clicked a Recall offer for a totem on another server (`/bsp recall <server>`); `getTargetServer()` is that server's `storage.serverId`; a teleport mod moves them there and calls `setHandled()`; BSP-Core lands them near the totem on arrival |
 | `SeasonEvent.Ended` | a season ended on this server; `getEndedNumber`, `isFullReset` (coins wiped too), `getBy`. On a network each server fires its own when it picks the new season up. |

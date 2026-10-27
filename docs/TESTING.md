@@ -1767,3 +1767,204 @@ No GameTest can see a screen: everything here is for the client. The fixes were 
 - [ ] As an admin at a Market Stall of a shop that buys: seven keys, none touching.
 - [ ] Sell a capped card (Sold ... the shop takes no more): the message is three lines at most and clear of the last row of cards.
 - [ ] Hover a section card (one that shows "> open"): the tooltip starts with the section's name, then "Click to open this section"; not the item's name and mod.
+
+## Molten metals (Totem Forge, task 1, 2026-10-27)
+
+Covered by GameTest `molten_metals_are_fluids_and_bsp_stays_off_material_tags` (each fluid's source and flowing form carry `forge:molten_<metal>`, the bucket holds the fluid, the block places a source; no `bsp_core` item or block is on a `forge:ingots/`, `nuggets/`, `ores/`, `dusts/`, `raw_materials/`, `storage_blocks/`, `gems/` or `plates/` tag). Untested: everything a client draws.
+
+- [ ] Creative tab: the three Molten buckets sit before the filters, each a vanilla bucket with the metal's colour inside, named "Molten Tetrium Bucket" and so on.
+- [ ] Empty each bucket on the ground: it spreads a short way like lava, glows, and its still and flowing surfaces move downward in the metal's colours (Tetrium violet, Illyrium turquoise, Magnatite blue-grey). The bucket picks it back up.
+- [ ] Walk into it: you catch fire and take damage, as in lava. A fire-immune mob does not.
+- [ ] Pump it with a Mekanism Electric Pump or a pipe into a Mekanism, Thermal or Ender IO tank and an AE2 fluid cell: it is accepted and named Molten Tetrium (or the others) in each.
+- [ ] With JAOPCA and Almost Unified in the pack, JEI shows no new Tetrium, Illyrium or Magnatite processing recipes from other mods (no dusts, clumps or doubling).
+
+## Tinkers and Thermal melting (Totem Forge, task 2, 2026-10-27)
+
+Covered by GameTest `molten_recipes_load_only_with_their_mods`: without Tinkers or Thermal Expansion none of the 39 recipes loads; with them (`./gradlew runGameTestServer -PpackMods=<the pack's mods folder>`, which loads the pack's own Tinkers 3.12.1, Mantle, Thermal Foundation and Expansion 11.0.1, CoFH Core and JEI) all 24 Tinkers and 15 Thermal recipes load. Checked 2026-10-27: 150/150 both ways. Untested: what the machines actually do with them in a client.
+
+- [ ] Melter or smeltery (lava fuel): Raw Tetrium or Tetrium Ore gives 20 mB of Molten Tetrium; a Tetrium Ingot 90 mB, a nugget 10 mB. Raw Magnatite or Magnatite Ore gives 30 mB of Molten Magnatite.
+- [ ] A Foundry: the same ores give the same amounts, with no by-product fluid.
+- [ ] Illyrium Ore, Raw Illyrium, a Dirty Illyrium Ingot and a Charged Magnatite Ingot do not melt anywhere (JEI shows no melting recipe for them).
+- [ ] Illyrium Ingot or nugget needs a fuel hotter than lava (1400 °C): the melter on lava does not melt it; blazing blood does.
+- [ ] Casting table: gold and sand ingot casts give one ingot per 90 mB, nugget casts one nugget per 10 mB, for all three metals.
+- [ ] Thermal Magma Crucible: the same amounts as Tinkers for every item above. Fit an augment (an output or a fluid augment) and check the ore still gives 20 mB or 30 mB.
+- [ ] Thermal Blast Chiller with the Chiller Ingot Cast: 90 mB gives one ingot.
+- [ ] JEI's Tinkers and Thermal pages show these recipes and nothing else for BSP metals.
+
+## Totem Forge structure (Totem Forge, task 3, 2026-10-27)
+
+Covered by GameTests `totem_forge_forms_round_its_hollow` (11 positions round the controller, the four hollow ones the middle layer; forms when every part is in; the hearths take lava, the intake items) and `totem_forge_needs_its_hollow_empty` (stone in the hollow un-forms it and is named as the problem; clearing it forms it again). The forge does nothing yet: its working is task 6, its formed look task 4. Untested: everything a client draws.
+
+- [ ] JEI: recipes for the Totem Forge, Metal Intake, Forge Hearth, Melt Tank, Pour Head and Forge Cap, as in the mock-up's section 4.
+- [ ] The six blocks in the creative tab with the other multiblock parts, each with its own face: the controller's screen, lamps and red button; the intake's blue ring; the hearth's vents and gold socket; the tank's window; the Pour Head's nozzle underneath; the Cap's vents on top.
+- [ ] Place the Totem Forge: ghost blocks show the intake behind it, the hearths to its right, and the four top blocks one block higher than the hollow (nothing is drawn in the hollow itself).
+- [ ] Sneak-right-click the controller: the Assembly Guide lists the controller, the intake and hearths, then the tanks, Pour Head and Cap, with their tips; no step asks for "Air".
+- [ ] Put a block in the hollow and right-click the controller: "Clear the Stone at x y z: that space must stay empty." in red. Take it out: the forge forms.
+- [ ] Break a part with a pickaxe: it drops itself. A hoe or bare hand drops nothing.
+
+## Totem Forge formed look (Totem Forge, task 4, 2026-10-27)
+
+`TotemForgeRenderer` draws mock-up A over the hidden parts (GameTest `totem_forge_forms_round_its_hollow` now also checks every part hides once formed). The forge does not work yet, so a real forge shows an empty hollow with empty tanks; **demo mode** (an operator's button on the machine screen, as for the other machines) plays pieces, pour, setting and the finished totem on a 30-second loop. Nothing here has been seen in a client.
+
+- [ ] Build a forge facing each of north, east, south and west: the parts vanish and the whole forge is drawn, the front panel always on the controller's front, the item hatch and fluid flange on the intake's outer side, the gold and orange sockets on the hearths' outer side, the chimney over the back hearth.
+- [ ] In daylight and in a dark cave the hull is lit like the blocks around it (not black), and the glows stay bright.
+- [ ] Turn on demo mode: pieces appear one by one (base, feet, torso, arms, head, the turquoise core), the tank windows and pillar strips fill, then empty as a stream pours from the nozzle and the mould fills from the bottom; the wheels turn while it pours; the cast turns from orange to gold under steam; the shells fade and a gold totem stands in the hollow; then the loop starts again.
+- [ ] The lamps: the first lights green with all eight pieces in, the second yellow once the tanks are full, the third turquoise from the pour on. The screen turns green when the totem has set.
+- [ ] Put a block in the hollow: the forge un-forms, the cubes come back and the block is boxed in red.
+- [ ] The dial's needle on the back corner follows the tank level; the chimney smokes while there is lava in the forge.
+- [ ] Fit an RF upgrade: the hearths' lower sockets go from dim to half-bright, and pulse while RF runs it.
+
+## Totem Mould items (Totem Forge, task 5, 2026-10-27)
+
+Covered by GameTest `mould_pieces_last_three_pours_and_have_recipes` (each piece has 3 pours, one left after two, no enchanting or anvil repair; recipes for the five pieces, the core and the shell load, even without Allthemodium, whose ingots are named by tag). The pieces do nothing yet: going into the hollow and cracking come with the forge's working (task 6). Untested: everything a client draws.
+
+- [ ] Creative tab, after the multiblock parts: Mould Shell, Base, Foot, Torso, Arm and Head Mould, Totem Core.
+- [ ] In the hotbar, inventory, hand and on the ground each mould piece is the whole totem in pale see-through grey with its own part in solid ceramic with a dark outline: the base plinth, the left knee, the torso, the left arm and hand, the head. The Totem Core shows the orb in turquoise. Turn the item in hand: the solid part is never hidden behind the ghost.
+- [ ] Tooltips: "Pours left: 3 of 3"; the Foot and Arm Mould add "Two go into the Totem Forge's mould, left and right"; the core "Becomes the orb of a forged totem. Every pour uses one."
+- [ ] A mould piece cannot be enchanted at a table or with a book on an anvil, and the anvil takes no material to repair it.
+- [ ] JEI (in the pack, with Allthemodium): the Mould Shell (two from four Tetrium Plates, four Allthemodium Ingots and a Charged Magnatite Ingot) and each piece's recipe as in the mock-up; the Totem Core from four Illyrium Ingots, two Charged Resonance Crystals, a Nether Star, a Totem of Undying and an Illyrium Core.
+
+## Totem Forge melting and mould (Totem Forge, task 6a, 2026-10-27)
+
+Covered by GameTests `totem_forge_melts_ingots_into_its_tanks` (lava through a hearth; the intake refuses an Iron Ingot; three Tetrium Ingots melt to 270 mB in 3 jobs, 75 mB of lava burned, the shown level rises), `totem_forge_takes_molten_metal_through_the_intake` (Molten Tetrium in; Molten Magnatite stops at its 2,880 mB line; no lava, nothing drains out) and `totem_forge_mould_goes_in_in_order` (the torso refused before the base; base, feet, torso, arms, head, then one core; a second core refused; the core comes out first). No pour yet (task 6b).
+
+- [ ] Pipe lava into a hearth and Tetrium Ingots into the intake (hopper or pipe): they melt one every 2 seconds; the tank windows and pillar strips rise; the chimney smokes. With an RF upgrade and power on a hearth, faster and less lava per ingot.
+- [ ] An item that is not on the bill (an Iron Ingot) will not go into the intake or the input slot.
+- [ ] A Tinkers smeltery's drain or a Mekanism pipe of Molten Tetrium into the intake fills the Tetrium tank, never past 11,520 mB (128 ingots); the drain backs up once it is full.
+- [ ] Allthemodium, Vibranium and Unobtainium Ingots (the pack's) are taken by their tags.
+- [ ] Right-click the controller, the intake or a hearth with a Torso Mould first: "The mould takes the Base Mould next." in yellow. Put the pieces in in order: each appears in the hollow with a stone click, "Base Mould in the mould (1 of 8)." in green. The Totem Core goes in last.
+- [ ] Sneak-right-click with an empty hand: the last piece comes back to your inventory.
+- [ ] Break the controller with pieces in: they drop where it stood, with their pours left unchanged.
+- [ ] Change `totem_forge.bill` in the server config (say `bsp_core:tetrium_ingot=4` only) and restart: the forge takes only that.
+
+## Totem Forge pour rules (Totem Forge, task 6b, 2026-10-27)
+
+Covered by GameTests `totem_forge_pour_is_free_without_a_totem` (no pour without the mould or the metal; free and 120 h for a player with no totem; a second forge refuses the same player, the pouring forge refuses another pour, the mould locks; the pour runs to the end and empties the tanks; seven pieces left with two pours each, the core used up; breaking frees the claim) and `totem_forge_pour_costs_coins_with_a_totem` (a carried totem counts; 3 Illyrium coins refused with nothing taken; 4 of 5 paid; 360 h). Untested: the network claim (two servers on the same MySQL) and anything a client draws.
+
+- [ ] Open the forge's screen (task 7's own screen; the old machine screen's POUR key is gone). With the mould incomplete: "The mould is not complete: it takes the ... next." With tanks not full: "The tanks are not full yet."
+- [ ] As a player with no totem (steal yours away or use a fresh player), with a full forge, press POUR: "The pour has begun. You own no totem, so it is free, and the totem sets in 5 days." The stream pours for half a minute, the windows empty and the mould fills.
+- [ ] As a player carrying or owning a totem, with fewer than 4 Illyrium Coins: the cost message, nothing taken. With 4 or more: "Paid 4 Illyrium Shatter Coin...", "sets in 15 days". Owning two totems costs 8.
+- [ ] Start a pour, then fill a second forge and press POUR there: "You already have a totem pouring or setting in another forge." On a network, try the second forge on another server: the same.
+- [ ] During or after the pour, a mould piece cannot be put in or taken out ("The metal is in the mould: it stays until the totem has set.").
+- [ ] Break the controller after pouring: the pieces drop with one pour fewer (a piece that had one left is gone), no Totem Core, and you can pour again elsewhere.
+
+## Totem Forge setting, take-out and steal (Totem Forge, task 6c, 2026-10-27)
+
+Covered by GameTests `totem_forge_pourer_takes_the_set_totem` (nothing to take before it has set; once set the pourer's click gives a forged, tier I totem owned by them, named Forged Shatter Totem; the forge empties with the seven pieces left, the claim freed) and `totem_forge_set_totem_can_be_stolen` (a stranger's click starts a steal; out of range past the grace it fails; staying for the steal time gives the thief the totem; breaking a set forge drops its totem for the pourer). Untested: the warnings on another server and Discord, and what a client draws. A steal in progress is not kept through a server restart.
+
+To try it without waiting 5 days, an operator can set `freeSetHours` and `paidSetHours` to 0 in the server config: the totem sets as soon as the pour ends.
+
+- [ ] Pour, wait out the setting (or set the hours to 0): the cast turns gold, the shells fade, the screen turns green, and the pourer gets "Your forged totem has set in the Totem Forge at x y z." wherever they are.
+- [ ] The pourer right-clicks the forge: "You take the Forged Shatter Totem out of the forge. It is yours." with the totem sound; the item is named Forged Shatter Totem, Tier I, owned by them. Place it and pick it up: still Forged.
+- [ ] The hollow keeps the seven pieces (each with one pour fewer; a piece that was on its last pour has cracked with a pot-shatter sound); the core is gone; a new core and full tanks pour again.
+- [ ] Another player right-clicks a set forge: "Stealing the forged totem: stay within N blocks of the forge for 150 seconds." The pourer sees the red warning (on another server too) and on Discord if set up. The thief's action bar counts down; walking away shows "Too far from the forge!" and, past the grace, the steal fails.
+- [ ] The pourer right-clicks during the steal: they take the totem, and the thief is told "... took the totem out first."
+- [ ] A thief who stays to the end gets the totem, owned by them; the pourer is told who stole it.
+- [ ] Break the controller of a set forge: the totem drops beside it, owned by the pourer, and only they can pick it up.
+
+## Totem Forge screen (Totem Forge, task 7, 2026-10-27)
+
+Covered by GameTest `totem_forge_screen_keys` (the menu reports the viewer's check from the server; TAKE PIECE OUT hands back the core; POUR starts the pour; the lava gauge's size). Nothing here has been seen in a client.
+
+- [ ] Right-click the controller (empty hand, not sneaking): "> Totem Forge" with a gold frame and the state at top right (melting, ready, pouring, setting, set).
+- [ ] MOULD (n OF 8): eight places in two rows; empty ones show a dim ghost of the piece they take, the next one with a gold outline; filled ones the piece (as in the hotbar) with a gold outline. Hover: the piece's tooltip, or "Empty: the ... goes here".
+- [ ] METAL: one tube per line of the bill, filling as the metal melts, the frame gold when full, the ingot under each (the pack's Allthemodium metals from their tags). Hover: "Tetrium Ingot: 54 of 128 ingots (4,860 of 11,520 mB)".
+- [ ] INGOTS, LAVA and RF slots take what they should; shift-click from the inventory sends ingots and a lava bucket in. LAVA n mB with its gauge.
+- [ ] The message line follows the forge: the next piece; "Waiting for metal: ..." with the first three short; free or the price for you; red when you lack the coins or have a pour elsewhere; "Pouring: n%"; "Setting: d h min left of N days. Poured by ..."; set: "Your totem has set..." for the pourer, the steal note for anyone else. Two lines at most, inside the frame.
+- [ ] The main key: POUR (free), PAY n AND POUR with the coin icon (greyed without the coins; hover tells the price), POURING and SETTING greyed, then TAKE TOTEM for the pourer and STEAL for anyone else. TAKE PIECE OUT works until the pour and is grey after.
+- [ ] As an operator, the demo switch left of the inventory plays the forge's demo loop.
+- [ ] Nothing overlaps at the default GUI scale and at the largest that fits.
+
+## Totem Forge guide and viewers (Totem Forge, task 8, 2026-10-27)
+
+`tools/gen_guide_book.py` checks the book as it writes it (every crafting page names a real recipe, no changelog words, short titles); 161/161 GameTests. Nothing here has been seen in a client.
+
+- [ ] Field Guide, Machines: "The Totem Forge" (intro, the 3D build with the hollow left empty and the controller facing you, The metal, The mould, Pouring, Setting and stealing, three recipe pages), "The Totem Mould" (text and four recipe pages). Materials: "Molten Metals".
+- [ ] The Shatter Totem's first page: "It cannot be destroyed, and the only way to make another is to pour one in a Totem Forge.", the link opening the forge's entry.
+- [ ] The 3D build page: switch to the layered view; the middle layer is empty, Melt Tanks on the left above the controller and intake, the Pour Head over the front hearth.
+- [ ] JEI (and EMI): press U on each Totem Forge block, a mould piece, the Totem Core and a Molten bucket: an information page. The Shatter Totem's page says more can only be poured in a Totem Forge.
+
+
+## Totem Forge steal rules (Totem Forge audit, fix task 1, 2026-10-27)
+
+Covered by GameTests `totem_forge_set_totem_can_be_stolen` (start only within the radius; the timer stops outside it while the grace runs down; the grace refills inside; fails past the grace; the thief is shielded on success) and `totem_forge_steal_follows_the_totem_rules` (no creative thief, no teammate, the channel line and the pourer's direct Discord message, the failure outcome on Discord, a second steal at the same forge announced again, the StealStarted and StealEnded events in order). 162/162 GameTests, twice. Nothing here has been seen in a client or against the real Discord.
+
+- [ ] Right-click a set forge from further than the steal radius: "Stand within n blocks of the forge to steal the totem." and no steal.
+- [ ] A teammate of the pourer right-clicks: "You cannot steal from your own team". A creative player: "Creative and spectator players cannot steal a forged totem."
+- [ ] A stranger starts a steal: both the thief and the online pourer see the steal bar at the top of the screen, as for a totem steal; walking out of the radius shows the "come back" countdown and the timer stops.
+- [ ] Discord (with VA-D1 running): the channel line, and the pourer's direct message for every forge steal; the outcome message when the steal fails or succeeds. A second steal at the same forge is announced again.
+- [ ] Break the controller during a steal: the thief reads "The Totem Forge was broken. The steal has failed." and the steal bars close.
+- [ ] A successful thief gets the shield (Resistance and Fire Resistance) for the usual seconds.
+- [ ] On a network, another server's teleport raid rules treat the forge steal as a steal in progress.
+
+## Totem Forge pour claims (Totem Forge audit, fix task 2, 2026-10-27)
+
+Covered by GameTests `totem_forge_stale_claims_heal_or_clear` (a claim on a loaded spot with no forge, or on this forge with nothing poured, frees itself; one in an unloaded chunk is trusted until `/bsp totemforge clear`) and `totem_forge_network_claim_answers_or_times_out` (with a stand-in network: another server's claim refuses the pour; a second click while waiting asks nothing more; no answer in 100 ticks calls it off and a late answer gives back the row; a claim won starts the pour). 164/164 GameTests twice, and with `-PpackMods`. The real MySQL path (`NetworkStorage.claimState`) has not been run.
+
+- [ ] As an operator, look at a forge's controller (or its intake or a hearth): `/bsp totemforge fill` fills the tubes; after a pour, `/bsp totemforge finish` sets the totem.
+- [ ] Pour, then remove the forge without breaking it (a world edit tool, or stop the server and delete its region file); stand at another forge with the spot of the old one loaded: POUR works, the old claim freed. With the old spot unloaded: "already pouring" until `/bsp totemforge clear <player>`.
+- [ ] Create: a mechanical piston or bearing will not pick up the Totem Forge controller.
+- [ ] Two servers with MySQL: pour on server A, switch to B and POUR at a ready forge: "already pouring". Take the totem out on A, then POUR on B works. With the database stopped, POUR shows "Checking the network..." and after 5 seconds "The network did not answer, so nothing was poured."
+
+## Totem Forge intake and bill (Totem Forge audit, fix task 3, 2026-10-27)
+
+Covered by GameTests `totem_forge_intake_takes_only_what_it_needs` (200 mB short: the intake takes 3 of 64 Tetrium Ingots; the last melts though only 20 mB fits; a full tank takes no more and the slot is free for Magnatite, up to its 32; a mould piece with no pours left is refused), `totem_forge_bill_leaves_out_lines_it_cannot_use` (counts of 0 or over 99,999, a missing item and an empty tag left out; good item and tag lines kept) and the bill check in `totem_forge_melts_ingots_into_its_tanks`. 166/166 GameTests twice, and with `-PpackMods`. The intake test runs in its own batch (`totem_forge_intake`): in the default batch it moves three plasma and cable tests (`accelerator_wakes_a_sleeping_far_side_and_delivers`, `accelerator_view_travels_whole_and_unlink_drops_the_card_at_the_far_end`, `tetrium_stops_at_sixteen_cables`) to where they fail. Those tests depend on where they land, which is worth its own look. Nothing here has been seen in a client.
+
+- [ ] A hopper over the Metal Intake with 64 Tetrium and 64 Magnatite Ingots: Tetrium goes in only up to what its tube still needs, then Magnatite follows; nothing is left stuck in the INGOTS slot.
+- [ ] Shift-click a stack of an ingot whose tube is full into the forge: it stays in your inventory. During a pour or setting, no ingot goes in.
+- [ ] Pipe Molten Tetrium until its tube is within 90 mB of full, then put in one ingot: it melts and the tube is full.
+- [ ] In a pack without Allthemodium, the screen shows five tubes and the log warns once for each line left out; the forge can pour.
+- [ ] After the update, `serverconfig/bsp_core-server.toml`'s `totem_forge.bill` comment is rewritten (Forge may keep a backup of the old file); the values are kept.
+
+## Totem Forge clicks and screen state (Totem Forge audit, fix task 4, 2026-10-27)
+
+Covered by GameTest `totem_forge_set_forge_takes_only_an_empty_hand` (a port's update tag carries its controller; on a set forge a held block on the controller opens the screen and on a port passes on, with no steal; an empty hand on a port starts the steal; TAKE TOTEM works with a block in hand and ends the steal; a set forge with a broken hearth still reads "set" and its totem still comes out). All Totem Forge GameTests now run in their own batch, `totem_forge`: the default batch had grown big enough that its late plasma and cable tests started too late (see the fix task 3 section). 167/167 GameTests twice, and with `-PpackMods`. Nothing here has been seen in a client.
+
+- [ ] Right-click the Metal Intake or a Forge Hearth with a mould piece: it goes in on the one click, the arm swings once, and an off-hand piece does not follow it.
+- [ ] On a set forge, right-click a hearth holding a block: the block is placed (not into the hollow, which would break the structure, but on another face); holding a wrench, the wrench works. No steal starts and the pourer is not warned.
+- [ ] On a set forge, right-click the controller holding anything: the screen opens; TAKE TOTEM (pourer) or STEAL (anyone else) does what an empty-handed click does.
+- [ ] Break a hearth of a set forge: the screen reads "set", the key is TAKE TOTEM or STEAL, and the totem comes out. A pouring or setting forge with a broken part reads "pouring" or "setting", not "unformed".
+- [ ] The Field Guide's "Setting and stealing" page says to right-click with an empty hand.
+
+## Totem Forge setting notice and countdown (Totem Forge audit, fix task 5, 2026-10-27)
+
+Covered by GameTests `totem_forge_ledger_tells_the_pourer_once` (the ledger keeps the set time from the end of the pour, tells the pourer of a totem set in an unloaded forge, only once, and forgets the time with a cleared claim; a forge that sees its totem set tells them itself and the ledger knows) and `totem_forge_screen_counts_down_by_the_server_clock` (a screen that has heard nothing reads UNKNOWN, not FREE; the minutes left come from the server and survive the two 15-bit halves menu data needs). `totem_forge.lavaTank` is now at most 32,000 mB (an existing config above that goes back to 8,000 with a warning from Forge). 169/169 GameTests twice, and with `-PpackMods`. Nothing here has been seen in a client.
+
+- [ ] Set `freeSetHours = 1`, pour, walk far enough away that the forge's chunk unloads (or log out). Within a minute of the hour: "Your forged totem has set at x y z" (on another server through the network, or at the next login with network storage on). Come back: no second message.
+- [ ] Pour with `freeSetHours = 0`: the message comes once, at the end of the pour.
+- [ ] Set the computer's clock an hour wrong, open a setting forge's screen: "Setting: ... left" matches the server, not the computer.
+- [ ] Open a ready forge's screen on a slow connection: the POUR key is never lit gold before the forge's own answer arrives (it stays grey, then lights if the pour is free).
+
+## Totem Forge ownership and coins (Totem Forge audit, fix task 6, 2026-10-27)
+
+Covered by GameTests `totem_forge_counts_every_totem_the_player_owns` (a totem on the cursor, owed here, lying dropped and reporting, held for a transfer; a long-silent dropped sighting and a stone do not count; a totem counts once when back), `totem_forge_pour_takes_any_coins_by_value` (seven Netherite Coins are short of four Illyrium Coins' worth; ten pay with eight and leave two) and `totem_forge_network_owed_totems_count_and_never_surprise` (with a stand-in network: a totem waiting in the network turns a free pour into a paid one, so nothing is poured or taken and the row is given back; pressed again at the price shown, it pays and pours). GameTest `totem_forge_pour_costs_coins_with_a_totem` still holds. 172/172 GameTests twice, and with `-PpackMods`. The real MySQL count (`MySqlStore.countPendingTotems`) has not been run.
+
+- [ ] Own one totem, carry 8 Netherite Coins and no Illyrium: the screen offers PAY 4 AND POUR; pressing it takes the 8 Netherite Coins. With 3 Illyrium and 2 Netherite Coins (64 units): it takes them all. With more than enough in mixed coins, the change comes back in coins.
+- [ ] Hold your only totem on the cursor in the forge's screen: the pour is not free.
+- [ ] Drop-test: with your totem lying on the ground (before it places itself), the pour is not free.
+- [ ] Two servers with MySQL: switch servers with a totem and press POUR at a ready forge at once on arrival: if the totem has not been handed back yet, "Counting the totems on their way to you, you own 1: the pour costs 4 Illyrium Shatter Coins now. Press POUR again to pay it." and nothing is taken.
+
+## Molten metals in the world (Totem Forge audit, fix task 7, 2026-10-27)
+
+Covered by GameTest `molten_metals_pour_from_dispensers_and_cool_in_water` (a powered dispenser pours a Molten Tetrium bucket into a source and keeps the empty bucket; a molten source placed against water becomes Obsidian, a flowing block Cobblestone). 173/173 GameTests twice, and with `-PpackMods`. The Thermal augment check (decision D6) is still the owner's, in game. Nothing here has been seen in a client.
+
+- [ ] A dispenser with a Molten Magnatite bucket, powered: a source in front, an empty bucket left; powered again with the empty bucket facing the pool: it fills.
+- [ ] Pour water next to a Molten Illyrium pool: the source turns to Obsidian with lava's hiss. Water reaching a flowing edge turns it to Cobblestone. Pour the metal next to standing water: the same.
+- [ ] Field Guide, Materials, "Molten Metals": the new "Spills" page.
+- [ ] Owner's check (D6): put an output augment (and a fluid or secondary augment, if any) in a Thermal Magma Crucible melting a Tetrium Ingot, and in a Blast Chiller casting from 90 mB. If the crucible gives more than 90 mB or the chiller more than one ingot, tell Claude: every Thermal molten recipe is then removed (Tinkers stays).
+
+## Totem Forge efficiency and hygiene (Totem Forge audit, fix task 8, 2026-10-27)
+
+Covered by GameTest `totem_forge_intake_gives_up_empty_buckets` (a lava bucket goes in through the intake and never comes back out full; once emptied, a pipe takes the bucket; no RF bar without an upgrade). The other changes are not rules: the forge sends its data to clients without a block update (mould pieces, tank windows, the pour, the setting's steps), saves once a second while pouring and only at the setting's 0.2 % steps while setting; the renderer's fixed arrays are made once; `CORE` and `PLACES` name the mould's places; `build.gradle` finds the pack's jars by name. 174/174 GameTests twice, and with `-PpackMods` (now found by name); `./gradlew build` rebuilt `build/libs/bsp-core-1.6.2.jar` and the slim jar. Nothing here has been seen in a client.
+
+- [ ] Put mould pieces in and pipe metal into a forge while standing beside it: the pieces and tank windows still update at once, and there is no stutter (the chunk is no longer redrawn each time).
+- [ ] The empty INGOTS, LAVA and RF slots show a faint Tetrium Ingot, lava bucket and RF upgrade, with their hints on hover.
+- [ ] Fit an RF upgrade and power a hearth: a thin gold bar under the lava gauge fills; hover: "RF buffer: n%".
+- [ ] A hopper feeding lava buckets into the Metal Intake and a hopper under it: the forge keeps taking buckets, the empty ones come out.
+
+## Create cannot move a placed totem (2026-10-27)
+
+`data/create/tags/blocks/non_movable.json` now holds the placed Shatter Totem as well as the Totem Forge controller. Covered by GameTest `create_cannot_move_totems_or_the_forge` (both blocks carry the tag). 175/175 GameTests twice. Not seen with Create in a client.
+
+- [ ] Build a mechanical piston or bearing contraption with a placed Shatter Totem glued to it: assembly fails at the totem (Create names the block it cannot move), and the totem stays where it was, owner and upgrades unchanged.
+- [ ] The same with a Totem Forge controller.

@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TIT",
+    "MDM",
+    " N "
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "I": {
+      "item": "bsp_core:illyrium_ingot"
+    },
+    "M": {
+      "item": "bsp_core:magnatite_ingot"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "N": {
+      "item": "bsp_core:illyrium_nugget"
+    }
+  },
+  "result": {
+    "item": "bsp_core:pour_head"
+  }
+}

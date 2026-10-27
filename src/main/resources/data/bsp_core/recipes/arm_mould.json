@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SC",
+    "SV",
+    "TT"
+  ],
+  "key": {
+    "S": {
+      "item": "bsp_core:mould_shell"
+    },
+    "C": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "V": {
+      "tag": "forge:ingots/vibranium"
+    },
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:arm_mould"
+  }
+}

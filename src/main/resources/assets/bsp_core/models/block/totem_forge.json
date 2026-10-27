@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "bsp_core:block/totem_forge_front",
+    "side": "bsp_core:block/forge_hull",
+    "top": "bsp_core:block/forge_hull",
+    "particle": "bsp_core:block/forge_hull"
+  }
+}

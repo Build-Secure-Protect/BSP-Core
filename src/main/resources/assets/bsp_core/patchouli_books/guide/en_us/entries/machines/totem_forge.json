@@ -1,0 +1,77 @@
+{
+  "name": "The Totem Forge",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:totem_forge",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A 2 x 2 x 3 multiblock that pours a new $(item)Shatter Totem$(). It melts a long bill of metals into its tanks, fills a mould of eight pieces standing in its hollow middle, and lets the totem set.$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "Totem Forge",
+      "multiblock": {
+        "pattern": [
+          [
+            "DQ",
+            "MM"
+          ],
+          [
+            "  ",
+            "  "
+          ],
+          [
+            "EE",
+            "0N"
+          ]
+        ],
+        "mapping": {
+          "D": "bsp_core:pour_head",
+          "E": "bsp_core:forge_hearth",
+          "M": "bsp_core:melt_tank",
+          "N": "bsp_core:metal_intake",
+          "Q": "bsp_core:forge_cap",
+          "0": "bsp_core:totem_forge[facing=north]"
+        },
+        "symmetrical": false
+      },
+      "text": "Bottom: the Totem Forge front left, the Metal Intake behind it, a Forge Hearth on the right of each. Middle: empty. Top: Melt Tanks left, Pour Head front right, Forge Cap behind it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The tanks must hold the whole metal bill before the forge pours. Its screen shows a tube for each metal; by default 128 Tetrium, 32 Magnatite, 8 Charged Magnatite, 12 Illyrium, 32 Allthemodium, 16 Vibranium, 8 Unobtainium and 2 Netherite Ingots.$(br2)Ingots go into the Metal Intake or the screen's slot and melt one at a time, burning lava from the Forge Hearths. An RF Upgrade speeds it up. Molten Tetrium, Magnatite and Illyrium can be piped straight into the intake.",
+      "title": "The metal"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The $(l:machines/totem_mould)Totem Mould$() goes into the hollow one piece at a time, in order: the Base, two Feet, the Torso, two Arms, the Head, and the Totem Core last. Right-click the forge with each piece.$(br2)$(l)Sneak + right-click$() with an empty hand, or TAKE PIECE OUT on the screen, takes the last piece back out, until the metal is poured.",
+      "title": "The mould"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "With the mould complete and the tanks full, press $(l)POUR$().$(br2)If you own no Shatter Totem, the pour is free and the totem sets in 5 days. If you own any, you pay 4 Illyrium Shatter Coins for each one first (or their worth in any other Shatter Coins, with change), and it sets in 15 days.$(br2)You can have one totem pouring or setting at a time, on any server.",
+      "title": "Pouring"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The totem sets on real time, even while you are away, and you are told when it is ready. Right-click the forge with an empty hand to take it out: a $(item)Forged Shatter Totem$(), tier I, yours.$(br2)Anyone else must steal it the same way: they stay by the forge for two and a half minutes while you are warned. Break the forge before the totem has set and the pour is lost.",
+      "title": "Setting and stealing"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:forge_hearth",
+      "recipe2": "bsp_core:totem_forge"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:metal_intake",
+      "recipe2": "bsp_core:melt_tank"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:pour_head",
+      "recipe2": "bsp_core:forge_cap"
+    }
+  ]
+}

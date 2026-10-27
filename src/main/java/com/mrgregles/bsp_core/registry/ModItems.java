@@ -70,6 +70,26 @@ public final class ModItems {
     /** The base, tier-less blank made from Tetrium. Tier blanks are built on top of it. */
     public static final RegistryObject<Item> SHATTER_BLANK = simple("shatter_blank");
 
+    // --- Totem Mould: five pieces (the feet and arms are each needed twice), the core that becomes the orb, and the shell they are built from
+    public static final Map<com.mrgregles.bsp_core.material.TotemMouldItem.Piece, RegistryObject<com.mrgregles.bsp_core.material.TotemMouldItem>> MOULDS =
+            new EnumMap<>(com.mrgregles.bsp_core.material.TotemMouldItem.Piece.class);
+
+    static {
+        for (var piece : com.mrgregles.bsp_core.material.TotemMouldItem.Piece.values()) {
+            MOULDS.put(piece, ITEMS.register(piece.id(), () -> new com.mrgregles.bsp_core.material.TotemMouldItem(piece)));
+        }
+    }
+
+    public static final RegistryObject<Item> MOULD_SHELL = ITEMS.register("mould_shell", () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.UNCOMMON)));
+    /** Used up by every pour: it becomes the forged totem's orb. */
+    public static final RegistryObject<Item> TOTEM_CORE = ITEMS.register("totem_core", () -> new Item(new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC)) {
+        @Override
+        public void appendHoverText(net.minecraft.world.item.ItemStack stack, @javax.annotation.Nullable net.minecraft.world.level.Level level, List<net.minecraft.network.chat.Component> lines,
+                                    net.minecraft.world.item.TooltipFlag flag) {
+            lines.add(net.minecraft.network.chat.Component.translatable("tooltip.bsp_core.totem_core").withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+    });
+
     /** bsp_core:<tier>_filter */
     public static final Map<FilterItem.Tier, RegistryObject<FilterItem>> FILTERS = new EnumMap<>(FilterItem.Tier.class);
     /** Block items for the ores, in creative-tab order. */
@@ -108,13 +128,14 @@ public final class ModItems {
     public static final RegistryObject<com.mrgregles.bsp_core.compass.TotemCompassItem> TOTEM_COMPASS =
             ITEMS.register("totem_compass", com.mrgregles.bsp_core.compass.TotemCompassItem::new);
 
-    /** Controllers and structural parts of the two Illyrium multiblocks. */
+    /** Controllers and structural parts of the multiblocks: the Illyrium Crucible and Refinery, the Magnetic Centrifuge, the Totem Forge. */
     public static final List<RegistryObject<Item>> MULTIBLOCK_ITEMS = new ArrayList<>();
 
     static {
         for (var block : List.of(ModBlocks.ILLYRIUM_CRUCIBLE, ModBlocks.ILLYRIUM_REFINERY, ModBlocks.ILLYRIUM_CASING, ModBlocks.ILLYRIUM_GLASS,
                 ModBlocks.ILLYRIUM_CORE, ModBlocks.LAVA_PYLON, ModBlocks.REFINERY_PUMP, ModBlocks.ITEM_HATCH,
-                ModBlocks.MAGNETIC_CENTRIFUGE, ModBlocks.CENTRIFUGE_CASING, ModBlocks.CENTRIFUGE_ROTOR, ModBlocks.CENTRIFUGE_POWER_PORT)) {
+                ModBlocks.MAGNETIC_CENTRIFUGE, ModBlocks.CENTRIFUGE_CASING, ModBlocks.CENTRIFUGE_ROTOR, ModBlocks.CENTRIFUGE_POWER_PORT,
+                ModBlocks.TOTEM_FORGE, ModBlocks.METAL_INTAKE, ModBlocks.FORGE_HEARTH, ModBlocks.MELT_TANK, ModBlocks.POUR_HEAD, ModBlocks.FORGE_CAP)) {
             MULTIBLOCK_ITEMS.add(ITEMS.register(block.getId().getPath(), () -> new net.minecraft.world.item.BlockItem(block.get(), new Item.Properties())));
         }
     }

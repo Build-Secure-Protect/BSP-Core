@@ -236,6 +236,17 @@ final class MySqlStore implements AutoCloseable {
         return out;
     }
 
+    /** One key of the shared state, or null when it is missing. */
+    @javax.annotation.Nullable
+    String readStateKey(String key) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT v FROM " + t("state") + " WHERE k = ?")) {
+            ps.setString(1, key);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
+
     /** Writes the given keys; with {@code onlyIfAbsent}, keys that already exist are left alone. */
     void putState(Map<String, String> values, boolean onlyIfAbsent) throws SQLException {
         String sql = onlyIfAbsent ? "INSERT IGNORE INTO " + t("state") + " (k, v) VALUES (?, ?)"
@@ -270,6 +281,17 @@ final class MySqlStore implements AutoCloseable {
                 ps.addBatch();
             }
             ps.executeBatch();
+        }
+    }
+
+    /** How many Shatter Totems wait for the player in the pending items (a transfer, a hand-back, a delivery), without taking them. */
+    int countPendingTotems(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT COUNT(*) FROM " + t("pending_items") + " WHERE uuid = ? AND item LIKE ?")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, "%id:\"bsp_core:shatter_totem\"%");
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
         }
     }
 

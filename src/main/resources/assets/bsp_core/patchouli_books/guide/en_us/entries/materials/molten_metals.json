@@ -1,0 +1,17 @@
+{
+  "name": "Molten Metals",
+  "category": "bsp_core:materials",
+  "icon": "bsp_core:molten_tetrium_bucket",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Tetrium, Magnatite and Illyrium melt in a Tinkers' smeltery or a Thermal Magma Crucible, and pipe and store like any fluid. A nugget is 10 mB and an ingot 90 mB, and both cast back one for one.$(br2)Ore melts to exactly what the BSP machines make from it: Tetrium ore 20 mB, two nuggets; Magnatite ore 30 mB, three. The slag and the Carbon Dust come only from the BSP machines.$(br2)Illyrium ore, Dirty Illyrium and Charged Magnatite do not melt: the Crucible, the Refinery and the Centrifuge are their only way."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Spilled, molten metal burns whatever wades into it, as lava does, and meets water as lava does: a still pool sets to $(item)Obsidian$(), a flowing edge to $(item)Cobblestone$(), and the metal is gone.$(br2)A dispenser pours a molten bucket, and fills an empty one from a pool in front of it.",
+      "title": "Spills"
+    }
+  ]
+}

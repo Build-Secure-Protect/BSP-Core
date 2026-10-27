@@ -91,6 +91,7 @@ public final class BSPCommands {
                                         .executes(ctx -> setTier(ctx.getSource(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "tier")))))
                         .then(Commands.literal("recloak").executes(ctx -> recloak(ctx.getSource()))))
                 // testing: an operator may choose to be treated like any outsider by Cloaking
+                .then(TotemForgeCommands.tree())
                 .then(Commands.literal("recall")
                         .then(Commands.argument("server", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .executes(ctx -> {

@@ -1,0 +1,19 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "thermal_expansion"
+  }
+ ],
+ "type": "thermal:crucible",
+ "ingredient": {
+  "item": "bsp_core:illyrium_nugget"
+ },
+ "result": [
+  {
+   "fluid": "bsp_core:molten_illyrium",
+   "amount": 10
+  }
+ ],
+ "energy": 1000
+}

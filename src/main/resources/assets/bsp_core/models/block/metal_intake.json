@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "bsp_core:block/metal_intake_side",
+    "end": "bsp_core:block/forge_hull",
+    "particle": "bsp_core:block/forge_hull"
+  }
+}

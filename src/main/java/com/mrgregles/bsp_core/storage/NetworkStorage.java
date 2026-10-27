@@ -697,6 +697,22 @@ public final class NetworkStorage {
         });
     }
 
+    /**
+     * Claims one state key for a Totem Forge pour if it is free (missing or empty), in one round trip on the storage thread, and counts the Shatter Totems waiting for {@code player} in the pending
+     * items (travelling between servers, owed hand-backs): {@code then} hears, on the server thread, who holds the key afterwards
+     * ({@code value} when this server got it) and that count. Nothing happens if the database cannot be reached, so a caller that
+     * waits should time out.
+     */
+    public static void claimPour(String key, String value, UUID player, java.util.function.BiConsumer<String, Integer> then) {
+        async("claim a Totem Forge pour", s -> {
+            s.putState(Map.of(key, ""), true);
+            String holder = s.casState(key, "", value) ? value : s.readStateKey(key);
+            int owed = s.countPendingTotems(player);
+            String answer = holder == null ? "" : holder;
+            onServer(() -> then.accept(answer, owed));
+        });
+    }
+
     /** Changes a state key from {@code expected} to {@code value}; {@code then} hears whether this server was the one to do it. */
     public static void casState(String key, String expected, String value, Consumer<Boolean> then) {
         async("update the season state", s -> {

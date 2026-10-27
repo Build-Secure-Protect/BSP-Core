@@ -79,11 +79,20 @@ public class MachineBlock extends BaseEntityBlock {
             for (MultiblockControllerBlockEntity.Part part : multi.missingParts()) {
                 BlockState there = level.getBlockState(part.pos());
                 if (!there.canBeReplaced()) {
-                    sp.displayClientMessage(Component.translatable("message.bsp_core.multiblock.wrong", there.getBlock().getName(), part.pos().getX(), part.pos().getY(),
+                    // a space the structure needs empty (the Totem Forge's hollow) asks for it to be cleared, not for "Air"
+                    String key = part.block() == net.minecraft.world.level.block.Blocks.AIR ? "message.bsp_core.multiblock.clear" : "message.bsp_core.multiblock.wrong";
+                    sp.displayClientMessage(Component.translatable(key, there.getBlock().getName(), part.pos().getX(), part.pos().getY(),
                             part.pos().getZ(), part.block().getName()).withStyle(net.minecraft.ChatFormatting.RED), false);
                     break;
                 }
             }
+        }
+        if (player instanceof ServerPlayer sp && level.getBlockEntity(pos) instanceof TotemForgeBlockEntity forge) {
+            if (!forge.use(sp, hand)) { // a mould piece in or out, or a set totem taken or stolen; otherwise the forge's own screen
+                NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> new TotemForgeMenu(id, inv, forge), Component.translatable(forge.titleKey())),
+                        buf -> buf.writeBlockPos(pos));
+            }
+            return InteractionResult.SUCCESS;
         }
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof MachineBlockEntity machine) {
             NetworkHooks.openScreen(serverPlayer,
@@ -101,6 +110,10 @@ public class MachineBlock extends BaseEntityBlock {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof MachineBlockEntity machine) {
             for (int i = 0; i < machine.getItems().getSlots(); i++) {
                 Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), machine.getItems().getStackInSlot(i));
+            }
+            if (machine instanceof TotemForgeBlockEntity forge) {
+                forge.onBroken();
+                forge.mouldContents().forEach(s -> Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), s));
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

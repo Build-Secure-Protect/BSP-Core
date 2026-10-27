@@ -1,0 +1,18 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "tconstruct"
+  }
+ ],
+ "type": "tconstruct:melting",
+ "ingredient": {
+  "item": "bsp_core:deepslate_magnatite_ore"
+ },
+ "result": {
+  "fluid": "bsp_core:molten_magnatite",
+  "amount": 30
+ },
+ "temperature": 1000,
+ "time": 600
+}

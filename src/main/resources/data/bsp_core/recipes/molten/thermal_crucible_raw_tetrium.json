@@ -1,0 +1,19 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "thermal_expansion"
+  }
+ ],
+ "type": "thermal:crucible",
+ "ingredient": {
+  "item": "bsp_core:raw_tetrium"
+ },
+ "result": [
+  {
+   "fluid": "bsp_core:molten_tetrium",
+   "amount": 20
+  }
+ ],
+ "energy": 6000
+}

@@ -17,11 +17,14 @@ CONTENT = ROOT / "src/main/resources/assets/bsp_core/patchouli_books/guide/en_us
 
 BLOCKS = {"C": "bsp_core:illyrium_casing", "P": "bsp_core:lava_pylon", "H": "bsp_core:item_hatch", "O": "bsp_core:illyrium_core", "G": "bsp_core:illyrium_glass",
           "U": "bsp_core:refinery_pump", "F": "bsp_core:factory_frame", "B": "bsp_core:factory_blank_hatch", "R": "bsp_core:factory_power_port", "S": "bsp_core:factory_press",
-          "K": "bsp_core:centrifuge_casing", "T": "bsp_core:centrifuge_rotor", "W": "bsp_core:centrifuge_power_port"}
+          "K": "bsp_core:centrifuge_casing", "T": "bsp_core:centrifuge_rotor", "W": "bsp_core:centrifuge_power_port",
+          "N": "bsp_core:metal_intake", "E": "bsp_core:forge_hearth", "M": "bsp_core:melt_tank", "D": "bsp_core:pour_head", "Q": "bsp_core:forge_cap"}
 CRUCIBLE = [["CCC", "CCC", "CXC"], ["P P", "HOH", "P P"], ["PCP", "C C", "PCP"]]
 REFINERY = [["CCC", "COC", "CXC"], [" C ", "HGU", "   "], ["   ", " G ", "   "]]
 FACTORY = [["B", "F", "X"], ["R", "S", "F"]]
 CENTRIFUGE = [["KKK", "HTW", "KXK"]]
+# '.' is space that must stay empty (the Totem Forge's hollow); ' ' is anything
+TOTEM_FORGE = [["NE", "XE"], ["..", ".."], ["MQ", "MD"]]
 
 
 def multiblock(layers, controller):
@@ -29,8 +32,8 @@ def multiblock(layers, controller):
     rows, cols = len(layers[0]), len(layers[0][0])
     out = []
     for layer in reversed(layers):
-        out.append(["".join({"X": "0", " ": "_"}.get(layer[rows - 1 - j][cols - 1 - i], layer[rows - 1 - j][cols - 1 - i]) for j in range(rows)) for i in range(cols)])
-    used = {ch for layer in layers for row in layer for ch in row} - {"X", " "}
+        out.append(["".join({"X": "0", " ": "_", ".": " "}.get(layer[rows - 1 - j][cols - 1 - i], layer[rows - 1 - j][cols - 1 - i]) for j in range(rows)) for i in range(cols)])
+    used = {ch for layer in layers for row in layer for ch in row} - {"X", " ", "."}
     mapping = {ch: BLOCKS[ch] for ch in sorted(used)}
     mapping["0"] = f"{controller}[facing=north]"
     return {"pattern": out, "mapping": mapping, "symmetrical": False}
@@ -86,7 +89,7 @@ def build(name, layers, controller, body):
 CATEGORIES = [
     ("totem", "The Shatter Totem", "Your totem is the heart of BSP: build around it, protect it, and take other players' totems if you can.", "bsp_core:shatter_totem"),
     ("materials", "The Three Metals", "Tetrium, Illyrium and Magnatite, from first ore to refined ingot.", "bsp_core:illyrium_ingot"),
-    ("machines", "Machines", "The parts every machine is made of, and how to build the two Illyrium multiblocks.", "bsp_core:illyrium_crucible"),
+    ("machines", "Machines", "The parts every machine is made of, and how to build the multiblocks, the Totem Forge among them.", "bsp_core:illyrium_crucible"),
     ("coins", "Shatter Coins", "Coins pay for the strongest totem upgrades. You press them yourself.", "bsp_core:gold_shatter_coin"),
 ]
 
@@ -113,7 +116,7 @@ ENTRIES = [
         text("From the account screen you can pay any player on the network, online or not; large payments ask you to confirm, and you can refuse incoming payments.$(br2)The transaction log lists what you bought and sold, who you paid and who paid you, with filters and a search. It is kept for 90 days.$(br2)Commands are a backup: $(l)/bank$(), $(l)/bank pay$(), $(l)/bank log$().", "Paying and the log"),
     ]),
     ("totem", "your_totem", "Your Shatter Totem", "bsp_core:shatter_totem", 0, [
-        text("Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be crafted and it cannot be destroyed.$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."),
+        text("Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be destroyed, and the only way to make another is to pour one in a $(l:machines/totem_forge)Totem Forge$().$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."),
         text("Only one totem is ever yours by right, but you can hold others: any totem you steal becomes yours.$(br2)If you die to another player while carrying your totem, it is placed where you fell. A totem dropped on the ground places itself after a short while.", "Keeping it"),
         text("A totem never goes offline with you. When you log out, every totem you carry is placed where you stood, so it can still be stolen; if it is still there, untouched, when you come back, it returns to you.", "Logging out"),
     ]),
@@ -297,6 +300,28 @@ ENTRIES = [
         text("Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on the Crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.$(br2)The Combination Forge runs on RF alone with an upgrade, at twice its coal speed."),
         craft("rf_upgrade_mk1", "rf_upgrade_mk2"),
         craft("rf_upgrade_mk3"),
+    ]),
+    ("machines", "totem_forge", "The Totem Forge", "bsp_core:totem_forge", 5, [
+        text("A 2 x 2 x 3 multiblock that pours a new $(item)Shatter Totem$(). It melts a long bill of metals into its tanks, fills a mould of eight pieces standing in its hollow middle, and lets the totem set." + GUIDE_TIP),
+        build("Totem Forge", TOTEM_FORGE, "bsp_core:totem_forge", "Bottom: the Totem Forge front left, the Metal Intake behind it, a Forge Hearth on the right of each. Middle: empty. Top: Melt Tanks left, Pour Head front right, Forge Cap behind it."),
+        text("The tanks must hold the whole metal bill before the forge pours. Its screen shows a tube for each metal; by default 128 Tetrium, 32 Magnatite, 8 Charged Magnatite, 12 Illyrium, 32 Allthemodium, 16 Vibranium, 8 Unobtainium and 2 Netherite Ingots.$(br2)Ingots go into the Metal Intake or the screen's slot and melt one at a time, burning lava from the Forge Hearths. An RF Upgrade speeds it up. Molten Tetrium, Magnatite and Illyrium can be piped straight into the intake.", "The metal"),
+        text("The $(l:machines/totem_mould)Totem Mould$() goes into the hollow one piece at a time, in order: the Base, two Feet, the Torso, two Arms, the Head, and the Totem Core last. Right-click the forge with each piece.$(br2)$(l)Sneak + right-click$() with an empty hand, or TAKE PIECE OUT on the screen, takes the last piece back out, until the metal is poured.", "The mould"),
+        text("With the mould complete and the tanks full, press $(l)POUR$().$(br2)If you own no Shatter Totem, the pour is free and the totem sets in 5 days. If you own any, you pay 4 Illyrium Shatter Coins for each one first (or their worth in any other Shatter Coins, with change), and it sets in 15 days.$(br2)You can have one totem pouring or setting at a time, on any server.", "Pouring"),
+        text("The totem sets on real time, even while you are away, and you are told when it is ready. Right-click the forge with an empty hand to take it out: a $(item)Forged Shatter Totem$(), tier I, yours.$(br2)Anyone else must steal it the same way: they stay by the forge for two and a half minutes while you are warned. Break the forge before the totem has set and the pour is lost.", "Setting and stealing"),
+        craft("forge_hearth", "totem_forge"),
+        craft("metal_intake", "melt_tank"),
+        craft("pour_head", "forge_cap"),
+    ]),
+    ("machines", "totem_mould", "The Totem Mould", "bsp_core:torso_mould", 6, [
+        text("Seven mould pieces and a core make one mould. Each piece looks like the totem with its own part picked out: the Base, the Foot and Arm (two of each go in, left and right), the Torso and the Head.$(br2)A piece lasts three pours, then cracks. It takes no enchantment and no repair. The $(item)Totem Core$() becomes the forged totem's orb, so every pour needs a new one."),
+        craft("mould_shell", "base_mould", "Mould Shells come two at a time; every piece is built from them."),
+        craft("foot_mould", "torso_mould"),
+        craft("arm_mould", "head_mould"),
+        craft("totem_core"),
+    ]),
+    ("materials", "molten_metals", "Molten Metals", "bsp_core:molten_tetrium_bucket", 4, [
+        text("Tetrium, Magnatite and Illyrium melt in a Tinkers' smeltery or a Thermal Magma Crucible, and pipe and store like any fluid. A nugget is 10 mB and an ingot 90 mB, and both cast back one for one.$(br2)Ore melts to exactly what the BSP machines make from it: Tetrium ore 20 mB, two nuggets; Magnatite ore 30 mB, three. The slag and the Carbon Dust come only from the BSP machines.$(br2)Illyrium ore, Dirty Illyrium and Charged Magnatite do not melt: the Crucible, the Refinery and the Centrifuge are their only way."),
+        text("Spilled, molten metal burns whatever wades into it, as lava does, and meets water as lava does: a still pool sets to $(item)Obsidian$(), a flowing edge to $(item)Cobblestone$(), and the metal is gone.$(br2)A dispenser pours a molten bucket, and fills an empty one from a pool in front of it.", "Spills"),
     ]),
     ("coins", "shatter_coins", "Blanks and Coins", "bsp_core:copper_shatter_coin", 0, [
         text("There are five coins: Copper, Gold, Diamond, Netherite and Illyrium. Each is worth twice the one before.$(br2)A coin starts as a $(item)Shatter Blank$(), is built up into a tier's coin blank, and is then pressed in the $(l:coins/factory)Shatter Coin Factory$()."),

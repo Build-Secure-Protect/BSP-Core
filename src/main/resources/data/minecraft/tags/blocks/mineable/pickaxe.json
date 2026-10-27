@@ -103,6 +103,12 @@
     "bsp_core:accelerator_intake",
     "bsp_core:accelerator_frame",
     "bsp_core:decelerator_core",
-    "bsp_core:decelerator_port"
+    "bsp_core:decelerator_port",
+    "bsp_core:totem_forge",
+    "bsp_core:metal_intake",
+    "bsp_core:forge_hearth",
+    "bsp_core:melt_tank",
+    "bsp_core:pour_head",
+    "bsp_core:forge_cap"
   ]
 }

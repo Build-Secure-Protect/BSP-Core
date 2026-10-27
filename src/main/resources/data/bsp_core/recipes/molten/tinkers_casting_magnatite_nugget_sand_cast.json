@@ -1,0 +1,21 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "tconstruct"
+  }
+ ],
+ "type": "tconstruct:casting_table",
+ "cast": {
+  "tag": "tconstruct:casts/single_use/nugget"
+ },
+ "cast_consumed": true,
+ "cooling_time": 20,
+ "fluid": {
+  "fluid": "bsp_core:molten_magnatite",
+  "amount": 10
+ },
+ "result": {
+  "item": "bsp_core:magnatite_nugget"
+ }
+}

@@ -14,6 +14,16 @@ import java.util.UUID;
  */
 public final class TotemIdentity {
     public static final String TAG_ID = "TotemId", TAG_INSTANCE = "Instance", TAG_SPENT = "Spent";
+    /** Set on a totem poured in a Totem Forge: it is named "Forged Shatter Totem" and otherwise works like any other. Kept with the identity, so it survives placing and picking up. */
+    public static final String TAG_FORGED = "Forged";
+
+    public static boolean isForged(ItemStack stack) {
+        return stack.getTag() != null && stack.getTag().getBoolean(TAG_FORGED);
+    }
+
+    public static void setForged(ItemStack stack) {
+        stack.getOrCreateTag().putBoolean(TAG_FORGED, true);
+    }
 
     private TotemIdentity() {}
 
@@ -75,6 +85,9 @@ public final class TotemIdentity {
         }
         if (from.hasUUID(TAG_INSTANCE)) {
             to.putUUID(TAG_INSTANCE, from.getUUID(TAG_INSTANCE));
+        }
+        if (from.getBoolean(TAG_FORGED)) {
+            to.putBoolean(TAG_FORGED, true);
         }
     }
 }

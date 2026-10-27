@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:molten_magnatite",
+    "bsp_core:flowing_molten_magnatite"
+  ]
+}

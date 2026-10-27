@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TTT",
+    "TRT",
+    "SSS"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_plate"
+    },
+    "R": {
+      "item": "bsp_core:charged_resonance_crystal"
+    },
+    "S": {
+      "item": "bsp_core:slag_brick"
+    }
+  },
+  "result": {
+    "item": "bsp_core:forge_cap"
+  }
+}

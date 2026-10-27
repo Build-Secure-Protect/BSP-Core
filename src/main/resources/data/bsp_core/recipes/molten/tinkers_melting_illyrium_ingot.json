@@ -1,0 +1,18 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "tconstruct"
+  }
+ ],
+ "type": "tconstruct:melting",
+ "ingredient": {
+  "item": "bsp_core:illyrium_ingot"
+ },
+ "result": {
+  "fluid": "bsp_core:molten_illyrium",
+  "amount": 90
+ },
+ "temperature": 1400,
+ "time": 60
+}

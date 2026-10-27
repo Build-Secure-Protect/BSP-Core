@@ -87,6 +87,12 @@ public final class BspTransfer {
         return ACTIVE.containsKey(player);
     }
 
+    /** Totems taken from the player for a transfer and held here (without network storage), not yet handed back. */
+    public static int heldTotems(UUID player) {
+        Pending p = ACTIVE.get(player);
+        return p == null ? 0 : (int) p.held.stream().filter(TotemInventories::isTotem).count();
+    }
+
     /**
      * The teleport was cancelled (damage, movement, anything) or never happened: the totems come
      * straight back into the player's inventory, into the hand slot or the first free slot, moving

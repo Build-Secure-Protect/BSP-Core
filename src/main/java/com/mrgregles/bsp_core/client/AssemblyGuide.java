@@ -35,7 +35,8 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
 
     /** Order in which block types are placed within a layer. */
     private static final List<String> ORDER = List.of("illyrium_core", "illyrium_casing", "illyrium_glass", "lava_pylon", "item_hatch", "refinery_pump",
-            "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "centrifuge_rotor", "centrifuge_casing", "centrifuge_power_port");
+            "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "centrifuge_rotor", "centrifuge_casing", "centrifuge_power_port",
+            "metal_intake", "forge_hearth", "melt_tank", "pour_head", "forge_cap");
 
     private static String path(Block block) {
         var key = ForgeRegistries.BLOCKS.getKey(block);
@@ -71,6 +72,7 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
             case "illyrium_refinery", "illyrium_glass", "refinery_pump" -> ModBlocks.ILLYRIUM_REFINERY.get();
             case "shatter_coin_factory", "factory_frame", "factory_press", "factory_blank_hatch", "factory_power_port", "factory_motivator" -> ModBlocks.COIN_FACTORY.get();
             case "magnetic_centrifuge", "centrifuge_casing", "centrifuge_rotor", "centrifuge_power_port" -> ModBlocks.MAGNETIC_CENTRIFUGE.get();
+            case "totem_forge", "metal_intake", "forge_hearth", "melt_tank", "pour_head", "forge_cap" -> ModBlocks.TOTEM_FORGE.get();
             default -> null;
         };
         if (!(controller instanceof net.minecraft.world.level.block.EntityBlock entity)) {
@@ -146,8 +148,8 @@ public record AssemblyGuide(Component title, Direction facing, List<Step> steps)
             Map<Integer, Map<Block, List<Placed>>> layers = new java.util.TreeMap<>();
             for (MultiblockControllerBlockEntity.Part part : c.parts()) {
                 BlockPos rel = part.pos().subtract(origin);
-                if (rel.equals(BlockPos.ZERO)) {
-                    continue;
+                if (rel.equals(BlockPos.ZERO) || part.block() == net.minecraft.world.level.block.Blocks.AIR) {
+                    continue; // the controller is the first step; space that must stay empty (the Totem Forge's hollow) is not a step
                 }
                 layers.computeIfAbsent(rel.getY(), k -> new LinkedHashMap<>()).computeIfAbsent(part.block(), k -> new ArrayList<>())
                         .add(new Placed(rel, part.block().defaultBlockState()));

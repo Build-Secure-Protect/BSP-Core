@@ -1,0 +1,21 @@
+{
+ "conditions": [
+  {
+   "type": "forge:mod_loaded",
+   "modid": "tconstruct"
+  }
+ ],
+ "type": "tconstruct:casting_table",
+ "cast": {
+  "tag": "tconstruct:casts/single_use/ingot"
+ },
+ "cast_consumed": true,
+ "cooling_time": 60,
+ "fluid": {
+  "fluid": "bsp_core:molten_magnatite",
+  "amount": 90
+ },
+ "result": {
+  "item": "bsp_core:magnatite_ingot"
+ }
+}

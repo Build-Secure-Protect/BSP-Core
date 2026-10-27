@@ -49,9 +49,15 @@ public final class ModBlockEntities {
                     .of(IllyriumRefineryBlockEntity::new, ModBlocks.ILLYRIUM_REFINERY.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.machine.TotemForgeBlockEntity>> TOTEM_FORGE =
+            BLOCK_ENTITIES.register("totem_forge", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.machine.TotemForgeBlockEntity::new, ModBlocks.TOTEM_FORGE.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.machine.MachinePortBlockEntity>> MACHINE_PORT =
             BLOCK_ENTITIES.register("machine_port", () -> BlockEntityType.Builder
-                    .of(com.mrgregles.bsp_core.machine.MachinePortBlockEntity::new, ModBlocks.LAVA_PYLON.get(), ModBlocks.REFINERY_PUMP.get(), ModBlocks.ITEM_HATCH.get(), ModBlocks.CENTRIFUGE_POWER_PORT.get()).build(null));
+                    .of(com.mrgregles.bsp_core.machine.MachinePortBlockEntity::new, ModBlocks.LAVA_PYLON.get(), ModBlocks.REFINERY_PUMP.get(), ModBlocks.ITEM_HATCH.get(), ModBlocks.CENTRIFUGE_POWER_PORT.get(),
+                            ModBlocks.METAL_INTAKE.get(), ModBlocks.FORGE_HEARTH.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.coin.FactoryPortBlockEntity>> FACTORY_PORT =
