@@ -217,7 +217,7 @@ ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:f
       if(s==='confirm'){ fill(g,cx0-26,cy0-30,52,6,'rgba(190,230,255,0.55)'); txt(g,'PRESS AGAIN TO DRAW · '+fmt(POT)+' to 1 of '+IN,cx0,y+152,C.AMBER,{align:'center',size:8}); }
       else { g.fillStyle='rgba(190,230,255,0.28)'; g.fillRect(cx0-22,cy0-22,44,44); frame(g,cx0-22,cy0-22,44,44,'rgba(220,240,255,0.7)'); txt(g,'press to lift the cover',cx0,y+152,C.DIM,{align:'center',size:8}); }
     },
-    function(cv,s){ const g=post(cv,TABS_OP,'⚙',false), x=14, y=32, lw=176;
+    function(cv,s){ const g=post(cv,TABS,'LOTTERY',false), x=14, y=32, lw=176; // as built: the admin page sits under the LOTTERY tab (ADMIN key)
       txt(g,'PLAYER',x+2,y,C.DIM); txt(g,'SEEN',x+70,y,C.DIM); txt(g,'RANK',x+102,y,C.DIM); txt(g,'',x+lw,y,C.DIM);
       ADMIN_ROWS.forEach((r,i)=>{ const yy=y+11+i*11; if(i%2) fill(g,x,yy-1,lw,11,'#08160d'); const inn=r[3]==='IN';
         txt(g,r[0],x+2,yy,inn?C.PHOS:C.DIM,{max:64}); txt(g,r[1],x+70,yy,C.DIM); txt(g,r[2],x+102,yy,C.DIM,{max:36}); txt(g,r[3],x+lw-2,yy,inn?C.PHOS:C.AMBER,{align:'right',max:36}); });
@@ -226,7 +226,7 @@ ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:f
       txt(g,'POT',rx,y,C.DIM); txt(g,fmt(POT),rx,y+8,C.AMBER,{size:16,max:rw});
       txt(g,'SEEN WITHIN',rx,y+26,C.DIM); skey(g,rx,y+35,12,11,'−'); txt(g,'7 d',rx+rw/2,y+36,C.PHOS,{align:'center'}); skey(g,rx+rw-12,y+35,12,11,'+');
       txt(g,'LEFT OUT',rx,y+50,C.DIM); ['admin','mod','staff','helper'].forEach((r,i)=>{ const yy=y+60+i*10; tick(g,rx,yy+1,i<3); txt(g,r,rx+10,yy,i<3?C.PHOS:C.DIM); });
-      txt(g,'+3 more ▾',rx,y+100,C.DIM,{size:8});
+      skey(g,rx+rw-22,y+48,10,9,'▲'); skey(g,rx+rw-11,y+48,10,9,'▼');
       skey(g,rx,y+112,rw/2-2,12,'ADD',{on:s==='add'}); skey(g,rx+rw/2+2,y+112,rw/2-2,12,'TAKE');
       if(s==='confirm') skey(g,rx,y+130,rw,20,'SURE? DRAW',{amber:true}); else { fill(g,rx,y+130,rw,20,C.AMBER); txt(g,'DRAW',rx+rw/2,y+134,C.SCREEN,{align:'center',size:14}); }
       if(s==='add'){ overlay(g,10,10,280,196); const bx=70, by=70; fill(g,bx,by,160,64,C.SCREEN); frame(g,bx,by,160,64,C.PHOS); txt(g,'ADD TO THE POT',bx+80,by+5,C.PHOS,{align:'center'});
@@ -266,7 +266,7 @@ ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:f
     function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops'],'Account'); const {g,x,y}=b;
       frame(g,x,y+52,150,44,C.AMBER_D); txt(g,'LOTTERY',x+4,y+55,C.DIM); coin(g,x+4,y+66,2); txt(g,fmt(POT),x+24,y+64,C.AMBER,{size:20});
       txt(g,'1 in '+IN,x+146,y+55,C.PHOS,{align:'right'}); txt(g,'last: Kira_B 41,800',x+146,y+85,C.DIM,{align:'right',size:8});
-      txt(g,'Drawn by an admin',x,y+102,C.SCREEN_E,{size:8}); },
+    },
     function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops','Lottery'],'Account'); const {g,x,y}=b; fill(g,x,y+50,150,1,C.SCREEN_E);
       txt(g,'LOTTERY POT',x,y+54,C.DIM); txt(g,fmt(POT),x+150,y+54,C.AMBER,{align:'right'}); txt(g,'The LOTTERY key opens the page.',x,y+66,C.SCREEN_E,{size:8});
       txt(g,'RECENT',x,y+80,C.DIM); [['Bought 4 Iron Ingot','-240'],['Sold 16 Cobblestone','+80']].forEach((r,i)=>{ txt(g,r[0],x,y+90+i*10,C.DIM,{max:110}); txt(g,r[1],x+150,y+90+i*10,C.PHOS,{align:'right'}); }); }];

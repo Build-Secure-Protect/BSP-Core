@@ -1,0 +1,305 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+.bsp-target { width: 560px !important; max-width: none !important; }</style><title>Lottery Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&family=VT323&display=swap">
+<style>
+/* Board like the other BSP concept pages: one column of cards; canvases at GUI pixel size (drawn 3x) for the screens and the Score Screen board. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.seg{ display:flex; flex-wrap:wrap; gap:6px; }
+.btn{ font:600 12px var(--body); color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:5px 12px; cursor:pointer; }
+.btn[aria-pressed="true"]{ border-color:var(--acc); color:var(--acc); }
+.btn:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.shot{ background:#1b1d22; border-radius:4px; padding:12px; overflow-x:auto; display:flex; justify-content:center; }
+canvas.gui{ display:block; width:100%; height:auto; image-rendering:pixelated; }
+ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:3px; } ul.d b{ color:var(--fg); font-weight:600; }
+.chat{ background:#1b1d22; border-radius:4px; padding:14px; font-family:VT323,ui-monospace,monospace; font-size:20px; line-height:1.15; color:#fff; min-height:190px; display:flex; flex-direction:column; justify-content:flex-end; }
+.chat div{ background:rgba(0,0,0,.45); padding:1px 6px; width:fit-content; max-width:100%; text-shadow:2px 2px 0 #3f3f3f; }
+.chat .g{ color:#ffaa00; } .chat .y{ color:#ffff55; } .chat .a{ color:#55ffff; } .chat .w{ color:#fff; }
+</style>
+<div class="wrap">
+<section><h1>Lottery Concepts</h1>
+<p class="lede">Three looks for the lottery, each drawn in all the places a player meets it: the Trade Post's new LOTTERY page, the admin page, a Lottery board for the Score Screen and a line on the Portable Banker. The screens are drawn at Minecraft GUI size in the Trade Post's own phosphor colours. Pick one look per place; they can be mixed.</p>
+<div class="card" style="border-color:var(--acc)"><h3>Picked (owner, 2026-10-28)</h3><p><b>LOTTERY page B</b> (name drum), <b>admin page C</b> (player table), <b>Score Screen board B</b> (drum), <b>Portable Banker B</b> (a small card). Every shop kind pays the pot, in pieces or coins (kits do not); the admin page sets the days with − and +, starting at 7.</p></div>
+<div class="card"><h3>Decided (owner, 2026-10-28)</h3>
+<ul class="d">
+<li><b>Who is in:</b> everyone who logged on to any server of the network in the week before the draw, one equal chance each. No tickets.</li>
+<li><b>Left out:</b> operators, and the LuckPerms ranks the admin ticks on the admin page (mod and staff, say).</li>
+<li><b>The draw:</b> only when an admin presses DRAW. The winner takes the whole pot, straight into their bank, online or not.</li>
+<li><b>The pot fills from</b> the market's two 5% taxes and half of every shop purchase.</li>
+<li><b>Announced</b> by a countdown from 5 in chat, then the winner's name and the amount.</li>
+<li><b>Admin page</b> in the Trade Post (operators only) and by <code>/bsp lottery admin</code>.</li>
+</ul></div>
+</section>
+
+<section><h2>1. The LOTTERY page on the Trade Post</h2>
+<p class="lede">A fourth tab beside MARKET, SELL and COLLECT. The traders band stays at the right. Pick a moment to see each look then.</p>
+<div class="card"><div class="seg" id="pState" role="group" aria-label="Player page state">
+<button class="btn" data-s="in" aria-pressed="true">You are in</button><button class="btn" data-s="out" aria-pressed="false">Your rank is left out</button><button class="btn" data-s="count" aria-pressed="false">The countdown</button><button class="btn" data-s="won" aria-pressed="false">Just drawn</button></div></div>
+<div class="grid3">
+<div class="card"><h3>A. Jackpot</h3><div class="shot"><canvas class="gui" id="p0"></canvas></div><p>The pot in big amber digits with a coin on each side, under it how many players are in and your own chance, then the last five winners with the date and what they won. During the countdown the number is replaced by the count; after it, by the winner's name. Operators see an ADMIN key at the bottom.</p></div>
+<div class="card"><h3>B. Name drum</h3><div class="shot"><canvas class="gui" id="p1"></canvas></div><p>A drum of the names of everyone in turns slowly on the left, the middle row marked with amber arrows. The pot, how many are in and your chance sit beside it. The last five winners are ticket stubs along the bottom. During the countdown the drum spins fast and stops on the winner, lit amber.</p></div>
+<div class="card"><h3>C. Ledger</h3><div class="shot"><canvas class="gui" id="p2"></canvas></div><p>Three figures in boxes across the top (pot, players in, your chance), then the list of everyone in with where and when they last played, so a player can check they are on it. The last winner is one line at the foot. Operators get a fifth tab, a cog, for the admin page.</p></div>
+</div></section>
+
+<section><h2>2. The admin page</h2>
+<p class="lede">Operators only: from the Trade Post or by <code>/bsp lottery admin</code> anywhere (then without the traders band). Everything to run the lottery: the pot, who is in, the ranks left out, the week's length, adding or taking pieces with a reason, and the draw.</p>
+<div class="card"><div class="seg" id="aState" role="group" aria-label="Admin page state">
+<button class="btn" data-s="ready" aria-pressed="true">Ready</button><button class="btn" data-s="confirm" aria-pressed="false">About to draw</button><button class="btn" data-s="add" aria-pressed="false">Adding pieces</button></div></div>
+<div class="grid3">
+<div class="card"><h3>A. Two columns</h3><div class="shot"><canvas class="gui" id="a0"></canvas></div><p>The pot and the players in at the left with the week's length (−/+ a day) and the big amber DRAW key; the LuckPerms ranks as tick boxes at the right. DRAW asks once more on a card ("48,210 pieces to one of 62 players") before anything happens.</p></div>
+<div class="card"><h3>B. Control panel</h3><div class="shot"><canvas class="gui" id="a1"></canvas></div><p>Three readouts along the top, the ranks as chips you tap on and off, and at the foot a red DRAW button under a clear cover, like the Totem Forge's pour button: the first press lifts the cover, the second draws.</p></div>
+<div class="card"><h3>C. Player table</h3><div class="shot"><canvas class="gui" id="a2"></canvas></div><p>The ADMIN tab takes the whole screen: every player seen this season in a table, each marked IN or OUT with the reason (a rank, not seen for 9 days, operator). The controls sit in a column at the right, DRAW at its foot with a second press to confirm.</p></div>
+</div></section>
+
+<section><h2>3. The Lottery board on the Score Screen</h2>
+<p class="lede">A new "Lottery" board in the Score Screen's settings, shown alone or in the rotation. Each is a 4 by 2 screen. There is no countdown to a next draw, since the admins choose when.</p>
+<div class="grid3">
+<div class="card"><h3>A. Big pot</h3><div class="shot"><canvas class="gui" id="b0"></canvas></div><p>The pot across the middle in large gold digits that tick up as it grows, how many are in under it, and the last winner on a strip at the foot.</p></div>
+<div class="card"><h3>B. Drum</h3><div class="shot"><canvas class="gui" id="b1"></canvas></div><p>The same name drum as the page's look B rolling at the left, the pot and the last three winners at the right.</p></div>
+<div class="card"><h3>C. Beside the leaderboard</h3><div class="shot"><canvas class="gui" id="b2"></canvas></div><p>The Side look every board has: the totem leaderboard keeps the left two thirds, the lottery takes a column at the right.</p></div>
+</div></section>
+
+<section><h2>4. The Portable Banker</h2>
+<p class="lede">A line on the account page, which every player has, so the pot is seen without a Trade Post nearby.</p>
+<div class="grid3">
+<div class="card"><h3>A. One line</h3><div class="shot"><canvas class="gui" id="k0"></canvas></div><p>Under the balance: "Lottery pot 48,210 · you are in".</p></div>
+<div class="card"><h3>B. A small card</h3><div class="shot"><canvas class="gui" id="k1"></canvas></div><p>A boxed card with the pot in amber, your chance and the last winner.</p></div>
+<div class="card"><h3>C. A LOTTERY key</h3><div class="shot"><canvas class="gui" id="k2"></canvas></div><p>The pot in one line, and a LOTTERY key in the key column that opens the same LOTTERY page as the Trade Post, without the traders band.</p></div>
+</div></section>
+
+<section><h2>5. The draw in chat</h2>
+<p class="lede">The same in every look, on every server of the network, one line a second. The winner also gets a line of their own (and a Discord message if linked); a winner who is offline is told at their next login.</p>
+<div class="card"><div class="chat" id="chat" aria-live="polite"></div><div class="seg"><button class="btn" id="replay">Play the draw again</button></div></div>
+</section>
+</div>
+
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- shared data ---------- */
+  const POT=48210, IN=62;
+  const fmt=n=>n.toLocaleString('en-GB');
+  const WINNERS=[['Kira_B',41800,'21 Oct'],['Tobbe',12650,'14 Oct'],['Alex',30120,'7 Oct'],['Wren',9400,'30 Sep'],['Juno42',22075,'23 Sep']];
+  const DRUM=['Steve','Alex','Kira_B','Tobbe','Wren','Juno42','Ash','Mira','Dax_77','Lumen','Otto','Pip','Rook','Saga','Vex'];
+  const SEEN=[['Steve','Spawn','now',true],['Alex','Spawn','now',true],['Kira_B','Survival','2 h',true],['Tobbe','Survival','1 d',true],['Wren','Events','3 d',true],['Juno42','Spawn','6 d',true],['Ash','Survival','5 d',true],['Mira','Spawn','4 d',true]];
+  const ADMIN_ROWS=[['Steve','now','member','IN'],['Alex','now','vip','IN'],['ModMatt','now','mod','OUT rank'],['Kira_B','2 h','member','IN'],['Tobbe','1 d','member','IN'],['Grace','2 d','staff','OUT rank'],['Wren','3 d','vip','IN'],['Owner','1 d','admin','OUT op'],['Juno42','6 d','member','IN'],['Zed','9 d','member','OUT 9 d']];
+  const RANKS=[['admin',true],['mod',true],['staff',true],['helper',false],['vip',false],['member',false],['default',false]];
+  const WINNER='Kira_B';
+
+  /* ---------- the coin picture: 8x8 map ---------- */
+  const COIN={p:{a:'#8a5a00',b:'#f2b544',c:'#fff3a8',d:'#5a3a00'},m:['..aaaa..','.abbbba.','abcbbdba','abbbdbba','abbdbbba','abdbbcba','.abbbba.','..aaaa..']};
+  function coin(g,x,y,s){ s=s||2; COIN.m.forEach((row,j)=>{ for(let i=0;i<8;i++){ const ch=row[i]; if(ch!=='.'){ g.fillStyle=COIN.p[ch]; g.fillRect(x+i*s,y+j*s,s,s); } } }); }
+
+  /* ---------- GUI drawing (Trade Post colours from TradePostScreen) ---------- */
+  const R=3, FONT='VT323, ui-monospace, monospace';
+  const C={BEZEL:'#cfc8b8',BEZEL_D:'#8f877a',BEZEL_L:'#ece6d8',SCREEN:'#061008',SCREEN_E:'#0d3b22',PHOS:'#58f29a',DIM:'#3fb97a',AMBER:'#f2b544',AMBER_D:'#5a4210',KEY:'#eae4d5',KEY_E:'#9a9183',KEY_T:'#2b2823',KEY_L:'#8f877a',SEL:'#0f2d1c',BAND:'#030805',RED:'#c8382e',RED_D:'#6a1a14'};
+  function gui(cv,w,h){ cv.width=w*R; cv.height=h*R; cv.style.maxWidth=Math.round(w*2.6)+'px'; const g=cv.getContext('2d'); g.setTransform(R,0,0,R,0,0); g.imageSmoothingEnabled=false; g.textBaseline='top'; return g; }
+  function fill(g,x,y,w,h,c){ g.fillStyle=c; g.fillRect(x,y,w,h); }
+  function frame(g,x,y,w,h,c){ fill(g,x,y,w,1,c); fill(g,x,y+h-1,w,1,c); fill(g,x,y,1,h,c); fill(g,x+w-1,y,1,h,c); }
+  function bezel(g,w,h){ fill(g,0,0,w,h,C.BEZEL_D); fill(g,0,0,w-1,h-1,C.BEZEL_L); fill(g,1,1,w-2,h-2,C.BEZEL); }
+  function scr(g,x,y,w,h){ fill(g,x-1,y-1,w+2,h+2,C.SCREEN_E); fill(g,x,y,w,h,C.SCREEN); }
+  function txt(g,s,x,y,c,o){ o=o||{}; const size=o.size||10; g.font=size+'px '+FONT; const w=g.measureText(s).width; const sc=o.max&&w>o.max?o.max/w:1; const al=o.align||'left';
+    const ax=al==='right'?x-w*sc:al==='center'?x-w*sc/2:x; g.save(); g.translate(ax,y); g.scale(sc,sc); if(o.shadow){ g.fillStyle='#3f3f3f'; g.fillText(s,1,1); } g.fillStyle=c; g.fillText(s,0,0); g.restore(); return w*sc; }
+  function wrap(g,s,x,y,w,c,o){ o=o||{}; const size=o.size||10, lh=o.lh||9; g.font=size+'px '+FONT; const words=s.split(' '); let line='', yy=y;
+    words.forEach(wd=>{ const t=line?line+' '+wd:wd; if(g.measureText(t).width>w&&line){ txt(g,line,o.align==='center'?x+w/2:x,yy,c,{size,align:o.align}); yy+=lh; line=wd; } else line=t; });
+    if(line) txt(g,line,o.align==='center'?x+w/2:x,yy,c,{size,align:o.align}); return yy+lh; }
+  function key(g,x,y,w,h,label,o){ o=o||{}; fill(g,x,y,w,h+2,o.on?'#2e8b57':C.KEY_E); fill(g,x,y,w,h,o.on?C.PHOS:C.KEY); txt(g,label.toUpperCase(),x+w/2,y+(h-8)/2,C.KEY_T,{align:'center',max:w-6}); }
+  function skey(g,x,y,w,h,label,o){ o=o||{}; if(o.amber){ fill(g,x,y,w,h,C.AMBER); txt(g,label,x+w/2,y+(h-8)/2,C.SCREEN,{align:'center',max:w-4}); }
+    else if(o.on){ fill(g,x,y,w,h,C.PHOS); txt(g,label,x+w/2,y+(h-8)/2,C.SCREEN,{align:'center',max:w-4}); }
+    else { frame(g,x,y,w,h,o.locked?C.SCREEN_E:C.DIM); txt(g,label,x+w/2,y+(h-8)/2,o.locked?C.SCREEN_E:C.PHOS,{align:'center',max:w-4}); } }
+  function tick(g,x,y,on){ frame(g,x,y,7,7,C.DIM); if(on) fill(g,x+2,y+2,3,3,C.PHOS); }
+  function box(g,x,y,w,h,label,value,c){ frame(g,x,y,w,h,C.SCREEN_E); txt(g,label,x+3,y+2,C.DIM,{size:8,max:w-6}); txt(g,value,x+w/2,y+11,c||C.PHOS,{align:'center',size:14,max:w-6}); }
+  function clipRun(g,x,y,w,h,f){ g.save(); g.beginPath(); g.rect(x,y,w,h); g.clip(); f(); g.restore(); }
+  function overlay(g,x,y,w,h){ g.fillStyle='rgba(0,0,0,0.62)'; g.fillRect(x,y,w,h); }
+
+  /* the Trade Post screen (look C), with the LOTTERY tab on; band=false for /bsp lottery admin */
+  const PLAYERS=[{n:'Steve',s:'Spawn'},{n:'Alex',s:'Spawn'},{n:'Kira_B',s:'Survival',busy:true},{n:'Tobbe',s:'Survival'},{n:'Wren',s:'Events'},{n:'Juno42',s:'Spawn'}];
+  function post(cv,tabs,on,band){ const W=300, H=216, g=gui(cv,W,H); bezel(g,W,H); scr(g,10,10,280,196); let tx=14;
+    tabs.forEach(t=>{ g.font='10px '+FONT; const tw=Math.ceil(g.measureText(t).width)+10; skey(g,tx,13,tw,13,t,{on:t===on}); tx+=tw+3; });
+    skey(g,276,12,11,11,'✕');
+    if(band){ fill(g,210,10,80,196,C.BAND); txt(g,'TRADERS · 6',214,14,C.DIM); let ry=26;
+      PLAYERS.forEach(p=>{ fill(g,214,ry+4,3,3,p.busy?C.SCREEN_E:C.PHOS); txt(g,p.n,220,ry+1,p.busy?C.DIM:C.PHOS,{max:66}); txt(g,p.busy?'busy':p.s,220,ry+10,C.DIM,{max:66}); ry+=21; });
+      skey(g,214,186,72,16,'TRADE STEVE',{locked:true}); }
+    fill(g,14,28,band?192:272,1,C.SCREEN_E); return g; }
+  const TABS=['MARKET','SELL','COLLECT 2','LOTTERY'], TABS_OP=['MARKET','SELL','COLLECT 2','LOTTERY','⚙'];
+
+  /* ---------- 1. the player page ---------- */
+  const winnersFor=s=>s==='won'?[[WINNER,POT,'today']].concat(WINNERS.slice(0,4)):WINNERS;
+  function winnersRows(g,x,y,w,n,s){ txt(g,'LAST WINNERS',x,y,C.DIM); winnersFor(s).slice(0,n).forEach((r,i)=>{ const yy=y+11+i*11; if(i%2) fill(g,x,yy-1,w,11,'#08160d');
+    txt(g,r[0],x+2,yy,C.PHOS,{max:70}); txt(g,r[2],x+w/2+8,yy,C.DIM,{align:'center'}); txt(g,fmt(r[1]),x+w-2,yy,C.AMBER,{align:'right'}); }); }
+  function drum(g,x,y,w,h,t,state){ frame(g,x,y,w,h,C.SCREEN_E); const rh=12, mid=y+h/2-rh/2; const speed=state==='count'?60:state==='won'?0:3;
+    const stopAt=DRUM.indexOf(WINNER); const off=state==='won'?stopAt*rh:(t*speed)%(DRUM.length*rh);
+    clipRun(g,x+1,y+1,w-2,h-2,()=>{ for(let k=-1;k<2;k++) DRUM.forEach((n,i)=>{ const yy=mid+i*rh+k*DRUM.length*rh-off; if(yy<y-rh||yy>y+h) return;
+      const d=Math.abs(yy-mid); const c=d<rh/2?(state==='won'?C.AMBER:C.PHOS):d<rh*2?C.DIM:C.SCREEN_E; txt(g,n,x+w/2,yy+2,c,{align:'center',max:w-16}); }); });
+    fill(g,x+1,mid-1,w-2,1,state==='won'?C.AMBER:C.SCREEN_E); fill(g,x+1,mid+rh,w-2,1,state==='won'?C.AMBER:C.SCREEN_E);
+    txt(g,'▶',x+2,mid+2,C.AMBER); txt(g,'◀',x+w-8,mid+2,C.AMBER); }
+  function stubs(g,x,y,w,s){ const n=5, gap=3, sw=(w-gap*(n-1))/n; winnersFor(s).forEach((r,i)=>{ const sx=x+i*(sw+gap); frame(g,sx,y,sw,24,C.AMBER_D);
+    fill(g,sx-1,y+10,2,4,C.SCREEN); fill(g,sx+sw-1,y+10,2,4,C.SCREEN); txt(g,r[0],sx+sw/2,y+2,C.PHOS,{align:'center',size:8,max:sw-4});
+    txt(g,fmt(r[1]),sx+sw/2,y+9,C.AMBER,{align:'center',size:9,max:sw-4}); txt(g,r[2],sx+sw/2,y+16,C.DIM,{align:'center',size:8,max:sw-4}); }); }
+  const countN=t=>Math.max(1,5-Math.floor(t%7));
+
+  const PAGE=[
+    function(cv,s,t){ const g=post(cv,TABS,'LOTTERY',true), x=14, y=32, w=192;
+      txt(g,'LOTTERY POT',x+w/2,y+1,C.DIM,{align:'center'});
+      if(s==='count'){ txt(g,String(countN(t)),x+w/2,y+10,C.AMBER,{align:'center',size:34}); txt(g,'Drawing the lottery…',x+w/2,y+40,C.DIM,{align:'center'}); }
+      else if(s==='won'){ txt(g,WINNER+' won',x+w/2,y+12,C.AMBER,{align:'center',size:20}); txt(g,fmt(POT)+' pieces',x+w/2,y+32,C.PHOS,{align:'center'}); }
+      else { coin(g,x+22,y+15,2); coin(g,x+w-38,y+15,2); txt(g,fmt(POT),x+w/2,y+10,C.AMBER,{align:'center',size:30}); txt(g,'pieces',x+w/2,y+37,C.DIM,{align:'center',size:8}); }
+      fill(g,x,y+49,w,1,C.SCREEN_E);
+      txt(g,IN+' players are in',x,y+53,C.PHOS); txt(g,s==='out'?'':'1 in '+IN,x+w,y+53,C.DIM,{align:'right'});
+      if(s==='out') wrap(g,'Your rank (mod) is left out of the lottery.',x,y+63,w,C.AMBER);
+      else if(s==='won') wrap(g,'The pot starts again from 0. Everyone stays in.',x,y+63,w,C.DIM);
+      else wrap(g,'You are in: you played on the network this week.',x,y+63,w,C.DIM);
+      winnersRows(g,x,y+80,w,5,s);
+      txt(g,'Drawn by an admin. The winner takes the whole pot.',x,y+156,C.DIM,{max:150,size:8}); skey(g,x+w-40,y+154,40,14,'ADMIN'); },
+    function(cv,s,t){ const g=post(cv,TABS,'LOTTERY',true), x=14, y=32, w=192;
+      drum(g,x,y,92,96,t,s);
+      const rx=x+100, rw=w-100; txt(g,'POT',rx,y,C.DIM); txt(g,s==='won'?'0':fmt(POT),rx,y+9,C.AMBER,{size:20,max:rw});
+      txt(g,'IN THE DRUM',rx,y+32,C.DIM); txt(g,String(IN),rx,y+41,C.PHOS,{size:16});
+      if(s==='count'){ txt(g,'DRAWING IN',rx,y+60,C.DIM); txt(g,String(countN(t)),rx,y+68,C.AMBER,{size:22}); }
+      else if(s==='won'){ txt(g,'WINNER',rx,y+60,C.DIM); txt(g,WINNER,rx,y+69,C.AMBER,{size:14,max:rw}); txt(g,fmt(POT),rx,y+83,C.PHOS,{max:rw}); }
+      else if(s==='out'){ txt(g,'YOUR CHANCE',rx,y+60,C.DIM); wrap(g,'None: your rank is left out.',rx,y+70,rw,C.AMBER); }
+      else { txt(g,'YOUR CHANCE',rx,y+60,C.DIM); txt(g,'1 in '+IN,rx,y+69,C.PHOS,{size:14}); }
+      txt(g,'LAST WINNERS',x,y+104,C.DIM); stubs(g,x,y+114,w,s);
+      skey(g,x+w-40,y+142,40,12,'ADMIN'); },
+    function(cv,s,t){ const g=post(cv,TABS_OP,'LOTTERY',true), x=14, y=32, w=192, bw=(w-6)/3;
+      box(g,x,y,bw,26,'POT',s==='won'?'0':fmt(POT),C.AMBER); box(g,x+bw+3,y,bw,26,'PLAYERS IN',String(IN));
+      box(g,x+2*(bw+3),y,bw,26,'YOUR CHANCE',s==='out'?'none':'1 in '+IN,s==='out'?C.AMBER:C.PHOS);
+      if(s==='count'){ overlay(g,x,y+30,w,120); txt(g,'Drawing in '+countN(t),x+w/2,y+70,C.AMBER,{align:'center',size:22}); }
+      else { txt(g,'WHO IS IN',x,y+31,C.DIM); txt(g,'LAST PLAYED',x+w,y+31,C.DIM,{align:'right'});
+        SEEN.forEach((r,i)=>{ const yy=y+42+i*11; const me=r[0]==='Steve'; if(me) fill(g,x,yy-1,w,11,C.SEL); else if(i%2) fill(g,x,yy-1,w,11,'#08160d');
+          txt(g,r[0]+(me?' (you)':''),x+2,yy,s==='won'&&r[0]===WINNER?C.AMBER:C.PHOS,{max:90}); txt(g,r[1],x+120,yy,C.DIM,{align:'center'}); txt(g,r[2],x+w-2,yy,C.DIM,{align:'right'}); });
+        if(s==='out') wrap(g,'You are not on the list: your rank (mod) is left out.',x,y+132,w,C.AMBER); }
+      fill(g,x,y+141,w,1,C.SCREEN_E);
+      txt(g,s==='won'?'Just drawn: '+WINNER+' won '+fmt(POT):'Last winner: Kira_B, 41,800 on 21 Oct',x,y+145,s==='won'?C.AMBER:C.DIM,{max:w}); }];
+
+  /* ---------- 2. the admin page ---------- */
+  const ADMIN=[
+    function(cv,s){ const g=post(cv,TABS,'LOTTERY',true), x=14, y=32;
+      txt(g,'LOTTERY ADMIN',x,y,C.PHOS); skey(g,x+152,y-1,40,11,'BACK');
+      txt(g,'POT',x,y+13,C.DIM); txt(g,fmt(POT),x,y+21,C.AMBER,{size:18});
+      txt(g,'PLAYERS IN',x,y+41,C.DIM); txt(g,String(IN)+' of 71 seen',x,y+50,C.PHOS);
+      txt(g,'SEEN WITHIN',x,y+64,C.DIM); skey(g,x,y+73,12,11,'−'); txt(g,'7 DAYS',x+32,y+74,C.PHOS,{align:'center'}); skey(g,x+52,y+73,12,11,'+');
+      txt(g,'PIECES',x,y+90,C.DIM); fill(g,x,y+99,64,12,C.SEL); txt(g,s==='add'?'5,000_':'',x+3,y+101,C.PHOS);
+      skey(g,x+67,y+99,14,12,'+'); skey(g,x+84,y+99,14,12,'−');
+      fill(g,x,y+114,98,12,C.SEL); txt(g,s==='add'?'Event prize_':'Reason',x+3,y+116,s==='add'?C.PHOS:C.DIM,{max:92});
+      fill(g,x,y+132,98,20,'#6a4c10'); fill(g,x,y+132,98,18,C.AMBER); txt(g,'DRAW',x+49,y+136,C.SCREEN,{align:'center',size:14});
+      const rx=x+108; txt(g,'LEFT OUT',rx,y+13,C.DIM); tick(g,rx,y+24,true); txt(g,'operators',rx+10,y+23,C.DIM);
+      RANKS.forEach((r,i)=>{ const yy=y+35+i*11; tick(g,rx,yy+1,r[1]); txt(g,r[0],rx+10,yy,r[1]?C.PHOS:C.DIM); });
+      txt(g,'ranks from LuckPerms',rx,y+116,C.SCREEN_E,{size:8});
+      if(s==='confirm'){ overlay(g,10,10,280,196); const bx=60, by=72; fill(g,bx,by,180,70,C.SCREEN); frame(g,bx,by,180,70,C.AMBER);
+        txt(g,'DRAW THE LOTTERY?',bx+90,by+6,C.AMBER,{align:'center'}); wrap(g,fmt(POT)+' pieces go to one of '+IN+' players, picked at random.',bx+8,by+18,164,C.PHOS,{align:'center'});
+        skey(g,bx+20,by+48,64,14,'DRAW',{amber:true}); skey(g,bx+96,by+48,64,14,'CANCEL'); }
+      if(s==='add') txt(g,'Adds 5,000 to the pot, logged with the reason.',x,y+156,C.DIM,{size:8,max:192}); },
+    function(cv,s){ const g=post(cv,TABS,'LOTTERY',false), x=14, y=32, w=272, bw=(w-8)/3;
+      box(g,x,y,bw,26,'POT',fmt(POT),C.AMBER); box(g,x+bw+4,y,bw,26,'PLAYERS IN',IN+' / 71');
+      const sx=x+2*(bw+4); frame(g,sx,y,bw,26,C.SCREEN_E); txt(g,'SEEN WITHIN',sx+3,y+2,C.DIM,{size:8}); skey(g,sx+6,y+12,12,11,'−'); txt(g,'7 days',sx+bw/2,y+12,C.PHOS,{align:'center',size:12}); skey(g,sx+bw-18,y+12,12,11,'+');
+      txt(g,'TAP A RANK TO LEAVE IT OUT',x,y+32,C.DIM); let cx=x, cy=y+43;
+      [['operators',true]].concat(RANKS).forEach(r=>{ const cw=r[0].length*5+12; if(cx+cw>x+w){ cx=x; cy+=15; } skey(g,cx,cy,cw,12,r[0],{on:r[1]}); cx+=cw+4; });
+      txt(g,'POT',x,y+78,C.DIM); fill(g,x,y+87,70,12,C.SEL); txt(g,s==='add'?'5,000_':'pieces',x+3,y+89,s==='add'?C.PHOS:C.DIM);
+      fill(g,x+74,y+87,120,12,C.SEL); txt(g,s==='add'?'Event prize_':'reason',x+77,y+89,s==='add'?C.PHOS:C.DIM); skey(g,x+198,y+87,34,12,'ADD',{on:s==='add'}); skey(g,x+236,y+87,36,12,'TAKE');
+      const cx0=x+w/2, cy0=y+130; g.fillStyle=C.RED_D; g.beginPath(); g.arc(cx0,cy0+2,17,0,Math.PI*2); g.fill(); g.fillStyle=C.RED; g.beginPath(); g.arc(cx0,cy0,17,0,Math.PI*2); g.fill();
+      txt(g,'DRAW',cx0,cy0-5,'#fff',{align:'center',size:12});
+      if(s==='confirm'){ fill(g,cx0-26,cy0-30,52,6,'rgba(190,230,255,0.55)'); txt(g,'PRESS AGAIN TO DRAW · '+fmt(POT)+' to 1 of '+IN,cx0,y+152,C.AMBER,{align:'center',size:8}); }
+      else { g.fillStyle='rgba(190,230,255,0.28)'; g.fillRect(cx0-22,cy0-22,44,44); frame(g,cx0-22,cy0-22,44,44,'rgba(220,240,255,0.7)'); txt(g,'press to lift the cover',cx0,y+152,C.DIM,{align:'center',size:8}); }
+    },
+    function(cv,s){ const g=post(cv,TABS,'LOTTERY',false), x=14, y=32, lw=176; // as built: the admin page sits under the LOTTERY tab (ADMIN key)
+      txt(g,'PLAYER',x+2,y,C.DIM); txt(g,'SEEN',x+70,y,C.DIM); txt(g,'RANK',x+102,y,C.DIM); txt(g,'',x+lw,y,C.DIM);
+      ADMIN_ROWS.forEach((r,i)=>{ const yy=y+11+i*11; if(i%2) fill(g,x,yy-1,lw,11,'#08160d'); const inn=r[3]==='IN';
+        txt(g,r[0],x+2,yy,inn?C.PHOS:C.DIM,{max:64}); txt(g,r[1],x+70,yy,C.DIM); txt(g,r[2],x+102,yy,C.DIM,{max:36}); txt(g,r[3],x+lw-2,yy,inn?C.PHOS:C.AMBER,{align:'right',max:36}); });
+      txt(g,'62 in · 9 out · 71 seen this season',x+2,y+124,C.DIM,{size:8});
+      const rx=x+lw+6, rw=272-lw-6; fill(g,rx-3,y-2,1,156,C.SCREEN_E);
+      txt(g,'POT',rx,y,C.DIM); txt(g,fmt(POT),rx,y+8,C.AMBER,{size:16,max:rw});
+      txt(g,'SEEN WITHIN',rx,y+26,C.DIM); skey(g,rx,y+35,12,11,'−'); txt(g,'7 d',rx+rw/2,y+36,C.PHOS,{align:'center'}); skey(g,rx+rw-12,y+35,12,11,'+');
+      txt(g,'LEFT OUT',rx,y+50,C.DIM); ['admin','mod','staff','helper'].forEach((r,i)=>{ const yy=y+60+i*10; tick(g,rx,yy+1,i<3); txt(g,r,rx+10,yy,i<3?C.PHOS:C.DIM); });
+      skey(g,rx+rw-22,y+48,10,9,'▲'); skey(g,rx+rw-11,y+48,10,9,'▼');
+      skey(g,rx,y+112,rw/2-2,12,'ADD',{on:s==='add'}); skey(g,rx+rw/2+2,y+112,rw/2-2,12,'TAKE');
+      if(s==='confirm') skey(g,rx,y+130,rw,20,'SURE? DRAW',{amber:true}); else { fill(g,rx,y+130,rw,20,C.AMBER); txt(g,'DRAW',rx+rw/2,y+134,C.SCREEN,{align:'center',size:14}); }
+      if(s==='add'){ overlay(g,10,10,280,196); const bx=70, by=70; fill(g,bx,by,160,64,C.SCREEN); frame(g,bx,by,160,64,C.PHOS); txt(g,'ADD TO THE POT',bx+80,by+5,C.PHOS,{align:'center'});
+        fill(g,bx+8,by+17,144,12,C.SEL); txt(g,'5,000_',bx+11,by+19,C.PHOS); fill(g,bx+8,by+32,144,12,C.SEL); txt(g,'Event prize',bx+11,by+34,C.PHOS);
+        skey(g,bx+8,by+48,68,12,'ADD',{on:true}); skey(g,bx+84,by+48,68,12,'CANCEL'); } }];
+
+  /* ---------- 3. the Score Screen board (ScoreScreenRenderer colours) ---------- */
+  const SB={BG:'#070a0e',TQ:'#19d3b0',GOLD:'#ffd23a',TEXT:'#e8eaf0',MUTED:'#9aa3b5',STRIP:'#10151c'};
+  const BW=256, BH=128;
+  function boardFrame(g){ fill(g,0,0,BW,BH,'#2a2f3a'); fill(g,2,2,BW-4,BH-4,SB.BG); for(let i=1;i<4;i++) fill(g,i*64,2,1,BH-4,'#0c1016'); fill(g,2,64,BW-4,1,'#0c1016'); }
+  function title(g,x,w,s){ fill(g,x,4,w,14,SB.STRIP); txt(g,s,x+w/2,6,SB.TQ,{align:'center',size:12}); }
+  const BOARDS=[
+    function(g,t){ boardFrame(g); title(g,4,BW-8,'LOTTERY'); const shown=Math.min(POT,Math.floor(POT-400+t*100));
+      coin(g,30,44,3); coin(g,BW-54,44,3); txt(g,fmt(reduce?POT:shown),BW/2,34,SB.GOLD,{align:'center',size:40});
+      txt(g,'pieces · '+IN+' players are in',BW/2,74,SB.MUTED,{align:'center'});
+      fill(g,4,BH-24,BW-8,18,SB.STRIP); txt(g,'LAST WINNER',10,BH-20,SB.MUTED); txt(g,'Kira_B',BW/2,BH-20,SB.TEXT,{align:'center'}); txt(g,'41,800',BW-10,BH-20,SB.GOLD,{align:'right'}); },
+    function(g,t){ boardFrame(g); title(g,4,BW-8,'LOTTERY'); const dx=8, dw=100, dy=24, dh=96, rh=13, mid=dy+dh/2-rh/2, off=(t*8)%(DRUM.length*rh);
+      frame(g,dx,dy,dw,dh,'#1f2733'); clipRun(g,dx+1,dy+1,dw-2,dh-2,()=>{ for(let k=-1;k<2;k++) DRUM.forEach((n,i)=>{ const yy=mid+i*rh+k*DRUM.length*rh-off; if(yy<dy-rh||yy>dy+dh) return; const d=Math.abs(yy-mid);
+        txt(g,n,dx+dw/2,yy+2,d<rh/2?SB.GOLD:d<rh*2?SB.TEXT:SB.MUTED,{align:'center',size:11}); }); });
+      txt(g,'▶',dx+3,mid+2,SB.GOLD); txt(g,'◀',dx+dw-9,mid+2,SB.GOLD);
+      const rx=120; txt(g,'POT',rx,24,SB.MUTED); txt(g,fmt(POT),rx,33,SB.GOLD,{size:26}); txt(g,IN+' players are in',rx,58,SB.TEXT);
+      txt(g,'LAST WINNERS',rx,74,SB.MUTED); WINNERS.slice(0,3).forEach((r,i)=>{ txt(g,r[0],rx,84+i*11,SB.TEXT); txt(g,fmt(r[1]),BW-8,84+i*11,SB.GOLD,{align:'right'}); }); },
+    function(g,t){ boardFrame(g); const lw=166; title(g,4,lw,'TOTEM LEADERBOARD');
+      [['Alex','14,200'],['Kira_B','11,850'],['Tobbe','9,400'],['Wren','7,120'],['Steve','5,060'],['Juno42','3,300'],['Ash','2,950']].forEach((r,i)=>{ const y=22+i*14; txt(g,(i+1)+'',12,y,i<3?SB.GOLD:SB.MUTED); txt(g,r[0],26,y,SB.TEXT); txt(g,r[1],lw-4,y,SB.GOLD,{align:'right'}); });
+      const x=lw+8, w=BW-x-4; title(g,x,w,'LOTTERY'); txt(g,'POT',x+2,22,SB.MUTED); txt(g,fmt(POT),x+w/2,31,SB.GOLD,{align:'center',size:20,max:w-4});
+      txt(g,IN+' in',x+w/2,52,SB.TEXT,{align:'center'}); fill(g,x,64,w,1,'#1f2733'); txt(g,'LAST WON',x+2,68,SB.MUTED);
+      WINNERS.slice(0,3).forEach((r,i)=>{ txt(g,r[0],x+2,79+i*15,SB.TEXT,{size:9,max:w-4}); txt(g,fmt(r[1]),x+w-2,86+i*15,SB.GOLD,{align:'right',size:8}); }); }];
+
+  /* ---------- 4. the Portable Banker's account page (Cash Machine look) ---------- */
+  function banker(cv,keys,lit){ const W=240, H=150, g=gui(cv,W,H); bezel(g,W,H); keys.forEach((k,i)=>key(g,8,8+i*24,58,18,k,{on:k===lit}));
+    scr(g,74,8,158,134); const x=78, y=12; txt(g,'SHATTER BANK · Steve',x,y,C.PHOS); fill(g,x,y+11,150,1,C.SCREEN_E);
+    txt(g,'BALANCE',x,y+15,C.DIM); txt(g,'12,400',x+150,y+15,C.AMBER,{align:'right'}); txt(g,'COINS',x,y+26,C.DIM); txt(g,'3 gold · 12 copper',x+150,y+26,C.PHOS,{align:'right'});
+    txt(g,'BOX',x,y+37,C.DIM); txt(g,'27 slots · 12 d paid',x+150,y+37,C.PHOS,{align:'right'}); return {g,x,y}; }
+  const BANK=[
+    function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops'],'Account'); const {g,x,y}=b; fill(g,x,y+50,150,1,C.SCREEN_E);
+      txt(g,'Lottery pot '+fmt(POT)+' · you are in',x,y+54,C.AMBER,{max:150}); txt(g,'RECENT',x,y+70,C.DIM); [['Bought 4 Iron Ingot','-240'],['Sold 16 Cobblestone','+80'],['Market tax','-25']].forEach((r,i)=>{ txt(g,r[0],x,y+80+i*10,C.DIM,{max:110}); txt(g,r[1],x+150,y+80+i*10,C.PHOS,{align:'right'}); }); },
+    function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops'],'Account'); const {g,x,y}=b;
+      frame(g,x,y+52,150,44,C.AMBER_D); txt(g,'LOTTERY',x+4,y+55,C.DIM); coin(g,x+4,y+66,2); txt(g,fmt(POT),x+24,y+64,C.AMBER,{size:20});
+      txt(g,'1 in '+IN,x+146,y+55,C.PHOS,{align:'right'}); txt(g,'last: Kira_B 41,800',x+146,y+85,C.DIM,{align:'right',size:8});
+    },
+    function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops','Lottery'],'Account'); const {g,x,y}=b; fill(g,x,y+50,150,1,C.SCREEN_E);
+      txt(g,'LOTTERY POT',x,y+54,C.DIM); txt(g,fmt(POT),x+150,y+54,C.AMBER,{align:'right'}); txt(g,'The LOTTERY key opens the page.',x,y+66,C.SCREEN_E,{size:8});
+      txt(g,'RECENT',x,y+80,C.DIM); [['Bought 4 Iron Ingot','-240'],['Sold 16 Cobblestone','+80']].forEach((r,i)=>{ txt(g,r[0],x,y+90+i*10,C.DIM,{max:110}); txt(g,r[1],x+150,y+90+i*10,C.PHOS,{align:'right'}); }); }];
+
+  /* ---------- wiring ---------- */
+  let pS='in', aS='ready', t0=performance.now();
+  const pageC=[0,1,2].map(i=>el('p'+i)), adminC=[0,1,2].map(i=>el('a'+i)), boardG=[0,1,2].map(i=>gui(el('b'+i),BW,BH));
+  function drawPages(t){ PAGE.forEach((f,i)=>f(pageC[i],pS,t)); }
+  function drawAdmin(){ ADMIN.forEach((f,i)=>f(adminC[i],aS)); }
+  function seg(id,set){ el(id).querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ el(id).querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false')); set(b.dataset.s); })); }
+  seg('pState',s=>{ pS=s; drawPages((performance.now()-t0)/1000); }); seg('aState',s=>{ aS=s; drawAdmin(); });
+  function drawAll(){ drawPages(0); drawAdmin(); BOARDS.forEach((f,i)=>f(boardG[i],0)); BANK.forEach((f,i)=>f(el('k'+i))); }
+  drawAll(); if(document.fonts) document.fonts.ready.then(drawAll);
+  function loop(now){ const t=(now-t0)/1000; drawPages(t); BOARDS.forEach((f,i)=>f(boardG[i],t)); requestAnimationFrame(loop); }
+  if(!reduce) requestAnimationFrame(loop);
+
+  /* ---------- 5. the chat ---------- */
+  const LINES=[['g','[Lottery] ','w','An admin is drawing the lottery: '+fmt(POT)+' pieces, '+IN+' players in.'],['g','[Lottery] ','y','5'],['g','[Lottery] ','y','4'],['g','[Lottery] ','y','3'],['g','[Lottery] ','y','2'],['g','[Lottery] ','y','1'],
+    ['g','[Lottery] ','a',WINNER+' won '+fmt(POT)+' pieces!']];
+  let timers=[];
+  function play(){ timers.forEach(clearTimeout); timers=[]; const box=el('chat'); box.textContent='';
+    LINES.forEach((l,i)=>timers.push(setTimeout(()=>{ const d=document.createElement('div'); for(let k=0;k<l.length;k+=2){ const s=document.createElement('span'); s.className=l[k]; s.textContent=l[k+1]; d.appendChild(s); } box.appendChild(d); },reduce?0:i*1000))); }
+  el('replay').addEventListener('click',play); play();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · The lottery on the Portable Banker</div><div class="bsp-cap">The account page shows the pot, your chance and the last winner wherever you are.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('k1')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>
