@@ -24,11 +24,13 @@ public final class BankEvents {
         var server = player.server;
         var id = player.getUUID();
         long seen = Bank.account(server, id).seenMs;
+        long day = DailyReward.today(); // the day they arrived, even if the account opens after midnight
         Bank.ensure(server, id, player.getGameProfile().getName(), granted -> {
             if (granted) {
                 player.displayClientMessage(Component.translatable("message.bsp_core.bank.welcome", Bank.format(Bank.pieces(server, id))).withStyle(ChatFormatting.GOLD), false);
             }
             Bank.pushState(server, id);
+            DailyReward.atLogin(player, day);
             Bank.log(server, id, log -> {
                 long received = 0, sold = 0, won = 0;
                 int n = 0, sales = 0;

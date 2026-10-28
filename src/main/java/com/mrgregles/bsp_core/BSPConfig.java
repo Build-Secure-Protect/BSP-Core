@@ -177,7 +177,7 @@ public final class BSPConfig {
     // ------------------------------------------------------------------ bank
 
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
-    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS, BANK_MARKET_UNLOCK_COINS,
+    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_DAILY_REWARD, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS, BANK_MARKET_UNLOCK_COINS,
             BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS, SHOP_LOTTERY_PERCENT;
     public static ForgeConfigSpec.ConfigValue<String> SHOP_TIME_ZONE;
 
@@ -595,6 +595,9 @@ public final class BSPConfig {
                         "Converting is one way: pieces never turn back into coins.")
                 .defineInRange("piecesPerCopperCoin", 1000, 1, 1000000);
         BANK_STARTING_PIECES = BUILDER.comment("Pieces a player is given the first time they join the network (once, whichever server they join).").defineInRange("startingPieces", 500, 0, 1000000000);
+        BANK_DAILY_REWARD = BUILDER.comment("Pieces every player is given once a day: at their first login of the day on any server of the network, or at midnight to everyone online then.",
+                        "Days run midnight to midnight on the shop clock (shop.timeZone). 0 for none.")
+                .defineInRange("dailyRewardPieces", 50, 0, 1000000000);
         BANK_PAY_CONFIRM = BUILDER.comment("Paying another player this many pieces or more asks for a confirmation first.").defineInRange("payConfirmPieces", 1000, 0, 1000000000);
         BANK_LOG_DAYS = BUILDER.comment("Days a player's transaction log is kept.").defineInRange("logDays", 90, 1, 3650);
         BANK_LOG_ENTRIES = BUILDER.comment("Most log entries kept per player on this server (the newest stay).").defineInRange("logEntries", 500, 10, 100000);

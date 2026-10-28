@@ -235,6 +235,8 @@ final class MySqlStore implements AutoCloseable {
             }
             // what reached the database: listings (by lot id) and held-item writes, so a lost answer can be asked about
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_attempts") + " (id VARCHAR(64) NOT NULL PRIMARY KEY, ms BIGINT NOT NULL, INDEX (ms))");
+            // the daily login reward: the last day each player was paid (days since 1970 on the shop clock)
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("daily_rewards") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, day INT NOT NULL)");
             // the lottery: every player seen on the network, with their ranks and operator status at the time
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("lottery_players") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL, seen_ms BIGINT NOT NULL, "
                     + "ranks VARCHAR(1024) NOT NULL DEFAULT '', op TINYINT NOT NULL DEFAULT 0, server_id VARCHAR(64) NOT NULL DEFAULT '', INDEX (seen_ms))");
@@ -2057,6 +2059,38 @@ final class MySqlStore implements AutoCloseable {
             }
             return new long[]{amount, piecesOf(c, win.id())};
         });
+    }
+
+    /**
+     * Pays the daily reward if {@code day} was not paid yet, claiming the day and moving the pieces (with the log row) in one
+     * transaction: {pieces paid, balance after}; {0, -1} when the day was paid already; {-1, -1} when the player has no bank
+     * row (nothing claimed). The claim is one conditional UPDATE on a row made first if missing, so it takes no gap lock and
+     * holds under any isolation level. A day more than one ahead of {@code day} (written by a server whose clock ran ahead)
+     * counts as not paid.
+     */
+    long[] dailyReward(UUID id, int day, long amount, String serverId) throws SQLException {
+        return marketTx(c -> {
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("daily_rewards") + " (uuid, day) VALUES (?, -1)")) {
+                ps.setString(1, id.toString());
+                ps.executeUpdate();
+            }
+            int claimed;
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("daily_rewards") + " SET day = ? WHERE uuid = ? AND (day < ? OR day > ?)")) {
+                ps.setInt(1, day);
+                ps.setString(2, id.toString());
+                ps.setInt(3, day);
+                ps.setInt(4, day + 1);
+                claimed = ps.executeUpdate();
+            }
+            if (claimed != 1) {
+                return new long[]{0, -1};
+            }
+            if (!addPieces(c, id, amount)) {
+                throw new MarketNo("no_account"); // rolls the claim back too
+            }
+            bankLog(c, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.GRANT, "Shatter Bank", "daily reward", amount, -1, 0, serverId));
+            return new long[]{amount, piecesOf(c, id)};
+        }, key -> new long[]{-1, -1});
     }
 
     /** Players seen at or after {@code sinceMs}. */

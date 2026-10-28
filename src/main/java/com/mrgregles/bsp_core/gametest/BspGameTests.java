@@ -733,6 +733,55 @@ public class BspGameTests {
         h.succeed();
     }
 
+    // ------------------------------------------------------------------ daily login reward
+
+    @GameTest(template = EMPTY)
+    public void daily_reward_pays_once_a_day_midnight_to_midnight(GameTestHelper h) {
+        var server = server(h);
+        long amount = com.mrgregles.bsp_core.bank.DailyReward.amount();
+        if (amount <= 0 || com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
+            h.succeed(); // the reward is off, or paid through the database (a network test): nothing this test can check
+            return;
+        }
+        UUID id = UUID.randomUUID();
+        com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Dai" + Long.toHexString(System.nanoTime()).substring(0, 5), g -> {});
+        var zone = com.mrgregles.bsp_core.shop.Shops.zone();
+        long midnight = java.time.LocalDate.of(2026, 3, 10).atStartOfDay(zone).toInstant().toEpochMilli();
+        long d0 = com.mrgregles.bsp_core.bank.DailyReward.day(midnight);
+        h.assertTrue(com.mrgregles.bsp_core.bank.DailyReward.day(midnight - 1) + 1 == d0 && d0 == com.mrgregles.bsp_core.bank.DailyReward.day(midnight + 86_399_999L),
+                "a day runs from midnight to midnight on the shop clock");
+        var paid = new com.mrgregles.bsp_core.bank.DailyReward.Outcome[1];
+        long[] pieces = new long[1];
+        com.mrgregles.bsp_core.bank.DailyReward.Answer answer = (o, p) -> {
+            paid[0] = o;
+            pieces[0] = p;
+        };
+        try {
+            com.mrgregles.bsp_core.bank.DailyReward.useClock(() -> midnight + 9 * 3_600_000L);
+            h.assertTrue(com.mrgregles.bsp_core.bank.DailyReward.today() == d0, "today follows the clock");
+            long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+            com.mrgregles.bsp_core.bank.DailyReward.give(server, id, d0, answer);
+            h.assertTrue(paid[0] == com.mrgregles.bsp_core.bank.DailyReward.Outcome.PAID && pieces[0] == amount && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start + amount,
+                    "the first claim of the day pays " + amount + ": " + paid[0]);
+            var row = com.mrgregles.bsp_core.bank.BankLedger.get(server).log(id).get(0);
+            h.assertTrue(row.type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.GRANT && row.detail().equals("daily reward") && row.pieces() == amount, "the bank log shows it: " + row);
+            com.mrgregles.bsp_core.bank.DailyReward.give(server, id, d0, answer);
+            h.assertTrue(paid[0] == com.mrgregles.bsp_core.bank.DailyReward.Outcome.NONE && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start + amount, "a second claim the same day pays nothing");
+            com.mrgregles.bsp_core.bank.DailyReward.give(server, id, d0 + 1, answer);
+            h.assertTrue(paid[0] == com.mrgregles.bsp_core.bank.DailyReward.Outcome.PAID && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start + 2 * amount, "the next day pays again");
+            com.mrgregles.bsp_core.bank.DailyReward.give(server, id, d0, answer);
+            h.assertTrue(paid[0] == com.mrgregles.bsp_core.bank.DailyReward.Outcome.NONE, "a day before the last one paid never pays");
+            com.mrgregles.bsp_core.bank.DailyReward.Days.get(server).paid(id, d0 + 40); // written by a clock that ran far ahead
+            com.mrgregles.bsp_core.bank.DailyReward.give(server, id, d0 + 2, answer);
+            h.assertTrue(paid[0] == com.mrgregles.bsp_core.bank.DailyReward.Outcome.PAID, "a day far ahead does not block the real one");
+            var days = com.mrgregles.bsp_core.bank.DailyReward.Days.load(com.mrgregles.bsp_core.bank.DailyReward.Days.get(server).save(new net.minecraft.nbt.CompoundTag()));
+            h.assertTrue(days.last(id) == d0 + 2, "the world keeps the last day paid through a save");
+        } finally {
+            com.mrgregles.bsp_core.bank.DailyReward.useClock(null);
+        }
+        h.succeed();
+    }
+
     // ------------------------------------------------------------------ lottery
 
     @GameTest(template = EMPTY)

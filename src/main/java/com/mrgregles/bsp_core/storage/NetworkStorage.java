@@ -1191,6 +1191,37 @@ public final class NetworkStorage {
         publish("lottery", payload);
     }
 
+    /**
+     * What a daily reward claim came to: "paid" (with the pieces and the balance after), "already" (the day was paid), and, to
+     * be tried again, "no_account", "unreachable", "untouched" (surely nothing happened) or "unsure" (the answer was lost after
+     * the commit may have gone in; trying again is safe, the claim is in the same transaction).
+     */
+    public record Daily(String key, long pieces, long balance) {}
+
+    public static void dailyReward(UUID id, int day, long amount, Consumer<Daily> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(new Daily("unreachable", 0, -1));
+            return;
+        }
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        worker().execute(() -> {
+            Daily d;
+            try {
+                long[] r = s.dailyReward(id, day, amount, here);
+                d = r[0] > 0 ? new Daily("paid", r[0], r[1]) : r[0] == 0 ? new Daily("already", 0, -1) : new Daily("no_account", 0, -1);
+            } catch (com.mrgregles.bsp_core.market.MarketDb.Untouched e) {
+                BSPCore.LOGGER.error("BSP-Core storage: a daily reward could not be paid (will try again): {}", e.toString());
+                d = new Daily("untouched", 0, -1);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: a daily reward's answer was lost (will check again): {}", e.toString());
+                d = new Daily("unsure", 0, -1);
+            }
+            Daily answer = d;
+            onServer(() -> then.accept(answer));
+        });
+    }
+
     public static void lotterySeen(com.mrgregles.bsp_core.lottery.LotteryPlayer p, boolean ranksKnown) {
         async("record a player for the lottery", s -> s.lotterySeen(p, ranksKnown));
     }

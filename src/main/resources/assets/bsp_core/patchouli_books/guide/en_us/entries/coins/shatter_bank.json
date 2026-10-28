@@ -17,6 +17,11 @@
       "type": "patchouli:text",
       "text": "From the account screen you can pay any player on the network, online or not; large payments ask you to confirm, and you can refuse incoming payments.$(br2)The transaction log lists what you bought and sold, who you paid and who paid you, with filters and a search. It is kept for 90 days.$(br2)Commands are a backup: $(l)/bank$(), $(l)/bank pay$(), $(l)/bank log$().",
       "title": "Paying and the log"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Once a day, the first time you log in on any server of the network, $(l)50 pieces$() go into your account, with a line in chat to say so.$(br2)If you are online when midnight comes, the new day's reward arrives then. Days run from midnight to midnight.",
+      "title": "Daily reward"
     }
   ]
 }

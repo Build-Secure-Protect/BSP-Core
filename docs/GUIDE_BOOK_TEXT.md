@@ -978,6 +978,12 @@ The transaction log lists what you bought and sold, who you paid and who paid yo
 
 Commands are a backup: **/bank**, **/bank pay**, **/bank log**.
 
+**Page 4: Daily reward**
+
+Once a day, the first time you log in on any server of the network, **50 pieces** go into your account, with a line in chat to say so.
+
+If you are online when midnight comes, the new day's reward arrives then. Days run from midnight to midnight.
+
 ## Safety Deposit Box
 
 **Page 1**

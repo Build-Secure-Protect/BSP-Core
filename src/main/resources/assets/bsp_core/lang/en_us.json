@@ -2207,6 +2207,7 @@
   "message.bsp_core.market.removed": "Market: an admin took your lot %s off the market. Its items wait in your Collect box at any Trade Post.",
   "message.bsp_core.market.to_collect": "%s stack(s) did not fit in your inventory and wait in your Collect box at any Trade Post.",
   "message.bsp_core.market.while_away": "While you were away: %s market sale(s), %s pieces in all.",
+  "message.bsp_core.bank.daily_reward": "Daily reward: %s pieces went into your bank.",
   "gui.bsp_core.lottery.admin.title": "LOTTERY ADMIN",
   "gui.bsp_core.lottery.admin.player": "PLAYER",
   "gui.bsp_core.lottery.admin.seen": "SEEN",

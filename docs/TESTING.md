@@ -2430,3 +2430,25 @@ Covered by GameTests: `lottery_keeps_ranks_it_cannot_read_and_shares_never_overf
 - [ ] At a Trade Post on the LOTTERY tab: click around the drum, the pot and the foot line: no lot opens and nothing is bought (check `/bank` log).
 - [ ] The drum's names show, clipped to the drum, at GUI scale 2, 3 and 4, and in a small window.
 - [ ] Open the ADD card on the admin page and click a tab or the close mark: nothing happens until the card is closed.
+
+## Daily login reward (2026-10-28)
+
+Covered by a GameTest in the default batch: `daily_reward_pays_once_a_day_midnight_to_midnight`:
+- a day runs from midnight to midnight on the shop clock;
+- the first login of the day pays `bank.dailyRewardPieces` (50 by default), with a GRANT "daily reward" row in the bank log;
+- a second login the same day pays nothing; a minute past the next midnight pays again; a clock set back never pays a day twice;
+- the world keeps the last day paid through a save;
+- (after the audit) a day before the last one paid never pays, and a day written far ahead by a clock that ran ahead does not block the real one.
+
+**Audit (2026-10-28), fixed:** a claim that failed (database away at midnight, answer lost, no bank row yet) was lost for the day: it is now tried again every 30 s while the player is online; the network claim takes no locking read on a missing row (no gap-lock deadlocks between servers, no double pay under READ COMMITTED); the day is read when the player arrives, so a login a moment before midnight pays that day; a lost answer re-reads the balance and settles on the next try; the chat line follows the player to another server; the day is taken at server start, so a midnight a second after start is not missed; a warning when a network server has `shop.timeZone` empty. The GameTest skips itself if the reward is 0 or the test server is on a network.
+
+**Not covered by a GameTest:** the login hook and the chat line, the payment at midnight to players online, the retries, the network transaction (`daily_rewards`).
+
+- [ ] On a network, stop MySQL for a minute around a login: no reward, no error for the player; start MySQL: within about 30 seconds the reward comes, with its chat line.
+
+- [ ] Log in on a test server: "Daily reward: 50 pieces went into your bank." in gold; `/bank` shows 50 more and a "grant Shatter Bank, daily reward" line in the log.
+- [ ] Log out and in again: no second reward.
+- [ ] Set `shop.timeZone` so midnight is a minute away (or wait for midnight) and stay online: at midnight the line comes again, without logging out.
+- [ ] A new player: the 500 welcome pieces and then the 50 daily reward, both on the first login.
+- [ ] `bank.dailyRewardPieces = 0`: no reward and no line.
+- [ ] On a network: log in on A (reward), move to B the same day (no reward); next day, first login on B pays.
