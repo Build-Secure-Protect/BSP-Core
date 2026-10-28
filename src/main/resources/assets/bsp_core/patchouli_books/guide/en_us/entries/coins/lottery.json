@@ -1,0 +1,22 @@
+{
+  "name": "The Lottery",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:gold_shatter_coin",
+  "sortnum": 15,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The network has one lottery pot. It fills from the $(l:coins/market)market$()'s taxes and from half of what players pay for shop items.$(br2)Everyone who has played on the network in the past week is in the lottery, with one equal chance each. There are no tickets to buy or earn. Operators and staff ranks are left out."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "An admin draws the lottery when they choose. Chat on every server counts down from 5 and then names the winner and what they won.$(br2)The winner takes the whole pot, straight into their bank. A winner who is offline is told when they next log in.$(br2)After a draw the pot starts again, and everyone who keeps playing is in the next one.",
+      "title": "The draw"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The $(l)LOTTERY$() tab on a $(l:coins/trade_post)Trade Post$() turns a drum of the names of everyone in, beside the pot, how many are in and your own chance. The last five winners are along the bottom.$(br2)The $(item)Portable Banker$() shows the pot and your chance on its account page, and Score Screens can show the $(l)Lottery$() board.",
+      "title": "Watching the pot"
+    }
+  ]
+}

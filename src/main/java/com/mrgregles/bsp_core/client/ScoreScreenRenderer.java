@@ -248,6 +248,10 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             missing(id, w, top, area, u);
             return;
         }
+        if (b.id().equals(ClientLottery.BOARD)) {
+            lotteryBoard(w, top, area, u, t);
+            return;
+        }
         List<BspBoards.BoardLine> lines = BspBoards.lines(b.id());
         if (lines.isEmpty()) {
             text(Component.translatable("screen.bsp_core.board.empty").getString(), w / 2, top + area / 2, 11 * u, MUTED, 0.5f, w - 12);
@@ -258,6 +262,71 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             return;
         }
         ledger(level, lines, w * 0.04f, w * 0.96f, h, top, area, u, t, speed, 16 * u, true);
+    }
+
+    /**
+     * The Lottery board (look B, owner's pick 2026-10-28), whatever the screen's look: a drum of the names of everyone in rolling
+     * slowly at the left, the middle name gold between two arrows; it spins while a draw counts down and stands on the winner
+     * after. At the right the pot, how many are in (or the count, or the winner) and the last three winners.
+     */
+    private void lotteryBoard(float w, float top, float area, float u, float t) {
+        com.mrgregles.bsp_core.lottery.LotterySummary.Summary s = ClientLottery.summary();
+        com.mrgregles.bsp_core.lottery.LotteryDraw.Phase[] phases = com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.values();
+        var phase = s.phase() >= 0 && s.phase() < phases.length ? phases[s.phase()] : com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.IDLE;
+        float dx = w * 0.03f, dw = w * 0.38f, dy = top + 1, dh = area - 2, rh = 13 * u, mid = dy + dh / 2;
+        rect(dx, dy, dx + dw, dy + 1, STRIP);
+        rect(dx, dy + dh - 1, dx + dw, dy + dh, STRIP);
+        rect(dx, dy, dx + 1, dy + dh, STRIP);
+        rect(dx + dw - 1, dy, dx + dw, dy + dh, STRIP);
+        List<String> names = s.names();
+        if (names.isEmpty()) {
+            text(Component.translatable("screen.bsp_core.lottery.nobody"), dx + dw / 2, mid, 8 * u, MUTED, 0.5f, dw - 8);
+        } else {
+            float total = names.size() * rh;
+            int at = names.indexOf(s.winner());
+            float roll = phase == com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.WON && at >= 0 ? at * rh
+                    : t * (phase == com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.COUNTING ? 200 : 8) * u;
+            float off = ((roll % total) + total) % total;
+            int copies = (int) (dh / total) + 2; // enough copies of a short list to fill the drum
+            for (int k = -copies; k <= copies; k++) {
+                for (int i = 0; i < names.size(); i++) {
+                    float y = mid + i * rh + k * total - off;
+                    if (y < dy + rh * 0.55f || y > dy + dh - rh * 0.55f) {
+                        continue;
+                    }
+                    float d = Math.abs(y - mid);
+                    text(names.get(i), dx + dw / 2, y, rh * 0.7f, d < rh / 2 ? GOLD : d < rh * 2 ? TEXT : MUTED, 0.5f, dw - 30 * u); // clear of the arrows
+                }
+            }
+            text("\u25B6", dx + 3 * u, mid, rh * 0.6f, GOLD, 0f, 10 * u);
+            text("\u25C0", dx + dw - 3 * u, mid, rh * 0.6f, GOLD, 1f, 10 * u);
+        }
+        float rx = dx + dw + 8 * u, rw = w - rx - w * 0.03f;
+        text(Component.translatable("screen.bsp_core.lottery.pot"), rx, top + 5 * u, 7 * u, MUTED, 0f, rw);
+        text(com.mrgregles.bsp_core.bank.Bank.format(s.pot()), rx, top + 18 * u, 20 * u, GOLD, 0f, rw);
+        if (phase == com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.COUNTING) {
+            long n = Math.max(1, 5 - Math.max(0, ClientLottery.phaseAge() / 1000 - 1));
+            text(Component.translatable("screen.bsp_core.lottery.drawing_in", n), rx, top + 33 * u, 9 * u, GOLD, 0f, rw);
+        } else if (phase == com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.WON) {
+            text(Component.translatable("screen.bsp_core.lottery.won", s.winner(), com.mrgregles.bsp_core.bank.Bank.format(s.winPieces())), rx, top + 33 * u, 9 * u, GOLD, 0f, rw);
+        } else {
+            text(Component.translatable("screen.bsp_core.lottery.players_in", s.in()), rx, top + 33 * u, 9 * u, TEXT, 0f, rw);
+        }
+        text(Component.translatable("screen.bsp_core.lottery.winners"), rx, top + 47 * u, 7 * u, MUTED, 0f, rw);
+        if (s.wins().isEmpty()) {
+            text(Component.translatable("screen.bsp_core.lottery.no_winners"), rx, top + 58 * u, 8 * u, MUTED, 0f, rw);
+        }
+        for (int i = 0; i < s.wins().size(); i++) {
+            var win = s.wins().get(i);
+            float y = top + 58 * u + i * 11 * u;
+            if (y > top + area - 4 * u) {
+                break;
+            }
+            String amount = com.mrgregles.bsp_core.bank.Bank.format(win.pieces());
+            float aw = Math.min(rw * 0.45f, font.width(Component.literal(amount).withStyle(style)) * (8 * u / 8f) + 2);
+            text(win.name(), rx, y, 8 * u, TEXT, 0f, rw - aw - 4);
+            text(amount, rx + rw, y, 8 * u, GOLD, 1f, aw);
+        }
     }
 
     /** Rows: icon, text, value right-aligned; scrolls at the screen's speed when there are more rows than fit. */

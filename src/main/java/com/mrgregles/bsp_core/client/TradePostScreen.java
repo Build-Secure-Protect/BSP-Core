@@ -32,6 +32,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     private static final int SX = 10, SY = 10, SW = 280, SH = 196, CX = 14, BX = 210, BW = 80, CARD_H = 40, GAP = 3, ROWS = 3, KEY_Y = 178;
     private static final String[] SORTS = {"newest", "cheapest", "dearest"};
 
+
     @Nullable
     private String openLot;
     @Nullable
@@ -51,6 +52,12 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     private long clockOffset;
     /** When the search box last changed: the search goes out a quarter second after typing stops. */
     private long searchAt;
+    /** The LOTTERY tab's page while it shows (the traders band stays). */
+    @Nullable
+    private LotteryPlayerPage lottery;
+    /** The lottery's admin page while an operator has it open (the ADMIN key on the LOTTERY page); the traders band is hidden behind it. */
+    @Nullable
+    private LotteryAdminPage admin;
     /** The pages' width, the lot cards across and a card's width: 192, 3, 62 beside the traders band; 272, 4, 65 on a Portable Banker. */
     private final int cw, cols, cardW;
 
@@ -65,6 +72,23 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         if (menu.page == TradePostBlock.Tab.TRADE) {
             menu.page = TradePostBlock.Tab.MARKET;   // the TRADE key: the market with the traders band in front
         }
+    }
+
+    /** True while the lottery's admin page is showing. */
+    public boolean adminShown() {
+        return admin != null;
+    }
+
+    private boolean operator() {
+        return minecraft != null && minecraft.player != null && minecraft.player.hasPermissions(2);
+    }
+
+    @Override
+    public boolean charTyped(char c, int mods) {
+        if (admin != null && admin.charTyped(c)) {
+            return true;
+        }
+        return super.charTyped(c, mods);
     }
 
     /** A view from the server for the open screen. */
@@ -100,6 +124,16 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     @Override
     protected void containerTick() {
         super.containerTick();
+        if (admin != null && !operator()) {
+            openLottery(); // no longer an operator: back to the LOTTERY page, without the ADMIN key
+        } else if (admin != null) {
+            admin.tick();
+        } else if (lottery != null) {
+            if (lottery.operator() != operator()) {
+                openLottery();
+            }
+            lottery.tick();
+        }
         if (searchAt > 0 && System.currentTimeMillis() >= searchAt) {
             searchAt = 0;
             askView(0);
@@ -122,6 +156,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         super.init();
         search = null;
         price = null;
+        if (admin != null || lottery != null) {
+            return;
+        }
         if (menu.page == TradePostBlock.Tab.MARKET && openLot == null) {
             search = new EditBox(font, leftPos + CX + 3, topPos + 33, 120, 10, Component.translatable("gui.bsp_core.trade_post.search"));
             search.setBordered(false);
@@ -148,6 +185,8 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     }
 
     private void page(TradePostBlock.Tab tab) {
+        admin = null;
+        lottery = null;
         menu.page = tab;
         openLot = null;
         openView = null;
@@ -247,6 +286,10 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                 return true;
             }
         }
+        if (admin != null && admin.cardOpen()) {
+            admin.click(x, y); // the ADD or TAKE card covers the whole screen, tabs and close mark included
+            return true;
+        }
         if (over(x, y, 276, 12, 11, 11)) {
             onClose();
             return true;
@@ -258,7 +301,23 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                 page(tab);
                 return true;
             }
-            tx += w + 3;
+            tx += w + 2;
+        }
+        if (over(x, y, tx, 13, lotteryTabWidth(), 13)) {
+            if (lottery == null || admin != null) {
+                openLottery();
+            }
+            return true;
+        }
+        if (admin != null) {
+            return admin.click(x, y) || super.mouseClicked(mx, my, button);
+        }
+        if (lottery != null) {
+            // the market page behind it is not shown: a click must never reach its lots or its BUY key
+            if (lottery.click(x, y) || !menu.portable() && clickBand(x, y)) {
+                return true;
+            }
+            return super.mouseClicked(mx, my, button);
         }
         if (!menu.portable() && clickBand(x, y)) {
             return true;
@@ -350,6 +409,12 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
+        if (admin != null) {
+            return admin.scroll(mx - leftPos, my - topPos, delta);
+        }
+        if (lottery != null) {
+            return true;
+        }
         if (menu.page == TradePostBlock.Tab.MARKET && openLot == null) {
             int rows = (v().lots().size() + cols - 1) / cols;
             scroll = Math.max(0, Math.min(Math.max(0, rows - ROWS), scroll - (int) Math.signum(delta)));
@@ -360,6 +425,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (admin != null && admin.keyPressed(key)) {
+            return true;
+        }
         EditBox focus = search != null && search.isFocused() ? search : price != null && price.isFocused() ? price : null;
         if (focus != null && key != 256) {
             return focus.keyPressed(key, scan, mods) || focus.canConsumeInput();
@@ -369,13 +437,34 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
 
     // ------------------------------------------------------------------ drawing
 
+    /** Four tabs fit beside the traders band (MARKET, SELL, COLLECT 99+ and LOTTERY take 196 of its 196 pixels) with 6 pixels round each label and 2 between. */
     private int tabWidth(TradePostBlock.Tab tab) {
-        return font.width(tabLabel(tab)) + 12;
+        return font.width(tabLabel(tab)) + 6;
+    }
+
+    private int lotteryTabWidth() {
+        return font.width(tr("tab.lottery")) + 6;
+    }
+
+    /** The LOTTERY page in place of whatever shows. */
+    private void openLottery() {
+        page(TradePostBlock.Tab.MARKET); // no lot places or inventory behind the lottery's pages
+        lottery = new LotteryPlayerPage(font, CX, 32, cw, operator(), this::openAdmin);
+        lottery.opened();
+        rebuildWidgets();
+    }
+
+    /** The ADMIN key on the LOTTERY page: the admin page in its place, the traders band hidden. */
+    private void openAdmin() {
+        lottery = null;
+        admin = new LotteryAdminPage(font, CX, 31);
+        admin.opened();
+        rebuildWidgets();
     }
 
     private String tabLabel(TradePostBlock.Tab tab) {
         String s = Component.translatable("gui.bsp_core.trade_post.tab." + tab.name().toLowerCase(Locale.ROOT)).getString();
-        return tab == TradePostBlock.Tab.COLLECT && v().collectCount() > 0 ? s + " " + v().collectCount() : s;
+        return tab == TradePostBlock.Tab.COLLECT && v().collectCount() > 0 ? s + " " + (v().collectCount() > 99 ? "99+" : v().collectCount()) : s;
     }
 
     /** A touch-screen key: lit (filled) or outlined, dimmed when it cannot be pressed. */
@@ -439,7 +528,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         g.fill(x, y, x + imageWidth, y + 2, BEZEL_LIGHT);
         g.fill(x + SX - 1, y + SY - 1, x + SX + SW + 1, y + SY + SH + 1, SCREEN_EDGE);
         g.fill(x + SX, y + SY, x + SX + SW, y + SY + SH, SCREEN);
-        if (!menu.portable()) {
+        if (!menu.portable() && admin == null) {
             g.fill(x + BX, y + SY, x + SX + SW, y + SY + SH, BAND);
         }
         if (menu.page == TradePostBlock.Tab.SELL) {
@@ -463,11 +552,33 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         int tx = CX;
         for (TradePostBlock.Tab tab : new TradePostBlock.Tab[]{TradePostBlock.Tab.MARKET, TradePostBlock.Tab.SELL, TradePostBlock.Tab.COLLECT}) {
             int w = tabWidth(tab);
-            key(g, tx, 13, w, 13, tabLabel(tab), menu.page == tab, true, mx, my);
-            tx += w + 3;
+            key(g, tx, 13, w, 13, tabLabel(tab), admin == null && lottery == null && menu.page == tab, true, mx, my);
+            tx += w + 2;
         }
+        key(g, tx, 13, lotteryTabWidth(), 13, tr("tab.lottery"), admin != null || lottery != null, true, mx, my);
         key(g, 276, 12, 11, 11, "x", false, true, mx, my);
+        if (admin != null) {
+            g.fill(CX, 28, SX + SW - 4, 29, SCREEN_EDGE);
+            admin.draw(g, mx - leftPos, my - topPos);
+            if (!menu.portable() && !v().toMe().isEmpty()) {
+                drawRequest(g, v().toMe().get(0), mx, my);
+            }
+            return;
+        }
         g.fill(CX, 28, CX + cw, 29, SCREEN_EDGE);
+        if (lottery != null) {
+            lottery.draw(g, mx - leftPos, my - topPos, leftPos, topPos);
+            if (!message.isEmpty()) {
+                CashMachine.fit(g, font, message, CX, 196, cw, AMBER);
+            }
+            if (!menu.portable()) {
+                drawBand(g, mx, my);
+                if (!v().toMe().isEmpty()) {
+                    drawRequest(g, v().toMe().get(0), mx, my);
+                }
+            }
+            return;
+        }
         switch (menu.page) {
             case SELL -> drawSell(g, mx, my);
             case COLLECT -> drawCollect(g, mx, my);
@@ -673,6 +784,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
 
     /** The item under the mouse on a lot page, a card or the Collect box (positions relative to the panel). */
     private ItemStack hoveredShown(double x, double y) {
+        if (lottery != null || admin != null) {
+            return ItemStack.EMPTY; // the market's lots are behind the lottery's pages, not on show
+        }
         if (menu.page == TradePostBlock.Tab.COLLECT) {
             List<ItemStack> box = v().collect();
             for (int i = 0; i < Math.min(box.size(), 45); i++) {

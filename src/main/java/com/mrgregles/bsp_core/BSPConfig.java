@@ -178,7 +178,7 @@ public final class BSPConfig {
 
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
     public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS, BANK_MARKET_UNLOCK_COINS,
-            BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS;
+            BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS, SHOP_LOTTERY_PERCENT;
     public static ForgeConfigSpec.ConfigValue<String> SHOP_TIME_ZONE;
 
     // ------------------------------------------------------------------ market
@@ -632,6 +632,8 @@ public final class BSPConfig {
 
         BUILDER.comment("Shops.").push("shop");
         DISPLAY_SECONDS = BUILDER.comment("Seconds a Stall Display shows each item before moving to the next.").defineInRange("displaySeconds", 4, 1, 600);
+        SHOP_LOTTERY_PERCENT = BUILDER.comment("Percent of what players pay for shop items, in pieces or coins, that goes into the lottery pot (/bsp market pot). Rounded down; the rest leaves the economy. 0 for none.")
+                .defineInRange("lotteryPercent", 50, 0, 100);
         SHOP_TIME_ZONE = BUILDER.comment("The time zone fixed refill times (\"day 00:00\", \"monday 00:00\") are read in, such as Europe/London or UTC. Empty uses the server machine's own.",
                 "Set it the same on every server of a network.").define("timeZone", "");
         BUILDER.pop();

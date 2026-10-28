@@ -108,6 +108,8 @@ minecraft {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
+            // holds each test back until its chunks tick (1.20.1's runner starts the clock before they do); this run only, never in the jar's MixinConfigs
+            args '--mixin.config', 'bsp_core.gametest.mixins.json'
         }
 
         data {
@@ -300,12 +302,15 @@ tasks.withType(JavaCompile).configureEach {
 // The jar with the bundled driver is the one to release (no classifier); the plain jar is kept as "-slim".
 // The driver's classes (and every reference to them in this mod) are moved under com.mrgregles.bsp_core.shaded, and its
 // module descriptor is dropped, so it is plain content of this mod's jar and never a second "mysql.connector.j" module.
-tasks.named('jar') { archiveClassifier = 'slim' }
+// The GameTest server's own mixin (bsp_core.gametest.mixins.json) stays out of both jars.
+def gameTestMixin = ['bsp_core.gametest.mixins.json', 'com/mrgregles/bsp_core/mixin/gametest/**']
+tasks.named('jar') { archiveClassifier = 'slim'; exclude gameTestMixin }
 shadowJar {
     archiveClassifier = ''
     configurations = [project.configurations.shade]
     relocate 'com.mysql', 'com.mrgregles.bsp_core.shaded.mysql'
     exclude '**/module-info.class'
+    exclude gameTestMixin
     mergeServiceFiles()
     manifest { attributes 'MixinConfigs': 'bsp_core.mixins.json' }
 }

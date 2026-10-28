@@ -10,7 +10,7 @@ import net.minecraft.nbt.CompoundTag;
  * @param detail what it was: an item name and count, "converted 2 Copper coins", a reason
  */
 public record BankTransaction(long ms, Type type, String with, String detail, long pieces, int coinTier, int coinCount, String server, String shopId, String itemId) {
-    public enum Type { BOUGHT, SOLD, PAID, RECEIVED, DEPOSIT, CONVERT, WITHDRAW, GRANT, ADMIN, RENT, FEE, MARKET, TAX }
+    public enum Type { BOUGHT, SOLD, PAID, RECEIVED, DEPOSIT, CONVERT, WITHDRAW, GRANT, ADMIN, RENT, FEE, MARKET, TAX, LOTTERY }
 
     /** A row that is not a shop trade (or one logged before rows named the shop and item). */
     public BankTransaction(long ms, Type type, String with, String detail, long pieces, int coinTier, int coinCount, String server) {

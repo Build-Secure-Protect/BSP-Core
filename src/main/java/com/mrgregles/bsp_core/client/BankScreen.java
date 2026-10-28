@@ -54,6 +54,8 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> implements Scr
     private long confirmAmount;
     private Component message = Component.empty();
     private int messageColour = AMBER;
+    /** Where the view's space ends this frame (above the message), for what may not fit. */
+    private int viewBottom = SY + SH;
 
     public BankScreen(BankMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -427,6 +429,7 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> implements Scr
         // the message sits at the foot of the screen; the view is clipped to the space above it
         int msgH = CashMachine.height(font, message, SW - 12);
         int bottom = SY + SH - (msgH > 0 ? msgH + 4 : 0);
+        viewBottom = bottom;
         CashMachine.clip(g, leftPos, topPos, SX, SY + 18, SW, bottom - SY - 18);
         switch (view) {
             case ACCOUNT -> drawAccount(g);
@@ -457,9 +460,58 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> implements Scr
         if (menu.portable()) {
             // what the device reaches, in place of the coins hint (coins are a bank's business, as the key says)
             int hy = SY + 100 + CashMachine.wrap(g, font, tr(account().remoteShops ? "network_open" : "network_locked", Bank.remoteUnlockCoins(), Bank.tierName(Bank.remoteUnlockTier())), SX + 8, SY + 100, SW - 16, AMBER);
-            CashMachine.wrap(g, font, tr(account().remoteMarket ? "market_open" : "market_locked", Bank.marketUnlockCoins(), Bank.tierName(Bank.marketUnlockTier())), SX + 8, hy + 3, SW - 16, AMBER);
+            hy += 3 + CashMachine.wrap(g, font, tr(account().remoteMarket ? "market_open" : "market_locked", Bank.marketUnlockCoins(), Bank.tierName(Bank.marketUnlockTier())), SX + 8, hy + 3, SW - 16, AMBER);
+            lotteryCard(g, hy + 3);
         } else {
             CashMachine.wrap(g, font, tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SX + 8, SY + 100, SW - 16, PHOS_DIM);
+        }
+    }
+
+    /**
+     * The lottery's card (look B, owner's pick 2026-10-28): LOTTERY and the player's chance along the top, a coin and the pot
+     * in amber, and the last winner at the foot, in an amber box. From the summary every client gets ({@link ClientLottery}).
+     * Where the lines above it took two rows each (the network or the market still locked) there is no room for the box:
+     * then one line, the pot and the chance.
+     */
+    private void lotteryCard(GuiGraphics g, int y) {
+        com.mrgregles.bsp_core.lottery.LotterySummary.Summary s = ClientLottery.summary();
+        int x = SX + 8, w = SW - 16, h = 34, edge = 0xFF6A4C10;
+        com.mrgregles.bsp_core.lottery.Lottery.Standing[] all = com.mrgregles.bsp_core.lottery.Lottery.Standing.values();
+        String chance = s.standing() < 0 || s.standing() >= all.length ? "" : switch (all[s.standing()]) {
+            case IN -> tr("lottery_chance", s.in()).getString();
+            case OPERATOR -> tr("lottery_out_op").getString();
+            case RANK -> tr("lottery_out_rank", s.rank()).getString();
+            case AWAY -> tr("lottery_out_away").getString();
+        };
+        boolean in = s.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.IN.ordinal();
+        if (y + h > viewBottom) {
+            String line = tr("lottery_line", Bank.format(s.pot())).getString() + (chance.isEmpty() ? "" : " · " + chance);
+            CashMachine.fit(g, font, line, x, y + 1, w, AMBER);
+            return;
+        }
+        g.fill(x, y, x + w, y + 1, edge);
+        g.fill(x, y + h - 1, x + w, y + h, edge);
+        g.fill(x, y, x + 1, y + h, edge);
+        g.fill(x + w - 1, y, x + w, y + h, edge);
+        g.drawString(font, tr("lottery"), x + 4, y + 3, PHOS_DIM, false);
+        CashMachine.fitRight(g, font, chance, x + w - 4, y + 3, w - 60, in ? PHOS : AMBER);
+        g.renderItem(new ItemStack(CoinTier.GOLD.coin()), x + 4, y + 13);
+        String pot = Bank.format(s.pot());
+        float scale = Math.min(1.5f, (w - 30) / (float) Math.max(1, font.width(pot)));
+        g.pose().pushPose();
+        g.pose().translate(x + 24, y + 15, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, pot, 0, 0, AMBER, false);
+        g.pose().popPose();
+        if (!s.wins().isEmpty()) {
+            var last = s.wins().get(0);
+            String line = tr("lottery_last", last.name(), Bank.format(last.pieces())).getString();
+            int maxW = Math.round((w - 90) / 0.75f); // in the small text's own pixels
+            g.pose().pushPose();
+            g.pose().translate(x + w - 4 - Math.min(font.width(line), maxW) * 0.75f, y + 25, 0);
+            g.pose().scale(0.75f, 0.75f, 1f);
+            CashMachine.fit(g, font, line, 0, 0, maxW, PHOS_DIM);
+            g.pose().popPose();
         }
     }
 

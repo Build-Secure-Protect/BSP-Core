@@ -929,6 +929,7 @@ Setup: a fresh world or a second account that has never joined; operator for the
 ## Running the Forge GameTests (2026-10-08)
 
 - `./gradlew runGameTestServer` starts a headless server, runs every test in `src/main/java/com/mrgregles/bsp_core/gametest/`, prints a pass/fail line per test and exits; the Gradle task fails when a test fails. Claude can run this, so these checks no longer need screenshots.
+- The GameTest server runs ticks flat out (its tick wait only runs pending tasks), so a few hundred ticks can pass in a second, and in 1.20.1 a test's clock starts when its structure is placed, before its chunks may tick. A test whose chunks were still loading could then time out without its blocks ever ticking ("the test's area never started ticking", a link reported MISSING or ASLEEP). `mixin/gametest/GameTestInfoMixin` (config `bsp_core.gametest.mixins.json`, handed only to the `gameTestServer` run and left out of both jars) holds each test, clock and all, until every chunk under its structure ticks blocks and entities, for up to two minutes of real time; a test held 20 ticks or more is logged.
 - Each test builds its own blocks inside the empty 24 x 10 x 24 template `bsp_core:empty` (written by `tools/gen_gametest_structures.py`).
 - Bank tests (2026-10-11): starting pieces once, pay and shortfall and self-pay, refusing payments, one-way conversion with banked coins by tier and withdrawal, the API charge and credit.
 - Tests so far: the tank forms when complete (flags, master, capacity, port), rejects glass on an edge, keeps plasma while a block is missing; `allocate` is max-min fair; plasma reaches a base over 3 Tetrium cables; 15 Tetrium cables reach, 16 do not; an Output 10 totem moves 20,000 mB a second through one Illyrium cable into a tank port.
@@ -1908,7 +1909,7 @@ Covered by GameTests `totem_forge_stale_claims_heal_or_clear` (a claim on a load
 
 ## Totem Forge intake and bill (Totem Forge audit, fix task 3, 2026-10-27)
 
-Covered by GameTests `totem_forge_intake_takes_only_what_it_needs` (200 mB short: the intake takes 3 of 64 Tetrium Ingots; the last melts though only 20 mB fits; a full tank takes no more and the slot is free for Magnatite, up to its 32; a mould piece with no pours left is refused), `totem_forge_bill_leaves_out_lines_it_cannot_use` (counts of 0 or over 99,999, a missing item and an empty tag left out; good item and tag lines kept) and the bill check in `totem_forge_melts_ingots_into_its_tanks`. 166/166 GameTests twice, and with `-PpackMods`. The intake test runs in its own batch (`totem_forge_intake`): in the default batch it moves three plasma and cable tests (`accelerator_wakes_a_sleeping_far_side_and_delivers`, `accelerator_view_travels_whole_and_unlink_drops_the_card_at_the_far_end`, `tetrium_stops_at_sixteen_cables`) to where they fail. Those tests depend on where they land, which is worth its own look. Nothing here has been seen in a client.
+Covered by GameTests `totem_forge_intake_takes_only_what_it_needs` (200 mB short: the intake takes 3 of 64 Tetrium Ingots; the last melts though only 20 mB fits; a full tank takes no more and the slot is free for Magnatite, up to its 32; a mould piece with no pours left is refused), `totem_forge_bill_leaves_out_lines_it_cannot_use` (counts of 0 or over 99,999, a missing item and an empty tag left out; good item and tag lines kept) and the bill check in `totem_forge_melts_ingots_into_its_tanks`. 166/166 GameTests twice, and with `-PpackMods`. The Totem Forge tests run in the default batch again (2026-10-28): the plasma and cable tests that failed beside them were tests that started before their chunks ticked, which `GameTestInfoMixin` now prevents (see below). Nothing here has been seen in a client.
 
 - [ ] A hopper over the Metal Intake with 64 Tetrium and 64 Magnatite Ingots: Tetrium goes in only up to what its tube still needs, then Magnatite follows; nothing is left stuck in the INGOTS slot.
 - [ ] Shift-click a stack of an ingot whose tube is full into the forge: it stays in your inventory. During a pour or setting, no ingot goes in.
@@ -2255,3 +2256,177 @@ Covered by GameTests in batch `trade_post`:
 - [ ] Set `storage.serverId` to 40 characters on a test server: the log reports it at start.
 - [ ] `market.maxStacks = 20` in the config: Forge resets it to 9 at the next start.
 
+
+## The lottery: where to start (2026-10-28)
+
+The lottery's checks are in the eight sections below, one per build task. For a first pass on one server, in this order:
+1. Buy at a shop and see `/bsp market pot` rise by half the price (Shop purchases pay the lottery pot).
+2. `/bsp lottery`: the pot, how many are in and why the others are not (Drawing the lottery).
+3. At a Trade Post, the LOTTERY tab: the drum, the pot, your chance, the winners (The Trade Post's LOTTERY page).
+4. As an operator, ADMIN on that tab: the table, the days, the rank ticks, ADD and TAKE (The lottery's admin page).
+5. A Score Screen showing the Lottery board, and the Portable Banker's account page (the board and Banker sections).
+6. DRAW with a second player online and watch everything at once: chat counting 5 to 1 on every screen, the tab's drum, the board, the winner's "You won", the pot at 0 on the card.
+7. Repeat 6 on a network with MySQL and Redis, players on two servers.
+8. The guide book, Shatter Coins, The Lottery: three pages; the market's tax page links to it (The lottery in the guide book, at the end).
+
+GameTests for all of it: `shop_buy_pays_gives_counts_stock_and_restocks` and the `lottery_` tests (eight; the draw test in its own batch `lottery_draw`, the rest in the default batch).
+
+## Shop purchases pay the lottery pot (2026-10-28)
+
+Covered by a GameTest in the default batch: `shop_buy_pays_gives_counts_stock_and_restocks`:
+- a test buy pays nothing into the pot;
+- a buy of 240 pieces pays `shop.lotteryPercent` of it (50% by default, rounded down), 120, into the pot;
+- a buy refused for too few pieces pays nothing;
+- a buy in Gold Coins pays the share of the coins' bank worth.
+
+218/218 GameTests. **Not covered by a GameTest:** a network, where the share is its own write to the pot's `bank_accounts` row after the purchase.
+
+- [ ] `/bsp market pot`, then buy a card of 100 pieces at a spawn shop: the pot has risen by 50. Sell to a shop: the pot does not change.
+- [ ] Buy a card priced in coins: the pot rises by half the coins' worth at the bank.
+- [ ] `shop.lotteryPercent = 0` in the server config: a purchase leaves the pot as it was.
+- [ ] On a network: buy on server A; `/bsp market pot` on B shows the same rise.
+
+## The lottery's record of players (lottery task L1, 2026-10-28)
+
+Covered by a GameTest in the default batch: `lottery_records_players_with_their_ranks_and_operator_status`:
+- a sighting records the name, the time and the server;
+- ranks are kept lower-cased, and the operator flag follows the server's op list;
+- an older sighting never moves the time back, but its ranks and server are the latest;
+- a player last seen 10 days ago is not among the past week's;
+- the ledger keeps everyone through a save;
+- ranks go to text and back.
+
+**Not covered by a GameTest:** the login and logout events themselves, real LuckPerms groups, and the `lottery_players` table on MySQL. Nothing shows in game yet; the draw comes in task L3.
+
+- [ ] On a network with MySQL: log in on server A. `SELECT * FROM <prefix>lottery_players` has your row, `server_id` A, `seen_ms` now, your LuckPerms groups in `ranks`, `op` 1 if you are an operator.
+- [ ] Move to server B: `server_id` becomes B and `seen_ms` moves on. Log out: `seen_ms` moves on again.
+- [ ] `/lp user <you> parent add vip`, then log out and in: `ranks` now includes `vip`.
+
+## The lottery's settings and who is in (lottery task L2, 2026-10-28)
+
+Covered by a GameTest in the default batch: `lottery_settings_decide_who_is_in_and_why_not`:
+- the days stay between 1 and 90, and the ranks left out are tidied (lower case, sorted, once each);
+- a rank is left out and let back in;
+- the settings go to text and back, and missing or broken text gives the defaults (7 days; admin, mod, moderator, owner, staff);
+- an operator is out whatever their rank, a rank left out names itself, and a player seen 8 days ago is out at 7 days but in at 10;
+- the world's settings save and read back, the list runs most recently seen first, and only the players who are in are entrants.
+
+**Not covered by a GameTest:** the shared state key on MySQL. There is no screen or command for the settings yet (the admin page is task L4), so nothing to check in game.
+
+## Drawing the lottery (lottery task L3, 2026-10-28)
+
+Covered by GameTests in the default batch:
+- `lottery_pick_is_fixed_by_its_seed_and_wins_are_kept`: the same seed picks the same player, one player always wins, every player can win; the ten newest wins are kept and go to text and back.
+- `lottery_draw_refuses_an_empty_pot_then_pays_the_whole_pot_to_one_player` (countdown sped up to nothing):
+  - an empty pot is refused before any countdown, and nothing can be taken from it;
+  - `add` puts pieces in, logged with the admin and the reason;
+  - a draw starts and a second one waits;
+  - the winner takes the whole pot, which shows in the wins list and as LOTTERY rows on the winner and on the pot with the draw's id.
+
+**Not covered by a GameTest:** the real one-second countdown in chat, a network draw (the claim, the payout transaction, the Redis messages to other servers), the "won while away" line at login, and the commands themselves.
+
+On one server (a test world):
+- [ ] `/bsp lottery`: the pot, how many players are in, left out (operators, by rank), the settings (7 days, the staff ranks) and "Nobody has won the lottery yet."
+- [ ] `/bsp lottery add 5000 Test prize`: "Added 5,000 pieces"; `/bsp market pot` shows it; `/bsp lottery take 100 test` works, and `take 999999999 test` says the pot holds less.
+- [ ] As an operator alone, `/bsp lottery draw`: "Nobody is in the lottery" (operators are left out). From the server console, `deop <you>`, then `bsp lottery draw` there (a draw records everyone online as they are at that moment): the chat says the lottery is being drawn, counts 5, 4, 3, 2, 1 a second apart, then "[Lottery] <you> won 4,900 pieces!" and "You won the lottery".
+- [ ] `/bsp lottery draw` again at once: "The lottery pot is empty."
+- [ ] With a second player in: have them log off, draw until they win (or empty the pot to a small sum each time), then log them in: "While you were away you won the lottery".
+- [ ] `/bsp lottery draw` twice quickly: the second says "A draw is already running."
+- [ ] Bank log of the winner (Portable Banker LOG): a "lottery" line with the pieces.
+
+On a network with MySQL and Redis:
+- [ ] Draw on A with players on A and B: both see the same countdown and the same winner at about the same time.
+- [ ] Draw on A and, during the countdown, on B: B says "A draw is already running."
+- [ ] `SELECT v FROM <prefix>state WHERE k IN ('lottery_draw', 'lottery_wins')`: the draw is free again (empty) and the win is listed.
+
+## The lottery's admin page (lottery task L4, 2026-10-28)
+
+Covered by a GameTest in the default batch: `lottery_admin_page_changes_settings_and_the_pot_and_shows_everyone`:
+- a player who is not an operator cannot use the page;
+- + adds a day, and the days never go below one;
+- a ticked rank is left out and an unticked one is in again;
+- ADD with no pieces or no reason is refused; ADD and TAKE move the pot; taking more than it holds is refused;
+- the view lists a player out by a rank, its counts add up, it shows the settings, and it goes through its packet unchanged (long names and rank lists are cut).
+
+**Not covered by a GameTest:** the page itself in a client (drawing, clicks, the card's typing, scrolling, the five-second refresh), the ADMIN key, and the command. (Since L5 the page opens from the ADMIN key on the LOTTERY page, not from a cog tab.)
+
+- [ ] As an operator at a Trade Post, LOTTERY tab: an ADMIN key at the bottom right. A player who is not an operator does not see it.
+- [ ] Press ADMIN: the traders band goes, the page fills the screen: the table of players (yourself among them), the pot, SEEN WITHIN 7 d, LEFT OUT with the staff ranks ticked, ADD, TAKE, DRAW.
+- [ ] − and +: the days change and the line at the foot says so; at 1 the − key is dimmed.
+- [ ] Tick a rank you hold: you show OUT rank in the table within a moment; untick it: IN again (unless you are an operator: OUT op).
+- [ ] ADD: a card with pieces and reason; type 1000 and "test", press Enter: "Added 1,000 pieces to the pot", the pot shows it. Escape closes a card without closing the screen; E types nothing and does not close the screen.
+- [ ] TAKE more than the pot holds: "The pot holds less than that."
+- [ ] DRAW once: it turns to SURE? DRAW for three seconds; press again: the countdown runs in chat, the key shows DRAWING... until it ends.
+- [ ] Click LOTTERY or MARKET: that page and the traders band come back.
+- [ ] `/bsp lottery admin` away from any Trade Post: the same page on its own, with LOTTERY ADMIN and a close mark at the top.
+- [ ] With more than 11 players or 5 ranks: the mouse wheel scrolls each; ▲ and ▼ move the ranks.
+
+## The Trade Post's LOTTERY page (lottery task L5, 2026-10-28)
+
+Covered by a GameTest in the default batch: `lottery_page_shows_who_is_in_your_chance_and_the_winners`:
+- a player seen now is on the drum and in; the names are in order; the count, the winners and the pot are right;
+- a player never seen has no standing yet;
+- the view goes through its packet unchanged, and a drum of 250 names is cut to 200 with the count kept.
+
+**Not covered by a GameTest:** the page in a client (the drum's turning, spin and stop, the stubs, the tabs' widths), and the one-second asking.
+
+- [ ] At a Trade Post: four tabs, MARKET, SELL, COLLECT and LOTTERY, none running under the traders band; with more than 99 stacks in the Collect box it reads COLLECT 99+ and still fits.
+- [ ] LOTTERY: the drum turns slowly with the names of everyone in, the middle one bright between amber arrows; POT, IN THE DRUM and YOUR CHANCE "1 in N"; LAST WINNERS as stubs (name, pieces, date) or "Nobody has won yet."
+- [ ] As an operator: YOUR CHANCE reads "None: operators are left out." With a rank left out (tick it on the admin page): "None: your rank (vip) is left out."
+- [ ] Draw from another player's screen or the console while you watch the page: the drum spins fast, DRAWING IN counts 5 to 1 with the chat, then the drum slows to a stop on the winner, lit amber, with WINNER and the pieces; the pot reads 0. After about 30 seconds the page is back to YOUR CHANCE, and the new winner is the first stub.
+- [ ] On a Portable Banker's market: the LOTTERY tab works too, the page wider and with no traders band.
+- [ ] With nobody in: the drum says "Nobody is in yet."
+
+## The Lottery board on the Score Screen (lottery task L6, 2026-10-28)
+
+Covered by a GameTest in the default batch: `lottery_board_summary_carries_the_drum_the_pot_and_three_winners`:
+- the summary has the drum's names (a player seen now among them), the count, at most three winners and the pot;
+- it goes through its packet unchanged; a drum of 90 names is cut to 60 with the count kept, and long names are cut.
+
+**Not covered by a GameTest:** the board drawn on a Score Screen, the once-a-second sending, the summary at login.
+
+- [ ] A Score Screen of 4 by 2, settings, Show: Board, pick LOTTERY: the drum of names rolls slowly at the left with the middle name gold between ▶ and ◀; at the right POT and the amount, "N players are in", LAST WINNERS with three rows (or "Nobody has won yet").
+- [ ] Buy at a shop: the pot on the board rises within a few seconds.
+- [ ] `/bsp lottery draw` in front of the board: the drum spins, "Drawing in 5" counts to 1, then the drum stands on the winner and the line reads "<name> won <pieces>!"; the pot reads 0; about 30 seconds later the winner is the first of the last winners.
+- [ ] Rotate with LOTTERY among the pages: it fades in like the other pages. Side look with LOTTERY: the right column lists the pot, "In the drum" and the winners with their dates.
+- [ ] A 2 by 1 screen: everything still fits (smaller), nothing runs off the edge.
+- [ ] Settings with the Market board, BSP-Teleport's board and the Lottery board installed: all three boards can be picked (the board row shows four at most).
+
+## The lottery on the Portable Banker (lottery task L7, 2026-10-28)
+
+Covered by the GameTest `lottery_board_summary_carries_the_drum_the_pot_and_three_winners`: the summary carries the player's own standing (and none for nobody in particular), and a long rank name is cut in its packet.
+
+**Not covered by a GameTest:** the card drawn on the account page, and the one-line fallback.
+
+- [ ] Portable Banker with the Shopping Network and the market unlocked, ACCOUNT: under "Shopping Network: open" and "Market: open", an amber box: LOTTERY and "1 in N" along the top, a gold coin and the pot in amber, "last: <name> <pieces>" small at the bottom right (nothing there before the first draw). Nothing runs off the screen.
+- [ ] As an operator: the top right reads "operators are left out" in amber. With a rank left out that you hold: "your rank (vip) is left out".
+- [ ] A new player with both locked (the lines take two rows each): one amber line instead, "Lottery pot 48,210 · 1 in N".
+- [ ] Buy at a shop with the Banker open: the pot on the card rises within a few seconds.
+- [ ] With a message showing at the foot (pay someone): the card gives way to the one line if it no longer fits.
+
+## The lottery in the guide book (lottery task L8, 2026-10-28)
+
+`tools/gen_guide_book.py` builds it (its guard against changelog words passed); `docs/GUIDE_BOOK_TEXT.md` has the text for review.
+
+- [ ] The guide book, Shatter Coins: an entry "The Lottery" with a gold Shatter Coin, after Market on the Go. Three pages: how the pot fills and who is in, "The draw", "Watching the pot". The words fit each page.
+- [ ] The Market's "The tax" page: "lottery" is a link that opens The Lottery.
+
+## Lottery audit fixes (2026-10-28)
+
+An audit of the lottery code (two reviewers, server and client) found these, all fixed:
+- **Clicks on the LOTTERY page went through to the hidden market page**: two clicks could open a lot and press BUY unseen. The lottery's pages now take every click; the market's tooltips no longer show behind them.
+- **The drum's clipping** was in the wrong coordinates (names cut off or missing) and is now done like the bank screen's; a short list of names fills the drum without gaps, on the page and the board.
+- **A network server whose database was not connected** drew from its own old copy of the pot (a pot could be paid twice). It now refuses to draw, move the pot, change settings or record players.
+- **Players online for a long time on another server** read as away: every server records its online players every five minutes and while stopping.
+- **The payout's bank log rows** are written in the payout's own transaction; a lost answer is settled by reading the list of wins.
+- **Operators** are checked again on the drawing server at the draw; a failed LuckPerms lookup no longer wipes stored ranks.
+- **The pot is locked during a draw** (ADD and TAKE refused); a server stopping mid-draw frees the claim and tells the others.
+- Smaller: the share of a huge price cannot overflow, a coin purchase shares what the wallet really took, a broken win in the list is skipped, packet lists are capped when read, rate-limit records are dropped at logout, a rank with a comma stays one rank, the admin page drops a message after 8 seconds and never shows an old one, losing operator closes the admin page, the ADD/TAKE card blocks the tabs and the close mark, `/bsp lottery admin` does nothing for a non-operator and closes an open container first, the lottery views are cleared when leaving a world, the Banker card's last-winner line stays inside its box, the page shows the real pot during a win, and the winner is always on the drum when it stops.
+
+Covered by GameTests: `lottery_keeps_ranks_it_cannot_read_and_shares_never_overflow` (ranks kept, commas, a broken win, the claim's two minutes, the share's overflow) and the draw test (the pot refused during a draw), which runs in its own batch `lottery_draw` so no other test meets the locked pot.
+
+**Left as they are** (noted, not fixed): a shop share that fails to reach the pot is logged, not retried; two admins changing the settings on two servers at the same instant can lose one change; a player made an operator on a server other than the drawing one, or given a staff rank, while offline, counts as they were at their last login.
+
+- [ ] At a Trade Post on the LOTTERY tab: click around the drum, the pot and the foot line: no lot opens and nothing is bought (check `/bank` log).
+- [ ] The drum's names show, clipped to the drum, at GUI scale 2, 3 and 4, and in a small window.
+- [ ] Open the ADD card on the admin page and click a tab or the close mark: nothing happens until the card is closed.

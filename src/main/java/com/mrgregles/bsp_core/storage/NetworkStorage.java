@@ -243,6 +243,7 @@ public final class NetworkStorage {
                         // not a player id
                     }
                 }
+                case "lottery" -> com.mrgregles.bsp_core.lottery.LotteryDraw.onMessage(srv, payload);
                 case "bank", "box" -> {
                     try {
                         UUID id = UUID.fromString(payload);
@@ -1093,6 +1094,123 @@ public final class NetworkStorage {
             if (acceptPay != null || remoteShops != null || remoteMarket != null) {
                 publish("bank", id.toString());
             }
+        });
+    }
+
+    /** One key of the shared state: {@code then} gets its value ("" when missing), or null when the database is unreachable. */
+    public static void readStateKey(String key, Consumer<String> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            String value = null;
+            try {
+                String v = s.readStateKey(key);
+                value = v == null ? "" : v;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the shared state {}: {}", key, e.toString());
+            }
+            String answer = value;
+            onServer(() -> then.accept(answer));
+        });
+    }
+
+    /** Writes one key of the shared state; {@code then} hears whether it went in. */
+    public static void writeStateKey(String key, String value, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(false);
+            return;
+        }
+        worker().execute(() -> {
+            boolean ok = false;
+            try {
+                s.putState(Map.of(key, value), false);
+                ok = true;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not write the shared state {}: {}", key, e.toString());
+            }
+            boolean answer = ok;
+            onServer(() -> then.accept(answer));
+        });
+    }
+
+    /** Claims the lottery's draw network-wide: true when this server got it, false when another draw holds it, null when unreachable. */
+    public static void lotteryClaim(String draw, long now, long staleMs, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Boolean got = null;
+            try {
+                got = s.lotteryClaim(draw, now, staleMs);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not claim the lottery draw: {}", e.toString());
+            }
+            Boolean answer = got;
+            onServer(() -> then.accept(answer));
+        });
+    }
+
+    public static void lotteryRelease(String draw) {
+        async("free the lottery draw", s -> s.lotteryRelease(draw));
+    }
+
+    /** What a lottery payout came to: "ok" with the pieces and the winner's balance, "empty", "untouched" (surely not paid) or "unsure". */
+    public record Payout(String key, long pieces, long winnerPieces) {}
+
+    public static void lotteryPayout(com.mrgregles.bsp_core.lottery.LotteryWin win, Consumer<Payout> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(new Payout("untouched", 0, -1));
+            return;
+        }
+        worker().execute(() -> {
+            Payout p;
+            try {
+                long[] r = s.lotteryPayout(win);
+                p = r[0] > 0 ? new Payout("ok", r[0], r[1]) : new Payout("empty", 0, -1);
+            } catch (com.mrgregles.bsp_core.market.MarketDb.Untouched e) {
+                BSPCore.LOGGER.error("BSP-Core storage: the lottery payout did not happen: {}", e.toString());
+                p = new Payout("untouched", 0, -1);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: the lottery payout's answer was lost (it may have happened): {}", e.toString());
+                p = new Payout("unsure", 0, -1);
+            }
+            Payout answer = p;
+            onServer(() -> then.accept(answer));
+        });
+    }
+
+    /** Tells the other servers about a lottery draw (kind {@code lottery}); harmless without Redis. */
+    public static void publishLottery(String payload) {
+        publish("lottery", payload);
+    }
+
+    public static void lotterySeen(com.mrgregles.bsp_core.lottery.LotteryPlayer p, boolean ranksKnown) {
+        async("record a player for the lottery", s -> s.lotterySeen(p, ranksKnown));
+    }
+
+    /** Players seen at or after {@code sinceMs}, or null when unreachable. */
+    public static void lotteryPlayers(long sinceMs, Consumer<List<com.mrgregles.bsp_core.lottery.LotteryPlayer>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.lottery.LotteryPlayer> list = null;
+            try {
+                list = s.lotteryPlayers(sinceMs);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the lottery's players: {}", e.toString());
+            }
+            List<com.mrgregles.bsp_core.lottery.LotteryPlayer> l = list;
+            onServer(() -> then.accept(l));
         });
     }
 

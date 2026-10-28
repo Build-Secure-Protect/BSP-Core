@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 
 /**
  * Opens a player's bank account on their first join anywhere on the network (with the starting
- * pieces, once) and tells them what arrived while they were away.
+ * pieces, once) and tells them what arrived while they were away: payments, market sales and a lottery win.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class BankEvents {
@@ -30,7 +30,7 @@ public final class BankEvents {
             }
             Bank.pushState(server, id);
             Bank.log(server, id, log -> {
-                long received = 0, sold = 0;
+                long received = 0, sold = 0, won = 0;
                 int n = 0, sales = 0;
                 for (BankTransaction t : log) {
                     if (t.ms() > seen && t.type() == BankTransaction.Type.RECEIVED) {
@@ -39,6 +39,8 @@ public final class BankEvents {
                     } else if (t.ms() > seen && t.type() == BankTransaction.Type.MARKET && t.pieces() > 0) {
                         sold += t.pieces();
                         sales++;
+                    } else if (t.ms() > seen && t.type() == BankTransaction.Type.LOTTERY && t.pieces() > 0) {
+                        won += t.pieces();
                     }
                 }
                 if (n > 0 && !player.hasDisconnected()) {
@@ -46,6 +48,9 @@ public final class BankEvents {
                 }
                 if (sales > 0 && !player.hasDisconnected()) {
                     player.displayClientMessage(Component.translatable("message.bsp_core.market.while_away", sales, Bank.format(sold)).withStyle(ChatFormatting.GOLD), false);
+                }
+                if (won > 0 && !player.hasDisconnected()) {
+                    player.displayClientMessage(Component.translatable("message.bsp_core.lottery.while_away", Bank.format(won)).withStyle(ChatFormatting.GOLD), false);
                 }
                 Bank.touch(server, id);
             });

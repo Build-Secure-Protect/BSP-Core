@@ -6,6 +6,7 @@ import com.mrgregles.bsp_core.bank.BankResult;
 import com.mrgregles.bsp_core.bank.BankTransaction;
 import com.mrgregles.bsp_core.coin.CoinTier;
 import com.mrgregles.bsp_core.coin.CoinWallet;
+import com.mrgregles.bsp_core.market.Market;
 import com.mrgregles.bsp_core.storage.NetworkStorage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -1229,6 +1230,9 @@ public final class Shops {
 
     private static void pay(MinecraftServer server, Player player, Shop shop, ShopItem item, int index, int count, long now, Consumer<Outcome> then) {
         long cost = price(shop, item, true, now) * count;
+        String what = count * item.stack.getCount() + " " + item.stack.getHoverName().getString();
+        // what was really paid, in pieces: coins by their bank worth, and only as many as the wallet takes (it takes an int of copper)
+        long worth = item.currency < 0 ? cost : Math.min(Integer.MAX_VALUE, cost * CoinTier.values()[item.currency].value()) * BSPConfig.getOr(BSPConfig.BANK_PIECES_PER_COPPER, 1000);
         Consumer<BankResult> paid = answer -> {
             BankResult r = answered(answer);
             if (!r.ok()) {
@@ -1250,9 +1254,9 @@ public final class Shops {
                     }
                 }
             }
+            Market.toPot(server, lotteryShare(worth), player.getName().getString(), "shop share: " + what + " at " + shop.name);
             then.accept(new Outcome(true, "bought", count, cost, r.pieces()));
         };
-        String what = count * item.stack.getCount() + " " + item.stack.getHoverName().getString();
         if (item.currency < 0) {
             Bank.take(server, player.getUUID(), cost, BankTransaction.Type.BOUGHT, shop.name, what, shop.id, itemId(item), paid);
         } else {
@@ -1265,6 +1269,12 @@ public final class Shops {
             Bank.record(server, player.getUUID(), new BankTransaction(now, BankTransaction.Type.BOUGHT, shop.name, what + ", " + cost + " " + Bank.tierName(tier) + " coins", 0, item.currency, (int) -cost, Bank.serverId(), shop.id, itemId(item)));
             paid.accept(BankResult.ok(Bank.pieces(server, player.getUUID())));
         }
+    }
+
+    /** The lottery pot's share of a purchase worth {@code pieces}: {@code shop.lotteryPercent} of it, rounded down. */
+    public static long lotteryShare(long pieces) {
+        int pct = BSPConfig.getOr(BSPConfig.SHOP_LOTTERY_PERCENT, 50);
+        return pieces <= 0 ? 0 : pieces / 100 * pct + pieces % 100 * pct / 100; // never overflows, whatever the price
     }
 
     /**

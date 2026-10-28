@@ -1110,3 +1110,25 @@ There is no list of traders on the Portable Banker. Trading with another player 
 
 The unlock lasts the season, like the Shopping Network.
 
+## The Lottery
+
+**Page 1**
+
+The network has one lottery pot. It fills from the market's taxes and from half of what players pay for shop items.
+
+Everyone who has played on the network in the past week is in the lottery, with one equal chance each. There are no tickets to buy or earn. Operators and staff ranks are left out.
+
+**Page 2: The draw**
+
+An admin draws the lottery when they choose. Chat on every server counts down from 5 and then names the winner and what they won.
+
+The winner takes the whole pot, straight into their bank. A winner who is offline is told when they next log in.
+
+After a draw the pot starts again, and everyone who keeps playing is in the next one.
+
+**Page 3: Watching the pot**
+
+The **LOTTERY** tab on a Trade Post turns a drum of the names of everyone in, beside the pot, how many are in and your own chance. The last five winners are along the bottom.
+
+The *Portable Banker* shows the pot and your chance on its account page, and Score Screens can show the **Lottery** board.
+

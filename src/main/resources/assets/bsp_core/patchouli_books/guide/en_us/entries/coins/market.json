@@ -10,7 +10,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Listing costs a $(l)5% tax$() on the price, rounded up, paid when you list and kept if the lot does not sell. The buyer pays the price plus the same 5%. Both taxes go into the network's lottery pot.$(br2)A lot is bought whole. The seller is paid at once, with a message, or at their next login.",
+      "text": "Listing costs a $(l)5% tax$() on the price, rounded up, paid when you list and kept if the lot does not sell. The buyer pays the price plus the same 5%. Both taxes go into the network's $(l:coins/lottery)lottery$() pot.$(br2)A lot is bought whole. The seller is paid at once, with a message, or at their next login.",
       "title": "The tax"
     },
     {

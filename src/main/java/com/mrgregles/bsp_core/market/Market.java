@@ -4,6 +4,7 @@ import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.api.event.MarketEvent;
 import com.mrgregles.bsp_core.bank.Bank;
+import com.mrgregles.bsp_core.bank.BankTransaction;
 import com.mrgregles.bsp_core.registry.ModItems;
 import com.mrgregles.bsp_core.storage.NetworkStorage;
 import net.minecraft.core.registries.Registries;
@@ -183,6 +184,19 @@ public final class Market {
     /** Pieces in the lottery pot. */
     public static long pot(MinecraftServer server) {
         return Bank.pieces(server, POT);
+    }
+
+    /** Pays {@code pieces} into the lottery pot (market tax, a shop's share of a purchase); nothing for 0 or less. A failure is logged. */
+    public static void toPot(MinecraftServer server, long pieces, String from, String detail) {
+        if (pieces <= 0) {
+            return;
+        }
+        Bank.account(server, POT).name = POT_NAME;
+        Bank.give(server, POT, pieces, BankTransaction.Type.TAX, from, detail, r -> {
+            if (!r.ok()) {
+                BSPCore.LOGGER.warn("BSP-Core: {} pieces ({}) could not reach the lottery pot ({})", pieces, detail, r.key());
+            }
+        });
     }
 
     // ------------------------------------------------------------------ listing

@@ -469,6 +469,18 @@ public final class Bank {
         NetworkStorage.bankChanged(id);
     }
 
+    /**
+     * As {@link #changedInDatabase}, for a change whose log row the database already has (written in the same transaction, the
+     * lottery's payout): only this server's copy of the log gets the line.
+     */
+    public static void changedAndLoggedInDatabase(MinecraftServer server, UUID id, long piecesAfter, BankTransaction.Type type, String with, String detail, long delta) {
+        if (piecesAfter >= 0) {
+            account(server, id).pieces = piecesAfter;
+        }
+        BankLedger.get(server).record(id, tx(type, with, detail, delta));
+        NetworkStorage.bankChanged(id);
+    }
+
     /** Writes a log line locally and, on a network, to the database. */
     public static void record(MinecraftServer server, UUID id, BankTransaction t) {
         BankLedger.get(server).record(id, t);

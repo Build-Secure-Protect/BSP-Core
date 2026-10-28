@@ -1,6 +1,5 @@
 package com.mrgregles.bsp_core.market;
 
-import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.bank.Bank;
 import com.mrgregles.bsp_core.bank.BankTransaction;
 import net.minecraft.server.MinecraftServer;
@@ -103,14 +102,6 @@ public class LocalMarket implements MarketStore {
     }
 
     private static void toPot(MinecraftServer server, long tax, String from, String detail) {
-        if (tax <= 0) {
-            return;
-        }
-        Bank.account(server, Market.POT).name = Market.POT_NAME;
-        Bank.give(server, Market.POT, tax, BankTransaction.Type.TAX, from, detail, r -> {
-            if (!r.ok()) {
-                BSPCore.LOGGER.warn("BSP-Core market: {} pieces of tax could not reach the lottery pot ({})", tax, r.key());
-            }
-        });
+        Market.toPot(server, tax, from, detail);
     }
 }

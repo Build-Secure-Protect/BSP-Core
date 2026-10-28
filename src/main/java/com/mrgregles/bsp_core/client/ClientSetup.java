@@ -21,6 +21,7 @@ public final class ClientSetup {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             ClientMarket.register();
+            ClientLottery.register();
             MenuScreens.register(ModMenus.SHATTER_TOTEM.get(), ShatterTotemScreen::new);
             MenuScreens.register(ModMenus.TRADE_POST.get(), TradePostScreen::new);
             MenuScreens.register(ModMenus.TRADE.get(), TradeScreen::new);

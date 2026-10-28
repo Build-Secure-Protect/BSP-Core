@@ -235,6 +235,9 @@ final class MySqlStore implements AutoCloseable {
             }
             // what reached the database: listings (by lot id) and held-item writes, so a lost answer can be asked about
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_attempts") + " (id VARCHAR(64) NOT NULL PRIMARY KEY, ms BIGINT NOT NULL, INDEX (ms))");
+            // the lottery: every player seen on the network, with their ranks and operator status at the time
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("lottery_players") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL, seen_ms BIGINT NOT NULL, "
+                    + "ranks VARCHAR(1024) NOT NULL DEFAULT '', op TINYINT NOT NULL DEFAULT 0, server_id VARCHAR(64) NOT NULL DEFAULT '', INDEX (seen_ms))");
         }
     }
 
@@ -992,7 +995,12 @@ final class MySqlStore implements AutoCloseable {
     }
 
     void bankLog(UUID id, BankTransaction tx) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+        bankLog(conn(), id, tx);
+    }
+
+    /** A log row on the given connection (inside a transaction, it goes in or not with the rest). */
+    private void bankLog(Connection c, UUID id, BankTransaction tx) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             ps.setString(1, id.toString());
             ps.setLong(2, tx.ms());
             ps.setString(3, tx.type().name());
@@ -1948,6 +1956,122 @@ final class MySqlStore implements AutoCloseable {
             insertAttempt(c, lot.id);
             return new com.mrgregles.bsp_core.market.MarketDb.Done("ok", lot, piecesOf(c, lot.seller), -1, piecesOf(c, com.mrgregles.bsp_core.market.Market.POT));
         }, com.mrgregles.bsp_core.market.MarketDb.Done::no);
+    }
+
+    /** Records a player as seen: the time only moves forward; the name, operator status and server are the latest, and the ranks too unless they could not be read. */
+    void lotterySeen(com.mrgregles.bsp_core.lottery.LotteryPlayer p, boolean ranksKnown) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("lottery_players") + " (uuid, name, seen_ms, ranks, op, server_id) VALUES (?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE name = VALUES(name), seen_ms = GREATEST(seen_ms, VALUES(seen_ms)), ranks = IF(? = 1, VALUES(ranks), ranks), op = VALUES(op), server_id = VALUES(server_id)")) {
+            String ranks = p.ranksText();
+            if (ranks.length() > 1024) { // whole rank names only
+                ranks = ranks.substring(0, Math.max(0, ranks.lastIndexOf(',', 1024)));
+            }
+            ps.setString(1, p.id().toString());
+            ps.setString(2, p.name().length() > 16 ? p.name().substring(0, 16) : p.name());
+            ps.setLong(3, p.seenMs());
+            ps.setString(4, ranks);
+            ps.setInt(5, p.op() ? 1 : 0);
+            ps.setString(6, p.server().length() > 64 ? p.server().substring(0, 64) : p.server());
+            ps.setInt(7, ranksKnown ? 1 : 0);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Claims the lottery's draw for {@code draw} (shared state key {@code lottery_draw}, "id@ms"): true when it was free, or
+     * held by a draw older than {@code staleMs} (a server that stopped mid-draw).
+     */
+    boolean lotteryClaim(String draw, long now, long staleMs) throws SQLException {
+        putState(Map.of("lottery_draw", ""), true);
+        String held = readStateKey("lottery_draw");
+        if (held == null) {
+            return false;
+        }
+        if (!held.isEmpty()) {
+            int at = held.lastIndexOf('@');
+            long since;
+            try {
+                since = at < 0 ? 0 : Long.parseLong(held.substring(at + 1));
+            } catch (NumberFormatException e) {
+                since = 0;
+            }
+            if (now - since < staleMs) {
+                return false;
+            }
+        }
+        return casState("lottery_draw", held, draw + "@" + now);
+    }
+
+    /** Frees the lottery's draw if {@code draw} still holds it. */
+    void lotteryRelease(String draw) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("state") + " SET v = '' WHERE k = 'lottery_draw' AND v LIKE ?")) {
+            ps.setString(1, draw + "@%");
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Pays the whole lottery pot to {@code win}'s player in one transaction, with both bank log rows, and puts the win at the
+     * front of the shared list of wins: {pieces paid, the winner's balance after}, or {0, -1} when the pot is empty (nothing changed). Throws
+     * {@code MarketDb.Untouched} when it surely did not happen; any other exception may have come after the commit.
+     */
+    long[] lotteryPayout(com.mrgregles.bsp_core.lottery.LotteryWin win) throws SQLException {
+        UUID pot = com.mrgregles.bsp_core.market.Market.POT;
+        return inTransaction(c -> {
+            lockAccounts(c, pot, win.id());
+            long amount = piecesOf(c, pot);
+            if (amount <= 0) {
+                return new long[]{0, -1};
+            }
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = 0 WHERE uuid = ?")) {
+                ps.setString(1, pot.toString());
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bank_accounts") + " (uuid, name, pieces) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE pieces = pieces + ?")) {
+                ps.setString(1, win.id().toString());
+                ps.setString(2, win.name().length() > 16 ? win.name().substring(0, 16) : win.name());
+                ps.setLong(3, amount);
+                ps.setLong(4, amount);
+                ps.executeUpdate();
+            }
+            String old = "";
+            try (PreparedStatement ps = c.prepareStatement("SELECT v FROM " + t("state") + " WHERE k = ? FOR UPDATE")) {
+                ps.setString(1, com.mrgregles.bsp_core.lottery.LotteryWin.STATE_KEY);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        old = rs.getString(1);
+                    }
+                }
+            }
+            var paid = new com.mrgregles.bsp_core.lottery.LotteryWin(win.id(), win.name(), amount, win.ms(), win.entrants(), win.draw());
+            String wins = com.mrgregles.bsp_core.lottery.LotteryWin.text(com.mrgregles.bsp_core.lottery.LotteryWin.prepend(paid, com.mrgregles.bsp_core.lottery.LotteryWin.fromText(old)));
+            // both log rows in this transaction, so a payout that went in always has them (and an offline winner is told)
+            String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+            bankLog(c, pot, new BankTransaction(win.ms(), BankTransaction.Type.LOTTERY, win.name(), com.mrgregles.bsp_core.lottery.LotteryDraw.potDetail(win.draw()), -amount, -1, 0, here));
+            bankLog(c, win.id(), new BankTransaction(win.ms(), BankTransaction.Type.LOTTERY, com.mrgregles.bsp_core.market.Market.POT_NAME,
+                    com.mrgregles.bsp_core.lottery.LotteryDraw.wonDetail(win.entrants()), amount, -1, 0, here));
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("state") + " (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)")) {
+                ps.setString(1, com.mrgregles.bsp_core.lottery.LotteryWin.STATE_KEY);
+                ps.setString(2, wins);
+                ps.executeUpdate();
+            }
+            return new long[]{amount, piecesOf(c, win.id())};
+        });
+    }
+
+    /** Players seen at or after {@code sinceMs}. */
+    List<com.mrgregles.bsp_core.lottery.LotteryPlayer> lotteryPlayers(long sinceMs) throws SQLException {
+        List<com.mrgregles.bsp_core.lottery.LotteryPlayer> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, seen_ms, ranks, op, server_id FROM " + t("lottery_players") + " WHERE seen_ms >= ?")) {
+            ps.setLong(1, sinceMs);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new com.mrgregles.bsp_core.lottery.LotteryPlayer(UUID.fromString(rs.getString("uuid")), rs.getString("name"), rs.getLong("seen_ms"),
+                            com.mrgregles.bsp_core.lottery.LotteryPlayer.ranksOf(rs.getString("ranks")), rs.getInt("op") != 0, rs.getString("server_id")));
+                }
+            }
+        }
+        return out;
     }
 
     /** Creates the lottery pot's empty bank row if it is not there (at start, so every way into the pot finds it). */

@@ -733,6 +733,360 @@ public class BspGameTests {
         h.succeed();
     }
 
+    // ------------------------------------------------------------------ lottery
+
+    @GameTest(template = EMPTY)
+    public void lottery_records_players_with_their_ranks_and_operator_status(GameTestHelper h) {
+        var server = server(h);
+        var ann = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var realRanks = com.mrgregles.bsp_core.lottery.Lottery.rankSource;
+        long before = System.currentTimeMillis();
+        try {
+            com.mrgregles.bsp_core.lottery.Lottery.rankSource = id -> id.equals(ann.getUUID()) ? Set.of("Mod", "VIP") : Set.of();
+            com.mrgregles.bsp_core.lottery.Lottery.seen(ann);
+            com.mrgregles.bsp_core.lottery.LotteryPlayer[] got = new com.mrgregles.bsp_core.lottery.LotteryPlayer[1];
+            com.mrgregles.bsp_core.lottery.Lottery.seenSince(server, before, list -> list.stream().filter(p -> p.id().equals(ann.getUUID())).findFirst().ifPresent(p -> got[0] = p));
+            var a = got[0];
+            h.assertTrue(a != null && a.name().equals(ann.getGameProfile().getName()) && a.seenMs() >= before && a.server().equals(com.mrgregles.bsp_core.bank.Bank.serverId()),
+                    "a login records the player, the time and the server: " + a);
+            h.assertTrue(a.ranks().equals(Set.of("mod", "vip")) && !a.op(), "ranks are kept lower-cased, and a player who is not an operator is marked so: " + a);
+            server.getPlayerList().op(ann.getGameProfile());
+            try {
+                com.mrgregles.bsp_core.lottery.Lottery.seen(ann);
+                com.mrgregles.bsp_core.lottery.Lottery.seenSince(server, before, list -> list.stream().filter(p -> p.id().equals(ann.getUUID())).findFirst().ifPresent(p -> got[0] = p));
+                h.assertTrue(got[0].op(), "an operator is marked as one: " + got[0]);
+            } finally {
+                server.getPlayerList().deop(ann.getGameProfile());
+            }
+        } finally {
+            com.mrgregles.bsp_core.lottery.Lottery.rankSource = realRanks;
+        }
+
+        // the ledger on its own: an older sighting never moves the time back, but its ranks are the latest
+        var ledger = new com.mrgregles.bsp_core.lottery.LotteryLedger();
+        UUID bo = UUID.randomUUID(), cy = UUID.randomUUID();
+        long now = System.currentTimeMillis(), day = 86_400_000L;
+        ledger.seen(new com.mrgregles.bsp_core.lottery.LotteryPlayer(bo, "Bo", now, Set.of("member"), false, "hub"));
+        ledger.seen(new com.mrgregles.bsp_core.lottery.LotteryPlayer(bo, "Bo", now - day, Set.of("vip"), false, "survival"));
+        ledger.seen(new com.mrgregles.bsp_core.lottery.LotteryPlayer(cy, "Cy", now - 10 * day, Set.of(), true, "hub"));
+        var week = ledger.since(now - 7 * day);
+        h.assertTrue(week.size() == 1 && week.get(0).seenMs() == now && week.get(0).ranks().equals(Set.of("vip")) && week.get(0).server().equals("survival"),
+                "the newest time is kept, with the latest ranks and server; a player last seen 10 days ago is not in the week: " + week);
+        var back = com.mrgregles.bsp_core.lottery.LotteryLedger.load(ledger.save(new net.minecraft.nbt.CompoundTag()));
+        h.assertTrue(back.since(0).size() == 2 && back.since(0).containsAll(ledger.since(0)), "the ledger keeps everyone through a save");
+        var p = new com.mrgregles.bsp_core.lottery.LotteryPlayer(bo, "Bo", now, Set.of("Vip", "admin"), false, "hub");
+        h.assertTrue(p.ranksText().equals("admin,vip") && com.mrgregles.bsp_core.lottery.LotteryPlayer.ranksOf(p.ranksText()).equals(p.ranks())
+                && com.mrgregles.bsp_core.lottery.LotteryPlayer.ranksOf("").isEmpty() && p.hasAny(List.of("ADMIN")) && !p.hasAny(List.of("mod")),
+                "ranks go to text and back, sorted, and match whatever their case");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void lottery_settings_decide_who_is_in_and_why_not(GameTestHelper h) {
+        var server = server(h);
+        // the settings: days kept in range, ranks lower-cased, sorted and once each, and read back from their text
+        var s = new com.mrgregles.bsp_core.lottery.LotterySettings(0, List.of("Staff", " mod ", "staff", ""));
+        h.assertTrue(s.days() == 1 && s.leftOut().equals(List.of("mod", "staff")) && new com.mrgregles.bsp_core.lottery.LotterySettings(500, List.of()).days() == 90,
+                "days stay between 1 and 90, ranks are tidied: " + s);
+        s = s.withDays(7).withRank("VIP", true).withRank("mod", false);
+        h.assertTrue(s.days() == 7 && s.leftOut().equals(List.of("staff", "vip")), "a rank is left out and let back in: " + s);
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotterySettings.fromText(s.text()).equals(s), "the settings go to text and back: " + s.text());
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotterySettings.fromText("").equals(com.mrgregles.bsp_core.lottery.LotterySettings.DEFAULT)
+                && com.mrgregles.bsp_core.lottery.LotterySettings.fromText("{not snbt").equals(com.mrgregles.bsp_core.lottery.LotterySettings.DEFAULT)
+                && com.mrgregles.bsp_core.lottery.LotterySettings.DEFAULT.days() == 7 && com.mrgregles.bsp_core.lottery.LotterySettings.DEFAULT.leftOut().contains("mod"),
+                "missing or broken text gives the defaults: seven days, staff ranks left out");
+
+        // where each player stands: an operator first, then a rank left out, then not seen within the days
+        long now = System.currentTimeMillis(), day = 86_400_000L;
+        String tag = Long.toHexString(System.nanoTime()).substring(0, 6);
+        var op = new com.mrgregles.bsp_core.lottery.LotteryPlayer(UUID.randomUUID(), "Op" + tag, now - day, Set.of("staff"), true, "hub");
+        var staff = new com.mrgregles.bsp_core.lottery.LotteryPlayer(UUID.randomUUID(), "Staff" + tag, now - 2 * day, Set.of("member", "STAFF"), false, "hub");
+        var fresh = new com.mrgregles.bsp_core.lottery.LotteryPlayer(UUID.randomUUID(), "Fresh" + tag, now - 6 * day, Set.of("member"), false, "survival");
+        var away = new com.mrgregles.bsp_core.lottery.LotteryPlayer(UUID.randomUUID(), "Away" + tag, now - 8 * day, Set.of("member"), false, "hub");
+        var e = com.mrgregles.bsp_core.lottery.Lottery.standing(op, s, now);
+        h.assertTrue(e.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.OPERATOR, "an operator is out, whatever their rank: " + e);
+        e = com.mrgregles.bsp_core.lottery.Lottery.standing(staff, s, now);
+        h.assertTrue(e.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.RANK && e.rank().equals("staff"), "a rank left out says which: " + e);
+        h.assertTrue(com.mrgregles.bsp_core.lottery.Lottery.standing(fresh, s, now).in(), "seen six days ago is in a seven-day lottery");
+        h.assertTrue(com.mrgregles.bsp_core.lottery.Lottery.standing(away, s, now).standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.AWAY
+                && com.mrgregles.bsp_core.lottery.Lottery.standing(away, s.withDays(10), now).in(), "seen eight days ago is out at seven days and in at ten");
+
+        // the world's own settings and records, as a single server reads them
+        var ledger = com.mrgregles.bsp_core.lottery.LotteryLedger.get(server);
+        var kept = ledger.settings();
+        try {
+            for (var p : List.of(op, staff, fresh, away)) {
+                ledger.seen(p);
+            }
+            boolean[] saved = new boolean[1];
+            com.mrgregles.bsp_core.lottery.Lottery.saveSettings(server, s, ok -> saved[0] = ok);
+            com.mrgregles.bsp_core.lottery.LotterySettings[] read = new com.mrgregles.bsp_core.lottery.LotterySettings[1];
+            com.mrgregles.bsp_core.lottery.Lottery.settings(server, x -> read[0] = x);
+            h.assertTrue(saved[0] && s.equals(read[0]), "the settings are saved and read back: " + read[0]);
+            List<com.mrgregles.bsp_core.lottery.Lottery.Entry> mine = new ArrayList<>();
+            com.mrgregles.bsp_core.lottery.Lottery.standings(server, now, now - 30 * day, (set, all) -> all.stream().filter(x -> x.player().name().endsWith(tag)).forEach(mine::add));
+            h.assertTrue(mine.stream().map(x -> x.player().name()).toList().equals(List.of("Op" + tag, "Staff" + tag, "Fresh" + tag, "Away" + tag)),
+                    "everyone seen in the 30 days, the most recently seen first: " + mine);
+            List<com.mrgregles.bsp_core.lottery.LotteryPlayer> in = new ArrayList<>();
+            com.mrgregles.bsp_core.lottery.Lottery.entrants(server, now, list -> list.stream().filter(p -> p.name().endsWith(tag)).forEach(in::add));
+            h.assertTrue(in.equals(List.of(fresh)), "only the player seen within the days, with no rank left out and not an operator, is in: " + in);
+            var back = com.mrgregles.bsp_core.lottery.LotteryLedger.load(ledger.save(new net.minecraft.nbt.CompoundTag()));
+            h.assertTrue(back.settings().equals(s), "the world keeps its settings through a save");
+        } finally {
+            ledger.settings(kept);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void lottery_pick_is_fixed_by_its_seed_and_wins_are_kept(GameTestHelper h) {
+        for (long seed : new long[]{0, 1, -7, 123_456_789L}) {
+            int a = com.mrgregles.bsp_core.lottery.LotteryDraw.pick(62, seed);
+            h.assertTrue(a >= 0 && a < 62 && a == com.mrgregles.bsp_core.lottery.LotteryDraw.pick(62, seed), "the same seed picks the same player: " + seed);
+        }
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotteryDraw.pick(1, 99) == 0, "one player in always wins");
+        java.util.Set<Integer> seen = new java.util.HashSet<>();
+        for (long seed = 0; seed < 400; seed++) {
+            seen.add(com.mrgregles.bsp_core.lottery.LotteryDraw.pick(5, seed));
+        }
+        h.assertTrue(seen.size() == 5, "every player can win: " + seen);
+        List<com.mrgregles.bsp_core.lottery.LotteryWin> wins = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            wins = com.mrgregles.bsp_core.lottery.LotteryWin.prepend(new com.mrgregles.bsp_core.lottery.LotteryWin(UUID.randomUUID(), "W" + i, 100L * i, 1000L * i, 3, "d" + i), wins);
+        }
+        h.assertTrue(wins.size() == com.mrgregles.bsp_core.lottery.LotteryWin.KEEP && wins.get(0).name().equals("W11") && wins.get(9).name().equals("W2"), "the ten newest wins are kept, newest first");
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotteryWin.fromText(com.mrgregles.bsp_core.lottery.LotteryWin.text(wins)).equals(wins)
+                && com.mrgregles.bsp_core.lottery.LotteryWin.fromText("").isEmpty() && com.mrgregles.bsp_core.lottery.LotteryWin.fromText("{oops").isEmpty(),
+                "the wins go to text and back; missing or broken text gives none");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void lottery_admin_page_changes_settings_and_the_pot_and_shows_everyone(GameTestHelper h) {
+        var server = server(h);
+        var ann = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        h.assertTrue(!com.mrgregles.bsp_core.lottery.LotteryAdmin.allowed(ann), "a player who is not an operator cannot use the admin page");
+        var ledger = com.mrgregles.bsp_core.lottery.LotteryLedger.get(server);
+        var kept = ledger.settings();
+        String k = "gui.bsp_core.lottery.admin.";
+        String[] msg = new String[1];
+        List<String> args = new ArrayList<>();
+        java.util.function.BiConsumer<String, List<String>> answer = (m, a) -> {
+            msg[0] = m;
+            args.clear();
+            args.addAll(a);
+        };
+        try {
+            ledger.settings(new com.mrgregles.bsp_core.lottery.LotterySettings(7, List.of("staff")));
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.DAYS, "", 1, false, answer);
+            h.assertTrue(msg[0].equals(k + "days_set") && args.equals(List.of("8")) && ledger.settings().days() == 8, "+ adds a day: " + msg[0] + args);
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.DAYS, "", -500, false, answer);
+            h.assertTrue(ledger.settings().days() == 1, "the days never go below one: " + ledger.settings());
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.RANK, "VIP", 0, true, answer);
+            h.assertTrue(msg[0].equals(k + "rank_out") && args.equals(List.of("vip")) && ledger.settings().leftOut().equals(List.of("staff", "vip")), "a ticked rank is left out: " + ledger.settings());
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.RANK, "staff", 0, false, answer);
+            h.assertTrue(msg[0].equals(k + "rank_in") && ledger.settings().leftOut().equals(List.of("vip")), "an unticked rank is in again: " + ledger.settings());
+
+            long pot = com.mrgregles.bsp_core.market.Market.pot(server);
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.ADD, "prize", 0, false, answer);
+            h.assertTrue(msg[0].equals(k + "amount"), "no pieces: refused: " + msg[0]);
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.ADD, "  ", 500, false, answer);
+            h.assertTrue(msg[0].equals(k + "reason_needed") && com.mrgregles.bsp_core.market.Market.pot(server) == pot, "no reason: refused, the pot unchanged: " + msg[0]);
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.ADD, "Event prize", 500, false, answer);
+            h.assertTrue(msg[0].equals(k + "added") && args.equals(List.of("500")) && com.mrgregles.bsp_core.market.Market.pot(server) == pot + 500, "500 added: " + msg[0] + args);
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.TAKE, "too much", pot + 501, false, answer);
+            h.assertTrue(msg[0].equals(k + "short") && com.mrgregles.bsp_core.market.Market.pot(server) == pot + 500, "taking more than the pot holds is refused: " + msg[0]);
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.apply(server, "test", com.mrgregles.bsp_core.lottery.LotteryAdmin.Action.TAKE, "back", 500, false, answer);
+            h.assertTrue(msg[0].equals(k + "taken") && com.mrgregles.bsp_core.market.Market.pot(server) == pot, "500 taken back: " + msg[0]);
+
+            // the view: everyone seen this season, the counts, the ranks to pick from, and its packet
+            var realRanks = com.mrgregles.bsp_core.lottery.Lottery.rankSource;
+            com.mrgregles.bsp_core.lottery.Lottery.rankSource = id -> Set.of("vip");
+            com.mrgregles.bsp_core.lottery.Lottery.seen(ann);
+            com.mrgregles.bsp_core.lottery.Lottery.rankSource = realRanks;
+            com.mrgregles.bsp_core.lottery.LotteryAdminView[] got = new com.mrgregles.bsp_core.lottery.LotteryAdminView[1];
+            com.mrgregles.bsp_core.lottery.LotteryAdmin.view(server, k + "added", List.of("500"), true, v -> got[0] = v);
+            var v = got[0];
+            var row = v.rows().stream().filter(r -> r.name().equals(ann.getGameProfile().getName())).findFirst().orElse(null);
+            h.assertTrue(row != null && row.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.RANK.ordinal() && row.rank().equals("vip"),
+                    "the player is listed, out by the rank left out: " + row);
+            h.assertTrue(v.in() + v.out() == v.seen() && v.seen() >= v.rows().size() && v.days() == 1 && v.leftOut().equals(List.of("vip")) && v.ranks().contains("vip")
+                    && v.open() && v.message().equals(k + "added"), "the counts add up and the settings are shown: " + v.in() + "/" + v.out() + "/" + v.seen());
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            v.encode(buf);
+            h.assertTrue(com.mrgregles.bsp_core.lottery.LotteryAdminView.decode(buf).equals(v), "the view goes through its packet unchanged");
+            var longName = new com.mrgregles.bsp_core.lottery.LotteryAdminView(1, 7, List.of(), List.of(), List.of(new com.mrgregles.bsp_core.lottery.LotteryAdminView.Row("A".repeat(40), 0, "x".repeat(200), 0, "")),
+                    1, 0, 1, false, 0, "", List.of(), false);
+            buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            longName.encode(buf);
+            var back = com.mrgregles.bsp_core.lottery.LotteryAdminView.decode(buf).rows().get(0);
+            h.assertTrue(back.name().length() == 16 && back.ranks().length() == 64, "long names and rank lists are cut, never thrown: " + back);
+        } finally {
+            ledger.settings(kept);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void lottery_page_shows_who_is_in_your_chance_and_the_winners(GameTestHelper h) {
+        var server = server(h);
+        var ann = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var realRanks = com.mrgregles.bsp_core.lottery.Lottery.rankSource;
+        com.mrgregles.bsp_core.lottery.Lottery.rankSource = id -> Set.of();
+        com.mrgregles.bsp_core.lottery.Lottery.seen(ann);
+        com.mrgregles.bsp_core.lottery.Lottery.rankSource = realRanks;
+        com.mrgregles.bsp_core.lottery.LotteryPage.invalidate();
+        com.mrgregles.bsp_core.lottery.LotteryPageView[] got = new com.mrgregles.bsp_core.lottery.LotteryPageView[1];
+        com.mrgregles.bsp_core.lottery.LotteryPage.view(server, ann.getUUID(), v -> got[0] = v);
+        var v = got[0];
+        String name = ann.getGameProfile().getName();
+        h.assertTrue(v != null && v.names().contains(name) && v.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.IN.ordinal(),
+                "a player seen now is on the drum and in: " + (v == null ? null : v.standing()));
+        List<String> sorted = new ArrayList<>(v.names());
+        sorted.sort(String.CASE_INSENSITIVE_ORDER);
+        h.assertTrue(v.names().equals(sorted) && v.in() >= v.names().size() && v.wins().size() <= com.mrgregles.bsp_core.lottery.LotteryPageView.WINS
+                && v.pot() == com.mrgregles.bsp_core.market.Market.pot(server) && v.phase() >= 0 && v.phase() < com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.values().length,
+                "the names are in order, the counts and the pot are right: " + v.in() + " in");
+        com.mrgregles.bsp_core.lottery.LotteryPage.view(server, UUID.randomUUID(), x -> got[0] = x);
+        h.assertTrue(got[0].standing() == -1, "a player never seen has no standing yet");
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        v.encode(buf);
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotteryPageView.decode(buf).equals(v), "the view goes through its packet unchanged");
+        List<String> many = new ArrayList<>();
+        for (int i = 0; i < 250; i++) {
+            many.add("P" + i);
+        }
+        var big = new com.mrgregles.bsp_core.lottery.LotteryPageView(5, many, 250, -1, "", 7,
+                List.of(new com.mrgregles.bsp_core.lottery.LotteryPageView.Win("W".repeat(30), 9, 1)), 1, 2000, 6000, "", 0, 3);
+        buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        big.encode(buf);
+        var back = com.mrgregles.bsp_core.lottery.LotteryPageView.decode(buf);
+        h.assertTrue(back.names().size() == com.mrgregles.bsp_core.lottery.LotteryPageView.MAX_NAMES && back.in() == 250 && back.standing() == -1
+                && back.wins().get(0).name().length() == 16 && back.phase() == 1 && back.phaseMs() == 2000, "a long drum is cut to 200 names, the count stays: " + back.names().size());
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void lottery_board_summary_carries_the_drum_the_pot_and_three_winners(GameTestHelper h) {
+        var server = server(h);
+        var ann = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var realRanks = com.mrgregles.bsp_core.lottery.Lottery.rankSource;
+        com.mrgregles.bsp_core.lottery.Lottery.rankSource = id -> Set.of();
+        com.mrgregles.bsp_core.lottery.Lottery.seen(ann);
+        com.mrgregles.bsp_core.lottery.Lottery.rankSource = realRanks;
+        com.mrgregles.bsp_core.lottery.LotteryPage.invalidate();
+        com.mrgregles.bsp_core.lottery.LotterySummary.Summary[] got = new com.mrgregles.bsp_core.lottery.LotterySummary.Summary[1];
+        com.mrgregles.bsp_core.lottery.LotterySummary.build(server, ann.getUUID(), s -> got[0] = s);
+        var s = got[0];
+        h.assertTrue(s != null && s.in() >= s.names().size() && s.names().size() <= com.mrgregles.bsp_core.lottery.LotterySummary.NAMES
+                && s.wins().size() <= com.mrgregles.bsp_core.lottery.LotterySummary.WINS && s.pot() == com.mrgregles.bsp_core.market.Market.pot(server),
+                "the summary has the drum, the count, at most three winners and the pot: " + (s == null ? null : s.in()));
+        h.assertTrue(s.in() > com.mrgregles.bsp_core.lottery.LotterySummary.NAMES || s.names().contains(ann.getGameProfile().getName()), "a player seen now is on the board's drum");
+        h.assertTrue(s.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.IN.ordinal(), "the summary carries the player's own standing, for the Portable Banker's card");
+        com.mrgregles.bsp_core.lottery.LotterySummary.build(server, null, x -> got[0] = x);
+        h.assertTrue(got[0].standing() == -1 && got[0].in() == s.in(), "for nobody in particular: no standing, the same count");
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        s.encode(buf);
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotterySummary.Summary.decode(buf).equals(s), "the summary goes through its packet unchanged");
+        List<String> many = new ArrayList<>();
+        for (int i = 0; i < 90; i++) {
+            many.add("N" + i);
+        }
+        var big = new com.mrgregles.bsp_core.lottery.LotterySummary.Summary(7, many, 90, List.of(new com.mrgregles.bsp_core.lottery.LotteryPageView.Win("Q".repeat(20), 3, 4)), 2, 100, "Z".repeat(20), 9, -1, "R".repeat(40));
+        buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        big.encode(buf);
+        var back = com.mrgregles.bsp_core.lottery.LotterySummary.Summary.decode(buf);
+        h.assertTrue(back.names().size() == com.mrgregles.bsp_core.lottery.LotterySummary.NAMES && back.in() == 90 && back.winner().length() == 16
+                && back.wins().get(0).name().length() == 16 && back.phase() == 2 && back.standing() == -1 && back.rank().length() == 32,
+                "a long drum is cut to 60 names, the count stays, long names are cut");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void lottery_keeps_ranks_it_cannot_read_and_shares_never_overflow(GameTestHelper h) {
+        // a sighting whose rank lookup failed keeps the ranks stored before; a known one replaces them
+        var ledger = new com.mrgregles.bsp_core.lottery.LotteryLedger();
+        UUID id = UUID.randomUUID();
+        long now = System.currentTimeMillis();
+        ledger.seen(new com.mrgregles.bsp_core.lottery.LotteryPlayer(id, "Mo", now - 1000, Set.of("staff"), false, "hub"), true);
+        ledger.seen(new com.mrgregles.bsp_core.lottery.LotteryPlayer(id, "Mo", now, Set.of(), false, "survival"), false);
+        var p = ledger.since(0).get(0);
+        h.assertTrue(p.ranks().equals(Set.of("staff")) && p.seenMs() == now && p.server().equals("survival"), "ranks that could not be read are kept: " + p);
+        ledger.seen(new com.mrgregles.bsp_core.lottery.LotteryPlayer(id, "Mo", now - 5, Set.of("member"), true, "hub"), true);
+        p = ledger.since(0).get(0);
+        h.assertTrue(p.ranks().equals(Set.of("member")) && p.op() && p.seenMs() == now, "known ranks and operator status replace them; the time never goes back: " + p);
+        // a rank with a comma or spaces is one rank, and can be let back in as typed
+        var s = new com.mrgregles.bsp_core.lottery.LotterySettings(7, List.of("admin")).withRank(" Mod,Team ", true);
+        h.assertTrue(s.leftOut().equals(List.of("admin", "modteam")) && com.mrgregles.bsp_core.lottery.LotterySettings.fromText(s.text()).equals(s), "a comma never splits a rank: " + s);
+        h.assertTrue(s.withRank(" admin ", false).leftOut().equals(List.of("modteam")), "a rank typed with spaces is let back in");
+        // one broken win is left out, never the list
+        var good = new com.mrgregles.bsp_core.lottery.LotteryWin(UUID.randomUUID(), "Ok", 5, 1, 2, "d1");
+        String text = com.mrgregles.bsp_core.lottery.LotteryWin.text(List.of(good)).replace("{Wins:[", "{Wins:[{Name:\"Broken\"},");
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotteryWin.fromText(text).equals(List.of(good)), "a win with no id is left out: " + text);
+        // a claim is live for two minutes, then free
+        h.assertTrue(com.mrgregles.bsp_core.lottery.LotteryDraw.claimLive("abc@" + now, now + 1000) && !com.mrgregles.bsp_core.lottery.LotteryDraw.claimLive("abc@" + now, now + 121_000)
+                && !com.mrgregles.bsp_core.lottery.LotteryDraw.claimLive("", now) && !com.mrgregles.bsp_core.lottery.LotteryDraw.claimLive("junk", now), "a claim older than two minutes is free");
+        // the shops' share: rounded down, never negative or overflowing
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.lotteryShare(0) == 0 && com.mrgregles.bsp_core.shop.Shops.lotteryShare(-5) == 0, "nothing for nothing");
+        long big = com.mrgregles.bsp_core.shop.Shops.lotteryShare(Long.MAX_VALUE);
+        int pct = com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.SHOP_LOTTERY_PERCENT, 50);
+        h.assertTrue(big >= 0 && big <= Long.MAX_VALUE / 100 * pct + 100, "the largest price never overflows the share: " + big);
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.lotteryShare(241) == 241L * pct / 100, "a small price is rounded down as before");
+        h.succeed();
+    }
+
+    /** In a batch of its own: while its draw runs the pot is locked, which other tests moving the pot must never meet. */
+    @GameTest(template = EMPTY, timeoutTicks = 400, batch = "lottery_draw")
+    public void lottery_draw_refuses_an_empty_pot_then_pays_the_whole_pot_to_one_player(GameTestHelper h) {
+        var server = server(h);
+        var ann = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var realRanks = com.mrgregles.bsp_core.lottery.Lottery.rankSource;
+        com.mrgregles.bsp_core.lottery.Lottery.rankSource = id -> Set.of();
+        com.mrgregles.bsp_core.lottery.Lottery.seen(ann); // at least one player is in
+        com.mrgregles.bsp_core.lottery.Lottery.rankSource = realRanks;
+        h.assertTrue(!com.mrgregles.bsp_core.lottery.LotteryDraw.busy(), "no draw is running before the test");
+        String[] key = new String[1];
+        long held = com.mrgregles.bsp_core.market.Market.pot(server);
+        if (held > 0) {
+            com.mrgregles.bsp_core.lottery.Lottery.takeFromPot(server, held, "test", "empty the pot", r -> {});
+        }
+        com.mrgregles.bsp_core.lottery.LotteryDraw.start(server, "test", k -> key[0] = k);
+        h.assertTrue("empty".equals(key[0]) && !com.mrgregles.bsp_core.lottery.LotteryDraw.busy(), "an empty pot is refused before any countdown: " + key[0]);
+        com.mrgregles.bsp_core.bank.BankResult[] took = new com.mrgregles.bsp_core.bank.BankResult[1];
+        com.mrgregles.bsp_core.lottery.Lottery.takeFromPot(server, 5, "test", "too much", r -> took[0] = r);
+        h.assertTrue(!took[0].ok() && took[0].key().equals("short"), "nothing can be taken from an empty pot: " + took[0]);
+        com.mrgregles.bsp_core.lottery.Lottery.addToPot(server, 1_000, "test", "event prize", r -> {});
+        h.assertTrue(com.mrgregles.bsp_core.market.Market.pot(server) == 1_000, "an admin adds to the pot");
+        var log = com.mrgregles.bsp_core.bank.BankLedger.get(server).log(com.mrgregles.bsp_core.market.Market.POT).get(0);
+        h.assertTrue(log.type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN && log.with().equals("test") && log.detail().equals("event prize") && log.pieces() == 1_000,
+                "the pot's log names the admin and the reason: " + log);
+        List<com.mrgregles.bsp_core.lottery.LotteryWin> before = new ArrayList<>();
+        com.mrgregles.bsp_core.lottery.Lottery.wins(server, before::addAll);
+        com.mrgregles.bsp_core.lottery.LotteryDraw.stepMs = 0;
+        com.mrgregles.bsp_core.lottery.LotteryDraw.start(server, "test", k -> key[0] = k);
+        h.assertTrue("ok".equals(key[0]) && com.mrgregles.bsp_core.lottery.LotteryDraw.busy(), "the draw starts: " + key[0]);
+        com.mrgregles.bsp_core.lottery.LotteryDraw.start(server, "test", k -> key[0] = k);
+        h.assertTrue("busy".equals(key[0]), "a second draw waits for the first: " + key[0]);
+        com.mrgregles.bsp_core.bank.BankResult[] during = new com.mrgregles.bsp_core.bank.BankResult[1];
+        com.mrgregles.bsp_core.lottery.Lottery.takeFromPot(server, 1, "test", "during the count", r -> during[0] = r);
+        h.assertTrue(!during[0].ok() && during[0].key().equals("drawing"), "the pot cannot be changed while a draw runs: " + during[0]);
+        h.succeedWhen(() -> {
+            h.assertTrue(!com.mrgregles.bsp_core.lottery.LotteryDraw.busy(), "the draw has finished");
+            com.mrgregles.bsp_core.lottery.LotteryDraw.stepMs = 1000;
+            List<com.mrgregles.bsp_core.lottery.LotteryWin> after = new ArrayList<>();
+            com.mrgregles.bsp_core.lottery.Lottery.wins(server, after::addAll);
+            h.assertTrue(after.size() > 0 && (before.isEmpty() || !after.get(0).equals(before.get(0))), "the draw is in the list of wins");
+            var win = after.get(0);
+            h.assertTrue(win.pieces() >= 1_000 && win.entrants() >= 1, "the winner took the whole pot: " + win);
+            var row = com.mrgregles.bsp_core.bank.BankLedger.get(server).log(win.id()).get(0);
+            h.assertTrue(row.type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.LOTTERY && row.pieces() == win.pieces(), "the winner's bank log shows the win: " + row);
+            var potRow = com.mrgregles.bsp_core.bank.BankLedger.get(server).log(com.mrgregles.bsp_core.market.Market.POT).stream()
+                    .filter(t -> t.type() == com.mrgregles.bsp_core.bank.BankTransaction.Type.LOTTERY).findFirst().orElse(null);
+            h.assertTrue(potRow != null && potRow.pieces() == -win.pieces() && potRow.with().equals(win.name()) && potRow.detail().equals("draw " + win.draw()),
+                    "the pot's log shows the pieces leaving to the winner, with the draw's id: " + potRow);
+        });
+    }
+
     // ------------------------------------------------------------------ shops
 
     @GameTest(template = EMPTY)
@@ -753,12 +1107,17 @@ public class BspGameTests {
         int index = shop.add(item);
         com.mrgregles.bsp_core.shop.Shops.save(server, shop);
         long start = com.mrgregles.bsp_core.bank.Bank.pieces(server, id);
+        long pot = com.mrgregles.bsp_core.market.Market.pot(server);
         com.mrgregles.bsp_core.shop.Shops.Outcome[] o = new com.mrgregles.bsp_core.shop.Shops.Outcome[1];
         com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 2, true, x -> o[0] = x);
         h.assertTrue(o[0].ok() && o[0].key().equals("test_bought") && player.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 0 && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start, "test mode moves nothing: " + o[0]);
+        h.assertTrue(com.mrgregles.bsp_core.market.Market.pot(server) == pot, "a test buy pays nothing into the lottery pot");
         com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 2, false, x -> o[0] = x);
         h.assertTrue(o[0].ok() && o[0].lots() == 2 && o[0].amount() == 240, "bought two lots for 240: " + o[0]);
         h.assertTrue(player.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 8 && com.mrgregles.bsp_core.bank.Bank.pieces(server, id) == start - 240, "eight ingots given, 240 paid");
+        long share = com.mrgregles.bsp_core.shop.Shops.lotteryShare(240);
+        h.assertTrue(share == 240L * com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.SHOP_LOTTERY_PERCENT, 50) / 100 && com.mrgregles.bsp_core.market.Market.pot(server) == pot + share,
+                "the lottery pot got its share of the 240 (" + share + "), now " + com.mrgregles.bsp_core.market.Market.pot(server) + " from " + pot);
         h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, index, id, System.currentTimeMillis()) == 1, "one lot of stock left");
         com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 5, false, x -> o[0] = x);
         h.assertTrue(o[0].ok() && o[0].lots() == 1, "a buy is cut to the stock left: " + o[0]);
@@ -767,8 +1126,21 @@ public class BspGameTests {
         com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(shop.id, index).stock.at = System.currentTimeMillis() - 1;
         h.assertTrue(com.mrgregles.bsp_core.shop.Shops.stockLeft(server, shop, index, id, System.currentTimeMillis()) == 3, "restocked after the countdown");
         com.mrgregles.bsp_core.bank.Bank.set(server, id, 100, "test", r -> {});
+        long potBefore = com.mrgregles.bsp_core.market.Market.pot(server);
         com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, index, 1, false, x -> o[0] = x);
         h.assertTrue(!o[0].ok() && o[0].key().equals("short") && player.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 12, "too poor: nothing given");
+        h.assertTrue(com.mrgregles.bsp_core.market.Market.pot(server) == potBefore, "a failed buy pays nothing into the lottery pot");
+        var gold = new com.mrgregles.bsp_core.shop.ShopItem();
+        gold.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_INGOT);
+        gold.buy = 3;
+        gold.currency = com.mrgregles.bsp_core.coin.CoinTier.GOLD.ordinal();
+        int gi = shop.add(gold);
+        com.mrgregles.bsp_core.shop.Shops.save(server, shop);
+        com.mrgregles.bsp_core.api.BspCoins.give(player, 3 * com.mrgregles.bsp_core.coin.CoinTier.GOLD.value());
+        com.mrgregles.bsp_core.shop.Shops.buy(server, player, shop, gi, 1, false, x -> o[0] = x);
+        long coinShare = com.mrgregles.bsp_core.shop.Shops.lotteryShare(3 * com.mrgregles.bsp_core.bank.Bank.piecesPerCoin(com.mrgregles.bsp_core.coin.CoinTier.GOLD));
+        h.assertTrue(o[0].ok() && com.mrgregles.bsp_core.market.Market.pot(server) == potBefore + coinShare,
+                "a buy in coins pays its share at the coins' bank worth (" + coinShare + "): " + o[0] + ", pot " + com.mrgregles.bsp_core.market.Market.pot(server) + " from " + potBefore);
         h.succeed();
     }
 
@@ -3330,9 +3702,9 @@ public class BspGameTests {
     }
 
     /**
-     * Runs {@code then} {@code ticks} ticks after the test's own area ticks blocks and entities. A test late in a big batch can wait 250
-     * ticks or more for that (the server, catching up, promotes chunks late), so a fixed delay counted from the test's start may run
-     * out before anything ticked. Once the area ticks, this is a plain delay.
+     * Runs {@code then} {@code ticks} ticks after the test's own area ticks blocks and entities. The GameTest server runs ticks flat
+     * out, so a few hundred ticks can pass in a second while chunks still load; {@code GameTestInfoMixin} holds every test back until
+     * its area ticks, so this is normally a plain delay, and the check stays to name the failure if the area is not ticking.
      */
     private static void afterTicking(GameTestHelper h, int ticks, Runnable then) {
         List<BlockPos> corners = List.of(h.absolutePos(new BlockPos(0, 1, 0)), h.absolutePos(new BlockPos(23, 1, 0)),
@@ -5893,7 +6265,7 @@ public class BspGameTests {
     // ------------------------------------------------------------------ molten metals (Totem Forge, task 1)
 
     /** The molten metals are fluids with blocks, buckets and their forge:molten_ tags, and no BSP item or block is on a material tag. */
-    @GameTest(template = EMPTY, batch = "totem_forge")
+    @GameTest(template = EMPTY)
     public void molten_metals_are_fluids_and_bsp_stays_off_material_tags(GameTestHelper h) {
         for (var e : com.mrgregles.bsp_core.material.MoltenMetals.ALL.entrySet()) {
             String id = e.getKey().id();
@@ -5928,7 +6300,7 @@ public class BspGameTests {
     /** With Tinkers or Thermal Expansion loaded every molten-metal recipe loads (a wrong format would drop it); without them none does.
      *  Run with -PpackMods to load the pack's jars (build.gradle). */
     /** A dispenser pours a molten bucket as it does lava's; molten metal meets water as lava does: a source turns to Obsidian, a flowing block to Cobblestone (audit D7). */
-    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 200)
     public void molten_metals_pour_from_dispensers_and_cool_in_water(GameTestHelper h) {
         var tetrium = com.mrgregles.bsp_core.material.MoltenMetals.of(com.mrgregles.bsp_core.material.MoltenMetals.Metal.TETRIUM);
         BlockPos disp = new BlockPos(2, 2, 2), front = disp.east();
@@ -5948,7 +6320,7 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, batch = "totem_forge")
+    @GameTest(template = EMPTY)
     public void molten_recipes_load_only_with_their_mods(GameTestHelper h) {
         int tinkers = 0, thermal = 0;
         for (var r : h.getLevel().getServer().getRecipeManager().getRecipes()) {
@@ -5983,7 +6355,7 @@ public class BspGameTests {
     }
 
     /** Eight parts in two layers of four round an empty middle layer; the hearths take lava, the intake takes items; formed, the parts hide. */
-    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 200)
     public void totem_forge_forms_round_its_hollow(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var parts = forge.parts();
@@ -6007,7 +6379,7 @@ public class BspGameTests {
     }
 
     /** A block in the hollow breaks the structure, and the forge forms again once it is gone. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_needs_its_hollow_empty(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         BlockPos hollow = forge.parts().stream().filter(p -> p.block() == net.minecraft.world.level.block.Blocks.AIR).findFirst().orElseThrow().pos();
@@ -6026,7 +6398,7 @@ public class BspGameTests {
     // ------------------------------------------------------------------ Totem Mould items (task 5)
 
     /** Each mould piece lasts three pours and takes no enchantment or anvil repair; the pieces, the core and the shell all have recipes. */
-    @GameTest(template = EMPTY, batch = "totem_forge")
+    @GameTest(template = EMPTY)
     public void mould_pieces_last_three_pours_and_have_recipes(GameTestHelper h) {
         var recipes = h.getLevel().getServer().getRecipeManager();
         for (var e : com.mrgregles.bsp_core.registry.ModItems.MOULDS.entrySet()) {
@@ -6050,7 +6422,7 @@ public class BspGameTests {
     }
 
     /** Ingots through the intake melt one at a time into their own tank, 90 mB each, burning lava from the hearths; an ingot off the bill is refused. */
-    @GameTest(template = EMPTY, timeoutTicks = 600, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 600)
     public void totem_forge_melts_ingots_into_its_tanks(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var tetrium = billLine("bsp_core:tetrium_ingot");
@@ -6080,7 +6452,7 @@ public class BspGameTests {
     }
 
     /** Molten Tetrium, Magnatite and Illyrium pipe into the intake, each only up to its line of the bill; lava and the intake's drain do nothing. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_takes_molten_metal_through_the_intake(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         afterTicking(h, 25, () -> {
@@ -6100,7 +6472,7 @@ public class BspGameTests {
     }
 
     /** The mould goes in in order, base first and the Totem Core last; a wrong piece is refused; sneaking takes the last piece back out. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_mould_goes_in_in_order(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         afterTicking(h, 25, () -> {
@@ -6128,7 +6500,7 @@ public class BspGameTests {
      * The intake takes only the ingots a tank still needs, so a surplus never blocks the slot for the other metals; a tank
      * a little short still melts its last ingot, the excess lost; a mould piece with no pours left is refused.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 600, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 600)
     public void totem_forge_intake_takes_only_what_it_needs(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var tetrium = billLine("bsp_core:tetrium_ingot");
@@ -6164,7 +6536,7 @@ public class BspGameTests {
     }
 
     /** The bill's lines: a count out of range, an item that does not exist and a tag no item carries are left out; good item and tag lines stay. */
-    @GameTest(template = EMPTY, batch = "totem_forge")
+    @GameTest(template = EMPTY)
     public void totem_forge_bill_leaves_out_lines_it_cannot_use(GameTestHelper h) {
         var value = com.mrgregles.bsp_core.BSPConfig.TFORGE_BILL;
         var was = value.get();
@@ -6194,7 +6566,7 @@ public class BspGameTests {
     }
 
     /** No totem: the pour is free and sets in 5 days; it needs the mould and the metal; it runs to the end and empties the tanks; one pour per player; a broken forge frees the claim and drops only the pieces that survive. */
-    @GameTest(template = EMPTY, timeoutTicks = 1000, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 1000)
     public void totem_forge_pour_is_free_without_a_totem(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var other = buildTotemForge(h, new BlockPos(14, 1, 4));
@@ -6227,7 +6599,7 @@ public class BspGameTests {
     }
 
     /** Owning a totem: the pour costs 4 Illyrium coins for each one owned and sets in 15 days; too few coins and nothing starts. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_pour_costs_coins_with_a_totem(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
@@ -6269,7 +6641,7 @@ public class BspGameTests {
     }
 
     /** Once set, the pourer's right-click hands over a Forged Shatter Totem; the forge keeps the surviving pieces, frees the claim and can pour again. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_pourer_takes_the_set_totem(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
@@ -6291,7 +6663,7 @@ public class BspGameTests {
     }
 
     /** Anyone else must steal a set totem: walking away fails the steal; staying by the forge for the steal time hands the thief the totem. Breaking a set forge drops the totem for its pourer. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_set_totem_can_be_stolen(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var other = buildTotemForge(h, new BlockPos(14, 1, 4));
@@ -6352,7 +6724,7 @@ public class BspGameTests {
      * The forge steal follows the totem steal's rules (audit D1, D2): no creative thief, no teammate, the steal events
      * fire, the pourer gets the direct Discord message, and the next steal at the same forge is announced again.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_steal_follows_the_totem_rules(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var server = server(h);
@@ -6422,7 +6794,7 @@ public class BspGameTests {
     // ------------------------------------------------------------------ Totem Forge ownership and coins (audit fix task 6)
 
     /** Owned counts every totem of the player's on this server: carried on the cursor, owed here, lying dropped (while it reports), held for a transfer (audit D9). */
-    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 200)
     public void totem_forge_counts_every_totem_the_player_owns(GameTestHelper h) {
         var player = survivor(h);
         var server = server(h);
@@ -6465,7 +6837,7 @@ public class BspGameTests {
     }
 
     /** Any Shatter Coins pay the pour by value (audit D5): seven Netherite Coins are short of four Illyrium Coins' worth, eight pay it. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_pour_takes_any_coins_by_value(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = survivor(h);
@@ -6488,7 +6860,7 @@ public class BspGameTests {
     }
 
     /** Totems the network says wait for the player count too; a pour that turns out dearer than the screen showed is not charged until pressed again. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_network_owed_totems_count_and_never_surprise(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = survivor(h);
@@ -6527,7 +6899,7 @@ public class BspGameTests {
      * The ledger keeps when a claimed totem will have set and tells its pourer once it has, whether or not the forge is
      * loaded; the forge's own notice and the ledger's never both go out.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_ledger_tells_the_pourer_once(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var server = server(h);
@@ -6560,7 +6932,7 @@ public class BspGameTests {
      * The screen gets the setting's minutes left from the server's clock and the viewer's check as ordinal + 1, so a client
      * that has heard nothing yet reads UNKNOWN (never FREE); the minutes travel in two 15-bit halves.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 1000, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 1000)
     public void totem_forge_screen_counts_down_by_the_server_clock(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var pourer = survivor(h);
@@ -6589,7 +6961,7 @@ public class BspGameTests {
     }
 
     /** Create's contraptions may not pick up a placed Shatter Totem or a Totem Forge controller: moving either would carry its block entity off (a stale claim, a doubled totem). */
-    @GameTest(template = EMPTY, batch = "totem_forge")
+    @GameTest(template = EMPTY)
     public void create_cannot_move_totems_or_the_forge(GameTestHelper h) {
         var nonMovable = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, new net.minecraft.resources.ResourceLocation("create", "non_movable"));
         h.assertTrue(ModBlocks.SHATTER_TOTEM.get().defaultBlockState().is(nonMovable), "the placed Shatter Totem is create:non_movable");
@@ -6600,7 +6972,7 @@ public class BspGameTests {
     // ------------------------------------------------------------------ Totem Forge efficiency and hygiene (audit fix task 8)
 
     /** Pipes take the empty bucket a lava bucket leaves out through the intake (an input side) but never a full one; the screen hears no RF buffer without an upgrade. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_intake_gives_up_empty_buckets(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = survivor(h);
@@ -6626,7 +6998,7 @@ public class BspGameTests {
      * (the controller opens the screen, a port lets the item work), and the screen's key works with anything in hand. The
      * ports tell clients their controller. A set forge with a broken part still shows as set, and its totem still comes out.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 400, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 400)
     public void totem_forge_set_forge_takes_only_an_empty_hand(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var pourer = survivor(h);
@@ -6679,7 +7051,7 @@ public class BspGameTests {
      * A claim left behind heals itself: one pointing at a loaded spot with no forge, or at this forge with nothing poured,
      * is freed by the next pour check. One in an unloaded chunk is trusted until an operator's /bsp totemforge clear.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_stale_claims_heal_or_clear(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = survivor(h);
@@ -6748,7 +7120,7 @@ public class BspGameTests {
      * With network storage, POUR claims the player's row first: another server's claim refuses the pour; the claim won
      * starts it; no answer within the wait calls it off, and a late answer gives back the row it won.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 400, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 400)
     public void totem_forge_network_claim_answers_or_times_out(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = survivor(h);
@@ -6794,7 +7166,7 @@ public class BspGameTests {
     // ------------------------------------------------------------------ Totem Forge screen (task 7)
 
     /** The screen's menu: the viewer's pour check and cost come from the server; TAKE PIECE OUT and POUR do what the right-clicks and the old key did. */
-    @GameTest(template = EMPTY, timeoutTicks = 300, batch = "totem_forge")
+    @GameTest(template = EMPTY, timeoutTicks = 300)
     public void totem_forge_screen_keys(GameTestHelper h) {
         var forge = buildTotemForge(h, new BlockPos(4, 1, 4));
         var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);

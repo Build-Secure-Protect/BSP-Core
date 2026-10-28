@@ -212,6 +212,21 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(MarketSummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(MarketSummaryPacket::encode).decoder(MarketSummaryPacket::decode)
                 .consumerMainThread(MarketSummaryPacket::handle).add();
+        CHANNEL.messageBuilder(LotteryAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LotteryAdminPacket::encode).decoder(LotteryAdminPacket::decode)
+                .consumerMainThread(LotteryAdminPacket::handle).add();
+        CHANNEL.messageBuilder(LotteryAdminActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(LotteryAdminActionPacket::encode).decoder(LotteryAdminActionPacket::decode)
+                .consumerMainThread(LotteryAdminActionPacket::handle).add();
+        CHANNEL.messageBuilder(LotteryPagePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LotteryPagePacket::encode).decoder(LotteryPagePacket::decode)
+                .consumerMainThread(LotteryPagePacket::handle).add();
+        CHANNEL.messageBuilder(LotteryPageAskPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(LotteryPageAskPacket::encode).decoder(LotteryPageAskPacket::decode)
+                .consumerMainThread(LotteryPageAskPacket::handle).add();
+        CHANNEL.messageBuilder(LotterySummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LotterySummaryPacket::encode).decoder(LotterySummaryPacket::decode)
+                .consumerMainThread(LotterySummaryPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

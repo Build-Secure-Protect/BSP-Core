@@ -4,7 +4,22 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **The lottery.** The network's lottery pot (the market's taxes, and now half of every shop purchase) is drawn by an admin and won whole by one player. Everyone seen on any server of the network within the past days (7 by default) is in, one equal chance each, with no tickets; operators and the LuckPerms ranks the admin leaves out (admin, mod, moderator, owner and staff by default) are not. The guide book has a page on it under Shatter Coins.
+  - **The draw.** Chat on every server says the lottery is being drawn, counts down from 5 a second at a time, then names the winner and what they won. The winner, picked at random from everyone in when the count began, takes the whole pot straight into their bank; a winner who is offline is told at their next login. Payouts show in bank logs as LOTTERY. Only one draw runs at a time across a network, and a draw with nobody in or an empty pot is refused before the countdown.
+  - **The Trade Post's LOTTERY tab**, beside MARKET, SELL and COLLECT (also on the Portable Banker's market). A drum of the names of everyone in turns slowly, with the pot, how many are in and your own chance beside it (or why you are left out), and the last five winners as ticket stubs. During a draw the drum spins and the count shows, then it slows to a stop on the winner.
+  - **The Lottery board for Score Screens**, picked in a screen's settings like the Market board, alone or in the rotation: the drum of names at the left, the pot, how many are in and the last three winners at the right, spinning and counting during a draw. In the Side look its column lists the pot, how many are in and the winners.
+  - **The Portable Banker's account page** shows a lottery card: the pot, your chance or why you are left out, and the last winner. When the network or the market is still locked and their lines take the room, it is one line: the pot and your chance.
+  - **The admin page**, for operators: the ADMIN key on the LOTTERY tab, or `/bsp lottery admin` anywhere. A table of every player seen this season with when they were last seen, their rank, and IN or OUT with the reason (operator, a rank left out, or not seen within the days); beside it the pot, the days (− and +, 1 to 90), the LuckPerms ranks to tick to leave out, ADD and TAKE (pieces and a reason, which goes in the pot's log), and DRAW, which asks for a second press. The settings are shared by the whole network.
+  - **Commands** for operators: `/bsp lottery` (the pot, how many are in, how many are left out and why, the settings and the last five winners), `/bsp lottery draw`, and `/bsp lottery add|take <pieces> <reason>`.
+  - **Who played** is recorded at every login and logout on every server (time, server, LuckPerms ranks and operator status), so a draw knows who is in and whose rank is left out while they are offline.
+
+### Changed
+- **Half of what players pay at shops goes into the lottery pot** instead of leaving the economy: `shop.lotteryPercent` of every purchase (server config, default 50, rounded down; 0 turns it off). Cards priced in coins pay the share of the coins' bank worth. Selling to a shop, test buys in the workbench, kits and bank fees are unchanged.
+- **The Trade Post's tabs** are a little narrower so four fit beside the traders band, and a Collect box of more than 99 stacks shows as COLLECT 99+.
+
+### Development
+- GameTests start only once their area's chunks tick (a GameTest-server-only mixin, left out of the jars), so a test can no longer run out of ticks before its blocks tick, which made some plasma and cable tests fail depending on where they landed in a batch; the Totem Forge tests are back in the default batch.
 
 ## [1.7.0] - 2026-10-28
 
