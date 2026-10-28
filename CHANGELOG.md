@@ -4,6 +4,10 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.8.0] - 2026-10-28
+
 ### Added
 - **The lottery.** The network's lottery pot (the market's taxes, and now half of every shop purchase) is drawn by an admin and won whole by one player. Everyone seen on any server of the network within the past days (7 by default) is in, one equal chance each, with no tickets; operators and the LuckPerms ranks the admin leaves out (admin, mod, moderator, owner and staff by default) are not. The guide book has a page on it under Shatter Coins.
   - **The draw.** Chat on every server says the lottery is being drawn, counts down from 5 a second at a time, then names the winner and what they won. The winner, picked at random from everyone in when the count began, takes the whole pot straight into their bank; a winner who is offline is told at their next login. Payouts show in bank logs as LOTTERY. Only one draw runs at a time across a network, and a draw with nobody in or an empty pot is refused before the countdown.
