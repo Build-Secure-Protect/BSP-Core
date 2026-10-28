@@ -2452,3 +2452,13 @@ Covered by a GameTest in the default batch: `daily_reward_pays_once_a_day_midnig
 - [ ] A new player: the 500 welcome pieces and then the 50 daily reward, both on the first login.
 - [ ] `bank.dailyRewardPieces = 0`: no reward and no line.
 - [ ] On a network: log in on A (reward), move to B the same day (no reward); next day, first login on B pays.
+
+## Score Screen settings reach every board (2026-10-28)
+
+Six boards register with BSP-Core 1.8.0 and the sibling mods (Market, Lottery; Server Utilities' Staff Online, Action Log and Players; Teleport's Home Servers). The Board row showed four and the Rotation row three, so some boards could not be picked. Both rows now page with ‹ and ›. Not covered by a GameTest (a client screen).
+
+- [ ] With BSP-Server Utilities and BSP-Teleport installed, open a Score Screen's settings: the Board row shows ‹, four boards and ›, with "1/2" under "Board"; › shows the other two, and › again wraps to the first page.
+- [ ] A screen already set to a board on page 2: its settings open on page 2 with that board lit.
+- [ ] The Rotation row: ‹, five chips and ›, "1/2" under "Rotation"; every board can be ticked in or out of the rotation.
+- [ ] With only BSP-Core's two boards: no arrows, the rows look as they always did.
+- [ ] Nothing in either row runs past the right edge of the settings panel; at GUI scale 4 too.

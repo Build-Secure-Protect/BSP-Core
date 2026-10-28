@@ -22,6 +22,7 @@ Nothing yet.
 ### Changed
 - **Half of what players pay at shops goes into the lottery pot** instead of leaving the economy: `shop.lotteryPercent` of every purchase (server config, default 50, rounded down; 0 turns it off). Cards priced in coins pay the share of the coins' bank worth. Selling to a shop, test buys in the workbench, kits and bank fees are unchanged.
 - **The Trade Post's tabs** are a little narrower so four fit beside the traders band, and a Collect box of more than 99 stacks shows as COLLECT 99+.
+- **Every board can be picked in a Score Screen's settings.** The Board row showed only the first four boards and the Rotation row only three beside the built-in pages, so with BSP-Server Utilities' and BSP-Teleport's boards some could not be chosen. Both rows now turn pages with ‹ and › when there are more than fit, with the page shown under the row's name; the Board row opens on the page of the screen's own board.
 
 ### Development
 - GameTests start only once their area's chunks tick (a GameTest-server-only mixin, left out of the jars), so a test can no longer run out of ticks before its blocks tick, which made some plasma and cable tests fail depending on where they landed in a batch; the Totem Forge tests are back in the default batch.

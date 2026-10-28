@@ -36,6 +36,8 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
     private List<String> pages;
     private EditBox title;
     private final List<Hit> hits = new ArrayList<>();
+    /** The page of chips shown in the board row and the rotation row when they hold more than fit; the board row opens on the screen's own board. */
+    private int boardPage = -1, rotationPage;
 
     public ScoreScreenConfigScreen(BlockPos origin, ScoreScreenBlockEntity screen) {
         super(Component.translatable("gui.bsp_core.screen.title"));
@@ -146,6 +148,50 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
         hits.add(new Hit(x, y, w, 16, run));
     }
 
+    /**
+     * A row of chips that turns pages with ‹ and › when there are more than {@code fitAll}: then {@code perPage} at a time
+     * between the two keys. {@code on} says which chips are lit, {@code pick} what a click on one does; the page shown is
+     * clamped and returned.
+     */
+    private int chipRow(GuiGraphics g, int row, List<Component> labels, java.util.function.IntPredicate on, java.util.function.IntConsumer pick,
+                        int fitAll, int perPage, int page, int mouseX, int mouseY) {
+        int x = left() + OPT_X, y = rowY(row), n = labels.size();
+        if (n <= fitAll) {
+            int cw = chipWidth(n);
+            for (int i = 0; i < n; i++) {
+                int k = i;
+                option(g, x + i * (cw + 2), y, cw, labels.get(i), on.test(i), mouseX, mouseY, () -> pick.accept(k));
+            }
+            return 0;
+        }
+        int avail = W - OPT_X - 10, pages = (n + perPage - 1) / perPage, p = Math.max(0, Math.min(pages - 1, page));
+        int cw = Math.min(58, (avail - 32 - (perPage - 1) * 2) / perPage);
+        option(g, x, y, 14, Component.literal("\u2039"), false, mouseX, mouseY, () -> turn(row, -1));
+        for (int i = p * perPage; i < Math.min(n, (p + 1) * perPage); i++) {
+            int k = i;
+            option(g, x + 16 + (i - p * perPage) * (cw + 2), y, cw, labels.get(i), on.test(i), mouseX, mouseY, () -> pick.accept(k));
+        }
+        option(g, x + avail - 14, y, 14, Component.literal("\u203A"), false, mouseX, mouseY, () -> turn(row, 1));
+        String where = (p + 1) + "/" + pages;
+        small(g, Component.literal(where), left() + LABEL_X, y + 14, MUTED); // under the row's name, clear of the next row
+        return p;
+    }
+
+    /** The ‹ or › of a paged row (wrapping round at the ends). */
+    private void turn(int row, int step) {
+        List<BspBoards.Board> boards = BspBoards.boards();
+        if (row == 1) {
+            int pages = Math.max(1, (boards.size() + BOARDS_PER_PAGE - 1) / BOARDS_PER_PAGE);
+            boardPage = Math.floorMod(Math.max(0, boardPage) + step, pages);
+        } else {
+            int pages = Math.max(1, (boards.size() + 3 + ROTATION_PER_PAGE - 1) / ROTATION_PER_PAGE);
+            rotationPage = Math.floorMod(rotationPage + step, pages);
+        }
+    }
+
+    /** Chips in a row without paging (4 boards; the 3 built-in pages and 3 boards), and per page when paging. */
+    private static final int BOARDS_FIT = 4, BOARDS_PER_PAGE = 4, ROTATION_FIT = 6, ROTATION_PER_PAGE = 5;
+
     /** A row of chips, {@code count} of them sharing the row's width. */
     private int chipWidth(int count) {
         int avail = W - OPT_X - 10;
@@ -169,22 +215,29 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
             int m = i;
             option(g, x + OPT_X + i * (cw + 2), rowY(0), cw, Component.translatable("gui.bsp_core.screen.mode." + i), mode == i, mouseX, mouseY, () -> { mode = m; send(); });
         }
-        // 1 board: the registered boards
+        // 1 board: the registered boards, every one reachable (‹ › when more than four)
         List<BspBoards.Board> boards = BspBoards.boards();
         if (boards.isEmpty()) {
             small(g, Component.translatable("gui.bsp_core.screen.board.none"), x + OPT_X, rowY(1) + 5, MUTED);
         } else {
-            int bw = chipWidth(Math.min(4, boards.size()));
-            for (int i = 0; i < Math.min(4, boards.size()); i++) {
-                String id = boards.get(i).id().toString();
-                option(g, x + OPT_X + i * (bw + 2), rowY(1), bw, boards.get(i).title(), id.equals(boardId) && (mode == ScoreScreenBlockEntity.MODE_PAGE), mouseX, mouseY, () -> {
-                    boardId = id;
-                    if (id.equals(ClientMarket.BOARD.toString())) {
-                        look = ScoreScreenBlockEntity.LOOK_TILES; // the Market Board's own look (owner's pick); the admin can change it after
+            if (boardPage < 0) { // first frame: the page with this screen's board on it
+                int at = 0;
+                for (int i = 0; i < boards.size(); i++) {
+                    if (boards.get(i).id().toString().equals(boardId)) {
+                        at = i;
                     }
-                    send();
-                });
+                }
+                boardPage = at / BOARDS_PER_PAGE;
             }
+            List<Component> titles = boards.stream().map(BspBoards.Board::title).toList();
+            boardPage = chipRow(g, 1, titles, i -> boards.get(i).id().toString().equals(boardId) && mode == ScoreScreenBlockEntity.MODE_PAGE, i -> {
+                String id = boards.get(i).id().toString();
+                boardId = id;
+                if (id.equals(ClientMarket.BOARD.toString())) {
+                    look = ScoreScreenBlockEntity.LOOK_TILES; // the Market Board's own look (owner's pick); the admin can change it after
+                }
+                send();
+            }, BOARDS_FIT, BOARDS_PER_PAGE, boardPage, mouseX, mouseY);
         }
         // 2 look
         int lw = chipWidth(ScoreScreenBlockEntity.LOOKS);
@@ -197,16 +250,11 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
         List<String> ids = new ArrayList<>(List.of(ScoreScreenBlockEntity.PAGE_SCOREBOARD, ScoreScreenBlockEntity.PAGE_RULES, ScoreScreenBlockEntity.PAGE_PRIZES));
         List<Component> names = new ArrayList<>(List.of(Component.translatable("gui.bsp_core.screen.mode.0"), Component.translatable("gui.bsp_core.screen.mode.1"), Component.translatable("gui.bsp_core.screen.mode.2")));
         for (BspBoards.Board b : boards) {
-            if (ids.size() < 6) {
-                ids.add(b.id().toString());
-                names.add(b.title());
-            }
+            ids.add(b.id().toString());
+            names.add(b.title());
         }
-        int rw = chipWidth(ids.size());
-        for (int i = 0; i < ids.size(); i++) {
-            String id = ids.get(i);
-            option(g, x + OPT_X + i * (rw + 2), rowY(3), rw, names.get(i), rot.contains(id) && mode == ScoreScreenBlockEntity.MODE_ROTATE, mouseX, mouseY, () -> togglePage(id));
-        }
+        rotationPage = chipRow(g, 3, names, i -> rot.contains(ids.get(i)) && mode == ScoreScreenBlockEntity.MODE_ROTATE, i -> togglePage(ids.get(i)),
+                ROTATION_FIT, ROTATION_PER_PAGE, rotationPage, mouseX, mouseY);
         // 4 every: seconds
         option(g, x + OPT_X, rowY(4), 18, Component.literal("-"), false, mouseX, mouseY, () -> { rotate = Mth.clamp(rotate - 5, ScoreScreenBlockEntity.ROTATE_MIN, ScoreScreenBlockEntity.ROTATE_MAX); send(); });
         option(g, x + OPT_X + 100, rowY(4), 18, Component.literal("+"), false, mouseX, mouseY, () -> { rotate = Mth.clamp(rotate + 5, ScoreScreenBlockEntity.ROTATE_MIN, ScoreScreenBlockEntity.ROTATE_MAX); send(); });
