@@ -91,7 +91,18 @@ final class MySqlStore implements AutoCloseable {
         throw last != null ? last : new SQLException("No MySQL or MariaDB JDBC driver is available to BSP-Core");
     }
 
+    /** When the connection was last checked, and until when a failed connect is not tried again. */
+    private long checkedMs, downUntilMs;
+
+    /**
+     * The connection: checked with a round trip at most every 2 seconds (not before every statement); after a failed connect,
+     * calls fail at once for 5 seconds instead of each waiting out a connect timeout behind the others.
+     */
     private Connection conn() throws SQLException {
+        long now = System.currentTimeMillis();
+        if (connection != null && now - checkedMs < 2000) {
+            return connection;
+        }
         if (connection == null || !connection.isValid(2)) {
             if (connection != null) {
                 try {
@@ -99,9 +110,19 @@ final class MySqlStore implements AutoCloseable {
                 } catch (SQLException ignored) {
                     // already gone
                 }
+                connection = null;
             }
-            connection = open();
+            if (now < downUntilMs) {
+                throw new SQLException("the database could not be reached a moment ago; trying again shortly");
+            }
+            try {
+                connection = open();
+            } catch (SQLException e) {
+                downUntilMs = now + 5000;
+                throw e;
+            }
         }
+        checkedMs = now;
         return connection;
     }
 
@@ -137,8 +158,15 @@ final class MySqlStore implements AutoCloseable {
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_accounts") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL DEFAULT '', "
                     + "pieces BIGINT NOT NULL DEFAULT 0, c0 INT NOT NULL DEFAULT 0, c1 INT NOT NULL DEFAULT 0, c2 INT NOT NULL DEFAULT 0, c3 INT NOT NULL DEFAULT 0, c4 INT NOT NULL DEFAULT 0, "
-                    + "accept_pay TINYINT NOT NULL DEFAULT 1, remote_shops TINYINT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, "
+                    + "accept_pay TINYINT NOT NULL DEFAULT 1, remote_shops TINYINT NOT NULL DEFAULT 0, remote_market TINYINT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, "
                     + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX (name))");
+            try { // the Portable Banker's market unlock, added to a bank_accounts made before it
+                st.executeUpdate("ALTER TABLE " + t("bank_accounts") + " ADD COLUMN remote_market TINYINT NOT NULL DEFAULT 0");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                    throw e;
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_log") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, ms BIGINT NOT NULL, "
                     + "type VARCHAR(16) NOT NULL, with_name VARCHAR(64) NOT NULL, detail VARCHAR(255) NOT NULL, pieces BIGINT NOT NULL, coin_tier INT NOT NULL, coin_count INT NOT NULL, "
                     + "server_id VARCHAR(64) NOT NULL, INDEX (uuid, ms))");
@@ -188,6 +216,25 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kit_items") + " (kit VARCHAR(24) NOT NULL, slot INT NOT NULL, item VARCHAR(128) NOT NULL, count INT NOT NULL, nbt MEDIUMTEXT NOT NULL, PRIMARY KEY (kit, slot))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kit_redeems") + " (uuid CHAR(36) NOT NULL, kit VARCHAR(24) NOT NULL, scope VARCHAR(64) NOT NULL DEFAULT '', count INT NOT NULL DEFAULT 0, "
                     + "last_ms BIGINT NOT NULL DEFAULT 0, owed INT NOT NULL DEFAULT 0, PRIMARY KEY (uuid, kit, scope), INDEX (kit))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_lots") + " (id VARCHAR(16) NOT NULL PRIMARY KEY, seller CHAR(36) NOT NULL, seller_name VARCHAR(16) NOT NULL, "
+                    + "price BIGINT NOT NULL, listed_ms BIGINT NOT NULL, ends_ms BIGINT NOT NULL, server_id VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, INDEX (seller), INDEX (listed_ms))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("trade_escrow") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, attempt VARCHAR(48) NOT NULL, owner CHAR(36) NOT NULL, "
+                    + "item MEDIUMTEXT NOT NULL, ms BIGINT NOT NULL, INDEX (attempt), INDEX (ms))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("trade_outcomes") + " (attempt VARCHAR(48) NOT NULL PRIMARY KEY, outcome VARCHAR(8) NOT NULL, ms BIGINT NOT NULL, INDEX (ms))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_collect") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, item MEDIUMTEXT NOT NULL, "
+                    + "taking VARCHAR(48) NULL, taking_ms BIGINT NOT NULL DEFAULT 0, INDEX (uuid), INDEX (taking))");
+            // a Collect box being emptied: its rows are marked with the attempt first and deleted once the items are delivered
+            for (String alter : List.of("ADD COLUMN taking VARCHAR(48) NULL", "ADD COLUMN taking_ms BIGINT NOT NULL DEFAULT 0", "ADD INDEX bsp_taking (taking)")) {
+                try {
+                    st.executeUpdate("ALTER TABLE " + t("market_collect") + " " + alter);
+                } catch (SQLException e) {
+                    if (e.getErrorCode() != 1060 && e.getErrorCode() != 1061) { // 1060 the column, 1061 the index, is there already
+                        throw e;
+                    }
+                }
+            }
+            // what reached the database: listings (by lot id) and held-item writes, so a lost answer can be asked about
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_attempts") + " (id VARCHAR(64) NOT NULL PRIMARY KEY, ms BIGINT NOT NULL, INDEX (ms))");
         }
     }
 
@@ -793,6 +840,7 @@ final class MySqlStore implements AutoCloseable {
         a.granted = true;
         a.acceptPay = rs.getInt("accept_pay") != 0;
         a.remoteShops = rs.getInt("remote_shops") != 0;
+        a.remoteMarket = rs.getInt("remote_market") != 0;
         a.seenMs = rs.getLong("seen_ms");
         return a;
     }
@@ -859,10 +907,15 @@ final class MySqlStore implements AutoCloseable {
 
     /** Moves pieces between two accounts in one transaction. */
     BankResult bankTransfer(UUID from, UUID to, long amount) throws SQLException {
+        return SqlRetry.once(() -> bankTransferOnce(from, to, amount));
+    }
+
+    private BankResult bankTransferOnce(UUID from, UUID to, long amount) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
         try {
+            lockAccounts(c, from, to); // both rows, in UUID order, before anything else
             try (PreparedStatement ps = c.prepareStatement("SELECT accept_pay FROM " + t("bank_accounts") + " WHERE uuid = ? FOR UPDATE")) {
                 ps.setString(1, to.toString());
                 try (ResultSet rs = ps.executeQuery()) {
@@ -907,7 +960,7 @@ final class MySqlStore implements AutoCloseable {
         }
     }
 
-    void bankFlags(UUID id, Boolean acceptPay, Boolean remoteShops, Long seenMs) throws SQLException {
+    void bankFlags(UUID id, Boolean acceptPay, Boolean remoteShops, Boolean remoteMarket, Long seenMs) throws SQLException {
         if (acceptPay != null) {
             try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET accept_pay = ? WHERE uuid = ?")) {
                 ps.setInt(1, acceptPay ? 1 : 0);
@@ -918,6 +971,13 @@ final class MySqlStore implements AutoCloseable {
         if (remoteShops != null) {
             try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET remote_shops = ? WHERE uuid = ?")) {
                 ps.setInt(1, remoteShops ? 1 : 0);
+                ps.setString(2, id.toString());
+                ps.executeUpdate();
+            }
+        }
+        if (remoteMarket != null) {
+            try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET remote_market = ? WHERE uuid = ?")) {
+                ps.setInt(1, remoteMarket ? 1 : 0);
                 ps.setString(2, id.toString());
                 ps.executeUpdate();
             }
@@ -994,7 +1054,7 @@ final class MySqlStore implements AutoCloseable {
 
     void bankResetRemote() throws SQLException {
         try (Statement st = conn().createStatement()) {
-            st.executeUpdate("UPDATE " + t("bank_accounts") + " SET remote_shops = 0");
+            st.executeUpdate("UPDATE " + t("bank_accounts") + " SET remote_shops = 0, remote_market = 0");
         }
     }
 
@@ -1651,5 +1711,624 @@ final class MySqlStore implements AutoCloseable {
             }
         }
         return out;
+    }
+
+    // ------------------------------------------------------------------ the marketplace (one transaction per call)
+
+    private interface Tx<T> {
+        T run(Connection c) throws SQLException;
+    }
+
+    /**
+     * Runs {@code work} as one transaction. A failure before the commit (no connection, a statement, rolled back) throws
+     * {@link com.mrgregles.bsp_core.market.MarketDb.Untouched}: nothing changed. A failure at the commit throws as it is: the
+     * change may have been made with only the answer lost.
+     */
+    private <T> T inTransaction(Tx<T> work) throws SQLException {
+        try {
+            return inTransactionOnce(work);
+        } catch (com.mrgregles.bsp_core.market.MarketDb.Untouched e) {
+            if (!SqlRetry.lockFailure(e)) {
+                throw e;
+            }
+            // MySQL ended it over a lock (a deadlock with another server, or a lock wait timeout) and rolled it back: once more
+            return inTransactionOnce(work);
+        }
+    }
+
+    private <T> T inTransactionOnce(Tx<T> work) throws SQLException {
+        Connection c;
+        boolean auto;
+        try {
+            c = conn();
+            auto = c.getAutoCommit();
+            c.setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new com.mrgregles.bsp_core.market.MarketDb.Untouched(e);
+        }
+        try {
+            T out;
+            try {
+                out = work.run(c);
+            } catch (SQLException | RuntimeException e) {
+                try {
+                    c.rollback();
+                } catch (SQLException ignored) {
+                    // a dead connection rolls back by itself
+                }
+                if (e instanceof SQLException se) {
+                    throw new com.mrgregles.bsp_core.market.MarketDb.Untouched(se);
+                }
+                throw e;
+            }
+            c.commit();
+            return out;
+        } finally {
+            try {
+                c.setAutoCommit(auto);
+            } catch (SQLException ignored) {
+                // the next conn() checks the connection anyway
+            }
+        }
+    }
+
+    /** Thrown inside a market transaction to roll it back with a reason instead of an error. */
+    private static final class MarketNo extends RuntimeException {
+        final String key;
+
+        MarketNo(String key) {
+            super(key, null, false, false);
+            this.key = key;
+        }
+    }
+
+    private <T> T marketTx(Tx<T> work, java.util.function.Function<String, T> no) throws SQLException {
+        try {
+            return inTransaction(work);
+        } catch (MarketNo n) {
+            return no.apply(n.key);
+        }
+    }
+
+    /**
+     * Locks bank rows in one statement, in UUID order, so two transactions that both touch the same two accounts (a purchase
+     * each way, a purchase and a payment, two trades) always take them in the same order and cannot deadlock.
+     */
+    private void lockAccounts(Connection c, UUID... ids) throws SQLException {
+        java.util.TreeSet<String> sorted = new java.util.TreeSet<>();
+        for (UUID id : ids) {
+            sorted.add(id.toString());
+        }
+        String marks = String.join(", ", java.util.Collections.nCopies(sorted.size(), "?"));
+        try (PreparedStatement ps = c.prepareStatement("SELECT uuid FROM " + t("bank_accounts") + " WHERE uuid IN (" + marks + ") ORDER BY uuid FOR UPDATE")) {
+            int i = 1;
+            for (String id : sorted) {
+                ps.setString(i++, id);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // locked
+                }
+            }
+        }
+    }
+
+    /** Pays {@code tax} into the lottery pot in one statement that takes the row's write lock at once (and makes the row if it is missing). */
+    private void toPot(Connection c, long tax) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bank_accounts") + " (uuid, name, pieces) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE pieces = pieces + ?")) {
+            ps.setString(1, com.mrgregles.bsp_core.market.Market.POT.toString());
+            ps.setString(2, com.mrgregles.bsp_core.market.Market.POT_NAME);
+            ps.setLong(3, tax);
+            ps.setLong(4, tax);
+            ps.executeUpdate();
+        }
+    }
+
+    private void ensurePot(Connection c) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("bank_accounts") + " (uuid, name, pieces) VALUES (?, ?, 0)")) {
+            ps.setString(1, com.mrgregles.bsp_core.market.Market.POT.toString());
+            ps.setString(2, com.mrgregles.bsp_core.market.Market.POT_NAME);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Adds {@code delta} to an account; with a negative delta only if the balance covers it. False when it did not change. */
+    private boolean addPieces(Connection c, UUID id, long delta) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces + ? WHERE uuid = ? AND pieces + ? >= 0")) {
+            ps.setLong(1, delta);
+            ps.setString(2, id.toString());
+            ps.setLong(3, delta);
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    private long piecesOf(Connection c, UUID id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT pieces FROM " + t("bank_accounts") + " WHERE uuid = ?")) {
+            ps.setString(1, id.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : -1;
+            }
+        }
+    }
+
+    private void insertLot(Connection c, com.mrgregles.bsp_core.market.MarketLot lot, boolean ignore) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT " + (ignore ? "IGNORE " : "") + "INTO " + t("market_lots")
+                + " (id, seller, seller_name, price, listed_ms, ends_ms, server_id, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, lot.id);
+            ps.setString(2, lot.seller.toString());
+            ps.setString(3, lot.sellerName.length() > 16 ? lot.sellerName.substring(0, 16) : lot.sellerName);
+            ps.setLong(4, lot.price);
+            ps.setLong(5, lot.listedMs);
+            ps.setLong(6, lot.endsMs);
+            ps.setString(7, lot.server);
+            ps.setString(8, lot.save().toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** The open lot, locked for this transaction; null when it is not there. */
+    @javax.annotation.Nullable
+    private com.mrgregles.bsp_core.market.MarketLot lockLot(Connection c, String id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT data FROM " + t("market_lots") + " WHERE id = ? FOR UPDATE")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? lotOf(rs.getString(1)) : null;
+            }
+        }
+    }
+
+    private void deleteLot(Connection c, String id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("market_lots") + " WHERE id = ?")) {
+            ps.setString(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    private static com.mrgregles.bsp_core.market.MarketLot lotOf(String data) throws SQLException {
+        try {
+            return com.mrgregles.bsp_core.market.MarketLot.load(net.minecraft.nbt.TagParser.parseTag(data));
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            throw new SQLException("unreadable market lot: " + e.getMessage());
+        }
+    }
+
+    private void insertCollect(Connection c, UUID player, java.util.List<net.minecraft.world.item.ItemStack> items) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("market_collect") + " (uuid, item) VALUES (?, ?)")) {
+            for (net.minecraft.world.item.ItemStack s : items) {
+                if (s.isEmpty()) {
+                    continue;
+                }
+                ps.setString(1, player.toString());
+                ps.setString(2, s.save(new net.minecraft.nbt.CompoundTag()).toString());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    private java.util.List<net.minecraft.world.item.ItemStack> readCollect(Connection c, UUID player, boolean lock) throws SQLException {
+        java.util.List<net.minecraft.world.item.ItemStack> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = c.prepareStatement("SELECT item FROM " + t("market_collect") + " WHERE uuid = ? AND taking IS NULL ORDER BY id" + (lock ? " FOR UPDATE" : ""))) {
+            ps.setString(1, player.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        net.minecraft.world.item.ItemStack s = net.minecraft.world.item.ItemStack.of(net.minecraft.nbt.TagParser.parseTag(rs.getString(1)));
+                        if (!s.isEmpty()) {
+                            out.add(s);
+                        }
+                    } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core market: an unreadable item in {}'s Collect box was skipped: {}", player, e.getMessage());
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    com.mrgregles.bsp_core.market.MarketDb.Done marketList(com.mrgregles.bsp_core.market.MarketLot lot, long tax, int maxLots) throws SQLException {
+        return marketTx(c -> {
+            // the seller's row first: their listings on every server queue here, so the count below sees all of them
+            lockAccounts(c, lot.seller);
+            try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + t("market_lots") + " WHERE seller = ?")) {
+                ps.setString(1, lot.seller.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) >= maxLots) {
+                        throw new MarketNo("lots");
+                    }
+                }
+            }
+            if (tax > 0) {
+                if (!addPieces(c, lot.seller, -tax)) {
+                    throw new MarketNo("short");
+                }
+                toPot(c, tax);
+            }
+            insertLot(c, lot, false);
+            insertAttempt(c, lot.id);
+            return new com.mrgregles.bsp_core.market.MarketDb.Done("ok", lot, piecesOf(c, lot.seller), -1, piecesOf(c, com.mrgregles.bsp_core.market.Market.POT));
+        }, com.mrgregles.bsp_core.market.MarketDb.Done::no);
+    }
+
+    /** Creates the lottery pot's empty bank row if it is not there (at start, so every way into the pot finds it). */
+    void marketEnsurePot() throws SQLException {
+        ensurePot(conn());
+    }
+
+    /** Records that an attempt reached the database; false when it was there already. */
+    private boolean insertAttempt(Connection c, String id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("market_attempts") + " (id, ms) VALUES (?, ?)")) {
+            ps.setString(1, id);
+            ps.setLong(2, System.currentTimeMillis());
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    /** Whether a listing (by its lot id) or a held-item write reached the database. */
+    boolean marketCommitted(String attempt) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT 1 FROM " + t("market_attempts") + " WHERE id = ?")) {
+            ps.setString(1, attempt);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /**
+     * Writes what a server held while the database was away, in one transaction, at most once per {@code attempt}: lots from
+     * before the network (each at most once, by its id), Collect boxes, and listings whose answer was lost ({@code unsure}:
+     * dropped when the listing went in, else their items go to the seller's Collect box).
+     */
+    void marketFlush(String attempt, java.util.List<com.mrgregles.bsp_core.market.MarketLot> lots, java.util.List<com.mrgregles.bsp_core.market.MarketLot> unsure,
+                     java.util.Map<UUID, java.util.List<net.minecraft.world.item.ItemStack>> boxes) throws SQLException {
+        inTransaction(c -> {
+            if (!insertAttempt(c, attempt)) {
+                return false; // written before; only its answer was lost
+            }
+            for (com.mrgregles.bsp_core.market.MarketLot lot : lots) {
+                if (insertAttempt(c, lot.id)) {
+                    insertLot(c, lot, true);
+                }
+            }
+            for (com.mrgregles.bsp_core.market.MarketLot lot : unsure) {
+                if (insertAttempt(c, lot.id)) { // the listing never went in: its stacks are the seller's again
+                    insertCollect(c, lot.seller, lot.items());
+                }
+            }
+            for (var e : boxes.entrySet()) {
+                insertCollect(c, e.getKey(), e.getValue());
+            }
+            return true;
+        });
+    }
+
+    /** Marks of boxes being emptied that were never finished (a server stopped between taking and delivering) go back; old attempt records go. */
+    void marketSweep(long now) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("market_collect") + " SET taking = NULL, taking_ms = 0 WHERE taking IS NOT NULL AND taking_ms < ?")) {
+            ps.setLong(1, now - 10 * 60_000L);
+            int n = ps.executeUpdate();
+            if (n > 0) {
+                com.mrgregles.bsp_core.BSPCore.LOGGER.warn("BSP-Core market: {} Collect box stack(s) left half taken went back into their boxes", n);
+            }
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("market_attempts") + " WHERE ms < ?")) {
+            ps.setLong(1, now - 30L * 24 * 60 * 60_000L);
+            ps.executeUpdate();
+        }
+    }
+
+    /** The open lots' ids, newest first: no lot data, so cheap however heavy the lots are. */
+    java.util.List<String> marketOpenIds() throws SQLException {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id FROM " + t("market_lots") + " ORDER BY listed_ms DESC")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(rs.getString(1));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The lots with these ids (those still open), read in batches of 200. */
+    java.util.List<com.mrgregles.bsp_core.market.MarketLot> marketLots(java.util.List<String> ids) throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.market.MarketLot> out = new java.util.ArrayList<>();
+        for (int from = 0; from < ids.size(); from += 200) {
+            java.util.List<String> part = ids.subList(from, Math.min(ids.size(), from + 200));
+            String marks = String.join(", ", java.util.Collections.nCopies(part.size(), "?"));
+            try (PreparedStatement ps = conn().prepareStatement("SELECT id, data FROM " + t("market_lots") + " WHERE id IN (" + marks + ")")) {
+                for (int i = 0; i < part.size(); i++) {
+                    ps.setString(i + 1, part.get(i));
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        try {
+                            out.add(lotOf(rs.getString(2)));
+                        } catch (SQLException e) {
+                            com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core market: lot {} is unreadable and was left out: {}", rs.getString(1), e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    com.mrgregles.bsp_core.market.MarketDb.Done marketBuy(String id, UUID buyer, long tax, long now) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.market.MarketLot lot = lockLot(c, id);
+            if (lot == null || lot.endedBy(now)) {
+                throw new MarketNo("gone");
+            }
+            if (lot.seller.equals(buyer)) {
+                throw new MarketNo("own");
+            }
+            lockAccounts(c, buyer, lot.seller);
+            if (!addPieces(c, buyer, -(lot.price + tax))) {
+                throw new MarketNo("short");
+            }
+            if (!addPieces(c, lot.seller, lot.price)) {
+                throw new MarketNo("seller"); // no bank row for the seller on the network: nobody would be paid
+            }
+            if (tax > 0) {
+                toPot(c, tax);
+            }
+            insertCollect(c, buyer, lot.items()); // the items are the buyer's from this commit on, whatever happens to the answer
+            deleteLot(c, id);
+            return new com.mrgregles.bsp_core.market.MarketDb.Done("ok", lot, piecesOf(c, buyer), piecesOf(c, lot.seller), piecesOf(c, com.mrgregles.bsp_core.market.Market.POT));
+        }, com.mrgregles.bsp_core.market.MarketDb.Done::no);
+    }
+
+    com.mrgregles.bsp_core.market.MarketDb.Done marketClose(String id) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.market.MarketLot lot = lockLot(c, id);
+            if (lot == null) {
+                throw new MarketNo("gone");
+            }
+            insertCollect(c, lot.seller, lot.items());
+            deleteLot(c, id);
+            return new com.mrgregles.bsp_core.market.MarketDb.Done("ok", lot, -1, -1, -1);
+        }, com.mrgregles.bsp_core.market.MarketDb.Done::no);
+    }
+
+    void marketAddCollect(UUID player, java.util.List<net.minecraft.world.item.ItemStack> items) throws SQLException {
+        inTransaction(c -> {
+            insertCollect(c, player, items);
+            return true;
+        });
+    }
+
+    /** Marks what is in the player's box with {@code attempt} and returns it; the rows stay until {@link #marketTaken}. */
+    java.util.List<net.minecraft.world.item.ItemStack> marketTakeCollect(UUID player, String attempt) throws SQLException {
+        return inTransaction(c -> {
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("market_collect") + " SET taking = ?, taking_ms = ? WHERE uuid = ? AND taking IS NULL")) {
+                ps.setString(1, attempt);
+                ps.setLong(2, System.currentTimeMillis());
+                ps.setString(3, player.toString());
+                ps.executeUpdate();
+            }
+            java.util.List<net.minecraft.world.item.ItemStack> out = new java.util.ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement("SELECT item FROM " + t("market_collect") + " WHERE taking = ? ORDER BY id")) {
+                ps.setString(1, attempt);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        try {
+                            net.minecraft.world.item.ItemStack s = net.minecraft.world.item.ItemStack.of(net.minecraft.nbt.TagParser.parseTag(rs.getString(1)));
+                            if (!s.isEmpty()) {
+                                out.add(s);
+                            }
+                        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                            com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core market: an unreadable item in {}'s Collect box was skipped: {}", player, e.getMessage());
+                        }
+                    }
+                }
+            }
+            return out;
+        });
+    }
+
+    /** The items of {@code attempt} were delivered: their rows go. */
+    void marketTaken(String attempt) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("market_collect") + " WHERE taking = ?")) {
+            ps.setString(1, attempt);
+            ps.executeUpdate();
+        }
+    }
+
+    /** The items of {@code attempt} were not delivered (its answer was lost): back into the box. */
+    void marketUntake(String attempt) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("market_collect") + " SET taking = NULL, taking_ms = 0 WHERE taking = ?")) {
+            ps.setString(1, attempt);
+            ps.executeUpdate();
+        }
+    }
+
+    java.util.List<net.minecraft.world.item.ItemStack> marketPeekCollect(UUID player) throws SQLException {
+        return readCollect(conn(), player, false);
+    }
+
+    // ------------------------------------------------------------------ live trades across servers (one transaction per call)
+
+    /** "done" or "aborted" for an attempt, or null when undecided; locks the row when it exists. */
+    @javax.annotation.Nullable
+    private String tradeOutcome(Connection c, String attempt) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT outcome FROM " + t("trade_outcomes") + " WHERE attempt = ? FOR UPDATE")) {
+            ps.setString(1, attempt);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
+
+    /** Writes the attempt's outcome; false when one was already written (the other one wins). */
+    private boolean decide(Connection c, String attempt, String outcome) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("trade_outcomes") + " (attempt, outcome, ms) VALUES (?, ?, ?)")) {
+            ps.setString(1, attempt);
+            ps.setString(2, outcome);
+            ps.setLong(3, System.currentTimeMillis());
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    private void addPending(Connection c, UUID player, java.util.List<net.minecraft.world.item.ItemStack> items) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("pending_items") + " (uuid, item) VALUES (?, ?)")) {
+            for (net.minecraft.world.item.ItemStack s : items) {
+                if (s.isEmpty()) {
+                    continue;
+                }
+                ps.setString(1, player.toString());
+                ps.setString(2, s.save(new net.minecraft.nbt.CompoundTag()).toString());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /** The escrow rows of an owner for an attempt, as items; deletes them. */
+    private java.util.List<net.minecraft.world.item.ItemStack> takeEscrow(Connection c, String attempt, UUID owner) throws SQLException {
+        java.util.List<net.minecraft.world.item.ItemStack> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = c.prepareStatement("SELECT item FROM " + t("trade_escrow") + " WHERE attempt = ? AND owner = ? ORDER BY id FOR UPDATE")) {
+            ps.setString(1, attempt);
+            ps.setString(2, owner.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        net.minecraft.world.item.ItemStack s = net.minecraft.world.item.ItemStack.of(net.minecraft.nbt.TagParser.parseTag(rs.getString(1)));
+                        if (!s.isEmpty()) {
+                            out.add(s);
+                        }
+                    } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core trade: an unreadable escrow item of attempt {} was skipped: {}", attempt, e.getMessage());
+                    }
+                }
+            }
+        }
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("trade_escrow") + " WHERE attempt = ? AND owner = ?")) {
+            ps.setString(1, attempt);
+            ps.setString(2, owner.toString());
+            ps.executeUpdate();
+        }
+        return out;
+    }
+
+    com.mrgregles.bsp_core.trade.TradeDb.Settled tradeSettle(String attempt, UUID a, long aPieces, UUID b, long bPieces, java.util.List<net.minecraft.world.item.ItemStack> hostItems,
+                                                             @javax.annotation.Nullable UUID hostItemsTo, @javax.annotation.Nullable UUID escrowOwner, @javax.annotation.Nullable UUID escrowTo) throws SQLException {
+        try {
+            return inTransaction(c -> {
+                if (!decide(c, attempt, "done")) {
+                    throw new MarketNo("aborted");
+                }
+                if (aPieces > 0 || bPieces > 0) {
+                    lockAccounts(c, a, b);
+                }
+                if (aPieces > 0 && !addPieces(c, a, -aPieces)) {
+                    throw new MarketNo("short_a");
+                }
+                if (bPieces > 0 && !addPieces(c, b, -bPieces)) {
+                    throw new MarketNo("short_b");
+                }
+                if (aPieces > 0) {
+                    addPieces(c, b, aPieces);
+                }
+                if (bPieces > 0) {
+                    addPieces(c, a, bPieces);
+                }
+                if (hostItemsTo != null) {
+                    addPending(c, hostItemsTo, hostItems);
+                }
+                if (escrowOwner != null && escrowTo != null) {
+                    addPending(c, escrowTo, takeEscrow(c, attempt, escrowOwner));
+                }
+                return new com.mrgregles.bsp_core.trade.TradeDb.Settled("ok", piecesOf(c, a), piecesOf(c, b));
+            });
+        } catch (MarketNo n) {
+            return new com.mrgregles.bsp_core.trade.TradeDb.Settled(n.key, -1, -1);
+        }
+    }
+
+    void tradeEscrow(String attempt, UUID owner, java.util.List<net.minecraft.world.item.ItemStack> items) throws SQLException {
+        inTransaction(c -> {
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("trade_escrow") + " (attempt, owner, item, ms) VALUES (?, ?, ?, ?)")) {
+                long now = System.currentTimeMillis();
+                for (net.minecraft.world.item.ItemStack s : items) {
+                    ps.setString(1, attempt);
+                    ps.setString(2, owner.toString());
+                    ps.setString(3, s.save(new net.minecraft.nbt.CompoundTag()).toString());
+                    ps.setLong(4, now);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            insertAttempt(c, "e:" + attempt); // so a lost answer can be asked about (market_attempts)
+            return true;
+        });
+    }
+
+    /** See {@link com.mrgregles.bsp_core.trade.TradeDb#recoverEscrow}. */
+    com.mrgregles.bsp_core.trade.TradeDb.Recovered tradeRecoverEscrow(String attempt, UUID owner) throws SQLException {
+        return inTransaction(c -> {
+            decide(c, attempt, "aborted");
+            String outcome = tradeOutcome(c, attempt);
+            boolean escrowed;
+            try (PreparedStatement ps = c.prepareStatement("SELECT 1 FROM " + t("market_attempts") + " WHERE id = ?")) {
+                ps.setString(1, "e:" + attempt);
+                try (ResultSet rs = ps.executeQuery()) {
+                    escrowed = rs.next();
+                }
+            }
+            if (!"aborted".equals(outcome)) {
+                return new com.mrgregles.bsp_core.trade.TradeDb.Recovered(outcome == null ? "aborted" : outcome, escrowed, java.util.List.of());
+            }
+            return new com.mrgregles.bsp_core.trade.TradeDb.Recovered("aborted", escrowed, takeEscrow(c, attempt, owner));
+        });
+    }
+
+    String tradeDecideAbort(String attempt) throws SQLException {
+        return inTransaction(c -> {
+            decide(c, attempt, "aborted");
+            String o = tradeOutcome(c, attempt);
+            return o == null ? "aborted" : o;
+        });
+    }
+
+    java.util.List<net.minecraft.world.item.ItemStack> tradeTakeEscrow(String attempt, UUID owner) throws SQLException {
+        return inTransaction(c -> {
+            if (!"aborted".equals(tradeOutcome(c, attempt))) {
+                return java.util.List.of();
+            }
+            return takeEscrow(c, attempt, owner);
+        });
+    }
+
+    /** Escrow older than {@code beforeMs}: each attempt is decided "aborted" unless done, and its items go to their owners as pending items. */
+    int tradeSweep(long beforeMs) throws SQLException {
+        java.util.List<String[]> rows = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT DISTINCT attempt, owner FROM " + t("trade_escrow") + " WHERE ms < ?")) {
+            ps.setLong(1, beforeMs);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new String[]{rs.getString(1), rs.getString(2)});
+                }
+            }
+        }
+        int n = 0;
+        for (String[] r : rows) {
+            n += inTransaction(c -> {
+                decide(c, r[0], "aborted");
+                if (!"aborted".equals(tradeOutcome(c, r[0]))) {
+                    return 0;
+                }
+                UUID owner = UUID.fromString(r[1]);
+                java.util.List<net.minecraft.world.item.ItemStack> items = takeEscrow(c, r[0], owner);
+                addPending(c, owner, items);
+                return items.size();
+            });
+        }
+        // outcome rows a day old: every attempt that could ask about them has long ended (decision D5)
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("trade_outcomes") + " WHERE ms < ?")) {
+            ps.setLong(1, System.currentTimeMillis() - 24L * 60 * 60_000L);
+            ps.executeUpdate();
+        }
+        return n;
     }
 }

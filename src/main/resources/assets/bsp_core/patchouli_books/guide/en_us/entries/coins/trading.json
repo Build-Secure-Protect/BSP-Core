@@ -1,0 +1,22 @@
+{
+  "name": "Trading with Players",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:trade_post",
+  "sortnum": 12,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A request lasts 30 seconds and comes up as a card on the other player's screen, with $(l)ACCEPT$() and $(l)DECLINE$(). You can have one request out at a time; $(l)TAKE BACK$() withdraws it.$(br2)Accepted, you both get the trade screen: your 12 offer places at the left, theirs at the right, a pieces box under each, and a chat between the two of you."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "You see what the other player puts in as they do it. Any change to either offer turns both $(l)READY$() lights off, so nobody is shown one thing and given another.$(br2)When you are both ready, five lights count down 5 seconds and the offers lock. Press READY again to stop. At the end the items and pieces cross over in one go.",
+      "title": "Ready"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Before anything moves, the trade checks that both of you have room for what you are getting. If not, nothing moves and you are told who is short of space.$(br2)Closing the screen, walking more than 8 blocks from the post, logging out or dying ends the trade, and your offer comes back to you.$(br2)Shatter Totems and Totem Cores never go into an offer.",
+      "title": "Room and leaving"
+    }
+  ]
+}

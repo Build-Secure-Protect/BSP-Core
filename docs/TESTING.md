@@ -1968,3 +1968,290 @@ Covered by GameTest `totem_forge_intake_gives_up_empty_buckets` (a lava bucket g
 
 - [ ] Build a mechanical piston or bearing contraption with a placed Shatter Totem glued to it: assembly fails at the totem (Create names the block it cannot move), and the totem stays where it was, owner and upgrades unchanged.
 - [ ] The same with a Totem Forge controller.
+
+## Marketplace rules (Trade Post task 1, 2026-10-27)
+
+Written before the Trade Post existed, so these checks use the operator commands (they still work); the same steps on the Trade Post screen are under "The Trade Post screen". Covered by GameTests in batch `trade_post`: `market_listing_charges_the_tax_and_refuses_what_it_must` (totems, Totem Cores and a shulker box holding a core refused and handed back; empty lots, too many stacks and a price of 0 refused; the 5% tax paid into the lottery pot at listing, rounded up; the 10-lot limit; no lot without pieces for the tax), `market_buying_moves_pieces_tax_and_items_once` (own lot refused; too few pieces moves nothing; a purchase pays the seller the price and the pot both taxes; an offline buyer's stacks wait in the Collect box; a second buyer gets nothing; one `MarketEvent.Sold`; a payment that fails after the lot was taken puts it back), `market_cancel_and_expiry_send_the_lot_to_collect` (only the seller cancels; the tax is not refunded; a lot past its end cannot be bought and the sweep moves it to Collect, not a moment early; collecting into a full inventory leaves the rest in the box), `market_ledger_keeps_lots_and_collect_boxes_through_a_save`. 179/179 GameTests twice. Single server only: the network store is task 2. Not seen in a client.
+
+You need two accounts (an operator and a second player, or two operators).
+
+- [ ] Operator A holds 64 Diamonds: `/bsp market sell 1000`. Chat names the lot id and "tax paid 50"; the hand is empty; `/bank` shows a TAX line of -50; `/bsp market pot` has risen by 50.
+- [ ] `/bsp market list`: the lot, its id, "ends in 6 d 23 h".
+- [ ] Hold a Shatter Totem, then a Totem Core, then a shulker box with a Totem Core inside: `sell 100` is refused each time and the item is back in the inventory; nothing is charged.
+- [ ] `/bsp market buy <id>` as A: "That is your own lot."
+- [ ] Player B with at least 1,050 pieces (an operator for now): `/bsp market buy <id>`. B's inventory gets the Diamonds; B's bank shows a MARKET line of -1,050; A gets "your lot … sold to B for 1,000 pieces" and a MARKET line of +1,000; the pot has risen by another 50.
+- [ ] `buy <id>` again: "That lot is no longer on the market."
+- [ ] A lists again and logs out; B buys it; A logs in: "While you were away: 1 market sale(s), … pieces in all."
+- [ ] A lists a lot, then `/bsp market cancel <id>`: "its items wait in A's Collect box"; `/bsp market box A` lists them; A's listing tax is not given back; A `/bsp market collect` gets them back. With a full inventory, the rest stays: run `collect` again after making room.
+- [ ] Set `market.listingDays` to 1 in the server config, list a lot, wait a day (or move the server clock): within 30 seconds of the end A is told it ran out and it waits in the Collect box.
+- [ ] Add `"minecraft:elytra"` to `market.refusedItems`, reload, try to list an Elytra: refused.
+
+## The marketplace across the network (Trade Post task 2, 2026-10-27)
+
+Covered by GameTests in batch `trade_post`, with an in-memory database shared by two market copies standing in for two servers: `market_network_two_servers_share_lots_and_sell_each_once` (a lot listed on A is seen on B; the tax moves in the database and A's bank copy follows; Ari on A and Bea on B buy at the same moment while B has not heard of the sale: the database sells it once, Bea pays nothing and B drops the lot; Ari collects the stacks on the other server; an ended lot swept by both servers reaches the Collect box once) and `market_network_failures_and_late_answers_move_nothing_twice` (database down: a listing charges nothing and hands the stack back, a purchase stays unbought, a collect takes nothing; a late answer decides nothing until it arrives; a Collect box that cannot be written waits on the server, shows in the box, and is written at the next refresh). 181/181 GameTests twice. **The real MySQL transactions and the Redis notices are untested here** (no database on this machine); the in-game checks below need two servers on the network database. Not seen in a client.
+
+- [ ] Start both servers: each log has "connected to MySQL"; the database has the tables `market_lots` and `market_collect` and a `bank_accounts` row named "Lottery pot" with 0 pieces.
+- [ ] On server 1, operator A: `/bsp market sell 1000` with 64 Diamonds in hand. On server 2, `/bsp market list` shows the lot within a second with Redis (within a minute without). The `market_lots` table has its row; A's `bank_accounts` row is 50 lower; the pot row is 50 higher.
+- [ ] On server 2, player B: `/bsp market buy <id>`. B gets the Diamonds; A (on server 1) gets the "sold" message; the row is gone from `market_lots`; balances in the database: B -1,050, A +1,000, pot +50. `/bank` on both servers shows the new balances.
+- [ ] Race: list a lot, then have B on server 2 and C on server 1 run `/bsp market buy <id>` as close together as you can. One gets it; the other is told it is no longer on the market and their balance is unchanged.
+- [ ] A cancels a lot on server 1, then on server 2 `/bsp market box A` lists its items and A `/bsp market collect` there gets them.
+- [ ] Stop MySQL while both servers run: `/bsp market sell 100` hands the stack back with "The market could not be reached"; `/bsp market buy <id>` leaves the lot listed; nothing is charged. Start MySQL again: everything works without a restart.
+- [ ] Set `market.listingDays` to 1 on both servers and let a lot end: the seller's Collect box gets its items once (one row per stack in `market_collect`), not twice.
+
+## Live trades, the rules (Trade Post task 3, 2026-10-27)
+
+Server side; the checks in game are under "The trade screen" (task 8). Covered by GameTests in batch `trade_post` with mock players: `trade_requests_last_30_seconds_one_at_a_time` (only players at a Trade Post ask and are asked; no asking yourself; one request out; declining ends it; it runs out after 30 s; a busy player cannot be asked; the trader list shows the others with busy marks, never yourself; leaving ends the trade), `trade_any_change_drops_both_ready_and_the_countdown_locks` (shift-click into the offer; the other side sees it and cannot take it; totems and Totem Cores refused; pieces checked against the bank at READY; a change of pieces or items turns both lights off; the countdown locks slots and pieces; un-ready stops it; a change forced in during the countdown stops it; chat cleaned of formatting codes and capped at 120), `trade_completes_after_the_countdown_and_moves_items_and_pieces` (not a tick before 5 s; items and 250 pieces cross over; one `TradeEvent.Completed`), `trade_space_is_worked_out_and_nothing_moves_when_short` (stacking onto a part stack counts; a player with room for 1 of 3 stacks: nothing moves, both lights off, the note names the room), `trade_cancel_gives_the_items_back_and_drops_what_does_not_fit` (leaving gives both offers back, what does not fit drops at the feet; more than 8 blocks from the post closes the menu and cancels). 186/186 GameTests twice.
+
+## Live trades across the network (Trade Post task 4, 2026-10-27)
+
+Server side; the checks in game, on two servers, are under "The trade screen" (task 8). Covered by GameTests in batch `trade_post`, with two trade hubs as servers s1 and s2 on a loopback link that can lose messages and an in-memory database: `trade_across_servers_hands_over_once` (Ann on s1 sees Ben on s2, asks, Ben accepts on s2; offers and pieces cross the link; the countdown locks both sides; the hand-over moves 64 Diamonds one way, 3 Emeralds and 200 pieces the other, once; no escrow or pending left), `trade_across_servers_checks_room_on_the_other_server` (Ben's full inventory: nothing goes into escrow, both offers stay, the note names his room), `trade_across_servers_gives_everything_back_when_a_server_goes_quiet` (Ben's offer in escrow, then the link goes down: s1 decides the attempt aborted and gives Ann her Diamonds back; s2 reads the outcome itself and gives Ben his Emeralds back; nothing doubled or lost, no pieces moved), `trade_across_servers_finishes_when_the_done_message_is_lost` (s1 finishes, the "done" message is lost: s2 reads "done" from the database and delivers Ben's Diamonds once; the sweep sends escrow left from an old attempt back to its owner). 190/190 GameTests twice. **The real MySQL transactions and Redis messages are untested here**; the player checks come with the screen (task 8). Known window: if a server stops in the half-second while a one-server trade's pieces are moving on the network, the pieces may move without the items.
+
+## The Trade Post block (Trade Post task 5, 2026-10-27)
+
+Covered by GameTests in batch `trade_post`: `trade_post_stands_as_four_parts_facing_the_placer` (four parts facing the placer, the wing to the clockwise side, each finds the controller, only the controller has a block entity, light 7; a block in the way refuses the place), `trade_post_falls_together_and_lets_its_traders_go` (a player cannot break it; one part removed takes the other three; broken while two players trade at it, the trade ends, the items come back, nobody is left at the post), `trade_post_keys_open_their_page_whichever_way_it_faces` (each key's middle opens its page in all four facings; the screen and the drawer bay open MARKET). 193/193 GameTests twice. The baked model was checked from its JSON in a three.js view (the deck slopes up toward the screen); not seen in a client.
+
+- [ ] Creative, as an admin: the Trade Post is in the BSP tab. Place it facing north, east, south and west: the screen faces you each time, the desk is on the lower two blocks and the monitor above; it stands two wide, with the second column on your left.
+- [ ] Try to place it where any of the four places is taken: nothing is placed.
+- [ ] Survival (not an admin): it cannot be mined; TNT next to it leaves it standing; a piston cannot push it.
+- [ ] As an admin, break the upper left part: all four parts go, nothing drops.
+- [ ] Right-click each of the four keys on the sloped deck: the Trade Post screen opens on MARKET, SELL, COLLECT, and the market for TRADE, as they sit left to right. Right-click the screen, the drawer bay or the side: MARKET.
+- [ ] At night it gives off a little light; the drawer bay's amber strip, the kick plate stripes and the key lamps are bright.
+- [ ] The inventory icon shows the whole desk, not cut off.
+
+## The Trade Post renderer (Trade Post task 6, 2026-10-27)
+
+Covered by GameTest `trade_post_shows_who_uses_it_and_who_trades` (the controller shows two players at the post, then the two names of their trade, the update tag carries both, and everything clears when they leave). The drawing itself cannot be checked headless: **not seen in a client**. 194/194 GameTests twice. Until the screen exists (task 7) a player cannot join a post in game, so the "at this post" and trading states can only be seen once that lands; the idle look can be checked now.
+
+- [ ] An empty post: the screen shows TRADE large and the server's name (or LOCAL) under it with a blinking cursor, in green phosphor, readable from the front (not mirrored), inside the recess.
+- [ ] The four key names sit on the sloped keys, lit amber, readable from in front of the desk, MARKET on the left to TRADE on the right, matching what each key opens.
+- [ ] The scales stand on the desk in front of the monitor, leaning slightly to one side, a cyan gem in the left pan and two coins in the right; the chains reach the pans.
+- [ ] Two round bumpers on the desk's front corners; three coins in the small tray on the left of the desk.
+- [ ] The two beacons on the back corners of the hood glow amber and stand still.
+- [ ] Place the post facing each of the four ways: every part of the drawing turns with it.
+- [ ] At night, the drawing is lit by the air in front of the post (not black), and the screen, key names, gem and beacons glow.
+
+## The Trade Post screen (Trade Post task 7, 2026-10-27)
+
+Covered by GameTests in batch `trade_post`: `trade_post_menu_lists_from_its_slots_and_gives_back_on_close` (shift-click into the lot places, a Totem Core stays out, no price is refused with the stacks back in the places, a listing empties them, closing gives back what is left) and `trade_post_view_searches_sorts_and_shows_traders` (newest, cheapest and dearest first; the search finds item and seller names; the traders and a request with its seconds left reach the view). 196/196 GameTests twice. The screen is **not seen in a client**.
+
+You need two players (an admin to place the post; players need nothing else).
+
+- [ ] Right-click the four keys: the screen opens on MARKET, SELL, COLLECT, and MARKET for TRADE. Anywhere else on the post: MARKET.
+- [ ] MARKET with nothing listed: "Nothing is for sale yet." Use SELL to list a lot (below), then MARKET shows its card: the item's picture and count, the price, the name and "0 m", marked YOURS for you.
+- [ ] Type in the search box: the cards narrow down as you type (item names, and the seller's name). The sort key cycles NEWEST, CHEAPEST, DEAREST. With more than nine lots, the mouse wheel scrolls.
+- [ ] Click a card: the lot page shows every stack (hover for the tooltip), the price, the tax, what you pay and your balance. On someone else's lot BUY buys it and the message line says so; with too few pieces the key is dimmed. On your own lot, CANCEL LOT: the message says its items wait in your Collect box.
+- [ ] SELL: the screen grows to show your inventory. Shift-click or drag up to 9 stacks into the lot places; a Shatter Totem or Totem Core will not go in. Type a price: the tax line shows what you pay now and what the buyer pays. LIST LOT lists it; the places empty. Leave stacks in the places and close the screen: they are back in your inventory.
+- [ ] COLLECT: the box's stacks (hover for tooltips) and COLLECT ALL; with a full inventory the rest stays and the message says so. The tab shows how many stacks wait.
+- [ ] Two players open a Trade Post (the same or another one, or another server): each sees the other at the right, with the server name. Pick the name, press TRADE: the other gets the request card with ACCEPT, DECLINE and the seconds counting down; the asker's key reads TAKE BACK. DECLINE: the asker is told. Let it run out: the asker is told no answer came.
+- [ ] Walk more than 8 blocks away with the screen open: it closes.
+- [ ] A small window or a high GUI scale: the screen shrinks to fit.
+
+## The trade screen (Trade Post task 8, 2026-10-27)
+
+Covered by GameTests in batch `trade_post`: `trade_screen_state_follows_the_trade` (each side's view: pieces, READY lights, the stage, the 5 s countdown, locked, the balance, chat lines; the menu locks the slots) and `trade_screen_works_on_the_other_server_too` (the other server's menu shows the asker's items, the view names the running server, locks during the countdown). 198/198 GameTests twice; `./gradlew build` rebuilt `build/libs/bsp-core-1.6.2.jar` and the slim jar with this uncommitted work. The screen is **not seen in a client**, and the two-server trade has not run against a real network.
+
+Two players at Trade Posts (one server first, then two servers of the network).
+
+- [ ] A asks B, B presses ACCEPT: both screens switch to the trade screen; the title names the other player and their server.
+- [ ] A shift-clicks Diamonds into the left places: they appear at the right of B's screen at once; B cannot take them. A Shatter Totem or a Totem Core will not go in.
+- [ ] B types 250 in the pieces box and clicks away (or Enter): A sees PIECES 250 on the right. B types more pieces than B has and presses READY: "does not have the pieces" on the status screen.
+- [ ] A presses READY (the key turns green, B's right key says READY), then B changes the pieces: both READY lights go off and the status screen says an offer changed.
+- [ ] Both press READY: five pips light and go out one a second, "Trading in n s"; the places are locked. A presses READY again: the countdown stops.
+- [ ] Let the countdown run out: the items and pieces cross over; both are back on the Trade Post screen; `/bank` shows the trade lines.
+- [ ] Fill B's inventory first: at the end, "B has room for n of m stacks", nothing moved, both lights off.
+- [ ] Type in the chat box and press Enter: the line shows on both screens, and in the server log.
+- [ ] Press Escape mid-trade: the trade ends for both, the items go back; the other player is back on the Trade Post screen.
+- [ ] A small window or a high GUI scale: the screen shrinks to fit.
+
+## The Portable Banker's market (Trade Post task 9, 2026-10-27)
+
+Covered by GameTests in batch `trade_post`: `portable_market_unlock_is_bought_once_with_coins_and_cleared_at_season_end` (no coins or the wrong tier is refused, 12 Netherite are taken once, a second unlock is refused, the Shopping Network stays locked, the flag survives a save and a copy, the season reset clears it alone or with the Shopping Network), `portable_market_opens_only_with_the_unlock_and_keeps_out_of_the_trader_list` (locked, nothing opens; unlocked, the market opens with no post; the player is not listed and cannot be asked; the portable view carries no traders or requests) and `portable_market_keys_are_refused_without_the_unlock_and_work_with_it` (locked, BUY, LIST, COLLECT and CANCEL close the screen, nothing is bought or listed and the lot places go back; unlocked, BUY buys and LIST lists; ASK is refused without a post). 201/201 GameTests twice. The screens are **not seen in a client**; the `remote_market` column has not run against a real MySQL.
+
+One player with a Portable Banker and at least 12 Netherite Shatter Coins; a second player with a lot listed helps.
+
+- [ ] Open the Portable Banker: under PAY PLAYERS and TRANSACTION LOG, after a gap, SHOPPING NETWORK (or UNLOCK NETWORK) and UNLOCK MARKET. The account page says "Shopping Network: ..." and "Market: locked. Unlock with 12 Netherite coins." in place of the coins hint. At a Bank the page still shows the coins hint and no market key.
+- [ ] UNLOCK MARKET with fewer than 12 Netherite coins: "Unlocking the market costs 12 Netherite coins. Carry them." Nothing is taken. With them: "Market unlocked...", 12 coins gone, the key reads MARKET, the line "Market: open", and TRANSACTION LOG has a "Market unlocked" line. The Shopping Network is still locked if it was.
+- [ ] MARKET: the market screen opens with no traders band, the cards four across over the whole screen, the sort key at the right of the search box. Search, sort, a lot page with BUY, SELL with your inventory and LIST LOT, COLLECT and COLLECT ALL all work as at a Trade Post. The x key closes it.
+- [ ] Another player at a Trade Post does not see you in their list while you have the Portable Banker's market open.
+- [ ] Log in on another server of the network: the Portable Banker shows MARKET without paying again.
+- [ ] With the market open, an operator runs `/bsp bank remote reset`: within a second the screen closes with "The market on your Portable Banker is locked...", anything in the lot places is back in your inventory, and the account page reads UNLOCK MARKET again (on another server of the network, at the next login or account refresh).
+- [ ] `/bsp bank remote <player> market on` and `off` switch it for one player, with a line in chat.
+- [ ] MySQL: after the first start with this version, `bank_accounts` has the column `remote_market` (0 for everyone); after an unlock it is 1 for that player; after the reset 0 again.
+
+## The Market Board (Trade Post task 10, 2026-10-28)
+
+Covered by GameTests in batch `trade_post`: `market_summary_follows_listings_sales_cancels_and_expiry` (newest first, each lot's first stack, stack count, seller and listing time; a listing, a sale, a cancel and a lot past its end each change it and it is sent once per change; capped at 60 with the newest kept) and `market_board_lines_and_the_board_line_note` (lines made the old ways have no note, `withNote` keeps the rest; the Market Board's lines: the first item as the icon, count and name with "+2 more", the price, an age note). 203/203 GameTests twice. The board is **not seen in a client**; the drawing (the note in all three looks, the Tiles scroll) is untested.
+
+An admin with a Score Screen (best 4 by 3 panels or bigger) and a few lots on the market.
+
+- [ ] Open the screen's settings: the Board row has "Market Board". Pick Show: Board, then Market Board: the look switches to Tiles. The screen shows a tile per lot: the item, the price large, "64 Oak Log +2 more" and "3 h ago" under it, newest first.
+- [ ] List a lot at a Trade Post: within a second or two it appears first on the board. Buy one, cancel one: they go. A lot running out goes too.
+- [ ] More lots than fit: the tiles scroll up slowly at the screen's speed; speed 0 holds still on the first rows.
+- [ ] Switch the look to Ledger: one row a lot, icon, count and name, the age in small grey just before the price. Side: the leaderboard at the left and the Market Board in the column at the right, ages before prices.
+- [ ] Rotate with the default pages: the Market Board is one of the pages. A screen with a saved list of pages does not gain it until it is ticked.
+- [ ] On a network, list a lot on another server: the board on this one shows it within a second with Redis (within a minute without).
+- [ ] Log out and in: the board is filled at once.
+- [ ] The shop settings' style chips: the third reads "Market Stall style (comes later, draws as Cash Machine)".
+
+## The guide, the recipe viewers and the line as a whole (Trade Post task 11, 2026-10-28)
+
+No new server rules; 203/203 GameTests twice after the guide and info pages. The book was regenerated with `tools/gen_guide_book.py` (40 entries; `docs/GUIDE_BOOK_TEXT.md` has the text). **Not seen in a client.** The whole Trade Post line (tasks 1 to 11) is the sections from "Marketplace rules" to here; none of it has been seen in a client, and the MySQL tables (`market_lots`, `market_collect`, `trade_escrow`, `trade_outcomes`, the `remote_market` column) and the Redis kinds `market` and `trade` have not run against a real network.
+
+- [ ] Field Guide, Shatter Coins: "The Trade Post" (its 3D page shows the whole desk, turnable; the links to the market and to trading open them), "Trading with Players", "The Market", "Market on the Go". The text matches what the screens do (30 s requests, 12 places, 5 s countdown, 9 stacks, 10 lots, 7 days, 5% each side, 12 Netherite coins).
+- [ ] JEI and EMI: the Trade Post's information page (uses, recipe lookup on the item).
+- [ ] The Portable Banker's tooltip has a fourth line about the market.
+
+## The connection settings leave the synced config (Trade Post audit, fix task 1, 2026-10-28)
+
+Covered by GameTest `network_settings_move_out_of_the_server_config_and_passwords_never_reach_the_log` (the database settings and the password move to the network file and are cleared in the server config; a value already in the network file wins; the log line names what moved and never a password; a second start moves nothing; the old field names BSP-InventorySync reads still answer, with the moved values). 204/204 GameTests twice. Checked in the dev run: `run/config/bsp_core-network.toml` is written, and the world's `bsp_core-server.toml` shows the moved keys with their defaults. **Not tried on a real network yet.**
+
+On one network server first, then the others:
+
+- [ ] Before updating, note that `serverconfig/bsp_core-server.toml` has the real `[storage]` host, user and password (and `[storage.redis]`).
+- [ ] Start with the new jar: the log has "the network connection settings were in bsp_core-server.toml ... They are now in config/bsp_core-network.toml" with what moved and no password. Then "connected to MySQL" and Redis as before.
+- [ ] `config/bsp_core-network.toml` holds the host, user and both passwords; in `bsp_core-server.toml` those keys are back to their defaults (password empty).
+- [ ] Restart: no "moved" warning this time; it still connects.
+- [ ] `/bsp storage test` reports the database and Redis.
+- [ ] With BSP-InventorySync (`storage.useBspCoreDatabase = true`): its start line still names BSP-Core's database (its text still says "bsp_core-server.toml"; the values come from the new file), and inventories sync across servers.
+- [ ] `defaultconfigs/bsp_core-server.toml`: clear any password left there. Change the database and Redis passwords, since the old file may have reached players.
+- [ ] A client joining: its copy of the server config (in memory, or a Forge debug log of the config sync) has no password.
+
+## Market items safe when an answer is lost (Trade Post audit, fix task 2a, 2026-10-28)
+
+Covered by GameTest `market_network_lost_answers_never_dupe_or_lose_items`, on an in-memory database that can commit and then lose the answer:
+- A listing whose answer is lost is found listed, and nothing is handed back.
+- Lost and not even askable, it waits as "unsure", and the next write drops it.
+- A listing the database never saw is handed back at once.
+- A commit that failed without going in, and could not be asked about, ends up in the seller's Collect box once.
+- A purchase whose answer is lost has paid, and its items wait in the buyer's box, collected once.
+- A collect whose answer is lost gives nothing, and the stacks are back in the box.
+- A collect delivered whose rows could not be deleted: a second collect gives nothing, and the next refresh deletes the rows.
+- A box left half taken goes back after ten minutes, not five.
+- A held batch whose answer is lost is not written twice.
+
+The task 2 GameTests pass as before. 205/205 GameTests twice. **Not run against a real MySQL**; the stop handling is not tested by a GameTest.
+
+On a network with MySQL:
+
+- [ ] After the first start with this version: `market_attempts` exists; `market_collect` has the columns `taking` and `taking_ms`.
+- [ ] Buy a lot online: the items land in your inventory as before (they pass through your Collect box in the same moment; the box is empty after). Buy with a full inventory: the rest waits in the Collect box.
+- [ ] List a lot: `market_attempts` has a row with the lot's id.
+- [ ] Stop the MySQL server, list a lot: "could not be reached", the stacks come back. Start MySQL again.
+- [ ] Collect from your box: the rows are gone from `market_collect` afterwards, with no row left marked in `taking`.
+- [ ] (If you can) kill the database connection while collecting: the stacks are either in your inventory or still in your box, never both; a row left marked goes back by itself within ten minutes.
+- [ ] Buy a lot and run `/stop` straight after: after the restart the items are in your inventory or your Collect box.
+
+## Trade items safe when an answer is lost (Trade Post audit, fix task 2b, 2026-10-28)
+
+Covered by GameTests in batch `trade_post`, with the in-memory trade database able to lose an answer after committing, fail at the commit, or be down:
+- `trade_escrow_whose_answer_is_lost_comes_back_once`:
+  - an escrow that went in, its answer lost: the attempt is aborted, and the Emeralds are back in Ben's offer once while the trade is open again;
+  - an escrow that failed at its commit, with the database down: held aside, then back from memory once;
+  - an escrow that went in, its answer lost, the database down and Ben gone meanwhile: back in his inventory once.
+- `trade_hand_over_whose_answer_is_lost_finishes_once`: the hand-over went in and its answer was lost. The trade finishes, Ann's Diamonds do not come back to her, Ben gets them once, and the pieces move once.
+- `trade_one_server_pay_whose_answer_is_lost_pays_once`: a one-server payment went in, its answer was lost and the database went down. The trade goes back to open; at the next READY the old payment is found made and nothing is paid twice.
+
+208/208 GameTests twice. **Not run on two real servers.**
+
+On two servers of the network, with MySQL and Redis:
+
+- [ ] A trade across the servers finishes as before; `market_attempts` has an `e:` row for Ben's escrow.
+- [ ] (If you can) drop the database connection on Ben's server just as the countdown ends: the trade goes back to open (or ends) and Ben's offer comes back once; within two minutes nothing more arrives from the escrow sweep.
+- [ ] A trade on one server with pieces on a network: finishes, `/bank` shows the payment once.
+
+## The view and the Market Board stay small (Trade Post audit, fix task 5, 2026-10-28)
+
+Covered by GameTests in batch `trade_post`:
+- `trade_post_view_and_board_stay_small_with_heavy_lots` uses 12 lots of nine shulker boxes of 27 long written books (one such lot in full is over the packet limit) and 40 light lots:
+  - the view is page 1 of 2 with 36 lots, under 60 KB, and a page past the end shows the last;
+  - the search finds the boxes by their name, and the pictures carry no contents;
+  - the board summary is under 20 KB;
+  - the open lot's stacks fit under the limit, the first ones in full and the last as a picture;
+  - a gone lot says so, and an ended lot leaves the view.
+- `trade_post_view_is_sent_on_change_only_and_actions_are_limited`: the first view goes and a second identical one does not; a listing makes it go once; a message always goes; eight actions at once, then four more half a second later; a search sent over the limit still takes effect.
+
+210/210 GameTests twice. The screen changes are **not seen in a client**.
+
+- [ ] MARKET with more than 36 lots: the foot shows `<  1/2  >`; `>` shows the next page, scrolled to the top; `<` goes back. Searching shows "n of m lots match".
+- [ ] Cards: a renamed item shows its name, an enchanted one its glint, a potion its colour, a dyed leather item its colour. Hovering a card's item shows its name (not its contents).
+- [ ] Open a lot of a shulker box with items in it: for a moment the stacks show as pictures, then in full; hovering the box lists its contents.
+- [ ] Keep a lot page open while another player lists something: it stays open. Buy it: back to the cards with the message.
+- [ ] Type a search fast: the cards change once you stop typing, not on every letter.
+- [ ] Ages on the cards ("3 m") keep counting while nothing on the market changes.
+- [ ] A shulker box full of written books on the market, then opening the Trade Post: no kick, no crash; the server log has no "would be ... bytes" line.
+
+## Items safe in the Trade Post's menus and trades (Trade Post audit, fix task 4, 2026-10-28)
+
+Covered by GameTests in batch `trade_post`:
+- `trade_post_lot_places_are_safe_at_logout_death_and_late_answers`:
+  - the places go back at logout;
+  - a removed player's places, and a dead player's stacks, go to the Collect box;
+  - a listing refused after the screen closed comes back to the inventory.
+- `trade_items_go_to_the_player_as_they_are_now`: a live player gets the items; a dead one, or an old object with no current player, gets the Collect box.
+- `trade_post_closing_while_starting_and_a_broken_post_leave_nothing_behind`:
+  - an accepted cross-server request still starting counts as busy, not in a trade, and leaving clears it;
+  - the asker's side gives up and is free;
+  - a broken post closes the screen, gives the places back and takes the player off the list.
+- `trade_offer_put_back_is_told_to_the_running_server`: Ben's 32 and 32 dirt come back merged after a lost escrow answer, the running server learns of the 64, and the next hand-over goes through once.
+
+The menu test now opens its menu as the player's screen, as in game. 214/214 GameTests twice. **Not seen in a client.**
+
+- [ ] Put stacks in the SELL places and quit the game: log back in, they are in your inventory.
+- [ ] Put stacks in the SELL places and die (keepInventory off): they drop with the rest; with keepInventory on, they are in your inventory after the respawn.
+- [ ] Two servers: Ann asks Ben, Ben accepts and closes the screen at once: Ben is gone from Ann's list within a few seconds.
+- [ ] An admin breaks a post while a player has its screen open with stacks in the SELL places: the screen closes, the stacks are back.
+
+## Locks and limits on the network (Trade Post audit, fix task 3, 2026-10-28)
+
+Covered by GameTest `market_network_counts_the_lot_limit_in_the_database_and_needs_the_sellers_account`:
+- server B, which has not heard of a seller's 10 lots on A, still has the 11th refused by the database, with nothing charged and the stack handed back;
+- a lot whose seller has no bank row is refused with nothing moved;
+- the retry still sees error codes 1213 and 1205 through the "nothing changed" marker.
+
+215/215 GameTests twice. **The SQL itself is not exercised by a GameTest** (the tests use an in-memory database). That covers the pot paid with `INSERT ... ON DUPLICATE KEY UPDATE`, the bank rows locked with one `SELECT ... WHERE uuid IN (...) ORDER BY uuid FOR UPDATE`, the retry inside every transaction and around `/bank pay`, and the count after the seller's row lock. All of it needs a real MySQL or MariaDB.
+
+On a network with MySQL:
+
+- [ ] List and buy as usual: the pot's `bank_accounts` row grows by both taxes; nothing in the server logs about deadlocks.
+- [ ] As one player, list lots on two servers until the limit: the 11th is refused ("10 lots"), wherever it is listed.
+- [ ] Two players buy each other's lots at the same moment (or one buys while the other pays them with `/bank pay`): both go through; if MySQL reports a deadlock in its own log, the servers' logs show no failure (the retry took it).
+- [ ] `/bank pay` between two players still works both ways.
+
+## Refresh and the storage thread (Trade Post audit, fix task 6, 2026-10-28)
+
+Covered by GameTest `market_network_refresh_reads_only_new_lots_and_each_server_sweeps_its_own`:
+- B reads three lots, then only the fourth, then nothing for a sold one;
+- three refresh asks during a read give two reads;
+- this server's three ended lots close in one sweep, with one notice and three box notices;
+- a lot listed on another server is left alone just past its end, and closed ten minutes later.
+
+216/216 GameTests twice. **Not covered by a GameTest and not tried on a real network:** Redis on its own thread with its 1,000-message limit, the 5-second reply timeout and the subscriber's PING after 45 quiet seconds, the connection checked every 2 seconds and the 5-second fail-fast, the polls not queued twice, and the `mbox` and pot notices.
+
+On a network with MySQL and Redis:
+
+- [ ] List a lot on server A: server B's Trade Post shows it within a second.
+- [ ] A lot of yours listed on A runs out while you are on B with your Collect box open: it appears there within a second or two.
+- [ ] `/bsp market pot` on B shows the same as on A after a listing on A.
+- [ ] Stop Redis for a minute while players use the bank and the market: no server stalls; the logs say the subscriber dropped and later "listening" again; changes show within a minute through the database polling meanwhile.
+- [ ] Stop MySQL for a minute: bank and market actions answer "could not be reached" at once (not after a long wait); when MySQL is back, everything works again within seconds.
+- [ ] Leave the network quiet for several minutes: Redis stays "listening" (PING keeps it alive), and the next change still arrives at once.
+
+## Client and leftovers (Trade Post audit, fix task 7, 2026-10-28)
+
+Covered by GameTests in batch `trade_post`:
+- `board_lines_are_read_once_a_second_unless_the_data_changes`: fifty frames, one read; `invalidate` reads at once.
+- `trade_chat_and_pieces_are_limited_and_long_names_never_break_a_packet`:
+  - chat four at once, then one every half second;
+  - the same pieces again from the other server send nothing, and Ann stays ready;
+  - a 100-character server name is cut, not thrown, while encoding.
+
+218/218 GameTests twice. **Not covered by a GameTest:** the animation clock, Score Screens no longer drawn off screen, the Portable Banker key, the server id warning, the trimming of `trade_outcomes`, the `maxStacks` cap and the hub reset in single player.
+
+- [ ] A Score Screen showing the Market Board: turn away and back; it shows at once. Several screens nearby: the frame rate holds.
+- [ ] On a world with a high game time (`/time query gametime` over 10,000,000, or `/time add` a lot on a test world): the Trade Post's scales tip smoothly and the Score Screen scrolls smoothly.
+- [ ] Portable Banker: UNLOCK MARKET: the key reads MARKET at once, and the message is amber.
+- [ ] Trade chat: paste lines fast: after four, "Slow down: that line was not sent."
+- [ ] Type the same pieces again and press Enter in a trade across servers: the READY lights stay as they were.
+- [ ] Set `storage.serverId` to 40 characters on a test server: the log reports it at start.
+- [ ] `market.maxStacks = 20` in the config: Forge resets it to 9 at the next start.
+

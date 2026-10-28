@@ -112,7 +112,7 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             return; // another panel of this screen draws it
         }
         int[] wh = ScoreScreenBlock.size(level, screen.getBlockPos(), facing);
-        float w = wh[0] * PX, h = wh[1] * PX, t = (level.getGameTime() + partialTick) / 20f;
+        float w = wh[0] * PX, h = wh[1] * PX, t = ((level.getGameTime() & 0xFFFFF) + partialTick) / 20f; // the world's ticks would outgrow a float's fractions in days; wraps every ~14.5 hours
         this.pose = pose;
         this.buffers = buffers;
         this.style = FONTS[Mth.clamp(screen.font(), 0, FONTS.length - 1)];
@@ -254,7 +254,7 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             return;
         }
         if (look == ScoreScreenBlockEntity.LOOK_TILES) {
-            tiles(level, lines, w, top, area, u);
+            tiles(level, lines, w, top, area, u, t, speed);
             return;
         }
         ledger(level, lines, w * 0.04f, w * 0.96f, h, top, area, u, t, speed, 16 * u, true);
@@ -277,7 +277,12 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
                 x += rh * 0.95f;
             }
             float valueW = line.value() == null ? 0 : Math.min((x1 - x) * 0.4f, font.width(line.value().copy().withStyle(style)) * (rh * 0.62f / 8f) + 2);
-            text(line.text(), x, y, rh * 0.62f, TEXT, 0f, x1 - x - valueW - 4);
+            // the note (an age, say) small and grey just before the value
+            float noteW = line.note() == null ? 0 : Math.min((x1 - x) * 0.25f, font.width(line.note().copy().withStyle(style)) * (rh * 0.45f / 8f) + 4);
+            text(line.text(), x, y, rh * 0.62f, TEXT, 0f, x1 - x - valueW - noteW - 4);
+            if (line.note() != null) {
+                text(line.note(), x1 - valueW - 3, y, rh * 0.45f, MUTED, 1f, noteW - 4);
+            }
             if (line.value() != null) {
                 text(line.value(), x1, y, rh * 0.62f, line.colour() == 0 ? GOLD : 0xFF000000 | line.colour(), 1f, valueW + (x1 - x) * 0.3f);
             }
@@ -287,15 +292,30 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
         }
     }
 
-    /** Tiles: the icon above the value in large type, the text under it; as many across as fit. */
-    private void tiles(Level level, List<BspBoards.BoardLine> lines, float w, float top, float area, float u) {
+    /**
+     * Tiles: the icon above the value in large type, the text under it and any note under that; as many across as fit. When
+     * the rows would have to shrink below what a tile's contents need, they keep that size and scroll up at the screen's
+     * speed instead (only whole tiles are drawn).
+     */
+    private void tiles(Level level, List<BspBoards.BoardLine> lines, float w, float top, float area, float u, float t, float speed) {
         int n = lines.size();
         int cols = Math.max(1, Math.min(n, (int) (w / (46 * u))));
         int rows = (n + cols - 1) / cols;
-        float tw = (w - 8) / cols, thh = Math.min(area / rows, 48 * u);
-        for (int i = 0; i < n; i++) {
+        boolean notes = lines.stream().anyMatch(l -> l.note() != null);
+        float need = (notes ? 48 : 40) * u + 4;
+        float tw = (w - 8) / cols, thh = Math.min(area / rows, Math.max(48 * u, need));
+        boolean over = thh < need;
+        if (over) {
+            thh = need;
+        }
+        float off = over ? (t * speed * 24 * u) % (rows * thh) : 0;
+        for (int k = 0; k < n * (over ? 2 : 1); k++) {
+            int i = k % n, row = (k / n) * rows + i / cols;
             BspBoards.BoardLine line = lines.get(i);
-            float cx = 4 + tw * (i % cols + 0.5f), cy = top + thh * (i / cols);
+            float cx = 4 + tw * (i % cols + 0.5f), cy = top + thh * row - off;
+            if (cy < top - 0.5f || cy + thh > top + area + 0.5f) {
+                continue;
+            }
             rect(cx - tw / 2 + 2, cy + 1, cx + tw / 2 - 2, cy + thh - 2, DARK);
             float y = cy + 4;
             if (!line.icon().isEmpty()) {
@@ -307,6 +327,9 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
                 y += 15 * u;
             }
             text(line.text(), cx, y + 4 * u, 8 * u, TEXT, 0.5f, tw - 8);
+            if (line.note() != null) {
+                text(line.note(), cx, y + 12 * u, 6.5f * u, MUTED, 0.5f, tw - 8);
+            }
         }
     }
 
@@ -463,7 +486,7 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
 
     @Override
     public boolean shouldRenderOffScreen(ScoreScreenBlockEntity screen) {
-        return true;
+        return false; // the render box covers the whole joined screen, so it is drawn only when that is in view
     }
 
     @Override

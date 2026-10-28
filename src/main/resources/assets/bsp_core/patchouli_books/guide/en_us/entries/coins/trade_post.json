@@ -1,0 +1,33 @@
+{
+  "name": "The Trade Post",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:trade_post",
+  "sortnum": 11,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Trade Post$() is a steel trading desk two blocks wide and two high that admins place at spawn and in hubs. It is where players trade with each other, and where the $(l:coins/market)market$() is.$(br2)Its four keys open their pages: $(l)MARKET$(), $(l)SELL$(), $(l)COLLECT$() and $(l)TRADE$(). Click anywhere else on the desk for the market."
+    },
+    {
+      "type": "patchouli:multiblock",
+      "name": "Trade Post",
+      "multiblock": {
+        "pattern": [
+          [
+            "0"
+          ]
+        ],
+        "mapping": {
+          "0": "bsp_core:trade_post[facing=north]"
+        },
+        "symmetrical": false
+      },
+      "text": "The Exchange Desk. The scales on the counter tip while a trade runs, and the beacons on the hood turn while anyone uses the post."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "At the right of the screen is everyone standing at a Trade Post on any server of the network, with their server's name. A grey mark means they are busy in a trade.$(br2)Pick a name and press $(l)TRADE$() to ask them. See $(l:coins/trading)Trading with Players$().",
+      "title": "Who is here"
+    }
+  ]
+}

@@ -46,6 +46,8 @@ public class BSPCore {
 
         // Server config: lives in <world>/serverconfig/bsp_core-server.toml and syncs to clients.
         context.registerConfig(ModConfig.Type.SERVER, BSPConfig.SPEC);
+        // The network connection and its passwords: config/bsp_core-network.toml, never sent to clients.
+        context.registerConfig(ModConfig.Type.COMMON, com.mrgregles.bsp_core.storage.NetworkConfig.SPEC, com.mrgregles.bsp_core.storage.NetworkConfig.FILE);
         context.registerConfig(ModConfig.Type.CLIENT, BSPClientConfig.SPEC);
 
         MinecraftForge.EVENT_BUS.register(this);

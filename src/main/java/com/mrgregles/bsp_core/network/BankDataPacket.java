@@ -22,6 +22,7 @@ public record BankDataPacket(BankAccount account, List<BankTransaction> log, Str
         }
         buf.writeBoolean(a.acceptPay);
         buf.writeBoolean(a.remoteShops);
+        buf.writeBoolean(a.remoteMarket);
         buf.writeUtf(a.name, 16);
         buf.writeVarInt(a.boxSlots);
         buf.writeLong(a.boxUntilMs);
@@ -57,6 +58,7 @@ public record BankDataPacket(BankAccount account, List<BankTransaction> log, Str
         }
         a.acceptPay = buf.readBoolean();
         a.remoteShops = buf.readBoolean();
+        a.remoteMarket = buf.readBoolean();
         a.name = buf.readUtf(16);
         a.boxSlots = buf.readVarInt();
         a.boxUntilMs = buf.readLong();

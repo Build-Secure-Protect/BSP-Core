@@ -25,6 +25,8 @@ FACTORY = [["B", "F", "X"], ["R", "S", "F"]]
 CENTRIFUGE = [["KKK", "HTW", "KXK"]]
 # '.' is space that must stay empty (the Totem Forge's hollow); ' ' is anything
 TOTEM_FORGE = [["NE", "XE"], ["..", ".."], ["MQ", "MD"]]
+# the Trade Post is one block whose lower right part carries the whole 2 x 2 desk model
+TRADE_POST = [["X"]]
 
 
 def multiblock(layers, controller):
@@ -343,6 +345,25 @@ ENTRIES = [
         text("On the $(l)Access$() tab, add the players who may open the vault. They must be online when you add them. They can move coins but cannot change the settings.$(br2)On the $(l)Security$() tab, buy up to three lock levels and an Alarm with coins. The Alarm warns everyone with access the moment someone starts picking the lock.", "Access and Security"),
         text("Anyone without access can pick the lock: 2 minutes, plus 1 minute for each lock level, staying within 4 blocks. If they finish, they take a quarter of the coins, chosen at random. Illyrium coins are safe while the vault holds 3 or fewer.$(br2)Breaking a vault that is not yours gives no coins: they are kept for the owner, who collects them by opening any vault of theirs.", "Lockpicking"),
         text("Coins in your vaults earn interest: XP levels and Tetrium Ingots for every 50 coin value stored, counted across all your vaults. With a Netherite or Illyrium coin stored you also earn up to 2 Illyrium Ingots every 3 days.$(br2)Interest builds up while you are offline, but stops at 3 days' worth. Press $(l)Redeem$() on the Storage tab to collect it and start it building again.", "Interest"),
+    ]),
+    ("coins", "trade_post", "The Trade Post", "bsp_core:trade_post", 11, [
+        text("The $(item)Trade Post$() is a steel trading desk two blocks wide and two high that admins place at spawn and in hubs. It is where players trade with each other, and where the $(l:coins/market)market$() is.$(br2)Its four keys open their pages: $(l)MARKET$(), $(l)SELL$(), $(l)COLLECT$() and $(l)TRADE$(). Click anywhere else on the desk for the market."),
+        build("Trade Post", TRADE_POST, "bsp_core:trade_post", "The Exchange Desk. The scales on the counter tip while a trade runs, and the beacons on the hood turn while anyone uses the post."),
+        text("At the right of the screen is everyone standing at a Trade Post on any server of the network, with their server's name. A grey mark means they are busy in a trade.$(br2)Pick a name and press $(l)TRADE$() to ask them. See $(l:coins/trading)Trading with Players$().", "Who is here"),
+    ]),
+    ("coins", "trading", "Trading with Players", "bsp_core:trade_post", 12, [
+        text("A request lasts 30 seconds and comes up as a card on the other player's screen, with $(l)ACCEPT$() and $(l)DECLINE$(). You can have one request out at a time; $(l)TAKE BACK$() withdraws it.$(br2)Accepted, you both get the trade screen: your 12 offer places at the left, theirs at the right, a pieces box under each, and a chat between the two of you."),
+        text("You see what the other player puts in as they do it. Any change to either offer turns both $(l)READY$() lights off, so nobody is shown one thing and given another.$(br2)When you are both ready, five lights count down 5 seconds and the offers lock. Press READY again to stop. At the end the items and pieces cross over in one go.", "Ready"),
+        text("Before anything moves, the trade checks that both of you have room for what you are getting. If not, nothing moves and you are told who is short of space.$(br2)Closing the screen, walking more than 8 blocks from the post, logging out or dying ends the trade, and your offer comes back to you.$(br2)Shatter Totems and Totem Cores never go into an offer.", "Room and leaving"),
+    ]),
+    ("coins", "market", "The Market", "bsp_core:trade_post", 13, [
+        text("The market is one list for the whole network. On $(l)SELL$(), put up to 9 stacks into a lot, type a price in pieces and press $(l)LIST LOT$(). A lot stays up for 7 days, and you can have 10 at once.$(br2)On $(l)MARKET$(), search by item or seller and sort by newest, cheapest or dearest. A card opens the lot: every stack, the price and what you pay."),
+        text("Listing costs a $(l)5% tax$() on the price, rounded up, paid when you list and kept if the lot does not sell. The buyer pays the price plus the same 5%. Both taxes go into the network's lottery pot.$(br2)A lot is bought whole. The seller is paid at once, with a message, or at their next login.", "The tax"),
+        text("A lot you cancel, and one whose 7 days run out, waits in your $(l)Collect$() box. $(l)COLLECT ALL$() fills your inventory and leaves the rest in the box.$(br2)Shatter Totems and Totem Cores cannot be sold, not even inside a shulker box.$(br2)Score Screens can show the market as the $(l)Market Board$(): the newest lots with their prices and how long ago each was listed.", "Collecting"),
+    ]),
+    ("coins", "market_portable", "Market on the Go", "bsp_core:portable_banker", 14, [
+        spot("bsp_core:portable_banker", "The $(item)Portable Banker$() has a $(l)MARKET$() key under the Shopping Network. The market is its own one-time unlock: $(l)UNLOCK MARKET$() takes 12 Netherite Shatter Coins from your inventory, and it stays with your account on every server."),
+        text("MARKET opens the same market as a Trade Post: browse, buy, list lots and collect, wherever you are.$(br2)There is no list of traders on the Portable Banker. Trading with another player needs a Trade Post, and nobody can ask you to trade while you are only on the banker.$(br2)The unlock lasts the season, like the Shopping Network.", "Buying and selling"),
     ]),
     ("coins", "motivators", "Motivators", "bsp_core:factory_motivator", 2, [
         spot("bsp_core:factory_motivator", "Place up to three on top of a complete factory slice. One, two or three cut that slice's press time by 15%, 30% or 50%.$(br2)They pulse faster the more a slice has, and link up with their neighbours."),

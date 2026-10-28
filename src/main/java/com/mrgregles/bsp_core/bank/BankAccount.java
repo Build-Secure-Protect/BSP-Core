@@ -20,6 +20,8 @@ public final class BankAccount {
     public boolean acceptPay = true;
     /** Remote shop access on the Portable Banker: bought with coins, reset by admins at season end. */
     public boolean remoteShops;
+    /** The market on the Portable Banker: its own one-time unlock, reset with the Shopping Network at season end. */
+    public boolean remoteMarket;
     public String name = "";
     /** When the player was last seen on any server; payments newer than this are announced at login. */
     public long seenMs;
@@ -47,6 +49,7 @@ public final class BankAccount {
         granted = o.granted;
         acceptPay = o.acceptPay;
         remoteShops = o.remoteShops;
+        remoteMarket = o.remoteMarket;
         name = o.name;
         seenMs = o.seenMs;
         boxSlots = o.boxSlots;
@@ -63,6 +66,7 @@ public final class BankAccount {
         tag.putBoolean("Granted", granted);
         tag.putBoolean("AcceptPay", acceptPay);
         tag.putBoolean("RemoteShops", remoteShops);
+        tag.putBoolean("RemoteMarket", remoteMarket);
         tag.putString("Name", name);
         tag.putLong("Seen", seenMs);
         tag.putInt("BoxSlots", boxSlots);
@@ -79,6 +83,7 @@ public final class BankAccount {
         a.granted = tag.getBoolean("Granted");
         a.acceptPay = !tag.contains("AcceptPay") || tag.getBoolean("AcceptPay");
         a.remoteShops = tag.getBoolean("RemoteShops");
+        a.remoteMarket = tag.getBoolean("RemoteMarket");
         a.name = tag.getString("Name");
         a.seenMs = tag.getLong("Seen");
         a.boxSlots = tag.getInt("BoxSlots");

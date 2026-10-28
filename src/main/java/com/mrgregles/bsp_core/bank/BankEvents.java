@@ -30,16 +30,22 @@ public final class BankEvents {
             }
             Bank.pushState(server, id);
             Bank.log(server, id, log -> {
-                long received = 0;
-                int n = 0;
+                long received = 0, sold = 0;
+                int n = 0, sales = 0;
                 for (BankTransaction t : log) {
                     if (t.ms() > seen && t.type() == BankTransaction.Type.RECEIVED) {
                         received += t.pieces();
                         n++;
+                    } else if (t.ms() > seen && t.type() == BankTransaction.Type.MARKET && t.pieces() > 0) {
+                        sold += t.pieces();
+                        sales++;
                     }
                 }
                 if (n > 0 && !player.hasDisconnected()) {
                     player.displayClientMessage(Component.translatable("message.bsp_core.bank.while_away", n, Bank.format(received)).withStyle(ChatFormatting.GOLD), false);
+                }
+                if (sales > 0 && !player.hasDisconnected()) {
+                    player.displayClientMessage(Component.translatable("message.bsp_core.market.while_away", sales, Bank.format(sold)).withStyle(ChatFormatting.GOLD), false);
                 }
                 Bank.touch(server, id);
             });

@@ -1,0 +1,22 @@
+{
+  "name": "The Market",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:trade_post",
+  "sortnum": 13,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The market is one list for the whole network. On $(l)SELL$(), put up to 9 stacks into a lot, type a price in pieces and press $(l)LIST LOT$(). A lot stays up for 7 days, and you can have 10 at once.$(br2)On $(l)MARKET$(), search by item or seller and sort by newest, cheapest or dearest. A card opens the lot: every stack, the price and what you pay."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Listing costs a $(l)5% tax$() on the price, rounded up, paid when you list and kept if the lot does not sell. The buyer pays the price plus the same 5%. Both taxes go into the network's lottery pot.$(br2)A lot is bought whole. The seller is paid at once, with a message, or at their next login.",
+      "title": "The tax"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A lot you cancel, and one whose 7 days run out, waits in your $(l)Collect$() box. $(l)COLLECT ALL$() fills your inventory and leaves the rest in the box.$(br2)Shatter Totems and Totem Cores cannot be sold, not even inside a shulker box.$(br2)Score Screens can show the market as the $(l)Market Board$(): the newest lots with their prices and how long ago each was listed.",
+      "title": "Collecting"
+    }
+  ]
+}

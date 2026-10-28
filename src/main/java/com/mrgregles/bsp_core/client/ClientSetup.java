@@ -20,7 +20,10 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            ClientMarket.register();
             MenuScreens.register(ModMenus.SHATTER_TOTEM.get(), ShatterTotemScreen::new);
+            MenuScreens.register(ModMenus.TRADE_POST.get(), TradePostScreen::new);
+            MenuScreens.register(ModMenus.TRADE.get(), TradeScreen::new);
             MenuScreens.register(ModMenus.TOTEM_UPGRADES.get(), TotemUpgradeScreen::new);
             MenuScreens.register(ModMenus.COIN_FACTORY.get(), CoinFactoryScreen::new);
             MenuScreens.register(ModMenus.MACHINE.get(), MachineScreen::new);
@@ -67,6 +70,7 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.PROJECTOR_BASE.get(), ProjectorBaseRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ANTI_TOTEM.get(), AntiTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.BANK_ATM.get(), BankAtmRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.TRADE_POST.get(), TradePostRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SAFETY_DEPOSIT_BOX.get(), SafetyDepositBoxRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.VENDOR_POST.get(), VendorPostRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.STALL_DISPLAY.get(), StallDisplayRenderer::new);

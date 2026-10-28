@@ -30,6 +30,12 @@ public final class ModMenus {
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.machine.TotemForgeMenu>> TOTEM_FORGE = MENUS.register("totem_forge",
             () -> IForgeMenuType.create(com.mrgregles.bsp_core.machine.TotemForgeMenu::new));
 
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.trade.TradePostMenu>> TRADE_POST = MENUS.register("trade_post",
+            () -> IForgeMenuType.create(com.mrgregles.bsp_core.trade.TradePostMenu::new));
+
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.trade.TradeMenu>> TRADE = MENUS.register("trade",
+            () -> IForgeMenuType.create(com.mrgregles.bsp_core.trade.TradeMenu::new));
+
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.compass.TotemCompassMenu>> TOTEM_COMPASS = MENUS.register("totem_compass",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.compass.TotemCompassMenu(id, inv, buf.readEnum(InteractionHand.class))));
 

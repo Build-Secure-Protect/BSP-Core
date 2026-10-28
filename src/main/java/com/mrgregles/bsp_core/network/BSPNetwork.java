@@ -194,9 +194,57 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ShopTreePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ShopTreePacket::encode).decoder(ShopTreePacket::decode)
                 .consumerMainThread(ShopTreePacket::handle).add();
+        CHANNEL.messageBuilder(TradePostActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TradePostActionPacket::encode).decoder(TradePostActionPacket::decode)
+                .consumerMainThread(TradePostActionPacket::handle).add();
+        CHANNEL.messageBuilder(TradePostDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TradePostDataPacket::encode).decoder(TradePostDataPacket::decode)
+                .consumerMainThread(TradePostDataPacket::handle).add();
+        CHANNEL.messageBuilder(TradeActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TradeActionPacket::encode).decoder(TradeActionPacket::decode)
+                .consumerMainThread(TradeActionPacket::handle).add();
+        CHANNEL.messageBuilder(TradeStatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TradeStatePacket::encode).decoder(TradeStatePacket::decode)
+                .consumerMainThread(TradeStatePacket::handle).add();
+        CHANNEL.messageBuilder(TradePostLotPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TradePostLotPacket::encode).decoder(TradePostLotPacket::decode)
+                .consumerMainThread(TradePostLotPacket::handle).add();
+        CHANNEL.messageBuilder(MarketSummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(MarketSummaryPacket::encode).decoder(MarketSummaryPacket::decode)
+                .consumerMainThread(MarketSummaryPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** {@code s} cut to {@code max} characters, for a string field that would otherwise throw while encoding (and in a tick handler stop the server). */
+    public static String cut(String s, int max) {
+        return s.length() <= max ? s : s.substring(0, max);
+    }
+
+    /** Vanilla refuses a custom payload over 1,048,576 bytes by throwing, which in a tick handler stops the server; this stays well under. */
+    public static final int MAX_PAYLOAD = 1_000_000;
+
+    /** The size {@code packet} encodes to, in bytes. */
+    public static <T> int sizeOf(T packet, java.util.function.BiConsumer<T, net.minecraft.network.FriendlyByteBuf> encoder) {
+        net.minecraft.network.FriendlyByteBuf buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        try {
+            encoder.accept(packet, buf);
+            return buf.writerIndex();
+        } finally {
+            buf.release();
+        }
+    }
+
+    /** Sends {@code packet} if it encodes to less than {@link #MAX_PAYLOAD}; otherwise logs it and sends nothing. True when sent. */
+    public static <T> boolean sendChecked(ServerPlayer player, T packet, java.util.function.BiConsumer<T, net.minecraft.network.FriendlyByteBuf> encoder, String what) {
+        int size = sizeOf(packet, encoder);
+        if (size >= MAX_PAYLOAD) {
+            com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core: {} for {} would be {} bytes, over the {} a packet may carry; not sent", what, player.getGameProfile().getName(), size, MAX_PAYLOAD);
+            return false;
+        }
+        sendTo(player, packet);
+        return true;
     }
 }

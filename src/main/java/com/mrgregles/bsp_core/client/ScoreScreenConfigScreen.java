@@ -177,7 +177,13 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
             int bw = chipWidth(Math.min(4, boards.size()));
             for (int i = 0; i < Math.min(4, boards.size()); i++) {
                 String id = boards.get(i).id().toString();
-                option(g, x + OPT_X + i * (bw + 2), rowY(1), bw, boards.get(i).title(), id.equals(boardId) && (mode == ScoreScreenBlockEntity.MODE_PAGE), mouseX, mouseY, () -> { boardId = id; send(); });
+                option(g, x + OPT_X + i * (bw + 2), rowY(1), bw, boards.get(i).title(), id.equals(boardId) && (mode == ScoreScreenBlockEntity.MODE_PAGE), mouseX, mouseY, () -> {
+                    boardId = id;
+                    if (id.equals(ClientMarket.BOARD.toString())) {
+                        look = ScoreScreenBlockEntity.LOOK_TILES; // the Market Board's own look (owner's pick); the admin can change it after
+                    }
+                    send();
+                });
             }
         }
         // 2 look

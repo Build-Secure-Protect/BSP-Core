@@ -25,8 +25,8 @@ import java.util.Locale;
  * The banking screen in the "Cash Machine" skin: a beige bezel, a black phosphor screen that fills
  * the left and middle, one column of keys on the right (navigation at the top, the view's own
  * actions at the bottom) and a status strip across the base. Views: account, pay a player,
- * transaction log, deposit coins, withdraw coins. The Portable Banker shows the same screen with a
- * Shopping Network key in place of the deposit keys.
+ * transaction log, deposit coins, withdraw coins. The Portable Banker shows the same screen with the
+ * Shopping Network and market keys (a group of their own) in place of the deposit keys.
  */
 public class BankScreen extends AbstractContainerScreen<BankMenu> implements ScreenFit.Fitted {
     private static final int W = 300, H = 216;
@@ -121,8 +121,11 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> implements Scr
                 top.add(new Key("pay_players", true, () -> setView(View.PAY)));
                 top.add(new Key("transaction_log", true, () -> setView(View.LOG)));
                 if (portable) {
-                    top.add(new Key(account().remoteShops ? "shopping_network" : "unlock_network", true,
+                    // buying from anywhere: a group apart from paying and the log
+                    middle.add(new Key(account().remoteShops ? "shopping_network" : "unlock_network", true,
                             () -> send(account().remoteShops ? BankActionPacket.Action.OPEN_NETWORK : BankActionPacket.Action.UNLOCK_NETWORK, 0, 0, "", 0, false)));
+                    middle.add(new Key(account().remoteMarket ? "market" : "unlock_market", true,
+                            () -> send(account().remoteMarket ? BankActionPacket.Action.OPEN_MARKET : BankActionPacket.Action.UNLOCK_MARKET, 0, 0, "", 0, false)));
                     bottom.add(new Key("convert_at_bank", false, () -> {}));
                 } else {
                     bottom.add(new Key("deposit_coins", true, () -> setView(View.DEPOSIT)));
@@ -272,13 +275,13 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> implements Scr
             amountBox.setValue("");
         } else if (key.equals("accepting") || key.equals("refusing")) {
             setView(View.PAY);
-        } else if (key.equals("network_unlocked")) {
+        } else if (key.equals("network_unlocked") || key.equals("market_unlocked")) {
             setView(View.ACCOUNT);
         } else if (key.equals("converted") || key.equals("deposited") || key.equals("withdrawn")) {
             count = 1;
             setView(view);
         }
-        boolean bad = !(key.equals("paid") || key.equals("converted") || key.equals("deposited") || key.equals("withdrawn") || key.equals("accepting") || key.equals("refusing") || key.equals("confirm_screen") || key.equals("network_unlocked"));
+        boolean bad = !(key.equals("paid") || key.equals("converted") || key.equals("deposited") || key.equals("withdrawn") || key.equals("accepting") || key.equals("refusing") || key.equals("confirm_screen") || key.equals("network_unlocked") || key.equals("market_unlocked"));
         messageColour = bad ? 0xFF6B5C : AMBER;
         message = Component.translatable("message.bsp_core.bank." + key, args);
     }
@@ -451,9 +454,12 @@ public class BankScreen extends AbstractContainerScreen<BankMenu> implements Scr
         g.pose().popPose();
         g.drawString(font, unit, Math.round(bx + bigW + 4), SY + 38, PHOS_DIM, false);
         coinRow(g, SY + 58, true);
-        int hy = SY + 100 + CashMachine.wrap(g, font, tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SX + 8, SY + 100, SW - 16, PHOS_DIM);
         if (menu.portable()) {
-            CashMachine.wrap(g, font, tr(account().remoteShops ? "network_open" : "network_locked", Bank.remoteUnlockCoins(), Bank.tierName(Bank.remoteUnlockTier())), SX + 8, hy + 3, SW - 16, AMBER);
+            // what the device reaches, in place of the coins hint (coins are a bank's business, as the key says)
+            int hy = SY + 100 + CashMachine.wrap(g, font, tr(account().remoteShops ? "network_open" : "network_locked", Bank.remoteUnlockCoins(), Bank.tierName(Bank.remoteUnlockTier())), SX + 8, SY + 100, SW - 16, AMBER);
+            CashMachine.wrap(g, font, tr(account().remoteMarket ? "market_open" : "market_locked", Bank.marketUnlockCoins(), Bank.tierName(Bank.marketUnlockTier())), SX + 8, hy + 3, SW - 16, AMBER);
+        } else {
+            CashMachine.wrap(g, font, tr("coins_hint", Bank.format(Bank.piecesPerCoin(CoinTier.COPPER))), SX + 8, SY + 100, SW - 16, PHOS_DIM);
         }
     }
 

@@ -146,23 +146,46 @@ public final class BSPConfig {
 
     // ------------------------------------------------------------------ storage
 
-    public static final ForgeConfigSpec.ConfigValue<String> STORAGE_MODE, STORAGE_SERVER_ID, STORAGE_HOST, STORAGE_DATABASE, STORAGE_USER, STORAGE_PASSWORD,
-            STORAGE_TABLE_PREFIX;
-    public static final ForgeConfigSpec.IntValue STORAGE_PORT;
-    public static final ForgeConfigSpec.BooleanValue REDIS_ENABLED, REDIS_SSL;
-    public static final ForgeConfigSpec.ConfigValue<String> REDIS_HOST, REDIS_PASSWORD, REDIS_CHANNEL;
-    public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER, DISCORD_SERVER_NAME, DISCORD_REDIS_CHANNEL;
+    public static final ForgeConfigSpec.ConfigValue<String> STORAGE_MODE, STORAGE_SERVER_ID;
+    /**
+     * The connection settings' old places, read only to move them into {@link com.mrgregles.bsp_core.storage.NetworkConfig} (this
+     * file is sent to every player who joins). Kept in the spec so Forge does not delete them before they are moved.
+     */
+    public static final ForgeConfigSpec.ConfigValue<String> OLD_STORAGE_HOST, OLD_STORAGE_DATABASE, OLD_STORAGE_USER, OLD_STORAGE_PASSWORD, OLD_STORAGE_TABLE_PREFIX,
+            OLD_REDIS_HOST, OLD_REDIS_PASSWORD;
+    public static final ForgeConfigSpec.IntValue OLD_STORAGE_PORT, OLD_REDIS_PORT, OLD_REDIS_DB;
+    public static final ForgeConfigSpec.BooleanValue OLD_STORAGE_SSL, OLD_REDIS_SSL;
+    /**
+     * The connection settings by their old field names, now read from {@code config/bsp_core-network.toml}. BSP-InventorySync
+     * (its {@code storage.useBspCoreDatabase}) and BSP-Server Utilities ({@code useBspCoreDatabase}, {@code useBspCoreRedis})
+     * read these fields by reflection at server start; keep the names.
+     */
+    public static final ForgeConfigSpec.ConfigValue<String> STORAGE_HOST = com.mrgregles.bsp_core.storage.NetworkConfig.DB_HOST,
+            STORAGE_DATABASE = com.mrgregles.bsp_core.storage.NetworkConfig.DB_DATABASE, STORAGE_USER = com.mrgregles.bsp_core.storage.NetworkConfig.DB_USER,
+            STORAGE_PASSWORD = com.mrgregles.bsp_core.storage.NetworkConfig.DB_PASSWORD, STORAGE_TABLE_PREFIX = com.mrgregles.bsp_core.storage.NetworkConfig.DB_TABLE_PREFIX,
+            REDIS_HOST = com.mrgregles.bsp_core.storage.NetworkConfig.REDIS_HOST, REDIS_PASSWORD = com.mrgregles.bsp_core.storage.NetworkConfig.REDIS_PASSWORD;
+    public static final ForgeConfigSpec.IntValue STORAGE_PORT = com.mrgregles.bsp_core.storage.NetworkConfig.DB_PORT,
+            REDIS_PORT = com.mrgregles.bsp_core.storage.NetworkConfig.REDIS_PORT, REDIS_DB = com.mrgregles.bsp_core.storage.NetworkConfig.REDIS_DB;
+    public static final ForgeConfigSpec.BooleanValue STORAGE_SSL = com.mrgregles.bsp_core.storage.NetworkConfig.DB_SSL,
+            REDIS_SSL = com.mrgregles.bsp_core.storage.NetworkConfig.REDIS_SSL;
+    public static final ForgeConfigSpec.BooleanValue REDIS_ENABLED;
+    public static final ForgeConfigSpec.ConfigValue<String> REDIS_CHANNEL;
+    public static final ForgeConfigSpec.ConfigValue<String> BANK_REMOTE_UNLOCK_TIER, BANK_MARKET_UNLOCK_TIER, DISCORD_SERVER_NAME, DISCORD_REDIS_CHANNEL;
     public static final ForgeConfigSpec.IntValue TRANSFER_SECONDS, TRANSFER_TIMEOUT_HOURS, LOGOUT_RETURN_MINUTES;
     public static final ForgeConfigSpec.BooleanValue ADMIN_TOTEMS_TRAVEL, DISCORD_ENABLED;
-    public static final ForgeConfigSpec.IntValue REDIS_PORT, REDIS_DB;
 
     // ------------------------------------------------------------------ bank
 
     /** Pieces one Copper Shatter Coin converts to; the other tiers follow the coin values. */
-    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS,
+    public static final ForgeConfigSpec.IntValue BANK_PIECES_PER_COPPER, BANK_STARTING_PIECES, BANK_PAY_CONFIRM, BANK_LOG_DAYS, BANK_LOG_ENTRIES, BANK_COIN_MARKUP_PERCENT, BANK_REMOTE_UNLOCK_COINS, BANK_MARKET_UNLOCK_COINS,
             BOX_RENT_PER_DAY, BOX_SLOT_STEP_PIECES, BOX_FEE_PER_DAY, BOX_MAX_DAYS, DISPLAY_SECONDS;
     public static ForgeConfigSpec.ConfigValue<String> SHOP_TIME_ZONE;
-    public static final ForgeConfigSpec.BooleanValue STORAGE_SSL, STORAGE_DELIVER_ON_RESTORE;
+
+    // ------------------------------------------------------------------ market
+
+    public static final ForgeConfigSpec.IntValue MARKET_MAX_STACKS, MARKET_MAX_LOTS, MARKET_DAYS, MARKET_TAX_PERCENT;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MARKET_REFUSED;
+    public static final ForgeConfigSpec.BooleanValue STORAGE_DELIVER_ON_RESTORE;
     public static final ForgeConfigSpec.IntValue STORAGE_RESTORE_WAIT_SECONDS;
 
     // ------------------------------------------------------------------ visuals
@@ -529,19 +552,20 @@ public final class BSPConfig {
                         "\"local\": in this world only. Nothing to set up; right for a single server.",
                         "\"mysql\": also in a MySQL or MariaDB database shared by every server of a network, so first-join totems and the",
                         "factory slice limit apply across the whole network. You provide the database and an account; BSP-Core only creates",
-                        "its own tables in it. Fill in the details below, run /bsp storage test, then /bsp storage migrate, then set mode to",
-                        "\"mysql\" and restart.")
+                        "its own tables in it. Put the database's address, user and password in config/bsp_core-network.toml (never in this file,",
+                        "which is sent to every player who joins), run /bsp storage test, then /bsp storage migrate, then set mode to \"mysql\" and restart.")
                .push("storage");
         STORAGE_MODE = BUILDER.comment("\"local\" or \"mysql\".").define("mode", "local");
         STORAGE_SERVER_ID = BUILDER.comment("A short name for this server, different on every server of the network (for example \"hub\", \"survival-1\").")
                 .define("serverId", "server-1");
-        STORAGE_HOST = BUILDER.comment("Database host name or address.").define("host", "localhost");
-        STORAGE_PORT = BUILDER.comment("Database port.").defineInRange("port", 3306, 1, 65535);
-        STORAGE_DATABASE = BUILDER.comment("Name of the existing database (schema) to use.").define("database", "bsp");
-        STORAGE_USER = BUILDER.comment("Database user. It needs CREATE, SELECT, INSERT, UPDATE and DELETE on that database.").define("user", "bsp");
-        STORAGE_PASSWORD = BUILDER.comment("Database password. This file is plain text: keep it private.").define("password", "");
-        STORAGE_TABLE_PREFIX = BUILDER.comment("Prefix for BSP-Core's table names (letters, digits and underscores).").define("tablePrefix", "bsp_");
-        STORAGE_SSL = BUILDER.comment("Connect with SSL/TLS.").define("useSsl", false);
+        String moved = "Moved to config/bsp_core-network.toml. Leave as it is: a value set here is copied there at the next start and cleared here.";
+        OLD_STORAGE_HOST = BUILDER.comment(moved).define("host", "localhost");
+        OLD_STORAGE_PORT = BUILDER.comment(moved).defineInRange("port", 3306, 1, 65535);
+        OLD_STORAGE_DATABASE = BUILDER.comment(moved).define("database", "bsp");
+        OLD_STORAGE_USER = BUILDER.comment(moved).define("user", "bsp");
+        OLD_STORAGE_PASSWORD = BUILDER.comment(moved).define("password", "");
+        OLD_STORAGE_TABLE_PREFIX = BUILDER.comment(moved).define("tablePrefix", "bsp_");
+        OLD_STORAGE_SSL = BUILDER.comment(moved).define("useSsl", false);
         STORAGE_NOTICE_SECONDS = BUILDER.comment("How often this server collects messages left for its players by other servers, such as \"your totem is being stolen\".",
                         "Lower is quicker to warn but asks the database more often.")
                 .defineInRange("noticeSeconds", 3, 1, 60);
@@ -554,12 +578,12 @@ public final class BSPConfig {
         BUILDER.comment("Redis, optional: with it, balance changes, deposit boxes, shop edits and messages reach the other servers at once",
                         "instead of at the next poll. Without it (or while it is down) everything still works through the database.")
                .push("redis");
-        REDIS_ENABLED = BUILDER.comment("Connect to Redis when storage.mode is \"mysql\".").define("enabled", false);
-        REDIS_HOST = BUILDER.define("host", "localhost");
-        REDIS_PORT = BUILDER.defineInRange("port", 6379, 1, 65535);
-        REDIS_PASSWORD = BUILDER.comment("Password, if Redis has one. Plain text: keep this file private.").define("password", "");
-        REDIS_SSL = BUILDER.comment("Connect with TLS.").define("useSsl", false);
-        REDIS_DB = BUILDER.comment("Redis database index.").defineInRange("db", 0, 0, 15);
+        REDIS_ENABLED = BUILDER.comment("Connect to Redis when storage.mode is \"mysql\". Its address and password are in config/bsp_core-network.toml.").define("enabled", false);
+        OLD_REDIS_HOST = BUILDER.comment(moved).define("host", "localhost");
+        OLD_REDIS_PORT = BUILDER.comment(moved).defineInRange("port", 6379, 1, 65535);
+        OLD_REDIS_PASSWORD = BUILDER.comment(moved).define("password", "");
+        OLD_REDIS_SSL = BUILDER.comment(moved).define("useSsl", false);
+        OLD_REDIS_DB = BUILDER.comment(moved).defineInRange("db", 0, 0, 15);
         REDIS_CHANNEL = BUILDER.comment("Pub/sub channel every server of the network listens on.").define("channel", "bsp_core");
         BUILDER.pop();
         BUILDER.pop();
@@ -579,6 +603,10 @@ public final class BSPConfig {
                         "Taken from the inventory; admins can clear everyone's access at a season end with /bsp bank remote reset.")
                 .defineInRange("remoteUnlockCoins", 12, 1, 10000);
         BANK_REMOTE_UNLOCK_TIER = BUILDER.comment("The coin tier the unlock is paid in: copper, gold, diamond, netherite or illyrium.").define("remoteUnlockTier", "netherite");
+        BANK_MARKET_UNLOCK_COINS = BUILDER.comment("How many Shatter Coins of marketUnlockTier a player pays once to unlock the market (browse, buy, list, collect) on their Portable Banker.",
+                        "Its own unlock, apart from the Shopping Network; taken from the inventory and cleared with it by /bsp bank remote reset.")
+                .defineInRange("marketUnlockCoins", 12, 1, 10000);
+        BANK_MARKET_UNLOCK_TIER = BUILDER.comment("The coin tier the market unlock is paid in: copper, gold, diamond, netherite or illyrium.").define("marketUnlockTier", "netherite");
         BUILDER.comment("Safety deposit boxes: one per player for the whole network, rented by the day, 6 slots at first and 3 more per purchase up to 18.",
                         "Coins pay at their conversion value; any overpayment is credited as pieces.").push("box");
         BOX_RENT_PER_DAY = BUILDER.comment("Pieces one day of rent costs.").defineInRange("rentPiecesPerDay", 50, 0, 1000000);
@@ -587,6 +615,19 @@ public final class BSPConfig {
                 .defineInRange("holdingFeePiecesPerDay", 150, 0, 1000000);
         BOX_MAX_DAYS = BUILDER.comment("Most days of rent a box may hold ahead.").defineInRange("maxDaysAhead", 365, 1, 3650);
         BUILDER.pop();
+        BUILDER.pop();
+
+        BUILDER.comment("The marketplace: lots players list at a Trade Post for pieces, bought whole by anyone on the network.",
+                        "The seller pays the tax when listing (kept if the lot is cancelled or runs out); the buyer pays the price plus the tax.",
+                        "Both taxes go into the lottery pot (/bsp market pot).").push("market");
+        MARKET_MAX_STACKS = BUILDER.comment("Most stacks in one lot (the Trade Post's SELL page and lot page hold 9).").defineInRange("maxStacks", 9, 1, 9);
+        MARKET_MAX_LOTS = BUILDER.comment("Most lots one player may have listed at once.").defineInRange("maxLotsPerPlayer", 10, 1, 200);
+        MARKET_DAYS = BUILDER.comment("Days a lot stays listed; then its items wait in the seller's Collect box.").defineInRange("listingDays", 7, 1, 90);
+        MARKET_TAX_PERCENT = BUILDER.comment("Tax on the price, in percent, paid by the seller when listing and again by the buyer. Rounded up; 0 for none.")
+                .defineInRange("taxPercent", 5, 0, 50);
+        MARKET_REFUSED = BUILDER.comment("Items that cannot be listed or traded, as item ids (\"minecraft:elytra\") or item tags (\"#forge:shulker_boxes\").",
+                        "Shatter Totems and Totem Cores are always refused, also inside shulker boxes and bundles.")
+                .defineListAllowEmpty("refusedItems", List.of(), o -> o instanceof String);
         BUILDER.pop();
 
         BUILDER.comment("Shops.").push("shop");

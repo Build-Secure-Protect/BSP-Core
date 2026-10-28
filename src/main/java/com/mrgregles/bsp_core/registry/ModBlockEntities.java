@@ -88,6 +88,9 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.bank.BankAtmBlockEntity>> BANK_ATM =
             BLOCK_ENTITIES.register("bank_atm", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.bank.BankAtmBlockEntity::new, ModBlocks.BANK_ATM.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.trade.TradePostBlockEntity>> TRADE_POST =
+            BLOCK_ENTITIES.register("trade_post", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.trade.TradePostBlockEntity::new, ModBlocks.TRADE_POST.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.score.ScoreScreenBlockEntity>> SCORE_SCREEN =
             BLOCK_ENTITIES.register("score_screen", () -> BlockEntityType.Builder

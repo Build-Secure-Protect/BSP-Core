@@ -120,6 +120,7 @@ public final class BSPCommands {
                             return board.size();
                         })))
                 .then(com.mrgregles.bsp_core.bank.BankCommands.admin())
+                .then(com.mrgregles.bsp_core.market.MarketCommands.admin())
                 .then(com.mrgregles.bsp_core.shop.ShopCommands.tree())
                 .then(TeamCommands.tree())
                 .then(KitCommands.tree())

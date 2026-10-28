@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,half=lower,wing=false": {
+      "model": "bsp_core:block/trade_post"
+    },
+    "facing=east,half=lower,wing=false": {
+      "model": "bsp_core:block/trade_post",
+      "y": 90
+    },
+    "facing=south,half=lower,wing=false": {
+      "model": "bsp_core:block/trade_post",
+      "y": 180
+    },
+    "facing=west,half=lower,wing=false": {
+      "model": "bsp_core:block/trade_post",
+      "y": 270
+    },
+    "facing=north,half=lower,wing=true": {
+      "model": "bsp_core:block/trade_post_part"
+    },
+    "facing=east,half=lower,wing=true": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 90
+    },
+    "facing=south,half=lower,wing=true": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 180
+    },
+    "facing=west,half=lower,wing=true": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 270
+    },
+    "facing=north,half=upper,wing=false": {
+      "model": "bsp_core:block/trade_post_part"
+    },
+    "facing=east,half=upper,wing=false": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 90
+    },
+    "facing=south,half=upper,wing=false": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 180
+    },
+    "facing=west,half=upper,wing=false": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 270
+    },
+    "facing=north,half=upper,wing=true": {
+      "model": "bsp_core:block/trade_post_part"
+    },
+    "facing=east,half=upper,wing=true": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 90
+    },
+    "facing=south,half=upper,wing=true": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 180
+    },
+    "facing=west,half=upper,wing=true": {
+      "model": "bsp_core:block/trade_post_part",
+      "y": 270
+    }
+  }
+}

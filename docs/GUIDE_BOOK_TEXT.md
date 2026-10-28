@@ -1034,3 +1034,79 @@ Click a card's picture to see what is in the kit, with the counts, and every con
 
 On a network your kits and what you have taken are the same on every server.
 
+## The Trade Post
+
+**Page 1**
+
+The *Trade Post* is a steel trading desk two blocks wide and two high that admins place at spawn and in hubs. It is where players trade with each other, and where the market is.
+
+Its four keys open their pages: **MARKET**, **SELL**, **COLLECT** and **TRADE**. Click anywhere else on the desk for the market.
+
+**Page 2**  `[3D structure] Trade Post`
+
+The Exchange Desk. The scales on the counter tip while a trade runs, and the beacons on the hood turn while anyone uses the post.
+
+**Page 3: Who is here**
+
+At the right of the screen is everyone standing at a Trade Post on any server of the network, with their server's name. A grey mark means they are busy in a trade.
+
+Pick a name and press **TRADE** to ask them. See Trading with Players.
+
+## Trading with Players
+
+**Page 1**
+
+A request lasts 30 seconds and comes up as a card on the other player's screen, with **ACCEPT** and **DECLINE**. You can have one request out at a time; **TAKE BACK** withdraws it.
+
+Accepted, you both get the trade screen: your 12 offer places at the left, theirs at the right, a pieces box under each, and a chat between the two of you.
+
+**Page 2: Ready**
+
+You see what the other player puts in as they do it. Any change to either offer turns both **READY** lights off, so nobody is shown one thing and given another.
+
+When you are both ready, five lights count down 5 seconds and the offers lock. Press READY again to stop. At the end the items and pieces cross over in one go.
+
+**Page 3: Room and leaving**
+
+Before anything moves, the trade checks that both of you have room for what you are getting. If not, nothing moves and you are told who is short of space.
+
+Closing the screen, walking more than 8 blocks from the post, logging out or dying ends the trade, and your offer comes back to you.
+
+Shatter Totems and Totem Cores never go into an offer.
+
+## The Market
+
+**Page 1**
+
+The market is one list for the whole network. On **SELL**, put up to 9 stacks into a lot, type a price in pieces and press **LIST LOT**. A lot stays up for 7 days, and you can have 10 at once.
+
+On **MARKET**, search by item or seller and sort by newest, cheapest or dearest. A card opens the lot: every stack, the price and what you pay.
+
+**Page 2: The tax**
+
+Listing costs a **5% tax** on the price, rounded up, paid when you list and kept if the lot does not sell. The buyer pays the price plus the same 5%. Both taxes go into the network's lottery pot.
+
+A lot is bought whole. The seller is paid at once, with a message, or at their next login.
+
+**Page 3: Collecting**
+
+A lot you cancel, and one whose 7 days run out, waits in your **Collect** box. **COLLECT ALL** fills your inventory and leaves the rest in the box.
+
+Shatter Totems and Totem Cores cannot be sold, not even inside a shulker box.
+
+Score Screens can show the market as the **Market Board**: the newest lots with their prices and how long ago each was listed.
+
+## Market on the Go
+
+**Page 1**  `[item shown] portable_banker`
+
+The *Portable Banker* has a **MARKET** key under the Shopping Network. The market is its own one-time unlock: **UNLOCK MARKET** takes 12 Netherite Shatter Coins from your inventory, and it stays with your account on every server.
+
+**Page 2: Buying and selling**
+
+MARKET opens the same market as a Trade Post: browse, buy, list lots and collect, wherever you are.
+
+There is no list of traders on the Portable Banker. Trading with another player needs a Trade Post, and nobody can ask you to trade while you are only on the banker.
+
+The unlock lasts the season, like the Shopping Network.
+

@@ -221,6 +221,8 @@ public final class ModItems {
     public static final RegistryObject<Item> PORTABLE_BANKER = ITEMS.register("portable_banker", com.mrgregles.bsp_core.bank.PortableBankerItem::new);
     public static final RegistryObject<Item> BANK_ATM = ITEMS.register("bank_atm",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.BANK_ATM.get()));
+    public static final RegistryObject<Item> TRADE_POST = ITEMS.register("trade_post",
+            () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.TRADE_POST.get()));
     public static final RegistryObject<Item> SAFETY_DEPOSIT_BOX = ITEMS.register("safety_deposit_box",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SAFETY_DEPOSIT_BOX.get()));
     public static final RegistryObject<Item> VENDOR_POST = ITEMS.register("vendor_post",

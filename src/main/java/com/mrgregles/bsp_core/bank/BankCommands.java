@@ -94,7 +94,10 @@ public final class BankCommands {
                             return 1;
                         })).then(Commands.argument("player", EntityArgument.player())
                         .then(Commands.literal("on").executes(ctx -> adminRemote(ctx, true)))
-                        .then(Commands.literal("off").executes(ctx -> adminRemote(ctx, false)))));
+                        .then(Commands.literal("off").executes(ctx -> adminRemote(ctx, false)))
+                        .then(Commands.literal("market")
+                                .then(Commands.literal("on").executes(ctx -> adminMarket(ctx, true)))
+                                .then(Commands.literal("off").executes(ctx -> adminMarket(ctx, false))))));
     }
 
     private static ServerPlayer player(CommandSourceStack src) {
@@ -241,6 +244,14 @@ public final class BankCommands {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         Bank.setRemoteShops(src.getServer(), target.getUUID(), on);
         src.sendSuccess(() -> tr(on ? "remote_on" : "remote_off", target.getGameProfile().getName()), true);
+        return 1;
+    }
+
+    private static int adminMarket(CommandContext<CommandSourceStack> ctx, boolean on) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        Bank.setRemoteMarket(src.getServer(), target.getUUID(), on);
+        src.sendSuccess(() -> tr(on ? "market_on" : "market_off", target.getGameProfile().getName()), true);
         return 1;
     }
 }

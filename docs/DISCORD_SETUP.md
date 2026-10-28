@@ -13,7 +13,7 @@ In `serverconfig/bsp_core-server.toml` (or the world's copy) on **every** server
     mode = "mysql"            # network storage: Discord linking and alerts travel over its Redis link
 
     [storage.redis]
-        enabled = true        # with host, port, password and channel as the other network features already use
+        enabled = true        # with the channel the other network features already use; Redis's host, port and password are in config/bsp_core-network.toml
 
 [discord]
     enabled = true            # Herald unlocks and alerts go out; false keeps Herald locked
@@ -25,7 +25,7 @@ In `serverconfig/bsp_core-server.toml` (or the world's copy) on **every** server
 - Turn `discord.enabled` on only once the bot is running on the proxy (and Redis is 6.2 or newer). Before that, players could buy Herald and link codes would wait for a bot that is not there.
 - `serverName` is public: it is the only detail in the alert channel's line ("A totem is being stolen on Frostwarf").
 - Single-player and LAN worlds ignore all of this: Herald stays locked there and nothing is sent.
-- The client pack must not ship this file. Keep `bsp_core-server.toml` out of the pack's `defaultconfigs` (it also holds the database and Redis passwords).
+- The client pack must not ship this file. Keep `bsp_core-server.toml` out of the pack's `defaultconfigs`, and never ship `config/bsp_core-network.toml` (the database and Redis passwords live there).
 
 ## Redis permissions (only if the network's Redis users are limited)
 

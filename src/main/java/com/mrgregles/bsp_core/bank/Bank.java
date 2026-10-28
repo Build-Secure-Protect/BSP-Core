@@ -273,15 +273,22 @@ public final class Bank {
         BankLedger ledger = BankLedger.get(server);
         ledger.account(id).acceptPay = accept;
         ledger.setDirty();
-        NetworkStorage.bankFlags(id, accept, null, null);
+        NetworkStorage.bankFlags(id, accept, null, null, null);
     }
 
     public static void setRemoteShops(MinecraftServer server, UUID id, boolean on) {
         BankLedger ledger = BankLedger.get(server);
         ledger.account(id).remoteShops = on;
         ledger.setDirty();
-        NetworkStorage.bankFlags(id, null, on, null);
+        NetworkStorage.bankFlags(id, null, on, null, null);
         pushState(server, id);
+    }
+
+    public static void setRemoteMarket(MinecraftServer server, UUID id, boolean on) {
+        BankLedger ledger = BankLedger.get(server);
+        ledger.account(id).remoteMarket = on;
+        ledger.setDirty();
+        NetworkStorage.bankFlags(id, null, null, on, null);
     }
 
     /** Sends the player's own box and network state to their client, for the deposit box renderer. */
@@ -299,8 +306,21 @@ public final class Bank {
     }
 
     public static com.mrgregles.bsp_core.coin.CoinTier remoteUnlockTier() {
+        return tierOr(BSPConfig.BANK_REMOTE_UNLOCK_TIER);
+    }
+
+    /** How many coins, and of which tier, the Portable Banker's market unlock costs (config; an unknown tier name means Netherite). */
+    public static int marketUnlockCoins() {
+        return BSPConfig.getOr(BSPConfig.BANK_MARKET_UNLOCK_COINS, 12);
+    }
+
+    public static com.mrgregles.bsp_core.coin.CoinTier marketUnlockTier() {
+        return tierOr(BSPConfig.BANK_MARKET_UNLOCK_TIER);
+    }
+
+    private static com.mrgregles.bsp_core.coin.CoinTier tierOr(net.minecraftforge.common.ForgeConfigSpec.ConfigValue<String> value) {
         try {
-            return com.mrgregles.bsp_core.coin.CoinTier.valueOf(BSPConfig.BANK_REMOTE_UNLOCK_TIER.get().trim().toUpperCase(java.util.Locale.ROOT));
+            return com.mrgregles.bsp_core.coin.CoinTier.valueOf(value.get().trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
             return com.mrgregles.bsp_core.coin.CoinTier.NETHERITE;
         }
@@ -324,13 +344,32 @@ public final class Bank {
         then.accept(BankResult.ok(account(server, id).pieces));
     }
 
-    /** Admin, season end: nobody's Portable Banker reaches the Shopping Network any more. */
+    /** Buys the market for the player's Portable Banker with coins from their inventory. Fails with "market_already" or "coins_market". */
+    public static void unlockMarket(MinecraftServer server, Player player, Consumer<BankResult> then) {
+        UUID id = player.getUUID();
+        if (account(server, id).remoteMarket) {
+            then.accept(BankResult.fail("market_already"));
+            return;
+        }
+        int count = marketUnlockCoins();
+        com.mrgregles.bsp_core.coin.CoinTier tier = marketUnlockTier();
+        if (!com.mrgregles.bsp_core.coin.CoinWallet.take(player, tier, count)) {
+            then.accept(BankResult.fail("coins_market"));
+            return;
+        }
+        setRemoteMarket(server, id, true);
+        record(server, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.FEE, "Shatter Bank", "Market unlocked", 0, tier.ordinal(), -count, serverId()));
+        then.accept(BankResult.ok(account(server, id).pieces));
+    }
+
+    /** Admin, season end: nobody's Portable Banker reaches the Shopping Network or the market any more. Counts the accounts that had either. */
     public static int resetRemoteAll(MinecraftServer server) {
         BankLedger ledger = BankLedger.get(server);
         int n = 0;
         for (BankAccount a : ledger.all().values()) {
-            if (a.remoteShops) {
+            if (a.remoteShops || a.remoteMarket) {
                 a.remoteShops = false;
+                a.remoteMarket = false;
                 n++;
             }
         }
@@ -345,7 +384,7 @@ public final class Bank {
         long now = System.currentTimeMillis();
         ledger.account(id).seenMs = now;
         ledger.setDirty();
-        NetworkStorage.bankFlags(id, null, null, now);
+        NetworkStorage.bankFlags(id, null, null, null, now);
     }
 
     // ------------------------------------------------------------------ players
@@ -414,6 +453,20 @@ public final class Bank {
 
     private static BankTransaction tx(BankTransaction.Type type, String with, String detail, long pieces, String shopId, String itemId) {
         return new BankTransaction(System.currentTimeMillis(), type, with, detail, pieces, -1, 0, serverId(), shopId, itemId);
+    }
+
+    /**
+     * After another part of BSP-Core changed this account in the network database inside its own transaction (the market):
+     * the cached balance ({@code piecesAfter}, ignored when negative), the log line for {@code delta}, and a notice so the
+     * other servers re-read the account.
+     */
+    public static void changedInDatabase(MinecraftServer server, UUID id, long piecesAfter, BankTransaction.Type type, String with, String detail, long delta) {
+        if (piecesAfter >= 0) {
+            account(server, id).pieces = piecesAfter;
+            BankLedger.get(server).setDirty();
+        }
+        record(server, id, tx(type, with, detail, delta));
+        NetworkStorage.bankChanged(id);
     }
 
     /** Writes a log line locally and, on a network, to the database. */

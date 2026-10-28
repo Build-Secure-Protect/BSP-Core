@@ -35,7 +35,7 @@ public class PortableBankerItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             tooltip.add(Component.translatable("item.bsp_core.portable_banker.tip." + i).withStyle(ChatFormatting.GRAY));
         }
     }

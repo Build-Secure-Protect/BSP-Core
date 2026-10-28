@@ -143,11 +143,20 @@ public final class RedisLink implements AutoCloseable {
 
     // ------------------------------------------------------------------ sockets
 
+    /** The publishing connection waits at most this long for an answer; a half-open connection fails instead of blocking for good. */
+    static final int REPLY_TIMEOUT_MS = 5000;
+    /** The listening connection: after this long with nothing heard it sends PING; a second silence means the connection is dead. */
+    static final int LISTEN_TIMEOUT_MS = 45_000;
+
     private Socket open() throws IOException {
+        return open(REPLY_TIMEOUT_MS);
+    }
+
+    private Socket open(int readTimeoutMs) throws IOException {
         SocketFactory f = ssl ? SSLSocketFactory.getDefault() : SocketFactory.getDefault();
         Socket s = f.createSocket();
         s.connect(new InetSocketAddress(host, port), 4000);
-        s.setSoTimeout(0);
+        s.setSoTimeout(REPLY_TIMEOUT_MS); // AUTH and SELECT answer at once
         s.setKeepAlive(true);
         InputStream in = new BufferedInputStream(s.getInputStream());
         OutputStream out = s.getOutputStream();
@@ -161,6 +170,7 @@ public final class RedisLink implements AutoCloseable {
             out.flush();
             decode(in);
         }
+        s.setSoTimeout(readTimeoutMs);
         return s;
     }
 
@@ -250,7 +260,7 @@ public final class RedisLink implements AutoCloseable {
         long backoff = 2000;
         while (!closed) {
             try {
-                Socket s = open();
+                Socket s = open(LISTEN_TIMEOUT_MS);
                 sub = s;
                 InputStream in = new BufferedInputStream(s.getInputStream());
                 s.getOutputStream().write(encode("SUBSCRIBE", channel));
@@ -260,8 +270,22 @@ public final class RedisLink implements AutoCloseable {
                 lastError = "";
                 backoff = 2000;
                 BSPCore.LOGGER.info("BSP-Core redis: listening on {}:{} channel \"{}\"", host, port, channel);
+                boolean pinged = false;
                 while (!closed) {
-                    Object v = decode(in);
+                    Object v;
+                    try {
+                        v = decode(in);
+                    } catch (java.net.SocketTimeoutException quiet) {
+                        // nothing heard for a while: ask; a connection that cannot answer even that is dead (a half-open socket)
+                        if (pinged) {
+                            throw new IOException("no answer to PING; reconnecting");
+                        }
+                        s.getOutputStream().write(encode("PING"));
+                        s.getOutputStream().flush();
+                        pinged = true;
+                        continue;
+                    }
+                    pinged = false;
                     if (v instanceof List<?> l && l.size() == 3 && "message".equals(l.get(0)) && l.get(2) instanceof String text) {
                         String[] p = parse(text, serverId);
                         if (p != null) {

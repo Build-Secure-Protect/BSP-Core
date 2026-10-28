@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  * {@link BankDataPacket} carrying the fresh account and a message key.
  */
 public record BankActionPacket(Action action, int tier, int count, String text, long amount, boolean flag) {
-    public enum Action { DEPOSIT, WITHDRAW, PAY, TOGGLE_PAY, SEARCH, REFRESH, UNLOCK_NETWORK, OPEN_NETWORK }
+    public enum Action { DEPOSIT, WITHDRAW, PAY, TOGGLE_PAY, SEARCH, REFRESH, UNLOCK_NETWORK, OPEN_NETWORK, UNLOCK_MARKET, OPEN_MARKET }
 
     public static void encode(BankActionPacket msg, FriendlyByteBuf buf) {
         buf.writeEnum(msg.action);
@@ -132,6 +132,13 @@ public record BankActionPacket(Action action, int tier, int count, String text, 
                     com.mrgregles.bsp_core.shop.ShopListMenu.open(player);
                 } else {
                     BankMenu.sync(player, "network_locked", List.of(), null);
+                }
+            }
+            case UNLOCK_MARKET -> Bank.unlockMarket(server, player, r -> BankMenu.sync(player, r.ok() ? "market_unlocked" : r.key(), List.of(),
+                    new String[]{String.valueOf(Bank.marketUnlockCoins()), Bank.tierName(Bank.marketUnlockTier())}));
+            case OPEN_MARKET -> {
+                if (!menu.portable() || !com.mrgregles.bsp_core.trade.TradePostMenu.openPortable(player)) {
+                    BankMenu.sync(player, "market_locked", List.of(), null);
                 }
             }
             case REFRESH -> {

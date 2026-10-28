@@ -1,0 +1,18 @@
+{
+  "name": "Market on the Go",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:portable_banker",
+  "sortnum": 14,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:portable_banker",
+      "text": "The $(item)Portable Banker$() has a $(l)MARKET$() key under the Shopping Network. The market is its own one-time unlock: $(l)UNLOCK MARKET$() takes 12 Netherite Shatter Coins from your inventory, and it stays with your account on every server."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "MARKET opens the same market as a Trade Post: browse, buy, list lots and collect, wherever you are.$(br2)There is no list of traders on the Portable Banker. Trading with another player needs a Trade Post, and nobody can ask you to trade while you are only on the banker.$(br2)The unlock lasts the season, like the Shopping Network.",
+      "title": "Buying and selling"
+    }
+  ]
+}
