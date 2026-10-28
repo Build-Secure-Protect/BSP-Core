@@ -16,6 +16,7 @@ import html
 import json
 import os
 import tempfile
+from pathlib import Path
 
 from gen_material_assets import ASSETS, ROOT, read_png, vanilla, write_png
 
@@ -28,7 +29,8 @@ TQ = "#19d3b0"
 # vanilla items whose picture is a block texture rather than an item texture
 VANILLA_BLOCK = {"anvil": "anvil", "bricks": "bricks", "cobweb": "cobweb", "furnace": "furnace_front", "glass": "glass", "glass_pane": "glass", "magma_block": "magma",
                  "piston": "piston_side", "redstone_block": "redstone_block", "smooth_stone": "smooth_stone", "tnt": "tnt_side", "crafting_table": "crafting_table_front",
-                 "lever": "lever", "hopper": "hopper_outside", "stone": "stone", "deepslate": "deepslate", "end_stone": "end_stone"}
+                 "lever": "lever", "hopper": "hopper_outside", "stone": "stone", "deepslate": "deepslate", "end_stone": "end_stone",
+                 "blast_furnace": "blast_furnace_front", "dispenser": "dispenser_front", "crying_obsidian": "crying_obsidian"}
 VANILLA_NAMES = {"lapis_lazuli": "Lapis Lazuli", "tnt": "TNT"}
 ORE_HOST = {"tetrium_ore": ("stone", "tetrium"), "deepslate_tetrium_ore": ("deepslate", "tetrium"), "illyrium_ore": ("stone", "illyrium"),
             "deepslate_illyrium_ore": ("deepslate", "illyrium"), "end_stone_illyrium_ore": ("end_stone", "illyrium"),
@@ -38,6 +40,12 @@ BLOCK_TEX = {"shatter_coin_factory": "shatter_coin_factory_front", "illyrium_cru
 DYE_COLOURS = {"white": "#F9FFFE", "orange": "#F9801D", "magenta": "#C74EBD", "light_blue": "#3AB3DA", "yellow": "#FED83D", "lime": "#80C71F", "pink": "#F38BAA", "gray": "#474F52",
                "light_gray": "#9D9D97", "cyan": "#169C9C", "purple": "#8932B8", "blue": "#3C44AA", "brown": "#835432", "green": "#5E7C16", "red": "#B02E26", "black": "#1D1D21"}
 _cache = {}
+# items of other pack mods that BSP recipes ask for, pictured from the mod's jar in the owner's pack instance
+PACK = os.path.expanduser("~/Games/Instances/Build Secure Protect (Adding Mods)")
+PACK_MODS = {"allthemodium": "allthemodium-1.20.1-*.jar"}
+# tags BSP recipes use for those items
+TAG_ITEM = {"forge:ingots/allthemodium": "allthemodium:allthemodium_ingot", "forge:ingots/vibranium": "allthemodium:vibranium_ingot",
+            "forge:ingots/unobtainium": "allthemodium:unobtainium_ingot"}
 
 
 def is_dyed_cable(name):
@@ -73,8 +81,18 @@ def icon_src(item):
     try:
         if ns == "patchouli":
             src = b64(vanilla16("item/book.png"))
+        elif item == "minecraft:wither_skeleton_skull":  # drawn from the mob's face, as the inventory shows the skull
+            _, _, rows = vanilla("entity/skeleton/wither_skeleton.png")
+            src = b64(rows_png(8, 8, [r[8:16] for r in rows[8:16]]))
         elif ns == "minecraft":
             src = b64(vanilla16(f"block/{VANILLA_BLOCK[name]}.png" if name in VANILLA_BLOCK else f"item/{name}.png"))
+        elif ns in PACK_MODS:
+            # another mod's item, read from its jar in the pack instance (nothing of it is kept in this repo)
+            jars = glob.glob(os.path.join(PACK, "mods", PACK_MODS[ns]))
+            if jars:
+                import zipfile
+                with zipfile.ZipFile(jars[0]) as z:
+                    src = b64(z.read(f"assets/{ns}/textures/item/{name}.png"))
         elif name in ORE_HOST:
             host, metal = ORE_HOST[name]
             _, _, base = vanilla(f"block/{host}.png")
@@ -87,7 +105,13 @@ def icon_src(item):
             for path in (ASSETS / f"textures/item/{name}.png", ASSETS / f"textures/block/{BLOCK_TEX.get(name, name)}.png", ASSETS / f"textures/item/{name}_00.png",
                          ICONS / f"{name}.png"):
                 if path.exists():
-                    src = b64(path.read_bytes())
+                    if Path(str(path) + ".mcmeta").exists() and (ICONS / f"{name}.png").exists():  # an animated atlas (the totem's): its inventory icon
+                        src = b64((ICONS / f"{name}.png").read_bytes())
+                    elif Path(str(path) + ".mcmeta").exists():  # an animated strip: its first frame
+                        w, _, rows = read_png(path.read_bytes())
+                        src = b64(rows_png(w, w, rows[:w]))
+                    else:
+                        src = b64(path.read_bytes())
                     break
     except (KeyError, FileNotFoundError):
         src = None
@@ -176,7 +200,7 @@ def p(text):
 # ----------------------------------------------------------------------------- the totem
 def totem_plates():
     facts = ("<ul class='facts'>"
-             "<li><b>Everyone gets one</b> on their first join. It cannot be crafted or destroyed, only stolen.</li>"
+             "<li><b>Everyone gets one</b> on their first join. It cannot be crafted or destroyed, only stolen, or poured in the Totem Forge at the end of the road.</li>"
              "<li><b>Place it</b> and it projects your base powers in a cube around it. <b>Carry it</b> and it powers you.</li>"
              "<li><b>Steal one</b> by standing at a rival's totem until the timer runs out: five minutes by default. The owner is warned the moment it starts.</li>"
              "<li><b>Nothing makes a totem safe.</b> No power, no block, no trick. That rule is not going to change.</li>"
@@ -218,7 +242,7 @@ def progression():
              ("2. Illyrium: slow, valuable, and the key to the rest", ["illyrium_ore", "dirty_illyrium_ingot", "illyrium_refinery", "illyrium_nugget", "illyrium_processor", "illyrium_ingot"]),
              ("3. Magnatite: the centrifuge, charged metal and coins", ["magnetic_centrifuge", "magnatite_ingot", "charged_magnatite_ingot", "shatter_coin_factory", "copper_shatter_coin", "charged_resonance_crystal"]),
              ("4. Wave Plasma: the totem's power on tap", ["plasma_extractor", "plasma_interface", "tetrium_core_cable", "totem_projector", "plasma_injector", "plasma_battery_2"]),
-             ("5. End game", ["illyrium_shatter_coin", "decoy_totem", "plasma_battery_4", "charged_illyrium_core_cable", "wave_emitter", "tank_port"])]
+             ("5. End game: a second totem", ["illyrium_shatter_coin", "decoy_totem", "plasma_battery_4", "wave_emitter", "mould_shell", "totem_forge"])]
     rows = ""
     for title, ids in tiers:
         parts = []
@@ -406,8 +430,23 @@ def extras():
           + p("For admins: keeps Shatter Totems and chosen BSP blocks out of a box of up to 256 blocks in each direction. Spawn, hubs, arenas.") + '</div></div>'
           + f'<p class="hint big">{icon("score_screen", 40)} <span><b>Score Screen.</b> An admin block, placed from the creative menu: shows the live leaderboard, the rules, or the season\'s prizes. Every totem scores by its tier.</span></p>'
           + f'<p class="hint big">{icon("admin_rack", 40)} <span><b>Admin Rack</b>, or /bsp admin. Every player\'s totems, positions and vault coins, with teleport and reset. End a season from it: the top three get the prizes you placed, everyone gets a fresh totem.</span></p>'
-          + f'<p class="hint big">{icon("totem_compass", 40)} <span><b>One config file</b>, serverconfig/bsp_core-server.toml, holds every cost, time, range and price. Optional MySQL or MariaDB links several servers into one season.</span></p>',
+          + f'<p class="hint big">{icon("totem_compass", 40)} <span><b>One config file</b>, serverconfig/bsp_core-server.toml, holds every cost, time, range and price. Optional MySQL or MariaDB links several servers into one season; its passwords stay in config/bsp_core-network.toml, which players never get.</span></p>',
           "Moderators get a read-only admin view. /bsp totem buff and /bsp totem tier set powers for testing.")
+    forge = {"I": "metal_intake", "H": "forge_hearth", "X": "totem_forge", "T": "melt_tank", "C": "forge_cap", "P": "pour_head"}
+    shape = [["IH", "XH"], ["  ", "  "], ["TC", "TP"]]
+    bill = [("tetrium_ingot", 128), ("magnatite_ingot", 32), ("charged_magnatite_ingot", 8), ("illyrium_ingot", 12), ("allthemodium:allthemodium_ingot", 32),
+            ("allthemodium:vibranium_ingot", 16), ("allthemodium:unobtainium_ingot", 8), ("minecraft:netherite_ingot", 2)]
+    plate("totem_forge", "The Totem Forge: a second totem",
+          '<div class="split"><div class="col">' + h3("Build it (2 x 2 x 3)") + layers(shape, forge, ["Bottom", "Middle: keep it empty", "Top"], 40)
+          + legend(forge, count(shape, forge))
+          + p("The hearths take lava and RF, the intake takes ingots, molten metal and lava buckets. Ghost blocks and the Assembly Guide show what is missing.") + '</div>'
+          '<div class="col">' + h3("The mould, in this order") + chain("base_mould", "+", ("foot_mould", 2), "+", "torso_mould", "+", ("arm_mould", 2), size=36)
+          + chain("head_mould", "+", "totem_core", ("from Mould Shells",), "mould_shell", size=36)
+          + p("Every piece lasts three pours, then cracks. The Totem Core is used up by every pour.")
+          + h3("One totem's metal") + '<ul class="legend">' + "".join(f'<li>{icon(i, 24)} {n} x {html.escape(name_of(full(i)))}</li>' for i, n in bill) + '</ul>'
+          + p("Each metal melts into its own tank, an ingot every 2 seconds for 25 mB of lava. Molten Tetrium, Magnatite and Illyrium can be piped straight in.") + '</div></div>'
+          + '<div class="jobs">' + chain("tetrium_ingot", ("melts",), "molten_tetrium_bucket", ("POUR: 30 s",), "base_mould", ("sets in 5 days, 15 if you own a totem",), "shatter_totem", size=36) + '</div>',
+          "Pouring is free if you own no totem; otherwise it costs 4 Illyrium Coins' worth for each one you own. Anyone else can steal the set totem by staying beside the forge for 2.5 minutes.")
 
 
 # ----------------------------------------------------------------------------- recipes, in the order you need them
@@ -427,14 +466,17 @@ GROUPS = [
     ("Decoys and traps", ["magnet_core", "decoy_power_base", "decoy_totem", "range_coil_mk1", "range_coil_mk2", "range_coil_mk3", "blast_charge", "hex_charge", "poison_charge", "fatigue_charge",
                           "warp_charge", "trap_amplifier", "reinforced_casing"]),
     ("Across worlds", ["accelerator_frame", "accelerator_intake", "decelerator_core", "decelerator_port", "link_card", "link_expander"]),
+    ("Totem Forge", ["totem_forge", "metal_intake", "forge_hearth", "melt_tank", "pour_head", "forge_cap", "mould_shell", "base_mould", "foot_mould", "torso_mould",
+                     "arm_mould", "head_mould", "totem_core"]),
 ]
 # the bank's one recipe joins the coins' chunk, the link recipes follow the plasma ones
 GROUPS.insert([g for g, _ in GROUPS].index("Wave Plasma"), ("Bank", ["portable_banker"]))
 GROUPS.insert([g for g, _ in GROUPS].index("Decoys and traps"), GROUPS.pop([g for g, _ in GROUPS].index("Across worlds")))
 # where each group's recipe plates go: after this plate
 ANCHOR = {"Tetrium": "machines_single", "Illyrium Crucible": "machine_illyrium_crucible", "Illyrium Refinery": "machine_illyrium_refinery", "Illyrium": "machine_illyrium_refinery",
-          "Magnetic Centrifuge": "machine_magnetic_centrifuge", "Shatter Coins": "machine_coin_factory", "Wave Plasma": "cable_colours", "Batteries": "cable_colours", "Decoys and traps": "raiding", "Across worlds": "cable_colours", "Bank": "machine_coin_factory"}
-NO_RECIPE = [("shatter_totem", "given on your first join"), ("tetrium_nugget", "Tetrium Crucible"), ("tetrium_slag", "Tetrium Crucible"), ("tetrium_dust", "crushing"),
+          "Magnetic Centrifuge": "machine_magnetic_centrifuge", "Shatter Coins": "machine_coin_factory", "Wave Plasma": "cable_colours", "Batteries": "cable_colours", "Decoys and traps": "raiding", "Across worlds": "cable_colours", "Bank": "machine_coin_factory",
+          "Totem Forge": "totem_forge"}
+NO_RECIPE = [("shatter_totem", "first join, or the Totem Forge"), ("tetrium_nugget", "Tetrium Crucible"), ("tetrium_slag", "Tetrium Crucible"), ("tetrium_dust", "crushing"),
              ("dirty_illyrium_ingot", "Illyrium Crucible"), ("pure_illyrium_dust", "Illyrium Refinery"), ("illyrium_nugget", "Illyrium Crucible"), ("magnatite_nugget", "Magnetic Centrifuge"),
              ("carbon_dust", "Magnetic Centrifuge"), ("charged_magnatite_ingot", "Magnetic Centrifuge"), ("charged_resonance_crystal", "Magnetic Centrifuge"),
              ("copper_shatter_coin", "Shatter Coin Factory"), ("illyrium_shatter_coin", "Shatter Coin Factory"), ("raw_tetrium", "mined")]
@@ -447,7 +489,7 @@ def ingredient(o):
         tag = o["tag"]
         if tag.endswith("_cables"):
             return "bsp_core:" + tag.split(":")[1].replace("_cables", "_core_cable")
-        return {"bsp_core:illyrium_ores": "bsp_core:illyrium_ore", "bsp_core:tetrium_ores": "bsp_core:tetrium_ore", "bsp_core:magnatite_ores": "bsp_core:magnatite_ore"}.get(tag)
+        return {"bsp_core:illyrium_ores": "bsp_core:illyrium_ore", "bsp_core:tetrium_ores": "bsp_core:tetrium_ore", "bsp_core:magnatite_ores": "bsp_core:magnatite_ore", **TAG_ITEM}.get(tag)
     return o.get("item")
 
 
@@ -504,6 +546,15 @@ def recipe_cards():
     return cards
 
 
+# what Tinkers' Construct and Thermal melt BSP metal into (gen_molten_recipes.py): never more than the BSP machines give
+MELTS = [("raw_tetrium", "20 mB, as the Tetrium Crucible's 2 nuggets"), ("raw_magnatite", "30 mB, as the Centrifuge's 3 nuggets"),
+         ("tetrium_nugget", "10 mB a nugget of any of the three"), ("illyrium_ingot", "90 mB an ingot of any of the three")]
+MELTING = ('<div class="norecipe">' + h3("Melting in Tinkers' Construct and Thermal") + '<ul class="legend">'
+           + "".join(f'<li>{icon(i, 24)} <span><b>{html.escape(name_of(full(i)))}</b> {html.escape(t)}</span></li>' for i, t in MELTS)
+           + '</ul><p class="hint">Ores melt like their raw metal. Illyrium Ore, Dirty Illyrium and Charged Magnatite never melt. Tinkers casts nuggets and ingots back one for one; '
+             "Thermal's Blast Chiller casts ingots. No ore doubling.</p></div>")
+
+
 def recipe_plates():
     """Chunks of twelve cards; each chunk goes after the anchor plate of its last card's group. Returns {anchor slug: [plate tuples]}."""
     cards = recipe_cards()
@@ -516,7 +567,7 @@ def recipe_plates():
         body = '<div class="rcs">' + "".join(c for _, _, c in chunk) + "</div>"
         if len(chunk) < per:  # the last plate: fill the space with what has no recipe
             rows = "".join(f'<li>{icon(i, 22)} <b>{html.escape(name_of(full(i)))}</b> {html.escape(how)}</li>' for i, how in NO_RECIPE)
-            body = ('<div class="rcs">' + "".join(c for _, _, c in chunk) + "</div>"
+            body = ('<div class="rcs">' + "".join(c for _, _, c in chunk) + "</div>" + (MELTING if len(chunk) <= 4 else "")
                     + f'<div class="norecipe">{h3("Made elsewhere: these have no crafting recipe")}<ul class="legend four">{rows}</ul></div>')
         note = "A small number on the result is how many one craft makes. JEI and EMI show all of these in game, with every machine's jobs."
         PLATES.append(("", "", ""))  # placeholder so plate() can be reused for the html
@@ -609,7 +660,7 @@ def main():
     extras()
     # the metals' build plates sit next to their flow plates: reorder into the reading order, then slot the recipe plates in
     order = ["totem", "totem_powers", "progression", "ores", "tetrium", "machines_single", "illyrium", "machine_illyrium_crucible", "machine_illyrium_refinery", "magnatite",
-             "machine_magnetic_centrifuge", "coins", "machine_coin_factory", "plasma_network", "plasma_blocks", "plasma_tank_injector", "batteries", "cable_colours", "raiding", "base_blocks"]
+             "machine_magnetic_centrifuge", "coins", "machine_coin_factory", "plasma_network", "plasma_blocks", "plasma_tank_injector", "batteries", "cable_colours", "raiding", "totem_forge", "base_blocks"]
     by_slug = {s: (s, t, b) for s, t, b in PLATES}
     assert set(by_slug) == set(order), set(by_slug) ^ set(order)
     recipes = recipe_plates()

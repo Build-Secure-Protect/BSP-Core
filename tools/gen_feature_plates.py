@@ -46,6 +46,12 @@ PLATES = [
      "The kit's slots, FROM HAND and FROM INVENTORY, an item browser with search and mod chips, and every rule as a row of chips.", None),
     ("herald_discord", "discord_herald_concepts.html", "document.querySelectorAll('.grid3')[0].children[0].querySelectorAll('.dc')[0]", "Herald on Discord",
      "A message from the BSP bot when your totem is being stolen, and another when it is over. The alert channel only ever reads \"A totem is being stolen on Frostwarf\".", 560),
+    ("trade_post_market", "trade_post_concepts.html", "document.getElementById('m2')", "The Trade Post",
+     "MARKET, SELL and COLLECT along the top, the lots as cards with their price and age, search and sort, and everyone at a Trade Post on the network down the right.", 600),
+    ("trade_screen", "trade_post_concepts.html", "document.getElementById('t2')", "Trading with a player",
+     "Your offer on the left, theirs on the right as they change it, pieces and READY under each, five pips for the countdown, and the trade chat beside your inventory.", 720),
+    ("market_board", "trade_post_concepts.html", "document.getElementById('b1')", "The Market Board",
+     "A Score Screen showing the newest lots on the market: the item, the price, and how long ago it was listed, on every server.", 720),
     ("herald_card", "herald_tree_concepts.html", "document.getElementById('cv-a')", "Herald on the tree",
      "Herald sits off Alarm on the tier II ring. Its card carries your own Discord line: LINK gives a code for /link in the BSP Discord.", 700),
 ]

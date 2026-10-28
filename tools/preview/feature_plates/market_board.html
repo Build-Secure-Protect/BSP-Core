@@ -1,0 +1,370 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+.bsp-target { width: 720px !important; max-width: none !important; }</style><title>Trade Post Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&family=VT323&display=swap">
+<style>
+/* Board like the other BSP concept pages: one column of cards; three.js views for the block, canvases at GUI pixel size (drawn 3x) for the screens and the Score Screen page. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; max-width:100%; background:radial-gradient(ellipse at 50% 72%,#2b3140 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view canvas{ display:block; width:100%; height:100%; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; }
+.seg{ display:flex; flex-wrap:wrap; gap:6px; }
+.btn{ font:600 12px var(--body); color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:5px 12px; cursor:pointer; }
+.btn[aria-pressed="true"]{ border-color:var(--acc); color:var(--acc); }
+.btn:focus-visible, input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.shot{ background:#1b1d22; border-radius:4px; padding:12px; overflow-x:auto; display:flex; justify-content:center; }
+canvas.gui{ display:block; width:100%; height:auto; image-rendering:pixelated; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:6px; max-width:80ch; } ol b{ color:var(--fg); }
+ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:3px; } ul.d b{ color:var(--fg); font-weight:600; }
+</style>
+<div class="wrap">
+<section><h1>Trade Post Concepts</h1>
+<p class="lede">Three designs each for the Trade Post block, its main screen (the market and the list of players at a Trade Post), the trade screen, and the Market page on the Score Screen. The screens are drawn at Minecraft GUI size in the Cash Machine skin the Bank and the shops use. Names, items and prices are made up for the picture. Nothing is built.</p>
+<div class="card" style="border-color:var(--acc)"><h3>Picked (owner, 2026-10-27)</h3><p><b>Main screen C</b>, <b>trade screen C</b>, <b>Market page B</b>. The block: none of these three; round 2 has new looks with scales on a counter, the screen behind and labelled buttons.</p></div>
+<div class="card"><h3>Decided (owner, 2026-10-27)</h3>
+<ul class="d">
+<li><b>Live trades</b> with anyone at a Trade Post on the network, other servers included. A request lasts 30 s, a player trading shows as busy.</li>
+<li><b>12 slots a side</b>, a pieces box under each, READY under that. Any change turns both READY lights off; the 5 s countdown locks the slots.</li>
+<li><b>Space is worked out at the end</b>; if it does not fit nothing moves and both players are told who is short. Leaving cancels.</li>
+<li><b>Market lots</b> of up to 9 stacks, 10 a player, 7 days. The seller pays 5% when listing, the buyer pays the price plus 5%; the tax goes into the lottery pot.</li>
+<li><b>Totems, Forged totems and Totem Cores</b> are refused. Admins place the posts. Search and sort above the lots. A MARKET key on the Portable Banker behind its own unlock.</li>
+</ul></div>
+</section>
+
+<section><h2>1. The block</h2>
+<p class="lede">Two blocks wide, two tall, one deep, turned to face the player who places it. TRADE on the screen. The grey cube is one block, for scale. Drag to turn.</p>
+<div class="card"><div class="ctl"><label><input type="checkbox" id="night"> Night (shows what glows)</label><label><input type="checkbox" id="busy" checked> Someone using it</label></div></div>
+<div class="grid3">
+<div class="card"><h3>A. Street Kiosk</h3><div class="view" id="v0"></div><p>The Cash Machine made twice as wide: cream casing, one wide green screen, a slanted row of beige keys, and two item hatches at the foot with arrows between them. Reads as the screens look.</p></div>
+<div class="card"><h3>B. Exchange Pillar</h3><div class="view" id="v1"></div><p>A wide cousin of the Bank's Vault Pillar: dark steel, riveted bands, the screen under a hood, amber keys down both sides, a beacon on each top corner, and a drawer that slides from one side to the other while a trade runs.</p></div>
+<div class="card"><h3>C. Market Booth</h3><div class="view" id="v2"></div><p>A wooden booth with a striped awning, the screen set into the back panel, a brass counter with two trays and a lantern on each front post. Ties it to the Market Stalls.</p></div>
+</div></section>
+
+<section><h2>2. The main screen</h2>
+<p class="lede">Opens on the market. The players at a Trade Post anywhere on the network are listed at the right; picking a name lights the trade key. The same market screen opens from the Portable Banker's MARKET key, without the player list.</p>
+<div class="card"><div class="seg" id="mainState" role="group" aria-label="Main screen state">
+<button class="btn" data-s="market" aria-pressed="true">The market</button><button class="btn" data-s="lot" aria-pressed="false">A lot opened</button><button class="btn" data-s="sell" aria-pressed="false">Listing a lot</button><button class="btn" data-s="request" aria-pressed="false">A trade request comes in</button></div></div>
+<div class="card"><h3>A. One screen, keys below</h3><div class="shot"><canvas class="gui" id="m0"></canvas></div><p>One wide phosphor screen split in two: the lots on the left, the players on the right. A strip of physical keys underneath, grouped as market keys, the trade key, and CLOSE, with gaps between the groups.</p></div>
+<div class="card"><h3>B. Key column, like the Bank</h3><div class="shot"><canvas class="gui" id="m1"></canvas></div><p>The Bank's layout with a second, narrow screen: the keys in a column on the left, the market in the middle, the players on their own screen at the right with the ASK TO TRADE key under it. The widest of the three.</p></div>
+<div class="card"><h3>C. Touch screen with tabs</h3><div class="shot"><canvas class="gui" id="m2"></canvas></div><p>No physical keys: one tall screen with MARKET, SELL and COLLECT tabs along the top, the lots as cards with big item pictures, and the players in a darker band at the right. Buttons are drawn on the screen.</p></div>
+</section>
+
+<section><h2>3. The trade screen</h2>
+<p class="lede">Your offer on the left, theirs on the right, a pieces box and READY under each, the chat at the bottom, your inventory below or beside it.</p>
+<div class="card"><div class="seg" id="tradeState" role="group" aria-label="Trade screen state">
+<button class="btn" data-s="fill" aria-pressed="true">Filling the offers</button><button class="btn" data-s="count" aria-pressed="false">Both ready, countdown</button><button class="btn" data-s="noroom" aria-pressed="false">Not enough space</button></div></div>
+<div class="card"><h3>A. Mirror</h3><div class="shot"><canvas class="gui" id="t0"></canvas></div><p>The two offers face each other with a small screen between them that tells you what is happening: who is ready, the countdown as a big number, or who is short of space. The chat screen runs the full width above the inventory.</p></div>
+<div class="card"><h3>B. Ready lamps in the middle</h3><div class="shot"><canvas class="gui" id="t1"></canvas></div><p>The middle column holds two large lamps, one per player, and the one READY key. The countdown is a bar across the whole screen that drains over 5 seconds. Messages show in the chat screen as lines from the Trade Post.</p></div>
+<div class="card"><h3>C. Low and wide</h3><div class="shot"><canvas class="gui" id="t2"></canvas></div><p>The inventory and the chat sit side by side at the bottom, so the screen is wider but much shorter and fits small windows. The countdown is five pips that go out one a second.</p></div>
+</section>
+
+<section><h2>4. The Market page on the Score Screen</h2>
+<p class="lede">A new "Market" board in the Score Screen's settings, shown alone or in the rotation. Each page below is a 4 by 2 screen in one of the three looks every board already has. It scrolls slowly through every lot.</p>
+<div class="card"><h3>A. Ledger rows</h3><div class="shot"><canvas class="gui" id="b0"></canvas></div><p>One lot a row: the item picture, its count and name, "+2 more" for a lot of several stacks, how long ago it was listed, and the price in gold at the right.</p></div>
+<div class="card"><h3>B. Tiles</h3><div class="shot"><canvas class="gui" id="b1"></canvas></div><p>A big item picture per lot with the price under it and the name and age in small type; four across on this size of screen, more on a wider one.</p></div>
+<div class="card"><h3>C. Beside the leaderboard</h3><div class="shot"><canvas class="gui" id="b2"></canvas></div><p>The Side look: the leaderboard keeps the left two thirds, the market scrolls in a column at the right.</p></div>
+</section>
+
+<section><h2>5. What each needs</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A</th><th>B</th><th>C</th></tr></thead><tbody>
+<tr><td><b>Block</b></td><td>A static model from a generator; the renderer draws the screen and the hatch slits.</td><td>Model plus a renderer for the screen, the turning beacons and the sliding drawer.</td><td>Model plus a renderer for the screen and the lantern flicker.</td></tr>
+<tr><td><b>Main screen</b></td><td>300 by 216, the Bank's size.</td><td>372 by 216; needs a GUI scale with that much room.</td><td>300 by 216; the cards show 9 lots at once against 6 rows in A, with less text on each.</td></tr>
+<tr><td><b>Trade screen</b></td><td>320 by 286.</td><td>320 by 286.</td><td>380 by 212.</td></tr>
+<tr><td><b>Market page</b></td><td colspan="3">The Score Screen's existing looks; the board line gains a third column (the age) between the text and the price.</td></tr>
+</tbody></table></div></div>
+</section>
+
+<section><h2>6. Picks to make</h2><div class="card"><ol>
+<li><b>Block:</b> A, the Cash Machine made wide; B, the Bank's steel pillar made wide; or C, a wooden booth under an awning.</li>
+<li><b>Main screen:</b> A, one split screen with keys below; B, the Bank's key column with a second screen for the players; or C, a touch screen with tabs and lot cards.</li>
+<li><b>Trade screen:</b> A, the offers facing a status screen; B, ready lamps in the middle and a draining bar; or C, low and wide with the chat beside the inventory.</li>
+<li><b>Market page:</b> A, ledger rows; B, tiles; or C, beside the leaderboard. Each is a look an admin can choose per screen, so the pick is the default.</li>
+</ol></div></section>
+</div>
+<script src="../https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- shared data ---------- */
+  const NAMES={diamond:'Diamond',gold:'Gold Ingot',iron:'Iron Ingot',netherite:'Netherite Ingot',apple:'Golden Apple',book:'Enchanted Book',log:'Oak Log',pearl:'Ender Pearl',redstone:'Redstone',pick:'Diamond Pickaxe',coin:'Shatter Coin'};
+  const LOTS=[
+    {items:[['diamond',64],['diamond',32],['gold',16]],seller:'Alex',price:2400,age:'12 m'},
+    {items:[['book',1]],name:'Mending Book',seller:'Kira_B',price:900,age:'40 m'},
+    {items:[['iron',64],['iron',64],['iron',64]],seller:'Tobbe',price:1150,age:'2 h'},
+    {items:[['netherite',4]],seller:'Wren',price:5200,age:'3 h'},
+    {items:[['apple',8]],seller:'Juno42',price:640,age:'5 h'},
+    {items:[['log',64],['log',64],['log',64],['log',64]],seller:'Alex',price:300,age:'9 h'},
+    {items:[['pearl',16]],seller:'Steve',price:480,age:'1 d'},
+    {items:[['redstone',64],['redstone',64]],seller:'Wren',price:220,age:'2 d'},
+    {items:[['pick',1]],seller:'Kira_B',price:1500,age:'4 d'}];
+  const PLAYERS=[{n:'Steve',s:'Spawn'},{n:'Alex',s:'Spawn'},{n:'Kira_B',s:'Survival',busy:true},{n:'Tobbe',s:'Survival'},{n:'Wren',s:'Events'},{n:'Juno42',s:'Spawn'}];
+  const INV=[['iron',23],['log',64],null,['redstone',40],null,null,['coin',12],null,null, null,['gold',9],null,null,['book',1],null,null,null,null, null,null,null,null,null,null,null,null,null, ['pick',1],null,['apple',3],null,null,null,null,null,['diamond',5]];
+  const fmt=n=>n.toLocaleString('en-GB');
+  const lotTitle=l=>{ const k=l.items[0][0], n=l.items[0][1]; return (n>1?n+' ':'')+(l.name||NAMES[k])+(l.items.length>1?' +'+(l.items.length-1)+' more':''); };
+
+  /* ---------- item pictures: 8x8 maps drawn at 2 px ---------- */
+  const ING=['........','........','..aaaaa.','.acccba.','abbbbba.','aaaaaa..','........','........'];
+  const ICONS={
+    diamond:{p:{a:'#0e6b6b',b:'#2fd3cc',c:'#a8fff7'},m:['...aa...','..abca..','.abbcca.','abbbbcca','abbbbbba','.abbbba.','..abba..','...aa...']},
+    iron:{p:{a:'#5a5a5a',b:'#c8c8c8',c:'#f0f0f0'},m:ING},
+    gold:{p:{a:'#8a5a00',b:'#f2b544',c:'#fff3a8'},m:ING},
+    netherite:{p:{a:'#151214',b:'#4a4245',c:'#7a7074'},m:ING},
+    apple:{p:{a:'#8a5a00',b:'#ffd23a',c:'#fff3a8',d:'#3a8a2a',e:'#5a3a1a'},m:['...e....','...ed...','.abbba..','abcbbba.','abbbbba.','abbbbba.','.abbba..','..aaa...']},
+    book:{p:{a:'#3a1a5a',b:'#8a3ad3',c:'#e0a8ff',d:'#c9a227'},m:['........','.daaaaa.','.dbbbba.','.dbccba.','.dbbbba.','.dbbcba.','.daaaaa.','........']},
+    log:{p:{a:'#4a3218',b:'#6b4a2b',c:'#b08a52',d:'#8a6a3a'},m:['aaaaaaaa','abbbbbba','abccccba','abcddcba','abcddcba','abccccba','abbbbbba','aaaaaaaa']},
+    pearl:{p:{a:'#0b3b36',b:'#1f8a7a',c:'#6ff0d8'},m:['........','..aaaa..','.abbbba.','.abccba.','.abccba.','.abbbba.','..aaaa..','........']},
+    redstone:{p:{a:'#7a0000',b:'#ff2a1a'},m:['........','..b..a..','.bab....','..b.bba.','....bab.','.ab..b..','bab.....','.b......']},
+    pick:{p:{a:'#7a5a3a',b:'#2fd3cc',c:'#0e6b6b'},m:['.cbbbc..','c....bc.','.....ab.','....a.bc','...a....','..a.....','.a......','a.......']},
+    coin:{p:{a:'#8a5a00',b:'#f2b544',c:'#fff3a8',d:'#5a3a00'},m:['..aaaa..','.abbbba.','abcbbdba','abbbdbba','abbdbbba','abdbbcba','.abbbba.','..aaaa..']}};
+  function icon(g,kind,x,y,s){ s=s||2; const ic=ICONS[kind]; if(!ic) return; ic.m.forEach((row,j)=>{ for(let i=0;i<8;i++){ const ch=row[i]; if(ch&&ch!=='.'){ g.fillStyle=ic.p[ch]; g.fillRect(x+i*s,y+j*s,s,s); } } }); }
+
+  /* ---------- GUI drawing (Cash Machine colours from BankScreen) ---------- */
+  const R=3, FONT='VT323, ui-monospace, monospace';
+  const C={BEZEL:'#cfc8b8',BEZEL_D:'#8f877a',BEZEL_L:'#ece6d8',SCREEN:'#061008',SCREEN_E:'#0d3b22',PHOS:'#58f29a',DIM:'#3fb97a',AMBER:'#f2b544',KEY:'#eae4d5',KEY_E:'#9a9183',KEY_T:'#2b2823',KEY_L:'#8f877a',SEL:'#0f2d1c',ON_E:'#2e8b57',BAND:'#030805'};
+  function gui(cv,w,h){ cv.width=w*R; cv.height=h*R; cv.style.maxWidth=Math.round(w*2.6)+'px'; const g=cv.getContext('2d'); g.setTransform(R,0,0,R,0,0); g.imageSmoothingEnabled=false; g.textBaseline='top'; return g; }
+  function fill(g,x,y,w,h,c){ g.fillStyle=c; g.fillRect(x,y,w,h); }
+  function frame(g,x,y,w,h,c){ fill(g,x,y,w,1,c); fill(g,x,y+h-1,w,1,c); fill(g,x,y,1,h,c); fill(g,x+w-1,y,1,h,c); }
+  function bezel(g,w,h){ fill(g,0,0,w,h,C.BEZEL_D); fill(g,0,0,w-1,h-1,C.BEZEL_L); fill(g,1,1,w-2,h-2,C.BEZEL); }
+  function scr(g,x,y,w,h){ fill(g,x-1,y-1,w+2,h+2,C.SCREEN_E); fill(g,x,y,w,h,C.SCREEN); }
+  function txt(g,s,x,y,c,o){ o=o||{}; const size=o.size||10; g.font=size+'px '+FONT; const w=g.measureText(s).width; const sc=o.max&&w>o.max?o.max/w:1; const al=o.align||'left';
+    const ax=al==='right'?x-w*sc:al==='center'?x-w*sc/2:x; g.save(); g.translate(ax,y); g.scale(sc,sc); if(o.shadow){ g.fillStyle='#3f3f3f'; g.fillText(s,1,1); } g.fillStyle=c; g.fillText(s,0,0); g.restore(); return w*sc; }
+  function wrap(g,s,x,y,w,c,o){ o=o||{}; const size=o.size||10, lh=o.lh||9; g.font=size+'px '+FONT; const words=s.split(' '); let line='', yy=y;
+    words.forEach(wd=>{ const t=line?line+' '+wd:wd; if(g.measureText(t).width>w&&line){ txt(g,line,o.align==='center'?x+w/2:x,yy,c,{size,align:o.align}); yy+=lh; line=wd; } else line=t; });
+    if(line) txt(g,line,o.align==='center'?x+w/2:x,yy,c,{size,align:o.align}); return yy+lh; }
+  function key(g,x,y,w,h,label,o){ o=o||{}; fill(g,x,y,w,h+2,o.on?C.ON_E:C.KEY_E); fill(g,x,y,w,h,o.on?C.PHOS:C.KEY); txt(g,label.toUpperCase(),x+w/2,y+(h-8)/2,o.locked?C.KEY_L:C.KEY_T,{align:'center',max:w-6}); }
+  function skey(g,x,y,w,h,label,o){ o=o||{}; if(o.on){ fill(g,x,y,w,h,C.PHOS); txt(g,label,x+w/2,y+(h-8)/2,C.SCREEN,{align:'center',max:w-4}); } else { frame(g,x,y,w,h,o.locked?C.SCREEN_E:C.DIM); txt(g,label,x+w/2,y+(h-8)/2,o.locked?C.SCREEN_E:C.PHOS,{align:'center',max:w-4}); } }
+  function slot(g,x,y){ fill(g,x,y,18,18,'#373737'); fill(g,x+1,y+1,17,17,'#ffffff'); fill(g,x+1,y+1,16,16,'#8b8b8b'); }
+  function sslot(g,x,y){ fill(g,x,y,18,18,C.SCREEN_E); fill(g,x+1,y+1,16,16,C.SEL); }
+  function item(g,it,x,y){ if(!it) return; icon(g,it[0],x,y); if(it[1]>1) txt(g,String(it[1]),x+17,y+9,'#ffffff',{align:'right',shadow:true}); }
+  function inv(g,x,y){ for(let r=0;r<3;r++) for(let c=0;c<9;c++){ slot(g,x+c*18,y+r*18); item(g,INV[r*9+c],x+c*18+1,y+r*18+1); }
+    for(let c=0;c<9;c++){ slot(g,x+c*18,y+58); item(g,INV[27+c],x+c*18+1,y+59); } }
+
+  /* ---------- main screen parts ---------- */
+  function players(g,x,y,w,h,state,o){ o=o||{};
+    txt(g,o.noHead?'':'AT A TRADE POST',x+2,y,C.DIM,{max:w-4}); let ry=y+(o.noHead?0:12);
+    PLAYERS.forEach((p,i)=>{ if(ry+20>y+h) return; const sel=i===0;
+      if(sel) fill(g,x,ry,w,20,state==='request'?'#2a2208':C.SEL);
+      fill(g,x+2,ry+4,3,3,p.busy?C.SCREEN_E:C.PHOS);
+      txt(g,p.n,x+8,ry+1,p.busy?C.DIM:(sel&&state==='request'?C.AMBER:C.PHOS),{max:w-10});
+      txt(g,p.busy?'busy':sel&&state==='request'?'asking you':p.s,x+8,ry+10,C.DIM,{max:w-10}); ry+=21; }); }
+  function search(g,x,y,w){ fill(g,x,y,w-50,12,C.SEL); txt(g,'Search lots_',x+3,y+2,C.DIM,{max:w-58}); fill(g,x+w-46,y,46,12,C.SEL); txt(g,'NEWEST ▾',x+w-23,y+2,C.PHOS,{align:'center',max:42}); }
+  function lotRows(g,x,y,w,h){ search(g,x,y,w); txt(g,'PIECES',x+w-2,y+15,C.DIM,{align:'right',size:8}); let ry=y+23;
+    LOTS.forEach((l,i)=>{ if(ry+20>y+h) return; if(i===0) fill(g,x,ry,w,19,C.SEL); icon(g,l.items[0][0],x+2,ry+2);
+      txt(g,lotTitle(l),x+21,ry+1,C.PHOS,{max:w-62}); txt(g,l.seller+' · '+l.age+' ago',x+21,ry+10,C.DIM,{max:w-62}); txt(g,fmt(l.price),x+w-2,ry+5,C.PHOS,{align:'right'}); ry+=20; });
+    fill(g,x+w+2,y+23,1,h-23,C.SCREEN_E); fill(g,x+w+2,y+23,1,40,C.DIM); }
+  function lotCards(g,x,y,w,h){ search(g,x,y,w); const cols=3, gap=4, cw=Math.floor((w-gap*(cols-1))/cols), ch=40; let cy=y+16;
+    for(let i=0;i<LOTS.length;i++){ const c=i%cols, r=Math.floor(i/cols); const cx=x+c*(cw+gap), yy=cy+r*(ch+gap); if(yy+ch>y+h) break; const l=LOTS[i];
+      if(i===0) fill(g,cx,yy,cw,ch,C.SEL); frame(g,cx,yy,cw,ch,i===0?C.PHOS:C.SCREEN_E);
+      icon(g,l.items[0][0],cx+cw/2-8,yy+2); if(l.items[0][1]>1) txt(g,String(l.items[0][1]),cx+cw/2+9,yy+11,'#ffffff',{align:'right',shadow:true});
+      if(l.items.length>1) txt(g,'+'+(l.items.length-1),cx+cw-3,yy+3,C.DIM,{align:'right'});
+      txt(g,fmt(l.price),cx+cw/2,yy+19,C.PHOS,{align:'center',max:cw-4}); txt(g,(l.name||NAMES[l.items[0][0]])+' · '+l.age,cx+cw/2,yy+29,C.DIM,{align:'center',max:cw-4,size:8}); } }
+  function lotView(g,x,y,w,h){ const l=LOTS[0];
+    txt(g,'LOT BY '+l.seller.toUpperCase(),x,y,C.PHOS); txt(g,'Listed '+l.age+' ago · ends in 6 d 23 h',x,y+10,C.DIM,{max:w});
+    for(let j=0;j<3;j++) for(let i=0;i<3;i++){ sslot(g,x+i*18,y+24+j*18); item(g,l.items[j*3+i],x+i*18+1,y+25+j*18); }
+    const px=x+62, pw=w-62; let ry=y+26; const row=(a,b,c)=>{ txt(g,a,px,ry,C.DIM,{max:pw-40}); txt(g,b,px+pw,ry,c||C.PHOS,{align:'right'}); ry+=11; };
+    row('Price',fmt(l.price)); row('Tax 5%',fmt(l.price*0.05)); fill(g,px,ry,pw,1,C.SCREEN_E); ry+=3; row('You pay',fmt(l.price*1.05),C.AMBER); ry+=4; row('Your balance','4,820');
+    wrap(g,'64 Diamond, 32 Diamond, 16 Gold Ingot. Bought whole.',x,y+82,w,C.DIM); }
+  function sellView(g,x,y,w,h){ txt(g,'LIST A LOT',x,y,C.PHOS); txt(g,'Lots listed 3 of 10 · up for 7 days',x,y+10,C.DIM,{max:w});
+    const lot=[['pearl',16],['apple',8]]; for(let j=0;j<3;j++) for(let i=0;i<3;i++){ sslot(g,x+i*18,y+24+j*18); item(g,lot[j*3+i],x+i*18+1,y+25+j*18); }
+    const px=x+62, pw=w-62; txt(g,'Price in pieces',px,y+25,C.DIM,{max:pw}); fill(g,px,y+35,pw,13,C.SEL); frame(g,px,y+35,pw,13,C.PHOS); txt(g,'1,000_',px+pw-3,y+37,C.PHOS,{align:'right'});
+    wrap(g,'Listing tax now: 50 pieces, kept if you cancel. The buyer pays 1,050.',px,y+52,pw,C.DIM);
+    wrap(g,'Put up to 9 stacks in from your inventory below.',x,y+82,w,C.DIM); }
+  function requestBox(g,sx,sy,sw,sh,touch){ g.fillStyle='rgba(0,0,0,0.62)'; g.fillRect(sx,sy,sw,sh); const bw=150, bh=66, bx=sx+(sw-bw)/2, by=sy+(sh-bh)/2;
+    fill(g,bx,by,bw,bh,C.SCREEN); frame(g,bx,by,bw,bh,C.AMBER); txt(g,'STEVE ASKS TO TRADE',bx+bw/2,by+6,C.AMBER,{align:'center',max:bw-8}); txt(g,'on Spawn · answer in 24 s',bx+bw/2,by+17,C.DIM,{align:'center',max:bw-8});
+    if(touch){ skey(g,bx+10,by+38,60,16,'ACCEPT',{on:true}); skey(g,bx+80,by+38,60,16,'DECLINE'); } else { key(g,bx+10,by+38,60,16,'Accept',{on:true}); key(g,bx+80,by+38,60,16,'Decline'); } }
+  function invPanel(g,w,y){ txt(g,'INVENTORY',(w-162)/2,y,'#5a5348'); inv(g,(w-162)/2,y+10); }
+  function content(g,state,x,y,w,h,cards){ if(state==='lot') lotView(g,x,y,w,h); else if(state==='sell') sellView(g,x,y,w,h); else if(cards) lotCards(g,x,y,w,h); else lotRows(g,x,y,w,h); }
+
+  const MAIN=[
+    function(cv,state){ const W=300, H=216+(state==='sell'?92:0), g=gui(cv,W,H); bezel(g,W,H); scr(g,10,10,280,170);
+      content(g,state,14,14,180,162,false); fill(g,201,12,1,166,C.SCREEN_E); players(g,205,14,82,162,state);
+      const ky=186, kh=20; if(state==='lot'){ key(g,10,ky,60,kh,'Buy',{on:true}); key(g,74,ky,60,kh,'Back'); }
+      else if(state==='sell'){ key(g,10,ky,60,kh,'List lot',{on:true}); key(g,74,ky,60,kh,'Back'); }
+      else { key(g,10,ky,60,kh,'Sell a lot'); key(g,74,ky,60,kh,'Collect (2)'); }
+      key(g,150,ky,84,kh,'Trade Steve'); key(g,242,ky,48,kh,'Close');
+      if(state==='sell') invPanel(g,W,214); if(state==='request') requestBox(g,10,10,280,170,false); },
+    function(cv,state){ const W=372, H=216+(state==='sell'?92:0), g=gui(cv,W,H); bezel(g,W,H); const kx=10, kw=64, kh=20;
+      if(state==='lot'){ key(g,kx,10,kw,kh,'Buy',{on:true}); key(g,kx,34,kw,kh,'Back'); }
+      else if(state==='sell'){ key(g,kx,10,kw,kh,'List lot',{on:true}); key(g,kx,34,kw,kh,'Back'); }
+      else { key(g,kx,10,kw,kh,'Market',{on:true}); key(g,kx,34,kw,kh,'Sell a lot'); key(g,kx,58,kw,kh,'Collect (2)'); }
+      key(g,kx,184,kw,kh,'Close');
+      scr(g,84,10,196,196); content(g,state,88,14,188,188,false);
+      scr(g,290,10,72,170); players(g,292,14,68,162,state); key(g,290,186,72,kh,'Ask to trade');
+      if(state==='sell') invPanel(g,W,214); if(state==='request') requestBox(g,84,10,196,196,false); },
+    function(cv,state){ const W=300, H=216+(state==='sell'?92:0), g=gui(cv,W,H); bezel(g,W,H); scr(g,10,10,280,196);
+      const tabs=[['MARKET',state==='market'||state==='lot'||state==='request'],['SELL',state==='sell'],['COLLECT 2',false]]; let tx=14;
+      tabs.forEach(t=>{ const tw=t[0].length*6+14; skey(g,tx,13,tw,13,t[0],{on:t[1]}); tx+=tw+3; });
+      fill(g,14,28,192,1,C.SCREEN_E); content(g,state,14,32,192,152,true);
+      if(state==='lot'){ skey(g,14,188,60,14,'BUY 2,520',{on:true}); skey(g,78,188,40,14,'BACK'); }
+      else if(state==='sell'){ skey(g,14,188,60,14,'LIST LOT',{on:true}); skey(g,78,188,40,14,'BACK'); }
+      fill(g,210,10,80,196,C.BAND); txt(g,'TRADERS · 6',214,14,C.DIM); players(g,212,26,76,150,state,{noHead:true}); skey(g,214,186,72,16,'TRADE STEVE');
+      skey(g,262,13,24,11,'✕');
+      if(state==='sell') invPanel(g,W,214); if(state==='request') requestBox(g,10,10,280,196,true); }];
+
+  /* ---------- trade screen ---------- */
+  const MINE=[['diamond',64],['diamond',64],['coin',8]], THEIRS=[['netherite',4],['book',1]];
+  const CHAT=[['Steve','4 netherite + mending for the diamonds?'],['Ash','add 250 pieces and it is a deal'],['Steve','done, 250 in']];
+  function tradeState(s){ return s==='fill'?{me:false,them:true}:s==='count'?{me:true,them:true}:{me:false,them:false}; }
+  function offer(g,x,y,items){ for(let j=0;j<3;j++) for(let i=0;i<4;i++){ slot(g,x+i*18,y+j*18); item(g,items[j*4+i],x+i*18+1,y+j*18+1); } }
+  function pieces(g,x,y,w,amount,edit){ scr(g,x,y,w,12); txt(g,'PIECES',x+3,y+2,C.DIM); txt(g,amount+(edit?'_':''),x+w-3,y+2,C.PHOS,{align:'right'}); }
+  function chat(g,x,y,w,h,extra){ scr(g,x,y,w,h); const lines=CHAT.slice(); if(extra) lines.push(['',extra]); const shown=lines.slice(-Math.floor((h-15)/9)); let yy=y+h-14-shown.length*9;
+    shown.forEach(l=>{ if(l[0]){ const nw=txt(g,l[0]+':',x+3,yy,C.AMBER); txt(g,l[1],x+7+nw,yy,C.PHOS,{max:w-12-nw}); } else txt(g,l[1],x+3,yy,'#ff8a6a',{max:w-6}); yy+=9; });
+    fill(g,x+2,y+h-12,w-4,1,C.SCREEN_E); txt(g,'> ok, ready_',x+3,y+h-10,C.DIM); }
+  const SHORT='STEVE HAS ROOM FOR 1 OF YOUR 3 STACKS. NOTHING MOVED.';
+  const TRADE=[
+    function(cv,s){ const W=320, H=286, g=gui(cv,W,H), st=tradeState(s); bezel(g,W,H);
+      txt(g,'TRADE WITH STEVE · on Spawn',10,6,'#5a5348');
+      txt(g,'YOU',16,17,'#5a5348'); offer(g,16,27,MINE); pieces(g,16,86,72,'0',s==='fill'); key(g,16,103,72,16,st.me?'Ready':'Ready?',{on:st.me});
+      txt(g,'STEVE',304,17,'#5a5348',{align:'right'}); offer(g,232,27,THEIRS); pieces(g,232,86,72,'250',false); key(g,232,103,72,16,st.them?'Ready':'Not ready',{on:st.them,locked:!st.them});
+      scr(g,96,27,128,92);
+      if(s==='fill'){ txt(g,'STEVE IS READY',160,40,C.PHOS,{align:'center'}); wrap(g,'Check his offer, then press READY.',100,56,120,C.DIM,{align:'center'}); txt(g,'⇄',160,82,C.DIM,{align:'center',size:20}); }
+      else if(s==='count'){ txt(g,'3',160,36,C.PHOS,{align:'center',size:44}); wrap(g,'Un-ready to stop the trade.',100,84,120,C.DIM,{align:'center'}); }
+      else { wrap(g,SHORT,100,40,120,C.AMBER,{align:'center'}); wrap(g,'Both READY lights are off.',100,86,120,C.DIM,{align:'center'}); }
+      chat(g,10,128,300,58); txt(g,'INVENTORY',79,192,'#5a5348'); inv(g,79,202); },
+    function(cv,s){ const W=320, H=286, g=gui(cv,W,H), st=tradeState(s); bezel(g,W,H);
+      txt(g,'TRADE WITH STEVE · on Spawn',10,6,'#5a5348');
+      txt(g,'YOUR OFFER',12,17,'#5a5348'); offer(g,12,27,MINE); pieces(g,12,86,72,'0',s==='fill');
+      txt(g,"STEVE'S OFFER",308,17,'#5a5348',{align:'right'}); offer(g,236,27,THEIRS); pieces(g,236,86,72,'250',false);
+      const lamp=(cx,on,label)=>{ fill(g,cx-15,30,30,30,'#5a5348'); fill(g,cx-13,32,26,26,on?C.PHOS:'#1c2a20'); if(on){ fill(g,cx-9,34,8,4,'#c8ffe0'); } txt(g,label,cx,63,'#5a5348',{align:'center'}); };
+      lamp(134,st.me,'YOU'); lamp(186,st.them,'STEVE'); key(g,110,76,100,22,st.me?'Un-ready':'Ready',{on:st.me});
+      scr(g,10,106,300,8); if(s==='count') fill(g,11,107,Math.round(298*0.6),6,C.PHOS);
+      chat(g,10,122,300,64,s==='noroom'?'Trade Post: Steve has room for 1 of your 3 stacks. Nothing moved.':s==='count'?'Trade Post: both ready, trading in 3 s.':s==='fill'?'Trade Post: Steve is ready.':null); txt(g,'INVENTORY',79,192,'#5a5348'); inv(g,79,202); },
+    function(cv,s){ const W=380, H=212, g=gui(cv,W,H), st=tradeState(s); bezel(g,W,H);
+      txt(g,'TRADE WITH STEVE · on Spawn',10,5,'#5a5348');
+      offer(g,10,18,MINE); pieces(g,10,76,72,'0',s==='fill'); key(g,10,93,72,16,st.me?'Ready':'Ready?',{on:st.me});
+      offer(g,298,18,THEIRS); pieces(g,298,76,72,'250',false); key(g,298,93,72,16,st.them?'Ready':'Not ready',{on:st.them,locked:!st.them});
+      scr(g,90,18,200,91); txt(g,'YOU',96,22,C.DIM); txt(g,'STEVE',284,22,C.DIM,{align:'right'});
+      for(let i=0;i<5;i++){ const on=s==='count'&&i<3; fill(g,140+i*20,40,12,12,on?C.PHOS:C.SCREEN_E); }
+      if(s==='fill') wrap(g,'Steve is ready. Check his offer, then press READY.',100,62,180,C.PHOS,{align:'center'});
+      else if(s==='count') wrap(g,'Trading in 3 s. Un-ready to stop.',100,62,180,C.PHOS,{align:'center'});
+      else wrap(g,SHORT,100,62,180,C.AMBER,{align:'center'});
+      inv(g,10,122); chat(g,180,122,190,76); }];
+
+  /* ---------- Market page on the Score Screen (ScoreScreenRenderer colours) ---------- */
+  const SB={BG:'#070a0e',TQ:'#19d3b0',GOLD:'#ffd23a',TEXT:'#e8eaf0',MUTED:'#9aa3b5',STRIP:'#10151c'};
+  const BW=256, BH=128;
+  function boardFrame(g){ fill(g,0,0,BW,BH,'#2a2f3a'); fill(g,2,2,BW-4,BH-4,SB.BG); for(let i=1;i<4;i++) fill(g,i*64,2,1,BH-4,'#0c1016'); fill(g,2,64,BW-4,1,'#0c1016'); }
+  function title(g,x,w,s){ fill(g,x,4,w,14,SB.STRIP); txt(g,s,x+w/2,6,SB.TQ,{align:'center',size:12}); }
+  function clipRun(g,x,y,w,h,f){ g.save(); g.beginPath(); g.rect(x,y,w,h); g.clip(); f(); g.restore(); }
+  const BOARDS=[
+    function(g,t){ boardFrame(g); title(g,4,BW-8,'MARKET · 9 LOTS'); const rh=15, total=LOTS.length*rh, off=(t*6)%total;
+      clipRun(g,4,20,BW-8,BH-24,()=>{ for(let k=0;k<2;k++) LOTS.forEach((l,i)=>{ const y=20+i*rh+k*total-off; if(y<6||y>BH) return; if(i%2) fill(g,4,y,BW-8,rh,'#0b0f14');
+        icon(g,l.items[0][0],8,y+1.5,1.5); txt(g,lotTitle(l),24,y+3,SB.TEXT,{max:130}); txt(g,l.age,190,y+3,SB.MUTED,{align:'right'}); txt(g,fmt(l.price),BW-8,y+3,SB.GOLD,{align:'right'}); }); }); },
+    function(g,t){ boardFrame(g); title(g,4,BW-8,'MARKET'); const cols=4, cw=(BW-8)/cols, rh=52, rows=Math.ceil(LOTS.length/cols), total=rows*rh, off=(t*5)%total;
+      clipRun(g,4,20,BW-8,BH-24,()=>{ for(let k=0;k<2;k++) LOTS.forEach((l,i)=>{ const c=i%cols, r=Math.floor(i/cols), x=4+c*cw, y=22+r*rh+k*total-off; if(y<-rh||y>BH) return;
+        icon(g,l.items[0][0],x+cw/2-12,y,3); txt(g,fmt(l.price),x+cw/2,y+25,SB.GOLD,{align:'center',size:12,max:cw-6}); txt(g,lotTitle(l),x+cw/2,y+35,SB.TEXT,{align:'center',size:8,max:cw-6}); txt(g,l.age+' ago',x+cw/2,y+42,SB.MUTED,{align:'center',size:8,max:cw-6}); }); }); },
+    function(g,t){ boardFrame(g); const lw=166; title(g,4,lw,'TOTEM LEADERBOARD');
+      [['Alex','14,200'],['Kira_B','11,850'],['Tobbe','9,400'],['Wren','7,120'],['Steve','5,060'],['Juno42','3,300'],['Ash','2,950']].forEach((r,i)=>{ const y=22+i*14; txt(g,(i+1)+'',12,y,i<3?SB.GOLD:SB.MUTED); txt(g,r[0],26,y,SB.TEXT); txt(g,r[1],lw-4,y,SB.GOLD,{align:'right'}); });
+      const x=lw+8, w=BW-x-4; title(g,x,w,'MARKET'); const rh=24, total=LOTS.length*rh, off=(t*6)%total;
+      clipRun(g,x,20,w,BH-24,()=>{ for(let k=0;k<2;k++) LOTS.forEach((l,i)=>{ const y=20+i*rh+k*total-off; if(y<-rh||y>BH) return; icon(g,l.items[0][0],x+2,y+2,1.5);
+        txt(g,fmt(l.price),x+w-2,y+2,SB.GOLD,{align:'right'}); txt(g,l.age,x+w-2,y+12,SB.MUTED,{align:'right',size:8}); txt(g,lotTitle(l),x+18,y+12,SB.TEXT,{size:8,max:w-40}); }); }); }];
+
+  /* ---------- wiring for the screens ---------- */
+  let mainS='market', tradeS='fill';
+  function drawMain(){ MAIN.forEach((f,i)=>f(el('m'+i),mainS)); }
+  function drawTrade(){ TRADE.forEach((f,i)=>f(el('t'+i),tradeS)); }
+  function seg(id,set){ el(id).querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ el(id).querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false')); set(b.dataset.s); })); }
+  seg('mainState',s=>{ mainS=s; drawMain(); }); seg('tradeState',s=>{ tradeS=s; drawTrade(); });
+  const boardG=[0,1,2].map(i=>gui(el('b'+i),BW,BH));
+  function drawBoards(t){ BOARDS.forEach((f,i)=>f(boardG[i],t)); }
+  function drawScreens(){ drawMain(); drawTrade(); drawBoards(0); }
+  drawScreens();
+
+  /* ---------- the block in three.js ---------- */
+  const views=[]; const texs=[];
+  const CREAM=0xd9d2c0, CREAM2=0xeae4d5, BEZEL=0x2b2823, DARKGREY=0x3a3f4b, STEEL=0x4a5060, STEEL2=0x2a2f3a, TRIM=0x8a909c, BRASS=0xb8893a, WOOD=0x5a3d22, WOOD2=0x6b4a2b, STONE=0x6c6f73, RED=0xb8362e, AMBER=0xf2b544, PHOS=0x58f29a, DARK=0x15181e;
+  const state={night:false,busy:true};
+  function screenTex(){ const c=document.createElement('canvas'); c.width=256; c.height=128; const tex=new THREE.CanvasTexture(c); const o={c,tex}; texs.push(o); paintTex(o); return tex; }
+  function paintTex(o){ const g=o.c.getContext('2d'); g.fillStyle='#061008'; g.fillRect(0,0,256,128); g.textAlign='center'; g.textBaseline='middle'; g.shadowColor='#58f29a'; g.shadowBlur=10; g.fillStyle='#58f29a';
+    g.font=(state.busy?64:84)+'px '+FONT; g.fillText('TRADE',128,state.busy?48:62); g.shadowBlur=0;
+    g.font='24px '+FONT; g.fillStyle='#3fb97a'; g.fillText(state.busy?'ASH ⇄ STEVE':'',128,98); o.tex.needsUpdate=true; }
+  function bx(g,f,t,c,glow){ const mat=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c});
+    const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos,rx){ const s=new THREE.Group(); s.position.set(pos[0],pos[1],pos[2]); if(rx) s.rotation.x=rx; g.add(s); return s; }
+  function screenPlane(g,cx,cy,z,w,h){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:screenTex()})); m.position.set(cx,cy,z); m.rotation.y=Math.PI; g.add(m); return m; }
+  function floor(g){ bx(g,[-30,-1,-30],[70,0,30],0x1c2026); bx(g,[38,0,0],[54,16,16],STONE); }
+
+  function kiosk(g){ floor(g);
+    bx(g,[0,0,0],[32,32,16],CREAM); bx(g,[0,0,0],[32,3,16],TRIM); bx(g,[0,31,0],[32,32,16],CREAM2);
+    bx(g,[2,16,-0.6],[30,30,0],BEZEL); screenPlane(g,16,23,-0.65,26,12);
+    const lamp=bx(g,[14,30.3,-0.7],[18,31.3,-0.2],AMBER,true);
+    const shelf=grp(g,[0,13,0],-0.5); bx(shelf,[3,0,-3],[29,2,0],CREAM); for(let i=0;i<6;i++) bx(shelf,[4.4+i*4.2,2,-2.4],[7.4+i*4.2,2.6,-0.8],CREAM2);
+    const slits=[]; [[3,13],[19,29]].forEach(([a,b])=>{ bx(g,[a,4,-1],[b,10,0],DARKGREY); slits.push(bx(g,[a+1,8.4,-1.1],[b-1,9,-1],PHOS,true)); bx(g,[a+1,5,-1.3],[b-1,7.6,-1],TRIM); });
+    const arrows=[bx(g,[14.4,7.6,-0.5],[17.6,8.2,-0.4],PHOS,true),bx(g,[14.4,5.8,-0.5],[17.6,6.4,-0.4],PHOS,true)];
+    return t=>{ lamp.visible=!state.busy||Math.floor(t*3)%2===0; arrows[0].visible=!state.busy||Math.floor(t*2)%2===0; arrows[1].visible=!state.busy||Math.floor(t*2)%2===1; }; }
+
+  function pillar(g){ floor(g);
+    bx(g,[-1,0,-1],[33,2,17],STEEL2); [[0,0],[31,0],[0,15],[31,15]].forEach(([x,z])=>bx(g,[x-0.5,2,z-0.5],[x+1.5,2.6,z+1.5],TRIM));
+    bx(g,[0,2,0],[32,32,16],STEEL); bx(g,[-0.3,10,-0.4],[32.3,11.5,16.4],TRIM); bx(g,[-0.3,28,-0.4],[32.3,29.5,16.4],TRIM);
+    for(let i=0;i<8;i++){ bx(g,[1.5+i*4,10.4,-0.7],[2.5+i*4,11.1,-0.4],STEEL2); bx(g,[1.5+i*4,28.4,-0.7],[2.5+i*4,29.1,-0.4],STEEL2); }
+    bx(g,[3,26.5,-3],[29,27.6,0],STEEL2); bx(g,[3,15,-3],[4,26.5,0],STEEL2); bx(g,[28,15,-3],[29,26.5,0],STEEL2);
+    bx(g,[4,15.4,-0.3],[28,26.5,0],DARK); screenPlane(g,16,21,-0.4,22,10);
+    for(let i=0;i<4;i++){ bx(g,[0.6,16+i*2.6,-0.5],[2.4,17.6+i*2.6,0],AMBER,true); bx(g,[29.6,16+i*2.6,-0.5],[31.4,17.6+i*2.6,0],AMBER,true); }
+    const flaps=[]; [[1,1],[27,1]].forEach(([x,z])=>{ bx(g,[x,32,z],[x+4,33,z+4],TRIM); bx(g,[x+0.6,33,z+0.6],[x+3.4,35.4,z+3.4],AMBER,true);
+      const f=grp(g,[x+2,34.2,z+2]); bx(f,[-1.8,-1.2,-0.3],[1.8,1.2,0.3],DARK); flaps.push(f); });
+    bx(g,[6,4,-0.4],[26,8.4,0],DARK); const drawer=bx(g,[7,4.6,-2],[15,7.8,-0.2],TRIM); const tray=bx(g,[6,3.1,-0.6],[26,3.7,-0.3],AMBER,true);
+    return t=>{ flaps.forEach((f,i)=>f.rotation.y=t*(i?-2.2:2.2)); const k=state.busy?(Math.sin(t*1.2)+1)/2:0; drawer.position.x=11+k*10; tray.visible=state.busy?Math.floor(t*2)%2===0:true; }; }
+
+  function booth(g){ floor(g);
+    [[0,0],[30,0],[0,14],[30,14]].forEach(([x,z])=>bx(g,[x,0,z],[x+2,30,z+2],WOOD));
+    bx(g,[2,0,13],[30,30,15.5],WOOD2); for(let i=1;i<7;i++) bx(g,[2,i*4.3,12.8],[30,i*4.3+0.3,13],WOOD);
+    bx(g,[1,0,1],[31,12,14],WOOD2); for(let i=0;i<4;i++) bx(g,[1.5+i*7.5,1,0.8],[1.8+i*7.5,11,1],WOOD);
+    bx(g,[0,12,-1.5],[32,13,9],BRASS);
+    [[4,12],[20,28]].forEach(([a,b])=>{ bx(g,[a,13,-1],[b,13.6,4],0x8a6a2a); bx(g,[a+0.8,13.2,-0.4],[b-0.8,13.7,3.4],DARK); });
+    bx(g,[5,14.5,10.2],[27,27.5,12.8],WOOD); screenPlane(g,16,21,10.1,20,11);
+    const aw=grp(g,[0,30,0],0.32); for(let i=0;i<8;i++) bx(aw,[i*4,0,-4],[i*4+4,1,16.5],i%2?CREAM2:RED); for(let i=0;i<8;i++) bx(aw,[i*4,-1.4,-4],[i*4+4,0,-3.6],i%2?CREAM2:RED);
+    const lan=[]; [[0,-1.6],[30,-1.6]].forEach(([x,z])=>{ bx(g,[x+0.8,26.5,z],[x+1.2,28.5,z+0.4],DARK); bx(g,[x,24.4,z-0.6],[x+2,26.6,z+1],BRASS); lan.push(bx(g,[x+0.3,24.7,z-0.7],[x+1.7,26.3,z+1.1],AMBER,true)); });
+    return t=>{ lan.forEach((l,i)=>l.material.color.setHex((Math.sin(t*13+i*2)+Math.sin(t*7.3+i))>-1.2||reduce?AMBER:0xa8741e)); }; }
+
+  function view3d(host,build){ const scene=new THREE.Scene(); const cam=new THREE.PerspectiveCamera(32,1,1,600);
+    const ren=new THREE.WebGLRenderer({antialias:true,alpha:true}); ren.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); host.appendChild(ren.domElement);
+    const amb=new THREE.AmbientLight(0xffffff,0.65), dir=new THREE.DirectionalLight(0xffffff,0.8); dir.position.set(-40,80,-70); scene.add(amb); scene.add(dir);
+    const g=new THREE.Group(); scene.add(g); const v={scene,cam,ren,amb,dir,host,anim:build(g),az:-0.3,el:0.28,drag:null,last:-1e9};
+    host.addEventListener('pointerdown',e=>{ v.drag={x:e.clientX,y:e.clientY,az:v.az,el:v.el}; host.setPointerCapture(e.pointerId); });
+    host.addEventListener('pointermove',e=>{ if(!v.drag) return; v.az=v.drag.az+(e.clientX-v.drag.x)*0.01; v.el=Math.max(-0.1,Math.min(1.2,v.drag.el+(e.clientY-v.drag.y)*0.01)); v.last=performance.now(); });
+    const up=()=>{ if(v.drag){ v.base=v.az; v.last=performance.now(); } v.drag=null; }; host.addEventListener('pointerup',up); host.addEventListener('pointercancel',up); v.base=v.az;
+    size(v); views.push(v); return v; }
+  function size(v){ const w=Math.max(1,v.host.clientWidth||300); v.ren.setSize(w,w,false); }
+  function lights(){ views.forEach(v=>{ v.amb.intensity=state.night?0.12:0.65; v.dir.intensity=state.night?0.08:0.8; }); }
+  function frameView(v,t){ const T=[26,15,8], r=118; v.cam.position.set(T[0]+Math.sin(v.az)*Math.cos(v.el)*r, T[1]+Math.sin(v.el)*r, T[2]-Math.cos(v.az)*Math.cos(v.el)*r); v.cam.lookAt(T[0],T[1],T[2]); v.anim(t); v.ren.render(v.scene,v.cam); }
+
+  let has3d=typeof THREE!=='undefined';
+  if(has3d){ try{ view3d(el('v0'),kiosk); view3d(el('v1'),pillar); view3d(el('v2'),booth); } catch(e){ has3d=false; } }
+  if(!has3d) ['v0','v1','v2'].forEach(id=>{ el(id).textContent='3D view needs WebGL and three.js.'; });
+  el('night').addEventListener('change',e=>{ state.night=e.target.checked; lights(); });
+  el('busy').addEventListener('change',e=>{ state.busy=e.target.checked; texs.forEach(paintTex); });
+  window.addEventListener('resize',()=>views.forEach(size));
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ drawScreens(); texs.forEach(paintTex); });
+
+  const t0=performance.now();
+  function loop(now){ const t=reduce?0:(now-t0)/1000; views.forEach(v=>{ if(!reduce&&!v.drag&&now-v.last>2500) v.az=v.base+Math.sin((now-v.last-2500)/2600)*0.5; frameView(v,t); }); if(!reduce) drawBoards(t); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · The Market Board</div><div class="bsp-cap">A Score Screen showing the newest lots on the market: the item, the price, and how long ago it was listed, on every server.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('b1')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

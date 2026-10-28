@@ -938,5 +938,90 @@
     "file": "link_expander.png",
     "name": "Link Expander",
     "kind": "item"
+  },
+  "molten_tetrium_bucket": {
+    "file": "molten_tetrium_bucket.png",
+    "name": "Molten Tetrium Bucket",
+    "kind": "item"
+  },
+  "molten_illyrium_bucket": {
+    "file": "molten_illyrium_bucket.png",
+    "name": "Molten Illyrium Bucket",
+    "kind": "item"
+  },
+  "molten_magnatite_bucket": {
+    "file": "molten_magnatite_bucket.png",
+    "name": "Molten Magnatite Bucket",
+    "kind": "item"
+  },
+  "totem_forge": {
+    "file": "totem_forge.png",
+    "name": "Totem Forge",
+    "kind": "block"
+  },
+  "metal_intake": {
+    "file": "metal_intake.png",
+    "name": "Metal Intake",
+    "kind": "block"
+  },
+  "forge_hearth": {
+    "file": "forge_hearth.png",
+    "name": "Forge Hearth",
+    "kind": "block"
+  },
+  "melt_tank": {
+    "file": "melt_tank.png",
+    "name": "Melt Tank",
+    "kind": "block"
+  },
+  "pour_head": {
+    "file": "pour_head.png",
+    "name": "Pour Head",
+    "kind": "block"
+  },
+  "forge_cap": {
+    "file": "forge_cap.png",
+    "name": "Forge Cap",
+    "kind": "block"
+  },
+  "base_mould": {
+    "file": "base_mould.png",
+    "name": "Base Mould",
+    "kind": "item"
+  },
+  "foot_mould": {
+    "file": "foot_mould.png",
+    "name": "Foot Mould",
+    "kind": "item"
+  },
+  "torso_mould": {
+    "file": "torso_mould.png",
+    "name": "Torso Mould",
+    "kind": "item"
+  },
+  "arm_mould": {
+    "file": "arm_mould.png",
+    "name": "Arm Mould",
+    "kind": "item"
+  },
+  "head_mould": {
+    "file": "head_mould.png",
+    "name": "Head Mould",
+    "kind": "item"
+  },
+  "totem_core": {
+    "file": "totem_core.png",
+    "name": "Totem Core",
+    "kind": "item"
+  },
+  "mould_shell": {
+    "file": "mould_shell.png",
+    "name": "Mould Shell",
+    "kind": "item"
+  },
+  "trade_post": {
+    "file": "trade_post.png",
+    "name": "Trade Post",
+    "kind": "block"
   }
 }

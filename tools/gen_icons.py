@@ -27,7 +27,7 @@ SIZE = 96
 FILL = 0.84
 # faces by their outward direction: top brightest, then the x sides, then the z sides, as the game lights its icons
 SHADE = {"up": 1.0, "down": 0.5, "west": 0.8, "east": 0.8, "north": 0.62, "south": 0.62}
-SKIP = {"ghost_block"}  # no item form
+SKIP = {"ghost_block", "molten_tetrium", "molten_illyrium", "molten_magnatite", "forged_shatter_totem"}  # no item form (the molten metals are placed fluids, with buckets; the forged totem is a Shatter Totem with that name)
 
 TEXTURE_CACHE = {}
 
@@ -73,6 +73,8 @@ def resolve(ref):
             return {"elements": VANILLA_PARENTS[ref](), "textures": {}, "sprite": False}
         return {"elements": [], "textures": {}, "sprite": False}
     m = json.loads((ASSETS / f"models/{path}.json").read_text())
+    if m.get("loader") == "forge:fluid_container":
+        return {"elements": [], "textures": {}, "sprite": True, "fluid": m["fluid"]}
     base = resolve(m["parent"]) if "parent" in m else {"elements": [], "textures": {}, "sprite": False}
     return {"elements": m.get("elements") or base["elements"], "textures": dict(base["textures"], **m.get("textures", {})), "sprite": base["sprite"]}
 
@@ -236,7 +238,19 @@ def draw_model(model):
     return px
 
 
+def fluid_bucket(fluid):
+    """Forge's bucket for a fluid, as the inventory shows it: the vanilla bucket, with the fluid's still texture where the
+    water bucket shows water."""
+    _, _, bucket = texture("minecraft:item/bucket")
+    w, h, water = texture("minecraft:item/water_bucket")
+    _, _, still = texture(fluid.replace(":", ":block/") + "_still")
+    return w, h, [[still[y][x] if water[y][x] != bucket[y][x] and water[y][x][3] > 8 else water[y][x] for x in range(w)] for y in range(h)]
+
+
 def draw_sprite(model):
+    if "fluid" in model:
+        TEXTURE_CACHE["bucket:" + model["fluid"]] = fluid_bucket(model["fluid"])
+        model = {"textures": {"layer0": "bucket:" + model["fluid"]}}
     layers = sorted(k for k in model["textures"] if k.startswith("layer"))
     px = [[(0, 0, 0, 0)] * SIZE for _ in range(SIZE)]
     for layer in layers:
