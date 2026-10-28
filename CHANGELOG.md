@@ -4,6 +4,10 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.7.0] - 2026-10-28
+
 ### Added
 - **Molten Tetrium, Molten Illyrium and Molten Magnatite**: fluids with buckets and a placed form that burns like lava and meets water as lava does (a source sets to Obsidian, a flowing block to Cobblestone). A dispenser pours the buckets and fills empty ones. Any mod's pipes and tanks (Mekanism, AE2, Thermal, Pipez and the rest) can move and store them. They carry only the fluid tags `forge:molten_tetrium`, `forge:molten_illyrium` and `forge:molten_magnatite`; the metals stay off the item material tags (`forge:ingots/...`, `forge:ores/...`), so no mod adds ore doubling for them.
 - **Tinkers' Construct and Thermal melt and cast BSP metal, never more than the BSP machines make.** Raw Tetrium and Tetrium ore melt to 20 mB (the Tetrium Crucible's 2 nuggets), Raw Magnatite and Magnatite ore to 30 mB (the Magnetic Centrifuge's 3), with no slag or Carbon Dust; nuggets and ingots of all three metals melt to 10 and 90 mB. Tinkers casts nuggets and ingots back one for one in gold or sand casts; Thermal's Blast Chiller casts ingots. Illyrium ore, Dirty Illyrium and Charged Magnatite never melt. The Tinkers recipes are plain melting, so the smeltery's ore bonus and the foundry's by-products do not apply. Each recipe loads only with its mod.
