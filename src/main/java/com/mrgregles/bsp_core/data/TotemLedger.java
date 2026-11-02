@@ -48,6 +48,8 @@ public class TotemLedger extends SavedData {
 
     /** Where a totem was last seen. IN_TRANSIT: taken from its holder for a server transfer and travelling through the database; never "lost". */
     public static final int HELD = 0, PLACED = 1, DROPPED = 2, IN_TRANSIT = 3;
+    /** A totem that no longer exists (destroyed in creative, wiped, forgotten, a season ended): any copy of it that turns up is a husk. */
+    public static final int RETIRED = 4;
     private static final String TAG_TOTEMS = "Totems";
 
     /** The last sighting of a totem: its current instance, the player who had it last, when, as what, and a copy of its item tag. */
@@ -107,9 +109,14 @@ public class TotemLedger extends SavedData {
      * A totem arrived through the database (a transfer's hand-back): the instance it carries is the real one, whatever this
      * server's ledger remembered, because another server may have reissued it meanwhile. Counts as held by {@code holder} now.
      */
-    public void arrived(UUID id, UUID instance, UUID holder, @Nullable CompoundTag copy, long now) {
+    public boolean arrived(UUID id, UUID instance, UUID holder, @Nullable CompoundTag copy, long now) {
+        Sighting old = totems.get(id);
+        if (old != null && old.where() == RETIRED) {
+            return false; // retired here (wiped, a season ended): the copy that arrived is a husk, never live again
+        }
         totems.put(id, new Sighting(instance, holder, now, HELD, copy != null ? copy.copy() : null));
         setDirty();
+        return true;
     }
 
     /** Totems last seen in a player's hands more than {@code maxAge} ticks ago and nowhere since: stored away, or carried off. */
@@ -132,21 +139,86 @@ public class TotemLedger extends SavedData {
         return fresh;
     }
 
-    /** Forgets every totem last seen with this player (held, dropped by them, in transit); returns how many. */
+    /**
+     * Whether a copy carrying {@code instance} is stale: the ledger knows the totem and its current instance is another one (it was
+     * reissued, or the totem was retired). Such a copy is spent wherever it turns up: in an inventory, on the ground, being placed.
+     */
+    public boolean stale(@Nullable UUID id, @Nullable UUID instance) {
+        if (id == null || instance == null) {
+            return false;
+        }
+        Sighting s = totems.get(id);
+        return s != null && !s.instance().equals(instance);
+    }
+
+    /** Retires every totem last seen with this player (held, dropped by them, in transit); returns how many. */
     public int forgetHeldBy(UUID player) {
-        int before = totems.size();
-        totems.values().removeIf(s -> player.equals(s.holder()));
-        int n = before - totems.size();
+        int n = 0;
+        for (var e : totems.entrySet()) {
+            if (player.equals(e.getValue().holder()) && e.getValue().where() != RETIRED) {
+                e.setValue(retired());
+                n++;
+            }
+        }
         if (n > 0) {
             setDirty();
         }
         return n;
     }
 
+    /**
+     * Retires a totem: it no longer exists. Kept as a marker with a fresh instance rather than deleted, so a copy of it left in a
+     * chest, on the ground or in an old inventory is a husk when it turns up, never a live totem again.
+     */
     public void forget(UUID id) {
+        Sighting old = totems.get(id);
+        if (old != null && old.where() != RETIRED) {
+            totems.put(id, retired());
+            setDirty();
+        }
+    }
+
+    /**
+     * Drops what the ledger knows of a totem, so the next copy seen is taken as it is. For a creative player's totem: the creative
+     * screen keeps a stack on the cursor only on the client, so a totem "nowhere" for a while may come back, and must not be a husk.
+     */
+    public void drop(UUID id) {
         if (totems.remove(id) != null) {
             setDirty();
         }
+    }
+
+    /**
+     * A placed totem's block went without anyone taking the totem (a world edit, a command, a mod removing blocks): it counts as
+     * lost from its owner's hands, so they get it back (now if they are online, else at their next login), with {@code copy} (its
+     * owner and upgrades as they stood). A pickup or a steal that follows at once is seen in a hand first and nothing is reissued.
+     */
+    public void lostFromPlace(UUID id, UUID instance, UUID owner, @Nullable CompoundTag copy) {
+        Sighting old = totems.get(id);
+        if (old == null || !old.instance().equals(instance) || old.where() != PLACED) {
+            return; // picked up, dropped, retired or reissued already: not this block's to give back
+        }
+        totems.put(id, new Sighting(instance, owner, 0, HELD, copy != null ? copy.copy() : old.copy()));
+        setDirty();
+    }
+
+    /** Retires one totem whether or not this server has seen it (a totem destroyed on another server: its copies are husks here too). */
+    public void retire(UUID id) {
+        Sighting old = totems.get(id);
+        if (old == null || old.where() != RETIRED) {
+            totems.put(id, retired());
+            setDirty();
+        }
+    }
+
+    /** Retires every totem this server knows (the season's end removes them all). */
+    public void retireAll() {
+        totems.replaceAll((id, s) -> s.where() == RETIRED ? s : retired());
+        setDirty();
+    }
+
+    private static Sighting retired() {
+        return new Sighting(UUID.randomUUID(), null, 0, RETIRED, null);
     }
 
     public static TotemLedger get(MinecraftServer server) {

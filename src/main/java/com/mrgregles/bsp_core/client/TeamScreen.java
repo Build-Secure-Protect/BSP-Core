@@ -298,7 +298,14 @@ public class TeamScreen extends Screen implements ScreenFit.Fitted {
             }
             g.fill(mx + 4, yy + ROW - 1, mx + mw - 4, yy + ROW, LINE);
             g.fill(mx + 7, yy + 3, mx + 12, yy + 8, GREEN);
-            CashMachine.fit(g, font, c.name(), mx + 17, yy + 2, mw - 12 - 10 - 90, TEXT);
+            int nameMax = mw - 12 - 10 - 90;
+            CashMachine.fit(g, font, c.name(), mx + 17, yy + 2, nameMax, TEXT);
+            if (!c.server().isEmpty()) {
+                int nw = Math.min(font.width(c.name()), nameMax) + 4;
+                if (nameMax - nw > 16) {
+                    CashMachine.fit(g, font, Component.translatable("gui.bsp_core.team.elsewhere", c.server()).getString(), mx + 17 + nw, yy + 2, nameMax - nw, MUTED);
+                }
+            }
             if (c.waitSeconds() > 0) {
                 CashMachine.fitRight(g, font, Component.translatable("gui.bsp_core.team.invite.waiting", c.waitSeconds()).getString(), mx + mw - 6, yy + 2, 80, AMBER & 0xFFFFFF);
             } else {

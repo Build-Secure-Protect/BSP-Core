@@ -20,7 +20,9 @@ public final class TeamActions {
             case CREATE -> out = Teams.create(p, m.text(), colour(m.value()));
             case INVITE -> {
                 ServerPlayer invitee = p.server.getPlayerList().getPlayer(m.target());
-                out = invitee == null ? new Teams.Outcome(false, Component.translatable("message.bsp_core.access.not_online").withStyle(ChatFormatting.RED)) : Teams.invite(p, invitee);
+                var elsewhere = invitee == null ? com.mrgregles.bsp_core.storage.NetworkStorage.onlineElsewhere(m.target()) : java.util.Optional.<com.mrgregles.bsp_core.storage.NetworkStorage.OnlinePlayer>empty();
+                out = invitee != null ? Teams.invite(p, invitee) : elsewhere.isPresent() ? Teams.invite(p, elsewhere.get())
+                        : new Teams.Outcome(false, Component.translatable("message.bsp_core.access.not_online").withStyle(ChatFormatting.RED));
             }
             case ACCEPT -> out = Teams.accept(p);
             case DECLINE -> out = Teams.decline(p);

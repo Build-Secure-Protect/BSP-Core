@@ -75,7 +75,7 @@ public class ShatterTotemItem extends BlockItem {
 
     @Override
     public boolean hasCustomEntity(ItemStack stack) {
-        return true;
+        return !TotemIdentity.isSpent(stack); // a husk is a plain item on the ground: it never places itself
     }
 
     @Nullable

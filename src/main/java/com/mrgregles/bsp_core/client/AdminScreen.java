@@ -200,9 +200,20 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         return confirm == id && System.currentTimeMillis() < confirmUntil;
     }
 
-    private static String where(AdminDataPacket.Totem t) {
+    /** Where a totem is; on a network one on another server starts with that server's name ("BSP-" left off). */
+    private String where(AdminDataPacket.Totem t) {
         String dim = t.dimension().substring(t.dimension().indexOf(':') + 1);
-        return t.pos().getX() + ", " + t.pos().getY() + ", " + t.pos().getZ() + "  " + dim;
+        String at = t.pos().getX() + ", " + t.pos().getY() + ", " + t.pos().getZ() + "  " + dim;
+        return elsewhere(t) ? t.server().replaceFirst("^BSP-", "") + " · " + at : at;
+    }
+
+    /** True for a totem on another server of the network: it cannot be teleported to or reset from here. */
+    private boolean elsewhere(AdminDataPacket.Totem t) {
+        return data != null && data.network() && !t.server().isEmpty() && !t.server().equals(data.here());
+    }
+
+    private boolean anyHere(AdminDataPacket.Row r) {
+        return r.totems().stream().anyMatch(t -> !elsewhere(t)) || r.totemCount() > r.totems().size(); // a cut list may hide some here
     }
 
     // ------------------------------------------------------------------ input
@@ -284,7 +295,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         }
         for (int i = 0; i < Math.min(TOTEM_ROWS, r.totems().size()); i++) {
             AdminDataPacket.Totem t = r.totems().get(i);
-            if (over(mx, my, x + W - 34, y + TOTEM_Y + i * TOTEM_H - 1, 24, 10)) {
+            if (!elsewhere(t) && over(mx, my, x + W - 34, y + TOTEM_Y + i * TOTEM_H - 1, 24, 10)) {
                 send(new AdminActionPacket(AdminActionPacket.TP_POS, r.id(), t.dimension(), t.pos()));
                 onClose();
                 return true;
@@ -295,7 +306,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             onClose();
             return true;
         }
-        if (r.totemCount() > 0 && over(mx, my, x + DX + BTN_W + 8, y + BTN_Y, BTN_W, BTN_H) && confirmed(AdminActionPacket.RESET_TOTEMS)) {
+        if (anyHere(r) && over(mx, my, x + DX + BTN_W + 8, y + BTN_Y, BTN_W, BTN_H) && confirmed(AdminActionPacket.RESET_TOTEMS)) {
             send(new AdminActionPacket(AdminActionPacket.RESET_TOTEMS, r.id()));
             return true;
         }
@@ -461,7 +472,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             g.drawString(font, TotemUpgrades.roman(t.tier()), x + DX, ty, GOLD & 0xFFFFFF, false);
             String at = (t.carried() ? tr("carried", where(t)) : Component.literal(where(t))).getString();
             small(g, Component.literal(font.plainSubstrByWidth(at, Math.round((W - 34 - 4 - DX - 22) / 0.75f))), x + DX + 22, ty + 1, TEXT); // clear of the TP button
-            button(g, x + W - 34, ty - 1, 24, 10, tr("tp"), edit, TQ, mouseX, mouseY);
+            button(g, x + W - 34, ty - 1, 24, 10, tr("tp"), edit && !elsewhere(t), TQ, mouseX, mouseY);
         }
         if (sel.totems().isEmpty()) {
             small(g, tr("no_totems"), x + DX, y + TOTEM_Y + 1, MUTED);
@@ -485,7 +496,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             }
         }
         button(g, x + DX, y + BTN_Y, BTN_W, BTN_H, tr("tp_player"), edit && sel.online(), TQ, mouseX, mouseY);
-        button(g, x + DX + BTN_W + 8, y + BTN_Y, BTN_W, BTN_H, tr(arming(AdminActionPacket.RESET_TOTEMS) ? "confirm" : "reset_totems"), edit && sel.totemCount() > 0, BAD, mouseX, mouseY);
+        button(g, x + DX + BTN_W + 8, y + BTN_Y, BTN_W, BTN_H, tr(arming(AdminActionPacket.RESET_TOTEMS) ? "confirm" : "reset_totems"), edit && anyHere(sel), BAD, mouseX, mouseY);
     }
 
     @Override

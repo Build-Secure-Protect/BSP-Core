@@ -16,6 +16,26 @@ public final class TotemIdentity {
     public static final String TAG_ID = "TotemId", TAG_INSTANCE = "Instance", TAG_SPENT = "Spent";
     /** Set on a totem poured in a Totem Forge: it is named "Forged Shatter Totem" and otherwise works like any other. Kept with the identity, so it survives placing and picking up. */
     public static final String TAG_FORGED = "Forged";
+    /**
+     * The season a totem was made in. A totem from an earlier season is a husk wherever it turns up (a chest, the ground, the
+     * database, a placement): the season's end replaces every totem. A totem without one was made in season 1, before the stamp.
+     */
+    public static final String TAG_SEASON = "Season";
+
+    /** The season the totem was made in (1 when it carries none). */
+    public static int season(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag != null && tag.contains(TAG_SEASON) ? tag.getInt(TAG_SEASON) : 1;
+    }
+
+    public static void stampSeason(ItemStack stack, int season) {
+        stack.getOrCreateTag().putInt(TAG_SEASON, season);
+    }
+
+    /** Whether a live-looking totem is from a season before the current one, on this server's count. */
+    public static boolean oldSeason(ItemStack stack, net.minecraft.server.MinecraftServer server) {
+        return !isSpent(stack) && season(stack) < com.mrgregles.bsp_core.admin.SeasonData.get(server).number;
+    }
 
     public static boolean isForged(ItemStack stack) {
         return stack.getTag() != null && stack.getTag().getBoolean(TAG_FORGED);
@@ -34,6 +54,11 @@ public final class TotemIdentity {
         if (!tag.hasUUID(TAG_ID)) {
             tag.putUUID(TAG_ID, UUID.randomUUID());
             added = true;
+            // a brand-new totem: made in the season in progress
+            var server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server != null && !tag.contains(TAG_SEASON)) {
+                tag.putInt(TAG_SEASON, com.mrgregles.bsp_core.admin.SeasonData.get(server).number);
+            }
         }
         if (!tag.hasUUID(TAG_INSTANCE)) {
             tag.putUUID(TAG_INSTANCE, UUID.randomUUID());
@@ -88,6 +113,9 @@ public final class TotemIdentity {
         }
         if (from.getBoolean(TAG_FORGED)) {
             to.putBoolean(TAG_FORGED, true);
+        }
+        if (from.contains(TAG_SEASON)) {
+            to.putInt(TAG_SEASON, from.getInt(TAG_SEASON));
         }
     }
 }

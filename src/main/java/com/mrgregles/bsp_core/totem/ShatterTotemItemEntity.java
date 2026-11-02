@@ -83,6 +83,15 @@ public class ShatterTotemItemEntity extends Entity {
         pickupDelay = ticks;
     }
 
+    /** Dropped: the ledger hears it at once, not at the first tick (a chunk whose entities are still loading does not tick it). */
+    @Override
+    public void onAddedToWorld() {
+        super.onAddedToWorld();
+        if (!level().isClientSide) {
+            report();
+        }
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -126,34 +135,52 @@ public class ShatterTotemItemEntity extends Entity {
         }
     }
 
-    /** Tells the ledger this totem is lying in the world, so it is not taken for lost. */
+    /** Tells the ledger this totem is lying in the world, so it is not taken for lost. A husk is never reported; a stale copy becomes one. */
     private void report() {
         ItemStack stack = getItem();
-        if (!(level() instanceof ServerLevel sl) || stack.isEmpty()) {
+        if (!(level() instanceof ServerLevel sl) || stack.isEmpty() || TotemIdentity.isSpent(stack)) {
             return;
         }
         TotemIdentity.ensure(stack);
-        setItem(stack);
         UUID id = TotemIdentity.id(stack), instance = TotemIdentity.instance(stack);
-        if (id != null && instance != null) {
+        if (TotemLedger.get(sl.getServer()).stale(id, instance) || TotemIdentity.oldSeason(stack, sl.getServer())) {
+            TotemIdentity.spend(stack); // reissued, retired or from an earlier season: this copy is a husk, never a second totem
+        }
+        setItem(stack);
+        if (id != null && instance != null && !TotemIdentity.isSpent(stack)) {
             TotemLedger.get(sl.getServer()).seen(id, instance, TotemOwner.fromStack(stack).map(TotemOwner::uuid).orElse(null), TotemLedger.DROPPED, stack.getTag(), sl.getServer().overworld().getGameTime());
         }
     }
 
+    /** Whether this is a live totem: not a husk, and not a stale copy of one reissued or retired since. */
+    private boolean live() {
+        ItemStack stack = getItem();
+        return TotemInventories.isTotem(stack) && !(level() instanceof ServerLevel sl
+                && (TotemLedger.get(sl.getServer()).stale(TotemIdentity.id(stack), TotemIdentity.instance(stack)) || TotemIdentity.oldSeason(stack, sl.getServer())));
+    }
+
     private void tryPlace() {
         ServerLevel level = (ServerLevel) level();
+        if (!live()) {
+            // a husk is never placed: it lies as a plain item instead, which despawns and anyone may pick up
+            ItemStack husk = getItem().copy();
+            TotemIdentity.spend(husk);
+            level.addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(level, getX(), getY(), getZ(), husk));
+            destroy();
+            return;
+        }
         if (NoTotemServers.here()) {
             // no placement on this server: the totem goes to its owner (into their hands here, or waiting for their next login)
             var owner = TotemOwner.fromStack(getItem());
             if (owner.isPresent()) {
                 com.mrgregles.bsp_core.admin.AdminService.deliver(level.getServer(), owner.get().uuid(), java.util.List.of(getItem().copy()), "message.bsp_core.transfer.returned");
-                discard();
+                destroy();
                 return;
             }
             return; // an ownerless totem stays on the ground here: never placed on a server without totem placement
         }
         if (TotemPlacer.place(level, blockPosition(), getItem())) {
-            discard();
+            destroy();
         } else {
             groundTicks -= 20; // nowhere to go right now (rare); retry in a second
             BSPCore.LOGGER.warn("Could not find a spot to place a Shatter Totem near {} in {}", blockPosition(), level.dimension().location());
@@ -161,6 +188,40 @@ public class ShatterTotemItemEntity extends Entity {
     }
 
     // --- indestructible, immovable ---
+
+    /** Set when this entity is removed on purpose (placed, picked up, delivered, wiped): its removal then rescues nothing. */
+    private boolean handled;
+
+    /** Removes the entity on purpose: its totem was placed, picked up or delivered, or it is being wiped. */
+    public void destroy() {
+        handled = true;
+        discard();
+    }
+
+    /**
+     * Removed by anything else ({@code /kill}, an entity-clearing mod, a discard by another mod): a live totem is not lost with it;
+     * it is placed where it lay, or given to its owner when no spot is free. Unloading and changing dimension are not removals.
+     */
+    @Override
+    public void remove(RemovalReason reason) {
+        if (!handled && !level().isClientSide && (reason == RemovalReason.KILLED || reason == RemovalReason.DISCARDED) && live()) {
+            handled = true;
+            ServerLevel level = (ServerLevel) level();
+            ItemStack totem = getItem().copy();
+            if (NoTotemServers.here() || !TotemPlacer.place(level, blockPosition(), totem)) {
+                TotemOwner.fromStack(totem).ifPresent(o -> com.mrgregles.bsp_core.admin.AdminService.deliver(level.getServer(), o.uuid(), java.util.List.of(totem),
+                        "message.bsp_core.transfer.returned"));
+            }
+            BSPCore.LOGGER.info("A dropped Shatter Totem at {} in {} was removed ({}); it was placed or given to its owner", blockPosition(), level.dimension().location(), reason);
+        }
+        super.remove(reason);
+    }
+
+    /** Never through a portal: it would land in a dimension totems may not be in, and place itself there. */
+    @Override
+    public boolean canChangeDimensions() {
+        return false;
+    }
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
@@ -230,7 +291,7 @@ public class ShatterTotemItemEntity extends Entity {
         if (player.getInventory().add(stack.copy())) {
             player.take(this, 1);
             level().playSound(null, getX(), getY(), getZ(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.2F, ((random.nextFloat() - random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
-            discard();
+            destroy();
         }
     }
 

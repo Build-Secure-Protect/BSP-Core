@@ -3,7 +3,9 @@ package com.mrgregles.bsp_core.team;
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.api.event.TeamEvent;
+import com.mrgregles.bsp_core.storage.NetworkStorage;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,6 +28,11 @@ import java.util.UUID;
  * lead over, renaming, recolouring, disbanding, the pinned note and the board. Every change goes
  * through here, tells the players concerned and posts a {@link TeamEvent}. Invites live in memory
  * and run out after {@code team.inviteSeconds}; an invite holds a seat while it waits.
+ * <p>
+ * On a network a player online on another server can be invited too. The invite goes to their
+ * server over Redis ({@link NetworkStorage#teamInvite}) and is kept on both: the inviter's server
+ * holds the seat and tells the inviter how it ended, the invitee's shows the card and runs the
+ * answer, then sends it back. Each side lets the invite run out on its own clock.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class Teams {
@@ -46,10 +53,35 @@ public final class Teams {
         }
     }
 
-    /** An invite waiting for an answer. */
-    public record Invite(int id, UUID teamId, UUID inviter, String inviterName, UUID invitee, long expiresMs) {}
+    /**
+     * An invite waiting for an answer. {@code elsewhere} is the server the other side is on: the invitee's on the inviter's server,
+     * the inviter's on the invitee's; "" when both are here.
+     */
+    public record Invite(int id, UUID teamId, UUID inviter, String inviterName, UUID invitee, String inviteeName, long expiresMs, String elsewhere,
+                         int ref, boolean sent) {
+        public boolean remote() {
+            return !elsewhere.isEmpty();
+        }
+
+        /** The invitee's side of an invite made on another server: its answer goes back there. */
+        boolean answersElsewhere() {
+            return remote() && !sent;
+        }
+    }
 
     private static int inviteIds;
+
+    /** Sends an invite message to another server; false when it cannot reach it. Tests swap it with {@link #useLink}. */
+    public interface Link {
+        boolean send(String toServer, CompoundTag message);
+    }
+
+    private static Link link = NetworkStorage::teamInvite;
+
+    /** For tests: catch the messages to other servers instead of sending them; null puts Redis back. */
+    public static void useLink(@Nullable Link l) {
+        link = l == null ? NetworkStorage::teamInvite : l;
+    }
 
     private static final Map<UUID, Invite> INVITES = new HashMap<>();
     /** Players whose chat goes to their team until they switch back (the TEAM CHAT key). */
@@ -156,41 +188,164 @@ public final class Teams {
         ledger.add(team);
         INVITES.remove(player.getUUID());
         TeamSync.written(team);
+        TeamSync.joined(server, team, player.getUUID()); // the leader's seat, after the team row (one storage thread: in order)
         MinecraftForge.EVENT_BUS.post(new TeamEvent.Created(server, team.id, team.name, player.getUUID()));
         return Outcome.done("created", styled(team));
     }
 
     public static Outcome invite(ServerPlayer inviter, ServerPlayer invitee) {
+        String name = invitee.getGameProfile().getName();
+        Outcome bad = mayInvite(inviter, invitee.getUUID(), name);
+        if (bad != null) {
+            return bad;
+        }
+        Team team = teamOf(inviter.server, inviter.getUUID());
+        long seconds = inviteSeconds();
+        int id = ++inviteIds;
+        Invite invite = new Invite(id, team.id, inviter.getUUID(), inviter.getGameProfile().getName(), invitee.getUUID(), name, now() + seconds * 1000L, "", id, false);
+        INVITES.put(invitee.getUUID(), invite);
+        TeamPrompts.offer(invitee, invite, team, (int) seconds);
+        return Outcome.done("invited", name, styled(team));
+    }
+
+    /** Invites a player online on another server of the network: the invite goes to their server, which shows them the card. */
+    public static Outcome invite(ServerPlayer inviter, NetworkStorage.OnlinePlayer invitee) {
+        Outcome bad = mayInvite(inviter, invitee.id(), invitee.name());
+        if (bad != null) {
+            return bad;
+        }
+        Team team = teamOf(inviter.server, inviter.getUUID());
+        long expires = now() + inviteSeconds() * 1000L;
+        int id = ++inviteIds;
+        Invite invite = new Invite(id, team.id, inviter.getUUID(), inviter.getGameProfile().getName(), invitee.id(), invitee.name(), expires, invitee.server(), id, true);
+        CompoundTag m = message("offer", invite);
+        m.putLong("Expires", expires);
+        if (!link.send(invitee.server(), m)) {
+            return Outcome.fail("invite_unreachable", invitee.name(), invitee.server());
+        }
+        INVITES.put(invitee.id(), invite);
+        return Outcome.done("invited_elsewhere", invitee.name(), invitee.server(), styled(team));
+    }
+
+    /** Null when the inviter may invite this player now, otherwise why not. */
+    @Nullable
+    private static Outcome mayInvite(ServerPlayer inviter, UUID invitee, String name) {
         if (!enabled()) {
             return Outcome.fail("disabled");
         }
-        MinecraftServer server = inviter.server;
-        TeamLedger ledger = TeamLedger.get(server);
+        TeamLedger ledger = TeamLedger.get(inviter.server);
         Team team = ledger.teamOf(inviter.getUUID());
         if (team == null) {
             return Outcome.fail("not_in_team");
         }
-        if (inviter.getUUID().equals(invitee.getUUID())) {
+        if (inviter.getUUID().equals(invitee)) {
             return Outcome.fail("invite_self");
         }
         if (!team.isLeader(inviter.getUUID()) && !BSPConfig.getOr(BSPConfig.TEAM_MEMBERS_INVITE, true)) {
             return Outcome.fail("members_cannot_invite");
         }
-        String name = invitee.getGameProfile().getName();
-        if (ledger.teamOf(invitee.getUUID()) != null) {
+        if (ledger.teamOf(invitee) != null) {
             return Outcome.fail("player_in_team", name);
         }
-        if (pending(invitee.getUUID()).isPresent()) {
+        if (pending(invitee).isPresent()) {
             return Outcome.fail("invite_pending", name);
         }
         if (team.size() + pendingFor(team.id) >= maxMembers()) {
             return Outcome.fail("full", styled(team), maxMembers());
         }
-        long seconds = Math.max(5, BSPConfig.getOr(BSPConfig.TEAM_INVITE_SECONDS, 60));
-        Invite invite = new Invite(++inviteIds, team.id, inviter.getUUID(), inviter.getGameProfile().getName(), invitee.getUUID(), now() + seconds * 1000L);
-        INVITES.put(invitee.getUUID(), invite);
-        TeamPrompts.offer(invitee, invite, team, (int) seconds);
-        return Outcome.done("invited", name, styled(team));
+        return null;
+    }
+
+    private static long inviteSeconds() {
+        return Math.max(5, BSPConfig.getOr(BSPConfig.TEAM_INVITE_SECONDS, 60));
+    }
+
+    // ------------------------------------------------------------------ invites between servers
+
+    /** A message about an invite: {@code op} (offer, refused, answer) and who it is between. */
+    private static CompoundTag message(String op, Invite invite) {
+        CompoundTag m = new CompoundTag();
+        m.putString("Op", op);
+        m.putUUID("Team", invite.teamId());
+        m.putUUID("Inviter", invite.inviter());
+        m.putString("InviterName", invite.inviterName());
+        m.putUUID("Invitee", invite.invitee());
+        m.putString("InviteeName", invite.inviteeName());
+        m.putInt("Ref", invite.ref()); // which invite: a late answer to an earlier one never ends a newer one
+        return m;
+    }
+
+    /**
+     * An invite message from another server (the server thread). An offer is for a player here: their card is shown, or the inviter's
+     * server is told why not. A refusal or an answer is for an invite made here: the seat is freed and the inviter told.
+     */
+    public static void onRemote(MinecraftServer server, String from, CompoundTag m) {
+        onRemote(server, from, m, m.hasUUID("Invitee") ? server.getPlayerList().getPlayer(m.getUUID("Invitee")) : null);
+    }
+
+    /** As {@link #onRemote(MinecraftServer, String, CompoundTag)}, with the invited player as found here (tests pass a mock player). */
+    public static void onRemote(MinecraftServer server, String from, CompoundTag m, @Nullable ServerPlayer online) {
+        if (!m.hasUUID("Team") || !m.hasUUID("Inviter") || !m.hasUUID("Invitee")) {
+            return;
+        }
+        UUID teamId = m.getUUID("Team"), inviter = m.getUUID("Inviter"), invitee = m.getUUID("Invitee");
+        String inviterName = m.getString("InviterName"), inviteeName = m.getString("InviteeName");
+        switch (m.getString("Op")) {
+            case "offer" -> {
+                Invite invite = new Invite(++inviteIds, teamId, inviter, inviterName, invitee, inviteeName, m.getLong("Expires"), from, m.getInt("Ref"), false);
+                Team team = TeamLedger.get(server).team(teamId);
+                String refusal = online == null ? "invite_left" : team == null ? "invite_retry" : TeamLedger.get(server).teamOf(invitee) != null ? "player_in_team"
+                        : pending(invitee).isPresent() ? "invite_pending" : null;
+                if (team == null) {
+                    NetworkStorage.teamReload(teamId); // made a moment ago and not read here yet: the next invite finds it
+                }
+                if (refusal != null) {
+                    CompoundTag back = message("refused", invite);
+                    back.putString("Reason", refusal);
+                    link.send(from, back);
+                    return;
+                }
+                INVITES.put(invitee, invite);
+                TeamPrompts.offer(online, invite, team, (int) Math.max(1, (invite.expiresMs() - now() + 999) / 1000));
+            }
+            case "refused", "answer" -> {
+                Invite mine = INVITES.get(invitee);
+                if (mine == null || !mine.sent() || !mine.teamId().equals(teamId) || !mine.elsewhere().equals(from) || mine.ref() != m.getInt("Ref")) {
+                    return; // ran out here already, or another invite since
+                }
+                INVITES.remove(invitee);
+                String key = m.getString("Op").equals("refused") ? m.getString("Reason") : m.getString("Result").equals("declined") ? "invite_declined" : null;
+                if (key == null) {
+                    return; // joined (the team's members are told as the team changes) or could not join (told on their server)
+                }
+                net.minecraft.network.chat.MutableComponent line = switch (key) {
+                    case "invite_left", "invite_unreachable" -> Component.translatable("message.bsp_core.team." + key, inviteeName, from);
+                    default -> Component.translatable("message.bsp_core.team." + key, inviteeName);
+                };
+                tell(server, inviter, line.withStyle(key.equals("invite_declined") ? ChatFormatting.YELLOW : ChatFormatting.RED));
+            }
+            default -> { }
+        }
+    }
+
+    /** Tells the inviter's server how an invite made there ended here. */
+    private static void answered(Invite invite, String result) {
+        if (invite.answersElsewhere()) {
+            CompoundTag m = message("answer", invite);
+            m.putString("Result", result);
+            link.send(invite.elsewhere(), m);
+        }
+    }
+
+    /** Drops the invites to a team disbanded on another server, taking their cards down. */
+    static void dropInvites(MinecraftServer server, UUID teamId) {
+        INVITES.values().removeIf(i -> {
+            if (i.teamId().equals(teamId)) {
+                TeamPrompts.clear(server, i);
+                return true;
+            }
+            return false;
+        });
     }
 
     public static Outcome accept(ServerPlayer player) {
@@ -206,18 +361,23 @@ public final class Teams {
         TeamLedger ledger = TeamLedger.get(server);
         Team team = ledger.team(invite.teamId());
         if (team == null) {
+            answered(invite, "failed");
             return Outcome.fail("invite_gone");
         }
         if (ledger.teamOf(player.getUUID()) != null) {
+            answered(invite, "failed");
             return Outcome.fail("already_in_team");
         }
         if (team.size() >= maxMembers()) {
+            answered(invite, "failed");
             return Outcome.fail("full", styled(team), maxMembers());
         }
+        answered(invite, "joined");
         String name = player.getGameProfile().getName();
         team.join(player.getUUID(), name, now());
         ledger.joined(team, player.getUUID());
-        TeamSync.written(team);
+        // on a network the database seats them: one row, refused if the team filled up or they joined another meanwhile elsewhere
+        TeamSync.joined(server, team, player.getUUID());
         tellTeam(server, team, Component.translatable("message.bsp_core.team.member_joined", name).withStyle(ChatFormatting.GREEN), player.getUUID());
         MinecraftForge.EVENT_BUS.post(new TeamEvent.Joined(server, team.id, team.name, player.getUUID()));
         return Outcome.done("joined", styled(team));
@@ -232,7 +392,11 @@ public final class Teams {
         Invite invite = pending.get();
         TeamPrompts.clear(player.server, invite);
         Team team = TeamLedger.get(player.server).team(invite.teamId());
-        tell(player.server, invite.inviter(), Component.translatable("message.bsp_core.team.invite_declined", player.getGameProfile().getName()).withStyle(ChatFormatting.YELLOW));
+        if (invite.answersElsewhere()) {
+            answered(invite, "declined");
+        } else {
+            tell(player.server, invite.inviter(), Component.translatable("message.bsp_core.team.invite_declined", player.getGameProfile().getName()).withStyle(ChatFormatting.YELLOW));
+        }
         return Outcome.done("declined", team == null ? Component.literal("?") : styled(team));
     }
 
@@ -597,7 +761,7 @@ public final class Teams {
             Team team = TeamLedger.get(server).team(i.teamId());
             Component name = team == null ? Component.literal("?") : styled(team);
             tell(server, i.invitee(), Component.translatable("message.bsp_core.team.invite_expired", name).withStyle(ChatFormatting.GRAY));
-            tell(server, i.inviter(), Component.translatable("message.bsp_core.team.invite_expired_inviter", nameOf(server, i.invitee())).withStyle(ChatFormatting.GRAY));
+            tell(server, i.inviter(), Component.translatable("message.bsp_core.team.invite_expired_inviter", i.inviteeName()).withStyle(ChatFormatting.GRAY));
         }
     }
 

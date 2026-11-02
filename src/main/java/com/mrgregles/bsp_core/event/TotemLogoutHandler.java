@@ -120,6 +120,9 @@ public final class TotemLogoutHandler {
      */
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (com.mrgregles.bsp_core.admin.LoginSettle.waitsForRestore()) {
+            return; // the login's settle returns them, after BSP-InventorySync's restore (dead or alive, it waits for the respawn)
+        }
         if (event.getEntity() instanceof ServerPlayer player) {
             if (player.isDeadOrDying()) {
                 AFTER_RESPAWN.add(player.getUUID());

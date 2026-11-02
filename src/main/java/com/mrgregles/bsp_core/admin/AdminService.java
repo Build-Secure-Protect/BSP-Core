@@ -136,27 +136,58 @@ public final class AdminService {
 
     // ------------------------------------------------------------------ the panel's data
 
-    public static AdminDataPacket snapshot(MinecraftServer server, ServerPlayer viewer, boolean open) {
-        TotemLedger ledger = TotemLedger.get(server);
-        VaultLedger vaults = VaultLedger.get(server);
-        Map<UUID, List<AdminDataPacket.Totem>> totems = new LinkedHashMap<>();
-        Set<UUID> ids = new HashSet<>(ledger.allGranted());
-        ledger.allPlaced().forEach((owner, positions) -> {
-            List<GlobalPos> sorted = new ArrayList<>(positions);
-            sorted.sort(Comparator.comparing((GlobalPos p) -> p.dimension().location().toString()).thenComparing(GlobalPos::pos));
-            for (GlobalPos pos : sorted) {
-                totems.computeIfAbsent(owner, k -> new ArrayList<>()).add(new AdminDataPacket.Totem(ledger.tierAt(pos), false, pos.dimension().location().toString(), pos.pos()));
+    /**
+     * The rest of the network as the database has it, for the panel: the name of every player who had a first-join totem
+     * anywhere (or owns a listed totem; "" when not known), and every totem every server listed with its last score rows.
+     */
+    public record Network(Map<UUID, String> names, List<ScoreService.Spot> spots) {
+    }
+
+    /**
+     * Sends the panel to {@code viewer}: on a network after reading the other servers' totems and players from the database
+     * (this server's own come live), else this server's alone.
+     */
+    public static void send(ServerPlayer viewer, boolean open) {
+        MinecraftServer server = viewer.server;
+        if (!NetworkStorage.enabled()) {
+            BSPNetwork.sendTo(viewer, snapshot(server, viewer, open, null));
+            return;
+        }
+        NetworkStorage.adminNetwork(net -> {
+            if (!viewer.hasDisconnected()) {
+                BSPNetwork.sendTo(viewer, snapshot(server, viewer, open, net));
             }
         });
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            ids.add(player.getUUID());
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (TotemInventories.isTotem(stack)) {
-                    totems.computeIfAbsent(player.getUUID(), k -> new ArrayList<>())
-                            .add(new AdminDataPacket.Totem(TotemUpgrades.getTier(stack), true, player.level().dimension().location().toString(), player.blockPosition()));
+    }
+
+    public static AdminDataPacket snapshot(MinecraftServer server, ServerPlayer viewer, boolean open) {
+        return snapshot(server, viewer, open, null);
+    }
+
+    /**
+     * The panel's data. Every player this server knows, with this server's totems live; with {@code net} (a network) also every
+     * player on the network and the totems the other servers listed (as fresh as their last leaderboard refresh).
+     */
+    public static AdminDataPacket snapshot(MinecraftServer server, ServerPlayer viewer, boolean open, @javax.annotation.Nullable Network net) {
+        TotemLedger ledger = TotemLedger.get(server);
+        VaultLedger vaults = VaultLedger.get(server);
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        Map<UUID, List<AdminDataPacket.Totem>> totems = new LinkedHashMap<>();
+        Set<UUID> ids = new HashSet<>(ledger.allGranted());
+        for (ScoreService.Spot s : ScoreService.spots(server)) {
+            totems.computeIfAbsent(s.owner(), k -> new ArrayList<>()).add(new AdminDataPacket.Totem(s.tier(), s.carried(), s.server(), s.dimension(), s.pos()));
+        }
+        if (net != null) {
+            ids.addAll(net.names().keySet());
+            for (ScoreService.Spot s : net.spots()) {
+                if (!s.server().equals(here)) { // this server's own are the live ones above
+                    totems.computeIfAbsent(s.owner(), k -> new ArrayList<>()).add(new AdminDataPacket.Totem(s.tier(), s.carried(), s.server(), s.dimension(), s.pos()));
                 }
             }
+            ids.addAll(NetworkStorage.vaultOwnersElsewhere());
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            ids.add(player.getUUID());
         }
         ids.addAll(totems.keySet());
         vaults.all().forEach((id, account) -> {
@@ -179,13 +210,15 @@ public final class AdminService {
                 coins[tier.ordinal()] += elsewhere[tier.ordinal()];
                 value += coins[tier.ordinal()] * tier.value();
             }
-            rows.add(new AdminDataPacket.Row(id, ScoreService.name(server, id), server.getPlayerList().getPlayer(id) != null, points, list.size(),
+            String known = net == null ? "" : net.names().getOrDefault(id, "");
+            String name = server.getPlayerList().getPlayer(id) != null || known.isEmpty() ? ScoreService.name(server, id) : known;
+            rows.add(new AdminDataPacket.Row(id, name, server.getPlayerList().getPlayer(id) != null, points, list.size(),
                     list.subList(0, Math.min(MAX_TOTEMS, list.size())), coins, value,
                     (account == null ? 0 : account.vaultCount()) + NetworkStorage.vaultBlocksElsewhere(id)));
         }
         rows.sort(Comparator.comparingInt(AdminDataPacket.Row::points).reversed().thenComparing(AdminDataPacket.Row::name, String.CASE_INSENSITIVE_ORDER));
         SeasonData season = SeasonData.get(server);
-        return new AdminDataPacket(open, Admins.isAdmin(viewer), season.number, season.day(), season.lastWinner, season.lastWinnerPoints, season.holderHours, minutesToHolderReward(season), decoyRanges(),
+        return new AdminDataPacket(open, Admins.isAdmin(viewer), here, net != null, season.number, season.day(), season.lastWinner, season.lastWinnerPoints, season.holderHours, minutesToHolderReward(season), decoyRanges(),
                 com.mrgregles.bsp_core.BSPConfig.CHUNKS_OWNER_ONLINE.get(),
                 rows.subList(0, Math.min(MAX_ROWS, rows.size())));
     }
@@ -228,7 +261,7 @@ public final class AdminService {
             player.displayClientMessage(Component.translatable("message.bsp_core.admin.denied").withStyle(ChatFormatting.RED), true);
             return;
         }
-        BSPNetwork.sendTo(player, snapshot(player.server, player, true));
+        send(player, true);
     }
 
     // ------------------------------------------------------------------ actions
@@ -262,6 +295,7 @@ public final class AdminService {
     private static void giveFreshTotem(ServerPlayer player) {
         ItemStack totem = new ItemStack(ModItems.SHATTER_TOTEM.get());
         new TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(totem);
+        com.mrgregles.bsp_core.totem.TotemIdentity.stampSeason(totem, SeasonData.get(player.server).number);
         TotemInventories.giveBack(player, totem);
         player.displayClientMessage(Component.translatable("message.bsp_core.season.fresh_totem").withStyle(ChatFormatting.GOLD), false);
         ScoreService.markDirty();
@@ -273,6 +307,9 @@ public final class AdminService {
      * the database decides, so they get it once, on whichever server they join first.
      */
     public static void seasonCheck(ServerPlayer player) {
+        if (NetworkStorage.down()) {
+            return; // the network decides who has had this season's totem: once it connects (NetworkStorage.connected)
+        }
         SeasonData season = SeasonData.get(player.server);
         int number = season.number;
         if (PlayerPersistent.seasonSeen(player) >= number) {
@@ -291,7 +328,7 @@ public final class AdminService {
                 if (PlayerPersistent.seasonSeen(player) >= number) {
                     return; // their first-join totem arrived in the meantime, and it is this season's
                 }
-                TotemInventories.removeAll(player);
+                retire(player, TotemInventories.removeAll(player));
                 PlayerPersistent.setSeasonSeen(player, number);
                 if (result == NetworkStorage.CLAIM_OK) {
                     giveFreshTotem(player);
@@ -302,8 +339,19 @@ public final class AdminService {
         boolean granted = TotemLedger.get(player.server).hasBeenGranted(player.getUUID()) || PlayerPersistent.isTotemGranted(player);
         PlayerPersistent.setSeasonSeen(player, number);
         if (granted) { // a player who has never had a totem gets their first one from the first-join grant instead
-            TotemInventories.removeAll(player);
+            retire(player, TotemInventories.removeAll(player));
             giveFreshTotem(player);
+        }
+    }
+
+    /** The totems a season check took: retired, so they are not reissued as lost and a copy of them is a husk. */
+    private static void retire(ServerPlayer player, List<ItemStack> removed) {
+        TotemLedger ledger = TotemLedger.get(player.server);
+        for (ItemStack t : removed) {
+            UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(t);
+            if (id != null) {
+                ledger.forget(id);
+            }
         }
     }
 
@@ -328,11 +376,13 @@ public final class AdminService {
                     drops.add(e);
                 }
             }
-            drops.forEach(Entity::discard);
+            drops.forEach(e -> ((ShatterTotemItemEntity) e).destroy());
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             TotemInventories.removeAll(player);
         }
+        // every totem is gone: none may come back as "lost" (a held one would be reissued 3 s later), any copy that turns up is a husk
+        ledger.retireAll();
         ScoreService.markDirty();
     }
 
@@ -565,8 +615,13 @@ public final class AdminService {
         if (PlayerPersistent.coinEpoch(player) < season.coinEpoch) {
             stripCoins(player, season.coinEpoch); // a full reset happened while they were away
         }
+        handOverOwed(player); // first: an old-season totem kept for them is then taken by the season check, not handed over after it
         seasonCheck(player);
-        handOverOwed(player);
+        com.mrgregles.bsp_core.event.FirstJoinHandler.check(player);
+        if (LoginSettle.waitsForRestore()) {
+            // after the restore, which would otherwise put back the logout records this consumed from the old saved data
+            com.mrgregles.bsp_core.event.TotemLogoutHandler.returnPlaced(player);
+        }
     }
 
     /** Hands a living, settled player the items kept here for them, then collects what the shared database holds. */

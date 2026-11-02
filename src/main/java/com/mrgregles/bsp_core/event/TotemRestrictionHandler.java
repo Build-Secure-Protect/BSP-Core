@@ -80,10 +80,37 @@ public final class TotemRestrictionHandler {
         TotemLedger ledger = TotemLedger.get(player.server);
         long now = player.server.overworld().getGameTime();
         Inventory inv = player.getInventory();
+        java.util.Set<UUID> seen = null;
         for (int i = 0; i < inv.getContainerSize(); i++) {
-            track(player, ledger, inv.getItem(i), now);
+            seen = track(player, ledger, inv.getItem(i), now, seen);
         }
-        track(player, ledger, player.containerMenu.getCarried(), now);
+        seen = track(player, ledger, player.containerMenu.getCarried(), now, seen);
+        // the inventory's own 2x2 crafting grid: a totem there is still in the player's hands (and comes back out on closing)
+        var grid = player.inventoryMenu.getCraftSlots();
+        for (int i = 0; i < grid.getContainerSize(); i++) {
+            seen = track(player, ledger, grid.getItem(i), now, seen);
+        }
+    }
+
+    /** Tracks one stack; returns the ids seen so far in this scan (a second live stack of the same id is a clone and is spent). */
+    @javax.annotation.Nullable
+    private static java.util.Set<UUID> track(ServerPlayer player, TotemLedger ledger, ItemStack stack, long now, @javax.annotation.Nullable java.util.Set<UUID> seen) {
+        if (stack.isEmpty() || !stack.is(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get()) || TotemIdentity.isSpent(stack)) {
+            return seen;
+        }
+        UUID id = TotemIdentity.id(stack);
+        if (id != null && seen != null && seen.contains(id) && !ledger.stale(id, TotemIdentity.instance(stack))) {
+            TotemIdentity.spend(stack); // the same live totem twice (a creative clone): only the first is real
+            return seen;
+        }
+        track(player, ledger, stack, now);
+        if (!TotemIdentity.isSpent(stack) && TotemIdentity.id(stack) != null) { // only a stack that stayed live counts (a stale copy is spent above)
+            if (seen == null) {
+                seen = new java.util.HashSet<>(4);
+            }
+            seen.add(TotemIdentity.id(stack));
+        }
+        return seen;
     }
 
     private static void track(ServerPlayer player, TotemLedger ledger, ItemStack stack, long now) {
@@ -91,6 +118,16 @@ public final class TotemRestrictionHandler {
             return;
         }
         TotemIdentity.ensure(stack);
+        if (TotemIdentity.oldSeason(stack, player.server)) {
+            TotemIdentity.spend(stack); // from an earlier season: the season's end replaced it
+            player.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.old_season").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        if (com.mrgregles.bsp_core.totem.TotemOwner.fromStack(stack).isEmpty()) {
+            // a totem nobody owns (from the creative menu, a give command, JEI) is its holder's: never "Unclaimed" in a player's hands
+            new com.mrgregles.bsp_core.totem.TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(stack);
+            BSPCore.LOGGER.info("An unowned Shatter Totem in {}'s inventory is now theirs", player.getGameProfile().getName());
+        }
         UUID id = TotemIdentity.id(stack), instance = TotemIdentity.instance(stack), current = ledger.currentInstance(id);
         if (current != null && !current.equals(instance)) {
             TotemIdentity.spend(stack); // a copy that went missing and was reissued: a husk now
@@ -127,8 +164,11 @@ public final class TotemRestrictionHandler {
      * and an admin must be able to get rid of a spare totem, so the ledger forgets it instead.
      */
     public static Lost lost(ServerPlayer holder, TotemLedger ledger, UUID id, long now) {
+        if (holder.isDeadOrDying()) {
+            return null; // a dead entity's inventory does not pass to the respawned player: asked again once they are back
+        }
         if (holder.isCreative()) {
-            ledger.forget(id);
+            ledger.drop(id);
             holder.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.destroyed").withStyle(ChatFormatting.GRAY), true);
             BSPCore.LOGGER.info("{}'s Shatter Totem {} was nowhere for {} ticks while they were in creative mode; counted as destroyed", holder.getGameProfile().getName(), id, LOST_AFTER_TICKS);
             return Lost.DESTROYED;

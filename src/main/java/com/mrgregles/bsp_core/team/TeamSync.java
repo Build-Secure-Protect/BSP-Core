@@ -27,6 +27,43 @@ public final class TeamSync {
         NetworkStorage.teamWrite(team);
     }
 
+    /**
+     * A player joined here: the database seats them (one member row, in a transaction that counts the seats and checks they are
+     * in no other team), never by writing this server's whole copy of the team, which may be behind another server's join or kick.
+     * Refused there, the join is undone here and they are told.
+     */
+    static void joined(MinecraftServer server, Team team, UUID player) {
+        Team.Member m = team.members().get(player);
+        if (m == null) {
+            return;
+        }
+        NetworkStorage.teamJoin(team.id, player, m, Teams.maxMembers(), seated -> {
+            if (Boolean.TRUE.equals(seated)) {
+                return;
+            }
+            if (seated == null) {
+                NetworkStorage.teamReload(team.id); // unreachable: the database may or may not have them; its copy decides
+                return;
+            }
+            TeamLedger ledger = TeamLedger.get(server);
+            Team now = ledger.team(team.id);
+            if (now != null && now.has(player)) {
+                now.remove(player);
+                ledger.left(player);
+                ledger.changed();
+            }
+            ServerPlayer online = server.getPlayerList().getPlayer(player);
+            if (online != null) {
+                TeamChat.sendState(online);
+                online.displayClientMessage(Component.translatable("message.bsp_core.team.join_refused", Teams.styled(team)).withStyle(ChatFormatting.RED), false);
+            }
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TeamEvent.Left(server, team.id, team.name, player,
+                    com.mrgregles.bsp_core.api.event.TeamEvent.Left.Reason.LEFT));
+            TeamAccessSync.resyncOwners(server, Set.of(player));
+            NetworkStorage.teamReload(team.id);
+        });
+    }
+
     static void member(Team team, UUID player) {
         Team.Member m = team.members().get(player);
         if (m != null) {
@@ -64,12 +101,30 @@ public final class TeamSync {
      * asked for; an empty list for it means it was disbanded elsewhere.
      */
     public static void apply(MinecraftServer server, List<Team> fresh, @Nullable UUID only) {
+        apply(server, fresh, only, false);
+    }
+
+    /**
+     * As {@link #apply(MinecraftServer, List, UUID)}; with {@code prune}, a full read ({@code only} null) also drops the teams the
+     * database no longer has (disbanded on another server while its message was missed).
+     */
+    public static void apply(MinecraftServer server, List<Team> fresh, @Nullable UUID only, boolean prune) {
         TeamLedger ledger = TeamLedger.get(server);
+        if (only == null && prune) { // only on an explicit request (a test, an admin tool): a routine read may be older than a write here
+            Set<UUID> keep = new HashSet<>();
+            fresh.forEach(t -> keep.add(t.id));
+            for (Team t : new ArrayList<>(ledger.all())) {
+                if (!keep.contains(t.id)) {
+                    apply(server, List.of(), t.id, false);
+                }
+            }
+        }
         if (only != null && fresh.isEmpty()) {
             Team gone = ledger.team(only);
             if (gone != null) {
                 Set<UUID> members = new HashSet<>(gone.members().keySet());
                 ledger.remove(gone);
+                Teams.dropInvites(server, only);
                 tellHere(server, members, Component.translatable("message.bsp_core.team.disbanded", Teams.styled(gone)).withStyle(ChatFormatting.YELLOW));
                 TeamAccessSync.resyncOwners(server, members);
             }
@@ -96,6 +151,13 @@ public final class TeamSync {
                 }
                 for (Team.Message m : fresh2) {
                     tellHere(server, team.members().keySet(), Teams.chatLine(team, m));
+                }
+                // someone joined on another server (an invite from here, or one answered there)
+                for (var e : team.members().entrySet()) {
+                    if (!old.has(e.getKey())) {
+                        Set<UUID> others = new HashSet<>(old.members().keySet());
+                        tellHere(server, others, Component.translatable("message.bsp_core.team.member_joined", e.getValue().name).withStyle(ChatFormatting.GREEN));
+                    }
                 }
                 for (UUID p : old.members().keySet()) {
                     if (!team.has(p)) {

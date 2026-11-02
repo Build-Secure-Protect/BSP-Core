@@ -48,6 +48,67 @@ public final class TotemWipe {
         return r;
     }
 
+    /**
+     * One totem taken out of play for good by an admin ({@code BspTotems.destroyed}, BSP-InventorySync request R8): retired in the
+     * ledger, here and on the network's other servers, so no lost-totem rule ever gives it back and any copy of it is a husk; and
+     * dropped from every record that could bring it back: its holder's logout placements and totems kept through a death (when they
+     * are online here), a transfer under way, the items owed on this server and in the database. False for a husk or anything that
+     * is not a live totem (nothing is changed).
+     */
+    public static boolean destroyed(MinecraftServer server, ItemStack totem, String by) {
+        return destroyed(server, totem, by, null);
+    }
+
+    /** As {@link #destroyed(MinecraftServer, ItemStack, String)}; {@code holderHere} is the holder when known (tests pass a mock player, not in the player list). */
+    public static boolean destroyed(MinecraftServer server, ItemStack totem, String by, @javax.annotation.Nullable ServerPlayer holderHere) {
+        if (!TotemInventories.isTotem(totem)) {
+            return false;
+        }
+        UUID id = TotemIdentity.id(totem), instance = TotemIdentity.instance(totem);
+        if (id == null || instance == null) {
+            return false;
+        }
+        TotemLedger ledger = TotemLedger.get(server);
+        var sighting = ledger.sighting(id);
+        UUID holder = sighting != null && sighting.holder() != null ? sighting.holder() : TotemOwner.fromStack(totem).map(TotemOwner::uuid).orElse(null);
+        ledger.retire(id);
+        int records = 0;
+        if (holder != null) {
+            ServerPlayer online = holderHere != null && holderHere.getUUID().equals(holder) ? holderHere : server.getPlayerList().getPlayer(holder);
+            if (online != null) {
+                records += PlayerPersistent.removeLogoutPlaced(online, id);
+                records += com.mrgregles.bsp_core.zone.ZoneHandler.dropHeld(online, id);
+            }
+            records += com.mrgregles.bsp_core.api.BspTransfer.forgetTotem(holder, id);
+        }
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        for (var owed : season.pendingItems.values()) {
+            int before = owed.size();
+            owed.removeIf(st -> id.equals(TotemIdentity.id(st)));
+            records += before - owed.size();
+        }
+        season.pendingItems.values().removeIf(List::isEmpty);
+        season.setDirty();
+        NetworkStorage.totemDestroyed(id);
+        com.mrgregles.bsp_core.score.ScoreService.markDirty();
+        BSPCore.LOGGER.info("Shatter Totem {} destroyed by {}: retired on this server and the network, {} record(s) dropped here", id, by, records);
+        return true;
+    }
+
+    /** Another server destroyed a totem (its Redis notice): retired here too, and dropped from the items owed on this server. */
+    public static void destroyedElsewhere(MinecraftServer server, UUID id) {
+        TotemLedger.get(server).retire(id);
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        boolean changed = false;
+        for (var owed : season.pendingItems.values()) {
+            changed |= owed.removeIf(st -> id.equals(TotemIdentity.id(st)));
+        }
+        if (changed) {
+            season.pendingItems.values().removeIf(List::isEmpty);
+            season.setDirty();
+        }
+    }
+
     private static Result clear(MinecraftServer server, UUID id, @javax.annotation.Nullable ServerPlayer player) {
         TotemLedger ledger = TotemLedger.get(server);
         // carried totems

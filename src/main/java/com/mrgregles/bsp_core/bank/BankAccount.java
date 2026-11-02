@@ -43,6 +43,23 @@ public final class BankAccount {
         return v;
     }
 
+    /**
+     * Copies the money and the switches, not the deposit box. A row read from the network database carries no box (the box is
+     * its own table, read when the box opens), so copying it whole would empty the cached box, and the next save of the box
+     * (renting, more slots, closing it) would write that empty copy over the player's items.
+     */
+    public void copyMoneyFrom(BankAccount o) {
+        pieces = o.pieces;
+        System.arraycopy(o.coins, 0, coins, 0, coins.length);
+        granted = o.granted;
+        acceptPay = o.acceptPay;
+        remoteShops = o.remoteShops;
+        remoteMarket = o.remoteMarket;
+        name = o.name;
+        seenMs = o.seenMs;
+    }
+
+    /** Copies everything, the box too (a whole account: the menus' copies, a local load). */
     public void copyFrom(BankAccount o) {
         pieces = o.pieces;
         System.arraycopy(o.coins, 0, coins, 0, coins.length);

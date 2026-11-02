@@ -95,6 +95,6 @@ public record AdminActionPacket(int action, UUID target, String dimension, Block
             default -> {
             }
         }
-        BSPNetwork.sendTo(player, AdminService.snapshot(player.server, player, false));
+        AdminService.send(player, false);
     }
 }

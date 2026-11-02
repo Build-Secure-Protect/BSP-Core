@@ -128,6 +128,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             ChunkLoading.totemChanged(this);
             ChunkLoading.restore(serverLevel, worldPosition, tag.getIntArray(TAG_CHUNK_PATTERN));
         }
+        if (level instanceof ServerLevel serverLevel) {
+            // placed: the ledger hears it now, not at the first tick. A chunk does not tick until its entities have loaded, which on
+            // a busy server can take seconds after a player arrives or teleports; meanwhile the totem, last seen in their hands,
+            // counted as lost after 60 ticks and was reissued to them while the placed one stood: a duplicate.
+            reportToLedger(serverLevel);
+        }
     }
 
     /** Writes everything that must survive into the item when the block is picked up. */
@@ -159,7 +165,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             if (steal != null) {
                 endSteal(serverLevel, StealStatusPacket.OUTCOME_FAILED, "message.bsp_core.steal.totem_gone");
             }
-            TotemLedger.get(serverLevel.getServer()).recordRemoved(GlobalPos.of(serverLevel.dimension(), worldPosition));
+            TotemLedger ledger = TotemLedger.get(serverLevel.getServer());
+            ledger.recordRemoved(GlobalPos.of(serverLevel.dimension(), worldPosition));
+            if (owner != null && identity.hasUUID(TotemIdentity.TAG_ID) && identity.hasUUID(TotemIdentity.TAG_INSTANCE)) {
+                // gone without a pickup (a pickup puts it in a hand, or on the ground, before this): it goes back to its owner
+                CompoundTag copy = new CompoundTag();
+                writeToStackTag(copy);
+                ledger.lostFromPlace(identity.getUUID(TotemIdentity.TAG_ID), identity.getUUID(TotemIdentity.TAG_INSTANCE), owner.uuid(), copy);
+            }
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.Removed(serverLevel.getServer(),
                     GlobalPos.of(serverLevel.dimension(), worldPosition), owner == null ? null : owner.uuid()));
         }

@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +55,8 @@ public final class NetworkStorage {
     /** While the server stops: answers from the storage thread wait here and are run before the world is saved. */
     private static final java.util.concurrent.ConcurrentLinkedQueue<Runnable> late = new java.util.concurrent.ConcurrentLinkedQueue<>();
     private static volatile boolean stopping;
+    /** Whether this server's local records were copied to the database ({@code /bsp storage migrate}), as read at the start. */
+    private static volatile boolean migratedHere = true;
     private static final Map<UUID, Integer> slicesElsewhere = new ConcurrentHashMap<>();
     /** What each player keeps in Coin Vaults on the other servers, as last read: five coin counts, blocks, and the Illyrium-interest flag. */
     private static volatile Map<UUID, int[]> vaultsElsewhere = Map.of();
@@ -65,6 +68,9 @@ public final class NetworkStorage {
     private static volatile com.mrgregles.bsp_core.market.NetworkMarket market;
 
     /** A steal running on another server of the network: where, whose totem, who is stealing, and when it started and is expected to end (wall-clock ms). */
+    /** A player online on another server of the network. */
+    public record OnlinePlayer(UUID id, String name, String server) {}
+
     public record RemoteSteal(String serverId, String dimension, int x, int y, int z, @Nullable UUID owner, UUID thief, String thiefName, long startedMs, long endsMs) {}
 
     private NetworkStorage() {}
@@ -140,6 +146,15 @@ public final class NetworkStorage {
     public static boolean countsWanted() {
         MinecraftServer s = server;
         return s != null && networkWanted(BSPConfig.STORAGE_MODE.get(), singlePlayer());
+    }
+
+    /**
+     * True on a network server whose database is not connected: in the seconds after the start before it connects, or for good
+     * when it could not. Its local records are only a cache then, so nothing that the network keeps (money, grants, claims) may
+     * be decided on them.
+     */
+    public static boolean down() {
+        return countsWanted() && (!enabled() || market == null); // connected only once the network's market is built too
     }
 
     /** True while this server is writing to and reading from the network database. */
@@ -266,6 +281,24 @@ public final class NetworkStorage {
                     }
                 }
                 case "steal" -> refreshSteals();
+                case "totem_destroyed" -> {
+                    try {
+                        com.mrgregles.bsp_core.totem.TotemWipe.destroyedElsewhere(srv, UUID.fromString(payload));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a totem id
+                    }
+                }
+                case "online" -> refreshOnline();
+                case "team_invite" -> {
+                    int sp = payload.indexOf(' ');
+                    if (sp > 0 && payload.substring(0, sp).equals(BSPConfig.STORAGE_SERVER_ID.get())) {
+                        try {
+                            com.mrgregles.bsp_core.team.Teams.onRemote(srv, msg[1], net.minecraft.nbt.TagParser.parseTag(payload.substring(sp + 1)));
+                        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                            BSPCore.LOGGER.warn("BSP-Core team: an unreadable invite message from {}: {}", msg[1], e.getMessage());
+                        }
+                    }
+                }
                 case "team" -> {
                     try {
                         if (payload.startsWith("-")) {
@@ -352,12 +385,26 @@ public final class NetworkStorage {
             }
             return;
         }
-        worker().execute(() -> {
+        worker().execute(NetworkStorage::connect);
+    }
+
+    /** Ticks between full reloads of teams, kits and shops (five minutes), which catch up on any Redis message missed. */
+    private static final int CATCH_UP_TICKS = 5 * 60 * 20;
+    private static int catchUpTicks;
+
+    /** When to try connecting again after a failed start (0: no retry due). The server stays "down" meanwhile: nothing networked is decided locally. */
+    private static volatile long retryAtMs;
+    private static final long RETRY_MS = 30_000L;
+
+    /** Connects to the database (the storage thread): at the start, and again every 30 s while it fails. */
+    private static void connect() {
+        {
             MySqlStore s = null;
             try {
                 s = fromConfig();
                 s.ensureSchema();
                 boolean migrated = s.hasMigrated();
+                migratedHere = migrated;
                 store = s;
                 BSPCore.LOGGER.info("BSP-Core storage: connected to MySQL {}", s.describe());
                 if (BSPConfig.REDIS_ENABLED.get()) {
@@ -372,6 +419,8 @@ public final class NetworkStorage {
                 MinecraftServer started = server;
                 onServer(() -> com.mrgregles.bsp_core.shop.Shops.moveCountsOnce(started, BSPConfig.STORAGE_SERVER_ID.get()));
                 s.teamClearOnline();
+                s.onlineClear();
+                playersElsewhere = List.copyOf(s.onlineElsewhere(System.currentTimeMillis(), ONLINE_MAX_AGE_MS));
                 teamReload(null);
                 kitReload(null);
                 s.marketEnsurePot();
@@ -389,57 +438,98 @@ public final class NetworkStorage {
                 });
                 s.clearSteals();
                 stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis()));
+                MinecraftServer joined = server;
+                onServer(() -> connected(joined));
             } catch (SQLException | RuntimeException e) {
                 if (s != null) {
+                    if (store == s) {
+                        store = null; // never half on: a failure part-way leaves the server on its local records, as the log says
+                    }
                     s.close();
                 }
-                BSPCore.LOGGER.error("BSP-Core storage: storage.mode is \"mysql\" but the database could not be used ({}). "
-                        + "Running on local records only; network-wide limits are NOT enforced until this is fixed and the server restarted.", e.toString());
+                RedisLink r = redis;
+                redis = null;
+                if (r != null) {
+                    r.close();
+                }
+                market = null;
+                retryAtMs = System.currentTimeMillis() + RETRY_MS;
+                BSPCore.LOGGER.error("BSP-Core storage: storage.mode is \"mysql\" but the database could not be used ({}). Trying again in {} s; until it connects, "
+                        + "the bank, the market, first-join totems and kits wait (nothing the network keeps is decided on this server's local copy).", e.toString(), RETRY_MS / 1000);
             }
-        });
+        }
     }
 
+    /**
+     * The database connected: what a login decides on the network (the account and starting pieces, the first totem, first-join
+     * kits, the online mark) is done now for the players who joined in the seconds before, when it waited.
+     */
+    private static void connected(MinecraftServer srv) {
+        if (srv == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (ServerPlayer p : srv.getPlayerList().getPlayers()) {
+            UUID id = p.getUUID();
+            String name = p.getGameProfile().getName();
+            async("mark a player online", s -> s.onlineHere(id, name, now));
+            com.mrgregles.bsp_core.bank.BankEvents.arrive(p);
+            if (com.mrgregles.bsp_core.admin.LoginSettle.canReceive(p)) {
+                // settled already: the season check and the first totem waited for the database (not settled yet: the settle runs them)
+                com.mrgregles.bsp_core.admin.AdminService.seasonCheck(p);
+                com.mrgregles.bsp_core.event.FirstJoinHandler.check(p);
+            }
+            com.mrgregles.bsp_core.kit.KitGrants.connected(p);
+        }
+        publish("online", "");
+    }
+
+    /**
+     * The server is stopping, before the players leave and the world is saved: what is queued finishes (a purchase, a Collect box
+     * being emptied) and its answers run here, while they can still reach the players and the world. The database stays connected,
+     * so the players' logouts that follow still write to it (a totem kept for a player leaving a no-totem server, their deposit box,
+     * their online mark); it closes at {@link #onServerStopped}.
+     */
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
+        stopping = true; // from now answers queue in `late` and run here, not on a server loop that no longer turns
+        drain(5);
+    }
+
+    /** The server has stopped (players gone, world saved): the logouts' writes finish, then the database and Redis close. */
+    @SubscribeEvent
+    public static void onServerStopped(net.minecraftforge.event.server.ServerStoppedEvent event) {
+        MySqlStore s = store;
+        if (s != null) {
+            async("clear this server's online players", MySqlStore::onlineClear);
+            publish("online", "");
+        }
+        drain(5);
+        store = null;
         RedisLink r = redis;
         redis = null;
         if (r != null) {
             r.close();
         }
-        MySqlStore s = store;
-        store = null;
-        // let what is queued finish (a purchase, a Collect box being emptied) and run its answers here, before the players and
-        // the world are saved; an answer may queue a follow-up (deleting the rows of an emptied box), so a few rounds
-        stopping = true;
-        for (int round = 0; round < 3; round++) {
-            ExecutorService w = worker;
-            if (w == null) {
-                break;
-            }
+        ExecutorService w = worker;
+        if (w != null && !w.isShutdown()) {
             w.shutdown();
             try {
-                if (!w.awaitTermination(round == 0 ? 5 : 2, java.util.concurrent.TimeUnit.SECONDS)) {
+                if (!w.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS)) {
                     BSPCore.LOGGER.warn("BSP-Core storage: the database work still queued at stop did not finish in time");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            boolean ran = false;
-            for (Runnable task; (task = late.poll()) != null; ) {
-                ran = true;
-                try {
-                    task.run();
-                } catch (RuntimeException e) {
-                    BSPCore.LOGGER.error("BSP-Core storage: an answer at stop failed: {}", e.toString());
-                }
-            }
-            if (!ran && (worker == w || worker == null || worker.isShutdown())) {
-                break;
-            }
         }
-        ExecutorService w = worker;
-        if (w != null && !w.isShutdown()) {
-            w.shutdown();
+        runLate();
+        MinecraftServer stopped = server;
+        if (stopped != null) {
+            try {
+                stopped.overworld().getDataStorage().save(); // what the late answers kept here (items owed to a player) was after the world save
+            } catch (RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not save the records changed at stop: {}", e.toString());
+            }
         }
         ExecutorService rw = redisWorker;
         if (rw != null) {
@@ -451,18 +541,69 @@ public final class NetworkStorage {
         }
         late.clear();
         stopping = false;
+        retryAtMs = 0;
         slicesElsewhere.clear();
         vaultsElsewhere = Map.of();
         stealsElsewhere = List.of();
+        playersElsewhere = List.of();
         market = null;
         com.mrgregles.bsp_core.trade.Trades.hub().disconnect();
         server = null;
+    }
+
+    /**
+     * Waits (up to {@code seconds} a round) for the work queued so far to finish and runs the answers it left, a few rounds, since
+     * an answer may queue a follow-up (deleting the rows of an emptied box). Never gives up on a round because nothing came back yet.
+     */
+    private static void drain(int seconds) {
+        for (int round = 0; round < 3; round++) {
+            ExecutorService w = worker;
+            if (w == null || w.isShutdown()) {
+                runLate();
+                return;
+            }
+            java.util.concurrent.Future<?> marker = w.submit(() -> { });
+            try {
+                marker.get(round == 0 ? seconds : 2, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                BSPCore.LOGGER.warn("BSP-Core storage: the database work queued at stop is still running");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (java.util.concurrent.ExecutionException ignored) {
+                // a no-op cannot fail
+            }
+            if (!runLate() && marker.isDone()) {
+                return;
+            }
+        }
+    }
+
+    /** Runs the answers queued while stopping; true when there were any. */
+    private static boolean runLate() {
+        boolean ran = false;
+        for (Runnable task; (task = late.poll()) != null; ) {
+            ran = true;
+            try {
+                task.run();
+            } catch (RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: an answer at stop failed: {}", e.toString());
+            }
+        }
+        return ran;
     }
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             refreshSlices(player.getUUID());
+            UUID id = player.getUUID();
+            String name = player.getGameProfile().getName();
+            long now = System.currentTimeMillis();
+            async("mark a player online", s -> {
+                s.onlineHere(id, name, now);
+                publish("online", "");
+            });
             var m = market();
             if (m != null) {
                 m.refreshBox(player.getUUID());
@@ -473,6 +614,11 @@ public final class NetworkStorage {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         slicesElsewhere.remove(event.getEntity().getUUID());
+        UUID id = event.getEntity().getUUID();
+        async("mark a player gone", s -> {
+            s.onlineGone(id);
+            publish("online", "");
+        });
         var m = market();
         if (m != null) {
             m.forget(event.getEntity().getUUID()); // the copy of their Collect box; read again at their next login
@@ -563,7 +709,8 @@ public final class NetworkStorage {
      * Publishes this server's score rows and hands the whole network's board to {@code then} on the
      * server thread. If the database cannot be reached, {@code then} gets this server's own rows.
      */
-    public static void syncScores(List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine, Consumer<List<com.mrgregles.bsp_core.score.ScoreService.Entry>> then) {
+    public static void syncScores(List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine, List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots,
+                                  Consumer<List<com.mrgregles.bsp_core.score.ScoreService.Entry>> then) {
         MySqlStore s = store;
         if (s == null) {
             then.accept(mine);
@@ -572,10 +719,11 @@ public final class NetworkStorage {
         worker().execute(() -> {
             List<com.mrgregles.bsp_core.score.ScoreService.Entry> result;
             try {
-                result = s.syncScores(mine);
+                result = s.syncScores(mine, spots);
             } catch (SQLException | RuntimeException e) {
+                // the board keeps what it last showed: publishing this server's rows alone would post every other server's points as lost
                 BSPCore.LOGGER.error("BSP-Core storage: could not sync the leaderboard: {}", e.toString());
-                result = mine;
+                return;
             }
             List<com.mrgregles.bsp_core.score.ScoreService.Entry> out = result;
             onServer(() -> then.accept(out));
@@ -617,6 +765,18 @@ public final class NetworkStorage {
 
     @SubscribeEvent
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && store != null && ++catchUpTicks >= CATCH_UP_TICKS) {
+            // a Redis message missed (a reconnect gap, a dropped publish) is never re-sent: teams, kits and shops are read whole now and then
+            catchUpTicks = 0;
+            teamReload(null);
+            kitReload(null, false); // never prunes: a kit written here a moment ago may not be in the read yet
+            shopReload(null);
+        }
+        long due = retryAtMs;
+        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && due > 0 && store == null && !stopping && System.currentTimeMillis() >= due) {
+            retryAtMs = 0;
+            worker().execute(NetworkStorage::connect);
+        }
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && --rotationTicks <= 0) {
             rotationTicks = 20 * 60;
             com.mrgregles.bsp_core.shop.Shops.tickRotations(event.getServer());
@@ -637,6 +797,7 @@ public final class NetworkStorage {
         collectNotices(event.getServer());
         collectTotemReturns(event.getServer());
         refreshSteals();
+        refreshOnline();
         MySqlStore s = store;
         if (s == null) {
             pollWaiting.set(false);
@@ -742,6 +903,37 @@ public final class NetworkStorage {
         return stealsElsewhere;
     }
 
+    private static volatile List<OnlinePlayer> playersElsewhere = List.of();
+
+    /**
+     * The players online on the other servers, as last read (every {@code storage.noticeSeconds}, and at once on a Redis notice when
+     * someone joins or leaves a server). Empty without network storage.
+     */
+    public static List<OnlinePlayer> playersElsewhere() {
+        return playersElsewhere;
+    }
+
+    /** Where on the other servers the player is online, if they are. */
+    public static Optional<OnlinePlayer> onlineElsewhere(UUID player) {
+        for (OnlinePlayer p : playersElsewhere) {
+            if (p.id().equals(player)) {
+                return Optional.of(p);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** How long a server's online rows count without it confirming them (it confirms every {@code storage.noticeSeconds}). */
+    private static final long ONLINE_MAX_AGE_MS = 60_000L;
+
+    private static void refreshOnline() {
+        async("read the players online elsewhere", s -> {
+            long now = System.currentTimeMillis();
+            s.onlineBeat(now);
+            playersElsewhere = List.copyOf(s.onlineElsewhere(now, ONLINE_MAX_AGE_MS));
+        });
+    }
+
     private static void refreshSteals() {
         async("read the steals in progress", s -> stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis())));
     }
@@ -800,6 +992,30 @@ public final class NetworkStorage {
                 onServer(() -> then.accept(elsewhere));
             }
         });
+    }
+
+    /** The admin panel's view of the network; null when the database could not be read. */
+    public static void adminNetwork(Consumer<com.mrgregles.bsp_core.admin.AdminService.Network> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            com.mrgregles.bsp_core.admin.AdminService.Network n = null;
+            try {
+                n = s.adminNetwork();
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the network for the admin panel: {}", e.toString());
+            }
+            com.mrgregles.bsp_core.admin.AdminService.Network out = n;
+            onServer(() -> then.accept(out));
+        });
+    }
+
+    /** Players who keep Coin Vaults on other servers. */
+    public static Set<UUID> vaultOwnersElsewhere() {
+        return Set.copyOf(vaultsElsewhere.keySet());
     }
 
     /** Coins of each tier the player keeps in vaults on other servers (zeros when storage is local). */
@@ -880,13 +1096,67 @@ public final class NetworkStorage {
     }
 
     /** Leaves items (as SNBT) for a player to be handed over on whichever server they are on or next join. */
+    /**
+     * Stores items owed to a player for whichever server they are on next. When the database cannot take them (not connected, or
+     * the write fails) they are kept in this world's own records instead, handed over at the player's next login here, so items
+     * that already left an inventory (a totem leaving for a transfer, a no-totem server's logout) are never lost.
+     */
     public static void addPending(UUID player, List<String> items) {
         List<String> copy = List.copyOf(items);
-        async("store items owed to a player", s -> s.addPending(player, copy));
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null) {
+            keepLocally(srv, player, copy);
+            return;
+        }
+        worker().execute(() -> {
+            try {
+                s.addPending(player, copy);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not store {} item(s) owed to {}; kept on this server instead: {}", copy.size(), player, e.toString());
+                onServer(() -> keepLocally(srv, player, copy));
+            }
+        });
+    }
+
+    private static void keepLocally(@Nullable MinecraftServer srv, UUID player, List<String> encoded) {
+        if (srv == null) {
+            BSPCore.LOGGER.error("BSP-Core storage: {} item(s) owed to {} could not be kept anywhere: {}", encoded.size(), player, encoded);
+            return;
+        }
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(srv);
+        var owed = season.pendingItems.computeIfAbsent(player, k -> new java.util.ArrayList<>());
+        for (String snbt : encoded) {
+            try {
+                net.minecraft.world.item.ItemStack stack = net.minecraft.world.item.ItemStack.of(net.minecraft.nbt.TagParser.parseTag(snbt));
+                if (!stack.isEmpty()) {
+                    owed.add(stack);
+                }
+            } catch (Exception e) {
+                BSPCore.LOGGER.error("BSP-Core storage: an item owed to {} could not be read: {}", player, snbt);
+            }
+        }
+        season.setDirty();
     }
 
     /** Takes whatever is waiting for the given players and hands it to {@code then} on the server thread. */
     /** Drops every item still owed to a player across the network (an admin wipe). */
+    /**
+     * A totem destroyed by an admin: its rows in the items owed (pending_items) are deleted, and the other servers are told to
+     * retire it. Without Redis the other servers do not hear of it; a copy of it there would still be a husk once it reached this
+     * server, but their own ledgers keep their record of it.
+     */
+    public static void totemDestroyed(UUID totemId) {
+        String needle = pendingNeedle(totemId);
+        async("drop a destroyed totem from the items owed", s -> s.removePendingContaining(needle));
+        publish("totem_destroyed", totemId.toString());
+    }
+
+    /** How a totem's id reads inside a stored item (the SNBT of its tag), to find its rows in the items owed. */
+    public static String pendingNeedle(UUID totemId) {
+        return "TotemId:" + net.minecraft.nbt.NbtUtils.createUUID(totemId);
+    }
+
     public static void clearPending(UUID player) {
         async("drop the items owed to a player", s -> s.clearPending(player));
     }
@@ -895,9 +1165,7 @@ public final class NetworkStorage {
         List<UUID> copy = List.copyOf(players);
         async("collect items owed to players", s -> {
             Map<UUID, List<String>> owed = s.takePending(copy);
-            if (!owed.isEmpty()) {
-                onServer(() -> then.accept(owed));
-            }
+            onServer(() -> then.accept(owed)); // also when nothing was owed: a caller may have records to settle either way
         });
     }
 
@@ -959,14 +1227,17 @@ public final class NetworkStorage {
                     int[] n = s.migrate(grants, placed, slices);
                     int kitRowCount = 0;
                     for (com.mrgregles.bsp_core.kit.Kit k : kits) {
-                        s.kitWrite(k);
+                        if (!s.kitExists(k.id)) {
+                            s.kitWrite(k); // only kits the network does not have: never over a newer copy edited on another server
+                        }
                     }
                     for (var e : kitRows.entrySet()) {
                         for (com.mrgregles.bsp_core.kit.KitLedger.Redeem r : e.getValue()) {
-                            s.kitRedeemWrite(e.getKey(), r);
+                            s.kitRedeemMigrate(e.getKey(), r);
                             kitRowCount++;
                         }
                     }
+                    migratedHere = true;
                     lines = List.of("Migrated to " + s.describe() + ".",
                             "First-join grants: " + n[0] + " added, " + n[1] + " already in the database.",
                             "Placed totems written: " + n[2] + ". Factory slices written: " + n[3] + ".",
@@ -1025,16 +1296,24 @@ public final class NetworkStorage {
     }
 
     /** Applies the deltas atomically; {@code then} gets the row after, or null when refused or unreachable. */
-    public static void bankAdjust(UUID id, long dPieces, int[] dCoins, Consumer<com.mrgregles.bsp_core.bank.BankAccount> then) {
+    /**
+     * Changes a balance and writes its log row in one transaction. {@code then} gets the account after the change, or null when it
+     * was refused (it would go below zero, or there is no account), and whether the database was reached: false means it was
+     * rolled back (or never sent), so nothing changed.
+     */
+    public static void bankAdjust(UUID id, long dPieces, int[] dCoins, @Nullable com.mrgregles.bsp_core.bank.BankTransaction log,
+                                  java.util.function.BiConsumer<com.mrgregles.bsp_core.bank.BankAccount, Boolean> then) {
         MySqlStore s = store;
         if (s == null) {
-            then.accept(null);
+            then.accept(null, false);
             return;
         }
         worker().execute(() -> {
             com.mrgregles.bsp_core.bank.BankAccount row = null;
+            boolean reached = false;
             try {
-                row = s.bankAdjust(id, dPieces, dCoins);
+                row = s.bankAdjust(id, dPieces, dCoins, log);
+                reached = true;
                 if (row != null) {
                     publish("bank", id.toString());
                 }
@@ -1042,6 +1321,29 @@ public final class NetworkStorage {
                 BSPCore.LOGGER.error("BSP-Core storage: could not change a bank balance: {}", e.toString());
             }
             com.mrgregles.bsp_core.bank.BankAccount r = row;
+            boolean ok = reached;
+            onServer(() -> then.accept(r, ok));
+        });
+    }
+
+    /** Turns a one-time switch on ({@code remote_shops}, {@code remote_market}) only if it is off: {@code then} gets true when set now, false when it was on, null when unreachable. */
+    public static void bankUnlock(UUID id, String column, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Boolean set = null;
+            try {
+                set = s.bankUnlock(id, column);
+                if (set) {
+                    publish("bank", id.toString());
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not unlock {}: {}", column, e.toString());
+            }
+            Boolean r = set;
             onServer(() -> then.accept(r));
         });
     }
@@ -1269,6 +1571,7 @@ public final class NetworkStorage {
     }
 
     /** {@code then} gets {slots, rentUntil, itemsSnbt}, or null when the network has no box or is unreachable. */
+    /** The player's box row (slots, rent until, items), an empty array when the network has none, or null when unreachable. */
     public static void bankBoxRead(UUID id, Consumer<Object[]> then) {
         MySqlStore s = store;
         if (s == null) {
@@ -1279,6 +1582,9 @@ public final class NetworkStorage {
             Object[] row = null;
             try {
                 row = s.bankBoxRead(id);
+                if (row == null) {
+                    row = new Object[0];
+                }
             } catch (SQLException | RuntimeException e) {
                 BSPCore.LOGGER.error("BSP-Core storage: could not read a deposit box: {}", e.toString());
             }
@@ -1580,16 +1886,48 @@ public final class NetworkStorage {
 
     // ------------------------------------------------------------------ teams
 
+    /** The team's own row (name, colour, leader, pin, message count); members are written one by one, never replaced as a set. */
     public static void teamWrite(com.mrgregles.bsp_core.team.Team team) {
+        com.mrgregles.bsp_core.team.Team.Note pin = team.pinned();
+        MySqlStore.TeamRow row = new MySqlStore.TeamRow(team.id, team.name, team.colour.getName(), team.leader, team.createdMs, team.messageSeq(),
+                pin == null ? "" : pin.text(), pin == null ? "" : pin.by().toString(), pin == null ? "" : pin.byName(), pin == null ? 0 : pin.ms());
         async("write a team", s -> {
-            s.teamWrite(team);
-            publish("team", team.id.toString());
+            s.teamRowWrite(row);
+            publish("team", row.id().toString());
         });
     }
 
+    /** Seats a player in a team: {@code then} gets true when seated, false when refused (full, gone, in another team), null when unreachable. Nothing without the database. */
+    public static void teamJoin(UUID teamId, UUID player, com.mrgregles.bsp_core.team.Team.Member m, int max, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            return;
+        }
+        com.mrgregles.bsp_core.team.Team.Member copy = m.copy();
+        worker().execute(() -> {
+            Boolean seated = null;
+            try {
+                seated = s.teamJoin(teamId, player, copy, max);
+                if (seated) {
+                    publish("team", teamId.toString());
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not seat a player in a team: {}", e.toString());
+            }
+            Boolean r = seated;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    /** Whether this server has a Redis link, the only way a message reaches another server at once (a team invite). */
+    public static boolean redisOn() {
+        return redis != null;
+    }
+
     public static void teamMember(UUID teamId, UUID player, com.mrgregles.bsp_core.team.Team.Member m) {
+        com.mrgregles.bsp_core.team.Team.Member copy = m.copy(); // read here, on the server thread
         async("write a team member", s -> {
-            s.teamMemberWrite(teamId, player, m);
+            s.teamMemberWrite(teamId, player, copy);
             publish("team", teamId.toString());
         });
     }
@@ -1615,12 +1953,24 @@ public final class NetworkStorage {
         });
     }
 
+    /** Hands a team invite message to one other server over Redis; false when Redis is off here, so it cannot reach it. */
+    public static boolean teamInvite(String toServer, net.minecraft.nbt.CompoundTag message) {
+        if (redis == null) {
+            return false;
+        }
+        publish("team_invite", toServer + " " + message);
+        return true;
+    }
+
     public static void teamOnline(UUID player, boolean online) {
+        // the team is looked up here, on the server thread: the storage thread never reads the team ledger
+        com.mrgregles.bsp_core.team.Team team = server == null ? null : com.mrgregles.bsp_core.team.Teams.teamOf(server, player);
+        UUID teamId = team == null ? null : team.id;
+        String where = online ? BSPConfig.STORAGE_SERVER_ID.get() : "";
         async("mark a team member online", s -> {
-            s.teamOnline(player, online ? BSPConfig.STORAGE_SERVER_ID.get() : "");
-            com.mrgregles.bsp_core.team.Team team = server == null ? null : com.mrgregles.bsp_core.team.Teams.teamOf(server, player);
-            if (team != null) {
-                publish("team", team.id.toString());
+            s.teamOnline(player, where);
+            if (teamId != null) {
+                publish("team", teamId.toString());
             }
         });
     }
@@ -1684,7 +2034,9 @@ public final class NetworkStorage {
                     publish("kit", "r:" + player);
                 }
             } catch (SQLException | RuntimeException e) {
+                // not recorded: the grant made here is taken back, so the kit stays unclaimed for the next login rather than owed twice
                 BSPCore.LOGGER.error("BSP-Core storage: could not claim a first-join kit: {}", e.toString());
+                onServer(() -> then.accept(false));
                 return;
             }
             onServer(() -> then.accept(won));
@@ -1720,6 +2072,11 @@ public final class NetworkStorage {
 
     /** Reads one kit (or every kit) and the server list from the database and puts them in place of the local copy, on the server thread. */
     public static void kitReload(@Nullable String id) {
+        kitReload(id, true);
+    }
+
+    /** As {@link #kitReload(String)}; {@code prune} false never drops kits the read did not have (the periodic catch-up). */
+    public static void kitReload(@Nullable String id, boolean pruneFull) {
         MySqlStore s = store;
         MinecraftServer srv = server;
         if (s == null || srv == null) {
@@ -1736,7 +2093,8 @@ public final class NetworkStorage {
                 BSPCore.LOGGER.error("BSP-Core storage: could not read kits: {}", e.toString());
                 return;
             }
-            onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id));
+            boolean prune = pruneFull && migratedHere; // before /bsp storage migrate, kits only this server has are kept for it to copy up
+            onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune));
         });
     }
 

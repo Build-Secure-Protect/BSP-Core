@@ -31,9 +31,36 @@ public final class TotemPlacer {
         return placeAt(level, around, totem) != null;
     }
 
+    /**
+     * A totem that arrived through the database (a transfer's place-back, a no-totem server's return): the instance it carries is
+     * the real one, whatever this server's ledger remembered (another server may have reissued it), so the ledger takes it before the
+     * totem is placed. Without this the placed block's reports were ignored as stale, and breaking it later spent the real totem.
+     */
+    public static boolean adopt(net.minecraft.server.MinecraftServer server, ItemStack totem) {
+        if (TotemIdentity.oldSeason(totem, server)) {
+            TotemIdentity.spend(totem); // from an earlier season
+            return false;
+        }
+        java.util.UUID id = TotemIdentity.id(totem), instance = TotemIdentity.instance(totem);
+        var owner = TotemOwner.fromStack(totem);
+        if (id != null && instance != null && owner.isPresent() && !TotemIdentity.isSpent(totem)
+                && !com.mrgregles.bsp_core.data.TotemLedger.get(server).arrived(id, instance, owner.get().uuid(), totem.getTag(), server.overworld().getGameTime())) {
+            TotemIdentity.spend(totem); // retired here: a husk
+            return false;
+        }
+        return !TotemIdentity.isSpent(totem);
+    }
+
     /** As {@link #place}, returning where the block went, or null when no spot was free. */
     @Nullable
     public static BlockPos placeAt(ServerLevel level, BlockPos around, ItemStack totem) {
+        if (TotemIdentity.oldSeason(totem, level.getServer())) {
+            TotemIdentity.spend(totem); // from an earlier season
+        }
+        if (TotemIdentity.isSpent(totem)) {
+            BSPCore.LOGGER.warn("Not placing a spent Shatter Totem (a husk) at {} in {}", around, level.dimension().location());
+            return null;
+        }
         if (NoTotemServers.here()) {
             // a server without totem placement places nothing; every caller keeps the totem another way when no spot is found
             BSPCore.LOGGER.warn("Not placing a Shatter Totem at {} in {}: this server allows no totem placement (restrictions.noTotemServers)", around, level.dimension().location());

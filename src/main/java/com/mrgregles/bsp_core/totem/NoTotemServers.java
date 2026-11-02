@@ -124,6 +124,9 @@ public final class NoTotemServers {
                 : server.getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, dim));
         int placed = 0;
         for (ItemStack stack : items) {
+            if (TotemInventories.isTotem(stack) && level != null) {
+                TotemPlacer.adopt(server, stack);
+            }
             if (TotemInventories.isTotem(stack) && level != null && TotemPlacer.place(level, spot.pos(), stack)) {
                 placed++;
             } else {

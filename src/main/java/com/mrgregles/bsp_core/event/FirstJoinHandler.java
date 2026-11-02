@@ -26,9 +26,18 @@ import net.minecraftforge.fml.common.Mod;
 public final class FirstJoinHandler {
     private FirstJoinHandler() {}
 
-    @SubscribeEvent
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+    /** Players whose grant is being asked of the database: never asked twice at once (both answers would say "give it"). */
+    private static final java.util.Set<java.util.UUID> ASKING = new java.util.HashSet<>();
+
+    /**
+     * Gives the first totem if the player has none recorded. Called from the login's settle ({@code AdminService.settle}: at once,
+     * or after BSP-InventorySync's restore, which replaces the inventory and the player's saved data, so a totem and the guide
+     * book given before it would be wiped and the granted flag overwritten). On a network whose database is not connected yet (the
+     * first seconds after a start) nothing is decided: a totem given then has no network record, so it would be given again
+     * elsewhere and taken at the season's end. {@code NetworkStorage} calls this again for everyone settled once it connects.
+     */
+    public static void check(ServerPlayer player) {
+        if (com.mrgregles.bsp_core.storage.NetworkStorage.down() || ASKING.contains(player.getUUID())) {
             return;
         }
         if (!BSPConfig.GRANT_TOTEM_ON_FIRST_JOIN.get()) {
@@ -45,7 +54,12 @@ public final class FirstJoinHandler {
         }
         // On a network the database decides: only the first server to record the player hands out a totem.
         java.util.UUID id = player.getUUID();
+        ASKING.add(id);
         com.mrgregles.bsp_core.storage.NetworkStorage.claimGrant(id, result -> {
+            ASKING.remove(id);
+            if (ledger.hasBeenGranted(id)) {
+                return; // given meanwhile
+            }
             if (result == com.mrgregles.bsp_core.storage.NetworkStorage.CLAIM_FAILED) {
                 return; // database unreachable: nothing recorded, so the next join tries again
             }
@@ -80,18 +94,14 @@ public final class FirstJoinHandler {
     public static void grant(ServerPlayer player, TotemLedger ledger) {
         ItemStack totem = new ItemStack(ModItems.SHATTER_TOTEM.get());
         new TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(totem);
-
-        if (!player.getInventory().add(totem)) {
-            // Inventory full: drop at the player's feet. The item form cannot despawn or be destroyed.
-            ItemEntity drop = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), totem);
-            drop.setNoPickUpDelay();
-            player.level().addFreshEntity(drop);
-        }
+        com.mrgregles.bsp_core.totem.TotemIdentity.stampSeason(totem, com.mrgregles.bsp_core.admin.SeasonData.get(player.server).number);
 
         ledger.markGranted(player.getUUID());
         PlayerPersistent.setTotemGranted(player, true);
         // this totem is their totem for the season in progress
         PlayerPersistent.setSeasonSeen(player, com.mrgregles.bsp_core.admin.SeasonData.get(player.server).number);
+        // into the inventory however full (a slot is made), never dropped as a plain item (no-totem servers, the ground timer)
+        com.mrgregles.bsp_core.totem.TotemInventories.giveBack(player, totem);
 
         player.displayClientMessage(
                 Component.translatable("message.bsp_core.shatter_totem.granted").withStyle(ChatFormatting.GOLD), false);

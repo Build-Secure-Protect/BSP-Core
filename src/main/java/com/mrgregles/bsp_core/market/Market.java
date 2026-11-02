@@ -214,7 +214,8 @@ public final class Market {
                 given.add(s.copy());
             }
         });
-        String fail = given.isEmpty() ? "empty"
+        String fail = NetworkStorage.down() ? "unreachable" // the network's market is not connected: never this world's in its place
+                : given.isEmpty() ? "empty"
                 : given.size() > maxStacks() ? "stacks"
                 : given.stream().anyMatch(Market::refused) ? "refused"
                 : price < 1 || price > MAX_PRICE ? "price"
@@ -257,6 +258,10 @@ public final class Market {
         }
         if (seen.seller.equals(buyer)) {
             then.accept(MarketResult.fail("own"));
+            return;
+        }
+        if (NetworkStorage.down()) {
+            then.accept(MarketResult.fail("unreachable"));
             return;
         }
         long tax = tax(seen.price), total = seen.price + tax;
@@ -302,6 +307,10 @@ public final class Market {
         }
         if (!admin && !seen.seller.equals(by)) {
             then.accept(MarketResult.fail("not_yours"));
+            return;
+        }
+        if (NetworkStorage.down()) {
+            then.accept(MarketResult.fail("unreachable"));
             return;
         }
         store(server).close(server, id, answer -> {
@@ -353,6 +362,10 @@ public final class Market {
 
     /** Empties the player's Collect box into their inventory; what does not fit stays in the box. The result's count is the stacks handed over. */
     public static void collect(MinecraftServer server, Player player, Consumer<MarketResult> then) {
+        if (NetworkStorage.down()) {
+            then.accept(MarketResult.fail("unreachable"));
+            return;
+        }
         MarketStore store = store(server);
         store.takeCollect(server, player.getUUID(), got -> {
             if (got.isEmpty()) {
@@ -360,6 +373,11 @@ public final class Market {
                 return;
             }
             List<ItemStack> items = got.get();
+            if (player instanceof ServerPlayer sp && sp.hasDisconnected()) {
+                store.addCollect(server, player.getUUID(), items); // left while the database answered: back into the box
+                then.accept(MarketResult.fail("unreachable"));
+                return;
+            }
             List<ItemStack> left = intoInventory(player, items);
             if (!left.isEmpty()) {
                 store.addCollect(server, player.getUUID(), left);

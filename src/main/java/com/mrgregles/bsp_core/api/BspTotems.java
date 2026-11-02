@@ -212,6 +212,18 @@ public final class BspTotems {
         return r.carried() + r.placed();
     }
 
+    /**
+     * A live Shatter Totem item taken out of play for good by an admin (BSP-InventorySync request R8: a totem trashed in its admin
+     * inventory editor). Every record of that one totem goes: it is retired in the ledger (here, and on the network's other servers
+     * over Redis), so no lost-totem rule gives it back and any copy of it that turns up is a husk; and it is dropped from its
+     * holder's logout placements and the totems kept through a death (when they are online here), a transfer under way, the items
+     * owed on this server and in the network database. One log line names the totem's id and {@code by}. A spent husk or any other
+     * item is ignored. Calling it again for the same totem does no harm. Server thread only.
+     */
+    public static void destroyed(MinecraftServer server, ItemStack totem, String by) {
+        com.mrgregles.bsp_core.totem.TotemWipe.destroyed(server, totem, by);
+    }
+
     /** The upgrade named like the enum constant ("SWIFTNESS", case does not matter); null when there is no such upgrade. */
     @Nullable
     public static TotemUpgrades.Buff upgrade(String name) {

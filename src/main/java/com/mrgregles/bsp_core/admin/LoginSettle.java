@@ -141,6 +141,8 @@ public final class LoginSettle {
             return;
         }
         AdminService.handOverOwed(player);
+        // a player who was dead when the database connected (NetworkStorage.connected skips the dead) gets their first totem now
+        com.mrgregles.bsp_core.event.FirstJoinHandler.check(player);
     }
 
     @SubscribeEvent

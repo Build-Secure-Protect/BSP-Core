@@ -71,6 +71,13 @@ public final class BSPCommands {
                         .then(Commands.literal("locate")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::locate)))
+                        // the ledger against the world: entries with no totem block are forgotten (chunks loaded to check)
+                        .then(Commands.literal("check").executes(ctx -> {
+                            var r = com.mrgregles.bsp_core.totem.LedgerCheck.check(ctx.getSource().getServer(), true);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Totem ledger checked: " + r.checked() + " placed totems looked at, " + r.forgotten()
+                                    + " with no totem block there forgotten" + (r.skipped() > 0 ? ", " + r.skipped() + " in worlds this server does not have" : "") + "."), true);
+                            return r.forgotten();
+                        }))
                         .then(Commands.literal("wipe")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::wipe)))

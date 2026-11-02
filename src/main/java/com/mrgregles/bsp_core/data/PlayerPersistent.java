@@ -17,6 +17,21 @@ public final class PlayerPersistent {
     private static final String TAG_LAST_MAIN_DIM = BSPCore.MODID + ":LastMainDim";
     private static final String TAG_LAST_MAIN_POS = BSPCore.MODID + ":LastMainPos";
     private static final String TAG_LOGOUT_PLACED = BSPCore.MODID + ":LogoutPlaced";
+    /** The server the last main position was on: BSP-InventorySync copies this data between servers, so a position is only good on its own. */
+    private static final String TAG_LAST_MAIN_SERVER = BSPCore.MODID + ":LastMainServer";
+
+    /** True when a record tagged with {@code server} belongs here; an untagged one (written before records were tagged) counts as here. */
+    /**
+     * This server's configured id. Not {@code Bank.serverId()}, which says "local" while the database is not connected (the first
+     * seconds after a start): a record tagged or compared then would never match this server again.
+     */
+    private static String serverId() {
+        return com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID, "server");
+    }
+
+    private static boolean here(String server) {
+        return server.isEmpty() || server.equals(serverId());
+    }
 
     private PlayerPersistent() {}
 
@@ -59,12 +74,13 @@ public final class PlayerPersistent {
         CompoundTag tag = get(player);
         tag.putString(TAG_LAST_MAIN_DIM, dimension.location().toString());
         tag.putLong(TAG_LAST_MAIN_POS, pos.asLong());
+        tag.putString(TAG_LAST_MAIN_SERVER, serverId());
     }
 
     public static Optional<LastMainPosition> getLastMainPosition(Player player) {
         CompoundTag tag = get(player);
-        if (!tag.contains(TAG_LAST_MAIN_DIM) || !tag.contains(TAG_LAST_MAIN_POS)) {
-            return Optional.empty();
+        if (!tag.contains(TAG_LAST_MAIN_DIM) || !tag.contains(TAG_LAST_MAIN_POS) || !here(tag.getString(TAG_LAST_MAIN_SERVER))) {
+            return Optional.empty(); // none, or a position on another server of the network
         }
         ResourceLocation dim = ResourceLocation.tryParse(tag.getString(TAG_LAST_MAIN_DIM));
         if (dim == null) {
@@ -91,24 +107,60 @@ public final class PlayerPersistent {
         e.putUUID("Id", placed.id());
         e.putUUID("Instance", placed.instance());
         e.putLong("When", placed.whenMs());
+        e.putString("Server", serverId());
         list.add(e);
         tag.put(TAG_LOGOUT_PLACED, list);
     }
 
-    /** Takes every logout placement recorded for the player, clearing the list. */
+    /**
+     * Takes the logout placements this server made for the player, leaving those of other servers for when the player is back
+     * there: BSP-InventorySync copies this data between servers, and another server's placement is not in this world.
+     */
     public static java.util.List<LogoutPlaced> takeLogoutPlaced(Player player) {
         CompoundTag tag = get(player);
         java.util.List<LogoutPlaced> out = new java.util.ArrayList<>();
+        net.minecraft.nbt.ListTag others = new net.minecraft.nbt.ListTag();
         for (net.minecraft.nbt.Tag raw : tag.getList(TAG_LOGOUT_PLACED, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             CompoundTag e = (CompoundTag) raw;
+            if (!here(e.getString("Server"))) {
+                others.add(e);
+                continue;
+            }
             ResourceLocation dim = ResourceLocation.tryParse(e.getString("Dim"));
             if (dim == null || !e.hasUUID("Id") || !e.hasUUID("Instance")) {
                 continue;
             }
             out.add(new LogoutPlaced(ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, dim), BlockPos.of(e.getLong("Pos")), e.getUUID("Id"), e.getUUID("Instance"), e.getLong("When")));
         }
-        tag.remove(TAG_LOGOUT_PLACED);
+        if (others.isEmpty()) {
+            tag.remove(TAG_LOGOUT_PLACED);
+        } else {
+            tag.put(TAG_LOGOUT_PLACED, others);
+        }
         return out;
+    }
+
+    /** Drops the player's logout placements of one totem (on every server); returns how many. */
+    public static int removeLogoutPlaced(Player player, java.util.UUID totemId) {
+        CompoundTag tag = get(player);
+        net.minecraft.nbt.ListTag keep = new net.minecraft.nbt.ListTag();
+        int n = 0;
+        for (net.minecraft.nbt.Tag raw : tag.getList(TAG_LOGOUT_PLACED, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag e = (CompoundTag) raw;
+            if (e.hasUUID("Id") && e.getUUID("Id").equals(totemId)) {
+                n++;
+            } else {
+                keep.add(e);
+            }
+        }
+        if (n > 0) {
+            if (keep.isEmpty()) {
+                tag.remove(TAG_LOGOUT_PLACED);
+            } else {
+                tag.put(TAG_LOGOUT_PLACED, keep);
+            }
+        }
+        return n;
     }
 
     public record LastMainPosition(ResourceKey<Level> dimension, BlockPos pos) {

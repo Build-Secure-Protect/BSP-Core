@@ -255,6 +255,114 @@ public class BspGameTests {
         h.succeed();
     }
 
+    @GameTest(template = EMPTY)
+    public void totems_keep_to_their_trip_their_server_and_their_holder(GameTestHelper h) {
+        var server = server(h);
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        // a stored totem belongs to one trip: the sweep of an old departure never takes a later trip's totem
+        var totem = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        String mine = com.mrgregles.bsp_core.api.BspTransfer.trip(here, 1000), later = com.mrgregles.bsp_core.api.BspTransfer.trip("BSP-Elsewhere", 2000);
+        var marked = totem.copy();
+        marked.getOrCreateTag().putString(com.mrgregles.bsp_core.api.BspTransfer.TAG_TRIP, later);
+        h.assertTrue(com.mrgregles.bsp_core.api.BspTransfer.ofTrip(marked, later) && !com.mrgregles.bsp_core.api.BspTransfer.ofTrip(marked, mine)
+                && !com.mrgregles.bsp_core.api.BspTransfer.ofTrip(totem, mine), "only the trip's own departure may place a totem back; an unmarked one is nobody's trip");
+        var clean = com.mrgregles.bsp_core.api.BspTransfer.unmarked(marked);
+        h.assertTrue(!clean.hasTag() && marked.getTag().contains(com.mrgregles.bsp_core.api.BspTransfer.TAG_TRIP), "the mark comes off a copy once the totem is out of the database");
+
+        // logout placements and the last main position are kept per server (BSP-InventorySync copies them between servers)
+        var p = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var dim = net.minecraft.world.level.Level.OVERWORLD;
+        com.mrgregles.bsp_core.data.PlayerPersistent.addLogoutPlaced(p, new com.mrgregles.bsp_core.data.PlayerPersistent.LogoutPlaced(dim, new BlockPos(1, 2, 3), UUID.randomUUID(), UUID.randomUUID(), 5));
+        var list = com.mrgregles.bsp_core.data.PlayerPersistent.get(p).getList("bsp_core:LogoutPlaced", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        var other = list.getCompound(0).copy();
+        other.putString("Server", "BSP-Elsewhere");
+        other.putLong("Pos", new BlockPos(7, 8, 9).asLong());
+        var legacy = list.getCompound(0).copy();
+        legacy.remove("Server");
+        legacy.putLong("Pos", new BlockPos(4, 5, 6).asLong());
+        list.add(other);
+        list.add(legacy);
+        var taken = com.mrgregles.bsp_core.data.PlayerPersistent.takeLogoutPlaced(p);
+        h.assertTrue(taken.size() == 2 && taken.stream().noneMatch(t -> t.pos().equals(new BlockPos(7, 8, 9))), "this server's placements (and untagged old ones) are taken: " + taken);
+        var left = com.mrgregles.bsp_core.data.PlayerPersistent.get(p).getList("bsp_core:LogoutPlaced", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        h.assertTrue(left.size() == 1 && left.getCompound(0).getString("Server").equals("BSP-Elsewhere"), "another server's placement is left for when the player is back there");
+        com.mrgregles.bsp_core.data.PlayerPersistent.setLastMainPosition(p, dim, new BlockPos(10, 64, 10));
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.getLastMainPosition(p).isPresent(), "this server's last main position is used");
+        com.mrgregles.bsp_core.data.PlayerPersistent.get(p).putString("bsp_core:LastMainServer", "BSP-Elsewhere");
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.getLastMainPosition(p).isEmpty(), "a position recorded on another server is not used here");
+
+        // the ledger is kept true to the world: an entry with no totem block is forgotten, a real one stays
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        UUID ghostOwner = UUID.randomUUID();
+        var ghost = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(3, 2, 3)));
+        ledger.recordPlaced(ghostOwner, ghost, 0);
+        h.assertTrue(ledger.placedFor(ghostOwner).contains(ghost), "the ledger lists the ghost before the check");
+        var realPos = h.absolutePos(new BlockPos(1, 2, 1));
+        h.getLevel().setBlock(realPos, com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get().defaultBlockState(), 3);
+        var owned = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        UUID realOwner = UUID.randomUUID();
+        new com.mrgregles.bsp_core.totem.TotemOwner(realOwner, "Real").applyTo(owned);
+        ((ShatterTotemBlockEntity) h.getLevel().getBlockEntity(realPos)).loadFromStack(owned);
+        var r = com.mrgregles.bsp_core.totem.LedgerCheck.check(server, false);
+        h.assertTrue(!ledger.placedFor(ghostOwner).contains(ghost) && r.forgotten() >= 1, "the entry with no totem block is forgotten: " + r);
+        h.assertTrue(ledger.placedFor(realOwner).contains(net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), realPos)), "the totem that stands is kept");
+        h.getLevel().removeBlock(realPos, false);
+
+        // a totem nobody owns becomes its holder's the moment it is in their hands
+        var unowned = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        p.getInventory().add(unowned);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(p);
+        var held = p.getInventory().items.stream().filter(com.mrgregles.bsp_core.totem.TotemInventories::isTotem).findFirst().orElse(net.minecraft.world.item.ItemStack.EMPTY);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemOwner.fromStack(held).map(o -> o.uuid().equals(p.getUUID())).orElse(false), "an unowned totem in a player's hands is theirs");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 200)
+    public void placing_a_totem_never_reissues_it(GameTestHelper h) {
+        var server = server(h);
+        var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var totem = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(totem);
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, totem);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(player); // held: id, instance and a HELD sighting
+        var held = player.getMainHandItem();
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(held);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        BlockPos below = h.absolutePos(new BlockPos(2, 1, 2));
+        player.setShiftKeyDown(true); // sneaking: the totem is placed, not its upgrade tree opened
+        var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(below).add(0, 0.5, 0), net.minecraft.core.Direction.UP, below, false);
+        var result = held.useOn(new net.minecraft.world.item.context.UseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit));
+        BlockPos at = h.getLevel().getBlockEntity(below) instanceof ShatterTotemBlockEntity ? below : below.above(); // into the clicked block when it is air
+        h.assertTrue(result.consumesAction() && h.getLevel().getBlockEntity(at) instanceof ShatterTotemBlockEntity, "the totem is placed: " + result);
+        h.assertTrue(player.getMainHandItem().isEmpty(), "the item has left the hand");
+        var now0 = ledger.sighting(id);
+        h.assertTrue(now0 != null && now0.where() == com.mrgregles.bsp_core.data.TotemLedger.PLACED,
+                "the ledger has it placed at once, before the block's first tick (a chunk still loading its entities does not tick it)");
+        // a dropped totem is known at once too
+        var drop = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(drop);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(drop);
+        UUID dropId = com.mrgregles.bsp_core.totem.TotemIdentity.id(drop);
+        var dropPos = h.absolutePos(new BlockPos(4, 3, 4));
+        var entity = new com.mrgregles.bsp_core.totem.ShatterTotemItemEntity(h.getLevel(), dropPos.getX() + 0.5, dropPos.getY(), dropPos.getZ() + 0.5, drop);
+        h.getLevel().addFreshEntity(entity);
+        var dropped = ledger.sighting(dropId);
+        h.assertTrue(dropped != null && dropped.where() == com.mrgregles.bsp_core.data.TotemLedger.DROPPED, "a dropped totem is in the ledger the moment it is in the world");
+        entity.discard();
+        ledger.forget(dropId);
+        h.runAfterDelay(80, () -> {
+            com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(player);
+            var sighting = ledger.sighting(id);
+            long now = server.overworld().getGameTime();
+            h.assertTrue(sighting != null && sighting.where() == com.mrgregles.bsp_core.data.TotemLedger.PLACED,
+                    "after 80 ticks the ledger has it placed: " + (sighting == null ? null : sighting.where()));
+            h.assertTrue(!ledger.lostHeld(now, 60).contains(id), "a placed totem is never counted lost");
+            h.getLevel().removeBlock(at, false);
+            ledger.forget(id);
+            h.succeed();
+        });
+    }
+
     // ------------------------------------------------------------------ the 1.0 buffs
 
     @GameTest(template = EMPTY, timeoutTicks = 800)
@@ -730,6 +838,41 @@ public class BspGameTests {
         String[] p = com.mrgregles.bsp_core.storage.RedisLink.parse("bank:hub:a:b", "survival");
         h.assertTrue(p != null && p[0].equals("bank") && p[1].equals("hub") && p[2].equals("a:b"), "kind, origin and payload, the payload keeping its colons");
         h.assertTrue(com.mrgregles.bsp_core.storage.RedisLink.parse("junk", "hub") == null, "anything else is dropped");
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------ admin panel across the network
+
+    @GameTest(template = EMPTY)
+    public void admin_panel_shows_the_whole_network_with_each_totems_server(GameTestHelper h) {
+        var server = server(h);
+        var viewer = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.CREATIVE);
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        UUID remote = UUID.randomUUID(), quiet = UUID.randomUUID();
+        String tag = Long.toHexString(System.nanoTime()).substring(0, 5);
+        var far = new net.minecraft.core.BlockPos(120, 64, -40);
+        var net = new com.mrgregles.bsp_core.admin.AdminService.Network(Map.of(remote, "Far" + tag, quiet, "Quiet" + tag), List.of(
+                new com.mrgregles.bsp_core.score.ScoreService.Spot(remote, 2, false, "BSP-Elsewhere", "minecraft:overworld", far),
+                new com.mrgregles.bsp_core.score.ScoreService.Spot(remote, 0, true, "BSP-Other", "minecraft:the_nether", new net.minecraft.core.BlockPos(1, 2, 3)),
+                // a stale copy of a totem on this very server: the panel takes this server's own live instead
+                new com.mrgregles.bsp_core.score.ScoreService.Spot(remote, 4, false, here, "minecraft:overworld", new net.minecraft.core.BlockPos(9, 9, 9))));
+        var data = com.mrgregles.bsp_core.admin.AdminService.snapshot(server, viewer, false, net);
+        h.assertTrue(data.network() && data.here().equals(here), "the panel says it covers the network, and which server it is on");
+        var row = data.rows().stream().filter(r -> r.id().equals(remote)).findFirst().orElse(null);
+        h.assertTrue(row != null && row.name().equals("Far" + tag) && !row.online(), "a player known only to the network is listed by name: " + row);
+        h.assertTrue(row.totemCount() == 2 && row.points() == com.mrgregles.bsp_core.score.ScoreService.tierPoints(2) + com.mrgregles.bsp_core.score.ScoreService.tierPoints(0),
+                "their totems on other servers count, and this server's stale copy does not: " + row.totemCount() + " totems, " + row.points() + " points");
+        var placed = row.totems().stream().filter(t -> !t.carried()).findFirst().orElse(null);
+        h.assertTrue(placed != null && placed.server().equals("BSP-Elsewhere") && placed.pos().equals(far) && placed.tier() == 2, "each totem names its server: " + placed);
+        var none = data.rows().stream().filter(r -> r.id().equals(quiet)).findFirst().orElse(null);
+        h.assertTrue(none != null && none.totemCount() == 0 && none.points() == 0, "a player with a first-join record and no totems is still listed");
+        var alone = com.mrgregles.bsp_core.admin.AdminService.snapshot(server, viewer, false, null);
+        h.assertTrue(!alone.network() && alone.rows().stream().noneMatch(r -> r.id().equals(remote)), "without the network the panel shows this server alone");
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.AdminDataPacket.encode(data, buf);
+        var back = com.mrgregles.bsp_core.network.AdminDataPacket.decode(buf);
+        var backRow = back.rows().stream().filter(r -> r.id().equals(remote)).findFirst().orElse(null);
+        h.assertTrue(back.network() && back.here().equals(here) && backRow != null && backRow.totems().equals(row.totems()), "the packet keeps the servers and the network flag");
         h.succeed();
     }
 
@@ -3892,7 +4035,7 @@ public class BspGameTests {
         var survival = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
         ledger.seen(id, instance, creative.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
         h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(creative, ledger, id, now + 100) == com.mrgregles.bsp_core.event.TotemRestrictionHandler.Lost.DESTROYED, "deleted in creative: destroyed");
-        h.assertTrue(ledger.sighting(id) == null, "and forgotten");
+        h.assertTrue(ledger.sighting(id) == null, "and dropped from the ledger (not retired: a creative cursor stack lives only on the client, so it may come back)");
         h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(creative).isEmpty(), "nothing was handed back");
         UUID id2 = UUID.randomUUID();
         ledger.seen(id2, UUID.randomUUID(), survival.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
@@ -4847,6 +4990,345 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void team_invites_reach_players_on_other_servers(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        var b = survivor(h);
+        record Sent(String to, net.minecraft.nbt.CompoundTag m) {}
+        List<Sent> sent = new ArrayList<>();
+        com.mrgregles.bsp_core.team.Teams.useLink((to, m) -> sent.add(new Sent(to, m.copy())));
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Ibis"), net.minecraft.ChatFormatting.GOLD).ok(), "made");
+            var team = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+            // this server's side: invite a player online on another server
+            UUID far = UUID.randomUUID();
+            var farPlayer = new com.mrgregles.bsp_core.storage.NetworkStorage.OnlinePlayer(far, "Faraway", "BSP-Other");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, farPlayer).ok(), "a player on another server can be invited");
+            h.assertTrue(sent.size() == 1 && sent.get(0).to().equals("BSP-Other") && sent.get(0).m().getString("Op").equals("offer"), "the offer goes to their server");
+            var held = com.mrgregles.bsp_core.team.Teams.pending(far);
+            h.assertTrue(held.isPresent() && held.get().elsewhere().equals("BSP-Other"), "the invite is kept here, naming their server");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invitesOf(team.id).stream().anyMatch(i -> i.invitee().equals(far)), "and holds a seat in the team's invite view");
+            h.assertFalse(com.mrgregles.bsp_core.team.Teams.invite(a, farPlayer).ok(), "not twice while it waits");
+            var refused = sent.get(0).m().copy();
+            refused.putString("Op", "refused");
+            refused.putString("Reason", "invite_left");
+            com.mrgregles.bsp_core.team.Teams.onRemote(server, "BSP-Other", refused);
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(far).isEmpty(), "their server said they left: the seat is free");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.invite(a, farPlayer).ok(), "invited again");
+            var declined = sent.get(sent.size() - 1).m().copy();
+            declined.putString("Op", "answer");
+            declined.putString("Result", "declined");
+            var earlier = declined.copy();
+            earlier.putInt("Ref", declined.getInt("Ref") - 1);
+            com.mrgregles.bsp_core.team.Teams.onRemote(server, "BSP-Other", earlier);
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(far).isPresent(), "a late answer to an earlier invite never ends the newer one");
+            com.mrgregles.bsp_core.team.Teams.onRemote(server, "BSP-Somewhere", declined);
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(far).isPresent(), "an answer from a server the invite did not go to changes nothing");
+            com.mrgregles.bsp_core.team.Teams.onRemote(server, "BSP-Other", declined);
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(far).isEmpty(), "declined there: the seat is free here");
+            // the invitee's side: an offer from another server for a player here
+            var offer = new net.minecraft.nbt.CompoundTag();
+            offer.putString("Op", "offer");
+            offer.putUUID("Team", team.id);
+            offer.putUUID("Inviter", a.getUUID());
+            offer.putString("InviterName", a.getGameProfile().getName());
+            offer.putUUID("Invitee", b.getUUID());
+            offer.putString("InviteeName", b.getGameProfile().getName());
+            offer.putLong("Expires", System.currentTimeMillis() + 60_000L);
+            int before = sent.size();
+            com.mrgregles.bsp_core.team.Teams.onRemote(server, "BSP-One", offer, b);
+            var got = com.mrgregles.bsp_core.team.Teams.pending(b.getUUID());
+            h.assertTrue(got.isPresent() && got.get().elsewhere().equals("BSP-One") && sent.size() == before, "the player here gets the invite card, nothing is sent back yet");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.accept(b).ok() && team.has(b.getUUID()), "and joins by accepting it");
+            var answer = sent.get(sent.size() - 1);
+            h.assertTrue(answer.to().equals("BSP-One") && answer.m().getString("Op").equals("answer") && answer.m().getString("Result").equals("joined"), "the inviter's server hears they joined");
+            var gone = offer.copy();
+            gone.putUUID("Invitee", far);
+            com.mrgregles.bsp_core.team.Teams.onRemote(server, "BSP-One", gone, null);
+            var back = sent.get(sent.size() - 1);
+            h.assertTrue(back.to().equals("BSP-One") && back.m().getString("Op").equals("refused") && back.m().getString("Reason").equals("invite_left"),
+                    "an offer for someone no longer here goes back refused");
+            h.assertTrue(com.mrgregles.bsp_core.team.Teams.pending(far).isEmpty(), "and is not kept");
+        } finally {
+            com.mrgregles.bsp_core.team.Teams.useLink(null);
+            com.mrgregles.bsp_core.team.Teams.expireInvites(server, System.currentTimeMillis() + 3_600_000L);
+            if (com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID()) != null) {
+                com.mrgregles.bsp_core.team.Teams.adminDisband(server, com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID()));
+            }
+        }
+        h.succeed();
+    }
+
+    private static net.minecraft.world.item.ItemStack ownedTotem(net.minecraft.server.level.ServerPlayer owner) {
+        var stack = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        new com.mrgregles.bsp_core.totem.TotemOwner(owner.getUUID(), owner.getGameProfile().getName()).applyTo(stack);
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(stack);
+        return stack;
+    }
+
+    @GameTest(template = EMPTY)
+    public void bank_balance_copies_never_empty_the_deposit_box(GameTestHelper h) {
+        var cached = new com.mrgregles.bsp_core.bank.BankAccount();
+        cached.boxSlots = 9;
+        cached.boxUntilMs = 123_456L;
+        cached.box.setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 12));
+        var row = new com.mrgregles.bsp_core.bank.BankAccount(); // what the database sends back: money and switches, no box
+        row.pieces = 777;
+        row.remoteShops = true;
+        cached.copyMoneyFrom(row);
+        h.assertTrue(cached.pieces == 777 && cached.remoteShops, "the money and the switches are copied");
+        h.assertTrue(cached.boxSlots == 9 && cached.boxUntilMs == 123_456L && cached.box.getStackInSlot(0).getCount() == 12,
+                "the box keeps its slots, its rent and its items (a balance change on a network emptied it, and renting then saved it empty)");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void husks_and_stale_copies_never_come_back_as_totems(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var a = survivor(h);
+        long now = server.overworld().getGameTime();
+        // a husk: dropped as a plain item, never placed
+        var husk = ownedTotem(a);
+        com.mrgregles.bsp_core.totem.TotemIdentity.spend(husk);
+        h.assertFalse(husk.getItem().hasCustomEntity(husk), "a husk drops as a plain item, not the self-placing totem entity");
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.placeAt(h.getLevel(), h.absolutePos(new BlockPos(2, 2, 2)), husk) == null, "a husk is never placed");
+        // a stale copy on the ground turns into a husk and is not reported
+        var live = ownedTotem(a);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(live);
+        ledger.seen(id, com.mrgregles.bsp_core.totem.TotemIdentity.instance(live), a.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, live.getTag(), now);
+        var old = live.copy();
+        ledger.reissue(id, now);
+        var p = h.absolutePos(new BlockPos(3, 3, 3));
+        var entity = new com.mrgregles.bsp_core.totem.ShatterTotemItemEntity(h.getLevel(), p.getX() + 0.5, p.getY(), p.getZ() + 0.5, old);
+        h.getLevel().addFreshEntity(entity);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.isSpent(entity.getItem()), "a stale copy lying on the ground is a husk at once");
+        h.assertTrue(ledger.sighting(id).where() == com.mrgregles.bsp_core.data.TotemLedger.HELD, "and the ledger still has the real one in its holder's hands");
+        entity.destroy();
+        // a retired (forgotten, destroyed) totem's copies are stale too
+        var gone = ownedTotem(a);
+        UUID goneId = com.mrgregles.bsp_core.totem.TotemIdentity.id(gone);
+        ledger.seen(goneId, com.mrgregles.bsp_core.totem.TotemIdentity.instance(gone), a.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        ledger.forget(goneId);
+        h.assertTrue(ledger.stale(goneId, com.mrgregles.bsp_core.totem.TotemIdentity.instance(gone)), "a copy of a forgotten totem is stale, never live again");
+        // two stacks of one totem in an inventory (a creative clone): one stays live
+        var one = ownedTotem(a);
+        a.getInventory().setItem(0, one);
+        a.getInventory().setItem(1, one.copy());
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(a);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.isTotem(a.getInventory().getItem(0)) && !com.mrgregles.bsp_core.totem.TotemInventories.isTotem(a.getInventory().getItem(1)),
+                "the second stack of the same totem is a husk");
+        a.getInventory().clearContent();
+        ledger.forget(id);
+        ledger.forget(com.mrgregles.bsp_core.totem.TotemIdentity.id(one));
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void totems_survive_death_the_crafting_grid_a_kill_and_the_season_end(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        long now = server.overworld().getGameTime();
+        // the 2x2 crafting grid is part of the player's hands
+        var a = survivor(h);
+        var inGrid = ownedTotem(a);
+        UUID gridId = com.mrgregles.bsp_core.totem.TotemIdentity.id(inGrid);
+        a.inventoryMenu.getCraftSlots().setItem(0, inGrid);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(a);
+        var seen = ledger.sighting(gridId);
+        h.assertTrue(seen != null && seen.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && a.getUUID().equals(seen.holder()), "a totem in the crafting grid is seen as held");
+        var removed = com.mrgregles.bsp_core.totem.TotemInventories.removeAll(a);
+        h.assertTrue(removed.size() == 1 && a.inventoryMenu.getCraftSlots().getItem(0).isEmpty(), "and is taken with the rest when totems are removed");
+        // dying in a zone (or on a no-totem server): kept for the respawn, never reissued into the dead entity
+        var b = survivor(h);
+        var kept = ownedTotem(b);
+        UUID keptId = com.mrgregles.bsp_core.totem.TotemIdentity.id(kept);
+        b.getInventory().setItem(0, kept);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(b);
+        com.mrgregles.bsp_core.zone.ZoneHandler.holdTotems(b);
+        h.assertTrue(ledger.sighting(keptId).where() == com.mrgregles.bsp_core.data.TotemLedger.IN_TRANSIT, "held through death: in transit");
+        h.assertFalse(ledger.lostHeld(now + 1000, 60).contains(keptId), "so never counted as lost");
+        com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(b);
+        var c = survivor(h);
+        UUID deadId = UUID.randomUUID();
+        ledger.seen(deadId, UUID.randomUUID(), c.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        c.setHealth(0);
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(c, ledger, deadId, now + 100) == null, "a dead holder gets nothing reissued (it would stay with the dead entity)");
+        // a dropped totem killed or cleared away is placed where it lay
+        var d = survivor(h);
+        var dropped = ownedTotem(d);
+        UUID dropId = com.mrgregles.bsp_core.totem.TotemIdentity.id(dropped);
+        var at = h.absolutePos(new BlockPos(4, 2, 4));
+        var entity = new com.mrgregles.bsp_core.totem.ShatterTotemItemEntity(h.getLevel(), at.getX() + 0.5, at.getY(), at.getZ() + 0.5, dropped);
+        h.getLevel().addFreshEntity(entity);
+        entity.kill();
+        var after = ledger.sighting(dropId);
+        h.assertTrue(after != null && after.where() == com.mrgregles.bsp_core.data.TotemLedger.PLACED, "killed on the ground: placed, not lost");
+        h.assertFalse(entity.canChangeDimensions(), "and it never goes through a portal");
+        // the season's end: nothing held is reissued afterwards, and old copies are husks
+        UUID held = UUID.randomUUID(), inst = UUID.randomUUID();
+        ledger.seen(held, inst, a.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        ledger.retireAll();
+        h.assertFalse(ledger.lostHeld(now + 1000, 60).contains(held), "after the season's end no old totem counts as lost");
+        h.assertTrue(ledger.stale(held, inst), "and a copy of one is stale");
+        for (var pos : new java.util.ArrayList<>(ledger.placedFor(d.getUUID()))) {
+            h.getLevel().removeBlock(pos.pos(), false);
+            ledger.recordRemoved(pos);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void owed_items_are_kept_here_when_the_database_cannot_take_them_and_arrivals_adopt_their_instance(GameTestHelper h) {
+        var server = server(h);
+        UUID player = UUID.randomUUID();
+        var stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.EMERALD, 5);
+        com.mrgregles.bsp_core.storage.NetworkStorage.addPending(player, List.of(stack.save(new net.minecraft.nbt.CompoundTag()).toString()));
+        var owed = com.mrgregles.bsp_core.admin.SeasonData.get(server).pendingItems.get(player);
+        h.assertTrue(owed != null && owed.size() == 1 && owed.get(0).getCount() == 5, "no database: the items wait in this world's records, never dropped on the floor");
+        com.mrgregles.bsp_core.admin.SeasonData.get(server).pendingItems.remove(player);
+        // a totem placed back from the database carries the real instance: the ledger takes it over
+        var a = survivor(h);
+        var totem = ownedTotem(a);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        ledger.seen(id, UUID.randomUUID(), a.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, server.overworld().getGameTime()); // an older instance remembered here
+        com.mrgregles.bsp_core.totem.TotemPlacer.adopt(server, totem);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.instance(totem).equals(ledger.currentInstance(id)), "the arriving instance is the current one, so its block is not stale");
+        ledger.forget(id);
+        h.assertFalse(com.mrgregles.bsp_core.storage.NetworkStorage.down(), "a local test world is never 'down'");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void network_records_name_this_server_and_full_reads_drop_teams_gone_elsewhere(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        com.mrgregles.bsp_core.data.PlayerPersistent.setLastMainPosition(a, net.minecraft.world.level.Level.OVERWORLD, new BlockPos(1, 64, 2));
+        String tagged = com.mrgregles.bsp_core.data.PlayerPersistent.get(a).getString("bsp_core:LastMainServer");
+        h.assertTrue(tagged.equals(com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID, "server")) && !tagged.equals("local"),
+                "a record is tagged with this server's configured id, never \"local\" (what the bank says while the database connects): " + tagged);
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.getLastMainPosition(a).isPresent(), "and this server reads it back");
+        // a full read of the teams drops one the database no longer has (disbanded while its message was missed)
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.create(a, teamName("Wren"), net.minecraft.ChatFormatting.GREEN).ok(), "made");
+        var team = com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID());
+        var member = team.members().get(a.getUUID()).copy();
+        h.assertTrue(member.name.equals(a.getGameProfile().getName()) && member != team.members().get(a.getUUID()), "the storage thread gets a copy of a member, never the live one");
+        com.mrgregles.bsp_core.team.TeamSync.apply(server, List.of(), null, false);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID()) != null, "without pruning a full read keeps it");
+        com.mrgregles.bsp_core.team.TeamSync.apply(server, List.of(), null, true);
+        h.assertTrue(com.mrgregles.bsp_core.team.Teams.teamOf(server, a.getUUID()) == null, "pruned: gone here too");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void old_season_totems_are_husks_and_removed_placed_totems_go_back_to_their_owner(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var a = survivor(h);
+        int season = com.mrgregles.bsp_core.admin.SeasonData.get(server).number;
+        // a totem made now carries this season; one from before it is a husk wherever it turns up
+        var fresh = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(fresh);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.season(fresh) == season && !com.mrgregles.bsp_core.totem.TotemIdentity.oldSeason(fresh, server), "a new totem is stamped with the season in progress");
+        var old = ownedTotem(a);
+        com.mrgregles.bsp_core.totem.TotemIdentity.stampSeason(old, season - 1);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.oldSeason(old, server), "a totem from an earlier season is old");
+        a.getInventory().setItem(0, old);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(a);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.isSpent(a.getInventory().getItem(0)), "in an inventory it turns into a husk");
+        var placeOld = ownedTotem(a);
+        com.mrgregles.bsp_core.totem.TotemIdentity.stampSeason(placeOld, season - 1);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemPlacer.placeAt(h.getLevel(), h.absolutePos(new BlockPos(1, 2, 1)), placeOld) == null, "it is never placed");
+        var tagged = new net.minecraft.nbt.CompoundTag();
+        tagged.putInt(com.mrgregles.bsp_core.totem.TotemIdentity.TAG_SEASON, 7);
+        var copied = new net.minecraft.nbt.CompoundTag();
+        com.mrgregles.bsp_core.totem.TotemIdentity.copy(tagged, copied);
+        h.assertTrue(copied.getInt(com.mrgregles.bsp_core.totem.TotemIdentity.TAG_SEASON) == 7, "the stamp goes with the totem into its block and back out");
+        a.getInventory().clearContent();
+        // a placed totem removed without a pickup (a command, a world edit) goes back to its owner
+        var placed = ownedTotem(a);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(placed);
+        var pos = com.mrgregles.bsp_core.totem.TotemPlacer.placeAt(h.getLevel(), h.absolutePos(new BlockPos(5, 2, 5)), placed);
+        h.assertTrue(pos != null && ledger.sighting(id).where() == com.mrgregles.bsp_core.data.TotemLedger.PLACED, "placed");
+        h.getLevel().removeBlock(pos, false);
+        var after = ledger.sighting(id);
+        h.assertTrue(after != null && after.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && a.getUUID().equals(after.holder()), "removed: counted as lost from its owner's hands");
+        long now = server.overworld().getGameTime();
+        h.assertTrue(ledger.lostHeld(now, 60).contains(id), "so it is reissued to them");
+        ledger.forget(id);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void an_admin_destroyed_totem_leaves_no_record_and_never_comes_back(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        var season = com.mrgregles.bsp_core.admin.SeasonData.get(server);
+        var a = survivor(h);
+        var totem = ownedTotem(a);
+        UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(totem), instance = com.mrgregles.bsp_core.totem.TotemIdentity.instance(totem);
+        a.getInventory().setItem(0, totem);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(a);
+        h.assertTrue(ledger.sighting(id) != null && ledger.sighting(id).where() == com.mrgregles.bsp_core.data.TotemLedger.HELD, "held and recorded");
+        // records that could bring it back: a logout placement, a death in a zone, an owed copy here
+        com.mrgregles.bsp_core.data.PlayerPersistent.addLogoutPlaced(a, new com.mrgregles.bsp_core.data.PlayerPersistent.LogoutPlaced(net.minecraft.world.level.Level.OVERWORLD, new BlockPos(0, 64, 0), id, instance, System.currentTimeMillis()));
+        var kept = totem.copy();
+        var data = com.mrgregles.bsp_core.data.PlayerPersistent.get(a);
+        var heldList = new net.minecraft.nbt.ListTag();
+        heldList.add(kept.save(new net.minecraft.nbt.CompoundTag()));
+        data.put("bsp_core:ZoneHeldTotems", heldList);
+        var other = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD);
+        season.pendingItems.put(a.getUUID(), new ArrayList<>(List.of(totem.copy(), other)));
+        // the editor took it out of the inventory, then told BSP-Core
+        var taken = a.getInventory().removeItemNoUpdate(0);
+        com.mrgregles.bsp_core.totem.TotemWipe.destroyed(server, taken, "TestAdmin", a); // what BspTotems.destroyed does, with the test player handed in
+        var s = ledger.sighting(id);
+        h.assertTrue(s != null && s.where() == com.mrgregles.bsp_core.data.TotemLedger.RETIRED && ledger.stale(id, instance), "retired: never held, any copy is a husk");
+        long now = server.overworld().getGameTime();
+        h.assertFalse(ledger.lostHeld(now + 10_000, 60).contains(id), "no lost-totem rule gives it back");
+        h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.takeLogoutPlaced(a).isEmpty(), "its logout placement is gone");
+        h.assertTrue(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(a).isEmpty(), "and the copy kept through a death");
+        var owed = season.pendingItems.get(a.getUUID());
+        h.assertTrue(owed != null && owed.size() == 1 && owed.get(0).is(net.minecraft.world.item.Items.BREAD), "the owed copy is gone, the bread stays");
+        season.pendingItems.remove(a.getUUID());
+        String snbt = totem.save(new net.minecraft.nbt.CompoundTag()).toString();
+        h.assertTrue(snbt.contains(com.mrgregles.bsp_core.storage.NetworkStorage.pendingNeedle(id)), "the database rows are found by the id as stored: " + com.mrgregles.bsp_core.storage.NetworkStorage.pendingNeedle(id));
+        // a copy that turns up later is a husk
+        var copy = totem.copy();
+        a.getInventory().setItem(1, copy);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(a);
+        h.assertTrue(com.mrgregles.bsp_core.totem.TotemIdentity.isSpent(a.getInventory().getItem(1)), "a copy found later is a husk");
+        a.getInventory().clearContent();
+        // twice: no harm
+        com.mrgregles.bsp_core.api.BspTotems.destroyed(server, totem.copy(), "TestAdmin");
+        h.assertTrue(ledger.sighting(id).where() == com.mrgregles.bsp_core.data.TotemLedger.RETIRED, "a second call changes nothing");
+        // a husk and a plain item change nothing
+        var b = survivor(h);
+        var live = ownedTotem(b);
+        UUID liveId = com.mrgregles.bsp_core.totem.TotemIdentity.id(live);
+        b.getInventory().setItem(0, live);
+        com.mrgregles.bsp_core.event.TotemRestrictionHandler.trackIdentity(b);
+        var husk = live.copy();
+        com.mrgregles.bsp_core.totem.TotemIdentity.spend(husk);
+        com.mrgregles.bsp_core.api.BspTotems.destroyed(server, husk, "TestAdmin");
+        com.mrgregles.bsp_core.api.BspTotems.destroyed(server, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND), "TestAdmin");
+        com.mrgregles.bsp_core.api.BspTotems.destroyed(server, net.minecraft.world.item.ItemStack.EMPTY, "TestAdmin");
+        var still = ledger.sighting(liveId);
+        h.assertTrue(still != null && still.where() == com.mrgregles.bsp_core.data.TotemLedger.HELD && b.getUUID().equals(still.holder()), "a husk or another item changes nothing");
+        b.getInventory().clearContent();
+        ledger.forget(liveId);
+        // the signature BSP-InventorySync looks up by reflection
+        try {
+            var m = com.mrgregles.bsp_core.api.BspTotems.class.getMethod("destroyed", net.minecraft.server.MinecraftServer.class, net.minecraft.world.item.ItemStack.class, String.class);
+            h.assertTrue(java.lang.reflect.Modifier.isStatic(m.getModifiers()) && m.getReturnType() == void.class, "public static void destroyed(MinecraftServer, ItemStack, String)");
+        } catch (NoSuchMethodException e) {
+            h.fail("BspTotems.destroyed(MinecraftServer, ItemStack, String) not found");
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public void team_board_keeps_the_last_lines_and_a_pinned_note(GameTestHelper h) {
         var server = server(h);
         var a = survivor(h);
@@ -5700,7 +6182,8 @@ public class BspGameTests {
         var r = com.mrgregles.bsp_core.totem.TotemWipe.wipe(a);
         h.assertTrue(r.carried() == 1 && r.placed() == 1 && r.forgotten() >= 1 && r.logoutRecords() == 1 && r.granted(), "the wipe reports what it did: " + r);
         h.assertBlockNotPresent(com.mrgregles.bsp_core.registry.ModBlocks.SHATTER_TOTEM.get(), pos);
-        h.assertTrue(ledger.placedFor(a.getUUID()).isEmpty() && ledger.sighting(stray) == null, "nothing placed, nothing remembered");
+        h.assertTrue(ledger.placedFor(a.getUUID()).isEmpty() && ledger.sighting(stray) != null && ledger.sighting(stray).where() == com.mrgregles.bsp_core.data.TotemLedger.RETIRED,
+                "nothing placed, the old totem retired (a copy of it would be a husk)");
         h.assertTrue(com.mrgregles.bsp_core.data.PlayerPersistent.takeLogoutPlaced(a).isEmpty(), "no logout placements left");
         var fresh = com.mrgregles.bsp_core.totem.TotemInventories.removeAll(a);
         h.assertTrue(fresh.size() == 1 && com.mrgregles.bsp_core.totem.TotemUpgrades.getTier(fresh.get(0)) == 0, "one fresh Tier I totem, as on a first join");

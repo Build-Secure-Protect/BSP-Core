@@ -27,8 +27,11 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
     /** A member: {@code state} 0 online here, 1 online elsewhere on the network, 2 offline (then {@code seenMs} says since when). */
     public record Member(UUID id, String name, boolean leader, int state, long seenMs, int totems, String where) {}
 
-    /** Someone who may be invited (online here, in no team), or who was and has {@code waitSeconds} left to answer. */
-    public record Candidate(UUID id, String name, int waitSeconds) {}
+    /**
+     * Someone who may be invited (online anywhere on the network, in no team), or who was and has {@code waitSeconds} left to answer.
+     * {@code server} is the server they are on when it is not this one, else "".
+     */
+    public record Candidate(UUID id, String name, int waitSeconds, String server) {}
 
     /** A line on the board; {@code fresh} while the viewer has not read it. */
     public record Line(long ms, String name, String text, boolean fresh) {}
@@ -63,6 +66,7 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
             buf.writeUUID(c.id);
             buf.writeUtf(c.name);
             buf.writeVarInt(c.waitSeconds);
+            buf.writeUtf(c.server);
         }
         buf.writeVarInt(m.lines.size());
         for (Line l : m.lines) {
@@ -91,7 +95,7 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
         n = buf.readVarInt();
         List<Candidate> candidates = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            candidates.add(new Candidate(buf.readUUID(), buf.readUtf(), buf.readVarInt()));
+            candidates.add(new Candidate(buf.readUUID(), buf.readUtf(), buf.readVarInt(), buf.readUtf()));
         }
         n = buf.readVarInt();
         List<Line> lines = new ArrayList<>(n);
@@ -130,11 +134,20 @@ public record TeamViewPacket(boolean open, boolean enabled, boolean hasTeam, Str
         List<UUID> waiting = new ArrayList<>();
         for (Teams.Invite i : Teams.invitesOf(team.id)) {
             waiting.add(i.invitee());
-            candidates.add(new Candidate(i.invitee(), Teams.nameOf(server, i.invitee()), (int) Math.max(1, (i.expiresMs() - now + 999) / 1000)));
+            boolean here = server.getPlayerList().getPlayer(i.invitee()) != null;
+            candidates.add(new Candidate(i.invitee(), i.inviteeName(), (int) Math.max(1, (i.expiresMs() - now + 999) / 1000), here ? "" : i.elsewhere()));
         }
         for (ServerPlayer o : server.getPlayerList().getPlayers()) {
             if (!o.getUUID().equals(p.getUUID()) && !waiting.contains(o.getUUID()) && Teams.teamOf(server, o.getUUID()) == null && Teams.pending(o.getUUID()).isEmpty()) {
-                candidates.add(new Candidate(o.getUUID(), o.getGameProfile().getName(), 0));
+                candidates.add(new Candidate(o.getUUID(), o.getGameProfile().getName(), 0, ""));
+            }
+        }
+        // players on other servers only when an invite can reach them (Redis)
+        for (var o : com.mrgregles.bsp_core.storage.NetworkStorage.redisOn() ? com.mrgregles.bsp_core.storage.NetworkStorage.playersElsewhere()
+                : List.<com.mrgregles.bsp_core.storage.NetworkStorage.OnlinePlayer>of()) {
+            if (!o.id().equals(p.getUUID()) && !waiting.contains(o.id()) && server.getPlayerList().getPlayer(o.id()) == null && Teams.teamOf(server, o.id()) == null
+                    && Teams.pending(o.id()).isEmpty()) {
+                candidates.add(new Candidate(o.id(), o.name(), 0, o.server()));
             }
         }
         Team.Member me = team.members().get(p.getUUID());

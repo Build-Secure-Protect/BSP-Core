@@ -116,8 +116,8 @@ public final class KitGrants {
 
     /** What a login does: record the first-join grants, then schedule the delivery. Public for the tests. */
     public static void login(ServerPlayer player) {
-        if (!Kits.enabled()) {
-            return;
+        if (!Kits.enabled() || com.mrgregles.bsp_core.storage.NetworkStorage.down()) {
+            return; // not connected yet: connected() runs this once it is
         }
         if (com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
             // the network's rows first (a reward given elsewhere, a grant made on another server), then the grants
@@ -188,6 +188,25 @@ public final class KitGrants {
         return n;
     }
 
+    /**
+     * The network's database connected while the player was online (they joined in the seconds after the start): their login's
+     * grants now, and what is owed delivered unless their restore is still to come (it delivers then).
+     */
+    public static void connected(ServerPlayer player) {
+        if (!Kits.enabled()) {
+            return;
+        }
+        com.mrgregles.bsp_core.storage.NetworkStorage.kitRedeemsReload(player.getUUID(), () -> {
+            if (player.hasDisconnected()) {
+                return;
+            }
+            int granted = grantFirstJoin(player);
+            if ((granted > 0 || !Kits.owed(player.server, player.getUUID()).isEmpty()) && !AWAITING_RESTORE.contains(player.getUUID())) {
+                PENDING.put(player.getUUID(), new Pending(player, new int[] {Math.max(1, BSPConfig.getOr(BSPConfig.KIT_GRANT_DELAY_TICKS, 40))}));
+            }
+        });
+    }
+
     /** Delivery once the inventory is settled: now (the restore event), or after the delay. */
     public static void schedule(ServerPlayer player) {
         if (waitsForRestore()) {
@@ -202,8 +221,8 @@ public final class KitGrants {
      * them. Public for the tests.
      */
     public static int deliver(ServerPlayer player) {
-        if (player.isDeadOrDying()) {
-            return 0;
+        if (player.isDeadOrDying() || com.mrgregles.bsp_core.storage.NetworkStorage.down()) {
+            return 0; // dead: at the respawn; not connected: the owed rows here may be stale, connected() delivers
         }
         Set<String> first = GRANTED_NOW.remove(player.getUUID());
         return Kits.deliverOwed(player, id -> first != null && first.contains(id) ? KitEvent.How.FIRST_JOIN : KitEvent.How.REWARD);

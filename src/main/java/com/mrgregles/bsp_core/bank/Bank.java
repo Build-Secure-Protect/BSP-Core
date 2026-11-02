@@ -85,6 +85,10 @@ public final class Bank {
         a.name = name;
         ledger.setDirty();
         long starting = BSPConfig.getOr(BSPConfig.BANK_STARTING_PIECES, 500);
+        if (NetworkStorage.down()) {
+            then.accept(false); // the network's database is not connected (yet): the account opens once it is (NetworkStorage.connected)
+            return;
+        }
         if (!NetworkStorage.enabled()) {
             if (a.granted) {
                 then.accept(false);
@@ -98,7 +102,7 @@ public final class Bank {
         }
         NetworkStorage.bankEnsure(id, name, starting, (inserted, row) -> {
             if (row != null) {
-                a.copyFrom(row);
+                a.copyMoneyFrom(row);
                 a.name = name;
                 ledger.setDirty();
             }
@@ -151,6 +155,10 @@ public final class Bank {
         }
         BankLedger ledger = BankLedger.get(server);
         String fromName = nameOf(server, from), toName = nameOf(server, to);
+        if (NetworkStorage.down()) {
+            then.accept(BankResult.fail("unreachable"));
+            return;
+        }
         if (!NetworkStorage.enabled()) {
             BankAccount a = ledger.account(from), b = ledger.account(to);
             if (!b.acceptPay) {
@@ -185,6 +193,10 @@ public final class Bank {
     /** Admin: sets the balance outright. */
     public static void set(MinecraftServer server, UUID id, long pieces, String admin, Consumer<BankResult> then) {
         long now = account(server, id).pieces;
+        if (NetworkStorage.down()) {
+            then.accept(BankResult.fail("unreachable"));
+            return;
+        }
         if (!NetworkStorage.enabled()) {
             adjust(server, id, pieces - now, null, tx(BankTransaction.Type.ADMIN, admin, "set to " + format(pieces), pieces - now), then);
             return;
@@ -194,9 +206,10 @@ public final class Bank {
                 then.accept(BankResult.fail("unreachable"));
                 return;
             }
-            account(server, id).copyFrom(row);
+            long before = account(server, id).pieces;
+            account(server, id).copyMoneyFrom(row);
             BankLedger.get(server).setDirty();
-            record(server, id, tx(BankTransaction.Type.ADMIN, admin, "set to " + format(pieces), pieces - now));
+            record(server, id, tx(BankTransaction.Type.ADMIN, admin, "set to " + format(pieces), pieces - before));
             then.accept(BankResult.ok(row.pieces));
         });
     }
@@ -232,7 +245,7 @@ public final class Bank {
         }
         adjust(server, id, dPieces, dCoins, t, r -> {
             if (!r.ok()) {
-                giveCoins(player, tier, count); // the database did not take them: hand the coins back
+                giveCoins(server, player, tier, count); // the database did not take them: hand the coins back
             }
             then.accept(r);
         });
@@ -250,20 +263,28 @@ public final class Bank {
         BankTransaction t = new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.WITHDRAW, "Shatter Bank", "took out " + what, 0, tier.ordinal(), -count, serverId());
         adjust(server, player.getUUID(), 0, dCoins, t, r -> {
             if (r.ok()) {
-                giveCoins(player, tier, count);
+                giveCoins(server, player, tier, count);
             }
             then.accept(r);
         });
     }
 
-    private static void giveCoins(Player player, CoinTier tier, int count) {
+    /** Coins into the player's inventory; a player who left while the database answered gets them at their next login instead. */
+    private static void giveCoins(MinecraftServer server, Player player, CoinTier tier, int count) {
+        List<ItemStack> stacks = new java.util.ArrayList<>();
         while (count > 0) {
             int batch = Math.min(count, 64);
-            ItemStack stack = new ItemStack(tier.coin(), batch);
+            stacks.add(new ItemStack(tier.coin(), batch));
+            count -= batch;
+        }
+        if (player instanceof ServerPlayer sp && sp.hasDisconnected()) {
+            com.mrgregles.bsp_core.admin.AdminService.deliver(server, player.getUUID(), stacks, "message.bsp_core.bank.coins_delivered");
+            return;
+        }
+        for (ItemStack stack : stacks) {
             if (!player.getInventory().add(stack)) {
                 player.drop(stack, false);
             }
-            count -= batch;
         }
     }
 
@@ -335,13 +356,45 @@ public final class Bank {
         }
         int count = remoteUnlockCoins();
         com.mrgregles.bsp_core.coin.CoinTier tier = remoteUnlockTier();
-        if (!com.mrgregles.bsp_core.coin.CoinWallet.take(player, tier, count)) {
-            then.accept(BankResult.fail("coins_unlock"));
+        unlock(server, player, tier, count, "remote_shops", "coins_unlock", "already", "Shopping Network unlocked", () -> setRemoteShops(server, id, true), then);
+    }
+
+    /**
+     * Takes the coins and sets the switch. On a network the coins are taken, then the database sets the switch only if it was
+     * off; the coins go back if it was on already (bought on another server) or the database could not be reached, so a stale
+     * copy here can never make a player pay twice, nor pay without the switch being stored.
+     */
+    private static void unlock(MinecraftServer server, Player player, CoinTier tier, int count, String column, String shortKey, String alreadyKey, String detail,
+                               Runnable setLocal, Consumer<BankResult> then) {
+        UUID id = player.getUUID();
+        if (NetworkStorage.down()) {
+            then.accept(BankResult.fail("unreachable"));
             return;
         }
-        setRemoteShops(server, id, true);
-        record(server, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.FEE, "Shatter Bank", "Shopping Network unlocked", 0, tier.ordinal(), -count, serverId()));
-        then.accept(BankResult.ok(account(server, id).pieces));
+        if (!com.mrgregles.bsp_core.coin.CoinWallet.take(player, tier, count)) {
+            then.accept(BankResult.fail(shortKey));
+            return;
+        }
+        Runnable done = () -> {
+            setLocal.run();
+            record(server, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.FEE, "Shatter Bank", detail, 0, tier.ordinal(), -count, serverId()));
+            then.accept(BankResult.ok(account(server, id).pieces));
+        };
+        if (!NetworkStorage.enabled()) {
+            done.run();
+            return;
+        }
+        NetworkStorage.bankUnlock(id, column, set -> {
+            if (Boolean.TRUE.equals(set)) {
+                done.run();
+                return;
+            }
+            giveCoins(server, player, tier, count);
+            if (set != null) {
+                setLocal.run(); // it was on already: this server's copy was behind
+            }
+            then.accept(BankResult.fail(set == null ? "unreachable" : alreadyKey));
+        });
     }
 
     /** Buys the market for the player's Portable Banker with coins from their inventory. Fails with "market_already" or "coins_market". */
@@ -353,13 +406,7 @@ public final class Bank {
         }
         int count = marketUnlockCoins();
         com.mrgregles.bsp_core.coin.CoinTier tier = marketUnlockTier();
-        if (!com.mrgregles.bsp_core.coin.CoinWallet.take(player, tier, count)) {
-            then.accept(BankResult.fail("coins_market"));
-            return;
-        }
-        setRemoteMarket(server, id, true);
-        record(server, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.FEE, "Shatter Bank", "Market unlocked", 0, tier.ordinal(), -count, serverId()));
-        then.accept(BankResult.ok(account(server, id).pieces));
+        unlock(server, player, tier, count, "remote_market", "coins_market", "market_already", "Market unlocked", () -> setRemoteMarket(server, id, true), then);
     }
 
     /** Admin, season end: nobody's Portable Banker reaches the Shopping Network or the market any more. Counts the accounts that had either. */
@@ -494,7 +541,7 @@ public final class Bank {
         }
         NetworkStorage.bankRead(id, row -> {
             if (row != null) {
-                account(server, id).copyFrom(row);
+                account(server, id).copyMoneyFrom(row);
                 BankLedger.get(server).setDirty();
             }
         });
@@ -505,6 +552,11 @@ public final class Bank {
         BankLedger ledger = BankLedger.get(server);
         BankAccount a = ledger.account(id);
         int[] dc = dCoins == null ? new int[CoinTier.values().length] : dCoins;
+        if (NetworkStorage.down()) {
+            // a network server whose database is not connected: the cache here is not the record, so nothing may change on it
+            then.accept(BankResult.fail("unreachable"));
+            return;
+        }
         if (!NetworkStorage.enabled()) {
             if (a.pieces + dPieces < 0) {
                 then.accept(BankResult.fail("short"));
@@ -524,14 +576,18 @@ public final class Bank {
             then.accept(BankResult.ok(a.pieces));
             return;
         }
-        NetworkStorage.bankAdjust(id, dPieces, dc, row -> {
+        NetworkStorage.bankAdjust(id, dPieces, dc, t, (row, reached) -> {
+            if (!reached) {
+                then.accept(BankResult.fail("unreachable")); // rolled back: nothing changed
+                return;
+            }
             if (row == null) {
                 then.accept(BankResult.fail("short"));
                 return;
             }
-            a.copyFrom(row);
+            a.copyMoneyFrom(row);
             ledger.setDirty();
-            record(server, id, t);
+            ledger.record(id, t); // the database wrote its log row in the same transaction
             then.accept(BankResult.ok(row.pieces));
         });
     }

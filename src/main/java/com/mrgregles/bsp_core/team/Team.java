@@ -35,6 +35,14 @@ public final class Team {
             this.readSeq = readSeq;
             this.seenMs = joinedMs;
         }
+
+        /** A copy for the storage thread, which must never read a member the server thread is changing. */
+        public Member copy() {
+            Member m = new Member(name, joinedMs, readSeq);
+            m.seenMs = seenMs;
+            m.onlineServer = onlineServer;
+            return m;
+        }
     }
 
     /** A line on the team's board. {@code seq} counts up for the team, so unread lines are those above a member's {@code readSeq}. */

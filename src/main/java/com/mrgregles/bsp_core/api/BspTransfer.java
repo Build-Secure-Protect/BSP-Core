@@ -41,6 +41,11 @@ public final class BspTransfer {
     private record Pending(long since, List<ItemStack> held, boolean stored) {}
 
     private static final Map<UUID, Pending> ACTIVE = new ConcurrentHashMap<>();
+    /**
+     * Item tag on a totem stored for a transfer: {@code <server id>@<ms>}, the trip it belongs to. Only the server it left from,
+     * for that departure, may ever place it back; a sweep finding another trip's totem leaves it waiting for its owner.
+     */
+    public static final String TAG_TRIP = "bsp_core:Trip";
     private static int tick;
 
     private BspTransfer() {}
@@ -60,27 +65,74 @@ public final class BspTransfer {
             return 0;
         }
         endTransfer(player); // a second call starts afresh
+        long since = System.currentTimeMillis();
         List<ItemStack> totems = TotemInventories.removeAll(player);
         totems.addAll(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(player));
         markInTransit(server, player, totems);
         boolean stored = false;
         if (!totems.isEmpty() && NetworkStorage.enabled()) {
             List<String> encoded = new ArrayList<>();
-            totems.forEach(t -> encoded.add(t.save(new CompoundTag()).toString()));
+            String trip = trip(com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID, "server"), since);
+            for (ItemStack t : totems) {
+                ItemStack marked = t.copy();
+                marked.getOrCreateTag().putString(TAG_TRIP, trip);
+                encoded.add(marked.save(new CompoundTag()).toString());
+            }
             NetworkStorage.addPending(player.getUUID(), encoded);
             stored = true;
             if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
                 // remember the departure point: if the totem is still waiting after the timeout, it is placed back here
                 var target = com.mrgregles.bsp_core.totem.TotemPlacer.safeTargetFor(sp);
-                com.mrgregles.bsp_core.totem.TransferLedger.get(server).put(player.getUUID(), System.currentTimeMillis(), net.minecraft.core.GlobalPos.of(target.level().dimension(), target.pos()));
+                com.mrgregles.bsp_core.totem.TransferLedger.get(server).put(player.getUUID(), since, net.minecraft.core.GlobalPos.of(target.level().dimension(), target.pos()));
             }
         }
-        ACTIVE.put(player.getUUID(), new Pending(System.currentTimeMillis(), stored ? List.of() : totems, stored));
+        ACTIVE.put(player.getUUID(), new Pending(since, stored ? List.of() : totems, stored));
         if (!totems.isEmpty()) {
             player.displayClientMessage(Component.translatable("message.bsp_core.transfer.stored", totems.size()).withStyle(ChatFormatting.GOLD), false);
             BSPCore.LOGGER.info("{} is transferring with {} totem(s) ({})", player.getGameProfile().getName(), totems.size(), stored ? "stored in the database" : "held here");
         }
         return totems.size();
+    }
+
+    /** Drops one totem from a transfer under way here (held for a cancelled teleport); returns how many stacks went. */
+    public static int forgetTotem(UUID player, UUID totemId) {
+        Pending p = ACTIVE.get(player);
+        if (p == null || p.held.isEmpty()) {
+            return 0;
+        }
+        List<ItemStack> keep = new ArrayList<>();
+        p.held.forEach(st -> {
+            if (!totemId.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(st))) {
+                keep.add(st);
+            }
+        });
+        int n = p.held.size() - keep.size();
+        if (n > 0) {
+            ACTIVE.put(player, new Pending(p.since, keep, p.stored));
+        }
+        return n;
+    }
+
+    /** The trip mark for a departure from {@code server} at {@code sinceMs}. */
+    public static String trip(String server, long sinceMs) {
+        return server + "@" + sinceMs;
+    }
+
+    /** Whether {@code stack} is a totem stored for exactly this trip (a totem from another trip, or from before trips were marked, is not). */
+    public static boolean ofTrip(ItemStack stack, String trip) {
+        return stack.hasTag() && trip.equals(stack.getTag().getString(TAG_TRIP));
+    }
+
+    /** The trip mark taken off, once a totem is out of the database. */
+    public static ItemStack unmarked(ItemStack stack) {
+        ItemStack out = stack.copy();
+        if (out.hasTag()) {
+            out.getTag().remove(TAG_TRIP);
+            if (out.getTag().isEmpty()) {
+                out.setTag(null);
+            }
+        }
+        return out;
     }
 
     public static boolean isTransferring(UUID player) {
@@ -166,12 +218,17 @@ public final class BspTransfer {
         if (player.getServer() != null) {
             com.mrgregles.bsp_core.totem.TransferLedger.get(player.getServer()).remove(player.getUUID()); // they are back on this server
         }
-        for (ItemStack stack : items) {
+        for (ItemStack stored : items) {
+            ItemStack stack = unmarked(stored);
             if (TotemInventories.isTotem(stack)) {
-                if (player.getServer() != null) {
+                if (player.getServer() != null && com.mrgregles.bsp_core.totem.TotemIdentity.oldSeason(stack, player.getServer())) {
+                    com.mrgregles.bsp_core.totem.TotemIdentity.spend(stack); // stored before a season ended: a husk
+                } else if (player.getServer() != null) {
                     com.mrgregles.bsp_core.totem.TotemIdentity.ensure(stack);
-                    com.mrgregles.bsp_core.data.TotemLedger.get(player.getServer()).arrived(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack), com.mrgregles.bsp_core.totem.TotemIdentity.instance(stack),
-                            player.getUUID(), stack.getTag(), player.getServer().overworld().getGameTime());
+                    if (!com.mrgregles.bsp_core.data.TotemLedger.get(player.getServer()).arrived(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack), com.mrgregles.bsp_core.totem.TotemIdentity.instance(stack),
+                            player.getUUID(), stack.getTag(), player.getServer().overworld().getGameTime())) {
+                        com.mrgregles.bsp_core.totem.TotemIdentity.spend(stack);
+                    }
                 }
                 TotemInventories.giveBack(player, stack.copy());
             } else if (!player.getInventory().add(stack.copy())) {
@@ -213,10 +270,11 @@ public final class BspTransfer {
     }
 
     /**
-     * Departures older than {@code restrictions.transferTotemTimeoutHours}: if the player's totems
-     * are still waiting in the database (they never logged in anywhere), they are placed back at the
-     * departure point; anything else waiting with them stays owed. A departure whose totems are gone
-     * (collected on another server) is simply forgotten.
+     * Departures older than {@code restrictions.transferTotemTimeoutHours}: if the totems of that very trip are still waiting in
+     * the database (the player never logged in anywhere), they are placed back at the departure point. Everything else waiting
+     * for the player stays owed: their other items, and above all a totem of a later trip, on its way to another server right
+     * now, which this server must never take (it once did: a player's totem in flight landed on a server they had left days
+     * before). A departure whose totems are gone (collected on another server) is simply forgotten.
      */
     public static void placeBackTimedOut(MinecraftServer server, long now) {
         var ledger = com.mrgregles.bsp_core.totem.TransferLedger.get(server);
@@ -235,8 +293,9 @@ public final class BspTransfer {
                 List<ItemStack> items = decode(owed.getOrDefault(id, List.of()));
                 List<String> keep = new ArrayList<>();
                 int placed = 0;
+                String trip = departure == null ? "" : trip(com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.STORAGE_SERVER_ID, "server"), departure.sinceMs());
                 for (ItemStack stack : items) {
-                    if (TotemInventories.isTotem(stack) && departure != null && placeAt(server, departure.where(), stack)) {
+                    if (departure != null && TotemInventories.isTotem(stack) && ofTrip(stack, trip) && placeAt(server, departure.where(), unmarked(stack))) {
                         placed++;
                     } else {
                         keep.add(stack.save(new CompoundTag()).toString());
@@ -256,6 +315,9 @@ public final class BspTransfer {
         var level = server.getLevel(where.dimension());
         if (level == null) {
             return false;
+        }
+        if (!com.mrgregles.bsp_core.totem.TotemPlacer.adopt(server, totem)) {
+            return true; // retired here: a husk, placed nowhere
         }
         if (!com.mrgregles.bsp_core.totem.TotemPlacer.place(level, where.pos(), totem)) {
             level.addFreshEntity(new com.mrgregles.bsp_core.totem.ShatterTotemItemEntity(level, where.pos().getX() + 0.5, where.pos().getY() + 0.5, where.pos().getZ() + 0.5, totem));

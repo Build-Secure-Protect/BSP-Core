@@ -181,7 +181,14 @@ public final class DepositBox {
             return;
         }
         NetworkStorage.bankBoxRead(id, row -> {
-            if (row != null && !sp.hasDisconnected()) {
+            if (row == null) {
+                // unreachable: the copy here may be older than the network's (emptied on another server), so it is not opened
+                if (!sp.hasDisconnected()) {
+                    sp.displayClientMessage(Component.translatable("message.bsp_core.bank.unreachable").withStyle(net.minecraft.ChatFormatting.RED), false);
+                }
+                return;
+            }
+            if (row.length > 0 && !sp.hasDisconnected()) {
                 BankAccount a = Bank.account(sp.server, id);
                 a.boxSlots = (Integer) row[0];
                 a.boxUntilMs = (Long) row[1];

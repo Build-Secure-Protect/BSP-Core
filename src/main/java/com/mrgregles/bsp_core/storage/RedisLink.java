@@ -31,7 +31,7 @@ public final class RedisLink implements AutoCloseable {
     private final boolean ssl;
     private final Consumer<String[]> onMessage;
     private volatile boolean closed;
-    private Socket pub;
+    private volatile Socket pub;
     private InputStream pubIn;
     private OutputStream pubOut;
     private Thread subThread;
@@ -326,7 +326,8 @@ public final class RedisLink implements AutoCloseable {
     }
 
     @Override
-    public synchronized void close() {
+    /** Not synchronized: a publish stuck on an unreachable Redis holds the lock for seconds, and a stopping server must not wait for it. */
+    public void close() {
         closed = true;
         closeQuietly(pub);
         closeQuietly(sub);

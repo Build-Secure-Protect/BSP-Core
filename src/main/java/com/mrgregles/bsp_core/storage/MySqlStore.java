@@ -98,7 +98,13 @@ final class MySqlStore implements AutoCloseable {
      * The connection: checked with a round trip at most every 2 seconds (not before every statement); after a failed connect,
      * calls fail at once for 5 seconds instead of each waiting out a connect timeout behind the others.
      */
+    /** Set by {@link #close}: work still queued after it fails instead of opening a new connection. */
+    private volatile boolean closed;
+
     private Connection conn() throws SQLException {
+        if (closed) {
+            throw new SQLException("the storage was closed");
+        }
         long now = System.currentTimeMillis();
         if (connection != null && now - checkedMs < 2000) {
             return connection;
@@ -139,6 +145,9 @@ final class MySqlStore implements AutoCloseable {
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("scores") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, name VARCHAR(32) NOT NULL, "
                     + "totems INT NOT NULL, points INT NOT NULL, best_tier INT NOT NULL, PRIMARY KEY (server_id, uuid), INDEX (uuid))");
+            // every totem on each server, rewritten with that server's score rows: the admin panel's view of the network
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("admin_totems") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, tier INT NOT NULL, "
+                    + "carried TINYINT NOT NULL, INDEX (server_id), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("meta") + " (server_id VARCHAR(64) NOT NULL PRIMARY KEY, "
                     + "migrated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("vault_totals") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, "
@@ -206,6 +215,8 @@ final class MySqlStore implements AutoCloseable {
                     + "pin_by_name VARCHAR(16) NOT NULL DEFAULT '', pin_ms BIGINT NOT NULL DEFAULT 0, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX (name))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("team_members") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, team CHAR(36) NOT NULL, name VARCHAR(16) NOT NULL, "
                     + "joined_ms BIGINT NOT NULL, read_seq INT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, online_server VARCHAR(64) NOT NULL DEFAULT '', INDEX (team))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("online_players") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL, "
+                    + "server_id VARCHAR(64) NOT NULL, since_ms BIGINT NOT NULL, INDEX (server_id))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("team_messages") + " (team CHAR(36) NOT NULL, seq INT NOT NULL, ms BIGINT NOT NULL, uuid CHAR(36) NOT NULL, "
                     + "name VARCHAR(16) NOT NULL, text VARCHAR(512) NOT NULL, PRIMARY KEY (team, seq))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kits") + " (id VARCHAR(24) NOT NULL PRIMARY KEY, name VARCHAR(24) NOT NULL, description VARCHAR(80) NOT NULL DEFAULT '', "
@@ -245,22 +256,47 @@ final class MySqlStore implements AutoCloseable {
 
     // ------------------------------------------------------------------ grants
 
-    /** Records the grant if no server has recorded one for this player. True means this server should hand out the totem. */
+    /**
+     * Records the grant if no server has recorded one for this player. True means this server should hand out the totem: the grant
+     * is recorded now, or it was recorded by this server before and never reached the player (the caller asks only when this
+     * server has no grant on record: a lost answer, a crash before the save, a player who left first). The grant and the season
+     * claim go in together or not at all.
+     */
     boolean claimGrant(UUID player) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("grants") + " (uuid, server_id) VALUES (?, ?)")) {
-            ps.setString(1, player.toString());
-            ps.setString(2, serverId);
-            if (ps.executeUpdate() != 1) {
-                return false;
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            boolean claimed;
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("grants") + " (uuid, server_id) VALUES (?, ?)")) {
+                ps.setString(1, player.toString());
+                ps.setString(2, serverId);
+                claimed = ps.executeUpdate() == 1;
             }
+            if (!claimed) {
+                try (PreparedStatement ps = c.prepareStatement("SELECT server_id FROM " + t("grants") + " WHERE uuid = ?")) {
+                    ps.setString(1, player.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        claimed = rs.next() && serverId.equals(rs.getString(1));
+                    }
+                }
+            }
+            if (claimed) {
+                // their first totem is also their totem for the season in progress
+                try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("season_claims") + " (season, uuid) SELECT CAST(v AS UNSIGNED), ? FROM "
+                        + t("state") + " WHERE k = 'season'")) {
+                    ps.setString(1, player.toString());
+                    ps.executeUpdate();
+                }
+            }
+            c.commit();
+            return claimed;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
         }
-        // their first totem is also their totem for the season in progress
-        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("season_claims") + " (season, uuid) SELECT CAST(v AS UNSIGNED), ? FROM "
-                + t("state") + " WHERE k = 'season'")) {
-            ps.setString(1, player.toString());
-            ps.executeUpdate();
-        }
-        return true;
     }
 
     // ------------------------------------------------------------------ seasons
@@ -348,6 +384,15 @@ final class MySqlStore implements AutoCloseable {
     }
 
     /** Takes out, and returns, everything waiting for the given players. */
+    /** Deletes owed items whose stored form contains {@code needle} (one totem's id); returns how many. */
+    int removePendingContaining(String needle) throws SQLException {
+        String like = "%" + needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("pending_items") + " WHERE item LIKE ?")) {
+            ps.setString(1, like);
+            return ps.executeUpdate();
+        }
+    }
+
     void clearPending(UUID player) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("pending_items") + " WHERE uuid = ?")) {
             ps.setString(1, player.toString());
@@ -729,10 +774,11 @@ final class MySqlStore implements AutoCloseable {
     // ------------------------------------------------------------------ leaderboard
 
     /**
-     * Replaces this server's score rows with {@code mine} and returns the board of the whole network:
-     * each player's totems and points added up across servers.
+     * Replaces this server's score rows with {@code mine} and its totem list with {@code spots}, together, and returns the board
+     * of the whole network: each player's totems and points added up across servers.
      */
-    java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> syncScores(java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine) throws SQLException {
+    java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> syncScores(java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine,
+                                                                              java.util.List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
@@ -753,6 +799,24 @@ final class MySqlStore implements AutoCloseable {
                 }
                 ps.executeBatch();
             }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("admin_totems") + " WHERE server_id = ?")) {
+                ps.setString(1, serverId);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("admin_totems") + " (server_id, dimension, x, y, z, owner_uuid, tier, carried) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                for (var sp : spots) {
+                    ps.setString(1, serverId);
+                    ps.setString(2, sp.dimension().length() > 128 ? sp.dimension().substring(0, 128) : sp.dimension());
+                    ps.setInt(3, sp.pos().getX());
+                    ps.setInt(4, sp.pos().getY());
+                    ps.setInt(5, sp.pos().getZ());
+                    ps.setString(6, sp.owner().toString());
+                    ps.setInt(7, sp.tier());
+                    ps.setInt(8, sp.carried() ? 1 : 0);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
             c.commit();
         } catch (SQLException e) {
             c.rollback();
@@ -768,6 +832,39 @@ final class MySqlStore implements AutoCloseable {
             }
         }
         return all;
+    }
+
+    /**
+     * The admin panel's view of the network: every totem every server last listed (with its score rows), and the name of every
+     * player who has had a first-join totem anywhere or owns a listed totem (from the bank, else the board).
+     */
+    com.mrgregles.bsp_core.admin.AdminService.Network adminNetwork() throws SQLException {
+        java.util.Map<UUID, String> names = new java.util.LinkedHashMap<>();
+        try (Statement st = conn().createStatement();
+             ResultSet rs = st.executeQuery("SELECT g.uuid, COALESCE(b.name, '') FROM " + t("grants") + " g LEFT JOIN " + t("bank_accounts") + " b ON b.uuid = g.uuid")) {
+            while (rs.next()) {
+                names.put(UUID.fromString(rs.getString(1)), rs.getString(2));
+            }
+        }
+        try (Statement st = conn().createStatement(); ResultSet rs = st.executeQuery("SELECT uuid, MAX(name) FROM " + t("scores") + " GROUP BY uuid")) {
+            while (rs.next()) {
+                UUID id = UUID.fromString(rs.getString(1));
+                if (names.getOrDefault(id, "").isEmpty()) {
+                    names.put(id, rs.getString(2));
+                }
+            }
+        }
+        java.util.List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots = new java.util.ArrayList<>();
+        try (Statement st = conn().createStatement();
+             ResultSet rs = st.executeQuery("SELECT server_id, dimension, x, y, z, owner_uuid, tier, carried FROM " + t("admin_totems") + " ORDER BY server_id, dimension, x, y, z")) {
+            while (rs.next()) {
+                UUID owner = UUID.fromString(rs.getString(6));
+                names.putIfAbsent(owner, "");
+                spots.add(new com.mrgregles.bsp_core.score.ScoreService.Spot(owner, rs.getInt(7), rs.getInt(8) != 0, rs.getString(1), rs.getString(2),
+                        new net.minecraft.core.BlockPos(rs.getInt(3), rs.getInt(4), rs.getInt(5))));
+            }
+        }
+        return new com.mrgregles.bsp_core.admin.AdminService.Network(names, spots);
     }
 
     // ------------------------------------------------------------------ migration
@@ -794,11 +891,17 @@ final class MySqlStore implements AutoCloseable {
         c.setAutoCommit(false);
         try {
             int added = 0, skipped = 0, t = 0, s = 0;
-            for (UUID player : grants) {
-                if (claimGrant(player)) {
-                    added++;
-                } else {
-                    skipped++;
+            // the grants only: no season claim (a player granted here long ago may not have this season's totem yet), and on this
+            // transaction's connection (claimGrant commits on its own)
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("grants") + " (uuid, server_id) VALUES (?, ?)")) {
+                for (UUID player : grants) {
+                    ps.setString(1, player.toString());
+                    ps.setString(2, serverId);
+                    if (ps.executeUpdate() == 1) {
+                        added++;
+                    } else {
+                        skipped++;
+                    }
                 }
             }
             for (String table : new String[]{"totems", "factory_slices"}) {
@@ -880,23 +983,60 @@ final class MySqlStore implements AutoCloseable {
     }
 
     /** Applies signed deltas as one atomic change; null if the account is missing or anything would go below zero. */
-    BankAccount bankAdjust(UUID id, long dPieces, int[] dCoins) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces + ?, c0 = c0 + ?, c1 = c1 + ?, c2 = c2 + ?, c3 = c3 + ?, c4 = c4 + ? "
-                + "WHERE uuid = ? AND pieces + ? >= 0 AND c0 + ? >= 0 AND c1 + ? >= 0 AND c2 + ? >= 0 AND c3 + ? >= 0 AND c4 + ? >= 0")) {
-            ps.setLong(1, dPieces);
-            for (int i = 0; i < 5; i++) {
-                ps.setInt(2 + i, dCoins[i]);
+    /**
+     * Changes a balance, writes its log row ({@code log}, if any) and reads the account back, all in one transaction, so an error
+     * anywhere leaves nothing changed. Null when refused (below zero, or no account).
+     */
+    BankAccount bankAdjust(UUID id, long dPieces, int[] dCoins, @javax.annotation.Nullable BankTransaction log) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces + ?, c0 = c0 + ?, c1 = c1 + ?, c2 = c2 + ?, c3 = c3 + ?, c4 = c4 + ? "
+                    + "WHERE uuid = ? AND pieces + ? >= 0 AND c0 + ? >= 0 AND c1 + ? >= 0 AND c2 + ? >= 0 AND c3 + ? >= 0 AND c4 + ? >= 0")) {
+                ps.setLong(1, dPieces);
+                for (int i = 0; i < 5; i++) {
+                    ps.setInt(2 + i, dCoins[i]);
+                }
+                ps.setString(7, id.toString());
+                ps.setLong(8, dPieces);
+                for (int i = 0; i < 5; i++) {
+                    ps.setInt(9 + i, dCoins[i]);
+                }
+                if (ps.executeUpdate() != 1) {
+                    c.rollback();
+                    return null;
+                }
             }
-            ps.setString(7, id.toString());
-            ps.setLong(8, dPieces);
-            for (int i = 0; i < 5; i++) {
-                ps.setInt(9 + i, dCoins[i]);
+            if (log != null) {
+                bankLog(c, id, log);
             }
-            if (ps.executeUpdate() != 1) {
-                return null;
+            BankAccount after;
+            try (PreparedStatement ps = c.prepareStatement("SELECT * FROM " + t("bank_accounts") + " WHERE uuid = ?")) {
+                ps.setString(1, id.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    after = rs.next() ? bankRow(rs) : null;
+                }
             }
+            c.commit();
+            return after;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
         }
-        return bankRead(id);
+    }
+
+    /** Sets a one-time switch column to 1 only if it is 0; true when it was set now. */
+    boolean bankUnlock(UUID id, String column) throws SQLException {
+        if (!column.equals("remote_shops") && !column.equals("remote_market")) {
+            throw new IllegalArgumentException(column);
+        }
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("bank_accounts") + " SET " + column + " = 1 WHERE uuid = ? AND " + column + " = 0")) {
+            ps.setString(1, id.toString());
+            return ps.executeUpdate() == 1;
+        }
     }
 
     BankAccount bankSet(UUID id, long pieces) throws SQLException {
@@ -1383,45 +1523,95 @@ final class MySqlStore implements AutoCloseable {
     // ------------------------------------------------------------------ teams, one record for the network
 
     /** Writes the team's row and every member row, and drops member rows of people no longer in it. */
-    void teamWrite(com.mrgregles.bsp_core.team.Team team) throws SQLException {
-        com.mrgregles.bsp_core.team.Team.Note pin = team.pinned();
+    /** A team's own row, as read on the server thread (the worker never reads a live Team). */
+    record TeamRow(UUID id, String name, String colour, UUID leader, long createdMs, int seq, String pinText, String pinBy, String pinByName, long pinMs) {}
+
+    void teamRowWrite(TeamRow r) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("teams") + " (id, name, colour, leader, created_ms, seq, pin_text, pin_by, pin_by_name, pin_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
                 + "ON DUPLICATE KEY UPDATE name = VALUES(name), colour = VALUES(colour), leader = VALUES(leader), seq = GREATEST(seq, VALUES(seq)), pin_text = VALUES(pin_text), pin_by = VALUES(pin_by), pin_by_name = VALUES(pin_by_name), pin_ms = VALUES(pin_ms)")) {
-            ps.setString(1, team.id.toString());
-            ps.setString(2, team.name);
-            ps.setString(3, team.colour.getName());
-            ps.setString(4, team.leader.toString());
-            ps.setLong(5, team.createdMs);
-            ps.setInt(6, team.messageSeq());
-            ps.setString(7, pin == null ? "" : pin.text());
-            ps.setString(8, pin == null ? "" : pin.by().toString());
-            ps.setString(9, pin == null ? "" : pin.byName());
-            ps.setLong(10, pin == null ? 0 : pin.ms());
-            ps.executeUpdate();
-        }
-        for (var e : team.members().entrySet()) {
-            teamMemberWrite(team.id, e.getKey(), e.getValue());
-        }
-        StringBuilder keep = new StringBuilder();
-        for (UUID m : team.members().keySet()) {
-            keep.append(keep.length() == 0 ? "'" : ", '").append(m).append("'");
-        }
-        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("team_members") + " WHERE team = ?" + (keep.length() == 0 ? "" : " AND uuid NOT IN (" + keep + ")"))) {
-            ps.setString(1, team.id.toString());
+            ps.setString(1, r.id().toString());
+            ps.setString(2, r.name());
+            ps.setString(3, r.colour());
+            ps.setString(4, r.leader().toString());
+            ps.setLong(5, r.createdMs());
+            ps.setInt(6, r.seq());
+            ps.setString(7, r.pinText());
+            ps.setString(8, r.pinBy());
+            ps.setString(9, r.pinByName());
+            ps.setLong(10, r.pinMs());
             ps.executeUpdate();
         }
     }
 
+    /**
+     * Seats a player in a team in one transaction: the team row is locked, the seats counted, and the player must be in no other
+     * team. True when seated (or already in this team).
+     */
+    boolean teamJoin(UUID teamId, UUID player, com.mrgregles.bsp_core.team.Team.Member m, int max) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + t("teams") + " WHERE id = ? FOR UPDATE")) {
+                ps.setString(1, teamId.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        c.rollback();
+                        return false;
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("SELECT team FROM " + t("team_members") + " WHERE uuid = ? FOR UPDATE")) {
+                ps.setString(1, player.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        boolean same = teamId.toString().equals(rs.getString(1));
+                        c.rollback();
+                        return same;
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + t("team_members") + " WHERE team = ?")) {
+                ps.setString(1, teamId.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) >= max) {
+                        c.rollback();
+                        return false;
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("team_members") + " (uuid, team, name, joined_ms, read_seq, seen_ms) VALUES (?, ?, ?, ?, ?, ?)")) {
+                ps.setString(1, player.toString());
+                ps.setString(2, teamId.toString());
+                ps.setString(3, m.name);
+                ps.setLong(4, m.joinedMs);
+                ps.setInt(5, m.readSeq);
+                ps.setLong(6, m.seenMs);
+                ps.executeUpdate();
+            }
+            c.commit();
+            return true;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
     /** One member's row: name, joined, read and seen; the online server is kept as it is. */
+    /**
+     * Updates a member's row (name, read and seen) only while they are in that team: a server whose copy missed a kick or a move
+     * to another team must never put them back. Seating is {@link #teamJoin}'s alone.
+     */
     void teamMemberWrite(UUID teamId, UUID player, com.mrgregles.bsp_core.team.Team.Member m) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("team_members") + " (uuid, team, name, joined_ms, read_seq, seen_ms) VALUES (?, ?, ?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE team = VALUES(team), name = VALUES(name), joined_ms = VALUES(joined_ms), read_seq = GREATEST(read_seq, VALUES(read_seq)), seen_ms = GREATEST(seen_ms, VALUES(seen_ms))")) {
-            ps.setString(1, player.toString());
-            ps.setString(2, teamId.toString());
-            ps.setString(3, m.name);
-            ps.setLong(4, m.joinedMs);
-            ps.setInt(5, m.readSeq);
-            ps.setLong(6, m.seenMs);
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("team_members") + " SET name = ?, read_seq = GREATEST(read_seq, ?), seen_ms = GREATEST(seen_ms, ?) "
+                + "WHERE uuid = ? AND team = ?")) {
+            ps.setString(1, m.name);
+            ps.setInt(2, m.readSeq);
+            ps.setLong(3, m.seenMs);
+            ps.setString(4, player.toString());
+            ps.setString(5, teamId.toString());
             ps.executeUpdate();
         }
     }
@@ -1472,6 +1662,63 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(2, player.toString());
             ps.executeUpdate();
         }
+    }
+
+    /** Records that a player is online here (a login), replacing where they were before. */
+    void onlineHere(UUID player, String name, long ms) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("online_players") + " (uuid, name, server_id, since_ms) VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE name = VALUES(name), server_id = VALUES(server_id), since_ms = VALUES(since_ms)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, name);
+            ps.setString(3, serverId);
+            ps.setLong(4, ms);
+            ps.executeUpdate();
+        }
+    }
+
+    /** A player left this server; a row another server wrote since (they moved there first) is kept. */
+    void onlineGone(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("online_players") + " WHERE uuid = ? AND server_id = ?")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, serverId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Forgets every player marked online here (a start, a stop, a restart after a crash). */
+    void onlineClear() throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("online_players") + " WHERE server_id = ?")) {
+            ps.setString(1, serverId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** This server is alive: its players' rows are confirmed now (rows a crashed server left stop being confirmed, and drop out). */
+    void onlineBeat(long now) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("online_players") + " SET since_ms = ? WHERE server_id = ?")) {
+            ps.setLong(1, now);
+            ps.setString(2, serverId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** The players online on the other servers, as confirmed within {@code maxAgeMs} (a server that stopped confirming has crashed). */
+    java.util.List<NetworkStorage.OnlinePlayer> onlineElsewhere(long now, long maxAgeMs) throws SQLException {
+        java.util.List<NetworkStorage.OnlinePlayer> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, server_id FROM " + t("online_players") + " WHERE server_id <> ? AND since_ms >= ? ORDER BY name")) {
+            ps.setString(1, serverId);
+            ps.setLong(2, now - maxAgeMs);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.add(new NetworkStorage.OnlinePlayer(UUID.fromString(rs.getString("uuid")), rs.getString("name"), rs.getString("server_id")));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     /** Forgets this server's online marks (a restart after a crash). */
@@ -1530,6 +1777,7 @@ final class MySqlStore implements AutoCloseable {
 
     @Override
     public void close() {
+        closed = true;
         if (connection != null) {
             try {
                 connection.close();
@@ -1543,6 +1791,15 @@ final class MySqlStore implements AutoCloseable {
     // ------------------------------------------------------------------ kits, one record for the network
 
     /** Writes the kit's row and its item rows (the old item rows go first). */
+    boolean kitExists(String id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT 1 FROM " + t("kits") + " WHERE id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     void kitWrite(com.mrgregles.bsp_core.kit.Kit k) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kits") + " (id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), icon = VALUES(icon), in_browser = VALUES(in_browser), "
@@ -1662,6 +1919,19 @@ final class MySqlStore implements AutoCloseable {
     void kitRedeemWrite(UUID player, com.mrgregles.bsp_core.kit.KitLedger.Redeem r) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kit_redeems") + " (uuid, kit, scope, count, last_ms, owed) VALUES (?, ?, ?, ?, ?, ?) "
                 + "ON DUPLICATE KEY UPDATE count = GREATEST(count, VALUES(count)), last_ms = GREATEST(last_ms, VALUES(last_ms)), owed = VALUES(owed)")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, r.kit);
+            ps.setString(3, r.scope);
+            ps.setInt(4, r.count);
+            ps.setLong(5, r.lastMs);
+            ps.setInt(6, r.owed);
+            ps.executeUpdate();
+        }
+    }
+
+    /** A redeem row from this server's local records ({@code /bsp storage migrate}): only where the network has none, never over its counts. */
+    void kitRedeemMigrate(UUID player, com.mrgregles.bsp_core.kit.KitLedger.Redeem r) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("kit_redeems") + " (uuid, kit, scope, count, last_ms, owed) VALUES (?, ?, ?, ?, ?, ?)")) {
             ps.setString(1, player.toString());
             ps.setString(2, r.kit);
             ps.setString(3, r.scope);
@@ -2385,11 +2655,11 @@ final class MySqlStore implements AutoCloseable {
                 if (bPieces > 0 && !addPieces(c, b, -bPieces)) {
                     throw new MarketNo("short_b");
                 }
-                if (aPieces > 0) {
-                    addPieces(c, b, aPieces);
+                if (aPieces > 0 && !addPieces(c, b, aPieces)) {
+                    throw new MarketNo("no_account"); // nobody to credit: undo the debit with the rest
                 }
-                if (bPieces > 0) {
-                    addPieces(c, a, bPieces);
+                if (bPieces > 0 && !addPieces(c, a, bPieces)) {
+                    throw new MarketNo("no_account");
                 }
                 if (hostItemsTo != null) {
                     addPending(c, hostItemsTo, hostItems);

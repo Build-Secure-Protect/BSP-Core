@@ -98,11 +98,43 @@ public final class ZoneHandler {
         if (totems.isEmpty()) {
             return;
         }
+        // kept for the respawn, not lost: never reissued into the dead entity meanwhile
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(player.server);
+        long now = player.server.overworld().getGameTime();
+        for (ItemStack t : totems) {
+            java.util.UUID id = com.mrgregles.bsp_core.totem.TotemIdentity.id(t), instance = com.mrgregles.bsp_core.totem.TotemIdentity.instance(t);
+            if (id != null && instance != null) {
+                ledger.inTransit(id, instance, player.getUUID(), t.getTag(), now);
+            }
+        }
         CompoundTag data = PlayerPersistent.get(player);
         ListTag held = data.getList(HELD, Tag.TAG_COMPOUND);
         totems.forEach(t -> held.add(t.save(new CompoundTag())));
         data.put(HELD, held);
         player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.GOLD), false);
+    }
+
+    /** Drops one totem from those held for a player since a death; returns how many stacks went. */
+    public static int dropHeld(Player player, java.util.UUID totemId) {
+        CompoundTag data = PlayerPersistent.get(player);
+        ListTag keep = new ListTag();
+        int n = 0;
+        for (Tag raw : data.getList(HELD, Tag.TAG_COMPOUND)) {
+            ItemStack stack = ItemStack.of((CompoundTag) raw);
+            if (totemId.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack))) {
+                n++;
+            } else {
+                keep.add(raw);
+            }
+        }
+        if (n > 0) {
+            if (keep.isEmpty()) {
+                data.remove(HELD);
+            } else {
+                data.put(HELD, keep);
+            }
+        }
+        return n;
     }
 
     /** Takes back, and clears, the totems held for a player since they died in a zone. */

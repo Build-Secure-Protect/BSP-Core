@@ -35,6 +35,14 @@ public final class KitSync {
 
     /** Applies kits read from the database (the server thread). {@code only} names the one asked for; an empty list for it means it was deleted elsewhere. */
     public static void apply(MinecraftServer server, List<Kit> fresh, @Nullable String only) {
+        apply(server, fresh, only, true);
+    }
+
+    /**
+     * As {@link #apply(MinecraftServer, List, String)}; {@code prune} false keeps kits only this server has (a server whose local
+     * records are not in the database yet: {@code /bsp storage migrate} is still to copy them up).
+     */
+    public static void apply(MinecraftServer server, List<Kit> fresh, @Nullable String only, boolean prune) {
         KitLedger ledger = KitLedger.get(server);
         if (only != null && fresh.isEmpty()) {
             ledger.remove(only);
@@ -43,7 +51,7 @@ public final class KitSync {
         for (Kit kit : fresh) {
             ledger.replace(kit);
         }
-        if (only == null) {
+        if (only == null && prune) {
             // a full load: kits the database no longer has are gone here too
             java.util.Set<String> keep = new java.util.HashSet<>();
             for (Kit k : fresh) {

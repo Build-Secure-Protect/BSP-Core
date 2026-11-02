@@ -18,14 +18,24 @@ public final class BankEvents {
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            arrive(player);
+        }
+    }
+
+    /**
+     * A player's arrival: their account, the welcome, the daily reward and what came while they were away. On a network whose
+     * database is not connected yet this waits; {@code NetworkStorage} calls it for everyone online once it connects.
+     */
+    public static void arrive(ServerPlayer player) {
+        if (com.mrgregles.bsp_core.storage.NetworkStorage.down()) {
             return;
         }
         var server = player.server;
         var id = player.getUUID();
-        long seen = Bank.account(server, id).seenMs;
         long day = DailyReward.today(); // the day they arrived, even if the account opens after midnight
         Bank.ensure(server, id, player.getGameProfile().getName(), granted -> {
+            long seen = Bank.account(server, id).seenMs; // the network's copy: when they were last seen on any server
             if (granted) {
                 player.displayClientMessage(Component.translatable("message.bsp_core.bank.welcome", Bank.format(Bank.pieces(server, id))).withStyle(ChatFormatting.GOLD), false);
             }

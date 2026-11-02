@@ -33,6 +33,13 @@ public final class TotemInventories {
             removed.add(carried.copy());
             player.containerMenu.setCarried(ItemStack.EMPTY);
         }
+        var grid = player.inventoryMenu.getCraftSlots(); // the inventory's own 2x2 crafting grid
+        for (int i = 0; i < grid.getContainerSize(); i++) {
+            if (isTotem(grid.getItem(i))) {
+                removed.add(grid.getItem(i).copy());
+                grid.setItem(i, ItemStack.EMPTY);
+            }
+        }
         return removed;
     }
 

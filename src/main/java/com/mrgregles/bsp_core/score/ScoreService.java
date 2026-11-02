@@ -48,6 +48,10 @@ public final class ScoreService {
     public record Entry(UUID id, String name, int totems, int points, int bestTier) {
     }
 
+    /** One totem as the admin panel lists it: its owner (or carrier), tier, whether carried, and where, on which server. */
+    public record Spot(UUID owner, int tier, boolean carried, String server, String dimension, net.minecraft.core.BlockPos pos) {
+    }
+
     private static final Comparator<Entry> ORDER = Comparator.comparingInt(Entry::points).reversed()
             .thenComparing(Comparator.comparingInt(Entry::totems).reversed())
             .thenComparing(Comparator.comparingInt(Entry::bestTier).reversed())
@@ -86,22 +90,38 @@ public final class ScoreService {
                 : server.getProfileCache().get(id).map(com.mojang.authlib.GameProfile::getName).orElse(id.toString().substring(0, 8));
     }
 
-    /** This server's own rows: placed totems from the ledger plus totems carried by online players. */
-    public static List<Entry> local(MinecraftServer server) {
-        Map<UUID, int[]> acc = new HashMap<>(); // totems, points, best tier
+    /** Every totem on this server: placed ones from the ledger (sorted by place), then those carried by players online here. */
+    public static List<Spot> spots(MinecraftServer server) {
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        List<Spot> out = new ArrayList<>();
         TotemLedger ledger = TotemLedger.get(server);
         ledger.allPlaced().forEach((owner, positions) -> {
-            for (GlobalPos pos : positions) {
-                add(acc, owner, ledger.tierAt(pos));
+            List<GlobalPos> sorted = new ArrayList<>(positions);
+            sorted.sort(java.util.Comparator.comparing((GlobalPos p) -> p.dimension().location().toString()).thenComparing(GlobalPos::pos));
+            for (GlobalPos pos : sorted) {
+                out.add(new Spot(owner, ledger.tierAt(pos), false, here, pos.dimension().location().toString(), pos.pos()));
             }
         });
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
                 ItemStack stack = player.getInventory().getItem(i);
                 if (TotemInventories.isTotem(stack)) {
-                    add(acc, player.getUUID(), TotemUpgrades.getTier(stack));
+                    out.add(new Spot(player.getUUID(), TotemUpgrades.getTier(stack), true, here, player.level().dimension().location().toString(), player.blockPosition()));
                 }
             }
+        }
+        return out;
+    }
+
+    /** This server's own rows: placed totems from the ledger plus totems carried by online players. */
+    public static List<Entry> local(MinecraftServer server) {
+        return entries(server, spots(server));
+    }
+
+    private static List<Entry> entries(MinecraftServer server, List<Spot> spots) {
+        Map<UUID, int[]> acc = new HashMap<>(); // totems, points, best tier
+        for (Spot s : spots) {
+            add(acc, s.owner(), s.tier());
         }
         List<Entry> out = new ArrayList<>();
         acc.forEach((id, v) -> out.add(new Entry(id, name(server, id), v[0], v[1], v[2])));
@@ -160,9 +180,11 @@ public final class ScoreService {
     public static void refresh(MinecraftServer server) {
         dirty = false;
         ticks = 0;
-        List<Entry> mine = local(server);
+        List<Spot> spots = spots(server);
+        List<Entry> mine = entries(server, spots);
         if (NetworkStorage.enabled()) {
-            NetworkStorage.syncScores(mine, combined -> publish(server, combined)); // answer arrives on the server thread
+            // the rows and every totem behind them, for the board and for the admin panel on every server
+            NetworkStorage.syncScores(mine, spots, combined -> publish(server, combined)); // answer arrives on the server thread
         } else {
             publish(server, mine);
         }

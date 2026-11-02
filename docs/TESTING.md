@@ -1151,6 +1151,49 @@ Setup: two servers on the same MySQL database with Redis on (the MySQL live test
 - [ ] Restart server A: the teams are still there (read from the database), and nobody is shown "on A" until they log in again.
 - [ ] Make a team called "Nightwatch" on A, then try the same name (any case) on B: refused.
 
+## Audit fixes: totems, bank, first join, network sync (2026-11-02)
+
+Covered by GameTests in the default batch:
+- `bank_balance_copies_never_empty_the_deposit_box`: a balance copy keeps the box's slots, rent and items.
+- `husks_and_stale_copies_never_come_back_as_totems`: a husk drops as a plain item and is never placed; a stale copy on the ground turns into a husk; a forgotten totem's copies are stale; a second stack of the same totem is spent.
+- `totems_survive_death_the_crafting_grid_a_kill_and_the_season_end`: the 2x2 grid counts as held and is emptied by removals; a zone death keeps the totem in transit; a dead holder gets nothing reissued; a killed dropped totem is placed; no portals; after `retireAll` nothing counts as lost.
+- `owed_items_are_kept_here_when_the_database_cannot_take_them_and_arrivals_adopt_their_instance`.
+- `network_records_name_this_server_and_full_reads_drop_teams_gone_elsewhere`: LastMainServer carries the configured id; member copies; full team reads prune only when asked.
+- `team_invites_reach_players_on_other_servers`: a late answer to an earlier invite (an older Ref) changes nothing.
+- Updated: `creative_player_destroys_a_spare_totem_instead_of_getting_it_back` and `totem_wipe_gives_a_player_a_clean_slate` expect the retired marker.
+
+Not covered by a GameTest (needs MySQL, two servers or a restart). On the network:
+- [ ] Rent a deposit box with pieces on a network, put items in, pay someone, rent more days, buy slots, close and reopen on another server: the items, slots and days are all there.
+- [ ] Restart a server and join in the first seconds: "the bank is unreachable" until it connects, then the account, starting pieces (new player), first totem and kits arrive without relogging. The log says "connected to MySQL" before anything is granted.
+- [ ] Stop MySQL, start a server: the log says it tries again every 30 s; start MySQL: it connects without a restart.
+- [ ] Stop a no-totem server with a player holding their totem: they get it back on the next server they join.
+- [ ] A brand-new player whose first join is on Spawn with BSP-InventorySync: the totem, the guide book and a logout-placed totem's return all survive the restore.
+- [ ] `/bsp storage migrate` on a server: kit counts on the network do not change; no season record is added.
+- [ ] End a season (on a test network): wait 5 s; nobody gets their old totem back; an old totem found in a chest is a husk.
+- [ ] Die in an Anti Totem zone and wait 10 s on the death screen, respawn: exactly one live totem.
+- [ ] `/kill @e[type=bsp_core:shatter_totem_item]` on a dropped totem: it stands as a block where it lay.
+- [ ] A Create drill and a Mekanism cardboard box against a placed totem: nothing happens.
+- [ ] Two players accept invites to one team with one seat left on two servers at once: one joins, the other is told it filled up.
+- [ ] Kill a server (no clean stop): within a minute its players leave the other servers' invite lists.
+- [ ] A 1.8.0 client joining an updated server is refused at login with a version mismatch, not kicked later.
+- [ ] `/setblock` air over a placed totem (or a WorldEdit `//set air`): its owner, online, gets it back within a second with its upgrades; offline, at their next login.
+- [ ] Start season 2 on a test network: an old totem left in a chest, one waiting in a transfer and one dropped on the ground are all husks; the fresh Tier I totem works.
+- Covered by `old_season_totems_are_husks_and_removed_placed_totems_go_back_to_their_owner`: the stamp on new totems, an older one spent in an inventory and refused for placement, the stamp carried into the block and back, a removed placed totem counted as lost to its owner.
+
+## Team invites across the network (2026-11-02)
+
+Setup: two servers on the same MySQL database with Redis on, two accounts with no team, one on each server.
+
+- [ ] On A, make a team and open INVITE: the player on B is listed with "on B" within a few seconds of their login, and leaves the list within a few seconds of logging out.
+- [ ] Invite them: A says "You invited … (on B) to …"; on B they get the card, the chime and the chat line. Their row on A shows "waiting n s".
+- [ ] Accept on B (the key or the chat button): they are in the team on both servers, and the members on A hear "… joined the team".
+- [ ] Invite again and decline on B: A hears "… declined your invite" and the seat is free. Invite again and let it run out: A hears "… did not answer your invite", B "The invite to … ran out".
+- [ ] Invite, then the player on B logs out before the offer arrives (or is in a team by then): A hears why and the seat is free.
+- [ ] Disband on A while an invite waits on B: the card on B goes away.
+- [ ] Turn Redis off on A: inviting the player on B says B cannot be reached; players on A are invited as before.
+
+Covered by a GameTest in the default batch: `team_invites_reach_players_on_other_servers` (the messages are caught instead of going over Redis): the offer goes to the invitee's server and the seat is held here; a refusal or a decline from that server frees it, an answer from another server does not; an offer for a player here gives them the invite, accepting it joins them and answers "joined"; an offer for someone not here goes back refused.
+
 ## Teams, part 7: the guide (2026-10-18)
 
 - [ ] The guide book's totem category has "Teams" next to "Letting Friends In": six pages, no picture; every page fits without a cut line; "Letting Friends In" ends with the pointer to Teams.
@@ -2462,3 +2505,42 @@ Six boards register with BSP-Core 1.8.0 and the sibling mods (Market, Lottery; S
 - [ ] The Rotation row: ‹, five chips and ›, "1/2" under "Rotation"; every board can be ticked in or out of the rotation.
 - [ ] With only BSP-Core's two boards: no arrows, the rows look as they always did.
 - [ ] Nothing in either row runs past the right edge of the settings panel; at GUI scale 4 too.
+
+## The admin panel across the network (2026-11-02)
+
+Covered by a GameTest in the default batch: `admin_panel_shows_the_whole_network_with_each_totems_server`: with the network's view given, a player known only to the network is listed by name; their totems on other servers count and name their server; a stale copy of this server's own totems is left out for the live ones; a player with a first-join record and no totems is listed; without the network the panel is this server's alone; the packet keeps the servers and the network flag.
+
+**Not covered by a GameTest:** the `admin_totems` table on MySQL and the panel drawn in a client.
+
+On the network (every server and the client on this version):
+- [ ] `/bsp admin` on Spawn and on Moongrove: the same players on both (everyone who has had a first totem), with the same totem counts and points (give it 30 s after a change).
+- [ ] On Spawn, a player whose totems are on Moongrove: each line reads "Moongrove · x, y, z  overworld", its TP key dimmed; Reset totems dimmed if they have none on Spawn.
+- [ ] On Moongrove, the same player: their Moongrove totems have no server name and TP works; Reset totems says "Reset n totems on this server to Tier I" and their totems elsewhere are untouched.
+- [ ] A player carrying a totem on Stormfall: on Spawn's panel it shows as carried, "Stormfall · …", within 30 s.
+- [ ] `SELECT server_id, COUNT(*) FROM bsp_admin_totems GROUP BY server_id;`: a row count for every server that has totems.
+
+## Totems on a network: trips, ghosts, shared records, owners (2026-11-02)
+
+Found in the network's logs and saves (BSP-Servers backups): a departure sweep took a totem in flight (Moongrove 25 Oct, Sanctuary and Stormfall 27 Oct); Frostwarf's ledger listed two placed totems with no block (Nether 36, 98, 4 and End 0, 79, -115); InventorySync copies `bsp_core:LogoutPlaced` and `LastMainPos` between servers; BSPAdmin's creative-menu totems had no owner.
+
+Covered by a GameTest in the default batch: `totems_keep_to_their_trip_their_server_and_their_holder`:
+- a stored totem matches only its own trip; an unmarked one matches none; the mark comes off;
+- this server's logout placements (and untagged old ones) are taken, another server's are left; another server's last main position is not used;
+- a ledger entry with no block is forgotten by the check, a standing totem is kept;
+- an unowned totem in a player's inventory becomes theirs.
+
+**Not covered by a GameTest:** a real two-server trip with the 48-hour sweep (the database), `/bsp totem check` loading chunks.
+
+Covered by a GameTest in the default batch: `placing_a_totem_never_reissues_it`:
+- a survival player sneak-places their owned totem; the ledger has it PLACED at once, before the block's first tick;
+- a dropped totem is in the ledger as DROPPED the moment it is added to the world;
+- 80 ticks later it is still PLACED and not counted as lost, so it is not reissued.
+
+**Not covered by a GameTest:** placing in a chunk whose entities are still loading after a teleport (the case seen on the network); the test proves the ledger no longer waits for a tick.
+
+On the network:
+- [ ] On every server, `/bsp totem check`. Frostwarf should forget 2 (Nether, End); the others 0 or a few. The log names each one.
+- [ ] Teleport with a totem from A to B (BSP-Teleport): it arrives with you. On A, `/bsp totem check` changes nothing.
+- [ ] With a departure record older than 48 h on A (or `restrictions.transferTotemTimeoutHours = 1` on a test server and an hour's wait), teleport B to C with a totem: it arrives on C, and A's log never says "never arrived after a transfer" for it.
+- [ ] Log out on Frostwarf carrying a totem (it is placed), join Stormfall, then Frostwarf again: the totem comes back to you on Frostwarf ("came back to them" in Frostwarf's log).
+- [ ] In creative, take a Shatter Totem from the creative menu: its tooltip names you at once, and placed it is yours.

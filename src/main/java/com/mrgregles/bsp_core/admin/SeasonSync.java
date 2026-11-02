@@ -177,8 +177,11 @@ public final class SeasonSync {
                 if (!rest.isEmpty()) {
                     AdminService.giveItems(player, rest, "message.bsp_core.season.delivery");
                 }
+            } else if (!items.isEmpty() && player == null) {
+                // they left in the meantime: back to the database, for whichever server they are on now
+                NetworkStorage.addPending(id, encoded);
             } else if (!items.isEmpty()) {
-                // they left in the meantime (kept for their next login), or wait for their restore or a respawn (handed over then)
+                // waiting for their restore or a respawn here: handed over then
                 season.pendingItems.computeIfAbsent(id, k -> new ArrayList<>()).addAll(items);
                 season.setDirty();
             }
@@ -190,11 +193,14 @@ public final class SeasonSync {
         if (NetworkStorage.enabled()) {
             List<UUID> online = new ArrayList<>();
             server.getPlayerList().getPlayers().forEach(p -> {
-                if (LoginSettle.canReceive(p)) {
+                // never a player leaving on a transfer: the totem just stored for their trip waits for the server they arrive on
+                if (LoginSettle.canReceive(p) && !com.mrgregles.bsp_core.api.BspTransfer.isTransferring(p.getUUID())) {
                     online.add(p.getUUID()); // a player waiting for their restore, or dead, collects after it or at the respawn
                 }
             });
-            NetworkStorage.takePending(online, owed -> deliver(server, owed));
+            if (!online.isEmpty()) {
+                NetworkStorage.takePending(online, owed -> deliver(server, owed));
+            }
         }
     }
 
