@@ -178,14 +178,52 @@ public class TotemLedger extends SavedData {
         }
     }
 
-    /**
-     * Drops what the ledger knows of a totem, so the next copy seen is taken as it is. For a creative player's totem: the creative
-     * screen keeps a stack on the cursor only on the client, so a totem "nowhere" for a while may come back, and must not be a husk.
-     */
+    /** Drops what the ledger knows of a totem, so the next copy seen is taken as it is. */
     public void drop(UUID id) {
         if (totems.remove(id) != null) {
             setDirty();
         }
+    }
+
+    /** A totem destroyed in creative mode: what was destroyed (its instance, holder and tag) and the retired marker it left. */
+    private record CreativeGone(Sighting gone, UUID marker) {
+    }
+
+    /** Totems destroyed in creative mode this run. Never saved. */
+    private final Map<UUID, CreativeGone> creativeGone = new HashMap<>();
+
+    /**
+     * A creative player's totem was destroyed (it was nowhere for a while: the creative screen's bin or item browser): retired, so
+     * every copy of it is a husk, but remembered until the server stops, because the creative screen keeps a stack on the cursor
+     * only on the client and the same player may put it back ({@link #creativeReturn}).
+     */
+    public void creativeDestroyed(UUID id, UUID holder) {
+        Sighting old = totems.get(id);
+        retire(id);
+        if (old != null && old.where() != RETIRED) {
+            creativeGone.put(id, new CreativeGone(new Sighting(old.instance(), holder, old.lastSeen(), HELD, old.copy()), totems.get(id).instance()));
+        }
+    }
+
+    /**
+     * Whether {@code player}'s copy carrying {@code instance} is the totem they destroyed in creative mode coming back off their
+     * cursor; if so it is live and held by them again. Only the same instance in the same player's hands, and only while the ledger
+     * still holds the marker the deletion left (nothing else has happened to the totem since): any other copy stays a husk.
+     */
+    public boolean creativeReturn(UUID id, @Nullable UUID instance, UUID player, long now) {
+        CreativeGone entry = creativeGone.get(id);
+        if (entry == null || !entry.gone().instance().equals(instance) || !player.equals(entry.gone().holder())) {
+            return false;
+        }
+        creativeGone.remove(id);
+        Sighting marker = totems.get(id);
+        if (marker == null || marker.where() != RETIRED || !marker.instance().equals(entry.marker())) {
+            return false;
+        }
+        Sighting gone = entry.gone();
+        totems.put(id, new Sighting(gone.instance(), player, now, HELD, gone.copy()));
+        setDirty();
+        return true;
     }
 
     /**

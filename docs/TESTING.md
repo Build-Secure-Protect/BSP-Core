@@ -2563,3 +2563,15 @@ In game (single server or network):
 - [ ] End a season on a test server: no player has a star afterwards.
 - [ ] On the network: set a score on Spawn; within `scoring.refreshSeconds` (30) Moongrove's panel and Score Screens show it. `SELECT * FROM bsp_score_adjust;` has the row, and `/bsp score clear` removes it.
 
+
+## Totems deleted in creative mode (2026-11-03)
+
+On a test server, with an op in creative mode and a second player in survival:
+- [ ] Break the survival player's placed totem in creative with room in your inventory: it goes into your inventory. Drop it on the creative screen's bin: after 3 seconds the action bar says "Shatter Totem destroyed for good (creative mode)". The survival player gets nothing back, now or after relogging.
+- [ ] Have a duplicate copy of that same totem somewhere (for example a copy given with a command before deleting): when it reaches an inventory it says "That totem was destroyed: this copy is a dead husk".
+- [ ] Pick a totem up onto the creative cursor, hold it for 5 seconds, then put it back in your inventory: it is still a live totem (not a husk).
+- [ ] Fill every inventory slot, then break a placed totem in creative: it drops at the block and is not handed back to its owner.
+- [ ] Break a placed duplicate copy left by the old placing bug: the action bar says "That copy is a dead duplicate: the real totem is <name>'s", and the server log names the holder.
+- [ ] On a network, after a creative deletion, the totem's copies on another server are husks too (with Redis on).
+- [ ] Middle-click a placed totem in creative: you get a plain totem of your own (not a copy of that one), and the placed totem is untouched after you bin the plain one.
+- [ ] In creative, carry a totem and switch to another server: it arrives live and is not destroyed while the inventory is being restored.

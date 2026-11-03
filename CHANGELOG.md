@@ -4,6 +4,13 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Fixed
+- **A totem an admin deletes in creative mode is gone for good.** A totem that leaves a creative player's inventory and is nowhere for 3 seconds (the creative screen's bin or its item browser) was only forgotten by the server, so any other copy of it still about (a duplicate left by the old placing bug, a copy in a chest) came back as a live totem. It is now destroyed as `BspTotems.destroyed` destroys one: retired on this server and the network, dropped from every record that could bring it back, and every other copy of it is a husk. The same admin putting the same copy back into their inventory (a stack held on the creative cursor, which only the client knows of) gets it back live, on that server until it restarts, as long as nothing else has happened to the totem meanwhile.
+- **Breaking a placed totem in creative mode with a full inventory dropped nothing and gave it back to its owner.** Minecraft deletes what does not fit a creative player's inventory, so the totem counted as removed without a pickup and went home. It now drops at the block, as it does for a survival player. A totem dropped by a break is recorded as lying there at once, so its owner is never handed it back meanwhile.
+- **A creative pick-block (middle click) of a placed totem gives a plain totem**, as from the creative menu, instead of a live copy of that totem: the copy was a duplicate in the admin's hands, could be placed as a second block, and deleting it could destroy the totem standing there.
+- **No totem counts as lost while a login waits for BSP-InventorySync's restore.** A totem the restore brings back is no longer reissued first (leaving the restored copy a husk), or destroyed for a creative player; it is checked once the login is settled.
+- **Turning into a husk says whose the real totem is.** A copy that turns into a husk in a player's hands says "That copy is a dead duplicate: the real totem is Name's" (or "yours"), or "That totem was destroyed" for a destroyed one, instead of "its holder has the real one"; the server log names the real totem's holder too. The husk's tooltip says it is a dead copy.
+
 ## [1.8.2] - 2026-11-03
 
 ### Added

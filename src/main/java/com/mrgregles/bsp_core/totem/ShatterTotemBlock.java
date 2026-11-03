@@ -137,10 +137,21 @@ public class ShatterTotemBlock extends BaseEntityBlock {
     public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide) {
             ItemStack stack = toItemStack(level, pos);
-            if (!player.getInventory().add(stack)) {
-                ItemEntity drop = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
-                drop.setDefaultPickUpDelay();
-                level.addFreshEntity(drop);
+            // a creative player's full inventory would swallow the item (Inventory.add deletes what does not fit in creative mode),
+            // and the owner would then get the totem back as removed without a pickup: it drops at the block instead, as in survival
+            boolean swallowed = player.getAbilities().instabuild && player.getInventory().getFreeSlot() < 0;
+            if (swallowed || !player.getInventory().add(stack)) {
+                // our own entity, not a vanilla one: Forge swaps that for ours only at the next tick, so the block's removal just after
+                // would find the totem nowhere and count it as lost from its owner's hands
+                if (TotemIdentity.isSpent(stack)) {
+                    ItemEntity drop = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                    drop.setDefaultPickUpDelay();
+                    level.addFreshEntity(drop);
+                } else {
+                    ShatterTotemItemEntity drop = new ShatterTotemItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                    drop.setPickUpDelay(10);
+                    level.addFreshEntity(drop);
+                }
             }
         }
         super.playerWillDestroy(level, pos, state, player);
@@ -148,7 +159,9 @@ public class ShatterTotemBlock extends BaseEntityBlock {
 
     @Override
     public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
-        return toItemStack(level, pos);
+        // a plain totem, as from the creative menu: a copy of this one's identity would be a live duplicate of it in a creative
+        // player's hands, and deleting that copy would destroy the totem standing here
+        return new ItemStack(ModItems.SHATTER_TOTEM.get());
     }
 
     /** Builds the item form of the totem at {@code pos}, including its owner. */

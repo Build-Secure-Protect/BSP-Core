@@ -129,12 +129,30 @@ public final class TotemRestrictionHandler {
             BSPCore.LOGGER.info("An unowned Shatter Totem in {}'s inventory is now theirs", player.getGameProfile().getName());
         }
         UUID id = TotemIdentity.id(stack), instance = TotemIdentity.instance(stack), current = ledger.currentInstance(id);
-        if (current != null && !current.equals(instance)) {
-            TotemIdentity.spend(stack); // a copy that went missing and was reissued: a husk now
-            player.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.spent").withStyle(ChatFormatting.RED), true);
+        if (current != null && !current.equals(instance) && !(player.isCreative() && ledger.creativeReturn(id, instance, player.getUUID(), now))) {
+            TotemLedger.Sighting real = ledger.sighting(id);
+            TotemIdentity.spend(stack); // a copy that went missing and was reissued, a duplicate of one elsewhere, or a destroyed totem: a husk now
+            player.displayClientMessage(spentMessage(player, real).withStyle(ChatFormatting.RED), true);
+            BSPCore.LOGGER.info("A stale copy of Shatter Totem {} in {}'s inventory is a husk now; {}", id, player.getGameProfile().getName(),
+                    real == null || real.where() == TotemLedger.RETIRED ? "the totem was destroyed" : real.holder() == null ? "the real one's holder is unknown"
+                            : "the real one is " + com.mrgregles.bsp_core.score.ScoreService.name(player.server, real.holder()) + "'s");
             return;
         }
         ledger.seen(id, instance, player.getUUID(), TotemLedger.HELD, stack.getTag(), now);
+    }
+
+    /** What a player is told when a copy in their hands turns into a husk: whose the real totem is, or that the totem was destroyed. */
+    private static net.minecraft.network.chat.MutableComponent spentMessage(ServerPlayer player, @javax.annotation.Nullable TotemLedger.Sighting real) {
+        if (real == null || real.where() == TotemLedger.RETIRED) {
+            return Component.translatable("message.bsp_core.shatter_totem.spent_destroyed");
+        }
+        if (real.holder() == null) {
+            return Component.translatable("message.bsp_core.shatter_totem.spent");
+        }
+        if (real.holder().equals(player.getUUID())) {
+            return Component.translatable("message.bsp_core.shatter_totem.spent_yours");
+        }
+        return Component.translatable("message.bsp_core.shatter_totem.spent_duplicate", com.mrgregles.bsp_core.score.ScoreService.name(player.server, real.holder()));
     }
 
     /** Once a second: a totem last seen in someone's hands that has been nowhere for {@link #LOST_AFTER_TICKS} comes back to them. */
@@ -161,16 +179,22 @@ public final class TotemRestrictionHandler {
     /**
      * A held totem has been nowhere for a minute. A survival player gets it back with a new instance (it was stored away or carried
      * off). A creative player is taken at their word: the creative inventory's bin and its item browser delete what is dropped on them,
-     * and an admin must be able to get rid of a spare totem, so the ledger forgets it instead.
+     * and an admin must be able to get rid of a totem for good, so it is destroyed: retired here and on the network, and dropped from
+     * every record that could bring it back, so every other copy of it is a husk. The same player putting the same copy back (a stack
+     * held on the creative cursor, which only the client knows of) gets it back live on this server ({@link TotemLedger#creativeReturn}).
      */
     public static Lost lost(ServerPlayer holder, TotemLedger ledger, UUID id, long now) {
         if (holder.isDeadOrDying()) {
             return null; // a dead entity's inventory does not pass to the respawned player: asked again once they are back
         }
+        if (com.mrgregles.bsp_core.admin.LoginSettle.isWaiting(holder.getUUID())) {
+            return null; // the login waits for BSP-InventorySync's restore, which may bring the totem back: asked again once it is settled
+        }
         if (holder.isCreative()) {
-            ledger.drop(id);
+            ledger.creativeDestroyed(id, holder.getUUID());
+            com.mrgregles.bsp_core.totem.TotemWipe.dropRecords(holder.server, id, holder.getUUID(), holder,
+                    holder.getGameProfile().getName() + " in creative mode (nowhere for " + LOST_AFTER_TICKS + " ticks)");
             holder.displayClientMessage(Component.translatable("message.bsp_core.shatter_totem.destroyed").withStyle(ChatFormatting.GRAY), true);
-            BSPCore.LOGGER.info("{}'s Shatter Totem {} was nowhere for {} ticks while they were in creative mode; counted as destroyed", holder.getGameProfile().getName(), id, LOST_AFTER_TICKS);
             return Lost.DESTROYED;
         }
         reissue(holder, ledger, id, now);

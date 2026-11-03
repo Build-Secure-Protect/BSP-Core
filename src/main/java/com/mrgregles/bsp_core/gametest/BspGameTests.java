@@ -4026,7 +4026,7 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
-    public void creative_player_destroys_a_spare_totem_instead_of_getting_it_back(GameTestHelper h) {
+    public void creative_player_destroys_a_totem_for_good_and_a_full_inventory_drops_it(GameTestHelper h) {
         var server = server(h);
         var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
         UUID id = UUID.randomUUID(), instance = UUID.randomUUID();
@@ -4035,8 +4035,48 @@ public class BspGameTests {
         var survival = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
         ledger.seen(id, instance, creative.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
         h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(creative, ledger, id, now + 100) == com.mrgregles.bsp_core.event.TotemRestrictionHandler.Lost.DESTROYED, "deleted in creative: destroyed");
-        h.assertTrue(ledger.sighting(id) == null, "and dropped from the ledger (not retired: a creative cursor stack lives only on the client, so it may come back)");
+        h.assertTrue(ledger.sighting(id) != null && ledger.sighting(id).where() == com.mrgregles.bsp_core.data.TotemLedger.RETIRED && ledger.stale(id, instance), "retired for good: every copy of it is a husk");
         h.assertTrue(com.mrgregles.bsp_core.totem.TotemInventories.removeAll(creative).isEmpty(), "nothing was handed back");
+        h.assertFalse(ledger.creativeReturn(id, instance, survival.getUUID(), now + 120), "another player's copy stays a husk");
+        h.assertFalse(ledger.creativeReturn(id, UUID.randomUUID(), creative.getUUID(), now + 120), "and so does another instance in the same hands");
+        h.assertTrue(ledger.creativeReturn(id, instance, creative.getUUID(), now + 120), "the same copy back off the creative cursor is live again");
+        h.assertTrue(instance.equals(ledger.currentInstance(id)) && creative.getUUID().equals(ledger.sighting(id).holder()), "held by them, same instance");
+        h.assertFalse(ledger.creativeReturn(id, instance, creative.getUUID(), now + 130), "once only");
+        ledger.forget(id);
+        // a return after anything else happened to the totem (here: dropped from the ledger) stays a husk
+        UUID id3 = UUID.randomUUID(), instance3 = UUID.randomUUID();
+        ledger.seen(id3, instance3, creative.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(creative, ledger, id3, now + 100) == com.mrgregles.bsp_core.event.TotemRestrictionHandler.Lost.DESTROYED, "destroyed");
+        ledger.drop(id3);
+        h.assertFalse(ledger.creativeReturn(id3, instance3, creative.getUUID(), now + 120), "the marker is gone: no return");
+        // a login waiting for the inventory restore never counts a totem lost, in creative or survival
+        UUID id4 = UUID.randomUUID();
+        ledger.seen(id4, UUID.randomUUID(), creative.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
+        com.mrgregles.bsp_core.admin.LoginSettle.hold(creative, 1200);
+        h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(creative, ledger, id4, now + 100) == null, "waiting for the restore: not lost yet");
+        h.assertTrue(ledger.sighting(id4).where() == com.mrgregles.bsp_core.data.TotemLedger.HELD, "still held, not retired");
+        com.mrgregles.bsp_core.admin.LoginSettle.release(creative);
+        ledger.forget(id4);
+        // a creative player breaking a placed totem with a full inventory: it drops at the block, never deleted and given back to its owner
+        var owner = survivor(h);
+        var placed = ownedTotem(owner);
+        UUID placedId = com.mrgregles.bsp_core.totem.TotemIdentity.id(placed);
+        var pos = com.mrgregles.bsp_core.totem.TotemPlacer.placeAt(h.getLevel(), h.absolutePos(new BlockPos(3, 2, 3)), placed);
+        h.assertTrue(pos != null, "placed");
+        var picked = h.getLevel().getBlockState(pos).getCloneItemStack(new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos), net.minecraft.core.Direction.UP, pos, false), h.getLevel(), pos, creative);
+        h.assertTrue(picked.is(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get()) && com.mrgregles.bsp_core.totem.TotemIdentity.id(picked) == null, "a creative pick-block gives a plain totem, never a copy of this one");
+        for (int i = 0; i < creative.getInventory().items.size(); i++) {
+            creative.getInventory().items.set(i, new ItemStack(net.minecraft.world.item.Items.DIRT));
+        }
+        var state = h.getLevel().getBlockState(pos);
+        state.getBlock().playerWillDestroy(h.getLevel(), pos, state, creative);
+        h.getLevel().removeBlock(pos, false);
+        var dropped = h.getLevel().getEntitiesOfClass(com.mrgregles.bsp_core.totem.ShatterTotemItemEntity.class, new net.minecraft.world.phys.AABB(pos).inflate(2));
+        h.assertTrue(dropped.size() == 1 && placedId.equals(com.mrgregles.bsp_core.totem.TotemIdentity.id(dropped.get(0).getItem())), "it lies at the block at once: " + dropped.size());
+        h.assertTrue(ledger.sighting(placedId).where() == com.mrgregles.bsp_core.data.TotemLedger.DROPPED, "recorded as dropped, so its owner is not handed it back");
+        dropped.forEach(com.mrgregles.bsp_core.totem.ShatterTotemItemEntity::destroy);
+        creative.getInventory().clearContent();
+        ledger.forget(placedId);
         UUID id2 = UUID.randomUUID();
         ledger.seen(id2, UUID.randomUUID(), survival.getUUID(), com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now);
         h.assertTrue(com.mrgregles.bsp_core.event.TotemRestrictionHandler.lost(survival, ledger, id2, now + 100) == com.mrgregles.bsp_core.event.TotemRestrictionHandler.Lost.REISSUED, "a survival player gets it back");

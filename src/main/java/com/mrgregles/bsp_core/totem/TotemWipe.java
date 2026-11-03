@@ -72,6 +72,16 @@ public final class TotemWipe {
         var sighting = ledger.sighting(id);
         UUID holder = sighting != null && sighting.holder() != null ? sighting.holder() : TotemOwner.fromStack(totem).map(TotemOwner::uuid).orElse(null);
         ledger.retire(id);
+        dropRecords(server, id, holder, holderHere, by);
+        return true;
+    }
+
+    /**
+     * The rest of {@link #destroyed}, for a totem already retired here: dropped from every record that could bring it back (its
+     * holder's logout placements and totems kept through a death when they are online here, a transfer under way, the items owed
+     * here and in the database), and the network's other servers told to retire it.
+     */
+    public static void dropRecords(MinecraftServer server, UUID id, @javax.annotation.Nullable UUID holder, @javax.annotation.Nullable ServerPlayer holderHere, String by) {
         int records = 0;
         if (holder != null) {
             ServerPlayer online = holderHere != null && holderHere.getUUID().equals(holder) ? holderHere : server.getPlayerList().getPlayer(holder);
@@ -92,7 +102,6 @@ public final class TotemWipe {
         NetworkStorage.totemDestroyed(id);
         com.mrgregles.bsp_core.score.ScoreService.markDirty();
         BSPCore.LOGGER.info("Shatter Totem {} destroyed by {}: retired on this server and the network, {} record(s) dropped here", id, by, records);
-        return true;
     }
 
     /** Another server destroyed a totem (its Redis notice): retired here too, and dropped from the items owed on this server. */
