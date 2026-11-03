@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Score Screen board picker with Wanted</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.ab{font-family:'Pixelify Sans',monospace}
+.a{position:absolute}
+.hk{position:absolute;font-family:inherit;font-size:14px;background:#0B0D11;color:#9AA3B5;border:2px solid #2a2f3a;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.hk.on{color:#19D3B0;border-color:#19D3B0;background:#10151C}
+.mini{position:relative;width:440px;height:250px;background:#070A0E;border:10px solid #2a2d33;box-sizing:border-box;flex:none}
+.mh{position:absolute;left:0;right:0;top:0;height:28px;background:#10151C}
+.mr{position:absolute;left:8px;width:404px;height:30px;border-bottom:2px solid #10151C;font-size:14px;color:#E8EAF0}
+.mr span{position:absolute;right:4px;top:6px;color:#FFD23A}
+.mr b{position:absolute;left:4px;top:6px;font-weight:400}
+.lbl{font-size:15px;color:#b8b1a3;letter-spacing:.06em}
+</style>
+</helmet>
+<div class="ab" style="width: 1000px; height: 560px; box-sizing: border-box; padding: 40px; background: #1c1e23; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">SCORE SCREEN SETTINGS: THE BOARD ROW</div>
+<div style="position: relative; width: 920px; height: 64px; background: #10151C; border: 2px solid #2a2f3a; box-sizing: border-box">
+<div class="a" style="left: 14px; top: 20px; color: #9AA3B5; font-size: 14px">BOARD</div>
+<button class="hk" type="button" style="left: 90px; top: 14px; width: 30px; height: 32px">&lt;</button>
+<button class="hk" type="button" style="left: 128px; top: 14px; width: 150px; height: 32px">LEADERBOARD</button>
+<button class="hk" type="button" style="left: 286px; top: 14px; width: 150px; height: 32px">MARKET</button>
+<button class="hk on" type="button" style="left: 444px; top: 14px; width: 150px; height: 32px">WANTED</button>
+<button class="hk" type="button" style="left: 602px; top: 14px; width: 150px; height: 32px">LOTTERY</button>
+<button class="hk" type="button" style="left: 760px; top: 14px; width: 30px; height: 32px">&gt;</button>
+<div class="a" style="left: 806px; top: 22px; color: #9AA3B5; font-size: 12px">page 1/2</div>
+</div>
+</div>
+<div style="display: flex; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">ONE SCREEN ON MARKET: FOR SALE</div>
+<div class="mini">
+<div class="mh"><div class="a" style="left: 10px; top: 5px; color: #19D3B0; font-size: 15px">MARKET</div></div>
+<div class="mr" style="top: 34px"><b>Diamond x8</b><span>1,200</span></div>
+<div class="mr" style="top: 66px"><b>Netherite Ingot</b><span>2,400</span></div>
+<div class="mr" style="top: 98px"><b>64 Oak Log</b><span>320</span></div>
+<div class="mr" style="top: 130px"><b>16 Ender Pearl +1 more</b><span>420</span></div>
+<div class="mr" style="top: 162px"><b>Elytra</b><span>5,000</span></div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">ANOTHER ON WANTED: WHAT PEOPLE WANT</div>
+<div class="mini">
+<div class="mh"><div class="a" style="left: 10px; top: 5px; color: #19D3B0; font-size: 15px">WANTED</div></div>
+<div class="mr" style="top: 34px"><b>Iron Ingot, 32 to go</b><span>40 each</span></div>
+<div class="mr" style="top: 66px"><b>Ender Pearl, 10 to go</b><span>25 each</span></div>
+<div class="mr" style="top: 98px"><b>Cactus, 24 to go</b><span>12 each</span></div>
+<div class="mr" style="top: 130px"><b>Slime Ball, 50 to go</b><span>9 each</span></div>
+<div class="mr" style="top: 162px"><b>Oak Log, 200 to go</b><span>6 each</span></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

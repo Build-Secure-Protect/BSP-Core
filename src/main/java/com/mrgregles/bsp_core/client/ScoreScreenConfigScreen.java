@@ -233,8 +233,8 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
             boardPage = chipRow(g, 1, titles, i -> boards.get(i).id().toString().equals(boardId) && mode == ScoreScreenBlockEntity.MODE_PAGE, i -> {
                 String id = boards.get(i).id().toString();
                 boardId = id;
-                if (id.equals(ClientMarket.BOARD.toString())) {
-                    look = ScoreScreenBlockEntity.LOOK_TILES; // the Market Board's own look (owner's pick); the admin can change it after
+                if (id.equals(ClientMarket.BOARD.toString()) || id.equals(ClientOrders.BOARD.toString())) {
+                    look = ScoreScreenBlockEntity.LOOK_TILES; // the Market and Wanted boards' own look (owner's pick); the admin can change it after
                 }
                 send();
             }, BOARDS_FIT, BOARDS_PER_PAGE, boardPage, mouseX, mouseY);

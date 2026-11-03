@@ -12,9 +12,10 @@ public final class BSPNetwork {
     /**
      * Raised whenever a packet's layout changes, so a client and server that do not match are told at login instead of a
      * screen failing later. 2: the admin panel's network fields and the team screen's candidate servers. 3: the admin
-     * panel's score split (totem points and the part set by hand).
+     * panel's score split (totem points and the part set by hand). 4: buy orders (the Trade Post's orders view, the Trade Post
+     * keys for orders, the Wanted board's summary).
      */
-    private static final String PROTOCOL = "3";
+    private static final String PROTOCOL = "4";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -217,6 +218,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(MarketSummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(MarketSummaryPacket::encode).decoder(MarketSummaryPacket::decode)
                 .consumerMainThread(MarketSummaryPacket::handle).add();
+        CHANNEL.messageBuilder(TradePostOrdersPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TradePostOrdersPacket::encode).decoder(TradePostOrdersPacket::decode)
+                .consumerMainThread(TradePostOrdersPacket::handle).add();
+        CHANNEL.messageBuilder(OrderSummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OrderSummaryPacket::encode).decoder(OrderSummaryPacket::decode)
+                .consumerMainThread(OrderSummaryPacket::handle).add();
         CHANNEL.messageBuilder(LotteryAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(LotteryAdminPacket::encode).decoder(LotteryAdminPacket::decode)
                 .consumerMainThread(LotteryAdminPacket::handle).add();

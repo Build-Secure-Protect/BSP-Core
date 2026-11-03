@@ -2,7 +2,7 @@
   "name": "The Lottery",
   "category": "bsp_core:coins",
   "icon": "bsp_core:gold_shatter_coin",
-  "sortnum": 15,
+  "sortnum": 16,
   "pages": [
     {
       "type": "patchouli:text",

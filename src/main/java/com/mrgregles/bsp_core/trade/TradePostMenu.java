@@ -2,11 +2,14 @@ package com.mrgregles.bsp_core.trade;
 
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.bank.Bank;
+import com.mrgregles.bsp_core.market.BuyOrder;
+import com.mrgregles.bsp_core.market.BuyOrders;
 import com.mrgregles.bsp_core.market.Market;
 import com.mrgregles.bsp_core.market.MarketLot;
 import com.mrgregles.bsp_core.market.MarketResult;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.TradePostDataPacket;
+import com.mrgregles.bsp_core.network.TradePostOrdersPacket;
 import com.mrgregles.bsp_core.registry.ModMenus;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -31,7 +34,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * The Trade Post screen's menu (look C, the touch screen): the MARKET, SELL and COLLECT pages and the traders band. Its
+ * The Trade Post screen's menu (look C, the touch screen): the MARKET page (lots FOR SALE, or the buy orders WANTED), SELL
+ * and COLLECT pages and the traders band. Its
  * only slots are the 9 places of a lot being listed and, on the SELL page, the player's inventory; everything else comes to
  * the screen in a {@link View} after every action and once a second. Opening it puts the player in the trader list;
  * closing it takes them off (unless a trade they just accepted is opening its own screen) and gives back what is still in
@@ -46,6 +50,29 @@ public class TradePostMenu extends AbstractContainerMenu {
     public record LotView(String id, UUID seller, String sellerName, long price, long listedMs, long endsMs, List<ItemStack> items) {}
 
     public record TraderView(UUID id, String name, String server, boolean busy) {}
+
+    /** One buy order as the screen shows it; {@code item} the plain item, {@code carried} how many of it the viewer carries. */
+    public record OrderView(String id, UUID buyer, String buyerName, ItemStack item, int wanted, int filled, long each, long placedMs, long endsMs, int carried) {
+        public int toGo() {
+            return Math.max(0, wanted - filled);
+        }
+    }
+
+    /**
+     * The WANTED side of the MARKET page: one page of {@link #PAGE} of the {@code matched} orders ({@code page} of
+     * {@code pages}), how many the viewer has open of {@code maxOrders}, and how many are open in all.
+     */
+    public record OrdersView(List<OrderView> orders, int page, int pages, int matched, int mine, int maxOrders, int total) {
+        public static final OrdersView EMPTY = new OrdersView(List.of(), 0, 1, 0, 0, 10, 0);
+
+        /** What decides whether a player's screen needs this view again. */
+        public String key() {
+            StringBuilder b = new StringBuilder().append(page).append('/').append(pages).append('/').append(matched).append('|').append(mine).append('/').append(maxOrders)
+                    .append('|').append(total).append('|');
+            orders.forEach(o -> b.append(o.id()).append(':').append(o.filled()).append(':').append(o.carried()).append(','));
+            return b.toString();
+        }
+    }
 
     public record RequestView(UUID from, String name, String server, int seconds) {}
 
@@ -83,7 +110,9 @@ public class TradePostMenu extends AbstractContainerMenu {
     /** Server: what the MARKET page asks for, and the key of the last view sent ({@link View#key}). */
     String search = "";
     int sort, lotPage;
-    private String sentKey = "";
+    /** Server: whether the MARKET page shows the buy orders (WANTED) rather than the lots, and the key of the last orders view sent. */
+    boolean wanted;
+    private String sentKey = "", sentOrdersKey = "";
     /** Server: the actions this screen may send (eight at once, then about eight a second). */
     private final RateLimit limit = new RateLimit(8, 8);
     /** Client: the page shown (the lot and inventory slots only show on SELL), and the last view received. */
@@ -368,23 +397,82 @@ public class TradePostMenu extends AbstractContainerMenu {
                 to, out == null ? 0 : (int) Math.max(0, (out.expires() - tnow) / 1000), message, args);
     }
 
+    /**
+     * The buy orders for a player, on page {@code page}: searched by item and buyer, sorted newest first ({@code sort} 0), best
+     * pay first (1) or the ones they can fill first (2); orders past their end are left out (the sweep closes them).
+     */
+    public static OrdersView ordersView(MinecraftServer server, @Nullable ServerPlayer viewer, UUID player, String search, int sort, int page) {
+        long now = Market.now();
+        String q = search.trim().toLowerCase(Locale.ROOT);
+        List<BuyOrder> found = new ArrayList<>();
+        int mine = 0, running = 0;
+        for (BuyOrder o : BuyOrders.open(server)) {
+            if (o.buyer.equals(player)) {
+                mine++;
+            }
+            if (o.endedBy(now) || o.toGo() <= 0) {
+                continue;
+            }
+            running++;
+            if (q.isEmpty() || o.matches(q)) {
+                found.add(o);
+            }
+        }
+        java.util.Map<String, Integer> carried = new java.util.HashMap<>();
+        for (BuyOrder o : found) {
+            carried.put(o.id, viewer == null || o.buyer.equals(player) ? 0 : BuyOrders.carried(viewer, o));
+        }
+        if (sort == 1) {
+            found.sort(Comparator.comparingLong((BuyOrder o) -> o.each).reversed());
+        } else if (sort == 2) {
+            found.sort(Comparator.comparingInt((BuyOrder o) -> carried.get(o.id) > 0 ? 0 : 1).thenComparing(Comparator.comparingLong((BuyOrder o) -> o.each).reversed()));
+        }
+        int pages = Math.max(1, (found.size() + PAGE - 1) / PAGE), p = Math.max(0, Math.min(page, pages - 1));
+        List<OrderView> out = new ArrayList<>();
+        for (BuyOrder o : found.subList(p * PAGE, Math.min(found.size(), (p + 1) * PAGE))) {
+            out.add(new OrderView(o.id, o.buyer, o.buyerName, o.item(), o.wanted, o.filled, o.each, o.placedMs, o.endsMs, carried.get(o.id)));
+        }
+        return new OrdersView(out, p, pages, found.size(), mine, BuyOrders.maxOrders(), running);
+    }
+
     /** Sends a player with this screen open their view, with a message; only when something on it changed (or there is a message). True when sent. */
     public static boolean sync(ServerPlayer player, String message, List<String> args) {
         if (!(player.containerMenu instanceof TradePostMenu m)) {
             return false;
         }
-        View v = view(player.server, player.getUUID(), m.search, m.sort, m.lotPage, message, args, !m.portable());
+        boolean sent = false;
+        if (m.wanted) {
+            // the orders go first, so a message about an order arrives with the orders it is about already shown
+            OrdersView o = ordersView(player.server, player, player.getUUID(), m.search, m.sort, m.lotPage);
+            String okey = o.key();
+            if (!okey.equals(m.sentOrdersKey) && BSPNetwork.sendChecked(player, new TradePostOrdersPacket(o), TradePostOrdersPacket::encode, "a Trade Post orders view")) {
+                m.sentOrdersKey = okey;
+                sent = true;
+            }
+        }
+        View v = view(player.server, player.getUUID(), m.search, m.sort, m.wanted ? 0 : m.lotPage, message, args, !m.portable());
         String key = v.key();
         if (message.isEmpty() && key.equals(m.sentKey)) {
-            return false;
+            return sent;
         }
         TradePostDataPacket packet = new TradePostDataPacket(v);
         if (!BSPNetwork.sendChecked(player, packet, TradePostDataPacket::encode, "a Trade Post view")) {
-            return false;
+            return sent;
         }
         m.sentKey = key;
-        m.lotPage = v.page();
+        if (!m.wanted) {
+            m.lotPage = v.page();
+        }
         return true;
+    }
+
+    /** The screen asks for another search, sort or page, of the lots or ({@code wanted}) the buy orders; the next {@link #sync} sends it. */
+    public void setView(String search, int sort, int page, boolean wanted) {
+        setView(search, sort, page);
+        if (this.wanted != wanted) {
+            sentOrdersKey = "";
+        }
+        this.wanted = wanted;
     }
 
     /** The screen asks for another search, sort or page; the next {@link #sync} sends it. */

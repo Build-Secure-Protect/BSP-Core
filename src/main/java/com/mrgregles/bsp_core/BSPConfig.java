@@ -183,7 +183,7 @@ public final class BSPConfig {
 
     // ------------------------------------------------------------------ market
 
-    public static final ForgeConfigSpec.IntValue MARKET_MAX_STACKS, MARKET_MAX_LOTS, MARKET_DAYS, MARKET_TAX_PERCENT;
+    public static final ForgeConfigSpec.IntValue MARKET_MAX_STACKS, MARKET_MAX_LOTS, MARKET_MAX_ORDERS, MARKET_DAYS, MARKET_TAX_PERCENT;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MARKET_REFUSED;
     public static final ForgeConfigSpec.BooleanValue STORAGE_DELIVER_ON_RESTORE;
     public static final ForgeConfigSpec.IntValue STORAGE_RESTORE_WAIT_SECONDS;
@@ -622,13 +622,16 @@ public final class BSPConfig {
 
         BUILDER.comment("The marketplace: lots players list at a Trade Post for pieces, bought whole by anyone on the network.",
                         "The seller pays the tax when listing (kept if the lot is cancelled or runs out); the buyer pays the price plus the tax.",
-                        "Both taxes go into the lottery pot (/bsp market pot).").push("market");
+                        "Buy orders: a player asks for an item at a price apiece, paid up front; sellers fill them from their inventory, less the tax.",
+                        "Every tax goes into the lottery pot (/bsp market pot).").push("market");
         MARKET_MAX_STACKS = BUILDER.comment("Most stacks in one lot (the Trade Post's SELL page and lot page hold 9).").defineInRange("maxStacks", 9, 1, 9);
         MARKET_MAX_LOTS = BUILDER.comment("Most lots one player may have listed at once.").defineInRange("maxLotsPerPlayer", 10, 1, 200);
-        MARKET_DAYS = BUILDER.comment("Days a lot stays listed; then its items wait in the seller's Collect box.").defineInRange("listingDays", 7, 1, 90);
-        MARKET_TAX_PERCENT = BUILDER.comment("Tax on the price, in percent, paid by the seller when listing and again by the buyer. Rounded up; 0 for none.")
+        MARKET_MAX_ORDERS = BUILDER.comment("Most buy orders one player may have open at once. Each asks for at most maxStacks stacks of one item; it lasts listingDays.")
+                .defineInRange("maxOrdersPerPlayer", 10, 1, 200);
+        MARKET_DAYS = BUILDER.comment("Days a lot stays listed (then its items wait in the seller's Collect box) and a buy order stays open (then what is not spent goes back to the buyer).").defineInRange("listingDays", 7, 1, 90);
+        MARKET_TAX_PERCENT = BUILDER.comment("Tax on the price, in percent, paid by the seller when listing and again by the buyer, and by a seller on what a buy order pays them. Rounded up; 0 for none.")
                 .defineInRange("taxPercent", 5, 0, 50);
-        MARKET_REFUSED = BUILDER.comment("Items that cannot be listed or traded, as item ids (\"minecraft:elytra\") or item tags (\"#forge:shulker_boxes\").",
+        MARKET_REFUSED = BUILDER.comment("Items that cannot be listed, traded or ordered, as item ids (\"minecraft:elytra\") or item tags (\"#forge:shulker_boxes\").",
                         "Shatter Totems and Totem Cores are always refused, also inside shulker boxes and bundles.")
                 .defineListAllowEmpty("refusedItems", List.of(), o -> o instanceof String);
         BUILDER.pop();

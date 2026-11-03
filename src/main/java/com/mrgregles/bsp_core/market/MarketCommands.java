@@ -24,7 +24,9 @@ import java.util.List;
  *   <li>{@code cancel <id>} takes a lot off the market, its items to the seller's Collect box;</li>
  *   <li>{@code sell <price>}, {@code buy <id>}, {@code collect} the market for the operator themself, until the Trade Post
  *       screen exists: lists the stack in the main hand, buys a lot, empties their own Collect box;</li>
- *   <li>{@code expire} runs the sweep of lots past their end now (it also runs every 30 seconds);</li>
+ *   <li>{@code orders [player]} the open buy orders (or one player's), newest first, with their ids;</li>
+ *   <li>{@code cancelorder <id>} takes a buy order off the market, what is still held for it back to the buyer;</li>
+ *   <li>{@code expire} runs the sweep of lots and buy orders past their end now (it also runs every 30 seconds);</li>
  *   <li>{@code box <player>} what waits in a player's Collect box.</li>
  * </ul>
  */
@@ -89,10 +91,31 @@ public final class MarketCommands {
                             + (r.items().isEmpty() ? "." : "; " + r.items().size() + " still wait in the box (inventory full).")), false));
                     return 1;
                 }))
+                .then(Commands.literal("orders").executes(ctx -> orders(ctx.getSource(), null))
+                        .then(Commands.argument("player", GameProfileArgument.gameProfile())
+                                .executes(ctx -> orders(ctx.getSource(), GameProfileArgument.getGameProfiles(ctx, "player")))))
+                .then(Commands.literal("cancelorder").then(Commands.argument("id", StringArgumentType.word()).executes(ctx -> {
+                    CommandSourceStack src = ctx.getSource();
+                    String id = StringArgumentType.getString(ctx, "id");
+                    var by = src.getEntity() == null ? new java.util.UUID(0, 0) : src.getEntity().getUUID();
+                    BuyOrders.cancel(src.getServer(), by, id, true, a -> {
+                        if (a.ok()) {
+                            src.sendSuccess(() -> Component.literal("Order " + id + " (" + a.order().describe() + ", " + a.order().filled + " sent) taken off; "
+                                    + Bank.format(a.refund()) + " pieces back to " + a.order().buyerName + "."), true);
+                        } else if (a.key().equals("gone")) {
+                            src.sendFailure(Component.literal("No open order " + id + "."));
+                        } else {
+                            src.sendFailure(Component.translatable("message.bsp_core.order." + a.key()));
+                        }
+                    });
+                    return 1;
+                })))
                 .then(Commands.literal("expire").executes(ctx -> {
                     int n = Market.expireDue(ctx.getSource().getServer());
-                    ctx.getSource().sendSuccess(() -> Component.literal(n + " lot(s) ran out and went to their sellers' Collect boxes."), true);
-                    return n;
+                    int o = BuyOrders.expireDue(ctx.getSource().getServer());
+                    ctx.getSource().sendSuccess(() -> Component.literal(n + " lot(s) ran out and went to their sellers' Collect boxes; " + o
+                            + " buy order(s) ran out and gave back what was held."), true);
+                    return n + o;
                 }))
                 .then(Commands.literal("box").then(Commands.argument("player", GameProfileArgument.gameProfile()).executes(ctx -> {
                     for (GameProfile p : GameProfileArgument.getGameProfiles(ctx, "player")) {
@@ -103,6 +126,24 @@ public final class MarketCommands {
                     }
                     return 1;
                 })));
+    }
+
+    private static int orders(CommandSourceStack src, Collection<GameProfile> who) {
+        List<BuyOrder> orders = BuyOrders.open(src.getServer());
+        if (who != null) {
+            var ids = who.stream().map(GameProfile::getId).toList();
+            orders = orders.stream().filter(o -> ids.contains(o.buyer)).toList();
+        }
+        long now = Market.now();
+        StringBuilder sb = new StringBuilder(orders.size() + " open buy order(s).");
+        for (BuyOrder o : orders) {
+            long hours = Math.max(0, (o.endsMs - now) / 3_600_000L);
+            sb.append("\n").append(o.id).append("  ").append(o.buyerName).append("  ").append(o.describe()).append(" at ").append(Bank.format(o.each))
+                    .append(" each  ").append(o.filled).append(" sent  ").append(Bank.format(o.held())).append(" held  ends in ").append(hours / 24).append(" d ").append(hours % 24).append(" h");
+        }
+        String text = sb.toString();
+        src.sendSuccess(() -> Component.literal(text), false);
+        return orders.size();
     }
 
     private static int list(CommandSourceStack src, Collection<GameProfile> who) {

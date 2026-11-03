@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Buy orders, option B: rows</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.ab{font-family:'Pixelify Sans',monospace}
+.tp{position:relative;width:600px;height:432px;background:#CFC8B8;border-top:4px solid #ECE6D8;border-left:4px solid #ECE6D8;border-right:4px solid #8F877A;border-bottom:4px solid #8F877A;box-sizing:border-box;flex:none}
+.scr{position:absolute;left:16px;top:16px;width:560px;height:392px;background:#061008;outline:2px solid #0D3B22;overflow:hidden}
+.a{position:absolute}
+.key{position:absolute;font-family:inherit;font-size:14px;background:#061008;color:#3FB97A;border:2px solid #0D3B22;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.key.on{color:#58F29A;border-color:#58F29A;background:#0F2D1C}
+.key.amb{color:#F2B544;border-color:#F2B544}
+.band{position:absolute;left:400px;top:0;width:160px;height:392px;background:#030805;border-left:2px solid #0D3B22}
+.t{font-size:14px;color:#3FB97A}
+.b{color:#58F29A}
+.am{color:#F2B544}
+.sm{font-size:12px}
+.box{position:absolute;height:26px;background:#0F2D1C;border:2px solid #0D3B22;color:#58F29A;font-family:inherit;font-size:14px;padding:0 6px;box-sizing:border-box}
+.row{position:absolute;left:8px;width:384px;height:28px;border-bottom:2px solid #0D3B22;box-sizing:border-box}
+.row.on{background:#0F2D1C;border:2px solid #58F29A}
+.row .ic{position:absolute;left:4px;top:3px;width:20px;height:20px}
+.rn{position:absolute;left:32px;top:5px;font-size:13px;color:#58F29A;width:100px;white-space:nowrap;overflow:hidden}
+.rb{position:absolute;left:138px;top:11px;width:70px;height:5px;background:#0D3B22}
+.rb i{display:block;height:5px;background:#F2B544}
+.rc{position:absolute;left:214px;top:6px;font-size:12px;color:#3FB97A}
+.rp{position:absolute;left:270px;top:5px;font-size:13px;color:#58F29A;width:66px;text-align:right}
+.rt{position:absolute;right:6px;top:6px;font-size:12px;color:#3FB97A}
+.ic{width:32px;height:32px;box-sizing:border-box}
+.cactus{background:repeating-linear-gradient(90deg,#4f9e2f 0 6px,#2f7420 6px 8px);border:3px solid #24581a}
+.iron{background:linear-gradient(160deg,#f4f4f4 0 40%,#bdbdbd 40% 100%);border:3px solid #8a8a8a;border-radius:2px;transform:scaleY(.6)}
+.log{background:repeating-linear-gradient(0deg,#a27f4b 0 5px,#7d5f33 5px 7px);border:3px solid #5b4524}
+.red{background:radial-gradient(circle,#ff3b2e 0 35%,#a1150f 36% 70%,transparent 71%)}
+.slime{background:radial-gradient(circle,#9be27a 0 45%,#5ea343 46% 70%,transparent 71%)}
+.glass{background:#cdeef3;border:3px solid #8fc4cc;opacity:.85}
+.bone{background:linear-gradient(45deg,transparent 0 40%,#ece6cf 40% 60%,transparent 60%);border-radius:4px}
+.pearl{background:radial-gradient(circle,#2fa58e 0 30%,#14544a 31% 66%,transparent 67%)}
+.carrot{background:linear-gradient(135deg,transparent 0 30%,#f08a1c 30% 70%,#3f8f2a 70% 85%,transparent 85%)}
+.cake{background:linear-gradient(180deg,#f4efe8 0 40%,#c4372b 40% 50%,#b07a49 50% 100%);border:2px solid #7a5432}
+.camp{background:linear-gradient(180deg,#ffb12a 0 45%,#6b4b2a 45% 100%)}
+.candle{background:linear-gradient(90deg,transparent 0 38%,#efe6c4 38% 62%,transparent 62%)}
+.ss{position:relative;width:760px;height:428px;background:#070A0E;border:12px solid #2a2d33;box-sizing:border-box;flex:none}
+.ssh{position:absolute;left:0;right:0;top:0;height:36px;background:#10151C}
+.lr{position:absolute;left:10px;width:716px;height:40px;border-bottom:2px solid #10151C}
+.lr .ic{position:absolute;left:4px;top:4px}
+.lt{position:absolute;left:48px;top:4px;color:#E8EAF0;font-size:17px}
+.ln{position:absolute;left:48px;top:23px;color:#9AA3B5;font-size:12px}
+.lv{position:absolute;right:6px;top:8px;color:#FFD23A;font-size:20px}
+.lbl{font-size:15px;color:#b8b1a3;letter-spacing:.06em}
+</style>
+</helmet>
+<div class="ab" style="width: 1960px; height: 1040px; box-sizing: border-box; padding: 40px; background: #1c1e23; display: flex; flex-direction: column; gap: 48px">
+<div style="display: flex; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">1  MARKET TAB, SHOWING WANTED</div>
+<div class="tp"><div class="scr">
+<button class="key on" type="button" style="left: 8px; top: 6px; width: 100px; height: 26px">MARKET</button>
+<button class="key" type="button" style="left: 112px; top: 6px; width: 70px; height: 26px">SELL</button>
+<button class="key" type="button" style="left: 186px; top: 6px; width: 104px; height: 26px">COLLECT</button>
+<button class="key" type="button" style="left: 294px; top: 6px; width: 106px; height: 26px">LOTTERY</button>
+<button class="key" type="button" aria-label="Close" style="left: 532px; top: 4px; width: 22px; height: 22px">x</button>
+<div class="a" style="left: 8px; top: 36px; width: 384px; height: 2px; background: #0D3B22"></div>
+<label class="box" style="left: 8px; top: 42px; width: 200px; color: #3FB97A; display: flex; align-items: center">Search</label>
+<button class="key on" type="button" style="left: 214px; top: 42px; width: 92px; height: 26px">WANTED</button>
+<button class="key" type="button" style="left: 310px; top: 42px; width: 82px; height: 26px">BEST PAY</button>
+<div class="a t sm" style="left: 40px; top: 72px">ITEM</div><div class="a t sm" style="left: 146px; top: 72px">SENT</div><div class="a t sm" style="left: 300px; top: 72px">EACH</div><div class="a t sm" style="left: 362px; top: 72px">LEFT</div>
+<div class="row" style="top: 88px"><div class="ic iron"></div><div class="rn">Iron Ingot</div><div class="rb"><i style="width: 50%"></i></div><div class="rc">32/64</div><div class="rp">40</div><div class="rt">6 d</div></div>
+<div class="row" style="top: 116px"><div class="ic pearl"></div><div class="rn">Ender Pearl</div><div class="rb"><i style="width: 37%"></i></div><div class="rc">6/16</div><div class="rp">25</div><div class="rt">3 d</div></div>
+<div class="row" style="top: 144px"><div class="ic cactus"></div><div class="rn">Cactus</div><div class="rb"><i style="width: 62%"></i></div><div class="rc">40/64</div><div class="rp">12</div><div class="rt">5 d</div></div>
+<div class="row" style="top: 172px"><div class="ic slime"></div><div class="rn">Slime Ball</div><div class="rb"><i style="width: 22%"></i></div><div class="rc">14/64</div><div class="rp">9</div><div class="rt">6 d</div></div>
+<div class="row" style="top: 200px"><div class="ic log"></div><div class="rn">Oak Log</div><div class="rb"><i style="width: 10%"></i></div><div class="rc">20/220</div><div class="rp">6</div><div class="rt">2 d</div></div>
+<div class="row" style="top: 228px"><div class="ic red"></div><div class="rn">Redstone</div><div class="rb"><i style="width: 25%"></i></div><div class="rc">32/128</div><div class="rp">4</div><div class="rt">7 d</div></div>
+<div class="row" style="top: 256px"><div class="ic glass"></div><div class="rn am">Glass (yours)</div><div class="rb"><i style="width: 0%"></i></div><div class="rc">0/128</div><div class="rp am">3</div><div class="rt">7 d</div></div>
+<div class="row" style="top: 284px"><div class="ic bone"></div><div class="rn">Bone</div><div class="rb"><i style="width: 0%"></i></div><div class="rc">0/64</div><div class="rp">2</div><div class="rt">4 d</div></div>
+<div class="a t sm" style="left: 8px; top: 318px">12 orders · yours 1 of 10 · scroll</div>
+<button class="key amb" type="button" style="left: 8px; top: 336px; width: 144px; height: 32px">+ NEW ORDER</button>
+<div class="band"><div class="a t" style="left: 10px; top: 10px; color: #58F29A">TRADERS</div><div class="a t sm" style="left: 10px; top: 36px">Okra_Moss</div><div class="a t sm" style="left: 10px; top: 56px">TallyFern</div><div class="a t sm" style="left: 10px; top: 76px">Pellmouth</div></div>
+</div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">2  A ROW PICKED: FILL IT ON THE SAME PAGE</div>
+<div class="tp"><div class="scr">
+<button class="key on" type="button" style="left: 8px; top: 6px; width: 100px; height: 26px">MARKET</button>
+<button class="key" type="button" style="left: 112px; top: 6px; width: 70px; height: 26px">SELL</button>
+<button class="key" type="button" style="left: 186px; top: 6px; width: 104px; height: 26px">COLLECT</button>
+<button class="key" type="button" style="left: 294px; top: 6px; width: 106px; height: 26px">LOTTERY</button>
+<button class="key" type="button" aria-label="Close" style="left: 532px; top: 4px; width: 22px; height: 22px">x</button>
+<div class="a" style="left: 8px; top: 36px; width: 384px; height: 2px; background: #0D3B22"></div>
+<label class="box" style="left: 8px; top: 42px; width: 200px; color: #3FB97A; display: flex; align-items: center">Search</label>
+<button class="key on" type="button" style="left: 214px; top: 42px; width: 92px; height: 26px">WANTED</button>
+<button class="key" type="button" style="left: 310px; top: 42px; width: 82px; height: 26px">BEST PAY</button>
+<div class="row" style="top: 76px"><div class="ic iron"></div><div class="rn">Iron Ingot</div><div class="rb"><i style="width: 50%"></i></div><div class="rc">32/64</div><div class="rp">40</div><div class="rt">6 d</div></div>
+<div class="row" style="top: 104px"><div class="ic pearl"></div><div class="rn">Ender Pearl</div><div class="rb"><i style="width: 37%"></i></div><div class="rc">6/16</div><div class="rp">25</div><div class="rt">3 d</div></div>
+<div class="row on" style="top: 132px"><div class="ic cactus"></div><div class="rn">Cactus</div><div class="rb"><i style="width: 62%"></i></div><div class="rc">40/64</div><div class="rp">12</div><div class="rt">5 d</div></div>
+<div class="row" style="top: 160px"><div class="ic slime"></div><div class="rn">Slime Ball</div><div class="rb"><i style="width: 22%"></i></div><div class="rc">14/64</div><div class="rp">9</div><div class="rt">6 d</div></div>
+<div class="row" style="top: 188px"><div class="ic log"></div><div class="rn">Oak Log</div><div class="rb"><i style="width: 10%"></i></div><div class="rc">20/220</div><div class="rp">6</div><div class="rt">2 d</div></div>
+<div class="a" style="left: 8px; top: 222px; width: 384px; height: 106px; background: #0F2D1C; border: 2px solid #58F29A; box-sizing: border-box"></div>
+<div class="a b" style="left: 16px; top: 228px; font-size: 14px">BRINDLEWICK WANTS 24 MORE CACTUS</div>
+<div class="a am sm" style="left: 16px; top: 248px">You carry 37 plain Cactus</div>
+<div class="a t" style="left: 16px; top: 270px">SEND</div>
+<button class="key" type="button" style="left: 66px; top: 266px; width: 26px; height: 26px">-</button>
+<label class="box" style="left: 96px; top: 266px; width: 56px; display: flex; align-items: center; justify-content: center">24</label>
+<button class="key" type="button" style="left: 156px; top: 266px; width: 26px; height: 26px">+</button>
+<button class="key" type="button" style="left: 186px; top: 266px; width: 48px; height: 26px">ALL</button>
+<div class="a t sm" style="left: 16px; top: 300px">288 less 15 tax: you get <span class="am">273</span></div>
+<button class="key on" type="button" style="left: 296px; top: 288px; width: 88px; height: 32px">FILL 24</button>
+<button class="key amb" type="button" style="left: 8px; top: 336px; width: 144px; height: 32px">+ NEW ORDER</button>
+<div class="band"><div class="a t" style="left: 10px; top: 10px; color: #58F29A">TRADERS</div><div class="a t sm" style="left: 10px; top: 36px">Okra_Moss</div><div class="a t sm" style="left: 10px; top: 56px">TallyFern</div><div class="a t sm" style="left: 10px; top: 76px">Pellmouth</div></div>
+</div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">3  NEW ORDER: PICK BY NAME, QUICK AMOUNTS</div>
+<div class="tp"><div class="scr">
+<button class="key on" type="button" style="left: 8px; top: 6px; width: 100px; height: 26px">MARKET</button>
+<button class="key" type="button" style="left: 112px; top: 6px; width: 70px; height: 26px">SELL</button>
+<button class="key" type="button" style="left: 186px; top: 6px; width: 104px; height: 26px">COLLECT</button>
+<button class="key" type="button" style="left: 294px; top: 6px; width: 106px; height: 26px">LOTTERY</button>
+<button class="key" type="button" aria-label="Close" style="left: 532px; top: 4px; width: 22px; height: 22px">x</button>
+<div class="a" style="left: 8px; top: 36px; width: 384px; height: 2px; background: #0D3B22"></div>
+<label class="box" style="left: 8px; top: 42px; width: 384px; display: flex; align-items: center">ca</label>
+<div class="row on" style="top: 72px"><div class="ic cactus"></div><div class="rn" style="width: 300px">Cactus</div></div>
+<div class="row" style="top: 100px"><div class="ic carrot"></div><div class="rn" style="width: 300px">Carrot</div></div>
+<div class="row" style="top: 128px"><div class="ic cake"></div><div class="rn" style="width: 300px">Cake</div></div>
+<div class="row" style="top: 156px"><div class="ic camp"></div><div class="rn" style="width: 300px">Campfire</div><div class="rt">+16 more</div></div>
+<div class="a t" style="left: 8px; top: 196px">HOW MANY</div>
+<button class="key" type="button" style="left: 110px; top: 192px; width: 44px; height: 26px">16</button>
+<button class="key" type="button" style="left: 158px; top: 192px; width: 44px; height: 26px">32</button>
+<button class="key on" type="button" style="left: 206px; top: 192px; width: 44px; height: 26px">64</button>
+<label class="box" style="left: 256px; top: 192px; width: 136px; display: flex; align-items: center">64</label>
+<div class="a t" style="left: 8px; top: 230px">PAY EACH</div>
+<label class="box" style="left: 110px; top: 226px; width: 90px; display: flex; align-items: center">12</label>
+<div class="a t" style="left: 8px; top: 264px; width: 384px; display: flex; justify-content: space-between"><span>Held from your bank now</span><span class="am">768</span></div>
+<div class="a t sm" style="left: 8px; top: 290px; width: 384px">7 days. Unspent pieces come back when it closes.</div>
+<button class="key on" type="button" style="left: 8px; top: 336px; width: 144px; height: 32px">PLACE ORDER</button>
+<button class="key" type="button" style="left: 160px; top: 336px; width: 88px; height: 32px">BACK</button>
+<div class="band"><div class="a t" style="left: 10px; top: 10px; color: #58F29A">TRADERS</div><div class="a t sm" style="left: 10px; top: 36px">Okra_Moss</div><div class="a t sm" style="left: 10px; top: 56px">TallyFern</div><div class="a t sm" style="left: 10px; top: 76px">Pellmouth</div></div>
+</div></div>
+</div>
+</div>
+<div style="display: flex; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="lbl">4  SCORE SCREEN: THE WANTED BOARD (LEDGER LOOK)</div>
+<div class="ss">
+<div class="ssh"><div class="a" style="left: 14px; top: 8px; color: #19D3B0; font-size: 18px">WANTED</div><div class="a" style="right: 14px; top: 10px; color: #9AA3B5; font-size: 14px">pays each</div></div>
+<div class="lr" style="top: 44px"><div class="ic iron"></div><div class="lt">Iron Ingot</div><div class="ln">32 to go · Okra_Moss · 6 d</div><div class="lv">40</div></div>
+<div class="lr" style="top: 86px"><div class="ic pearl"></div><div class="lt">Ender Pearl</div><div class="ln">10 to go · TallyFern · 3 d</div><div class="lv">25</div></div>
+<div class="lr" style="top: 128px"><div class="ic cactus"></div><div class="lt">Cactus</div><div class="ln">24 to go · Brindlewick · 5 d</div><div class="lv">12</div></div>
+<div class="lr" style="top: 170px"><div class="ic slime"></div><div class="lt">Slime Ball</div><div class="ln">50 to go · Pellmouth · 6 d</div><div class="lv">9</div></div>
+<div class="lr" style="top: 212px"><div class="ic log"></div><div class="lt">Oak Log</div><div class="ln">200 to go · Quillon · 2 d</div><div class="lv">6</div></div>
+<div class="lr" style="top: 254px"><div class="ic red"></div><div class="lt">Redstone</div><div class="ln">96 to go · Harrowgate · 7 d</div><div class="lv">4</div></div>
+<div class="lr" style="top: 296px"><div class="ic glass"></div><div class="lt">Glass</div><div class="ln">128 to go · Okra_Moss · 7 d</div><div class="lv">3</div></div>
+<div class="lr" style="top: 338px"><div class="ic bone"></div><div class="lt">Bone</div><div class="ln">64 to go · TallyFern · 4 d</div><div class="lv">2</div></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1960,"height":1040}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

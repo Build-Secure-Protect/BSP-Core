@@ -30,7 +30,7 @@ import com.mrgregles.bsp_core.bank.BankTransaction;
  *
  * <p>Tables: {@code grants} (one row per player who has been given a first-join totem, anywhere on
  * the network), {@code totems} (every placed totem, by server), {@code factory_slices} (every
- * factory controller, by server), {@code scores} (each server's leaderboard rows), {@code score_adjust} (scores set by hand, for the network), {@code meta} (one
+ * factory controller, by server), {@code scores} (each server's leaderboard rows), {@code score_adjust} (scores set by hand, for the network), {@code market_orders} (open buy orders), {@code meta} (one
  * row per server that has migrated), {@code vault_totals} (what each player keeps in Coin Vaults,
  * by server), {@code state} (the shared season state, as keys and values), {@code season_claims}
  * (who has been given their fresh totem for which season) and {@code pending_items} (prize and
@@ -249,6 +249,9 @@ final class MySqlStore implements AutoCloseable {
             }
             // what reached the database: listings (by lot id) and held-item writes, so a lost answer can be asked about
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_attempts") + " (id VARCHAR(64) NOT NULL PRIMARY KEY, ms BIGINT NOT NULL, INDEX (ms))");
+            // buy orders: the order's data (its item, how many wanted and sent, the price each) as SNBT; it changes as it fills
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_orders") + " (id VARCHAR(16) NOT NULL PRIMARY KEY, buyer CHAR(36) NOT NULL, placed_ms BIGINT NOT NULL, "
+                    + "ends_ms BIGINT NOT NULL, server_id VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, INDEX (buyer), INDEX (placed_ms))");
             // the daily login reward: the last day each player was paid (days since 1970 on the shop clock)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("daily_rewards") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, day INT NOT NULL)");
             // the lottery: every player seen on the network, with their ranks and operator status at the time
@@ -2656,6 +2659,157 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(1, attempt);
             ps.executeUpdate();
         }
+    }
+
+    // ------------------------------------------------------------------ buy orders
+
+    private void insertOrder(Connection c, com.mrgregles.bsp_core.market.BuyOrder o) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("market_orders") + " (id, buyer, placed_ms, ends_ms, server_id, data) VALUES (?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, o.id);
+            ps.setString(2, o.buyer.toString());
+            ps.setLong(3, o.placedMs);
+            ps.setLong(4, o.endsMs);
+            ps.setString(5, o.server);
+            ps.setString(6, o.save().toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** The open order, locked for this transaction; null when it is not there. */
+    @javax.annotation.Nullable
+    private com.mrgregles.bsp_core.market.BuyOrder lockOrder(Connection c, String id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT data FROM " + t("market_orders") + " WHERE id = ? FOR UPDATE")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? orderOf(rs.getString(1)) : null;
+            }
+        }
+    }
+
+    private static com.mrgregles.bsp_core.market.BuyOrder orderOf(String data) throws SQLException {
+        try {
+            return com.mrgregles.bsp_core.market.BuyOrder.load(net.minecraft.nbt.TagParser.parseTag(data));
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            throw new SQLException("unreadable buy order: " + e.getMessage());
+        }
+    }
+
+    private void deleteOrder(Connection c, String id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("market_orders") + " WHERE id = ?")) {
+            ps.setString(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Takes the order's whole price from the buyer and inserts it, its id recorded as an attempt; "orders" at the limit, "short" when the buyer cannot pay. */
+    com.mrgregles.bsp_core.market.OrderDb.Done orderPlace(com.mrgregles.bsp_core.market.BuyOrder o, int maxOrders) throws SQLException {
+        return marketTx(c -> {
+            // the buyer's row first: their orders on every server queue here, so the count below sees all of them
+            lockAccounts(c, o.buyer);
+            try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + t("market_orders") + " WHERE buyer = ?")) {
+                ps.setString(1, o.buyer.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) >= maxOrders) {
+                        throw new MarketNo("orders");
+                    }
+                }
+            }
+            if (!addPieces(c, o.buyer, -o.held())) {
+                throw new MarketNo("short");
+            }
+            insertOrder(c, o);
+            insertAttempt(c, o.id);
+            return new com.mrgregles.bsp_core.market.OrderDb.Done("ok", o, 0, 0, 0, 0, false, piecesOf(c, o.buyer), -1);
+        }, com.mrgregles.bsp_core.market.OrderDb.Done::no);
+    }
+
+    /** Every open order, newest first. */
+    java.util.List<com.mrgregles.bsp_core.market.BuyOrder> orderList() throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.market.BuyOrder> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, data FROM " + t("market_orders") + " ORDER BY placed_ms DESC")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.add(orderOf(rs.getString(2)));
+                    } catch (SQLException e) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core orders: buy order {} could not be read and was skipped: {}", rs.getString(1), e.getMessage());
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Fills an order with up to {@code count} items in one transaction: as many as it still wants into the buyer's Collect box
+     * and the rest into the seller's, the seller paid for those sent less the tax and the tax into the pot, the order changed or
+     * (once it has all it wants) deleted, and {@code attempt} recorded.
+     */
+    com.mrgregles.bsp_core.market.OrderDb.Done orderFill(String id, UUID seller, int count, String attempt, long now) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.market.BuyOrder o = lockOrder(c, id);
+            if (o == null || o.endedBy(now) || o.toGo() <= 0) {
+                throw new MarketNo("gone");
+            }
+            if (o.buyer.equals(seller)) {
+                throw new MarketNo("own");
+            }
+            int n = Math.min(count, o.toGo());
+            long pay = n * o.each, tax = com.mrgregles.bsp_core.market.BuyOrders.tax(pay);
+            lockAccounts(c, seller);
+            if (!addPieces(c, seller, pay - tax)) {
+                throw new MarketNo("seller"); // no bank row for the seller on the network: nobody would be paid
+            }
+            if (tax > 0) {
+                toPot(c, tax);
+            }
+            insertCollect(c, o.buyer, com.mrgregles.bsp_core.market.BuyOrders.stacks(o.item(), n)); // the buyer's from this commit on
+            if (count > n) {
+                insertCollect(c, seller, com.mrgregles.bsp_core.market.BuyOrders.stacks(o.item(), count - n));
+            }
+            com.mrgregles.bsp_core.market.BuyOrder after = o.filledBy(n);
+            boolean closed = after.toGo() <= 0;
+            if (closed) {
+                deleteOrder(c, id);
+            } else {
+                try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("market_orders") + " SET data = ? WHERE id = ?")) {
+                    ps.setString(1, after.save().toString());
+                    ps.setString(2, id);
+                    ps.executeUpdate();
+                }
+            }
+            insertAttempt(c, attempt);
+            return new com.mrgregles.bsp_core.market.OrderDb.Done("ok", after, n, pay - tax, tax, 0, closed, piecesOf(c, seller), piecesOf(c, com.mrgregles.bsp_core.market.Market.POT));
+        }, com.mrgregles.bsp_core.market.OrderDb.Done::no);
+    }
+
+    /** Deletes the order and gives the buyer back what is still held for it, in one transaction. */
+    com.mrgregles.bsp_core.market.OrderDb.Done orderClose(String id) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.market.BuyOrder o = lockOrder(c, id);
+            if (o == null) {
+                throw new MarketNo("gone");
+            }
+            long refund = o.held();
+            if (refund > 0) {
+                lockAccounts(c, o.buyer);
+                if (!addPieces(c, o.buyer, refund)) {
+                    throw new MarketNo("buyer"); // the buyer's bank row is gone: the order stays, and its pieces with it
+                }
+            }
+            deleteOrder(c, id);
+            return new com.mrgregles.bsp_core.market.OrderDb.Done("ok", o, 0, 0, 0, refund, false, piecesOf(c, o.buyer), -1);
+        }, com.mrgregles.bsp_core.market.OrderDb.Done::no);
+    }
+
+    /** A fill whose answer was lost: unless {@code attempt} went in, the items go to the seller's Collect box; recorded either way, so once only. */
+    void orderSettleFill(String attempt, UUID seller, java.util.List<net.minecraft.world.item.ItemStack> items) throws SQLException {
+        inTransaction(c -> {
+            if (insertAttempt(c, attempt)) {
+                insertCollect(c, seller, items);
+            }
+            return true;
+        });
     }
 
     java.util.List<net.minecraft.world.item.ItemStack> marketPeekCollect(UUID player) throws SQLException {

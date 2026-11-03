@@ -30,7 +30,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22,
             SEL = 0xFF0F2D1C, BAND = 0xFF030805, PHOS = 0xFF58F29A, DIM = 0xFF3FB97A, AMBER = 0xFFF2B544, LABEL = 0xFF5A5348;
     private static final int SX = 10, SY = 10, SW = 280, SH = 196, CX = 14, BX = 210, BW = 80, CARD_H = 40, GAP = 3, ROWS = 3, KEY_Y = 178;
-    private static final String[] SORTS = {"newest", "cheapest", "dearest"};
+    private static final String[] SORTS = {"newest", "cheapest", "dearest"}, ORDER_SORTS = {"newest", "best_pay", "can_fill"};
+    /** The search row on the MARKET page: the FOR SALE and WANTED keys, then the search box, then the sort key. */
+    private static final int SWITCH_W = 44, SEARCH_X = CX + 2 * SWITCH_W + 4, SORT_W = 46;
 
 
     @Nullable
@@ -60,6 +62,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     private LotteryAdminPage admin;
     /** The pages' width, the lot cards across and a card's width: 192, 3, 62 beside the traders band; 272, 4, 65 on a Portable Banker. */
     private final int cw, cols, cardW;
+    /** The MARKET page shows the buy orders (WANTED) rather than the lots (FOR SALE); their cards and pages are drawn by {@link #orders}. */
+    private boolean wanted;
+    private final TradePostOrdersPage orders;
 
     public TradePostScreen(TradePostMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -67,6 +72,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         cw = band ? 192 : SW - 8;
         cols = band ? 3 : 4;
         cardW = (cw - GAP * (cols - 1)) / cols;
+        orders = new TradePostOrdersPage(this, Minecraft.getInstance().font, cw, cols, cardW);
         this.imageWidth = TradePostMenu.W;
         this.imageHeight = menu.page == TradePostBlock.Tab.SELL ? TradePostMenu.H_SELL : TradePostMenu.H;
         if (menu.page == TradePostBlock.Tab.TRADE) {
@@ -100,6 +106,47 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         }
     }
 
+    /** The buy orders for the open screen's WANTED side. */
+    public static void receiveOrders(TradePostMenu.OrdersView view) {
+        TradePostOrdersPage.receive(view);
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        TradePostOrdersPage.reset();
+    }
+
+    /** What the WANTED pages read from the market's view: the balance, the tax and how long an order lasts. */
+    long balance() {
+        return v().balance();
+    }
+
+    int taxPercent() {
+        return v().taxPercent();
+    }
+
+    int days() {
+        return v().days();
+    }
+
+    int maxStacks() {
+        return v().maxStacks();
+    }
+
+    boolean hover(int mx, int my, int x, int y, int w, int h) {
+        return over(mx - leftPos, my - topPos, x, y, w, h);
+    }
+
+    void rebuild() {
+        rebuildWidgets();
+    }
+
+    /** Whether the MARKET page's search row shows: the lots or orders as cards, no lot or order page open. */
+    private boolean searchRow() {
+        return menu.page == TradePostBlock.Tab.MARKET && openLot == null && (!wanted || orders.cards());
+    }
+
     /** The full stacks of the lot the player opened, or word that it is gone. */
     public static void receiveLot(com.mrgregles.bsp_core.network.TradePostLotPacket lot) {
         if (Minecraft.getInstance().screen instanceof TradePostScreen s && lot.id().equals(s.openLot)) {
@@ -112,13 +159,13 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         }
     }
 
-    private long serverNow() {
+    long serverNow() {
         return System.currentTimeMillis() + clockOffset;
     }
 
     /** Asks for the market as searched, sorted and on {@code page}. */
-    private void askView(int page) {
-        send(TradePostActionPacket.Action.VIEW, searchText, sort + 3L * Math.max(0, page), false);
+    void askView(int page) {
+        send(TradePostActionPacket.Action.VIEW, searchText, sort + 3L * Math.max(0, page), wanted);
     }
 
     @Override
@@ -144,7 +191,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         return menu.view;
     }
 
-    private static void send(TradePostActionPacket.Action action, String text, long amount, boolean flag) {
+    static void send(TradePostActionPacket.Action action, String text, long amount, boolean flag) {
         BSPNetwork.CHANNEL.sendToServer(new TradePostActionPacket(action, text, amount, flag));
     }
 
@@ -159,8 +206,8 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         if (admin != null || lottery != null) {
             return;
         }
-        if (menu.page == TradePostBlock.Tab.MARKET && openLot == null) {
-            search = new EditBox(font, leftPos + CX + 3, topPos + 33, 120, 10, Component.translatable("gui.bsp_core.trade_post.search"));
+        if (searchRow()) {
+            search = new EditBox(font, leftPos + SEARCH_X + 3, topPos + 33, cw - (SEARCH_X - CX) - SORT_W - 8, 10, Component.translatable("gui.bsp_core.trade_post.search"));
             search.setBordered(false);
             search.setTextColor(PHOS);
             search.setMaxLength(40);
@@ -171,6 +218,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                 searchAt = System.currentTimeMillis() + 250;
             });
             addRenderableWidget(search);
+        }
+        if (menu.page == TradePostBlock.Tab.MARKET && wanted) {
+            orders.widgets(leftPos, topPos).forEach(this::addRenderableWidget);
         }
         if (menu.page == TradePostBlock.Tab.SELL) {
             price = new EditBox(font, leftPos + 81, topPos + 70, 120, 10, Component.translatable("gui.bsp_core.trade_post.price"));
@@ -192,6 +242,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         openView = null;
         detail = null;
         scroll = 0;
+        orders.closePages();
         rebuildWidgets();
     }
 
@@ -226,17 +277,17 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         return minecraft != null && minecraft.player != null && l.seller().equals(minecraft.player.getUUID());
     }
 
-    private long tax(long p) {
+    long tax(long p) {
         int pct = v().taxPercent();
         return pct <= 0 || p <= 0 ? 0 : Math.max(1, (p * pct + 99) / 100);
     }
 
-    private static String ago(long ms) {
+    static String ago(long ms) {
         long m = Math.max(0, ms) / 60000;
         return m < 60 ? m + " m" : m < 60 * 24 ? m / 60 + " h" : m / (60 * 24) + " d";
     }
 
-    private static String left(long ms) {
+    static String left(long ms) {
         long m = Math.max(0, ms) / 60000;
         return m / (60 * 24) + " d " + (m / 60) % 24 + " h";
     }
@@ -269,7 +320,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
 
     // ------------------------------------------------------------------ input
 
-    private static boolean over(double mx, double my, int x, int y, int w, int h) {
+    static boolean over(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
@@ -368,6 +419,19 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                 }
             }
             default -> {
+                if (wanted && !orders.cards()) {
+                    return orders.click(x, y);
+                }
+                if (openLot == null && over(x, y, CX, 31, SWITCH_W, 13) || openLot == null && over(x, y, CX + SWITCH_W + 2, 31, SWITCH_W, 13)) {
+                    boolean want = x >= CX + SWITCH_W + 2;
+                    if (want != wanted) {
+                        wanted = want;
+                        scroll = 0;
+                        askView(0);
+                        rebuildWidgets();
+                    }
+                    return true;
+                }
                 if (openLot != null) {
                     TradePostMenu.LotView l = openView;
                     if (over(x, y, CX + 76, KEY_Y, 44, 16)) {
@@ -380,11 +444,14 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                     }
                     return false;
                 }
-                if (over(x, y, CX + cw - 60, 31, 60, 13)) {
+                if (over(x, y, CX + cw - SORT_W, 31, SORT_W, 13)) {
                     sort = (sort + 1) % 3;
                     scroll = 0;
                     askView(0);
                     return true;
+                }
+                if (wanted) {
+                    return orders.click(x, y);
                 }
                 if (v().pages() > 1 && over(x, y, CX + cw - 48, 174, 12, 10) && v().page() > 0) {
                     askView(v().page() - 1);
@@ -415,6 +482,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         if (lottery != null) {
             return true;
         }
+        if (menu.page == TradePostBlock.Tab.MARKET && wanted) {
+            return orders.scrolled(mx - leftPos, my - topPos, delta);
+        }
         if (menu.page == TradePostBlock.Tab.MARKET && openLot == null) {
             int rows = (v().lots().size() + cols - 1) / cols;
             scroll = Math.max(0, Math.min(Math.max(0, rows - ROWS), scroll - (int) Math.signum(delta)));
@@ -428,7 +498,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         if (admin != null && admin.keyPressed(key)) {
             return true;
         }
-        EditBox focus = search != null && search.isFocused() ? search : price != null && price.isFocused() ? price : null;
+        EditBox focus = search != null && search.isFocused() ? search : price != null && price.isFocused() ? price : wanted ? orders.focused() : null;
         if (focus != null && key != 256) {
             return focus.keyPressed(key, scan, mods) || focus.canConsumeInput();
         }
@@ -468,7 +538,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     }
 
     /** A touch-screen key: lit (filled) or outlined, dimmed when it cannot be pressed. */
-    private void key(GuiGraphics g, int x, int y, int w, int h, String label, boolean on, boolean enabled, int mx, int my) {
+    void key(GuiGraphics g, int x, int y, int w, int h, String label, boolean on, boolean enabled, int mx, int my) {
         boolean hover = enabled && over(mx - leftPos, my - topPos, x, y, w, h);
         if (on && enabled) {
             g.fill(x, y, x + w, y + h, hover ? 0xFF7CF7B3 : PHOS);
@@ -483,12 +553,12 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         }
     }
 
-    private static void slotBox(GuiGraphics g, int x, int y) {
+    static void slotBox(GuiGraphics g, int x, int y) {
         g.fill(x, y, x + 18, y + 18, SCREEN_EDGE);
         g.fill(x + 1, y + 1, x + 17, y + 17, SEL);
     }
 
-    private static String tr(String key, Object... args) {
+    static String tr(String key, Object... args) {
         return Component.translatable("gui.bsp_core.trade_post." + key, args).getString();
     }
 
@@ -498,6 +568,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
             seenSerial = menu.viewSerial;
             if (!v().message().isEmpty()) {
                 message = Component.translatable(v().message(), v().args().toArray()).getString();
+                orders.message(v().message());
                 // the open lot was bought, cancelled or is gone: back to the cards
                 if (openLot != null && (v().message().endsWith(".bought") || v().message().endsWith(".cancelled") || v().message().endsWith(".gone"))) {
                     openLot(null);
@@ -583,7 +654,9 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
             case SELL -> drawSell(g, mx, my);
             case COLLECT -> drawCollect(g, mx, my);
             default -> {
-                if (openLot != null && openView != null) {
+                if (wanted && !orders.cards()) {
+                    orders.draw(g, mx, my);
+                } else if (openLot != null && openView != null) {
                     drawLot(g, openView, mx, my);
                 } else {
                     drawMarket(g, mx, my);
@@ -605,11 +678,17 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
     }
 
     private void drawMarket(GuiGraphics g, int mx, int my) {
-        g.fill(CX, 31, CX + 128, 44, SEL);
+        key(g, CX, 31, SWITCH_W, 13, tr("for_sale"), !wanted, true, mx, my);
+        key(g, CX + SWITCH_W + 2, 31, SWITCH_W, 13, tr("wanted"), wanted, true, mx, my);
+        g.fill(SEARCH_X, 31, CX + cw - SORT_W - 2, 44, SEL);
         if (searchText.isEmpty() && (search == null || !search.isFocused())) {
-            g.drawString(font, tr("search"), CX + 3, 33, DIM, false);
+            CashMachine.fit(g, font, tr("search"), SEARCH_X + 3, 33, cw - (SEARCH_X - CX) - SORT_W - 8, DIM);
         }
-        key(g, CX + cw - 60, 31, 60, 13, tr("sort." + SORTS[sort]), false, true, mx, my);
+        key(g, CX + cw - SORT_W, 31, SORT_W, 13, wanted ? tr("order_sort." + ORDER_SORTS[sort]) : tr("sort." + SORTS[sort]), false, true, mx, my);
+        if (wanted) {
+            orders.draw(g, mx, my);
+            return;
+        }
         List<TradePostMenu.LotView> lots = v().lots();
         if (lots.isEmpty()) {
             g.drawString(font, tr(searchText.isEmpty() ? "no_lots" : "no_match"), CX + 2, 50, DIM, false);
@@ -629,7 +708,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                 g.renderItemDecorations(font, l.items().get(0), x + cardW / 2 - 8, y + 3);
             }
             if (mine(l)) {
-                small(g, tr("yours"), x + 3, y + 3, AMBER, cardW / 2 - 12);
+                tag(g, tr("yours"), x + 3, y + 3, AMBER, cardW / 2 - 11);
             }
             if (l.items().size() > 1) {
                 String more = "+" + (l.items().size() - 1);
@@ -694,7 +773,7 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         key(g, CX + 76, KEY_Y, 44, 16, tr("back"), false, true, mx, my);
     }
 
-    private int row(GuiGraphics g, String left, String right, int x, int y, int w, int colour) {
+    int row(GuiGraphics g, String left, String right, int x, int y, int w, int colour) {
         CashMachine.fit(g, font, left, x, y, w - font.width(right) - 4, DIM);
         g.drawString(font, right, x + w - font.width(right), y, colour, false);
         return y + 11;
@@ -773,8 +852,18 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
         g.pose().popPose();
     }
 
+    /** A short label at three quarters of the font's size, smaller still when that is wider than {@code w} (never cut). */
+    void tag(GuiGraphics g, String s, int x, int y, int colour, int w) {
+        float scale = Math.min(0.75f, (float) w / Math.max(1, font.width(s)));
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, s, 0, 0, colour, false);
+        g.pose().popPose();
+    }
+
     /** Text at three quarters of the font's size, cut to fit {@code w}. */
-    private void small(GuiGraphics g, String s, int x, int y, int colour, int w) {
+    void small(GuiGraphics g, String s, int x, int y, int colour, int w) {
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(0.75f, 0.75f, 1f);
@@ -794,6 +883,8 @@ public class TradePostScreen extends AbstractContainerScreen<TradePostMenu> impl
                     return box.get(i);
                 }
             }
+        } else if (menu.page == TradePostBlock.Tab.MARKET && wanted) {
+            return orders.hovered(x, y);
         } else if (menu.page == TradePostBlock.Tab.MARKET && openLot != null && openView != null) {
             List<ItemStack> items = lotItems(openView);
             for (int i = 0; i < items.size(); i++) {

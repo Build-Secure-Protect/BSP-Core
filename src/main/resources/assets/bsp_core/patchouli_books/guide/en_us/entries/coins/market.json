@@ -15,7 +15,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "A lot you cancel, and one whose 7 days run out, waits in your $(l)Collect$() box. $(l)COLLECT ALL$() fills your inventory and leaves the rest in the box.$(br2)Shatter Totems and Totem Cores cannot be sold, not even inside a shulker box.$(br2)Score Screens can show the market as the $(l)Market Board$(): the newest lots with their prices and how long ago each was listed.",
+      "text": "A lot you cancel, and one whose 7 days run out, waits in your $(l)Collect$() box. $(l)COLLECT ALL$() fills your inventory and leaves the rest in the box.$(br2)Shatter Totems and Totem Cores cannot be sold, not even inside a shulker box.$(br2)Score Screens can show the market as the $(l)Market Board$(): the newest lots with their prices and how long ago each was listed.$(br2)Looking for something nobody sells? Place a $(l:coins/buy_orders)buy order$().",
       "title": "Collecting"
     }
   ]

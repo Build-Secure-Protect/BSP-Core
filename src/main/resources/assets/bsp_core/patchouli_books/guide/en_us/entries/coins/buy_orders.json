@@ -1,0 +1,27 @@
+{
+  "name": "Buy Orders",
+  "category": "bsp_core:coins",
+  "icon": "minecraft:cactus",
+  "sortnum": 14,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Want something nobody sells? On $(l)MARKET$(), press $(l)WANTED$(), then the $(l)+ NEW ORDER$() card. Find the item by name, set how many and the price each, and press $(l)PLACE ORDER$().$(br2)The whole price leaves your bank at once and is held for the order. You can have 10 open, each for up to 9 stacks of one item."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Filling an order",
+      "text": "On $(l)WANTED$() each order is a card: the item, the price each and how many are still wanted. Orders you can fill from your inventory are lit.$(br2)Open a card, choose how many to $(l)SEND$() and press $(l)FILL$(). The items leave your inventory and you are paid at once, less the 5% market tax, which goes to the $(l:coins/lottery)lottery$() pot."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Plain items only",
+      "text": "An order takes only the plain item: no enchantments, no damage, no custom name. Shatter Totems and Totem Cores cannot be ordered.$(br2)Orders fill a little at a time from anyone on the network. What is sent waits in the buyer's $(l)Collect$() box at any Trade Post, and the buyer hears each time."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Closing an order",
+      "text": "An order lasts 7 days. Open your own order to $(l)CANCEL ORDER$(). When it is cancelled or runs out, the pieces held for what was not sent go back to your bank.$(br2)Score Screens can show the $(l)Wanted Board$(): the open orders, best pay first. A second screen on the $(l)Market Board$() shows what is for sale."
+    }
+  ]
+}

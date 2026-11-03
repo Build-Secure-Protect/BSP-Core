@@ -4,6 +4,16 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-03
+
+### Added
+- **Buy orders.** A player who wants an item nobody is selling asks for it at a Trade Post (or on the Portable Banker's market): on the MARKET page, the WANTED key beside FOR SALE shows the buy orders as cards like the lots, and the first card, + NEW ORDER, places one. The item is found by name among every item that can be ordered; the order asks for 1 to `market.maxStacks` stacks of it at a price each, and the whole price leaves the buyer's bank at once and is held for the order. Anyone else opens an order's card, picks how many to SEND (shift steps a stack) and presses FILL: the items leave their inventory (never what they wear) and they are paid at once for what goes, less the market tax (`market.taxPercent`, into the lottery pot; it always leaves the seller at least a piece). Orders fill a bit at a time from anyone on the network; what is sent waits in the buyer's Collect box, and the buyer is told each time (on any server, or at their next login). An order lasts `market.listingDays`; the buyer can cancel it from its card, and when it is cancelled or runs out what is held for what was not sent goes back to their bank. Only the plain item counts: its default form, with no enchantments, damage or custom name. Shatter Totems, Totem Cores, the market's `refusedItems` and operator-only blocks can never be ordered. A player may have `market.maxOrdersPerPlayer` (new, 10) open at once. The cards show the item, who wants it, the price each, how many are still wanted, a bar of how much is sent, YOURS on your own and "have N" on those you can fill; sort by newest, best pay or the ones you can fill, and search by item or buyer.
+  - **The Wanted Board for Score Screens**, picked in a screen's settings like the Market Board (and in the Tiles look by default): the open orders, best pay first, each its item, the price each and how many it still wants of how many. One screen can show what is for sale and another what people want.
+  - **On a network** the orders live in the database (new table `market_orders`) and every placing, fill and cancel is one transaction, so two sellers on two servers filling the same order at once never send more than it wants (what one sends past that goes back to their Collect box in the same step). When the database cannot be reached nothing moves; when an answer is lost after the database may have changed, a fill's items wait on the server until the database can say whether it went in, and go to the seller's Collect box if it did not.
+  - **Commands** for operators: `/bsp market orders [player]` (the open orders with their ids, what is sent and held) and `/bsp market cancelorder <id>` (what is held goes back to the buyer, who is told); `/bsp market expire` also closes the orders past their end.
+  - **The guide book** has a Buy Orders entry under Shatter Coins, and the market's entry points to it.
+  - Clients need this version too: the Trade Post screen's data and the boards' summaries changed (network protocol 4).
+
 ## [1.8.3] - 2026-11-03
 
 ### Fixed

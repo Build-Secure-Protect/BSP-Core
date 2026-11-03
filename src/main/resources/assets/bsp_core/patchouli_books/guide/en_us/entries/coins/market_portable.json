@@ -2,7 +2,7 @@
   "name": "Market on the Go",
   "category": "bsp_core:coins",
   "icon": "bsp_core:portable_banker",
-  "sortnum": 14,
+  "sortnum": 15,
   "pages": [
     {
       "type": "patchouli:spotlight",

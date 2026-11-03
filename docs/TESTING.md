@@ -2575,3 +2575,21 @@ On a test server, with an op in creative mode and a second player in survival:
 - [ ] On a network, after a creative deletion, the totem's copies on another server are husks too (with Redis on).
 - [ ] Middle-click a placed totem in creative: you get a plain totem of your own (not a copy of that one), and the placed totem is untouched after you bin the plain one.
 - [ ] In creative, carry a totem and switch to another server: it arrives live and is not destroyed while the inventory is being restored.
+
+## Buy orders (2026-11-03)
+
+Two players, A (buyer) and B (seller), each with a bank balance. On one server first, then across two servers of the network.
+- [ ] A opens a Trade Post, MARKET, presses WANTED: the + NEW ORDER card is first. It opens NEW ORDER; typing "cact" shows Cactus among the results (hover shows the item); totems and Totem Cores never show.
+- [ ] A picks Cactus: HOW MANY fills with 64, "up to 576". Types PAY EACH 12: "Held from your bank now 768". PLACE ORDER: the message says 768 are held, A's balance drops by 768, and the card shows "12 each", "Cactus · 64 to go", YOURS.
+- [ ] B carries 37 plain Cactus and 5 renamed: the card says "you have 37" and is lit. B opens it: YOU CARRY 37. SEND -, + and ALL work (shift steps 64), FILL 37: B's balance rises by 444 less the tax, the pot by the tax, B keeps the 5 renamed, and A is told (on any server, or at the next login).
+- [ ] A's COLLECT tab shows 37 Cactus; COLLECT ALL takes them.
+- [ ] B sends 30 more: only 27 go, 3 stay with B (on a network they go to B's Collect box), and the order leaves the WANTED cards; A hears it is filled.
+- [ ] A places an order, B fills part, A opens it (YOUR ORDER) and presses CANCEL ORDER: what was held for the rest comes back.
+- [ ] Set `market.listingDays` to 1 and let an order run out: within 30 seconds A is told, with what was sent and the pieces back.
+- [ ] Sort cycles NEWEST, BEST PAY, YOU CAN FILL; the search finds by item and by buyer name.
+- [ ] Place `market.maxOrdersPerPlayer` orders: NEW ORDER says to cancel one first and PLACE ORDER stays dim.
+- [ ] A Score Screen set to WANTED (Board row) shows the orders in the Tiles look, best pay first, "12 each", "24 of 64 to go"; another on MARKET shows the lots.
+- [ ] The Portable Banker's market has WANTED too.
+- [ ] Network: B on one server and C on another fill the same order at the same moment: the buyer never gets more than ordered, and the one who sent too many finds the rest in their Collect box.
+- [ ] `/bsp market orders` lists them; `/bsp market cancelorder <id>` gives back what is held and tells the buyer.
+- [ ] A 1.8.3 client joining is refused with the update message.

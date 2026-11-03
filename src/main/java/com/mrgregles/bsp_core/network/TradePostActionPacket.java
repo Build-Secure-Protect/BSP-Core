@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.network;
 
 import com.mrgregles.bsp_core.bank.Bank;
+import com.mrgregles.bsp_core.market.BuyOrders;
 import com.mrgregles.bsp_core.market.Market;
 import com.mrgregles.bsp_core.trade.TradePostMenu;
 import com.mrgregles.bsp_core.trade.Trades;
@@ -18,18 +19,23 @@ import java.util.function.Supplier;
  * every key closes the screen when the account has lost its market unlock.
  */
 public record TradePostActionPacket(Action action, String text, long amount, boolean flag) {
-    /** VIEW: {@code text} the search, {@code amount} sort + 3 x page. DETAIL: {@code text} a lot id, answered with its full stacks. */
-    public enum Action { VIEW, BUY, CANCEL, LIST, COLLECT, ASK, WITHDRAW, ANSWER, DETAIL }
+    /**
+     * VIEW: {@code text} the search, {@code amount} sort + 3 x page, {@code flag} the buy orders (WANTED) rather than the lots.
+     * DETAIL: {@code text} a lot id, answered with its full stacks. ORDER: {@code text} the item id and how many, as
+     * "minecraft:cactus 64", {@code amount} the price each. FILL: {@code text} an order id, {@code amount} how many to send.
+     * UNORDER: {@code text} an order id, cancelled.
+     */
+    public enum Action { VIEW, BUY, CANCEL, LIST, COLLECT, ASK, WITHDRAW, ANSWER, DETAIL, ORDER, FILL, UNORDER }
 
     public static void encode(TradePostActionPacket msg, FriendlyByteBuf buf) {
         buf.writeEnum(msg.action);
-        buf.writeUtf(msg.text, 64);
+        buf.writeUtf(BSPNetwork.cut(msg.text, 160), 160); // an ORDER's item id and count; a modded id can be long
         buf.writeLong(msg.amount);
         buf.writeBoolean(msg.flag);
     }
 
     public static TradePostActionPacket decode(FriendlyByteBuf buf) {
-        return new TradePostActionPacket(buf.readEnum(Action.class), buf.readUtf(64), buf.readLong(), buf.readBoolean());
+        return new TradePostActionPacket(buf.readEnum(Action.class), buf.readUtf(160), buf.readLong(), buf.readBoolean());
     }
 
     public static void handle(TradePostActionPacket msg, Supplier<NetworkEvent.Context> ctx) {
@@ -59,7 +65,7 @@ public record TradePostActionPacket(Action action, String text, long amount, boo
         if (!menu.allow(System.currentTimeMillis())) {
             // too many at once: a search, sort or page still counts (the once-a-second refresh sends it), anything else is dropped
             if (msg.action == Action.VIEW) {
-                menu.setView(msg.text, (int) Math.floorMod(msg.amount, 3L), (int) Math.max(0, msg.amount / 3));
+                menu.setView(msg.text, (int) Math.floorMod(msg.amount, 3L), (int) Math.max(0, msg.amount / 3), msg.flag);
             }
             return;
         }
@@ -69,9 +75,15 @@ public record TradePostActionPacket(Action action, String text, long amount, boo
         }
         switch (msg.action) {
             case VIEW -> {
-                menu.setView(msg.text, (int) Math.floorMod(msg.amount, 3L), (int) Math.max(0, msg.amount / 3));
+                menu.setView(msg.text, (int) Math.floorMod(msg.amount, 3L), (int) Math.max(0, msg.amount / 3), msg.flag);
                 TradePostMenu.sync(player, "", List.of());
             }
+            case ORDER -> order(player, msg);
+            case FILL -> BuyOrders.fill(server, player, msg.text, (int) Math.max(0, Math.min(Integer.MAX_VALUE, msg.amount)), a -> TradePostMenu.sync(player,
+                    "message.bsp_core.order." + (a.ok() ? "sent" : a.key()), a.ok() ? List.of(a.sent() + " " + a.order().item().getHoverName().getString(), a.order().buyerName,
+                            Bank.format(a.paid()), Bank.format(a.tax())) : List.of()));
+            case UNORDER -> BuyOrders.cancel(server, player.getUUID(), msg.text, false, a -> TradePostMenu.sync(player,
+                    "message.bsp_core.order." + (a.ok() ? "cancelled" : a.key()), a.ok() ? List.of(a.order().describe(), Bank.format(a.refund())) : List.of()));
             case DETAIL -> BSPNetwork.sendChecked(player, TradePostLotPacket.of(msg.text, Market.find(server, msg.text).orElse(null)),
                     TradePostLotPacket::encode, "a lot's stacks");
             case BUY -> Market.buy(server, player.getUUID(), name, msg.text, r -> TradePostMenu.sync(player,
@@ -98,6 +110,27 @@ public record TradePostActionPacket(Action action, String text, long amount, boo
                 TradePostMenu.sync(player, key.equals("ok") || key.equals("declined") ? "" : "message.bsp_core.trade." + key, List.of("?"));
             }
         }
+    }
+
+    /** ORDER: "item count" in the text, the price each in the amount. */
+    private static void order(ServerPlayer player, TradePostActionPacket msg) {
+        String[] parts = msg.text.trim().split(" ");
+        net.minecraft.resources.ResourceLocation key = parts.length == 2 ? net.minecraft.resources.ResourceLocation.tryParse(parts[0]) : null;
+        net.minecraft.world.item.Item item = key == null ? null : net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(key);
+        int count;
+        try {
+            count = parts.length == 2 ? Integer.parseInt(parts[1]) : 0;
+        } catch (NumberFormatException e) {
+            count = 0;
+        }
+        if (item == null || item == net.minecraft.world.item.Items.AIR) {
+            TradePostMenu.sync(player, "message.bsp_core.order.refused", List.of());
+            return;
+        }
+        int n = count;
+        BuyOrders.place(player.server, player.getUUID(), player.getGameProfile().getName(), item, n, msg.amount, a -> TradePostMenu.sync(player,
+                "message.bsp_core.order." + (a.ok() ? "placed" : a.key()), a.ok() ? List.of(a.order().describe(), Bank.format(a.order().each), Bank.format(a.order().held()))
+                        : List.of(String.valueOf(BuyOrders.maxOrders()), String.valueOf(BuyOrders.maxCount(BuyOrders.plain(item))))));
     }
 
     /** A Portable Banker's market whose unlock was taken away: the screen closes (the lot slots go back) with a line saying why. */

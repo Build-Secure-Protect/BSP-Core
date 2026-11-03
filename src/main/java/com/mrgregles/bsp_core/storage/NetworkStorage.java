@@ -66,6 +66,7 @@ public final class NetworkStorage {
     /** The marketplace while network storage is on (made when the database connects). */
     @Nullable
     private static volatile com.mrgregles.bsp_core.market.NetworkMarket market;
+    private static volatile com.mrgregles.bsp_core.market.NetworkOrders orders;
 
     /** A steal running on another server of the network: where, whose totem, who is stealing, and when it started and is expected to end (wall-clock ms). */
     /** A player online on another server of the network. */
@@ -330,6 +331,12 @@ public final class NetworkStorage {
                         m.refresh(srv);
                     }
                 }
+                case "orders" -> {
+                    var o = orders();
+                    if (o != null) {
+                        o.refresh(srv);
+                    }
+                }
                 case "shop" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
@@ -424,6 +431,7 @@ public final class NetworkStorage {
                 teamReload(null);
                 kitReload(null);
                 s.marketEnsurePot();
+                orders = newOrders(s); // before the market: down() turns false with the market, and an order then must find its store
                 market = newMarket(s);
                 MinecraftServer forTrades = server;
                 RedisLink linked = redis;
@@ -434,6 +442,10 @@ public final class NetworkStorage {
                     var m = market;
                     if (m != null && server != null) {
                         m.refresh(server);
+                    }
+                    var o = orders;
+                    if (o != null && server != null) {
+                        o.refresh(server);
                     }
                 });
                 s.clearSteals();
@@ -453,6 +465,7 @@ public final class NetworkStorage {
                     r.close();
                 }
                 market = null;
+                orders = null;
                 retryAtMs = System.currentTimeMillis() + RETRY_MS;
                 BSPCore.LOGGER.error("BSP-Core storage: storage.mode is \"mysql\" but the database could not be used ({}). Trying again in {} s; until it connects, "
                         + "the bank, the market, first-join totems and kits wait (nothing the network keeps is decided on this server's local copy).", e.toString(), RETRY_MS / 1000);
@@ -547,6 +560,7 @@ public final class NetworkStorage {
         stealsElsewhere = List.of();
         playersElsewhere = List.of();
         market = null;
+        orders = null;
         com.mrgregles.bsp_core.trade.Trades.hub().disconnect();
         server = null;
     }
@@ -1804,6 +1818,12 @@ public final class NetworkStorage {
         return store != null ? market : null;
     }
 
+    /** The network's buy orders, or null while network storage is off. */
+    @Nullable
+    public static com.mrgregles.bsp_core.market.NetworkOrders orders() {
+        return store != null ? orders : null;
+    }
+
     /** Tells the other servers a bank account changed in the database (their cached copy re-reads it). */
     public static void bankChanged(UUID id) {
         if (store != null) {
@@ -1926,6 +1946,50 @@ public final class NetworkStorage {
         };
         return new com.mrgregles.bsp_core.market.NetworkMarket(db, r -> worker().execute(r), NetworkStorage::onServer, () -> publish("market", ""),
                 com.mrgregles.bsp_core.market.MarketLedger::get, id -> publish("mbox", id.toString()));
+    }
+
+    private static com.mrgregles.bsp_core.market.NetworkOrders newOrders(MySqlStore s) {
+        com.mrgregles.bsp_core.market.OrderDb db = new com.mrgregles.bsp_core.market.OrderDb() {
+            @Override
+            public Done place(com.mrgregles.bsp_core.market.BuyOrder order, int maxOrders) throws Exception {
+                return s.orderPlace(order, maxOrders);
+            }
+
+            @Override
+            public List<com.mrgregles.bsp_core.market.BuyOrder> orders() throws Exception {
+                return s.orderList();
+            }
+
+            @Override
+            public Done fill(String id, UUID seller, int count, String attempt, long now) throws Exception {
+                return s.orderFill(id, seller, count, attempt, now);
+            }
+
+            @Override
+            public Done close(String id) throws Exception {
+                return s.orderClose(id);
+            }
+
+            @Override
+            public boolean committed(String attempt) throws Exception {
+                return s.marketCommitted(attempt);
+            }
+
+            @Override
+            public void settleFill(String attempt, UUID seller, List<net.minecraft.world.item.ItemStack> items) throws Exception {
+                s.orderSettleFill(attempt, seller, items);
+            }
+        };
+        // a fill puts items in Collect boxes in the database: this server's copy of the box is read again, and the others are told
+        java.util.function.Consumer<UUID> boxChanged = id -> {
+            var m = market();
+            if (m != null) {
+                m.refreshBox(id);
+            }
+            publish("mbox", id.toString());
+        };
+        return new com.mrgregles.bsp_core.market.NetworkOrders(db, r -> worker().execute(r), NetworkStorage::onServer, () -> publish("orders", ""),
+                com.mrgregles.bsp_core.market.OrderLedger::get, boxChanged);
     }
 
     // ------------------------------------------------------------------ teams
