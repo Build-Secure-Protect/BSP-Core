@@ -4,6 +4,7 @@ band and a caption, captured headlessly like the other pictures.
 
   python3 tools/gen_feature_plates.py          -> tools/preview/feature_plates/<slug>.html and docs/curseforge/images/feature_<slug>.jpg
   python3 tools/gen_feature_plates.py html     -> the pages only (open one with file:// to check it)
+  python3 tools/gen_feature_plates.py only a b -> every page, but captures only the plates named
 
 Each plate copies its source page whole (so the page's own styles and scripts run), hides everything, then shows the one
 element the JS picks, fixed in the middle of the plate. Add a plate to PLATES: slug, source page, a JS expression giving the
@@ -34,6 +35,12 @@ PLATES = [
      "The leader's pinned note on top, the last fifty lines with a mark on the ones new to you, and a line to type.", 500),
     ("teams_invite", "team_popup_concepts.html", "[...document.querySelectorAll('h3')].find(h => h.textContent.startsWith('P3')).parentElement.querySelector('.game')",
      "An invite arrives", "A card at the top right with the inviter, the team, two keys and the seconds left, plus a clickable chat line.", None),
+    ("ally_allies", "alliance_plate.html", "document.getElementById('a1')", "Alliances",
+     "The ALLIANCE tab: every player of your allied teams, the server and dimension they are in, their block when their team shares it, and TELEPORT with BSP-Teleport.", 600),
+    ("ally_perks", "alliance_plate.html", "document.getElementById('a2')", "What you give your allies",
+     "Each team picks what its allies get on its totems: see through its cloaks, pass its Ward, keep its Alarm quiet, use its machines. Upgrades never.", 600),
+    ("ally_break", "alliance_plate.html", "document.getElementById('a3')", "Betrayal",
+     "An ally who starts a steal on an ally's totem breaks the alliance: the steal takes half as long again, and everyone in it hears at once.", 720),
     ("score_boards", "score_board_concepts.html", "document.querySelectorAll('.scr')[0]", "Boards on a Score Screen",
      "A screen can show another mod's board, here the home servers, and turn through the scoreboard, the rules, the prizes and every board.", None),
     ("kits_browser", "kit_refined.html", "document.querySelectorAll('.scr.q')[0]", "The kit browser",
@@ -118,9 +125,12 @@ def main():
     print("pages:", len(pages), "->", OUT)
     if len(sys.argv) > 1 and sys.argv[1] == "html":
         return
+    only = set(sys.argv[2:]) if len(sys.argv) > 1 and sys.argv[1] == "only" else None
     from capture_images import shot, jpeg
     IMAGES.mkdir(parents=True, exist_ok=True)
     for (slug, *_), p in zip(PLATES, pages):
+        if only is not None and slug not in only:
+            continue
         tmp = Path(tempfile.gettempdir()) / f"bsp_feature_{slug}.png"
         shot(f"file://{p}", 800, 600, tmp, budget=8000)
         jpeg(tmp, IMAGES / f"feature_{slug}.jpg")

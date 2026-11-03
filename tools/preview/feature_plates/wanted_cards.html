@@ -122,7 +122,7 @@ canvas.gui{ width:100%; image-rendering:pixelated; display:block; margin:0 auto;
   (function(){ const g=gui(el('w3'),300,216); post(g);
     txt(g,'NEW ORDER',CX,32,C.PHOS); fill(g,CX,42,CW,13,C.SEL); txt(g,'ca',CX+3,44,C.PHOS);
     ['cactus','carrot','cake','camp','candle','log','glass','redstone','iron','pearl'].forEach((k,i)=>{ const x=CX+i*19; sslot(g,x,58); if(i===0) frame(g,x,58,18,18,C.PHOS); icon(g,k,x+1,59); });
-    small(g,'23 items · row 1 of 3 · scroll',CX,78,C.DIM,CW); txt(g,'CACTUS',CX,84,C.PHOS);
+    small(g,'23 items · row 1 of 3 · scroll',CX,77,C.DIM,CW); txt(g,'CACTUS',CX,84,C.PHOS,{size:9});
     const field=(x,y,w,v)=>{ fill(g,x,y-1,w,12,C.SEL); fill(g,x,y+10,w,1,C.DIM); txt(g,v,x+2,y+1,C.PHOS); };
     small(g,'HOW MANY',CX,96,C.DIM,50); key(g,CX+52,93,12,11,'-',false); field(CX+65,93,38,'64'); key(g,CX+104,93,12,11,'+',false); small(g,'up to 576',CX+120,96,C.DIM,72);
     small(g,'PAY EACH',CX,110,C.DIM,50); key(g,CX+52,107,12,11,'-',false); field(CX+65,107,74,'12'); key(g,CX+140,107,12,11,'+',false);
@@ -133,13 +133,13 @@ canvas.gui{ width:100%; image-rendering:pixelated; display:block; margin:0 auto;
 
   /* 4: the Wanted Board in the Tiles look (ScoreScreenRenderer colours) */
   (function(){ const SB={BG:'#070a0e',TQ:'#19d3b0',GOLD:'#ffd23a',TEXT:'#e8eaf0',MUTED:'#9aa3b5',STRIP:'#10151c',DARK:'#0b0d11'};
-    const BW=256, BH=128, g=gui(el('wb'),BW,BH);
+    const BW=256, BH=150, g=gui(el('wb'),BW,BH);
     fill(g,0,0,BW,BH,'#2a2f3a'); fill(g,2,2,BW-4,BH-4,SB.BG); fill(g,4,4,BW-8,14,SB.STRIP); txt(g,'WANTED',BW/2,6,SB.TQ,{align:'center',size:12});
     const sorted=ORDERS.filter(o=>!o.mine).concat(ORDERS.filter(o=>o.mine)).sort((a,b)=>b.each-a.each);
-    const cols=4, tw=(BW-8)/cols, th=52;
+    const cols=4, tw=(BW-8)/cols, th=63;
     sorted.slice(0,8).forEach((o,i)=>{ const x=4+(i%cols)*tw, y=21+Math.floor(i/cols)*th; fill(g,x+2,y+1,tw-4,th-3,SB.DARK);
-      icon(g,o.it,x+tw/2-12,y+3,3); txt(g,o.each+' each',x+tw/2,y+28,SB.GOLD,{align:'center',size:11,max:tw-8});
-      txt(g,o.name,x+tw/2,y+37,SB.TEXT,{align:'center',size:8,max:tw-8}); txt(g,(o.wanted-o.filled)+' of '+o.wanted+' to go',x+tw/2,y+43,SB.MUTED,{align:'center',size:7,max:tw-8}); }); })();
+      icon(g,o.it,x+tw/2-12,y+3,3); txt(g,o.each+' each',x+tw/2,y+29,SB.GOLD,{align:'center',size:11,max:tw-8});
+      txt(g,o.name,x+tw/2,y+41,SB.TEXT,{align:'center',size:9,max:tw-8}); txt(g,(o.wanted-o.filled)+' of '+o.wanted+' to go',x+tw/2,y+51,SB.MUTED,{align:'center',size:8,max:tw-8}); }); })();
 })();
 </script>
 <div class="bsp-band"><b>BSP-Core</b> · Buy orders</div><div class="bsp-cap">WANTED beside FOR SALE: every order as a card with who wants it, the price each and how many are still to go. The ones you can fill light up.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('w1')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

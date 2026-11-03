@@ -1,0 +1,117 @@
+<meta charset="utf-8">
+<title>Alliances Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Oswald:wght@500;600&family=VT323&display=swap">
+<style>
+/* The alliance screens as built in 1.10.0 (TeamScreen's ALLIANCE tab, PromptHud's cards), drawn at GUI pixel size like
+   buy_orders_plate.html, for the CurseForge feature plates. One card per screen. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:24px; }
+h1{ font-family:var(--display); font-size:28px; margin:0; }
+h3{ font-family:var(--display); font-size:15px; margin:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+canvas.gui{ width:100%; image-rendering:pixelated; display:block; margin:0 auto; }
+</style>
+<div class="wrap">
+<h1>Alliances in 1.10.0</h1>
+<div class="card"><h3>The ALLIANCE tab: ALLIES</h3><canvas class="gui" id="a1"></canvas></div>
+<div class="card"><h3>PERKS</h3><canvas class="gui" id="a2"></canvas></div>
+<div class="card"><h3>The break</h3><canvas class="gui" id="a3"></canvas></div>
+</div>
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const R=3, FONT='VT323, ui-monospace, monospace';
+  const C={BG:'#10151c',SLOT:'#0c0e12',DIM:'#2a2f3a',LINE:'#1a1f29',MUTED:'#9aa3b5',TEXT:'#e6eaf2',GREEN:'#58f29a',AMBER:'#f2b544',GREY:'#555c6a',
+    RED:'#ff6b5c',GOLD:'#ffd23a',VIO:'#b58cff',TEAL:'#4fd8c8',TQ:'#19d3b0',HOVER:'#0e2624'};
+  const MC={red:'#ff5555',aqua:'#55ffff',green:'#55ff55',gold:'#ffaa00',purple:'#aa00aa',blue:'#5555ff',grey:'#aaaaaa'};
+  function gui(cv,w,h,fit){ cv.width=w*R; cv.height=h*R; cv.style.maxWidth=Math.round(w*(fit||2.6))+'px'; const g=cv.getContext('2d'); g.setTransform(R,0,0,R,0,0); g.imageSmoothingEnabled=false; g.textBaseline='top'; return g; }
+  function fill(g,x,y,w,h,c){ g.fillStyle=c; g.fillRect(x,y,w,h); }
+  function txt(g,s,x,y,c,o){ o=o||{}; const size=o.size||10; g.font=size+'px '+FONT; const w=g.measureText(s).width; const sc=o.max&&w>o.max?o.max/w:1; const al=o.align||'left';
+    const ax=al==='right'?x-w*sc:al==='center'?x-w*sc/2:x; g.save(); g.translate(ax,y); g.scale(sc,sc); g.fillStyle=c; g.fillText(s,0,0); g.restore(); return w*sc; }
+  const small=(g,s,x,y,c,w,al)=>txt(g,s,x,y,c,{size:8,max:w,align:al});
+  function wrap(g,s,x,y,w,c,size){ size=size||10; g.font=size+'px '+FONT; const words=s.split(' '); let line='', yy=y; const lh=size===10?9:7;
+    words.forEach(wd=>{ const t=line?line+' '+wd:wd; if(g.measureText(t).width>w&&line){ txt(g,line,x,yy,c,{size}); yy+=lh; line=wd; } else line=t; }); if(line) txt(g,line,x,yy,c,{size}); return yy+lh; }
+  function key(g,x,y,w,h,label,look,sub){ const edge=look==='on'?C.TEAL:look==='warn'?C.RED:C.DIM; const col=look==='on'?C.TEAL:look==='warn'?C.RED:look==='lock'?C.GREY:C.MUTED;
+    fill(g,x,y,w,h,edge); fill(g,x+1,y+1,w-2,h-2,C.SLOT); small(g,label,x+w/2,sub?y+3:y+h/2-3,col,w-4,'center'); if(sub) small(g,sub,x+w/2,y+h-9,C.MUTED,w-4,'center'); }
+  // the Team screen on its ALLIANCE tab: frame, tabs, the main box and the alliance's key row
+  function screen(g,page,leader){
+    fill(g,0,0,342,238,C.TEAL); fill(g,1,1,340,236,C.BG);
+    txt(g,'TEAM',11,6,C.GREY); txt(g,'ALLIANCE',47,6,C.TEAL); fill(g,47,16,40,1,C.TEAL);
+    txt(g,leader?'you lead this team':'member',331,6,C.MUTED,{align:'right'});
+    fill(g,8,20,326,184,C.DIM); fill(g,9,21,324,182,C.SLOT);
+    let kx=9; const ky=209;
+    const k=(w,l,look,sub)=>{ key(g,kx,ky,w,20,l,look,sub); kx+=w+3; };
+    k(42,'ALLIES',page==='allies'?'on':''); k(56,'INVITE TEAM',''); k(54,'ALLY BOARD','');
+    fill(g,kx-3-54+54-9,ky-4,8,8,C.TEAL); small(g,'3',kx-3-54+54-7,ky-3,C.BG);
+    kx+=4; k(52,'ALLY CHAT','','off'); kx+=4; k(38,'PERKS',page==='perks'?'on':''); if(leader){ kx+=4; k(40,'LEAVE','warn'); }
+  }
+  function dot(g,x,y,c){ fill(g,x,y,4,4,c); }
+
+  // 1. ALLIES
+  (function(){ const g=gui(el('a1'),342,238); screen(g,'allies',true);
+    const mx=9,my=21,mw=324;
+    txt(g,'The Iron Pact',mx+6,my+5,C.TEAL); txt(g,'3 of 3 teams',mx+mw-6,my+5,C.MUTED,{align:'right'});
+    let y=my+18;
+    const head=(name,col,note)=>{ fill(g,mx+7,y+3,5,5,col); txt(g,name,mx+17,y+2,col); small(g,note,mx+mw-6,y+3,C.MUTED,170,'right'); y+=13; };
+    const row=(name,lead,state,where,coords,tp)=>{ fill(g,mx+14,y+18,mw-18,1,C.LINE); dot(g,mx+17,y+4,state==='here'?C.GREEN:state==='else'?C.AMBER:C.GREY);
+      const nw=txt(g,name,mx+25,y+2,C.TEXT,{max:lead?100:120}); if(lead) small(g,'LEAD',mx+25+nw+3,y+3,C.GOLD);
+      const right=mx+mw-6-(tp?48:0);
+      small(g,where,mx+25,y+11,state==='here'?C.GREEN:C.MUTED,right-mx-25);
+      if(coords) small(g,coords,right,y+3,/\d/.test(coords)?C.TEXT:C.GREY,120,'right');
+      if(tp) key(g,mx+mw-6-44,y+2,44,14,'TELEPORT','on');
+      y+=19; };
+    head('Saltmarsh',MC.aqua,'2 online · shares coordinates');
+    row('TallyFern',true,'here','online here · Overworld','1204, 71, -388',true);
+    row('Pellmouth',false,'else','on Moongrove · Nether','152, 40, 96',true);
+    row('Mirewick',false,'off','offline · 3 h ago',null,false);
+    y+=2;
+    head('Thornwood',MC.green,'2 online · coordinates hidden');
+    row('Quillon',true,'else','on Frostwarf · Overworld','not shared',true);
+    row('Harrowgate',false,'else','on Stormfall · End','not shared',true);
+  })();
+
+  // 2. PERKS
+  (function(){ const g=gui(el('a2'),342,238); screen(g,'perks',true);
+    const mx=9,my=21,mw=324;
+    let hx=mx+6; hx+=small(g,'WHAT ',hx,my+5,C.MUTED)+3; hx+=small(g,'EMBERFALL',hx,my+5,MC.red)+3; small(g,'GIVES ITS ALLIES',hx,my+5,C.MUTED);
+    let y=my+16;
+    const tog=(x,yy,on)=>key(g,x,yy,36,13,on?'ON':'OFF',on?'on':'');
+    [['They see through our cloaks',true],['Our Ward leaves them alone',true],['Our Alarm stays quiet for them',false],['They may use our machines and plasma',false]].forEach(p=>{
+      txt(g,p[0],mx+6,y+3,C.TEXT); tog(mx+mw-6-36,y,p[1]); y+=15; });
+    fill(g,mx+6,y+1,mw-12,1,C.LINE); y+=5;
+    txt(g,'Share our coordinates',mx+6,y+3,C.TEXT); tog(mx+mw-6-36,y,true); y+=15;
+    small(g,'On: allies see where each of us stands.',mx+6,y,C.MUTED); y+=11;
+    small(g,'WHAT WE GET FROM THEM',mx+6,y,C.MUTED); y+=9;
+    let w=txt(g,'Saltmarsh',mx+6,y,MC.aqua); small(g,'cloak · machines · coordinates',mx+6+w+6,y+1,C.TEXT); y+=10;
+    w=txt(g,'Thornwood',mx+6,y,MC.green); small(g,'ward',mx+6+w+6,y+1,C.TEXT);
+    const foot='Allies never upgrade, pick up or recall our totems. An ally who starts a steal on one of us breaks the alliance.';
+    g.font='10px '+FONT; let lines=1, line=''; foot.split(' ').forEach(wd=>{ const t=line?line+' '+wd:wd; if(g.measureText(t).width>mw-12&&line){ lines++; line=wd; } else line=t; });
+    wrap(g,foot,mx+6,my+182-4-lines*9,mw-12,C.GREY);
+  })();
+
+  // 3. the break: the red card at the top right of the game, and the lines in chat
+  (function(){ const g=gui(el('a3'),300,150,3);
+    const sky=g.createLinearGradient(0,0,0,150); sky.addColorStop(0,'#5f8fd8'); sky.addColorStop(0.6,'#9dc0ee'); sky.addColorStop(0.6,'#4a7a2a'); sky.addColorStop(1,'#33561c');
+    g.fillStyle=sky; g.fillRect(0,0,300,150);
+    for(let i=0;i<6;i++){ fill(g,20+i*40,78-(i%3)*6,24,14,'#6b4a2b'); fill(g,22+i*40,80-(i%3)*6,20,10,'#8a6a3a'); }
+    // the card (128 x 40) at the top right, under where the game's toasts sit
+    const x=300-6-128, y=28;
+    fill(g,x-1,y-1,130,42,C.RED); fill(g,x,y,128,40,'rgba(16,21,28,0.94)');
+    fill(g,x+5,y+5,12,12,'#6b3fa0'); fill(g,x+7,y+8,3,2,'#fff'); fill(g,x+12,y+8,3,2,'#fff');
+    small(g,'ALLIANCE BROKEN',x+21,y+4,C.RED,102);
+    const nw=txt(g,'Quillon · ',x+21,y+12,C.TEXT,{size:9}); txt(g,'Thornwood',x+21+nw,y+12,MC.green,{size:9});
+    small(g,"stealing Okra_Moss's totem",x+21,y+23,C.TEXT,102);
+    small(g,'out of The Iron Pact',x+21,y+31,C.RED,102);
+    fill(g,x,y+39,90,1,C.RED);
+    // chat, bottom left
+    fill(g,2,104,296,30,'rgba(0,0,0,0.45)');
+    let cy=wrap(g,"[Alliance] Quillon of Thornwood started stealing Okra_Moss's totem. The Iron Pact is broken for them",4,106,292,C.RED,8);
+    wrap(g,'[Alliance] Thornwood cannot ally with any of those teams for 24 h',4,cy,292,C.RED,8);
+  })();
+})();
+</script>

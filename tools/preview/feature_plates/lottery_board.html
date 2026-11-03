@@ -276,7 +276,7 @@ ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:f
     function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops'],'Account'); const {g,x,y}=b;
       frame(g,x,y+52,150,44,C.AMBER_D); txt(g,'LOTTERY',x+4,y+55,C.DIM); coin(g,x+4,y+66,2); txt(g,fmt(POT),x+24,y+64,C.AMBER,{size:20});
       txt(g,'1 in '+IN,x+146,y+55,C.PHOS,{align:'right'}); txt(g,'last: Kira_B 41,800',x+146,y+85,C.DIM,{align:'right',size:8});
-      txt(g,'Drawn by an admin',x,y+102,C.SCREEN_E,{size:8}); },
+    },
     function(cv){ const b=banker(cv,['Account','Pay','Log','Market','Shops','Lottery'],'Account'); const {g,x,y}=b; fill(g,x,y+50,150,1,C.SCREEN_E);
       txt(g,'LOTTERY POT',x,y+54,C.DIM); txt(g,fmt(POT),x+150,y+54,C.AMBER,{align:'right'}); txt(g,'The LOTTERY key opens the page.',x,y+66,C.SCREEN_E,{size:8});
       txt(g,'RECENT',x,y+80,C.DIM); [['Bought 4 Iron Ingot','-240'],['Sold 16 Cobblestone','+80']].forEach((r,i)=>{ txt(g,r[0],x,y+90+i*10,C.DIM,{max:110}); txt(g,r[1],x+150,y+90+i*10,C.PHOS,{align:'right'}); }); }];
