@@ -92,6 +92,18 @@ The server puts Trade Posts at spawn: a steel trading desk with a screen under a
 
 Everyone at a Trade Post shows down the side of the screen with the server they are on. Pick a name, press TRADE, and if they accept you both get the trade screen: 12 places and a pieces box each, and their offer changing live in front of you. Any change turns both READY lights off, so nobody gets switched on at the last second; when both are ready a five-second countdown locks it all in. If either of you is short of room nothing moves. Walk away, log out or die and the trade is off, with everything back where it came from. A Shatter Totem and a Totem Core can never be sold or traded, not even in a shulker box.
 
+<!-- feature: wanted_cards -->
+
+Want something nobody is selling? Ask for it. Press WANTED beside FOR SALE and the market shows what people want instead: every buy order as a card with who wants it, the price each and how many are still to go, and the ones you could fill from your inventory light up.
+
+<!-- feature: wanted_fill -->
+
+Open one, pick how many to send and press FILL. The items leave your inventory and you are paid at once, less the 5% tax. Orders fill a bit at a time from anyone on any server, and everything sent waits in the buyer's Collect box.
+
+<!-- feature: wanted_new -->
+
+To place one, press + NEW ORDER, find the item by name and set how many (up to 9 stacks) and what you pay for each. The whole price comes out of your bank straight away and is held for the order; cancel it, or let its week run out, and whatever was not spent comes back. Up to 10 orders at a time, plain items only (no enchantments, damage or names), and never a totem or a Totem Core.
+
 ## The lottery
 
 <!-- feature: lottery_page -->
@@ -180,9 +192,10 @@ Click a card's picture to see what is inside, with the counts, and every conditi
 
 <!-- feature: score_boards -->
 
-Every totem you own scores by its tier, so stealing and upgrading both move you up. Score Screens at spawn show the live leaderboard, the season's rules and the prizes, and can carry boards from the other BSP mods, such as BSP-Teleport's Home Servers, and turn through all of it, page by page. The Market Board shows the newest lots on the market with their prices, a second after they are listed on any server, and the Lottery board rolls the names of everyone in beside the pot and the last winners. An admin sneaks and right-clicks a screen for its settings: Show it as the scoreboard, the rules, the prizes, one Board, or Rotate through pages; pick the board (‹ and › turn through them when there are more than fit), its look (Ledger rows, Tiles, or a Side column beside the leaderboard), which pages are in the rotation and how many seconds each stays. When a season ends the top three take the prizes, every totem is removed and everyone starts again with a fresh Tier I totem; prizes wait for you if you were offline.
+Every totem you own scores by its tier, so stealing and upgrading both move you up. Score Screens at spawn show the live leaderboard, the season's rules and the prizes, and can carry boards from the other BSP mods, such as BSP-Teleport's Home Servers, and turn through all of it, page by page. The Market Board shows the newest lots on the market with their prices, a second after they are listed on any server, the Wanted Board shows the buy orders, best pay first, so one screen can show what is for sale and the next what people want, and the Lottery board rolls the names of everyone in beside the pot and the last winners. An admin sneaks and right-clicks a screen for its settings: Show it as the scoreboard, the rules, the prizes, one Board, or Rotate through pages; pick the board (‹ and › turn through them when there are more than fit), its look (Ledger rows, Tiles, or a Side column beside the leaderboard), which pages are in the rotation and how many seconds each stays. When a season ends the top three take the prizes, every totem is removed and everyone starts again with a fresh Tier I totem; prizes wait for you if you were offline.
 
 <!-- feature: market_board -->
+<!-- feature: wanted_board -->
 <!-- feature: lottery_board -->
 
 ## For server owners
@@ -190,13 +203,13 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 <!-- plate: base_blocks -->
 
 - **One config file,** `serverconfig/bsp_core-server.toml`: every cost, time, range, limit and price, the bank, the shops, the market, the Totem Forge, teams and kits. The database and Redis passwords live apart in `config/bsp_core-network.toml`, which is never sent to players.
-- **Admin Rack,** or `/bsp admin`: every player's totems, position and vault at a glance, teleport and reset, the season end that pays the top three and hands everyone a fresh totem, decoy ranges, chunk loading, and the KITS tab. `/bsp totem wipe <player>` gives a test account a clean slate.
+- **Admin Rack,** or `/bsp admin`: every player on the network with their totems on every server, position, vault and score, teleport and reset, a box to set a player's score by hand (or `/bsp score set <player> <points>`; it rides on top of their totems and clears with the season), the season end that pays the top three and hands everyone a fresh totem, decoy ranges, chunk loading, and the KITS tab. `/bsp totem wipe <player>` gives a test account a clean slate, `/bsp totem give <player>` hands out a totem, and a totem an admin deletes in creative mode is gone for good.
 - **Shops are yours to build.** `/bsp shop` opens the Workbench: shops, pages, cards, prices, limits and their refills, rotations, notes, hours, styles and the network flag, all in a screen. A whole price list goes in with `/bsp shop import <file>`: the file is checked from top to bottom first and refused whole on any mistake, `test` shows what it would do, and a price fix keeps everyone's counts. `/bsp shop export` writes shops back out, and `/bsp shop report` shows what every shop paid out and took in, with a spreadsheet of every card. Cards and whole shops can ask for a LuckPerms rank or hours of play. Vendor Posts, Market Stalls, Stall Displays, the Shatter Bank, the Safety Deposit Box, the Land Office and the Trade Post are admin-placed blocks: nobody mines, pushes or blows them up.
 
 <!-- feature: kits_admin -->
 <!-- feature: kits_editor -->
 
-- **The market is yours to tune:** lot size, lots per player, days listed and the tax, items it refuses (ids or `#tags`), and the Portable Banker's unlock price. `/bsp market` lists lots, shows the pot, cancels a lot, ends the overdue ones and opens a player's Collect box. The Totem Forge's bill, pour time, setting times, coin price and steal time are all in the config too.
+- **The market is yours to tune:** lot size, lots and buy orders per player, days listed and the tax, items it refuses (ids or `#tags`), and the Portable Banker's unlock price. `/bsp market` lists lots and buy orders, shows the pot, cancels a lot or an order, ends the overdue ones and opens a player's Collect box. The Totem Forge's bill, pour time, setting times, coin price and steal time are all in the config too.
 - **The lottery is yours to run.** The ADMIN key on a Trade Post's LOTTERY tab, or `/bsp lottery admin` anywhere, opens the admin page: everyone seen this season, IN or OUT and why, how many days back a player must have played (7 by default), the LuckPerms ranks to leave out, ADD and TAKE with a reason for the log, and DRAW, which asks twice. `/bsp lottery` shows the same in chat, and `draw`, `add` and `take` do the same from the console. Only one draw runs at a time across the network. The shops' share of each purchase is `shop.lotteryPercent` (50 by default) and the daily login reward is `bank.dailyRewardPieces` (50 by default; 0 turns either off).
 
 <!-- feature: lottery_admin -->
@@ -207,10 +220,10 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 
 - **Anti Totem Block:** keeps totems and chosen machines out of spawn, hubs and arenas, and tells BSP-Teleport where homes and teleports are not allowed.
 - **Servers without totem placement:** list the safe servers of the network (spawn, a saferoom, a sanctuary) in `restrictions.noTotemServers`. Totems can be carried there but never placed or dropped, and one carried at logout goes back to its owner's last spot on a server that allows placement, so nobody parks a totem out of reach by logging off somewhere safe.
-- **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops with their stock, limits and rotating cards, the market, the lottery and the daily reward, teams and kits across every server, and Totem Forge pours count once per player; add Redis and all of it is live, live trades between servers included. A kit taken on one server is taken everywhere; a team made on one exists on all.
+- **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops with their stock, limits and rotating cards, the market and its buy orders, the lottery and the daily reward, teams with their invites, kits and the admin panel across every server, and Totem Forge pours count once per player; add Redis and all of it is live, live trades between servers included. A kit taken on one server is taken everywhere; a team made on one exists on all.
 - **Discord steal warnings:** turn on `discord.enabled` and give each server its `discord.serverName`. The alerts travel over the network's Redis to the Discord bot in BSP-Velocity Additions on the proxy, which alone holds the bot's token: no game server ever has one.
 - **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams, kits, the bank, the market and trades, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards and its playtime unlocks shop cards, BSP-Teleport moves teammates between servers, Region Guard sells the land, BSP-Velocity Additions carries the chat between servers and runs the Discord bot.
 
 ## Status
 
-1.8.0 is the current release: the lottery, drawn by an admin and won whole by one player, on the Trade Post, the Score Screens and the Portable Banker, and a daily login reward, on top of the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
+1.9.0 is the current release: buy orders on the Trade Post and the Wanted Board on the Score Screens, on top of scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!

@@ -1,0 +1,145 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+.bsp-target { width: 720px !important; max-width: none !important; }</style><title>Buy Orders Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Oswald:wght@500;600&family=VT323&display=swap">
+<style>
+/* The buy order screens as built in 1.9.0 (TradePostOrdersPage, ClientOrders), drawn at GUI pixel size like
+   trade_post_concepts.html, for the CurseForge feature plates. One card per screen. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:24px; }
+h1{ font-family:var(--display); font-size:28px; margin:0; }
+h3{ font-family:var(--display); font-size:15px; margin:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+canvas.gui{ width:100%; image-rendering:pixelated; display:block; margin:0 auto; }
+</style>
+<div class="wrap">
+<h1>Buy orders in 1.9.0</h1>
+<div class="card"><h3>The WANTED side of the MARKET page</h3><canvas class="gui" id="w1"></canvas></div>
+<div class="card"><h3>Filling an order</h3><canvas class="gui" id="w2"></canvas></div>
+<div class="card"><h3>Placing an order</h3><canvas class="gui" id="w3"></canvas></div>
+<div class="card"><h3>The Wanted Board</h3><canvas class="gui" id="wb"></canvas></div>
+</div>
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const ING=['........','........','..aaaaa.','.acccba.','abbbbba.','aaaaaa..','........','........'];
+  const ICONS={
+    diamond:{p:{a:'#0e6b6b',b:'#2fd3cc',c:'#a8fff7'},m:['...aa...','..abca..','.abbcca.','abbbbcca','abbbbbba','.abbbba.','..abba..','...aa...']},
+    iron:{p:{a:'#5a5a5a',b:'#c8c8c8',c:'#f0f0f0'},m:ING},
+    gold:{p:{a:'#8a5a00',b:'#f2b544',c:'#fff3a8'},m:ING},
+    log:{p:{a:'#4a3218',b:'#6b4a2b',c:'#b08a52',d:'#8a6a3a'},m:['aaaaaaaa','abbbbbba','abccccba','abcddcba','abcddcba','abccccba','abbbbbba','aaaaaaaa']},
+    pearl:{p:{a:'#0b3b36',b:'#1f8a7a',c:'#6ff0d8'},m:['........','..aaaa..','.abbbba.','.abccba.','.abccba.','.abbbba.','..aaaa..','........']},
+    redstone:{p:{a:'#7a0000',b:'#ff2a1a'},m:['........','..b..a..','.bab....','..b.bba.','....bab.','.ab..b..','bab.....','.b......']},
+    cactus:{p:{a:'#1f4a14',b:'#3f8a2a',c:'#6fbf4a',d:'#e8e2c0'},m:['.abcbca.','dabcbcad','.abcbca.','.abcbca.','dabcbcad','.abcbca.','.abcbca.','dabcbcad']},
+    bone:{p:{a:'#9a947a',b:'#ece6cf'},m:['bb......','bba.....','.bba....','..bba...','...bba..','....bba.','.....bba','......bb']},
+    slime:{p:{a:'#2f6a20',b:'#6fbf4a',c:'#a8f07a'},m:['........','..aaaa..','.abbbba.','.abccba.','.abbcba.','.abbbba.','..aaaa..','........']},
+    glass:{p:{a:'#8fc4cc',b:'#cdeef3',c:'#ffffff'},m:['aaaaaaaa','abbbbbca','abbbbcba','abbbcbba','abbcbbba','abcbbbba','acbbbbba','aaaaaaaa']},
+    carrot:{p:{a:'#a85a10',b:'#f08a1c',c:'#3f8f2a'},m:['......cc','.....cc.','....ab..','...abb..','..abb...','.abb....','.ab.....','a.......']},
+    cake:{p:{a:'#7a5432',b:'#b07a49',c:'#f4efe8',d:'#c4372b'},m:['........','.cdccdc.','cccccccc','dddddddd','bbbbbbbb','bbbbbbbb','aaaaaaaa','........']},
+    candle:{p:{a:'#c9b98a',b:'#efe6c4',c:'#ffb12a'},m:['...c....','...c....','..bb....','..bb....','..ab....','..ab....','..ab....','..aa....']},
+    camp:{p:{a:'#4a3218',b:'#6b4a2b',c:'#ffb12a',d:'#ff6a1a'},m:['...c....','..cdc...','.cdddc..','..cdc...','abababab','babababa','abababab','........']}};
+  function icon(g,kind,x,y,s){ s=s||2; const ic=ICONS[kind]; if(!ic) return; ic.m.forEach((row,j)=>{ for(let i=0;i<8;i++){ const ch=row[i]; if(ch&&ch!=='.'){ g.fillStyle=ic.p[ch]; g.fillRect(x+i*s,y+j*s,s,s); } } }); }
+  const R=3, FONT='VT323, ui-monospace, monospace';
+  const C={BEZEL:'#cfc8b8',BEZEL_D:'#8f877a',BEZEL_L:'#ece6d8',SCREEN:'#061008',SCREEN_E:'#0d3b22',PHOS:'#58f29a',DIM:'#3fb97a',AMBER:'#f2b544',SEL:'#0f2d1c',BAND:'#030805'};
+  function gui(cv,w,h){ cv.width=w*R; cv.height=h*R; cv.style.maxWidth=Math.round(w*2.6)+'px'; const g=cv.getContext('2d'); g.setTransform(R,0,0,R,0,0); g.imageSmoothingEnabled=false; g.textBaseline='top'; return g; }
+  function fill(g,x,y,w,h,c){ g.fillStyle=c; g.fillRect(x,y,w,h); }
+  function frame(g,x,y,w,h,c){ fill(g,x,y,w,1,c); fill(g,x,y+h-1,w,1,c); fill(g,x,y,1,h,c); fill(g,x+w-1,y,1,h,c); }
+  function bezel(g,w,h){ fill(g,0,0,w,h,C.BEZEL_D); fill(g,0,0,w-1,h-1,C.BEZEL_L); fill(g,1,1,w-2,h-2,C.BEZEL); }
+  function scr(g,x,y,w,h){ fill(g,x-1,y-1,w+2,h+2,C.SCREEN_E); fill(g,x,y,w,h,C.SCREEN); }
+  function txt(g,s,x,y,c,o){ o=o||{}; const size=o.size||10; g.font=size+'px '+FONT; const w=g.measureText(s).width; const sc=o.max&&w>o.max?o.max/w:1; const al=o.align||'left';
+    const ax=al==='right'?x-w*sc:al==='center'?x-w*sc/2:x; g.save(); g.translate(ax,y); g.scale(sc,sc); g.fillStyle=c; g.fillText(s,0,0); g.restore(); return w*sc; }
+  function wrap(g,s,x,y,w,c){ g.font='10px '+FONT; const words=s.split(' '); let line='', yy=y;
+    words.forEach(wd=>{ const t=line?line+' '+wd:wd; if(g.measureText(t).width>w&&line){ txt(g,line,x,yy,c); yy+=9; line=wd; } else line=t; }); if(line) txt(g,line,x,yy,c); return yy+9; }
+  const small=(g,s,x,y,c,w)=>txt(g,s,x,y,c,{size:8,max:w});
+  function key(g,x,y,w,h,label,on,enabled){ enabled=enabled!==false;
+    if(on&&enabled){ fill(g,x,y,w,h,C.PHOS); txt(g,label,x+w/2,y+(h-8)/2,C.SCREEN,{align:'center',max:w-6}); }
+    else { frame(g,x,y,w,h,enabled?C.DIM:C.SCREEN_E); txt(g,label,x+w/2,y+(h-8)/2,enabled?C.PHOS:C.SCREEN_E,{align:'center',max:w-6}); } }
+  function sslot(g,x,y){ fill(g,x,y,18,18,C.SCREEN_E); fill(g,x+1,y+1,16,16,C.SEL); }
+  function bar(g,x,y,w,h,done,of){ fill(g,x,y,w,h,C.SCREEN_E); fill(g,x,y,Math.round(w*done/of),h,C.AMBER); }
+  const fmt=n=>n.toLocaleString('en-GB');
+  const CX=14, CW=192;
+
+  function post(g,state){
+    bezel(g,300,216); scr(g,10,10,280,196);
+    let tx=CX; [['MARKET',true],['SELL',false],['COLLECT 3',false],['LOTTERY',false]].forEach(t=>{ const tw=t[0].length*5+8; key(g,tx,13,tw,13,t[0],t[1]); tx+=tw+2; });
+    key(g,276,12,11,11,'x',false); fill(g,CX,28,CW,1,C.SCREEN_E);
+    fill(g,210,10,80,196,C.BAND); small(g,'TRADERS · 4',214,15,C.DIM,60);
+    [['Okra_Moss','Spawn'],['TallyFern','Moongrove'],['Pellmouth','Stormfall',true],['Quillon','Frostwarf']].forEach((p,i)=>{ const y=26+i*21;
+      fill(g,214,y+4,3,3,p[2]?C.SCREEN_E:C.PHOS); txt(g,p[0],220,y+1,p[2]?C.DIM:C.PHOS,{max:66}); small(g,p[2]?'busy':p[1],220,y+11,C.DIM,66); });
+    key(g,214,186,72,16,'PICK A NAME',false,false); }
+
+  const ORDERS=[
+    {it:'iron',name:'Iron Ingot',buyer:'Okra_Moss',each:40,wanted:64,filled:32},
+    {it:'pearl',name:'Ender Pearl',buyer:'TallyFern',each:25,wanted:16,filled:6},
+    {it:'cactus',name:'Cactus',buyer:'Brindlewick',each:12,wanted:64,filled:40,have:37},
+    {it:'slime',name:'Slime Ball',buyer:'Pellmouth',each:9,wanted:64,filled:14},
+    {it:'glass',name:'Glass',buyer:'You',each:3,wanted:128,filled:0,mine:true},
+    {it:'log',name:'Oak Log',buyer:'Quillon',each:6,wanted:220,filled:20,have:64},
+    {it:'redstone',name:'Redstone',buyer:'Harrowgate',each:4,wanted:128,filled:32},
+    {it:'bone',name:'Bone',buyer:'TallyFern',each:2,wanted:64,filled:0}];
+
+  /* 1: the cards */
+  (function(){ const g=gui(el('w1'),300,216); post(g);
+    key(g,CX,31,44,13,'FOR SALE',false); key(g,CX+46,31,44,13,'WANTED',true);
+    fill(g,106,31,52,13,C.SEL); txt(g,'Search',109,33,C.DIM,{max:46}); key(g,160,31,46,13,'BEST PAY',false);
+    const cardW=62, H=40;
+    for(let i=0;i<9;i++){ const c=i%3, r=Math.floor(i/3), x=CX+c*(cardW+3), y=46+r*(H+3);
+      fill(g,x,y,cardW,H,C.SCREEN);
+      if(i===0){ frame(g,x,y,cardW,H,C.AMBER); txt(g,'+',x+cardW/2,y+9,C.AMBER,{align:'center'}); txt(g,'NEW ORDER',x+cardW/2,y+23,C.AMBER,{align:'center',max:cardW-4}); continue; }
+      const o=ORDERS[i-1], can=!!o.have;
+      if(can) fill(g,x,y,cardW,H,i===3?C.SEL:C.SCREEN);
+      frame(g,x,y,cardW,H,can?C.PHOS:C.SCREEN_E); icon(g,o.it,x+3,y+3);
+      if(o.mine) small(g,'YOURS',x+22,y+4,C.AMBER,37); else { small(g,o.buyer,x+22,y+4,C.DIM,37); if(can) small(g,'have '+o.have,x+22,y+12,C.AMBER,37); }
+      txt(g,o.each+' each',x+cardW/2,y+21,o.mine?C.AMBER:C.PHOS,{align:'center',max:cardW-4});
+      small(g,(o.wanted-o.filled)+' to go · '+o.name,x+3,y+31,C.DIM,cardW-6); bar(g,x+3,y+H-3,cardW-6,1,o.filled,o.wanted); }
+    small(g,'12 orders · yours 1 of 10  scroll for more',CX,177,C.DIM,CW); })();
+
+  /* 2: an order's page */
+  (function(){ const g=gui(el('w2'),300,216); post(g); const o=ORDERS[2];
+    txt(g,'WANTED BY BRINDLEWICK',CX,32,C.PHOS,{max:CW}); small(g,'Placed 2 h ago · ends in 5 d 3 h',CX,43,C.DIM,CW);
+    sslot(g,CX,54); icon(g,'cactus',CX+1,55); txt(g,'64 Cactus',CX+24,55,C.PHOS,{max:CW-24}); bar(g,CX+24,66,CW-24,3,40,64);
+    small(g,'40 sent, 24 to go · 12 each',CX+24,72,C.DIM,CW-24); small(g,'YOU CARRY 37',CX+24,81,C.AMBER,CW-24);
+    small(g,'SEND',CX,94,C.DIM,28); key(g,CX+30,91,12,11,'-',false); txt(g,'24',CX+59,93,C.PHOS,{align:'center'}); key(g,CX+76,91,12,11,'+',false); key(g,CX+92,91,26,11,'ALL',false);
+    const row=(a,b,y,c)=>{ txt(g,a,CX,y,C.DIM,{max:CW-60}); txt(g,b,CX+CW,y,c||C.PHOS,{align:'right'}); };
+    row('24 x 12','288',107); row('Tax 5%','-15',118); fill(g,CX,129,CW,1,C.SCREEN_E); row('You get','273',132,C.AMBER);
+    wrap(g,"Plain items only: no names, damage or enchantments. They go to the buyer's Collect box.",CX,146,CW,C.DIM);
+    key(g,CX,178,72,16,'FILL 24',true); key(g,CX+76,178,44,16,'BACK',false); })();
+
+  /* 3: NEW ORDER */
+  (function(){ const g=gui(el('w3'),300,216); post(g);
+    txt(g,'NEW ORDER',CX,32,C.PHOS); fill(g,CX,42,CW,13,C.SEL); txt(g,'ca',CX+3,44,C.PHOS);
+    ['cactus','carrot','cake','camp','candle','log','glass','redstone','iron','pearl'].forEach((k,i)=>{ const x=CX+i*19; sslot(g,x,58); if(i===0) frame(g,x,58,18,18,C.PHOS); icon(g,k,x+1,59); });
+    small(g,'23 items · row 1 of 3 · scroll',CX,77,C.DIM,CW); txt(g,'CACTUS',CX,84,C.PHOS,{size:9});
+    const field=(x,y,w,v)=>{ fill(g,x,y-1,w,12,C.SEL); fill(g,x,y+10,w,1,C.DIM); txt(g,v,x+2,y+1,C.PHOS); };
+    small(g,'HOW MANY',CX,96,C.DIM,50); key(g,CX+52,93,12,11,'-',false); field(CX+65,93,38,'64'); key(g,CX+104,93,12,11,'+',false); small(g,'up to 576',CX+120,96,C.DIM,72);
+    small(g,'PAY EACH',CX,110,C.DIM,50); key(g,CX+52,107,12,11,'-',false); field(CX+65,107,74,'12'); key(g,CX+140,107,12,11,'+',false);
+    txt(g,'Held from your bank now',CX,124,C.DIM); txt(g,'768',CX+CW,124,C.AMBER,{align:'right'});
+    txt(g,'Balance after',CX,135,C.DIM); txt(g,'4,232',CX+CW,135,C.PHOS,{align:'right'});
+    wrap(g,'Lasts 7 days. What is not spent comes back when it is cancelled or runs out.',CX,148,CW,C.DIM);
+    key(g,CX,178,72,16,'PLACE ORDER',true); key(g,CX+76,178,44,16,'BACK',false); })();
+
+  /* 4: the Wanted Board in the Tiles look (ScoreScreenRenderer colours) */
+  (function(){ const SB={BG:'#070a0e',TQ:'#19d3b0',GOLD:'#ffd23a',TEXT:'#e8eaf0',MUTED:'#9aa3b5',STRIP:'#10151c',DARK:'#0b0d11'};
+    const BW=256, BH=150, g=gui(el('wb'),BW,BH);
+    fill(g,0,0,BW,BH,'#2a2f3a'); fill(g,2,2,BW-4,BH-4,SB.BG); fill(g,4,4,BW-8,14,SB.STRIP); txt(g,'WANTED',BW/2,6,SB.TQ,{align:'center',size:12});
+    const sorted=ORDERS.filter(o=>!o.mine).concat(ORDERS.filter(o=>o.mine)).sort((a,b)=>b.each-a.each);
+    const cols=4, tw=(BW-8)/cols, th=63;
+    sorted.slice(0,8).forEach((o,i)=>{ const x=4+(i%cols)*tw, y=21+Math.floor(i/cols)*th; fill(g,x+2,y+1,tw-4,th-3,SB.DARK);
+      icon(g,o.it,x+tw/2-12,y+3,3); txt(g,o.each+' each',x+tw/2,y+29,SB.GOLD,{align:'center',size:11,max:tw-8});
+      txt(g,o.name,x+tw/2,y+41,SB.TEXT,{align:'center',size:9,max:tw-8}); txt(g,(o.wanted-o.filled)+' of '+o.wanted+' to go',x+tw/2,y+51,SB.MUTED,{align:'center',size:8,max:tw-8}); }); })();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · The Wanted Board</div><div class="bsp-cap">A Score Screen showing what people want, best pay first, with how many each order still needs. Put the Market Board on the next screen.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('wb')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>
