@@ -15,7 +15,7 @@ public final class BSPNetwork {
      * panel's score split (totem points and the part set by hand). 4: buy orders (the Trade Post's orders view, the Trade Post
      * keys for orders, the Wanted board's summary).
      */
-    private static final String PROTOCOL = "4";
+    private static final String PROTOCOL = "5";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

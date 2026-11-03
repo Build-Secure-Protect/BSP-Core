@@ -168,6 +168,10 @@ public final class TeamSync {
                     }
                 }
             }
+            Alliance alliance = AllianceLedger.get(server).allianceOf(team.id);
+            if (alliance != null) {
+                concerned.addAll(Alliances.players(server, alliance)); // allies' totems carry this team's members as allies
+            }
             TeamAccessSync.resyncOwners(server, concerned);
         }
     }

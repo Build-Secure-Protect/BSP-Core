@@ -69,8 +69,18 @@ public final class NetworkStorage {
     private static volatile com.mrgregles.bsp_core.market.NetworkOrders orders;
 
     /** A steal running on another server of the network: where, whose totem, who is stealing, and when it started and is expected to end (wall-clock ms). */
-    /** A player online on another server of the network. */
-    public record OnlinePlayer(UUID id, String name, String server) {}
+    /**
+     * A player online on another server of the network. {@code dim} and the block are where they were at {@code posMs}, written only
+     * for players in an alliance ({@code dim} "" when never written).
+     */
+    public record OnlinePlayer(UUID id, String name, String server, String dim, int x, int y, int z, long posMs) {
+        public OnlinePlayer(UUID id, String name, String server) {
+            this(id, name, server, "", 0, 0, 0, 0L);
+        }
+    }
+
+    /** Where a player online here is, for their allies on the other servers. */
+    public record Position(UUID id, String dim, int x, int y, int z) {}
 
     public record RemoteSteal(String serverId, String dimension, int x, int y, int z, @Nullable UUID owner, UUID thief, String thiefName, long startedMs, long endsMs) {}
 
@@ -311,6 +321,34 @@ public final class NetworkStorage {
                         // not a team id
                     }
                 }
+                case "alliance" -> {
+                    try {
+                        if (payload.startsWith("-")) {
+                            com.mrgregles.bsp_core.team.AllianceSync.apply(srv, List.of(), UUID.fromString(payload.substring(1)), null, false, false);
+                        } else {
+                            allianceReload(UUID.fromString(payload));
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // not an alliance id
+                    }
+                }
+                case "alliance_invite" -> {
+                    int sp = payload.indexOf(' ');
+                    if (sp > 0 && payload.substring(0, sp).equals(BSPConfig.STORAGE_SERVER_ID.get())) {
+                        try {
+                            com.mrgregles.bsp_core.team.Alliances.onRemote(srv, msg[1], net.minecraft.nbt.TagParser.parseTag(payload.substring(sp + 1)));
+                        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                            BSPCore.LOGGER.warn("BSP-Core alliances: an unreadable invite message from {}: {}", msg[1], e.getMessage());
+                        }
+                    }
+                }
+                case "alliance_broken" -> {
+                    try {
+                        com.mrgregles.bsp_core.team.Alliances.brokenCard(srv, net.minecraft.nbt.TagParser.parseTag(payload));
+                    } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                        BSPCore.LOGGER.warn("BSP-Core alliances: an unreadable break message from {}: {}", msg[1], e.getMessage());
+                    }
+                }
                 case "shopcount" -> com.mrgregles.bsp_core.shop.Shops.heard(srv, payload);
                 case "trade" -> {
                     int sp = payload.indexOf(' ');
@@ -429,6 +467,7 @@ public final class NetworkStorage {
                 s.onlineClear();
                 playersElsewhere = List.copyOf(s.onlineElsewhere(System.currentTimeMillis(), ONLINE_MAX_AGE_MS));
                 teamReload(null);
+                allianceReload(null);
                 kitReload(null);
                 s.marketEnsurePot();
                 orders = newOrders(s); // before the market: down() turns false with the market, and an order then must find its store
@@ -827,6 +866,7 @@ public final class NetworkStorage {
             // a Redis message missed (a reconnect gap, a dropped publish) is never re-sent: teams, kits and shops are read whole now and then
             catchUpTicks = 0;
             teamReload(null);
+            allianceReload(null);
             kitReload(null, false); // never prunes: a kit written here a moment ago may not be in the read yet
             shopReload(null);
         }
@@ -855,6 +895,7 @@ public final class NetworkStorage {
         collectNotices(event.getServer());
         collectTotemReturns(event.getServer());
         refreshSteals();
+        sendPositions(event.getServer());
         refreshOnline();
         MySqlStore s = store;
         if (s == null) {
@@ -979,6 +1020,27 @@ public final class NetworkStorage {
             }
         }
         return Optional.empty();
+    }
+
+    private static long positionsSentMs;
+
+    /** Writes where this server's allied players are, every {@code alliance.positionSeconds} (read on the server thread). */
+    private static void sendPositions(MinecraftServer srv) {
+        long now = System.currentTimeMillis();
+        if (now - positionsSentMs < Math.max(1, BSPConfig.getOr(BSPConfig.ALLIANCE_POSITION_SECONDS, 5)) * 1000L || !com.mrgregles.bsp_core.team.Alliances.enabled()) {
+            return;
+        }
+        positionsSentMs = now;
+        List<Position> out = new java.util.ArrayList<>();
+        for (ServerPlayer p : srv.getPlayerList().getPlayers()) {
+            if (com.mrgregles.bsp_core.team.Alliances.allianceOf(srv, p.getUUID()) != null) {
+                net.minecraft.core.BlockPos b = p.blockPosition();
+                out.add(new Position(p.getUUID(), p.level().dimension().location().toString(), b.getX(), b.getY(), b.getZ()));
+            }
+        }
+        if (!out.isEmpty()) {
+            async("write where allied players are", s -> s.onlinePositions(out, now));
+        }
     }
 
     /** How long a server's online rows count without it confirming them (it confirms every {@code storage.noticeSeconds}). */
@@ -2051,6 +2113,10 @@ public final class NetworkStorage {
         async("remove a team", s -> {
             s.teamDelete(teamId);
             publish("team", "-" + teamId);
+            String alliance = s.allianceLeaveTeam(teamId); // its seat in an alliance goes with it, whatever this server's copy knew
+            if (alliance != null) {
+                publish("alliance", alliance);
+            }
         });
     }
 
@@ -2081,6 +2147,142 @@ public final class NetworkStorage {
                 publish("team", teamId.toString());
             }
         });
+    }
+
+    // ------------------------------------------------------------------ alliances
+
+    /**
+     * Seats a team in an alliance: {@code then} gets true when seated, false when refused (full, gone, in another alliance, a wait),
+     * null when unreachable. With {@code row} the alliance's row is written first (a new alliance). Nothing without the database.
+     */
+    public static void allianceJoin(@Nullable com.mrgregles.bsp_core.team.Alliance row, UUID allianceId, UUID team, com.mrgregles.bsp_core.team.Alliance.Seat seat, int max,
+                                    Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            return;
+        }
+        MySqlStore.AllianceRow r = row == null ? null : new MySqlStore.AllianceRow(row.id, row.name, row.createdMs, row.messageSeq());
+        com.mrgregles.bsp_core.team.Alliance.Seat copy = seat.copy();
+        worker().execute(() -> {
+            Boolean seated = null;
+            try {
+                if (r != null) {
+                    s.allianceRowWrite(r);
+                }
+                seated = s.allianceJoin(allianceId, team, copy, max, System.currentTimeMillis());
+                if (seated) {
+                    publish("alliance", allianceId.toString());
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not seat a team in an alliance: {}", e.toString());
+            }
+            Boolean done = seated;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    public static void allianceSeat(UUID allianceId, UUID team, com.mrgregles.bsp_core.team.Alliance.Seat seat) {
+        int perks = seat.perks;
+        boolean share = seat.shareCoords;
+        async("write what a team gives its allies", s -> {
+            s.allianceSeatWrite(allianceId, team, perks, share);
+            publish("alliance", allianceId.toString());
+        });
+    }
+
+    /** Takes a team out of an alliance; the database ends the alliance when fewer than two teams are left. */
+    public static void allianceLeave(UUID allianceId, UUID team) {
+        async("take a team out of an alliance", s -> publish("alliance", (s.allianceLeave(allianceId, team) ? "-" : "") + allianceId));
+    }
+
+    public static void allianceDelete(UUID allianceId) {
+        async("end an alliance", s -> {
+            s.allianceDelete(allianceId);
+            publish("alliance", "-" + allianceId);
+        });
+    }
+
+    public static void allianceWaits(List<com.mrgregles.bsp_core.team.AllianceLedger.Wait> waits) {
+        if (waits.isEmpty()) {
+            return;
+        }
+        List<com.mrgregles.bsp_core.team.AllianceLedger.Wait> copy = List.copyOf(waits);
+        async("record the waits after an alliance broke", s -> s.allianceWaitsWrite(copy));
+    }
+
+    public static void allianceFormers(List<com.mrgregles.bsp_core.team.AllianceLedger.Former> formers) {
+        if (formers.isEmpty()) {
+            return;
+        }
+        List<com.mrgregles.bsp_core.team.AllianceLedger.Former> copy = List.copyOf(formers);
+        async("record the teams that left an alliance", s -> s.allianceFormerWrite(copy));
+    }
+
+    public static void allianceFormerSpend(UUID team) {
+        async("use up a team's left-alliance records", s -> s.allianceFormerSpend(team));
+    }
+
+    public static void allianceMessage(UUID allianceId, com.mrgregles.bsp_core.team.Alliance.Message m, int keep) {
+        async("write an alliance message", s -> {
+            s.allianceMessageWrite(allianceId, m, keep);
+            publish("alliance", allianceId.toString());
+        });
+    }
+
+    public static void allianceRead(UUID allianceId, UUID player, int seq) {
+        async("mark alliance messages read", s -> s.allianceReadWrite(allianceId, player, seq));
+    }
+
+    /** Reads one alliance (or every alliance) and the waits from the database and puts them in place of the local copy, on the server thread. */
+    public static void allianceReload(@Nullable UUID id) {
+        allianceReload(id, false);
+    }
+
+    /**
+     * As {@link #allianceReload(UUID)}; {@code own} for the read this server queues right after its own write to that alliance, so
+     * it shows the write (the storage thread runs one thing at a time, in order).
+     */
+    public static void allianceReload(@Nullable UUID id, boolean own) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.team.Alliance> read;
+            List<com.mrgregles.bsp_core.team.AllianceLedger.Wait> waits;
+            List<com.mrgregles.bsp_core.team.AllianceLedger.Former> formers;
+            try {
+                read = s.allianceRead(id);
+                waits = s.allianceWaitsRead(System.currentTimeMillis());
+                formers = s.allianceFormerRead(System.currentTimeMillis());
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read alliances: {}", e.toString());
+                if (own) {
+                    onServer(() -> com.mrgregles.bsp_core.team.AllianceSync.ownReadFailed(id));
+                }
+                return;
+            }
+            boolean prune = id == null && migratedHere; // before /bsp storage migrate, alliances only this server has are kept
+            onServer(() -> {
+                com.mrgregles.bsp_core.team.AllianceSync.formersRead(srv, formers);
+                com.mrgregles.bsp_core.team.AllianceSync.apply(srv, read, id, waits, own, prune);
+            });
+        });
+    }
+
+    /** Hands an alliance invite message to one other server over Redis; false when Redis is off here. */
+    public static boolean allianceInvite(String toServer, net.minecraft.nbt.CompoundTag message) {
+        if (redis == null) {
+            return false;
+        }
+        publish("alliance_invite", toServer + " " + message);
+        return true;
+    }
+
+    /** Asks every other server to show the break card to the players it names. */
+    public static void allianceBroken(net.minecraft.nbt.CompoundTag card) {
+        publish("alliance_broken", card.toString());
     }
 
     // ------------------------------------------------------------------ kits, one record for the network

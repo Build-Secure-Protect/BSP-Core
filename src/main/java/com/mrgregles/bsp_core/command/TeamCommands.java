@@ -17,8 +17,8 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * {@code /bsp team ...}: the admin's view of teams. Players never need these; they make, join and
- * run a team from the Team screen. Team names with spaces go in quotes.
+ * {@code /bsp team ...}: the admin's view of teams and alliances. Players never need these; they make,
+ * join and run a team (and its alliance) from the Team screen. Names with spaces go in quotes.
  */
 public final class TeamCommands {
     private TeamCommands() {}
@@ -33,7 +33,74 @@ public final class TeamCommands {
                 .then(Commands.literal("rename").then(Commands.argument("team", StringArgumentType.string())
                         .then(Commands.argument("name", StringArgumentType.greedyString()).executes(ctx -> rename(ctx)))))
                 .then(Commands.literal("lead").then(Commands.argument("team", StringArgumentType.string())
-                        .then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> lead(ctx)))));
+                        .then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> lead(ctx)))))
+                .then(Commands.literal("alliances").executes(ctx -> alliances(ctx.getSource())))
+                .then(Commands.literal("dissolve").then(Commands.argument("alliance", StringArgumentType.string()).executes(ctx -> dissolve(ctx))));
+    }
+
+    /** {@code /bspally accept | decline}: what an alliance invite's Accept and Decline click. A team's leader. */
+    public static LiteralArgumentBuilder<CommandSourceStack> allyTree() {
+        return Commands.literal("bspally")
+                .then(Commands.literal("accept").executes(ctx -> allyAnswer(ctx.getSource(), true)))
+                .then(Commands.literal("decline").executes(ctx -> allyAnswer(ctx.getSource(), false)));
+    }
+
+    /** {@code /a <message>}: one line to the alliance without switching the channel. */
+    public static LiteralArgumentBuilder<CommandSourceStack> allyChatTree() {
+        return Commands.literal("a").then(Commands.argument("message", StringArgumentType.greedyString()).executes(ctx -> {
+            if (!(ctx.getSource().getEntity() instanceof ServerPlayer p)) {
+                ctx.getSource().sendFailure(Component.literal("Players only."));
+                return 0;
+            }
+            Teams.Outcome out = com.mrgregles.bsp_core.team.Alliances.post(p, StringArgumentType.getString(ctx, "message"));
+            if (out.message() != null) {
+                p.displayClientMessage(out.message(), false);
+            }
+            return out.ok() ? 1 : 0;
+        }));
+    }
+
+    private static int allyAnswer(CommandSourceStack src, boolean accept) {
+        if (!(src.getEntity() instanceof ServerPlayer p)) {
+            src.sendFailure(Component.literal("Players only."));
+            return 0;
+        }
+        Teams.Outcome out = accept ? com.mrgregles.bsp_core.team.Alliances.accept(p) : com.mrgregles.bsp_core.team.Alliances.decline(p);
+        if (out.message() != null) {
+            p.displayClientMessage(out.message(), false);
+        }
+        com.mrgregles.bsp_core.team.TeamActions.send(p, false);
+        return out.ok() ? 1 : 0;
+    }
+
+    private static int alliances(CommandSourceStack src) {
+        var all = com.mrgregles.bsp_core.team.AllianceLedger.get(src.getServer()).all();
+        if (all.isEmpty()) {
+            src.sendSuccess(() -> Component.literal("No alliances yet."), false);
+            return 0;
+        }
+        for (var a : all) {
+            StringBuilder line = new StringBuilder(a.name + ": ");
+            boolean first = true;
+            for (UUID t : a.teams().keySet()) {
+                Team team = TeamLedger.get(src.getServer()).team(t);
+                line.append(first ? "" : ", ").append(team == null ? t.toString() : team.name);
+                first = false;
+            }
+            String text = line.toString();
+            src.sendSuccess(() -> Component.literal(text), false);
+        }
+        return all.size();
+    }
+
+    private static int dissolve(CommandContext<CommandSourceStack> ctx) {
+        String name = StringArgumentType.getString(ctx, "alliance");
+        var a = com.mrgregles.bsp_core.team.AllianceLedger.get(ctx.getSource().getServer()).byName(name);
+        if (a == null) {
+            ctx.getSource().sendFailure(Component.literal("No alliance called " + name + "."));
+            return 0;
+        }
+        return report(ctx.getSource(), com.mrgregles.bsp_core.team.Alliances.adminDissolve(ctx.getSource().getServer(), a), "Ended " + a.name + ".");
     }
 
     /** {@code /bspteam accept | decline}: what the chat line's Accept and Decline click. Any player. */

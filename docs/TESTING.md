@@ -2593,3 +2593,21 @@ Two players, A (buyer) and B (seller), each with a bank balance. On one server f
 - [ ] Network: B on one server and C on another fill the same order at the same moment: the buyer never gets more than ordered, and the one who sent too many finds the rest in their Collect box.
 - [ ] `/bsp market orders` lists them; `/bsp market cancelorder <id>` gives back what is held and tells the buyer.
 - [ ] A 1.8.3 client joining is refused with the update message.
+
+## Alliances (2026-11-03)
+
+Three teams, each with its leader and one member: A (leader a), B (leader b), C (leader c). On one server first, then with B on a second server of the network.
+- [ ] a opens the Team screen: the header shows TEAM and ALLIANCE; the TEAM tab is unchanged. ALLIANCE turns the frame teal and shows the hint, a name box and CREATE; A's member sees "Only your team's leader makes an alliance".
+- [ ] a names it and presses CREATE: ALLIES says no other team is in it yet. INVITE TEAM lists B and C with their leaders; "invite" on B: b gets a teal ALLIANCE INVITE card with a chime and the chat line. Y accepts. Both teams hear that B joined.
+- [ ] ALLIES on A shows B's players: "online here · Overworld", "on <server> · Nether" for the one elsewhere, "not shared" for coordinates. b switches on Share our coordinates in PERKS: within 5 seconds A sees B's blocks, and they move as B's players walk (also across servers).
+- [ ] PERKS: a turns on "They see through our cloaks": b sees the real blocks inside A's cloak, without opening A's machines. "They may use our machines": b opens A's projector and tank. Ward and Alarm leave b alone only once switched on. b never buys an upgrade on A's totem. A's member sees the switches without being able to flip them; WHAT WE GET FROM THEM lists B's.
+- [ ] ALLY CHAT on: the teal ALLY CHAT pill shows, lines go to both teams tagged with the team; TEAM CHAT turns it off. /a sends one line. ALLY BOARD keeps the lines; the teal count shows on the ALLIANCE tab and the ALLY BOARD key until read.
+- [ ] c joins too (3 of 3); a fourth team cannot be invited.
+- [ ] b starts a steal on a's totem: the steal shows 7:30 (450 s) instead of 5:00; a, c and their members get the red ALLIANCE BROKEN card with a sound and the chat lines (on the other server too); b is told it broke the alliance. B's perks on A's totems stop at once (the cloak hides again for b). A and C stay allied.
+- [ ] INVITE TEAM on A shows B as "24 h to wait after a break".
+- [ ] Ally A, B and C again (B after its wait, or with a fresh team). B's leader presses LEAVE, then a B member starts a steal on A's totem at once: it still takes 7:30, A and C get the red card and the "within 24 h of leaving" line, and B waits 24 h. A second steal by B is an ordinary 5:00.
+- [ ] c presses LEAVE twice: the alliance has one team left and ends; ALLIANCE shows CREATE again.
+- [ ] Disbanding a team in a two-team alliance ends the alliance.
+- [ ] `/bsp team alliances` lists it; `/bsp team dissolve "<name>"` ends it.
+- [ ] A 1.9.0 client joining is refused with the update message.
+

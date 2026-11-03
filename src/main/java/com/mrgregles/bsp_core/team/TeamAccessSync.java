@@ -15,9 +15,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Keeps clients' view of totem access right when a team changes: a placed totem syncs the owner's
- * teammates with its data, so when someone joins or leaves, every loaded totem of everyone concerned
- * is sent again. The server itself never caches: it asks the team ledger on every check.
+ * Keeps clients' view of totem access right when a team or an alliance changes: a placed totem syncs the
+ * owner's teammates and allies with its data, so when someone joins or leaves, every loaded totem of
+ * everyone concerned is sent again. The server itself never caches: it asks the team ledger on every check.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class TeamAccessSync {
@@ -40,6 +40,10 @@ public final class TeamAccessSync {
         Team team = TeamLedger.get(server).team(teamId);
         if (team != null) {
             owners.addAll(team.members().keySet());
+        }
+        Alliance alliance = AllianceLedger.get(server).allianceOf(teamId);
+        if (alliance != null) {
+            owners.addAll(Alliances.players(server, alliance)); // allies' totems carry the player's perks too
         }
         resyncOwners(server, owners);
     }

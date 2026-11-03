@@ -168,4 +168,122 @@ public abstract class TeamEvent extends Event {
             return by;
         }
     }
+
+    /** An event about the team's place in an alliance; {@link #getAllianceName()} is the alliance's name at the time. */
+    public abstract static class AllianceEvent extends TeamEvent {
+        private final UUID allianceId;
+        private final String allianceName;
+
+        protected AllianceEvent(MinecraftServer server, UUID teamId, String teamName, UUID allianceId, String allianceName) {
+            super(server, teamId, teamName);
+            this.allianceId = allianceId;
+            this.allianceName = allianceName;
+        }
+
+        public UUID getAllianceId() {
+            return allianceId;
+        }
+
+        public String getAllianceName() {
+            return allianceName;
+        }
+    }
+
+    /** The team made an alliance (it is then the only team in it) or joined one. */
+    public static class Allied extends AllianceEvent {
+        public Allied(MinecraftServer server, UUID teamId, String teamName, UUID allianceId, String allianceName) {
+            super(server, teamId, teamName, allianceId, allianceName);
+        }
+    }
+
+    /**
+     * The team is out of the alliance: its leader left, the team was disbanded, an admin ended the alliance, or a member broke it
+     * (then an {@link AllianceBroken} follows). {@link #isEnded()} when fewer than two teams were left, so the alliance is gone.
+     */
+    public static class AllianceLeft extends AllianceEvent {
+        private final boolean ended;
+
+        public AllianceLeft(MinecraftServer server, UUID teamId, String teamName, UUID allianceId, String allianceName, boolean ended) {
+            super(server, teamId, teamName, allianceId, allianceName);
+            this.ended = ended;
+        }
+
+        public boolean isEnded() {
+            return ended;
+        }
+    }
+
+    /**
+     * A member of the team started a steal on an ally's totem, so the team was thrown out of the alliance. The steal goes ahead.
+     * {@link #getThief()} started it on {@link #getOwner()}'s totem; {@link #isEnded()} when the alliance is gone.
+     */
+    public static class AllianceBroken extends AllianceEvent {
+        private final UUID thief, owner;
+        private final boolean ended;
+
+        public AllianceBroken(MinecraftServer server, UUID teamId, String teamName, UUID allianceId, String allianceName, UUID thief, UUID owner, boolean ended) {
+            super(server, teamId, teamName, allianceId, allianceName);
+            this.thief = thief;
+            this.owner = owner;
+            this.ended = ended;
+        }
+
+        public UUID getThief() {
+            return thief;
+        }
+
+        public UUID getOwner() {
+            return owner;
+        }
+
+        public boolean isEnded() {
+            return ended;
+        }
+    }
+
+    /**
+     * A player pressed TELEPORT on an ally's row on the Team screen's ALLIES page (or a mod asked the same through the api). Allies
+     * trust each other less than teammates: a teleport mod asks the target first and moves {@link #getPlayer()} only when they
+     * accept, under its own rules, and calls {@link #setHandled()} on every request, refusals included. {@link #getTargetServer()}
+     * names the network server the target is online on, "" when they are on this one. The team is the player's.
+     */
+    public static class AllyTeleportRequest extends AllianceEvent {
+        private final net.minecraft.server.level.ServerPlayer player;
+        private final UUID target;
+        private final String targetName, targetServer;
+        private boolean handled;
+
+        public AllyTeleportRequest(MinecraftServer server, UUID teamId, String teamName, UUID allianceId, String allianceName, net.minecraft.server.level.ServerPlayer player,
+                                   UUID target, String targetName, String targetServer) {
+            super(server, teamId, teamName, allianceId, allianceName);
+            this.player = player;
+            this.target = target;
+            this.targetName = targetName;
+            this.targetServer = targetServer;
+        }
+
+        public net.minecraft.server.level.ServerPlayer getPlayer() {
+            return player;
+        }
+
+        public UUID getTarget() {
+            return target;
+        }
+
+        public String getTargetName() {
+            return targetName;
+        }
+
+        public String getTargetServer() {
+            return targetServer;
+        }
+
+        public void setHandled() {
+            handled = true;
+        }
+
+        public boolean isHandled() {
+            return handled;
+        }
+    }
 }

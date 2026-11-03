@@ -788,6 +788,9 @@ public class TotemForgeBlockEntity extends MultiblockControllerBlockEntity {
             return;
         }
         int seconds = BSPConfig.TFORGE_STEAL_SECONDS.get();
+        // an ally's steal (or one soon after the teams parted) breaks the alliance and takes longer, as for a placed totem
+        boolean breaksAlliance = com.mrgregles.bsp_core.team.Alliances.stealBreaks(sl.getServer(), pourer, player.getUUID());
+        seconds = com.mrgregles.bsp_core.team.Alliances.stealSeconds(sl.getServer(), pourer, player.getUUID(), seconds);
         String name = player.getGameProfile().getName();
         steal = new com.mrgregles.bsp_core.totem.StealState(player.getUUID(), name, seconds * 20, seconds * 20, BSPConfig.STEAL_GRACE_SECONDS.get() * 20, false);
         thiefPlayer = player;
@@ -796,6 +799,9 @@ public class TotemForgeBlockEntity extends MultiblockControllerBlockEntity {
         // the network's raid rules and Discord's outcome message follow these events, as for a totem steal
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.StealStarted(sl.getServer(), here(), pourer, player.getUUID(), name, seconds));
         com.mrgregles.bsp_core.BSPCore.LOGGER.info("{} started stealing {}'s forged totem at {}", name, pourerName, worldPosition);
+        if (breaksAlliance) {
+            com.mrgregles.bsp_core.team.Alliances.breakBySteal(sl.getServer(), player.getUUID(), name, pourer, pourerName);
+        }
         if (pourer != null) {
             com.mrgregles.bsp_core.storage.NetworkStorage.tell(sl.getServer(), pourer, net.minecraft.network.chat.Component.translatable("message.bsp_core.totem_forge.steal.warning",
                     name, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ()).withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD));

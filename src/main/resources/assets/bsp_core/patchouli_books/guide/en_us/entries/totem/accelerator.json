@@ -2,7 +2,7 @@
   "name": "Plasma Across Worlds",
   "category": "bsp_core:totem",
   "icon": "bsp_core:accelerator_intake",
-  "sortnum": 12,
+  "sortnum": 13,
   "pages": [
     {
       "type": "patchouli:spotlight",

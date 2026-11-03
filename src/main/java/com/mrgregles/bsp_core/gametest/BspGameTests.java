@@ -5506,7 +5506,7 @@ public class BspGameTests {
         }, net.minecraft.network.chat.Style.EMPTY);
         h.assertTrue(clicks.equals(java.util.List.of(com.mrgregles.bsp_core.team.TeamPrompts.ACCEPT_COMMAND, com.mrgregles.bsp_core.team.TeamPrompts.DECLINE_COMMAND)), "Accept and Decline click the two commands: " + clicks);
         // the card packet survives the wire, and a clear is a clear
-        var packet = new com.mrgregles.bsp_core.network.TeamPromptPacket(invite.id(), false, a.getUUID(), "A", team.name, team.colour.getId(), 1, 5, "A", 60);
+        var packet = new com.mrgregles.bsp_core.network.TeamPromptPacket(invite.id(), false, com.mrgregles.bsp_core.network.TeamPromptPacket.TEAM_INVITE, a.getUUID(), "A", team.name, team.colour.getId(), 1, 5, "A", "", 60);
         var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
         com.mrgregles.bsp_core.network.TeamPromptPacket.encode(packet, buf);
         h.assertTrue(com.mrgregles.bsp_core.network.TeamPromptPacket.decode(buf).equals(packet), "encode and decode agree");

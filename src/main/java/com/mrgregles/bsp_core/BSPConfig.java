@@ -124,6 +124,9 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.BooleanValue TEAM_ENABLED, TEAM_MEMBERS_INVITE, TEAM_CHAT_TAG, TEAM_TEAMMATES_STEAL, TEAM_COMPASS_IGNORES;
     public static final ForgeConfigSpec.BooleanValue PROXY_RELAY_CHAT;
     public static final ForgeConfigSpec.IntValue TEAM_MAX_MEMBERS, TEAM_INVITE_SECONDS, TEAM_HISTORY_SIZE, TEAM_NAME_MIN, TEAM_NAME_MAX;
+    public static final ForgeConfigSpec.BooleanValue ALLIANCE_ENABLED, ALLIANCE_ALLOW_CLOAK, ALLIANCE_ALLOW_WARD, ALLIANCE_ALLOW_ALARM, ALLIANCE_ALLOW_MACHINES;
+    public static final ForgeConfigSpec.IntValue ALLIANCE_MAX_TEAMS, ALLIANCE_BREAK_HOURS, ALLIANCE_POSITION_SECONDS, ALLIANCE_LEFT_HOURS;
+    public static final ForgeConfigSpec.DoubleValue ALLIANCE_BREAK_STEAL;
     public static final ForgeConfigSpec.BooleanValue KIT_ENABLED, KIT_SHOW_REDEEMED, KIT_DELIVER_ON_RESTORE;
     public static final ForgeConfigSpec.IntValue KIT_GRANT_DELAY_TICKS, KIT_MAX_ITEMS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
@@ -672,6 +675,25 @@ public final class BSPConfig {
         TEAM_COMPASS_IGNORES = BUILDER.comment("When true the Totem Compass does not count teammates' totems as rivals.").define("compassIgnoresTeam", true);
         TEAM_NAME_MIN = BUILDER.comment("Shortest team name.").defineInRange("nameMin", 3, 1, 32);
         TEAM_NAME_MAX = BUILDER.comment("Longest team name.").defineInRange("nameMax", 16, 3, 32);
+        BUILDER.pop();
+
+        BUILDER.comment("Alliances: teams that ally share a chat, see where each other's players are and may give each other some totem perks.",
+                "An ally who starts a steal on an ally's totem breaks the alliance for their team.").push("alliance");
+        ALLIANCE_ENABLED = BUILDER.comment("Master switch. When false nobody can make or join an alliance; alliances that exist give no perks and show no positions.").define("enabled", true);
+        ALLIANCE_MAX_TEAMS = BUILDER.comment("Most teams in one alliance. An invite that is waiting holds a place.").defineInRange("maxTeams", 3, 2, 20);
+        ALLIANCE_BREAK_HOURS = BUILDER.comment("Hours a team that broke an alliance by a steal must wait before allying again with any team that was in it. 0: no wait.")
+                .defineInRange("breakCooldownHours", 24, 0, 24 * 365);
+        ALLIANCE_LEFT_HOURS = BUILDER.comment("Hours after a team leaves an alliance during which a steal by one of its members on a totem of a team it was allied with",
+                        "still counts as breaking the alliance (longer steal, the wait, the warning). 0: leaving frees the team at once.")
+                .defineInRange("leftStealHours", 24, 0, 24 * 365);
+        ALLIANCE_BREAK_STEAL = BUILDER.comment("A steal that breaks an alliance takes this many times as long as the same steal by anyone else (1.5: five minutes become seven and a half).")
+                .defineInRange("breakStealMultiplier", 1.5, 1.0, 10.0);
+        ALLIANCE_POSITION_SECONDS = BUILDER.comment("How often, in seconds, the positions of allied players are shared with the other servers of the network.")
+                .defineInRange("positionSeconds", 5, 1, 300);
+        ALLIANCE_ALLOW_CLOAK = BUILDER.comment("When false no team can let its allies see through its cloaks.").define("allowCloak", true);
+        ALLIANCE_ALLOW_WARD = BUILDER.comment("When false no team can let its allies pass its Ward.").define("allowWard", true);
+        ALLIANCE_ALLOW_ALARM = BUILDER.comment("When false no team can keep its Alarm quiet for its allies.").define("allowAlarm", true);
+        ALLIANCE_ALLOW_MACHINES = BUILDER.comment("When false no team can let its allies use its machines and plasma.").define("allowMachines", true);
         BUILDER.pop();
 
         BUILDER.comment("Kits: item bundles handed out at first login, redeemed from the kit browser, or given as rewards.").push("kit");

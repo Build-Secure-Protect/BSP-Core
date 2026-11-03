@@ -1,0 +1,42 @@
+{
+  "name": "Alliances",
+  "category": "bsp_core:totem",
+  "icon": "minecraft:shield",
+  "sortnum": 12,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Teams can form an $(l)alliance$(). Allies talk on their own chat, see where each other's players are, and each team chooses which of its totem perks its allies get. Unlike a team, an alliance can break: an ally who starts a steal on an ally's totem breaks it for their own team."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Your team's leader opens the Team screen, picks the $(l)ALLIANCE$() tab at the top, names the alliance and presses CREATE. From INVITE TEAM they invite teams in no alliance; the invite goes to the other team's leader, who answers with the same card and keys as a team invite. An alliance holds up to three teams, and a team is in one alliance at a time.",
+      "title": "Making one"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)ALLIES$() lists every player of the other teams: online here or on which server, and in which dimension. A team that switches on Share our coordinates also shows each of its players' blocks. Offline allies show when they were last seen.",
+      "title": "Where allies are"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)PERKS$() holds four switches, all off to start: allies see through our cloaks, our Ward leaves them alone, our Alarm stays quiet for them, and they may use our machines and plasma. Only the leader sets them; every member sees what the team gives and gets. Allies never upgrade, pick up or recall another team's totems.",
+      "title": "Perks"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)ALLY BOARD$() keeps the alliance's lines, each tagged with the speaker's team. $(l)ALLY CHAT$() sends what you type to the alliance until you press it again, and $(l)/a message$() sends one line. Team chat and ally chat are never on together.",
+      "title": "Talking"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "An ally who starts a steal on an ally's totem throws their own team out of the alliance at once, and its perks stop. The steal goes ahead but takes half as long again, and everyone in the alliance sees a red card. The thief's team waits a day before allying with any of those teams again. An alliance left with one team ends.",
+      "title": "Breaking it"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Leaving first",
+      "text": "Leaving does not dodge the rule. For a day after a team leaves, a steal between it and the teams it left counts as breaking the alliance all the same: the longer steal, the red card and the wait. An admin ending an alliance frees everyone at once."
+    }
+  ]
+}

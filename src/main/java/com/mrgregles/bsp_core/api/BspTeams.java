@@ -12,7 +12,8 @@ import java.util.UUID;
 /**
  * Read-only lookups about teams for other mods: which team a player is in, who is in it, and
  * whether two players are teammates (teammates count as friends with every access flag on each
- * other's Shatter Totems). Nothing here changes a team; players do that from the Team screen.
+ * other's Shatter Totems); and the same for alliances (teams that ally, giving each other the
+ * perks each team chooses). Nothing here changes a team; players do that from the Team screen.
  */
 public final class BspTeams {
     private BspTeams() {}
@@ -106,5 +107,74 @@ public final class BspTeams {
             out.add(view(t));
         }
         return out;
+    }
+
+    // ------------------------------------------------------------------ alliances
+
+    /** An alliance as other mods see it: its teams in the order they joined. */
+    public record Alliance(UUID id, String name, List<UUID> teams) {}
+
+    /** The alliance the player's team is in, if any. */
+    public static Optional<Alliance> allianceOf(MinecraftServer server, UUID player) {
+        com.mrgregles.bsp_core.team.Alliance a = com.mrgregles.bsp_core.team.Alliances.enabled() ? com.mrgregles.bsp_core.team.Alliances.allianceOf(server, player) : null;
+        return a == null ? Optional.empty() : Optional.of(new Alliance(a.id, a.name, List.copyOf(a.teams().keySet())));
+    }
+
+    /** Whether two players are allies: in two different teams of the same alliance. Teammates are not allies. */
+    public static boolean allied(MinecraftServer server, UUID a, UUID b) {
+        return com.mrgregles.bsp_core.team.Alliances.allied(server, a, b);
+    }
+
+    /**
+     * The perks {@code owner}'s team gives {@code player} as an ally on the owner's totems, as {@code TotemAccess} flags (CLOAK 16,
+     * WARD 4, ALARM 2, MACHINES 8; never UPGRADES); 0 when they are not allies.
+     */
+    public static int allyFlags(MinecraftServer server, UUID owner, UUID player) {
+        return com.mrgregles.bsp_core.team.Alliances.perksFor(server, owner, player);
+    }
+
+    /**
+     * An ally as other mods see them: their team, the network server they are online on ("" when offline; this server's id when
+     * here), the dimension's id when known, and {@code pos} only when their team shares its coordinates.
+     */
+    public record Ally(UUID uuid, String name, UUID teamId, String teamName, ChatFormatting colour, String server, String dimension,
+                       Optional<net.minecraft.core.BlockPos> pos, long seenMs) {}
+
+    /** The player's allies (every member of the other teams in their alliance) with where they are; empty when none. */
+    public static List<Ally> allies(MinecraftServer server, UUID player) {
+        com.mrgregles.bsp_core.team.Team mine = TeamLedger.get(server).teamOf(player);
+        com.mrgregles.bsp_core.team.Alliance a = mine == null || !com.mrgregles.bsp_core.team.Alliances.enabled() ? null
+                : com.mrgregles.bsp_core.team.Alliances.allianceOfTeam(server, mine.id);
+        if (a == null) {
+            return List.of();
+        }
+        List<Ally> out = new ArrayList<>();
+        for (var e : a.teams().entrySet()) {
+            com.mrgregles.bsp_core.team.Team t = TeamLedger.get(server).team(e.getKey());
+            if (t == null || t.id.equals(mine.id)) {
+                continue;
+            }
+            for (var w : com.mrgregles.bsp_core.team.Alliances.whereabouts(server, t, e.getValue().shareCoords)) {
+                out.add(new Ally(w.id(), w.name(), t.id, t.name, t.colour, w.server(), w.dim(), Optional.ofNullable(w.pos()), w.seenMs()));
+            }
+        }
+        return out;
+    }
+
+    private static volatile String allyTeleporter = "";
+
+    /** A teleport mod says it handles {@code TeamEvent.AllyTeleportRequest}; from then on the ALLIES page draws TELEPORT keys. */
+    public static void allyTeleportsHandledBy(String modId) {
+        allyTeleporter = modId == null ? "" : modId;
+    }
+
+    /** The mod that handles ally teleports, or "" when none has said so. */
+    public static String allyTeleporter() {
+        return allyTeleporter;
+    }
+
+    /** Asks the teleport mod to move the player to an ally: the same thing the TELEPORT key on the ALLIES page does. */
+    public static boolean requestAllyTeleport(net.minecraft.server.level.ServerPlayer player, UUID target) {
+        return com.mrgregles.bsp_core.team.Alliances.requestTeleport(player, target).ok();
     }
 }

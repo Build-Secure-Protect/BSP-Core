@@ -32,6 +32,11 @@
       "type": "patchouli:text",
       "text": "Any member may buy upgrades on a teammate's placed totem and raise its tier; the one buying pays, with coins and experience as for their own. The upgrade belongs to the totem and stays with it whoever leaves the team.",
       "title": "Upgrading together"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A team's leader can also ally the team with up to two other teams: a shared chat, each other's whereabouts and the perks each team chooses to give. See $(l:totem/alliances)Alliances$(). An alliance, unlike a team, breaks when an ally starts a steal on an ally's totem.",
+      "title": "Allies"
     }
   ]
 }

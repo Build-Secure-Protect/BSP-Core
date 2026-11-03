@@ -11,10 +11,16 @@ import java.util.UUID;
 /**
  * One person on a totem's access list and what they may do: {@link #UPGRADES} (buy upgrades, change
  * chunks and projector settings), {@link #ALARM} (does not set it off), {@link #WARD} (not weakened
- * by it), {@link #MACHINES} (may open the totem's plasma machines).
+ * by it), {@link #MACHINES} (may open the totem's plasma machines and see through its Cloaking).
+ * {@link #CLOAK} is never on a list: it is the perk a team gives its allies on its own, so a team can show
+ * its base without handing over its machines ({@code team.Alliances}).
  */
 public record TotemAccess(UUID id, String name, int flags) {
     public static final int UPGRADES = 1, ALARM = 2, WARD = 4, MACHINES = 8, ALL = 15, MAX = 8;
+    /** Allies only: sees the real blocks inside the totem's cloak. */
+    public static final int CLOAK = 16;
+    /** Every perk a team may give its allies (never UPGRADES). */
+    public static final int ALLY_PERKS = CLOAK | WARD | ALARM | MACHINES;
     public static final String TAG = "Access";
 
     public boolean has(int flag) {

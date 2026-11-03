@@ -2,7 +2,7 @@
   "name": "Powers in Detail",
   "category": "bsp_core:totem",
   "icon": "minecraft:ender_eye",
-  "sortnum": 12,
+  "sortnum": 13,
   "pages": [
     {
       "type": "patchouli:text",

@@ -25,8 +25,8 @@ public final class TeamPrompts {
     public static final String ACCEPT_COMMAND = "/bspteam accept", DECLINE_COMMAND = "/bspteam decline";
 
     static void offer(ServerPlayer invitee, Teams.Invite invite, Team team, int seconds) {
-        BSPNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> invitee), new TeamPromptPacket(invite.id(), false, invite.inviter(), invite.inviterName(), team.name, team.colour.getId(),
-                team.size(), Teams.maxMembers(), Teams.nameOf(invitee.server, team.leader), seconds));
+        BSPNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> invitee), new TeamPromptPacket(invite.id(), false, TeamPromptPacket.TEAM_INVITE, invite.inviter(), invite.inviterName(), team.name,
+                team.colour.getId(), team.size(), Teams.maxMembers(), Teams.nameOf(invitee.server, team.leader), "", seconds));
         invitee.playNotifySound(SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.PLAYERS, 0.6f, 1.4f);
         invitee.displayClientMessage(chatLine(invite, team), false);
     }

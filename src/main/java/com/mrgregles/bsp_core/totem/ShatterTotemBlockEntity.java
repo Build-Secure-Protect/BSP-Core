@@ -58,6 +58,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     private java.util.List<TotemAccess> access = new java.util.ArrayList<>();
     /** The owner's teammates as last synced to this client; the server asks the team ledger instead. */
     private final java.util.Set<UUID> teammates = new java.util.HashSet<>();
+    /** The owner's allies and the perks the owner's team gives them, as last synced to this client; the server asks the alliances. */
+    private final java.util.Map<UUID, Integer> allies = new java.util.HashMap<>();
     /** The Cloaking cube's copy of the land, taken when Cloaking first came on; null while there is none. */
     @Nullable
     private CloakSnapshot cloak;
@@ -212,6 +214,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         int seconds = owner == null ? BSPConfig.UNCLAIMED_STEAL_SECONDS.get() : BSPConfig.STEAL_SECONDS.get();
         net.minecraft.world.item.ItemStack raidTotem = thief.getOffhandItem();
         boolean raiding = TotemInventories.isTotem(raidTotem);
+        boolean breaksAlliance = false;
         if (owner != null) {
             // Deadlock on this totem adds time; Lockpick on the thief's offhand totem takes time off; limits keep every totem stealable
             seconds += BSPConfig.levelValue(BSPConfig.DEADLOCK_SECONDS.get(), getUpgradeLevel(TotemUpgrades.Buff.DEADLOCK), 0);
@@ -219,6 +222,10 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 seconds -= BSPConfig.levelValue(BSPConfig.LOCKPICK_SECONDS.get(), TotemUpgrades.getLevel(raidTotem, TotemUpgrades.Buff.LOCKPICK), 0);
             }
             seconds = Math.max(BSPConfig.MIN_STEAL_SECONDS.get(), Math.min(BSPConfig.MAX_STEAL_SECONDS.get(), seconds));
+            // an ally's steal (or one soon after the teams parted) breaks the alliance and takes longer (after the limits, so it is always
+            // longer), giving the allies time to come
+            breaksAlliance = com.mrgregles.bsp_core.team.Alliances.stealBreaks(serverLevel.getServer(), owner.uuid(), thief.getUUID());
+            seconds = com.mrgregles.bsp_core.team.Alliances.stealSeconds(serverLevel.getServer(), owner.uuid(), thief.getUUID(), seconds);
         }
         int shroud = raiding ? BSPConfig.levelValue(BSPConfig.SHROUD_SECONDS.get(), TotemUpgrades.getLevel(raidTotem, TotemUpgrades.Buff.SHROUD), 0) : 0;
         steal = new StealState(thief.getUUID(), thief.getGameProfile().getName(), seconds * 20, seconds * 20, grace, false);
@@ -228,6 +235,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.StealStarted(serverLevel.getServer(),
                 GlobalPos.of(serverLevel.dimension(), worldPosition), owner == null ? null : owner.uuid(), thief.getUUID(), steal.thiefName(), seconds));
         BSPCore.LOGGER.info("{} started stealing {}'s totem at {}", steal.thiefName(), ownerName(), worldPosition);
+        if (breaksAlliance) {
+            com.mrgregles.bsp_core.team.Alliances.breakBySteal(serverLevel.getServer(), thief.getUUID(), steal.thiefName(), owner.uuid(), ownerName());
+        }
 
         thief.displayClientMessage(Component.translatable("message.bsp_core.steal.started", ownerName(), seconds).withStyle(ChatFormatting.GOLD), false);
         warnDelay = Math.min(shroud, seconds - 1) * 20;
@@ -579,9 +589,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         return cloak;
     }
 
-    /** Whether {@code player} sees the real blocks inside the cloak: the owner, friends with Machines access, or an operator. */
+    /**
+     * Whether {@code player} sees the real blocks inside the cloak: the owner, friends with Machines access, teammates, an operator,
+     * or allies the owner's team lets see through its cloaks (an ally's Machines perk alone does not).
+     */
     public boolean seesThroughCloak(net.minecraft.world.entity.player.Player player) {
-        return isOwner(player.getUUID()) || player.hasPermissions(2) && !CloakBlind.isBlind(player) || hasAccess(player.getUUID(), TotemAccess.MACHINES);
+        UUID id = player.getUUID();
+        return isOwner(id) || player.hasPermissions(2) && !CloakBlind.isBlind(player) || listed(id, TotemAccess.MACHINES) || isTeammate(id)
+                || (allyPerks(id) & TotemAccess.CLOAK) != 0;
     }
 
     /** Operator: take the Cloaking snapshot again now (for example after building the base that should be hidden). */
@@ -705,13 +720,30 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         return java.util.Collections.unmodifiableList(access);
     }
 
+    /** Whether the player has the flag: on the access list, as a teammate (every flag), or as an ally given that perk (never Upgrades). */
     public boolean hasAccess(UUID player, int flag) {
+        return listed(player, flag) || isTeammate(player) || flag != TotemAccess.UPGRADES && (allyPerks(player) & flag) != 0;
+    }
+
+    /** Whether the player is on the access list with the flag. */
+    private boolean listed(UUID player, int flag) {
         for (TotemAccess a : access) {
             if (a.id().equals(player) && a.has(flag)) {
                 return true;
             }
         }
-        return isTeammate(player);
+        return false;
+    }
+
+    /** The perks the owner's team gives the player as an ally ({@link TotemAccess} flags); 0 when they are not allies. */
+    public int allyPerks(UUID player) {
+        if (owner == null || owner.uuid().equals(player)) {
+            return 0;
+        }
+        if (level instanceof ServerLevel sl) {
+            return com.mrgregles.bsp_core.team.Alliances.perksFor(sl.getServer(), owner.uuid(), player);
+        }
+        return allies.getOrDefault(player, 0);
     }
 
     /**
@@ -978,6 +1010,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 teammates.add(net.minecraft.nbt.NbtUtils.loadUUID(raw));
             }
         }
+        allies.clear();
+        for (net.minecraft.nbt.Tag raw : tag.getList("Allies", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag a = (CompoundTag) raw;
+            if (a.hasUUID("Id")) {
+                allies.put(a.getUUID("Id"), a.getInt("Perks"));
+            }
+        }
         if (!tag.getBoolean("CloakKept")) { // a sync that left the unchanged snapshot out keeps the one this client holds
             cloak = tag.contains("Cloak") && level != null ? CloakSnapshot.load(tag.getCompound("Cloak"), CloakSnapshot.blocks(level)) : null;
         }
@@ -995,6 +1034,21 @@ public class ShatterTotemBlockEntity extends BlockEntity {
                 mates.add(net.minecraft.nbt.NbtUtils.createUUID(m));
             }
             tag.put("Teammates", mates);
+        }
+        if (owner != null && level instanceof ServerLevel sl && com.mrgregles.bsp_core.team.Alliances.enabled()) {
+            net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+            for (UUID ally : com.mrgregles.bsp_core.team.Alliances.allies(sl.getServer(), owner.uuid())) {
+                int perks = com.mrgregles.bsp_core.team.Alliances.perksFor(sl.getServer(), owner.uuid(), ally);
+                if (perks != 0) {
+                    CompoundTag a = new CompoundTag();
+                    a.putUUID("Id", ally);
+                    a.putInt("Perks", perks);
+                    list.add(a);
+                }
+            }
+            if (!list.isEmpty()) {
+                tag.put("Allies", list);
+            }
         }
         // An unclaimed totem with no upgrades and no steal writes nothing, and Minecraft drops update
         // packets whose tag is empty. Without this marker the client would never learn that the owner,

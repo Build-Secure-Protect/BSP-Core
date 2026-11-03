@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Alliances: the break and the invite</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+.ab{font-family:'Pixelify Sans',monospace}
+.a{position:absolute}
+.lbl{font-size:15px;color:#b8b1a3;letter-spacing:.06em}
+.cap{font-size:14px;color:#8f897d;max-width:680px;line-height:1.35}
+.scr{position:relative;width:684px;height:476px;background:#10151C;border:2px solid #B58CFF;box-sizing:border-box;flex:none;overflow:hidden}
+.scr.wide{width:924px}
+.box{position:absolute;background:#0C0E12;outline:2px solid #2A2F3A}
+.k{position:absolute;font-family:inherit;font-size:12px;letter-spacing:.03em;background:#0C0E12;color:#9AA3B5;border:2px solid #2A2F3A;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
+.k.on{color:#B58CFF;border-color:#B58CFF}
+.k.al{color:#4FD8C8;border-color:#4FD8C8}
+.k.warn{color:#FF6B5C;border-color:#FF6B5C}
+.k.lock{color:#555C6A}
+.t{font-size:16px;color:#E6EAF2;white-space:nowrap}
+.m{font-size:13px;color:#9AA3B5;white-space:nowrap}
+.mw{font-size:13px;color:#9AA3B5;line-height:1.4}
+.row{position:absolute;left:8px;height:26px;border-bottom:2px solid #1A1F29;box-sizing:border-box}
+.dot{position:absolute;width:10px;height:10px;top:6px;left:6px}
+.badge{position:absolute;height:16px;padding:0 6px;font-size:11px;color:#10151C;display:flex;align-items:center}
+.tog{position:absolute;width:44px;height:20px;border:2px solid #2A2F3A;box-sizing:border-box;font-size:11px;display:flex;align-items:center;justify-content:center}
+.tog.on{border-color:#4FD8C8;color:#4FD8C8;background:#0E2624}
+.tog.off{color:#555C6A}
+.chip{position:absolute;width:10px;height:10px}
+.card{position:relative;width:300px;background:#141A22;border:2px solid #FF6B5C;box-sizing:border-box;padding:10px 12px}
+.mc{position:relative;width:924px;background:#2c2f24;box-sizing:border-box;padding:14px 16px;font-size:15px;line-height:1.7;color:#fff}
+</style>
+</helmet>
+<div class="ab" style="width:2060px;height:560px;box-sizing:border-box;padding:40px;background:#1c1e23;display:flex;flex-wrap:wrap;gap:48px 40px;align-content:flex-start"><div style="display:flex;flex-direction:column;gap:10px"><div class="lbl">5  ALLIES' SCREENS: THE BREAK CARD</div><div class="card" style="left:0;top:0"><div class="t" style="color:#FF6B5C;font-size:15px">ALLIANCE BROKEN</div><div class="mw" style="margin-top:6px;color:#E6EAF2">Quillon of <span style="color:#55FF55">Thornwood</span> started stealing Okra_Moss's totem.</div><div class="mw" style="margin-top:4px"><span style="color:#55FF55">Thornwood</span> is out of The Iron Pact. Their perks have stopped.</div></div><div class="cap">The same right-edge card as team invites, in red, with a warning sound. Everyone in the alliance's teams sees it, on any server.</div></div><div style="display:flex;flex-direction:column;gap:10px"><div class="lbl">6  THEIR CHAT</div><div class="mc"><span style="color:#FF6B5C">[Alliance] Quillon of Thornwood started stealing Okra_Moss's totem. The Iron Pact is broken for Thornwood.</span><br><span style="color:#FF6B5C">[Alliance] Thornwood can't ally with Emberfall or Saltmarsh for 24 h.</span></div><div class="cap">Two lines stay in chat after the card has gone.</div></div><div style="display:flex;flex-direction:column;gap:10px"><div class="lbl">7  THE THIEF'S SIDE</div><div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><span style="color:#F2B544">You broke The Iron Pact. Thornwood is out of it.</span><br><span style="color:#F2B544">Stealing from an ally takes longer: 7:30 instead of 5:00.</span></div><div style="position:relative;width:300px;height:64px;background:#0C0E12cc;border:2px solid #FF6B5C;box-sizing:border-box"><div class="a t" style="left:12px;top:8px;color:#FF6B5C;font-size:14px">STEALING Okra_Moss's totem</div><div class="a t" style="left:12px;top:32px;font-size:20px;color:#E6EAF2">7:30</div><div class="a m" style="left:80px;top:37px;">ally steal: half as long again</div></div></div><div class="cap">The steal goes ahead but takes 7:30 instead of 5:00, so the victim's allies have time to come.</div></div><div style="display:flex;flex-direction:column;gap:10px"><div class="lbl">8  A LEADER'S INVITE CARD</div><div class="card" style="left:0;top:0;border-color:#4FD8C8"><div class="t" style="color:#4FD8C8;font-size:15px">ALLIANCE INVITE</div><div class="mw" style="margin-top:6px;color:#E6EAF2"><span style="color:#55FFFF">Saltmarsh</span> asks <span style="color:#FF5555">Emberfall</span> to join The Iron Pact.</div><div class="mw" style="margin-top:6px">[ ACCEPT ]  [ DECLINE ]   41 s</div></div><div class="cap">Only the leader gets this card. Members see a chat line that an invite is waiting.</div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2060,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

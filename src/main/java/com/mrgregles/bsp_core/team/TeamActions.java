@@ -37,6 +37,17 @@ public final class TeamActions {
             case MARK_READ -> Teams.markRead(p.server, p.getUUID());
             case CHAT_TOGGLE -> TeamChat.toggle(p);
             case TELEPORT -> out = Teams.requestTeleport(p, m.target());
+            case ALLY_CREATE -> out = Alliances.create(p, m.text());
+            case ALLY_INVITE -> out = Alliances.invite(p, m.target());
+            case ALLY_ACCEPT -> out = Alliances.accept(p);
+            case ALLY_DECLINE -> out = Alliances.decline(p);
+            case ALLY_LEAVE -> out = Alliances.leave(p);
+            case ALLY_PERK -> out = Alliances.setPerk(p, m.value() & 0xFF, (m.value() & TeamActionPacket.ON) != 0);
+            case ALLY_SHARE -> out = Alliances.setShare(p, m.value() != 0);
+            case ALLY_POST -> out = Alliances.post(p, m.text());
+            case ALLY_READ -> Alliances.markRead(p.server, p.getUUID());
+            case ALLY_CHAT -> TeamChat.toggleAlly(p);
+            case ALLY_TELEPORT -> out = Alliances.requestTeleport(p, m.target());
         }
         if (out != null && out.message() != null) {
             p.displayClientMessage(out.message(), false);

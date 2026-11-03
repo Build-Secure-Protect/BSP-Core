@@ -31,7 +31,8 @@ import com.mrgregles.bsp_core.bank.BankTransaction;
  * <p>Tables: {@code grants} (one row per player who has been given a first-join totem, anywhere on
  * the network), {@code totems} (every placed totem, by server), {@code factory_slices} (every
  * factory controller, by server), {@code scores} (each server's leaderboard rows), {@code score_adjust} (scores set by hand, for the network), {@code market_orders} (open buy orders), {@code meta} (one
- * row per server that has migrated), {@code vault_totals} (what each player keeps in Coin Vaults,
+ * row per server that has migrated), {@code alliances}, {@code alliance_teams}, {@code alliance_messages}, {@code alliance_reads}, {@code alliance_waits} and {@code alliance_former}
+ * (teams that ally, for the network), {@code vault_totals} (what each player keeps in Coin Vaults,
  * by server), {@code state} (the shared season state, as keys and values), {@code season_claims}
  * (who has been given their fresh totem for which season) and {@code pending_items} (prize and
  * reward items waiting for a player to log in somewhere) and {@code notices} (chat messages for a
@@ -257,6 +258,29 @@ final class MySqlStore implements AutoCloseable {
             // the lottery: every player seen on the network, with their ranks and operator status at the time
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("lottery_players") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL, seen_ms BIGINT NOT NULL, "
                     + "ranks VARCHAR(1024) NOT NULL DEFAULT '', op TINYINT NOT NULL DEFAULT 0, server_id VARCHAR(64) NOT NULL DEFAULT '', INDEX (seen_ms))");
+            // alliances: the alliance's own row, one row per team in it (what it gives its allies), the board, who read what, and the
+            // waits a team that broke an alliance serves before it may ally again with the teams that were in it
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("alliances") + " (id CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(32) NOT NULL, created_ms BIGINT NOT NULL, "
+                    + "seq INT NOT NULL DEFAULT 0, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX (name))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("alliance_teams") + " (team CHAR(36) NOT NULL PRIMARY KEY, alliance CHAR(36) NOT NULL, joined_ms BIGINT NOT NULL, "
+                    + "perks INT NOT NULL DEFAULT 0, share_coords TINYINT NOT NULL DEFAULT 0, INDEX (alliance))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("alliance_messages") + " (alliance CHAR(36) NOT NULL, seq INT NOT NULL, ms BIGINT NOT NULL, uuid CHAR(36) NOT NULL, "
+                    + "name VARCHAR(16) NOT NULL, team_name VARCHAR(32) NOT NULL, colour INT NOT NULL, text VARCHAR(512) NOT NULL, PRIMARY KEY (alliance, seq))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("alliance_reads") + " (uuid CHAR(36) NOT NULL, alliance CHAR(36) NOT NULL, read_seq INT NOT NULL, PRIMARY KEY (uuid, alliance))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("alliance_waits") + " (team CHAR(36) NOT NULL, other CHAR(36) NOT NULL, until_ms BIGINT NOT NULL, PRIMARY KEY (team, other))");
+            // teams that left an alliance lately: a steal between them still counts as breaking it until until_ms
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("alliance_former") + " (team CHAR(36) NOT NULL, other CHAR(36) NOT NULL, alliance CHAR(36) NOT NULL, "
+                    + "name VARCHAR(32) NOT NULL, until_ms BIGINT NOT NULL, PRIMARY KEY (team, other))");
+            // where each online player is (dimension and block), for their allies' screens; written only for players in an alliance
+            for (String col : new String[] {"dim VARCHAR(64) NOT NULL DEFAULT ''", "x INT NOT NULL DEFAULT 0", "y INT NOT NULL DEFAULT 0", "z INT NOT NULL DEFAULT 0", "pos_ms BIGINT NOT NULL DEFAULT 0"}) {
+                try {
+                    st.executeUpdate("ALTER TABLE " + t("online_players") + " ADD COLUMN " + col);
+                } catch (SQLException e) {
+                    if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                        throw e;
+                    }
+                }
+            }
         }
     }
 
@@ -1795,13 +1819,14 @@ final class MySqlStore implements AutoCloseable {
     /** The players online on the other servers, as confirmed within {@code maxAgeMs} (a server that stopped confirming has crashed). */
     java.util.List<NetworkStorage.OnlinePlayer> onlineElsewhere(long now, long maxAgeMs) throws SQLException {
         java.util.List<NetworkStorage.OnlinePlayer> out = new java.util.ArrayList<>();
-        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, server_id FROM " + t("online_players") + " WHERE server_id <> ? AND since_ms >= ? ORDER BY name")) {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, server_id, dim, x, y, z, pos_ms FROM " + t("online_players") + " WHERE server_id <> ? AND since_ms >= ? ORDER BY name")) {
             ps.setString(1, serverId);
             ps.setLong(2, now - maxAgeMs);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     try {
-                        out.add(new NetworkStorage.OnlinePlayer(UUID.fromString(rs.getString("uuid")), rs.getString("name"), rs.getString("server_id")));
+                        out.add(new NetworkStorage.OnlinePlayer(UUID.fromString(rs.getString("uuid")), rs.getString("name"), rs.getString("server_id"), rs.getString("dim"),
+                                rs.getInt("x"), rs.getInt("y"), rs.getInt("z"), rs.getLong("pos_ms")));
                     } catch (IllegalArgumentException ignored) {
                         // not a player id
                     }
@@ -1809,6 +1834,26 @@ final class MySqlStore implements AutoCloseable {
             }
         }
         return out;
+    }
+
+    /** Where this server's allied players are now (their online rows only; a row another server owns is left alone). */
+    void onlinePositions(java.util.List<NetworkStorage.Position> positions, long ms) throws SQLException {
+        if (positions.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("online_players") + " SET dim = ?, x = ?, y = ?, z = ?, pos_ms = ? WHERE uuid = ? AND server_id = ?")) {
+            for (NetworkStorage.Position p : positions) {
+                ps.setString(1, p.dim());
+                ps.setInt(2, p.x());
+                ps.setInt(3, p.y());
+                ps.setInt(4, p.z());
+                ps.setLong(5, ms);
+                ps.setString(6, p.id().toString());
+                ps.setString(7, serverId);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
     }
 
     /** Forgets this server's online marks (a restart after a crash). */
@@ -1859,6 +1904,383 @@ final class MySqlStore implements AutoCloseable {
                     while (rs.next()) {
                         team.messages().add(new com.mrgregles.bsp_core.team.Team.Message(rs.getInt("seq"), rs.getLong("ms"), UUID.fromString(rs.getString("uuid")), rs.getString("name"), rs.getString("text")));
                     }
+                }
+            }
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ alliances, one record for the network
+
+    /** An alliance's own row, as read on the server thread. */
+    record AllianceRow(UUID id, String name, long createdMs, int seq) {}
+
+    void allianceRowWrite(AllianceRow r) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("alliances") + " (id, name, created_ms, seq) VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE name = VALUES(name), seq = GREATEST(seq, VALUES(seq))")) {
+            ps.setString(1, r.id().toString());
+            ps.setString(2, r.name());
+            ps.setLong(3, r.createdMs());
+            ps.setInt(4, r.seq());
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Seats a team in an alliance in one transaction: the alliance row is locked, the team must be in no other alliance, the
+     * alliance must have a free place, and no wait may stand between the team and any team in it. True when seated (or already
+     * in this alliance), false when refused.
+     */
+    boolean allianceJoin(UUID allianceId, UUID team, com.mrgregles.bsp_core.team.Alliance.Seat seat, int max, long now) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + t("alliances") + " WHERE id = ? FOR UPDATE")) {
+                ps.setString(1, allianceId.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        c.rollback();
+                        return false;
+                    }
+                }
+            }
+            String held = null;
+            try (PreparedStatement ps = c.prepareStatement("SELECT alliance FROM " + t("alliance_teams") + " WHERE team = ? FOR UPDATE")) {
+                ps.setString(1, team.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        held = rs.getString(1);
+                    }
+                }
+            }
+            if (held != null) {
+                if (allianceId.toString().equals(held)) {
+                    c.rollback();
+                    return true;
+                }
+                boolean live;
+                try (PreparedStatement ps = c.prepareStatement("SELECT 1 FROM " + t("alliances") + " WHERE id = ?")) {
+                    ps.setString(1, held);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        live = rs.next();
+                    }
+                }
+                if (live) {
+                    c.rollback();
+                    return false;
+                }
+                // a seat left behind by an alliance deleted meanwhile: it holds the team back from nothing
+                try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("alliance_teams") + " WHERE team = ?")) {
+                    ps.setString(1, team.toString());
+                    ps.executeUpdate();
+                }
+            }
+            java.util.List<String> members = new java.util.ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement("SELECT team FROM " + t("alliance_teams") + " WHERE alliance = ?")) {
+                ps.setString(1, allianceId.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        members.add(rs.getString(1));
+                    }
+                }
+            }
+            if (members.size() >= max) {
+                c.rollback();
+                return false;
+            }
+            for (String other : members) {
+                try (PreparedStatement ps = c.prepareStatement("SELECT 1 FROM " + t("alliance_waits") + " WHERE until_ms > ? AND ((team = ? AND other = ?) OR (team = ? AND other = ?))")) {
+                    ps.setLong(1, now);
+                    ps.setString(2, team.toString());
+                    ps.setString(3, other);
+                    ps.setString(4, other);
+                    ps.setString(5, team.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            c.rollback();
+                            return false;
+                        }
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("alliance_teams") + " (team, alliance, joined_ms, perks, share_coords) VALUES (?, ?, ?, ?, ?)")) {
+                ps.setString(1, team.toString());
+                ps.setString(2, allianceId.toString());
+                ps.setLong(3, seat.joinedMs);
+                ps.setInt(4, seat.perks);
+                ps.setBoolean(5, seat.shareCoords);
+                ps.executeUpdate();
+            }
+            c.commit();
+            return true;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** What the team gives its allies, only while it is in that alliance (a copy that missed a leave never puts it back). */
+    void allianceSeatWrite(UUID allianceId, UUID team, int perks, boolean share) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("alliance_teams") + " SET perks = ?, share_coords = ? WHERE team = ? AND alliance = ?")) {
+            ps.setInt(1, perks);
+            ps.setBoolean(2, share);
+            ps.setString(3, team.toString());
+            ps.setString(4, allianceId.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Takes the team out of the alliance in one transaction and ends the alliance when fewer than two teams are left. True when
+     * the alliance ended.
+     */
+    boolean allianceLeave(UUID allianceId, UUID team) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            boolean exists;
+            try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + t("alliances") + " WHERE id = ? FOR UPDATE")) {
+                ps.setString(1, allianceId.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    exists = rs.next();
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("alliance_teams") + " WHERE team = ? AND alliance = ?")) {
+                ps.setString(1, team.toString());
+                ps.setString(2, allianceId.toString());
+                ps.executeUpdate();
+            }
+            int left;
+            try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + t("alliance_teams") + " WHERE alliance = ?")) {
+                ps.setString(1, allianceId.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    left = rs.next() ? rs.getInt(1) : 0;
+                }
+            }
+            boolean ends = !exists || left < 2;
+            if (ends) {
+                allianceDeleteIn(c, allianceId);
+            }
+            c.commit();
+            return ends;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    void allianceDelete(UUID allianceId) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + t("alliances") + " WHERE id = ? FOR UPDATE")) {
+                ps.setString(1, allianceId.toString());
+                ps.executeQuery().close();
+            }
+            allianceDeleteIn(c, allianceId);
+            c.commit();
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /**
+     * A team was disbanded: it leaves whatever alliance the database seats it in. The alliance's id, prefixed "-" when it ended;
+     * null when the team was in none.
+     */
+    String allianceLeaveTeam(UUID team) throws SQLException {
+        String alliance = null;
+        try (PreparedStatement ps = conn().prepareStatement("SELECT alliance FROM " + t("alliance_teams") + " WHERE team = ?")) {
+            ps.setString(1, team.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    alliance = rs.getString(1);
+                }
+            }
+        }
+        if (alliance == null) {
+            return null;
+        }
+        return (allianceLeave(UUID.fromString(alliance), team) ? "-" : "") + alliance;
+    }
+
+    private void allianceDeleteIn(Connection c, UUID allianceId) throws SQLException {
+        for (String table : new String[] {"alliance_messages", "alliance_reads", "alliance_teams", "alliances"}) {
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t(table) + " WHERE " + (table.equals("alliances") ? "id" : "alliance") + " = ?")) {
+                ps.setString(1, allianceId.toString());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    /** Records the waits after a break (a longer wait already there stays), and drops the waits that are over. */
+    void allianceWaitsWrite(java.util.List<com.mrgregles.bsp_core.team.AllianceLedger.Wait> waits) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("alliance_waits") + " (team, other, until_ms) VALUES (?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE until_ms = GREATEST(until_ms, VALUES(until_ms))")) {
+            for (var w : waits) {
+                ps.setString(1, w.team().toString());
+                ps.setString(2, w.other().toString());
+                ps.setLong(3, w.untilMs());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("alliance_waits") + " WHERE until_ms <= ?")) {
+            ps.setLong(1, System.currentTimeMillis());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Adds a line, moves the alliance's counter on, and drops lines beyond {@code keep}. */
+    void allianceMessageWrite(UUID allianceId, com.mrgregles.bsp_core.team.Alliance.Message m, int keep) throws SQLException {
+        int seq = m.seq();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT COALESCE(MAX(seq), 0) FROM " + t("alliance_messages") + " WHERE alliance = ?")) {
+            ps.setString(1, allianceId.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) >= seq) {
+                    seq = rs.getInt(1) + 1; // another server posted with this number first: this line follows it, never replaces it
+                }
+            }
+        }
+        m = new com.mrgregles.bsp_core.team.Alliance.Message(seq, m.ms(), m.author(), m.authorName(), m.teamName(), m.colour(), m.text());
+        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("alliance_messages") + " (alliance, seq, ms, uuid, name, team_name, colour, text) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, allianceId.toString());
+            ps.setInt(2, m.seq());
+            ps.setLong(3, m.ms());
+            ps.setString(4, m.author().toString());
+            ps.setString(5, m.authorName());
+            ps.setString(6, m.teamName());
+            ps.setInt(7, m.colour());
+            ps.setString(8, m.text());
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("alliances") + " SET seq = GREATEST(seq, ?) WHERE id = ?")) {
+            ps.setInt(1, m.seq());
+            ps.setString(2, allianceId.toString());
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("alliance_messages") + " WHERE alliance = ? AND seq <= ?")) {
+            ps.setString(1, allianceId.toString());
+            ps.setInt(2, m.seq() - Math.max(0, keep));
+            ps.executeUpdate();
+        }
+    }
+
+    void allianceReadWrite(UUID allianceId, UUID player, int seq) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("alliance_reads") + " (uuid, alliance, read_seq) VALUES (?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE read_seq = GREATEST(read_seq, VALUES(read_seq))")) {
+            ps.setString(1, player.toString());
+            ps.setString(2, allianceId.toString());
+            ps.setInt(3, seq);
+            ps.executeUpdate();
+        }
+    }
+
+    /** One alliance whole (its teams, the kept lines, who read what), or every alliance with a null id. */
+    java.util.List<com.mrgregles.bsp_core.team.Alliance> allianceRead(UUID id) throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.team.Alliance> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, created_ms, seq FROM " + t("alliances") + (id == null ? "" : " WHERE id = ?"))) {
+            if (id != null) {
+                ps.setString(1, id.toString());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.mrgregles.bsp_core.team.Alliance a = new com.mrgregles.bsp_core.team.Alliance(UUID.fromString(rs.getString("id")), rs.getString("name"), rs.getLong("created_ms"));
+                    a.setMessageSeq(rs.getInt("seq"));
+                    out.add(a);
+                }
+            }
+        }
+        for (com.mrgregles.bsp_core.team.Alliance a : out) {
+            try (PreparedStatement ps = conn().prepareStatement("SELECT team, joined_ms, perks, share_coords FROM " + t("alliance_teams") + " WHERE alliance = ? ORDER BY joined_ms")) {
+                ps.setString(1, a.id.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        a.teams().put(UUID.fromString(rs.getString("team")), new com.mrgregles.bsp_core.team.Alliance.Seat(rs.getLong("joined_ms"), rs.getInt("perks"), rs.getBoolean("share_coords")));
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn().prepareStatement("SELECT seq, ms, uuid, name, team_name, colour, text FROM " + t("alliance_messages") + " WHERE alliance = ? ORDER BY seq")) {
+                ps.setString(1, a.id.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        a.messages().add(new com.mrgregles.bsp_core.team.Alliance.Message(rs.getInt("seq"), rs.getLong("ms"), UUID.fromString(rs.getString("uuid")), rs.getString("name"),
+                                rs.getString("team_name"), rs.getInt("colour"), rs.getString("text")));
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, read_seq FROM " + t("alliance_reads") + " WHERE alliance = ?")) {
+                ps.setString(1, a.id.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        a.reads().put(UUID.fromString(rs.getString("uuid")), rs.getInt("read_seq"));
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    void allianceFormerWrite(java.util.List<com.mrgregles.bsp_core.team.AllianceLedger.Former> formers) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("alliance_former") + " (team, other, alliance, name, until_ms) VALUES (?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE alliance = VALUES(alliance), name = VALUES(name), until_ms = VALUES(until_ms)")) {
+            for (var f : formers) {
+                ps.setString(1, f.team().toString());
+                ps.setString(2, f.other().toString());
+                ps.setString(3, f.allianceId().toString());
+                ps.setString(4, f.allianceName());
+                ps.setLong(5, f.untilMs());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("alliance_former") + " WHERE until_ms <= ?")) {
+            ps.setLong(1, System.currentTimeMillis());
+            ps.executeUpdate();
+        }
+    }
+
+    /** The team's records are used up (its steal counted as a break). */
+    void allianceFormerSpend(UUID team) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("alliance_former") + " WHERE team = ? OR other = ?")) {
+            ps.setString(1, team.toString());
+            ps.setString(2, team.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    java.util.List<com.mrgregles.bsp_core.team.AllianceLedger.Former> allianceFormerRead(long now) throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.team.AllianceLedger.Former> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT team, other, alliance, name, until_ms FROM " + t("alliance_former") + " WHERE until_ms > ?")) {
+            ps.setLong(1, now);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new com.mrgregles.bsp_core.team.AllianceLedger.Former(UUID.fromString(rs.getString("team")), UUID.fromString(rs.getString("other")),
+                            UUID.fromString(rs.getString("alliance")), rs.getString("name"), rs.getLong("until_ms")));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The waits still running. */
+    java.util.List<com.mrgregles.bsp_core.team.AllianceLedger.Wait> allianceWaitsRead(long now) throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.team.AllianceLedger.Wait> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT team, other, until_ms FROM " + t("alliance_waits") + " WHERE until_ms > ?")) {
+            ps.setLong(1, now);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new com.mrgregles.bsp_core.team.AllianceLedger.Wait(UUID.fromString(rs.getString("team")), UUID.fromString(rs.getString("other")), rs.getLong("until_ms")));
                 }
             }
         }

@@ -48,6 +48,8 @@ public final class BSPCommands {
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(TeamCommands.playerTree());
         dispatcher.register(TeamCommands.chatTree());
+        dispatcher.register(TeamCommands.allyTree());
+        dispatcher.register(TeamCommands.allyChatTree());
         dispatcher.register(KitCommands.playerTree());
         LiteralArgumentBuilder<CommandSourceStack> staffOnly = Commands.literal("bsp")
                 .then(Commands.literal("admin").executes(ctx -> {

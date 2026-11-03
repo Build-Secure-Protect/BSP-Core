@@ -7,16 +7,20 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Server to client: whether the player's chat goes to their team right now, for the badge above the chat. */
-public record TeamChatPacket(boolean on, int colour, String team) {
+/**
+ * Server to client: whether the player's chat goes to their team (or, with {@code ally}, to their alliance) right now, for the badge
+ * above the chat. {@code team} is the team's or the alliance's name.
+ */
+public record TeamChatPacket(boolean on, boolean ally, int colour, String team) {
     public static void encode(TeamChatPacket m, FriendlyByteBuf buf) {
         buf.writeBoolean(m.on);
+        buf.writeBoolean(m.ally);
         buf.writeByte(m.colour);
         buf.writeUtf(m.team);
     }
 
     public static TeamChatPacket decode(FriendlyByteBuf buf) {
-        return new TeamChatPacket(buf.readBoolean(), buf.readByte(), buf.readUtf());
+        return new TeamChatPacket(buf.readBoolean(), buf.readBoolean(), buf.readByte(), buf.readUtf());
     }
 
     public static void handle(TeamChatPacket msg, Supplier<NetworkEvent.Context> ctx) {

@@ -419,6 +419,7 @@ public final class Teams {
         ledger.left(player.getUUID());
         ledger.changed();
         CHAT_ON.remove(player.getUUID());
+        Alliances.chatOff(player.getUUID()); // out of the team, out of its alliance's chat
         TeamChat.sendState(player);
         TeamSync.left(team, player.getUUID());
         tellTeam(server, team, Component.translatable("message.bsp_core.team.member_left", player.getGameProfile().getName()).withStyle(ChatFormatting.YELLOW), null);
@@ -449,6 +450,7 @@ public final class Teams {
         ledger.left(member);
         ledger.changed();
         CHAT_ON.remove(member);
+        Alliances.chatOff(member);
         ServerPlayer kicked = server.getPlayerList().getPlayer(member);
         if (kicked != null) {
             TeamChat.sendState(kicked);
@@ -501,6 +503,7 @@ public final class Teams {
     }
 
     private static Outcome disbandNow(MinecraftServer server, Team team, @Nullable UUID by) {
+        Alliances.teamGone(server, team); // out of its alliance first, while its members can still be told
         TeamLedger ledger = TeamLedger.get(server);
         List<UUID> members = new ArrayList<>(team.members().keySet());
         ledger.remove(team);
@@ -512,6 +515,7 @@ public final class Teams {
             return false;
         });
         CHAT_ON.removeAll(members);
+        members.forEach(Alliances::chatOff);
         TeamSync.removed(team);
         Component line = Component.translatable("message.bsp_core.team.disbanded", styled(team)).withStyle(ChatFormatting.YELLOW);
         for (UUID m : members) {
@@ -690,7 +694,7 @@ public final class Teams {
         return CHAT_ON.contains(player);
     }
 
-    /** Switches the player's chat between the team and everyone; returns the new state. */
+    /** Switches the player's chat between the team and everyone (the alliance channel goes off); returns the new state. */
     public static boolean toggleChat(MinecraftServer server, UUID player) {
         if (CHAT_ON.remove(player)) {
             return false;
@@ -698,8 +702,14 @@ public final class Teams {
         if (teamOf(server, player) == null) {
             return false;
         }
+        Alliances.chatOff(player);
         CHAT_ON.add(player);
         return true;
+    }
+
+    /** The team channel goes off (the alliance channel took over). */
+    static void chatOff(UUID player) {
+        CHAT_ON.remove(player);
     }
 
     @SubscribeEvent

@@ -9,11 +9,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
-/** The pill above the chat lines while the player's chat goes to the team: "TEAM CHAT" in the team's colour. Gone when they switch back. */
+/**
+ * The pill above the chat lines while the player's chat goes to the team ("TEAM CHAT" in the team's colour) or to the alliance
+ * ("ALLY CHAT" in the alliance teal). Gone when they switch back.
+ */
 public final class TeamChatBadge implements IGuiOverlay {
     public static final TeamChatBadge INSTANCE = new TeamChatBadge();
     private static final int BG = 0xF010151C;
-    private static boolean on;
+    private static boolean on, ally;
+    private static final int TEAL = 0x4FD8C8;
     private static int colour = 0x55FFFF;
     private static String team = "";
 
@@ -21,9 +25,10 @@ public final class TeamChatBadge implements IGuiOverlay {
 
     public static void receive(TeamChatPacket msg) {
         on = msg.on();
+        ally = msg.ally();
         ChatFormatting c = ChatFormatting.getById(msg.colour());
         Integer rgb = c == null ? null : c.getColor();
-        colour = rgb == null ? 0x55FFFF : rgb;
+        colour = ally ? TEAL : rgb == null ? 0x55FFFF : rgb;
         team = msg.team();
     }
 
@@ -34,6 +39,7 @@ public final class TeamChatBadge implements IGuiOverlay {
     /** Logging out or changing servers forgets the state; the server sends it again at login. */
     public static void reset() {
         on = false;
+        ally = false;
     }
 
     @Override
@@ -43,7 +49,7 @@ public final class TeamChatBadge implements IGuiOverlay {
             return;
         }
         Font font = gui.getFont();
-        String label = Component.translatable("hud.bsp_core.team.chat").getString();
+        String label = Component.translatable(ally ? "hud.bsp_core.alliance.chat" : "hud.bsp_core.team.chat").getString();
         boolean typing = mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen;
         String text = typing && !team.isEmpty() ? label + " · " + team : label;
         int w = font.width(text) * 3 / 4 + 8;

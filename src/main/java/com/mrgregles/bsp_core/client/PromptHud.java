@@ -19,13 +19,14 @@ import java.util.Locale;
 
 /**
  * The prompt cards at the top right, where the game's toasts appear: the active one on top and
- * bright, the waiting ones under it and dimmed. Today the cards are team invites; the accept and
- * decline keys act on the top card. Each card counts its own seconds down and leaves by itself.
+ * bright, the waiting ones under it and dimmed. The cards are team invites, alliance invites (teal)
+ * and alliance breaks (red, nothing to answer); the accept and decline keys act on the first card
+ * that can be answered. Each card counts its own seconds down and leaves by itself.
  */
 public final class PromptHud implements IGuiOverlay {
     public static final PromptHud INSTANCE = new PromptHud();
-    private static final int CW = 128, CH = 40, GAP = 4, TOP = 28, RIGHT = 6;
-    private static final int BG = 0xF010151C, VIO = 0xFFB58CFF, DIM = 0xFF2A2F3A, TEXT = 0xE6EAF2, MUTED = 0x9AA3B5, TQ = 0xFF19D3B0, RED = 0xFFFF6B5C;
+    private static final int CW = 128, CH = 40, GAP = 4, TOP = 28, RIGHT = 6, SHOWN = 3;
+    private static final int BG = 0xF010151C, VIO = 0xFFB58CFF, DIM = 0xFF2A2F3A, TEXT = 0xE6EAF2, MUTED = 0x9AA3B5, TQ = 0xFF19D3B0, RED = 0xFFFF6B5C, TEAL = 0xFF4FD8C8;
 
     private record Prompt(TeamPromptPacket invite, long untilMs) {}
 
@@ -40,17 +41,25 @@ public final class PromptHud implements IGuiOverlay {
         }
     }
 
-    /** The accept or decline key: answers the top card. */
+    /** The accept or decline key: answers the first card that can be answered. */
     public static void answer(boolean accept) {
-        if (QUEUE.isEmpty()) {
-            return;
+        long now = System.currentTimeMillis();
+        QUEUE.removeIf(p -> p.untilMs() <= now); // never answer a card that ran out while the HUD was hidden
+        for (int i = 0; i < QUEUE.size() && i < SHOWN; i++) { // only a card that is drawn
+            TeamPromptPacket m = QUEUE.get(i).invite();
+            if (m.answerable()) {
+                QUEUE.remove(i);
+                boolean ally = m.kind() == TeamPromptPacket.ALLY_INVITE;
+                BSPNetwork.CHANNEL.sendToServer(TeamActionPacket.of(ally ? (accept ? TeamActionPacket.Action.ALLY_ACCEPT : TeamActionPacket.Action.ALLY_DECLINE)
+                        : accept ? TeamActionPacket.Action.ACCEPT : TeamActionPacket.Action.DECLINE));
+                return;
+            }
         }
-        QUEUE.remove(0);
-        BSPNetwork.CHANNEL.sendToServer(TeamActionPacket.of(accept ? TeamActionPacket.Action.ACCEPT : TeamActionPacket.Action.DECLINE));
     }
 
+    /** Whether a card waits for the accept or decline key. */
     public static boolean hasPrompt() {
-        return !QUEUE.isEmpty();
+        return QUEUE.stream().limit(SHOWN).anyMatch(p -> p.invite().answerable());
     }
 
     @Override
@@ -63,16 +72,23 @@ public final class PromptHud implements IGuiOverlay {
         QUEUE.removeIf(p -> p.untilMs() <= now);
         Font font = gui.getFont();
         int x = width - RIGHT - CW, y = TOP;
-        for (int i = 0; i < QUEUE.size() && i < 3; i++) {
+        int keys = -1; // the card the accept and decline keys answer
+        for (int i = 0; i < QUEUE.size() && i < SHOWN && keys < 0; i++) {
+            if (QUEUE.get(i).invite().answerable()) {
+                keys = i;
+            }
+        }
+        for (int i = 0; i < QUEUE.size() && i < SHOWN; i++) {
             Prompt p = QUEUE.get(i);
-            card(g, font, mc, x, y, p, i == 0, (int) Math.max(1, (p.untilMs() - now + 999) / 1000));
+            card(g, font, mc, x, y, p, i == keys, (int) Math.max(1, (p.untilMs() - now + 999) / 1000));
             y += CH + GAP;
         }
     }
 
     private void card(GuiGraphics g, Font font, Minecraft mc, int x, int y, Prompt p, boolean active, int seconds) {
         TeamPromptPacket m = p.invite();
-        int frame = active ? VIO : DIM;
+        int accent = m.kind() == TeamPromptPacket.ALLY_BROKEN ? RED : m.kind() == TeamPromptPacket.ALLY_INVITE ? TEAL : VIO;
+        int frame = active || m.kind() == TeamPromptPacket.ALLY_BROKEN ? accent : DIM;
         g.fill(x - 1, y - 1, x + CW + 1, y + CH + 1, frame);
         g.fill(x, y, x + CW, y + CH, BG);
         // the inviter's face, from the tab list when they are on this server
@@ -83,20 +99,35 @@ public final class PromptHud implements IGuiOverlay {
             g.fill(x + 5, y + 5, x + 17, y + 17, DIM);
         }
         int tx = x + 21, tw = CW - 26;
-        int title = active ? VIO & 0xFFFFFF : MUTED;
-        small(g, font, Component.translatable("hud.bsp_core.team.invite.title").getString(), tx, y + 4, title);
+        boolean lit = active || m.kind() == TeamPromptPacket.ALLY_BROKEN;
+        int title = lit ? accent & 0xFFFFFF : MUTED;
+        String titleKey = switch (m.kind()) {
+            case TeamPromptPacket.ALLY_INVITE -> "hud.bsp_core.alliance.invite.title";
+            case TeamPromptPacket.ALLY_BROKEN -> "hud.bsp_core.alliance.broken.title";
+            default -> "hud.bsp_core.team.invite.title";
+        };
+        small(g, font, Component.translatable(titleKey).getString(), tx, y + 4, title);
         ChatFormatting c = ChatFormatting.getById(m.colour());
-        Component line = Component.literal(m.inviterName() + " · ").withStyle(s -> s.withColor(active ? TEXT : MUTED))
+        Component line = Component.literal(m.inviterName() + " · ").withStyle(s -> s.withColor(lit ? TEXT : MUTED))
                 .append(Component.literal(m.team()).withStyle(c == null ? ChatFormatting.AQUA : c));
-        CashMachine.fit(g, font, line.getString(), tx, y + 12, tw, active ? TEXT : MUTED);
-        small(g, font, Component.translatable("hud.bsp_core.team.invite.about", m.members(), m.maxMembers(), m.leader()).getString(), tx, y + 23, tw, MUTED);
-        String accept = TeamKeys.ACCEPT.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
-        String decline = TeamKeys.DECLINE.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
-        small(g, font, Component.translatable("hud.bsp_core.team.invite.keys", accept, decline, seconds).getString(), tx, y + 31, tw, active ? TQ & 0xFFFFFF : MUTED);
+        CashMachine.fit(g, font, line.getString(), tx, y + 12, tw, lit ? TEXT : MUTED);
+        String about = switch (m.kind()) {
+            case TeamPromptPacket.ALLY_INVITE -> Component.translatable("hud.bsp_core.alliance.invite.about", m.leader(), m.members(), m.maxMembers()).getString();
+            case TeamPromptPacket.ALLY_BROKEN -> Component.translatable("hud.bsp_core.alliance.broken.about", m.leader()).getString();
+            default -> Component.translatable("hud.bsp_core.team.invite.about", m.members(), m.maxMembers(), m.leader()).getString();
+        };
+        small(g, font, about, tx, y + 23, tw, m.kind() == TeamPromptPacket.ALLY_BROKEN ? TEXT : MUTED);
+        if (m.answerable()) {
+            String accept = TeamKeys.ACCEPT.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
+            String decline = TeamKeys.DECLINE.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
+            small(g, font, Component.translatable("hud.bsp_core.team.invite.keys", accept, decline, seconds).getString(), tx, y + 31, tw, active ? TQ & 0xFFFFFF : MUTED);
+        } else {
+            small(g, font, Component.translatable("hud.bsp_core.alliance.broken.out", m.extra()).getString(), tx, y + 31, tw, RED & 0xFFFFFF);
+        }
         // the time left, as a line along the bottom edge
         int full = Math.max(1, m.seconds());
         int w = (int) ((long) CW * Math.min(seconds, full) / full);
-        g.fill(x, y + CH - 1, x + w, y + CH, active ? VIO : DIM);
+        g.fill(x, y + CH - 1, x + w, y + CH, lit ? accent : DIM);
     }
 
     private static void small(GuiGraphics g, Font font, String text, int x, int y, int colour) {

@@ -9,7 +9,16 @@ import java.util.function.Supplier;
 
 /** Client to server: what the player did on the Team screen (or pressed the Team key). The server answers with a {@link TeamViewPacket}. */
 public record TeamActionPacket(Action action, String text, UUID target, int value) {
-    public enum Action { VIEW, REFRESH, CREATE, INVITE, ACCEPT, DECLINE, LEAVE, KICK, TRANSFER, RENAME, RECOLOUR, DISBAND, PIN, POST, MARK_READ, CHAT_TOGGLE, TELEPORT }
+    public enum Action { VIEW, REFRESH, CREATE, INVITE, ACCEPT, DECLINE, LEAVE, KICK, TRANSFER, RENAME, RECOLOUR, DISBAND, PIN, POST, MARK_READ, CHAT_TOGGLE, TELEPORT,
+        /** Alliances: make one ({@code text} its name), invite a team ({@code target} its id), answer, leave. */
+        ALLY_CREATE, ALLY_INVITE, ALLY_ACCEPT, ALLY_DECLINE, ALLY_LEAVE,
+        /** A perk the team gives its allies: {@code value} the flag, plus {@link #ON} to turn it on. */
+        ALLY_PERK,
+        /** Share coordinates: {@code value} 1 on, 0 off. */
+        ALLY_SHARE, ALLY_POST, ALLY_READ, ALLY_CHAT, ALLY_TELEPORT }
+
+    /** Added to {@code value} on {@link Action#ALLY_PERK} to turn the perk on. */
+    public static final int ON = 1 << 8;
 
     private static final UUID NONE = new UUID(0L, 0L);
 

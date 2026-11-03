@@ -42,8 +42,20 @@ public final class TeamChat {
         }
     }
 
-    /** Posts the line to the player's team when their chat is switched to it; true when the line was taken. */
+    /** Posts the line to the player's team or alliance when their chat is switched to it; true when the line was taken. */
     public static boolean take(ServerPlayer p, String raw) {
+        if (Alliances.isChatOn(p.getUUID())) {
+            Teams.Outcome out = Alliances.post(p, raw);
+            if (!out.ok()) {
+                if (out.message() != null) {
+                    p.displayClientMessage(out.message(), false);
+                }
+                if (!Alliances.enabled() || Alliances.allianceOf(p.server, p.getUUID()) == null) {
+                    Alliances.chatOff(p.server, p.getUUID()); // no alliance to talk to (or alliances turned off): back to everyone after this line
+                }
+            }
+            return true;
+        }
         if (!Teams.isChatOn(p.getUUID()) || !Teams.enabled()) {
             return false;
         }
@@ -57,6 +69,14 @@ public final class TeamChat {
         return true;
     }
 
+    /** Switches the alliance channel and tells the client, so the badge follows. */
+    public static boolean toggleAlly(ServerPlayer p) {
+        boolean on = Alliances.toggleChat(p.server, p.getUUID());
+        p.displayClientMessage(Component.translatable(on ? "message.bsp_core.alliance.chat_on" : "message.bsp_core.alliance.chat_off").withStyle(on ? ChatFormatting.DARK_AQUA : ChatFormatting.GRAY), false);
+        sendState(p);
+        return on;
+    }
+
     /** Switches the channel and tells the client, so the badge follows. */
     public static boolean toggle(ServerPlayer p) {
         boolean on = Teams.toggleChat(p.server, p.getUUID());
@@ -68,8 +88,13 @@ public final class TeamChat {
     /** Tells the client whether the channel is on, with the team's colour for the badge. */
     public static void sendState(ServerPlayer p) {
         Team team = Teams.teamOf(p.server, p.getUUID());
+        Alliance alliance = Alliances.isChatOn(p.getUUID()) ? Alliances.allianceOf(p.server, p.getUUID()) : null;
+        if (alliance != null) {
+            BSPNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new TeamChatPacket(true, true, ChatFormatting.DARK_AQUA.getId(), alliance.name));
+            return;
+        }
         boolean on = team != null && Teams.isChatOn(p.getUUID());
-        BSPNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new TeamChatPacket(on, team == null ? ChatFormatting.AQUA.getId() : team.colour.getId(), team == null ? "" : team.name));
+        BSPNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new TeamChatPacket(on, false, team == null ? ChatFormatting.AQUA.getId() : team.colour.getId(), team == null ? "" : team.name));
     }
 
     /** What a member hears on login: the count of new lines, and the pinned note. */
@@ -97,6 +122,10 @@ public final class TeamChat {
         }
         for (Component line : loginSummary(team, p.getUUID())) {
             p.displayClientMessage(line, false);
+        }
+        Alliance alliance = Alliances.enabled() ? Alliances.allianceOfTeam(p.server, team.id) : null;
+        if (alliance != null && alliance.unread(p.getUUID()) > 0) {
+            p.displayClientMessage(Component.translatable("message.bsp_core.alliance.unread", alliance.unread(p.getUUID()), Alliances.styled(alliance)).withStyle(ChatFormatting.DARK_AQUA), false);
         }
         sendState(p);
     }
