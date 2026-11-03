@@ -21,7 +21,8 @@ import java.util.function.Supplier;
  * everything else needs a full admin. The server answers with fresh panel data.
  */
 public record AdminActionPacket(int action, UUID target, String dimension, BlockPos pos) {
-    public static final int REFRESH = 0, TP_PLAYER = 1, TP_POS = 2, RESET_TOTEMS = 3, END_SEASON = 4, REWARD_HOLDERS = 5, FULL_RESET = 6, OPEN_REWARDS = 7, SET_HOLDER_HOURS = 8, SET_DECOY_RANGE = 9, SET_CHUNKS_ONLINE = 10;
+    public static final int REFRESH = 0, TP_PLAYER = 1, TP_POS = 2, RESET_TOTEMS = 3, END_SEASON = 4, REWARD_HOLDERS = 5, FULL_RESET = 6, OPEN_REWARDS = 7, SET_HOLDER_HOURS = 8, SET_DECOY_RANGE = 9, SET_CHUNKS_ONLINE = 10,
+            SET_SCORE = 11, CLEAR_SCORE = 12;
     private static final UUID NOBODY = new UUID(0, 0);
 
     public AdminActionPacket(int action) {
@@ -92,6 +93,25 @@ public record AdminActionPacket(int action, UUID target, String dimension, Block
             case SET_CHUNKS_ONLINE -> AdminService.setChunksOnlineOnly(player.server, msg.pos.getX() != 0);
             case SET_DECOY_RANGE -> AdminService.setDecoyRange(msg.pos.getX(), msg.pos.getY());
             case SET_HOLDER_HOURS -> AdminService.setHolderHours(player.server, msg.pos.getX());
+            case SET_SCORE, CLEAR_SCORE -> {
+                String name = com.mrgregles.bsp_core.score.ScoreService.name(player.server, msg.target);
+                java.util.function.Consumer<com.mrgregles.bsp_core.score.ScoreAdjust.Result> then = r -> {
+                    if (!r.ok()) {
+                        say(player, "score_failed", name);
+                    } else {
+                        say(player, msg.action == SET_SCORE ? "score_set" : "score_cleared", name, r.score());
+                    }
+                    if (!player.hasDisconnected()) {
+                        AdminService.send(player, false);
+                    }
+                };
+                if (msg.action == SET_SCORE) {
+                    com.mrgregles.bsp_core.score.ScoreAdjust.set(player.server, msg.target, msg.pos.getX(), by, then);
+                } else {
+                    com.mrgregles.bsp_core.score.ScoreAdjust.clear(player.server, msg.target, by, then);
+                }
+                return; // the panel is sent again with the answer
+            }
             default -> {
             }
         }

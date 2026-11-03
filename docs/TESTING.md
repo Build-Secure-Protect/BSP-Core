@@ -2544,3 +2544,22 @@ On the network:
 - [ ] With a departure record older than 48 h on A (or `restrictions.transferTotemTimeoutHours = 1` on a test server and an hour's wait), teleport B to C with a totem: it arrives on C, and A's log never says "never arrived after a transfer" for it.
 - [ ] Log out on Frostwarf carrying a totem (it is placed), join Stormfall, then Frostwarf again: the totem comes back to you on Frostwarf ("came back to them" in Frostwarf's log).
 - [ ] In creative, take a Shatter Totem from the creative menu: its tooltip names you at once, and placed it is yours.
+
+## Scores set by hand (2026-11-03)
+
+Covered by a GameTest in the default batch: `scores_set_by_hand_ride_on_the_totems_points_and_go_with_the_season`:
+- set stores the difference from the totems' points; the board, the season standings and the panel row show it, and the panel packet keeps the split;
+- add moves it; losing a totem still takes its points away; a score equal to the totems' stores nothing; a score never goes below 0;
+- a player with no totems and a score set is listed on the board and the panel; clear removes it; a season end clears them all.
+
+**Not covered by a GameTest:** the network table (MySQL), the panel's look and keys.
+
+In game (single server or network):
+- [ ] `/bsp admin`, pick a player with totems: the line under their name reads "Score n, m totems" with a box, SET and CLEAR (CLEAR dimmed). The line below reads "All from totems, nothing set by hand".
+- [ ] Type a lower score and press SET (or Enter): chat says their score is now that number; the list shows it with a violet star; the line below reads "x from totems, -y set by hand"; `/bsp score top` agrees.
+- [ ] Place or break one of their totems: their score moves by that totem's points.
+- [ ] CLEAR: the star goes and the score is their totems' points again.
+- [ ] `/bsp score set <offline player> 5` and `/bsp score add <player> -2` answer with the new score. A moderator sees the box and buttons dimmed.
+- [ ] End a season on a test server: no player has a star afterwards.
+- [ ] On the network: set a score on Spawn; within `scoring.refreshSeconds` (30) Moongrove's panel and Score Screens show it. `SELECT * FROM bsp_score_adjust;` has the row, and `/bsp score clear` removes it.
+

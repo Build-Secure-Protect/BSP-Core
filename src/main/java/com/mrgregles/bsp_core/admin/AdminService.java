@@ -195,6 +195,8 @@ public final class AdminService {
                 ids.add(id);
             }
         });
+        Map<UUID, Integer> adjust = com.mrgregles.bsp_core.score.ScoreAdjust.all(server);
+        ids.addAll(adjust.keySet());
         List<AdminDataPacket.Row> rows = new ArrayList<>();
         for (UUID id : ids) {
             List<AdminDataPacket.Totem> list = totems.getOrDefault(id, List.of());
@@ -212,7 +214,8 @@ public final class AdminService {
             }
             String known = net == null ? "" : net.names().getOrDefault(id, "");
             String name = server.getPlayerList().getPlayer(id) != null || known.isEmpty() ? ScoreService.name(server, id) : known;
-            rows.add(new AdminDataPacket.Row(id, name, server.getPlayerList().getPlayer(id) != null, points, list.size(),
+            int add = adjust.getOrDefault(id, 0);
+            rows.add(new AdminDataPacket.Row(id, name, server.getPlayerList().getPlayer(id) != null, Math.max(0, points + add), points, add, list.size(),
                     list.subList(0, Math.min(MAX_TOTEMS, list.size())), coins, value,
                     (account == null ? 0 : account.vaultCount()) + NetworkStorage.vaultBlocksElsewhere(id)));
         }
@@ -468,6 +471,7 @@ public final class AdminService {
         }
 
         wipeTotems(server);
+        com.mrgregles.bsp_core.score.ScoreAdjust.clearAll(server); // scores set by hand belong to the season that ended
         int ended = season.number;
         season.number++;
         season.startMs = System.currentTimeMillis();

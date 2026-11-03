@@ -710,23 +710,67 @@ public final class NetworkStorage {
      * server thread. If the database cannot be reached, {@code then} gets this server's own rows.
      */
     public static void syncScores(List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine, List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots,
-                                  Consumer<List<com.mrgregles.bsp_core.score.ScoreService.Entry>> then) {
+                                  java.util.function.BiConsumer<List<com.mrgregles.bsp_core.score.ScoreService.Entry>, Map<UUID, Integer>> then) {
         MySqlStore s = store;
         if (s == null) {
-            then.accept(mine);
+            then.accept(mine, null); // not connected: this server's rows, with the adjustments last read
             return;
         }
         worker().execute(() -> {
             List<com.mrgregles.bsp_core.score.ScoreService.Entry> result;
+            Map<UUID, Integer> adjust;
             try {
                 result = s.syncScores(mine, spots);
+                adjust = s.scoreAdjustments();
             } catch (SQLException | RuntimeException e) {
                 // the board keeps what it last showed: publishing this server's rows alone would post every other server's points as lost
                 BSPCore.LOGGER.error("BSP-Core storage: could not sync the leaderboard: {}", e.toString());
                 return;
             }
             List<com.mrgregles.bsp_core.score.ScoreService.Entry> out = result;
-            onServer(() -> then.accept(out));
+            onServer(() -> then.accept(out, adjust));
+        });
+    }
+
+    /**
+     * Sets ({@code add} false: {@code points} is the score wanted) or adds to a player's hand-set score adjustment for the whole
+     * network. The answer (the new adjustment, or null when the database could not be reached) arrives on the server thread.
+     */
+    public static void scoreAdjust(UUID player, int points, boolean add, String by, Consumer<Integer> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Integer adjust = null;
+            try {
+                adjust = s.scoreAdjust(player, points, add, by);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not change a score: {}", e.toString());
+            }
+            Integer r = adjust;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    /** Removes one player's adjustment, or everyone's with {@code player} null. The answer (false when it failed) arrives on the server thread. */
+    public static void scoreAdjustClear(@Nullable UUID player, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(false);
+            return;
+        }
+        worker().execute(() -> {
+            boolean ok = false;
+            try {
+                s.scoreAdjustClear(player);
+                ok = true;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not clear a score: {}", e.toString());
+            }
+            boolean r = ok;
+            onServer(() -> then.accept(r));
         });
     }
 

@@ -125,7 +125,19 @@ public final class BSPCommands {
                                 src.sendSuccess(() -> Component.literal(line), false);
                             }
                             return board.size();
-                        })))
+                        }))
+                        // scores set by hand, on top of the totems' points (cleared when a season ends); offline players too
+                        .then(Commands.literal("set").requires(src -> src.hasPermission(2))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .then(Commands.argument("points", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                                                .executes(ctx -> score(ctx, "set")))))
+                        .then(Commands.literal("add").requires(src -> src.hasPermission(2))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .then(Commands.argument("points", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                                .executes(ctx -> score(ctx, "add")))))
+                        .then(Commands.literal("clear").requires(src -> src.hasPermission(2))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .executes(ctx -> score(ctx, "clear")))))
                 .then(com.mrgregles.bsp_core.bank.BankCommands.admin())
                 .then(com.mrgregles.bsp_core.market.MarketCommands.admin())
                 .then(com.mrgregles.bsp_core.lottery.LotteryCommands.admin())
@@ -216,6 +228,34 @@ public final class BSPCommands {
         totem.setUpgradeLevel(buff, lvl);
         final var fb = buff;
         src.sendSuccess(() -> Component.literal("Placed totem: " + fb.key + " set to " + lvl), true);
+        return 1;
+    }
+
+    /** /bsp score set, add and clear: the answer comes back once the change is stored (on a network, from the database). */
+    private static int score(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, String what) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        java.util.Collection<com.mojang.authlib.GameProfile> profiles = net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles(ctx, "player");
+        if (profiles.size() != 1) {
+            src.sendFailure(Component.literal("Name one player"));
+            return 0;
+        }
+        com.mojang.authlib.GameProfile profile = profiles.iterator().next();
+        String by = src.getTextName();
+        java.util.function.Consumer<com.mrgregles.bsp_core.score.ScoreAdjust.Result> then = r -> {
+            if (!r.ok()) {
+                src.sendFailure(Component.literal("Could not reach the network database; " + profile.getName() + "'s score is unchanged"));
+            } else if (what.equals("clear")) {
+                src.sendSuccess(() -> Component.literal(profile.getName() + "'s score is their totems' points again: " + r.score()), true);
+            } else {
+                src.sendSuccess(() -> Component.literal(profile.getName() + "'s score is now " + r.score() + " (" + (r.adjust() > 0 ? "+" : "") + r.adjust()
+                        + " on top of their totems, cleared when the season ends)"), true);
+            }
+        };
+        switch (what) {
+            case "set" -> com.mrgregles.bsp_core.score.ScoreAdjust.set(src.getServer(), profile.getId(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "points"), by, then);
+            case "add" -> com.mrgregles.bsp_core.score.ScoreAdjust.add(src.getServer(), profile.getId(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "points"), by, then);
+            default -> com.mrgregles.bsp_core.score.ScoreAdjust.clear(src.getServer(), profile.getId(), by, then);
+        }
         return 1;
     }
 

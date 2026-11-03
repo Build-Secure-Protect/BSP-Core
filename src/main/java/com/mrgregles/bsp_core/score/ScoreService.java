@@ -59,6 +59,8 @@ public final class ScoreService {
     private static final int SENT = 100;
 
     private static volatile List<Entry> board = List.of();
+    /** The board before hand-set adjustments: what everyone's totems give. */
+    private static volatile List<Entry> raw = List.of();
     private static boolean published;
     private static List<Entry> lastSent = List.of();
     private static boolean dirty = true;
@@ -113,9 +115,56 @@ public final class ScoreService {
         return out;
     }
 
-    /** This server's own rows: placed totems from the ledger plus totems carried by online players. */
+    /** This server's own rows (placed totems from the ledger plus totems carried by online players), with the scores set by hand. */
     public static List<Entry> local(MinecraftServer server) {
-        return entries(server, spots(server));
+        return adjusted(server, entries(server, spots(server)));
+    }
+
+    /**
+     * What a player's totems give, before any score set by hand: on a network the whole network's as last read (with this
+     * server's own counted live), else this server's.
+     */
+    public static int totemPoints(MinecraftServer server, UUID player) {
+        int points = 0;
+        for (Entry e : entries(server, spots(server))) {
+            if (e.id().equals(player)) {
+                points = e.points();
+            }
+        }
+        if (!NetworkStorage.enabled()) {
+            return points;
+        }
+        for (Entry e : raw) {
+            if (e.id().equals(player)) {
+                return e.points() - mineAtRead.getOrDefault(player, 0) + points;
+            }
+        }
+        return points;
+    }
+
+    /** This server's own points per player in the rows the last network read was built from. */
+    private static volatile Map<UUID, Integer> mineAtRead = Map.of();
+
+    /** The board with the scores set by hand: each adjustment added (never below 0), and a player with only an adjustment listed. */
+    static List<Entry> adjusted(MinecraftServer server, List<Entry> entries) {
+        Map<UUID, Integer> adjust = ScoreAdjust.all(server);
+        if (adjust.isEmpty()) {
+            return entries;
+        }
+        Map<UUID, Integer> left = new HashMap<>(adjust);
+        List<Entry> out = new ArrayList<>();
+        for (Entry e : entries) {
+            int add = left.getOrDefault(e.id(), 0);
+            left.remove(e.id());
+            out.add(add == 0 ? e : new Entry(e.id(), e.name(), e.totems(), Math.max(0, e.points() + add), e.bestTier()));
+        }
+        left.forEach((id, add) -> {
+            if (add > 0) {
+                out.add(new Entry(id, name(server, id), 0, add, -1));
+            }
+        });
+        out.sort(ORDER);
+        return out;
     }
 
     private static List<Entry> entries(MinecraftServer server, List<Spot> spots) {
@@ -183,10 +232,22 @@ public final class ScoreService {
         List<Spot> spots = spots(server);
         List<Entry> mine = entries(server, spots);
         if (NetworkStorage.enabled()) {
+            Map<UUID, Integer> sent = new HashMap<>();
+            for (Entry e : mine) {
+                sent.put(e.id(), e.points());
+            }
             // the rows and every totem behind them, for the board and for the admin panel on every server
-            NetworkStorage.syncScores(mine, spots, combined -> publish(server, combined)); // answer arrives on the server thread
+            NetworkStorage.syncScores(mine, spots, (combined, adjust) -> { // answer arrives on the server thread
+                if (adjust != null) {
+                    ScoreAdjust.networkRead(adjust);
+                }
+                raw = List.copyOf(combined);
+                mineAtRead = Map.copyOf(sent);
+                publish(server, adjusted(server, combined));
+            });
         } else {
-            publish(server, mine);
+            raw = List.copyOf(mine);
+            publish(server, adjusted(server, mine));
         }
     }
 
@@ -220,6 +281,9 @@ public final class ScoreService {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         board = List.of();
+        raw = List.of();
+        mineAtRead = Map.of();
+        ScoreAdjust.reset();
         lastSent = List.of();
         published = false;
         dirty = true;

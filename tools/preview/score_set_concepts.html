@@ -1,0 +1,223 @@
+<title>Admin Score Setting Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark concept board used by the other BSP pages. Three working mocks of the admin panel, one per way of
+   seeing and setting a player's score, each with a short note. In-game mocks keep the Holo HUD colours in both themes. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78;
+  --h-bg:#10151c; --h-fg:#e6eaf2; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-hover:#2a2140;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:980px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:17px; margin:0; color:var(--tq); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:76ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.scroll{ overflow-x:auto; padding-bottom:4px; }
+button:focus-visible, input:focus-visible{ outline:2px solid var(--h-tq); outline-offset:2px; }
+/* ---- in-game panel, 344x210 drawn at 2x ---- */
+.hud{ width:688px; height:420px; box-sizing:border-box; position:relative; background:var(--h-bg); color:var(--h-fg); border:2px solid var(--h-vio); font-family:var(--display); font-size:13px; margin:0 auto; }
+.hud .s{ font-size:10px; } .mut{ color:var(--h-muted); } .gold{ color:var(--h-gold); } .vio{ color:var(--h-vio); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); }
+.abs{ position:absolute; }
+.head{ left:20px; top:16px; color:var(--h-vio); }
+.tabs{ right:20px; top:12px; display:flex; gap:6px; }
+.tab{ font:inherit; font-size:10px; width:92px; height:26px; background:var(--h-slot); border:2px solid var(--h-dim); color:var(--h-muted); cursor:pointer; padding:0; }
+.tab.on{ border-color:var(--h-vio); color:var(--h-vio); background:var(--h-bg); }
+.tabs.five .tab{ width:72px; }
+.list{ left:20px; top:52px; width:224px; display:flex; flex-direction:column; gap:2px; }
+.li{ font:inherit; height:22px; display:flex; justify-content:space-between; align-items:center; padding:0 6px; background:var(--h-slot); border:2px solid var(--h-slot); color:var(--h-fg); cursor:pointer; text-align:left; }
+.li.on{ border-color:var(--h-vio); } .li.off{ color:var(--h-muted); } .li:hover{ border-color:var(--h-dim); } .li.on:hover{ border-color:var(--h-vio); }
+.li i{ font-style:normal; color:var(--h-gold); }
+.li i.adj::after{ content:"*"; color:var(--h-vio); }
+.det{ left:260px; top:52px; right:20px; display:flex; flex-direction:column; gap:6px; }
+.trow{ display:flex; gap:10px; align-items:center; font-size:10px; }
+.trow b{ font-weight:400; color:var(--h-gold); width:30px; font-size:13px; }
+.trow .tp{ margin-left:auto; }
+.hb{ font:inherit; font-size:10px; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--h-dim); padding:3px 8px; cursor:pointer; }
+.hb.go{ border-color:var(--h-tq); color:var(--h-tq); } .hb.warn{ border-color:var(--h-bad); color:var(--h-bad); } .hb.gold{ border-color:var(--h-gold); color:var(--h-gold); } .hb.vio{ border-color:var(--h-vio); color:var(--h-vio); }
+.hb:disabled{ border-color:var(--h-dim); color:#555c6a; cursor:default; }
+.box{ font:inherit; font-size:12px; width:58px; height:20px; box-sizing:border-box; background:var(--h-slot); color:var(--h-fg); border:2px solid var(--h-dim); padding:0 4px; }
+.box.wide{ width:150px; }
+.line{ display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
+.btns{ left:260px; bottom:16px; display:flex; gap:16px; }
+.btns .hb{ width:196px; height:36px; font-size:11px; }
+.note{ left:20px; bottom:14px; width:224px; }
+table.st{ border-collapse:collapse; width:100%; font-size:10px; }
+.st th{ text-align:left; color:var(--h-muted); font-weight:400; padding:2px 8px 4px 0; }
+.st td{ padding:3px 8px 3px 0; border-top:2px solid var(--h-dim); white-space:nowrap; }
+.st td.n, .st th.n{ text-align:right; font-variant-numeric:tabular-nums; }
+.st tr.sel td{ background:var(--h-hover); }
+.veil{ inset:0; background:rgba(5,6,9,.72); display:grid; place-items:center; }
+.pop{ width:420px; background:var(--h-bg); border:2px solid var(--h-gold); padding:16px; display:flex; flex-direction:column; gap:10px; }
+.big{ font-size:28px; color:var(--h-gold); min-width:80px; text-align:center; font-variant-numeric:tabular-nums; }
+.sum{ display:grid; grid-template-columns:auto auto; gap:2px 16px; font-size:10px; justify-content:start; }
+.sum span:nth-child(even){ text-align:right; font-variant-numeric:tabular-nums; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Setting a player's score</h1>
+    <p class="lede">Three ways for the admin panel to show and set scores. In every option a score set by hand is stored as an adjustment on top of the points the player's totems give, so it keeps moving when they take, lose or upgrade a totem. Click players, type a score and press SET to try each one. The players and numbers are examples.</p>
+  </header>
+
+  <section>
+    <h2>A. On the player's page</h2>
+    <div class="card">
+      <p>The Players tab keeps its layout. Under the player's name the score line gets a number box with <b>SET</b> and <b>CLEAR</b>, and a small line beneath says how the score is made up. Players with an adjustment get a violet star in the list.</p>
+      <div class="scroll"><div class="hud" id="a"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. A Scores tab</h2>
+    <div class="card">
+      <p>A fifth tab lists every player in one table: totems, the points those totems give, the adjustment, and the score. Pick a row, type the score and press <b>SET</b>. This is the quickest way to fix many players in one sitting, and a player whose points look too high for their totem count stands out.</p>
+      <div class="scroll"><div class="hud" id="b"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. A Set Score window</h2>
+    <div class="card">
+      <p>The Players tab gets a third button, <b>SET SCORE</b>, beside TP and RESET TOTEMS. It opens a small window over the panel with the breakdown, steps of -10, -1, +1 and +10, a box for the exact number, and an optional reason that goes in the server log.</p>
+      <div class="scroll"><div class="hud" id="c"></div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const TP = [1, 2, 4, 7, 10];
+const seed = () => [
+  { name: "Brindlewick", on: true, tiers: [4, 3, 3, 2, 2, 1], adj: 0 },
+  { name: "Okra_Moss", on: true, tiers: [4, 4, 3, 3, 1], adj: 0 },
+  { name: "TallyFern", on: false, tiers: [3, 2, 2, 1], adj: 0 },
+  { name: "Pellmouth", on: true, tiers: [2, 2, 1, 1], adj: -4 },
+  { name: "Quillon", on: false, tiers: [1, 1, 0], adj: 0 },
+  { name: "Harrowgate", on: false, tiers: [0, 0], adj: 0 },
+];
+const roman = t => ["I", "II", "III", "IV", "V"][t];
+const totemPts = p => p.tiers.reduce((s, t) => s + TP[t], 0);
+const score = p => Math.max(0, totemPts(p) + p.adj);
+const sorted = ps => [...ps].sort((x, y) => score(y) - score(x) || y.tiers.length - x.tiers.length);
+const signed = n => (n > 0 ? "+" : "") + n;
+const PLACES = ["-212 71 340", "88 64 -1190", "carried, 15 70 -22", "-40 12 610", "1203 90 -77", "301 66 45"];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function tabs(active, five) {
+  const names = five ? ["PLAYERS", "SCORES", "SEASON", "SETTINGS", "KITS"] : ["PLAYERS", "SEASON", "SETTINGS", "KITS"];
+  return `<div class="abs tabs${five ? " five" : ""}">${names.map(n => `<button class="tab${n === active ? " on" : ""}" type="button" tabindex="-1">${n}</button>`).join("")}</div>`;
+}
+function list(ps, sel) {
+  return `<div class="abs list">${sorted(ps).map((p, i) =>
+    `<button class="li${p === sel ? " on" : ""}${p.on ? "" : " off"}" data-pick="${esc(p.name)}" type="button"><span>${i + 1}. ${esc(p.name)}</span><i class="${p.adj ? "adj" : ""}">${score(p)}</i></button>`).join("")}</div>`;
+}
+function totems(p, rows) {
+  return p.tiers.slice(0, rows).map((t, i) =>
+    `<div class="trow"><b>${roman(t)}</b><span>${PLACES[i]}</span><button class="hb go tp" type="button" tabindex="-1">TP</button></div>`).join("");
+}
+function breakdown(p) {
+  return p.adj ? `${totemPts(p)} from totems, ${signed(p.adj)} set by Mrgregles` : `${totemPts(p)} from totems, nothing set by hand`;
+}
+
+/* A: on the player's page */
+function mountA(el) {
+  const ps = seed(); let sel = ps[1];
+  const draw = () => {
+    el.innerHTML = `<div class="abs head">BSP ADMIN</div>${tabs("PLAYERS")}${list(ps, sel)}
+      <div class="abs det">
+        <div class="line"><span class="vio">${esc(sel.name)}</span><span class="s ${sel.on ? "tq" : "mut"}">${sel.on ? "ONLINE" : "OFFLINE"}</span></div>
+        <div class="line s"><span>SCORE</span><span class="gold" style="font-size:13px">${score(sel)}</span><span class="mut">${sel.tiers.length} totems</span>
+          <span style="margin-left:auto"></span><input class="box" id="a-box" inputmode="numeric" aria-label="New score" placeholder="${score(sel)}">
+          <button class="hb gold" type="button" data-set>SET</button><button class="hb" type="button" data-clear ${sel.adj ? "" : "disabled"}>CLEAR</button></div>
+        <div class="s ${sel.adj ? "vio" : "mut"}">${breakdown(sel)}</div>
+        <div class="s mut" style="margin-top:4px">TOTEMS: TIER AND POSITION</div>
+        ${totems(sel, 5)}
+      </div>
+      <div class="abs btns"><button class="hb go" type="button" tabindex="-1">TP TO PLAYER</button><button class="hb warn" type="button" tabindex="-1">RESET TOTEMS</button></div>`;
+  };
+  el.addEventListener("click", e => {
+    const pick = e.target.closest("[data-pick]");
+    if (pick) { sel = ps.find(p => p.name === pick.dataset.pick); draw(); return; }
+    if (e.target.closest("[data-set]")) { const v = parseInt(el.querySelector("#a-box").value, 10); if (v >= 0) { sel.adj = v - totemPts(sel); draw(); } }
+    if (e.target.closest("[data-clear]")) { sel.adj = 0; draw(); }
+  });
+  draw();
+}
+
+/* B: a Scores tab */
+function mountB(el) {
+  const ps = seed(); let sel = ps[1];
+  const draw = () => {
+    const rows = sorted(ps).map((p, i) => `<tr class="${p === sel ? "sel" : ""}" data-pick="${esc(p.name)}" style="cursor:pointer">
+      <td class="mut">${i + 1}.</td><td class="${p.on ? "" : "mut"}">${esc(p.name)}</td><td class="n">${p.tiers.length}</td><td class="n">${totemPts(p)}</td>
+      <td class="n ${p.adj ? "vio" : "mut"}">${p.adj ? signed(p.adj) : "-"}</td><td class="n gold">${score(p)}</td></tr>`).join("");
+    el.innerHTML = `<div class="abs head">BSP ADMIN</div>${tabs("SCORES", true)}
+      <div class="abs" style="left:20px;right:20px;top:52px">
+        <table class="st"><thead><tr><th></th><th>PLAYER</th><th class="n">TOTEMS</th><th class="n">FROM TOTEMS</th><th class="n">SET BY HAND</th><th class="n">SCORE</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>
+      <div class="abs" style="left:20px;right:20px;bottom:16px;display:flex;flex-direction:column;gap:8px">
+        <div class="s mut">${esc(sel.name)}: ${breakdown(sel)}</div>
+        <div class="line"><span class="vio">${esc(sel.name)}</span><span class="s mut">new score</span><input class="box" id="b-box" inputmode="numeric" aria-label="New score" placeholder="${score(sel)}">
+          <button class="hb gold" type="button" data-set>SET</button><button class="hb" type="button" data-clear ${sel.adj ? "" : "disabled"}>CLEAR</button>
+          <span class="s mut" style="margin-left:auto">CLEAR ALL needs a second click</span><button class="hb warn" type="button" tabindex="-1">CLEAR ALL</button></div>
+      </div>`;
+  };
+  el.addEventListener("click", e => {
+    const pick = e.target.closest("[data-pick]");
+    if (pick) { sel = ps.find(p => p.name === pick.dataset.pick); draw(); return; }
+    if (e.target.closest("[data-set]")) { const v = parseInt(el.querySelector("#b-box").value, 10); if (v >= 0) { sel.adj = v - totemPts(sel); draw(); } }
+    if (e.target.closest("[data-clear]")) { sel.adj = 0; draw(); }
+  });
+  draw();
+}
+
+/* C: a Set Score window */
+function mountC(el) {
+  const ps = seed(); let sel = ps[1]; let open = true; let draft = score(sel) - 7;
+  const draw = () => {
+    el.innerHTML = `<div class="abs head">BSP ADMIN</div>${tabs("PLAYERS")}${list(ps, sel)}
+      <div class="abs det">
+        <div class="line"><span class="vio">${esc(sel.name)}</span><span class="s ${sel.on ? "tq" : "mut"}">${sel.on ? "ONLINE" : "OFFLINE"}</span></div>
+        <div class="s">Score <span class="gold">${score(sel)}</span> points, ${sel.tiers.length} totems</div>
+        <div class="s mut" style="margin-top:4px">TOTEMS: TIER AND POSITION</div>
+        ${totems(sel, 5)}
+      </div>
+      <div class="abs" style="left:260px;bottom:16px;display:flex;gap:8px">
+        <button class="hb go" style="width:128px;height:36px" type="button" tabindex="-1">TP TO PLAYER</button>
+        <button class="hb gold" style="width:128px;height:36px" type="button" data-open>SET SCORE</button>
+        <button class="hb warn" style="width:128px;height:36px" type="button" tabindex="-1">RESET TOTEMS</button>
+      </div>
+      ${open ? `<div class="abs veil"><div class="pop">
+        <div class="line"><span class="gold">SET SCORE</span><span class="vio">${esc(sel.name)}</span></div>
+        <div class="sum"><span class="mut">From totems</span><span>${totemPts(sel)}</span><span class="mut">Set by hand now</span><span class="${sel.adj ? "vio" : "mut"}">${sel.adj ? signed(sel.adj) : "0"}</span><span class="mut">Score now</span><span class="gold">${score(sel)}</span></div>
+        <div class="line" style="justify-content:center">${[-10, -1].map(d => `<button class="hb" type="button" data-step="${d}">${d}</button>`).join("")}
+          <span class="big">${draft}</span>${[1, 10].map(d => `<button class="hb" type="button" data-step="${d}">+${d}</button>`).join("")}</div>
+        <div class="line"><span class="s mut">Exact</span><input class="box" id="c-box" inputmode="numeric" aria-label="Exact score" value="${draft}">
+          <span class="s mut">Reason</span><input class="box wide" id="c-why" aria-label="Reason" value="duplicate totems"></div>
+        <div class="s mut">Setting ${draft} stores ${signed(draft - totemPts(sel))} on top of the totems.</div>
+        <div class="line" style="justify-content:flex-end"><button class="hb" type="button" data-close>CANCEL</button><button class="hb" type="button" data-clear ${sel.adj ? "" : "disabled"}>CLEAR</button><button class="hb gold" type="button" data-set>SET</button></div>
+      </div></div>` : ""}`;
+  };
+  el.addEventListener("click", e => {
+    const pick = e.target.closest("[data-pick]");
+    if (pick && !open) { sel = ps.find(p => p.name === pick.dataset.pick); draft = score(sel); draw(); return; }
+    if (e.target.closest("[data-open]")) { open = true; draft = score(sel); draw(); }
+    const step = e.target.closest("[data-step]");
+    if (step) { draft = Math.max(0, draft + parseInt(step.dataset.step, 10)); draw(); }
+    if (e.target.closest("[data-close]")) { open = false; draw(); }
+    if (e.target.closest("[data-clear]")) { sel.adj = 0; open = false; draw(); }
+    if (e.target.closest("[data-set]")) { const v = parseInt(el.querySelector("#c-box").value, 10); if (v >= 0) { sel.adj = v - totemPts(sel); open = false; draw(); } }
+  });
+  el.addEventListener("input", e => { if (e.target.id === "c-box") { const v = parseInt(e.target.value, 10); if (v >= 0) draft = v; } });
+  draw();
+}
+
+mountA(document.getElementById("a"));
+mountB(document.getElementById("b"));
+mountC(document.getElementById("c"));
+</script>

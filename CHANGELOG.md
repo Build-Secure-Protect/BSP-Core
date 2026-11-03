@@ -4,6 +4,11 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-11-03
+
+### Added
+- **Scores set by hand.** `/bsp score set <player> <points>`, `/bsp score add <player> <points>` (negative takes away) and `/bsp score clear <player>`, for operators, online or offline players. The admin panel's Players tab has the same: under the player's name a box for the score with SET and CLEAR, a line saying how much comes from totems and how much was set by hand, and a violet star in the list beside players with a score set by hand. A score is still made by the totems: setting one stores the difference from what the player's totems give, so it keeps moving when they take, lose or raise a totem, and it never goes below 0. A player with no totems and a score set above 0 is listed on the board. Every score set by hand is cleared when a season ends. On a network the adjustment is stored once for the whole network (new table `score_adjust`) and reaches every board at its next refresh; each change is written to the server log with who made it. Clients need this version too: the panel's data has a new field.
+
 ## [1.8.1] - 2026-11-02
 
 ### Added

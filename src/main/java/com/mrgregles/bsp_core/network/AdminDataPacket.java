@@ -21,8 +21,11 @@ public record AdminDataPacket(boolean open, boolean canEdit, String here, boolea
     public record Totem(int tier, boolean carried, String server, String dimension, BlockPos pos) {
     }
 
-    /** One player. {@code totemCount} may be larger than the list, which is cut short for very large holdings. */
-    public record Row(UUID id, String name, boolean online, int points, int totemCount, List<Totem> totems, int[] coins, int vaultValue, int vaultBlocks) {
+    /**
+     * One player. {@code points} is their score: {@code totemPoints} from their totems plus {@code adjust} set by hand (never below 0).
+     * {@code totemCount} may be larger than the list, which is cut short for very large holdings.
+     */
+    public record Row(UUID id, String name, boolean online, int points, int totemPoints, int adjust, int totemCount, List<Totem> totems, int[] coins, int vaultValue, int vaultBlocks) {
     }
 
     public static void encode(AdminDataPacket msg, FriendlyByteBuf buf) {
@@ -44,6 +47,8 @@ public record AdminDataPacket(boolean open, boolean canEdit, String here, boolea
             buf.writeUtf(r.name, 32);
             buf.writeBoolean(r.online);
             buf.writeVarInt(r.points);
+            buf.writeVarInt(r.totemPoints);
+            buf.writeVarInt(r.adjust);
             buf.writeVarInt(r.totemCount);
             buf.writeVarInt(r.totems.size());
             for (Totem t : r.totems) {
@@ -74,12 +79,12 @@ public record AdminDataPacket(boolean open, boolean canEdit, String here, boolea
             UUID id = buf.readUUID();
             String name = buf.readUtf(32);
             boolean online = buf.readBoolean();
-            int points = buf.readVarInt(), count = buf.readVarInt(), tn = buf.readVarInt();
+            int points = buf.readVarInt(), totemPoints = buf.readVarInt(), adjust = buf.readVarInt(), count = buf.readVarInt(), tn = buf.readVarInt();
             List<Totem> totems = new ArrayList<>(tn);
             for (int k = 0; k < tn; k++) {
                 totems.add(new Totem(buf.readVarInt(), buf.readBoolean(), buf.readUtf(64), buf.readUtf(128), buf.readBlockPos()));
             }
-            rows.add(new Row(id, name, online, points, count, totems, buf.readVarIntArray(16), buf.readVarInt(), buf.readVarInt()));
+            rows.add(new Row(id, name, online, points, totemPoints, adjust, count, totems, buf.readVarIntArray(16), buf.readVarInt(), buf.readVarInt()));
         }
         return new AdminDataPacket(open, canEdit, here, network, season, day, winner, winnerPoints, holderHours, holderLeft, decoyRanges, chunksOnlineOnly, rows);
     }

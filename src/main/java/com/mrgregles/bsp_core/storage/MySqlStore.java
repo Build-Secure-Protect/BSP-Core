@@ -30,7 +30,7 @@ import com.mrgregles.bsp_core.bank.BankTransaction;
  *
  * <p>Tables: {@code grants} (one row per player who has been given a first-join totem, anywhere on
  * the network), {@code totems} (every placed totem, by server), {@code factory_slices} (every
- * factory controller, by server), {@code scores} (each server's leaderboard rows), {@code meta} (one
+ * factory controller, by server), {@code scores} (each server's leaderboard rows), {@code score_adjust} (scores set by hand, for the network), {@code meta} (one
  * row per server that has migrated), {@code vault_totals} (what each player keeps in Coin Vaults,
  * by server), {@code state} (the shared season state, as keys and values), {@code season_claims}
  * (who has been given their fresh totem for which season) and {@code pending_items} (prize and
@@ -145,6 +145,9 @@ final class MySqlStore implements AutoCloseable {
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("scores") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, name VARCHAR(32) NOT NULL, "
                     + "totems INT NOT NULL, points INT NOT NULL, best_tier INT NOT NULL, PRIMARY KEY (server_id, uuid), INDEX (uuid))");
+            // points an admin set by hand, added to the totems' points on the board (cleared when a season ends)
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("score_adjust") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, points INT NOT NULL, "
+                    + "set_by VARCHAR(32) NOT NULL DEFAULT '', set_ms BIGINT NOT NULL DEFAULT 0)");
             // every totem on each server, rewritten with that server's score rows: the admin panel's view of the network
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("admin_totems") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, tier INT NOT NULL, "
                     + "carried TINYINT NOT NULL, INDEX (server_id), INDEX (owner_uuid))");
@@ -832,6 +835,90 @@ final class MySqlStore implements AutoCloseable {
             }
         }
         return all;
+    }
+
+    /** Every hand-set score adjustment: player to the points added on top of their totems. */
+    java.util.Map<UUID, Integer> scoreAdjustments() throws SQLException {
+        java.util.Map<UUID, Integer> out = new java.util.HashMap<>();
+        try (Statement st = conn().createStatement(); ResultSet rs = st.executeQuery("SELECT uuid, points FROM " + t("score_adjust"))) {
+            while (rs.next()) {
+                out.put(UUID.fromString(rs.getString(1)), rs.getInt(2));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Changes a player's hand-set adjustment. With {@code add} false {@code points} is the score wanted, and the adjustment
+     * becomes that minus what the player's totems give across every server's rows; with {@code add} true it is added to the
+     * adjustment. Returns the new adjustment.
+     */
+    int scoreAdjust(UUID player, int points, boolean add, String by) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            int adjust;
+            if (add) {
+                int now = 0;
+                try (PreparedStatement ps = c.prepareStatement("SELECT points FROM " + t("score_adjust") + " WHERE uuid = ? FOR UPDATE")) {
+                    ps.setString(1, player.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            now = rs.getInt(1);
+                        }
+                    }
+                }
+                adjust = now + points;
+            } else {
+                int totems;
+                try (PreparedStatement ps = c.prepareStatement("SELECT COALESCE(SUM(points), 0) FROM " + t("scores") + " WHERE uuid = ?")) {
+                    ps.setString(1, player.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        rs.next();
+                        totems = rs.getInt(1);
+                    }
+                }
+                adjust = points - totems;
+            }
+            if (adjust == 0) {
+                scoreAdjustClear(c, player);
+            } else {
+                try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("score_adjust") + " (uuid, points, set_by, set_ms) VALUES (?, ?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE points = VALUES(points), set_by = VALUES(set_by), set_ms = VALUES(set_ms)")) {
+                    ps.setString(1, player.toString());
+                    ps.setInt(2, adjust);
+                    ps.setString(3, by.length() > 32 ? by.substring(0, 32) : by);
+                    ps.setLong(4, System.currentTimeMillis());
+                    ps.executeUpdate();
+                }
+            }
+            c.commit();
+            return adjust;
+        } catch (SQLException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** Removes one player's adjustment, or everyone's with {@code player} null (a season ended). */
+    void scoreAdjustClear(@javax.annotation.Nullable UUID player) throws SQLException {
+        scoreAdjustClear(conn(), player);
+    }
+
+    private void scoreAdjustClear(Connection c, @javax.annotation.Nullable UUID player) throws SQLException {
+        if (player == null) {
+            try (Statement st = c.createStatement()) {
+                st.executeUpdate("DELETE FROM " + t("score_adjust"));
+            }
+            return;
+        }
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("score_adjust") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            ps.executeUpdate();
+        }
     }
 
     /**

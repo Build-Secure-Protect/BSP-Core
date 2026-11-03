@@ -6253,6 +6253,54 @@ public class BspGameTests {
     }
 
     @GameTest(template = EMPTY)
+    public void scores_set_by_hand_ride_on_the_totems_points_and_go_with_the_season(GameTestHelper h) {
+        var server = server(h);
+        var a = survivor(h);
+        UUID away = UUID.randomUUID(); // a player with no totems, not online
+        BlockPos pos = new BlockPos(2, 1, 2);
+        int one = com.mrgregles.bsp_core.score.ScoreService.tierPoints(0);
+        List<com.mrgregles.bsp_core.score.ScoreAdjust.Result> got = new ArrayList<>();
+        try {
+            h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+            entity(h, pos, ShatterTotemBlockEntity.class).setOwner(new TotemOwner(a.getUUID(), a.getGameProfile().getName()));
+            com.mrgregles.bsp_core.score.ScoreAdjust.set(server, a.getUUID(), one + 9, "test", got::add);
+            h.assertTrue(got.size() == 1 && got.get(0).ok() && got.get(0).adjust() == 9 && got.get(0).score() == one + 9, "set stores the difference from the totems: " + got);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspScores.points(server, a.getUUID()) == one + 9, "and the board shows the score set");
+            h.assertTrue(com.mrgregles.bsp_core.score.ScoreService.local(server).stream().anyMatch(e -> e.id().equals(a.getUUID()) && e.points() == one + 9 && e.totems() == 1),
+                    "the standings a season end reads carry it too");
+            com.mrgregles.bsp_core.score.ScoreAdjust.add(server, a.getUUID(), -3, "test", got::add);
+            h.assertTrue(got.get(1).adjust() == 6 && got.get(1).score() == one + 6, "add moves the adjustment: " + got.get(1));
+            var row = com.mrgregles.bsp_core.admin.AdminService.snapshot(server, a, false).rows().stream().filter(r -> r.id().equals(a.getUUID())).findFirst().orElse(null);
+            h.assertTrue(row != null && row.points() == one + 6 && row.totemPoints() == one && row.adjust() == 6, "the panel row splits the score: " + row);
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.AdminDataPacket.encode(com.mrgregles.bsp_core.admin.AdminService.snapshot(server, a, false), buf);
+            var back = com.mrgregles.bsp_core.network.AdminDataPacket.decode(buf).rows().stream().filter(r -> r.id().equals(a.getUUID())).findFirst().orElse(null);
+            h.assertTrue(back != null && back.points() == one + 6 && back.totemPoints() == one && back.adjust() == 6, "and keeps the split over the wire");
+            h.setBlock(pos, Blocks.AIR);
+            com.mrgregles.bsp_core.score.ScoreService.refresh(server);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspScores.points(server, a.getUUID()) == 6, "losing the totem still takes its points away");
+            com.mrgregles.bsp_core.score.ScoreAdjust.set(server, a.getUUID(), 0, "test", got::add);
+            h.assertTrue(got.get(2).adjust() == 0 && com.mrgregles.bsp_core.score.ScoreAdjust.of(server, a.getUUID()) == 0, "a score equal to the totems' leaves nothing stored");
+            com.mrgregles.bsp_core.score.ScoreAdjust.add(server, a.getUUID(), -5, "test", got::add);
+            h.assertTrue(got.get(3).score() == 0 && com.mrgregles.bsp_core.api.BspScores.score(server, a.getUUID()).map(sc -> sc.points() == 0).orElse(true), "a score never goes below 0");
+            com.mrgregles.bsp_core.score.ScoreAdjust.set(server, away, 5, "test", got::add);
+            h.assertTrue(com.mrgregles.bsp_core.score.ScoreService.local(server).stream().anyMatch(e -> e.id().equals(away) && e.points() == 5 && e.totems() == 0),
+                    "a player with only a score set by hand is listed");
+            h.assertTrue(com.mrgregles.bsp_core.admin.AdminService.snapshot(server, a, false).rows().stream().anyMatch(r -> r.id().equals(away) && r.points() == 5 && r.totemPoints() == 0),
+                    "and shown on the panel");
+            com.mrgregles.bsp_core.score.ScoreAdjust.clear(server, away, "test", got::add);
+            h.assertTrue(com.mrgregles.bsp_core.score.ScoreAdjust.of(server, away) == 0, "clear removes it");
+            com.mrgregles.bsp_core.score.ScoreAdjust.set(server, away, 4, "test", got::add);
+            com.mrgregles.bsp_core.score.ScoreAdjust.clearAll(server);
+            h.assertTrue(com.mrgregles.bsp_core.score.ScoreAdjust.all(server).isEmpty(), "a season end clears every score set by hand");
+        } finally {
+            com.mrgregles.bsp_core.score.ScoreAdjust.clear(server, a.getUUID(), "test", r -> {});
+            com.mrgregles.bsp_core.score.ScoreAdjust.clear(server, away, "test", r -> {});
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
     public void totem_forget_leaves_nothing_and_gives_nothing_back_online_or_offline(GameTestHelper h) {
         var server = server(h);
         var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);

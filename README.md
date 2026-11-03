@@ -43,6 +43,9 @@ Other useful tasks: `./gradlew runClient`, `./gradlew runServer`, `./gradlew run
 | `/bsp totemforge fill` | Fill every tank of the Totem Forge you look at with its whole metal bill |
 | `/bsp totemforge finish` | Set the totem in the Totem Forge you look at at once |
 | `/bsp score top` | Show the top ten of the leaderboard |
+| `/bsp score set <player> <points>` | Set a player's score (online or offline); the difference from their totems' points is stored, so it still moves with their totems. Cleared when a season ends |
+| `/bsp score add <player> <points>` | Add to (or, negative, take from) the part of a player's score set by hand |
+| `/bsp score clear <player>` | Make a player's score their totems' points again |
 | `/bsp storage status` | Show whether records are local only or also in MySQL |
 | `/bsp storage test` | Try the MySQL connection from the config and create the tables |
 | `/bsp storage migrate` | Copy this server's local records into the MySQL database (add `force` to run it again) |

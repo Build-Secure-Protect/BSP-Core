@@ -26,8 +26,9 @@ import java.util.UUID;
 public class AdminScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 344, H = 210, BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, VIO = 0xFFB58CFF, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F,
             GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A2140;
-    private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 12, ROWS = 14, DX = 130, TOTEM_Y = 62, TOTEM_H = 11, TOTEM_ROWS = 6,
-            BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 46, TAB_H = 13;
+    private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 12, ROWS = 14, DX = 130, TOTEM_Y = 71, TOTEM_H = 11, TOTEM_ROWS = 5,
+            BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 46, TAB_H = 13,
+            CLEAR_W = 30, SET_W = 22, SCORE_Y = 39, CLEAR_X = W - 10 - CLEAR_W, SET_X = CLEAR_X - 3 - SET_W, BOX_X = SET_X - 3 - 38;
     private static final long CONFIRM_MS = 4000;
 
     private AdminDataPacket data;
@@ -78,8 +79,28 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         hoursBox.setValue(data.holderHours() > 0 ? Integer.toString(data.holderHours()) : "");
         hoursBox.visible = tab == 1 && data.canEdit();
         addRenderableWidget(hoursBox);
+        scoreBox = new net.minecraft.client.gui.components.EditBox(font, left() + BOX_X + 3, top() + SCORE_Y + 2, 34, 9, tr("score_hint"));
+        scoreBox.setMaxLength(6);
+        scoreBox.setBordered(false);
+        scoreBox.setFilter(s -> s.matches("\\d{0,6}"));
+        scoreBox.setHint(tr("score_hint"));
+        scoreBox.visible = false;
+        addRenderableWidget(scoreBox);
         kits.init(left(), top());
         kits.setVisible(tab == 3);
+    }
+
+    /** The score the admin types for the selected player; SET stores the difference from their totems' points. */
+    @Nullable
+    private net.minecraft.client.gui.components.EditBox scoreBox;
+
+    private void sendScore(AdminDataPacket.Row r) {
+        if (scoreBox == null || scoreBox.getValue().isEmpty()) {
+            return;
+        }
+        send(new AdminActionPacket(AdminActionPacket.SET_SCORE, r.id(), "", new net.minecraft.core.BlockPos(Integer.parseInt(scoreBox.getValue()), 0, 0)));
+        scoreBox.setValue("");
+        scoreBox.setFocused(false);
     }
 
     /** Hours between automatic holder rewards, typed by the admin; 0 or empty turns it off. */
@@ -284,6 +305,10 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         List<AdminDataPacket.Row> rows = data.rows();
         for (int i = 0; i < ROWS && i + scroll < rows.size(); i++) {
             if (over(mx, my, x + LIST_X, y + LIST_Y + i * ROW_H, LIST_W, ROW_H)) {
+                if (!rows.get(i + scroll).id().equals(selected) && scoreBox != null) {
+                    scoreBox.setValue("");
+                    scoreBox.setFocused(false);
+                }
                 selected = rows.get(i + scroll).id();
                 confirm = -1;
                 return true;
@@ -292,6 +317,14 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         AdminDataPacket.Row r = row();
         if (r == null || !edit) {
             return super.mouseClicked(mx, my, button);
+        }
+        if (over(mx, my, x + SET_X, y + SCORE_Y, SET_W, 11)) {
+            sendScore(r);
+            return true;
+        }
+        if (r.adjust() != 0 && over(mx, my, x + CLEAR_X, y + SCORE_Y, CLEAR_W, 11)) {
+            send(new AdminActionPacket(AdminActionPacket.CLEAR_SCORE, r.id()));
+            return true;
         }
         for (int i = 0; i < Math.min(TOTEM_ROWS, r.totems().size()); i++) {
             AdminDataPacket.Totem t = r.totems().get(i);
@@ -320,6 +353,13 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         }
         if (hoursBox != null && hoursBox.isFocused() && (key == 257 || key == 335)) {
             sendHours();
+            return true;
+        }
+        if (scoreBox != null && scoreBox.isFocused() && (key == 257 || key == 335)) {
+            AdminDataPacket.Row r = row();
+            if (r != null) {
+                sendScore(r);
+            }
             return true;
         }
         return super.keyPressed(key, scan, mods);
@@ -386,6 +426,12 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         } else {
             players(g, x, y, edit, mouseX, mouseY);
         }
+        if (scoreBox != null) {
+            scoreBox.visible = tab == 0 && edit && row() != null;
+            if (!scoreBox.visible) {
+                scoreBox.setFocused(false);
+            }
+        }
         super.render(g, mouseX, mouseY, partialTick);
     }
 
@@ -451,8 +497,12 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             g.fill(x + LIST_X, ry, x + LIST_X + LIST_W, ry + ROW_H - 1, on ? VIO : over(mouseX, mouseY, x + LIST_X, ry, LIST_W, ROW_H) ? DIM : SLOT_BG);
             g.fill(x + LIST_X + 1, ry + 1, x + LIST_X + LIST_W - 1, ry + ROW_H - 2, SLOT_BG);
             String pts = Integer.toString(r.points());
-            g.drawString(font, font.plainSubstrByWidth((i + scroll + 1) + ". " + r.name(), LIST_W - 10 - font.width(pts)), x + LIST_X + 3, ry + 2, r.online() ? TEXT : MUTED, false);
+            int star = r.adjust() != 0 ? font.width("*") + 1 : 0; // a score set by hand
+            g.drawString(font, font.plainSubstrByWidth((i + scroll + 1) + ". " + r.name(), LIST_W - 10 - font.width(pts) - star), x + LIST_X + 3, ry + 2, r.online() ? TEXT : MUTED, false);
             g.drawString(font, pts, x + LIST_X + LIST_W - 3 - font.width(pts), ry + 2, GOLD & 0xFFFFFF, false);
+            if (star > 0) {
+                g.drawString(font, "*", x + LIST_X + LIST_W - 3 - font.width(pts) - star, ry + 2, VIO & 0xFFFFFF, false);
+            }
         }
         if (rows.size() > ROWS) {
             int track = ROWS * ROW_H, knob = Math.max(8, track * ROWS / rows.size()), ky = (track - knob) * scroll / (rows.size() - ROWS);
@@ -464,8 +514,17 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         }
         g.drawString(font, sel.name(), x + DX, y + 28, VIO & 0xFFFFFF, false);
         small(g, tr(sel.online() ? "online" : "offline"), x + DX + font.width(sel.name()) + 6, y + 30, sel.online() ? TQ & 0xFFFFFF : MUTED);
-        small(g, tr("score", sel.points(), sel.totemCount()), x + DX, y + 41, TEXT);
-        small(g, tr("totems"), x + DX, y + 52, MUTED);
+        String scoreLine = font.plainSubstrByWidth(tr("score", sel.points(), sel.totemCount()).getString(), Math.round((BOX_X - 4 - DX) / 0.75f));
+        small(g, Component.literal(scoreLine), x + DX, y + SCORE_Y + 3, TEXT);
+        if (edit) {
+            g.fill(x + BOX_X, y + SCORE_Y, x + BOX_X + 38, y + SCORE_Y + 11, scoreBox != null && scoreBox.isFocused() ? GOLD : DIM);
+            g.fill(x + BOX_X + 1, y + SCORE_Y + 1, x + BOX_X + 37, y + SCORE_Y + 10, SLOT_BG);
+        }
+        button(g, x + SET_X, y + SCORE_Y, SET_W, 11, tr("score_set"), edit && scoreBox != null && !scoreBox.getValue().isEmpty(), GOLD, mouseX, mouseY);
+        button(g, x + CLEAR_X, y + SCORE_Y, CLEAR_W, 11, tr("score_clear"), edit && sel.adjust() != 0, TQ, mouseX, mouseY);
+        small(g, sel.adjust() == 0 ? tr("score_plain") : tr("score_parts", sel.totemPoints(), (sel.adjust() > 0 ? "+" : "") + sel.adjust()), x + DX, y + SCORE_Y + 14,
+                sel.adjust() == 0 ? MUTED : VIO & 0xFFFFFF);
+        small(g, tr("totems"), x + DX, y + TOTEM_Y - 10, MUTED);
         for (int i = 0; i < Math.min(TOTEM_ROWS, sel.totems().size()); i++) {
             AdminDataPacket.Totem t = sel.totems().get(i);
             int ty = y + TOTEM_Y + i * TOTEM_H;

@@ -11,9 +11,10 @@ import net.minecraftforge.network.simple.SimpleChannel;
 public final class BSPNetwork {
     /**
      * Raised whenever a packet's layout changes, so a client and server that do not match are told at login instead of a
-     * screen failing later. 2: the admin panel's network fields and the team screen's candidate servers.
+     * screen failing later. 2: the admin panel's network fields and the team screen's candidate servers. 3: the admin
+     * panel's score split (totem points and the part set by hand).
      */
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
