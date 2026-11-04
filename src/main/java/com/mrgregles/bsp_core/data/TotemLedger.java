@@ -323,6 +323,35 @@ public class TotemLedger extends SavedData {
         }
         levels.put(pos, Map.copyOf(now));
         setDirty();
+        UUID owner = ownerAt(pos);
+        if (owner != null) {
+            com.mrgregles.bsp_core.storage.NetworkStorage.totemLevels(owner, pos, now); // the network's servers see them too (request R11)
+        }
+    }
+
+    /** Who owns the placed totem at {@code pos}, or null when none is recorded there. */
+    @javax.annotation.Nullable
+    public UUID ownerAt(GlobalPos pos) {
+        for (Map.Entry<UUID, Set<GlobalPos>> e : placed.entrySet()) {
+            if (e.getValue().contains(pos)) {
+                return e.getKey();
+            }
+        }
+        return null;
+    }
+
+    /** Every placed totem whose levels are known, with its owner and levels: written to the network database at connect and after a migration. */
+    public java.util.List<com.mrgregles.bsp_core.storage.NetworkStorage.TotemLevels> levelRows() {
+        java.util.List<com.mrgregles.bsp_core.storage.NetworkStorage.TotemLevels> out = new java.util.ArrayList<>();
+        placed.forEach((owner, set) -> {
+            for (GlobalPos pos : set) {
+                Map<String, Integer> l = levels.get(pos);
+                if (l != null) {
+                    out.add(new com.mrgregles.bsp_core.storage.NetworkStorage.TotemLevels(owner, pos, com.mrgregles.bsp_core.storage.RemoteTotemLevels.encode(l)));
+                }
+            }
+        });
+        return out;
     }
 
     /** Whether the levels of the totem at {@code pos} are known (false only for totems not loaded since the levels were first kept). */

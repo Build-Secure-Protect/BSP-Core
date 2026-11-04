@@ -235,12 +235,15 @@ public final class BspTotems {
     }
 
     /**
-     * The highest level of {@code buff} across the totems {@code player} owns: those placed on this
-     * server and those carried in their inventory. 0 when they own none, or none has it.
+     * The highest level of {@code buff} across the totems {@code player} owns, anywhere on the network: those carried in their
+     * inventory, those placed on this server, and those placed on the network's other servers (as last read from the shared
+     * database, every {@code storage.noticeSeconds}; request R11). A totem removed or stolen on another server stops counting
+     * for its old owner at the next read; one stolen here stops at once. Without network storage, carried and placed here only.
+     * 0 when they own none, or none has it. Never loads a chunk, except once for a totem whose levels were never kept.
      */
     public static int highestLevel(Player player, TotemUpgrades.Buff buff) {
         MinecraftServer server = player.getServer();
-        int best = server == null ? 0 : highestPlacedLevel(server, player.getUUID(), buff);
+        int best = server == null ? com.mrgregles.bsp_core.storage.RemoteTotemLevels.highest(player.getUUID(), buff.key) : highestPlacedLevel(server, player.getUUID(), buff);
         for (ItemStack stack : player.getInventory().items) {
             best = Math.max(best, carriedLevel(stack, player.getUUID(), buff));
         }
@@ -248,15 +251,18 @@ public final class BspTotems {
         return best;
     }
 
-    /** As {@link #highestLevel(Player, TotemUpgrades.Buff)} for a player by id; counts carried totems only while they are online here. */
+    /** As {@link #highestLevel(Player, TotemUpgrades.Buff)} for a player by id (placed totems here and on the other servers); counts carried totems only while they are online here. */
     public static int highestLevel(MinecraftServer server, UUID player, TotemUpgrades.Buff buff) {
         Player online = server.getPlayerList().getPlayer(player);
         return online != null ? highestLevel(online, buff) : highestPlacedLevel(server, player, buff);
     }
 
-    /** Placed totems are read from the ledger, which keeps their levels; a totem's chunk is loaded only when its levels were never kept (once, after updating from 1.4.4 or earlier). */
+    /**
+     * Placed totems: this server's from the ledger, which keeps their levels (a totem's chunk is loaded only when its levels were
+     * never kept, once after updating from 1.4.4 or earlier), the other servers' from the last database read.
+     */
     private static int highestPlacedLevel(MinecraftServer server, UUID owner, TotemUpgrades.Buff buff) {
-        int best = 0;
+        int best = com.mrgregles.bsp_core.storage.RemoteTotemLevels.highest(owner, buff.key);
         TotemLedger ledger = TotemLedger.get(server);
         for (GlobalPos where : placed(server, owner)) {
             if (ledger.hasLevels(where)) {

@@ -4,6 +4,12 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-04
+
+### Fixed
+- **Totem upgrade levels count on every server of the network** (BSP-Teleport request R11). `BspTotems.highestLevel` counted only the totems carried and those placed on the same server, so on a server where nobody places a totem (the spawn hub) a player's Extra Homes and Swift Travel levels counted for nothing (BSP-Teleport showed "Homes 4 of 3" and locked the newest home, and the shorter cooldown was gone). It now also counts the player's totems placed on the network's other servers, as last read from the database every `storage.noticeSeconds` (3). A totem removed or stolen on another server stops counting for its old owner at the next read; a stolen totem counts for its new owner only. Without network storage nothing changes. The shared `totems` table gains a `levels` column, added by itself at start; each server writes its totems' levels whenever they change, and all of them when it connects and after `/bsp storage migrate`. Other mods calling `highestLevel` need no change.
+- A totem that changed owner (a steal) lost its upgrade levels from the totem ledger until its chunk was next loaded or a level was bought, so lookups for the new owner read its block again. The levels are kept through the change.
+
 ## [1.10.0] - 2026-11-03
 
 ### Added

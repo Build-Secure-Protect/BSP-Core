@@ -99,7 +99,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             TotemLedger ledger = TotemLedger.get(serverLevel.getServer());
             GlobalPos here = GlobalPos.of(serverLevel.dimension(), worldPosition);
             if (owner != null) {
-                ledger.recordPlaced(owner.uuid(), here, getTier());
+                recordInLedger(serverLevel); // owner, tier and levels: a new owner (a steal) gets the levels at once, here and on the network
             } else {
                 ledger.recordRemoved(here);
             }

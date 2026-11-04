@@ -142,6 +142,13 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("totems") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, "
                     + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, "
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
+            try { // each placed totem's upgrade levels, so every server sees them (request R11), added to a totems table made before them
+                st.executeUpdate("ALTER TABLE " + t("totems") + " ADD COLUMN levels VARCHAR(1024) NOT NULL DEFAULT ''");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                    throw e;
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("factory_slices") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, "
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("scores") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, name VARCHAR(32) NOT NULL, "
@@ -774,8 +781,66 @@ final class MySqlStore implements AutoCloseable {
         ps.setInt(5, pos.pos().getZ());
     }
 
+    /** A placed totem's row. A row already there under another owner (a stolen totem) loses its levels: they are written again for the new owner. */
     void totemPlaced(UUID owner, GlobalPos pos) throws SQLException {
-        upsert("totems", owner, pos);
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("totems") + " (server_id, dimension, x, y, z, owner_uuid, levels) VALUES (?, ?, ?, ?, ?, ?, '') "
+                + "ON DUPLICATE KEY UPDATE levels = IF(owner_uuid = VALUES(owner_uuid), levels, ''), owner_uuid = VALUES(owner_uuid)")) {
+            place(ps, pos);
+            ps.setString(6, owner.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** The upgrade levels of this server's placed totem at {@code pos}, written only on its row under {@code owner}: never a row of a totem gone or owned by someone else. */
+    void totemLevels(UUID owner, GlobalPos pos, String levels) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("totems") + " SET levels = ? "
+                + "WHERE server_id = ? AND dimension = ? AND x = ? AND y = ? AND z = ? AND owner_uuid = ?")) {
+            setLevels(ps, owner, pos, levels);
+            ps.executeUpdate();
+        }
+    }
+
+    /** {@link #totemLevels} for every placed totem on this server in one batch: at connect and after a migration, so rows made before levels were kept get them. */
+    void totemLevelsAll(java.util.List<NetworkStorage.TotemLevels> all) throws SQLException {
+        if (all.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("totems") + " SET levels = ? "
+                + "WHERE server_id = ? AND dimension = ? AND x = ? AND y = ? AND z = ? AND owner_uuid = ?")) {
+            for (NetworkStorage.TotemLevels l : all) {
+                setLevels(ps, l.owner(), l.pos(), l.levels());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    private void setLevels(PreparedStatement ps, UUID owner, GlobalPos pos, String levels) throws SQLException {
+        ps.setString(1, levels);
+        ps.setString(2, serverId);
+        ps.setString(3, pos.dimension().location().toString());
+        ps.setInt(4, pos.pos().getX());
+        ps.setInt(5, pos.pos().getY());
+        ps.setInt(6, pos.pos().getZ());
+        ps.setString(7, owner.toString());
+    }
+
+    /** The owners and levels of the totems placed on the other servers that have any upgrade. */
+    java.util.List<RemoteTotemLevels.Row> readTotemLevels() throws SQLException {
+        java.util.List<RemoteTotemLevels.Row> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT owner_uuid, levels FROM " + t("totems") + " WHERE server_id <> ? AND levels <> ''")) {
+            ps.setString(1, serverId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.add(new RemoteTotemLevels.Row(UUID.fromString(rs.getString(1)), rs.getString(2)));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     void totemRemoved(GlobalPos pos) throws SQLException {

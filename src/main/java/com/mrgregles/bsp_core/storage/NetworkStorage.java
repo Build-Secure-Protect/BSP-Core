@@ -84,6 +84,9 @@ public final class NetworkStorage {
 
     public record RemoteSteal(String serverId, String dimension, int x, int y, int z, @Nullable UUID owner, UUID thief, String thiefName, long startedMs, long endsMs) {}
 
+    /** A placed totem on this server with its upgrade levels in the column's text form ({@link RemoteTotemLevels#encode}). */
+    public record TotemLevels(UUID owner, GlobalPos pos, String levels) {}
+
     private NetworkStorage() {}
 
     private interface Work {
@@ -489,6 +492,7 @@ public final class NetworkStorage {
                 });
                 s.clearSteals();
                 stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis()));
+                RemoteTotemLevels.apply(s.readTotemLevels());
                 MinecraftServer joined = server;
                 onServer(() -> connected(joined));
             } catch (SQLException | RuntimeException e) {
@@ -520,6 +524,8 @@ public final class NetworkStorage {
         if (srv == null) {
             return;
         }
+        List<TotemLevels> levels = TotemLedger.get(srv).levelRows();
+        async("write the placed totems' levels", s -> s.totemLevelsAll(levels)); // rows written before the levels were kept get them now
         long now = System.currentTimeMillis();
         for (ServerPlayer p : srv.getPlayerList().getPlayers()) {
             UUID id = p.getUUID();
@@ -597,6 +603,7 @@ public final class NetworkStorage {
         slicesElsewhere.clear();
         vaultsElsewhere = Map.of();
         stealsElsewhere = List.of();
+        RemoteTotemLevels.clear();
         playersElsewhere = List.of();
         market = null;
         orders = null;
@@ -716,6 +723,12 @@ public final class NetworkStorage {
 
     public static void totemRemoved(GlobalPos pos) {
         async("remove a placed totem", s -> s.totemRemoved(pos));
+    }
+
+    /** The upgrade levels of this server's placed totem at {@code pos} changed (placed, a level bought, a reset, first load). */
+    public static void totemLevels(UUID owner, GlobalPos pos, Map<String, Integer> levels) {
+        String text = RemoteTotemLevels.encode(levels);
+        async("record a placed totem's levels", s -> s.totemLevels(owner, pos, text));
     }
 
     public static void sliceAdded(UUID owner, GlobalPos pos) {
@@ -895,6 +908,7 @@ public final class NetworkStorage {
         collectNotices(event.getServer());
         collectTotemReturns(event.getServer());
         refreshSteals();
+        refreshTotemLevels();
         sendPositions(event.getServer());
         refreshOnline();
         MySqlStore s = store;
@@ -1056,6 +1070,11 @@ public final class NetworkStorage {
 
     private static void refreshSteals() {
         async("read the steals in progress", s -> stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis())));
+    }
+
+    /** The upgrade levels of the totems placed on the other servers (request R11), read every {@code storage.noticeSeconds}. */
+    private static void refreshTotemLevels() {
+        async("read the totem levels elsewhere", s -> RemoteTotemLevels.apply(s.readTotemLevels()));
     }
 
     /** Delivers the messages other servers left for the players online here. Polled every few seconds, and at once on a Redis notice. */
@@ -1331,6 +1350,7 @@ public final class NetworkStorage {
         FactoryLedger factories = FactoryLedger.get(srv);
         Set<UUID> grants = new HashSet<>(totems.allGranted());
         Map<UUID, Set<GlobalPos>> placed = copy(totems.allPlaced()), slices = copy(factories.all());
+        List<TotemLevels> levels = totems.levelRows();
         List<com.mrgregles.bsp_core.kit.Kit> kits = new java.util.ArrayList<>();
         for (com.mrgregles.bsp_core.kit.Kit k : com.mrgregles.bsp_core.kit.KitLedger.get(srv).all()) {
             kits.add(k.copy());
@@ -1345,6 +1365,7 @@ public final class NetworkStorage {
                     lines = List.of("This server has already migrated to " + s.describe() + ".", "Nothing was changed. Use /bsp storage migrate force to copy the local records again.");
                 } else {
                     int[] n = s.migrate(grants, placed, slices);
+                    s.totemLevelsAll(levels);
                     int kitRowCount = 0;
                     for (com.mrgregles.bsp_core.kit.Kit k : kits) {
                         if (!s.kitExists(k.id)) {

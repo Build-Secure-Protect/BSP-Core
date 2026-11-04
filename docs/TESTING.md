@@ -2611,3 +2611,14 @@ Three teams, each with its leader and one member: A (leader a), B (leader b), C 
 - [ ] `/bsp team alliances` lists it; `/bsp team dissolve "<name>"` ends it.
 - [ ] A 1.9.0 client joining is refused with the update message.
 
+
+## Totem levels across the network (2026-11-04, BSP-Teleport request R11)
+
+On the network, with BSP-Teleport. Player A has a totem with Extra Homes 2 and Swift Travel 1 placed on a home server, and carries no totem.
+- [ ] After the update, each server's log at start shows no storage error; the database's `totems` table has a `levels` column, and A's row reads `extra_homes=2,swift_travel=1` within a few seconds of that server connecting.
+- [ ] A goes to the spawn hub: the Teleport Band shows A's 5 home slots (3 + 2), not "Homes 4 of 3"; A's newest home is not locked; A's teleport cooldown is the shortened one.
+- [ ] On the home server, A buys Extra Homes 3: within a few seconds the hub band shows 6 slots.
+- [ ] B steals A's totem on the home server: within a few seconds on the hub A is back to 3 slots and B (if B has homes) gains the totem's levels.
+- [ ] A's totem is broken or removed on the home server: within a few seconds A's slots on the hub drop to 3.
+- [ ] A carries a totem with a higher level to the hub: the carried level counts.
+- [ ] Single player: the band's slots follow the totems carried and placed, as before.

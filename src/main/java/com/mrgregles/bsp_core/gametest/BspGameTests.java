@@ -6406,6 +6406,88 @@ public class BspGameTests {
         h.succeed();
     }
 
+    /** Request R11: on a server where the player has no totem (the spawn hub), their totems placed on the other servers count. */
+    @GameTest(template = EMPTY)
+    public void totem_levels_placed_on_other_servers_count_here(GameTestHelper h) {
+        var server = server(h);
+        var player = h.makeMockPlayer();
+        UUID id = player.getUUID(), other = UUID.randomUUID();
+        var homes = TotemUpgrades.Buff.EXTRA_HOMES;
+        var swift = TotemUpgrades.Buff.SWIFT_TRAVEL;
+        try {
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, homes) == 0, "no totem anywhere, level 0");
+            // as read from the totems table: two of the player's totems on other servers, and someone else's
+            com.mrgregles.bsp_core.storage.RemoteTotemLevels.apply(List.of(
+                    new com.mrgregles.bsp_core.storage.RemoteTotemLevels.Row(id, "extra_homes=3,swift_travel=1"),
+                    new com.mrgregles.bsp_core.storage.RemoteTotemLevels.Row(id, "extra_homes=2"),
+                    new com.mrgregles.bsp_core.storage.RemoteTotemLevels.Row(other, "extra_homes=4,swift_travel=5")));
+            int h1 = com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, homes);
+            h.assertTrue(h1 == 3, "the best of the player's totems elsewhere counts: " + h1);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(server, id, homes) == 3, "by id as well");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, swift) == 1, "someone else's totem does not count");
+            // a carried totem with a higher level still wins
+            var totem = new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get());
+            new TotemOwner(id, "Erin").applyTo(totem);
+            TotemUpgrades.setLevel(totem, homes, 5);
+            player.getInventory().add(totem);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, homes) == 5, "the carried totem's level is higher");
+            player.getInventory().clearContent();
+            // the totem is stolen on its server: its row is the thief's now
+            com.mrgregles.bsp_core.storage.RemoteTotemLevels.apply(List.of(
+                    new com.mrgregles.bsp_core.storage.RemoteTotemLevels.Row(id, "extra_homes=2"),
+                    new com.mrgregles.bsp_core.storage.RemoteTotemLevels.Row(other, "extra_homes=3,swift_travel=1")));
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, homes) == 2, "a stolen totem stops counting for its old owner");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(server, other, homes) == 3, "and counts for the thief");
+            // and the last one is removed
+            com.mrgregles.bsp_core.storage.RemoteTotemLevels.apply(List.of());
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(player, homes) == 0, "a removed totem stops counting");
+        } finally {
+            com.mrgregles.bsp_core.storage.RemoteTotemLevels.apply(List.of());
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void totem_levels_column_text_reads_back(GameTestHelper h) {
+        String text = com.mrgregles.bsp_core.storage.RemoteTotemLevels.encode(Map.of("swift_travel", 2, "extra_homes", 3, "ward", 0));
+        h.assertTrue(text.equals("extra_homes=3,swift_travel=2"), "sorted by key, levels of 0 left out: " + text);
+        h.assertTrue(com.mrgregles.bsp_core.storage.RemoteTotemLevels.decode(text).equals(Map.of("extra_homes", 3, "swift_travel", 2)), "and read back");
+        h.assertTrue(com.mrgregles.bsp_core.storage.RemoteTotemLevels.encode(Map.of()).isEmpty(), "no levels, an empty column");
+        h.assertTrue(com.mrgregles.bsp_core.storage.RemoteTotemLevels.decode("").isEmpty() && com.mrgregles.bsp_core.storage.RemoteTotemLevels.decode(null).isEmpty(), "an empty column, no levels");
+        var junk = com.mrgregles.bsp_core.storage.RemoteTotemLevels.decode("ward=x,=4,alarm,fortify=-1, healing = 2 ");
+        h.assertTrue(junk.equals(Map.of("healing", 2)), "unreadable pairs are skipped: " + junk);
+        h.succeed();
+    }
+
+    /** A totem that changes owner (a steal) keeps its levels in the ledger, for the new owner only: here at once, and so in the network's row. */
+    @GameTest(template = EMPTY)
+    public void a_stolen_totems_levels_count_for_the_thief_at_once(GameTestHelper h) {
+        var server = server(h);
+        var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(server);
+        BlockPos pos = new BlockPos(2, 1, 2);
+        h.setBlock(pos, ModBlocks.SHATTER_TOTEM.get());
+        var be = entity(h, pos, ShatterTotemBlockEntity.class);
+        UUID owner = UUID.randomUUID(), thief = UUID.randomUUID();
+        var homes = TotemUpgrades.Buff.EXTRA_HOMES;
+        var here = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(pos));
+        try {
+            be.setOwner(new TotemOwner(owner, "owner"));
+            be.setUpgradeLevel(homes, 2);
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(server, owner, homes) == 2, "the owner's level");
+            be.setOwner(new TotemOwner(thief, "thief"));
+            h.assertTrue(ledger.hasLevels(here) && ledger.levelAt(here, homes.key) == 2, "the ledger keeps the levels through the change of owner");
+            h.assertTrue(thief.equals(ledger.ownerAt(here)), "under the thief");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(server, thief, homes) == 2, "the thief's level");
+            h.assertTrue(com.mrgregles.bsp_core.api.BspTotems.highestLevel(server, owner, homes) == 0, "the old owner's level is gone");
+            h.assertTrue(ledger.levelRows().stream().anyMatch(r -> r.pos().equals(here) && r.owner().equals(thief) && r.levels().equals("extra_homes=2")),
+                    "the row written to the network is the thief's, with the levels");
+        } finally {
+            h.setBlock(pos, Blocks.AIR);
+            ledger.recordRemoved(here);
+        }
+        h.succeed();
+    }
+
     /** Stands in for BSP-RankUp's TeamProvider, which is not loaded in this run. */
     public interface SameTeamQuestion {
         boolean sameTeam(UUID a, UUID b);
