@@ -38,14 +38,21 @@ import java.util.UUID;
  * player who logs out has their carried totems placed, so nothing is lost).
  *
  * <p>On a single server the board is this server's own totems. With network storage on, each
- * server publishes its rows to the database and reads back the combined board. The board is
- * rebuilt every {@code scoring.refreshSeconds}, and sooner when a totem changes, and sent to all
- * clients for the Score Screens.
+ * server publishes its rows to the database and reads back every server's rows; the board adds up
+ * the rows of the servers heard from within {@code scoring.serverTimeoutMinutes}, so a server that
+ * stopped, was renamed or left the network stops counting instead of holding its totems on the
+ * board for good. The board is rebuilt from the live state every {@code scoring.refreshSeconds},
+ * and sooner when a totem changes, and sent to all clients for the Score Screens. A placed totem
+ * in a world this server does not have counts for nobody: it cannot be reached, seen or taken.
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class ScoreService {
     /** One player's line on the board. */
     public record Entry(UUID id, String name, int totems, int points, int bestTier) {
+    }
+
+    /** One server's row for one player as the network database holds it, and how many seconds ago that server last wrote it. */
+    public record ServerRow(String server, Entry entry, long ageSeconds) {
     }
 
     /** One totem as the admin panel lists it: its owner (or carrier), tier, whether carried, and where, on which server. */
@@ -65,6 +72,9 @@ public final class ScoreService {
     private static List<Entry> lastSent = List.of();
     private static boolean dirty = true;
     private static int ticks;
+    /** Every server's rows as last read from the network (with their ages then), and when that read arrived. */
+    private static volatile List<ServerRow> networkRows = List.of();
+    private static volatile long networkReadMs;
 
     private ScoreService() {}
 
@@ -98,7 +108,12 @@ public final class ScoreService {
         List<Spot> out = new ArrayList<>();
         TotemLedger ledger = TotemLedger.get(server);
         ledger.allPlaced().forEach((owner, positions) -> {
-            List<GlobalPos> sorted = new ArrayList<>(positions);
+            List<GlobalPos> sorted = new ArrayList<>();
+            for (GlobalPos pos : positions) {
+                if (server.getLevel(pos.dimension()) != null) { // a world this server does not have (a mod taken out): nobody holds that totem
+                    sorted.add(pos);
+                }
+            }
             sorted.sort(java.util.Comparator.comparing((GlobalPos p) -> p.dimension().location().toString()).thenComparing(GlobalPos::pos));
             for (GlobalPos pos : sorted) {
                 out.add(new Spot(owner, ledger.tierAt(pos), false, here, pos.dimension().location().toString(), pos.pos()));
@@ -164,6 +179,117 @@ public final class ScoreService {
             }
         });
         out.sort(ORDER);
+        return out;
+    }
+
+    /**
+     * How long a server may go without refreshing its rows before they stop counting, in seconds: {@code scoring.serverTimeoutMinutes},
+     * but never less than three refreshes ({@code scoring.refreshSeconds}), so a slow refresh or a lagging server does not make its
+     * rows flicker in and out of the board.
+     */
+    public static long serverTimeoutSeconds() {
+        long timeout = 60L * Math.max(2, BSPConfig.getOr(BSPConfig.SCORE_SERVER_TIMEOUT_MINUTES, 30));
+        long refresh = Math.max(5, BSPConfig.getOr(BSPConfig.SCORE_REFRESH_SECONDS, 30));
+        return Math.max(timeout, 3 * refresh);
+    }
+
+    /** Whether a row {@code server} wrote {@code ageSeconds} ago counts: this server's own always do, another's while it is heard from. */
+    public static boolean counts(String server, String here, long ageSeconds, long maxAgeSeconds) {
+        return server.equals(here) || ageSeconds <= maxAgeSeconds;
+    }
+
+    /**
+     * The network's board from every server's rows: each player's totems and points added up over the rows that {@link #counts}
+     * (the best tier is the highest of them), best first. A player whose only rows are from silent servers is not on it.
+     */
+    public static List<Entry> combine(List<ServerRow> rows, String here, long maxAgeSeconds) {
+        Map<UUID, int[]> acc = new HashMap<>(); // totems, points, best tier
+        Map<UUID, String> names = new HashMap<>();
+        Map<UUID, Long> nameAge = new HashMap<>();
+        for (ServerRow r : rows) {
+            if (!counts(r.server(), here, r.ageSeconds(), maxAgeSeconds)) {
+                continue;
+            }
+            Entry e = r.entry();
+            int[] v = acc.computeIfAbsent(e.id(), k -> new int[]{0, 0, -1});
+            v[0] += e.totems();
+            v[1] += e.points();
+            v[2] = Math.max(v[2], e.bestTier());
+            if (!e.name().isEmpty() && r.ageSeconds() < nameAge.getOrDefault(e.id(), Long.MAX_VALUE)) {
+                names.put(e.id(), e.name()); // the freshest row's name
+                nameAge.put(e.id(), r.ageSeconds());
+            }
+        }
+        List<Entry> out = new ArrayList<>();
+        acc.forEach((id, v) -> out.add(new Entry(id, names.getOrDefault(id, id.toString().substring(0, 8)), v[0], v[1], v[2])));
+        out.sort(ORDER);
+        return out;
+    }
+
+    /**
+     * Why a player has the score they have, for {@code /bsp score why}: the board's line, the totems this server counts for them
+     * (placed, with where, and carried), on a network every server's row with its age and whether it counts, and the score set by
+     * hand riding on top.
+     */
+    public static List<String> explain(MinecraftServer server, UUID player) {
+        List<String> out = new ArrayList<>();
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        Entry line = null;
+        for (Entry e : board) {
+            if (e.id().equals(player)) {
+                line = e;
+            }
+        }
+        out.add(line == null ? name(server, player) + " is not on the board (0 points)."
+                : name(server, player) + ": " + line.points() + " points on the board, " + line.totems() + " totem" + (line.totems() == 1 ? "" : "s") + ".");
+        int placed = 0, carried = 0, points = 0;
+        List<String> where = new ArrayList<>();
+        for (Spot s : spots(server)) {
+            if (s.owner().equals(player)) {
+                points += tierPoints(s.tier());
+                if (s.carried()) {
+                    carried++;
+                } else {
+                    placed++;
+                    if (where.size() < 8) {
+                        where.add("Tier " + TotemUpgrades.roman(s.tier()) + " at " + s.pos().getX() + " " + s.pos().getY() + " " + s.pos().getZ() + " in " + s.dimension());
+                    }
+                }
+            }
+        }
+        out.add("Here (" + here + "): " + placed + " placed, " + carried + " carried, " + points + " points.");
+        where.forEach(w -> out.add("  " + w));
+        if (placed > where.size()) {
+            out.add("  and " + (placed - where.size()) + " more");
+        }
+        int missingWorld = 0;
+        for (GlobalPos pos : TotemLedger.get(server).placedFor(player)) {
+            if (server.getLevel(pos.dimension()) == null) {
+                missingWorld++;
+            }
+        }
+        if (missingWorld > 0) {
+            out.add("  " + missingWorld + " more listed in worlds this server does not have: not counted.");
+        }
+        if (NetworkStorage.enabled()) {
+            long timeout = serverTimeoutSeconds();
+            long since = networkReadMs == 0 ? -1 : (System.currentTimeMillis() - networkReadMs) / 1000;
+            out.add(since < 0 ? "The network has not been read since this server started." : "Network rows as read " + since + " s ago:");
+            boolean any = false;
+            for (ServerRow r : networkRows) {
+                if (r.entry().id().equals(player)) {
+                    any = true;
+                    boolean counted = counts(r.server(), here, r.ageSeconds(), timeout);
+                    out.add("  " + r.server() + ": " + r.entry().totems() + " totems, " + r.entry().points() + " points, written " + r.ageSeconds() + " s before the read"
+                            + (counted ? "" : " (not counted: silent for more than " + timeout / 60 + " min)"));
+                }
+            }
+            if (!any && since >= 0) {
+                out.add("  no server lists them.");
+            }
+        }
+        int add = ScoreAdjust.of(server, player);
+        out.add(add == 0 ? "No score set by hand." : "Set by hand: " + (add > 0 ? "+" : "") + add + " on top of the totems (/bsp score clear removes it).");
         return out;
     }
 
@@ -237,10 +363,14 @@ public final class ScoreService {
                 sent.put(e.id(), e.points());
             }
             // the rows and every totem behind them, for the board and for the admin panel on every server
-            NetworkStorage.syncScores(mine, spots, (combined, adjust) -> { // answer arrives on the server thread
+            String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+            NetworkStorage.syncScores(mine, spots, (rows, adjust) -> { // answer arrives on the server thread
                 if (adjust != null) {
                     ScoreAdjust.networkRead(adjust);
                 }
+                networkRows = List.copyOf(rows);
+                networkReadMs = System.currentTimeMillis();
+                List<Entry> combined = combine(rows, here, serverTimeoutSeconds());
                 raw = List.copyOf(combined);
                 mineAtRead = Map.copyOf(sent);
                 publish(server, adjusted(server, combined));
@@ -282,6 +412,8 @@ public final class ScoreService {
     public static void onServerStopped(ServerStoppedEvent event) {
         board = List.of();
         raw = List.of();
+        networkRows = List.of();
+        networkReadMs = 0;
         mineAtRead = Map.of();
         ScoreAdjust.reset();
         lastSent = List.of();

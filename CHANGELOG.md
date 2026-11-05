@@ -4,6 +4,19 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-11-05
+
+### Fixed
+- **Scores no longer keep totems that are gone.** On a network the board added up every row any server had ever written to the database's `scores` table, and only a server itself replaced its own rows, so the totems of a server that stopped writing (renamed, taken off the network, or down) stayed on the board for good, and so did a player's removed duplicates if that server had listed them. Each server's rows now carry the time it last wrote them (by the database's clock); the board, the admin panel and `/bsp score set` count only the servers heard from in the last `scoring.serverTimeoutMinutes` (30), and rows nobody has written for 7 days are deleted (once an hour, apart from the refresh). A server that comes back counts again at its first refresh. The wait is never shorter than three refreshes, and ages are measured in UTC, so a daylight-saving change on the database host does not drop every server for an hour.
+- **The ledger of placed totems checks the chunks nobody visits.** An entry whose block went with its chunk (a region reset, a deleted chunk) was only noticed when someone loaded that chunk or ran `/bsp totem check`, and counted until then. Now `scoring.ledgerSweepPerMinute` (4) such entries a minute are checked in turn; set it to 0 to turn the sweep off. A chunk that is saved is loaded to look; one that is not on disk is never generated (no lag spike, no new terrain): no totem can stand there. `/bsp totem check` and `/bsp totem wipe` no longer generate missing chunks either.
+- **A totem listed in a world the server does not have counts for nobody** (a mod's dimension taken out of the pack): it is left off the board and the admin panel, and kept in the ledger in case the world comes back.
+
+- **A totem wipe clears the score set by hand.** `/bsp totem wipe` (and `/bsp totem forget`, `BspTotems.forgetPlayer`) left any `/bsp score set` or `add` in place, so the fresh totem's score came with the old adjustment on top. A wipe starts the player over, so it is cleared too, on every server of a network; the command's reply says so.
+
+### Added
+- **The server config lists every dimension the server has.** At each start BSP-Core writes `restrictions.activeDimensions` in the world's `serverconfig/bsp_core-server.toml`, in the same section as `allowedDimensions`, with each name spelled as that list expects, so an admin can copy them across. Editing it does nothing; it is written again at the next start. A name in `allowedDimensions` the server does not have (a typo, or a mod taken out) is logged as a warning at start.
+- **`/bsp score why <player>`** (staff, offline players too): what a score is made of: the board's line, the totems this server counts for them with where they stand, on a network every server's row with its age and whether it counts, and any score set by hand on top.
+
 ## [1.11.0] - 2026-11-05
 
 ### Added

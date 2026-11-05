@@ -18,21 +18,22 @@ import java.util.UUID;
 /**
  * The admin's clean slate for one player ({@code /bsp totem wipe}): their carried totems are taken,
  * their placed totems removed from the world, every ledger record of their totems forgotten, their
- * logout placements, transfer and owed items dropped, their first-join grant cleared, and then a
+ * logout placements, transfer and owed items dropped, their first-join grant and any score set by hand
+ * ({@code /bsp score set}) cleared, and then a
  * fresh Tier I totem handed to them as on a first join. For testing accounts and support cases.
  */
 public final class TotemWipe {
     private TotemWipe() {}
 
     /** What the wipe did, for the admin's eyes. */
-    public record Result(int carried, int placed, int forgotten, int logoutRecords, boolean owedDropped, boolean granted) {}
+    public record Result(int carried, int placed, int forgotten, int logoutRecords, boolean owedDropped, boolean granted, boolean scoreCleared) {}
 
     public static Result wipe(ServerPlayer player) {
         Result r = clear(player.server, player.getUUID(), player);
         FirstJoinHandler.grant(player, TotemLedger.get(player.server));
         BSPCore.LOGGER.info("Totem wipe for {}: {} carried, {} placed, {} records forgotten, {} logout placements, owed items {}; a fresh totem given",
                 player.getGameProfile().getName(), r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped() ? "dropped" : "none");
-        return new Result(r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped(), true);
+        return new Result(r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped(), true, r.scoreCleared());
     }
 
     /**
@@ -136,7 +137,7 @@ public final class TotemWipe {
                 ledger.recordRemoved(where);
                 continue;
             }
-            level.getChunk(where.pos());
+            LedgerCheck.loadIfSaved(level, where.pos()); // a chunk that is not on disk is not generated: nothing stands there
             if (level.getBlockEntity(where.pos()) instanceof ShatterTotemBlockEntity totem && totem.isOwner(id)) {
                 UUID totemId = TotemIdentity.id(ShatterTotemBlock.toItemStack(level, where.pos()));
                 level.removeBlock(where.pos(), false); // onRemove tells the ledger and the chunk loading, and fires TotemEvent.Removed
@@ -162,7 +163,17 @@ public final class TotemWipe {
         if (player != null) {
             PlayerPersistent.setTotemGranted(player, false);
         }
+        // a wipe starts the player over: no score set by hand rides on the fresh totem. On a network the copy here may be older than
+        // a score set on another server since the last read, so the database is always asked (clearing nothing is harmless).
+        boolean scoreCleared = NetworkStorage.enabled() || com.mrgregles.bsp_core.score.ScoreAdjust.of(server, id) != 0;
+        if (scoreCleared) {
+            com.mrgregles.bsp_core.score.ScoreAdjust.clear(server, id, "totem wipe", r -> {
+                if (!r.ok()) {
+                    BSPCore.LOGGER.error("Totem wipe for {}: the score set by hand could not be cleared (the database is unreachable); run /bsp score clear", id);
+                }
+            });
+        }
         com.mrgregles.bsp_core.score.ScoreService.markDirty();
-        return new Result(carried.size(), placed, forgotten, logoutRecords, owed, false);
+        return new Result(carried.size(), placed, forgotten, logoutRecords, owed, false, scoreCleared);
     }
 }

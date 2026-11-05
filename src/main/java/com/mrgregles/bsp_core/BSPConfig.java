@@ -42,7 +42,7 @@ public final class BSPConfig {
     // ------------------------------------------------------------------ restrictions
 
     /** Dimensions in which a Shatter Totem may be placed, dropped or auto-placed. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_DIMENSIONS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_DIMENSIONS, ACTIVE_DIMENSIONS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> NO_TOTEM_SERVERS;
 
     /** Seconds a dropped totem lies on the ground before it places itself as a block. */
@@ -145,7 +145,7 @@ public final class BSPConfig {
     // ------------------------------------------------------------------ scoring
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> SCORE_TIER_POINTS;
-    public static final ForgeConfigSpec.IntValue SCORE_REFRESH_SECONDS;
+    public static final ForgeConfigSpec.IntValue SCORE_REFRESH_SECONDS, SCORE_SERVER_TIMEOUT_MINUTES, SCORE_LEDGER_SWEEP;
 
     // ------------------------------------------------------------------ storage
 
@@ -287,6 +287,10 @@ public final class BSPConfig {
                 .defineListAllowEmpty("allowedDimensions",
                         List.of("minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"),
                         o -> o instanceof String);
+        ACTIVE_DIMENSIONS = BUILDER
+                .comment("Filled in by BSP-Core every time the server starts: every dimension this server has, spelled as allowedDimensions",
+                        "expects. Copy names from here into allowedDimensions above. Editing this list does nothing; it is written again at the next start.")
+                .defineListAllowEmpty("activeDimensions", List.of(), o -> o instanceof String);
         NO_TOTEM_SERVERS = BUILDER
                 .comment("Servers of the network (their storage.serverId) where a Shatter Totem cannot be placed or dropped anywhere. Totems may still be held there;",
                         "one carried at logout goes back to the player's previous position on a server that allows placement (or, if they never stood on one,",
@@ -549,6 +553,14 @@ public final class BSPConfig {
         SCORE_REFRESH_SECONDS = BUILDER.comment("How often the leaderboard is rebuilt and sent to players. On a single server a change also shows within a second.",
                         "On a network this is how often the shared database is read.")
                 .defineInRange("refreshSeconds", 30, 5, 3600);
+        SCORE_SERVER_TIMEOUT_MINUTES = BUILDER.comment("On a network: the totems another server listed stop counting on the board (and in the admin panel) when that server",
+                        "has not refreshed its rows for this many minutes: it stopped, crashed, was renamed or left the network. They count again",
+                        "at its next refresh once it is back. Rows nobody has refreshed for 7 days are deleted.")
+                .defineInRange("serverTimeoutMinutes", 30, 2, 10080);
+        SCORE_LEDGER_SWEEP = BUILDER.comment("Placed totems in chunks nobody has loaded are checked against the world in turn: this many a minute have their chunk",
+                        "loaded and are forgotten if no totem stands there (a region reset, a deleted chunk). 0 turns the sweep off; loaded",
+                        "chunks are always checked once a minute, and /bsp totem check checks them all at once.")
+                .defineInRange("ledgerSweepPerMinute", 4, 0, 200);
         BUILDER.pop();
 
         BUILDER.comment("Where BSP-Core keeps its records.",

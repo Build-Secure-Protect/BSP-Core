@@ -2659,3 +2659,23 @@ Task 4: the guide book (2026-11-05).
 - [ ] The Upgrade Tree entry's "Base: walls" page lists "Tripwire: a redstone signal while outsiders are near", and the page still reads at a comfortable size.
 - [ ] Powers in Detail has the pages "Tripwire" and "Wiring a Tripwire" after "Linking Discord", and the "Alarm's" link reads properly.
 - [ ] The Alliances and Buy Orders entries are still there (the generator was brought back in step with them).
+
+
+## Scores that keep gone totems (2026-11-05)
+
+A player A on the network who owns one Tier I totem (score 1) but shows a higher score. Run these as an admin on any server once the update is on every server.
+- [ ] Each server's log at start shows no storage error; the database's `scores` and `admin_totems` tables have an `updated_at` column.
+- [ ] `/bsp score why A` lists the board's line, the totems this server counts (placed with where they stand, and carried), every server's row for A with how long before the read it was written, and "No score set by hand." or the amount set.
+- [ ] A server's row older than 30 minutes reads "(not counted: silent for more than 30 min)" and its totems are not in A's score on the board, the Score Screens or the admin panel. If none is listed and the score is still too high, the line "Set by hand" names the cause: `/bsp score clear A` brings it back to the totems' points.
+- [ ] Stop one server that has a totem of A's: A's score keeps it for 30 minutes, then drops it on every other server; start it again and it comes back within a refresh (30 s).
+- [ ] A totem whose chunk was reset with a region tool (nobody near it): within a few minutes the log says "(an unloaded chunk), but none stands there; the entry is forgotten" and A's score drops. `scoring.ledgerSweepPerMinute = 0` stops it; `/bsp totem check` still does it at once.
+- [ ] With a dimension's mod taken out, a totem that stood there no longer counts, and `/bsp score why` says "listed in worlds this server does not have".
+- [ ] Single player: scores follow placed and carried totems as before, and `/bsp score why` works without the network lines.
+- [ ] Part of the MySQL live test: the GameTests cover the rules, not the SQL. Check the `updated_at` columns after the upgrade, that a stopped server's rows drop out after 30 minutes (board, admin panel and `/bsp score set` alike), and after 7 days that its rows are gone.
+- [ ] `/bsp score add A 3`, then `/bsp totem wipe A`: the reply ends with "the score set by hand cleared", and within 30 s A's score is 1 (the fresh Tier I totem) on every server; `/bsp score why A` says "No score set by hand."
+
+Dimensions in the config (2026-11-05):
+- [ ] Start a server with a modded dimension in the pack: `world/serverconfig/bsp_core-server.toml` has `activeDimensions` under `[restrictions]`, below `allowedDimensions`, listing every dimension in alphabetical order (the three vanilla ones and the mod's).
+- [ ] Copy the mod's name into `allowedDimensions` and restart: a totem can be placed there.
+- [ ] Misspell a name in `allowedDimensions` (`minecraft:the_nethr`) and restart: the log warns that the server does not have it.
+- [ ] Edit `activeDimensions` by hand and restart: it is written back as it was.

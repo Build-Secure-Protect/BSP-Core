@@ -128,6 +128,20 @@ public final class BSPCommands {
                             }
                             return board.size();
                         }))
+                        // what a player's score is made of: the totems here, every server's row on the network, the score set by hand
+                        .then(Commands.literal("why")
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .executes(ctx -> {
+                                            CommandSourceStack src = ctx.getSource();
+                                            int n = 0;
+                                            for (com.mojang.authlib.GameProfile profile : net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles(ctx, "player")) {
+                                                for (String line : com.mrgregles.bsp_core.score.ScoreService.explain(src.getServer(), profile.getId())) {
+                                                    src.sendSuccess(() -> Component.literal(line), false);
+                                                }
+                                                n++;
+                                            }
+                                            return n;
+                                        })))
                         // scores set by hand, on top of the totems' points (cleared when a season ends); offline players too
                         .then(Commands.literal("set").requires(src -> src.hasPermission(2))
                                 .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
@@ -336,7 +350,7 @@ public final class BSPCommands {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         var r = com.mrgregles.bsp_core.totem.TotemWipe.wipe(target);
         String line = target.getGameProfile().getName() + ": " + r.carried() + " carried and " + r.placed() + " placed totems gone, " + r.forgotten() + " ledger records and "
-                + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + "; a fresh Tier I totem given, as on a first join.";
+                + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + (r.scoreCleared() ? com.mrgregles.bsp_core.storage.NetworkStorage.enabled() ? ", any score set by hand cleared on the network (a failure is logged)" : ", the score set by hand cleared" : "") + "; a fresh Tier I totem given, as on a first join.";
         ctx.getSource().sendSuccess(() -> Component.literal(line), true);
         return 1;
     }
@@ -346,7 +360,7 @@ public final class BSPCommands {
         for (com.mojang.authlib.GameProfile profile : net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles(ctx, "player")) {
             var r = com.mrgregles.bsp_core.totem.TotemWipe.forget(ctx.getSource().getServer(), profile.getId());
             String line = profile.getName() + ": " + r.carried() + " carried and " + r.placed() + " placed totems gone, " + r.forgotten() + " ledger records and "
-                    + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + "; nothing given back.";
+                    + r.logoutRecords() + " logout placements forgotten" + (r.owedDropped() ? ", owed items dropped" : "") + (r.scoreCleared() ? com.mrgregles.bsp_core.storage.NetworkStorage.enabled() ? ", any score set by hand cleared on the network (a failure is logged)" : ", the score set by hand cleared" : "") + "; nothing given back.";
             ctx.getSource().sendSuccess(() -> Component.literal(line), true);
             n++;
         }

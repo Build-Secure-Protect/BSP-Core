@@ -152,13 +152,23 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("factory_slices") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, "
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("scores") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, name VARCHAR(32) NOT NULL, "
-                    + "totems INT NOT NULL, points INT NOT NULL, best_tier INT NOT NULL, PRIMARY KEY (server_id, uuid), INDEX (uuid))");
+                    + "totems INT NOT NULL, points INT NOT NULL, best_tier INT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                    + "PRIMARY KEY (server_id, uuid), INDEX (uuid))");
             // points an admin set by hand, added to the totems' points on the board (cleared when a season ends)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("score_adjust") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, points INT NOT NULL, "
                     + "set_by VARCHAR(32) NOT NULL DEFAULT '', set_ms BIGINT NOT NULL DEFAULT 0)");
             // every totem on each server, rewritten with that server's score rows: the admin panel's view of the network
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("admin_totems") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, tier INT NOT NULL, "
-                    + "carried TINYINT NOT NULL, INDEX (server_id), INDEX (owner_uuid))");
+                    + "carried TINYINT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX (server_id), INDEX (owner_uuid))");
+            for (String table : List.of("scores", "admin_totems")) {
+                try { // when each server last wrote its rows (rows of a server that went silent stop counting), added to tables made before it
+                    st.executeUpdate("ALTER TABLE " + t(table) + " ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+                } catch (SQLException e) {
+                    if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                        throw e;
+                    }
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("meta") + " (server_id VARCHAR(64) NOT NULL PRIMARY KEY, "
                     + "migrated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("vault_totals") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, "
@@ -869,10 +879,13 @@ final class MySqlStore implements AutoCloseable {
     // ------------------------------------------------------------------ leaderboard
 
     /**
-     * Replaces this server's score rows with {@code mine} and its totem list with {@code spots}, together, and returns the board
-     * of the whole network: each player's totems and points added up across servers.
+     * Replaces this server's score rows with {@code mine} and its totem list with {@code spots}, together, and returns every
+     * server's rows with how many seconds ago each was written (by the database's clock, so the servers' clocks do not matter).
+     * The board adds up the rows of the servers still heard from ({@link com.mrgregles.bsp_core.score.ScoreService#combine}).
+     * Ages are taken from {@code UNIX_TIMESTAMP}, which a TIMESTAMP column keeps in UTC, so a daylight-saving change on the
+     * database host does not make every row look an hour older.
      */
-    java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> syncScores(java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine,
+    java.util.List<com.mrgregles.bsp_core.score.ScoreService.ServerRow> syncScores(java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine,
                                                                               java.util.List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
@@ -919,14 +932,26 @@ final class MySqlStore implements AutoCloseable {
         } finally {
             c.setAutoCommit(auto);
         }
-        java.util.List<com.mrgregles.bsp_core.score.ScoreService.Entry> all = new java.util.ArrayList<>();
+        java.util.List<com.mrgregles.bsp_core.score.ScoreService.ServerRow> all = new java.util.ArrayList<>();
         try (Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery("SELECT uuid, MAX(name), SUM(totems), SUM(points), MAX(best_tier) FROM " + t("scores") + " GROUP BY uuid")) {
+             ResultSet rs = st.executeQuery("SELECT server_id, uuid, name, totems, points, best_tier, GREATEST(0, UNIX_TIMESTAMP() - UNIX_TIMESTAMP(updated_at)) FROM " + t("scores"))) {
             while (rs.next()) {
-                all.add(new com.mrgregles.bsp_core.score.ScoreService.Entry(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getInt(3), rs.getInt(4), rs.getInt(5)));
+                all.add(new com.mrgregles.bsp_core.score.ScoreService.ServerRow(rs.getString(1),
+                        new com.mrgregles.bsp_core.score.ScoreService.Entry(UUID.fromString(rs.getString(2)), rs.getString(3), rs.getInt(4), rs.getInt(5), rs.getInt(6)), rs.getLong(7)));
             }
         }
         return all;
+    }
+
+    /**
+     * Deletes the score and admin panel rows nobody has written for 7 days (a server renamed or taken off the network). Run on its
+     * own, outside the sync's transaction, so it never holds up or rolls back a server's refresh.
+     */
+    void purgeOldScores() throws SQLException {
+        try (Statement st = conn().createStatement()) {
+            st.executeUpdate("DELETE FROM " + t("scores") + " WHERE UNIX_TIMESTAMP(updated_at) < UNIX_TIMESTAMP() - 604800");
+            st.executeUpdate("DELETE FROM " + t("admin_totems") + " WHERE UNIX_TIMESTAMP(updated_at) < UNIX_TIMESTAMP() - 604800");
+        }
     }
 
     /** Every hand-set score adjustment: player to the points added on top of their totems. */
@@ -945,7 +970,7 @@ final class MySqlStore implements AutoCloseable {
      * becomes that minus what the player's totems give across every server's rows; with {@code add} true it is added to the
      * adjustment. Returns the new adjustment.
      */
-    int scoreAdjust(UUID player, int points, boolean add, String by) throws SQLException {
+    int scoreAdjust(UUID player, int points, boolean add, String by, long maxAgeSeconds) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
@@ -964,8 +989,12 @@ final class MySqlStore implements AutoCloseable {
                 adjust = now + points;
             } else {
                 int totems;
-                try (PreparedStatement ps = c.prepareStatement("SELECT COALESCE(SUM(points), 0) FROM " + t("scores") + " WHERE uuid = ?")) {
+                // what the totems give on the servers still heard from, as the board counts them
+                try (PreparedStatement ps = c.prepareStatement("SELECT COALESCE(SUM(points), 0) FROM " + t("scores")
+                        + " WHERE uuid = ? AND (server_id = ? OR UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ?)")) {
                     ps.setString(1, player.toString());
+                    ps.setString(2, serverId);
+                    ps.setLong(3, maxAgeSeconds);
                     try (ResultSet rs = ps.executeQuery()) {
                         rs.next();
                         totems = rs.getInt(1);
@@ -1014,10 +1043,10 @@ final class MySqlStore implements AutoCloseable {
     }
 
     /**
-     * The admin panel's view of the network: every totem every server last listed (with its score rows), and the name of every
+     * The admin panel's view of the network: every totem every server still heard from last listed (with its score rows), and the name of every
      * player who has had a first-join totem anywhere or owns a listed totem (from the bank, else the board).
      */
-    com.mrgregles.bsp_core.admin.AdminService.Network adminNetwork() throws SQLException {
+    com.mrgregles.bsp_core.admin.AdminService.Network adminNetwork(long maxAgeSeconds) throws SQLException {
         java.util.Map<UUID, String> names = new java.util.LinkedHashMap<>();
         try (Statement st = conn().createStatement();
              ResultSet rs = st.executeQuery("SELECT g.uuid, COALESCE(b.name, '') FROM " + t("grants") + " g LEFT JOIN " + t("bank_accounts") + " b ON b.uuid = g.uuid")) {
@@ -1025,22 +1054,31 @@ final class MySqlStore implements AutoCloseable {
                 names.put(UUID.fromString(rs.getString(1)), rs.getString(2));
             }
         }
-        try (Statement st = conn().createStatement(); ResultSet rs = st.executeQuery("SELECT uuid, MAX(name) FROM " + t("scores") + " GROUP BY uuid")) {
-            while (rs.next()) {
-                UUID id = UUID.fromString(rs.getString(1));
-                if (names.getOrDefault(id, "").isEmpty()) {
-                    names.put(id, rs.getString(2));
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, MAX(name) FROM " + t("scores")
+                + " WHERE server_id = ? OR UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ? GROUP BY uuid")) {
+            ps.setString(1, serverId);
+            ps.setLong(2, maxAgeSeconds);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UUID id = UUID.fromString(rs.getString(1));
+                    if (names.getOrDefault(id, "").isEmpty()) {
+                        names.put(id, rs.getString(2));
+                    }
                 }
             }
         }
         java.util.List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots = new java.util.ArrayList<>();
-        try (Statement st = conn().createStatement();
-             ResultSet rs = st.executeQuery("SELECT server_id, dimension, x, y, z, owner_uuid, tier, carried FROM " + t("admin_totems") + " ORDER BY server_id, dimension, x, y, z")) {
-            while (rs.next()) {
-                UUID owner = UUID.fromString(rs.getString(6));
-                names.putIfAbsent(owner, "");
-                spots.add(new com.mrgregles.bsp_core.score.ScoreService.Spot(owner, rs.getInt(7), rs.getInt(8) != 0, rs.getString(1), rs.getString(2),
-                        new net.minecraft.core.BlockPos(rs.getInt(3), rs.getInt(4), rs.getInt(5))));
+        try (PreparedStatement ps = conn().prepareStatement("SELECT server_id, dimension, x, y, z, owner_uuid, tier, carried FROM " + t("admin_totems")
+                + " WHERE server_id = ? OR UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ? ORDER BY server_id, dimension, x, y, z")) {
+            ps.setString(1, serverId);
+            ps.setLong(2, maxAgeSeconds);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UUID owner = UUID.fromString(rs.getString(6));
+                    names.putIfAbsent(owner, "");
+                    spots.add(new com.mrgregles.bsp_core.score.ScoreService.Spot(owner, rs.getInt(7), rs.getInt(8) != 0, rs.getString(1), rs.getString(2),
+                            new net.minecraft.core.BlockPos(rs.getInt(3), rs.getInt(4), rs.getInt(5))));
+                }
             }
         }
         return new com.mrgregles.bsp_core.admin.AdminService.Network(names, spots);

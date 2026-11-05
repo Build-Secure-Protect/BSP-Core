@@ -203,8 +203,8 @@ public final class BspTotems {
     /**
      * Leaves nothing of a player's totems and gives nothing back (BSP-Stress Test request ST-C1): their carried totems are taken
      * (when they are online here), their placed totems removed from the world, every ledger, logout, transfer, owed-item and
-     * network record of their totems dropped, and their first-join grant cleared (a returning player is given a totem as on a
-     * first join). Works for an online or an offline player; an offline player's saved inventory is not opened. Server thread
+     * network record of their totems dropped, their first-join grant cleared (a returning player is given a totem as on a
+     * first join), and any score set by hand cleared (since 1.11.1). Works for an online or an offline player; an offline player's saved inventory is not opened. Server thread
      * only. Returns how many totems were taken out of inventories and the world. The command is {@code /bsp totem forget <player>}.
      */
     public static int forgetPlayer(MinecraftServer server, UUID player) {

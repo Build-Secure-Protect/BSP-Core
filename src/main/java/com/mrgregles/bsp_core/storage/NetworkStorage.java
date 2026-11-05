@@ -772,28 +772,43 @@ public final class NetworkStorage {
     }
 
     /**
-     * Publishes this server's score rows and hands the whole network's board to {@code then} on the
+     * Publishes this server's score rows and hands every server's rows (with their ages) to {@code then} on the
      * server thread. If the database cannot be reached, {@code then} gets this server's own rows.
      */
+    /** When the week-old leaderboard rows were last deleted (storage thread only). */
+    private static long lastScorePurgeMs;
+
     public static void syncScores(List<com.mrgregles.bsp_core.score.ScoreService.Entry> mine, List<com.mrgregles.bsp_core.score.ScoreService.Spot> spots,
-                                  java.util.function.BiConsumer<List<com.mrgregles.bsp_core.score.ScoreService.Entry>, Map<UUID, Integer>> then) {
+                                  java.util.function.BiConsumer<List<com.mrgregles.bsp_core.score.ScoreService.ServerRow>, Map<UUID, Integer>> then) {
         MySqlStore s = store;
         if (s == null) {
-            then.accept(mine, null); // not connected: this server's rows, with the adjustments last read
+            String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+            List<com.mrgregles.bsp_core.score.ScoreService.ServerRow> own = new java.util.ArrayList<>();
+            mine.forEach(e -> own.add(new com.mrgregles.bsp_core.score.ScoreService.ServerRow(here, e, 0)));
+            then.accept(own, null); // not connected: this server's rows, with the adjustments last read
             return;
         }
         worker().execute(() -> {
-            List<com.mrgregles.bsp_core.score.ScoreService.Entry> result;
+            List<com.mrgregles.bsp_core.score.ScoreService.ServerRow> result;
             Map<UUID, Integer> adjust;
             try {
                 result = s.syncScores(mine, spots);
                 adjust = s.scoreAdjustments();
+                long now = System.currentTimeMillis();
+                if (now - lastScorePurgeMs >= 3_600_000L) { // once an hour is plenty for rows a week old
+                    lastScorePurgeMs = now;
+                    try {
+                        s.purgeOldScores();
+                    } catch (SQLException | RuntimeException e) {
+                        BSPCore.LOGGER.warn("BSP-Core storage: could not delete week-old leaderboard rows (tried again in an hour): {}", e.toString());
+                    }
+                }
             } catch (SQLException | RuntimeException e) {
                 // the board keeps what it last showed: publishing this server's rows alone would post every other server's points as lost
                 BSPCore.LOGGER.error("BSP-Core storage: could not sync the leaderboard: {}", e.toString());
                 return;
             }
-            List<com.mrgregles.bsp_core.score.ScoreService.Entry> out = result;
+            List<com.mrgregles.bsp_core.score.ScoreService.ServerRow> out = result;
             onServer(() -> then.accept(out, adjust));
         });
     }
@@ -803,6 +818,7 @@ public final class NetworkStorage {
      * network. The answer (the new adjustment, or null when the database could not be reached) arrives on the server thread.
      */
     public static void scoreAdjust(UUID player, int points, boolean add, String by, Consumer<Integer> then) {
+        long maxAge = com.mrgregles.bsp_core.score.ScoreService.serverTimeoutSeconds(); // read here, on the server thread
         MySqlStore s = store;
         if (s == null) {
             then.accept(null);
@@ -811,7 +827,7 @@ public final class NetworkStorage {
         worker().execute(() -> {
             Integer adjust = null;
             try {
-                adjust = s.scoreAdjust(player, points, add, by);
+                adjust = s.scoreAdjust(player, points, add, by, maxAge);
             } catch (SQLException | RuntimeException e) {
                 BSPCore.LOGGER.error("BSP-Core storage: could not change a score: {}", e.toString());
             }
@@ -1135,6 +1151,7 @@ public final class NetworkStorage {
 
     /** The admin panel's view of the network; null when the database could not be read. */
     public static void adminNetwork(Consumer<com.mrgregles.bsp_core.admin.AdminService.Network> then) {
+        long maxAge = com.mrgregles.bsp_core.score.ScoreService.serverTimeoutSeconds(); // read here, on the server thread
         MySqlStore s = store;
         if (s == null) {
             then.accept(null);
@@ -1143,7 +1160,7 @@ public final class NetworkStorage {
         worker().execute(() -> {
             com.mrgregles.bsp_core.admin.AdminService.Network n = null;
             try {
-                n = s.adminNetwork();
+                n = s.adminNetwork(maxAge);
             } catch (SQLException | RuntimeException e) {
                 BSPCore.LOGGER.error("BSP-Core storage: could not read the network for the admin panel: {}", e.toString());
             }
