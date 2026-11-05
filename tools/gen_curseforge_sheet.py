@@ -223,16 +223,16 @@ def totem_plates():
             + path("Carried: travel", [("extra_homes", "More homes in BSP-Teleport"), ("swift_travel", "Shorter teleport cooldown")]) + '</div>'
             + path("Carried: feet, eyes", [("mining_speed", "Faster mining"), ("swiftness", "Faster running"), ("featherfall", "Less fall damage"), ("night_sight", "Night vision while held"),
                                            ("xray", "Blocks turn to glass, ores shine through"), ("bouncy", "Off Featherfall: bounce back up")])
-            + path("Base: walls", [("fortify", "Blocks survive blasts; intruders mine slower"), ("alarm", "Intruders outlined, you are warned"), ("ward", "Intruders get Weakness"),
-                                   ("deadlock", "Stealing takes longer"), ("cloaking", "Outsiders see empty land"), ("sentinel", "Off Alarm: who is inside, from anywhere"),
-                                   ("herald", "Off Alarm: a Discord message when it is stolen")])
+            + path("Base: walls", [("fortify", "Blast-proof, slower digging"), ("alarm", "Intruders glow, you are told"), ("ward", "Intruders get Weakness"),
+                                   ("deadlock", "Stealing takes longer"), ("cloaking", "Outsiders see empty land"), ("sentinel", "Off Alarm: who is inside"),
+                                   ("herald", "Off Alarm: Discord alerts"), ("tripwire", "Off Alarm: redstone signal")])
             + path("Base: aura, plasma", [("healing", "Heals you near the totem"), ("sanctuary", "No hostile mobs spawn"), ("overclock", "Its injectors speed machines up more"),
                                           ("recall", "Teleport home during a steal"), ("output", "Wave Plasma, to 6,000 mB/t"), ("anchor", "Keeps chunks loaded"), ("survey", "Pick which chunks"),
                                           ("harvest", "Mined BSP ores grow back")])
             + path("Raid", [("lockpick", "Shorter steals"), ("shroud", "The owner is warned late"), ("recall_block", "Delays the owner's Recall"), ("thief_step", "Silent; low Alarms miss you"),
                             ("siege", "Press V: mine at full speed in Fortify")])
             + '</div>')
-    plate("totem_powers", "31 powers on five tiers",
+    plate("totem_powers", "32 powers on five tiers",
           body, "Each power opens the next on its path at level 2. Raising the totem's tier costs 4 coins of the tier you are leaving; Mining Speed to Night Sight cost half the usual XP.")
 
 

@@ -12,9 +12,9 @@
 
 The moment you join you get a Shatter Totem, the guide book and 500 Shatter Pieces in the bank. Apart from the Totem Forge at the very end of the road, that is the only way to get a totem. Place it and it projects your base powers in a cube around it. Carry it and it powers you. Keep it somewhere clever, because anyone who finds it can stand beside it for five minutes and walk off with it, powers and all. You get a warning the second they start. There is no power, block or trick that makes a totem safe, and we are never adding one. You cannot hide it in a storage system either: it comes straight back out. If you crash with it in your hands it is placed where you stood, and it is back in your hands when you return, as long as nobody took it in between.
 
-![31 powers on five tiers](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/02_totem_powers.jpg)
+![32 powers on five tiers](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/02_totem_powers.jpg)
 
-Thirty-one powers on six paths, bought with Shatter Coins and XP. Carried powers work while the totem is on you, Base powers come from a placed totem, and Raid powers help you take someone else's. Up to eight friends on the ACCESS tab can pass your Alarm and Ward and use your machines, and your whole team can do all of that and upgrade your totem too.
+Thirty-two powers on six paths, bought with Shatter Coins and XP. Carried powers work while the totem is on you, Base powers come from a placed totem, and Raid powers help you take someone else's. Up to eight friends on the ACCESS tab can pass your Alarm and Ward and use your machines, and your whole team can do all of that and upgrade your totem too.
 
 ## The road ahead
 
@@ -167,6 +167,20 @@ Not in the game when someone starts on your totem? Give it Herald, the Base powe
 
 Linking takes ten seconds: `/bsp discord link`, or LINK on Herald's card, gives you a six-letter code, and you type `/link` and the code in the BSP Discord. You never type a Discord name or password into the game, and the game never sees your Discord details. If your DMs are closed, nothing is posted anywhere; the game tells you at your next login.
 
+## Tripwire: your totem runs your redstone
+
+![tripwire tree](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_tripwire_tree.jpg)
+
+Doors that slam on strangers and never on your friends! Tripwire, the Base power after Alarm, turns your placed totem into a redstone source. While anyone who isn't you, your team, your allies or a friend on its access list is in range, it gives a full signal out of all six sides, so dust, lamps, doors and pistons wired straight to it fire. The range grows with your totem: 16 blocks at Tier II, 32 at III, 64 at IV and 128 at V, each a little dearer. The signal holds for three seconds after the last one leaves, so nothing flickers.
+
+![tripwire card](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_tripwire_card.jpg)
+
+NEXT on Tripwire's card picks a shorter range or switches it off, so a 128-block totem can still guard just the front door. Only you, your team and friends with the Upgrades switch can see or change it, and a thief's Thief's Step only slips past a Tripwire set at or below its own level.
+
+![tripwire studs](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_tripwire_studs.jpg)
+
+Every totem and every Decoy has eight lamp studs round its base. They glow red while the signal is on, so nobody can tell from outside which totems are wired. A totem only watches while its chunk is loaded, so anchor it if you want the long ranges to catch someone out at the edge.
+
 ## Teams
 
 ![teams screen](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_teams_screen.jpg)
@@ -243,4 +257,4 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 
 ## Status
 
-1.10.0 is the current release: alliances between teams, with their own chat, each other's whereabouts, the perks each team chooses to give and a price for betrayal, on top of buy orders on the Trade Post and the Wanted Board on the Score Screens, scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
+1.11.0 is the current release: Tripwire, which turns your totem into a redstone sensor for outsiders, on top of alliances between teams, with their own chat, each other's whereabouts, the perks each team chooses to give and a price for betrayal, on top of buy orders on the Trade Post and the Wanted Board on the Score Screens, scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
