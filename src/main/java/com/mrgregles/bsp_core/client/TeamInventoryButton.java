@@ -57,13 +57,21 @@ public final class TeamInventoryButton {
         }
     }
 
-    /** Where this screen's buttons stand now, as {x, y, width, height}: for JEI and EMI, which keep their overlays out of them. */
+    /** Region Guard's BANNED button, which stands in the same corner row right of KITS (found by name: Region Guard is optional). */
+    static final String REGION_GUARD_CORNER = "com.mrgregles.bsp_region_guard.client.BannedInventoryButton$Corner";
+
+    /**
+     * Where this screen's corner buttons stand now, as {x, y, width, height}: for JEI and EMI, which keep their overlays out of them.
+     * BSP-Core's own TEAM and KITS, and Region Guard's BANNED beside them (request RG-C13; Region Guard has no JEI or EMI plugin).
+     */
     public static List<int[]> areas(Screen screen) {
         List<int[]> out = new ArrayList<>();
         if (screen != null) {
             for (var child : screen.children()) {
                 if (child instanceof Corner c && c.visible) {
                     out.add(new int[]{c.getX(), c.getY(), W, H});
+                } else if (child instanceof AbstractWidget w && w.visible && REGION_GUARD_CORNER.equals(w.getClass().getName())) {
+                    out.add(new int[]{w.getX(), w.getY(), w.getWidth(), w.getHeight()});
                 }
             }
         }

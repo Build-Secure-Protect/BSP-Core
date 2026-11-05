@@ -104,7 +104,7 @@ public class BspJeiPlugin implements IModPlugin {
     /** Clicking the progress dial on a machine screen shows that machine's jobs. */
     @Override
     public void registerGuiHandlers(mezz.jei.api.registration.IGuiHandlerRegistration reg) {
-        // the TEAM and KITS buttons in the inventory's top left corner: JEI's bookmarks and lists leave them free
+        // the TEAM and KITS buttons (and Region Guard's BANNED) in the inventory's top left corner: JEI's bookmarks and lists leave them free
         reg.addGlobalGuiHandler(new mezz.jei.api.gui.handlers.IGlobalGuiHandler() {
             @Override
             public java.util.Collection<net.minecraft.client.renderer.Rect2i> getGuiExtraAreas() {

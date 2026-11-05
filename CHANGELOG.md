@@ -4,6 +4,13 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+**Network protocol 8:** every player needs this version's client to join a server running it.
+
+### Added
+- **Each Land Office lists its own plots** (Region Guard requests RG-C15 and RG-C16; needs Region Guard API 8). A Land Office block lists the plots for sale and open areas Region Guard chooses for that office (every plot until an admin chooses), and refuses to quote or sell any other, whatever the client asks for ("This Land Office does not sell that plot."). The office the wand outline opens still lists every plot in the world, and so does every office with a Region Guard older than API 8. The player's own claims and other players' claims nearby are shown as before. BSP-Core admins and operators get an **ADMIN** key on an office block's screen, on its own between the map keys and the plot keys, which opens Region Guard's OFFICE PLOTS for that office; Esc comes back to the Land Office, which then shows the new list.
+- **Banned blocks on the Land Office** (Region Guard request RG-C12; needs Region Guard API 7). When Region Guard bans blocks or items on the chosen plot, its card shows a red "N BANNED" line under the price and a **BANNED** key under BUY opens Region Guard's BANNED HERE list for that plot; Esc comes back to the Land Office. The count is asked once per plot picked.
+- **JEI and EMI leave Region Guard's BANNED inventory button clear** (Region Guard request RG-C13), as they already did for TEAM and KITS.
+
 ## [1.12.0] - 2026-11-05
 
 **Network protocol 7:** every player needs this version's client to join a server running it.

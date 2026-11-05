@@ -2742,3 +2742,29 @@ Audit fixes (2026-11-05).
 - [ ] The NAUGHTY NAUGHTY tint covers the hotbar's items too; the villager sound is as loud as other game sounds.
 - [ ] A big kit (four rows of items, a rank, a price, a condition) turned over: "Own no Shatter Totem" is the first line under "To get it", and the list stops above the keys instead of running into them.
 - [ ] Network: stop a server that holds a player's only totem; after `scoring.serverTimeoutMinutes` the kit card turns ready as well as REDEEM working.
+
+## Land Office lists per office and banned blocks (2026-11-05, Region Guard requests RG-C12 to RG-C16)
+
+Needs Region Guard 0.6.0 or later (API 8) on the server and on every client, and BSP-Core with network protocol 8 on both.
+
+Lists per office (RG-C15):
+- [ ] A fresh Land Office block lists every plot for sale and open area in the world, as before.
+- [ ] As an admin, choose a few plots for it in OFFICE PLOTS (CHOSEN): after Esc the office lists only those, plus your own claims and other players' claims nearby.
+- [ ] A second office block nearby keeps its own list; a plot listed only at the first cannot be bought at the second.
+- [ ] Outline ground with the wand: the office that pops up lists every plot and open area in the world, whatever the blocks list.
+- [ ] Outline ground in an open area not listed at an office block, then open that block: the outline shows, but no quote is given for it.
+- [ ] Break an office block and place it again: it lists every plot again.
+
+ADMIN key (RG-C16):
+- [ ] An admin or operator sees ADMIN on an office block's screen, below CENTRE with a wider gap, clear of BUY even when BANNED shows.
+- [ ] A player who is neither never sees it; nor does anyone on the wand outline's office.
+- [ ] ADMIN opens OFFICE PLOTS for that office; Esc comes back to the Land Office with the map where it was.
+
+Banned blocks (RG-C12):
+- [ ] Pick a plot where Region Guard bans items: a red "N BANNED" line shows under the price, and a BANNED key appears under BUY.
+- [ ] BANNED opens BANNED HERE for that plot; Esc comes back to the Land Office with the plot still chosen.
+- [ ] A plot with nothing banned shows neither the line nor the key.
+- [ ] Clicking between plots does not lag, and picking the same plot again does not ask the server again (one count per plot while the screen is open).
+
+Recipe viewers (RG-C13):
+- [ ] With JEI, then with EMI: open the inventory where Region Guard's BANNED button shows; the bookmark and item list panels leave TEAM, KITS and BANNED clear.

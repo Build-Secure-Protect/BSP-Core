@@ -14,8 +14,9 @@ public final class BSPNetwork {
      * screen failing later. 2: the admin panel's network fields and the team screen's candidate servers. 3: the admin
      * panel's score split (totem points and the part set by hand). 4: buy orders (the Trade Post's orders view, the Trade Post
      * keys for orders, the Wanted board's summary). 7: kit conditions on the kit cards and the steal-back screen ({@link NaughtyPacket}).
+     * 8: the Land Office's block position and admin flag (Region Guard's plot lists per office).
      */
-    private static final String PROTOCOL = "7";
+    private static final String PROTOCOL = "8";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

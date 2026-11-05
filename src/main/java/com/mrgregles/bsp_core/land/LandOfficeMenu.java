@@ -39,6 +39,11 @@ public class LandOfficeMenu extends AbstractContainerMenu {
     public com.mrgregles.bsp_core.network.LandOfficeDataPacket.CoinTexts coins;
     public boolean messageOk = true;
     public int serial;
+    /** Client-side: the Land Office block this screen came from, or null for a wand outline's office (for the ADMIN key, request RG-C16). */
+    @Nullable
+    public net.minecraft.core.BlockPos officeAt;
+    /** Client-side: whether the player is a BSP-Core admin or an operator, who may choose the office's plots. */
+    public boolean admin;
 
     /** The Land Office block this was opened at, or null when opened for a wand outline. */
     @Nullable
@@ -51,6 +56,12 @@ public class LandOfficeMenu extends AbstractContainerMenu {
     public LandOfficeMenu(int id, Inventory inv, @Nullable net.minecraft.core.BlockPos at) {
         super(ModMenus.LAND_OFFICE.get(), id);
         this.at = at;
+    }
+
+    /** Server-side: the Land Office block this was opened at, or null when opened for a wand outline. */
+    @Nullable
+    public net.minecraft.core.BlockPos at() {
+        return at;
     }
 
     @Override
@@ -99,7 +110,7 @@ public class LandOfficeMenu extends AbstractContainerMenu {
         String msg = "";
         boolean ok = true;
         if (menu.selection != null) {
-            for (Plot p : RegionGuardClaims.listings(sp.serverLevel(), sp.getUUID(), sp.blockPosition())) {
+            for (Plot p : RegionGuardClaims.listings(sp.serverLevel(), sp.getUUID(), sp.blockPosition(), menu.at)) {
                 if (p.kind() == Plot.OPEN && p.contains(menu.selection)) {
                     var q = RegionGuardClaims.quoteOpen(sp, p.id(), menu.selection);
                     msg = q.message();
@@ -116,9 +127,32 @@ public class LandOfficeMenu extends AbstractContainerMenu {
         if (!(sp.containerMenu instanceof LandOfficeMenu menu)) {
             return;
         }
-        List<Plot> plots = RegionGuardClaims.listings(sp.serverLevel(), sp.getUUID(), sp.blockPosition());
+        List<Plot> plots = RegionGuardClaims.listings(sp.serverLevel(), sp.getUUID(), sp.blockPosition(), menu.at);
         BSPNetwork.sendTo(sp, new LandOfficeDataPacket(plots, Bank.pieces(sp.server, sp.getUUID()), RegionGuardClaims.present(),
-                RegionGuardClaims.claimsAllowed(sp.serverLevel()), menu.selection, message, ok, coinTexts(sp, plots, menu.selection)));
+                RegionGuardClaims.claimsAllowed(sp.serverLevel()), menu.selection, message, ok, coinTexts(sp, plots, menu.selection),
+                menu.at, mayChoosePlots(sp)));
+    }
+
+    /** BSP-Core admins and operators (permission level 2) see the ADMIN key; Region Guard checks again before it opens OFFICE PLOTS. */
+    public static boolean mayChoosePlots(ServerPlayer sp) {
+        return com.mrgregles.bsp_core.admin.Admins.isAdmin(sp) || sp.hasPermissions(2);
+    }
+
+    /**
+     * Why a Land Office block refuses to quote or sell a plot or open area, or null to go ahead: a modified client could ask for any id,
+     * so the office sells only what Region Guard lists for it (request RG-C15). A wand outline's office, enlarging and giving up are
+     * never refused here.
+     */
+    @Nullable
+    public static String refusal(net.minecraft.server.level.ServerLevel level, LandOfficeMenu menu, com.mrgregles.bsp_core.network.LandOfficeActionPacket.Action action, String id) {
+        boolean sells = switch (action) {
+            case QUOTE_PLOT, BUY_PLOT, QUOTE_OPEN, BUY_OPEN -> true;
+            default -> false;
+        };
+        if (!sells || RegionGuardClaims.listedAt(level, menu.at, id)) {
+            return null;
+        }
+        return Component.translatable("message.bsp_core.land.not_listed").getString();
     }
 
     /**

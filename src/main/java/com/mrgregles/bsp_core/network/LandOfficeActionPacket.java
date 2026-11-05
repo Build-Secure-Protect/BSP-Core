@@ -30,6 +30,11 @@ public record LandOfficeActionPacket(Action action, String id) {
         if (player != null && player.containerMenu instanceof LandOfficeMenu menu) {
             ctx.get().enqueueWork(() -> {
                 int[] ground = menu.selection;
+                String refused = LandOfficeMenu.refusal(player.serverLevel(), menu, msg.action, msg.id);
+                if (refused != null) {
+                    LandOfficeMenu.sync(player, refused, false);
+                    return;
+                }
                 switch (msg.action) {
                     case REFRESH -> LandOfficeMenu.sync(player, "", true);
                     case QUOTE_PLOT -> {

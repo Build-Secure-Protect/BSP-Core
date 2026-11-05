@@ -49,7 +49,11 @@ KEYS = {
     "gui.bsp_core.land.enlarge_ok": "Your outline covers it: ENLARGE grows it to the outline.",
     "gui.bsp_core.land.enlarge_no": "To enlarge, outline ground that covers the whole claim.",
     "gui.bsp_core.land.distance": "%s blocks away",
+    "gui.bsp_core.land.banned": "Banned",
+    "gui.bsp_core.land.banned_count": "%s BANNED",
+    "gui.bsp_core.land.admin": "Admin",
     "message.bsp_core.land.no_selection": "Outline the ground with Region Guard's wand first.",
+    "message.bsp_core.land.not_listed": "This Land Office does not sell that plot.",
 }
 lang = json.loads(LANG.read_text())
 lang.update(KEYS)

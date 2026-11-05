@@ -93,16 +93,89 @@ public final class RegionGuardClaims {
         }
     }
 
-    /** Plots for sale, open areas, the player's own claims, and other players' claims within {@link Plot#LOOK} blocks of {@code around}. */
+    /** Plots for sale, open areas, the player's own claims, and other players' claims within {@link Plot#LOOK} blocks of {@code around}: every plot in the world. */
     public static List<Plot> listings(ServerLevel level, UUID player, net.minecraft.core.BlockPos around) {
+        return listings(level, player, around, null);
+    }
+
+    /**
+     * As {@link #listings(ServerLevel, UUID, net.minecraft.core.BlockPos)}, but at a Land Office block ({@code office} not null) the plots for
+     * sale and open areas are the ones Region Guard lists for that office (API 8, request RG-C15). Without an office (a Land Office opened by
+     * the wand outline), or with a Region Guard older than API 8, every plot in the world.
+     */
+    public static List<Plot> listings(ServerLevel level, UUID player, net.minecraft.core.BlockPos around, @Nullable net.minecraft.core.BlockPos office) {
         if (!present()) {
             return List.of();
         }
         try {
-            return Api.listings(level, player, around);
+            return Api.listings(level, player, around, office);
         } catch (LinkageError | RuntimeException e) {
             warn(e);
             return List.of();
+        }
+    }
+
+    private static boolean warnedOld;
+
+    /**
+     * The office's own answer when there is an office and Region Guard can give one; the world-wide answer without an office, or when
+     * Region Guard is older than API 8 (the office call is missing: a {@link LinkageError}). Public for the tests.
+     */
+    public static <T> T byOffice(@Nullable net.minecraft.core.BlockPos office, java.util.function.Supplier<T> atOffice, java.util.function.Supplier<T> worldWide) {
+        if (office == null) {
+            return worldWide.get();
+        }
+        try {
+            return atOffice.get();
+        } catch (LinkageError e) {
+            warnOld(e);
+            return worldWide.get();
+        }
+    }
+
+    private static void warnOld(Throwable e) {
+        if (!warnedOld) {
+            warnedOld = true;
+            BSPCore.LOGGER.warn("Region Guard is older than API 8 ({}): every Land Office lists every plot in the world.", e.toString());
+        }
+    }
+
+    /** GameTests only: answers {@link #listedAt} in place of Region Guard (office, region id → listed there); null for Region Guard's own answer. */
+    @Nullable
+    private static java.util.function.BiPredicate<net.minecraft.core.BlockPos, String> listedHook;
+
+    public static void useListed(@Nullable java.util.function.BiPredicate<net.minecraft.core.BlockPos, String> hook) {
+        listedHook = hook;
+    }
+
+    /**
+     * Whether the Land Office at {@code office} lists a plot or open area, so it may be quoted and sold there (API 8). True without an
+     * office (the wand outline's office sells anywhere), without Region Guard (it sells nothing anyway) and with a Region Guard older than
+     * API 8 (its offices list every plot).
+     */
+    public static boolean listedAt(ServerLevel level, @Nullable net.minecraft.core.BlockPos office, String regionId) {
+        if (office == null) {
+            return true;
+        }
+        if (listedHook != null) {
+            return listedHook.test(office, regionId);
+        }
+        if (!present()) {
+            return true;
+        }
+        return checkListed(() -> Api.listedAt(level, office, regionId));
+    }
+
+    /** Region Guard's answer to "listed here?": yes when it is too old to say (API before 8), no when the call fails. Public for the tests. */
+    public static boolean checkListed(java.util.function.BooleanSupplier ask) {
+        try {
+            return ask.getAsBoolean();
+        } catch (LinkageError e) {
+            warnOld(e);
+            return true;
+        } catch (RuntimeException e) {
+            warn(e);
+            return false;
         }
     }
 
@@ -236,14 +309,16 @@ public final class RegionGuardClaims {
             return new Result(r.ok(), r.message(), r.claimId(), r.price());
         }
 
-        static List<Plot> listings(ServerLevel level, UUID player, net.minecraft.core.BlockPos around) {
+        static List<Plot> listings(ServerLevel level, UUID player, net.minecraft.core.BlockPos around, @Nullable net.minecraft.core.BlockPos office) {
             List<Plot> out = new ArrayList<>();
             java.util.Set<String> seen = new java.util.HashSet<>();
-            for (var l : claims().plotsForSale(level)) {
+            var forSale = byOffice(office, () -> claims().plotsForSale(level, office), () -> claims().plotsForSale(level));
+            var open = byOffice(office, () -> claims().openAreas(level, office), () -> claims().openAreas(level));
+            for (var l : forSale) {
                 out.add(new Plot(l.id(), l.name(), l.bounds().minX(), l.bounds().minZ(), l.bounds().maxX(), l.bounds().maxZ(), l.price(), l.costPerBlock(), l.minSize(), l.maxSize(), Plot.FOR_SALE, ""));
                 seen.add(l.id());
             }
-            for (var l : claims().openAreas(level)) {
+            for (var l : open) {
                 out.add(new Plot(l.id(), l.name(), l.bounds().minX(), l.bounds().minZ(), l.bounds().maxX(), l.bounds().maxZ(), l.price(), l.costPerBlock(), l.minSize(), l.maxSize(), Plot.OPEN, ""));
                 seen.add(l.id());
             }
@@ -287,6 +362,10 @@ public final class RegionGuardClaims {
                     com.mrgregles.bsp_core.land.LandOfficeMenu.sync(sp, "", true);
                 }
             }
+        }
+
+        static boolean listedAt(ServerLevel level, net.minecraft.core.BlockPos office, String regionId) {
+            return claims().listedAt(level, office, regionId);
         }
 
         static boolean claimsAllowed(ServerLevel level) {

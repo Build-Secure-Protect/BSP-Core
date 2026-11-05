@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.network;
 
 import com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.Plot;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -13,10 +14,11 @@ import java.util.function.Supplier;
 
 /**
  * Server → client: the Land Office as it stands: listings, the player's balance, whether Region Guard is there and claims are
- * allowed here, the outlined ground, a message, and, when Region Guard prices claims in Shatter Coins, the coin wording.
+ * allowed here, the outlined ground, a message, when Region Guard prices claims in Shatter Coins the coin wording, and the office block
+ * (null for a wand outline's office) with whether the player may choose its plots (the ADMIN key, request RG-C16).
  */
 public record LandOfficeDataPacket(List<Plot> plots, long balance, boolean present, boolean allowed, @Nullable int[] selection, String message, boolean ok,
-                                   @Nullable CoinTexts coins) {
+                                   @Nullable CoinTexts coins, @Nullable BlockPos office, boolean admin) {
     /**
      * Region Guard prices in Shatter Coins (BSP Region Guard request RG-C9): the coins the player carries, and per plot (same order
      * as {@code plots}) its price, its cost per block and the quote for the outlined ground, as Region Guard words them ("" where none).
@@ -25,6 +27,11 @@ public record LandOfficeDataPacket(List<Plot> plots, long balance, boolean prese
 
     public LandOfficeDataPacket(List<Plot> plots, long balance, boolean present, boolean allowed, @Nullable int[] selection, String message, boolean ok) {
         this(plots, balance, present, allowed, selection, message, ok, null);
+    }
+
+    public LandOfficeDataPacket(List<Plot> plots, long balance, boolean present, boolean allowed, @Nullable int[] selection, String message, boolean ok,
+                                @Nullable CoinTexts coins) {
+        this(plots, balance, present, allowed, selection, message, ok, coins, null, false);
     }
 
     public static void encode(LandOfficeDataPacket m, FriendlyByteBuf buf) {
@@ -63,6 +70,11 @@ public record LandOfficeDataPacket(List<Plot> plots, long balance, boolean prese
                 buf.writeUtf(i < m.coins.outline().size() ? m.coins.outline().get(i) : "", 64);
             }
         }
+        buf.writeBoolean(m.office != null);
+        if (m.office != null) {
+            buf.writeBlockPos(m.office);
+        }
+        buf.writeBoolean(m.admin);
     }
 
     public static LandOfficeDataPacket decode(FriendlyByteBuf buf) {
@@ -90,7 +102,9 @@ public record LandOfficeDataPacket(List<Plot> plots, long balance, boolean prese
             }
             coins = new CoinTexts(carried, price, perBlock, outline);
         }
-        return new LandOfficeDataPacket(plots, balance, present, allowed, selection, message, ok, coins);
+        BlockPos office = buf.readBoolean() ? buf.readBlockPos() : null;
+        boolean admin = buf.readBoolean();
+        return new LandOfficeDataPacket(plots, balance, present, allowed, selection, message, ok, coins, office, admin);
     }
 
     public static void handle(LandOfficeDataPacket msg, Supplier<NetworkEvent.Context> ctx) {

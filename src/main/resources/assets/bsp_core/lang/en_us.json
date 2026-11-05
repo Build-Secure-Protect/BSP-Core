@@ -2602,5 +2602,9 @@
   "gui.bsp_core.kits.f.cond.unknown": "Something this server does not know",
   "gui.bsp_core.kits.f.cond_have.no_totem": "· you own %s",
   "message.bsp_core.kit.pending": "%s is already on its way",
-  "message.bsp_core.kit.nested_totem": "A kit cannot hold a Shatter Totem inside another item: put it in a slot of its own"
+  "message.bsp_core.kit.nested_totem": "A kit cannot hold a Shatter Totem inside another item: put it in a slot of its own",
+  "gui.bsp_core.land.banned": "Banned",
+  "gui.bsp_core.land.banned_count": "%s BANNED",
+  "gui.bsp_core.land.admin": "Admin",
+  "message.bsp_core.land.not_listed": "This Land Office does not sell that plot."
 }

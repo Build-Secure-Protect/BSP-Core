@@ -24,7 +24,9 @@ import java.util.Locale;
  * with plots for sale in amber, the player's own claims in green, open areas dashed and the ground
  * they outlined with the wand in white. Click a plot to choose it; the side panel shows what it is
  * and what it costs; BUY, ENLARGE and GIVE UP ask once more before they act. Region Guard keeps the
- * plots and the money moves through it.
+ * plots and the money moves through it. When Region Guard bans blocks or items on the chosen plot, a red
+ * "N BANNED" line and a BANNED key open its BANNED HERE list (request RG-C12); at an office block, admins
+ * get an ADMIN key for Region Guard's OFFICE PLOTS, which chooses what this office lists (RG-C16).
  */
 public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> implements ScreenFit.Fitted {
     private static final int W = 360, H = 232;
@@ -33,10 +35,17 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
     private static final int SX = 10, SY = 10, SW = 206, SH = 176, PX = 222, PW = 66, KX = 292, KW = 58, KH = 18, KGAP = 3;
     private static final int MAP_X = SX + 3, MAP_Y = SY + 19, MAP = 154;
     private static final int[] ZOOMS = {48, 96, 160};
+    /** The ADMIN key stands on its own between the map keys and the plot keys, a wider gap above and below. */
+    private static final int ADMIN_Y = SY + 3 * (KH + KGAP) + 5;
 
     private record Key(String label, boolean enabled, Runnable action) {}
 
     private final List<Key> top = new ArrayList<>(), bottom = new ArrayList<>();
+    @Nullable
+    private Key admin;
+    /** Region Guard's count of banned items per region id, asked once per plot picked while the screen is open; -1 while waiting. */
+    private final java.util.Map<String, Integer> banned = new java.util.HashMap<>();
+    private boolean initialised;
     private int zoom = 1, lastSerial = -1;
     private int centreX, centreZ;
     @Nullable
@@ -65,12 +74,40 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
             menu.message = m.message();
             menu.messageOk = m.ok();
             menu.coins = m.coins();
+            menu.officeAt = m.office();
+            menu.admin = m.admin();
             menu.serial++;
         }
     }
 
     private static MutableComponent tr(String key, Object... args) {
         return Component.translatable("gui.bsp_core.land." + key, args);
+    }
+
+    /** Coming back from Region Guard's BANNED HERE or OFFICE PLOTS: ask afresh, since an admin may have changed what this office lists. */
+    @Override
+    protected void init() {
+        super.init();
+        if (initialised) {
+            send(Action.REFRESH, "");
+        }
+        initialised = true;
+    }
+
+    /** Asks Region Guard once how many items are banned on the chosen plot (the answer fills {@link #banned}). */
+    private void askBanned(@Nullable Plot sel) {
+        if (sel == null || !menu.present || banned.containsKey(sel.id()) || !RegionGuardViews.bannedAvailable()) {
+            return;
+        }
+        String id = sel.id();
+        banned.put(id, -1);
+        RegionGuardViews.bannedCount(id, n -> banned.put(id, n));
+    }
+
+    /** How many items Region Guard bans on the plot, 0 while unknown. */
+    private int bannedOn(@Nullable Plot sel) {
+        Integer n = sel == null ? null : banned.get(sel.id());
+        return n == null ? 0 : Math.max(0, n);
     }
 
     private void send(Action a, String id) {
@@ -123,8 +160,14 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
             bottom.add(new Key(confirming == Action.BUY_PLOT || confirming == Action.BUY_OPEN ? "confirm" : "buy", menu.present && menu.allowed && (canBuyPlot || canBuyOpen),
                     () -> confirmThen(canBuyPlot ? Action.BUY_PLOT : Action.BUY_OPEN, sel == null ? "" : sel.id())));
         }
+        if (bannedOn(sel) > 0) { // under BUY (or ENLARGE): what may not be placed or used there
+            bottom.add(new Key("banned", true, () -> RegionGuardViews.openBanned(sel.id())));
+        }
         bottom.add(new Key(confirming == Action.ABANDON ? "confirm" : "give_up", sel != null && sel.kind() == Plot.MINE, () -> confirmThen(Action.ABANDON, sel == null ? "" : sel.id())));
         bottom.add(new Key("done", true, this::onClose));
+        var office = menu.officeAt; // null for a wand outline's office: no ADMIN key there
+        admin = menu.admin && office != null && menu.present && RegionGuardViews.officePlotsAvailable()
+                ? new Key("admin", true, () -> RegionGuardViews.openOfficePlots(office)) : null;
     }
 
     /** True when the outlined ground contains the whole plot (for enlarging it). */
@@ -174,6 +217,11 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
                 return true;
             }
             ky += KH + KGAP;
+        }
+        if (admin != null && over(mx, my, x + KX, y + ADMIN_Y, KW, KH)) {
+            confirming = null;
+            admin.action.run();
+            return true;
         }
         ky = y + SY + SH - KH;
         for (int i = bottom.size() - 1; i >= 0; i--) {
@@ -249,6 +297,7 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
                 centreZ = (menu.selection[1] + menu.selection[3]) / 2;
             }
         }
+        askBanned(selected());
         keys();
         renderBackground(g);
         super.render(g, mx, my, partial);
@@ -322,6 +371,9 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
             key(g, x + KX, ky, k, mx, my);
             ky += KH + KGAP;
         }
+        if (admin != null) {
+            key(g, x + KX, y + ADMIN_Y, admin, mx, my);
+        }
         ky = y + SY + SH - KH;
         for (int i = bottom.size() - 1; i >= 0; i--) {
             key(g, x + KX, ky, bottom.get(i), mx, my);
@@ -386,8 +438,10 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
                 ty += CashMachine.wrap(g, font, tr("price", Bank.format(sel.price())), PX + 3, ty, PW - 6, AMBER) + 3;
                 ty += CashMachine.wrap(g, font, tr("after", Bank.format(Math.max(0, menu.balance - sel.price()))), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
             }
+            ty = bannedLine(g, sel, ty);
         } else if (sel.kind() == Plot.OPEN) {
             ty += CashMachine.wrap(g, font, tr("per_block", coins != null ? coins.perBlock().get(at) : Bank.format(sel.costPerBlock()), sel.minSize(), sel.maxSize()), PX + 3, ty, PW - 6, AMBER) + 3;
+            ty = bannedLine(g, sel, ty);
             if (menu.selection != null && sel.contains(menu.selection)) {
                 int w = menu.selection[2] - menu.selection[0] + 1, d = menu.selection[3] - menu.selection[1] + 1;
                 ty += CashMachine.wrap(g, font, coins != null ? tr("outline_coins", w, d, coins.outline().get(at))
@@ -413,8 +467,11 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
             } else {
                 ty += CashMachine.wrap(g, font, tr("outline_none"), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
             }
-        } else if (menu.selection != null) {
-            ty += CashMachine.wrap(g, font, tr(contains(menu.selection, sel) ? "enlarge_ok" : "enlarge_no"), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+        } else {
+            ty = bannedLine(g, sel, ty);
+            if (menu.selection != null) {
+                ty += CashMachine.wrap(g, font, tr(contains(menu.selection, sel) ? "enlarge_ok" : "enlarge_no"), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+            }
         }
         var player = Minecraft.getInstance().player;
         if (player != null) {
@@ -423,6 +480,15 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
             ty += CashMachine.wrap(g, font, tr("distance", Math.round(Math.sqrt((double) dx * dx + dz * dz))), PX + 3, ty, PW - 6, PHOS_DIM);
         }
         endSide(g, ty);
+    }
+
+    /** The red "N BANNED" line under the price when Region Guard bans anything on the plot; returns the next line's y. */
+    private int bannedLine(GuiGraphics g, Plot sel, int ty) {
+        int n = bannedOn(sel);
+        if (n <= 0) {
+            return ty;
+        }
+        return ty + CashMachine.wrap(g, font, tr("banned_count", String.format(Locale.ROOT, "%,d", n)), PX + 3, ty, PW - 6, RED) + 3;
     }
 
     /** Ends the side panel's clip and remembers how tall its text ran, for the wheel. */
