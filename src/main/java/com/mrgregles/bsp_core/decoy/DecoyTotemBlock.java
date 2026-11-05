@@ -64,6 +64,15 @@ public class DecoyTotemBlock extends BaseEntityBlock {
     }
 
     /** The same outline and collision as a real totem. */
+    /**
+     * A real Shatter Totem is a redstone source (Tripwire), so dust beside it bends towards it. The decoy says the same and gives
+     * nothing, or the dust would tell the two apart.
+     */
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
         return ModBlocks.SHATTER_TOTEM.get().defaultBlockState().getShape(level, pos, ctx);

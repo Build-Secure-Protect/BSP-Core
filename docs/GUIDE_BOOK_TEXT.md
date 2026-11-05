@@ -84,6 +84,7 @@ Work only while the totem is **placed**. Paid in Shatter Coins.
 - Alarm: outlines intruders and warns you
 - Sentinel: tells you who is inside, from anywhere
 - Herald: calls you on Discord
+- Tripwire: redstone when outsiders near
 - Ward: weakens intruders
 - Deadlock: your totem takes longer to steal
 - Cloaking: outsiders see untouched land
@@ -508,7 +509,7 @@ Friends who build together can form a **team**. Every member counts as a friend 
 
 **Page 2: Making one**
 
-Open the Team screen from the **TEAM** button above your inventory, the TEAM tab on your placed totem, the TEAM tab on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players who are online from the INVITE view; a seat is held for a minute while they decide.
+Open the Team screen from the **TEAM** button above your inventory, the TEAM tab on your placed totem, the TEAM tab on your carried totem's screen, or a key of your choice in Controls. Name the team, pick its colour and press CREATE. Invite players online on any server from the INVITE view; a seat is held for a minute while they decide.
 
 **Page 3: The invite**
 
@@ -525,6 +526,40 @@ Press **TEAM CHAT** on the Team screen and what you type goes to the team until 
 **Page 6: Upgrading together**
 
 Any member may buy upgrades on a teammate's placed totem and raise its tier; the one buying pays, with coins and experience as for their own. The upgrade belongs to the totem and stays with it whoever leaves the team.
+
+**Page 7: Allies**
+
+A team's leader can also ally the team with up to two other teams: a shared chat, each other's whereabouts and the perks each team chooses to give. See Alliances. An alliance, unlike a team, breaks when an ally starts a steal on an ally's totem.
+
+## Alliances
+
+**Page 1**
+
+Teams can form an **alliance**. Allies talk on their own chat, see where each other's players are, and each team chooses which of its totem perks its allies get. Unlike a team, an alliance can break: an ally who starts a steal on an ally's totem breaks it for their own team.
+
+**Page 2: Making one**
+
+Your team's leader opens the Team screen, picks the **ALLIANCE** tab at the top, names the alliance and presses CREATE. From INVITE TEAM they invite teams in no alliance; the invite goes to the other team's leader, who answers with the same card and keys as a team invite. An alliance holds up to three teams, and a team is in one alliance at a time.
+
+**Page 3: Where allies are**
+
+**ALLIES** lists every player of the other teams: online here or on which server, and in which dimension. A team that switches on Share our coordinates also shows each of its players' blocks. Offline allies show when they were last seen.
+
+**Page 4: Perks**
+
+**PERKS** holds four switches, all off to start: allies see through our cloaks, our Ward leaves them alone, our Alarm stays quiet for them, and they may use our machines and plasma. Only the leader sets them; every member sees what the team gives and gets. Allies never upgrade, pick up or recall another team's totems.
+
+**Page 5: Talking**
+
+**ALLY BOARD** keeps the alliance's lines, each tagged with the speaker's team. **ALLY CHAT** sends what you type to the alliance until you press it again, and **/a message** sends one line. Team chat and ally chat are never on together.
+
+**Page 6: Breaking it**
+
+An ally who starts a steal on an ally's totem throws their own team out of the alliance at once, and its perks stop. The steal goes ahead but takes half as long again, and everyone in the alliance sees a red card. The thief's team waits a day before allying with any of those teams again. An alliance left with one team ends.
+
+**Page 7: Leaving first**
+
+Leaving does not dodge the rule. For a day after a team leaves, a steal between it and the teams it left counts as breaking the alliance all the same: the longer steal, the red card and the wait. An admin ending an alliance frees everyone at once.
 
 ## Plasma Across Worlds
 
@@ -613,6 +648,18 @@ The higher-tier powers, one by one. Auras are cubes: a radius of 5 covers 11 by 
 Type **/bsp discord link**, or press LINK on Herald's card, for a six-letter code that lasts ten minutes. In the BSP Discord, type **/link** and the code. Only you see the bot's answer.
 
 You never type a Discord name or password in the game. **/bsp discord status** shows the link; **/bsp discord unlink** ends it.
+
+**Page 8: Tripwire**
+
+**Tripwire** (Base, after Alarm, Tier II): your placed totem gives a full redstone signal from every side while an outsider is near: anyone but you, your team, your allies and the friends on its access list.
+
+One range opens with each tier: 16 blocks at II, 32 at III, 64 at IV, 128 at V.
+
+**Page 9: Wiring a Tripwire**
+
+Dust, lamps, doors and pistons touching the totem take the signal, held three seconds after the last outsider goes, and the studs round its base glow red. It watches only while its chunk is loaded.
+
+NEXT on its card picks a shorter range, or off. Thief's Step hides from a Tripwire set to its level or lower.
 
 ---
 
@@ -1101,6 +1148,34 @@ A lot you cancel, and one whose 7 days run out, waits in your **Collect** box. *
 Shatter Totems and Totem Cores cannot be sold, not even inside a shulker box.
 
 Score Screens can show the market as the **Market Board**: the newest lots with their prices and how long ago each was listed.
+
+Looking for something nobody sells? Place a buy order.
+
+## Buy Orders
+
+**Page 1**
+
+Want something nobody sells? On **MARKET**, press **WANTED**, then the **+ NEW ORDER** card. Find the item by name, set how many and the price each, and press **PLACE ORDER**.
+
+The whole price leaves your bank at once and is held for the order. You can have 10 open, each for up to 9 stacks of one item.
+
+**Page 2: Filling an order**
+
+On **WANTED** each order is a card: the item, the price each and how many are still wanted. Orders you can fill from your inventory are lit.
+
+Open a card, choose how many to **SEND** and press **FILL**. The items leave your inventory and you are paid at once, less the 5% market tax, which goes to the lottery pot.
+
+**Page 3: Plain items only**
+
+An order takes only the plain item: no enchantments, no damage, no custom name. Shatter Totems and Totem Cores cannot be ordered.
+
+Orders fill a little at a time from anyone on the network. What is sent waits in the buyer's **Collect** box at any Trade Post, and the buyer hears each time.
+
+**Page 4: Closing an order**
+
+An order lasts 7 days. Open your own order to **CANCEL ORDER**. When it is cancelled or runs out, the pieces held for what was not sent go back to your bank.
+
+Score Screens can show the **Wanted Board**: the open orders, best pay first. A second screen on the **Market Board** shows what is for sale.
 
 ## Market on the Go
 

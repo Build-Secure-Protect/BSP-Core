@@ -22,8 +22,8 @@ import org.joml.Matrix4f;
 
 /**
  * Draws what the static block model cannot: the small upgrade orbs hovering around the plinth
- * (one per bought upgrade, tinted by level) and translucent spheres showing the radius of the
- * placed-only auras (Fortify, Healing).
+ * (one per bought upgrade, tinted by level), Tripwire's lit lamp studs while its signal is on, and
+ * translucent spheres showing the radius of the placed-only auras (Fortify, Healing).
  */
 public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlockEntity> {
     private static final ResourceLocation ATLAS_TEX = new ResourceLocation(BSPCore.MODID, "block/shatter_totem_owned");
@@ -33,6 +33,28 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
     private static final float ORB_RING_RADIUS = 7.5f / 16f;
     private static final float ORB_HEIGHT = 3f / 16f;
     private static final int SPHERE_LAT = 14, SPHERE_LON = 24;
+    /**
+     * Tripwire's eight lit lenses, in block units: two on each side of the plinth (centres 5 and 11 px along the side, half way
+     * up), just inside the baked bezels and well prouder than the baked dull lens (0.2 px against 0.1), so they cover it without fighting it at a distance. The studs are the same
+     * on every side, so the totem's facing does not move them.
+     */
+    private static final float[][] STUDS = new float[8][];
+
+    static {
+        int i = 0;
+        for (int side = 0; side < 4; side++) {
+            for (float c : new float[]{5, 11}) {
+                float a0 = (c - 0.75f) / 16f, a1 = (c + 0.75f) / 16f, y0 = 0.55f / 16f, y1 = 1.45f / 16f, out = 0.2f / 16f;
+                float lo = 2f / 16f, hi = 14f / 16f;
+                STUDS[i++] = switch (side) {
+                    case 0 -> new float[]{a0, y0, lo - out, a1, y1, lo};  // north
+                    case 1 -> new float[]{a0, y0, hi, a1, y1, hi + out};  // south
+                    case 2 -> new float[]{lo - out, y0, a0, lo, y1, a1};  // west
+                    default -> new float[]{hi, y0, a0, hi + out, y1, a1}; // east
+                };
+            }
+        }
+    }
 
     public ShatterTotemRenderer(BlockEntityRendererProvider.Context ctx) {}
 
@@ -73,6 +95,18 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
                 pose.popPose();
             }
             pose.popPose();
+        }
+
+        // --- Tripwire: the baked lamp studs light up red while the signal is on, full-bright, with a slow shimmer
+        if (totem.tripwireSignal()) {
+            VertexConsumer vc = buffers.getBuffer(RenderType.cutout());
+            Matrix4f m = pose.last().pose();
+            Matrix3f nm = pose.last().normal();
+            float u = sprite.getU(ORB_U0 + 0.5f), v = sprite.getV(ORB_V0 + 0.5f);
+            for (int i = 0; i < STUDS.length; i++) {
+                float k = 0.85f + 0.15f * Mth.sin(time * 0.25f + i * 1.3f);
+                litBox(vc, m, nm, STUDS[i], u, v, Math.round(255 * k), Math.round(48 * k), Math.round(36 * k));
+            }
         }
 
         // --- aura cubes, only when the viewer is close to the totem and has not hidden them
@@ -171,6 +205,24 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
             blockVertex(vc, m, nm, f[3], f[4], f[5], u1, v1, r, g, b, f[12], f[13], f[14]);
             blockVertex(vc, m, nm, f[6], f[7], f[8], u1, v0, r, g, b, f[12], f[13], f[14]);
             blockVertex(vc, m, nm, f[9], f[10], f[11], u0, v0, r, g, b, f[12], f[13], f[14]);
+        }
+    }
+
+    /** A lit box from (b[0], b[1], b[2]) to (b[3], b[4], b[5]) in block units, one colour, faces counter-clockwise from outside. */
+    private static void litBox(VertexConsumer vc, Matrix4f m, Matrix3f nm, float[] b, float u, float v, int r, int g, int bl) {
+        float x0 = b[0], y0 = b[1], z0 = b[2], x1 = b[3], y1 = b[4], z1 = b[5];
+        float[][] faces = {
+                {x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, 0, 0, 1},    // south (+z)
+                {x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, 0, 0, -1},   // north (-z)
+                {x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, 1, 0, 0},    // east (+x)
+                {x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, -1, 0, 0},   // west (-x)
+                {x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0, 0, 1, 0},    // up
+                {x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, 0, -1, 0},   // down
+        };
+        for (float[] f : faces) {
+            for (int i = 0; i < 4; i++) {
+                blockVertex(vc, m, nm, f[i * 3], f[i * 3 + 1], f[i * 3 + 2], u, v, r, g, bl, f[12], f[13], f[14]);
+            }
         }
     }
 

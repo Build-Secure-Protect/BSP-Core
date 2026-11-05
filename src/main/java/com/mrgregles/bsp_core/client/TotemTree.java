@@ -164,6 +164,7 @@ public final class TotemTree {
             case THIEF_STEP -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.THIEF_STEP_ALARM, java.util.List.<Integer>of()), level, 2));
             case SIEGE -> Component.translatable(key, BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.SIEGE_SECONDS, java.util.List.<Integer>of()), level, 8), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.SIEGE_RECHARGE, java.util.List.<Integer>of()), level, 180));
             case SENTINEL -> Component.translatable(key + "." + Math.min(4, Math.max(1, level)));
+            case TRIPWIRE -> Component.translatable(key, b.reach(level));
             case HARVEST -> Component.translatable(key, b.reach(level), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_SECONDS, java.util.List.<Integer>of()), level, 120), BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25));
         };
     }
@@ -299,6 +300,43 @@ public final class TotemTree {
     public static boolean overDiscordButton(double mouseX, double mouseY, int x, int y, @Nullable Component reason) {
         int bx = x + DETAIL_W - LINK_W, by = y + discordY(reason) - 2;
         return mouseX >= bx && mouseX < bx + LINK_W && mouseY >= by && mouseY < by + LINK_H;
+    }
+
+    // ------------------------------------------------------------------ Tripwire's range line
+
+    public static final int NEXT_W = 34;
+
+    /** The range in use for a setting (-1 = the top range bought, 0 = off) and the ranges bought: a level, 0 when off. */
+    public static int tripwireInUse(int setting, int bought) {
+        return setting < 0 ? bought : Math.min(setting, bought);
+    }
+
+    /**
+     * Tripwire's card under Buy, in the place of Herald's Discord line: one line of why Buy is off (if it is), then "Range: N blocks"
+     * (or "off") with a NEXT key that steps to the next range bought, then off. The key is grey for a viewer who may not change it.
+     */
+    public static void tripwireLine(GuiGraphics g, Font font, int x, int y, @Nullable Component reason, int setting, int bought, boolean mayChange, int mouseX, int mouseY) {
+        if (reason != null) {
+            small(g, font, Component.literal(CashMachine.cut(font, reason.getString(), (int) (DETAIL_W / 0.75f))), x, y + BUY_Y + BTN_H + 2, BAD);
+        }
+        int ry = y + discordY(reason), use = tripwireInUse(setting, bought);
+        Component label = Component.translatable("gui.bsp_core.tripwire.range");
+        small(g, font, label, x, ry, MUTED);
+        int lx = x + (int) Math.ceil(font.width(label) * 0.75f) + 3;
+        small(g, font, use > 0 ? Component.translatable("gui.bsp_core.tripwire.blocks", Buff.TRIPWIRE.reach(use)) : Component.translatable("gui.bsp_core.tripwire.off"),
+                lx, ry, use > 0 ? 0xE8EAF0 : MUTED);
+        int bx = x + DETAIL_W - NEXT_W, by = ry - 2;
+        boolean hover = mayChange && mouseX >= bx && mouseX < bx + NEXT_W && mouseY >= by && mouseY < by + LINK_H;
+        g.fill(bx, by, bx + NEXT_W, by + LINK_H, mayChange ? TQ : DIM);
+        g.fill(bx + 1, by + 1, bx + NEXT_W - 1, by + LINK_H - 1, hover ? 0xFF14362F : SLOT_BG);
+        Component text = Component.translatable("gui.bsp_core.tripwire.next");
+        small(g, font, text, bx + NEXT_W / 2 - (int) (font.width(text) * 0.375f), by + 2, mayChange ? TQ & 0xFFFFFF : 0x4A5160);
+    }
+
+    /** Whether the point is on Tripwire's NEXT key. */
+    public static boolean overTripwireNext(double mouseX, double mouseY, int x, int y, @Nullable Component reason) {
+        int bx = x + DETAIL_W - NEXT_W, by = y + discordY(reason) - 2;
+        return mouseX >= bx && mouseX < bx + NEXT_W && mouseY >= by && mouseY < by + LINK_H;
     }
 
     public static boolean overBuy(double mouseX, double mouseY, int x, int y) {

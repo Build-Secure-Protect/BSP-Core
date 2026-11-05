@@ -851,7 +851,7 @@ public class BspGameTests {
         UUID remote = UUID.randomUUID(), quiet = UUID.randomUUID();
         String tag = Long.toHexString(System.nanoTime()).substring(0, 5);
         var far = new net.minecraft.core.BlockPos(120, 64, -40);
-        var net = new com.mrgregles.bsp_core.admin.AdminService.Network(Map.of(remote, "Far" + tag, quiet, "Quiet" + tag), List.of(
+        var net = new com.mrgregles.bsp_core.admin.AdminService.Network(Map.of(remote, "Far" + tag, quiet, "0Quiet" + tag), List.of(
                 new com.mrgregles.bsp_core.score.ScoreService.Spot(remote, 2, false, "BSP-Elsewhere", "minecraft:overworld", far),
                 new com.mrgregles.bsp_core.score.ScoreService.Spot(remote, 0, true, "BSP-Other", "minecraft:the_nether", new net.minecraft.core.BlockPos(1, 2, 3)),
                 // a stale copy of a totem on this very server: the panel takes this server's own live instead
@@ -864,6 +864,8 @@ public class BspGameTests {
                 "their totems on other servers count, and this server's stale copy does not: " + row.totemCount() + " totems, " + row.points() + " points");
         var placed = row.totems().stream().filter(t -> !t.carried()).findFirst().orElse(null);
         h.assertTrue(placed != null && placed.server().equals("BSP-Elsewhere") && placed.pos().equals(far) && placed.tier() == 2, "each totem names its server: " + placed);
+        // the panel keeps its first 200 rows, by points and then name; the test world gathers players between runs, so the quiet
+        // player's name sorts first among those with no points
         var none = data.rows().stream().filter(r -> r.id().equals(quiet)).findFirst().orElse(null);
         h.assertTrue(none != null && none.totemCount() == 0 && none.points() == 0, "a player with a first-join record and no totems is still listed");
         var alone = com.mrgregles.bsp_core.admin.AdminService.snapshot(server, viewer, false, null);
@@ -6535,7 +6537,7 @@ public class BspGameTests {
         var herald = TotemUpgrades.Buff.HERALD;
         h.assertTrue(herald.parent() == TotemUpgrades.Buff.ALARM && herald.branch() == TotemUpgrades.Branch.BASE && herald.placedOnly && herald.single && herald.maxLevel() == 1,
                 "a one-level Base power after Alarm");
-        h.assertTrue(herald.ordinal() == TotemUpgrades.Buff.values().length - 1, "appended last, so the ordinals already saved and sent keep their meaning");
+        h.assertTrue(herald.ordinal() == TotemUpgrades.Buff.TRIPWIRE.ordinal() - 1, "appended after Swift Travel and before Tripwire, so the ordinals already saved and sent keep their meaning");
         // priced like Sentinel: Raid coins and XP, in the coin of its own tier, once
         var price = TotemUpgrades.price(herald, 0);
         int coins = com.mrgregles.bsp_core.BSPConfig.RAID_LEVEL_COINS.get().get(0), xp = com.mrgregles.bsp_core.BSPConfig.RAID_LEVEL_XP.get().get(0) * (herald.tier + 1);

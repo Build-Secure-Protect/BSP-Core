@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the wording for the newer totem powers (Bouncy, X-ray, Cloaking, Recall, Recall Block, Herald) into en_us.json, and the
+"""Writes the wording for the newer totem powers (Bouncy, X-ray, Cloaking, Recall, Recall Block, Herald, Tripwire) into en_us.json, and the
 Ghost Block's empty blockstate and model (X-ray's stand-in block).
 
   python3 tools/gen_effects_lang.py
@@ -14,10 +14,10 @@ KEYS = {
     "buff.bsp_core.xray": "X-ray",
     "buff.bsp_core.xray.effect": "Blocks within %s turn to faint glass for %s s, ores show through them bright; recharges in %s s",
     "block.bsp_core.ghost_block": "Ghost Block",
-    "tooltip.bsp_core.shatter_totem.spent": "Spent. This copy was stored away from its holder; the real totem went back to them.",
+    "tooltip.bsp_core.shatter_totem.spent": "Spent. A dead copy: the real totem went back to its holder, stands elsewhere, or was destroyed.",
     "message.bsp_core.shatter_totem.returned": "Your Shatter Totem came back to you. It cannot be stored away from you.",
     "message.bsp_core.shatter_totem.spent": "That totem is spent: its holder has the real one.",
-    "message.bsp_core.shatter_totem.destroyed": "Shatter Totem destroyed (creative mode).",
+    "message.bsp_core.shatter_totem.destroyed": "Shatter Totem destroyed for good (creative mode).",
     "message.bsp_core.shatter_totem.back": "Your Shatter Totem is back with you. It stood at %s while you were away.",
     "message.bsp_core.shatter_totem.stands_at": "Your Shatter Totem stands at %s, where you logged out.",
     "message.bsp_core.shatter_totem.being_stolen": "Your Shatter Totem at %s is being stolen right now. Go!",
@@ -28,6 +28,15 @@ KEYS = {
     "buff.bsp_core.recall.effect": "While the totem is being stolen you may teleport to within %s blocks of it",
     "buff.bsp_core.herald": "Herald",
     "buff.bsp_core.herald.effect": "Your totem calls you on Discord when it is being stolen",
+    "buff.bsp_core.tripwire": "Tripwire",
+    "buff.bsp_core.tripwire.effect": "Redstone signal while an outsider is within %s blocks",
+    "gui.bsp_core.tripwire.range": "Range:",
+    "gui.bsp_core.tripwire.blocks": "%s blocks",
+    "gui.bsp_core.tripwire.off": "off",
+    "gui.bsp_core.tripwire.next": "NEXT",
+    "gui.bsp_core.tree.why.cap_short": "Tier %s limit. Raise to Tier %s",
+    "gui.bsp_core.tree.not_yours_short": "Only its owner can buy upgrades",
+    "message.bsp_core.tripwire.not_yours": "Only those who may upgrade this totem can change its range",
     "gui.bsp_core.tree.why.discord": "This server is not linked to Discord",
     "buff.bsp_core.recall_block": "Recall Block",
     "buff.bsp_core.recall_block.effect": "Delays the owner's Recall offer by %s s while you steal with this totem in your offhand",

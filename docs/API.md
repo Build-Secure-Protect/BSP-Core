@@ -47,6 +47,8 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 
 Upgrade names for `BspTotems.upgrade` are the constants of `TotemUpgrades.Buff` (for example `SWIFTNESS`, `RECALL`); the enum itself may be used directly.
 
+`TRIPWIRE` (since 1.11.0) has levels 1 to 4, one per totem tier from Tier II; the level is the range bought, not the range the owner has picked with the NEXT key on its card. Every placed Shatter Totem is now a redstone source (`isSignalSource` is true); it gives 15 on every side, as weak power, while its Tripwire is set off, and 0 otherwise. The range setting is `TripRange` in the block entity and in the picked-up item's tag (absent = the highest range bought, 0 = off); the signal is `TripSignal`, in the block entity only. A Decoy Totem also reports `isSignalSource` (and gives 0), so dust cannot tell the two apart.
+
 Two upgrades exist only for a teleport mod to read; BSP-Core sells them on the tree (Home spoke, Carried prices at half XP, three levels each) and does nothing with them itself: `EXTRA_HOMES` (meant as one more home slot per level) and `SWIFT_TRAVEL` (meant as 25 % off the teleport cooldown per level). Read them with `BspTotems.highestLevel`.
 
 ## Inventory sync mods (`BspTotems.isTotem(ItemStack)`, `BspTotems.giveBack`; BSP-InventorySync requests R1 and R2)

@@ -37,6 +37,16 @@
       "type": "patchouli:text",
       "text": "Type $(l)/bsp discord link$(), or press LINK on Herald's card, for a six-letter code that lasts ten minutes. In the BSP Discord, type $(l)/link$() and the code. Only you see the bot's answer.$(br2)You never type a Discord name or password in the game. $(l)/bsp discord status$() shows the link; $(l)/bsp discord unlink$() ends it.",
       "title": "Linking Discord"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tripwire$() (Base, after Alarm, Tier II): your placed totem gives a full redstone signal from every side while an outsider is near: anyone but you, your team, your allies and the friends on its access list.$(br2)One range opens with each tier: 16 blocks at II, 32 at III, 64 at IV, 128 at V.",
+      "title": "Tripwire"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Dust, lamps, doors and pistons touching the totem take the signal, held three seconds after the last outsider goes, and the studs round its base glow red. It watches only while its chunk is loaded.$(br2)NEXT on its card picks a shorter range, or off. Thief's Step hides from a Tripwire set to its level or lower.",
+      "title": "Wiring a Tripwire"
     }
   ]
 }

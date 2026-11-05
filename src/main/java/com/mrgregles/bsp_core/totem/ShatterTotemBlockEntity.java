@@ -93,7 +93,11 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         this.owner = owner;
         setChanged();
+        if (previous == null || owner == null || !previous.uuid().equals(owner.uuid())) {
+            tripUntil = 0; // whoever set Tripwire off for the old owner may be a friend of the new one
+        }
         if (level instanceof ServerLevel serverLevel) {
+            tripwireExpire(serverLevel);
             sync();
             updateBlockState();
             TotemLedger ledger = TotemLedger.get(serverLevel.getServer());
@@ -120,6 +124,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         identity = new CompoundTag();
         TotemIdentity.copy(stack.getTag(), identity);
         upgrades = TotemUpgrades.copyFrom(stack);
+        CompoundTag carried = stack.getTag();
+        tripRange = carried != null && carried.contains("TripRange") ? carried.getInt("TripRange") : -1; // moving a totem keeps its Tripwire setting
         setOwner(TotemOwner.fromStack(stack).orElse(null));
         CompoundTag tag = stack.getTag();
         if (tag != null && owner != null && level instanceof ServerLevel serverLevel) {
@@ -154,6 +160,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         if (!upgrades.isEmpty()) {
             tag.put(TotemUpgrades.TAG_UPGRADES, upgrades.copy());
+        }
+        if (tripRange != -1) {
+            tag.putInt("TripRange", tripRange);
         }
     }
 
@@ -391,11 +400,128 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
     }
 
+    // ------------------------------------------------------------------ Tripwire
+
+    /** The range in use: -1 follows the highest level bought (the default, and after every purchase), 0 is off, 1 to 4 a chosen level. */
+    private int tripRange = -1;
+    /** Whether the totem gives its redstone signal now. */
+    private boolean tripSignal;
+    /** The game time the signal holds until; refreshed each time an outsider is seen. */
+    private long tripUntil;
+
+    /** The Tripwire level whose range is in use: the setting, never above what is bought; 0 when off or not bought. */
+    public int tripwireLevel() {
+        int bought = getUpgradeLevel(TotemUpgrades.Buff.TRIPWIRE);
+        return tripRange < 0 ? bought : Math.min(tripRange, bought);
+    }
+
+    /** The range setting: -1 follows the highest level bought, 0 is off, 1 to 4 a chosen level. */
+    public int tripwireSetting() {
+        return tripRange;
+    }
+
+    public void setTripwireRange(int range) {
+        tripRange = Math.max(-1, Math.min(TotemUpgrades.Buff.TRIPWIRE.maxLevel(), range));
+        tripUntil = 0; // the hold was for the old range: look again with the new one
+        setChanged();
+        sync();
+        if (level instanceof ServerLevel sl) {
+            tripwireCheck(sl, sl.players());
+        }
+    }
+
+    /**
+     * The NEXT key on Tripwire's card: the next range bought, then off, then the first again. Allowed to whoever may buy upgrades
+     * here (the owner, teammates, friends with the Upgrades switch, operators). False when refused or nothing is bought.
+     */
+    public boolean stepTripwireRange(ServerPlayer player) {
+        if (!mayUpgrade(player)) {
+            player.displayClientMessage(Component.translatable("message.bsp_core.tripwire.not_yours").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        int bought = getUpgradeLevel(TotemUpgrades.Buff.TRIPWIRE);
+        if (bought <= 0) {
+            return false;
+        }
+        setTripwireRange(nextTripwireRange(tripRange, bought));
+        return true;
+    }
+
+    /** The setting after {@code setting} when {@code bought} ranges are bought: 1, 2 ... the top (stored as -1, "follow the top"), off, 1. */
+    public static int nextTripwireRange(int setting, int bought) {
+        int now = setting < 0 ? bought : Math.min(setting, bought);
+        int next = now == 0 ? 1 : now >= bought ? 0 : now + 1;
+        return next == bought ? -1 : next;
+    }
+
+    /** Whether the totem gives its redstone signal now (15 on every side, weak power). */
+    public boolean tripwireSignal() {
+        return tripSignal;
+    }
+
+    /**
+     * Whether {@code p} sets Tripwire off at {@code tripLevel}: an outsider in the cube round the totem. Never the owner, a teammate,
+     * an ally, anyone on the access list, or a creative or spectating player. Thief's Step hides its carrier from a Tripwire whose
+     * range in use is at or below the level its table gives.
+     */
+    public boolean tripsTripwire(net.minecraft.world.entity.player.Player p, int tripLevel) {
+        if (owner == null || tripLevel <= 0 || !p.isAlive() || p.isSpectator() || p.isCreative() || p.level() != level || isOwner(p.getUUID())
+                || !TotemAuras.inCube(p, worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5, TotemUpgrades.Buff.TRIPWIRE.reach(tripLevel))) {
+            return false;
+        }
+        UUID id = p.getUUID();
+        if (isTeammate(id) || access.stream().anyMatch(a -> a.id().equals(id))) {
+            return false;
+        }
+        if (level instanceof ServerLevel sl && com.mrgregles.bsp_core.api.BspTeams.allied(sl.getServer(), owner.uuid(), id)) {
+            return false;
+        }
+        int thief = com.mrgregles.bsp_core.plasma.CarriedPowers.level(p, TotemUpgrades.Buff.THIEF_STEP);
+        return thief <= 0 || tripLevel > BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.THIEF_STEP_TRIPWIRE, java.util.List.<Integer>of()), thief, 0);
+    }
+
+    /**
+     * Once a second: if any of {@code players} trips the wire, the signal holds for {@code tripwireHoldSeconds} from now (and at least
+     * until the next look). The tick passes the level's players; tests pass their own, who are not in that list.
+     */
+    public void tripwireCheck(ServerLevel level, Iterable<? extends net.minecraft.world.entity.player.Player> players) {
+        int lvl = tripwireLevel();
+        if (lvl <= 0 || owner == null) {
+            tripUntil = 0;
+        } else {
+            for (var p : players) {
+                if (tripsTripwire(p, lvl)) {
+                    tripUntil = level.getGameTime() + Math.max(20, BSPConfig.getOr(BSPConfig.TRIPWIRE_HOLD_SECONDS, 3) * 20) + 1;
+                    break;
+                }
+            }
+        }
+        tripwireExpire(level);
+    }
+
+    /** Turns the signal on or off to match the hold, telling the neighbours (redstone) and the watching clients when it flips. */
+    private void tripwireExpire(ServerLevel level) {
+        boolean on = owner != null && tripwireLevel() > 0 && level.getGameTime() < tripUntil;
+        if (on != tripSignal) {
+            tripSignal = on;
+            setChanged();
+            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
+            sync();
+        }
+    }
+
     /** Server tick, registered by the block. */
     public void serverTick(ServerLevel level) {
+        if (tripSignal) {
+            if (tripUntil == 0) {
+                tripUntil = level.getGameTime() + 21; // loaded with the signal on: keep it until the next look says otherwise
+            }
+            tripwireExpire(level);
+        }
         if (level.getGameTime() % 20 == 0) {
             healingTick(level);
             intruderTick(level);
+            tripwireCheck(level, level.players());
             cloakTick(level);
             reportToLedger(level);
             harvestTick(level);
@@ -692,6 +818,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         TotemUpgrades.pay(player, price);
         setUpgradeLevel(buff, lvl + 1);
+        if (buff == TotemUpgrades.Buff.TRIPWIRE) {
+            setTripwireRange(-1); // a new range is put to use at once (owner's rule)
+        }
         player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
                 Component.translatable(buff.translationKey()), lvl + 1).withStyle(ChatFormatting.GOLD), true);
         BSPCore.LOGGER.info("{} bought {} level {} at {}", player.getGameProfile().getName(), buff.key, lvl + 1, worldPosition);
@@ -853,6 +982,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     public void resetUpgrades() {
         upgrades = new CompoundTag();
+        tripRange = -1;
         if (level instanceof ServerLevel serverLevel) {
             recordInLedger(serverLevel);
         }
@@ -975,6 +1105,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             tag.put(TotemUpgrades.TAG_UPGRADES, upgrades.copy());
         }
         TotemIdentity.copy(identity, tag);
+        if (tripRange != -1) {
+            tag.putInt("TripRange", tripRange);
+        }
+        if (tripSignal) {
+            tag.putBoolean("TripSignal", true);
+        }
         if (!harvestQueue.isEmpty()) {
             net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
             for (var e : harvestQueue) {
@@ -1022,6 +1158,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         steal = StealState.load(tag);
         upgrades = TotemUpgrades.current(tag.getCompound(TotemUpgrades.TAG_UPGRADES).copy());
+        tripRange = tag.contains("TripRange") ? tag.getInt("TripRange") : -1;
+        tripSignal = tag.getBoolean("TripSignal");
     }
 
     @Override

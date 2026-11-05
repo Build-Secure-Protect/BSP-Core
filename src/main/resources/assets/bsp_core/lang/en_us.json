@@ -2576,5 +2576,14 @@
   "gui.bsp_core.trade.settling": "Handing over...",
   "gui.bsp_core.trade.they_ready": "%s is ready. Check their offer, then press READY.",
   "gui.bsp_core.trade.waiting": "Waiting for %s to press READY.",
-  "gui.bsp_core.trade.fill": "Put in what you offer and the pieces, then press READY."
+  "gui.bsp_core.trade.fill": "Put in what you offer and the pieces, then press READY.",
+  "buff.bsp_core.tripwire": "Tripwire",
+  "buff.bsp_core.tripwire.effect": "Redstone signal while an outsider is within %s blocks",
+  "gui.bsp_core.tripwire.range": "Range:",
+  "gui.bsp_core.tripwire.blocks": "%s blocks",
+  "gui.bsp_core.tripwire.off": "off",
+  "gui.bsp_core.tripwire.next": "NEXT",
+  "gui.bsp_core.tree.why.cap_short": "Tier %s limit. Raise to Tier %s",
+  "message.bsp_core.tripwire.not_yours": "Only those who may upgrade this totem can change its range",
+  "gui.bsp_core.tree.not_yours_short": "Only its owner can buy upgrades"
 }

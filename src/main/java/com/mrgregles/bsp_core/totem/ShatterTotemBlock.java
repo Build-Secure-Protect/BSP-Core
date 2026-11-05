@@ -108,6 +108,19 @@ public class ShatterTotemBlock extends BaseEntityBlock {
         return SHAPE;
     }
 
+    // --- redstone: Tripwire ---
+
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
+    /** 15 on every side while Tripwire holds its signal; weak power only (no direct signal), so the block under it does not pass it on. */
+    @Override
+    public int getSignal(BlockState state, BlockGetter level, BlockPos pos, net.minecraft.core.Direction side) {
+        return level.getBlockEntity(pos) instanceof ShatterTotemBlockEntity totem && totem.tripwireSignal() ? 15 : 0;
+    }
+
     // --- block entity ---
 
     @Nullable

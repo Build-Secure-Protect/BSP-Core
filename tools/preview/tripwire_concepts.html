@@ -1,0 +1,327 @@
+<title>Tripwire Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: three mock-up sets for Tripwire, the totem's redstone sensor: its node on the upgrade tree, the range key under Buy, and the tripped look on the placed totem. Canvases are drawn at GUI pixel size x3 with the game's own font (ascii.png) and TreeLayout's numbers; the 3D views are the real totem model. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --red:#c8322a;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --red:#ff6b5c; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --red:#ff6b5c; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:26px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+section{ display:flex; flex-direction:column; gap:12px; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b, .card p b{ color:var(--fg); font-weight:600; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; }
+.facts{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:2px 10px; font-size:12.5px; margin:0; }
+.facts dt{ color:var(--muted); } .facts dd{ margin:0; }
+canvas.gui{ width:100%; max-width:100%; height:auto; display:block; background:#10151c; border:1px solid #2a2f3a; image-rendering:pixelated; }
+.view{ width:100%; aspect-ratio:1/1; max-width:100%; background:#10151c; border:1px solid #2a2f3a; border-radius:4px; touch-action:none; cursor:grab; }
+.view canvas{ width:100%; height:100%; display:block; }
+.note{ font-size:13px; color:var(--muted); border-left:3px solid var(--acc); padding:4px 10px; max-width:80ch; margin:0; }
+.note b{ color:var(--fg); }
+.bar{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; font-size:13px; }
+.bar label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
+.bar input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.pill{ font-family:var(--mono); font-size:12px; padding:1px 8px; border-radius:99px; border:1px solid var(--line); }
+.pill.on{ color:var(--red); border-color:var(--red); }
+.parts{ font-size:12.5px; margin:0; padding-left:18px; color:var(--muted); }
+.parts b{ color:var(--fg); font-weight:600; }
+</style>
+
+<div class="wrap">
+  <h1>Tripwire Concepts</h1>
+  <p class="lede">Three mock-up sets for <b>Tripwire</b>, the totem power that gives a redstone signal while an outsider is near: where its node sits on the upgrade tree, the key that picks its range, and how the placed totem shows that it is tripped. Everything follows the defaults you took. The screens are drawn at GUI pixel size with the game's own font. The totem is the real model and texture.</p>
+  <p class="note">A slip in my question 2: it said "Tier II, on the ring with Ward and Sentinel", but Ward and Sentinel sit on the Tier III ring. Tripwire has to start at Tier II for one range per tier to reach 128 at Tier V, so it goes on the <b>Tier II ring</b>, with Alarm and Herald. The three tree concepts are the places it fits there without touching another node.</p>
+  <div class="bar">
+    <label><input type="checkbox" id="tripped" checked> An outsider is in range now</label>
+    <span class="pill on" id="sig">SIGNAL 15</span>
+  </div>
+
+  <section>
+    <h2>1. The node on the tree</h2>
+    <p class="lede">A Tier III totem with Alarm at level 2 and Tripwire at level 1 (16 blocks), Tripwire selected. Its letters are <b>TR</b>. It is a Base power at Raid prices, so the next range costs 2 Diamond coins and 9 XP levels.</p>
+    <div class="grid3">
+      <div class="card"><h3>A. Between Alarm and Sanctuary</h3>
+        <p>Tripwire sits on the Tier II ring below Alarm, towards the Home path, in the gap above Sanctuary. Nothing else moves.</p>
+        <canvas class="gui" id="t-a" width="930" height="540"></canvas>
+        <dl class="facts" id="f-a"></dl>
+      </div>
+      <div class="card"><h3>B. Above Alarm, Herald moves down</h3>
+        <p>Tripwire takes Herald's place just above Alarm, and Herald moves to the gap above Sanctuary. Tripwire then sits closest to Alarm, but players will find Herald somewhere new.</p>
+        <canvas class="gui" id="t-b" width="930" height="540"></canvas>
+        <dl class="facts" id="f-b"></dl>
+      </div>
+      <div class="card"><h3>C. Place A, and the node shows the signal</h3>
+        <p>The same place as A. While the totem is giving its signal, the node's frame turns red, so the tree also tells you someone is near. Untick the box at the top to see it go back to gold.</p>
+        <canvas class="gui" id="t-c" width="930" height="540"></canvas>
+        <dl class="facts" id="f-c"></dl>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The range key under Buy</h2>
+    <p class="lede">The same card one level on: 16 and 32 blocks are bought, so the next range (64) needs Tier IV and the reason sits under Buy, as it does for Herald. The range line goes where Herald's Discord line goes, between Buy and the tier box. The range is set to 32.</p>
+    <p class="note">The red reason is cut to one line ("Raise the t..."), as Herald's is in game today, because the range line needs the second line's place. The build can shorten that reason for Tripwire to "Tier III limit. Raise to Tier IV", which fits whole.</p>
+    <div class="grid3">
+      <div class="card"><h3>A. One NEXT key</h3>
+        <p>"Range: 32 blocks" with a small NEXT key on the right. Each press steps to the next bought range, then OFF, then back to 16.</p>
+        <canvas class="gui" id="k-a" width="420" height="546"></canvas>
+      </div>
+      <div class="card"><h3>B. A row of five chips</h3>
+        <p>Five chips, 16, 32, 64, 128 and OFF. Click a chip to pick its range. Ranges not bought yet are greyed and do nothing. No label, because the chips say it all.</p>
+        <canvas class="gui" id="k-b" width="420" height="546"></canvas>
+      </div>
+      <div class="card"><h3>C. A signal lamp and a RANGE key</h3>
+        <p>A small lamp on the left shows whether the signal is on right now ("SIGNAL ON" in red, or "signal off"). A RANGE 32 key on the right steps through the ranges like A's NEXT.</p>
+        <canvas class="gui" id="k-c" width="420" height="546"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. The tripped look on the totem</h2>
+    <p class="lede">The placed totem with four upgrade orbs, wired with a line of redstone dust to a lamp, as a base would use it. Drag to turn it. Untick the box at the top to see it at rest. In each one the statue's model is unchanged except where it says <b>baked</b>.</p>
+    <div class="grid3">
+      <div class="card"><h3>A. Lamp studs round the base</h3>
+        <div class="view" id="v-a"></div>
+        <p>Eight round red lenses, two on each side of the base, each set in a small square bezel. They glow while the signal is on and go dull dark red at rest.</p>
+        <ul class="parts"><li><b>Baked:</b> the eight bezels (four thin bars each, standing a quarter pixel proud).</li><li><b>Renderer:</b> the lenses, lit or dull.</li></ul>
+      </div>
+      <div class="card"><h3>B. A red line in a groove</h3>
+        <div class="view" id="v-b"></div>
+        <p>A groove runs all round the base at half height, with a red light strip in it. While the signal is on, a brighter spot chases round the strip once a second.</p>
+        <ul class="parts"><li><b>Baked:</b> the base split into a lower and an upper slab with a narrower core between them, which makes the groove.</li><li><b>Renderer:</b> the strip and the chasing spot.</li></ul>
+      </div>
+      <div class="card"><h3>C. The orb turns red and pings</h3>
+        <div class="view" id="v-c"></div>
+        <p>The orb in the statue's hands takes a red glow, and once a second a red ring spreads out along the floor from the base and fades, like a radar ping.</p>
+        <ul class="parts"><li><b>Baked:</b> nothing.</li><li><b>Renderer:</b> the red shell round the orb and the floor ring.</li></ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC", TOTEM_TEX = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADjklEQVR42u1Xv2sUQRTezsIiFinEwhOViEZEEImeejkLo0hIIYI/ghAOJKBXaCCCR7ASAzZapIhg4Q8QsbAwnY02FiIEbFTQzsZ/IPXIt/CWdy+z82PnchfC++Bjdt68meV9O/NmX/Z35axZ+9MxaN92annLn3nLx2mOjdKP+7rmcZLftl01J+Wc7UPDxVy0X1d/GQKeMwlbcFVpCzR0XSk4PSPIofH6OpIA8p1cAFDCKoDvK7rG6Qvzfsw64I7hnTlpPvWlALs7rZzP134UIriCjxZAbtfYQFw+tqNE7+MCSEFIAAqahCABfr5r5vz3/V4uAFqyvZjfE3cE+Jd0nXebSLZjxNcLORZSCC4ABU3PEARj316NF/z95W4uAloQtswH1zmOZUouoeClCPwIIGguBMY+PWuY1Y/tghAALeygVwBfwGUBhQhFWzzkFpBHgAtgS4RkX3lypouf38/mIqBdvLk/fAfI7ZpyA4TmCts7Zd93Db55dLrgh5etPHi0ZPMKUJa9qyTBKswS8XrphlleOGXQInjqE6NyAN+utmRYdtfH7Azex9qpAjyeqxtwafFqLgBasoHBAvi2YsjtUPYfYPvD7NUOeHj/kmlNHTILsycNniECWvRhDz4Cri0uv5ovX7h2Ua93QHv6hJm7NWmohQDUB6OvwZhEZrvnfblC7pBs0IhNer4iKfbGGLgAKfe83A2hv8Obbge4klSsALF/hptCAF4/xwoRcy3aBBkdPWZlvX4uyJbKzFW+xtYFvi9uWy80qI0IPhegSgKMEcZVYrt2QL/EyKiWBlE/Ux1NNbWP3JfX4qFzQ4IhH+5Lz7XaSBKz5Tt7u2pq0GbjY1Rru1i2hpzLA4r5suSbnARROz+9va+onznL7GX0+ctxvNv1lfsigKynQ4ha22ejehx0rRV7tqVQyQLw2vnBzEhXfU01trTzOZIuXzmGfmqiSxZg/voBA/IaOoS2OaHr8Jo99QZIFoDXzpLtywe76mv0QZe/a1wSaydfY6lA3SxJ9bR89pHqcpsN69jWSr3Ts17U05JXzh9eZ+M1dpmvzQfjcj30yXfgO2B6asyEcubaRPE82Tzi9JPjsk9rxSQ/249QsgAXmscN2Bg7augZvDjRyMlt0of7htqlrUrwPRVgIwqMqpm9Sj7YEgLYBOnbf4BCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFIotj///HjwBS33MewAAAABJRU5ErkJggg==", COIN = {gold:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmv8/qkLBnw7qgTHMAAxD8Gne0cYNNwDZkK4Jc/5jGIDNZnQDQBikGW4ALttxaUY2AGwINgNgmskyAF0xPi9gGIDNNmyuQTEAORxwacYbiDADYNFDyAAM22EAOZHg8gpOzeiGICvEhvHmB4o04zMIlzoAvTpLT298i8sAAAAASUVORK5CYII=", diamond:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmk/+/o+C859/AmOYARiG4NOsvXIH3ABkQ7omzPmPYQA2m9ENAGGQZrgBuGzHpRnZALAh2AyAaSbLAHTF+LyAYQA227C5BsUA5HDApRlvIMIMgEUPIQMwbIcB5ESCyys4NaMbgqwQG8abHyjSjM8gXOoAuN9tYffehokAAAAASUVORK5CYII=", netherite:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvNSMlCwt5M7GMMMwDAEn2YtFQ24AciGdE2Y8x/DAGw2oxsAwiDNcANw2Y5LM7IBYEOwGQDTTJYB6IrxeQHDAGy2YXMNigHI4YBLM95AhBkAix5CBmDYDgPIiQSXV3BqRjcEWSE2jDc/UKQZn0G41AEAI0XvpJldWt4AAAAASUVORK5CYII="};
+  var GEO = [{"from":[2,0,2],"to":[14,2,14],"faces":{"north":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"south":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"east":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"west":{"uv":[12.0,4.0,16.0,5.0],"texture":"#atlas"},"up":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"},"down":{"uv":[8.0,4.0,12.0,8.0],"texture":"#atlas"}},"name":"plinth"},{"from":[3,2,3],"to":[8,6,11],"faces":{"north":{"uv":[1.0,6.5,2.25,7.5],"texture":"#atlas"},"south":{"uv":[2.0,6.5,3.25,7.5],"texture":"#atlas"},"east":{"uv":[4.0,6.5,6.0,7.5],"texture":"#atlas"},"west":{"uv":[1.75,6.5,3.75,7.5],"texture":"#atlas"},"up":{"uv":[1.0,6.0,2.25,8.0],"texture":"#atlas"},"down":{"uv":[0.25,5.5,1.5,7.5],"texture":"#atlas"}},"name":"knee_l"},{"from":[8,2,3],"to":[13,6,11],"faces":{"north":{"uv":[1.25,6.5,2.5,7.5],"texture":"#atlas"},"south":{"uv":[0.75,6.5,2.0,7.5],"texture":"#atlas"},"east":{"uv":[1.25,6.5,3.25,7.5],"texture":"#atlas"},"west":{"uv":[5.75,6.5,7.75,7.5],"texture":"#atlas"},"up":{"uv":[2.5,6.0,3.75,8.0],"texture":"#atlas"},"down":{"uv":[4.75,5.5,6.0,7.5],"texture":"#atlas"}},"name":"knee_r"},{"from":[4,6,5],"to":[12,16,10],"faces":{"north":{"uv":[12.0,0.0,14.0,3.0],"texture":"#atlas"},"south":{"uv":[3.75,4.0,5.75,6.5],"texture":"#atlas"},"east":{"uv":[2.0,4.0,3.25,6.5],"texture":"#atlas"},"west":{"uv":[5.75,4.0,7.0,6.5],"texture":"#atlas"},"up":{"uv":[1.5,4.0,3.5,5.25],"texture":"#atlas"},"down":{"uv":[1.0,5.25,3.0,6.5],"texture":"#atlas"}},"name":"torso"},{"from":[4,16,4],"to":[12,24,12],"faces":{"north":{"uv":[8.0,0.0,10.0,2.0],"texture":"#atlas"},"south":{"uv":[3.75,2.0,5.75,4.0],"texture":"#atlas"},"east":{"uv":[4.75,2.0,6.75,4.0],"texture":"#atlas"},"west":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"},"up":{"uv":[0.25,2.0,2.25,4.0],"texture":"#atlas"},"down":{"uv":[1.5,2.0,3.5,4.0],"texture":"#atlas"}},"name":"head","rotation":{"origin":[8,16,8],"axis":"x","angle":-22.5}},{"from":[1,8,2],"to":[4,12,9],"faces":{"north":{"uv":[5.5,5.0,6.25,6.0],"texture":"#atlas"},"south":{"uv":[4.0,5.0,4.75,6.0],"texture":"#atlas"},"east":{"uv":[0.25,5.0,2.0,6.0],"texture":"#atlas"},"west":{"uv":[1.0,5.0,2.75,6.0],"texture":"#atlas"},"up":{"uv":[3.75,5.0,4.5,6.75],"texture":"#atlas"},"down":{"uv":[0.75,4.25,1.5,6.0],"texture":"#atlas"}},"name":"arm_l"},{"from":[12,8,2],"to":[15,12,9],"faces":{"north":{"uv":[0.5,5.0,1.25,6.0],"texture":"#atlas"},"south":{"uv":[1.25,5.0,2.0,6.0],"texture":"#atlas"},"east":{"uv":[4.0,5.0,5.75,6.0],"texture":"#atlas"},"west":{"uv":[0.5,5.0,2.25,6.0],"texture":"#atlas"},"up":{"uv":[0.0,5.0,0.75,6.75],"texture":"#atlas"},"down":{"uv":[2.25,4.25,3.0,6.0],"texture":"#atlas"}},"name":"arm_r"},{"from":[2,7,-1],"to":[5,13,3],"faces":{"north":{"uv":[2.25,4.75,3.0,6.25],"texture":"#atlas"},"south":{"uv":[5.0,4.75,5.75,6.25],"texture":"#atlas"},"east":{"uv":[6.25,4.75,7.25,6.25],"texture":"#atlas"},"west":{"uv":[0.75,4.75,1.75,6.25],"texture":"#atlas"},"up":{"uv":[1.0,4.75,1.75,5.75],"texture":"#atlas"},"down":{"uv":[1.5,5.25,2.25,6.25],"texture":"#atlas"}},"name":"hand_l"},{"from":[11,7,-1],"to":[14,13,3],"faces":{"north":{"uv":[5.75,4.75,6.5,6.25],"texture":"#atlas"},"south":{"uv":[3.5,4.75,4.25,6.25],"texture":"#atlas"},"east":{"uv":[6.0,4.75,7.0,6.25],"texture":"#atlas"},"west":{"uv":[2.0,4.75,3.0,6.25],"texture":"#atlas"},"up":{"uv":[3.0,4.75,3.75,5.75],"texture":"#atlas"},"down":{"uv":[0.5,5.25,1.25,6.25],"texture":"#atlas"}},"name":"hand_r"},{"from":[5,7,-2],"to":[11,13,4],"faces":{"north":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"south":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"east":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"west":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"up":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"},"down":{"uv":[10.0,0.0,12.0,2.0],"texture":"#atlas"}},"name":"orb","shade":false}];
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var tripped = function(){ var b = el("tripped"); return !b || b.checked; };
+
+  // ---------------------------------------------------------------- the game's font, from ascii.png
+  var font = new Image(), W = new Array(256).fill(5), tints = {}, ready = false, imgs = {};
+  function measure(){
+    var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d"); g.drawImage(font, 0, 0);
+    var d = g.getImageData(0, 0, 128, 128).data;
+    for (var ch = 0; ch < 256; ch++){ var last = -1, sx = (ch % 16) * 8, sy = Math.floor(ch / 16) * 8;
+      for (var x = 0; x < 8; x++) for (var y = 0; y < 8; y++) if (d[((sy + y) * 128 + sx + x) * 4 + 3] > 0) last = Math.max(last, x);
+      W[ch] = last + 1; }
+  }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  /** font.width: each glyph's filled columns plus one, a space is 4 */
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i); w += c === 32 ? 4 : W[c] + 1; } return w; }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i); if (c === 32){ x += 4 * k; continue; }
+      if (W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k); x += (W[c] + 1) * k; } return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function split(s, max){ var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function wrapped(g, s, x, y, col, n){ split(s, 128 / 0.75).slice(0, n).forEach(function(l){ small(g, l, x, y, col); y += 8; }); return y; }
+  function cut(s, max){ if (mw(s) <= max) return s; while (s.length && mw(s + "...") > max) s = s.slice(0, -1); return s + "..."; }
+
+  // ---------------------------------------------------------------- TreeLayout, as in the code
+  // key: [branch 0 carried 1 base 2 raid, tier, parent, path, single]
+  var B = {damage:[0,0,null,1],resistance:[0,1,"damage",1],mining_speed:[0,0,null,0],fortify:[1,0,null,2],healing:[1,0,null,3],swiftness:[0,1,"mining_speed",0],
+    vitality:[0,2,"resistance",1],featherfall:[0,2,"swiftness",0],night_sight:[0,3,"featherfall",0,1],ward:[1,2,"alarm",2],alarm:[1,1,"fortify",2],sanctuary:[1,1,"healing",3],
+    deadlock:[1,3,"ward",2],overclock:[1,3,"sanctuary",3],lockpick:[2,1,null,4],shroud:[2,2,"lockpick",4],anchor:[1,1,"output",5],survey:[1,2,"anchor",5],output:[1,0,null,5],
+    bouncy:[0,2,"featherfall",0],xray:[0,4,"night_sight",0],cloaking:[1,3,"deadlock",2],recall:[1,4,"overclock",3],recall_block:[2,3,"shroud",4],thief_step:[2,3,"shroud",4],
+    siege:[2,4,"thief_step",4],harvest:[1,3,"survey",5],sentinel:[1,2,"alarm",2],extra_homes:[1,1,"healing",3],swift_travel:[1,2,"extra_homes",3],herald:[1,1,"alarm",2,1],
+    tripwire:[1,1,"alarm",2]};
+  var MAX = {anchor:3,survey:2,output:10,bouncy:4,cloaking:4,recall_block:4,thief_step:4,siege:4,harvest:4,sentinel:4,extra_homes:3,swift_travel:3,xray:5,recall:7,tripwire:4};
+  var ABBR = {recall:"RC",recall_block:"RB",swift_travel:"ST",herald:"HR"};
+  var SPOKE = [-128, -52, 12, 78, 180, 129], RING = [20, 35, 50, 65, 78], ROMAN = ["I","II","III","IV","V"];
+  var OFF = {bouncy:22,cloaking:22,thief_step:22,sentinel:22,extra_homes:26,swift_travel:26,night_sight:-14,deadlock:-14,herald:-30};
+  // the concepts: Tripwire's (and in B Herald's) angle off the Walls spoke
+  var PLACE = {a:{tripwire:33}, b:{tripwire:-30, herald:33}, c:{tripwire:33}};
+  function layout(opt){ var P = {}; Object.keys(B).forEach(function(k){ var o = PLACE[opt][k] !== undefined ? PLACE[opt][k] : OFF[k] || 0, a = (SPOKE[B[k][3]] + o) * Math.PI / 180, r = RING[Math.min(B[k][1], 4)];
+    P[k] = [85 + Math.round(Math.cos(a) * r), 85 + Math.round(Math.sin(a) * r)]; }); return P; }
+  function maxOf(k){ var b = B[k]; return MAX[k] || (b[4] ? 1 : 2 * (5 - b[1])); }
+  var COL = ["#8fe04a","#ffd23a","#ff6b5c"], SLOT = "#0c0e12", DIM = "#2a2f3a", RING_ON = "#27566b", TQ = "#19d3b0", BG = "#10151c", MUTED = "#9aa3b5", WHITE = "#e8eaf0", BAD = "#ff6b5c", REDSTONE = "#ff2a1f";
+  function rgba(hex, a){ var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0, y0, x1 - x0, y1 - y0); }
+
+  function nearest(P, k){ var best = null, d = 1e9; Object.keys(P).forEach(function(o){ if (o === k) return; var dd = Math.hypot(P[o][0] - P[k][0], P[o][1] - P[k][1]); if (dd < d){ d = dd; best = o; } });
+    var touch = Object.keys(P).some(function(o){ return o !== k && Math.abs(P[o][0] - P[k][0]) < 14 && Math.abs(P[o][1] - P[k][1]) < 14; });
+    return {name: best, d: Math.round(d), touch: touch}; }
+
+  function tree(g, opt, LV, tier){
+    var P = layout(opt);
+    fill(g, 0, 0, 170, 170, SLOT);
+    RING.forEach(function(r, i){ g.fillStyle = tier >= i ? RING_ON : DIM;
+      for (var a = 0; a < 360; a += 3){ var t = a * Math.PI / 180; g.fillRect(85 + Math.round(Math.cos(t) * r), 85 + Math.round(Math.sin(t) * r), 1, 1); }
+      var lw = Math.floor(mw(ROMAN[i]) * 3 / 4); fill(g, 85 - lw / 2 - 2, 85 - r - 3, 85 + lw / 2 + 2, 85 - r + 4, SLOT); small(g, ROMAN[i], 85 - lw / 2, 85 - r - 3, tier >= i ? "#6fb7c9" : "#4a5160"); });
+    Object.keys(B).forEach(function(k){ var p = P[k], par = B[k][2], f = par ? P[par] : [85, 85], steps = Math.max(1, Math.floor(Math.max(Math.abs(p[0] - f[0]), Math.abs(p[1] - f[1])) / 2));
+      g.fillStyle = (LV[k] || 0) > 0 ? TQ : DIM; for (var i = 0; i <= steps; i++) g.fillRect(f[0] + Math.trunc((p[0] - f[0]) * i / steps), f[1] + Math.trunc((p[1] - f[1]) * i / steps), 1, 1); });
+    fill(g, 77, 77, 93, 93, TQ); txt(g, ROMAN[tier], 85 - Math.floor(mw(ROMAN[tier]) / 2), 81, "#0b0d11");
+    Object.keys(B).forEach(function(k){ var p = P[k], x = p[0] - 7, y = p[1] - 7, l = LV[k] || 0, c = COL[B[k][0]], par = B[k][2],
+        open = tier >= B[k][1] && (!par || (LV[par] || 0) >= Math.min(2, maxOf(par))), mx = l >= maxOf(k);
+      if (k === "tripwire"){ fill(g, x - 2, y - 2, x + 16, y + 16, "#ffffff"); fill(g, x - 1, y - 1, x + 15, y + 15, SLOT); }
+      var frame = l > 0 ? c : open ? rgba(c, .56) : DIM;
+      if (k === "tripwire" && opt === "c" && tripped()) frame = REDSTONE;
+      fill(g, x, y, x + 14, y + 14, frame); fill(g, x + 1, y + 1, x + 13, y + 13, mx ? c : SLOT);
+      var s = ABBR[k] || k.slice(0, 2).toUpperCase(); txt(g, s, x + 7 - Math.floor(mw(s) / 2) + 1, y + 3, mx ? "#0b0d11" : (l > 0 || open) ? c : "#4a5160"); });
+    return P;
+  }
+
+  function coin(g, name, x, y){ var im = imgs[name]; if (im && im.complete && im.naturalWidth) g.drawImage(im, x, y, 16, 16); }
+  function button(g, x, y, w, label, on){ fill(g, x, y, x + w, y + 16, on ? TQ : DIM); fill(g, x + 1, y + 1, x + w - 1, y + 15, SLOT); txt(g, label, x + w / 2 - Math.floor(mw(label) / 2), y + 4, on ? TQ : "#6b7385"); }
+  function key(g, x, y, w, label, on){ fill(g, x, y, x + w, y + 9, on ? TQ : DIM); fill(g, x + 1, y + 1, x + w - 1, y + 8, SLOT); small(g, label, x + w / 2 - Math.floor(mw(label) * 0.375), y + 2, on ? TQ : "#4a5160"); }
+  var RANGES = [16, 32, 64, 128], NEXT_COIN = ["gold", "diamond", "netherite", "illyrium"];
+
+  // TotemTree.detail for Tripwire, then its range line (concept) and the tier box
+  function panel(g, X, Y, level, tier, concept, chosen){
+    var cap = Math.min(4, tier), c = COL[1];
+    txt(g, "Tripwire", X, Y, c);
+    small(g, "Base, from Tier II", X, Y + 10, MUTED);
+    for (var i = 0; i < 4; i++) fill(g, X + i * 7, Y + 19, X + i * 7 + 5, Y + 24, i < level ? c : i < cap ? "#4a5160" : DIM);
+    small(g, "Level " + level + " of 4" + (cap < 4 ? " (tier limit " + cap + ")" : ""), X, Y + 27, MUTED);
+    small(g, "NOW", X, Y + 37, MUTED);
+    wrapped(g, "Redstone signal while an outsider is within " + RANGES[level - 1] + " blocks", X, Y + 45, WHITE, 2);
+    small(g, "NEXT LEVEL", X, Y + 63, MUTED);
+    wrapped(g, "Redstone signal while an outsider is within " + RANGES[level] + " blocks", X, Y + 71, WHITE, 2);
+    var t = 1 + level, xp = 3 * (t + 1);
+    coin(g, NEXT_COIN[t - 1], X, Y + 89); var n = "x2"; txt(g, n, X + 17, Y + 94, WHITE); txt(g, "+ " + xp + " XP", X + 19 + mw(n) + 2, Y + 94, "#8fe04a");
+    var blocked = level >= cap;
+    button(g, X, Y + 108, 128, "Buy level", !blocked);
+    if (blocked) small(g, cut("Tier " + ROMAN[tier] + " limit reached. Raise the totem to Tier " + ROMAN[tier + 1], 128 / 0.75), X, Y + 126, BAD);
+    var ry = Y + 108 + 16 + (blocked ? 10 : 4);
+    rangeLine(g, X, ry, level, concept, chosen);
+    // the tier box
+    fill(g, X - 3, Y + 141, X + 131, Y + 176, SLOT);
+    small(g, "Raise the totem to Tier " + ROMAN[tier + 1], X, Y + 144, MUTED);
+    coin(g, "diamond", X, Y + 154); txt(g, "x4", X + 17, Y + 153, WHITE); txt(g, "35 XP", X + 17, Y + 163, "#8fe04a");
+    button(g, X + 78, Y + 155, 50, "Raise", true);
+    return ry;
+  }
+  var CHECKS = {};
+  function rangeLine(g, X, ry, level, concept, chosen){
+    var label = chosen ? chosen + " blocks" : "off";
+    if (concept === "a"){
+      var lab = "Range:"; small(g, lab, X, ry, MUTED); var lx = X + Math.ceil(mw(lab) * 0.75) + 3;
+      small(g, label, lx, ry, chosen ? WHITE : MUTED);
+      key(g, X + 128 - 34, ry - 2, 34, "NEXT", true);
+      CHECKS.a = {textEnd: Math.ceil(lx + mw(label) * 0.75), keyStart: X + 94};
+    } else if (concept === "b"){
+      var opts = ["16", "32", "64", "128", "OFF"], w = 24, gap = 2;
+      opts.forEach(function(o, i){ var x = X + i * (w + gap), bought = i === 4 || i < level, sel = (o === "OFF" && !chosen) || +o === chosen;
+        fill(g, x, ry - 2, x + w, ry + 7, sel ? TQ : bought ? "#4a5160" : DIM); fill(g, x + 1, ry - 1, x + w - 1, ry + 6, sel ? "#14362f" : SLOT);
+        small(g, o, x + w / 2 - Math.floor(mw(o) * 0.375), ry, sel ? TQ : bought ? WHITE : "#4a5160"); });
+      CHECKS.b = {widest: Math.max.apply(null, opts.map(function(o){ return Math.ceil(mw(o) * 0.75); })), chip: w - 2};
+    } else {
+      var on = tripped() && !!chosen;
+      fill(g, X, ry - 1, X + 7, ry + 6, on ? "#7a1410" : "#2a1616"); fill(g, X + 1, ry, X + 6, ry + 5, on ? REDSTONE : "#3a1a1a"); if (on) fill(g, X + 2, ry + 1, X + 4, ry + 3, "#ffb3a8");
+      var st = on ? "SIGNAL ON" : "signal off"; small(g, st, X + 10, ry, on ? REDSTONE : MUTED);
+      var kl = "RANGE " + (chosen || "OFF"); key(g, X + 128 - 50, ry - 2, 50, kl, true);
+      CHECKS.c = {textEnd: Math.ceil(X + 10 + Math.max(mw("SIGNAL ON"), mw("signal off")) * 0.75), keyStart: X + 78, keyText: Math.ceil(mw("RANGE 128") * 0.75), keyW: 48};
+    }
+  }
+
+  function drawTree(id, opt){ var cv = el(id); if (!cv) return; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(3, 0, 0, 3, 0, 0);
+    fill(g, 0, 0, 310, 180, BG);
+    var LV = {mining_speed:2,swiftness:2,featherfall:1,damage:2,resistance:2,vitality:1,fortify:2,alarm:2,ward:1,healing:2,sanctuary:2,extra_homes:1,output:4,anchor:2,lockpick:2,shroud:1,tripwire:1};
+    var P = tree(g, opt, LV, 2);
+    g.save(); g.translate(178, 2); panel(g, 0, 0, 1, 2, "a", 16); g.restore();
+    var n = nearest(P, "tripwire"), f = el("f-" + opt);
+    if (f) f.innerHTML = "<dt>Opens</dt><dd>at Tier II, once Alarm reaches level 2</dd><dt>Ranges</dt><dd>16 at II, 32 at III, 64 at IV, 128 at V</dd><dt>Closest node</dt><dd>" + n.name.replace("_", " ") + ", " + n.d + " pixels apart" + (n.touch ? " (touching!)" : "") + "</dd>";
+    CHECKS["tree_" + opt] = n;
+    if (opt === "b") CHECKS.herald_b = nearest(P, "herald");
+  }
+  function drawKey(id, concept){ var cv = el(id); if (!cv) return; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(3, 0, 0, 3, 0, 0);
+    fill(g, 0, 0, 140, 182, BG); g.save(); g.translate(6, 3); panel(g, 0, 0, 2, 2, concept, 32); g.restore(); }
+  function all(){ ["a","b","c"].forEach(function(o){ drawTree("t-" + o, o); drawKey("k-" + o, o); }); var s = el("sig"); if (s){ s.textContent = tripped() ? "SIGNAL 15" : "SIGNAL 0"; s.className = "pill" + (tripped() ? " on" : ""); } window.__tripwireChecks = CHECKS; }
+  ["gold","diamond","netherite"].forEach(function(k){ var im = new Image(); im.onload = all; im.src = COIN[k]; imgs[k] = im; });
+  font.onload = function(){ measure(); ready = true; all(); };
+  font.src = ASCII;
+  all();
+
+  // ---------------------------------------------------------------- the placed totem (three.js)
+  if (typeof THREE === "undefined") return;
+  var tex = new THREE.TextureLoader().load(TOTEM_TEX); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+  var MAT = new THREE.MeshLambertMaterial({map: tex});
+  function bx(g, f, t, c, glow){ var m = new THREE.Mesh(new THREE.BoxGeometry(t[0] - f[0], t[1] - f[1], t[2] - f[2]), glow ? new THREE.MeshBasicMaterial({color: c}) : new THREE.MeshLambertMaterial({color: c}));
+    m.position.set((f[0] + t[0]) / 2, (f[1] + t[1]) / 2, (f[2] + t[2]) / 2); g.add(m); return m; }
+  // the in-game Shatter Totem from its model file; `swap` replaces named parts (the groove in B)
+  function totem(g, swap){ var order = ["east","west","up","down","south","north"];
+    GEO.forEach(function(e){ var parts = swap && swap[e.name] ? swap[e.name] : [[e.from, e.to]];
+      parts.forEach(function(ft){ var f = ft[0], t = ft[1], s = [t[0] - f[0], t[1] - f[1], t[2] - f[2]], geo = new THREE.BoxGeometry(s[0], s[1], s[2]), uv = geo.attributes.uv;
+        order.forEach(function(face, i){ var fc = e.faces[face]; if (!fc) return; var u = fc.uv.map(function(v){ return v / 16; }); uv.setXY(i * 4, u[0], 1 - u[1]); uv.setXY(i * 4 + 1, u[2], 1 - u[1]); uv.setXY(i * 4 + 2, u[0], 1 - u[3]); uv.setXY(i * 4 + 3, u[2], 1 - u[3]); });
+        var m = new THREE.Mesh(geo, MAT), c = [(f[0] + t[0]) / 2, (f[1] + t[1]) / 2, (f[2] + t[2]) / 2];
+        if (e.rotation){ var p = new THREE.Group(), o = e.rotation.origin; p.position.set(o[0], o[1], o[2]); p.rotation[e.rotation.axis] = e.rotation.angle * Math.PI / 180; m.position.set(c[0] - o[0], c[1] - o[1], c[2] - o[2]); p.add(m); g.add(p); }
+        else { m.position.set(c[0], c[1], c[2]); g.add(m); } }); });
+  }
+  // four bought upgrades' orbs round the plinth, as the renderer draws them (radius 7.5 px, 3 px up, 2 px cubes)
+  function orbs(g){ var cols = [0xe8c45a, 0x6fd3ff, 0xff8f6b, 0xb58cff], list = [];
+    cols.forEach(function(c, i){ var a = Math.PI * 2 * i / 4 + Math.PI / 4, m = bx(g, [-1, -1, -1], [1, 1, 1], c, true); m.userData.base = [8 + Math.cos(a) * 7.5, 5, 8 - Math.sin(a) * 7.5]; m.position.set(m.userData.base[0], 5, m.userData.base[2]); list.push(m); });
+    return function(t){ list.forEach(function(m, i){ m.position.y = 5 + Math.sin(t * 2 + i * 2.1) * .64; m.rotation.y = t * .6 + i; }); }; }
+  // the story: dust from the totem's east side to a redstone lamp, both lit by the signal
+  function wiring(g){ var dust = [], lamp = [];
+    bx(g, [-24, -1, -24], [72, 0, 40], 0x23282f);
+    for (var x = 16; x < 32; x += 1) dust.push(bx(g, [x + .1, 0, 7], [x + .9, .2, 9], 0x5a0f0b, true));
+    dust.push(bx(g, [22, 0, 4], [26, .2, 12], 0x5a0f0b, true));
+    var body = bx(g, [32, 0, 0], [48, 16, 16], 0x5b3a22); lamp.push(body);
+    [[32, 0, -.15, 48, 16, .6], [32, 0, 15.4, 48, 16, 16.15], [31.85, 0, 0, 32.6, 16, 16], [47.4, 0, 0, 48.15, 16, 16]].forEach(function(r){ bx(g, [r[0], r[1], r[2]], [r[3], r[4], r[5]], 0x3a2516); });
+    [[36, 4, -.3, 44, 12, 0], [36, 4, 16, 44, 12, 16.3], [31.7, 4, 4, 32, 12, 12]].forEach(function(r){ lamp.push(bx(g, [r[0], r[1], r[2]], [r[3], r[4], r[5]], 0x6b4a2a, true)); });
+    return function(on){ dust.forEach(function(d){ d.material.color.setHex(on ? 0xff2a1f : 0x5a0f0b); }); lamp.forEach(function(l, i){ l.material.color.setHex(on ? (i ? 0xffe4a0 : 0xd99a4a) : (i ? 0x6b4a2a : 0x5b3a22)); }); }; }
+
+  var looks = {
+    a: function(g){ var lenses = [];
+      [[5, "n"], [11, "n"], [5, "s"], [11, "s"], [5, "e"], [11, "e"], [5, "w"], [11, "w"]].forEach(function(p){ var u = p[0], side = p[1], grp = new THREE.Group(); g.add(grp);
+        // place a local frame on the side's face: x along the side, z out of the face
+        if (side === "n"){ grp.position.set(u, 1, 2); grp.rotation.y = Math.PI; } else if (side === "s"){ grp.position.set(u, 1, 14); } else if (side === "e"){ grp.position.set(14, 1, u); grp.rotation.y = Math.PI / 2; } else { grp.position.set(2, 1, u); grp.rotation.y = -Math.PI / 2; }
+        bx(grp, [-1.1, .5, 0], [1.1, .8, .28], 0x2b2f38); bx(grp, [-1.1, -.8, 0], [1.1, -.5, .28], 0x2b2f38); bx(grp, [-1.1, -.5, 0], [-.8, .5, .28], 0x2b2f38); bx(grp, [.8, -.5, 0], [1.1, .5, .28], 0x2b2f38);
+        bx(grp, [-.8, -.5, -.05], [.8, .5, .02], 0x101216);
+        var lens = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 14), new THREE.MeshBasicMaterial({color: 0x4a1210})); lens.rotation.x = Math.PI / 2; lens.position.set(0, 0, .15); grp.add(lens); lenses.push(lens); });
+      return function(t, on){ lenses.forEach(function(l, i){ l.material.color.setHex(on ? 0xff2a1f : 0x4a1210); if (on && !reduce) l.material.color.multiplyScalar(.8 + .2 * Math.sin(t * 5 + i)); }); }; },
+    b: function(g){ var strip = [], spot = bx(g, [-.6, -.22, -.6], [.6, .22, .6], 0xffd0c8, true);
+      [[2.42, .78, 2.42, 13.58, 1.22, 2.6], [2.42, .78, 13.4, 13.58, 1.22, 13.58], [2.42, .78, 2.42, 2.6, 1.22, 13.58], [13.4, .78, 2.42, 13.58, 1.22, 13.58]].forEach(function(r){ strip.push(bx(g, [r[0], r[1], r[2]], [r[3], r[4], r[5]], 0x4a1210, true)); });
+      return function(t, on){ strip.forEach(function(s){ s.material.color.setHex(on ? 0xff2a1f : 0x4a1210); }); spot.visible = on && !reduce;
+        var p = (t % 1) * 44, x, z; if (p < 11){ x = 2.5 + p; z = 2.45; } else if (p < 22){ x = 13.55; z = 2.5 + p - 11; } else if (p < 33){ x = 13.5 - (p - 22); z = 13.55; } else { x = 2.45; z = 13.5 - (p - 33); }
+        spot.position.set(x, 1, z); }; },
+    c: function(g){ var shell = new THREE.Mesh(new THREE.BoxGeometry(6.5, 6.5, 6.5), new THREE.MeshBasicMaterial({color: 0xff2a1f, transparent: true, opacity: .45, depthWrite: false}));
+      shell.position.set(8, 10, 1); g.add(shell);
+      var ring = new THREE.Mesh(new THREE.RingGeometry(.92, 1, 48), new THREE.MeshBasicMaterial({color: 0xff2a1f, transparent: true, opacity: .8, side: THREE.DoubleSide, depthWrite: false}));
+      ring.rotation.x = -Math.PI / 2; ring.position.set(8, .08, 8); g.add(ring);
+      return function(t, on){ shell.visible = on; ring.visible = on; if (!on) return; var k = reduce ? .5 : t % 1, r = 8 + k * 22; ring.scale.set(r, r, r); ring.material.opacity = .85 * (1 - k);
+        shell.material.opacity = reduce ? .4 : .3 + .2 * Math.sin(t * 6); }; }
+  };
+  var swaps = {b: {plinth: [[[2, 0, 2], [14, .75, 14]], [[2.5, .75, 2.5], [13.5, 1.25, 13.5]], [[2, 1.25, 2], [14, 2, 14]]]}};
+
+  function view(id, k){ var host = el(id); if (!host) return;
+    var r = new THREE.WebGLRenderer({antialias: true, alpha: true}); r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); host.appendChild(r.domElement);
+    var scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 2000); scene.add(new THREE.AmbientLight(0xffffff, .72)); var d = new THREE.DirectionalLight(0xffffff, .7); d.position.set(10, 18, 14); scene.add(d);
+    var g = new THREE.Group(); scene.add(g); totem(g, swaps[k]); var orb = orbs(g), wire = wiring(g), look = looks[k](g);
+    var ry = Math.PI - .75, rx = .38, drag = false, lx = 0, ly = 0;
+    host.addEventListener("pointerdown", function(e){ drag = true; lx = e.clientX; ly = e.clientY; host.setPointerCapture(e.pointerId); });
+    host.addEventListener("pointermove", function(e){ if (!drag) return; ry += (e.clientX - lx) * .01; rx = Math.max(.05, Math.min(1.25, rx + (e.clientY - ly) * .01)); lx = e.clientX; ly = e.clientY; });
+    host.addEventListener("pointerup", function(){ drag = false; }); host.addEventListener("pointercancel", function(){ drag = false; });
+    function rs(){ var w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+    if (window.ResizeObserver) new ResizeObserver(rs).observe(host); rs();
+    var t0 = performance.now();
+    (function f(now){ var t = reduce ? 1 : (now - t0) / 1000, on = tripped(); if (!reduce && !drag) ry += .0025; orb(t); wire(on); look(t, on);
+      var D = 84, T = [14, 7, 6]; cam.position.set(T[0] + Math.sin(ry) * D * Math.cos(rx), T[1] + Math.sin(rx) * D, T[2] + Math.cos(ry) * D * Math.cos(rx)); cam.lookAt(T[0], T[1], T[2]);
+      r.render(scene, cam); requestAnimationFrame(f); })(t0);
+  }
+  ["a","b","c"].forEach(function(k){ view("v-" + k, k); });
+  var box = el("tripped"); if (box) box.addEventListener("change", all);
+})();
+</script>

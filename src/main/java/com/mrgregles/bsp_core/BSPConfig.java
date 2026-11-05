@@ -132,8 +132,8 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
     /** Thief's Step, Siege and Harvest (the 1.0 buffs), by level. */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> THIEF_STEP_ALARM, SIEGE_SECONDS, SIEGE_RECHARGE, HARVEST_RADIUS, HARVEST_SECONDS;
-    public static final ForgeConfigSpec.IntValue HARVEST_DRAW, SENTINEL_MARKER_RANGE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> THIEF_STEP_ALARM, SIEGE_SECONDS, SIEGE_RECHARGE, HARVEST_RADIUS, HARVEST_SECONDS, TRIPWIRE_RANGES, THIEF_STEP_TRIPWIRE;
+    public static final ForgeConfigSpec.IntValue HARVEST_DRAW, SENTINEL_MARKER_RANGE, TRIPWIRE_HOLD_SECONDS;
     public static final ForgeConfigSpec.IntValue CLOAK_DRAW, CLOAK_FADE_SECONDS, CLOAK_FADE_OUT_SECONDS, RECALL_PROMPT_SECONDS, RECALL_COOLDOWN_MINUTES;
     public static final ForgeConfigSpec.IntValue CHUNKS_MAX_PER_PLAYER;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
@@ -704,7 +704,7 @@ public final class BSPConfig {
         KIT_DELIVER_ON_RESTORE = BUILDER.comment("With BSP-InventorySync installed, deliver kits owed to a player when its restore has run (its InventoryRestoredEvent) instead of grantDelayTicks after the login.").define("deliverOnRestore", true);
         BUILDER.pop();
 
-        BUILDER.comment("The newer totem powers: Bouncy, X-ray, Cloaking, Recall and Recall Block. Lists have one entry per level.").push("effects");
+        BUILDER.comment("The newer totem powers: Bouncy, X-ray, Cloaking, Recall, Recall Block, Thief's Step, Siege, Harvest, Sentinel and Tripwire. Lists have one entry per level.").push("effects");
         BOUNCY_REDUCTION = BUILDER.comment("Share of fall damage Bouncy takes away, by level.").defineList("bouncyFallReduction", List.of(0.25, 0.5, 0.75, 1.0), BSPConfig::isFraction);
         BOUNCY_BOUNCE = BUILDER.comment("Share of the landing speed Bouncy throws you back up with, by level (like slime boots: a higher fall bounces higher). Sneak to land flat.")
                 .defineList("bouncyBounce", List.of(0.3, 0.45, 0.6, 0.75), BSPConfig::isFraction);
@@ -728,6 +728,11 @@ public final class BSPConfig {
         HARVEST_DRAW = BUILDER.comment("mB per tick of the totem's Wave Plasma output Harvest uses while ores are waiting to grow back.").defineInRange("harvestDraw", 25, 0, 100_000);
         SENTINEL_MARKER_RANGE = BUILDER.comment("Sentinel level 4: intruders within this many blocks of the viewer, in the same dimension, get a marker through walls. 0 turns the markers off.").defineInRange("sentinelMarkerRange", 128, 0, 1024);
         RECALL_BLOCK_SECONDS = BUILDER.comment("Seconds a thief's Recall Block delays the owner's Recall offer, by level, on top of Shroud.").defineList("recallBlockSeconds", List.of(10, 20, 30, 45), BSPConfig::isPositiveInt);
+        TRIPWIRE_RANGES = BUILDER.comment("Tripwire: the totem gives a redstone signal while an outsider is within this many blocks (a cube, like Alarm's), by level. One level opens per totem tier from Tier II.")
+                .defineList("tripwireRanges", List.of(16, 32, 64, 128), BSPConfig::isPositiveInt);
+        TRIPWIRE_HOLD_SECONDS = BUILDER.comment("Tripwire: seconds the signal stays on after the last outsider has gone, so doors and lamps do not flicker.").defineInRange("tripwireHoldSeconds", 3, 1, 60);
+        THIEF_STEP_TRIPWIRE = BUILDER.comment("Thief's Step: a Tripwire whose range in use is this level or lower does not see the carrier, by Thief's Step level. 0 hides from none.")
+                .defineList("thiefStepHidesFromTripwire", List.of(1, 2, 3, 4), BSPConfig::isNonNegativeInt);
         BUILDER.pop();
 
         BUILDER.comment("Discord steal warnings (the Herald upgrade). The bot's token never goes in this file: it lives only on the machine that runs the bot.").push("discord");
@@ -787,6 +792,10 @@ public final class BSPConfig {
             return fallback;
         }
         return list.get(Math.min(level, list.size()) - 1);
+    }
+
+    private static boolean isNonNegativeInt(Object o) {
+        return o instanceof Integer i && i >= 0;
     }
 
     private static boolean isPositiveInt(Object o) {

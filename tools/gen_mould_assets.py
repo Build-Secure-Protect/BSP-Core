@@ -75,7 +75,9 @@ def model(picked, tex):
     geo = json.loads(GEOMETRY.read_text())
     elements = []
     for e in geo["elements"]:
-        t = "#piece" if e.get("name") in picked else "#ghost"
+        # Tripwire's lamp studs sit in the base, so they come out of the Base Mould with it
+        name = e.get("name") or ""
+        t = "#piece" if name in picked or ("plinth" in picked and name.startswith("stud_")) else "#ghost"
         elements.append({"name": e.get("name"), "from": e["from"], "to": e["to"],
                          "faces": {f: {"uv": [0, 0, 16, 16], "texture": t} for f in e["faces"]}})
     # the picked-out boxes first: translucent quads write depth, so a ghost drawn before them would hide them where they overlap

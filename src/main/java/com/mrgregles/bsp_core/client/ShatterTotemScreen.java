@@ -237,6 +237,29 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         return b == Buff.HERALD && com.mrgregles.bsp_core.discord.Herald.available();
     }
 
+    /**
+     * Tripwire's card carries its range line once a range is bought, for those who may change it only: the range in use tells a
+     * raider whether their Thief's Step slips past, so everyone else sees the card without it.
+     */
+    private boolean tripwireLine(Buff b) {
+        return b == Buff.TRIPWIRE && level(b) > 0 && menu.getTotem() != null && mayUpgrade();
+    }
+
+    /** Why Buy is off, for Tripwire's one-line reason: the tier limit and "not yours" in short forms, so they fit whole above the range line. */
+    @Nullable
+    private Component tripwireReason(Buff b) {
+        Component why = blocked(b);
+        if (why != null && why.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents tc) {
+            if (tc.getKey().equals("gui.bsp_core.tree.why.cap")) {
+                return Component.translatable("gui.bsp_core.tree.why.cap_short", tc.getArgs());
+            }
+            if (tc.getKey().equals("gui.bsp_core.tree.not_yours")) {
+                return Component.translatable("gui.bsp_core.tree.not_yours_short");
+            }
+        }
+        return why;
+    }
+
     private boolean canBuy(Buff b) {
         return level(b) < b.maxLevel() && blocked(b) == null;
     }
@@ -308,6 +331,9 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 && (DiscordClient.shown() == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED || DiscordClient.shown() == com.mrgregles.bsp_core.discord.DiscordLinks.State.NOT_LINKED)) {
             DiscordClient.send(DiscordClient.shown() == com.mrgregles.bsp_core.discord.DiscordLinks.State.LINKED
                     ? com.mrgregles.bsp_core.discord.DiscordLinks.Action.UNLINK : com.mrgregles.bsp_core.discord.DiscordLinks.Action.LINK);
+            return true;
+        } else if (tripwireLine(b) && mayUpgrade() && TotemTree.overTripwireNext(mx, my, x + DETAIL_X, y + DETAIL_Y, tripwireReason(b))) {
+            BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.TripwireRangePacket(menu.getPos()));
             return true;
         } else if (buy && canBuy(b)) {
             BSPNetwork.CHANNEL.sendToServer(new PlacedUpgradeRequestPacket(menu.getPos(), b.ordinal()));
@@ -397,12 +423,16 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), null, set, true, mouseX, mouseY);
             tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, Math.min(tier(), TotemUpgrades.MAX_TIER - 1), Component.literal("-  +"), true, mouseX, mouseY);
         } else {
-            boolean discordLine = heraldLine(b);
-            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), discordLine ? null : blocked(b),
+            boolean discordLine = heraldLine(b), rangeLine = tripwireLine(b);
+            tree.detail(g, font, x + DETAIL_X, y + DETAIL_Y, level(b), tier(), discordLine || rangeLine ? null : blocked(b),
                     Component.translatable(level(b) >= b.maxLevel() ? "gui.bsp_core.upgrades.maxed" : "gui.bsp_core.tree.buy"), canBuy(b), mouseX, mouseY);
             if (discordLine) {
                 DiscordClient.refresh();
                 TotemTree.discordLine(g, font, x + DETAIL_X, y + DETAIL_Y, blocked(b), DiscordClient.shown(), DiscordClient.code(), DiscordClient.secondsLeft(), mouseX, mouseY);
+            }
+            if (rangeLine) {
+                ShatterTotemBlockEntity totem = menu.getTotem();
+                TotemTree.tripwireLine(g, font, x + DETAIL_X, y + DETAIL_Y, tripwireReason(b), totem.tripwireSetting(), level(b), mayUpgrade(), mouseX, mouseY);
             }
             tree.gate(g, font, x + DETAIL_X, y + DETAIL_Y, tier(), Component.translatable("gui.bsp_core.tree.raise"), canRaise(), mouseX, mouseY);
         }

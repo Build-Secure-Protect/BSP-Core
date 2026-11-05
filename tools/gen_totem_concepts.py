@@ -31,6 +31,8 @@ TORSO_FRONT = (48, 0, 56, 12)  # skin with the shatter crack
 PLINTH = (32, 16, 48, 32)      # dark stone base
 PLINTH_SIDE = (48, 16, 64, 20) # stone side strip
 ORBLET = (56, 0, 60, 4)        # white upgrade orb, tinted per buff level in game
+STUD_BEZEL = (32, 32, 36, 36)  # Tripwire's lamp-stud bezels: dark metal with a lit edge
+STUD_LENS = (36, 32, 40, 36)   # the studs' lenses at rest: dull dark red (the renderer lights them)
 
 
 def mottle(w, h, seed):
@@ -94,6 +96,8 @@ def build_role_map():
     rnd = random.Random(5)
     put(PLINTH, [["P1" if rnd.random() < 0.12 else "P0" for _ in range(16)] for _ in range(16)])
     put(PLINTH_SIDE, [["P0" if y < 3 else "P2" for _ in range(16)] for y in range(4)])
+    put(STUD_BEZEL, [["B1", "B1", "B1", "B1"], ["B1", "B0", "B0", "B0"], ["B1", "B0", "B0", "B0"], ["B1", "B0", "B0", "B0"]])
+    put(STUD_LENS, [["L1", "L1", "L1", "L1"], ["L1", "L0", "L0", "L1"], ["L1", "L0", "L0", "L1"], ["L1", "L1", "L1", "L1"]])
     return g
 
 
@@ -151,6 +155,7 @@ def skin_palette(base, dark, light, *_ignored):
         "C": hexc("#0B0F14"),
         "P0": hexc("#2B2B33"), "P1": hexc("#3A3A45"), "P2": hexc("#1F1F26"),
         "W0": hexc("#FFFFFF"), "W1": hexc("#C9CED8"),
+        "B0": hexc("#2B2F38"), "B1": hexc("#4A505C"), "L0": hexc("#3A0E0C"), "L1": hexc("#220806"),
         "X": (0, 0, 0, 0),
     }
 
@@ -282,7 +287,7 @@ def upgrade_orb_elements(plinth_from, plinth_to):
 def flip_z(el):
     """Mirror an element front-to-back so the face designed on 'south' ends up on 'north'."""
     f, t = el["from"], el["to"]
-    el["from"], el["to"] = [f[0], f[1], 16 - t[2]], [t[0], t[1], 16 - f[2]]
+    el["from"], el["to"] = [f[0], f[1], round(16 - t[2], 4)], [t[0], t[1], round(16 - f[2], 4)]
     faces = el["faces"]
     faces["north"], faces["south"] = faces.get("south"), faces.get("north")
     for k in [k for k, v in faces.items() if v is None]:
@@ -333,6 +338,33 @@ def variant_idol():
     ], "Idol")
 
 
+# Tripwire's lamp studs: two on each side of the plinth (centres 5 and 11 along the side, half way up), each a square bezel of
+# four bars standing a quarter pixel proud with a dull lens set in it. The renderer draws the lit lens over it while the
+# signal is on. Baked on every totem, so a raider cannot tell from outside which totems have Tripwire.
+STUD_CENTRES = (5, 11)
+STUD_BEZEL_FACES = {f: STUD_BEZEL for f in ("north", "south", "east", "west", "up", "down")}
+STUD_LENS_FACES = {f: STUD_LENS for f in ("north", "south", "east", "west", "up", "down")}
+
+
+def stud_elements(lo=2, hi=14):
+    out = []
+    parts = [("top", -1.1, 1.1, 1.5, 1.8, 0.25), ("bottom", -1.1, 1.1, 0.2, 0.5, 0.25), ("left", -1.1, -0.8, 0.5, 1.5, 0.25),
+             ("right", 0.8, 1.1, 0.5, 1.5, 0.25), ("lens", -0.8, 0.8, 0.5, 1.5, 0.1)]
+    for side in ("north", "south", "west", "east"):
+        for i, u in enumerate(STUD_CENTRES):
+            for part, a0, a1, y0, y1, depth in parts:
+                o0, o1 = (lo - depth, lo) if side in ("north", "west") else (hi, hi + depth)
+                if side in ("north", "south"):
+                    frm, to = [u + a0, y0, o0], [u + a1, y1, o1]
+                else:
+                    frm, to = [o0, y0, u + a0], [o1, y1, u + a1]
+                frm, to = [round(v, 4) for v in frm], [round(v, 4) for v in to]
+                # named for where it ends up: model() mirrors every element front to back (the face is designed on south)
+                final = {"north": "south", "south": "north"}.get(side, side)
+                out.append(box(frm, to, faces=STUD_LENS_FACES if part == "lens" else STUD_BEZEL_FACES, name=f"stud_{final}{i}_{part}"))
+    return out
+
+
 def variant_guardian():
     """Kneeling, head bowed, orb raised to the chest."""
     return model([
@@ -347,6 +379,7 @@ def variant_guardian():
         box([2, 7, 13], [5, 13, 17], seed=7, name="hand_l"),
         box([11, 7, 13], [14, 13, 17], seed=8, name="hand_r"),
         box([5, 7, 12], [11, 13, 18], faces=ORB_FACES, shade=False, name="orb"),
+        *stud_elements(),
     ], "Guardian")
 
 

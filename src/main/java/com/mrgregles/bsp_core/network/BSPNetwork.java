@@ -15,7 +15,7 @@ public final class BSPNetwork {
      * panel's score split (totem points and the part set by hand). 4: buy orders (the Trade Post's orders view, the Trade Post
      * keys for orders, the Wanted board's summary).
      */
-    private static final String PROTOCOL = "5";
+    private static final String PROTOCOL = "6";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -239,6 +239,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(LotterySummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(LotterySummaryPacket::encode).decoder(LotterySummaryPacket::decode)
                 .consumerMainThread(LotterySummaryPacket::handle).add();
+        CHANNEL.messageBuilder(TripwireRangePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TripwireRangePacket::encode).decoder(TripwireRangePacket::decode)
+                .consumerMainThread(TripwireRangePacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

@@ -2622,3 +2622,40 @@ On the network, with BSP-Teleport. Player A has a totem with Extra Homes 2 and S
 - [ ] A's totem is broken or removed on the home server: within a few seconds A's slots on the hub drop to 3.
 - [ ] A carries a totem with a higher level to the hub: the carried level counts.
 - [ ] Single player: the band's slots follow the totems carried and placed, as before.
+
+
+## Tripwire (2026-11-05)
+
+Task 1 of the line: the rules and the signal. The range key and the lit studs come in later tasks, so for now the range is always the highest one bought. Owner A with a placed totem; B is a player in no team with A; C is A's teammate.
+- [ ] A Tier I totem's tree shows TR (Tripwire) on the Tier II ring between Alarm and Sanctuary, locked. At Tier II with Alarm at level 2 it opens; its card reads "Base, from Tier II", "Level 0 of 4 (tier limit 1)", and the price is 2 Gold coins and 6 XP.
+- [ ] A buys it: the card reads "Redstone signal while an outsider is within 16 blocks", the tier limit stops a second level until Tier III, and a magenta orb joins the others round the base.
+- [ ] Dust from the totem's side to a lamp, and a door against another side. B walks within 16 blocks (any height within 16 too): within a second the lamp lights and the door opens. B steps back out: they stay on about 3 seconds, then go off.
+- [ ] C, an ally of A's team, a player on the access list, a creative player and a spectator walk up: nothing lights.
+- [ ] A stone block against the totem with dust on its far side: the dust stays dark (weak power).
+- [ ] Raise to Tier III and buy the second range: 32 blocks at once, for 2 Diamond coins and 9 XP. On to 64 at Tier IV (Netherite, 12 XP) and 128 at Tier V (Illyrium, 15 XP).
+- [ ] B carries a totem with Thief's Step 2 in the offhand: A's Tripwire at 32 or less does not see B; at 64 it does.
+- [ ] B starts a steal: the signal stays on through it. Picking the totem up turns the dust off.
+- [ ] Leave and come back (chunk unloaded and loaded again) with B standing near: the lamp comes back on within a second.
+
+Task 2: the range key (2026-11-05).
+- [ ] With 16 and 32 bought, Tripwire's card shows "Range: 32 blocks" under Buy with a teal NEXT key, and the tier limit reads "Tier III limit. Raise to Tier IV" in one line above it. Nothing overlaps the Raise box.
+- [ ] NEXT: "16 blocks"; B at 20 blocks no longer lights the lamp, B at 10 does. NEXT: "off", nothing lights. NEXT: "16 blocks" again.
+- [ ] Set to 16, buy 64 at Tier IV: the card jumps to "64 blocks".
+- [ ] C (teammate) and a friend with the Upgrades switch see the range line and can press NEXT; a friend without it, an ally and B see Tripwire's card with no range line (only the usual reason under Buy).
+- [ ] Set to 16, pick the totem up and place it again: still 16. An admin resets the upgrades and gives Tripwire back: it follows the top range.
+- [ ] With 128 in use and B 100 blocks out, NEXT to 16: the lamp goes dark at once, without the 3 s hold.
+- [ ] Before any range is bought the card has no range line.
+- [ ] A client on the previous version is refused with the update message (protocol 6).
+
+Task 3: the lamp studs (2026-11-05).
+- [ ] Any placed totem (owned, unclaimed, being stolen), a held totem and a Decoy Totem show eight studs round the base, two per side: a dark bezel with a dull dark red lens. Nothing flickers or fights where the studs meet the base.
+- [ ] B walks into A's Tripwire range: all eight lenses light bright red, full-bright even at night, with a slow shimmer; they go dull when the signal drops (about 3 s after B leaves).
+- [ ] The same from all four sides, and on totems placed facing each way.
+- [ ] The Base Mould item shows the studs as part of the ceramic piece; the other moulds and the Totem Core show them faintly as ghost.
+- [ ] Dust laid beside a Decoy Totem bends towards it exactly as beside a real totem.
+- [ ] The lit lenses do not flicker against the dull ones from 40 to 64 blocks away.
+
+Task 4: the guide book (2026-11-05).
+- [ ] The Upgrade Tree entry's "Base: walls" page lists "Tripwire: a redstone signal while outsiders are near", and the page still reads at a comfortable size.
+- [ ] Powers in Detail has the pages "Tripwire" and "Wiring a Tripwire" after "Linking Discord", and the "Alarm's" link reads properly.
+- [ ] The Alliances and Buy Orders entries are still there (the generator was brought back in step with them).

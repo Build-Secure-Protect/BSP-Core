@@ -4,6 +4,19 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-05
+
+### Added
+- **Tripwire**, a new totem power: the placed totem gives a redstone signal while an outsider is near. It sits on the Walls path after Alarm (Alarm at level 2 opens it) and has four ranges, one opening with each totem tier from Tier II: 16 blocks at Tier II, 32 at III, 64 at IV and 128 at V (`effects.tripwireRanges`). Each range is paid in its own tier's coin at Raid prices, so each costs more than the last (2 Gold coins and 6 XP levels, then 2 Diamond and 9, 2 Netherite and 12, 2 Illyrium and 15 with the default prices).
+  - **Who sets it off:** any player but the owner, the owner's teammates and allies, and players on the totem's access list; creative and spectating players never. The area is a cube round the totem, like Alarm's, in the totem's own dimension.
+  - **The signal:** full strength (15) on all six sides while anyone sets it off, as weak power (dust, repeaters, lamps, doors and pistons beside the totem react; the block it stands on does not pass it on). The totem looks once a second and holds the signal for `effects.tripwireHoldSeconds` (3) after the last outsider is seen, so doors do not flicker. Buying a range puts it to use at once. An unclaimed totem gives no signal, and a totem only looks while its chunk is loaded.
+  - **Thief's Step** hides its carrier from a Tripwire whose range in use is at or below its level (`effects.thiefStepHidesFromTripwire`, 1, 2, 3, 4).
+  - **Picking the range:** once a range is bought, Tripwire's card shows "Range: 32 blocks" under Buy with a NEXT key that steps through the ranges bought, then off, then the first again, so a 128-block totem can still guard just its door. Only the owner, teammates and friends with the Upgrades switch see the line and may press it; others do not learn the range in use. The setting stays with the totem when it is picked up and placed again, and an admin's upgrade reset puts it back to the top range. The tier limit under Buy reads in a short form on this card ("Tier III limit. Raise to Tier IV") so it fits whole.
+  - **Lamp studs:** every Shatter Totem (and every Decoy Totem) has eight small lamp studs round its base, two on each side, each a dark square bezel with a dull red lens. While a totem's Tripwire gives its signal, its lenses light bright red with a slow shimmer. They are on every totem, so nobody can tell from outside which totems have Tripwire. Redstone dust bends towards every totem and every Decoy Totem alike. The Base Mould shows them with the base.
+  - Tripwire's orb is magenta.
+  - The guide book's Upgrade Tree lists Tripwire with the Walls powers, and Powers in Detail has two Tripwire pages.
+  - Clients need this version too: the range key is a new packet (network protocol 6).
+
 ## [1.10.1] - 2026-11-04
 
 ### Fixed

@@ -85,7 +85,12 @@ public final class TotemUpgrades {
         /** Carried, on the Home spoke: a shorter teleport cooldown in the teleport mod, which reads the level. */
         SWIFT_TRAVEL("swift_travel", Branch.CARRIED, 2, "extra_homes", 3, false),
         /** Base, on the Walls path after Alarm, one level: a Discord message to the owner when the totem is being stolen. Locked where Discord is off ({@link com.mrgregles.bsp_core.discord.Herald}). */
-        HERALD("herald", Branch.BASE, 1, "alarm", 2, true);
+        HERALD("herald", Branch.BASE, 1, "alarm", 2, true),
+        /**
+         * Base, on the Walls path after Alarm: a redstone signal while an outsider is near, one range per totem tier from Tier II
+         * (16, 32, 64, 128 by default). Priced like a Raid power. Its rules are in {@link ShatterTotemBlockEntity#tripwireCheck}.
+         */
+        TRIPWIRE("tripwire", Branch.BASE, 1, "alarm", 2, false);
 
         public final String key;
         private final Branch branch;
@@ -133,12 +138,17 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
-            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST, SENTINEL -> 4; case EXTRA_HOMES, SWIFT_TRAVEL -> 3; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
+            return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST, SENTINEL, TRIPWIRE -> 4; case EXTRA_HOMES, SWIFT_TRAVEL -> 3; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
+        }
+
+        /** Levels that open with each totem tier: {@link #LEVELS_PER_TIER}, except Tripwire, which has one range per tier. */
+        public int perTier() {
+            return this == TRIPWIRE ? 1 : LEVELS_PER_TIER;
         }
 
         /** Highest level a totem of {@code totemTier} may hold. */
         public int cap(int totemTier) {
-            return totemTier < tier ? 0 : Math.min(maxLevel(), single ? 1 : LEVELS_PER_TIER * (totemTier - tier + 1));
+            return totemTier < tier ? 0 : Math.min(maxLevel(), single ? 1 : perTier() * (totemTier - tier + 1));
         }
 
         /** Effect radius in blocks for the two aura upgrades that draw a sphere; 0 otherwise or at level 0. */
@@ -163,6 +173,7 @@ public final class TotemUpgrades {
                 case ALARM -> BSPConfig.levelValue(BSPConfig.ALARM_RADIUS.get(), level, 0);
                 case SANCTUARY -> BSPConfig.levelValue(BSPConfig.SANCTUARY_RADIUS.get(), level, 0);
                 case HARVEST -> BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_RADIUS, List.<Integer>of()), level, 8);
+                case TRIPWIRE -> BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.TRIPWIRE_RANGES, List.<Integer>of()), level, 16 << Math.min(3, level - 1));
                 default -> 0;
             };
         }
@@ -193,8 +204,9 @@ public final class TotemUpgrades {
             return null;
         }
         // powers with their own level counts (Recall, X-ray, Output, ...) never price past the top tier's coin
-        int tier = Math.min(MAX_TIER, buff.single ? buff.tier : buff.tier + level / LEVELS_PER_TIER), step = buff.single ? 0 : level % LEVELS_PER_TIER;
-        Branch pricing = buff == Buff.SENTINEL || buff == Buff.HERALD ? Branch.RAID : buff.branch(); // Sentinel and Herald are Base powers at Raid prices (owner's rule)
+        int per = buff.perTier(), tier = Math.min(MAX_TIER, buff.single ? buff.tier : buff.tier + level / per), step = buff.single ? 0 : level % per;
+        // Sentinel, Herald and Tripwire are Base powers at Raid prices (owner's rule)
+        Branch pricing = buff == Buff.SENTINEL || buff == Buff.HERALD || buff == Buff.TRIPWIRE ? Branch.RAID : buff.branch();
         var coins = switch (pricing) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_COINS;
             case BASE -> BSPConfig.BASE_LEVEL_COINS;
