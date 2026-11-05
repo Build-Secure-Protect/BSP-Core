@@ -25,7 +25,25 @@ import java.util.function.Supplier;
 public record KitViewPacket(boolean open, boolean enabled, String rank, int rankIndex, List<String> ladder, long pieces, int freeSlots, List<Card> cards) {
     /** One kit as the player sees it. {@code state} is a {@link Kits.State} name; {@code number} and {@code text} go with it. */
     public record Card(String id, String name, String description, ItemStack icon, List<ItemStack> items, String state, long number, String text,
-                       boolean once, long cooldownSeconds, long price, String ranks, String servers, int slotsNeeded) {}
+                       boolean once, long cooldownSeconds, long price, String ranks, String servers, int slotsNeeded, List<Cond> conds) {}
+
+    /** One of a kit's conditions as it stands for the player: met or not, and its number (for "no_totem": how many totems they own). */
+    public record Cond(String key, boolean ok, long number) {}
+
+    /** The kit's conditions, each tested for the player; a key this version does not know is never met. */
+    static List<Cond> conds(ServerPlayer player, Kit k) {
+        List<Cond> out = new ArrayList<>();
+        for (String key : k.conditions) {
+            com.mrgregles.bsp_core.kit.KitCondition c = com.mrgregles.bsp_core.kit.KitCondition.of(key);
+            if (c == null) {
+                out.add(new Cond("unknown", false, 0));
+            } else {
+                com.mrgregles.bsp_core.kit.KitCondition.Result r = c.test(player);
+                out.add(new Cond(c.key, r.ok(), r.number()));
+            }
+        }
+        return out;
+    }
 
     public static KitViewPacket of(ServerPlayer player, boolean open) {
         List<Card> cards = new ArrayList<>();
@@ -47,7 +65,7 @@ public record KitViewPacket(boolean open, boolean enabled, String rank, int rank
                     continue;
                 }
                 Card c = new Card(k.id, k.name, k.description, k.iconOrFirst().copy(), k.copies(), s.state().name(), s.number(), s.text(), k.once, k.cooldownSeconds, k.price,
-                        String.join(", ", k.ranks), String.join(", ", k.servers), slotsNeeded(k));
+                        String.join(", ", k.ranks), String.join(", ", k.servers), slotsNeeded(k), conds(player, k));
                 (s.state() == Kits.State.OWED ? owed : rest).add(c);
             }
             cards.addAll(owed);
@@ -93,6 +111,11 @@ public record KitViewPacket(boolean open, boolean enabled, String rank, int rank
             buf.writeUtf(c.ranks, 256);
             buf.writeUtf(c.servers, 256);
             buf.writeVarInt(c.slotsNeeded);
+            buf.writeCollection(c.conds, (b, x) -> {
+                b.writeUtf(x.key, 32);
+                b.writeBoolean(x.ok);
+                b.writeVarLong(x.number);
+            });
         }
     }
 
@@ -113,7 +136,7 @@ public record KitViewPacket(boolean open, boolean enabled, String rank, int rank
                 items.add(buf.readItem());
             }
             cards.add(new Card(id, name, description, icon, items, buf.readUtf(16), buf.readLong(), buf.readUtf(256), buf.readBoolean(), buf.readLong(), buf.readLong(),
-                    buf.readUtf(256), buf.readUtf(256), buf.readVarInt()));
+                    buf.readUtf(256), buf.readUtf(256), buf.readVarInt(), buf.readList(b -> new Cond(b.readUtf(32), b.readBoolean(), b.readVarLong()))));
         }
         return new KitViewPacket(open, enabled, rank, rankIndex, ladder, pieces, free, cards);
     }

@@ -70,6 +70,11 @@ public class TotemLedger extends SavedData {
         return n;
     }
 
+    /** Every totem's last sighting, by id (read only). */
+    public Map<UUID, Sighting> sightings() {
+        return Collections.unmodifiableMap(totems);
+    }
+
     public UUID currentInstance(UUID id) {
         Sighting s = totems.get(id);
         return s == null ? null : s.instance();

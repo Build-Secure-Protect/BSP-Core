@@ -2585,5 +2585,22 @@
   "gui.bsp_core.tripwire.next": "NEXT",
   "gui.bsp_core.tree.why.cap_short": "Tier %s limit. Raise to Tier %s",
   "message.bsp_core.tripwire.not_yours": "Only those who may upgrade this totem can change its range",
-  "gui.bsp_core.tree.not_yours_short": "Only its owner can buy upgrades"
+  "gui.bsp_core.tree.not_yours_short": "Only its owner can buy upgrades",
+  "message.bsp_core.kit.condition.no_totem": "%s is only for players who own no Shatter Totem, and you own %s",
+  "message.bsp_core.kit.condition.unknown": "%s needs something this server does not know yet",
+  "message.bsp_core.kit.condition.try_again": "%s could not be checked across the network just now; try again shortly",
+  "message.bsp_core.kit.gone_free": "You left before the kit arrived",
+  "gui.bsp_core.naughty": "NAUGHTY NAUGHTY",
+  "gui.bsp_core.kit.needs": "Needs",
+  "gui.bsp_core.kit.cond.no_totem": "Owns no Shatter Totem anywhere on the network",
+  "gui.bsp_core.kit.cond_short.no_totem": "no totem",
+  "gui.bsp_core.kits.c.cond.no_totem": "You own a totem",
+  "gui.bsp_core.kits.c.cond.unknown": "Not here yet",
+  "gui.bsp_core.kits.l.cond.no_totem": "for players with no totem",
+  "gui.bsp_core.kits.l.cond.unknown": "a newer server can give it",
+  "gui.bsp_core.kits.f.cond.no_totem": "Own no Shatter Totem",
+  "gui.bsp_core.kits.f.cond.unknown": "Something this server does not know",
+  "gui.bsp_core.kits.f.cond_have.no_totem": "· you own %s",
+  "message.bsp_core.kit.pending": "%s is already on its way",
+  "message.bsp_core.kit.nested_totem": "A kit cannot hold a Shatter Totem inside another item: put it in a slot of its own"
 }

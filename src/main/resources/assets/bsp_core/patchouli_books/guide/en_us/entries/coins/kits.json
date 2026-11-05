@@ -15,6 +15,11 @@
     },
     {
       "type": "patchouli:text",
+      "text": "Some kits are only for players who own no Shatter Totem: none carried, placed, put away, or on another server. While you own one, the card is grey and says $(l)You own a totem$().$(br2)A totem a kit gives you is a new one, made in your name.",
+      "title": "No totem"
+    },
+    {
+      "type": "patchouli:text",
       "text": "A kit given to you as a reward, or at your first login, waits in violet when it did not fit or came while you were away. Free the slots it names and press TAKE IT.$(br2)Nothing is lost: a kit that cannot fit stays waiting until it can.",
       "title": "Waiting for you"
     },

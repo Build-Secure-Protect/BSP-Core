@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.client;
 
 import com.mrgregles.bsp_core.kit.Kit;
+import com.mrgregles.bsp_core.kit.KitCondition;
 import com.mrgregles.bsp_core.kit.Kits;
 import com.mrgregles.bsp_core.network.KitAdminPacket;
 import com.mrgregles.bsp_core.network.KitEditPacket;
@@ -45,7 +46,23 @@ public final class KitAdminTab {
         boolean canEdit();
     }
 
-    static final int W = 344, H_EDIT = 310;
+    static final int W = 344;
+    /** The "Needs" lines under Ranks: one per {@link KitCondition}, a tick box and its sentence; the first takes the place of a settings row. */
+    private static final int NEED_Y = 267, NEED_H = 11;
+
+    /** How much taller the editor is for its Needs lines than before them: a settings row for the first, a line for each more. */
+    private static int needsExtra() {
+        return 15 + (KitCondition.values().length - 1) * NEED_H;
+    }
+
+    /** The editor panel's height. */
+    static int editHeight() {
+        return 310 + needsExtra();
+    }
+
+    private static int editKeyY() {
+        return EDIT_KEY_Y + needsExtra();
+    }
     private static final int BG = 0xF010151C, SLOT = 0xFF0C0E12, DIM = 0xFF2A2F3A, VIO = 0xFFB58CFF, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F, GOLD = 0xFFFFD23A,
             MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A2140, OK = 0x58F29A;
     private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 16, ROWS = 9, DX = 130, KEY_Y = 182, KEY_H = 18;
@@ -262,6 +279,7 @@ public final class KitAdminTab {
             withId.grant = d.grant;
             withId.grantServers.addAll(d.grantServers);
             withId.enabled = d.enabled;
+            withId.conditions.addAll(d.conditions);
             draft = withId;
             return withId;
         }
@@ -534,7 +552,7 @@ public final class KitAdminTab {
         }
         if (!note.isEmpty() && System.currentTimeMillis() < noteUntil) {
             Component n = tr("note." + note);
-            small(g, n, x + W - 10 - smallWidth(n), y + (editing ? EDIT_KEY_Y : KEY_Y) - 10, note.equals("refused") || note.equals("id_taken") || note.equals("read_only") ? 0xFF8F86 : OK);
+            small(g, n, x + W - 10 - smallWidth(n), y + (editing ? editKeyY() : KEY_Y) - 10, note.equals("refused") || note.equals("id_taken") || note.equals("read_only") ? 0xFF8F86 : OK);
         }
     }
 
@@ -617,7 +635,17 @@ public final class KitAdminTab {
             int ruleW = (int) ((W - 22 - DX) / 0.75f);
             small(g, Component.literal(CashMachine.cut(font, ruleLine(sel), ruleW)), x + DX + 6, gy + 40, TEXT);
             small(g, Component.literal(CashMachine.cut(font, ruleLine2(sel), ruleW)), x + DX + 6, gy + 50, TEXT);
-            small(g, sel.lastTakenBy.isEmpty() ? tr("taken", sel.taken) : tr("taken_last", sel.taken, sel.lastTakenBy), x + DX + 6, gy + 64, MUTED);
+            int ty = gy + 64;
+            if (!sel.conditions.isEmpty()) {
+                List<String> needs = new ArrayList<>();
+                for (String key : sel.conditions) {
+                    KitCondition c = KitCondition.of(key);
+                    needs.add(c == null ? key : tr("cond_short." + c.key).getString());
+                }
+                small(g, Component.literal(CashMachine.cut(font, tr("needs").getString() + " " + String.join(", ", needs), ruleW)), x + DX + 6, gy + 60, TEXT);
+                ty = gy + 72;
+            }
+            small(g, sel.lastTakenBy.isEmpty() ? tr("taken", sel.taken) : tr("taken_last", sel.taken, sel.lastTakenBy), x + DX + 6, ty, MUTED);
             int cy = y + LIST_Y + ROWS * ROW_H - 12;
             chip(g, x + DX + 6, cy, tr(sel.enabled ? "enabled" : "v.off"), sel.enabled, false, mx, my, () -> {});
             if (sel.missing > 0) {
@@ -735,7 +763,7 @@ public final class KitAdminTab {
         }
 
         // the settings
-        inset(g, x + SLOT_X, y + SET_Y, W - 16, 130);
+        inset(g, x + SLOT_X, y + SET_Y, W - 16, 130 + needsExtra());
         int lx = x + 14;
         small(g, tr("name"), lx, y + 151, MUTED);
         inset(g, x + 56, y + 148, 92, 12);
@@ -796,26 +824,55 @@ public final class KitAdminTab {
             chips(g, x + 56, y + 243, tr("v.anyone"), d.ranks, ranks, Adding.RANK, edit, mx, my);
         }
 
-        small(g, tr("enabled"), lx, y + 269, MUTED);
+        // the Needs lines (the owner's pick B): a tick box and the sentence for each condition, all ticked ones must hold
+        small(g, tr("needs"), lx, y + NEED_Y + 2, MUTED);
+        KitCondition[] conds = KitCondition.values();
+        for (int i = 0; i < conds.length; i++) {
+            KitCondition c = conds[i];
+            int ny = y + NEED_Y + i * NEED_H;
+            boolean on = d.conditions.contains(c.key);
+            Component line = tr("cond." + c.key);
+            boolean hover = edit && over(mx, my, x + 56, ny - 1, 12 + smallWidth(line), 10);
+            g.fill(x + 56, ny, x + 64, ny + 8, on ? VIO : hover ? MUTED | 0xFF000000 : DIM);
+            g.fill(x + 57, ny + 1, x + 63, ny + 7, on ? HOVER : SLOT);
+            if (on) { // a tick drawn in pixels
+                int[][] px = {{1, 3}, {2, 4}, {3, 3}, {4, 2}, {5, 1}};
+                for (int[] p : px) {
+                    g.fill(x + 57 + p[0] - 1, ny + 1 + p[1], x + 57 + p[0], ny + 2 + p[1], VIO);
+                }
+            }
+            small(g, line, x + 68, ny + 2, on ? TEXT : MUTED);
+            if (edit) {
+                hits.add(new Hit(x + 56, ny - 1, 12 + smallWidth(line), 10, () -> {
+                    if (!d.conditions.remove(c.key)) {
+                        d.conditions.add(c.key);
+                    }
+                }));
+            }
+        }
+
+        int ey = y + 269 + needsExtra();
+        small(g, tr("enabled"), lx, ey, MUTED);
         cx = x + 56;
-        cx += chip(g, cx, y + 266, tr("v.on"), d.enabled, edit, mx, my, () -> d.enabled = true);
-        chip(g, cx, y + 266, tr("v.off"), !d.enabled, edit, mx, my, () -> d.enabled = false);
+        cx += chip(g, cx, ey - 3, tr("v.on"), d.enabled, edit, mx, my, () -> d.enabled = true);
+        chip(g, cx, ey - 3, tr("v.off"), !d.enabled, edit, mx, my, () -> d.enabled = false);
         if (!isNew) {
-            small(g, d.lastTakenBy.isEmpty() ? tr("taken", d.taken) : tr("taken_last", d.taken, d.lastTakenBy), x + 150, y + 269, MUTED);
+            small(g, d.lastTakenBy.isEmpty() ? tr("taken", d.taken) : tr("taken_last", d.taken, d.lastTakenBy), x + 150, ey, MUTED);
         }
 
         // the keys
-        key(g, x + SLOT_X, y + EDIT_KEY_Y, 62, KEY_H, tr("k.save"), edit, VIO, mx, my, this::save);
-        key(g, x + SLOT_X + 66, y + EDIT_KEY_Y, 70, KEY_H, tr("k.test"), edit && !isNew, TQ, mx, my, () -> {
+        int ky = y + editKeyY();
+        key(g, x + SLOT_X, ky, 62, KEY_H, tr("k.save"), edit, VIO, mx, my, this::save);
+        key(g, x + SLOT_X + 66, ky, 70, KEY_H, tr("k.test"), edit && !isNew, TQ, mx, my, () -> {
             save();
             host.send(KitEditPacket.of(KitEditPacket.Action.TEST, d.id));
         });
-        key(g, x + SLOT_X + 140, y + EDIT_KEY_Y, 62, KEY_H, tr(arming("delete") ? "k.sure" : "k.delete"), edit && !isNew, BAD, mx, my, () -> {
+        key(g, x + SLOT_X + 140, ky, 62, KEY_H, tr(arming("delete") ? "k.sure" : "k.delete"), edit && !isNew, BAD, mx, my, () -> {
             if (confirmed("delete")) {
                 host.send(KitEditPacket.of(KitEditPacket.Action.DELETE, d.id));
             }
         });
-        key(g, x + W - 8 - 62, y + EDIT_KEY_Y, 62, KEY_H, tr("k.close"), true, MUTED | 0xFF000000, mx, my, this::closeEditor);
+        key(g, x + W - 8 - 62, ky, 62, KEY_H, tr("k.close"), true, MUTED | 0xFF000000, mx, my, this::closeEditor);
     }
 
     private void setNamespace(String n) {

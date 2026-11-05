@@ -5,6 +5,9 @@ import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.api.BspBank;
 import com.mrgregles.bsp_core.api.event.KitEvent;
 import com.mrgregles.bsp_core.bank.Bank;
+import com.mrgregles.bsp_core.registry.ModItems;
+import com.mrgregles.bsp_core.totem.TotemInventories;
+import com.mrgregles.bsp_core.totem.TotemMint;
 import com.mrgregles.bsp_core.storage.NetworkStorage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -59,6 +62,12 @@ public final class Kits {
         REDEEMED,
         /** Taken lately; {@code number} = seconds until it is ready. */
         COOLDOWN,
+        /**
+         * A {@link KitCondition} the player does not meet; {@code text} = its key ("unknown:" and the name for one this version
+         * does not know), {@code number} = the condition's number (for "no totem": how many totems they own). Checked after once
+         * and the cooldown (a kit already taken says so first), before the price.
+         */
+        CONDITION,
         /** A rank the player lacks; {@code text} = the ranks that may. */
         RANK,
         /** Not redeemable on this server; {@code text} = the servers it may be taken on. */
@@ -95,6 +104,23 @@ public final class Kits {
             return new RankNames(List.of(), false);
         }
     }
+
+    /**
+     * How many totems a player has elsewhere on the network right now, for the "owns no totem" condition on a redeem; the answer
+     * comes on the server thread, null when it cannot be told. With network storage wanted it asks the database
+     * ({@link NetworkStorage#totemsElsewhere}, null while it is down); on a single server there is nowhere else, so 0. Tests swap it.
+     */
+    public interface TotemsElsewhere {
+        void ask(ServerPlayer player, Consumer<Integer> then);
+    }
+
+    public static TotemsElsewhere totemsElsewhere = (player, then) -> {
+        if (NetworkStorage.countsWanted()) {
+            NetworkStorage.totemsElsewhere(player.getUUID(), then);
+        } else {
+            then.accept(0);
+        }
+    };
 
     /** The scope of the network-wide row: the once rule, the cooldown and the owed count live on it. */
     public static final String NETWORK = "";
@@ -193,6 +219,10 @@ public final class Kits {
             if (s.isEmpty()) {
                 return Outcome.fail("empty_item").message();
             }
+            // a totem inside another item (a shulker box) would go out as a copy of that one totem, not a new one for each taker
+            if (!s.is(ModItems.SHATTER_TOTEM.get()) && s.hasTag() && s.getTag().toString().contains("bsp_core:shatter_totem")) {
+                return Outcome.fail("nested_totem").message();
+            }
         }
         if (kit.cooldownSeconds < 0 || kit.price < 0) {
             return Outcome.fail("negative").message();
@@ -207,12 +237,28 @@ public final class Kits {
             return new Outcome(false, why);
         }
         kit.name = kit.name.trim();
+        kit.blankTotems();
         for (int i = 0; i < kit.ranks.size(); i++) {
             kit.ranks.set(i, kit.ranks.get(i).toLowerCase(Locale.ROOT).trim());
         }
         kit.ranks.removeIf(String::isEmpty);
         kit.servers.removeIf(String::isBlank);
         kit.grantServers.removeIf(String::isBlank);
+        // conditions by key, each once, in the order the editor lists them; a name this version does not know is kept as it is
+        List<String> conditions = new ArrayList<>();
+        for (String name : kit.conditions) {
+            KitCondition c = KitCondition.of(name.trim());
+            String key = c == null ? name.trim() : c.key;
+            if (!key.isEmpty() && !conditions.contains(key)) {
+                conditions.add(key);
+            }
+        }
+        conditions.sort(java.util.Comparator.comparingInt(k -> {
+            KitCondition c = KitCondition.of(k);
+            return c == null ? Integer.MAX_VALUE : c.ordinal();
+        }));
+        kit.conditions.clear();
+        kit.conditions.addAll(conditions);
         KitLedger ledger = KitLedger.get(server);
         Kit old = ledger.kit(kit.id);
         if (old != null && old != kit) {
@@ -237,6 +283,11 @@ public final class Kits {
 
     /** The player's status for a kit, checked in the order the rules apply; one reason at a time. */
     public static Status status(ServerPlayer player, Kit kit) {
+        return status(player, kit, true);
+    }
+
+    /** As {@link #status}, leaving out the conditions when {@code conditions} is false (a redeem confirms them afresh on its own). */
+    private static Status status(ServerPlayer player, Kit kit, boolean conditions) {
         KitLedger ledger = KitLedger.get(player.server);
         KitLedger.Redeem row = ledger.redeem(player.getUUID(), kit.id, NETWORK);
         if (row != null && row.owed > 0) {
@@ -260,6 +311,10 @@ public final class Kits {
                 return new Status(State.COOLDOWN, left, "");
             }
         }
+        Status unmet = conditions ? unmet(player, kit) : null;
+        if (unmet != null) {
+            return unmet;
+        }
         if (kit.price > 0) {
             long have = BspBank.balance(player.server, player.getUUID());
             if (have < kit.price) {
@@ -271,6 +326,22 @@ public final class Kits {
             return new Status(State.SPACE, short_, "");
         }
         return new Status(State.READY, 0, "");
+    }
+
+    /** The first of the kit's conditions the player does not meet, or null when they meet them all. A condition this version does not know is never met. */
+    @Nullable
+    public static Status unmet(ServerPlayer player, Kit kit) {
+        for (String name : kit.conditions) {
+            KitCondition c = KitCondition.of(name);
+            if (c == null) {
+                return new Status(State.CONDITION, 0, "unknown:" + name);
+            }
+            KitCondition.Result r = c.test(player);
+            if (!r.ok()) {
+                return new Status(State.CONDITION, r.number(), c.key);
+            }
+        }
+        return null;
     }
 
     /** The status as a message for the player, or null when READY. */
@@ -285,6 +356,8 @@ public final class Kits {
             case SERVER -> Outcome.fail("server", kit.name, s.text()).message();
             case PRICE -> Outcome.fail("price", kit.name, BspBank.format(kit.price), BspBank.format(BspBank.balance(player.server, player.getUUID()))).message();
             case SPACE -> Outcome.fail("space", kit.name, s.number()).message();
+            case CONDITION -> s.text().startsWith("unknown:") ? Outcome.fail("condition.unknown", kit.name).message()
+                    : Outcome.fail("condition." + s.text(), kit.name, s.number()).message();
             case HIDDEN -> Outcome.fail("hidden", kit.name).message();
         };
     }
@@ -298,12 +371,35 @@ public final class Kits {
      * answered on a network.
      */
     public static void redeem(ServerPlayer player, String id, Consumer<Outcome> then) {
+        // one redeem of a kit per player at a time: on a network the answer waits for the database (and a price for the bank), and
+        // a second click meanwhile would pass every rule before the first had handed anything out
+        String key = player.getUUID() + "/" + id;
+        long now = System.currentTimeMillis();
+        Long since = REDEEMING.get(key);
+        if (since != null && now - since < REDEEM_WAIT_MS) {
+            Kit k = kit(player.server, id);
+            then.accept(Outcome.fail("pending", k == null ? id : k.name));
+            return;
+        }
+        REDEEMING.put(key, now);
+        redeemNow(player, id, o -> {
+            REDEEMING.remove(key);
+            then.accept(o);
+        });
+    }
+
+    /** Redeems waiting for an answer, by "player/kit", with when they started; one older than {@link #REDEEM_WAIT_MS} is taken as lost. */
+    private static final java.util.Map<String, Long> REDEEMING = new java.util.HashMap<>();
+    private static final long REDEEM_WAIT_MS = 60_000;
+
+    private static void redeemNow(ServerPlayer player, String id, Consumer<Outcome> then) {
         Kit kit = kit(player.server, id);
         if (kit == null) {
             then.accept(Outcome.fail("no_kit", id));
             return;
         }
-        Status s = status(player, kit);
+        // the conditions are left to confirm(), which asks the network afresh: the last read of it may be a refresh old either way
+        Status s = status(player, kit, false);
         if (s.state() == State.OWED) {
             then.accept(take(player, id));
             return;
@@ -312,6 +408,60 @@ public final class Kits {
             then.accept(new Outcome(false, explain(player, kit, s)));
             return;
         }
+        confirm(player, kit, 0, ok -> {
+            if (ok != null) {
+                then.accept(ok);
+                return;
+            }
+            // the network may have taken a moment: the kit as it stands now (an admin may have changed or deleted it), and the rest
+            // of its rules once more
+            Kit current = kit(player.server, id);
+            if (current == null) {
+                then.accept(Outcome.fail("no_kit", id));
+                return;
+            }
+            if (!current.conditions.equals(kit.conditions)) {
+                then.accept(Outcome.fail("condition.try_again", current.name));
+                return;
+            }
+            Status again = status(player, current, false);
+            if (!again.ready()) {
+                then.accept(new Outcome(false, explain(player, current, again)));
+                return;
+            }
+            pay(player, current, then);
+        });
+    }
+
+    /**
+     * Confirms the kit's conditions from {@code from} on, one after another ({@link KitCondition#confirm}); {@code then} gets null
+     * when every one holds, otherwise the refusal. Each answer arrives on the server thread; a player who left meanwhile is refused.
+     */
+    private static void confirm(ServerPlayer player, Kit kit, int from, Consumer<Outcome> then) {
+        if (from >= kit.conditions.size()) {
+            then.accept(null);
+            return;
+        }
+        KitCondition c = KitCondition.of(kit.conditions.get(from));
+        if (c == null) {
+            then.accept(Outcome.fail("condition.unknown", kit.name));
+            return;
+        }
+        c.confirm(player, r -> {
+            if (!player.isAlive() || player.hasDisconnected()) {
+                then.accept(Outcome.fail("gone_free"));
+            } else if (r == null) {
+                then.accept(Outcome.fail("condition.try_again", kit.name));
+            } else if (!r.ok()) {
+                then.accept(Outcome.fail("condition." + c.key, kit.name, r.number()));
+            } else {
+                confirm(player, kit, from + 1, then);
+            }
+        });
+    }
+
+    /** The redeem's last steps, every rule met: the price (when there is one), then the items. */
+    private static void pay(ServerPlayer player, Kit kit, Consumer<Outcome> then) {
         if (kit.price <= 0) {
             then.accept(hand(player, kit, KitEvent.How.REDEEMED, true));
             return;
@@ -461,12 +611,25 @@ public final class Kits {
         return n;
     }
 
-    /** Puts the items in the inventory (checked to fit by the caller), records it when asked, posts the event, tells the player. */
+    /**
+     * Puts the items in the inventory (checked to fit by the caller), records it when asked, posts the event, tells the player.
+     * Every Shatter Totem in the kit is handed out as a new one made for this player ({@link TotemMint#fresh}), placed however
+     * full the inventory is and never dropped (a totem must not lie on the ground).
+     */
     private static Outcome hand(ServerPlayer player, Kit kit, KitEvent.How how, boolean record) {
+        boolean totem = false;
         for (ItemStack s : kit.copies()) {
-            if (!player.getInventory().add(s)) {
+            if (s.is(ModItems.SHATTER_TOTEM.get())) {
+                totem = true;
+                for (int i = 0; i < s.getCount(); i++) {
+                    TotemInventories.giveBack(player, TotemMint.fresh(player));
+                }
+            } else if (!player.getInventory().add(s)) {
                 player.drop(s, false);
             }
+        }
+        if (totem && how != KitEvent.How.TEST) {
+            com.mrgregles.bsp_core.totem.StealBacks.watch(player.server, player.getUUID()); // any kit totem but TEST ON ME's starts the steal-back watch
         }
         if (record) {
             KitLedger ledger = KitLedger.get(player.server);

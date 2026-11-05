@@ -166,7 +166,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
 
     /** The panel's height: taller while the kit editor is open. */
     private int h() {
-        return tab == 3 && kits.editing() ? KitAdminTab.H_EDIT : H;
+        return tab == 3 && kits.editing() ? KitAdminTab.editHeight() : H;
     }
 
     @Override

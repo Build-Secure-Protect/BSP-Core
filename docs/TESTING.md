@@ -2679,3 +2679,66 @@ Dimensions in the config (2026-11-05):
 - [ ] Copy the mod's name into `allowedDimensions` and restart: a totem can be placed there.
 - [ ] Misspell a name in `allowedDimensions` (`minecraft:the_nethr`) and restart: the log warns that the server does not have it.
 - [ ] Edit `activeDimensions` by hand and restart: it is written back as it was.
+
+
+## Kit conditions (2026-11-05)
+
+Task 1: the "owns no totem" condition (one server). Tick "Owns no Shatter Totem anywhere on the network" in the kit editor's Needs line (task 6) to set it.
+- [ ] A kit with the `no_totem` condition: a player carrying a Shatter Totem presses REDEEM and chat says "... is only for players who own no Shatter Totem, and you own 1"; nothing is given and nothing is charged.
+- [ ] The same with the totem placed on this server, in the ender chest, or in the offhand: still refused.
+- [ ] A player whose only totem was stolen (the steal finished) can redeem it; during the steal it is still refused.
+- [ ] A husk, or a totem from last season, does not stop the kit.
+- [ ] An admin's GIVE TO… delivers the kit to a player who owns a totem.
+- [ ] A once-only kit already taken says "You already took ..." rather than the totem reason.
+
+Task 2: across the network (2026-11-05). Part of the MySQL live test.
+- [ ] After the first start with this version, the database's `kits` table has a `conditions` column; a kit given the condition on one server shows it on the others after their next read (the editor's tick list is task 6).
+- [ ] A player whose only totem is placed on another server is refused here at once after placing it, even before that server's next refresh.
+- [ ] Their only totem stolen on another server: REDEEM works here within that server's next score refresh (`scoring.refreshSeconds`), even if the kit card still showed it locked.
+- [ ] Stop the server holding their only totem: 30 minutes later (`scoring.serverTimeoutMinutes`) the kit is theirs to take, as the board drops that server.
+- [ ] Stop MySQL: REDEEM on a "no totem" kit says "... could not be checked across the network just now; try again shortly", and gives nothing.
+
+Task 3: fresh totems from kits (2026-11-05).
+- [ ] As an admin, put your own (upgraded) totem in a kit with FROM HAND and SAVE: the kit's slot shows a plain Shatter Totem, and your own totem is still yours and live.
+- [ ] Two players redeem it: each gets a Tier I totem in their own name ("Owner" on the tooltip), neither turns into a husk, and both can place them.
+- [ ] A kit made before this version with a totem in it: after the update, the next taker gets a live totem in their name (the stored one was cleaned at load).
+- [ ] A player with exactly the free slots the kit needs redeems it: everything lands, the totem included, and nothing is on the ground.
+- [ ] TEST ON ME on such a kit gives the admin a new totem of their own; it counts on the board like any other totem.
+- [ ] A new player's first-join totem is unchanged: one Tier I totem in their name.
+
+Task 4: the steal-back rule, server side (2026-11-05). The "naughty naughty" screen is task 5; until then a refused attempt shows nothing at all.
+- [ ] Player A's totem is stolen by B (the steal finishes). A takes a kit with a totem in it. A tries to steal the old totem back from B: nothing happens, B gets no warning, no Discord message, and the log has "Steal-back refused: A tried to steal totem ... It was stolen from them this season".
+- [ ] A's teammate tries the same: also refused; the log names A as the teammate.
+- [ ] A, or anyone else, can steal another of B's totems that was never A's.
+- [ ] Three hours after the kit (or with `kit.stealBackHours = 0` and a restart), A can steal it back as usual.
+- [ ] TEST ON ME on a totem kit does not start the watch.
+- [ ] Network, part of the MySQL live test: the tables `totem_losses` and `steal_watch` exist; the steal finished on server 1, the kit taken on server 2, and the steal-back tried on server 3 is refused within a moment (Redis), or within `storage.noticeSeconds` without Redis.
+
+Task 5: "NAUGHTY NAUGHTY" (2026-11-05). Network protocol 7: an older client is turned away at login with a version mismatch.
+- [ ] A refused steal-back (as in task 4): the whole screen turns dark red and "NAUGHTY NAUGHTY" lands in huge white letters with a dark red shadow, swells in and shakes for under a second, holds, and fades over the last second; 5 seconds in all.
+- [ ] The villager's "hmm-no" sounds once, at the start.
+- [ ] Meanwhile the player can walk, jump, fight and open their inventory; the words sit over the hotbar, the crosshair and every other HUD piece (steal timer, team prompts).
+- [ ] Clicking the totem again while it shows does not restart it or play the sound again; once it has gone, the next refused click shows it again.
+- [ ] Nothing in chat or on the action bar says why; the owner and anyone nearby see nothing.
+- [ ] With the GUI scale at 1 and at 4, and in a narrow window, the words stay on the screen (they shrink to fit).
+
+Task 6: the editor's Needs line and the locked card (2026-11-05).
+- [ ] `/bsp admin`, KITS, EDIT a kit: under Ranks a "Needs" line shows a tick box and "Owns no Shatter Totem anywhere on the network"; Enabled and the keys sit one row lower and the panel is a row taller. Nothing overlaps at GUI scale 2 and 3.
+- [ ] Click the box (or the sentence): a violet tick appears; click again to clear it. SAVE, close and EDIT again: it is still ticked. A NEW kit keeps it too.
+- [ ] The kit list's detail pane for that kit reads "Needs no totem" under the rule lines, with the "Taken" line below it.
+- [ ] A moderator (read only) sees the tick but cannot change it.
+- [ ] A player carrying or owning a totem opens the kit browser: the card is grey with a dimmed icon, a grey "You own a totem" chip and "for players with / no totem" in two lines underneath; no REDEEM key.
+- [ ] Click its icon: "To get it" lists "✗ Own no Shatter Totem · you own 1" in gold, and the key at the bottom reads "LOCKED · You own a totem". With no totem it reads "✓ Own no Shatter Totem" in green and REDEEM works.
+- [ ] A once-only kit already taken shows "Redeemed" rather than the totem reason.
+
+Task 7: the guide (2026-11-05).
+- [ ] The guide's Kits entry has a "No totem" page after "Reading a card": some kits are only for players who own no Shatter Totem, the grey "You own a totem" card, and that a kit's totem is a new one in your name. It reads at a comfortable size (not shrunk).
+- [ ] Nothing in the guide mentions stealing a totem back or the red screen.
+
+Audit fixes (2026-11-05).
+- [ ] A starts stealing back the totem B stole, then takes a "no totem" kit while the steal runs: when the steal's time is up it fails ("The steal attempt was interrupted"), B keeps the totem, and A sees NAUGHTY NAUGHTY.
+- [ ] Network: double-click REDEEM on a priced "no totem" kit: one kit, one payment; the second click says "... is already on its way".
+- [ ] A kit with a shulker box holding a Shatter Totem cannot be saved ("A kit cannot hold a Shatter Totem inside another item").
+- [ ] The NAUGHTY NAUGHTY tint covers the hotbar's items too; the villager sound is as loud as other game sounds.
+- [ ] A big kit (four rows of items, a rank, a price, a condition) turned over: "Own no Shatter Totem" is the first line under "To get it", and the list stops above the keys instead of running into them.
+- [ ] Network: stop a server that holds a player's only totem; after `scoring.serverTimeoutMinutes` the kit card turns ready as well as REDEEM working.

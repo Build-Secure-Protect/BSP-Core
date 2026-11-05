@@ -271,7 +271,7 @@ public class KitScreen extends Screen implements ScreenFit.Fitted {
 
     private void card(GuiGraphics g, KitViewPacket.Card c, int cx, int cy, int mx, int my, boolean live) {
         Kits.State state = Kits.State.valueOf(c.state());
-        boolean grey = state == Kits.State.REDEEMED || state == Kits.State.COOLDOWN;
+        boolean grey = state == Kits.State.REDEEMED || state == Kits.State.COOLDOWN || state == Kits.State.CONDITION;
         int edge = state == Kits.State.READY ? TQ : state == Kits.State.OWED ? VIO : DIM;
         int bg = state == Kits.State.READY ? READY_BG : state == Kits.State.OWED ? OWED_BG : SLOT;
         g.fill(cx, cy, cx + CARD_W, cy + CARD_H, edge);
@@ -305,6 +305,19 @@ public class KitScreen extends Screen implements ScreenFit.Fitted {
             case COOLDOWN -> {
                 chip(g, mid, cy + 50, tr("c.redeemed"), 0xFF1B1E26, 0x6B7280);
                 smallCentred(g, tr("l.again", Kits.span(c.number())), mid, body + 4, MUTED, CARD_W - 6);
+            }
+            case CONDITION -> { // the owner's pick A: greyed like a redeemed kit, the reason on the chip and a line under it
+                String key = condKey(c.text());
+                chip(g, mid, cy + 50, tr("c.cond." + key), 0xFF1B1E26, 0x6B7280);
+                List<net.minecraft.util.FormattedCharSequence> lines = font.split(tr("l.cond." + key), (int) ((CARD_W - 8) / 0.75f));
+                for (int i = 0; i < Math.min(2, lines.size()); i++) {
+                    int w = Math.round(font.width(lines.get(i)) * 0.75f);
+                    g.pose().pushPose();
+                    g.pose().translate(mid - w / 2f, body + 4 + i * 8, 0);
+                    g.pose().scale(0.75f, 0.75f, 1f);
+                    g.drawString(font, lines.get(i), 0, 0, MUTED, false);
+                    g.pose().popPose();
+                }
             }
             case RANK -> {
                 int need = neededIndex(c);
@@ -355,6 +368,12 @@ public class KitScreen extends Screen implements ScreenFit.Fitted {
         }
     }
 
+    /** The lang key part for a condition the status names: its key, or "unknown" for one this client does not know. */
+    private static String condKey(String text) {
+        com.mrgregles.bsp_core.kit.KitCondition c = text.startsWith("unknown:") ? null : com.mrgregles.bsp_core.kit.KitCondition.of(text);
+        return c == null ? "unknown" : c.key;
+    }
+
     private void flipped(GuiGraphics g, KitViewPacket.Card c, int x, int y, int mx, int my) {
         int fx = x + FX, fy = y + FY;
         Kits.State state = Kits.State.valueOf(c.state());
@@ -378,6 +397,19 @@ public class KitScreen extends Screen implements ScreenFit.Fitted {
         ly += 11;
         small(g, tr("f.to_get"), fx + 8, ly, MUTED);
         ly += 9;
+        int ky = fy + FH - 8 - 16;
+        // a long kit with many rules would run its list into the keys: the list is cut off above them
+        g.enableScissor(fx, fy, fx + FW, ky - 1);
+        // the kit's conditions first, as in the mock-up the owner picked
+        for (KitViewPacket.Cond k : c.conds()) {
+            String key = condKey(k.key());
+            Component line = tr("f.cond." + key);
+            small(g, Component.literal((k.ok() ? "✓ " : "✗ ") + line.getString()), fx + 8, ly, k.ok() ? OK : GOLD & 0xFFFFFF);
+            if (!k.ok() && key.equals("no_totem")) {
+                small(g, tr("f.cond_have." + key, k.number()), fx + 14 + smallWidth(line) + 6, ly, MUTED);
+            }
+            ly += 9;
+        }
         int need = neededIndex(c);
         if (!c.ranks().isEmpty()) {
             boolean ok = state != Kits.State.RANK;
@@ -420,7 +452,7 @@ public class KitScreen extends Screen implements ScreenFit.Fitted {
         } else if (state == Kits.State.OWED) {
             small(g, Component.literal("• " + tr("f.waiting").getString()), fx + 8, ly, VIO & 0xFFFFFF);
         }
-        int ky = fy + FH - 8 - 16;
+        g.disableScissor();
         switch (state) {
             case READY -> key(g, fx + 8, ky, 120, 16, tr("k.redeem"), TQ, true, mx, my, () -> send(new KitActionPacket(KitActionPacket.Action.REDEEM, c.id())));
             case OWED -> key(g, fx + 8, ky, 120, 16, tr("k.take"), VIO, c.number() <= 0, mx, my, () -> send(new KitActionPacket(KitActionPacket.Action.TAKE, c.id())));
@@ -431,6 +463,7 @@ public class KitScreen extends Screen implements ScreenFit.Fitted {
                     case PRICE -> tr("c.price", BspBank.format(c.price()).replace(" pieces", ""));
                     case SPACE -> tr("c.space", c.number());
                     case COOLDOWN -> tr("c.cooldown", Kits.span(c.number()));
+                    case CONDITION -> tr("c.cond." + condKey(c.text()));
                     default -> tr("c.redeemed");
                 };
                 key(g, fx + 8, ky, 150, 16, tr("k.locked", why), TQ, false, mx, my, null);

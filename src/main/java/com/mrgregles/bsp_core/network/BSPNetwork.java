@@ -13,9 +13,9 @@ public final class BSPNetwork {
      * Raised whenever a packet's layout changes, so a client and server that do not match are told at login instead of a
      * screen failing later. 2: the admin panel's network fields and the team screen's candidate servers. 3: the admin
      * panel's score split (totem points and the part set by hand). 4: buy orders (the Trade Post's orders view, the Trade Post
-     * keys for orders, the Wanted board's summary).
+     * keys for orders, the Wanted board's summary). 7: kit conditions on the kit cards and the steal-back screen ({@link NaughtyPacket}).
      */
-    private static final String PROTOCOL = "6";
+    private static final String PROTOCOL = "7";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -242,6 +242,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(TripwireRangePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(TripwireRangePacket::encode).decoder(TripwireRangePacket::decode)
                 .consumerMainThread(TripwireRangePacket::handle).add();
+        CHANNEL.messageBuilder(NaughtyPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(NaughtyPacket::encode).decoder(NaughtyPacket::decode)
+                .consumerMainThread(NaughtyPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

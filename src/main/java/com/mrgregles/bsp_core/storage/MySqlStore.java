@@ -244,7 +244,18 @@ final class MySqlStore implements AutoCloseable {
                     + "icon TEXT NOT NULL, in_browser TINYINT NOT NULL DEFAULT 1, once TINYINT NOT NULL DEFAULT 0, cooldown BIGINT NOT NULL DEFAULT 0, price BIGINT NOT NULL DEFAULT 0, "
                     + "ranks VARCHAR(512) NOT NULL DEFAULT '', servers VARCHAR(512) NOT NULL DEFAULT '', grant_kind VARCHAR(16) NOT NULL DEFAULT 'NONE', grant_servers VARCHAR(512) NOT NULL DEFAULT '', "
                     + "enabled TINYINT NOT NULL DEFAULT 1, created_ms BIGINT NOT NULL, taken INT NOT NULL DEFAULT 0, last_by VARCHAR(16) NOT NULL DEFAULT '', last_ms BIGINT NOT NULL DEFAULT 0, "
-                    + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+                    + "conditions VARCHAR(255) NOT NULL DEFAULT '', updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            try { // the kit conditions (comma-joined keys), added to a kits table made before them
+                st.executeUpdate("ALTER TABLE " + t("kits") + " ADD COLUMN conditions VARCHAR(255) NOT NULL DEFAULT ''");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                    throw e;
+                }
+            }
+            // the steal-back rule (StealBacks): totems stolen from each player this season, and the players a kit handed a totem lately
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("totem_losses") + " (uuid CHAR(36) NOT NULL, totem_id CHAR(36) NOT NULL, season INT NOT NULL, "
+                    + "lost_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (uuid, totem_id), INDEX (season))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("steal_watch") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, until_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kit_items") + " (kit VARCHAR(24) NOT NULL, slot INT NOT NULL, item VARCHAR(128) NOT NULL, count INT NOT NULL, nbt MEDIUMTEXT NOT NULL, PRIMARY KEY (kit, slot))");
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("kit_redeems") + " (uuid CHAR(36) NOT NULL, kit VARCHAR(24) NOT NULL, scope VARCHAR(64) NOT NULL DEFAULT '', count INT NOT NULL DEFAULT 0, "
                     + "last_ms BIGINT NOT NULL DEFAULT 0, owed INT NOT NULL DEFAULT 0, PRIMARY KEY (uuid, kit, scope), INDEX (kit))");
@@ -417,6 +428,114 @@ final class MySqlStore implements AutoCloseable {
             }
             ps.executeBatch();
         }
+    }
+
+    /**
+     * How many totems {@code owner} has placed on the other servers right now, for the kits' "owns no totem" condition: the
+     * admin panel rows (not carried) of every other server heard from within {@code maxAgeSeconds}, together with the
+     * {@code totems} rows written in that time (a totem placed since its server's last refresh). Each place counts once. Rows of a
+     * server gone silent do not count, as on the score board. Ages by the database's clock, in UTC.
+     */
+    int totemsPlacedElsewhere(UUID owner, long maxAgeSeconds) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT COUNT(*) FROM ("
+                + "SELECT server_id, dimension, x, y, z FROM " + t("admin_totems") + " WHERE owner_uuid = ? AND server_id <> ? AND carried = 0 "
+                + "AND UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ? "
+                + "UNION SELECT server_id, dimension, x, y, z FROM " + t("totems") + " WHERE owner_uuid = ? AND server_id <> ? "
+                + "AND UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ?) AS placed")) {
+            ps.setString(1, owner.toString());
+            ps.setString(2, serverId);
+            ps.setLong(3, maxAgeSeconds);
+            ps.setString(4, owner.toString());
+            ps.setString(5, serverId);
+            ps.setLong(6, maxAgeSeconds);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    /** The steal-back rule: {@code owner} lost the totem {@code totem} in {@code season}; earlier seasons' rows go (their totems are husks). */
+    void totemLost(UUID owner, UUID totem, int season) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("REPLACE INTO " + t("totem_losses") + " (uuid, totem_id, season) VALUES (?, ?, ?)")) {
+            ps.setString(1, owner.toString());
+            ps.setString(2, totem.toString());
+            ps.setInt(3, season);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("totem_losses") + " WHERE season < ?")) {
+            ps.setInt(1, season);
+            ps.executeUpdate();
+        }
+    }
+
+    /** The steal-back rule: watches {@code player} for {@code seconds} from now by the database's clock, or longer if a watch already runs longer. */
+    void stealWatch(UUID player, long seconds) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("steal_watch") + " (uuid, until_at) VALUES (?, TIMESTAMPADD(SECOND, ?, NOW())) "
+                + "ON DUPLICATE KEY UPDATE until_at = GREATEST(until_at, VALUES(until_at))")) {
+            ps.setString(1, player.toString());
+            ps.setLong(2, seconds);
+            ps.executeUpdate();
+        }
+        try (Statement st = conn().createStatement()) {
+            st.executeUpdate("DELETE FROM " + t("steal_watch") + " WHERE until_at < NOW()");
+        }
+    }
+
+    /**
+     * The watches running now with the totems each watched player lost in {@code season}; a watched player who lost nothing is
+     * left out. {@code untilMs} is by this machine's clock: the seconds left by the database's clock, added to now.
+     */
+    java.util.Map<UUID, com.mrgregles.bsp_core.totem.StealBacks.Watch> readStealWatches(int season) throws SQLException {
+        java.util.Map<UUID, Long> until = new java.util.HashMap<>();
+        java.util.Map<UUID, java.util.Set<UUID>> lost = new java.util.HashMap<>();
+        long now = System.currentTimeMillis();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT w.uuid, UNIX_TIMESTAMP(w.until_at) - UNIX_TIMESTAMP(), l.totem_id FROM " + t("steal_watch") + " w JOIN "
+                + t("totem_losses") + " l ON l.uuid = w.uuid WHERE w.until_at > NOW() AND l.season = ?")) {
+            ps.setInt(1, season);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        UUID p = UUID.fromString(rs.getString(1));
+                        until.put(p, now + rs.getLong(2) * 1000L);
+                        lost.computeIfAbsent(p, k -> new java.util.HashSet<>()).add(UUID.fromString(rs.getString(3)));
+                    } catch (IllegalArgumentException ignored) {
+                        // not an id
+                    }
+                }
+            }
+        }
+        java.util.Map<UUID, com.mrgregles.bsp_core.totem.StealBacks.Watch> out = new java.util.HashMap<>();
+        until.forEach((p, u) -> out.put(p, new com.mrgregles.bsp_core.totem.StealBacks.Watch(u, java.util.Set.copyOf(lost.get(p)))));
+        return out;
+    }
+
+    /**
+     * Every owner's count of totems placed on the other servers, as {@link #totemsPlacedElsewhere} counts one owner's: the admin
+     * panel rows (not carried) of the servers heard from within {@code maxAgeSeconds}, with the {@code totems} rows written in that
+     * time, each place once. The kit cards read this every notice cycle, so a card and a redeem agree.
+     */
+    java.util.Map<UUID, Integer> placedElsewhereCounts(long maxAgeSeconds) throws SQLException {
+        java.util.Map<UUID, Integer> out = new java.util.HashMap<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT owner_uuid, COUNT(*) FROM ("
+                + "SELECT owner_uuid, server_id, dimension, x, y, z FROM " + t("admin_totems") + " WHERE server_id <> ? AND carried = 0 "
+                + "AND UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ? "
+                + "UNION SELECT owner_uuid, server_id, dimension, x, y, z FROM " + t("totems") + " WHERE server_id <> ? "
+                + "AND UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ?) AS placed GROUP BY owner_uuid")) {
+            ps.setString(1, serverId);
+            ps.setLong(2, maxAgeSeconds);
+            ps.setString(3, serverId);
+            ps.setLong(4, maxAgeSeconds);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.put(UUID.fromString(rs.getString(1)), rs.getInt(2));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     /** How many Shatter Totems wait for the player in the pending items (a transfer, a hand-back, a delivery), without taking them. */
@@ -2416,8 +2535,8 @@ final class MySqlStore implements AutoCloseable {
     }
 
     void kitWrite(com.mrgregles.bsp_core.kit.Kit k) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kits") + " (id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), icon = VALUES(icon), in_browser = VALUES(in_browser), "
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kits") + " (id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms, conditions) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), conditions = VALUES(conditions), description = VALUES(description), icon = VALUES(icon), in_browser = VALUES(in_browser), "
                 + "once = VALUES(once), cooldown = VALUES(cooldown), price = VALUES(price), ranks = VALUES(ranks), servers = VALUES(servers), grant_kind = VALUES(grant_kind), grant_servers = VALUES(grant_servers), "
                 + "enabled = VALUES(enabled), taken = GREATEST(taken, VALUES(taken)), last_by = IF(VALUES(last_ms) >= last_ms, VALUES(last_by), last_by), last_ms = GREATEST(last_ms, VALUES(last_ms))")) {
             ps.setString(1, k.id);
@@ -2437,6 +2556,7 @@ final class MySqlStore implements AutoCloseable {
             ps.setInt(15, k.taken);
             ps.setString(16, k.lastTakenBy);
             ps.setLong(17, k.lastTakenMs);
+            ps.setString(18, com.mrgregles.bsp_core.kit.Kit.joined(k.conditions));
             ps.executeUpdate();
         }
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("kit_items") + " WHERE kit = ?")) {
@@ -2479,7 +2599,7 @@ final class MySqlStore implements AutoCloseable {
     /** One kit by id, or every kit, with its items; items this server cannot resolve are dropped and counted. */
     List<com.mrgregles.bsp_core.kit.Kit> kitRead(@Nullable String id) throws SQLException {
         List<com.mrgregles.bsp_core.kit.Kit> out = new ArrayList<>();
-        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms FROM " + t("kits")
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms, conditions FROM " + t("kits")
                 + (id == null ? " ORDER BY created_ms" : " WHERE id = ?"))) {
             if (id != null) {
                 ps.setString(1, id);
@@ -2508,6 +2628,7 @@ final class MySqlStore implements AutoCloseable {
                     k.taken = rs.getInt(15);
                     k.lastTakenBy = rs.getString(16);
                     k.lastTakenMs = rs.getLong(17);
+                    k.conditions.addAll(com.mrgregles.bsp_core.kit.Kit.split(rs.getString(18)));
                     out.add(k);
                 }
             }
@@ -2526,6 +2647,7 @@ final class MySqlStore implements AutoCloseable {
                     }
                 }
             }
+            k.blankTotems(); // a row written by an older version may hold a live totem's tag
         }
         return out;
     }

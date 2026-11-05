@@ -1075,13 +1075,19 @@ A grey card is one you took lately. It says how long until it is ready again, or
 
 A card with a rank on it needs that rank; the steps show where you stand and how far there is to go. A card naming a server is taken on that server. A price in pieces comes from your bank account. A card counting slots needs that much room in your inventory first.
 
-**Page 3: Waiting for you**
+**Page 3: No totem**
+
+Some kits are only for players who own no Shatter Totem: none carried, placed, put away, or on another server. While you own one, the card is grey and says **You own a totem**.
+
+A totem a kit gives you is a new one, made in your name.
+
+**Page 4: Waiting for you**
 
 A kit given to you as a reward, or at your first login, waits in violet when it did not fit or came while you were away. Free the slots it names and press TAKE IT.
 
 Nothing is lost: a kit that cannot fit stays waiting until it can.
 
-**Page 4: Looking inside**
+**Page 5: Looking inside**
 
 Click a card's picture to see what is in the kit, with the counts, and every condition ticked or crossed. BACK returns to the wall.
 

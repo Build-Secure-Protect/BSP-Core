@@ -128,7 +128,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue ALLIANCE_MAX_TEAMS, ALLIANCE_BREAK_HOURS, ALLIANCE_POSITION_SECONDS, ALLIANCE_LEFT_HOURS;
     public static final ForgeConfigSpec.DoubleValue ALLIANCE_BREAK_STEAL;
     public static final ForgeConfigSpec.BooleanValue KIT_ENABLED, KIT_SHOW_REDEEMED, KIT_DELIVER_ON_RESTORE;
-    public static final ForgeConfigSpec.IntValue KIT_GRANT_DELAY_TICKS, KIT_MAX_ITEMS;
+    public static final ForgeConfigSpec.IntValue KIT_GRANT_DELAY_TICKS, KIT_MAX_ITEMS, KIT_STEAL_BACK_HOURS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> BOUNCY_REDUCTION, BOUNCY_BOUNCE, XRAY_ALPHA;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> XRAY_RADIUS, XRAY_SECONDS, XRAY_RECHARGE, CLOAK_RADIUS, RECALL_RADIUS, RECALL_BLOCK_SECONDS;
     /** Thief's Step, Siege and Harvest (the 1.0 buffs), by level. */
@@ -714,6 +714,10 @@ public final class BSPConfig {
         KIT_SHOW_REDEEMED = BUILDER.comment("When true a once-only kit the player already took stays in their browser, marked redeemed; when false it is hidden.").define("showRedeemed", true);
         KIT_MAX_ITEMS = BUILDER.comment("Most stacks in one kit.").defineInRange("maxItems", 36, 1, 36);
         KIT_DELIVER_ON_RESTORE = BUILDER.comment("With BSP-InventorySync installed, deliver kits owed to a player when its restore has run (its InventoryRestoredEvent) instead of grantDelayTicks after the login.").define("deliverOnRestore", true);
+        KIT_STEAL_BACK_HOURS = BUILDER.comment("Hours after a kit hands a player a Shatter Totem during which that player, and their teammates, cannot steal any totem that",
+                        "was stolen from that player this season (a friend steals it, the kit gives a new one, the old one is stolen back). The attempt is refused",
+                        "without naming the reason. 0 turns this off.")
+                .defineInRange("stealBackHours", 3, 0, 168);
         BUILDER.pop();
 
         BUILDER.comment("The newer totem powers: Bouncy, X-ray, Cloaking, Recall, Recall Block, Thief's Step, Siege, Harvest, Sentinel and Tripwire. Lists have one entry per level.").push("effects");

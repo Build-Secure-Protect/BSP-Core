@@ -98,5 +98,6 @@ public final class ClientSetup {
         event.registerAboveAll("wrench_ends", WrenchHud.INSTANCE);
         event.registerAboveAll("team_prompts", PromptHud.INSTANCE);
         event.registerAboveAll("team_chat_badge", TeamChatBadge.INSTANCE);
+        event.registerAboveAll("naughty", NaughtyHud.INSTANCE); // last: drawn over every other layer
     }
 }

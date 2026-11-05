@@ -92,9 +92,7 @@ public final class FirstJoinHandler {
 
     /** Creates an owned totem for {@code player} and records the grant. Also used by admin commands. */
     public static void grant(ServerPlayer player, TotemLedger ledger) {
-        ItemStack totem = new ItemStack(ModItems.SHATTER_TOTEM.get());
-        new TotemOwner(player.getUUID(), player.getGameProfile().getName()).applyTo(totem);
-        com.mrgregles.bsp_core.totem.TotemIdentity.stampSeason(totem, com.mrgregles.bsp_core.admin.SeasonData.get(player.server).number);
+        ItemStack totem = com.mrgregles.bsp_core.totem.TotemMint.fresh(player);
 
         ledger.markGranted(player.getUUID());
         PlayerPersistent.setTotemGranted(player, true);

@@ -19,6 +19,8 @@ public final class RemoteTotemLevels {
     public record Row(UUID owner, String levels) {}
 
     private static volatile Map<UUID, Map<String, Integer>> byOwner = Map.of();
+    /** How many totems each owner has placed on the other servers that were heard from lately (kit conditions). */
+    private static volatile Map<UUID, Integer> counts = Map.of();
 
     /** Replaces what is known with a fresh read of the other servers' totems. Any thread. */
     public static void apply(List<Row> rows) {
@@ -31,9 +33,20 @@ public final class RemoteTotemLevels {
         byOwner = Map.copyOf(out);
     }
 
+    /** Replaces the counts of totems placed elsewhere with a fresh read ({@code MySqlStore.placedElsewhereCounts}). Any thread. */
+    public static void applyCounts(Map<UUID, Integer> read) {
+        counts = Map.copyOf(read);
+    }
+
     /** Forgets everything (the storage stopped). */
     public static void clear() {
         byOwner = Map.of();
+        counts = Map.of();
+    }
+
+    /** How many totems {@code owner} has placed on the network's other servers, as last read; 0 without network storage. */
+    public static int placedElsewhere(UUID owner) {
+        return counts.getOrDefault(owner, 0);
     }
 
     /** The highest level of upgrade {@code key} on {@code owner}'s totems placed on the other servers; 0 when none has it. */

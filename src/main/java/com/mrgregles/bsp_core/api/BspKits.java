@@ -23,11 +23,16 @@ import java.util.function.Consumer;
 public final class BspKits {
     private BspKits() {}
 
-    /** A kit as other mods see it. {@code items} are copies. */
+    /** A kit as other mods see it. {@code items} are copies. {@code conditions} are the condition keys a player must meet, all of them (e.g. "no_totem"). */
     public record Info(String id, String name, String description, ItemStack icon, List<ItemStack> items, boolean inBrowser, boolean once,
-                       long cooldownSeconds, long price, List<String> ranks, List<String> servers, String grant, boolean enabled) {}
+                       long cooldownSeconds, long price, List<String> ranks, List<String> servers, String grant, boolean enabled,
+                       List<String> conditions) {}
 
-    /** What a kit is to a player right now. {@code number} is the seconds, pieces or slots the state names; {@code text} the ranks or servers. */
+    /**
+     * What a kit is to a player right now. {@code number} is the seconds, pieces or slots the state names; {@code text} the ranks or
+     * servers. For "CONDITION", {@code text} is the unmet condition's key and {@code number} its number (for "no_totem": how many
+     * totems the player owns).
+     */
     public record Status(String state, long number, String text) {
         public boolean ready() {
             return "READY".equals(state);
@@ -36,7 +41,7 @@ public final class BspKits {
 
     private static Info view(Kit k) {
         return new Info(k.id, k.name, k.description, k.iconOrFirst().copy(), k.copies(), k.inBrowser, k.once, k.cooldownSeconds, k.price,
-                List.copyOf(k.ranks), List.copyOf(k.servers), k.grant.name(), k.enabled);
+                List.copyOf(k.ranks), List.copyOf(k.servers), k.grant.name(), k.enabled, List.copyOf(k.conditions));
     }
 
     /** Every kit this server knows, in the order they were made. */

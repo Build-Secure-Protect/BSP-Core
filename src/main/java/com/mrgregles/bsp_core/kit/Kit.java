@@ -58,6 +58,11 @@ public final class Kit {
     public final List<String> ranks = new ArrayList<>();
     /** Server ids the kit may be redeemed on; empty means everywhere. */
     public final List<String> servers = new ArrayList<>();
+    /**
+     * The {@link KitCondition} keys a player must meet to redeem the kit, all of them; empty means none. Kept as names, not enum
+     * values, so a condition a newer server saved survives a trip through an older one (which refuses the kit meanwhile).
+     */
+    public final List<String> conditions = new ArrayList<>();
     public Grant grant = Grant.NONE;
     /** For {@link Grant#SERVERS}: the servers that hand it out at first login; empty means every server. */
     public final List<String> grantServers = new ArrayList<>();
@@ -94,6 +99,30 @@ public final class Kit {
         return grant == Grant.SERVERS && (grantServers.isEmpty() || grantServers.contains(serverId));
     }
 
+    /**
+     * Makes every Shatter Totem in the kit (and its icon) a blank one: no id, owner, season, tier or upgrades. A totem dragged in
+     * from someone's inventory would otherwise hand every taker a copy of that one totem, in that person's name, and all but one
+     * copy would turn into husks. Each hand-out mints a new totem for the taker instead ({@code TotemMint.fresh}). Called on every
+     * save and every load (the world's copy, the editor's packet, the database), so a kit saved before this rule is cleaned too.
+     * Returns true when something changed.
+     */
+    public boolean blankTotems() {
+        boolean changed = false;
+        net.minecraft.world.item.Item totem = com.mrgregles.bsp_core.registry.ModItems.SHATTER_TOTEM.get();
+        for (int i = 0; i < items.size(); i++) {
+            ItemStack s = items.get(i);
+            if (s.is(totem) && s.hasTag()) {
+                items.set(i, com.mrgregles.bsp_core.totem.TotemMint.blank(s.getCount()));
+                changed = true;
+            }
+        }
+        if (icon.is(totem) && icon.hasTag()) {
+            icon = com.mrgregles.bsp_core.totem.TotemMint.blank(1);
+            changed = true;
+        }
+        return changed;
+    }
+
     /** Copies of the stacks, so a caller may hand them out. */
     public List<ItemStack> copies() {
         List<ItemStack> out = new ArrayList<>(items.size());
@@ -117,6 +146,7 @@ public final class Kit {
         k.price = price;
         k.ranks.addAll(ranks);
         k.servers.addAll(servers);
+        k.conditions.addAll(conditions);
         k.grant = grant;
         k.grantServers.addAll(grantServers);
         k.enabled = enabled;
@@ -146,6 +176,7 @@ public final class Kit {
         t.putLong("Price", price);
         t.put("Ranks", strings(ranks));
         t.put("Servers", strings(servers));
+        t.put("Conditions", strings(conditions));
         t.putString("Grant", grant.name());
         t.put("GrantServers", strings(grantServers));
         t.putBoolean("Enabled", enabled);
@@ -176,12 +207,14 @@ public final class Kit {
         k.price = t.getLong("Price");
         k.ranks.addAll(strings(t.getList("Ranks", Tag.TAG_STRING)));
         k.servers.addAll(strings(t.getList("Servers", Tag.TAG_STRING)));
+        k.conditions.addAll(strings(t.getList("Conditions", Tag.TAG_STRING)));
         k.grant = Grant.of(t.getString("Grant"));
         k.grantServers.addAll(strings(t.getList("GrantServers", Tag.TAG_STRING)));
         k.enabled = !t.contains("Enabled") || t.getBoolean("Enabled");
         k.taken = t.getInt("Taken");
         k.lastTakenBy = t.getString("LastBy");
         k.lastTakenMs = t.getLong("LastMs");
+        k.blankTotems();
         return k;
     }
 

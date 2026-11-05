@@ -219,6 +219,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             thief.displayClientMessage(Component.translatable("message.bsp_core.steal.too_far", BSPConfig.STEAL_RADIUS.get()).withStyle(ChatFormatting.RED), true);
             return;
         }
+        // the steal-back rule: a totem stolen from the thief (or a teammate) soon after a kit handed them a new one; refused before
+        // anything starts (no steal, no event, no warning, no Recall, no alliance break) and without telling them why
+        UUID watched = StealBacks.refuses(serverLevel.getServer(), thief.getUUID(), totemId());
+        if (watched != null) {
+            StealBacks.refused(serverLevel, thief, watched, totemId(), worldPosition);
+            return;
+        }
         int grace = BSPConfig.STEAL_GRACE_SECONDS.get() * 20;
         int seconds = owner == null ? BSPConfig.UNCLAIMED_STEAL_SECONDS.get() : BSPConfig.STEAL_SECONDS.get();
         net.minecraft.world.item.ItemStack raidTotem = thief.getOffhandItem();
@@ -578,6 +585,14 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     }
 
     private void completeSteal(ServerLevel level, ServerPlayer thief) {
+        // the steal-back rule again at the end: a steal started before a kit handed the thief (or a teammate) a totem must not
+        // finish after it; it fails like an interrupted one, and the thief is shown the same screen as a refused start
+        UUID watched = owner == null ? null : StealBacks.refuses(level.getServer(), thief.getUUID(), totemId());
+        if (watched != null) {
+            StealBacks.refused(level, thief, watched, totemId(), worldPosition);
+            endSteal(level, StealStatusPacket.OUTCOME_FAILED, "message.bsp_core.steal.failed_thief_gone");
+            return;
+        }
         TotemOwner previous = owner;
         StealState finished = steal;
         sendStatus(level, StealStatusPacket.OUTCOME_SUCCESS);
@@ -585,6 +600,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.TotemEvent.StealEnded(level.getServer(),
                 GlobalPos.of(level.dimension(), worldPosition), previous == null ? null : previous.uuid(), finished.thief(), finished.thiefName(), true, ""));
         setOwner(new TotemOwner(thief.getUUID(), thief.getGameProfile().getName()));
+        if (previous != null && !previous.uuid().equals(thief.getUUID())) {
+            StealBacks.lost(level.getServer(), previous.uuid(), totemId()); // the steal-back rule remembers whose it was
+        }
         blast(level, thief);
         thief.displayClientMessage(Component.translatable("message.bsp_core.steal.success", previous == null ? "?" : previous.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), false);
         if (previous != null) {
@@ -879,6 +897,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
      * Whether the player is in the owner's team: a teammate counts as a friend with every access flag.
      * On the server this asks the team ledger; a client uses the teammates synced with the block.
      */
+    /** This totem's permanent id (the same through placing, picking up and steals), or null when it has none yet. */
+    @Nullable
+    public UUID totemId() {
+        return identity.hasUUID(TotemIdentity.TAG_ID) ? identity.getUUID(TotemIdentity.TAG_ID) : null;
+    }
+
     public boolean isTeammate(UUID player) {
         if (owner == null || owner.uuid().equals(player)) {
             return false;
@@ -1033,6 +1057,15 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     }
 
     /** Operator: complete the steal in progress immediately. */
+    /** Finishes the running steal for {@code thief} as if their time had run out next to it (tests; a thief not in the player list). */
+    public boolean finishStealBy(ServerPlayer thief) {
+        if (level instanceof ServerLevel serverLevel && steal != null && steal.thief().equals(thief.getUUID())) {
+            completeSteal(serverLevel, thief);
+            return true;
+        }
+        return false;
+    }
+
     public boolean adminFinishSteal() {
         if (level instanceof ServerLevel serverLevel && steal != null) {
             ServerPlayer thief = serverLevel.getServer().getPlayerList().getPlayer(steal.thief());

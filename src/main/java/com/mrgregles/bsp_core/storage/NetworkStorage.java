@@ -385,6 +385,7 @@ public final class NetworkStorage {
                         shopReload(payload);
                     }
                 }
+                case "steal_watch" -> refreshStealWatches(srv);
                 case "kit" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.kit.KitSync.apply(srv, List.of(), payload.substring(1));
@@ -524,6 +525,7 @@ public final class NetworkStorage {
         if (srv == null) {
             return;
         }
+        com.mrgregles.bsp_core.totem.StealBacks.pushLosses(srv); // losses recorded here while the database was out of reach
         List<TotemLevels> levels = TotemLedger.get(srv).levelRows();
         async("write the placed totems' levels", s -> s.totemLevelsAll(levels)); // rows written before the levels were kept get them now
         long now = System.currentTimeMillis();
@@ -604,6 +606,7 @@ public final class NetworkStorage {
         vaultsElsewhere = Map.of();
         stealsElsewhere = List.of();
         RemoteTotemLevels.clear();
+        com.mrgregles.bsp_core.totem.StealBacks.clearNetwork();
         playersElsewhere = List.of();
         market = null;
         orders = null;
@@ -817,6 +820,30 @@ public final class NetworkStorage {
      * Sets ({@code add} false: {@code points} is the score wanted) or adds to a player's hand-set score adjustment for the whole
      * network. The answer (the new adjustment, or null when the database could not be reached) arrives on the server thread.
      */
+    /**
+     * For the kits' "owns no totem" condition: how many totems the player has elsewhere on the network right now, placed on the
+     * other servers ({@link MySqlStore#totemsPlacedElsewhere}) and waiting for them in the pending items. The answer arrives on the
+     * server thread: null when this server cannot tell (no connection, or the read failed).
+     */
+    public static void totemsElsewhere(UUID player, Consumer<Integer> then) {
+        long maxAge = com.mrgregles.bsp_core.score.ScoreService.serverTimeoutSeconds(); // read here, on the server thread
+        MySqlStore s = store;
+        if (s == null || down()) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Integer n = null;
+            try {
+                n = s.totemsPlacedElsewhere(player, maxAge) + s.countPendingTotems(player);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not count a player's totems elsewhere: {}", e.toString());
+            }
+            Integer r = n;
+            onServer(() -> then.accept(r));
+        });
+    }
+
     public static void scoreAdjust(UUID player, int points, boolean add, String by, Consumer<Integer> then) {
         long maxAge = com.mrgregles.bsp_core.score.ScoreService.serverTimeoutSeconds(); // read here, on the server thread
         MySqlStore s = store;
@@ -925,6 +952,7 @@ public final class NetworkStorage {
         collectTotemReturns(event.getServer());
         refreshSteals();
         refreshTotemLevels();
+        refreshStealWatches(event.getServer());
         sendPositions(event.getServer());
         refreshOnline();
         MySqlStore s = store;
@@ -1088,9 +1116,36 @@ public final class NetworkStorage {
         async("read the steals in progress", s -> stealsElsewhere = List.copyOf(s.readSteals(System.currentTimeMillis())));
     }
 
+    /** The steal-back watches and their lost totems, read every {@code storage.noticeSeconds} and on a Redis notice. Server thread (reads the season). */
+    private static void refreshStealWatches(MinecraftServer srv) {
+        int season = com.mrgregles.bsp_core.admin.SeasonData.get(srv).number;
+        async("read the steal-back watches", s -> com.mrgregles.bsp_core.totem.StealBacks.applyNetwork(s.readStealWatches(season)));
+    }
+
+    /** The steal-back rule: a steal finished and {@code owner} lost this totem. Written for the network; the others read it when a watch is started. */
+    public static void totemLost(UUID owner, UUID totem, int season) {
+        async("record a stolen totem", s -> s.totemLost(owner, totem, season));
+    }
+
+    /** The steal-back rule: a kit handed {@code player} a totem. Written, then every server is told to read the watches at once. */
+    public static void stealWatch(UUID player, long seconds) {
+        async("start a steal-back watch", s -> {
+            s.stealWatch(player, seconds);
+            publish("steal_watch", player.toString());
+            MinecraftServer srv = server;
+            if (srv != null) {
+                onServer(() -> refreshStealWatches(srv));
+            }
+        });
+    }
+
     /** The upgrade levels of the totems placed on the other servers (request R11), read every {@code storage.noticeSeconds}. */
     private static void refreshTotemLevels() {
-        async("read the totem levels elsewhere", s -> RemoteTotemLevels.apply(s.readTotemLevels()));
+        long maxAge = com.mrgregles.bsp_core.score.ScoreService.serverTimeoutSeconds(); // read here, on the server thread
+        async("read the totem levels elsewhere", s -> {
+            RemoteTotemLevels.apply(s.readTotemLevels());
+            RemoteTotemLevels.applyCounts(s.placedElsewhereCounts(maxAge));
+        });
     }
 
     /** Delivers the messages other servers left for the players online here. Polled every few seconds, and at once on a Redis notice. */
