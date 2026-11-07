@@ -110,7 +110,7 @@ public final class BSPConfig {
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ADMINS, MODERATORS;
     public static final ForgeConfigSpec.IntValue VAULT_LOCKPICK_SECONDS, VAULT_LOCK_LEVEL_SECONDS, VAULT_LOCKPICK_RADIUS, VAULT_ILLYRIUM_SAFE, VAULT_ALARM_COINS,
-            VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, STORAGE_NOTICE_SECONDS,
+            VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, VAULT_ILLYRIUM_VALUE_PER_INGOT, STORAGE_NOTICE_SECONDS,
             CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING, CENT_MAGNETISE_TICKS, CENT_MAGNETISE_TICKS_FULL,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
             PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX, INTERFACE_SIDE_MAX, TANK_PER_BLOCK, TANK_MAX;
@@ -145,8 +145,13 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CHUNKS_PER_LEVEL, CHUNK_RANGE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> DECOY_RANGES;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> CENT_NUGGETS_MIN, CENT_NUGGETS_MAX, CENT_CHARGE_ODDS;
-    public static final ForgeConfigSpec.DoubleValue VAULT_LOCKPICK_SHARE, VAULT_XP_RATE, VAULT_TETRIUM_RATE, VAULT_CAP_DAYS, VAULT_ILLYRIUM_PERIOD_DAYS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> VAULT_LOCK_COINS;
+    public static final ForgeConfigSpec.DoubleValue VAULT_LOCKPICK_SHARE, VAULT_XP_RATE, VAULT_TETRIUM_RATE, VAULT_CAP_DAYS, VAULT_ILLYRIUM_PERIOD_DAYS,
+            VAULT_MAX_XP_PER_DAY, VAULT_MAX_TETRIUM_PER_DAY, VAULT_MAX_ILLYRIUM_PER_DAY;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> VAULT_LOCK_COINS, VAULT_STEP_VALUES;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> VAULT_STEP_MULTIPLIERS;
+    public static final ForgeConfigSpec.BooleanValue VAULT_RATES_MOVED;
+    public static final ForgeConfigSpec.DoubleValue VAULT_PRIZE_HOURS;
+    public static final ForgeConfigSpec.IntValue VAULT_PRIZE_MIN_VALUE, VAULT_PRIZE_MAX_WAITING, VAULT_PRIZE_RARE_WEIGHT;
 
     // ------------------------------------------------------------------ scoring
 
@@ -545,17 +550,37 @@ public final class BSPConfig {
                         "Keep this short: a vault must never be a way to wall a totem in.")
                 .defineInRange("intruderBreakSeconds", 30, 1, 600);
         VAULT_MAX_BLOCKS = BUILDER.comment("Most vault blocks one player may own on this server. 27 is one full 3 x 3 x 3 vault.").defineInRange("maxBlocksPerPlayer", 27, 1, 1000);
-        BUILDER.comment("Interest, worked out on everything a player keeps in all their vaults together. It builds up while they are offline too,",
-                "stops at the cap, and has to be redeemed at a vault.").push("interest");
-        VAULT_INTEREST_UNIT = BUILDER.comment("The amount of stored coin value the two rates below are paid for (Copper 1, Gold 2, Diamond 4, Netherite 8, Illyrium 16 by default).")
-                .defineInRange("coinValuePerUnit", 50, 1, 1000000);
-        VAULT_XP_RATE = BUILDER.comment("XP levels earned per day for every coinValuePerUnit of coin value stored.")
+        BUILDER.comment("Interest, worked out on everything a player keeps in all their vaults on this server together. It builds up while they are offline too,",
+                "stops at the cap, and has to be redeemed at a vault. The more coin value is stored, the higher the multiplier on every rate below.").push("interest");
+        VAULT_INTEREST_UNIT = BUILDER.comment("The amount of stored coin value the XP and Tetrium rates below are paid for (Copper 1, Gold 2, Diamond 4, Netherite 8, Illyrium 16 by default).")
+                .defineInRange("coinValuePerUnit", 10, 1, 1000000);
+        VAULT_XP_RATE = BUILDER.comment("XP levels earned per day for every coinValuePerUnit of coin value stored, before the multiplier.")
                 .defineInRange("xpLevelsPerDayPerUnit", 1.0, 0.0, 1000.0);
-        VAULT_TETRIUM_RATE = BUILDER.comment("Tetrium Ingots earned per day for every coinValuePerUnit of coin value stored.").defineInRange("tetriumPerDayPerUnit", 0.5, 0.0, 1000.0);
-        VAULT_CAP_DAYS = BUILDER.comment("Unredeemed XP and Tetrium stop building up at this many days' worth.").defineInRange("capDays", 3.0, 0.1, 365.0);
-        VAULT_ILLYRIUM_PER_PERIOD = BUILDER.comment("Illyrium Ingots earned per period while the vaults hold at least one Netherite or Illyrium coin. This is also the most that can wait unredeemed.")
+        VAULT_TETRIUM_RATE = BUILDER.comment("Tetrium Ingots earned per day for every coinValuePerUnit of coin value stored, before the multiplier.").defineInRange("tetriumPerDayPerUnit", 3.0, 0.0, 1000.0);
+        VAULT_STEP_VALUES = BUILDER.comment("Stored coin value at which the multiplier steps up, lowest first. Below the first step the multiplier is 1.")
+                .defineList("stepValues", List.of(32, 128, 512), BSPConfig::isPositiveInt);
+        VAULT_STEP_MULTIPLIERS = BUILDER.comment("The multiplier from each step in stepValues on (the same count, in the same order). It applies to XP, Tetrium and Illyrium.")
+                .defineList("stepMultipliers", List.of(1.5, 2.0, 3.0), o -> o instanceof Number n && n.doubleValue() >= 0);
+        VAULT_MAX_XP_PER_DAY = BUILDER.comment("Most XP levels earned in a day, however much is stored. 0 for no limit.").defineInRange("maxXpLevelsPerDay", 100.0, 0.0, 1000000.0);
+        VAULT_MAX_TETRIUM_PER_DAY = BUILDER.comment("Most Tetrium Ingots earned in a day, however much is stored. 0 for no limit.").defineInRange("maxTetriumPerDay", 384.0, 0.0, 1000000.0);
+        VAULT_CAP_DAYS = BUILDER.comment("Unredeemed XP, Tetrium and Illyrium stop building up at this many days' worth.").defineInRange("capDays", 3.0, 0.1, 365.0);
+        VAULT_ILLYRIUM_VALUE_PER_INGOT = BUILDER.comment("Netherite and Illyrium coin value stored that earns one Illyrium Ingot a day, before the multiplier. 0 pays only the allowance below.")
+                .defineInRange("illyriumValuePerIngot", 32, 0, 1000000);
+        VAULT_MAX_ILLYRIUM_PER_DAY = BUILDER.comment("Most Illyrium Ingots earned in a day, however much is stored. 0 for no limit.").defineInRange("maxIllyriumPerDay", 4.0, 0.0, 10000.0);
+        VAULT_ILLYRIUM_PER_PERIOD = BUILDER.comment("The least Illyrium a player earns while the vaults hold at least one Netherite or Illyrium coin: this many ingots per period.")
                 .defineInRange("illyriumIngotsPerPeriod", 2, 0, 64);
         VAULT_ILLYRIUM_PERIOD_DAYS = BUILDER.comment("Length of that period in days.").defineInRange("illyriumPeriodDays", 3.0, 0.1, 365.0);
+        VAULT_RATES_MOVED = BUILDER.comment("Set by the mod the first time it loads this file: a coinValuePerUnit of 50 and a tetriumPerDayPerUnit of 0.5 (the old defaults) are moved to 10 and 3 once.",
+                "Leave it as it is; values set after that are kept.").define("ratesMoved", false);
+        BUILDER.pop();
+        BUILDER.comment("Prize rolls: a random item from the vault prize table (edited in the admin panel), paid when the player presses Redeem.",
+                "On a network one server pays them, and the coin value counts every server's vaults.").push("prizes");
+        VAULT_PRIZE_HOURS = BUILDER.comment("Real-time hours for one prize roll, online or offline. 0 turns prize rolls off.").defineInRange("hoursPerRoll", 12.0, 0.0, 8760.0);
+        VAULT_PRIZE_MIN_VALUE = BUILDER.comment("Coin value a player must keep in Coin Vaults (all servers together) for rolls to build up. Time spent under it earns none.")
+                .defineInRange("minimumCoinValue", 32, 0, 1000000);
+        VAULT_PRIZE_MAX_WAITING = BUILDER.comment("Most rolls that wait to be redeemed; no more build up until some are.").defineInRange("maxWaiting", 6, 1, 1000);
+        VAULT_PRIZE_RARE_WEIGHT = BUILDER.comment("A prize whose weight is this or less is rare: winning it plays the level-up sound and says the odds in chat. 0 for none.")
+                .defineInRange("rareWeight", 5, 0, 1000000);
         BUILDER.pop();
         BUILDER.pop();
 
@@ -851,6 +876,32 @@ public final class BSPConfig {
         return moved;
     }
 
+    /**
+     * Moves a saved {@code vault.interest.coinValuePerUnit} of 50 and {@code tetriumPerDayPerUnit} of 0.5 (the defaults before the
+     * stepped interest) to the new defaults of 10 and 3, once per config file; each is moved only if it still has its old default.
+     * The marker is set either way, so values an admin sets later are kept. Returns whether anything was moved; saves the file then.
+     */
+    public static boolean moveOldVaultRates() {
+        if (VAULT_RATES_MOVED.get()) {
+            return false;
+        }
+        boolean moved = false;
+        if (VAULT_INTEREST_UNIT.get() == 50) {
+            VAULT_INTEREST_UNIT.set(10);
+            moved = true;
+        }
+        if (VAULT_TETRIUM_RATE.get() == 0.5) {
+            VAULT_TETRIUM_RATE.set(3.0);
+            moved = true;
+        }
+        if (moved) {
+            BSPCore.LOGGER.info("BSP-Core: vault.interest had the old default rates and now has the new ones (coinValuePerUnit 10, tetriumPerDayPerUnit 3)");
+        }
+        VAULT_RATES_MOVED.set(true);
+        SPEC.save();
+        return moved;
+    }
+
     @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = BSPCore.MODID, bus = net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD)
     public static final class ConfigSteps {
         private ConfigSteps() {}
@@ -859,6 +910,7 @@ public final class BSPConfig {
         public static void onLoad(net.minecraftforge.fml.event.config.ModConfigEvent.Loading event) {
             if (event.getConfig().getSpec() == SPEC) {
                 moveOldCrucibleYield();
+                moveOldVaultRates();
             }
         }
     }

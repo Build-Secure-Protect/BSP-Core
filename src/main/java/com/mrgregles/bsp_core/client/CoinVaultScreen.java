@@ -32,9 +32,11 @@ import java.util.Locale;
 public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, GOLD = 0xFFFFD23A, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F, MUTED = 0x9AA3B5,
             TEXT = 0xE6EAF2, HOVER = 0xFF3A3210;
-    private static final int X0 = CoinVaultMenu.SLOT_X, RIGHT = X0 + 162, TAB_Y = 20, TAB_W = 52, TAB_H = 13, TAB_GAP = 3, BODY_Y = 37,
+    private static final int X0 = CoinVaultMenu.SLOT_X, RIGHT = X0 + 162, TAB_Y = 20, TAB_W = 39, TAB_H = 13, TAB_GAP = 2, BODY_Y = 37,
             STRIP_Y = 107, BTN_X = RIGHT - 50, BTN_W = 50, BTN_H = 18, ROW_H = 13, COL_W = 81;
-    private static final String[] TABS = {"storage", "access", "security"};
+    private static final String[] TABS = {"storage", "access", "security", "interest"};
+    /** The INTEREST tab's columns: XP, Tetrium, Illyrium. */
+    private static final int[] COLS = {X0 + 50, X0 + 86, X0 + 128};
     @Nullable
     private EditBox nameBox;
 
@@ -79,7 +81,7 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
     }
 
     private boolean anyDue() {
-        return menu.dueXp() + menu.dueTetrium() + menu.dueIllyrium() > 0;
+        return menu.dueXp() + menu.dueTetrium() + menu.dueIllyrium() + menu.duePrizes() > 0;
     }
 
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
@@ -145,6 +147,11 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
                 press(CoinVaultMenu.BTN_REDEEM);
                 return true;
             }
+        } else if (menu.tab == CoinVaultMenu.TAB_INTEREST) {
+            if (owner() && anyDue() && over(mx, my, x + BTN_X, y + STRIP_Y, BTN_W, BTN_H)) {
+                press(CoinVaultMenu.BTN_REDEEM);
+                return true;
+            }
         } else if (menu.tab == CoinVaultMenu.TAB_ACCESS && v != null && manager()) {
             for (int i = 0; i < v.accessList().size(); i++) {
                 if (over(mx, my, x + X0 + (i % 2) * COL_W + COL_W - 12, y + BODY_Y + 13 + (i / 2) * ROW_H, 10, 10)) {
@@ -203,6 +210,68 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
         g.drawString(font, label, x + w / 2 - font.width(label) / 2, y + 5, enabled ? GOLD & 0xFFFFFF : 0x6B7385, false);
     }
 
+    /** Small text shrunk further to fit {@code max} pixels, as the cash machine screens do. */
+    private void fit(GuiGraphics g, Component text, int x, int y, int colour, int max) {
+        int w = font.width(text);
+        float k = w <= 0 ? 0.75f : Math.max(0.5f, Math.min(0.75f, max / (float) w));
+        g.pose().pushPose();
+        g.pose().translate(x, y + Math.round((0.75f - k) * 4), 0);
+        g.pose().scale(k, k, 1f);
+        g.drawString(font, text, 0, 0, colour, false);
+        g.pose().popPose();
+    }
+
+    /** A number with its decimals only when it has some: 2, 1.5, 0.67. */
+    private static String num(double d) {
+        if (Math.abs(d - Math.rint(d)) < 1e-6) {
+            return Long.toString(Math.round(d));
+        }
+        if (Math.abs(d * 10 - Math.rint(d * 10)) < 1e-6) {
+            return String.format(Locale.ROOT, "%.1f", d);
+        }
+        return String.format(Locale.ROOT, "%.2f", d);
+    }
+
+    /** The interest steps for the ladder: the coin value where each starts (0 first) and its multiplier, from the server's config. */
+    private record Ladder(int[] at, double[] mult) {
+        int current(int value) {
+            int c = 0;
+            for (int i = 0; i < at.length; i++) {
+                if (value >= at[i]) {
+                    c = i;
+                }
+            }
+            return c;
+        }
+    }
+
+    private static Ladder ladder() {
+        List<? extends Integer> steps = BSPConfig.getOr(BSPConfig.VAULT_STEP_VALUES, List.of(32, 128, 512));
+        List<? extends Number> mults = BSPConfig.getOr(BSPConfig.VAULT_STEP_MULTIPLIERS, List.of(1.5, 2.0, 3.0));
+        // in step order, as the server's multiplier() reads them; at most five steps fit beside x1
+        List<int[]> order = new java.util.ArrayList<>();
+        for (int i = 0; i < Math.min(steps.size(), mults.size()); i++) {
+            order.add(new int[]{steps.get(i), i});
+        }
+        order.sort(java.util.Comparator.comparingInt(o -> o[0]));
+        int n = Math.min(5, order.size());
+        int[] at = new int[n + 1];
+        double[] mult = new double[n + 1];
+        mult[0] = 1.0;
+        for (int i = 0; i < n; i++) {
+            at[i + 1] = order.get(i)[0];
+            mult[i + 1] = mults.get(order.get(i)[1]).doubleValue();
+        }
+        return new Ladder(at, mult);
+    }
+
+    private static int segW(int n) {
+        return (162 - 2 * (n - 1)) / n;
+    }
+
+    /** The most prize pips that fit left of Redeem; more waiting than that shows as a count. */
+    private static final int MAX_PIPS = 7;
+
     private void pips(GuiGraphics g, int x, int y, int lit, int max) {
         for (int i = 0; i < max; i++) {
             g.fill(x + i * 9, y, x + i * 9 + 7, y + 7, i < lit ? GOLD : DIM);
@@ -253,6 +322,26 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
             // interest: how full it is against its cap
             g.fill(x + X0, y + STRIP_Y + 20, x + BTN_X - 6, y + STRIP_Y + 23, DIM);
             g.fill(x + X0, y + STRIP_Y + 20, x + X0 + Math.round((BTN_X - 6 - X0) * Mth.clamp(menu.fill(), 0, 1)), y + STRIP_Y + 23, menu.fill() >= 1f ? BAD : GOLD);
+            button(g, x + BTN_X, y + STRIP_Y, BTN_W, tr("redeem"), owner() && anyDue(), mouseX, mouseY);
+        } else if (menu.tab == CoinVaultMenu.TAB_INTEREST) {
+            Ladder l = ladder();
+            int n = l.at().length, w = segW(n), cur = l.current(menu.totalValue());
+            for (int i = 0; i < n; i++) {
+                int sx = x + X0 + i * (w + 2);
+                g.fill(sx, y + 48, sx + w, y + 59, i == cur ? GOLD : DIM);
+                g.fill(sx + 1, y + 49, sx + w - 1, y + 58, i == cur ? HOVER : SLOT_BG);
+            }
+            g.fill(x + X0, y + 79, x + RIGHT, y + 80, DIM);
+            int most = BSPConfig.getOr(BSPConfig.VAULT_PRIZE_MAX_WAITING, 6);
+            if (most <= MAX_PIPS) {
+                for (int i = 0; i < most; i++) {
+                    int px = x + COLS[0] + i * 8;
+                    g.fill(px, y + 110, px + 6, y + 116, i < menu.duePrizes() ? TQ : DIM);
+                    if (i >= menu.duePrizes()) {
+                        g.fill(px + 1, y + 111, px + 5, y + 115, SLOT_BG);
+                    }
+                }
+            }
             button(g, x + BTN_X, y + STRIP_Y, BTN_W, tr("redeem"), owner() && anyDue(), mouseX, mouseY);
         } else if (menu.tab == CoinVaultMenu.TAB_ACCESS && v != null) {
             if (manager()) {
@@ -306,7 +395,12 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
         }
         for (int i = 0; i < TABS.length; i++) {
             Component label = tr("tab." + TABS[i]);
-            small(g, label, X0 + i * (TAB_W + TAB_GAP) + TAB_W / 2 - Math.round(font.width(label) * 0.375f), TAB_Y + 4, menu.tab == i ? GOLD & 0xFFFFFF : MUTED);
+            float k = Math.min(0.75f, (TAB_W - 4) / (float) Math.max(1, font.width(label)));
+            g.pose().pushPose();
+            g.pose().translate(X0 + i * (TAB_W + TAB_GAP) + TAB_W / 2f - font.width(label) * k / 2f, TAB_Y + 4 + Math.round((0.75f - k) * 4), 0);
+            g.pose().scale(k, k, 1f);
+            g.drawString(font, label, 0, 0, menu.tab == i ? GOLD & 0xFFFFFF : MUTED, false);
+            g.pose().popPose();
         }
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, MUTED, false);
         if (menu.tab == CoinVaultMenu.TAB_STORAGE) {
@@ -317,7 +411,10 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
                 g.drawString(font, ">", RIGHT - 9, BODY_Y, GOLD & 0xFFFFFF, false);
             }
             small(g, tr("interest", menu.dueXp()), X0, STRIP_Y, anyDue() ? GOLD & 0xFFFFFF : MUTED);
-            small(g, tr("due", menu.dueTetrium(), menu.dueIllyrium()), X0, STRIP_Y + 10, anyDue() ? GOLD & 0xFFFFFF : MUTED);
+            Component due = menu.duePrizes() > 0 ? tr("due_prizes", menu.dueTetrium(), menu.dueIllyrium(), menu.duePrizes()) : tr("due", menu.dueTetrium(), menu.dueIllyrium());
+            fit(g, due, X0, STRIP_Y + 10, anyDue() ? GOLD & 0xFFFFFF : MUTED, BTN_X - 6 - X0);
+        } else if (menu.tab == CoinVaultMenu.TAB_INTEREST) {
+            interestLabels(g);
         } else if (menu.tab == CoinVaultMenu.TAB_ACCESS && v != null) {
             small(g, tr("access_head", v.accessList().size(), CoinVaultBlockEntity.MAX_ACCESS), X0, BODY_Y + 2, MUTED);
             List<CoinVaultBlockEntity.Access> list = v.accessList();
@@ -349,6 +446,48 @@ public class CoinVaultScreen extends AbstractContainerScreen<CoinVaultMenu> impl
             small(g, tr("illyrium_rule", BSPConfig.getOr(BSPConfig.VAULT_ILLYRIUM_SAFE, 3)), X0, BODY_Y + 71, MUTED);
             small(g, tr(manager() ? "break_rule" : "access_owner_only"), X0, BODY_Y + 80, MUTED);
         }
+    }
+
+    /** The INTEREST tab's words: the hoard and its step, the rates and what waits, and the prize rolls. */
+    private void interestLabels(GuiGraphics g) {
+        int value = menu.totalValue();
+        small(g, tr("hoard"), X0, BODY_Y + 2, MUTED);
+        Component worth = tr("hoard_value", value);
+        small(g, worth, RIGHT - Math.round(font.width(worth) * 0.75f), BODY_Y + 2, TEXT);
+        Ladder l = ladder();
+        int n = l.at().length, w = segW(n), cur = l.current(value);
+        for (int i = 0; i < n; i++) {
+            int sx = X0 + i * (w + 2);
+            Component m = Component.literal("×" + num(l.mult()[i]));
+            fit(g, m, sx + w / 2 - Math.min(w - 4, Math.round(font.width(m) * 0.75f)) / 2, 51, i == cur ? GOLD & 0xFFFFFF : MUTED, w - 4);
+            small(g, Component.literal(Integer.toString(l.at()[i])), sx, 62, i == cur ? TEXT : 0x6B7385);
+        }
+        fit(g, cur + 1 < n ? tr("next_step", l.at()[cur + 1] - value, num(l.mult()[cur + 1])) : tr("top_step", num(l.mult()[cur])), X0, 71, MUTED, 162);
+        String[] heads = {"col.xp", "col.tetrium", "col.illyrium"};
+        double[] rates = menu.dailyRates();
+        int[] waiting = {menu.dueXp(), menu.dueTetrium(), menu.dueIllyrium()};
+        for (int i = 0; i < 3; i++) {
+            small(g, tr(heads[i]), COLS[i], 83, MUTED);
+            small(g, Component.literal(num(rates[i])), COLS[i], 91, TEXT);
+            small(g, Component.literal(Integer.toString(waiting[i])), COLS[i], 99, waiting[i] > 0 ? GOLD & 0xFFFFFF : MUTED);
+        }
+        small(g, tr("a_day"), X0, 91, MUTED);
+        small(g, tr("waiting"), X0, 99, MUTED);
+        small(g, tr("prize_rolls"), X0, 110, MUTED);
+        int most = BSPConfig.getOr(BSPConfig.VAULT_PRIZE_MAX_WAITING, 6);
+        if (most > MAX_PIPS) {
+            small(g, tr("prize_count", menu.duePrizes(), most), COLS[0], 110, menu.duePrizes() > 0 ? TQ & 0xFFFFFF : MUTED);
+        }
+        int minutes = menu.nextRollMinutes();
+        Component line = switch (menu.prizeState()) {
+            case com.mrgregles.bsp_core.vault.VaultLedger.PRIZE_EARNING -> tr("prize_next", String.format(Locale.ROOT, "%d:%02d", Math.max(0, minutes) / 60, Math.max(0, minutes) % 60));
+            case com.mrgregles.bsp_core.vault.VaultLedger.PRIZE_SHORT -> tr("prize_short", Math.max(0, BSPConfig.getOr(BSPConfig.VAULT_PRIZE_MIN_VALUE, 32) - menu.networkValue()));
+            case com.mrgregles.bsp_core.vault.VaultLedger.PRIZE_ELSEWHERE -> tr("prize_elsewhere");
+            case com.mrgregles.bsp_core.vault.VaultLedger.PRIZE_FULL -> tr("prize_full", most);
+            case com.mrgregles.bsp_core.vault.VaultLedger.PRIZE_NETWORK -> tr("prize_network");
+            default -> tr("prize_off");
+        };
+        fit(g, line, X0, 119, menu.prizeState() == com.mrgregles.bsp_core.vault.VaultLedger.PRIZE_EARNING ? TQ & 0xFFFFFF : MUTED, BTN_X - 4 - X0);
     }
 
     @Override

@@ -214,6 +214,8 @@ public final class SeasonSync {
         }
         ticks = 0;
         MinecraftServer server = event.getServer();
+        // settle everyone's interest first: Illyrium and prize rolls are judged on what the last sync said about the other servers
+        VaultLedger.get(server).accrueAll();
         Map<UUID, int[]> mine = new HashMap<>();
         VaultLedger.get(server).all().forEach((id, account) -> {
             if (account.vaultCount() > 0) {

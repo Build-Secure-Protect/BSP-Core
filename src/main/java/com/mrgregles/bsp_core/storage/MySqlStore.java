@@ -827,7 +827,8 @@ final class MySqlStore implements AutoCloseable {
     /**
      * Replaces this server's vault rows with {@code mine} (five coin counts, then the block count, per
      * player) and returns what every player keeps on the other servers: five coin counts, the block
-     * count, and 1 if a server that sorts before this one holds a Netherite or Illyrium coin of theirs.
+     * count, 1 if a server that sorts before this one holds a Netherite or Illyrium coin of theirs, and 1 if a server
+     * that sorts before this one holds any coin of theirs (that server builds up their vault prize rolls).
      */
     Map<UUID, int[]> syncVaults(Map<UUID, int[]> mine) throws SQLException {
         Connection c = conn();
@@ -861,12 +862,15 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(1, serverId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    int[] row = out.computeIfAbsent(UUID.fromString(rs.getString(2)), k -> new int[7]);
+                    int[] row = out.computeIfAbsent(UUID.fromString(rs.getString(2)), k -> new int[8]);
                     for (int i = 0; i < 6; i++) {
                         row[i] += rs.getInt(3 + i);
                     }
                     if (rs.getString(1).compareTo(serverId) < 0 && rs.getInt(6) + rs.getInt(7) > 0) {
                         row[6] = 1;
+                    }
+                    if (rs.getString(1).compareTo(serverId) < 0 && rs.getInt(3) + rs.getInt(4) + rs.getInt(5) + rs.getInt(6) + rs.getInt(7) > 0) {
+                        row[7] = 1;
                     }
                 }
             }
@@ -3129,6 +3133,25 @@ final class MySqlStore implements AutoCloseable {
             }
             return compassWait(c, id);
         });
+    }
+
+    /** Gives back a Totem Compass claim that did not start: only while the wait is still {@code untilMs}, the one claimed. */
+    void compassRelease(UUID id, long untilMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("compass_waits") + " SET until_ms = 0 WHERE uuid = ? AND until_ms = ?")) {
+            ps.setString(1, id.toString());
+            ps.setLong(2, untilMs);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Makes {@code id}'s Totem Compass wait at least {@code untilMs} (a compass from an older version carried one). */
+    void compassRaise(UUID id, long untilMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("compass_waits") + " (uuid, until_ms) VALUES (?, ?) "
+                + "ON DUPLICATE KEY UPDATE until_ms = GREATEST(until_ms, VALUES(until_ms))")) {
+            ps.setString(1, id.toString());
+            ps.setLong(2, untilMs);
+            ps.executeUpdate();
+        }
     }
 
     /** When {@code id} may next start a Totem Compass (ms), 0 when never started. */

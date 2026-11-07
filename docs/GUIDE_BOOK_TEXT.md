@@ -1041,9 +1041,23 @@ Breaking a vault that is not yours gives no coins: they are kept for the owner, 
 
 **Page 5: Interest**
 
-Coins in your vaults earn interest: XP levels and Tetrium Ingots for every 50 coin value stored, counted across all your vaults. With a Netherite or Illyrium coin stored you also earn up to 2 Illyrium Ingots every 3 days.
+Coins in your vaults earn interest every day: XP levels and Tetrium Ingots for the coin value stored, counted across all your vaults on this server. Netherite and Illyrium coins also earn Illyrium Ingots: at least 2 every 3 days while you keep one.
 
 Interest builds up while you are offline, but stops at 3 days' worth. Press **Redeem** on the Storage tab to collect it and start it building again.
+
+**Page 6: Bigger hoards**
+
+The more coin value you keep, the better the rate. From 32 coin value everything pays half as much again, from 128 twice as much, and from 512 three times as much.
+
+Before that, every 10 coin value earns 1 XP level and 3 Tetrium Ingots a day, and every 32 value in Netherite and Illyrium coins earns 1 Illyrium Ingot. A day pays at most 100 levels, 384 Tetrium and 4 Illyrium.
+
+**Page 7: Prize rolls**
+
+While your vaults hold 32 coin value or more, counting every server, you earn a **prize roll** every 12 hours, up to 6 waiting.
+
+Each roll is a random item from the server's prize table, given when you press **Redeem**. The rarer the prize, the less often it comes up; when you win a rare one, the chat tells you the odds.
+
+The vault's **Interest** tab shows your step, what you earn a day, what is waiting and when the next roll comes.
 
 ## The Shatter Bank
 

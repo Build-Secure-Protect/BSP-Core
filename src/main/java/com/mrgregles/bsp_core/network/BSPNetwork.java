@@ -17,8 +17,9 @@ public final class BSPNetwork {
      * 8: the Land Office's block position and admin flag (Region Guard's plot lists per office).
      * 9: the Coin Factory screen's synced values carry each lane's press speed factor with Overclock.
      * 10: store credit on the shop and Land Office screens ({@link CreditStripPacket}, {@link CreditTogglePacket}) its stamp ({@link CreditNoticePacket}) and the admin panel's CREDIT tab ({@link CreditAdminPacket}, {@link CreditTicketsPacket}, {@link CreditAdminActionPacket}).
+     * 11: the Coin Vault screen's synced values carry the waiting vault prize rolls; the admin panel's VAULT tab ({@link VaultPrizeAdminPacket}, {@link VaultPrizeEditPacket}).
      */
-    private static final String PROTOCOL = "10";
+    private static final String PROTOCOL = "11";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -266,6 +267,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(CreditAdminActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(CreditAdminActionPacket::encode).decoder(CreditAdminActionPacket::decode)
                 .consumerMainThread(CreditAdminActionPacket::handle).add();
+        CHANNEL.messageBuilder(VaultPrizeAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(VaultPrizeAdminPacket::encode).decoder(VaultPrizeAdminPacket::decode)
+                .consumerMainThread(VaultPrizeAdminPacket::handle).add();
+        CHANNEL.messageBuilder(VaultPrizeEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(VaultPrizeEditPacket::encode).decoder(VaultPrizeEditPacket::decode)
+                .consumerMainThread(VaultPrizeEditPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

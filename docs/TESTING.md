@@ -3006,7 +3006,7 @@ Patchouli 84.1 draws no text on a crafting page with two recipes. Every such pag
 
 ## Totem Compass cooldown on the player, network-wide (2026-11-07)
 
-Covered by GameTests (batch `compass_cooldown`): `compass_cooldown_follows_the_player_to_a_new_compass` (a second compass cannot start while the first one's tracking and cooldown run and keeps its loaded seconds; its screen value is the player's wait; another player is not held; the wait survives a save and is forgotten once over) and `compass_old_game_time_becomes_real_clock` (an old compass's game-time ticks become real-clock times; one from another server's clock, or already past, is dropped). **Not covered:** the network claim (`compass_waits`), the login read, the "try again shortly" message, the screen in a client, a server restart.
+Covered by GameTests (batch `compass_cooldown`): `compass_cooldown_follows_the_player_to_a_new_compass` (a second compass cannot start while the first one's tracking and cooldown run and keeps its loaded seconds; its screen value is the player's wait; another player is not held; the wait survives a save and is forgotten once over) and `compass_old_game_time_becomes_real_clock` (an old compass's game-time ticks become real-clock times; one from another server's clock, or already past, is dropped) and `compass_old_wait_becomes_the_players` (an old compass's wait holds a new compass too). **Not covered:** the network claim (`compass_waits`), the login read, the "try again shortly" message, the screen in a client, a server restart.
 
 - [ ] Load a compass with a coin and press START. Craft a second compass, load it and open it: it shows COOLDOWN with the first compass's tracking plus cooldown time, START does nothing, and the coin stays loaded.
 - [ ] Throw the first compass away and wait: the second still counts down, and once it reaches zero START works.
@@ -3014,4 +3014,71 @@ Covered by GameTests (batch `compass_cooldown`): `compass_cooldown_follows_the_p
 - [ ] Hand the second compass to another player who has not tracked: they can START it.
 - [ ] On a network: START on server A, go to server B (the compass comes with you through inventory sync): it still tracks and shows the same time left, and a new compass crafted on B shows COOLDOWN with the same time. Once it ends, START works on B.
 - [ ] On a network: stop MySQL and press START on a loaded compass: the chat says the compass could not check the cooldown, and the coins stay loaded.
-- [ ] A compass that was tracking or cooling down before the update: after the update it still shows about the same time left on the server where it was started.
+- [ ] A compass that was tracking or cooling down before the update: after the update it still shows about the same time left on the server where it was started. A new compass crafted then shows the same COOLDOWN.
+- [ ] On a network: load a compass, press START and at once drag the compass to another slot: nothing starts, the chat says the compass was moved, the coins are still loaded, and START works straight after.
+
+## Coin Vault interest steps (2026-11-07, 1.14.1)
+
+Covered by GameTests (batch `vault_interest`): `multiplier_steps_up_with_the_hoard` (x1 below 32, x1.5 from 32, x2 from 128, x3 from 512), `daily_rates_match_the_agreed_table` (20 coins of each tier, 24 Diamond + 4 Netherite, the ceilings, the one-coin Illyrium allowance), `a_day_accrues_the_cap_holds_and_redeem_keeps_fractions` and `a_small_hoard_earns_at_x1_and_the_illyrium_allowance`; batch `vault_config`: `old_default_rates_move_once`. **Not covered:** the Redeem button and chat line in a client, a server that already had a `bsp_core-server.toml`, a network.
+
+- [ ] Put 20 Diamond coins in a vault and wait a few minutes: the Storage strip's XP count grows toward 12 a day (about 1 level every 2 hours).
+- [ ] Add coins until the hoard passes 128 coin value (32 Diamond coins): the rate doubles against the x1 rate.
+- [ ] Store one Netherite coin and redeem after a day or more: Illyrium arrives at about 2 every 3 days.
+- [ ] Start a server whose `serverconfig/bsp_core-server.toml` has `coinValuePerUnit = 50` and `tetriumPerDayPerUnit = 0.5` from before: the log says the rates moved, the file now has 10, 3 and `ratesMoved = true`. Set 50 again and restart: it stays 50.
+- [ ] Read the guide book's Coin Vault entry: the Interest page and the Bigger hoards page match what the vault pays.
+
+## Vault prize rolls (2026-11-07, 1.14.1)
+
+Covered by GameTests (batch `vault_interest`): `prize_rolls_build_every_12_hours_from_32_coin_value` (2 a day at 128 coin value, 6 at most, none under 32), `prize_table_rolls_by_weight`, `default_prize_table_holds_the_installed_items`, `paying_prizes_gives_items_and_an_empty_table_pays_none` and `prize_table_survives_a_save_with_enchantments`. **Not covered:** the Redeem button and chat lines in a client, the rare-prize sound, a network (the one-server rule, the minimum counted across servers).
+
+- [ ] Keep 32 Diamond coins in a vault, set `vault.prizes.hoursPerRoll` to 0.05 (3 minutes) and wait 10 minutes: Redeem is lit; pressing it gives 3 prizes with a turquoise chat line each.
+- [ ] Wait 30 minutes more: only 6 rolls wait, however long you leave it.
+- [ ] Win a rare prize (keep redeeming; once the admin editor is in, set every weight but the Nether Star's to 0): the level-up sound plays and the chat line ends "(a 1 in N roll)".
+- [ ] With a full inventory, Redeem drops the prizes at your feet.
+- [ ] Take coins out until under 32 coin value: no rolls build up meanwhile.
+- [ ] On a network: keep coins on two servers; prize rolls build up only on the server whose id sorts first; with 20 coin value on each (40 together) rolls still build up there.
+- [ ] Read the guide book's Coin Vault entry: the Prize rolls page matches.
+
+Shared table (2026-11-07): GameTest `shared_prize_table_round_trips_and_keeps_unknown_items` covers the SNBT form, a prize from a missing mod kept aside and written back, and unreadable text changing nothing. **Not covered:** MySQL and Redis themselves.
+
+- [ ] On a network with a fresh database: start server A, then B. The database's `state` row `vault_prizes` holds A's table, and B's table matches it.
+- [ ] Change the table on A (the admin editor, once built): B has the change within a second with Redis, or by the next catch-up without it.
+- [ ] Give B a table entry from a mod only A has: B never rolls it, and saving the table on B leaves it in place for A.
+
+## Admin panel VAULT tab (2026-11-07, 1.14.1)
+
+Covered by GameTests: `vault_tab_saves_for_admins_and_keeps_unknown_prizes` (batch `vault_admin`: no answer for someone who may not look, a moderator's save refused, an admin's save replacing the table with enchantment and name kept, a missing mod's prize kept, a moderator may ask for the table), `vault_tab_refuses_a_bad_table` and `vault_tab_packets_round_trip` (batch `vault_interest`). **Not covered:** the tab in a client (drawing, clicks, the browser, the search line, Escape), a network save.
+
+- [ ] Open the admin panel: six tabs fit, the heading BSP ADMIN is small and not cut; as a moderator READ ONLY sits under it.
+- [ ] Open VAULT: the default prizes are listed with their chances (Diamond 21.0 %, Antimatter Pellet 1.0 % with every mod installed). Pick the Nether Star: count 1, weight 5, "5.0% of rolls, about 1 in 20".
+- [ ] Press + on WEIGHT, then shift-click +: 6, then 16; the chances in the list change and "Unsaved changes" shows; SAVE lights.
+- [ ] Hold an enchanted, renamed sword and press FROM MY HAND: the prize becomes that sword; the detail says "Enchanted and named".
+- [ ] PICK FROM LIST: the browser opens with a search line; type "apple", click the Golden Apple: it replaces the prize. Open it again and press Escape: the browser closes, the panel stays open.
+- [ ] NEW PRIZE: pick an item; it is added at the end with weight 1 and chosen. Add prizes until 24: NEW PRIZE greys out.
+- [ ] DELETE the chosen prize, then SAVE: "Saved N prizes." in green; REFRESH shows the saved table.
+- [ ] As a moderator: every key is grey; the list and the detail still show.
+- [ ] Redeem prize rolls after the save: only the saved prizes come up.
+- [ ] On a network: SAVE on server A, open VAULT on server B: the same table, with "Every server uses this table." in A's answer.
+
+## Coin Vault INTEREST tab (2026-11-07, 1.14.1)
+
+Covered by GameTests (batch `vault_interest`): `interest_tab_prize_state_and_next_roll` (earning with the minutes to the next roll, full, short) and `interest_tab_synced_values_are_scaled_and_clamped`. **Not covered:** the tab in a client (drawing, the ladder, the fitted text), "paid on another server" and "off".
+
+- [ ] Open a vault: four tabs, STORAGE ACCESS SECURITY INTEREST, every label readable.
+- [ ] With 24 Diamond and 4 Netherite coins stored, open INTEREST: YOUR HOARD 128 coin value; the ×2 step lit; "384 more coin value for ×3"; A DAY 25.6 / 76.8 / 2; WAITING counts match the Storage strip.
+- [ ] Wait or set `vault.prizes.hoursPerRoll` to 0.05: the pips light as rolls arrive; "next in 0:03" counts down; at 6 the line says "6 waiting: redeem to earn more".
+- [ ] Redeem from the INTEREST tab: the counts drop to 0 and the prizes arrive.
+- [ ] Take coins out below 32: the line says how much more coin value is needed for prize rolls; the lit step moves down.
+- [ ] Set `vault.prizes.hoursPerRoll` to 0: "Prize rolls are off".
+- [ ] On a network: with coins on a server whose id sorts first, open INTEREST on the other: "Paid on another server".
+- [ ] Storage tab: with prizes waiting the second line reads "76 Tetrium, 2 Illyrium, 2 prizes", shrunk to fit left of Redeem.
+
+## Vault interest audit fixes (2026-11-07, 1.14.1)
+
+Covered by GameTests (batch `vault_interest`): `a_clock_going_back_pays_nothing_twice`, `network_time_waits_until_the_other_servers_are_known`, `unknown_prizes_count_toward_the_limit`. **Not covered:** the network itself (the periodic accrual at each vault sync, "Waiting for the network"), the VAULT tab's size check, the save refused while the database is down.
+
+- [ ] On a network: keep coins on servers A and B (A's id sorts first), redeem the prize rolls on A, move A's coins to a chest, wait 30 s and open B's vault: B shows no backlog of rolls, only what builds from then on.
+- [ ] Restart a network server and open a vault within 30 s: INTEREST says "Waiting for the network"; after the first sync the rolls carry on.
+- [ ] Stop MySQL and SAVE in the VAULT tab: the answer says the database is not connected; the table is unchanged.
+- [ ] Put a written book with many full pages, or a filled shulker box, in the prize table as several prizes and SAVE: past about 32 KB the tab says the table is too big, and the admin stays connected.
+- [ ] Empty the prize table, wait for a roll and Redeem: the chat says the rolls keep waiting.

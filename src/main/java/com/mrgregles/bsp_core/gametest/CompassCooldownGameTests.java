@@ -95,4 +95,28 @@ public class CompassCooldownGameTests {
                 "a time from another server's clock, or one already past, is dropped");
         h.succeed();
     }
+
+    /** An old compass held by a player still waiting: after the conversion the wait is the player's too, so a new compass waits. */
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void compass_old_wait_becomes_the_players(GameTestHelper h) {
+        if (com.mrgregles.bsp_core.storage.NetworkStorage.countsWanted()) {
+            h.succeed(); // a network server would also write the wait to the database
+            return;
+        }
+        ServerPlayer p = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        CompassCooldowns waits = CompassCooldowns.get(h.getLevel().getServer());
+        try {
+            long game = h.getLevel().getGameTime();
+            ItemStack old = new ItemStack(ModItems.TOTEM_COMPASS.get());
+            old.getOrCreateTag().putLong("CooldownUntil", game + 300 * 20); // five minutes of cooldown left, in ticks
+            TotemCompassItem.upgradeTimes(p, old);
+            h.assertTrue(near(TotemCompassItem.playerWaitLeft(p), 300), "the player waits the old compass's 300 s: " + TotemCompassItem.playerWaitLeft(p));
+            ItemStack fresh = loaded(30);
+            TotemCompassItem.startTracking(p, fresh);
+            h.assertTrue(TotemCompassItem.trackingLeft(fresh, System.currentTimeMillis()) == 0 && TotemCompassItem.stored(fresh) == 30, "a new compass cannot start before it ends");
+        } finally {
+            waits.clear(p.getUUID());
+        }
+        h.succeed();
+    }
 }

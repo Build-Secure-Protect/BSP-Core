@@ -1,0 +1,332 @@
+<title>Vault Prize Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: two mock-up sets for the Vault Interest Rework, drawn at GUI pixel size with the game's own font (ascii.png): how the Coin Vault shows the new interest and the 12-hour prize rolls, and how an admin edits the prize table. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#a07a00; --red:#c8322a;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#ffd23a; --red:#ff6b5c; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#ffd23a; --red:#ff6b5c; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:26px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+section{ display:flex; flex-direction:column; gap:12px; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b, .card p b{ color:var(--fg); font-weight:600; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.trio{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:10px; align-items:start; }
+.stack{ display:flex; flex-direction:column; gap:14px; }
+canvas.gui{ width:100%; max-width:100%; height:auto; display:block; background:#10151c; border:1px solid #2a2f3a; image-rendering:pixelated; }
+canvas.gui.vault{ max-width:588px; }
+.note{ font-size:13px; color:var(--muted); border-left:3px solid var(--acc); padding:4px 10px; max-width:80ch; margin:0; }
+.note b{ color:var(--fg); }
+.checks{ font:12px var(--mono); color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <h1>Vault Prize Concepts</h1>
+  <p class="lede">Three concepts each for how the <b>Coin Vault</b> shows the new interest and the <b>12-hour prize rolls</b>, and for the <b>admin screen</b> where the prize table is edited. They follow your answers: the rate rises with the hoard, a weighted table, one item a roll, 32 coin value to qualify, up to 6 rolls waiting, rolled when you press Redeem.</p>
+  <p class="note">The example player holds <b>24 Diamond and 4 Netherite coins</b> (128 coin value, so the ×2 step). They have <b>25 XP levels, 76 Tetrium and 2 Illyrium Ingots</b> waiting (one day's worth), <b>2 prize rolls</b> waiting and the next one due in 5:12:40. Item pictures here are stand-ins; the game draws the real ones.</p>
+
+  <section>
+    <h2>1. The Coin Vault</h2>
+    <p class="lede">Today the Storage tab has a two-line strip under the coins: XP, then Tetrium and Illyrium, with a bar for how full the 3-day cap is and the Redeem key. Each concept adds the multiplier and the prize rolls.</p>
+    <div class="trio">
+      <div class="card"><h3>A. A taller strip</h3>
+        <p>The strip gets a third line for prize rolls, in turquoise, and the multiplier joins the first line. Six pips under Redeem count the waiting rolls. The screen grows 10 pixels taller so nothing touches the inventory label.</p>
+        <canvas class="gui vault" id="v-a"></canvas>
+      </div>
+      <div class="card"><h3>B. An Interest tab</h3>
+        <p>A fourth tab, INTEREST, explains everything: a ladder of the four steps with your hoard marked on it and how much more reaches the next step, what you earn a day, what is waiting, and the prize rolls with their countdown. The Storage strip stays as it is today with one word added for prizes.</p>
+        <canvas class="gui vault" id="v-b"></canvas>
+      </div>
+      <div class="card"><h3>C. A badge and a tooltip</h3>
+        <p>The strip keeps its size. A gold ×2 badge sits beside the page line, and a prize ticket with its count sits left of Redeem. Hovering over the strip shows the full breakdown in a tooltip.</p>
+        <canvas class="gui vault" id="v-c"></canvas>
+      </div>
+    </div>
+    <div class="card"><h3>After Redeem (all three)</h3>
+      <p>The interest line in chat stays as it is today. Each prize roll adds a line of its own in turquoise, and a rare prize (weight 5 or less) also plays the level-up sound. Items go to the inventory, or drop at your feet if it is full.</p>
+      <canvas class="gui" id="chat"></canvas>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The prize table in the admin panel</h2>
+    <p class="lede">An admin puts real items in, so enchanted books or named gear work too. Moderators see the table but cannot change it. The game shows every weight as a chance: weight divided by the total of all weights.</p>
+    <div class="stack">
+      <div class="card"><h3>A. Prize shelf</h3>
+        <p>A key on the SEASON tab opens a shelf like Season Rewards: 24 slots in three rows, with the weight printed under each slot. You drag items in from your inventory. Click a weight to pick it, then scroll or use the − and + keys. The line at the foot says what the picked prize is and its chance.</p>
+        <canvas class="gui" id="a-a"></canvas>
+      </div>
+      <div class="card"><h3>B. Prize list</h3>
+        <p>A new VAULT tab works like KITS: the list of prizes on the left with each one's chance, the chosen prize on the right with its count and weight. FROM MY HAND copies the item you are holding, enchantments and all; PICK FROM LIST opens the kit editor's item browser.</p>
+        <canvas class="gui" id="a-b"></canvas>
+      </div>
+      <div class="card"><h3>C. Odds board</h3>
+        <p>A new VAULT tab shows the whole table as one bar split by chance, then a tile per prize with − and + on its weight. TEST 100 ROLLS rolls the table a hundred times without giving anything, so you can check the odds feel right before saving.</p>
+        <canvas class="gui" id="a-c"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <p class="checks" id="checks">Layout checks: not run yet.</p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (2 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (2 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 4 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+  // ------------------------------------------------------------ item pictures (16 x 16 stand-ins: o outline, d dark, b body, l light)
+  var PAT = {
+    gem: ["......oooo......", "....oollbbo.....", "...olllbbbdo....", "..ollbbbbbbdo...", ".oolbbbbbbbddoo.", "ollbbbbbbbbbbddo", ".obbbbbbbbbbddo.", "..obbbbbbbbddo..",
+          "...obbbbbbddo...", "....obbbbddo....", ".....obbddo.....", "......obdo......", ".......oo......."],
+    ingot: [".....oooooooooo.", "....ollllllllbo.", "...olbbbbbbbbdo.", "..oooooooooooddo", "..olllllllllodo.", "..obbbbbbbbbodo.", "..obbbbbbbbbdo..", "..oddddddddddo..", "..oooooooooooo.."],
+    apple: ["........oo......", ".......od.......", "....ooo.dooo....", "...ollbbbbbbo...", "..olllbbbbbbdo..", "..olbbbbbbbbdo..", "..obbbbbbbbbdo..", "..obbbbbbbbddo..",
+            "..obbbbbbbbddo..", "...obbbbbbddo...", "...obbbbbddo....", "....oobbddoo....", "......oooo......"],
+    star: [".......oo.......", ".......olo......", "......olbo......", "oooooolbbdoooooo", ".olllbbbbbbbddo.", "..olbbbbbbbbdo..", "...obbbbbbbdo...", "...obbbbbbbbo...",
+           "..obbbdoobbbdo..", "..obbdo..obbdo..", ".obdo.....obdo..", ".oo.........oo.."],
+    totem: ["......oooo......", ".....olllbo.....", ".....olbbbo.....", "..ooo.obbdo.ooo.", "..ollooooooolbo.", "..olbbbbbbbbbbo.", "...oobbbbbbdoo..", ".....obbbbdo....",
+            ".....obbbbdo....", "....obbbbbbdo...", "....obbbbbbdo...", ".....obbbbdo....", "......oooo......"],
+    pellet: ["......oooo......", ".....ollbbo.....", "....ollbbbdo....", "....olbbbbdo....", "....obbbbbdo....", "....obbbbddo....", ".....obbddo.....", "......oooo......"],
+    wing: ["..oooo....oooo..", ".ollbbo..obbllo.", ".olbbbo..obbblo.", "olbbbdo..odbbblo", "obbbbdo..odbbbbo", "obbbddo..oddbbbo", "obbbdo....odbbbo", "obbddo....oddbbo",
+           "obbdo......odbbo", "obdo........odbo", "odo..........odo", "oo............oo"],
+    coin: [".....oooooo.....", "....ollllllo....", "...ollbbbbbdo...", "..olbbbbbbbbdo..", "..olbbbllbbbdo..", "..olbbbllbbbdo..", "..olbbbbbbbbdo..", "..obbbbbbbbbdo..",
+           "...obbbbbbbdo...", "....oddddddo....", ".....oooooo....."]
+  };
+  function icon(g, kind, col, x, y, k){ k = k || 1; var rows = PAT[kind], top = Math.floor((16 - rows.length) / 2);
+    var pal = { o: shade(col, -0.72), d: shade(col, -0.35), b: col, l: shade(col, 0.45) };
+    for (var r = 0; r < rows.length; r++) for (var c = 0; c < 16; c++){ var ch = rows[r].charAt(c); if (ch && ch !== ".") fill(g, x + c * k, y + (r + top) * k, k, k, pal[ch]); } }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+
+  // the example table (your default answer 3): name, count, weight, picture, colour
+  var PRIZES = [
+    ["Diamond", 8, 21, "gem", "#4aedd9"], ["Netherite Ingot", 1, 12, "ingot", "#5a4b4b"], ["Totem of Undying", 1, 12, "totem", "#e8c33a"],
+    ["Allthemodium Ingot", 2, 12, "ingot", "#f2c94c"], ["Enchanted Golden Apple", 1, 10, "apple", "#f6d046"], ["Illyrium Ingot", 2, 8, "ingot", "#6fd6ff"],
+    ["Vibranium Ingot", 1, 8, "ingot", "#39d36a"], ["Nether Star", 1, 5, "star", "#eef0ff"], ["Unobtainium Ingot", 1, 4, "ingot", "#b04ad6"],
+    ["Polonium Pellet", 2, 4, "pellet", "#9fe36b"], ["Elytra", 1, 3, "wing", "#8a8aa8"], ["Antimatter Pellet", 1, 1, "pellet", "#7a3dd6"]];
+  var TOTAL = PRIZES.reduce(function(s, p){ return s + p[2]; }, 0), PICK = 7;
+  function pct(w){ return (Math.round(w * 1000 / TOTAL) / 10).toFixed(1) + "%"; }
+  check("The example weights add up to 100", TOTAL === 100);
+
+  // ------------------------------------------------------------ the Coin Vault (CoinVaultScreen: 196 wide, slots from x 17, y 48)
+  var VW = 196, X0 = 17, RIGHT = X0 + 162, SY = 48, STRIP_Y = 107, BTN_X = RIGHT - 50, MX = 34, MY = 8;
+  var TIER = { copper: "#d27d46", gold: "#ffd23a", diamond: "#4aedd9", netherite: "#5a4b4b", illyrium: "#7be0ff" };
+  function vault(id, H, invY, tabs, tab){
+    var g = frame(id, VW + MX * 2, H + MY * 2, 3); if (!g) return null;
+    fill(g, 0, 0, VW + MX * 2, H + MY * 2, "#1b2028"); g.translate(MX, MY);
+    fill(g, -1, -1, VW + 2, H + 2, VGOLD); fill(g, 0, 0, VW, H, BG);
+    txt(g, "COIN VAULT", 10, 8, VGOLD); smallR(g, "Owner: Mrgregles", VW - 10, 10, MUTED);
+    var n = tabs.length, gap = n > 3 ? 2 : 3, tw = Math.floor((162 - gap * (n - 1)) / n);
+    tabs.forEach(function(l, i){ var tx = X0 + i * (tw + gap), on = i === tab;
+      fill(g, tx, 20, tw, 13, on ? VGOLD : DIM); fill(g, tx + 1, 21, tw - 2, on ? 12 : 11, on ? BG : SLOT);
+      var k = Math.min(0.75, (tw - 4) / mw(l)); txt(g, l, tx + Math.round(tw / 2 - mw(l) * k / 2), 24 + Math.round((0.75 - k) * 4), on ? VGOLD : MUTED, k);
+      check("Vault tab '" + l + "' readable in " + tw + " px", k >= 0.6); });
+    txt(g, "Inventory", X0, invY - 11, MUTED);
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 9; c++){ var sx = X0 + 1 + c * 18, sy = r < 3 ? invY + r * 18 : invY + 58;
+      fill(g, sx - 1, sy - 1, 18, 18, INV_EDGE); fill(g, sx, sy, 16, 16, SLOT); }
+    return g;
+  }
+  function vaultSlots(g){
+    var stacks = [["diamond", 12], ["diamond", 12], ["netherite", 4]];
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 9; c++){ var sx = X0 + 1 + c * 18, sy = SY + 1 + r * 18, i = r * 9 + c;
+      fill(g, sx - 1, sy - 1, 18, 18, VSLOT_EDGE); fill(g, sx, sy, 16, 16, SLOT);
+      if (stacks[i]){ icon(g, "coin", TIER[stacks[i][0]], sx, sy, 1); count(g, stacks[i][1], sx, sy); } }
+    var page = "VAULT BLOCK 1 OF 1"; small(g, page, (X0 + RIGHT) / 2 - Math.round(sw(page) / 2), 39, MUTED);
+  }
+  function redeem(g, y){ fill(g, BTN_X, y, 50, 18, VGOLD); fill(g, BTN_X + 1, y + 1, 48, 16, SLOT); txt(g, "Redeem", BTN_X + 25 - Math.round(mw("Redeem") / 2), y + 5, VGOLD); }
+  function capBar(g, y){ fill(g, X0, y, BTN_X - 6 - X0, 3, DIM); fill(g, X0, y, Math.round((BTN_X - 6 - X0) / 3), 3, VGOLD); }
+  var STRIP_W = BTN_X - 6 - X0;
+
+  function vaultA(){ var H = 236, invY = 154, g = vault("v-a", H, invY, ["STORAGE", "ACCESS", "SECURITY"], 0); if (!g) return;
+    vaultSlots(g);
+    fit(g, "INTEREST ×2: 25 XP levels", X0, STRIP_Y, VGOLD, STRIP_W, "A line 1");
+    fit(g, "76 Tetrium, 2 Illyrium ingots", X0, STRIP_Y + 9, VGOLD, STRIP_W, "A line 2");
+    fit(g, "2 PRIZE ROLLS · next 5:12:40", X0, STRIP_Y + 18, TQ, STRIP_W, "A line 3");
+    capBar(g, STRIP_Y + 28); redeem(g, STRIP_Y);
+    for (var i = 0; i < 6; i++) pip(g, BTN_X + 2 + i * 8, STRIP_Y + 23, i < 2, TQ);
+    check("A: the strip ends above the inventory label", STRIP_Y + 31 <= invY - 12);
+  }
+  function vaultB(){ var H = 226, invY = 144, g = vault("v-b", H, invY, ["STORAGE", "ACCESS", "SECURITY", "INTEREST"], 3); if (!g) return;
+    small(g, "YOUR HOARD", X0, 39, MUTED); smallR(g, "128 coin value", RIGHT, 39, TEXT);
+    var steps = [["×1", "0"], ["×1.5", "32"], ["×2", "128"], ["×3", "512"]], segW = 39;
+    steps.forEach(function(s, i){ var sx = X0 + i * (segW + 2), on = i === 2;
+      fill(g, sx, 48, segW, 11, on ? VGOLD : DIM); fill(g, sx + 1, 49, segW - 2, 9, on ? VHOVER : SLOT);
+      small(g, s[0], sx + Math.round(segW / 2 - sw(s[0]) / 2), 51, on ? VGOLD : MUTED); small(g, s[1], sx, 62, i === 2 ? TEXT : OFF); });
+    small(g, "384 more coin value for ×3", X0, 71, MUTED);
+    fill(g, X0, 79, 162, 1, DIM);
+    var cols = [X0 + 50, X0 + 86, X0 + 128];
+    ["XP", "TETRIUM", "ILLYRIUM"].forEach(function(h, i){ small(g, h, cols[i], 83, MUTED); });
+    small(g, "A DAY", X0, 91, MUTED); ["25.6", "76.8", "2"].forEach(function(v, i){ small(g, v, cols[i], 91, TEXT); });
+    small(g, "WAITING", X0, 99, MUTED); ["25", "76", "2"].forEach(function(v, i){ small(g, v, cols[i], 99, VGOLD); });
+    small(g, "PRIZE ROLLS", X0, 110, MUTED); for (var i = 0; i < 6; i++) pip(g, X0 + 50 + i * 8, 110, i < 2, TQ);
+    small(g, "next in 5:12:40", X0, 119, TQ);
+    redeem(g, 107);
+    check("B: the countdown ends above the inventory label", 119 + 6 <= 144 - 11 - 2);
+    check("B: Redeem ends above the inventory label", 107 + 18 <= invY - 12);
+    check("B: 'next in 5:12:40' stays left of Redeem", X0 + sw("next in 5:12:40") <= BTN_X - 4);
+    check("B: the WAITING line fits", cols[2] + sw("2") <= RIGHT);
+  }
+  function tooltip(g, x, y, lines){ var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); }); var h = lines.length * 10 + 6, bw = w + 8;
+    fill(g, x + 1, y, bw - 2, h, "#100010"); fill(g, x, y + 1, bw, h - 2, "#100010");
+    fill(g, x + 1, y + 1, bw - 2, 1, "#5000ff"); fill(g, x + 1, y + h - 2, bw - 2, 1, "#28007f"); fill(g, x + 1, y + 1, 1, h - 2, "#3c00bf"); fill(g, x + bw - 2, y + 1, 1, h - 2, "#3c00bf");
+    lines.forEach(function(l, i){ txt(g, l[0], x + 4, y + 4 + i * 10 + (i ? 2 : 0), l[1]); }); return bw; }
+  function vaultC(){ var H = 226, invY = 144, g = vault("v-c", H, invY, ["STORAGE", "ACCESS", "SECURITY"], 0); if (!g) return;
+    vaultSlots(g);
+    fill(g, RIGHT - 19, 36, 19, 11, VGOLD); fill(g, RIGHT - 18, 37, 17, 9, VHOVER); small(g, "×2", RIGHT - 9 - Math.round(sw("×2") / 2), 39, VGOLD);
+    fit(g, "INTEREST: 25 XP levels", X0, STRIP_Y, VGOLD, STRIP_W - 18, "C line 1");
+    fit(g, "76 Tetrium, 2 Illyrium ingots", X0, STRIP_Y + 10, VGOLD, STRIP_W, "C line 2");
+    // the prize ticket: a small turquoise stub with a notch, and its count
+    var tx = BTN_X - 20; fill(g, tx, STRIP_Y, 10, 7, TQ); fill(g, tx + 1, STRIP_Y + 1, 8, 5, "#0b5a4c"); fill(g, tx + 4, STRIP_Y, 2, 1, BG); fill(g, tx + 4, STRIP_Y + 6, 2, 1, BG);
+    small(g, "2", tx + 12, STRIP_Y + 1, TQ);
+    capBar(g, STRIP_Y + 20); redeem(g, STRIP_Y);
+    var bw = tooltip(g, -26, 58, [["Interest ×2 (128 coin value)", "#ffffff"], ["A day: 25 XP, 76 Tetrium, 2 Illyrium", "#aaaaaa"], ["Waiting: 1 of 3 days", "#aaaaaa"],
+      ["Prize rolls: 2 of 6, next in 5:12:40", "#55ffff"], ["384 more coin value for ×3", "#aaaaaa"]]);
+    check("C: the tooltip stays inside the picture", -26 + bw <= VW + MX);
+  }
+  function chat(){ var W = 400, H = 46, g = frame("chat", W, H, 3); if (!g) return; fill(g, 0, 0, W, H, "#1b2028");
+    var lines = [["Interest redeemed: 25 XP levels, 76 Tetrium Ingots, 2 Illyrium Ingots.", "#ffaa00"], ["Vault prize: 8 Diamond", "#55ffff"], ["Vault prize: Nether Star (a 1 in 20 roll)", "#55ffff"]];
+    fill(g, 2, 4, W - 4, lines.length * 9 + 4, "rgba(0,0,0,0.5)");
+    lines.forEach(function(l, i){ txt(g, l[0], 5, 7 + i * 9, "#3f3f3f"); txt(g, l[0], 4, 6 + i * 9, l[1]); check("Chat line fits", mw(l[0]) <= W - 8); });
+  }
+
+  // ------------------------------------------------------------ the admin panel (AdminScreen: 344 wide, violet)
+  function panel(g, H, tabs, sel, head){
+    fill(g, 0, 0, PW, H, DIM); fill(g, 1, 1, PW - 2, H - 2, BG);
+    var TW = 40, n = tabs.length, rx = PW - 10 - n * (TW + 3) - 17; key(g, rx, 6, 14, 13, "", TQ);
+    ["..###.#", ".#...##", "#...###", "#......", "#.....#", ".#...#.", "..###.."].forEach(function(r, j){ for (var i = 0; i < 7; i++) if (r[i] === "#") fill(g, rx + 4 + i, 9 + j, 1, 1, TQ); });
+    tabs.forEach(function(l, i){ var tx = PW - 10 - (n - i) * (TW + 3) + 3, on = i === sel; fill(g, tx, 6, TW, 13, on ? VIO : DIM); fill(g, tx + 1, 7, TW - 2, 11, on ? BG : SLOT);
+      small(g, l, tx + TW / 2 - Math.round(mw(l) * 0.375), 10, on ? VIO : MUTED); check("Admin tab '" + l + "' fits 40 px", sw(l) <= TW - 4); });
+    txt(g, head, 10, 9, VIO); check("Admin heading fits left of REFRESH", 10 + mw(head) <= rx - 4);
+  }
+  var TABS6 = ["PLAYERS", "SEASON", "SETTINGS", "KITS", "CREDIT", "VAULT"];
+
+  function adminA(){ var W = 236, ROW_X = 46, H = 228, INV_Y = 146, g = frame("a-a", W, H, 3); if (!g) return;
+    fill(g, 0, 0, W, H, DIM); fill(g, 1, 1, W - 2, H - 2, BG);
+    txt(g, "Vault prizes", 10, 8, VIO); smallR(g, "12 of 24 · weights 100", W - 10, 10, MUTED);
+    fit(g, "One roll every 12 hours while a player stores 32 coin value or more.", 10, 21, MUTED, W - 20, "A sub-line");
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 8; c++){ var i = r * 8 + c, sx = ROW_X + c * 18, sy = 32 + r * 29, p = PRIZES[i], on = i === PICK;
+      fill(g, sx - 1, sy - 1, 18, 18, on ? VIO : INV_EDGE); fill(g, sx, sy, 16, 16, on ? HOVERV : SLOT);
+      if (p){ icon(g, p[3], p[4], sx, sy, 1); count(g, p[1], sx, sy); var w = String(p[2]); small(g, w, sx + 8 - Math.round(sw(w) / 2), sy + 19, on ? VIO : TEXT); } }
+    var p = PRIZES[PICK];
+    fit(g, p[0] + " · weight " + p[2] + " · " + pct(p[2]) + " of rolls, about 1 in " + Math.round(TOTAL / p[2]), 10, 125, TEXT, W - 60, "A foot line");
+    key(g, W - 46, 121, 16, 13, "−", VIO); key(g, W - 26, 121, 16, 13, "+", VIO);
+    txt(g, "Inventory", 37, INV_Y - 11, MUTED);
+    for (var rr = 0; rr < 4; rr++) for (var cc = 0; cc < 9; cc++){ var x = 37 + 1 + cc * 18, y = rr < 3 ? INV_Y + rr * 18 : INV_Y + 58;
+      fill(g, x - 1, y - 1, 18, 18, INV_EDGE); fill(g, x, y, 16, 16, SLOT); }
+    icon(g, "gem", "#4aedd9", 38, INV_Y + 58, 1); count(g, 32, 38, INV_Y + 58);
+    check("A: the foot line ends above the inventory label", 125 + 6 <= INV_Y - 13);
+  }
+
+  function adminB(){ var H = 210, g = frame("a-b", PW, H, 3); if (!g) return; panel(g, H, TABS6, 5, "Vault");
+    small(g, "Prizes · 12 · weights 100", 10, 26, MUTED);
+    for (var i = 0; i < 10; i++){ var p = PRIZES[i], ry = 34 + i * 13, on = i === PICK;
+      if (on){ fill(g, 10, ry, 108, 12, VIO); fill(g, 11, ry + 1, 106, 10, HOVERV); }
+      icon(g, p[3], p[4], 12, ry + 1, 0.625);
+      var c = pct(p[2]); fit(g, (p[1] > 1 ? p[1] + " " : "") + p[0], 24, ry + 3, on ? VIO : TEXT, 114 - sw(c) - 4 - 24, "B row"); smallR(g, c, 115, ry + 3, GOLD); }
+    fill(g, 120, 34, 3, 130, SLOT); fill(g, 120, 34, 3, 108, DIM);
+    key(g, 10, 168, 60, 13, "NEW PRIZE", TQ);
+    key(g, 10, H - 24, 54, 13, "DELETE", BAD);
+    var X = 132, p = PRIZES[PICK];
+    inset(g, X, 30, 36, 36); icon(g, p[3], p[4], X + 2, 32, 2);
+    txt(g, p[0], X + 44, 34, TEXT); small(g, "minecraft:nether_star", X + 44, 45, MUTED); small(g, "Plain item: no enchantments or name", X + 44, 54, OFF);
+    small(g, "COUNT", X, 78, MUTED); field(g, X + 46, 75, 30, "1"); key(g, X + 80, 75, 14, 11, "−", VIO); key(g, X + 97, 75, 14, 11, "+", VIO);
+    small(g, "WEIGHT", X, 94, MUTED); field(g, X + 46, 91, 30, "5"); key(g, X + 80, 91, 14, 11, "−", VIO); key(g, X + 97, 91, 14, 11, "+", VIO);
+    small(g, pct(p[2]) + " of rolls, about 1 in " + Math.round(TOTAL / p[2]), X, 110, TEXT);
+    small(g, "Weight out of 100 for the whole table", X, 119, MUTED);
+    key(g, X, 140, 80, 13, "FROM MY HAND", TQ); key(g, X + 84, 140, 84, 13, "PICK FROM LIST", TQ);
+    small(g, "Saved", PW - 10 - 54 - 30, H - 20, OK); key(g, PW - 10 - 54, H - 24, 54, 13, "SAVE", OK);
+  }
+
+  function adminC(){ var H = 210, g = frame("a-c", PW, H, 3); if (!g) return; panel(g, H, TABS6, 5, "Vault");
+    small(g, "Prizes · 12 · weights 100 · one roll every 12 hours from 32 coin value", 10, 26, MUTED);
+    var bx = 10, bw = PW - 20, at = bx; fill(g, bx - 1, 34, bw + 2, 12, DIM);
+    PRIZES.forEach(function(p, i){ var w = i === PRIZES.length - 1 ? bx + bw - at : Math.round(bw * p[2] / TOTAL); fill(g, at, 35, Math.max(1, w - 1), 10, p[4]); at += w; });
+    var TW = 78, TH = 38;
+    PRIZES.forEach(function(p, i){ var tx = 10 + (i % 4) * (TW + 4), ty = 50 + Math.floor(i / 4) * (TH + 3);
+      inset(g, tx, ty, TW, TH); fill(g, tx + 1, ty + 1, 2, TH - 2, p[4]);
+      icon(g, p[3], p[4], tx + 5, ty + 4, 1);
+      var nl = split(p[0], TW - 28); nl.slice(0, 2).forEach(function(l, j){ fit(g, l, tx + 24, ty + 3 + j * 7, TEXT, TW - 28, "C tile name"); });
+      check("C tile name '" + p[0] + "' takes two lines at most", nl.length <= 2); small(g, "× " + p[1], tx + 24, ty + (nl.length > 1 ? 16 : 13), MUTED);
+      key(g, tx + 5, ty + 24, 12, 10, "−", VIO); var w = String(p[2]); small(g, w, tx + 25 - Math.round(sw(w) / 2), ty + 26, TEXT); key(g, tx + 33, ty + 24, 12, 10, "+", VIO);
+      smallR(g, pct(p[2]), tx + TW - 4, ty + 26, GOLD); });
+    fit(g, "Test, 100 rolls: Diamond 22 · Netherite 13 · Allthemodium 12 · Totem 11 · 42 others", 10, 176, MUTED, PW - 20, "C test line");
+    key(g, 10, H - 24, 74, 13, "ADD HELD ITEM", TQ); key(g, 100, H - 24, 80, 13, "TEST 100 ROLLS", TQ);
+    key(g, PW - 10 - 54, H - 24, 54, 13, "SAVE", OK);
+  }
+
+  // ------------------------------------------------------------ wiring
+  function drawAll(){ CHECKS.length = 0;
+    vaultA(); vaultB(); vaultC(); chat(); adminA(); adminB(); adminC();
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".");
+    window.__vaultPrizeChecks = CHECKS.slice(); }
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>

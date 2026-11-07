@@ -30,9 +30,10 @@ import java.util.List;
 public class CoinVaultMenu extends AbstractContainerMenu {
     public static final int WIDTH = 196, SLOT_X = 17, SLOT_Y = 48, INV_Y = 144, HEIGHT = INV_Y + 82, LOCKED_HEIGHT = 122;
     public static final int BTN_PREV = 0, BTN_NEXT = 1, BTN_REDEEM = 2, BTN_LOCK = 3, BTN_ALARM = 4, BTN_PICK = 5, BTN_REMOVE = 10;
-    public static final int TAB_STORAGE = 0, TAB_ACCESS = 1, TAB_SECURITY = 2;
+    public static final int TAB_STORAGE = 0, TAB_ACCESS = 1, TAB_SECURITY = 2, TAB_INTEREST = 3;
     private static final int D_PAGE = 0, D_XP = 1, D_TETRIUM = 2, D_ILLYRIUM = 3, D_FILL = 4, D_PICK_LEFT = 5, D_PICK_TOTAL = 6, D_PICK_STATE = 7,
-            D_VALUE_LO = 8, D_VALUE_HI = 9, D_BLOCKS = 10, DATA_COUNT = 11;
+            D_VALUE_LO = 8, D_VALUE_HI = 9, D_BLOCKS = 10, D_PRIZES = 11, D_MULT = 12, D_RATE_XP = 13, D_RATE_TETRIUM = 14, D_RATE_ILLYRIUM = 15,
+            D_NEXT_ROLL = 16, D_PRIZE_STATE = 17, D_NET_LO = 18, D_NET_HI = 19, DATA_COUNT = 20;
 
     @Nullable
     private final CoinVaultBlockEntity vault;
@@ -133,13 +134,26 @@ public class CoinVaultMenu extends AbstractContainerMenu {
                     int[] due = ledger.redeemable(vault.getOwner());
                     VaultLedger.Account account = ledger.account(vault.getOwner());
                     int value = account.value();
-                    cache[D_XP] = due[0];
-                    cache[D_TETRIUM] = due[1];
-                    cache[D_ILLYRIUM] = due[2];
+                    // synced values travel as shorts: a count past 32767 (a config without ceilings) shows as 32767, never negative
+                    cache[D_XP] = Math.min(Short.MAX_VALUE, due[0]);
+                    cache[D_TETRIUM] = Math.min(Short.MAX_VALUE, due[1]);
+                    cache[D_ILLYRIUM] = Math.min(Short.MAX_VALUE, due[2]);
                     cache[D_FILL] = Math.round(ledger.fill(vault.getOwner()) * 1000);
                     cache[D_VALUE_LO] = value & 0xFFFF;
                     cache[D_VALUE_HI] = (value >>> 16) & 0xFFFF;
                     cache[D_BLOCKS] = account.vaultCount();
+                    cache[D_PRIZES] = Math.min(Short.MAX_VALUE, ledger.prizeRolls(vault.getOwner()));
+                    // synced values travel as shorts: the rates go as tenths (Illyrium as hundredths), clamped
+                    double[] rates = ledger.rates(vault.getOwner());
+                    cache[D_MULT] = scaled(VaultLedger.multiplier(value), 10);
+                    cache[D_RATE_XP] = scaled(rates[0], 10);
+                    cache[D_RATE_TETRIUM] = scaled(rates[1], 10);
+                    cache[D_RATE_ILLYRIUM] = scaled(rates[2], 100);
+                    cache[D_NEXT_ROLL] = Math.min(Short.MAX_VALUE, ledger.minutesToNextRoll(vault.getOwner()));
+                    cache[D_PRIZE_STATE] = ledger.prizeState(vault.getOwner());
+                    int network = ledger.networkValue(vault.getOwner());
+                    cache[D_NET_LO] = network & 0xFFFF;
+                    cache[D_NET_HI] = (network >>> 16) & 0xFFFF;
                 }
             }
 
@@ -212,6 +226,41 @@ public class CoinVaultMenu extends AbstractContainerMenu {
         return data.get(D_ILLYRIUM);
     }
 
+    /** {@code amount} times {@code scale}, rounded and held to what a synced value can carry. */
+    public static int scaled(double amount, int scale) {
+        return (int) Math.max(0, Math.min(Short.MAX_VALUE, Math.round(amount * scale)));
+    }
+
+    /** The owner's interest multiplier (x1.5 comes as 1.5). */
+    public double multiplier() {
+        return data.get(D_MULT) / 10.0;
+    }
+
+    /** XP levels, Tetrium Ingots and Illyrium Ingots the owner's vaults on this server earn a day. */
+    public double[] dailyRates() {
+        return new double[]{data.get(D_RATE_XP) / 10.0, data.get(D_RATE_TETRIUM) / 10.0, data.get(D_RATE_ILLYRIUM) / 100.0};
+    }
+
+    /** Minutes to the next prize roll, or -1 when none is building up here. */
+    public int nextRollMinutes() {
+        return (short) data.get(D_NEXT_ROLL);
+    }
+
+    /** One of {@link VaultLedger#PRIZE_EARNING} and the other prize states. */
+    public int prizeState() {
+        return data.get(D_PRIZE_STATE);
+    }
+
+    /** Coin value the owner keeps in vaults on every server of the network (this server alone without one). */
+    public int networkValue() {
+        return (data.get(D_NET_LO) & 0xFFFF) | ((data.get(D_NET_HI) & 0xFFFF) << 16);
+    }
+
+    /** Whole prize rolls waiting for the owner. */
+    public int duePrizes() {
+        return data.get(D_PRIZES);
+    }
+
     public float fill() {
         return data.get(D_FILL) / 1000f;
     }
@@ -263,6 +312,16 @@ public class CoinVaultMenu extends AbstractContainerMenu {
             give(sp, new ItemStack(ModItems.ILLYRIUM_INGOT.get()), due[2]);
             if (due[0] + due[1] + due[2] > 0) {
                 sp.displayClientMessage(Component.translatable("message.bsp_core.vault.redeemed", due[0], due[1], due[2]).withStyle(ChatFormatting.GOLD), false);
+            }
+            VaultLedger ledger = VaultLedger.get(sp.server);
+            int rolls = ledger.prizeRolls(sp.getUUID());
+            if (rolls > 0) {
+                // rolled now, one at a time; an empty table pays none and the rolls keep waiting
+                int paid = VaultPrizes.get(sp.server).pay(sp, rolls, sp.getRandom());
+                ledger.takePrizeRolls(sp.getUUID(), paid);
+                if (paid == 0) {
+                    sp.displayClientMessage(Component.translatable("message.bsp_core.vault.prize_empty", rolls).withStyle(ChatFormatting.GRAY), false);
+                }
             }
             return true;
         }

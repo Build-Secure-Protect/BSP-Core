@@ -58,9 +58,15 @@ public final class NetworkStorage {
     /** Whether this server's local records were copied to the database ({@code /bsp storage migrate}), as read at the start. */
     private static volatile boolean migratedHere = true;
     private static final Map<UUID, Integer> slicesElsewhere = new ConcurrentHashMap<>();
-    /** What each player keeps in Coin Vaults on the other servers, as last read: five coin counts, blocks, and the Illyrium-interest flag. */
+    /** What each player keeps in Coin Vaults on the other servers, as last read: five coin counts, blocks, the Illyrium-interest flag and the prize-roll flag. */
     private static volatile Map<UUID, int[]> vaultsElsewhere = Map.of();
-    private static final int[] NO_VAULTS = new int[7];
+    private static final int[] NO_VAULTS = new int[8];
+    /** True once this connection has read the other servers' vaults: until then nobody can tell which server pays a player's Illyrium and prize rolls. */
+    private static volatile boolean vaultsKnown;
+
+    public static boolean vaultsKnown() {
+        return vaultsKnown;
+    }
     /** The steals running on the other servers, as last read. */
     private static volatile List<RemoteSteal> stealsElsewhere = List.of();
     /** The marketplace while network storage is on (made when the database connects). */
@@ -392,6 +398,7 @@ public final class NetworkStorage {
                 }
                 case "steal_watch" -> refreshStealWatches(srv);
                 case "credit" -> com.mrgregles.bsp_core.credit.CreditSync.heard(srv, payload);
+                case "vault_prizes" -> vaultPrizesReload(null);
                 case "kit" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.kit.KitSync.apply(srv, List.of(), payload.substring(1));
@@ -479,6 +486,9 @@ public final class NetworkStorage {
                 teamReload(null);
                 allianceReload(null);
                 kitReload(null);
+                MinecraftServer forPrizes = server;
+                // the network's prize table replaces this server's; a network without one yet takes this server's first
+                onServer(() -> vaultPrizesReload(com.mrgregles.bsp_core.vault.VaultPrizes.get(forPrizes).snbt()));
                 com.mrgregles.bsp_core.credit.CreditSync.load(server, migrated);
                 s.marketEnsurePot();
                 orders = newOrders(s); // before the market: down() turns false with the market, and an order then must find its store
@@ -612,6 +622,7 @@ public final class NetworkStorage {
         retryAtMs = 0;
         slicesElsewhere.clear();
         vaultsElsewhere = Map.of();
+        vaultsKnown = false;
         stealsElsewhere = List.of();
         RemoteTotemLevels.clear();
         com.mrgregles.bsp_core.totem.StealBacks.clearNetwork();
@@ -934,6 +945,7 @@ public final class NetworkStorage {
             allianceReload(null);
             kitReload(null, false); // never prunes: a kit written here a moment ago may not be in the read yet
             shopReload(null);
+            vaultPrizesReload(null);
             com.mrgregles.bsp_core.credit.CreditSync.catchUp(server);
         }
         long due = retryAtMs;
@@ -1192,6 +1204,7 @@ public final class NetworkStorage {
         worker().execute(() -> {
             try {
                 vaultsElsewhere = Map.copyOf(s.syncVaults(mine));
+                vaultsKnown = true;
             } catch (SQLException | RuntimeException e) {
                 BSPCore.LOGGER.error("BSP-Core storage: could not sync Coin Vault totals: {}", e.toString());
             }
@@ -1251,6 +1264,12 @@ public final class NetworkStorage {
     /** True if another server is the one that pays this player's Illyrium interest, so that it is only paid once on the network. */
     public static boolean illyriumPaidElsewhere(UUID owner) {
         return vaultsElsewhere.getOrDefault(owner, NO_VAULTS)[6] != 0;
+    }
+
+    /** True if another server is the one that builds up this player's vault prize rolls, so that they are only paid once on the network. */
+    public static boolean prizesPaidElsewhere(UUID owner) {
+        int[] row = vaultsElsewhere.getOrDefault(owner, NO_VAULTS);
+        return row.length > 7 && row[7] != 0;
     }
 
     // ------------------------------------------------------------------ seasons
@@ -1794,6 +1813,16 @@ public final class NetworkStorage {
             Long answer = r;
             onServer(() -> then.accept(answer));
         });
+    }
+
+    /** Gives back a Totem Compass claim whose compass did not start (see {@link MySqlStore#compassRelease}). */
+    public static void compassRelease(UUID id, long untilMs) {
+        async("give back a Totem Compass start", s -> s.compassRelease(id, untilMs));
+    }
+
+    /** Raises a player's Totem Compass wait on the network to at least {@code untilMs}; nothing without a database. */
+    public static void compassRaise(UUID id, long untilMs) {
+        async("record a Totem Compass wait", s -> s.compassRaise(id, untilMs));
     }
 
     /** Copies {@code player}'s Totem Compass wait from the network into this server's record, so their compass screens show it. */
@@ -2606,6 +2635,45 @@ public final class NetworkStorage {
             }
             boolean prune = pruneFull && migratedHere; // before /bsp storage migrate, kits only this server has are kept for it to copy up
             onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune));
+        });
+    }
+
+    // ------------------------------------------------------------------ the vault prize table, one record for the network
+
+    private static final String VAULT_PRIZES_KEY = "vault_prizes";
+
+    /** Writes the whole vault prize table (SNBT) to the shared state and tells the other servers to read it. */
+    public static void vaultPrizesWrite(String snbt) {
+        async("write the vault prize table", s -> {
+            s.putState(Map.of(VAULT_PRIZES_KEY, snbt), false);
+            publish("vault_prizes", "");
+        });
+    }
+
+    /**
+     * Reads the network's vault prize table and puts it in place of this server's, on the server thread. With {@code upload},
+     * a network that has no table yet is given that one first (another server may get there first; its table wins then).
+     */
+    public static void vaultPrizesReload(@Nullable String upload) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            String v;
+            try {
+                if (upload != null) {
+                    s.putState(Map.of(VAULT_PRIZES_KEY, upload), true);
+                }
+                v = s.readStateKey(VAULT_PRIZES_KEY);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the vault prize table: {}", e.toString());
+                return;
+            }
+            if (v != null && !v.isEmpty()) {
+                onServer(() -> com.mrgregles.bsp_core.vault.VaultPrizes.get(srv).applySnbt(v));
+            }
         });
     }
 
