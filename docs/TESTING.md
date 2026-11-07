@@ -3003,3 +3003,15 @@ Patchouli 84.1 draws no text on a crafting page with two recipes. Every such pag
 
 - [ ] Open each entry and check the recipes and the words under them, nothing shrunk or cut off: Blanks and Coins (Shatter Blank, then copper blank with "Each tier's blank..."), The Totem Mould (Mould Shell with its line, then the base mould), Illyrium ("Nine nuggets make an ingot by hand." under the ingot; the forge upgrade sentence under the Illyrium Forge Upgrade; the filter sentence under the Iron Filter, then the Diamond Filter), Tetrium (the ingot line, then the Combination Forge "...on fuel or lava..."), Batteries and Cells (Tier I line, then the Tiers II to IV line; the Power Cell line, then Power Cell II; Power Cell III, then the Wave Emitter line), Decoy Totems (Magnet Core line, then the Decoy Totem; the charges line under the Blast Charge, then the Warp Charge), Plasma and Projectors (stacking extractors under the extractor, the refused interface under the interface; cables under the base, the projector's keys under the projector), The Plasma Tank (the glass line under Tetrium Glass, then Tank Glass; the port's runs under the casing, the wrench and 1,000 mB/t under the port).
 - [ ] The page count in each of those entries goes up by one per split page; the entry's last page still ends cleanly.
+
+## Totem Compass cooldown on the player, network-wide (2026-11-07)
+
+Covered by GameTests (batch `compass_cooldown`): `compass_cooldown_follows_the_player_to_a_new_compass` (a second compass cannot start while the first one's tracking and cooldown run and keeps its loaded seconds; its screen value is the player's wait; another player is not held; the wait survives a save and is forgotten once over) and `compass_old_game_time_becomes_real_clock` (an old compass's game-time ticks become real-clock times; one from another server's clock, or already past, is dropped). **Not covered:** the network claim (`compass_waits`), the login read, the "try again shortly" message, the screen in a client, a server restart.
+
+- [ ] Load a compass with a coin and press START. Craft a second compass, load it and open it: it shows COOLDOWN with the first compass's tracking plus cooldown time, START does nothing, and the coin stays loaded.
+- [ ] Throw the first compass away and wait: the second still counts down, and once it reaches zero START works.
+- [ ] Log out and back in, or restart the server, during the wait: the second compass still shows the cooldown.
+- [ ] Hand the second compass to another player who has not tracked: they can START it.
+- [ ] On a network: START on server A, go to server B (the compass comes with you through inventory sync): it still tracks and shows the same time left, and a new compass crafted on B shows COOLDOWN with the same time. Once it ends, START works on B.
+- [ ] On a network: stop MySQL and press START on a loaded compass: the chat says the compass could not check the cooldown, and the coins stay loaded.
+- [ ] A compass that was tracking or cooling down before the update: after the update it still shows about the same time left on the server where it was started.

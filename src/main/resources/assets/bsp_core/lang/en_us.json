@@ -393,6 +393,7 @@
   "gui.bsp_core.compass.hud.ready": "READY",
   "gui.bsp_core.compass.hud.tracking": "TRACKING %s",
   "gui.bsp_core.compass.hud.cooldown": "COOLDOWN %s",
+  "message.bsp_core.compass.unreachable": "The compass could not check your cooldown with the network just now. Nothing was spent; try again shortly.",
   "gui.bsp_core.tree.tier": "TIER %s",
   "gui.bsp_core.tree.level": "Level %s of %s",
   "gui.bsp_core.tree.level_cap": "Level %s of %s (tier limit %s)",

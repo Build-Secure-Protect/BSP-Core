@@ -31,12 +31,20 @@ import java.util.UUID;
 /**
  * Points to the holder's nearest own placed totem. Loaded with Shatter Coins and started from its
  * screen, it instead tracks the nearest totem belonging to someone else until the loaded time runs
- * out, then goes on cooldown. All state lives in the stack's NBT; the server writes the target
- * position once a second and the client's needle reads it.
+ * out, then goes on cooldown. The compass's state lives in the stack's NBT; the server writes the target
+ * position once a second and the client's needle reads it. Times are real-clock milliseconds, so a compass carried to another
+ * server of the network reads them the same there. The wait also belongs to the player ({@link CompassCooldowns}, and on a
+ * network the {@code compass_waits} table), so a new compass cannot skip it, on this server or another.
  */
 public class TotemCompassItem extends Item {
-    public static final String STORED = "Stored", TRACK_UNTIL = "TrackUntil", COOLDOWN_UNTIL = "CooldownUntil", LEVEL = "CooldownLevel",
+    public static final String STORED = "Stored", TRACK_UNTIL = "TrackUntilMs", COOLDOWN_UNTIL = "CooldownUntilMs", LEVEL = "CooldownLevel",
             TARGET = "TargetPos", TARGET_DIM = "TargetDim";
+    /** Older compasses kept the server's game time in ticks, which differs from server to server. */
+    private static final String OLD_TRACK_UNTIL = "TrackUntil", OLD_COOLDOWN_UNTIL = "CooldownUntil";
+    /** A converted old time further ahead than this is taken to come from another server's clock, and dropped. */
+    private static final long OLD_MAX_MS = 2 * 86_400_000L;
+    /** Players whose start is being checked with the network database: a second START waits for the answer. */
+    private static final Set<UUID> CLAIMING = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public TotemCompassItem() {
         super(new Properties().stacksTo(1).rarity(Rarity.EPIC));
@@ -48,12 +56,39 @@ public class TotemCompassItem extends Item {
         return s.hasTag() ? s.getTag().getInt(STORED) : 0;
     }
 
-    public static int trackingLeft(ItemStack s, long now) {
-        return s.hasTag() ? (int) Math.max(0, (s.getTag().getLong(TRACK_UNTIL) - now + 19) / 20) : 0;
+    /** Whole seconds from {@code nowMs} to {@code untilMs}, rounded up; 0 once it has passed. */
+    public static int secondsTo(long untilMs, long nowMs) {
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(0, (untilMs - nowMs + 999) / 1000));
     }
 
-    public static int cooldownLeft(ItemStack s, long now) {
-        return s.hasTag() ? (int) Math.max(0, (s.getTag().getLong(COOLDOWN_UNTIL) - now + 19) / 20) : 0;
+    /** Seconds of rival tracking left at {@code nowMs} (real clock). */
+    public static int trackingLeft(ItemStack s, long nowMs) {
+        return s.hasTag() ? secondsTo(s.getTag().getLong(TRACK_UNTIL), nowMs) : 0;
+    }
+
+    /** Seconds until this compass may start again at {@code nowMs} (real clock): its tracking and the cooldown after it. */
+    public static int cooldownLeft(ItemStack s, long nowMs) {
+        return s.hasTag() ? secondsTo(s.getTag().getLong(COOLDOWN_UNTIL), nowMs) : 0;
+    }
+
+    /**
+     * Server: a compass saved by an older BSP-Core holds game-time ticks; they become real-clock times, measured from this server's game
+     * time. One that reads more than two days ahead came from another server's clock and is dropped.
+     */
+    public static void upgradeTimes(ItemStack s, long gameTime, long nowMs) {
+        CompoundTag tag = s.getTag();
+        if (tag == null || !(tag.contains(OLD_TRACK_UNTIL) || tag.contains(OLD_COOLDOWN_UNTIL))) {
+            return;
+        }
+        for (String[] k : new String[][] {{OLD_TRACK_UNTIL, TRACK_UNTIL}, {OLD_COOLDOWN_UNTIL, COOLDOWN_UNTIL}}) {
+            if (tag.contains(k[0])) {
+                long left = (tag.getLong(k[0]) - gameTime) * 50L;
+                tag.remove(k[0]);
+                if (left > 0 && left <= OLD_MAX_MS && !tag.contains(k[1])) {
+                    tag.putLong(k[1], nowMs + left);
+                }
+            }
+        }
     }
 
     public static int level(ItemStack s) {
@@ -99,17 +134,75 @@ public class TotemCompassItem extends Item {
         compass.getOrCreateTag().putInt(STORED, stored(compass) + add);
     }
 
+    /**
+     * Seconds until {@code player} may start tracking with any compass: from the last time they started one, wherever that
+     * compass is now and on whichever server of the network. It covers the tracking time and the cooldown after it.
+     */
+    public static int playerWaitLeft(ServerPlayer player) {
+        return secondsTo(CompassCooldowns.get(player.server).until(player.getUUID()), System.currentTimeMillis());
+    }
+
+    /** What the compass's screen shows as the cooldown: the longer of this compass's own and the player's. */
+    public static int cooldownLeft(ServerPlayer player, ItemStack compass) {
+        return Math.max(cooldownLeft(compass, System.currentTimeMillis()), playerWaitLeft(player));
+    }
+
+    private static boolean canStart(ServerPlayer player, ItemStack compass, long now) {
+        return stored(compass) > 0 && trackingLeft(compass, now) <= 0 && cooldownLeft(compass, now) <= 0 && playerWaitLeft(player) <= 0;
+    }
+
+    /**
+     * START: spends the loaded seconds on rival tracking, then the cooldown. The player's own wait holds on every compass, so a
+     * new compass cannot skip it. On a network the wait is claimed in the database first, so it holds on every server; with the
+     * database out of reach nothing starts and the player is told to try again.
+     */
     public static void startTracking(ServerPlayer player, ItemStack compass) {
-        long now = player.level().getGameTime();
-        int seconds = stored(compass);
-        if (seconds <= 0 || trackingLeft(compass, now) > 0 || cooldownLeft(compass, now) > 0) {
+        long now = System.currentTimeMillis();
+        upgradeTimes(compass, player.level().getGameTime(), now);
+        if (!canStart(player, compass, now)) {
             return;
         }
+        UUID id = player.getUUID();
+        long until = now + stored(compass) * 1000L + cooldownSeconds(compass) * 1000L;
+        if (!com.mrgregles.bsp_core.storage.NetworkStorage.countsWanted()) {
+            begin(player, compass, now);
+            return;
+        }
+        if (!com.mrgregles.bsp_core.storage.NetworkStorage.enabled()) {
+            player.displayClientMessage(Component.translatable("message.bsp_core.compass.unreachable").withStyle(ChatFormatting.RED), false);
+            return;
+        }
+        if (!CLAIMING.add(id)) {
+            return; // the first START is still being checked
+        }
+        com.mrgregles.bsp_core.storage.NetworkStorage.compassClaim(id, now, until, answer -> {
+            CLAIMING.remove(id);
+            if (answer == null) {
+                player.displayClientMessage(Component.translatable("message.bsp_core.compass.unreachable").withStyle(ChatFormatting.RED), false);
+            } else if (answer == until) {
+                // claimed: start this compass, unless it changed meanwhile (its wait then stands, and nothing was spent)
+                if (stored(compass) > 0 && trackingLeft(compass, System.currentTimeMillis()) <= 0) {
+                    begin(player, compass, now);
+                } else {
+                    CompassCooldowns.get(player.server).start(id, until);
+                }
+            } else {
+                CompassCooldowns.get(player.server).start(id, answer); // a wait started elsewhere on the network: the screen shows it now
+            }
+        });
+    }
+
+    /** Starts tracking with the loaded seconds from {@code now} and records the wait on the compass and the player. */
+    private static void begin(ServerPlayer player, ItemStack compass, long now) {
+        int seconds = stored(compass);
+        long trackUntil = now + seconds * 1000L, cooldownUntil = trackUntil + cooldownSeconds(compass) * 1000L; // the cooldown runs from the moment tracking ends
         CompoundTag tag = compass.getOrCreateTag();
         tag.putInt(STORED, 0);
-        tag.putLong(TRACK_UNTIL, now + seconds * 20L);
-        // the cooldown runs from the moment tracking ends
-        tag.putLong(COOLDOWN_UNTIL, now + seconds * 20L + cooldownSeconds(compass) * 20L);
+        tag.putLong(TRACK_UNTIL, trackUntil);
+        tag.putLong(COOLDOWN_UNTIL, cooldownUntil);
+        CompassCooldowns waits = CompassCooldowns.get(player.server);
+        waits.prune(now);
+        waits.start(player.getUUID(), cooldownUntil);
     }
 
     public static void buyUpgrade(ServerPlayer player, ItemStack compass) {
@@ -134,7 +227,8 @@ public class TotemCompassItem extends Item {
         if (level.isClientSide || level.getGameTime() % 20 != 0 || !(entity instanceof ServerPlayer player)) {
             return;
         }
-        boolean rivals = trackingLeft(stack, level.getGameTime()) > 0;
+        upgradeTimes(stack, level.getGameTime(), System.currentTimeMillis());
+        boolean rivals = trackingLeft(stack, System.currentTimeMillis()) > 0;
         BlockPos best = nearest(player, rivals);
         if (rivals) {
             // a working Decoy Totem within its range takes over the needle

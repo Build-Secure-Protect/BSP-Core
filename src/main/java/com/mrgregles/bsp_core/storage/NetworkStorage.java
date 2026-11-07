@@ -540,6 +540,7 @@ public final class NetworkStorage {
             UUID id = p.getUUID();
             String name = p.getGameProfile().getName();
             async("mark a player online", s -> s.onlineHere(id, name, now));
+            compassWaitRead(srv, id);
             com.mrgregles.bsp_core.bank.BankEvents.arrive(p);
             if (com.mrgregles.bsp_core.admin.LoginSettle.canReceive(p)) {
                 // settled already: the season check and the first totem waited for the database (not settled yet: the settle runs them)
@@ -674,6 +675,7 @@ public final class NetworkStorage {
                 s.onlineHere(id, name, now);
                 publish("online", "");
             });
+            compassWaitRead(player.server, id); // a wait started on another server shows on this one's compasses
             var m = market();
             if (m != null) {
                 m.refreshBox(player.getUUID());
@@ -1768,6 +1770,47 @@ public final class NetworkStorage {
             }
             Daily answer = d;
             onServer(() -> then.accept(answer));
+        });
+    }
+
+    /**
+     * Claims a Totem Compass start for {@code id} across the network: {@code then} gets {@code untilMs} when it was claimed, the
+     * wait already running (another server's, or an earlier start) when not, or null when the database could not be asked.
+     */
+    public static void compassClaim(UUID id, long nowMs, long untilMs, Consumer<Long> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            Long r;
+            try {
+                r = s.compassClaim(id, nowMs, untilMs);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: a Totem Compass start could not be checked: {}", e.toString());
+                r = null;
+            }
+            Long answer = r;
+            onServer(() -> then.accept(answer));
+        });
+    }
+
+    /** Copies {@code player}'s Totem Compass wait from the network into this server's record, so their compass screens show it. */
+    public static void compassWaitRead(MinecraftServer srv, UUID id) {
+        MySqlStore s = store;
+        if (s == null) {
+            return;
+        }
+        worker().execute(() -> {
+            try {
+                long until = s.compassWait(id);
+                if (until > 0) {
+                    onServer(() -> com.mrgregles.bsp_core.compass.CompassCooldowns.get(srv).start(id, until));
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read a Totem Compass wait: {}", e.toString());
+            }
         });
     }
 

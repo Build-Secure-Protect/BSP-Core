@@ -29,11 +29,13 @@ public class TotemCompassMenu extends AbstractContainerMenu {
             @Override
             public int get(int i) {
                 ItemStack s = compass();
-                long now = player.level().getGameTime();
+                long now = System.currentTimeMillis();
                 return switch (i) {
                     case 0 -> Math.min(Short.MAX_VALUE, TotemCompassItem.stored(s));
                     case 1 -> Math.min(Short.MAX_VALUE, TotemCompassItem.trackingLeft(s, now));
-                    case 2 -> Math.min(Short.MAX_VALUE, TotemCompassItem.cooldownLeft(s, now));
+                    // the player's own wait too: a second compass shows the cooldown its holder is still under
+                    case 2 -> Math.min(Short.MAX_VALUE, player instanceof ServerPlayer sp && !s.isEmpty()
+                            ? TotemCompassItem.cooldownLeft(sp, s) : TotemCompassItem.cooldownLeft(s, now));
                     case 3 -> TotemCompassItem.level(s);
                     case 4 -> Math.min(Short.MAX_VALUE, TotemCompassItem.upgradeCost(s));
                     case 5 -> TotemCompassItem.cooldownSeconds(s);

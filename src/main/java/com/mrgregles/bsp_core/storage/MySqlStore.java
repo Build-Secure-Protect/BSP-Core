@@ -287,6 +287,8 @@ final class MySqlStore implements AutoCloseable {
             // buy orders: the order's data (its item, how many wanted and sent, the price each) as SNBT; it changes as it fills
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_orders") + " (id VARCHAR(16) NOT NULL PRIMARY KEY, buyer CHAR(36) NOT NULL, placed_ms BIGINT NOT NULL, "
                     + "ends_ms BIGINT NOT NULL, server_id VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, INDEX (buyer), INDEX (placed_ms))");
+            // the Totem Compass: when each player may next start tracking rivals (real clock, ms), whichever server they used
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("compass_waits") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, until_ms BIGINT NOT NULL)");
             // the daily login reward: the last day each player was paid (days since 1970 on the shop clock)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("daily_rewards") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, day INT NOT NULL)");
             // the lottery: every player seen on the network, with their ranks and operator status at the time
@@ -3104,6 +3106,43 @@ final class MySqlStore implements AutoCloseable {
             bankLog(c, id, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.GRANT, "Shatter Bank", "daily reward", amount, -1, 0, serverId));
             return new long[]{amount, piecesOf(c, id)};
         }, key -> new long[]{-1, -1});
+    }
+
+    /**
+     * Claims a Totem Compass start for {@code id}: when their wait has ended by {@code nowMs}, it becomes {@code untilMs} and that
+     * is returned; otherwise the wait already running is returned and nothing changes. One conditional UPDATE on a row made first
+     * if missing, so two servers can never both start.
+     */
+    long compassClaim(UUID id, long nowMs, long untilMs) throws SQLException {
+        return inTransaction(c -> {
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("compass_waits") + " (uuid, until_ms) VALUES (?, 0)")) {
+                ps.setString(1, id.toString());
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("compass_waits") + " SET until_ms = ? WHERE uuid = ? AND until_ms <= ?")) {
+                ps.setLong(1, untilMs);
+                ps.setString(2, id.toString());
+                ps.setLong(3, nowMs);
+                if (ps.executeUpdate() == 1) {
+                    return untilMs;
+                }
+            }
+            return compassWait(c, id);
+        });
+    }
+
+    /** When {@code id} may next start a Totem Compass (ms), 0 when never started. */
+    long compassWait(UUID id) throws SQLException {
+        return compassWait(conn(), id);
+    }
+
+    private long compassWait(Connection c, UUID id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT until_ms FROM " + t("compass_waits") + " WHERE uuid = ?")) {
+            ps.setString(1, id.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : 0;
+            }
+        }
     }
 
     /** Players seen at or after {@code sinceMs}. */
