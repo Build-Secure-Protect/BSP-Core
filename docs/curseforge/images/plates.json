@@ -133,14 +133,14 @@
  },
  {
   "n": 26,
-  "slug": "raiding",
-  "title": "Decoys, the compass and traps"
+  "slug": "recipes_08",
+  "title": "Recipes 8 of 11: Batteries, Across worlds",
+  "after": "cable_colours"
  },
  {
   "n": 27,
-  "slug": "recipes_08",
-  "title": "Recipes 8 of 11: Batteries, Across worlds, Decoys and traps",
-  "after": "raiding"
+  "slug": "raiding",
+  "title": "Decoys, the compass and traps"
  },
  {
   "n": 28,
@@ -156,17 +156,22 @@
  {
   "n": 30,
   "slug": "recipes_10",
-  "title": "Recipes 10 of 11: Totem Forge",
+  "title": "Recipes 10 of 11: Decoys and traps, Totem Forge",
   "after": "totem_forge"
  },
  {
   "n": 31,
-  "slug": "recipes_11",
-  "title": "Recipes 11 of 11: Totem Forge",
-  "after": "totem_forge"
+  "slug": "radiation",
+  "title": "Lead-lined chests and radiation shielding"
  },
  {
   "n": 32,
+  "slug": "recipes_11",
+  "title": "Recipes 11 of 11: Totem Forge, Radiation",
+  "after": "radiation"
+ },
+ {
+  "n": 33,
   "slug": "base_blocks",
   "title": "Vault, screens and admin blocks"
  }

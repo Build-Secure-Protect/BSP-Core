@@ -1,0 +1,369 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+.bsp-target { width: 500px !important; max-width: none !important; }</style><title>Kit Conditions Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: three mock-up sets for Kit Conditions: the kit editor's list of conditions, the card a player sees while they own a totem, and the full-screen "naughty naughty" shown when a steal-back is refused. Screens are drawn at GUI pixel size with the game's own font (ascii.png) and KitAdminTab's and KitScreen's numbers. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --red:#c8322a;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --red:#ff6b5c; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --red:#ff6b5c; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:26px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+section{ display:flex; flex-direction:column; gap:12px; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b, .card p b{ color:var(--fg); font-weight:600; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; }
+.stack{ display:flex; flex-direction:column; gap:14px; }
+canvas.gui{ width:100%; max-width:100%; height:auto; display:block; background:#10151c; border:1px solid #2a2f3a; image-rendering:pixelated; }
+canvas.gui.half{ max-width:720px; }
+.note{ font-size:13px; color:var(--muted); border-left:3px solid var(--acc); padding:4px 10px; max-width:80ch; margin:0; }
+.note b{ color:var(--fg); }
+.bar{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; font-size:13px; }
+.bar label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
+.bar input:focus-visible, .bar button:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.bar button{ font:600 12px var(--body); background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:4px 10px; cursor:pointer; }
+.parts{ font-size:12.5px; margin:0; padding-left:18px; color:var(--muted); }
+.parts b{ color:var(--fg); font-weight:600; }
+</style>
+
+<div class="wrap">
+  <h1>Kit Conditions Concepts</h1>
+  <p class="lede">Three mock-up sets for <b>kit conditions</b>: how an admin ticks conditions in the kit editor (the first one is "owns no totem"), how the kit's card looks to a player who still owns a totem, and the screen a player sees when a steal-back is refused. They follow your answers: a list of conditions, a new Tier I totem in the player's name, REDEEM only, and the card greyed with "You own a totem". The screens are drawn at GUI pixel size with the game's own font.</p>
+  <p class="note">The kit in every picture is <b>Second Chance</b>: one Shatter Totem and 16 bread, once only, for players with no totem. Conditions marked <b>example</b> do not exist; they only show how each layout grows when more are added later.</p>
+
+  <section>
+    <h2>1. Conditions in the kit editor</h2>
+    <p class="lede">The editor's settings block is full today: Name, Describe, Given, Grant on, Browser and Take, Price and Servers, Ranks, Enabled. Every concept adds a <b>Needs</b> row under Ranks, so the panel grows by one row (310 to 325 pixels tall). A kit with no conditions shows "nothing", and anyone may take it.</p>
+    <div class="bar"><label><input type="checkbox" id="more"> Show three example conditions as well</label></div>
+    <div class="stack">
+      <div class="card"><h3>A. A row of chips, like Ranks</h3>
+        <p>Each condition is a short chip: click one to turn it on, and every chip that is on must be true. Turning on "nothing" clears them all. It looks just like the Ranks and Servers rows. More conditions mean more chips on the same row, and it wraps onto a second row once it is full.</p>
+        <canvas class="gui" id="e-a" width="1032" height="975"></canvas>
+      </div>
+      <div class="card"><h3>B. A tick list in plain words</h3>
+        <p>Each condition is a whole sentence with a tick box in front: "Owns no Shatter Totem anywhere on the network". The wording says exactly what the rule checks, and a condition that needs a number (days, totems) can have its own box on its line. The panel grows by one line for every condition added later.</p>
+        <canvas class="gui" id="e-b" width="1032" height="975"></canvas>
+      </div>
+      <div class="card"><h3>C. A summary chip that opens a list</h3>
+        <p>The Needs row shows a summary chip, "no totem ›". Clicking it opens a list over the item browser, with a tick box and a full sentence for each condition, and DONE closes it. The settings block grows by just the one row, however many conditions are added later.</p>
+        <div class="bar"><label><input type="checkbox" id="open" checked> The list is open</label></div>
+        <canvas class="gui" id="e-c" width="1032" height="975"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The card while a player owns a totem</h2>
+    <p class="lede">The kit wall with a ready Starter card next to Second Chance, locked because the player owns one placed totem. Next to them is the card turned over (click a card's icon in the game): its <b>To get it</b> list gains a line for each condition.</p>
+    <div class="stack">
+      <div class="card"><h3>A. Greyed, like a redeemed kit</h3>
+        <p>The card is grey, with the icon dimmed, a grey "You own a totem" chip and "for players with no totem" underneath. It reads like the Redeemed and cooldown cards.</p>
+        <canvas class="gui" id="c-a" width="1080" height="606"></canvas>
+      </div>
+      <div class="card"><h3>B. Greyed, and it says where the totem is</h3>
+        <p>The same grey card with an amber chip, plus a line naming where the player's totems are: "1 placed · survival". A player who forgot one in a chest or on another server sees why the kit is locked.</p>
+        <canvas class="gui" id="c-b" width="1080" height="606"></canvas>
+      </div>
+      <div class="card"><h3>C. Greyed, with a crossed-out totem</h3>
+        <p>The grey card with a red chip and a small totem struck through with a red line. The picture says "no totem" before anyone reads the words.</p>
+        <canvas class="gui" id="c-c" width="1080" height="606"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. "naughty naughty"</h2>
+    <p class="lede">A player who redeemed a totem kit tries to steal back a totem they used to own within 3 hours. Nothing starts and nothing names the reason: the words fill their screen for 5 seconds and then fade. The game view behind is a stand-in.</p>
+    <div class="bar"><button type="button" id="replay">Play again</button><span class="note" style="border:0;padding:0">Loops every 6 seconds: 5 on screen, 1 off.</span></div>
+    <div class="stack">
+      <div class="card"><h3>A. A red stamp</h3>
+        <p>The whole screen turns dark red and "NAUGHTY NAUGHTY" lands in huge white letters with a thump and a short shake. It fades out over the last second.</p>
+        <canvas class="gui half" id="n-a" width="854" height="480"></canvas>
+      </div>
+      <div class="card"><h3>B. A wagging finger</h3>
+        <p>The screen dims and a big pixel hand wags its finger from side to side over "naughty naughty" in gold. It's cheeky rather than angry.</p>
+        <canvas class="gui half" id="n-b" width="854" height="480"></canvas>
+      </div>
+      <div class="card"><h3>C. Warning tape</h3>
+        <p>Rows of red "NAUGHTY NAUGHTY" tape scroll across the whole screen in both directions, with a black band through the middle carrying the words in large white letters.</p>
+        <canvas class="gui half" id="n-c" width="854" height="480"></canvas>
+      </div>
+    </div>
+    <ul class="parts"><li><b>All three:</b> drawn over the game and the HUD for 5 seconds. The player can still move and fight (question 16), and another refused attempt while it is showing does not start it again.</li></ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var more = function(){ var b = el("more"); return !!(b && b.checked); };
+  var open = function(){ var b = el("open"); return !b || b.checked; };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  // characters that come from the game's other font pages: drawn by hand, advance in pixels
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallC(g, s, cx, y, col, max){ if (max) while (sw(s) > max) s = s.slice(0, -1); small(g, s, cx - Math.floor(sw(s) / 2), y, col); } // max: plainSubstrByWidth, as KitScreen.smallCentred
+  function split(s, max){ var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (sw(t) > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+
+  // ------------------------------------------------------------ KitAdminTab's colours and pieces
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", FAINT = "#4a5160", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544", RED = "#ff8f86";
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function slot(g, x, y){ fill(g, x, y, 18, 18, DIM); fill(g, x + 1, y + 1, 16, 16, SLOT); }
+  function chip(g, x, y, label, on, enabled){ var w = sw(label) + 8; enabled = enabled !== false;
+    fill(g, x, y, w, 11, on ? VIO : DIM); fill(g, x + 1, y + 1, w - 2, 9, on ? HOVERV : SLOT);
+    small(g, label, x + 4, y + 3, on ? VIO : enabled ? TEXT : OFF); return w + 3; }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT);
+    var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c); }
+  function tick(g, x, y, on){ fill(g, x, y, 8, 8, on ? VIO : DIM); fill(g, x + 1, y + 1, 6, 6, on ? HOVERV : SLOT); if (on) txt(g, "✓", x + 1, y - 1, VIO, 0.75); }
+
+  // ------------------------------------------------------------ item icons, 16 x 16 pixel art
+  var ICONS = {
+    totem: ["................","......aaaa......",".....abbbba.....",".....abccba.....","......aaaa......","....aaddddaa....","...ad.dddd.da...","...a..dddd..a...","......dddd......","......d..d......",".....dd..dd.....","....eeeeeeee....","...effffffffe...","...egggggggge...","...eeeeeeeeee...","................"],
+    bread: ["................","................","................","................",".....aaaaaa.....","...aabbbbbbaa...","..abbcbbcbbcba..",".abbbbbbbbbbbba.",".abcbbcbbcbbcba.",".abbbbbbbbbbbba.","..aabbbbbbbbaa..","....aaaaaaaa....","................","................","................","................"],
+    pick: ["................","...aaaaaaaaa....","..abbbbbbbbba...","..a...cc...ba...","......cc....a...","......cc........","......cc........","......cc........","......cc........","......cc........","......cc........","......cc........","......cc........","................","................","................"],
+    block: ["aaaaaaaaaaaaaaaa","abbbbbbbbbbbbbba","abccbbbbbbbccbba","abbbbbbccbbbbbba","abbbbbbbbbbbbbba","abbbccbbbbbbbbba","abbbbbbbbbbccbba","abbbbbbbbbbbbbba","abccbbbbbbbbbbba","abbbbbbbccbbbbba","abbbbbbbbbbbbbba","abbbbbccbbbbbcca","abbbbbbbbbbbbbba","abccbbbbbbbbbbba","abbbbbbbbbbbbbba","aaaaaaaaaaaaaaaa"],
+    ingot: ["................","................","................","................","................","....aaaaaaaa....","...abbbbbbbba...","..abccccccccba..",".abbbbbbbbbbbba.",".aaaaaaaaaaaaaa.","................","................","................","................","................","................"]
+  };
+  var PAL = {
+    totem: { a: "#7a5a1c", b: "#19d3b0", c: "#b8fff0", d: "#e8c45a", e: "#5a4a32", f: "#8a7552", g: "#6d5c40" },
+    bread: { a: "#6b4317", b: "#c88a3c", c: "#e8b265" },
+    pick: { a: "#2c8d84", b: "#5ee6d8", c: "#7a5a32" },
+    stone: { a: "#5c5c5c", b: "#8a8a8a", c: "#6e6e6e" }, dirt: { a: "#5b3c22", b: "#8a5b36", c: "#6f4a2b" }, log: { a: "#4a3520", b: "#6e5232", c: "#8b6b44" },
+    iron: { a: "#6a6a6a", b: "#c9c9c9", c: "#f0f0f0" }, gold: { a: "#8a6a10", b: "#e8c13a", c: "#fff08a" }, cop: { a: "#7a3e22", b: "#d07a4a", c: "#f2a87a" }
+  };
+  function icon(g, name, pal, x, y, k, grey){ k = k || 1; var rows = ICONS[name], p = PAL[pal || name];
+    for (var r = 0; r < 16; r++) for (var c = 0; c < 16; c++){ var ch = rows[r][c]; if (ch === ".") continue; var col = p[ch]; if (!col) continue;
+      if (grey){ var n = parseInt(col.slice(1), 16), v = Math.round(((n >> 16) * .3 + (n >> 8 & 255) * .59 + (n & 255) * .11) * .5); col = "rgb(" + v + "," + v + "," + v + ")"; }
+      fill(g, x + c * k, y + r * k, k, k, col); } }
+  function count(g, n, x, y){ var s = String(n); txt(g, s, x + 17 - mw(s) + 1, y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); }
+
+  // ------------------------------------------------------------ the kit editor (KitAdminTab.editor), one concept at a time
+  var CONDS = [ { chip: "no totem", line: "Owns no Shatter Totem anywhere on the network", on: true } ];
+  var EXAMPLES = [ { chip: "no team", line: "Is in no team (example)", on: false }, { chip: "in a team", line: "Is in a team (example)", on: false }, { chip: "joined 7 d+", line: "First joined at least 7 days ago (example)", on: false } ];
+  var PW = 344;
+  function conds(){ return more() ? CONDS.concat(EXAMPLES) : CONDS; }
+
+  function editor(id, concept){
+    var cv = el(id); if (!cv) return; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(1, 0, 0, 1, 0, 0);
+    var list = conds(), extra = 0, chipRows = 1;
+    if (concept === "a"){ // chips wrap onto a second row once the first is full
+      var cx = 56; list.concat([{ chip: "nothing" }]).forEach(function(c){ var w = sw(c.chip) + 11; if (cx + w > PW - 12){ chipRows++; cx = 56; } cx += w; });
+      extra = (chipRows - 1) * 14; }
+    if (concept === "b") extra = (list.length - 1) * 11;
+    var H = 325 + extra; cv.height = H * 3; g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(3, 0, 0, 3, 0, 0);
+    fill(g, 0, 0, PW, H, DIM); fill(g, 1, 1, PW - 2, H - 2, BG);
+    txt(g, "Kit: Second Chance", 8, 8, TQ);
+    small(g, "unsaved", PW - 8 - sw("unsaved"), 10, GOLD);
+    // the kit's slots
+    small(g, "Contents · 2 of 36", 8, 22, MUTED);
+    for (var i = 0; i < 36; i++){ var sx = 8 + (i % 9) * 18, sy = 30 + Math.floor(i / 9) * 18; slot(g, sx, sy); }
+    icon(g, "totem", null, 9, 31); icon(g, "bread", null, 27, 31); count(g, 16, 27, 31);
+    small(g, "Click: out · wheel: count · shift: clear", 8, 30 + 72 + 3, MUTED);
+    key(g, 8, 113, 79, 13, "FROM HAND", TQ); key(g, 91, 113, 79, 13, "FROM INVENTORY", TQ);
+    // the browser
+    small(g, "Add items", 180, 22, MUTED); inset(g, 180, 29, 156, 12); small(g, "search every item…", 183, 32, OFF);
+    var bx = 180; bx += chip(g, bx, 43, "all", true); ["bsp_core", "minecraft", "thermal"].forEach(function(n){ if (bx + sw(n) + 11 <= 180 + 140) bx += chip(g, bx, 43, n, false); }); chip(g, 180 + 144, 43, "›", false);
+    var B = [["block","stone"],["block","dirt"],["block","log"],["ingot","iron"],["ingot","gold"],["ingot","cop"],["pick"],["bread"],["totem"],["block","stone"],["ingot","iron"],["block","log"]];
+    for (var j = 0; j < 32; j++){ var gx = 180 + (j % 8) * 18, gy = 56 + Math.floor(j / 8) * 18; slot(g, gx, gy); var it = B[j % B.length]; icon(g, it[0], it[1], gx + 1, gy + 1); }
+    small(g, "Click adds one · shift-click a stack", 180, 56 + 72 + 3, MUTED);
+    // the settings
+    var setH = 145 + extra; inset(g, 8, 146, PW - 16, setH);
+    var lx = 14;
+    small(g, "Name", lx, 151, MUTED); inset(g, 56, 148, 92, 12); small(g, "Second Chance", 59, 151, TEXT);
+    small(g, "Icon", 200, 151, MUTED); var ix = 226; ix += chip(g, ix, 148, "first slot", true); ix += chip(g, ix, 148, "pick…", false); icon(g, "totem", null, ix + 2, 146);
+    small(g, "Describe", lx, 166, MUTED); inset(g, 56, 163, 276, 12); small(g, "A new Shatter Totem for players who have none", 59, 166, TEXT);
+    small(g, "Given", lx, 181, MUTED); var gx2 = 56; gx2 += chip(g, gx2, 178, "never", true); gx2 += chip(g, gx2, 178, "first join · network", false); chip(g, gx2, 178, "first join · servers…", false);
+    small(g, "Grant on", lx, 196, FAINT);
+    small(g, "Browser", lx, 211, MUTED); var bw = 56; bw += chip(g, bw, 208, "shown", true); chip(g, bw, 208, "hidden", false);
+    small(g, "Take", 150, 211, MUTED); var tx = 172; tx += chip(g, tx, 208, "once", true); chip(g, tx, 208, "every", false); inset(g, 234, 208, 26, 12);
+    var ux = 264; ["min", "h", "d"].forEach(function(u){ ux += chip(g, ux, 208, u, false, false); });
+    small(g, "Price", lx, 226, MUTED); inset(g, 56, 223, 46, 12); small(g, "pieces", 106, 226, MUTED);
+    small(g, "Servers", 150, 226, MUTED); var svx = 190; svx += chip(g, svx, 223, "everywhere", true); svx += chip(g, svx, 223, "survival", false); chip(g, svx, 223, "+", false);
+    small(g, "Ranks", lx, 246, MUTED); var rx = 56; rx += chip(g, rx, 243, "anyone", true); chip(g, rx, 243, "+", false);
+    // the new row
+    small(g, "Needs", lx, 269, MUTED);
+    var any = list.some(function(c){ return c.on; });
+    if (concept === "a"){
+      var cx2 = 56, cy2 = 266, last = 0;
+      list = [{ chip: "nothing", on: !any }].concat(list);
+      list.forEach(function(c){ var w = sw(c.chip) + 11; if (cx2 + w > PW - 12){ cx2 = 56; cy2 += 14; } cx2 += chip(g, cx2, cy2, c.chip, c.on); last = cx2; });
+      check("A: the Needs chips stay inside the settings block", last - 3 <= PW - 12);
+    } else if (concept === "b"){
+      list.forEach(function(c, n){ var y = 267 + n * 11; tick(g, 56, y, c.on); small(g, c.line, 68, y + 2, c.on ? TEXT : MUTED);
+        check("B: '" + c.line + "' fits on its line", 68 + sw(c.line) <= PW - 12); });
+    } else {
+      var label = any ? list.filter(function(c){ return c.on; }).map(function(c){ return c.chip; }).join(", ") + " ›" : "nothing ›";
+      var w2 = chip(g, 56, 266, label, any || open());
+      small(g, "click to choose", 56 + w2 + 3, 269, MUTED);
+      check("C: the summary chip and its hint fit the row", 56 + w2 + 3 + sw("click to choose") <= PW - 12);
+    }
+    var ey = 284 + extra;
+    small(g, "Enabled", lx, ey, MUTED); var ex = 56; ex += chip(g, ex, ey - 3, "on", true); chip(g, ex, ey - 3, "off", false);
+    small(g, "Taken 3 times · last by Steve", 150, ey, MUTED);
+    // the keys
+    var ky = 299 + extra;
+    key(g, 8, ky, 62, 18, "SAVE", VIO); key(g, 8 + 66, ky, 70, 18, "TEST ON ME", TQ); key(g, 8 + 140, ky, 62, 18, "DELETE", BAD); key(g, PW - 8 - 62, ky, 62, 18, "CLOSE", MUTED);
+    check(concept.toUpperCase() + ": the keys keep their gaps", 8 + 140 + 62 < PW - 8 - 62);
+    // C: the list over the item browser
+    if (concept === "c" && open()){
+      var ox = 176, oy = 18, ow = PW - 4 - ox, oh = 124;
+      fill(g, ox, oy, ow, oh, VIO); fill(g, ox + 1, oy + 1, ow - 2, oh - 2, BG);
+      small(g, "NEEDS · every ticked line must be true", ox + 6, oy + 6, VIO);
+      var ly = oy + 18;
+      conds().forEach(function(c){ var lines = split(c.line, ow - 26); tick(g, ox + 6, ly, c.on); lines.forEach(function(l, n){ small(g, l, ox + 18, ly + 2 + n * 8, c.on ? TEXT : MUTED); });
+        ly += Math.max(11, lines.length * 8 + 4); });
+      check("C: the open list holds every condition above DONE", ly <= oy + oh - 20);
+      key(g, ox + ow - 6 - 44, oy + oh - 18, 44, 13, "DONE", VIO);
+    }
+    check(concept.toUpperCase() + ": the description fits its box", 59 + sw("A new Shatter Totem for players who have none") <= 56 + 276 - 2);
+  }
+
+  // ------------------------------------------------------------ the kit wall's cards (KitScreen.card) and the turned card (KitScreen.flipped)
+  var CARD_W = 77, CARD_H = 86, FW = 264, FH = 182;
+  function badge(g, cx, y, label, bg, fg){ var w = sw(label) + 8, x = cx - Math.floor(w / 2); fill(g, x, y, w, 10, bg); small(g, label, x + 4, y + 2, fg); return w; }
+  function readyCard(g, x, y){ fill(g, x, y, CARD_W, CARD_H, TQ); fill(g, x + 1, y + 1, CARD_W - 2, CARD_H - 2, "#13211f"); icon(g, "pick", null, x + CARD_W / 2 - 16, y + 5, 2);
+    var mid = x + CARD_W / 2; smallC(g, "Starter", mid, y + 40, TEXT); badge(g, mid, y + 50, "Ready", "#113d30", OK); key(g, x + 6, y + 62, CARD_W - 12, 13, "REDEEM", TQ); smallC(g, "5 items · once only", mid, y + 77, MUTED); }
+  function lockedCard(g, x, y, concept){
+    fill(g, x, y, CARD_W, CARD_H, DIM); fill(g, x + 1, y + 1, CARD_W - 2, CARD_H - 2, SLOT);
+    icon(g, "totem", null, x + CARD_W / 2 - 16, y + 5, 2, true);
+    var mid = x + CARD_W / 2, body = y + 62, bw;
+    smallC(g, "Second Chance", mid, y + 40, MUTED);
+    if (concept === "a"){
+      bw = badge(g, mid, y + 50, "You own a totem", "#1b1e26", "#6b7280");
+      var ls = split("for players with no totem", CARD_W - 8); ls.forEach(function(l, n){ smallC(g, l, mid, body + 4 + n * 8, MUTED); });
+      check("Card A: the reason wraps into two lines", ls.length <= 2);
+    } else if (concept === "b"){
+      bw = badge(g, mid, y + 50, "You own a totem", "#3b2f14", WARN);
+      smallC(g, "1 placed · survival", mid, body + 4, MUTED);
+      check("Card B: the where line fits", sw("1 placed · survival") <= CARD_W - 6);
+      smallC(g, "no-totem kit", mid, body + 13, FAINT);
+      check("Card B: the second line fits", sw("no-totem kit") <= CARD_W - 6);
+    } else {
+      bw = badge(g, mid, y + 50, "You own a totem", "#3a1a1a", RED);
+      icon(g, "totem", null, mid - 6, body, 0.75);
+      g.strokeStyle = BAD; g.lineWidth = 1.2; g.beginPath(); g.moveTo(mid - 8, body + 13); g.lineTo(mid + 8, body - 1); g.stroke();
+      smallC(g, "no-totem kit", mid, body + 15, MUTED);
+    }
+    check("Card " + concept.toUpperCase() + ": the chip fits the card", bw <= CARD_W - 6);
+  }
+  function flipped(g, x, y, concept){
+    fill(g, x - 1, y - 1, FW + 2, FH + 2, TQ); fill(g, x, y, FW, FH, BG);
+    icon(g, "totem", null, x + 8, y + 8, 2);
+    txt(g, "Second Chance", x + 46, y + 10, TQ);
+    var desc = "A new Shatter Totem for players who have none Once only."; while (sw(desc) > FW - 56) desc = desc.slice(0, -1); // plainSubstrByWidth, as the game cuts it
+    small(g, desc, x + 46, y + 22, MUTED);
+    for (var i = 0; i < 9; i++) slot(g, x + 8 + i * 18, y + 42);
+    icon(g, "totem", null, x + 9, y + 43); icon(g, "bread", null, x + 27, y + 43); count(g, 16, x + 27, y + 43);
+    var ly = y + 42 + 18 + 3;
+    small(g, "2 items · needs 2 free slots", x + 8, ly, MUTED); ly += 11;
+    small(g, "To get it", x + 8, ly, MUTED); ly += 9;
+    var line = "✗ Own no Shatter Totem", tail = concept === "b" ? "· you own 1, placed on survival" : "· you own 1";
+    small(g, line, x + 8, ly, GOLD); small(g, tail, x + 14 + sw(line) + 6 - 6, ly, MUTED);
+    check("Turned card " + concept.toUpperCase() + ": the condition line fits", 14 + sw(line) + sw(tail) <= FW - 8);
+    ly += 9;
+    small(g, "✓ 2 free slots", x + 8, ly, OK); small(g, "· you have 14", x + 14 + sw("2 free slots") + 6, ly, MUTED); ly += 9;
+    small(g, "✓ Any server", x + 8, ly, OK); ly += 9;
+    var ky = y + FH - 8 - 16, why = "LOCKED · You own a totem";
+    key(g, x + 8, ky, 150, 16, why, TQ, false);
+    check("Turned card " + concept.toUpperCase() + ": the LOCKED key's words fit", mw(why) <= 150 - 6);
+    key(g, x + FW - 8 - 56, ky, 56, 16, "BACK", MUTED);
+  }
+  function cards(id, concept){ var cv = el(id); if (!cv) return; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(3, 0, 0, 3, 0, 0);
+    fill(g, 0, 0, 360, 202, BG); readyCard(g, 6, 8); lockedCard(g, 6, 8 + CARD_H + 4, concept); flipped(g, 90, 10, concept); }
+
+  // ------------------------------------------------------------ "naughty naughty": a 427 x 240 game view (GUI scale 3 at 1280 x 720)
+  var NW = 427, NH = 240, t0 = 0;
+  function world(g){
+    var sky = g.createLinearGradient(0, 0, 0, NH); sky.addColorStop(0, "#6d9ee8"); sky.addColorStop(1, "#c5ddff"); g.fillStyle = sky; g.fillRect(0, 0, NW, NH);
+    for (var x = 0; x < NW; x += 8){ var h = 150 + Math.round(10 * Math.sin(x / 37) + 6 * Math.sin(x / 13)); fill(g, x, h, 8, NH - h, "#5d8f3a"); fill(g, x, h + 4, 8, NH - h, "#7a5432"); }
+    fill(g, 196, 120, 34, 46, "#5a4a32"); fill(g, 200, 104, 26, 18, "#e8c45a"); fill(g, 207, 96, 12, 10, "#19d3b0");
+    fill(g, NW / 2 - 4, NH / 2, 9, 1, "#fff"); fill(g, NW / 2, NH / 2 - 4, 1, 9, "#fff");
+    var hx = Math.round(NW / 2 - 91); fill(g, hx, NH - 22, 182, 22, "rgba(0,0,0,.55)"); for (var i = 0; i < 9; i++) inset(g, hx + 1 + i * 20, NH - 21, 20, 20);
+    fill(g, hx, NH - 22, 22, 22, "#fff"); fill(g, hx + 2, NH - 20, 18, 18, "rgba(0,0,0,.6)");
+  }
+  function big(g, s, x, y, k, col, shadow){ txt(g, s, x + k, y + k, shadow, k); txt(g, s, x, y, col, k); }
+  function fade(t){ return t < 0.15 ? t / 0.15 : t > 4 ? Math.max(0, 5 - t) : 1; }
+  function hand(g, cx, cy, k, ang){ g.save(); g.translate(cx, cy); g.rotate(ang);
+    var P = ["....aa......","...abba.....","...abba.....","...abba.....","...abba.....","...abbaaaa..","...abbabbaa.","..aabbabbaba",".abbbbbbbbba",".abbbbbbbbba",".abbbbbbbbba","..abbbbbbba.","..abbbbbbba.","...abbbbba..","...accccca..","...accccca.."];
+    for (var r = 0; r < P.length; r++) for (var c = 0; c < 12; c++){ var ch = P[r][c]; if (ch === ".") continue; g.fillStyle = ch === "a" ? "#5a3a24" : ch === "b" ? "#f2c39a" : "#3a6fd0"; g.fillRect((c - 6) * k, (r - 16) * k, k, k); }
+    g.restore(); }
+  function naughty(id, concept, now){ var cv = el(id); if (!cv) return; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(2, 0, 0, 2, 0, 0);
+    var t = reduce ? 1.6 : ((now - t0) / 1000) % 6; world(g); if (t >= 5) return; var a = fade(t);
+    g.globalAlpha = a;
+    if (concept === "a"){
+      fill(g, 0, 0, NW, NH, "rgba(110,0,0,.62)");
+      var k = t < 0.25 ? 4 + (0.25 - t) * 8 : 4, s = "NAUGHTY NAUGHTY", w = mw(s) * k, sh = t < 0.8 ? Math.round(Math.sin(t * 60) * 2 * (0.8 - t) / 0.8 * 2) : 0;
+      big(g, s, Math.round((NW - w) / 2) + sh, Math.round(NH / 2 - 4 * k - 10), k, "#ffffff", "#5a0000");
+      check("Naughty A: the words fit the screen", mw(s) * 4 <= NW - 16);
+    } else if (concept === "b"){
+      fill(g, 0, 0, NW, NH, "rgba(0,0,0,.62)");
+      hand(g, NW / 2, 120, 4, Math.sin(t * Math.PI * 5) * 0.32);
+      var s2 = "naughty naughty", w2 = mw(s2) * 4; big(g, s2, Math.round((NW - w2) / 2), 150, 4, GOLD, "#3b2a00");
+      check("Naughty B: the words fit the screen", w2 <= NW - 16);
+    } else {
+      fill(g, 0, 0, NW, NH, "rgba(0,0,0,.55)");
+      var tape = "NAUGHTY NAUGHTY · ", tw = mw(tape) * 2;
+      for (var r = 0; r < 9; r++){ var y = r * 28 - 6, dir = r % 2 ? 1 : -1, off = ((t * 40 * dir) % tw + tw) % tw;
+        fill(g, 0, y, NW, 20, r % 2 ? "#b3221a" : "#1a0c0c");
+        for (var x = -tw + off; x < NW; x += tw) txt(g, tape, Math.round(x), y + 3, r % 2 ? "#1a0c0c" : "#ff4a3a", 2); }
+      fill(g, 0, NH / 2 - 26, NW, 52, "#000"); fill(g, 0, NH / 2 - 26, NW, 2, "#ff4a3a"); fill(g, 0, NH / 2 + 24, NW, 2, "#ff4a3a");
+      var s3 = "NAUGHTY NAUGHTY", w3 = mw(s3) * 4; big(g, s3, Math.round((NW - w3) / 2), NH / 2 - 16, 4, "#ffffff", "#7a1010");
+    }
+    g.globalAlpha = 1;
+  }
+
+  function all(){ ["a", "b", "c"].forEach(function(c){ editor("e-" + c, c); cards("c-" + c, c); }); }
+  function loop(now){ ["a", "b", "c"].forEach(function(c){ naughty("n-" + c, c, now); }); if (!reduce) requestAnimationFrame(loop); }
+  function start(){ CHECKS.length = 0; all(); loop(t0 = (typeof performance !== "undefined" ? performance.now() : 0)); window.__kitConditionChecks = CHECKS; }
+  font.onload = function(){ ready = true; start(); };
+  font.src = ASCII;
+  ["more", "open"].forEach(function(id){ var b = el(id); if (b) b.addEventListener("change", function(){ CHECKS.length = 0; all(); }); });
+  var rp = el("replay"); if (rp) rp.addEventListener("click", function(){ t0 = performance.now(); if (reduce) loop(t0); });
+  start();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · Kits for players with no totem</div><div class="bsp-cap">A kit can be kept for players who own no Shatter Totem anywhere on the network: one tick on the Needs line of the kit editor.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('e-b')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

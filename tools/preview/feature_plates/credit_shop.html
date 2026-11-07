@@ -1,0 +1,579 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+</style><title>Store Credit Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: four mock-up sets for Store Credit, drawn at GUI pixel size with the game's own font (ascii.png): the ticket item (three shapes, 16 dye colours, a C or D mark), the admin panel's CREDIT tab, what a player sees when paying with credit (shop, Land Office, teleports), and the notice when a ticket's clock starts or runs out. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --red:#c8322a;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --red:#ff6b5c; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --red:#ff6b5c; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:26px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+section{ display:flex; flex-direction:column; gap:12px; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b, .card p b{ color:var(--fg); font-weight:600; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.stack{ display:flex; flex-direction:column; gap:14px; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:10px; align-items:start; }
+canvas.gui{ width:100%; max-width:100%; height:auto; display:block; background:#10151c; border:1px solid #2a2f3a; image-rendering:pixelated; }
+canvas.gui.half{ max-width:720px; }
+canvas.gui.shop{ max-width:600px; }
+.note{ font-size:13px; color:var(--muted); border-left:3px solid var(--acc); padding:4px 10px; max-width:80ch; margin:0; }
+.note b{ color:var(--fg); }
+.bar{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; font-size:13px; }
+.bar label{ display:flex; gap:6px; align-items:center; cursor:pointer; }
+.bar input:focus-visible, .bar button:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.bar button{ font:600 12px var(--body); background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:4px 10px; cursor:pointer; }
+.swatches{ display:flex; flex-wrap:wrap; gap:4px; }
+.swatches button{ width:22px; height:22px; padding:0; border:2px solid var(--line); border-radius:3px; cursor:pointer; }
+.swatches button[aria-pressed="true"]{ border-color:var(--fg); box-shadow:0 0 0 2px var(--acc); }
+.parts{ font-size:12.5px; margin:0; padding-left:18px; color:var(--muted); }
+.parts b{ color:var(--fg); font-weight:600; }
+.checks{ font:12px var(--mono); color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <h1>Store Credit Concepts</h1>
+  <p class="lede">Three concepts each for the <b>ticket</b>, the admin panel's <b>CREDIT</b> tab, what a player sees when <b>paying with credit</b>, and the notice when a ticket's <b>clock starts</b> or runs out. They follow your round 1 answers: kinds made in the admin screen, a colour and a C or D mark per kind, a scrolling list of plot names, credit paying first with the bank paying the rest, a notice the player can't ignore, and a ticket that disappears when it runs out.</p>
+  <p class="note">The examples: <b>Donor 10,000</b> (purple, D, 30 days, bound when given, spends at Spawn Market, any Land Office plot and teleports), <b>Sanctuary Plot</b> (lime, C, 6,000, 14 days, Sanctuary plots only), <b>Market Gift</b> (orange, C, 2,000, no time limit) and <b>Teleport Pass</b> (light blue, D, 1,500, 7 days, teleports only). Pick a colour and a mark below to see every ticket shape in it.</p>
+
+  <section>
+    <h2>1. The ticket</h2>
+    <p class="lede">Each shape is one 16 by 16 item texture, built from two layers. A grey body layer is tinted in the kind's colour, so all 16 dye colours come from one texture. The gold, gem and print details stay untinted. The C or D mark sits in a third layer picked by the item's model, top left as you asked. Below each big icon are all 16 colours with a C and with a D, and a hotbar at real game size.</p>
+    <div class="bar"><span>Colour</span><div class="swatches" id="swatches"></div></div>
+    <div class="bar" role="radiogroup" aria-label="Mark"><span>Mark</span>
+      <label><input type="radio" name="mark" id="mark-c" value="C"> C (credit)</label>
+      <label><input type="radio" name="mark" id="mark-d" value="D" checked> D (donor)</label>
+      <label><input type="radio" name="mark" id="mark-n" value=""> no mark</label>
+      <label>Shape drawn in sections 2 to 4 <select id="shape"><option value="a" selected>A</option><option value="b">B</option><option value="c">C</option></select></label></div>
+    <div class="stack">
+      <div class="card"><h3>A. Admit-one stub</h3>
+        <p>A classic paper ticket with a notch in each end, a perforated tear line and a gold star on the stub. The mark is a black tab over the top left corner, with a white C or a gold D. It reads as "ticket" even at hotbar size.</p>
+        <canvas class="gui" id="t-a" width="1120" height="260"></canvas>
+      </div>
+      <div class="card"><h3>B. Gift card</h3>
+        <p>A rounded plastic card with a gold chip, a Shatter Piece gem and an embossed number line. The mark is a round gold seal with a dark letter. It looks like money, and the gem ties it to the bank's pieces.</p>
+        <canvas class="gui" id="t-b" width="1120" height="260"></canvas>
+      </div>
+      <div class="card"><h3>C. Sealed voucher</h3>
+        <p>A tall slip of paper torn at both ends, with three printed lines and a gold wax seal. The mark is a white sticker with a blue C or a red D, so the two kinds differ in colour as well as letter.</p>
+        <canvas class="gui" id="t-c" width="1120" height="260"></canvas>
+      </div>
+      <div class="card"><h3>The tooltip (all three)</h3>
+        <p>Your answer 20, the same for every shape. On the left is a ticket before its first purchase; on the right is one partly spent and bound.</p>
+        <canvas class="gui" id="tip" width="1260" height="246"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The CREDIT tab in the admin panel</h2>
+    <p class="lede">A fifth tab after KITS. To fit five tabs the tabs narrow from 46 to 40 pixels. The list of kinds is on the left, as the players list is on PLAYERS. The concepts differ in how the kind's settings and its places are laid out. The <b>plot names</b> list shows each name once with how many plots share it (your "groups"), scrolls, and has a box to type a name that isn't on this server.</p>
+    <div class="stack">
+      <div class="card"><h3>A. A form, with the places in a pop-over</h3>
+        <p>The form fits the panel's normal 344 by 210 size. "Spends at" shows a summary chip per place. EDIT opens a list over the form, with SHOPS, LAND OFFICE and TELEPORTS tabs, a search box and tick boxes, and DONE closes it.</p>
+        <div class="bar"><label><input type="checkbox" id="pop" checked> The places list is open</label>
+          <label>Tab <select id="poptab"><option value="land" selected>Land Office</option><option value="shops">Shops</option><option value="tp">Teleports</option></select></label></div>
+        <canvas class="gui" id="a-a" width="1032" height="630"></canvas>
+      </div>
+      <div class="card"><h3>B. A printed ticket on top, with every place in view</h3>
+        <p>The top of the form is the ticket itself, printed large in its colour with its mark, name, value and time. It changes as you edit. Under it, the three place lists sit side by side and each scrolls on its own, so nothing is hidden behind a key. The panel grows to 290 pixels tall while a kind is open, as the kit editor does.</p>
+        <canvas class="gui" id="a-b" width="1032" height="870"></canvas>
+      </div>
+      <div class="card"><h3>C. Three steps: look, value and time, places</h3>
+        <p>The form is split into three steps with NEXT and BACK keys. Step 2 ends with a sentence that says what the ticket will do. Step 3 is one long list with Shops, Land Office and Teleports as headings. It keeps the normal panel size and each step has plenty of room.</p>
+        <div class="bar" role="radiogroup" aria-label="Step"><label><input type="radio" name="step" value="1"> Step 1</label><label><input type="radio" name="step" value="2"> Step 2</label><label><input type="radio" name="step" value="3" checked> Step 3</label></div>
+        <canvas class="gui" id="a-c" width="1032" height="630"></canvas>
+      </div>
+      <div class="card"><h3>The ticket list (all three)</h3>
+        <p>TICKETS opens every ticket of the kind that has been given, from your answer 23. Each row shows the serial, the holder (or "unbound"), the credit left and the time left. VOID ends a ticket, and its item disappears the next time it is seen.</p>
+        <canvas class="gui" id="a-list" width="1032" height="630"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Paying with credit</h2>
+    <p class="lede">A shop's quantity screen and the Land Office's plot panel, while a ticket that works there is in the player's inventory. In the shop, a Donor 10,000 ticket with <b>2,000 left</b> meets a 2,500 purchase, so the bank pays the other 500 (answer 9). At the Land Office, a <b>Sanctuary Plot</b> ticket pays the whole 6,000 for Sanctuary 4. The switch is on by default (answer 10).</p>
+    <div class="bar"><label><input type="checkbox" id="credit-on" checked> PAY WITH CREDIT is on</label></div>
+    <div class="stack">
+      <div class="card"><h3>A. A lit CREDIT key on the status strip</h3>
+        <p>A green key at the right end of the status strip, the shop's own ON key style. Click it to switch credit off (cream) or back on. The total gains a second line with the split, and the strip shows the credit left beside the balance.</p>
+        <div class="pair"><canvas class="gui shop" id="s-a" width="900" height="648"></canvas><canvas class="gui shop" id="l-a" width="1080" height="696"></canvas></div>
+      </div>
+      <div class="card"><h3>B. The ticket on the screen, with a receipt</h3>
+        <p>The ticket appears on the green screen with a tick box under it, and the total becomes a short receipt: price, credit, bank. With two tickets the screen shows the one that pays first, plus "and 1 more".</p>
+        <div class="pair"><canvas class="gui shop" id="s-b" width="900" height="648"></canvas><canvas class="gui shop" id="l-b" width="1080" height="696"></canvas></div>
+      </div>
+      <div class="card"><h3>C. The status strip becomes the ticket</h3>
+        <p>While credit is on, the whole status strip turns into the ticket, with notched ends, its colour and mark, the credit left and the time left. Click the strip to switch credit off, and it goes back to the plain green strip. The total reads as one sum, "2,500 = 2,000 credit + 500 bank".</p>
+        <div class="pair"><canvas class="gui shop" id="s-c" width="900" height="648"></canvas><canvas class="gui shop" id="l-c" width="1080" height="696"></canvas></div>
+      </div>
+      <div class="card"><h3>Teleports (all three)</h3>
+        <p>BSP-Teleport has no BSP-Core screen of its own, so a teleport ticket simply pays first (question 27). The chat line says so. These lines are BSP-Teleport's words once it takes request SC-1.</p>
+        <canvas class="gui half" id="tp" width="854" height="200"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. The clock starts, and the ticket runs out</h2>
+    <p class="lede">On the first purchase with a timed ticket, the player is told in a way they can't miss (answer 8). When the time runs out, they are told and the ticket disappears from their inventory (answer 3). Each concept shows both. The game view behind is a stand-in.</p>
+    <div class="bar"><label><input type="radio" name="when" value="start" checked> The clock starts</label><label><input type="radio" name="when" value="end"> The ticket runs out</label><button type="button" id="replay">Play again</button></div>
+    <div class="stack">
+      <div class="card"><h3>A. A full-screen stamp</h3>
+        <p>The screen washes in the ticket's colour, the ticket drops in large with a stamp sound, and the words stay for 6 seconds before fading. The player can still move. When the ticket runs out, it crumbles away into pixels.</p>
+        <canvas class="gui half" id="n-a" width="854" height="480"></canvas>
+      </div>
+      <div class="card"><h3>B. A screen they must close</h3>
+        <p>A small window opens over the game. Its I UNDERSTAND key is grey for 3 seconds with a countdown, and Esc does nothing until then. It can't be missed, but it can stop a player in the middle of a fight, so it waits until they have been out of combat for 5 seconds.</p>
+        <canvas class="gui half" id="n-b" width="854" height="480"></canvas>
+      </div>
+      <div class="card"><h3>C. A big title and a bar that stays</h3>
+        <p>A big title and subtitle in the middle, the same as a vanilla title, then a bar at the top in the ticket's colour that counts down the time left. It stays for the first 10 minutes, and comes back for the last 24 hours and at every login. When it runs out, the bar drains, turns red and goes.</p>
+        <canvas class="gui half" id="n-c" width="854" height="480"></canvas>
+      </div>
+    </div>
+    <ul class="parts"><li><b>All three:</b> a chat line as well ("Your Donor 10,000 ticket's 30 days have started: 8,000 pieces to spend by 7 December."), so the date is there to scroll back to. A player who is offline when a ticket runs out sees the notice at their next login.</li></ul>
+  </section>
+
+  <p class="checks" id="checks">Layout checks: not run yet.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (2 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (2 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 4 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+  // cash machine (ShopScreen / LandOfficeScreen / CashMachine)
+  var BEZEL = "#cfc8b8", BEZEL_DARK = "#8f877a", BEZEL_LIGHT = "#ece6d8", SCREEN = "#061008", SCREEN_EDGE = "#0d3b22", PHOS = "#58f29a", PHOS_DIM = "#3fb97a",
+      AMBER = "#f2b544", RED = "#ff6b5c", KEY = "#eae4d5", KEY_EDGE = "#9a9183", KEY_TEXT = "#2b2823", KEY_LOCKED = "#8f877a", KEY_ON = "#58f29a", KEY_ON_EDGE = "#2e8b57";
+
+  // ------------------------------------------------------------ the ticket textures, 16 x 16, built from roles
+  var LETTERS = { C: [".##","#..","#..","#..",".##"], D: ["##.","#.#","#.#","#.#","##."] };
+  function grid(){ var a = []; for (var y = 0; y < 16; y++){ var r = []; for (var x = 0; x < 16; x++) r.push(null); a.push(r); } return a; }
+  function edge(p){ var o = p.map(function(r){ return r.slice(); });
+    for (var y = 0; y < 16; y++) for (var x = 0; x < 16; x++){ if (!p[y][x]) continue;
+      var n = [[1,0],[-1,0],[0,1],[0,-1]].some(function(d){ var xx = x + d[0], yy = y + d[1]; return xx < 0 || yy < 0 || xx > 15 || yy > 15 || !p[yy][xx]; });
+      if (n) o[y][x] = "o"; }
+    return o; }
+  function put(p, cells, role){ cells.forEach(function(c){ p[c[1]][c[0]] = role; }); }
+  function rect(p, x0, y0, x1, y1, role){ for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) p[y][x] = role; }
+  function letter(p, mark, x0, y0, role){ var L = LETTERS[mark]; if (!L) return; for (var r = 0; r < 5; r++) for (var c = 0; c < 3; c++) if (L[r][c] === "#") p[y0 + r][x0 + c] = role; }
+  function body(p, y, role, from){ for (var x = 0; x < 16; x++) if (p[y][x] === (from || "b")) p[y][x] = role; }
+  var SHAPES = {
+    a: function(mark){ var p = grid(); rect(p, 0, 3, 15, 12, "b"); put(p, [[0,7],[0,8],[15,7],[15,8]], null); p = edge(p);
+      body(p, 4, "l"); body(p, 11, "d");
+      for (var y = 4; y <= 11; y += 2) p[y][11] = "o";
+      for (var x = 3; x <= 8; x++) p[6][x] = "w"; for (x = 3; x <= 6; x++) p[8][x] = "w";
+      put(p, [[13,6],[12,7],[14,7],[12,8],[14,8],[13,9]], "g"); put(p, [[13,7],[13,8]], "h");
+      if (mark){ rect(p, 0, 0, 4, 6, "k"); letter(p, mark, 1, 1, "m"); }
+      return p; },
+    b: function(mark){ var p = grid(); rect(p, 1, 3, 14, 12, "b"); put(p, [[1,3],[14,3],[1,12],[14,12]], null); p = edge(p);
+      body(p, 4, "l"); body(p, 11, "d");
+      rect(p, 3, 6, 5, 8, "g"); p[7][4] = "q";
+      put(p, [[11,5],[10,6],[12,6],[10,7],[11,7],[12,7],[11,8]], "e"); p[6][11] = "f";
+      put(p, [[3,10],[4,10],[6,10],[7,10],[9,10],[10,10]], "w");
+      if (mark){ rect(p, 0, 0, 6, 6, "n"); put(p, [[0,0],[1,0],[0,1],[5,0],[6,0],[6,1],[0,5],[0,6],[1,6],[6,5],[5,6],[6,6]], null);
+        put(p, [[2,0],[3,0],[4,0],[1,1],[5,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[1,5],[5,5],[2,6],[3,6],[4,6]], "r"); letter(p, mark, 2, 1, "m"); }
+      return p; },
+    c: function(mark){ var p = grid(); rect(p, 2, 1, 13, 14, "b"); for (var x = 2; x <= 13; x++){ if (x % 2 === 0) p[1][x] = null; else p[14][x] = null; } p = edge(p);
+      for (x = 4; x <= 11; x++) p[4][x] = "w"; for (x = 4; x <= 9; x++) p[6][x] = "w"; for (x = 4; x <= 10; x++) p[8][x] = "w";
+      rect(p, 9, 10, 12, 13, "g"); put(p, [[9,10],[12,10],[9,13],[12,13]], "b"); p[11][10] = "h"; put(p, [[12,12],[11,13]], "q");
+      if (mark){ rect(p, 0, 0, 4, 6, "u"); for (var y = 0; y <= 6; y++){ p[y][0] = "v"; p[y][4] = "v"; } for (x = 0; x <= 4; x++){ p[0][x] = "v"; p[6][x] = "v"; } letter(p, mark, 1, 1, "m"); }
+      return p; }
+  };
+  function paint(concept, role, col, mark){
+    var light = lum(col) > 200;
+    switch (role){
+      case "b": return col; case "l": return shade(col, .35); case "d": return shade(col, -.3); case "o": return shade(col, -.62);
+      case "w": return light ? shade(col, -.2) : shade(col, .6);
+      case "g": return "#e8c13a"; case "h": return "#fff08a"; case "q": return "#8a6a10"; case "e": return "#19d3b0"; case "f": return "#b8fff0";
+      case "k": return "#15161b"; case "n": return "#e8c13a"; case "r": return "#7a5a10"; case "u": return "#f2f2f2"; case "v": return "#4a4a4a";
+      case "m": return concept === "a" ? (mark === "D" ? "#ffd23a" : "#ffffff") : concept === "b" ? "#3a2400" : (mark === "D" ? "#c8322a" : "#2a62c8");
+    } return null; }
+  var ICON_CACHE = {};
+  function ticket(concept, col, mark){ var key = concept + col + mark; if (ICON_CACHE[key]) return ICON_CACHE[key];
+    var p = SHAPES[concept](mark), out = grid();
+    for (var y = 0; y < 16; y++) for (var x = 0; x < 16; x++) if (p[y][x]) out[y][x] = paint(concept, p[y][x], col, mark);
+    return ICON_CACHE[key] = out; }
+  function drawIcon(g, pix, x, y, k){ for (var r = 0; r < 16; r++) for (var c = 0; c < 16; c++){ var col = pix[r][c]; if (col) fill(g, x + c * k, y + r * k, k, k, col); } }
+
+  // ------------------------------------------------------------ page state
+  var state = { col: "purple", mark: "D", pop: true, popTab: "land", step: "3", credit: true, when: "start" };
+  var KINDS = [
+    { name: "Donor 10,000", id: "donor_10k", value: 10000, col: "purple", mark: "D", days: 30, hours: 0, bind: true, given: 14, places: { shops: ["Spawn Market"], plots: ["any"], tp: true } },
+    { name: "Sanctuary Plot", id: "sanctuary_plot", value: 6000, col: "lime", mark: "C", days: 14, hours: 0, bind: false, given: 3, places: { shops: [], plots: ["Sanctuary"], tp: false } },
+    { name: "Market Gift", id: "market_gift", value: 2000, col: "orange", mark: "C", days: 0, hours: 0, bind: false, given: 22, places: { shops: ["Spawn Market", "Farmers' Row"], plots: [], tp: false } },
+    { name: "Teleport Pass", id: "teleport_pass", value: 1500, col: "light blue", mark: "D", days: 7, hours: 0, bind: true, given: 6, places: { shops: [], plots: [], tp: true } }
+  ];
+  function k0(){ var k = Object.assign({}, KINDS[0]); k.col = state.col; k.mark = state.mark; return k; }
+  var CONCEPT = "a"; // the ticket shape drawn in sections 2 to 4 (the select in section 1)
+  function fmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+  // ------------------------------------------------------------ 1. the ticket
+  function vanillaSlot(g, x, y){ fill(g, x, y, 18, 18, "#373737"); fill(g, x + 1, y + 1, 17, 17, "#ffffff"); fill(g, x + 1, y + 1, 16, 16, "#8b8b8b"); }
+  function tickets(id, concept){
+    var g = frame(id, 560, 130, 2); if (!g) return;
+    fill(g, 0, 0, 560, 130, BG);
+    fill(g, 8, 10, 100, 100, "#8b8b8b"); fill(g, 8, 10, 100, 1, "#373737"); fill(g, 8, 10, 1, 100, "#373737");
+    drawIcon(g, ticket(concept, dye(state.col), state.mark), 10, 12, 6);
+    small(g, state.col + (state.mark ? " · " + state.mark : " · no mark"), 8, 115, MUTED);
+    ["C", "D"].forEach(function(m, row){
+      var y = 12 + row * 40; small(g, m, 116, y + 12, row ? GOLD : TEXT);
+      DYES.forEach(function(d, i){ drawIcon(g, ticket(concept, d[1], m), 126 + i * 26, y + 4, 1.5); });
+    });
+    small(g, "In the hotbar at real size:", 126, 96, MUTED);
+    var hx = 250, hy = 92; fill(g, hx - 1, hy - 1, 9 * 18 + 3, 20, "#c6c6c6");
+    var bar = [["purple","D"],["lime","C"],["orange","C"],["light blue","D"],[state.col, state.mark],["red","D"],["yellow","C"],["black","D"],["white","C"]];
+    bar.forEach(function(b, i){ vanillaSlot(g, hx + i * 18, hy); drawIcon(g, ticket(concept, dye(b[0]), b[1]), hx + i * 18 + 1, hy + 1, 1); });
+    check("Ticket " + concept.toUpperCase() + ": the hotbar and colour rows fit the picture", hx + 9 * 18 + 2 <= 560 && 126 + 15 * 26 + 24 <= 560);
+  }
+  function tooltip(g, x, y, lines){
+    var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); }); w += 8; var h = lines.length * 10 + 6 + 2;
+    fill(g, x + 1, y, w - 2, h, "#100010"); fill(g, x, y + 1, w, h - 2, "#100010");
+    g.fillStyle = "#5000ff"; g.fillRect(x + 1, y + 1, w - 2, 1); g.fillStyle = "#28007f"; g.fillRect(x + 1, y + h - 2, w - 2, 1);
+    var grd = g.createLinearGradient(0, y, 0, y + h); grd.addColorStop(0, "#5000ff"); grd.addColorStop(1, "#28007f"); g.fillStyle = grd; g.fillRect(x + 1, y + 2, 1, h - 4); g.fillRect(x + w - 2, y + 2, 1, h - 4);
+    lines.forEach(function(l, i){ txt(g, l[0], x + 4, y + 4 + i * 10 + (i > 0 ? 2 : 0), l[1]); });
+    return w; }
+  function tips(){
+    var g = frame("tip", 420, 82, 3); if (!g) return; fill(g, 0, 0, 420, 82, BG);
+    var a = [["Store Credit: Donor 10,000", "#ffaa00"], ["10,000 pieces", "#55ff55"], ["Spends at: Spawn Market, any plot,", "#aaaaaa"], ["teleports", "#aaaaaa"], ["30 days from the first purchase", "#ffff55"], ["Belongs to Steve", "#aaaaaa"]];
+    var b = [["Store Credit: Donor 10,000", "#ffaa00"], ["2,000 of 10,000 pieces left", "#55ff55"], ["Spends at: Spawn Market, any plot,", "#aaaaaa"], ["teleports", "#aaaaaa"], ["29 days 4 hours left", "#ffff55"], ["Belongs to Steve", "#aaaaaa"], ["#7Q2F-91KD", "#555555"]];
+    var w1 = tooltip(g, 4, 4, a); var w2 = tooltip(g, 214, 4, b);
+    check("Tooltip: the two tooltips sit side by side", 4 + w1 < 214 && 214 + w2 <= 420);
+  }
+
+  // ------------------------------------------------------------ 2. the admin panel
+  var PW = 344;
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function chip(g, x, y, label, on, col){ var w = sw(label) + 8; col = col || VIO;
+    fill(g, x, y, w, 11, on ? col : DIM); fill(g, x + 1, y + 1, w - 2, 9, on ? HOVERV : SLOT); small(g, label, x + 4, y + 3, on ? col : TEXT); return w + 3; }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); return true; }
+  function tick(g, x, y, on){ fill(g, x, y, 8, 8, on ? VIO : DIM); fill(g, x + 1, y + 1, 6, 6, on ? HOVERV : SLOT); if (on) txt(g, "✓", x + 1, y - 1, VIO, 0.75); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function panel(g, H, title){
+    fill(g, 0, 0, PW, H, DIM); fill(g, 1, 1, PW - 2, H - 2, BG);
+    var TW = 40, labels = ["PLAYERS", "SEASON", "SETTINGS", "KITS", "CREDIT"];
+    // REFRESH is a single ↻ key in the build (AdminScreen), so five tabs leave the heading room
+    var rx = PW - 10 - 5 * (TW + 3) - 17; key(g, rx, 6, 14, 13, "", TQ);
+    ["..###.#", ".#...##", "#...###", "#......", "#.....#", ".#...#.", "..###.."].forEach(function(r, j){ for (var i = 0; i < 7; i++) if (r[i] === "#") fill(g, rx + 4 + i, 9 + j, 1, 1, TQ); });
+    labels.forEach(function(l, i){ var tx = PW - 10 - (5 - i) * (TW + 3) + 3; fill(g, tx, 6, TW, 13, i === 4 ? VIO : DIM); fill(g, tx + 1, 7, TW - 2, 11, i === 4 ? BG : SLOT);
+      small(g, l, tx + TW / 2 - Math.round(mw(l) * 0.375), 10, i === 4 ? VIO : MUTED); check("Admin tab '" + l + "' fits 40 px", sw(l) <= TW - 4); });
+    var head = title || "Credit"; txt(g, head, 10, 9, VIO); check("Admin heading fits left of REFRESH", 10 + mw(head) <= rx - 4);
+  }
+  function kindList(g, sel, H){
+    small(g, "Ticket kinds · " + KINDS.length, 10, 26, MUTED);
+    KINDS.forEach(function(k, i){ var ry = 34 + i * 14, kk = i === 0 ? k0() : k;
+      if (i === sel){ fill(g, 10, ry, 112, 13, VIO); fill(g, 11, ry + 1, 110, 11, HOVERV); }
+      drawIcon(g, ticket(CONCEPT, dye(kk.col), kk.mark), 12, ry + 1, 0.6875);
+      var v = fmt(k.value); small(g, kk.name, 25, ry + 4, i === sel ? VIO : TEXT); smallR(g, v, 119, ry + 4, GOLD);
+      check("Kind row '" + k.name + "' fits", 25 + sw(kk.name) + 4 <= 119 - sw(v)); });
+    key(g, 10, 34 + KINDS.length * 14 + 4, 54, 13, "NEW KIND", TQ);
+    key(g, 10, H - 24, 54, 13, "DELETE", BAD);
+  }
+  function swatches(g, x, y, pitch, size, rows){ var per = Math.ceil(16 / (rows || 1));
+    DYES.forEach(function(d, i){ var sx = x + (i % per) * pitch, sy = y + Math.floor(i / per) * pitch; if (d[0] === state.col){ fill(g, sx - 1, sy - 1, size + 2, size + 2, "#ffffff"); }
+      fill(g, sx, sy, size, size, d[1]); }); }
+  function marks(g, x, y){ var cx = x; [["C", "C"], ["D", "D"], ["", "none"]].forEach(function(m){ cx += chip(g, cx, y, m[1], state.mark === m[0]); }); return cx; }
+  function placesSummary(k){ var out = []; k.places.shops.forEach(function(s){ out.push(s + (s === "Spawn Market" ? " +2" : "")); });
+    k.places.plots.forEach(function(p){ out.push(p === "any" ? "any plot" : p + " · 12"); }); if (k.places.tp) out.push("teleports"); return out; }
+  var PLOTS = [["Any plot at the Land Office", "", true], ["Sanctuary", "12 plots", false], ["Harbour Row", "6 plots", false], ["Spawn Plaza", "4 plots", false], ["Miner's Rest", "3 plots", false], ["Old Town 1", "", false], ["Old Town 2", "", false], ["Riverside", "2 plots", false], ["Cliffside 7", "", false]];
+  var SHOPS = [["Spawn Market", "", true, 0], ["Blocks", "sub-shop", true, 1], ["Tools", "sub-shop", true, 1], ["Farmers' Row", "", false, 0], ["Lumber Yard", "", false, 0], ["Donor Shop", "", false, 0], ["Ore Exchange", "", false, 0], ["Night Market", "", false, 0]];
+  function scrollbar(g, x, y, h, frac, at){ fill(g, x, y, 3, h, SLOT); fill(g, x, y + Math.round(h * at), 3, Math.max(6, Math.round(h * frac)), DIM); }
+  function listRows(g, x, y, w, rows, n, kind){ for (var i = 0; i < Math.min(n, rows.length); i++){ var r = rows[i], ry = y + i * 11, ind = r[3] ? 8 : 0;
+      tick(g, x + ind, ry, r[2]); var name = r[0], extra = r[1]; small(g, name, x + 11 + ind, ry + 1, r[2] ? VIO : TEXT); if (extra) smallR(g, extra, x + w - 6, ry + 1, MUTED);
+      check(kind + " row '" + name + "' fits", x + 11 + ind + sw(name) + (extra ? sw(extra) + 4 : 0) <= x + w - 6); } }
+  function adminA(){ var H = 210, g = frame("a-a", PW, H, 3); if (!g) return; panel(g, H); kindList(g, 0, H); var k = k0(), X = 130;
+    txt(g, "Kind: " + k.name, X, 26, TQ); small(g, "id " + k.id, X, 37, OFF);
+    small(g, "Name", X, 49, MUTED); field(g, X + 34, 46, 110, k.name);
+    small(g, "Value", X, 63, MUTED); field(g, X + 34, 60, 50, fmt(k.value), GOLD); small(g, "pieces", X + 88, 63, MUTED);
+    small(g, "Look", X, 77, MUTED); swatches(g, X + 34, 75, 9, 7, 1); marks(g, X + 34, 86);
+    fill(g, 316, 60, 18, 18, DIM); fill(g, 317, 61, 16, 16, SLOT); drawIcon(g, ticket(CONCEPT, dye(k.col), k.mark), 317, 61, 1);
+    small(g, "Time", X, 104, MUTED); field(g, X + 34, 101, 18, "30"); small(g, "days", X + 55, 104, MUTED); field(g, X + 74, 101, 14, "0"); small(g, "hours", X + 91, 104, MUTED);
+    chip(g, X + 116, 101, "no limit", false); small(g, "The clock starts at the first purchase.", X + 34, 115, OFF);
+    tick(g, X, 126, k.bind); small(g, "Bind to the player it is given to", X + 11, 127, TEXT);
+    small(g, "Spends at", X, 141, MUTED); key(g, X + 34, 138, 32, 11, "EDIT ›", TQ); var cx = X; placesSummary(k).forEach(function(p){ cx += chip(g, cx, 151, p, true, TQ); });
+    check("Credit A: the place chips fit one row", cx - 3 <= 334);
+    var give = "/give @p bsp_core:store_credit{Kind:\"" + k.id + "\"}"; inset(g, X, 166, 204, 12); small(g, give, X + 3, 169, OFF); check("Credit A: the /give line fits its box", sw(give) <= 204 - 6);
+    key(g, X, 186, 50, 13, "SAVE", TQ); key(g, X + 54, 186, 58, 13, "COPY /GIVE", TQ); key(g, 334 - 70, 186, 70, 13, "TICKETS · " + k.given, GOLD);
+    if (state.pop) popover(g);
+  }
+  function popover(g){ var x = 126, y = 22, w = 212, h = 182;
+    fill(g, x - 1, y - 1, w + 2, h + 2, "rgba(0,0,0,.6)"); fill(g, x, y, w, h, VIO); fill(g, x + 1, y + 1, w - 2, h - 2, BG);
+    small(g, "Where Donor 10,000 spends", x + 6, y + 5, VIO);
+    var tabs = [["shops", "SHOPS · 1"], ["land", "LAND OFFICE · 1"], ["tp", "TELEPORTS ✓"]], tx = x + 6;
+    tabs.forEach(function(t){ tx += chip(g, tx, y + 14, t[1], state.popTab === t[0]); });
+    inset(g, x + 6, y + 29, w - 12, 12); small(g, state.popTab === "land" ? "search plot names…" : "search shops…", x + 9, y + 32, OFF);
+    if (state.popTab === "tp"){ tick(g, x + 6, y + 48, true); small(g, "Every pieces price BSP-Teleport takes", x + 17, y + 49, VIO);
+      split("Warps with a cost, portals with a price, and bought access. Coin prices stay with the bank.", w - 24).forEach(function(l, i){ small(g, l, x + 17, y + 60 + i * 8, MUTED); }); }
+    else { var rows = state.popTab === "land" ? PLOTS : SHOPS; listRows(g, x + 6, y + 46, w - 16, rows, 9, "Pop-over"); scrollbar(g, x + w - 8, y + 46, 98, 0.75, 0); }
+    if (state.popTab === "land"){ inset(g, x + 6, y + 148, 140, 12); small(g, "type a plot name not on this server", x + 9, y + 151, OFF); key(g, x + 150, y + 148, 30, 12, "ADD", TQ); }
+    if (state.popTab === "shops") small(g, "A shop's sub-shops come with it.", x + 6, y + 151, OFF);
+    key(g, x + w - 44, y + h - 18, 38, 13, "DONE", TQ);
+  }
+  function printed(g, x, y, w, h, k, concept){ var col = dye(k.col), dk = shade(col, -.62), lt = lum(col) > 160;
+    fill(g, x, y, w, h, dk); fill(g, x + 1, y + 1, w - 2, h - 2, col); fill(g, x + 1, y + 1, w - 2, 2, shade(col, .35)); fill(g, x + 1, y + h - 3, w - 2, 2, shade(col, -.3));
+    fill(g, x, y + h / 2 - 4, 3, 8, BG); fill(g, x + w - 3, y + h / 2 - 4, 3, 8, BG);
+    for (var py = y + 3; py < y + h - 3; py += 4) fill(g, x + w - 46, py, 1, 2, dk);
+    var ink = lt ? "#1a1b20" : "#ffffff", ink2 = lt ? "#3a3d48" : shade(col, .7);
+    if (k.mark){ fill(g, x + 4, y + 4, 11, 13, "#15161b"); txt(g, k.mark, x + 7, y + 7, k.mark === "D" ? GOLD : "#ffffff"); }
+    txt(g, k.name.toUpperCase(), x + 20, y + 5, ink, 1.5); small(g, fmt(k.value) + " pieces", x + 20, y + 19, ink); small(g, k.days ? k.days + " days from the first purchase" : "no time limit", x + 20, y + 27, ink2);
+    small(g, k.bind ? "bound to the player it is given to" : "unbound until the first purchase", x + 20, y + 35, ink2);
+    drawIcon(g, ticket(concept, col, k.mark), x + w - 34, y + h / 2 - 8, 1);
+    check("Credit B: the printed ticket's lines fit", 20 + mw(k.name.toUpperCase()) * 1.5 <= w - 50 && 20 + sw("30 days from the first purchase") <= w - 50 && 20 + sw("bound to the player it is given to") <= w - 50 && 20 + sw("unbound until the first purchase") <= w - 50);
+  }
+  function adminB(){ var H = 290, g = frame("a-b", PW, H, 3); if (!g) return; panel(g, H); kindList(g, 0, H); var k = k0(), X = 130;
+    printed(g, X, 26, 204, 44, k, CONCEPT);
+    small(g, "Name", X, 79, MUTED); field(g, X + 26, 76, 72, k.name); small(g, "Value", X + 104, 79, MUTED); field(g, X + 128, 76, 42, fmt(k.value), GOLD);
+    small(g, "Time", X, 93, MUTED); field(g, X + 26, 90, 16, "30"); small(g, "d", X + 45, 93, MUTED); field(g, X + 52, 90, 14, "0"); small(g, "h", X + 69, 93, MUTED); chip(g, X + 76, 90, "no limit", false);
+    tick(g, X + 120, 91, k.bind); small(g, "bind when given", X + 131, 92, TEXT);
+    small(g, "Look", X, 107, MUTED); swatches(g, X + 26, 105, 9, 7, 1); small(g, "Mark", X, 119, MUTED); var mx2 = marks(g, X + 26, 116);
+    check("Credit B: swatches fit one row", X + 26 + 16 * 9 <= 336 && mx2 <= 336);
+    var cols = [["SHOPS", SHOPS, 68], ["LAND OFFICE", PLOTS.slice(1), 80], ["TELEPORTS", null, 48]], cx = X;
+    cols.forEach(function(c){ var w = c[2]; small(g, c[0], cx, 131, TQ); inset(g, cx, 139, w, 106);
+      if (c[1]){ var rows = c[1]; for (var i = 0; i < Math.min(8, rows.length); i++){ var r = rows[i], ry = 142 + i * 12, ind = r[3] ? 5 : 0; tick(g, cx + 3 + ind, ry, c[0] === "SHOPS" ? r[2] : false);
+          var nm = r[0]; while (sw(nm) > w - 26 - ind) nm = nm.slice(0, -1); small(g, nm, cx + 13 + ind, ry + 1, TEXT); if (c[0] !== "SHOPS" && r[1]) smallR(g, r[1].replace(" plots", ""), cx + w - 7, ry + 1, MUTED); }
+        scrollbar(g, cx + w - 4, 140, 104, .7, 0); }
+      else { tick(g, cx + 3, 142, k.places.tp); split("Warps, portals and bought access, priced in pieces", w - 16).forEach(function(l, i){ small(g, l, cx + 13, 143 + i * 8, TEXT); }); }
+      cx += w + 4; });
+    check("Credit B: three place lists fit across", cx - 4 <= 336);
+    tick(g, X + 63, 250, true); small(g, "any plot at the Land Office", X + 74, 251, VIO);
+    var give = "/give @p bsp_core:store_credit{Kind:\"" + k.id + "\"}"; small(g, give, X, 263, OFF);
+    key(g, X, 270, 50, 13, "SAVE", TQ); key(g, X + 54, 270, 58, 13, "COPY /GIVE", TQ); key(g, 334 - 70, 270, 70, 13, "TICKETS · " + k.given, GOLD);
+  }
+  function adminC(){ var H = 210, g = frame("a-c", PW, H, 3); if (!g) return; panel(g, H); kindList(g, 0, H); var k = k0(), X = 130, s = state.step;
+    var sx = X; [["1", "1 LOOK"], ["2", "2 VALUE AND TIME"], ["3", "3 PLACES"]].forEach(function(t){ sx += chip(g, sx, 25, t[1], s === t[0], TQ); });
+    check("Credit C: the step chips fit", sx <= 336);
+    if (s === "1"){ fill(g, X, 42, 68, 68, DIM); fill(g, X + 1, 43, 66, 66, "#8b8b8b"); drawIcon(g, ticket(CONCEPT, dye(k.col), k.mark), X + 2, 44, 4);
+      small(g, "Colour", X + 76, 42, MUTED); swatches(g, X + 76, 51, 15, 12, 4); small(g, "Mark", X + 76, 114, MUTED); marks(g, X + 100, 111);
+      small(g, "C for credit tickets, D for donor tickets.", X + 76, 126, OFF); }
+    if (s === "2"){ small(g, "Name", X, 45, MUTED); field(g, X + 34, 42, 110, k.name); small(g, "Value", X, 59, MUTED); field(g, X + 34, 56, 50, fmt(k.value), GOLD); small(g, "pieces", X + 88, 59, MUTED);
+      small(g, "Time", X, 73, MUTED); field(g, X + 34, 70, 18, "30"); small(g, "days", X + 55, 73, MUTED); field(g, X + 74, 70, 14, "0"); small(g, "hours", X + 91, 73, MUTED); chip(g, X + 116, 70, "no limit", false);
+      tick(g, X, 88, k.bind); small(g, "Bind to the player it is given to", X + 11, 89, TEXT);
+      inset(g, X, 102, 204, 46); split("Gives 10,000 pieces of credit. The clock starts at the first purchase and runs for 30 days; what is left then is gone. Bound to the player it is given to.", 196).forEach(function(l, i){ small(g, l, X + 4, 106 + i * 9, TQ); }); }
+    if (s === "3"){ inset(g, X, 42, 204, 12); small(g, "search shops and plot names…", X + 3, 45, OFF);
+      var rows = [["h", "SHOPS"], ["r", "Spawn Market", "+ 2 sub-shops", true], ["r", "Farmers' Row", "", false], ["r", "Lumber Yard", "", false], ["h", "LAND OFFICE"], ["r", "Any plot at the Land Office", "", true], ["r", "Sanctuary", "12 plots", false], ["r", "Harbour Row", "6 plots", false], ["r", "Spawn Plaza", "4 plots", false], ["h", "TELEPORTS"], ["r", "Every pieces price BSP-Teleport takes", "", true]];
+      rows.forEach(function(r, i){ var ry = 58 + i * 10; if (r[0] === "h"){ small(g, r[1], X + 2, ry + 2, TQ); fill(g, X + 2 + sw(r[1]) + 3, ry + 5, 196 - sw(r[1]) - 6, 1, DIM); return; }
+        tick(g, X + 2, ry, r[3]); small(g, r[1], X + 13, ry + 1, r[3] ? VIO : TEXT); if (r[2]) smallR(g, r[2], X + 196, ry + 1, MUTED);
+        check("Credit C row '" + r[1] + "' fits", X + 13 + sw(r[1]) + (r[2] ? sw(r[2]) + 4 : 0) <= X + 196); });
+      scrollbar(g, X + 200, 57, 112, .6, .1); }
+    key(g, X, 186, 34, 13, "BACK", TQ, s !== "1"); key(g, X + 38, 186, 34, 13, s === "3" ? "SAVE" : "NEXT", TQ); key(g, X + 76, 186, 54, 13, "COPY /GIVE", TQ); key(g, 334 - 60, 186, 60, 13, "TICKETS · " + k.given, GOLD); check("Credit C: the bottom keys do not overlap", X + 76 + 54 + 4 <= 334 - 60);
+  }
+  function adminList(){ var H = 210, g = frame("a-list", PW, H, 3); if (!g) return; panel(g, H); kindList(g, 0, H); var X = 130;
+    txt(g, "Tickets · 14 given", X, 26, TQ);
+    var cols = [[X, "SERIAL"], [X + 44, "HOLDER"], [X + 98, "LEFT"], [X + 124, "TIME LEFT"]]; cols.forEach(function(c){ small(g, c[1], c[0], 40, MUTED); }); fill(g, X, 47, 204, 1, DIM);
+    var rows = [["7Q2F-91KD", "Steve", "2,000", "29 d 4 h"], ["K3P0-22AA", "Alex_Builds", "10,000", "not started"], ["M9WX-0C1E", "unbound", "10,000", "not started"], ["B71L-4T4Q", "Notch_Fan", "450", "2 h 10 m"], ["Z0Z8-PL3S", "Rowan", "7,600", "12 d 0 h"], ["D4D4-H8N2", "kittykat", "0", "spent"], ["E5JQ-3R7W", "Quill", "3,100", "expired"], ["P2C9-YV6M", "Maddie", "8,000", "21 d 9 h"]];
+    rows.forEach(function(r, i){ var ry = 51 + i * 15, dead = r[3] === "spent" || r[3] === "expired";
+      small(g, r[0], X, ry + 3, OFF); small(g, r[1], X + 44, ry + 3, r[1] === "unbound" ? MUTED : TEXT); small(g, r[2], X + 98, ry + 3, dead ? OFF : GOLD);
+      small(g, r[3], X + 124, ry + 3, r[3] === "2 h 10 m" ? WARN : dead ? OFF : TEXT); if (!dead) key(g, 334 - 26, ry, 26, 12, "VOID", BAD);
+      check("Ticket row " + r[0] + " fits", X + 124 + sw(r[3]) <= 334 - 28 && X + 44 + sw(r[1]) <= X + 96 && X + 98 + sw(r[2]) <= X + 122); });
+    key(g, X, 186, 40, 13, "BACK", TQ); var note = "Spent tickets stay listed 30 days."; small(g, note, X + 46, 189, OFF); check("Ticket list note fits", X + 46 + sw(note) <= 334);
+  }
+
+  // ------------------------------------------------------------ 3. paying with credit: the shop's quantity screen
+  var SW_ = 300, SH_ = 216, SX = 10, SY = 10, SCW = 206, SCH = 160, KX = 226, KW = 64, KH = 20, STRIP_Y = 180, STRIP_H = 22;
+  function cashKey(g, x, y, w, h, label, enabled, on){ fill(g, x, y, w, h + 2, on ? KEY_ON_EDGE : KEY_EDGE); fill(g, x, y, w, h, on ? KEY_ON : KEY);
+    var L = label.toUpperCase(); txt(g, L, x + Math.round(w / 2 - mw(L) / 2), y + Math.round((h - 8) / 2) + 1, enabled === false ? KEY_LOCKED : KEY_TEXT); return mw(L) <= w - 6; }
+  function bezel(g, w, h){ fill(g, 0, 0, w + 4, h + 4, BEZEL_DARK); fill(g, 2, 2, w, h, BEZEL); fill(g, 2, 2, w, 2, BEZEL_LIGHT); }
+  function screen(g, x, y, w, h){ fill(g, x - 2, y - 2, w + 4, h + 4, SCREEN_EDGE); fill(g, x, y, w, h, SCREEN); for (var ly = y; ly < y + h; ly += 3) fill(g, x, ly, w, 1, "rgba(0,0,0,.08)"); }
+  var ICON_STONE = (function(){ var p = []; for (var y = 0; y < 16; y++){ var r = []; for (var x = 0; x < 16; x++){ var mortar = y % 4 === 3 || (x + (Math.floor(y / 4) % 2) * 4) % 8 === 7; r.push(mortar ? "#5e5e5e" : (x + y) % 5 === 0 ? "#8c8c8c" : "#7b7b7b"); } p.push(r); } return p; })();
+  function ticketStrip(g, x, y, w, h, k, label){ var col = dye(k.col), dk = shade(col, -.62), lt = lum(col) > 160, ink = lt ? "#1a1b20" : "#ffffff";
+    fill(g, x, y, w, h, dk); fill(g, x + 1, y + 1, w - 2, h - 2, col); fill(g, x + 1, y + 1, w - 2, 1, shade(col, .35)); fill(g, x, y + h / 2 - 3, 3, 6, BEZEL); fill(g, x + w - 3, y + h / 2 - 3, 3, 6, BEZEL);
+    drawIcon(g, ticket(CONCEPT, col, k.mark), x + 5, y + Math.round(h / 2 - 8), 1); var end = txt(g, label, x + 24, y + Math.round(h / 2 - 4), ink); return end; }
+  function shopQty(id, concept){ var g = frame(id, SW_ + 4, SH_ + 4, 3); if (!g) return; g.translate(2, 2); bezel(g, SW_ - 4, SH_ - 4); g.translate(-2, -2);
+    var k = k0(), on = state.credit, price = 2500, credit = 2000, bank = price - credit;
+    screen(g, SX, SY, SCW, SCH);
+    txt(g, "> SPAWN MARKET > BLOCKS", SX + 6, SY + 6, PHOS); txtR(g, "page 1/3", SX + SCW - 6, SY + 6, PHOS_DIM);
+    drawIcon(g, ICON_STONE, SX + 20, SY + 40, 1); txt(g, "64 Stone Bricks", SX + 42, SY + 44, PHOS);
+    txt(g, "4", Math.round(SX + SCW / 2 - mw("4")), SY + 64, PHOS, 2); txt(g, "lots", SX + SCW / 2 + mw("4") + 4, SY + 72, PHOS_DIM);
+    var total = "total 2,500 pieces";
+    if (concept === "a"){ txtC(g, total, SX + SCW / 2, SY + 92, AMBER); if (on){ var sp = "credit 2,000 + bank 500"; txtC(g, sp, SX + SCW / 2, SY + 103, PHOS); check("Pay A: the split fits", mw(sp) <= SCW - 16); }
+      split("Max is what you can afford, what fits in your inventory and the stock left.", SCW - 16, 1).forEach(function(l, i){ txt(g, l, SX + 8, SY + 118 + i * 9, PHOS_DIM); }); }
+    if (concept === "b"){ var tx = SX + 8, ty = SY + 130; if (on){ fill(g, tx, ty, 78, 26, shade(dye(k.col), -.62)); fill(g, tx + 1, ty + 1, 76, 24, dye(k.col)); drawIcon(g, ticket(CONCEPT, dye(k.col), k.mark), tx + 3, ty + 5, 1);
+        var ink = lum(dye(k.col)) > 160 ? "#1a1b20" : "#ffffff"; small(g, "Donor 10,000", tx + 22, ty + 3, ink); small(g, "2,000 left", tx + 22, ty + 10, ink); small(g, "29 d 4 h", tx + 22, ty + 17, ink); }
+      else { fill(g, tx, ty, 78, 26, "#0d3b22"); fill(g, tx + 1, ty + 1, 76, 24, SCREEN); small(g, "credit not used", tx + 8, ty + 10, PHOS_DIM); }
+      fill(g, tx + 84, ty + 9, 7, 7, PHOS_DIM); fill(g, tx + 85, ty + 10, 5, 5, SCREEN); if (on) txt(g, "✓", tx + 84, ty + 8, PHOS, 0.75); small(g, "pay with credit", tx + 94, ty + 10, PHOS);
+      var rx = SX + SCW - 10, lx = SX + 30; txt(g, "price", lx, SY + 92, PHOS_DIM); txtR(g, "2,500", rx, SY + 92, AMBER);
+      txt(g, "credit", lx, SY + 102, PHOS_DIM); txtR(g, on ? "−2,000" : "0", rx, SY + 102, on ? PHOS : PHOS_DIM); fill(g, lx, SY + 112, rx - lx, 1, PHOS_DIM);
+      txt(g, "from bank", lx, SY + 115, PHOS_DIM); txtR(g, on ? "500" : "2,500", rx, SY + 115, AMBER);
+      check("Pay B: the ticket and its tick fit the screen", ty + 26 <= SY + SCH - 2 && tx + 94 + sw("pay with credit") <= SX + SCW - 4); }
+    if (concept === "c"){ var line = on ? "2,500 = 2,000 credit + 500 bank" : total; var x0 = Math.round(SX + SCW / 2 - mw(line) / 2);
+      if (on){ var e = txt(g, "2,500 = ", x0, SY + 92, AMBER); e = txt(g, "2,000 credit", e, SY + 92, PHOS); txt(g, " + 500 bank", e, SY + 92, AMBER); } else txt(g, line, x0, SY + 92, AMBER);
+      check("Pay C: the sum fits", mw(line) <= SCW - 12);
+      split("Max is what you can afford, what fits in your inventory and the stock left.", SCW - 16, 1).forEach(function(l, i){ txt(g, l, SX + 8, SY + 108 + i * 9, PHOS_DIM); }); }
+    [["-1"], ["+1"], ["+16"], ["Max"]].forEach(function(t, i){ cashKey(g, KX, SY + i * (KH + 4), KW, KH, t[0]); });
+    cashKey(g, KX, SY + SCH - KH - (KH + 4), KW, KH, "Confirm"); cashKey(g, KX, SY + SCH - KH, KW, KH, "Cancel");
+    // the status strip
+    if (concept === "c" && on){ var end = ticketStrip(g, SX, STRIP_Y, SW_ - 2 * SX, STRIP_H, k, "✓ PAY WITH CREDIT · 2,000 · 29 d 4 h");
+      var ink2 = lum(dye(k.col)) > 160 ? "#1a1b20" : "#ffffff"; smallR(g, "bank 12,400", SW_ - SX - 6, STRIP_Y + 9, ink2); check("Pay C: the ticket strip's words fit", end + 4 <= SW_ - SX - 6 - sw("bank 12,400")); return; }
+    screen(g, SX, STRIP_Y, SW_ - 2 * SX, STRIP_H);
+    var left = "open / shopping network", bal = "balance 12,400 pieces";
+    if (concept === "a"){ var bal2 = on ? "balance 12,400 pieces · credit 2,000" : bal; small(g, left, SX + 6, STRIP_Y + 4, PHOS_DIM); small(g, bal2, SX + 6, STRIP_Y + 12, on ? PHOS : PHOS_DIM);
+      cashKey(g, KX, STRIP_Y + 2, KW, 16, on ? "Credit on" : "Credit off", true, on); check("Pay A: the strip's words fit beside the key", SX + 6 + Math.max(sw(left), sw(bal2)) <= KX - 6); }
+    else { txt(g, left, SX + 6, STRIP_Y + 7, PHOS_DIM); txtR(g, bal, SW_ - SX - 6, STRIP_Y + 7, PHOS_DIM); }
+  }
+  // the Land Office (LandOfficeScreen: W 360, H 232, map 154, side panel 66, keys 58)
+  var LW = 360, LH = 232, PX = 222, PWD = 66, LKX = 292, LKW = 58, LKH = 18, MAP_X = SX + 3, MAP_Y = SY + 19, MAP = 154, LSH = 176, LSTRIP = 196;
+  function landOffice(id, concept){ var g = frame(id, LW + 4, LH + 4, 3); if (!g) return; g.translate(2, 2); bezel(g, LW - 4, LH - 4); g.translate(-2, -2);
+    var k = { name: "Sanctuary Plot", col: "lime", mark: "C" }, on = state.credit;
+    screen(g, SX, SY, 206, LSH); screen(g, PX, SY, PWD, LSH);
+    txt(g, "LAND OFFICE", SX + 6, SY + 6, PHOS); smallR(g, "96 blocks across", SX + 200, SY + 7, PHOS_DIM);
+    for (var my = 0; my < MAP; my += 8) for (var mx = 0; mx < MAP; mx += 8){ var n = (mx * 7 + my * 13) % 11; fill(g, MAP_X + mx, MAP_Y + my, 8, 8, n < 2 ? "#4f7a33" : n < 4 ? "#5d8f3a" : n < 5 ? "#3b6ea8" : "#66983f"); }
+    function box(x, y, w, h, c, f){ if (f) fill(g, x, y, w, h, alpha(c, .25)); fill(g, x, y, w, 1, c); fill(g, x, y + h - 1, w, 1, c); fill(g, x, y, 1, h, c); fill(g, x + w - 1, y, 1, h, c); }
+    [[30, 30], [56, 30], [82, 30], [30, 56], [82, 56], [30, 82], [56, 82], [82, 82]].forEach(function(p){ box(MAP_X + p[0], MAP_Y + p[1], 24, 24, "#f2b544", true); });
+    box(MAP_X + 56, MAP_Y + 56, 24, 24, "#ffffff", true); box(MAP_X + 112, MAP_Y + 20, 30, 40, "#b58cff", true); box(MAP_X + 8, MAP_Y + 118, 40, 28, "#58f29a", true);
+    var x = PX + 4, y = SY + 6; txt(g, "Plot", x, y, PHOS); y += 14;
+    small(g, "Sanctuary 4", x, y, PHOS); y += 8; small(g, "for sale", x, y, AMBER); y += 8; small(g, "16 x 16 blocks", x, y, PHOS_DIM); y += 8; small(g, "6,000 pieces", x, y, AMBER); y += 12;
+    if (concept === "a"){ if (on){ small(g, "credit 6,000", x, y, PHOS); y += 8; small(g, "bank 0", x, y, PHOS_DIM); y += 8; small(g, "Sanctuary Plot", x, y, PHOS_DIM); y += 8; small(g, "ticket: all of it", x, y, PHOS_DIM); }
+      else { smallFit(g, "12,400 left after", x, y, PHOS_DIM, PWD - 6); } }
+    if (concept === "b"){ if (on){ var col = dye(k.col); fill(g, x, y, 58, 24, shade(col, -.62)); fill(g, x + 1, y + 1, 56, 22, col); drawIcon(g, ticket(CONCEPT, col, k.mark), x + 2, y + 4, 1);
+        small(g, "6,000", x + 20, y + 5, "#1a1b20"); small(g, "14 days", x + 20, y + 13, "#1a1b20"); y += 28; }
+      fill(g, x, y, 7, 7, PHOS_DIM); fill(g, x + 1, y + 1, 5, 5, SCREEN); if (on) txt(g, "✓", x, y - 1, PHOS, 0.75); small(g, "use credit", x + 10, y + 1, PHOS); y += 12;
+      small(g, "price", x, y, PHOS_DIM); smallR(g, "6,000", PX + PWD - 4, y, AMBER); y += 8; small(g, "credit", x, y, PHOS_DIM); smallR(g, on ? "−6,000" : "0", PX + PWD - 4, y, PHOS); y += 8;
+      fill(g, x, y, PWD - 8, 1, PHOS_DIM); y += 3; small(g, "bank", x, y, PHOS_DIM); smallR(g, on ? "0" : "6,000", PX + PWD - 4, y, AMBER); }
+    if (concept === "c"){ if (on){ small(g, "6,000 credit", x, y, PHOS); small(g, "0 from the bank", x, y + 8, PHOS_DIM); } else smallFit(g, "12,400 left after", x, y, PHOS_DIM, PWD - 6); check("Land C: the sum fits the side panel", sw("6,000 credit") <= PWD - 6 && sw("0 from the bank") <= PWD - 6); }
+    check("Land " + concept.toUpperCase() + ": side panel lines fit", sw("16 x 16 blocks") <= PWD - 6 && sw("ticket: all of it") <= PWD - 6);
+    ["Zoom in", "Zoom out", "Centre"].forEach(function(t, i){ cashKey(g, LKX, SY + i * (LKH + 3), LKW, LKH, t); });
+    cashKey(g, LKX, SY + LSH - LKH, LKW, LKH, "Buy");
+    if (concept === "c" && on){ var end = ticketStrip(g, SX, LSTRIP, LW - 2 * SX, 22, k, "✓ PAY WITH CREDIT · Sanctuary Plot · 6,000 left"); smallR(g, "bank 12,400", LW - SX - 6, LSTRIP + 9, "#1a1b20");
+      check("Land C: the ticket strip's words fit", end + 4 <= LW - SX - 6 - sw("bank 12,400")); return; }
+    screen(g, SX, LSTRIP, LW - 2 * SX, 22); var left = "land office: Region Guard holds the claims";
+    if (concept === "a"){ var bal = on ? "balance 12,400 · credit 6,000" : "balance 12,400"; small(g, left, SX + 6, LSTRIP + 4, PHOS_DIM); small(g, bal, SX + 6, LSTRIP + 12, on ? PHOS : PHOS_DIM); cashKey(g, LKX, LSTRIP + 2, LKW, 16, on ? "Credit on" : "Credit off", true, on);
+      check("Land A: the strip's words fit beside the key", SX + 6 + Math.max(sw(left), sw(bal)) <= LKX - 6); }
+    else { txt(g, left, SX + 6, LSTRIP + 7, PHOS_DIM); txtR(g, "balance 12,400", LW - SX - 6, LSTRIP + 7, PHOS_DIM); }
+  }
+  function teleports(){ var g = frame("tp", 427, 100, 2); if (!g) return; world(g, 427, 100, false);
+    var lines = [["[Teleport] Paid 500 pieces for Warp Mines with store credit.", "#ffffff"], ["Teleport Pass: 1,000 left, 6 days 23 hours to spend it.", "#aaaaaa"], ["[Teleport] Paid 300 pieces for Warp Nether Hub:", "#ffffff"], ["200 from store credit (Teleport Pass is now spent),", "#ffffff"], ["100 from your bank.", "#ffffff"]];
+    lines.forEach(function(l, i){ var y = 22 + i * 9; fill(g, 2, y - 1, 320, 9, "rgba(0,0,0,.5)"); txt(g, l[0], 4, y, l[1]); check("Teleport chat line " + (i + 1) + " fits the chat width (320)", mw(l[0]) <= 316); }); }
+
+  // ------------------------------------------------------------ 4. the clock starts / runs out: a 427 x 240 game view
+  var NW = 427, NH = 240, t0 = 0;
+  function world(g, w, h, hud){ w = w || NW; h = h || NH;
+    var sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#6d9ee8"); sky.addColorStop(1, "#c5ddff"); g.fillStyle = sky; g.fillRect(0, 0, w, h);
+    for (var x = 0; x < w; x += 8){ var hh = Math.round(h * .62) + Math.round(10 * Math.sin(x / 37) + 6 * Math.sin(x / 13)); fill(g, x, hh, 8, h - hh, "#5d8f3a"); fill(g, x, hh + 4, 8, h - hh, "#7a5432"); }
+    if (hud === false) return;
+    fill(g, w / 2 - 4, h / 2, 9, 1, "#fff"); fill(g, w / 2, h / 2 - 4, 1, 9, "#fff");
+    var hx = Math.round(w / 2 - 91); fill(g, hx, h - 22, 182, 22, "rgba(0,0,0,.55)"); for (var i = 0; i < 9; i++){ fill(g, hx + 1 + i * 20, h - 21, 20, 20, DIM); fill(g, hx + 2 + i * 20, h - 20, 18, 18, "rgba(12,14,18,.8)"); }
+    drawIcon(g, ticket(CONCEPT, dye(state.col), state.mark), hx + 3 + 2 * 20, h - 19, 1);
+  }
+  function big(g, s, cx, y, k, col, shadow){ var x = Math.round(cx - mw(s) * k / 2); txt(g, s, x + k, y + k, shadow, k); txt(g, s, x, y, col, k); return mw(s) * k; }
+  function fadeIn(t, len){ return t < 0.2 ? t / 0.2 : t > len - 1 ? Math.max(0, len - t) : 1; }
+  var CRUMBS = []; for (var i = 0; i < 256; i++) CRUMBS.push({ r: Math.floor(i / 16), c: i % 16, v: (i * 37 % 101) / 101 });
+  function notice(id, concept, now){ var g = frame(id, NW, NH, 2); if (!g) return; var t = reduce ? 2.2 : ((now - t0) / 1000) % 8, end = state.when === "end", col = dye(state.col), pix = ticket(CONCEPT, col, state.mark);
+    world(g); var head = end ? "TICKET EXPIRED" : "CREDIT CLOCK STARTED", sub = end ? "Donor 10,000 ran out of time: 1,250 pieces unspent" : "Donor 10,000: 30 days to spend 8,000 pieces";
+    if (concept === "a"){ if (t >= 6.5) return; var a = fadeIn(t, 6.5); g.globalAlpha = a; fill(g, 0, 0, NW, NH, alpha(col, .55));
+      var drop = t < 0.35 ? (0.35 - t) * 200 : 0, ix = NW / 2 - 40, iy = 34 - drop;
+      if (end && t > 1.6){ var f = Math.min(1, (t - 1.6) / 2.4); CRUMBS.forEach(function(b){ var c = pix[b.r][b.c]; if (!c) return; var fall = Math.max(0, f - b.v * .6) * 160; if (fall > 150) return; fill(g, ix + b.c * 5 + Math.sin(b.v * 9) * fall * .2, iy + b.r * 5 + fall, 5, 5, c); }); }
+      else drawIcon(g, pix, ix, iy, 5);
+      var w = big(g, head, NW / 2, 128, 3, "#ffffff", shade(col, -.7)); big(g, sub, NW / 2, 158, 1, "#ffffff", shade(col, -.7));
+      check("Notice A: the words fit (" + (end ? "end" : "start") + ")", w <= NW - 16 && mw(sub) <= NW - 16); g.globalAlpha = 1; }
+    if (concept === "b"){ fill(g, 0, 0, NW, NH, "rgba(0,0,0,.45)"); var bw = 230, bh = 128, bx = Math.round(NW / 2 - bw / 2), by = 40;
+      fill(g, bx, by, bw, bh, DIM); fill(g, bx + 1, by + 1, bw - 2, bh - 2, BG); fill(g, bx + 1, by + 1, bw - 2, 3, col);
+      fill(g, bx + 8, by + 12, 34, 34, DIM); fill(g, bx + 9, by + 13, 32, 32, "#8b8b8b"); if (!(end && t > 1.5)) drawIcon(g, pix, bx + 9, by + 13, 2);
+      txt(g, end ? "Your ticket has run out" : "Your credit clock has started", bx + 50, by + 14, end ? "#ff8f86" : VIO);
+      var body = end ? "Donor 10,000 ran out of time with 1,250 pieces unspent, and it has gone from your inventory." : "Donor 10,000 has 8,000 pieces left to spend at Spawn Market, any Land Office plot and teleports. It runs out in 30 days, on 7 December at 18:40.";
+      split(body, bw - 58).forEach(function(l, i){ small(g, l, bx + 50, by + 27 + i * 9, TEXT); });
+      var wait = Math.max(0, 3 - Math.floor(t)), lab = wait > 0 ? "I UNDERSTAND (" + wait + ")" : "I UNDERSTAND"; key(g, bx + bw - 100, by + bh - 22, 92, 15, lab, TQ, wait === 0);
+      small(g, "Esc works once the key is lit", bx + 8, by + bh - 17, OFF); check("Notice B: the text fits the window", split(body, bw - 58).length * 9 + 27 <= bh - 26); }
+    if (concept === "c"){ var bw2 = 182, bx2 = Math.round(NW / 2 - bw2 / 2), left = end ? Math.max(0, 1 - t / 2) : 1, red = end && t > 2;
+      var label = red ? "Donor 10,000 · expired" : end ? "Donor 10,000 · 0 h 0 m left" : "Donor 10,000 · 29 d 23 h left · 8,000 pieces";
+      txtC(g, label, NW / 2, 3, "#ffffff"); fill(g, bx2, 13, bw2, 5, "#1a1a1a"); fill(g, bx2 + 1, 14, Math.round((bw2 - 2) * (end ? left : .998)), 3, red ? "#d63b2f" : col);
+      check("Notice C: the bar's words fit", mw(label) <= NW - 16);
+      if (t < 5.5){ g.globalAlpha = fadeIn(t, 5.5); big(g, end ? "Ticket expired" : "Credit clock started", NW / 2, 72, 4, "#ffffff", "#3f3f3f"); big(g, end ? "1,250 pieces unspent; the ticket is gone" : "30 days to spend 8,000 pieces", NW / 2, 112, 2, "#ffff55", "#3f3f15"); g.globalAlpha = 1;
+        check("Notice C: the title fits", mw("Credit clock started") * 4 <= NW - 8 && mw("1,250 pieces unspent; the ticket is gone") * 2 <= NW - 8); }
+      }
+  }
+
+  // ------------------------------------------------------------ wiring
+  function drawAll(){ CHECKS.length = 0;
+    ["a", "b", "c"].forEach(function(c){ tickets("t-" + c, c); shopQty("s-" + c, c); landOffice("l-" + c, c); });
+    tips(); adminA(); adminB(); adminC(); adminList(); teleports(); notices(typeof performance !== "undefined" ? performance.now() : 0);
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".");
+    window.__storeCreditChecks = CHECKS.slice(); }
+  function notices(now){ ["a", "b", "c"].forEach(function(c){ notice("n-" + c, c, now); }); }
+  function loop(now){ notices(now); if (!reduce) requestAnimationFrame(loop); }
+  var sw_ = el("swatches"); if (sw_) DYES.forEach(function(d){ var b = document.createElement("button"); b.type = "button"; b.title = d[0]; b.setAttribute("aria-label", d[0]); b.style.background = d[1];
+    b.setAttribute("aria-pressed", String(d[0] === state.col)); b.addEventListener("click", function(){ state.col = d[0]; Array.prototype.forEach.call(sw_.children, function(x){ x.setAttribute("aria-pressed", String(x.title === state.col)); }); drawAll(); }); sw_.appendChild(b); });
+  function on(id, ev, f){ var e = el(id); if (e) e.addEventListener(ev, f); }
+  ["mark-c", "mark-d", "mark-n"].forEach(function(id){ on(id, "change", function(e){ state.mark = e.target.value; drawAll(); }); });
+  on("shape", "change", function(e){ CONCEPT = e.target.value; drawAll(); });
+  on("pop", "change", function(e){ state.pop = e.target.checked; drawAll(); });
+  on("poptab", "change", function(e){ state.popTab = e.target.value; drawAll(); });
+  on("credit-on", "change", function(e){ state.credit = e.target.checked; drawAll(); });
+  if (document.querySelectorAll) { Array.prototype.forEach.call(document.querySelectorAll('input[name="step"]'), function(r){ r.addEventListener("change", function(){ state.step = r.value; drawAll(); }); });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="when"]'), function(r){ r.addEventListener("change", function(){ state.when = r.value; t0 = performance.now(); if (reduce) notices(t0); }); }); }
+  on("replay", "click", function(){ t0 = performance.now(); if (reduce) notices(t0); });
+  font.onload = function(){ ready = true; drawAll(); loop(t0 = (typeof performance !== "undefined" ? performance.now() : 0)); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · Paying with credit</div><div class="bsp-cap">Where a ticket can pay, the shop's status strip becomes the ticket. Click it to keep your credit for later.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('s-c')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

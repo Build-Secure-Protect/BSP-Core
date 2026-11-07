@@ -154,6 +154,11 @@
     "name": "Illyrium Forge Upgrade",
     "kind": "item"
   },
+  "crucible_yield_upgrade": {
+    "file": "crucible_yield_upgrade.png",
+    "name": "Crucible Yield Upgrade",
+    "kind": "item"
+  },
   "shatter_blank": {
     "file": "shatter_blank.png",
     "name": "Shatter Blank",
@@ -1023,5 +1028,30 @@
     "file": "trade_post.png",
     "name": "Trade Post",
     "kind": "block"
+  },
+  "lead_lined_chest": {
+    "file": "lead_lined_chest.png",
+    "name": "Lead-Lined Chest",
+    "kind": "block"
+  },
+  "radiation_shielding_panel": {
+    "file": "radiation_shielding_panel.png",
+    "name": "Radiation Shielding Panel",
+    "kind": "block"
+  },
+  "radiation_shielding_window": {
+    "file": "radiation_shielding_window.png",
+    "name": "Radiation Shielding Window",
+    "kind": "block"
+  },
+  "radiation_shielding_door": {
+    "file": "radiation_shielding_door.png",
+    "name": "Radiation Shielding Door",
+    "kind": "block"
+  },
+  "store_credit": {
+    "file": "store_credit.png",
+    "name": "Store Credit Ticket",
+    "kind": "item"
   }
 }

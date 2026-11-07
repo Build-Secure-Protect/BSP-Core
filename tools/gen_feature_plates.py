@@ -8,7 +8,8 @@ band and a caption, captured headlessly like the other pictures.
 
 Each plate copies its source page whole (so the page's own styles and scripts run), hides everything, then shows the one
 element the JS picks, fixed in the middle of the plate. Add a plate to PLATES: slug, source page, a JS expression giving the
-element, the band title, the caption, and an optional CSS width for elements whose width comes from their parent.
+element, the band title, the caption, an optional CSS width for elements whose width comes from their parent, and optionally
+a script to run before the page's own (to stop an animation on one frame, say).
 """
 import sys
 import tempfile
@@ -83,6 +84,25 @@ PLATES = [
      "The account page shows the pot, your chance and the last winner wherever you are.", 560),
     ("lottery_admin", "lottery_concepts.html", "document.getElementById('a2')", "Running the lottery",
      "The admin page: everyone seen this season, IN or OUT and why, the days, the ranks left out, ADD and TAKE with a reason, and DRAW.", 600),
+    ("credit_ticket", "store_credit_concepts.html",
+     "(function(){ var d = document.createElement('div'); d.style.cssText = 'display:flex;flex-direction:column;gap:14px';"
+     " ['t-a', 'tip'].forEach(function(id){ var c = document.getElementById(id); c.style.cssText = 'width:100%;height:auto'; d.appendChild(c); });"
+     " document.body.appendChild(d); return d; })()", "Store credit tickets",
+     "A ticket holds Shatter Pieces to spend where the server chooses. Sixteen colours, a C or D tab, and its credit, places, time and owner in the tooltip.", 760),
+    ("credit_shop", "store_credit_concepts.html", "document.getElementById('s-c')", "Paying with credit",
+     "Where a ticket can pay, the shop's status strip becomes the ticket. Click it to keep your credit for later.", None),
+    ("credit_land", "store_credit_concepts.html", "document.getElementById('l-c')", "Credit at the Land Office",
+     "A ticket for a plot name or any plot pays for land first; the plot's card shows what credit and what the bank pay.", None),
+    ("credit_stamp", "store_credit_concepts.html", "document.getElementById('n-a')", "The clock starts",
+     "The first purchase with a timed ticket starts its clock: the screen washes in the ticket's colour so nobody misses it. The same stamp says when one runs out.", None,
+     # the stamp's still: the page draws its reduced-motion frame (2.2 s in) rather than wherever the clock is at capture
+     "window.matchMedia = function(q){ return { matches: /reduced-motion/.test(q), media: q, addListener: function(){}, addEventListener: function(){} }; };"),
+    ("credit_admin", "store_credit_concepts.html", "document.getElementById('a-a')", "The CREDIT tab",
+     "Admins make ticket kinds in the admin panel: name, value, colour, mark, time limit, binding and the places it spends, with COPY /GIVE for a donation plugin.", None),
+    ("kits_needs", "kit_conditions_concepts.html", "document.getElementById('e-b')", "Kits for players with no totem",
+     "A kit can be kept for players who own no Shatter Totem anywhere on the network: one tick on the Needs line of the kit editor.", 500),
+    ("kits_no_totem", "kit_conditions_concepts.html", "document.getElementById('c-a')", "Locked while you own a totem",
+     "A player who owns a totem sees the kit greyed, and turned over it says why.", None),
     ("herald_card", "herald_tree_concepts.html", "document.getElementById('cv-a')", "Herald on the tree",
      "Herald sits off Alarm on the tier II ring. Its card carries your own Discord line: LINK gives a code for /link in the BSP Discord.", 700),
 ]
@@ -100,10 +120,11 @@ body > * { visibility: hidden; }
 """
 
 
-def page(slug, source, pick, title, caption, width):
+def page(slug, source, pick, title, caption, width, pre=None):
+    """pre: optional JS run before the page's own scripts (a seventh column in PLATES)."""
     src = (PREVIEW / source).read_text()
     extra = f".bsp-target {{ width: {width}px !important; max-width: none !important; }}" if width else ""
-    head = f"<style id=\"bsp-plate\">{CSS}{extra}</style>"
+    head = f"<style id=\"bsp-plate\">{CSS}{extra}</style>" + (f"<script>{pre}</script>" if pre else "")
     tail = (f"<div class=\"bsp-band\"><b>BSP-Core</b> · {title}</div><div class=\"bsp-cap\">{caption}</div>"
             f"<script>document.documentElement.setAttribute('data-theme','dark');"
             f"setTimeout(function(){{ var el = ({pick}); if (!el) {{ document.title = 'NO TARGET'; return; }} el.classList.add('bsp-target');"

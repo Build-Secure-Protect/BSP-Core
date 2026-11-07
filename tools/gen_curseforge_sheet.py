@@ -42,10 +42,13 @@ DYE_COLOURS = {"white": "#F9FFFE", "orange": "#F9801D", "magenta": "#C74EBD", "l
 _cache = {}
 # items of other pack mods that BSP recipes ask for, pictured from the mod's jar in the owner's pack instance
 PACK = os.path.expanduser("~/Games/Instances/Build Secure Protect (Adding Mods)")
-PACK_MODS = {"allthemodium": "allthemodium-1.20.1-*.jar"}
+PACK_MODS = {"allthemodium": "allthemodium-1.20.1-*.jar", "electrodynamics": "Electrodynamics-1.20.1-*.jar"}
+# names for pack items whose id does not read as one
+PACK_NAMES = {"electrodynamics:plate/platelead": "Lead Plate"}
 # tags BSP recipes use for those items
 TAG_ITEM = {"forge:ingots/allthemodium": "allthemodium:allthemodium_ingot", "forge:ingots/vibranium": "allthemodium:vibranium_ingot",
-            "forge:ingots/unobtainium": "allthemodium:unobtainium_ingot"}
+            "forge:ingots/unobtainium": "allthemodium:unobtainium_ingot", "forge:plates/lead": "electrodynamics:plate/platelead",
+            "forge:chests/wooden": "minecraft:chest", "forge:glass": "minecraft:glass", "forge:stone": "minecraft:stone"}
 
 
 def is_dyed_cable(name):
@@ -84,6 +87,14 @@ def icon_src(item):
         elif item == "minecraft:wither_skeleton_skull":  # drawn from the mob's face, as the inventory shows the skull
             _, _, rows = vanilla("entity/skeleton/wither_skeleton.png")
             src = b64(rows_png(8, 8, [r[8:16] for r in rows[8:16]]))
+        elif item == "minecraft:chest":  # drawn from the chest's entity texture: the lid's front, the body's front and the latch
+            _, _, rows = vanilla("entity/chest/normal.png")
+            clear = (0, 0, 0, 0)
+            front = [[clear] + list(r[14:28]) + [clear] for r in rows[14:19] + rows[33:43]]  # 16 wide, 15 high
+            for y in range(4):
+                for x in range(2):
+                    front[3 + y][7 + x] = rows[1 + y][1 + x]
+            src = b64(rows_png(16, 16, [[clear] * 16] + front))
         elif ns == "minecraft":
             src = b64(vanilla16(f"block/{VANILLA_BLOCK[name]}.png" if name in VANILLA_BLOCK else f"item/{name}.png"))
         elif ns in PACK_MODS:
@@ -125,6 +136,8 @@ def name_of(item):
         return "Guide Book"
     if ns == "minecraft":
         return VANILLA_NAMES.get(name, name.replace("_", " ").title())
+    if item in PACK_NAMES:
+        return PACK_NAMES[item]
     return LANG.get(f"item.bsp_core.{name}") or LANG.get(f"block.bsp_core.{name}") or name.replace("_", " ").title()
 
 
@@ -265,7 +278,7 @@ def progression():
 # ----------------------------------------------------------------------------- the metals, one plate each: the jobs with their default times
 def metals():
     plate("tetrium", "Tetrium: the first metal",
-          h3("Ore to ingot in about a minute") + chain("tetrium_ore", ("Tetrium Crucible|15 s, burns fuel",), ("tetrium_nugget", 2), ("x9, Combination Forge|30 s, or 15 s on RF",), "tetrium_ingot", ("Combination Forge|30 s",), "tetrium_plate")
+          h3("Ore to ingot in about a minute") + chain("tetrium_ore", ("Tetrium Crucible|15 s, fuel or lava",), ("tetrium_nugget", 4), ("x9, Combination Forge|30 s, or 15 s on RF",), "tetrium_ingot", ("Combination Forge|30 s",), "tetrium_plate")
           + h3("The by-product builds every machine") + chain("tetrium_ore", ("Tetrium Crucible",), "tetrium_slag", ("Furnace",), "slag_brick", ("+ plates",), "machine_chassis", ("+ nugget",), "circuit_substrate")
           + h3("Dust, by hand or in a crusher") + chain("tetrium_ingot", "+", "minecraft:iron_pickaxe", ("crafting grid|1 in 3; or any crusher",), "tetrium_dust", ("crafting",), "crucible_control_circuit", "+", "mint_control_circuit")
           + h3("Parts that everything later is built from") + chain("tetrium_plate", "+", "machine_chassis", "+", "tetrium_coil", "+", "basic_control_circuit", "+", "drive_motor", ("make",), "illyrium_crucible")
@@ -273,13 +286,14 @@ def metals():
           "Times are the defaults with no upgrades or plasma. Every number is in serverconfig/bsp_core-server.toml.")
     plate("machines_single", "Tetrium Crucible and Combination Forge",
           '<div class="split"><div class="col">' + h3("Tetrium Crucible") + render("tetrium_crucible", "Tetrium Crucible")
-          + p("A furnace with a bigger idea. Burns any furnace fuel and turns one Tetrium Ore or raw chunk into 2 Tetrium Nuggets and 1 Tetrium Slag in 15 seconds. Keep the slag.") + '</div>'
+          + p("One Tetrium Ore or raw chunk into 4 Tetrium Nuggets and 1 Slag in 15 seconds, on lava from its 8,000 mB tank or any furnace fuel. Keep the slag.") + '</div>'
           '<div class="col">' + h3("Combination Forge") + render("combination_forge", "Combination Forge")
-          + p("Presses nine nuggets into an ingot, Tetrium Ingots into Tetrium Plates, and with the Illyrium Forge Upgrade nine Illyrium Nuggets into an ingot. Fuel, or RF twice as fast with an RF Upgrade.") + '</div></div>'
-          + h3("What they do") + '<div class="jobs">' + chain("tetrium_ore", ("Tetrium Crucible|15 s",), ("tetrium_nugget", 2), "+", "tetrium_slag", size=36)
+          + p("Presses nine nuggets into an ingot, Tetrium Ingots into Tetrium Plates, and with the Illyrium Forge Upgrade nine Illyrium Nuggets into an ingot. Lava, fuel, or RF twice as fast with an RF Upgrade.") + '</div></div>'
+          + h3("What they do") + '<div class="jobs">' + chain("tetrium_ore", ("Tetrium Crucible|15 s",), ("tetrium_nugget", 4), "+", "tetrium_slag", size=36)
           + chain(("tetrium_nugget", 9), ("Combination Forge|30 s",), "tetrium_ingot", ("Combination Forge|30 s",), "tetrium_plate", size=36) + '</div>'
-          + '<div class="jobs">' + chain("rf_upgrade_mk1", "+", "rf_upgrade_mk2", "+", "rf_upgrade_mk3", ("in the upgrade slot",), "combination_forge", ("runs on RF, twice as fast; Mk II and III faster still",), "illyrium_forge_upgrade", size=36) + '</div>',
-          "Both take a Plasma Injector on any side for up to three times the speed, and Jade reads their progress.")
+          + '<div class="jobs">' + chain(("crucible_yield_upgrade", 3), ("up to three|+2 nuggets an ore each",), "tetrium_crucible", ("all three fitted|double slag too",), ("tetrium_nugget", 10), size=36)
+          + chain("rf_upgrade_mk1", "+", "rf_upgrade_mk3", ("RF slot|twice as fast",), "combination_forge", size=36) + '</div>',
+          "Both take a Plasma Injector on any side for up to three times the speed (five with Overclock), and Jade reads their progress.")
     plate("illyrium", "Illyrium: slow and valuable",
           h3("Ore to dust: lava in, dirty metal out") + chain("illyrium_ore", "+", ("tetrium_slag", 2), ("Illyrium Crucible|40 s, 250 mB lava",), "dirty_illyrium_ingot", "+", "minecraft:iron_pickaxe", ("crafting grid|1 in 4; or a crusher",), "dirty_illyrium_dust")
           + h3("Dust to nugget: wash it, then alloy it") + chain("dirty_illyrium_dust", "+", "minecraft:water_bucket", ("Illyrium Refinery|90 s, a filter",), "pure_illyrium_dust", "+", "tetrium_dust", ("Illyrium Crucible|60 s, lava",), "illyrium_nugget")
@@ -447,12 +461,22 @@ def extras():
           + p("Each metal melts into its own tank, an ingot every 2 seconds for 25 mB of lava. Molten Tetrium, Magnatite and Illyrium can be piped straight in.") + '</div></div>'
           + '<div class="jobs">' + chain("tetrium_ingot", ("melts",), "molten_tetrium_bucket", ("POUR: 30 s",), "base_mould", ("sets in 5 days, 15 if you own a totem",), "shatter_totem", size=36) + '</div>',
           "Pouring is free if you own no totem; otherwise it costs 4 Illyrium Coins' worth for each one you own. Anyone else can steal the set totem by staying beside the forge for 2.5 minutes.")
+    rad = [("lead_lined_chest", "Lead-Lined Chest", "A chest whose contents never give off radiation, however much uranium is in it. Two side by side make a large chest; hoppers, pipes and comparators work as on any chest."),
+           ("radiation_shielding_panel", "Radiation Shielding Panel", "Stops all radiation passing through. Panels side by side join into one riveted wall."),
+           ("radiation_shielding_window", "Radiation Shielding Window", "A thick pane of pale-green glass: lets a tenth through, and all the light. Windows in one plane join into one sheet."),
+           ("radiation_shielding_door", "Radiation Shielding Door", "Lets 3% through while shut, by hand or redstone. Open, it lets nearly everything through, so shut it.")]
+    plate("radiation", "Lead-lined chests and radiation shielding",
+          "".join(f'<p class="hint big">{icon(i, 56)} <span><b>{html.escape(n)}.</b> {html.escape(t)}</span></p>' for i, n, t in rad)
+          + h3("All made from lead plates") + '<div class="jobs">'
+          + chain(("electrodynamics:plate/platelead", 8), "+", "minecraft:chest", ("crafting",), "lead_lined_chest", size=36)
+          + chain(("electrodynamics:plate/platelead", 8), "+", "minecraft:stone", ("crafting",), ("radiation_shielding_panel", 2), ("6 make 3",), "radiation_shielding_door", size=36) + '</div>',
+          "For packs with Voltaic radiation (Electrodynamics, Nuclear Science). As hard as iron. Lead plates from Electrodynamics, AllTheOres, Railcraft or Thermal.")
 
 
 # ----------------------------------------------------------------------------- recipes, in the order you need them
 GROUPS = [
     ("Tetrium", ["guide_book", "wrench", "tetrium_crucible", "combination_forge", "tetrium_ingot_from_nuggets", "tetrium_nuggets_from_ingot", "slag_brick_from_smelting", "machine_chassis",
-                 "tetrium_coil", "circuit_substrate", "basic_control_circuit", "drive_motor", "thermal_lining", "conveyor_belt", "rf_upgrade_mk1", "rf_upgrade_mk2", "tetrium_glass",
+                 "tetrium_coil", "circuit_substrate", "basic_control_circuit", "drive_motor", "thermal_lining", "conveyor_belt", "rf_upgrade_mk1", "rf_upgrade_mk2", "crucible_yield_upgrade", "tetrium_glass",
                  "coin_vault", "hand:tetrium_dust"]),
     ("Illyrium Crucible", ["crucible_control_circuit", "illyrium_casing", "illyrium_glass", "lava_pylon", "item_hatch", "illyrium_core", "illyrium_crucible", "dirty_illyrium_ingot_from_nuggets"]),
     ("Illyrium Refinery", ["hand:dirty_illyrium_dust", "refinery_control_circuit", "refinery_pump", "iron_filter", "diamond_filter", "netherite_filter", "illyrium_refinery"]),
@@ -468,6 +492,7 @@ GROUPS = [
     ("Across worlds", ["accelerator_frame", "accelerator_intake", "decelerator_core", "decelerator_port", "link_card", "link_expander"]),
     ("Totem Forge", ["totem_forge", "metal_intake", "forge_hearth", "melt_tank", "pour_head", "forge_cap", "mould_shell", "base_mould", "foot_mould", "torso_mould",
                      "arm_mould", "head_mould", "totem_core"]),
+    ("Radiation", ["lead_lined_chest", "radiation_shielding_panel", "radiation_shielding_window", "radiation_shielding_door"]),
 ]
 # the bank's one recipe joins the coins' chunk, the link recipes follow the plasma ones
 GROUPS.insert([g for g, _ in GROUPS].index("Wave Plasma"), ("Bank", ["portable_banker"]))
@@ -475,11 +500,12 @@ GROUPS.insert([g for g, _ in GROUPS].index("Decoys and traps"), GROUPS.pop([g fo
 # where each group's recipe plates go: after this plate
 ANCHOR = {"Tetrium": "machines_single", "Illyrium Crucible": "machine_illyrium_crucible", "Illyrium Refinery": "machine_illyrium_refinery", "Illyrium": "machine_illyrium_refinery",
           "Magnetic Centrifuge": "machine_magnetic_centrifuge", "Shatter Coins": "machine_coin_factory", "Wave Plasma": "cable_colours", "Batteries": "cable_colours", "Decoys and traps": "raiding", "Across worlds": "cable_colours", "Bank": "machine_coin_factory",
-          "Totem Forge": "totem_forge"}
+          "Totem Forge": "totem_forge", "Radiation": "radiation"}
 NO_RECIPE = [("shatter_totem", "first join, or the Totem Forge"), ("tetrium_nugget", "Tetrium Crucible"), ("tetrium_slag", "Tetrium Crucible"), ("tetrium_dust", "crushing"),
              ("dirty_illyrium_ingot", "Illyrium Crucible"), ("pure_illyrium_dust", "Illyrium Refinery"), ("illyrium_nugget", "Illyrium Crucible"), ("magnatite_nugget", "Magnetic Centrifuge"),
              ("carbon_dust", "Magnetic Centrifuge"), ("charged_magnatite_ingot", "Magnetic Centrifuge"), ("charged_resonance_crystal", "Magnetic Centrifuge"),
-             ("copper_shatter_coin", "Shatter Coin Factory"), ("illyrium_shatter_coin", "Shatter Coin Factory"), ("raw_tetrium", "mined")]
+             ("copper_shatter_coin", "Shatter Coin Factory"), ("illyrium_shatter_coin", "Shatter Coin Factory"), ("raw_tetrium", "mined"),
+             ("store_credit", "given by an admin")]
 
 
 def ingredient(o):
@@ -547,7 +573,7 @@ def recipe_cards():
 
 
 # what Tinkers' Construct and Thermal melt BSP metal into (gen_molten_recipes.py): never more than the BSP machines give
-MELTS = [("raw_tetrium", "20 mB, as the Tetrium Crucible's 2 nuggets"), ("raw_magnatite", "30 mB, as the Centrifuge's 3 nuggets"),
+MELTS = [("raw_tetrium", "20 mB, 2 nuggets' worth (the crucible gives 4)"), ("raw_magnatite", "30 mB, as the Centrifuge's 3 nuggets"),
          ("tetrium_nugget", "10 mB a nugget of any of the three"), ("illyrium_ingot", "90 mB an ingot of any of the three")]
 MELTING = ('<div class="norecipe">' + h3("Melting in Tinkers' Construct and Thermal") + '<ul class="legend">'
            + "".join(f'<li>{icon(i, 24)} <span><b>{html.escape(name_of(full(i)))}</b> {html.escape(t)}</span></li>' for i, t in MELTS)
@@ -660,7 +686,7 @@ def main():
     extras()
     # the metals' build plates sit next to their flow plates: reorder into the reading order, then slot the recipe plates in
     order = ["totem", "totem_powers", "progression", "ores", "tetrium", "machines_single", "illyrium", "machine_illyrium_crucible", "machine_illyrium_refinery", "magnatite",
-             "machine_magnetic_centrifuge", "coins", "machine_coin_factory", "plasma_network", "plasma_blocks", "plasma_tank_injector", "batteries", "cable_colours", "raiding", "totem_forge", "base_blocks"]
+             "machine_magnetic_centrifuge", "coins", "machine_coin_factory", "plasma_network", "plasma_blocks", "plasma_tank_injector", "batteries", "cable_colours", "raiding", "totem_forge", "radiation", "base_blocks"]
     by_slug = {s: (s, t, b) for s, t, b in PLATES}
     assert set(by_slug) == set(order), set(by_slug) ^ set(order)
     recipes = recipe_plates()

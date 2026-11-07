@@ -311,7 +311,9 @@ canvas.gui.shop{ max-width:600px; }
   function panel(g, H, title){
     fill(g, 0, 0, PW, H, DIM); fill(g, 1, 1, PW - 2, H - 2, BG);
     var TW = 40, labels = ["PLAYERS", "SEASON", "SETTINGS", "KITS", "CREDIT"];
-    var rx = PW - 10 - 5 * (TW + 3) - 50; key(g, rx, 6, 46, 13, "REFRESH", TQ);
+    // REFRESH is a single ↻ key in the build (AdminScreen), so five tabs leave the heading room
+    var rx = PW - 10 - 5 * (TW + 3) - 17; key(g, rx, 6, 14, 13, "", TQ);
+    ["..###.#", ".#...##", "#...###", "#......", "#.....#", ".#...#.", "..###.."].forEach(function(r, j){ for (var i = 0; i < 7; i++) if (r[i] === "#") fill(g, rx + 4 + i, 9 + j, 1, 1, TQ); });
     labels.forEach(function(l, i){ var tx = PW - 10 - (5 - i) * (TW + 3) + 3; fill(g, tx, 6, TW, 13, i === 4 ? VIO : DIM); fill(g, tx + 1, 7, TW - 2, 11, i === 4 ? BG : SLOT);
       small(g, l, tx + TW / 2 - Math.round(mw(l) * 0.375), 10, i === 4 ? VIO : MUTED); check("Admin tab '" + l + "' fits 40 px", sw(l) <= TW - 4); });
     var head = title || "Credit"; txt(g, head, 10, 9, VIO); check("Admin heading fits left of REFRESH", 10 + mw(head) <= rx - 4);

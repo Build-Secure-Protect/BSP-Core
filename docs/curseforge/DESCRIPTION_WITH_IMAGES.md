@@ -1,9 +1,9 @@
 # BSP-Core
 
-**The mod at the heart of the Build Secure Protect modpack.** Build a base, secure it, protect your Shatter Totem, and go and take everyone else's! Every block, machine and screen in here is about the totem: keeping yours, stealing theirs, getting rich enough to upgrade it, or forging a second one. This page runs in the order you meet things: your first minute, the road to a strong totem, the money, the market and the lottery, the plasma, the raids and the forge, your team, and then what the server owner sets up behind it all.
+**The mod at the heart of the Build Secure Protect modpack.** Build a base, secure it, protect your Shatter Totem, and go and take everyone else's! Every block, machine and screen in here is about the totem: keeping yours, stealing theirs, getting rich enough to upgrade it, or forging a second one. This page runs in the order you meet things: your first minute, the road to a strong totem, the money, store credit, the market and the lottery, the plasma, the raids and the forge, your team, and then what the server owner sets up behind it all.
 
 - Minecraft 1.20.1, Forge 47 or newer, Java 17. Needed on the client and the server.
-- Plays well with JEI or EMI (every recipe and machine job), Patchouli (the in-game guide book), Jade (block info), any RF mod (power for the machines), LuckPerms (ranks on kits), and the pack's crushers: Mekanism, Create, Thermal, Ender IO, Railcraft, Integrated Dynamics and Electrodynamics all turn BSP ingots into dust. Tinkers' Construct and Thermal melt and cast BSP metal, never for more than our own machines give, and any mod's pipes and tanks carry the molten metals. The Totem Forge's metal bill asks for Allthemodium ingots by default.
+- Plays well with JEI or EMI (every recipe and machine job), Patchouli (the in-game guide book), Jade (block info), any RF mod (power for the machines), LuckPerms (ranks on kits), and the pack's crushers: Mekanism, Create, Thermal, Ender IO, Railcraft, Integrated Dynamics and Electrodynamics all turn BSP ingots into dust. Tinkers' Construct and Thermal melt and cast BSP metal, never for more than our own machines give, and any mod's pipes and tanks carry the molten metals. The Totem Forge's metal bill asks for Allthemodium ingots by default. With Voltaic radiation (Electrodynamics, Nuclear Science) the Lead-Lined Chest and the shielding keep it in.
 - Made for the other BSP mods: BSP-Teleport, BSP Region Guard, BSP-RankUp, BSP-InventorySync and BSP-Velocity Additions all plug into it. It runs fine without them.
 
 ## Your first minute
@@ -31,7 +31,7 @@ Three metals, each slower than the last, and a machine for every step. That is t
 ![Tetrium: the first metal](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/05_tetrium.jpg)
 ![Tetrium Crucible and Combination Forge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/06_machines_single.jpg)
 
-Tetrium is everywhere and it is quick. A crucible, a forge, and you are making plates, chassis and circuits: the parts every later machine is built from. Hang on to the slag, it becomes the bricks in every chassis.
+Tetrium is everywhere and it is quick. A crucible, a forge, and you are making plates, chassis and circuits: the parts every later machine is built from. The crucible gives 4 nuggets an ore, and three Crucible Yield Upgrades take it to 10. Both machines have an 8,000 mB lava tank: pipe lava in and they never need fuel again (a bucket smelts 10 ores). Hang on to the slag, it becomes the bricks in every chassis.
 
 ![Recipes 1 of 11: Tetrium](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/07_recipes_01.jpg)
 
@@ -80,7 +80,25 @@ Rotating shops put a few of their cards on show at a time. They can change at a 
 
 ![land office](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_land_office.jpg)
 
-With BSP Region Guard on the server, the Land Office sells land. Its screen is a map of the ground around you drawn from the terrain: plots for sale in amber, open ground dashed, your own claims in green, the outline you drew with the wand in white. Click a plot for its size and price, then BUY, ENLARGE or GIVE UP. When Region Guard sells land for Shatter Coins, every price reads in coins ("3 gold coins") and the foot of the screen shows the coins you carry: you pay from your inventory and get change.
+With BSP Region Guard on the server, the Land Office sells land. Its screen is a map of the ground around you drawn from the terrain: plots for sale in amber, open ground dashed, your own claims in green, the outline you drew with the wand in white. Click a plot for its size and price, then BUY, ENLARGE or GIVE UP. Each Land Office block sells its own plots, so the office in the harbour sells the harbour. If the plot's owner has banned blocks there, its card says "3 BANNED" and the BANNED key lists them before you buy. When Region Guard sells land for Shatter Coins, every price reads in coins ("3 gold coins") and the foot of the screen shows the coins you carry: you pay from your inventory and get change.
+
+## Store credit
+
+![credit ticket](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_credit_ticket.jpg)
+
+A Store Credit Ticket holds Shatter Pieces you can only spend where the server says: chosen shops (and every shop inside them), plots at the Land Office, or teleports with BSP-Teleport. Servers mostly give them to say thank you for a donation. A ticket comes in any of the sixteen dye colours with a C or D tab in the corner, and its tooltip tells you what is left, where it spends, how long it has and who it belongs to. It pays before your bank, and if it doesn't cover the whole price the bank pays the rest. Copies of a ticket share one balance, so duplicating one gets you nothing.
+
+![credit shop](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_credit_shop.jpg)
+
+Where a ticket can pay, the shop's status strip turns into the ticket: its colour, its credit and its time left. The quantity screen shows the sum, "2,500 = 2,000 credit + 500 bank". Click the strip to keep your credit for later.
+
+![credit land](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_credit_land.jpg)
+
+At the Land Office the strip follows the plot you pick, and the plot's card shows what credit pays and what the bank pays. Give up a claim you bought with credit and the credit's share of the refund stays with the office, so credit never turns into pieces.
+
+![credit stamp](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_credit_stamp.jpg)
+
+Some tickets have a time limit, and it starts at your first purchase, not when you get the ticket. When it does, the whole screen washes in the ticket's colour so you can't miss it, and the end date goes in chat. You're warned with a day left and again with an hour. When time runs out whatever is left is gone, the screen says so, and the ticket disappears. One that is used up disappears too.
 
 ## Trading and the market
 
@@ -122,7 +140,7 @@ Your Portable Banker shows the pot, your chance and the last winner on its accou
 
 ![Wave Plasma: the totem's power on tap](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/19_plasma_network.jpg)
 
-A placed totem gives off Wave Plasma. Pipe it and your base powers appear wherever the cable ends. Feed it into a Plasma Injector and a machine runs up to three times faster. Bottle it in a battery and your base keeps running while the totem is away, or stolen. Put a cell in the Wave Emitter and carry your powers without carrying the totem. A tank holds millions of mB of it for the lean times, and remembers which powers the plasma carried.
+A placed totem gives off Wave Plasma. Pipe it and your base powers appear wherever the cable ends. Feed it into a Plasma Injector and a machine runs up to three times faster, five with Overclock, and Jade on the injector names the machine and its speed. Bottle it in a battery and your base keeps running while the totem is away, or stolen. Put a cell in the Wave Emitter and carry your powers without carrying the totem. A tank holds millions of mB of it for the lean times, and remembers which powers the plasma carried.
 
 ![The plasma blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/20_plasma_blocks.jpg)
 ![Plasma Tank and Plasma Injector](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/21_plasma_tank_injector.jpg)
@@ -130,6 +148,7 @@ A placed totem gives off Wave Plasma. Pipe it and your base powers appear wherev
 ![Coloured cables and cable ends](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/23_cable_colours.jpg)
 ![Recipes 6 of 11: Shatter Coins, Bank, Wave Plasma](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/24_recipes_06.jpg)
 ![Recipes 7 of 11: Wave Plasma, Batteries](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/25_recipes_07.jpg)
+![Recipes 8 of 11: Batteries, Across worlds](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/26_recipes_08.jpg)
 
 ## Plasma across worlds
 
@@ -141,11 +160,10 @@ Seven Accelerator Frames round an Accelerator Intake, standing up with the middl
 
 ## Decoys, traps and the compass
 
-![Decoys, the compass and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/26_raiding.jpg)
+![Decoys, the compass and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/27_raiding.jpg)
 
 A Decoy Totem looks like the real thing to everyone but you, pulls rival compasses toward it, and goes off like a trap when they try to steal it. Range coils, five kinds of charge, an amplifier and reinforced casings go in its sockets. Your own Totem Compass points home, or for a while at the nearest rival.
 
-![Recipes 8 of 11: Batteries, Across worlds, Decoys and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/27_recipes_08.jpg)
 ![Recipes 9 of 11: Decoys and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/28_recipes_09.jpg)
 
 ## The Totem Forge: a second totem
@@ -154,8 +172,15 @@ A Decoy Totem looks like the real thing to everyone but you, pulls rival compass
 
 The end of the road. Build the 2 by 2 by 3 forge, melt a whole bill of metals into its tanks (128 Tetrium, 32 Magnatite, 8 Charged Magnatite, 12 Illyrium, 32 Allthemodium, 16 Vibranium, 8 Unobtainium and 2 Netherite ingots), fill the mould piece by piece, put the Totem Core on top and press POUR. If you own no totem the pour is free and the new one sets in 5 days of real time; if you do, you pay 4 Illyrium Coins' worth for each totem you own and it takes 15. One pour at a time per player, across the network. When it has set it is yours to take out, and everyone else's to steal: two and a half minutes beside the forge, while you are warned in game and on Discord. Molten Tetrium, Illyrium and Magnatite come in buckets and run through any mod's pipes, and the mould pieces last three pours.
 
-![Recipes 10 of 11: Totem Forge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/30_recipes_10.jpg)
-![Recipes 11 of 11: Totem Forge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/31_recipes_11.jpg)
+![Recipes 10 of 11: Decoys and traps, Totem Forge](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/30_recipes_10.jpg)
+
+## Lead-lined chests and radiation shielding
+
+![Lead-lined chests and radiation shielding](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/31_radiation.jpg)
+
+Playing with Electrodynamics or Nuclear Science? Uranium in a chest makes everyone near it sick. Put it in a Lead-Lined Chest instead: nothing inside ever gives off radiation, however much is in it. It is a chest in every other way: two side by side make a large one, hoppers, pipes and comparators work, and claims protect it. For a shielded room, panels stop everything, thick windows let a tenth through (and all the light), and the door keeps it out while it is shut. Panels and windows join into one wall and one sheet of glass.
+
+![Recipes 11 of 11: Totem Forge, Radiation](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/32_recipes_11.jpg)
 
 ## Herald: your totem calls you on Discord
 
@@ -219,6 +244,10 @@ Kits are bundles the server hands out: at your first login, as a reward when you
 
 Click a card's picture to see what is inside, with the counts, and every condition ticked or crossed.
 
+![kits no totem](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_kits_no_totem.jpg)
+
+Some kits are only for players with no totem: a second chance after a raid. While you own a Shatter Totem anywhere on the network the card is greyed, and turned over it says why. A totem from a kit is always a brand-new Tier I totem in your name.
+
 ## Scores, seasons and the screens
 
 ![score boards](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_score_boards.jpg)
@@ -231,10 +260,10 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 
 ## For server owners
 
-![Vault, screens and admin blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/32_base_blocks.jpg)
+![Vault, screens and admin blocks](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/33_base_blocks.jpg)
 
 - **One config file,** `serverconfig/bsp_core-server.toml`: every cost, time, range, limit and price, the bank, the shops, the market, the Totem Forge, teams, alliances and kits. The database and Redis passwords live apart in `config/bsp_core-network.toml`, which is never sent to players.
-- **Admin Rack,** or `/bsp admin`: every player on the network with their totems on every server, position, vault and score, teleport and reset, a box to set a player's score by hand (or `/bsp score set <player> <points>`; it rides on top of their totems and clears with the season), the season end that pays the top three and hands everyone a fresh totem, decoy ranges, chunk loading, and the KITS tab. `/bsp totem wipe <player>` gives a test account a clean slate, `/bsp totem give <player>` hands out a totem, and a totem an admin deletes in creative mode is gone for good.
+- **Admin Rack,** or `/bsp admin`: every player on the network with their totems on every server, position, vault and score, teleport and reset, a box to set a player's score by hand (or `/bsp score set <player> <points>`; it rides on top of their totems and clears with the season), the season end that pays the top three and hands everyone a fresh totem, decoy ranges, chunk loading, and the KITS and CREDIT tabs. `/bsp score why <player>` shows what a score is made of. `/bsp totem wipe <player>` gives a test account a clean slate, `/bsp totem give <player>` hands out a totem, and a totem an admin deletes in creative mode is gone for good.
 - **Shops are yours to build.** `/bsp shop` opens the Workbench: shops, pages, cards, prices, limits and their refills, rotations, notes, hours, styles and the network flag, all in a screen. A whole price list goes in with `/bsp shop import <file>`: the file is checked from top to bottom first and refused whole on any mistake, `test` shows what it would do, and a price fix keeps everyone's counts. `/bsp shop export` writes shops back out, and `/bsp shop report` shows what every shop paid out and took in, with a spreadsheet of every card. Cards and whole shops can ask for a LuckPerms rank or hours of play. Vendor Posts, Market Stalls, Stall Displays, the Shatter Bank, the Safety Deposit Box, the Land Office and the Trade Post are admin-placed blocks: nobody mines, pushes or blows them up.
 
 ![kits admin](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_kits_admin.jpg)
@@ -245,16 +274,22 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 
 ![lottery admin](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_lottery_admin.jpg)
 
-- **Kits are made in the panel.** The KITS tab lists them; the editor has the kit's slots, FROM HAND and FROM INVENTORY for enchanted items, an item browser with search and a chip per mod, and every rule as a row of chips: when it is given, whether it is in the browser, once or every so often, the price, the LuckPerms ranks (RankUp's ladder, when RankUp is installed), the servers. TEST ON ME tries it on you; GIVE TO hands it to a player.
+- **Kits are made in the panel.** The KITS tab lists them; the editor has the kit's slots, FROM HAND and FROM INVENTORY for enchanted items, an item browser with search and a chip per mod, and every rule as a row of chips: when it is given, whether it is in the browser, once or every so often, the price, the LuckPerms ranks (RankUp's ladder, when RankUp is installed), the servers, and what the player needs (no totem anywhere on the network). TEST ON ME tries it on you; GIVE TO hands it to a player. A totem put in a kit stays blank, and every player who takes it gets a new one.
+
+![kits needs](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_kits_needs.jpg)
+
+- **Store credit is yours to hand out.** The CREDIT tab makes ticket kinds: a name, a value, a colour and a C or D tab, a time limit counted from the first purchase, whether it binds to the player it is given to (every ticket belongs to whoever first spends it either way), and where it spends: shops, plot names (with how many plots share each), any plot, teleports. COPY /GIVE puts the give command on your clipboard for a donation plugin: `/give <player> bsp_core:store_credit{Kind:"<id>"}`, or `/bsp credit give <player> <kind>`, which also works for a player who is offline. TICKETS lists every ticket of a kind with what is left, and VOID ends one. A ticket in a kit, on a shop card or in the season prizes is handed out new to every taker. The same can be done from the console with `/bsp credit`.
+
+![credit admin](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_credit_admin.jpg)
 
 ![anti totem block](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/render_anti_totem_block.jpg)
 
 - **Anti Totem Block:** keeps totems and chosen machines out of spawn, hubs and arenas, and tells BSP-Teleport where homes and teleports are not allowed.
 - **Servers without totem placement:** list the safe servers of the network (spawn, a saferoom, a sanctuary) in `restrictions.noTotemServers`. Totems can be carried there but never placed or dropped, and one carried at logout goes back to its owner's last spot on a server that allows placement, so nobody parks a totem out of reach by logging off somewhere safe.
-- **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops with their stock, limits and rotating cards, the market and its buy orders, the lottery and the daily reward, teams and alliances with their invites, kits and the admin panel across every server, and Totem Forge pours count once per player; add Redis and all of it is live, live trades between servers included. A kit taken on one server is taken everywhere; a team or an alliance made on one exists on all, and allies see each other's whereabouts across servers. `/bsp team alliances` lists the alliances and `/bsp team dissolve` ends one.
+- **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops with their stock, limits and rotating cards, store credit kinds and tickets (a spend is checked in the database, so two servers never spend the same credit), the market and its buy orders, the lottery and the daily reward, teams and alliances with their invites, kits and the admin panel across every server, and Totem Forge pours count once per player; add Redis and all of it is live, live trades between servers included. A kit taken on one server is taken everywhere; a team or an alliance made on one exists on all, and allies see each other's whereabouts across servers. `/bsp team alliances` lists the alliances and `/bsp team dissolve` ends one.
 - **Discord steal warnings:** turn on `discord.enabled` and give each server its `discord.serverName`. The alerts travel over the network's Redis to the Discord bot in BSP-Velocity Additions on the proxy, which alone holds the bot's token: no game server ever has one.
-- **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams and alliances, kits, the bank, the market and trades, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards and its playtime unlocks shop cards, BSP-Teleport moves teammates between servers, Region Guard sells the land, BSP-Velocity Additions carries the chat between servers and runs the Discord bot.
+- **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams and alliances, kits, the bank, store credit, the market and trades, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards and its playtime unlocks shop cards, BSP-Teleport moves teammates between servers and takes store credit for teleports, Region Guard sells the land and picks which plots each Land Office sells, BSP-Velocity Additions carries the chat between servers and runs the Discord bot.
 
 ## Status
 
-1.11.0 is the current release: Tripwire, which turns your totem into a redstone sensor for outsiders, on top of alliances between teams, with their own chat, each other's whereabouts, the perks each team chooses to give and a price for betrayal, on top of buy orders on the Trade Post and the Wanted Board on the Score Screens, scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
+1.14.0 is the current release: store credit tickets for the shops, the Land Office and teleports, lava tanks and the Crucible Yield Upgrade, on top of the Lead-Lined Chest and radiation shielding, a Land Office that sells its own plots, kits kept for players with no totem, Tripwire, which turns your totem into a redstone sensor for outsiders, alliances between teams, with their own chat, each other's whereabouts, the perks each team chooses to give and a price for betrayal, on top of buy orders on the Trade Post and the Wanted Board on the Score Screens, scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
