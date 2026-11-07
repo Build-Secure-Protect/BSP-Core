@@ -160,6 +160,7 @@ public final class BSPCommands {
                 .then(com.mrgregles.bsp_core.shop.ShopCommands.tree())
                 .then(TeamCommands.tree())
                 .then(KitCommands.tree())
+                .then(CreditCommands.tree())
                 .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(com.mrgregles.bsp_core.storage.NetworkStorage.status()), false);

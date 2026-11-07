@@ -230,7 +230,7 @@ Speed up testing in `serverconfig/bsp_core-server.toml`: set `ticksPerOre`, `tic
 - [ ] A new world loads without errors (world generation files are valid). `/locate` is not available for ores, so dig or use spectator: Tetrium Ore is common between y -32 and 80; Illyrium Ore is rare below y -16.
 - [ ] Ores need an iron pickaxe (Tetrium) or diamond pickaxe (Illyrium) and drop themselves.
 - [ ] Ingots, nuggets and dusts look like recoloured vanilla iron ingots, iron nuggets and redstone.
-- [ ] Tetrium Crucible: ore in the top-left slot, coal below it. The flame gauge lights, the bar fills, and 2 nuggets plus 1 slag appear. A lava bucket as fuel leaves an empty bucket.
+- [ ] Tetrium Crucible: ore in the top-left slot, coal below it. The flame gauge lights, the bar fills, and 4 nuggets plus 1 slag appear (with no Crucible Yield Upgrade fitted). A lava bucket as fuel leaves an empty bucket.
 - [ ] Combination Forge: 9 Tetrium Nuggets plus coal in the lower-left slot give 1 ingot in 30 seconds. With no fuel and no RF it does nothing. 9 Illyrium Nuggets do nothing until an Illyrium Forge Upgrade is in the bottom slot.
 - [ ] Crafting table: 9 nuggets make an ingot and an ingot makes 9 nuggets, for both metals.
 - [ ] Crush a Tetrium Ingot in a Mekanism Crusher, Create crushing wheels or millstone, and a Thermal Pulverizer: each gives Tetrium Dust.
@@ -2745,7 +2745,7 @@ Audit fixes (2026-11-05).
 
 ## Land Office lists per office and banned blocks (2026-11-05, Region Guard requests RG-C12 to RG-C16)
 
-Needs Region Guard 0.6.0 or later (API 8) on the server and on every client, and BSP-Core with network protocol 8 on both.
+Needs Region Guard 0.6.0 or later (API 8) on the server and on every client, and the same BSP-Core build on both (network protocol 8 at 1.13.0, 9 after it).
 
 Lists per office (RG-C15):
 - [ ] A fresh Land Office block lists every plot for sale and open area in the world, as before.
@@ -2806,3 +2806,200 @@ Radiation shielding set (in game, with the pack):
 - [ ] (Audit) On Hard, zombies at a Radiation Shielding Door cannot break it; a villager does not walk through it. The door's gauge dial shows the whole face with its ticks and red zone; an open chest shows the pale lining rim round the dark well; the light line and the needle do not flicker from 40 blocks away; the open lid stays drawn with the chest just off the edge of the screen.
 - [ ] (Audit) A wall of panels running down behind a stone floor, and a panel wall meeting a panel floor: the border runs along the line where they meet.
 
+## Overclock speed on machines (2026-11-07, bug fix)
+
+Server side covered by GameTests (batch `overclock`): a Tetrium Crucible fed by an Output III totem with Overclock IV reads x5 and finishes an ore in under a third of its ticks; a Totem Forge with an injector on a top-layer part reads x5; a Coin Factory slice reads x5 and its screen's synced value says x5; a slice presses ten minutes of the clock at x5, and after being reloaded from its saved data counts ten minutes away at x5 too (it was x3); the injector's Jade lookup names the crucible, the Totem Forge, the factory and a vanilla furnace with the right figure, an unassembled slice and Totem Forge as not assembled, and gives a furnace with two injectors the total of both; the reload test also runs the slice's own load order with its injector gone. The checks below need a client or a real server and are unverified.
+
+Set up a totem with Output III (500 mB/t) and Overclock IV, an extractor, an interface and Illyrium cables to Plasma Injectors.
+- [ ] Jade on a Tetrium Crucible under a fed injector reads "Plasma 500 mB/t: x5.0 speed", the same as Jade on the injector itself. With an Overclock 0 totem both read x3.0.
+- [ ] The same on a formed Totem Forge (injector on any part), an Illyrium Crucible, an Illyrium Refinery and a Magnetic Centrifuge.
+- [ ] Coin Factory: an injector in a slice's Motivator cell; hovering that lane in the factory screen reads "Plasma: 500 mB/t (x5.0 press speed)", and Jade on the slice says x5.0. The time left in the same tooltip falls about five times as fast as with no plasma.
+- [ ] A 1.13.0 client is refused when joining a server on this version (protocol 9), with the usual mismatch message, not a crash when opening the factory.
+- [ ] Jade on a fed injector shows a second line under "Injecting 500 mB/t: x5.0 speed": "Speeding up Tetrium Crucible: x5.0 speed" on a crucible; "Speeding up Totem Forge: ..." with the injector on a top part of a formed forge; "Speeding up Shatter Coin Factory: ..." in a slice's Motivator cell; "Speeding up Furnace: x5.0 speed" on a vanilla furnace. Two injectors on one machine (BSP-Core or vanilla) both show the machine's whole figure (two plain x3 injectors on a furnace: x5.0). An injector on a factory slice or Totem Forge that is not built yet says "... is not assembled yet: no speed-up". For up to a second after plasma starts arriving the second line may still show x1.0 (the machine reads its injectors once a second). An injector pointing at air or a cable says "No machine at the nozzle to speed up"; one on a block listed in `plasma.injectorBlacklist` says "... cannot be sped up by plasma". An unfed injector shows only "No plasma arriving".
+- [ ] On the server: a Coin Factory slice with no Motivators and an injector fed by an Overclock III totem (x4.5 at 500 mB/t). Note the lane's time left, walk far enough away for the chunk to unload (or restart the server) for ten minutes and come back: the time left has fallen by about 45 minutes, not 30. The same slice with an Overclock 0 totem falls by about 30.
+
+## Store credit, part 1: kinds and tickets (2026-11-07, Store Credit task 1)
+
+Server side covered by GameTests (batch `store_credit`): kind rules (id, name, value, colour, mark, time limit, repeats dropped), minting once on first sight with the kind's value, copies sharing one record, binding when the kind says so, blank and unknown-kind tickets left unminted, a deleted kind's tickets shown Withdrawn, kits and shop cards keeping tickets blank so each taker's is minted fresh, giving to a player who is away (single server), and voided tickets taken from the inventory and ender chest. The checks below are in game and unverified.
+
+- [ ] `/bsp credit kind donor create 10000 Donor 10,000`, then `/bsp credit kind donor time 30 0`, `bind true`, `colour purple`, `mark D`, `shop add <a shop id>`, `anyplot true`, `teleports true`: each prints the kind's line. `/bsp credit kinds` lists it. A player who is not an admin or operator cannot use `/bsp credit`.
+- [ ] `/give @s bsp_core:store_credit{Kind:"donor"}`: within half a second the ticket's name reads "Store Credit: Donor 10,000", the tooltip "10,000 pieces", "Belongs to <you>" (bind on) and a `#XXXX-XXXX` serial. `/bsp credit ticket <serial>` shows 10,000 left, not used yet, bound to you.
+- [ ] `/bsp credit give <player> donor 2` while they are online: two tickets, each with its own serial, and the gold "You received store credit" line. With a full inventory they drop at the player's feet already bound to them.
+- [ ] `/bsp credit give <player> donor` from the server console while they are offline: "they get it at their next login"; on their next login the ticket arrives with the same gold line and is minted in their name.
+- [ ] A ticket copied in creative (middle-click) keeps the same serial.
+- [ ] A ticket put in a kit (KITS editor) or on a shop card: redeeming or buying gives each player a ticket with a new serial and the full value.
+- [ ] `/bsp credit void <serial>` while the holder is online: the ticket vanishes from their inventory (and ender chest) with the red "voided by an admin" line.
+- [ ] `/bsp credit kind donor delete`: existing tickets show "Withdrawn: it spends nothing."
+- [ ] On a network (MySQL), tickets are local to each server until Store Credit task 3: a ticket carried to another server shows its last tooltip there and is not minted again.
+
+## Store credit, part 2: spending rules (2026-11-07, Store Credit task 2)
+
+Server side covered by GameTests (batch `store_credit`): credit first and the bank for the rest, all or nothing when the bank is short, places (shop and sub-shops, plot names, any plot for open ground, teleports only), copies counting once, the paying order (soonest end, then least left), binding and the clock on the first purchase, a price spread over two tickets, the day and hour warnings, the end of the time limit (inventory and ender chest, a late copy), and refunds (to the ticket, the item handed back, lost on a voided ticket). Nothing in the game calls the spending rules yet: the shops (task 4), the Land Office (task 5) and BSP-Teleport (task 6) do. Until then these checks need those tasks; listed here so they are not forgotten.
+
+- [ ] (After task 4.) A timed ticket's first purchase prints the gold "time has started ... by <date>" line, with the date in the server's shop time zone.
+- [ ] A used-up ticket disappears with "is used up and is gone".
+- [ ] With a ticket that has less than a day left (set the kind's time to 0 d 23 h after its first purchase), the yellow "less than a day" line appears once; with less than an hour, the "less than an hour" line once.
+- [ ] When the time is up the ticket disappears from the inventory and the ender chest with the red "ran out of time with N pieces unspent" line; logging in after it ran out shows the same line.
+- [ ] The bank log (Portable Banker) shows a line per credit spend naming the ticket's kind and serial, with 0 pieces, and the bank's own part as a normal purchase line.
+
+
+## Lava tanks on the Tetrium Crucible and the Combination Forge (2026-11-07)
+
+Server side covered by GameTests (batch `lava_tank`): pipes fill the tank from every face (output faces too) with lava only, up to 8,000 mB, and cannot drain it; the lava survives a save; a lava bucket used on the block pours 1,000 mB in and leaves an empty bucket, a water bucket does nothing; the crucible smelts an ore on lava with no fuel and the tank pays 100 mB; with lava and coal both in, the lava pays and the coal stays; with 99 mB the coal burns and the tank is untouched; a powered Mk III upgrade takes 70 mB an ore; the forge makes an ingot on lava alone for 200 mB, and on RF leaves its lava alone. The checks below need a client and are unverified.
+
+- [ ] Open a Tetrium Crucible: under HEAT there is a TANK gauge (orange segments), then RF if an upgrade is fitted; the POWER label and switch sit below all three with nothing overlapping. Hovering the TANK row (not the HEAT row, not the fuel slot) shows "x / 8,000 mB".
+- [ ] Right-click the crucible with a lava bucket: the bucket empties, the TANK gauge shows 1,000 mB, the screen does not open. With a water bucket, an empty bucket or anything else the screen opens as usual. In creative the bucket stays full.
+- [ ] Pipe lava in (a Thermal or Mekanism pipe from a lava tank or pump) on the bottom face, which is set to output: it fills. A pipe set to pull cannot take lava out.
+- [ ] Ore in, no fuel, lava in the tank: it runs and the front glows orange as when burning; the status column shows no red coal icon. Empty tank and no fuel: a red-framed coal icon whose tooltip says "Missing fuel or lava". Pull the ore out mid-job: the glow and the coil animation stop within a few seconds.
+- [ ] The same on a Combination Forge (nine nuggets, 200 mB an ingot). With an RF upgrade and power the HEAT gauge goes away and the tank is not used; with an empty tank, no fuel and no RF the status says "Missing fuel or lava (or RF with an RF Upgrade)".
+- [ ] JEI and EMI: the crucible page reads "Fuel or 100 mB lava", the forge pages "Fuel, 200 mB lava, or RF", each on one line inside the page.
+- [ ] The guide book's Tetrium Crucible page says it burns furnace fuel or lava, and the nuggets-to-ingot page says the forge works on fuel or lava, with no overflow.
+- [ ] Every other machine screen (Illyrium Crucible, Refinery, Magnetic Centrifuge, a Combination Forge on RF): the POWER key sits 8 px lower than before and clears the gauges, the Inventory label and the demo key.
+- [ ] Break a crucible holding lava: the lava is lost (no fluid spills), the items drop as before.
+
+## Store credit, part 3: network storage (2026-11-07, Store Credit task 3)
+
+Covered by GameTests with an in-memory stand-in for the database (batch `store_credit`): kinds, tickets, spends, warnings, voids and deleted kinds written to the network; a spend refused because another server spent the credit first, with this server's copy corrected; a ticket from another server read on sight; the catch-up; nothing minted, spent, voided or saved while the database is away; refunds. Never run against a real MySQL. On a two-server network with MySQL and Redis:
+
+- [ ] Server A: make a kind; server B lists it within a second (`/bsp credit kinds`).
+- [ ] Give a ticket on A, carry it to B (InventorySync): its tooltip on B shows the same credit and serial within a second.
+- [ ] Spend part of it on B (after task 4, at a shop listed on both); A's `/bsp credit ticket <serial>` shows the new amount.
+- [ ] Two copies of one ticket (creative), one on each server, spent at the same moment for more than half the credit each: one purchase goes through, the other says the credit changed and nothing is taken from the bank.
+- [ ] Stop MySQL: making a kind and voiding say "The network database is not connected"; a new ticket stays without a serial; credit cannot be spent.
+- [ ] `/bsp storage migrate force` on a server with local store credit: the lines report the kinds and tickets copied up.
+- [ ] Tables `<prefix>credit_kinds` and `<prefix>credit_tickets` exist after the start.
+
+## Store credit, part 4: shops (2026-11-07, Store Credit task 4)
+
+Covered by GameTests (batch `store_credit`): a ticket for a shop pays in its sub-shop (500 credit, 100 bank), the lottery share on the whole price, the shop report counting the items once, another shop and the switch off paying from the bank, a test buy counting credit, a ticket sold on a card minted fresh for each buyer. In game:
+
+- [ ] `/bsp credit kind donor shop add <shop id>`; with a Donor ticket in the inventory, buy a pieces card in that shop: the bank goes down only by what the ticket did not cover, the ticket's tooltip shows the rest, and the chat has the clock line for a timed kind.
+- [ ] The same in one of its sub-shops.
+- [ ] A coin-priced card: paid with coins; the ticket is untouched.
+- [ ] A shop the kind does not name: the bank pays it all.
+- [ ] Portable Banker log: a "store credit for ..." line (0 pieces) and the bank's own line for the rest.
+- [ ] `/bsp shop report 1 <shop>`: the purchase's items counted once.
+
+## Store credit, part 5: the Land Office (2026-11-07, Store Credit task 5)
+
+Covered by GameTests (batch `store_credit`), with Region Guard's calls into `BspBank` made by the test: the balance Region Guard sees includes credit only during the office's action and only for a plot the kind names, the charge takes credit first, a paid-back purchase returns the credit to the ticket and its item, a claim's credit share of the refund is taken back once. Region Guard is not loaded in the test server; in game with Region Guard (claims in pieces):
+
+- [ ] `/bsp credit kind sanctuary plot add Sanctuary`; with a Sanctuary ticket and a bank too small for the plot alone, a plot named Sanctuary quotes as affordable and BUY + CONFIRM buys it; the ticket pays first, the bank the rest.
+- [ ] A plot with another name: the ticket is not used (quote says the bank is short when it is).
+- [ ] An "any plot" ticket (`anyplot true`): buying outlined open ground and ENLARGE both use it.
+- [ ] Give up a claim bought with credit: Region Guard's refund arrives, then the gold line says how many pieces stay with the Land Office; the bank keeps only the bank-paid share.
+- [ ] With Region Guard's `claims.currency = coins`, tickets are never used at the office.
+
+## Store credit, part 6: the teleport API (2026-11-07, Store Credit task 6)
+
+Covered by a GameTest (batch `store_credit`): `credit` and `spendable` with and without a teleport ticket, a teleport ticket paying nothing at shops, `charge` splitting 400 credit and 50 bank, `refund` putting each part back, a short charge taking nothing, a zero charge. In game only once BSP-Teleport has SC-1:
+
+- [ ] A teleport ticket (`teleports true`) pays a priced warp before the bank; BSP-Teleport's chat line names the ticket and what is left.
+- [ ] A player with an empty bank and enough teleport credit is not refused.
+- [ ] A warp that fails after paying puts the credit back on the ticket.
+
+## Store credit, part 7: the ticket's look (2026-11-07, Store Credit task 7)
+
+Covered by a GameTest (batch `store_credit`): the colour, mark, places, time limit and end written for the client, the tint and mark property, the look and end following a kind edit, the time wording. The textures were checked in an enlarged tinted composite of the generated layers (`tools/gen_credit_assets.py`). Never seen in Minecraft:
+
+- [ ] A Donor ticket (purple, D) and a Sanctuary ticket (lime, C) in the hotbar: the stub shape, the colour, the black tab with a gold D or white C top left, the gold star on the stub; a kind with no mark shows no tab.
+- [ ] All 16 colours readable (`/bsp credit kind <id> colour <dye>`; white and black especially).
+- [ ] Tooltip: "Store Credit: <name>", the credit, "Spends at: ..." wrapping onto a second indented line when long, "30 days from the first purchase" before the first purchase, "N days N hours left" after (gold in the last day), "Belongs to <name>", the serial.
+- [ ] Changing a kind's colour or mark changes every ticket of it within half a second.
+
+## Store credit, part 8: paying on the screens (2026-11-07, Store Credit task 8, protocol 10)
+
+Covered by a GameTest (batch `store_credit`): the shop's summary (two tickets' total, the first ticket's look and time), the switch, the office's summaries by plot name, the packet's round trip. The screens themselves are client-only and never seen:
+
+- [ ] A shop where a Donor ticket works: the bottom strip is the ticket (purple, the D tab icon at the left, notched ends), "✓ PAY WITH CREDIT · <credit> · <time>" and "bank <balance>" at the right; the words shrink rather than run into the balance.
+- [ ] Click the strip: it turns into the plain green strip with "credit off (<credit>): click to use"; a purchase is then paid from the bank; click again to turn it back on.
+- [ ] Quantity screen: "2,500 = 2,000 credit + 500 bank" when the ticket does not cover it, "2,500, all store credit" when it does; Max lets you pick as many as bank plus credit afford.
+- [ ] A shop where no ticket works: the strip is the usual one.
+- [ ] Land Office: choose a Sanctuary plot with a Sanctuary ticket: the strip is the ticket, the card shows "<n> from credit" and "<n> from the bank" in place of "left after"; choose another plot: the plain strip. Open ground with an "any plot" ticket: the outline line is followed by "<n> from credit".
+- [ ] With Region Guard pricing in coins, no strip at all.
+- [ ] A 1.13.0 client or one with protocol 9 is refused on a server with this version, with the usual mismatch message.
+
+## Store credit, part 9: the stamp (2026-11-07, Store Credit task 9)
+
+Covered by a GameTest (batch `store_credit`): no stamp for a ticket with no time limit, the clock stamp on the first purchase only (colour, mark, pieces left, end), the end stamp with the pieces unspent, the packet's round trip. The overlay is client-only and never seen:
+
+- [ ] First purchase with a timed ticket: the screen washes in the ticket's colour, the ticket drops from above with an anvil-like stamp, "CREDIT CLOCK STARTED" and "<name>: <time> to spend <n> pieces" for about 6 seconds, fading over the last one. You can walk and act meanwhile; it covers the hotbar and chat.
+- [ ] A ticket running out (set a kind's time to 0 d 1 h and wait, or after its first purchase edit it shorter): "TICKET EXPIRED", "<name> ran out of time: <n> pieces unspent", the ticket breaks into falling bits with an item-break sound, and it is gone from the inventory.
+- [ ] Log out with a ticket about to run out, log in after: the end stamp shows after joining.
+- [ ] F1 hides it; a narrow window shrinks the words rather than cutting them.
+
+## Store credit, part 10: the CREDIT tab (2026-11-07, Store Credit task 10)
+
+Covered by a GameTest (batch `store_credit`): a player who is not an admin changes nothing, an admin's save follows the kind rules (a bad value refused), the tab's data (kinds with tickets given, shops, plot names including a saved name this server does not sell), the ticket list, VOID, both packets' round trips. The tab itself is client-only and never seen:
+
+- [ ] `/bsp admin`: five tabs fit (PLAYERS, SEASON, SETTINGS, KITS, CREDIT) and the heading still shows.
+- [ ] CREDIT: kinds with their ticket icon (colour and mark) and value; long names cut short before the value.
+- [ ] NEW KIND: Id (left empty, it is made from the name), Name, Value, a colour swatch, D, Time 30 days 0 hours, bind ticked; SAVE: the green "Saved ..." line in place of the /give line; the kind appears on the left.
+- [ ] A bad value (0) or a duplicate id: the red sentence, and what you typed stays.
+- [ ] EDIT ›: the pop-over; SHOPS lists shops with sub-shops indented, ticking a shop shows its sub-shops "with its shop"; LAND OFFICE: "Any plot at the Land Office", plot names with "12 plots" counts, the scroll bar and wheel; type a name + ADD (or Enter); TELEPORTS: one tick and the note; the search line filters; DONE or Esc closes it. The chips under "Spends at" follow.
+- [ ] COPY /GIVE: paste in chat gives a ticket of that kind.
+- [ ] TICKETS · N: the list with SERIAL, HOLDER, LEFT, TIME LEFT; VOID then SURE? voids it (the holder's ticket disappears); BACK.
+- [ ] DELETE, SURE?: the kind goes; its tickets show "Withdrawn".
+- [ ] A moderator who is not an admin: the CREDIT tab shows nothing to change (the server ignores it).
+
+
+## Multiblock tanks follow their configured size (2026-11-07, bug fix)
+
+Server side covered by GameTest `multiblock_tank_follows_the_configured_size` (batch `lava_tank`; it failed before the fix with "took 8000"): an Illyrium Crucible set to 16,000 mB takes 16,000, and lowered to 2,000 it keeps its 16,000 and takes nothing. The checks below need a server and are unverified.
+
+- [ ] Set `illyrium_crucible.lavaTank = 16000` and restart. Pipe lava into a formed Illyrium Crucible's lower pylons: the TANK gauge fills to the top and the tooltip reaches 16,000 / 16,000.
+- [ ] With the tank at 15,500, put a lava bucket in its lava slot: it waits (does not pour) until the tank is at 15,000 or less, then pours the whole 1,000 and leaves an empty bucket.
+- [ ] Set `refinery.waterTank` and `totem_forge.lavaTank` to sizes other than 8,000: each fills to its own size.
+- [ ] Lower a size below what a tank holds and restart: the tank keeps its fluid, takes no more by pipe or bucket, and works it down as usual.
+
+## Store credit, part 11: the guide and JEI (2026-11-07, Store Credit task 11)
+
+- [ ] The guide book has a Store Credit category with the ticket's icon and one entry: the ticket page, "Paying" and "The clock". No page is cut short (Patchouli shrinks text that overflows).
+- [ ] JEI and EMI: the ticket's info page.
+
+## Store credit: after the audit (2026-11-07)
+
+GameTests (batch `store_credit`) cover the Land Office marks (a purchase in flight is never taken over, another mod's charge meanwhile is the bank's, a stale mark cannot end a live one), the refund share (credit x Region Guard's refund percent, from the payer, per dimension, once; a bank-bought claim enlarged with credit gives back only the credit's share) and a receipt refunded once. In game:
+
+- [ ] Land Office: BUY twice quickly on a network: the second says "Your last purchase here is still going through".
+- [ ] An admin gives up a player's claim bought with credit: the owner's bank, not the admin's, loses the credit's share of the refund.
+- [ ] Buy a ticket's first purchase in a shop: the stamp shows after you close the shop screen, not under it.
+- [ ] The ticket's print lines and top highlight show clearly in every colour (white and yellow get darker lines).
+- [ ] CREDIT tab: the search and plot-name boxes show their text over the pop-over; days "365" and hours "12" fit; a long answer (stop MySQL, then SAVE) shows on two lines; TICKETS shows "Reading the tickets..." until the list arrives; a moderator sees "Store credit is for BSP-Core admins and operators."; REFRESH is the ↻ key and the heading (and "Kit: <name>" in the kit editor) has room.
+
+
+## Crucible Yield Upgrade, part 1: the rules (2026-11-07)
+
+Server side covered by GameTests (batch `yield`): one ore on lava gives 4, 6, 8 and 10 nuggets with 0 to 3 upgrades and slag 1, 1, 1 then 2; the yield slots take only the upgrade, one each, and pipes on every side can neither insert nor extract it; a crucible saved with five slots loads with eight, its items in place; a saved `nuggetsPerOre = 2` moves to 4 once, a 2 set later is kept, and other values are left. The checks below need a client or a real server and are unverified. `/give @s bsp_core:crucible_yield_upgrade 3` gives upgrades to test with.
+
+- [ ] On a server whose `bsp_core-server.toml` still says `nuggetsPerOre = 2`: start it once on this version. The log says the value moved to 4, the file now reads `nuggetsPerOre = 4` and `nuggetsPerOreMoved = true`. Set it back to 2 and restart: it stays 2.
+- [ ] An existing crucible from before the update, with ore, nuggets and an RF upgrade in it: everything is still there, the RF upgrade in the RF slot, and the screen shows three more empty violet yield slots in the UPGRADES row.
+- [ ] With 0, 1, 2 and 3 upgrades fitted, one ore gives 4, 6, 8 and 10 nuggets; slag is 1 until all three are in, then 2.
+- [ ] (Audit) Fit three upgrades while an ore is half done: that ore still gives 4 nuggets; the next gives 10. Take one out mid-ore: that ore gives the lower count.
+- [ ] Shift-clicking a stack of upgrades from the inventory fills the empty yield slots, one upgrade in each, and leaves the rest in the inventory; a hopper above or a pipe on any side cannot insert or pull the upgrades.
+- [ ] JEI and EMI show 4 nuggets per ore on the crucible page.
+
+## Crucible Yield Upgrade, part 2: the item, recipe and slot row (2026-11-07)
+
+Server side covered by GameTests (batch `yield`): the crucible's yield slots sit at x 196, 214 and 232 and its RF slot at 262 (y 124); the Combination Forge's upgrade slot at 196 and RF at 226; a multiblock with only an RF slot keeps it at 196; four plates, four ingots and a Basic Control Circuit make one upgrade, which stacks to 16. The checks below need a client and are unverified.
+
+- [ ] The upgrade's icon in the inventory and in a crucible slot: the grey chip with red pins, a lavender nugget and a turquoise arrow, crisp at 16 px, matching the Illyrium Forge Upgrade beside it.
+- [ ] Its tooltip reads "Crucible Yield Upgrade", "+2 Tetrium Nuggets per ore", "Fits a Tetrium Crucible, up to three" (the same in the main menu's creative search).
+- [ ] The crafting table makes it from the recipe. (Like the other BSP upgrades it has no recipe-book unlock, so the book only lists it once crafted; JEI and EMI show it.)
+- [ ] Crucible screen: three violet yield slots touching at the left of the UPGRADES row, a gap, then the RF slot; small YIELD under the yield slots and RF under the RF slot, clear of the Inventory label and the inventory slots below; empty yield slots show a faint upgrade icon and the hint "Crucible Yield Upgrade: more nuggets per ore, up to three".
+- [ ] Combination Forge screen: its upgrade slot at the left of the UPGRADES row, the RF slot after a gap, no captions; nothing overlaps the STATUS column.
+- [ ] Illyrium Refinery: its filter (upgrade) slot at the left of the UPGRADES row and its RF slot after a gap, as on the forge. Illyrium Crucible: its RF slot still at the start of the row. Magnetic Centrifuge: its one upgrade slot at the start of the row.
+- [ ] JEI and EMI crucible page: 4 nuggets and 1 slag out, then three lines: the time, "Fuel or 100 mB lava", "+2 per Yield Upgrade, max 3", all inside the page. JEI shows the upgrade's recipe.
+
+## Crucible Yield Upgrade, part 3: guide page (2026-11-07)
+
+Nothing here is server side. Unverified in a client.
+
+- [ ] Guide book, Materials, Tetrium: after the Tetrium Crucible page comes a crafting page for the Crucible Yield Upgrade (plates, ingots, Basic Control Circuit) with "Up to three Crucible Yield Upgrades fit a Tetrium Crucible. Each adds two nuggets per ore; three double the slag." in six lines under the grid, nothing cut off or shrunk.
+
+## Guide book: two-recipe pages split (2026-11-07, bug fix)
+
+Patchouli 84.1 draws no text on a crafting page with two recipes. Every such page in `tools/gen_guide_book.py` is now two single-recipe pages, and the generator refuses text on a two-recipe page. No Java changed; checked by measuring each page's text at 116 px (all within 9 lines). Unverified in a client.
+
+- [ ] Open each entry and check the recipes and the words under them, nothing shrunk or cut off: Blanks and Coins (Shatter Blank, then copper blank with "Each tier's blank..."), The Totem Mould (Mould Shell with its line, then the base mould), Illyrium ("Nine nuggets make an ingot by hand." under the ingot; the forge upgrade sentence under the Illyrium Forge Upgrade; the filter sentence under the Iron Filter, then the Diamond Filter), Tetrium (the ingot line, then the Combination Forge "...on fuel or lava..."), Batteries and Cells (Tier I line, then the Tiers II to IV line; the Power Cell line, then Power Cell II; Power Cell III, then the Wave Emitter line), Decoy Totems (Magnet Core line, then the Decoy Totem; the charges line under the Blast Charge, then the Warp Charge), Plasma and Projectors (stacking extractors under the extractor, the refused interface under the interface; cables under the base, the projector's keys under the projector), The Plasma Tank (the glass line under Tetrium Glass, then Tank Glass; the port's runs under the casing, the wrench and 1,000 mB/t under the port).
+- [ ] The page count in each of those entries goes up by one per split page; the entry's last page still ends cleanly.

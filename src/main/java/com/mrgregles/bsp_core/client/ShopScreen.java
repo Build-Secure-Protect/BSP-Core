@@ -260,7 +260,7 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
             }
             return Math.max(1, n);
         }
-        long afford = c.buy() <= 0 ? 999 : c.currency() < 0 ? menu.balance / c.buy() : 999;
+        long afford = c.buy() <= 0 ? 999 : c.currency() < 0 ? (menu.balance + ClientCredit.paying(ClientCredit.get("shop"))) / c.buy() : 999;
         int fits = com.mrgregles.bsp_core.shop.Shops.fits(minecraft.player, c.stack(), 999);
         long n = Math.min(afford, fits);
         if (c.stock().limited()) {
@@ -290,6 +290,11 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
     public boolean mouseClicked(double mx, double my, int button) {
         keys();
         int x = leftPos, y = topPos, ky = y + SY;
+        if (menu.open && ClientCredit.get("shop") != null && over(mx, my, x + SX - 2, y + STRIP_Y - 2, W - 2 * SX + 4, STRIP_H + 4)) {
+            click(); // PAY WITH CREDIT on or off
+            com.mrgregles.bsp_core.network.BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.CreditTogglePacket(menu.page));
+            return true;
+        }
         for (Key k : top) {
             if (over(mx, my, x + KX, ky, KW, KH)) {
                 if (k.enabled) {
@@ -568,9 +573,17 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
             key(g, x + KX, ky, bottom.get(i), mx, my);
             ky -= KH + gap();
         }
+        ShopMenu.Card picked = view == View.QTY ? card(sel) : null;
+        var credit = menu.open && (picked == null || picked.currency() < 0 && !selling) ? ClientCredit.get("shop") : null; // a coin card or a sale: credit plays no part
+        if (credit != null && ClientCredit.wants()) { // store credit pays here: the strip is the ticket (click it to switch credit off)
+            ClientCredit.drawStrip(g, font, x + SX - 2, y + STRIP_Y - 2, W - 2 * SX + 4, STRIP_H + 4, credit,
+                    Component.translatable("gui.bsp_core.credit.bank", Bank.format(menu.balance)).getString(), BEZEL);
+            return;
+        }
         g.fill(x + SX - 2, y + STRIP_Y - 2, x + W - SX + 2, y + STRIP_Y + STRIP_H + 2, SCREEN_EDGE);
         g.fill(x + SX, y + STRIP_Y, x + W - SX, y + STRIP_Y + STRIP_H, SCREEN);
-        String left = (menu.open ? tr("open_now").getString() : tr("closed_now").getString()) + " / " + (menu.remote ? tr("network").getString() : Bank.serverId());
+        String left = credit != null ? Component.translatable("gui.bsp_core.credit.off", Bank.format(credit.total())).getString()
+                : (menu.open ? tr("open_now").getString() : tr("closed_now").getString()) + " / " + (menu.remote ? tr("network").getString() : Bank.serverId());
         String bal = tr("balance", Bank.format(menu.balance)).getString();
         CashMachine.fit(g, font, left, x + SX + 6, y + STRIP_Y + 7, W - 2 * SX - 16 - font.width(bal), PHOS_DIM);
         g.drawString(font, bal, x + W - SX - 6 - font.width(bal), y + STRIP_Y + 7, PHOS_DIM, false);
@@ -626,6 +639,11 @@ public class ShopScreen extends AbstractContainerScreen<ShopMenu> implements Scr
                 g.pose().popPose();
                 g.drawString(font, tr("lots").getString(), SX + SW / 2 + font.width(n) + 4, SY + 72, PHOS_DIM, false);
                 String total = tr(selling ? "you_get" : "total", Bank.format(unit * lots), unitName(c.currency())).getString();
+                long credit = selling || c.currency() >= 0 ? 0 : Math.min(unit * lots, ClientCredit.paying(ClientCredit.get("shop")));
+                if (credit > 0) { // the sum as it will be paid: credit first, the bank the rest
+                    total = credit >= unit * lots ? Component.translatable("gui.bsp_core.credit.total_all", Bank.format(unit * lots)).getString()
+                            : Component.translatable("gui.bsp_core.credit.total", Bank.format(unit * lots), Bank.format(credit), Bank.format(unit * lots - credit)).getString();
+                }
                 CashMachine.fit(g, font, total, SX + SW / 2 - Math.min(font.width(total), SW - 16) / 2, SY + 92, SW - 16, AMBER);
                 CashMachine.wrap(g, font, tr(selling ? "max_sell_hint" : "max_buy_hint"), SX + 8, SY + 108, SW - 16, PHOS_DIM);
             }

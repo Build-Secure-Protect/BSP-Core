@@ -11,9 +11,9 @@ import java.util.List;
 
 /**
  * Nine nuggets in, one ingot out; or one Tetrium Ingot in, one Tetrium Plate out. Forges Tetrium as
- * built; Illyrium only once an Illyrium Forge Upgrade sits in the upgrade slot. Burns furnace fuel, or runs on RF at twice the speed with an RF upgrade.
+ * built; Illyrium only once an Illyrium Forge Upgrade sits in the upgrade slot. Burns lava from its tank or furnace fuel, or runs on RF at twice the speed with an RF upgrade.
  */
-public class CombinationForgeBlockEntity extends MachineBlockEntity {
+public class CombinationForgeBlockEntity extends LavaTankMachineBlockEntity {
     public static final int NUGGETS_PER_INGOT = 9;
     private static final int IN = 0, OUT = 1, UPGRADE = 2, FUEL = 3;
     private static final List<Slot> LAYOUT = List.of(
@@ -81,12 +81,23 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
         ItemStack in = items.getStackInSlot(IN);
         items.setStackInSlot(IN, in.copyWithCount(in.getCount() - inputCost()));
         addOutput(OUT, result);
+        payLava();
     }
 
-    /** Burns furnace fuel unless it is running on RF. */
+    /** Burns lava or furnace fuel unless it is running on RF. */
     @Override
-    protected boolean usesFuel() {
+    protected boolean needsHeat() {
         return !rfActive();
+    }
+
+    @Override
+    protected int lavaPerJob() {
+        return BSPConfig.FORGE_LAVA_PER_JOB.get();
+    }
+
+    @Override
+    protected int lavaTankSize() {
+        return BSPConfig.FORGE_LAVA_TANK.get();
     }
 
     /** On RF the forge runs faster than on fuel by the configured multiple, plus the upgrade's own bonus. */
@@ -104,8 +115,8 @@ public class CombinationForgeBlockEntity extends MachineBlockEntity {
         } else if (in.is(ModItems.ILLYRIUM_NUGGET.get()) && !hasIllyriumUpgrade()) {
             out.add(need(ModItems.ILLYRIUM_FORGE_UPGRADE.get(), "need.bsp_core.forge_upgrade"));
         }
-        if (!rfActive() && !burning && net.minecraftforge.common.ForgeHooks.getBurnTime(items.getStackInSlot(FUEL), null) <= 0) {
-            out.add(need(net.minecraft.world.item.Items.COAL, "need.bsp_core.fuel_or_rf"));
+        if (heatMissing(fluidMb, burning, items.getStackInSlot(FUEL))) {
+            out.add(need(net.minecraft.world.item.Items.COAL, "need.bsp_core.fuel_lava_or_rf"));
         }
         ItemStack result = result();
         if (!result.isEmpty() && !fits(OUT, result)) {

@@ -494,7 +494,7 @@ public class BspGameTests {
     // ------------------------------------------------------------------ machine times (balancing for 1.0, 2026-10-09)
 
     /**
-     * One Tetrium Ore takes {@code tetrium_crucible.ticksPerOre} ticks on coal: nothing has come out 50 ticks before that, two nuggets and
+     * One Tetrium Ore takes {@code tetrium_crucible.ticksPerOre} ticks on coal: nothing has come out 50 ticks before that, the base nuggets and
      * one slag have 30 ticks after. The shipped default must be 300. The timing itself is read from the loaded config, because the game
      * test server keeps a world copy in {@code run/world/serverconfig/bsp_core-server.toml} that does not follow a changed default.
      */
@@ -511,7 +511,8 @@ public class BspGameTests {
         afterTicking(h, ticks - 50, () -> h.assertTrue(be.getItems().getStackInSlot(2).isEmpty(), "no nuggets before " + ticks + " ticks"));
         afterTicking(h, ticks + 30, () -> {
             net.minecraft.world.item.ItemStack nuggets = be.getItems().getStackInSlot(2), slag = be.getItems().getStackInSlot(3);
-            h.assertTrue(nuggets.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_NUGGET.get()) && nuggets.getCount() == 2, "two Tetrium Nuggets after " + ticks + " ticks, got " + nuggets);
+            int base = com.mrgregles.bsp_core.BSPConfig.TCRUC_NUGGETS.get(); // no yield upgrades fitted
+            h.assertTrue(nuggets.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_NUGGET.get()) && nuggets.getCount() == base, base + " Tetrium Nuggets after " + ticks + " ticks, got " + nuggets);
             h.assertTrue(slag.is(com.mrgregles.bsp_core.registry.ModItems.TETRIUM_SLAG.get()) && slag.getCount() == 1, "one Tetrium Slag after " + ticks + " ticks, got " + slag);
             h.succeed();
         });
@@ -545,6 +546,9 @@ public class BspGameTests {
         pollThen(h, 700, () -> entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).rate() >= 450, () -> {
             h.assertBlockProperty(inj.above(), TotemCableBlock.SIDES[net.minecraft.core.Direction.DOWN.ordinal()], true); // the cable over the port reaches into it
             h.assertBlockProperty(inj.east(), TotemCableBlock.SIDES[net.minecraft.core.Direction.WEST.ordinal()], false); // the side cable does not
+            var injector = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
+            var served = injector.served(h.getLevel());
+            h.assertTrue(served.block() == Blocks.FURNACE && !served.refused() && Math.abs(served.factor() - injector.factor()) < 1e-9, "Jade on the injector names the furnace at x" + injector.factor() + ", got " + served);
             for (BlockPos f : List.of(furnace, control)) {
                 var fe = entity(h, f, net.minecraft.world.level.block.entity.FurnaceBlockEntity.class);
                 fe.setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RAW_IRON));
@@ -596,6 +600,193 @@ public class BspGameTests {
             h.assertTrue(slice.isFormed(), "the slice is formed");
             h.assertTrue(slice.plasmaRate() >= 450, "the slice reads its injector, got " + slice.plasmaRate() + " mB/t");
             h.assertTrue(slice.plasmaFactor() >= 2.9, "x3 press speed, got x" + slice.plasmaFactor());
+            h.succeed();
+        });
+    }
+
+    // ------------------------------------------------------------------ Overclock on machines (bug fix 2026-11-07)
+
+    /** The factor a full feed gives with the totem's Overclock at {@code level}: the curve's top, scaled (x5 with Overclock IV by default). */
+    private static double overclocked(int level) {
+        return overclocked(com.mrgregles.bsp_core.plasma.PlasmaBoost.topRate(), level);
+    }
+
+    /** The factor {@code rate} mB/t gives with the totem's Overclock at {@code level}. */
+    private static double overclocked(int rate, int level) {
+        return com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(rate), com.mrgregles.bsp_core.totem.TotemAuras.overclockScale(level));
+    }
+
+    /** Most of the feed arrives and the machine's figure is the curve at that rate with Overclock IV, not the plain curve. */
+    private static boolean overclockedFeed(int rate, double factor) {
+        return rate >= 450 && Math.abs(factor - overclocked(rate, 4)) < 1e-6 && factor > com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(rate) + 0.5;
+    }
+
+    /** A Tetrium Crucible fed by an Output III totem with Overclock IV runs past the plain x3: it reads x5 and finishes an ore in under a third of its ticks. */
+    @GameTest(template = EMPTY, timeoutTicks = 1400, batch = "overclock")
+    public void overclock_speeds_the_tetrium_crucible_past_the_plasma_curve(GameTestHelper h) {
+        BlockPos start = new BlockPos(2, 3, 2), inj = new BlockPos(7, 2, 2), crucible = inj.below();
+        plasmaLineTo(h, start, 3, inj.above().east());
+        entity(h, start.above(), ShatterTotemBlockEntity.class).setUpgradeLevel(TotemUpgrades.Buff.OVERCLOCK, 4);
+        injectorDown(h, inj);
+        h.setBlock(crucible, ModBlocks.TETRIUM_CRUCIBLE.get());
+        int ticks = com.mrgregles.bsp_core.BSPConfig.TCRUC_TICKS.get();
+        double want = overclocked(4), plain = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(com.mrgregles.bsp_core.plasma.PlasmaBoost.topRate());
+        var be = entity(h, crucible, com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity.class);
+        pollThen(h, 700, () -> overclockedFeed(be.plasmaRate(), be.plasmaFactor()), () -> {
+            net.minecraft.world.item.Item raw = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "raw_tetrium"));
+            be.getItems().insertItem(0, new net.minecraft.world.item.ItemStack(raw), false);
+            be.getItems().insertItem(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL), false);
+            var served = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).served(h.getLevel());
+            h.assertTrue(served.block() == ModBlocks.TETRIUM_CRUCIBLE.get() && !served.refused() && Math.abs(served.factor() - be.plasmaFactor()) < 1e-9,
+                    "Jade on the injector names the crucible at x" + be.plasmaFactor() + ", got " + served);
+            long t0 = h.getLevel().getGameTime();
+            int limit = (int) Math.floor(ticks / plain) - 10; // the plain plasma speed cannot make it in time
+            pollThen(h, limit, () -> !be.getItems().getStackInSlot(2).isEmpty(), h::succeed,
+                    () -> h.fail("nuggets out in " + limit + " ticks (x" + plain + " would need " + Math.round(ticks / plain) + "): none after "
+                            + (h.getLevel().getGameTime() - t0) + " ticks at x" + be.plasmaFactor()));
+        }, () -> h.fail("the crucible reads x" + want + " with Overclock IV, got x" + be.plasmaFactor() + " at " + be.plasmaRate() + " mB/t"));
+    }
+
+    /** A multiblock machine (the Totem Forge) with an injector on one of its parts takes the feeding totem's Overclock too. */
+    @GameTest(template = EMPTY, timeoutTicks = 1100, batch = "overclock")
+    public void overclock_speeds_a_multiblock_machine_through_a_part(GameTestHelper h) {
+        BlockPos at = new BlockPos(9, 1, 6);
+        var forge = buildTotemForge(h, at);
+        // a top-layer part, as a position in the test's own frame: the controller's offset to it, added to where the controller stands
+        BlockPos top = at.offset(forge.parts().stream().filter(p -> p.block() != net.minecraft.world.level.block.Blocks.AIR
+                && p.pos().getY() == forge.getBlockPos().getY() + 2).findFirst().orElseThrow().pos().subtract(forge.getBlockPos()));
+        BlockPos inj = top.above(), start = new BlockPos(inj.getX() - 5, inj.getY() + 1, inj.getZ());
+        plasmaLineTo(h, start, 3, inj.above().east());
+        entity(h, start.above(), ShatterTotemBlockEntity.class).setUpgradeLevel(TotemUpgrades.Buff.OVERCLOCK, 4);
+        injectorDown(h, inj);
+        double want = overclocked(4);
+        pollThen(h, 800, () -> forge.isFormed() && overclockedFeed(forge.plasmaRate(), forge.plasmaFactor()), () -> {
+                    var served = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).served(h.getLevel());
+                    h.assertTrue(served.block() == ModBlocks.TOTEM_FORGE.get() && Math.abs(served.factor() - forge.plasmaFactor()) < 1e-9,
+                            "Jade on the injector over a part names the Totem Forge at x" + forge.plasmaFactor() + ", got " + served);
+                    h.succeed();
+                },
+                () -> {
+                    var ie = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
+                    h.fail("the formed forge reads x" + want + " with Overclock IV, got x" + forge.plasmaFactor() + " at " + forge.plasmaRate() + " mB/t (formed " + forge.isFormed()
+                            + "; injector rate " + ie.rate() + " x" + ie.factor() + ", aims at " + ie.target().toShortString() + " = " + h.getLevel().getBlockState(ie.target()).getBlock()
+                            + "; part " + h.absolutePos(top).toShortString() + ")");
+                });
+    }
+
+    /** A Coin Factory slice fed by an Overclock IV totem presses at x5, and its screen's synced value says so (it showed the plain x3). */
+    @GameTest(template = EMPTY, timeoutTicks = 1100, batch = "overclock")
+    public void overclock_speeds_a_factory_slice_and_its_screen_says_so(GameTestHelper h) {
+        BlockPos c = new BlockPos(10, 1, 10); // controller facing north: the slice runs south (back) from it
+        h.setBlock(c, ModBlocks.COIN_FACTORY.get().defaultBlockState().setValue(com.mrgregles.bsp_core.coin.CoinFactoryBlock.FACING, net.minecraft.core.Direction.NORTH));
+        h.setBlock(c.south(), ModBlocks.FACTORY_FRAME.get());
+        h.setBlock(c.south(2), ModBlocks.FACTORY_BLANK_HATCH.get());
+        h.setBlock(c.above(), ModBlocks.FACTORY_FRAME.get());
+        h.setBlock(c.above().south(), ModBlocks.FACTORY_PRESS.get());
+        h.setBlock(c.above().south(2), ModBlocks.FACTORY_POWER_PORT.get());
+        BlockPos inj = c.above(2).south(2); // the back Motivator cell
+        plasmaLineTo(h, new BlockPos(2, 4, 12), 3, inj.above().east());
+        entity(h, new BlockPos(2, 5, 12), ShatterTotemBlockEntity.class).setUpgradeLevel(TotemUpgrades.Buff.OVERCLOCK, 4);
+        injectorDown(h, inj);
+        double want = overclocked(4);
+        var slice = entity(h, c, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
+        pollThen(h, 800, () -> slice.isFormed() && overclockedFeed(slice.plasmaRate(), slice.plasmaFactor()), () -> {
+            var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+            var menu = new com.mrgregles.bsp_core.coin.CoinFactoryMenu(0, player.getInventory(), slice, List.of(slice));
+            h.assertTrue(Math.abs(menu.plasmaFactor(0) - slice.plasmaFactor()) < 0.01, "the screen gets the lane's x" + slice.plasmaFactor() + ", got x" + menu.plasmaFactor(0));
+            h.assertTrue(menu.plasmaRate(0) == slice.plasmaRate(), "the screen still gets the mB/t");
+            var served = entity(h, inj, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).served(h.getLevel());
+            h.assertTrue(served.block() == ModBlocks.COIN_FACTORY.get() && Math.abs(served.factor() - slice.plasmaFactor()) < 1e-9,
+                    "Jade on the injector in the Motivator cell names the factory at x" + slice.plasmaFactor() + ", got " + served);
+            h.succeed();
+        }, () -> h.fail("the slice reads x" + want + " with Overclock IV, got x" + slice.plasmaFactor() + " at " + slice.plasmaRate() + " mB/t"));
+    }
+
+    /**
+     * A Coin Factory slice fed by an Overclock IV totem presses at x5 by the clock, and still counts its unloaded time at x5 after its
+     * chunk reloads. The press runs on the wall clock: on load the slice catches up on the time it was away at its saved speed, and
+     * the Overclock part of that speed was not saved, so a factory left alone (the usual case: a press takes hours) gained nothing from it.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 1100, batch = "overclock")
+    public void overclock_presses_coins_faster_and_keeps_it_through_a_reload(GameTestHelper h) {
+        BlockPos c = new BlockPos(10, 1, 10);
+        h.setBlock(c, ModBlocks.COIN_FACTORY.get().defaultBlockState().setValue(com.mrgregles.bsp_core.coin.CoinFactoryBlock.FACING, net.minecraft.core.Direction.NORTH));
+        h.setBlock(c.south(), ModBlocks.FACTORY_FRAME.get());
+        h.setBlock(c.south(2), ModBlocks.FACTORY_BLANK_HATCH.get());
+        h.setBlock(c.above(), ModBlocks.FACTORY_FRAME.get());
+        h.setBlock(c.above().south(), ModBlocks.FACTORY_PRESS.get());
+        h.setBlock(c.above().south(2), ModBlocks.FACTORY_POWER_PORT.get());
+        BlockPos inj = c.above(2).south(2);
+        plasmaLineTo(h, new BlockPos(2, 4, 12), 3, inj.above().east());
+        entity(h, new BlockPos(2, 5, 12), ShatterTotemBlockEntity.class).setUpgradeLevel(TotemUpgrades.Buff.OVERCLOCK, 4);
+        injectorDown(h, inj);
+        double want = overclocked(4);
+        var slice = entity(h, c, com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.class);
+        pollThen(h, 800, () -> slice.isFormed() && overclockedFeed(slice.plasmaRate(), slice.plasmaFactor()), () -> {
+            var tier = com.mrgregles.bsp_core.coin.CoinTier.values()[0];
+            for (int i = 0; i < 1000 && slice.poolStored() < tier.energyPerCoin(); i++) {
+                slice.poolReceive(Integer.MAX_VALUE, false);
+            }
+            slice.getItems().setStackInSlot(com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity.SLOT_INPUT, new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.BLANKS.get(tier).get()));
+            long t0 = System.currentTimeMillis(), span = 600_000; // ten minutes of the clock, handed to the slice by hand
+            slice.advance(t0);
+            h.assertTrue(slice.getJobTier() == tier, "a press started: " + slice.getJobTier() + ", pool " + slice.poolStored() + " of " + tier.energyPerCoin());
+            double speed = slice.plasmaFactor() / (1.0 - slice.totalReduction()), press = tier.pressMillis();
+            double p0 = slice.progressFraction();
+            slice.advance(t0 + span);
+            double loaded = (slice.progressFraction() - p0) * press / span;
+            h.assertTrue(Math.abs(loaded - speed) < 0.02 * speed, "ten minutes loaded press at x" + speed + ", got x" + loaded);
+            // the chunk was unloaded for ten minutes and loads again: a new block entity from the saved data, saved ten minutes ago by the
+            // clock, with the injector not fed yet (here: gone). The slice's own ticks then run the real load order (structure check, then
+            // the once-a-second speed check) and must count the time away at the saved x5 before dropping to x1.
+            double saved = slice.plasmaFactor();
+            BlockPos at = h.absolutePos(c);
+            var tag = slice.saveWithFullMetadata();
+            tag.putLong("LastUpdateMs", System.currentTimeMillis() - span);
+            h.setBlock(inj, Blocks.AIR);
+            var fresh = (com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity) net.minecraft.world.level.block.entity.BlockEntity.loadStatic(at, h.getLevel().getBlockState(at), tag);
+            h.assertTrue(fresh != null, "the slice loads from its saved data");
+            h.getLevel().setBlockEntity(fresh);
+            h.assertTrue(Math.abs(fresh.plasmaFactor() - saved) < 1e-9, "the reloaded slice keeps x" + saved + ", got x" + fresh.plasmaFactor());
+            double p1 = fresh.progressFraction();
+            pollThen(h, 80, () -> fresh.plasmaFactor() < 1.0 + 1e-9, () -> {
+                double away = (fresh.progressFraction() - p1) * press / span; // the few real seconds since at x1 are well inside the margin
+                h.assertTrue(Math.abs(away - speed) < 0.02 * speed, "ten minutes away counted at x" + speed + " after the reload, got x" + away);
+                h.succeed();
+            }, () -> h.fail("with its injector gone the reloaded slice drops to x1 within its own ticks, still x" + fresh.plasmaFactor()));
+        }, () -> h.fail("the slice reads x" + want + " with Overclock IV, got x" + slice.plasmaFactor() + " at " + slice.plasmaRate() + " mB/t"));
+    }
+
+    /**
+     * Jade's lookup for an injector: on an unassembled factory slice or Totem Forge it names the machine as not assembled (not "cannot be
+     * sped up"), and on another mod's machine with two injectors it gives the machine's total from both.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 200, batch = "overclock")
+    public void injector_jade_names_unassembled_machines_and_sums_a_furnace(GameTestHelper h) {
+        BlockPos c = new BlockPos(3, 1, 3); // a factory controller alone, with an injector in its first Motivator cell
+        h.setBlock(c, ModBlocks.COIN_FACTORY.get().defaultBlockState().setValue(com.mrgregles.bsp_core.coin.CoinFactoryBlock.FACING, net.minecraft.core.Direction.NORTH));
+        injectorDown(h, c.above(2));
+        BlockPos forgeAt = new BlockPos(12, 1, 3); // a Totem Forge controller alone, with an injector on it
+        h.setBlock(forgeAt, ModBlocks.TOTEM_FORGE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.machine.MachineBlock.FACING, net.minecraft.core.Direction.NORTH));
+        h.setBlock(forgeAt.north(), ModBlocks.PLASMA_INJECTOR.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        BlockPos furnace = new BlockPos(3, 1, 14); // a vanilla furnace with an injector above and one beside, both fed 500 mB/t (no Overclock)
+        h.setBlock(furnace, Blocks.FURNACE);
+        injectorDown(h, furnace.above());
+        h.setBlock(furnace.east(), ModBlocks.PLASMA_INJECTOR.get().defaultBlockState().setValue(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlock.FACING, net.minecraft.core.Direction.WEST));
+        afterTicking(h, 5, () -> {
+            var slice = entity(h, c.above(2), com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).served(h.getLevel());
+            h.assertTrue(slice.block() == ModBlocks.COIN_FACTORY.get() && slice.unformed() && !slice.refused(), "an unassembled slice is named as not assembled: " + slice);
+            var forge = entity(h, forgeAt.north(), com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).served(h.getLevel());
+            h.assertTrue(forge.block() == ModBlocks.TOTEM_FORGE.get() && forge.unformed(), "an unassembled Totem Forge is named as not assembled: " + forge);
+            int[] none = new int[TotemUpgrades.Buff.values().length];
+            for (BlockPos p : List.of(furnace.above(), furnace.east())) {
+                entity(h, p, com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class).feed(h.absolutePos(new BlockPos(0, 1, 0)), none, 0, 500,
+                        com.mrgregles.bsp_core.plasma.PlasmaBoost.topRate() * 20, new com.mrgregles.bsp_core.plasma.PlasmaAccess(), null);
+            }
+            var one = entity(h, furnace.above(), com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity.class);
+            var served = one.served(h.getLevel());
+            double total = 1.0 + 2 * (one.factor() - 1.0);
+            h.assertTrue(served.block() == Blocks.FURNACE && !served.unformed() && Math.abs(served.factor() - total) < 1e-9, "two x" + one.factor() + " injectors give the furnace x" + total + ": " + served);
             h.succeed();
         });
     }
@@ -3870,31 +4061,70 @@ public class BspGameTests {
         });
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 1000)
+    /**
+     * A far side that nothing keeps ticking sleeps; {@code wakeNow()} puts the WAKE ticket on it, and while the ticket holds the core
+     * ticks, forms, receives and the link delivers.
+     *
+     * <p>Two things used to make this test pass or fail with the batch order (how far the game clock had run before it):
+     * <ul>
+     * <li>A block entity placed by {@code setBlock} into a chunk that is not properly loaded gets no ticker. So the core is placed in a
+     * force-loaded chunk, and the chunk is let go only once the core has formed, which proves it ticks.</li>
+     * <li>A block entity ticks only once its chunk's entities have loaded, which happens off the server thread in real time. The WAKE
+     * ticket lasts 100 ticks: five seconds on a real server, well under a second on the GameTest server, which runs ticks flat out. A
+     * far chunk that had to come back from disk could miss the whole ticket. So the sleeping chunk is kept in memory (loaded but not
+     * ticking, which the link still reports as asleep) and woken once its entities are loaded: the test proves the wake, not the disk.</li>
+     * </ul>
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 1200)
     public void accelerator_wakes_a_sleeping_far_side_and_delivers(GameTestHelper h) {
         var server = server(h);
         var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
         ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
-        BlockPos far = new BlockPos(2000, 100, 2000); // nothing keeps this chunk loaded
+        BlockPos far = new BlockPos(2000, 100, 2000);
+        int cx = far.getX() >> 4, cz = far.getZ() >> 4;
+        long chunk = net.minecraft.world.level.ChunkPos.asLong(far);
+        nether.setChunkForced(cx, cz, true); // placed in a loaded, ticking chunk, as a player would place it
         var core = linkedDecelerator(h, nether, far, a);
-        // each step is checked every tick within the test's timeout: a test late in a big batch may wait 250 ticks or more before its chunk ticks
-        var settled = java.util.Set.of(com.mrgregles.bsp_core.link.Links.State.ASLEEP, com.mrgregles.bsp_core.link.Links.State.DELIVERING, com.mrgregles.bsp_core.link.Links.State.UNFORMED_THERE);
-        pollThen(h, 700, () -> settled.contains(a.report(core.here()).state()), () -> {
+        Runnable cleanUp = () -> {
+            nether.setChunkForced(cx, cz, false);
+            nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
+            nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
+        };
+        Runnable wake = () -> {
+            long before = core.store().stored(); // it formed and received while forced; the wake must bring more
             a.wakeNow();
             pollThen(h, 160, () -> {
                 nether.getChunk(far);
                 var woken = (com.mrgregles.bsp_core.link.DeceleratorBlockEntity) nether.getBlockEntity(far);
-                return woken != null && woken.isFormed() && woken.store().stored() > 0 && a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING;
+                return woken != null && woken.isFormed() && woken.store().stored() > before && nether.getChunkSource().isPositionTicking(chunk)
+                        && a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING;
             }, () -> {
-                nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
-                nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
+                cleanUp.run();
                 h.succeed();
             }, () -> {
                 var woken = nether.getBlockEntity(far) instanceof com.mrgregles.bsp_core.link.DeceleratorBlockEntity d ? d : null;
-                h.fail("the woken far side formed, received and the link delivers while the wake ticket holds: "
-                        + (woken == null ? "gone" : woken.isFormed() + " " + woken.store().stored()) + " " + a.report(core.here()));
+                String why = (woken == null ? "gone" : woken.isFormed() + " " + woken.store().stored() + " (was " + before + ")") + " ticking "
+                        + nether.getChunkSource().isPositionTicking(chunk) + " " + a.report(core.here());
+                cleanUp.run();
+                h.fail("the woken far side formed, received and the link delivers while the wake ticket holds: " + why);
             });
-        }, () -> h.fail("an unforced far side is asleep (or still loaded): " + a.report(core.here()).state()));
+        };
+        Runnable sleep = () -> {
+            nether.setChunkForced(cx, cz, false); // the core ticks; now nothing keeps its chunk ticking
+            pollThen(h, 700, () -> {
+                nether.getChunk(far); // in memory but not ticking: asleep, with no trip to the disk when it wakes
+                return a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.ASLEEP && nether.areEntitiesLoaded(chunk);
+            }, wake, () -> {
+                String state = a.report(core.here()).state().toString();
+                cleanUp.run();
+                h.fail("a far side that nothing keeps ticking falls asleep: " + state);
+            });
+        };
+        // each step is checked every tick within the test's timeout: a test late in a big batch may wait 250 ticks or more before its chunk ticks
+        pollThen(h, 300, core::isFormed, sleep, () -> {
+            cleanUp.run();
+            h.fail("the Nether core forms in its force-loaded chunk");
+        });
     }
 
     /**

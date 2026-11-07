@@ -133,6 +133,7 @@ public final class ShopOpener {
         BSPNetwork.sendTo(player, new ShopDataPacket(shop.name, Shops.fit(path.toString(), 128), shop.kind, shop.buyOnly, open, admin, shop.offerActive(now) ? shop.offerPercent : 0, shop.offerEndMs, rotatesIn,
                 page, pages, columns, rows, Bank.pieces(server, player.getUUID()), opensAt, until, cards, messageKey, args == null ? new String[0] : args,
                 open && ShopSearch.searchable(server, shop)));
+        com.mrgregles.bsp_core.credit.CreditStrip.sendShop(player, shop); // the store credit strip (Store Credit task 8)
     }
 
     /** The name a section card shows in its tooltip: its section's name, empty for a card that opens nothing or a section that is gone. */

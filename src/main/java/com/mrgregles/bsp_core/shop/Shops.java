@@ -1202,7 +1202,7 @@ public final class Shops {
         }
         if (test) {
             long cost = price(shop, item, true, now) * n;
-            if (!canPay(server, player, item.currency, cost)) {
+            if (!canPay(server, shop, player, item.currency, cost)) {
                 then.accept(Outcome.fail("short"));
                 return;
             }
@@ -1243,12 +1243,12 @@ public final class Shops {
             if (gone(player)) { // paid after they left (the network's bank answers a moment later): the items wait for their next login
                 List<ItemStack> items = new ArrayList<>();
                 for (int i = 0; i < count; i++) {
-                    items.add(item.stack.copy());
+                    items.add(com.mrgregles.bsp_core.credit.StoreCredit.blank(item.stack.copy()));
                 }
                 owe(server, player, items);
             } else {
                 for (int i = 0; i < count; i++) {
-                    ItemStack give = item.stack.copy();
+                    ItemStack give = com.mrgregles.bsp_core.credit.StoreCredit.blank(item.stack.copy()); // a ticket is minted fresh for the buyer
                     if (!player.getInventory().add(give)) {
                         player.drop(give, false);
                     }
@@ -1258,6 +1258,13 @@ public final class Shops {
             then.accept(new Outcome(true, "bought", count, cost, r.pieces()));
         };
         if (item.currency < 0) {
+            // store credit: a ticket that works at this shop (or a shop it sits in) pays first, the bank the rest (Store Credit task 4)
+            if (player instanceof net.minecraft.server.level.ServerPlayer sp && com.mrgregles.bsp_core.credit.CreditSpend.wants(sp.getUUID())
+                    && com.mrgregles.bsp_core.credit.CreditSpend.available(sp, creditPlace(server, shop)) > 0) {
+                com.mrgregles.bsp_core.credit.CreditSpend.pay(sp, cost, creditPlace(server, shop), shop.name, what, shop.id, itemId(item),
+                        r -> paid.accept(r.ok() ? BankResult.ok(Bank.pieces(server, player.getUUID())) : BankResult.fail(r.failKey())));
+                return;
+            }
             Bank.take(server, player.getUUID(), cost, BankTransaction.Type.BOUGHT, shop.name, what, shop.id, itemId(item), paid);
         } else {
             CoinTier tier = CoinTier.values()[item.currency];
@@ -1269,6 +1276,22 @@ public final class Shops {
             Bank.record(server, player.getUUID(), new BankTransaction(now, BankTransaction.Type.BOUGHT, shop.name, what + ", " + cost + " " + Bank.tierName(tier) + " coins", 0, item.currency, (int) -cost, Bank.serverId(), shop.id, itemId(item)));
             paid.accept(BankResult.ok(Bank.pieces(server, player.getUUID())));
         }
+    }
+
+    /** Where store credit is spent in this shop: the shop and every shop above it, so a ticket for a shop also pays in its sub-shops. */
+    public static com.mrgregles.bsp_core.credit.CreditPlace creditPlace(MinecraftServer server, Shop shop) {
+        List<String> ids = new ArrayList<>();
+        ids.add(shop.id);
+        for (Shop p : parents(server, shop)) {
+            ids.add(p.id);
+        }
+        return com.mrgregles.bsp_core.credit.CreditPlace.shop(ids);
+    }
+
+    /** The store credit the player can spend in this shop now: 0 with PAY WITH CREDIT off. */
+    public static long credit(MinecraftServer server, Shop shop, Player player) {
+        return player instanceof net.minecraft.server.level.ServerPlayer sp && com.mrgregles.bsp_core.credit.CreditSpend.wants(sp.getUUID())
+                ? com.mrgregles.bsp_core.credit.CreditSpend.available(sp, creditPlace(server, shop)) : 0;
     }
 
     /** The lottery pot's share of a purchase worth {@code pieces}: {@code shop.lotteryPercent} of it, rounded down. */
@@ -1460,9 +1483,9 @@ public final class Shops {
                 lots + (o.ok() ? o.lots() : 0), total + (o.ok() ? o.amount() : 0), capped || o.key().equals("sold_capped") || o.key().equals("sell_full"), test, then));
     }
 
-    private static boolean canPay(MinecraftServer server, Player player, int currency, long cost) {
+    private static boolean canPay(MinecraftServer server, Shop shop, Player player, int currency, long cost) {
         if (currency < 0) {
-            return Bank.pieces(server, player.getUUID()) >= cost;
+            return Bank.pieces(server, player.getUUID()) + credit(server, shop, player) >= cost;
         }
         return CoinWallet.totalValue(player) >= cost * CoinTier.values()[currency].value();
     }

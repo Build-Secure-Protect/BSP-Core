@@ -252,6 +252,12 @@ final class MySqlStore implements AutoCloseable {
                     throw e;
                 }
             }
+            // store credit: each kind as its saved form, and each ticket with what is left on it (Store Credit task 3)
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("credit_kinds") + " (id VARCHAR(32) NOT NULL PRIMARY KEY, data TEXT NOT NULL, "
+                    + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("credit_tickets") + " (serial CHAR(9) NOT NULL PRIMARY KEY, kind VARCHAR(32) NOT NULL, left_pieces BIGINT NOT NULL, "
+                    + "first_use_ms BIGINT NOT NULL DEFAULT 0, owner CHAR(36) NULL, owner_name VARCHAR(16) NOT NULL DEFAULT '', voided TINYINT NOT NULL DEFAULT 0, "
+                    + "created_ms BIGINT NOT NULL DEFAULT 0, warned INT NOT NULL DEFAULT 0, updated_ms BIGINT NOT NULL DEFAULT 0, INDEX (updated_ms), INDEX (kind))");
             // the steal-back rule (StealBacks): totems stolen from each player this season, and the players a kit handed a totem lately
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("totem_losses") + " (uuid CHAR(36) NOT NULL, totem_id CHAR(36) NOT NULL, season INT NOT NULL, "
                     + "lost_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (uuid, totem_id), INDEX (season))");
@@ -3646,5 +3652,189 @@ final class MySqlStore implements AutoCloseable {
             ps.executeUpdate();
         }
         return n;
+    }
+
+    // ------------------------------------------------------------------ store credit (Store Credit task 3)
+
+    /** The database's clock, ms since the epoch: tickets' first purchases and changes are stamped by it, so every server agrees. */
+    long dbNowMs() throws SQLException {
+        try (Statement st = conn().createStatement(); ResultSet rs = st.executeQuery("SELECT ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000)")) {
+            rs.next();
+            return rs.getLong(1);
+        }
+    }
+
+    void creditKindWrite(String id, String data) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("REPLACE INTO " + t("credit_kinds") + " (id, data) VALUES (?, ?)")) {
+            ps.setString(1, id);
+            ps.setString(2, data);
+            ps.executeUpdate();
+        }
+    }
+
+    void creditKindDelete(String id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("credit_kinds") + " WHERE id = ?")) {
+            ps.setString(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    boolean creditKindExists(String id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT 1 FROM " + t("credit_kinds") + " WHERE id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /** Every kind, as id and saved form. */
+    Map<String, String> creditKindsRead() throws SQLException {
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        try (Statement st = conn().createStatement(); ResultSet rs = st.executeQuery("SELECT id, data FROM " + t("credit_kinds") + " ORDER BY updated_at, id")) {
+            while (rs.next()) {
+                out.put(rs.getString(1), rs.getString(2));
+            }
+        }
+        return out;
+    }
+
+    private static final String CREDIT_COLUMNS = "serial, kind, left_pieces, first_use_ms, owner, owner_name, voided, created_ms, warned, updated_ms";
+
+    /** A new ticket; an existing serial is left as it is (INSERT IGNORE). Returns whether it was written. */
+    boolean creditTicketInsert(String serial, String kind, long left, @Nullable UUID owner, String ownerName, long createdMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT IGNORE INTO " + t("credit_tickets") + " (serial, kind, left_pieces, owner, owner_name, created_ms, updated_ms) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000))")) {
+            ps.setString(1, serial);
+            ps.setString(2, kind);
+            ps.setLong(3, left);
+            ps.setString(4, owner == null ? null : owner.toString());
+            ps.setString(5, ownerName);
+            ps.setLong(6, createdMs);
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    /** Ticket rows as {serial, kind, left, firstUse, owner (or null), ownerName, voided (0/1), created, warned, updated}. */
+    List<Object[]> creditTicketsRead(java.util.Collection<String> serials) throws SQLException {
+        List<Object[]> out = new ArrayList<>();
+        if (serials.isEmpty()) {
+            return out;
+        }
+        String marks = String.join(", ", java.util.Collections.nCopies(serials.size(), "?"));
+        try (PreparedStatement ps = conn().prepareStatement("SELECT " + CREDIT_COLUMNS + " FROM " + t("credit_tickets") + " WHERE serial IN (" + marks + ")")) {
+            int i = 1;
+            for (String s : serials) {
+                ps.setString(i++, s);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(creditRow(rs));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Ticket rows changed at or after {@code sinceMs} (the database's clock). */
+    List<Object[]> creditTicketsChanged(long sinceMs) throws SQLException {
+        List<Object[]> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT " + CREDIT_COLUMNS + " FROM " + t("credit_tickets") + " WHERE updated_ms >= ?")) {
+            ps.setLong(1, sinceMs);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(creditRow(rs));
+                }
+            }
+        }
+        return out;
+    }
+
+    private static Object[] creditRow(ResultSet rs) throws SQLException {
+        return new Object[]{rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getString(5), rs.getString(6), rs.getInt(7), rs.getLong(8), rs.getInt(9), rs.getLong(10)};
+    }
+
+    /**
+     * Spends credit from several tickets at once, all or nothing: each ticket must still have its part, not be voided, be unbound or
+     * bound to {@code player}, and not be out of time ({@code duration} ms after its first purchase; 0 for no limit). The first
+     * purchase is stamped with the database's clock and binds the ticket. Returns the time used, or -1 when any ticket refused
+     * (nothing changed then).
+     */
+    long creditSpend(List<String> serials, List<Long> pieces, List<Long> durations, UUID player, String name) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            long now;
+            try (Statement st = c.createStatement(); ResultSet rs = st.executeQuery("SELECT ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000)")) {
+                rs.next();
+                now = rs.getLong(1); // on the transaction's own connection
+            }
+            // owner_name is set before owner: MySQL applies a single-table UPDATE's assignments left to right
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("credit_tickets") + " SET left_pieces = left_pieces - ?, first_use_ms = IF(first_use_ms = 0, ?, first_use_ms), "
+                    + "owner_name = IF(owner IS NULL, ?, owner_name), owner = IFNULL(owner, ?), updated_ms = ? "
+                    + "WHERE serial = ? AND voided = 0 AND left_pieces >= ? AND (owner IS NULL OR owner = ?) AND (first_use_ms = 0 OR ? = 0 OR first_use_ms + ? > ?)")) {
+                for (int i = 0; i < serials.size(); i++) {
+                    ps.setLong(1, pieces.get(i));
+                    ps.setLong(2, now);
+                    ps.setString(3, name);
+                    ps.setString(4, player.toString());
+                    ps.setLong(5, now);
+                    ps.setString(6, serials.get(i));
+                    ps.setLong(7, pieces.get(i));
+                    ps.setString(8, player.toString());
+                    ps.setLong(9, durations.get(i));
+                    ps.setLong(10, durations.get(i));
+                    ps.setLong(11, now);
+                    if (ps.executeUpdate() != 1) {
+                        c.rollback();
+                        return -1;
+                    }
+                }
+            }
+            c.commit();
+            return now;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** For {@code /bsp storage migrate}: the rest of a ticket copied up from a server's local records. */
+    void creditTicketMigrate(String serial, long firstUseMs, boolean voided, int warned) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("credit_tickets") + " SET first_use_ms = ?, voided = ?, warned = ? WHERE serial = ?")) {
+            ps.setLong(1, firstUseMs);
+            ps.setInt(2, voided ? 1 : 0);
+            ps.setInt(3, warned);
+            ps.setString(4, serial);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Puts credit back on a ticket that is not voided (a purchase that did not go through). Returns whether it was. */
+    boolean creditRefund(String serial, long pieces) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("credit_tickets") + " SET left_pieces = left_pieces + ?, updated_ms = ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000) "
+                + "WHERE serial = ? AND voided = 0")) {
+            ps.setLong(1, pieces);
+            ps.setString(2, serial);
+            return ps.executeUpdate() == 1;
+        }
+    }
+
+    void creditVoid(String serial) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("credit_tickets") + " SET voided = 1, updated_ms = ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000) WHERE serial = ?")) {
+            ps.setString(1, serial);
+            ps.executeUpdate();
+        }
+    }
+
+    void creditWarned(String serial, int warned) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE " + t("credit_tickets") + " SET warned = warned | ?, updated_ms = ROUND(UNIX_TIMESTAMP(NOW(3)) * 1000) WHERE serial = ?")) {
+            ps.setInt(1, warned);
+            ps.setString(2, serial);
+            ps.executeUpdate();
+        }
     }
 }

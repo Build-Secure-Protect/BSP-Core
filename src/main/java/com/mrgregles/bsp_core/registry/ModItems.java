@@ -62,6 +62,8 @@ public final class ModItems {
     /** Fitted to a Magnetic Centrifuge, lets it charge Magnatite Ingots. */
     public static final RegistryObject<Item> COPPER_TETRIUM_COIL = ITEMS.register("copper_tetrium_coil", () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ILLYRIUM_FORGE_UPGRADE = ITEMS.register("illyrium_forge_upgrade", () -> new Item(new Item.Properties().stacksTo(1)));
+    /** Fits the upgrade slots of a Tetrium Crucible (up to three): more nuggets per ore. */
+    public static final RegistryObject<Item> CRUCIBLE_YIELD_UPGRADE = ITEMS.register("crucible_yield_upgrade", com.mrgregles.bsp_core.machine.CrucibleYieldUpgradeItem::new);
     /** Results of crushing by pickaxe; they resolve into dust or nuggets on reaching an inventory. */
     public static final RegistryObject<Item> CRUSHED_TETRIUM = ITEMS.register("crushed_tetrium",
             () -> new com.mrgregles.bsp_core.material.CrushedIngotItem(true, TETRIUM_DUST, TETRIUM_NUGGET));
@@ -227,6 +229,8 @@ public final class ModItems {
     public static final RegistryObject<Item> SCORE_SCREEN = ITEMS.register("score_screen",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SCORE_SCREEN.get()));
     public static final RegistryObject<Item> PORTABLE_BANKER = ITEMS.register("portable_banker", com.mrgregles.bsp_core.bank.PortableBankerItem::new);
+    /** A store credit ticket; given by admins ({@code /give ...{Kind:"<id>"}}, {@code /bsp credit give}), never crafted. */
+    public static final RegistryObject<Item> STORE_CREDIT = ITEMS.register("store_credit", com.mrgregles.bsp_core.credit.StoreCreditItem::new);
     public static final RegistryObject<Item> BANK_ATM = ITEMS.register("bank_atm",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.BANK_ATM.get()));
     public static final RegistryObject<Item> TRADE_POST = ITEMS.register("trade_post",

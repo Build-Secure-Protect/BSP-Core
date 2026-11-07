@@ -167,7 +167,7 @@ public final class ShopItem {
 
     public CompoundTag save() {
         CompoundTag t = new CompoundTag();
-        t.put("Stack", stack.save(new CompoundTag()));
+        t.put("Stack", com.mrgregles.bsp_core.credit.StoreCredit.blank(stack).save(new CompoundTag())); // a store credit ticket on a card is kept blank: each one bought is minted fresh
         t.putLong("Buy", buy);
         t.putLong("Sell", sell);
         t.putInt("Currency", currency);
@@ -194,7 +194,7 @@ public final class ShopItem {
 
     public static ShopItem load(CompoundTag t) {
         ShopItem i = new ShopItem();
-        i.stack = ItemStack.of(t.getCompound("Stack"));
+        i.stack = com.mrgregles.bsp_core.credit.StoreCredit.blank(ItemStack.of(t.getCompound("Stack")));
         i.buy = t.getLong("Buy");
         i.sell = t.getLong("Sell");
         i.currency = t.getInt("Currency");

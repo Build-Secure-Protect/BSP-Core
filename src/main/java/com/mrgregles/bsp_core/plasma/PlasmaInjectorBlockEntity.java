@@ -132,6 +132,73 @@ public class PlasmaInjectorBlockEntity extends BlockEntity implements PlasmaRece
         }
     }
 
+    /**
+     * What this injector speeds up, for Jade: the machine's block and the speed it runs at. For a BSP-Core machine or factory slice
+     * that is the machine's own figure from all its injectors, Overclock included; for another mod's machine, the extra ticks all the
+     * fed injectors pointing at it give it together. {@code block} is null with no machine at the nozzle; {@code refused} when the
+     * block cannot be sped up; {@code unformed} when it is a BSP-Core multiblock or factory slice that is not assembled.
+     */
+    public record Served(@Nullable net.minecraft.world.level.block.Block block, double factor, boolean refused, boolean unformed) {}
+
+    public Served served(ServerLevel sl) {
+        BlockPos t = target();
+        if (!sl.isLoaded(t)) {
+            return new Served(null, 1.0, false, false);
+        }
+        // BSP-Core machines: the block itself, or the controller of the multiblock or factory slice the target belongs to. Only chunks
+        // already fully loaded are read (getChunkNow), so a look never waits on a chunk still loading.
+        Served unformed = null;
+        for (int cx = (t.getX() - 6) >> 4; cx <= (t.getX() + 6) >> 4; cx++) {
+            for (int cz = (t.getZ() - 6) >> 4; cz <= (t.getZ() + 6) >> 4; cz++) {
+                net.minecraft.world.level.chunk.LevelChunk chunk = sl.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) {
+                    continue;
+                }
+                for (BlockEntity be : chunk.getBlockEntities().values()) {
+                    if (be.getBlockPos().distManhattan(t) > 12) {
+                        continue;
+                    }
+                    if (be instanceof com.mrgregles.bsp_core.machine.MultiblockControllerBlockEntity mc && !mc.isFormed()) {
+                        if (unformed == null && (mc.getBlockPos().equals(t) || mc.parts().stream().anyMatch(part -> part.pos().equals(t)))) {
+                            unformed = new Served(be.getBlockState().getBlock(), 1.0, false, true); // not ticking: its plasma figure is stale
+                        }
+                    } else if (be instanceof com.mrgregles.bsp_core.machine.MachineBlockEntity m && m.boostedAt(t)) {
+                        return new Served(be.getBlockState().getBlock(), m.plasmaFactor(), false, false);
+                    } else if (be instanceof com.mrgregles.bsp_core.coin.CoinFactoryBlockEntity slice && slice.hasCell(this)) {
+                        if (slice.isFormed()) {
+                            return new Served(be.getBlockState().getBlock(), slice.plasmaFactor(), false, false);
+                        }
+                        if (unformed == null) {
+                            unformed = new Served(be.getBlockState().getBlock(), 1.0, false, true);
+                        }
+                    }
+                }
+            }
+        }
+        if (unformed != null) {
+            return unformed;
+        }
+        BlockState ts = sl.getBlockState(t);
+        var id = ForgeRegistries.BLOCKS.getKey(ts.getBlock());
+        if (ts.isAir() || id == null) {
+            return new Served(null, 1.0, false, false);
+        }
+        BlockEntity be = sl.getBlockEntity(t);
+        boolean refused = BSPCore.MODID.equals(id.getNamespace()) || !BSPConfig.getOr(BSPConfig.INJECTOR_FOREIGN, true)
+                || BSPConfig.getOr(BSPConfig.INJECTOR_BLACKLIST, List.<String>of()).contains(id.toString()) || be == null || ticker(ts, sl, be) == null;
+        if (refused) {
+            return new Served(ts.getBlock(), 1.0, true, false);
+        }
+        double total = 1.0; // each fed injector on it adds its own extra ticks
+        for (Direction d : Direction.values()) {
+            BlockPos q = t.relative(d);
+            if (sl.isLoaded(q) && sl.getBlockEntity(q) instanceof PlasmaInjectorBlockEntity other && other.target().equals(t)) {
+                total += other.factor() - 1.0;
+            }
+        }
+        return new Served(ts.getBlock(), total, false, false);
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     private static BlockEntityTicker<BlockEntity> ticker(BlockState state, ServerLevel level, BlockEntity be) {

@@ -226,6 +226,15 @@ public class BspJadePlugin implements IWailaPlugin {
             } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity injector) {
                 data.putInt("InjRate", injector.rate());
                 data.putDouble("InjFactor", injector.factor());
+                if (accessor.getLevel() instanceof net.minecraft.server.level.ServerLevel sl) {
+                    var served = injector.served(sl); // the machine it speeds and the speed that machine runs at
+                    if (served.block() != null) {
+                        data.putString("InjMachine", net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(served.block()).toString());
+                        data.putDouble("InjMachineFactor", served.factor());
+                        data.putBoolean("InjRefused", served.refused());
+                        data.putBoolean("InjUnformed", served.unformed());
+                    }
+                }
             } else if (accessor.getBlockEntity() instanceof com.mrgregles.bsp_core.machine.MachineBlockEntity machine && machine.plasmaRate() > 0) {
                 data.putInt("BoostRate", machine.plasmaRate());
                 data.putDouble("BoostFactor", machine.plasmaFactor());
@@ -313,6 +322,18 @@ public class BspJadePlugin implements IWailaPlugin {
                 int rate = d.getInt("InjRate");
                 tooltip.add((rate > 0 ? net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector", rate, String.format("%.1f", d.getDouble("InjFactor")))
                         : net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector_idle")).withStyle(rate > 0 ? net.minecraft.ChatFormatting.AQUA : net.minecraft.ChatFormatting.GRAY));
+                if (rate > 0) {
+                    var block = d.contains("InjMachine") ? net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new net.minecraft.resources.ResourceLocation(d.getString("InjMachine"))) : null;
+                    if (block == null) {
+                        tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector_no_machine").withStyle(net.minecraft.ChatFormatting.YELLOW));
+                    } else if (d.getBoolean("InjUnformed")) {
+                        tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector_unformed", block.getName()).withStyle(net.minecraft.ChatFormatting.YELLOW));
+                    } else if (d.getBoolean("InjRefused")) {
+                        tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector_refused", block.getName()).withStyle(net.minecraft.ChatFormatting.YELLOW));
+                    } else {
+                        tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.injector_machine", block.getName(), String.format("%.1f", d.getDouble("InjMachineFactor"))).withStyle(net.minecraft.ChatFormatting.AQUA));
+                    }
+                }
             } else if (d.contains("BoostRate")) {
                 tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.boost", d.getInt("BoostRate"), String.format("%.1f", d.getDouble("BoostFactor"))).withStyle(net.minecraft.ChatFormatting.AQUA));
             }

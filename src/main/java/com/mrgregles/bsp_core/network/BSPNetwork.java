@@ -15,8 +15,10 @@ public final class BSPNetwork {
      * panel's score split (totem points and the part set by hand). 4: buy orders (the Trade Post's orders view, the Trade Post
      * keys for orders, the Wanted board's summary). 7: kit conditions on the kit cards and the steal-back screen ({@link NaughtyPacket}).
      * 8: the Land Office's block position and admin flag (Region Guard's plot lists per office).
+     * 9: the Coin Factory screen's synced values carry each lane's press speed factor with Overclock.
+     * 10: store credit on the shop and Land Office screens ({@link CreditStripPacket}, {@link CreditTogglePacket}) its stamp ({@link CreditNoticePacket}) and the admin panel's CREDIT tab ({@link CreditAdminPacket}, {@link CreditTicketsPacket}, {@link CreditAdminActionPacket}).
      */
-    private static final String PROTOCOL = "8";
+    private static final String PROTOCOL = "10";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -246,6 +248,24 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(NaughtyPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(NaughtyPacket::encode).decoder(NaughtyPacket::decode)
                 .consumerMainThread(NaughtyPacket::handle).add();
+        CHANNEL.messageBuilder(CreditStripPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CreditStripPacket::encode).decoder(CreditStripPacket::decode)
+                .consumerMainThread(CreditStripPacket::handle).add();
+        CHANNEL.messageBuilder(CreditTogglePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CreditTogglePacket::encode).decoder(CreditTogglePacket::decode)
+                .consumerMainThread(CreditTogglePacket::handle).add();
+        CHANNEL.messageBuilder(CreditNoticePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CreditNoticePacket::encode).decoder(CreditNoticePacket::decode)
+                .consumerMainThread(CreditNoticePacket::handle).add();
+        CHANNEL.messageBuilder(CreditAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CreditAdminPacket::encode).decoder(CreditAdminPacket::decode)
+                .consumerMainThread(CreditAdminPacket::handle).add();
+        CHANNEL.messageBuilder(CreditTicketsPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CreditTicketsPacket::encode).decoder(CreditTicketsPacket::decode)
+                .consumerMainThread(CreditTicketsPacket::handle).add();
+        CHANNEL.messageBuilder(CreditAdminActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CreditAdminActionPacket::encode).decoder(CreditAdminActionPacket::decode)
+                .consumerMainThread(CreditAdminActionPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

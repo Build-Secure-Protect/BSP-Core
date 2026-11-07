@@ -20,14 +20,21 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:tetrium_glass",
-      "recipe2": "bsp_core:tank_glass",
       "text": "Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet."
     },
     {
       "type": "patchouli:crafting",
+      "recipe": "bsp_core:tank_glass"
+    },
+    {
+      "type": "patchouli:crafting",
       "recipe": "bsp_core:tank_casing",
-      "recipe2": "bsp_core:tank_port",
-      "text": "A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks. Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face."
+      "text": "A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:tank_port",
+      "text": "Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face."
     },
     {
       "type": "patchouli:text",

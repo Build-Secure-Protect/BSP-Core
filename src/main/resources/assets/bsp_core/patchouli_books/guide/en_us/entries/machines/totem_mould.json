@@ -11,8 +11,11 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:mould_shell",
-      "recipe2": "bsp_core:base_mould",
       "text": "Mould Shells come two at a time; every piece is built from them."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:base_mould"
     },
     {
       "type": "patchouli:crafting",

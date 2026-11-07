@@ -1,0 +1,22 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "bsp_core:item/store_credit_body",
+    "layer1": "bsp_core:item/store_credit_print",
+    "layer2": "bsp_core:item/store_credit_details"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "bsp_core:mark": 0.5
+      },
+      "model": "bsp_core:item/store_credit_c"
+    },
+    {
+      "predicate": {
+        "bsp_core:mark": 1
+      },
+      "model": "bsp_core:item/store_credit_d"
+    }
+  ]
+}

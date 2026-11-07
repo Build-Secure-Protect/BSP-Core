@@ -85,12 +85,13 @@ public final class BspProcesses {
     /** Every machine's jobs, keyed by the machine name used for the recipe category ids. */
     public static Map<String, List<Process>> all() {
         Map<String, List<Process>> out = new LinkedHashMap<>();
-        Component fuel = Component.translatable("jei.bsp_core.fuel"), fuelOrRf = Component.translatable("jei.bsp_core.fuel_or_rf");
+        Component fuel = Component.translatable("jei.bsp_core.fuel_or_lava", cfg(BSPConfig.TCRUC_LAVA_PER_ORE, 100)),
+                fuelOrRf = Component.translatable("jei.bsp_core.fuel_lava_or_rf", cfg(BSPConfig.FORGE_LAVA_PER_JOB, 200));
         Component lavaNote = Component.translatable("jei.bsp_core.lava_note");
 
         out.put("tetrium_crucible", List.of(new Process(List.of(ores("tetrium")), List.of(), null, 0,
-                List.of(new ItemStack(ModItems.TETRIUM_NUGGET.get(), cfg(BSPConfig.TCRUC_NUGGETS, 3)), new ItemStack(ModItems.TETRIUM_SLAG.get(), cfg(BSPConfig.TCRUC_SLAG, 1))),
-                List.of(), List.of(seconds(cfg(BSPConfig.TCRUC_TICKS, 200)), fuel))));
+                List.of(new ItemStack(ModItems.TETRIUM_NUGGET.get(), cfg(BSPConfig.TCRUC_NUGGETS, 4)), new ItemStack(ModItems.TETRIUM_SLAG.get(), cfg(BSPConfig.TCRUC_SLAG, 1))),
+                List.of(), List.of(seconds(cfg(BSPConfig.TCRUC_TICKS, 200)), fuel, Component.translatable("jei.bsp_core.yield_upgrade", cfg(BSPConfig.TCRUC_PER_UPGRADE, 2))))));
 
         Component forgeTime = seconds(cfg(BSPConfig.FORGE_TICKS, 600));
         out.put("combination_forge", List.of(
@@ -165,6 +166,7 @@ public final class BspProcesses {
             Map.entry("jei.bsp_core.info.vault", List.of("coin_vault")),
             Map.entry("jei.bsp_core.info.lead_lined_chest", List.of("lead_lined_chest")),
             Map.entry("jei.bsp_core.info.radiation_shielding", List.of("radiation_shielding_panel", "radiation_shielding_window", "radiation_shielding_door")),
+            Map.entry("jei.bsp_core.info.store_credit", List.of("store_credit")),
             Map.entry("jei.bsp_core.info.extractor", List.of("plasma_extractor")),
             Map.entry("jei.bsp_core.info.interface", List.of("plasma_interface")),
             Map.entry("jei.bsp_core.info.injector", List.of("plasma_injector")),

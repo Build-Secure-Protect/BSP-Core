@@ -12,8 +12,11 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:magnet_core",
-      "recipe2": "bsp_core:decoy_totem",
       "text": "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:decoy_totem"
     },
     {
       "type": "patchouli:crafting",
@@ -48,8 +51,11 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:blast_charge",
-      "recipe2": "bsp_core:warp_charge",
       "text": "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:warp_charge"
     },
     {
       "type": "patchouli:crafting",

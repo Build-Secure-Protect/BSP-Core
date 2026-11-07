@@ -50,7 +50,18 @@ public final class ClientSetup {
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
                     new net.minecraft.resources.ResourceLocation("angle"),
                     new net.minecraft.client.renderer.item.CompassItemPropertyFunction((level, stack, entity) -> com.mrgregles.bsp_core.compass.TotemCompassItem.target(stack)));
+            // a store credit ticket's C or D mark (the model's overrides pick the overlay)
+            net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.STORE_CREDIT.get(),
+                    new net.minecraft.resources.ResourceLocation(com.mrgregles.bsp_core.BSPCore.MODID, "mark"),
+                    (stack, level, entity, seed) -> com.mrgregles.bsp_core.credit.StoreCreditItem.mark(stack));
         });
+    }
+
+    /** A store credit ticket's body is tinted with its kind's colour. */
+    @SubscribeEvent
+    public static void onItemColours(net.minecraftforge.client.event.RegisterColorHandlersEvent.Item event) {
+        event.register((stack, layer) -> layer == 0 ? com.mrgregles.bsp_core.credit.StoreCreditItem.tint(stack)
+                : layer == 1 ? com.mrgregles.bsp_core.credit.StoreCreditItem.printTint(stack) : -1, com.mrgregles.bsp_core.registry.ModItems.STORE_CREDIT.get());
     }
 
     /** Radiation Shielding Panels and Windows join like connected-texture blocks: their baked models are wrapped (ShieldJoinedModel). */
@@ -124,6 +135,7 @@ public final class ClientSetup {
         event.registerAboveAll("wrench_ends", WrenchHud.INSTANCE);
         event.registerAboveAll("team_prompts", PromptHud.INSTANCE);
         event.registerAboveAll("team_chat_badge", TeamChatBadge.INSTANCE);
+        event.registerAboveAll("credit_notice", CreditNoticeHud.INSTANCE); // the store credit stamp
         event.registerAboveAll("naughty", NaughtyHud.INSTANCE); // last: drawn over every other layer
     }
 }

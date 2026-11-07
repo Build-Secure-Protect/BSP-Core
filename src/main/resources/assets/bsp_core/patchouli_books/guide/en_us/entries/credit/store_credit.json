@@ -1,0 +1,23 @@
+{
+  "name": "Store Credit Tickets",
+  "category": "bsp_core:credit",
+  "icon": "bsp_core:store_credit",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:store_credit",
+      "text": "A $(item)Store Credit Ticket$() holds Shatter Pieces to spend at the places its tooltip names: certain shops and the shops inside them, plots at the Land Office, or teleports. Keep it in your inventory and it pays there before your bank. The server's staff give them out, often as a thank-you for supporting the server."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Where a ticket works, the strip along the bottom of the shop or Land Office screen turns into the ticket. Click it to pay from your bank instead, and again to use the ticket.$(br2)The ticket pays what it holds and your bank pays the rest. With several tickets, the one that runs out soonest pays first. Your first purchase with a ticket makes it yours alone.",
+      "title": "Paying"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Some tickets last a set time from their first purchase. The clock starts with that purchase.$(br2)A warning comes a day before the end and an hour before it. When the time is up, whatever is left is gone, and the ticket with it.",
+      "title": "The clock"
+    }
+  ]
+}

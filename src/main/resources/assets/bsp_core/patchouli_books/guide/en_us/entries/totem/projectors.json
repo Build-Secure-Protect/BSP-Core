@@ -25,8 +25,12 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:plasma_extractor",
-      "recipe2": "bsp_core:plasma_interface",
-      "text": "Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."
+      "text": "Stack extractors under the totem to split the flow between several interfaces."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:plasma_interface",
+      "text": "An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."
     },
     {
       "type": "patchouli:image",
@@ -45,8 +49,12 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:projector_base",
-      "recipe2": "bsp_core:totem_projector",
-      "text": "Cables plug into the base's four sides; the projector on top draws from it. A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure."
+      "text": "Cables plug into the base's four sides; the projector on top draws from it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:totem_projector",
+      "text": "A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure."
     },
     {
       "type": "patchouli:text",

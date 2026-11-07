@@ -183,6 +183,21 @@ def upgrade_pixel(x, y):
     return hexc("#2B3038")
 
 
+# The Crucible Yield Upgrade (concept A, picked 2026-11-07): the forge upgrade's grey chip and red pins with a Tetrium Nugget in the
+# middle and a turquoise arrow above it. Drawn from tools/preview/crucible_yield_concepts.html.
+YIELD_UPGRADE = [
+    "................", "................", ".....G.GG.G.....", "...GGGGGGGGGG...", "...GDDDDDDDDG...", "...GDRDTTDRDG...", "...GDDTTTTDDG...", "...GDDDDDDDDG...",
+    "...GDDwclDDDG...", "...GDqlcnqDDG...", "...GDRpqqpRDG...", "...GDDDDDDDDG...", "...GGGGGGGGGG...", ".....G.GG.G.....", "................", "................",
+]
+YIELD_PAL = {"G": "#9AA1AE", "D": "#2B3038", "R": "#E0322B", "T": "#19D3B0", "p": "#241843", "q": "#35265D", "n": "#8F75C4", "l": "#B69EE7",
+             "c": "#D2C0F4", "w": "#E9DCFF"}
+
+
+def yield_upgrade_pixel(x, y):
+    ch = YIELD_UPGRADE[y][x]
+    return CLEAR if ch == "." else hexc(YIELD_PAL[ch])
+
+
 def blank_pixel(x, y):
     """The base Shatter Blank: an unstruck Tetrium disc."""
     dx, dy = x - 7.5, y - 7.5
@@ -340,7 +355,7 @@ def main():
         "crushed_tetrium": recolour(vanilla("item/raw_iron.png"), TET), "crushed_dirty_illyrium": recolour(vanilla("item/raw_iron.png"), DIRTY, 7),
         "tetrium_slag": slag_pixel,
         "iron_filter": filter_pixel(IRON), "diamond_filter": filter_pixel(DIAMOND), "netherite_filter": filter_pixel(NETH), "illyrium_filter": filter_pixel(ILL),
-        "illyrium_forge_upgrade": upgrade_pixel, "shatter_blank": blank_pixel,
+        "illyrium_forge_upgrade": upgrade_pixel, "crucible_yield_upgrade": yield_upgrade_pixel, "shatter_blank": blank_pixel,
     }
     for name, px in sprites.items():
         write_png(ASSETS / f"textures/item/{name}.png", 16, 16, px)

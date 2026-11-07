@@ -11,14 +11,21 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:illyrium_ingot_from_nuggets",
-      "recipe2": "bsp_core:illyrium_forge_upgrade",
-      "text": "Nine nuggets make an ingot by hand. To forge Illyrium in the Combination Forge, fit the $(item)Illyrium Forge Upgrade$()."
+      "text": "Nine nuggets make an ingot by hand."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:illyrium_forge_upgrade",
+      "text": "To forge Illyrium in the Combination Forge, fit the $(item)Illyrium Forge Upgrade$()."
     },
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:iron_filter",
-      "recipe2": "bsp_core:diamond_filter",
       "text": "Filters wear out. Better filters refine far more dust before they are used up."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:diamond_filter"
     }
   ]
 }

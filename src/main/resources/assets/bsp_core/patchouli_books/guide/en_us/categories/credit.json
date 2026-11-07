@@ -1,0 +1,6 @@
+{
+  "name": "Store Credit",
+  "description": "Tickets that pay at chosen shops, at the Land Office or for teleports, before your bank.",
+  "icon": "bsp_core:store_credit",
+  "sortnum": 5
+}

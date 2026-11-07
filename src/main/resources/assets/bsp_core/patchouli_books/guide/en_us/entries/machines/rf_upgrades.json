@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on the Crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.$(br2)The Combination Forge runs on RF alone with an upgrade, at twice its coal speed."
+      "text": "Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on either crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.$(br2)The Combination Forge runs on RF alone with an upgrade, at twice its coal speed."
     },
     {
       "type": "patchouli:crafting",

@@ -156,13 +156,24 @@ public abstract class MachineBlockEntity extends BlockEntity {
         return List.of(worldPosition);
     }
 
+    /** Whether an injector pointing at {@code pos} speeds this machine (one of its blocks, or a formed multiblock's part). */
+    public boolean boostedAt(BlockPos pos) {
+        for (BlockPos p : boostPositions()) {
+            if (p.equals(pos)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** mB/t of Wave Plasma arriving at this machine's injectors, and the speed factor it gives. */
     public int plasmaRate() {
         return plasmaRate;
     }
 
+    /** The speed factor the injectors give: the plasma's curve, scaled by the feeding totem's Overclock. The tick and Jade both read this. */
     public double plasmaFactor() {
-        return plasma;
+        return com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plasma, overclock);
     }
 
     /** Speed gain of the fitted RF upgrade (0 if none). */
@@ -331,7 +342,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
     /** True while a redstone signal is holding the machine paused. Server side. */
     private boolean powered;
     private boolean demo;
-    /** Speed multiplier from a nearby totem's Overclock aura, refreshed every few seconds. Server side. */
+    /** The feeding totem's Overclock scale, through the injectors (1.0 with none), refreshed once a second. Server side. */
     private double overclock = 1.0;
     /** Speed multiplier from Plasma Injectors standing against the machine, and the mB/t they get. Server side. */
     private double plasma = 1.0;
@@ -352,7 +363,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
             burnTime--;
         }
         if (work) {
-            speedCarry += speed() * com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plasma, overclock); // Overclock scales the plasma speed-up, nothing more
+            speedCarry += speed() * plasmaFactor(); // Overclock scales the plasma speed-up, nothing more
             if (rfActive()) {
                 energy.use(BSPConfig.RF_PER_TICK.get());
             }

@@ -11,13 +11,22 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:tetrium_crucible",
-      "text": "The $(item)Tetrium Crucible$() burns furnace fuel and turns each ore into Tetrium Nuggets and Tetrium Slag."
+      "text": "The $(item)Tetrium Crucible$() burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:crucible_yield_upgrade",
+      "text": "Up to three $(item)Crucible Yield Upgrades$() fit a Tetrium Crucible. Each adds two nuggets per ore; three double the slag."
     },
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:tetrium_ingot_from_nuggets",
-      "recipe2": "bsp_core:combination_forge",
-      "text": "Nine nuggets make an ingot by hand. The $(item)Combination Forge$() does the same job for you and also presses plates."
+      "text": "Nine nuggets make an ingot by hand."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:combination_forge",
+      "text": "The $(item)Combination Forge$() does the same job for you, on fuel or lava, and also presses plates."
     },
     {
       "type": "patchouli:smelting",

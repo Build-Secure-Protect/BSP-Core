@@ -195,7 +195,7 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         tip.add(Component.translatable("gui.bsp_core.factory.motivators", m, Math.round(cut.doubleValue() * 100)));
         int pr = menu.plasmaRate(lane);
         if (pr > 0) {
-            tip.add(Component.translatable("gui.bsp_core.factory.plasma", pr, String.format("%.1f", com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(pr))));
+            tip.add(Component.translatable("gui.bsp_core.factory.plasma", pr, String.format("%.1f", menu.plasmaFactor(lane))));
         }
         return tip;
     }

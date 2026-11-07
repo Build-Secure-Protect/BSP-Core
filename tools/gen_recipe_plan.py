@@ -35,6 +35,7 @@ ITEMS = {
     "illyrium_ingot": ("Illyrium Ingot", "b", "II", "item/illyrium_ingot.png"),
     "rf_upgrade_mk1": ("RF Upgrade Mk I", "b", "R1", "item/rf_upgrade_mk1.png"), "rf_upgrade_mk2": ("RF Upgrade Mk II", "b", "R2", "item/rf_upgrade_mk2.png"),
     "rf_upgrade_mk3": ("RF Upgrade Mk III", "b", "R3", "item/rf_upgrade_mk3.png"), "illyrium_forge_upgrade": ("Illyrium Forge Upgrade", "b", "FU", "item/illyrium_forge_upgrade.png"),
+    "crucible_yield_upgrade": ("Crucible Yield Upgrade", "b", "YU", "item/crucible_yield_upgrade.png"),
     # BSP blocks that need recipes
     "illyrium_casing": ("Illyrium Casing", "b", "Ca", "block/illyrium_casing.png"), "illyrium_glass": ("Illyrium Tank Glass", "b", "TG", "block/illyrium_glass.png"),
     "illyrium_core": ("Illyrium Core", "b", "Co", "block/illyrium_core.png"), "lava_pylon": ("Lava Pylon", "b", "LP", "block/lava_pylon.png"),
@@ -104,10 +105,14 @@ R = {
     "rf_upgrade_mk2": (1, ["TGT", "WRW", "TGT"], {"T": "tetrium_ingot", "G": "gold_ingot", "W": "tetrium_coil", "R": "redstone_block"}, "Crafting"),
     "rf_upgrade_mk3": (1, ["TIT", "WRW", "TIT"], {"T": "tetrium_ingot", "I": "illyrium_nugget", "W": "tetrium_coil", "R": "redstone_block"}, "Crafting"),
     "illyrium_forge_upgrade": (1, ["III", "IZI", "IFI"], {"I": "illyrium_ingot", "Z": "illyrium_processor", "F": "iron_ingot"}, "Crafting"),
+    # Tetrium Crucible: +2 nuggets per ore each, up to three (owner, 2026-11-07)
+    "crucible_yield_upgrade": (1, ["PTP", "TCT", "PTP"], {"P": "tetrium_plate", "T": "tetrium_ingot", "C": "basic_control_circuit"}, "Crafting"),
 }
 
 SHARED = ["slag_brick", "tetrium_plate", "machine_chassis", "tetrium_coil", "drive_motor", "circuit_substrate", "basic_control_circuit"]
 GROUPS = [
+    ("Crucible Yield Upgrade", "Up to three fit a Tetrium Crucible; each adds two nuggets per ore, and all three double the slag.",
+     ["crucible_yield_upgrade"], ["crucible_yield_upgrade"]),
     ("Shared components", "Seven parts every machine block is built from. Slag finally has a use: it becomes the brick that hardens plates, chassis and circuit boards.",
      SHARED, SHARED),
     ("Illyrium Crucible", "Needs the Nether for Blaze Powder and Magma Blocks, which suits a lava machine. Nothing here needs Illyrium, so it can be built with Tetrium alone.",

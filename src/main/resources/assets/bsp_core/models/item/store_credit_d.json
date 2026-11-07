@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "bsp_core:item/store_credit_body",
+    "layer1": "bsp_core:item/store_credit_print",
+    "layer2": "bsp_core:item/store_credit_details",
+    "layer3": "bsp_core:item/store_credit_mark_d"
+  }
+}

@@ -209,6 +209,10 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
     public boolean mouseClicked(double mx, double my, int button) {
         keys();
         int x = leftPos, y = topPos, ky = y + SY;
+        if (menu.coins == null && creditHere() != null && over(mx, my, x + SX - 2, y + SY + SH + 6, W - 2 * SX + 4, H - SY - SH - 12)) {
+            com.mrgregles.bsp_core.network.BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.CreditTogglePacket(0)); // PAY WITH CREDIT on or off
+            return true;
+        }
         for (Key k : top) {
             if (over(mx, my, x + KX, ky, KW, KH)) {
                 if (k.enabled) {
@@ -379,14 +383,32 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
             key(g, x + KX, ky, bottom.get(i), mx, my);
             ky -= KH + KGAP;
         }
+        var credit = menu.coins == null ? creditHere() : null;
+        if (credit != null && com.mrgregles.bsp_core.client.ClientCredit.wants()) { // store credit pays here: the strip is the ticket (click it to switch credit off)
+            ClientCredit.drawStrip(g, font, x + SX - 2, y + SY + SH + 6, W - 2 * SX + 4, H - SY - SH - 12, credit,
+                    Component.translatable("gui.bsp_core.credit.bank", Bank.format(menu.balance)).getString(), BEZEL);
+            return;
+        }
         g.fill(x + SX - 2, y + SY + SH + 6, x + W - SX + 2, y + H - 6, SCREEN_EDGE);
         g.fill(x + SX, y + SY + SH + 8, x + W - SX, y + H - 8, SCREEN);
-        String strip = tr(menu.present ? (menu.allowed ? "strip" : "strip_no_claims") : "strip_absent").getString() + " / " + Bank.serverId();
+        String strip = credit != null ? Component.translatable("gui.bsp_core.credit.off", Bank.format(credit.total())).getString()
+                : tr(menu.present ? (menu.allowed ? "strip" : "strip_no_claims") : "strip_absent").getString() + " / " + Bank.serverId();
         String bal = menu.coins != null
                 ? tr("coins", menu.coins.carried().isEmpty() ? tr("coins_none").getString() : menu.coins.carried()).getString() // coin prices: the coins that pay
                 : tr("balance", Bank.format(menu.balance)).getString();
         CashMachine.fit(g, font, strip, x + SX + 6, y + SY + SH + 12, W - 2 * SX - 16 - font.width(bal), PHOS_DIM);
         g.drawString(font, bal, x + W - SX - 6 - font.width(bal), y + SY + SH + 12, PHOS_DIM, false);
+    }
+
+    /** The store credit for the chosen plot: a plot for sale by its name; open ground and the player's own claims (enlarging) as open ground. */
+    @Nullable
+    private com.mrgregles.bsp_core.network.CreditStripPacket.Summary creditHere() {
+        Plot sel = selected();
+        if (sel != null && sel.kind() == Plot.FOR_SALE) {
+            return ClientCredit.get(com.mrgregles.bsp_core.credit.CreditStrip.plotKey(sel.name().isBlank() ? sel.id() : sel.name()));
+        }
+        // open ground, or the player's own claim (enlarging); nothing is bought from another's claim, and with nothing chosen there is nothing to pay
+        return sel != null && (sel.kind() == Plot.OPEN || sel.kind() == Plot.MINE) ? ClientCredit.get("ground") : null;
     }
 
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
@@ -436,7 +458,13 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
                 ty += CashMachine.wrap(g, font, tr("price_coins", coins.price().get(at)), PX + 3, ty, PW - 6, AMBER) + 3;
             } else {
                 ty += CashMachine.wrap(g, font, tr("price", Bank.format(sel.price())), PX + 3, ty, PW - 6, AMBER) + 3;
-                ty += CashMachine.wrap(g, font, tr("after", Bank.format(Math.max(0, menu.balance - sel.price()))), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+                long credit = Math.min(sel.price(), ClientCredit.paying(creditHere()));
+                if (credit > 0) { // what the ticket pays and what the bank pays
+                    ty += CashMachine.wrap(g, font, Component.translatable("gui.bsp_core.credit.pays", Bank.format(credit)), PX + 3, ty, PW - 6, PHOS) + 3;
+                    ty += CashMachine.wrap(g, font, Component.translatable("gui.bsp_core.credit.bank_pays", Bank.format(sel.price() - credit)), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+                } else {
+                    ty += CashMachine.wrap(g, font, tr("after", Bank.format(Math.max(0, menu.balance - sel.price()))), PX + 3, ty, PW - 6, PHOS_DIM) + 3;
+                }
             }
             ty = bannedLine(g, sel, ty);
         } else if (sel.kind() == Plot.OPEN) {
@@ -446,6 +474,10 @@ public class LandOfficeScreen extends AbstractContainerScreen<LandOfficeMenu> im
                 int w = menu.selection[2] - menu.selection[0] + 1, d = menu.selection[3] - menu.selection[1] + 1;
                 ty += CashMachine.wrap(g, font, coins != null ? tr("outline_coins", w, d, coins.outline().get(at))
                         : tr("outline", w, d, Bank.format((long) w * d * sel.costPerBlock())), PX + 3, ty, PW - 6, PHOS) + 3;
+                long credit = coins != null ? 0 : Math.min((long) w * d * sel.costPerBlock(), ClientCredit.paying(creditHere()));
+                if (credit > 0) {
+                    ty += CashMachine.wrap(g, font, Component.translatable("gui.bsp_core.credit.pays", Bank.format(credit)), PX + 3, ty, PW - 6, PHOS) + 3;
+                }
                 // how close the outline lies to the nearest other plot or claim
                 Plot near = null;
                 int best = Integer.MAX_VALUE;

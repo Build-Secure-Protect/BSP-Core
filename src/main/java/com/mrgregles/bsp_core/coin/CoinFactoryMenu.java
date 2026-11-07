@@ -24,8 +24,8 @@ import java.util.List;
  */
 public class CoinFactoryMenu extends AbstractContainerMenu {
     public static final int WIDTH = 326, LANE_W = 30, BLANK_Y = 31, TRAY_Y = 75, INV_X = 82, INV_Y = 144, BTN_POWER = 0, BTN_DEMO = 1;
-    /** Per slice: tier + 1, progress in thousandths, seconds left (two shorts), Motivators, state. */
-    private static final int PER = 7, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
+    /** Per slice: tier + 1, progress in thousandths, seconds left (two shorts), Motivators, plasma mB/t, state, press speed factor in hundredths. */
+    private static final int PER = 8, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
 
     @Nullable
     private final CoinFactoryBlockEntity origin;
@@ -98,7 +98,8 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
                         case 3 -> (int) ((rem >>> 16) & 0xFFFF);
                         case 4 -> s.motivators();
                         case 5 -> s.plasmaRate();
-                        default -> s.stateCode();
+                        case 6 -> s.stateCode();
+                        default -> (int) Math.round(s.plasmaFactor() * 100); // with the feeding totem's Overclock
                     };
                 }
                 int stored = origin.poolStored(), cap = origin.poolCapacity(), intake = 0, cables = 0;
@@ -155,6 +156,11 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
     /** mB/t of Wave Plasma arriving at the lane's injectors. */
     public int plasmaRate(int lane) {
         return data.get(lane * PER + 5);
+    }
+
+    /** The lane's press speed factor from its injectors, Overclock included (1.0 with none). */
+    public double plasmaFactor(int lane) {
+        return Math.max(100, data.get(lane * PER + 7)) / 100.0;
     }
 
     public int state(int lane) {

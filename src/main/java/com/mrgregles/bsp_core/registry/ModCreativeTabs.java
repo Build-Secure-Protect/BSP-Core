@@ -56,7 +56,7 @@ public final class ModCreativeTabs {
                 for (var item : java.util.List.of(ModItems.TETRIUM_SLAG, ModItems.TETRIUM_NUGGET, ModItems.TETRIUM_INGOT, ModItems.TETRIUM_DUST,
                         ModItems.DIRTY_ILLYRIUM_INGOT, ModItems.DIRTY_ILLYRIUM_NUGGET, ModItems.DIRTY_ILLYRIUM_DUST, ModItems.PURE_ILLYRIUM_DUST, ModItems.ILLYRIUM_NUGGET,
                         ModItems.ILLYRIUM_INGOT, ModItems.MAGNATITE_NUGGET, ModItems.MAGNATITE_INGOT, ModItems.CHARGED_MAGNATITE_INGOT, ModItems.CARBON_DUST,
-                        ModItems.COPPER_TETRIUM_COIL, ModItems.SHATTER_BLANK, ModItems.ILLYRIUM_FORGE_UPGRADE)) {
+                        ModItems.COPPER_TETRIUM_COIL, ModItems.SHATTER_BLANK, ModItems.ILLYRIUM_FORGE_UPGRADE, ModItems.CRUCIBLE_YIELD_UPGRADE)) {
                     output.accept(item.get());
                 }
                 com.mrgregles.bsp_core.material.MoltenMetals.ALL.values().forEach(m -> output.accept(m.bucket().get()));

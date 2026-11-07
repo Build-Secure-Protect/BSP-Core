@@ -27,7 +27,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 344, H = 210, BG = 0xF010151C, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, VIO = 0xFFB58CFF, TQ = 0xFF19D3B0, BAD = 0xFFD63B2F,
             GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A2140;
     private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 12, ROWS = 14, DX = 130, TOTEM_Y = 71, TOTEM_H = 11, TOTEM_ROWS = 5,
-            BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 46, TAB_H = 13,
+            BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 40, TAB_H = 13, TABS = 5,
             CLEAR_W = 30, SET_W = 22, SCORE_Y = 39, CLEAR_X = W - 10 - CLEAR_W, SET_X = CLEAR_X - 3 - SET_W, BOX_X = SET_X - 3 - 38;
     private static final long CONFIRM_MS = 4000;
 
@@ -46,6 +46,28 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
 
         @Override
         public void send(com.mrgregles.bsp_core.network.KitEditPacket packet) {
+            BSPNetwork.CHANNEL.sendToServer(packet);
+        }
+
+        @Override
+        public boolean canEdit() {
+            return data.canEdit();
+        }
+    });
+    /** The CREDIT tab: store credit kinds and their tickets (Store Credit task 10). */
+    private final CreditAdminTab credit = new CreditAdminTab(new CreditAdminTab.Host() {
+        @Override
+        public net.minecraft.client.gui.Font font() {
+            return font;
+        }
+
+        @Override
+        public void addWidget(net.minecraft.client.gui.components.EditBox box) {
+            addRenderableWidget(box);
+        }
+
+        @Override
+        public void send(com.mrgregles.bsp_core.network.CreditAdminActionPacket packet) {
             BSPNetwork.CHANNEL.sendToServer(packet);
         }
 
@@ -88,6 +110,8 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         addRenderableWidget(scoreBox);
         kits.init(left(), top());
         kits.setVisible(tab == 3);
+        credit.init(left(), top());
+        credit.setVisible(tab == 4);
     }
 
     /** The score the admin types for the selected player; SET stores the difference from their totems' points. */
@@ -136,6 +160,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         if (to == 3) {
             kits.refresh();
         }
+        credit.setVisible(to == 4);
     }
 
     private AdminScreen(AdminDataPacket data) {
@@ -161,6 +186,20 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             if (packet.open() && screen.tab != 3) {
                 screen.setTab(3);
             }
+        }
+    }
+
+    /** Called when the CREDIT tab's data arrives. */
+    public static void receiveCredit(com.mrgregles.bsp_core.network.CreditAdminPacket packet) {
+        if (Minecraft.getInstance().screen instanceof AdminScreen screen) {
+            screen.credit.take(packet);
+        }
+    }
+
+    /** Called when a kind's ticket list arrives. */
+    public static void receiveCreditTickets(com.mrgregles.bsp_core.network.CreditTicketsPacket packet) {
+        if (Minecraft.getInstance().screen instanceof AdminScreen screen) {
+            screen.credit.takeTickets(packet);
         }
     }
 
@@ -242,15 +281,17 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int x = left(), y = top();
-        for (int i = 0; i < 4; i++) {
-            if (over(mx, my, x + W - 10 - (4 - i) * (TAB_W + 3) + 3, y + 6, TAB_W, TAB_H)) {
+        for (int i = 0; i < TABS; i++) {
+            if (over(mx, my, x + W - 10 - (TABS - i) * (TAB_W + 3) + 3, y + 6, TAB_W, TAB_H)) {
                 setTab(i);
                 return true;
             }
         }
-        if (over(mx, my, x + W - 10 - 4 * (TAB_W + 3) - 50, y + 6, 46, TAB_H)) {
+        if (over(mx, my, x + W - 10 - TABS * (TAB_W + 3) - 17, y + 6, 14, TAB_H)) {
             if (tab == 3) {
                 kits.refresh();
+            } else if (tab == 4) {
+                credit.refresh();
             } else {
                 send(new AdminActionPacket(AdminActionPacket.REFRESH));
             }
@@ -261,6 +302,12 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
                 return true;
             }
             return super.mouseClicked(mx, my, button);
+        }
+        if (tab == 4) {
+            if (super.mouseClicked(mx, my, button)) { // the edit boxes first, so a click into one focuses it
+                return true;
+            }
+            return credit.mouseClicked(mx, my, button);
         }
         boolean edit = data.canEdit();
         if (tab == 2) {
@@ -351,6 +398,9 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         if (tab == 3 && kits.keyPressed(key, scan, mods)) {
             return true;
         }
+        if (tab == 4 && credit.keyPressed(key, scan, mods)) {
+            return true;
+        }
         if (hoursBox != null && hoursBox.isFocused() && (key == 257 || key == 335)) {
             sendHours();
             return true;
@@ -369,6 +419,9 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
     public boolean mouseScrolled(double mx, double my, double delta) {
         if (tab == 3) {
             return kits.mouseScrolled(mx, my, delta);
+        }
+        if (tab == 4) {
+            return credit.mouseScrolled(mx, my, delta);
         }
         scroll = Mth.clamp(scroll - (int) Math.signum(delta), 0, Math.max(0, data.rows().size() - ROWS));
         return true;
@@ -404,17 +457,17 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         g.fill(x - 1, y - 1, x + W + 1, y + hh + 1, VIO);
         g.fill(x, y, x + W, y + hh, BG);
         Component heading = tab == 3 && kits.editing() ? kits.title() : title;
-        String head = font.plainSubstrByWidth(heading.getString(), W - 10 - 4 * (TAB_W + 3) - 62 - (edit ? 0 : 40));
+        String head = font.plainSubstrByWidth(heading.getString(), W - 10 - TABS * (TAB_W + 3) - 30 - (edit ? 0 : 40));
         g.drawString(font, head, x + 10, y + 9, VIO & 0xFFFFFF, false);
         if (!edit) {
             small(g, tr("read_only"), x + 14 + font.width(head), y + 11, GOLD & 0xFFFFFF);
         }
-        button(g, x + W - 10 - 4 * (TAB_W + 3) - 50, y + 6, 46, TAB_H, tr("refresh"), true, TQ, mouseX, mouseY);
-        for (int i = 0; i < 4; i++) {
-            int tx = x + W - 10 - (4 - i) * (TAB_W + 3) + 3;
+        button(g, x + W - 10 - TABS * (TAB_W + 3) - 17, y + 6, 14, TAB_H, Component.literal("\u21bb"), true, TQ, mouseX, mouseY); // REFRESH, a single sign so five tabs leave the heading room
+        for (int i = 0; i < TABS; i++) {
+            int tx = x + W - 10 - (TABS - i) * (TAB_W + 3) + 3;
             g.fill(tx, y + 6, tx + TAB_W, y + 6 + TAB_H, tab == i ? VIO : DIM);
             g.fill(tx + 1, y + 7, tx + TAB_W - 1, y + 5 + TAB_H, tab == i ? BG : SLOT_BG);
-            Component label = tr(i == 0 ? "tab.players" : i == 1 ? "tab.season" : i == 2 ? "tab.settings" : "tab.kits");
+            Component label = tr(i == 0 ? "tab.players" : i == 1 ? "tab.season" : i == 2 ? "tab.settings" : i == 3 ? "tab.kits" : "tab.credit");
             small(g, label, tx + TAB_W / 2 - Math.round(font.width(label) * 0.375f), y + 10, tab == i ? VIO & 0xFFFFFF : MUTED);
         }
         if (tab == 1) {
@@ -423,6 +476,8 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             settings(g, x, y, edit, mouseX, mouseY);
         } else if (tab == 3) {
             kits.render(g, x, y, mouseX, mouseY);
+        } else if (tab == 4) {
+            credit.render(g, x, y, mouseX, mouseY);
         } else {
             players(g, x, y, edit, mouseX, mouseY);
         }

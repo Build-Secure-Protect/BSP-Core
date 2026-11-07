@@ -460,7 +460,7 @@ public final class AdminService {
             for (int i = 0; i < SeasonData.PER_PLACE; i++) {
                 ItemStack stack = season.rewards.getStackInSlot(place * SeasonData.PER_PLACE + i);
                 if (!stack.isEmpty()) {
-                    prize.add(stack.copy());
+                    prize.add(com.mrgregles.bsp_core.credit.StoreCredit.blank(stack.copy())); // a store credit ticket is minted fresh for the winner
                 }
             }
             deliver(server, standings.get(place).id(), prize, "message.bsp_core.season.prize");
@@ -544,7 +544,7 @@ public final class AdminService {
         for (int i = 0; i < SeasonData.PER_PLACE; i++) {
             ItemStack stack = season.rewards.getStackInSlot(SeasonData.HOLDER_ROW * SeasonData.PER_PLACE + i);
             if (!stack.isEmpty()) {
-                set.add(stack.copy());
+                set.add(com.mrgregles.bsp_core.credit.StoreCredit.blank(stack.copy())); // handed out again and again: tickets are minted fresh each time
             }
         }
         season.lastHolderMs = System.currentTimeMillis();

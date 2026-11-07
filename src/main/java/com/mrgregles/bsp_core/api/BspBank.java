@@ -18,7 +18,8 @@ public final class BspBank {
 
     /** The balance this server knows of (on a network: the last value read from the database). */
     public static long balance(MinecraftServer server, UUID player) {
-        return Bank.pieces(server, player);
+        // while the Land Office runs a quote or purchase, the player's tickets for that place count too (Store Credit task 5)
+        return Bank.pieces(server, player) + com.mrgregles.bsp_core.credit.CreditLand.extra(server, player);
     }
 
     /**
@@ -26,11 +27,17 @@ public final class BspBank {
      * {@code then} gets true when the money was taken; false means they could not afford it or the bank was unreachable, and nothing was taken.
      */
     public static void charge(MinecraftServer server, UUID player, long pieces, String from, String reason, Consumer<Boolean> then) {
+        if (com.mrgregles.bsp_core.credit.CreditLand.charge(server, player, pieces, from, reason, then)) {
+            return; // a Land Office purchase: store credit pays first, the bank the rest
+        }
         Bank.take(server, player, pieces, BankTransaction.Type.BOUGHT, from, reason, r -> then.accept(r.ok()));
     }
 
     /** Gives {@code pieces} to the player (shown in their log as sold to {@code to}). */
     public static void credit(MinecraftServer server, UUID player, long pieces, String to, String reason, Consumer<Boolean> then) {
+        if (com.mrgregles.bsp_core.credit.CreditLand.credit(server, player, pieces, to, reason, then)) {
+            return; // a Land Office purchase paid back: the credit goes back on the ticket
+        }
         Bank.give(server, player, pieces, BankTransaction.Type.SOLD, to, reason, r -> then.accept(r.ok()));
     }
 

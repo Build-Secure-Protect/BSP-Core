@@ -61,6 +61,8 @@ def spot(item, body, title=None):
 
 
 def craft(first, second=None, body=None):
+    # Patchouli 84.1 places a two-recipe page's text at y 147 and draws it only below 146, so it would never show: split such pages.
+    assert not (second and body), f"text on the two-recipe page {first} + {second} is never drawn; use two craft() pages"
     page = {"type": "patchouli:crafting", "recipe": "bsp_core:" + first}
     if second:
         page["recipe2"] = "bsp_core:" + second
@@ -99,6 +101,7 @@ CATEGORIES = [
     ("machines", "Machines", "The parts every machine is made of, and how to build the multiblocks, the Totem Forge among them.", "bsp_core:illyrium_crucible"),
     ("coins", "Shatter Coins", "Coins pay for the strongest totem upgrades. You press them yourself.", "bsp_core:gold_shatter_coin"),
     ("radiation", "Radiation", "Uranium, pellets and fuel rods give off radiation. Store them safely and wall it in.", "bsp_core:lead_lined_chest"),
+    ("credit", "Store Credit", "Tickets that pay at chosen shops, at the Land Office or for teleports, before your bank.", "bsp_core:store_credit"),
 ]
 
 GUIDE_TIP = "$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
@@ -149,24 +152,24 @@ ENTRIES = [
     ]),
     ("totem", "decoys", "Decoy Totems", "bsp_core:decoy_totem", 5, [
         spot("bsp_core:decoy_totem", "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."),
-        craft("magnet_core", "decoy_totem", "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."),
+        craft("magnet_core", None, "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."), craft("decoy_totem"),
         craft("decoy_power_base", None, "A decoy must stand on a $(item)Decoy Power Base$(), fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol."),
         text("An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.", "Taking the bait"),
         text("Right-click your decoy to fit parts. A socket opens when the one before it is filled.$(br2)$(li)$(l)Range$(): Range Coils Mk I, II, III widen the compass range from 24 blocks to 40, 64 and 96.$(li)$(l)Traps$(): a charge, then a Trap Amplifier, then a second charge.$(li)$(l)Casing$(): each Reinforced Casing survives one more attempt.", "Sockets"),
         text("Each charge is used up when it goes off.$(br2)$(li)Blast: an explosion that hurts the thief and breaks nothing.$(li)Hex: Slowness, Weakness and Glowing.$(li)Poison.$(li)Fatigue: Mining Fatigue.$(li)Warp: throws the thief up to 30 blocks away.", "Trap charges"),
         craft("range_coil_mk1", "range_coil_mk2"),
         craft("range_coil_mk3", "trap_amplifier"),
-        craft("blast_charge", "warp_charge", "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."),
+        craft("blast_charge", None, "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."), craft("warp_charge"),
         craft("reinforced_casing"),
     ]),
     ("totem", "projectors", "Plasma and Projectors", "bsp_core:totem_projector", 6, [
         text("A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 6,000 with the ten levels of the $(l)Output$() upgrade. The totem panel shows the figure. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."),
         HOOKUP,
         text("The chain, in order:$(br)$(li)$(item)Plasma Extractor$() directly under the totem. More stack below; the flow is split between them.$(li)$(item)Plasma Interface$() touching an open face of an extractor. Cables plug into its outer faces.$(li)$(item)Plasma Cable$() from the interface onward.$(li)$(item)Projector Base$() at the end of the cable, holding what arrives.$(li)$(item)Projector$() standing on the base.", "How it joins up"),
-        craft("plasma_extractor", "plasma_interface", "Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."),
+        craft("plasma_extractor", None, "Stack extractors under the totem to split the flow between several interfaces."), craft("plasma_interface", None, "An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing."),
         GROUP,
         text("Right-click any interface for its $(l)flow view$(): the group and every cable, valve, repeater, extractor, base and charger it reaches in 3D, labelled with the mB/t passing. Drag to turn, right-drag to pan, scroll to zoom.$(br2)Jade shows the same figures block by block: an extractor's draw, a cable's flow, a valve's limit, a base's tank.", "Seeing the flow"),
-        craft("projector_base", "totem_projector", "Cables plug into the base's four sides; the projector on top draws from it. A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure."),
+        craft("projector_base", None, "Cables plug into the base's four sides; the projector on top draws from it."), craft("totem_projector", None, "A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure."),
         text("The base holds 5,000 mB and the projector burns 20 mB/t of it, so a base that was full keeps its projector going for about four minutes after a cable is cut. A base with nothing feeding it and no projector drains by itself.$(br2)A projector runs on plasma alone: no RF. With less than 100 mB/t arriving and a dry base it shows no aura.", "The base's tank"),
         craft("channel_expander", None, "A projector receives two powers at once, three with a $(item)Channel Expander$() fitted by right-clicking the projector with it; sneak and right-click empty-handed takes it out."),
         text("What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.$(br2)Auras are cubes: a power with radius 5 covers 11 by 11 by 11 blocks around the totem or projector, so you can measure and build to the edge.", "Powers and auras"),
@@ -207,8 +210,8 @@ ENTRIES = [
     ("totem", "tank", "The Plasma Tank", "bsp_core:tank_port", 8, [
         text("Wave Plasma can be kept in bulk. A $(item)Plasma Tank$() is a hollow box you build from three blocks: $(item)Tank Casing$() on every edge, $(item)Tank Glass$() or casing on the faces, and $(item)Tank Ports$() wherever a cable should meet it. Three to twelve blocks a side, nothing inside. It forms by itself when the last block goes in.$(br2)Every block of the shell holds 2,500,000 mB."),
         TANK_SCENE,
-        craft("tetrium_glass", "tank_glass", "Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet."),
-        craft("tank_casing", "tank_port", "A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks. Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face."),
+        craft("tetrium_glass", None, "Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet."), craft("tank_glass"),
+        craft("tank_casing", None, "A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks."), craft("tank_port", None, "Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face."),
         text("Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.$(br2)When the tank forms, a sweep of light runs over it and the casing turns to glass with a lit outline along the edges; the four uprights glow as high as the plasma stands, so the level can be read from outside. Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.", "Seeing it"),
         text("Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest. The tank's Output ports pass them on to injectors with every mB they give, with or without the totem, until that plasma is used up.$(br2)Plain plasma fed in mixes with it, and the powers fade as the mix runs down. The tank screen lists the powers the plasma carries.", "Powers in the plasma"),
         text("Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.", "Breaking and rebuilding"),
@@ -226,12 +229,12 @@ ENTRIES = [
         spot("bsp_core:charged_resonance_crystal", "A Resonance Crystal magnetised in the Magnetic Centrifuge, with a Magnatite Nugget in the upgrade slot. Ten seconds a crystal, faster with the centrifuge at full speed.", "The Charged Crystal"),
         craft("battery_charger", None, "Place the charger facing you: the cable goes into its $(l)back$(), and only there. The wrench turns it. Pipes and hoppers may put an empty battery or cell in from any other side and take it out once it is full. Its screen shows the tank, what is arriving, the item filling, and one row per power with a STAMP button. Only players with Machines access on the totem may open it."),
         text("Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.$(br2)$(l)Batteries$() take Base powers: the ones a projector can receive. $(l)Cells$() take Carried powers: the ones that work from your offhand.", "What gets stamped"),
-        craft("plasma_battery_1", "plasma_battery_2", "Tier I holds 40,000 mB and no powers. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below."),
+        craft("plasma_battery_1", None, "Tier I holds 40,000 mB and no powers."), craft("plasma_battery_2", None, "Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below."),
         craft("plasma_battery_3", "plasma_battery_4"),
         BATTERY_FEED,
         text("A battery on an extractor feeds it at 100 mB/t with its stamped powers until it runs dry, so projectors and chargers keep working while your totem is away or stolen. The battery lies along an axis; the wrench turns it. A battery keeps its charge and powers when mined.", "Batteries as a source"),
-        craft("power_cell_1", "power_cell_2", "A $(item)Power Cell$() holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III."),
-        craft("power_cell_3", "wave_emitter", "The $(item)Wave Emitter$() runs on one cell. Its hover text and the cell's own show the charge and the powers stamped in."),
+        craft("power_cell_1", None, "A $(item)Power Cell$() holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III."), craft("power_cell_2"),
+        craft("power_cell_3"), craft("wave_emitter", None, "The $(item)Wave Emitter$() runs on one cell. Its hover text and the cell's own show the charge and the powers stamped in."),
         text("Right-click the emitter at the air (no block within four blocks) to open it: put a Power Cell in the slot, press ON, and read the cell's powers and how long it will last. Put the emitter in your $(l)offhand$(): you get the cell's powers as if you carried the totem, while it draws 20 mB/t. It switches off when the cell runs dry.$(br2)Right-click at a nearby block to switch it without opening the screen; sneak there to take the cell out.", "The Wave Emitter"),
         text("So the totem can stay safe at home while you go out: a Tier III cell at 20 mB/t lasts 50 minutes.$(br2)Carried powers from the emitter: Damage, Resistance, Mining Speed, Swiftness, Vitality, Featherfall, Night Sight, Bouncy and X-ray, at the stamped level.", "Out and about"),
     ]),
@@ -274,8 +277,9 @@ ENTRIES = [
     ]),
     ("materials", "tetrium", "Tetrium", "bsp_core:tetrium_ingot", 0, [
         text("$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. Without Silk Touch the ore drops $(item)Raw Tetrium$(); the crucibles take raw chunks and ore blocks alike, so do not smelt either."),
-        craft("tetrium_crucible", None, "The $(item)Tetrium Crucible$() burns furnace fuel and turns each ore into Tetrium Nuggets and Tetrium Slag."),
-        craft("tetrium_ingot_from_nuggets", "combination_forge", "Nine nuggets make an ingot by hand. The $(item)Combination Forge$() does the same job for you and also presses plates."),
+        craft("tetrium_crucible", None, "The $(item)Tetrium Crucible$() burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag."),
+        craft("crucible_yield_upgrade", None, "Up to three $(item)Crucible Yield Upgrades$() fit a Tetrium Crucible. Each adds two nuggets per ore; three double the slag."),
+        craft("tetrium_ingot_from_nuggets", None, "Nine nuggets make an ingot by hand."), craft("combination_forge", None, "The $(item)Combination Forge$() does the same job for you, on fuel or lava, and also presses plates."),
         {"type": "patchouli:smelting", "recipe": "bsp_core:slag_brick_from_smelting", "text": "Keep your slag. Smelted into $(item)Slag Bricks$() it goes into almost every machine part."},
     ]),
     ("materials", "crushing", "Dust and Crushing", "bsp_core:tetrium_dust", 1, [
@@ -283,8 +287,8 @@ ENTRIES = [
     ]),
     ("materials", "illyrium", "Illyrium", "bsp_core:illyrium_ingot", 2, [
         text("$(item)Illyrium Ore$() is rarer and needs a diamond pickaxe. Refining it takes four steps:$(br2)$(li)$(l:machines/illyrium_crucible)Illyrium Crucible$(): ore and slag become a Dirty Illyrium Ingot.$(li)Crush it into Dirty Illyrium Dust.$(li)$(l:machines/illyrium_refinery)Illyrium Refinery$(): dust, water and a filter give Pure Illyrium Dust.$(li)Back in the Crucible: Pure Illyrium Dust and Tetrium Dust alloy into Illyrium Nuggets."),
-        craft("illyrium_ingot_from_nuggets", "illyrium_forge_upgrade", "Nine nuggets make an ingot by hand. To forge Illyrium in the Combination Forge, fit the $(item)Illyrium Forge Upgrade$()."),
-        craft("iron_filter", "diamond_filter", "Filters wear out. Better filters refine far more dust before they are used up."),
+        craft("illyrium_ingot_from_nuggets", None, "Nine nuggets make an ingot by hand."), craft("illyrium_forge_upgrade", None, "To forge Illyrium in the Combination Forge, fit the $(item)Illyrium Forge Upgrade$()."),
+        craft("iron_filter", None, "Filters wear out. Better filters refine far more dust before they are used up."), craft("diamond_filter"),
     ]),
     ("materials", "magnatite", "Magnatite", "bsp_core:magnatite_ingot", 3, [
         text("$(item)Magnatite Ore$() lies deep underground, mostly in deepslate, and needs a diamond pickaxe. It is a little easier to find than diamond. As with the other ores, keep the ore block: the machine takes it as it is.$(br2)The $(l:machines/magnetic_centrifuge)Magnetic Centrifuge$() spins each ore into Magnatite Nuggets and one $(item)Carbon Dust$()."),
@@ -319,7 +323,7 @@ ENTRIES = [
         craft("refinery_pump", "illyrium_refinery"),
     ]),
     ("machines", "rf_upgrades", "RF Upgrades", "bsp_core:rf_upgrade_mk1", 3, [
-        text("Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on the Crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.$(br2)The Combination Forge runs on RF alone with an upgrade, at twice its coal speed."),
+        text("Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on either crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.$(br2)The Combination Forge runs on RF alone with an upgrade, at twice its coal speed."),
         craft("rf_upgrade_mk1", "rf_upgrade_mk2"),
         craft("rf_upgrade_mk3"),
     ]),
@@ -336,7 +340,7 @@ ENTRIES = [
     ]),
     ("machines", "totem_mould", "The Totem Mould", "bsp_core:torso_mould", 6, [
         text("Seven mould pieces and a core make one mould. Each piece looks like the totem with its own part picked out: the Base, the Foot and Arm (two of each go in, left and right), the Torso and the Head.$(br2)A piece lasts three pours, then cracks. It takes no enchantment and no repair. The $(item)Totem Core$() becomes the forged totem's orb, so every pour needs a new one."),
-        craft("mould_shell", "base_mould", "Mould Shells come two at a time; every piece is built from them."),
+        craft("mould_shell", None, "Mould Shells come two at a time; every piece is built from them."), craft("base_mould"),
         craft("foot_mould", "torso_mould"),
         craft("arm_mould", "head_mould"),
         craft("totem_core"),
@@ -347,7 +351,7 @@ ENTRIES = [
     ]),
     ("coins", "shatter_coins", "Blanks and Coins", "bsp_core:copper_shatter_coin", 0, [
         text("There are five coins: Copper, Gold, Diamond, Netherite and Illyrium. Each is worth twice the one before.$(br2)A coin starts as a $(item)Shatter Blank$(), is built up into a tier's coin blank, and is then pressed in the $(l:coins/factory)Shatter Coin Factory$()."),
-        craft("shatter_blank", "copper_coin_blank", "Each tier's blank is crafted around the blank of the tier below it."),
+        craft("shatter_blank"), craft("copper_coin_blank", None, "Each tier's blank is crafted around the blank of the tier below it."),
         craft("gold_coin_blank", "diamond_coin_blank"),
     ]),
     ("coins", "factory", "The Shatter Coin Factory", "bsp_core:shatter_coin_factory", 1, [
@@ -408,6 +412,11 @@ ENTRIES = [
         spot("bsp_core:radiation_shielding_door", "The $(item)Radiation Shielding Door$() blocks nearly all radiation while it is shut and almost none while it is open. Open it by hand or with redstone, and keep it shut."),
         craft("radiation_shielding_panel", "radiation_shielding_window"),
         craft("radiation_shielding_door", None, "All three are as hard as iron."),
+    ]),
+    ("credit", "store_credit", "Store Credit Tickets", "bsp_core:store_credit", 0, [
+        spot("bsp_core:store_credit", "A $(item)Store Credit Ticket$() holds Shatter Pieces to spend at the places its tooltip names: certain shops and the shops inside them, plots at the Land Office, or teleports. Keep it in your inventory and it pays there before your bank. The server's staff give them out, often as a thank-you for supporting the server."),
+        text("Where a ticket works, the strip along the bottom of the shop or Land Office screen turns into the ticket. Click it to pay from your bank instead, and again to use the ticket.$(br2)The ticket pays what it holds and your bank pays the rest. With several tickets, the one that runs out soonest pays first. Your first purchase with a ticket makes it yours alone.", "Paying"),
+        text("Some tickets last a set time from their first purchase. The clock starts with that purchase.$(br2)A warning comes a day before the end and an hour before it. When the time is up, whatever is left is gone, and the ticket with it.", "The clock"),
     ]),
     ("coins", "motivators", "Motivators", "bsp_core:factory_motivator", 2, [
         spot("bsp_core:factory_motivator", "Place up to three on top of a complete factory slice. One, two or three cut that slice's press time by 15%, 30% or 50%.$(br2)They pulse faster the more a slice has, and link up with their neighbours."),

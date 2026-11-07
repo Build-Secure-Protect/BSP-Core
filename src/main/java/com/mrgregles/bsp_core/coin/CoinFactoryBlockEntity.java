@@ -89,7 +89,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     /** True while a redstone signal at the controller is holding this slice paused. */
     private boolean powered;
     private boolean demo;
-    /** Speed multiplier from a nearby totem's Overclock aura. Server side. */
+    /** The feeding totem's Overclock scale, through the injectors (1.0 with none). Saved, since a press catches up on its unloaded time at the saved speed. Server side. */
     private double overclock = 1.0, plasmaScale = 1.0;
     /** Bit i set = a Motivator sits on top cell i (0 = front). */
     private int motivatorMask;
@@ -195,8 +195,9 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         return plasmaRate;
     }
 
+    /** The press speed factor the injectors give: the plasma's curve, scaled by the feeding totem's Overclock. The press, Jade and the screen read this. */
     public double plasmaFactor() {
-        return plasma;
+        return com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plasma, overclock);
     }
 
     public boolean hasCoins() {
@@ -216,7 +217,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     }
 
     private double speed() {
-        return com.mrgregles.bsp_core.plasma.PlasmaBoost.apply(plasma, overclock) / (1.0 - totalReduction());
+        return plasmaFactor() / (1.0 - totalReduction());
     }
 
     /** Real seconds until the current press finishes, or 0 when idle. */
@@ -284,6 +285,17 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
     public BlockPos motivatorPos(int cell) {
         return worldPosition.above(2).relative(back(), cell);
+    }
+
+    /** Whether {@code injector} stands in one of this slice's Motivator cells pointing into it, so it speeds this slice once formed. */
+    public boolean hasCell(com.mrgregles.bsp_core.plasma.PlasmaInjectorBlockEntity injector) {
+        for (int i = 0; i < MOTIVATOR_CELLS; i++) {
+            BlockPos c = motivatorPos(i);
+            if (c.equals(injector.getBlockPos()) && injector.target().equals(c.below())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Re-reads the structure, hides or shows its blocks and counts the Motivators on top. */
@@ -485,6 +497,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         if (aura != overclock) {
             advance(System.currentTimeMillis()); // settle progress at the old speed first
             overclock = aura;
+            setChanged(); // saved with the plasma factor: the time the slice spends unloaded is counted at both on its next load
         }
         double boost = com.mrgregles.bsp_core.plasma.PlasmaBoost.factor(plasmaRate);
         if (boost != plasma) {
@@ -583,6 +596,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         tag.putBoolean("Demo", demo);
         tag.putInt("Motivators", motivatorMask);
         tag.putDouble("Plasma", plasma);
+        tag.putDouble("Overclock", overclock);
         tag.putInt("JobTier", jobTier);
         tag.putDouble("ProgressMs", progressMs);
         tag.putLong("LastUpdateMs", lastUpdateMs);
@@ -605,6 +619,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         demo = tag.getBoolean("Demo");
         motivatorMask = tag.getInt("Motivators");
         plasma = tag.contains("Plasma") ? tag.getDouble("Plasma") : 1.0;
+        overclock = tag.contains("Overclock") ? tag.getDouble("Overclock") : 1.0;
         jobTier = tag.contains("JobTier") ? tag.getInt("JobTier") : -1;
         progressMs = tag.getDouble("ProgressMs");
         lastUpdateMs = tag.getLong("LastUpdateMs");

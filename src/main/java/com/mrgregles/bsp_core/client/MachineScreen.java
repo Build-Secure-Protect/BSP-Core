@@ -30,7 +30,7 @@ import java.util.Locale;
 public class MachineScreen extends AbstractContainerScreen<MachineMenu> implements ScreenFit.Fitted {
     private static final int BG = 0xF010151C, EDGE = 0xFF19D3B0, SLOT_BG = 0xFF0C0E12, SLOT_EDGE = 0xFF3A3F4B, DIM = 0xFF2A2F3A, GHOST = 0xA010151C;
     private static final int TQ = 0xFF19D3B0, IN = 0xFF3A8BFF, OUT = 0xFFFF8A3A, OFF = 0xFF565C6B, VIO = 0xFFB58CFF, BAD = 0xFFD63B2F, GOLD = 0xFFFFD23A, LAVA = 0xFFFF7A1A, MUTED = 0x9AA3B5;
-    private static final int DIAL_X = 105, DIAL_Y = 39, DIAL_R = 15, GAUGE_X = 14, GAUGE_Y = 76, PORT_X = 196, PORT_Y = 32, STATUS_X = 284, POWER_X = 14, POWER_Y = 118, POWER_W = 38, POWER_H = 16;
+    private static final int DIAL_X = 105, DIAL_Y = 39, DIAL_R = 15, GAUGE_X = 14, GAUGE_Y = 76, PORT_X = 196, PORT_Y = 32, STATUS_X = 284, POWER_X = 14, POWER_Y = 126, POWER_W = 38, POWER_H = 16;
     /** 0 = off, 1 = on; eased toward the real state every frame so the knob slides. */
     private float powerAnim = -1f;
     /** Operator-only demo switch, in the free space left of the player inventory. */
@@ -282,6 +282,16 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> implemen
         if (machine != null && machine.layout().stream().anyMatch(s -> s.role() == MachineBlockEntity.Role.UPGRADE || s.role() == MachineBlockEntity.Role.RF)) {
             g.drawString(font, Component.translatable("gui.bsp_core.hud.upgrades"), MachineMenu.UP_X, MachineMenu.UP_Y - 10, VIO & 0xFFFFFF, false);
         }
+        if (machine instanceof com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity) {
+            // small captions under the UPGRADES row: the three yield slots, then the RF slot after its gap
+            int capY = MachineMenu.UP_Y + 19;
+            g.pose().pushPose();
+            g.pose().scale(0.75f, 0.75f, 1f);
+            float s = 1 / 0.75f;
+            g.drawString(font, Component.translatable("gui.bsp_core.hud.yield"), (int) (MachineMenu.UP_X * s), (int) (capY * s), VIO & 0xFFFFFF, false);
+            g.drawString(font, Component.translatable("gui.bsp_core.hud.rf"), (int) (MachineMenu.rfX(com.mrgregles.bsp_core.machine.TetriumCrucibleBlockEntity.YIELD_SLOTS) * s), (int) (capY * s), VIO & 0xFFFFFF, false);
+            g.pose().popPose();
+        }
         g.drawString(font, Component.translatable("gui.bsp_core.hud.power"), POWER_X, POWER_Y - 11, MUTED, false);
         g.drawString(font, Component.translatable(menu.enabled() ? "gui.bsp_core.hud.on" : "gui.bsp_core.hud.off_short"), POWER_X + POWER_W + 6, POWER_Y + 4, menu.enabled() ? TQ & 0xFFFFFF : 0xFF6B5C, false);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, MUTED, false);
@@ -322,7 +332,9 @@ public class MachineScreen extends AbstractContainerScreen<MachineMenu> implemen
         if (OperatorDemo.over(mouseX, mouseY, x + DEMO_X, y + DEMO_Y)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.demo.tip"), mouseX, mouseY);
         }
-        if (menu.fluidCapacity() > 0 && over(mouseX, mouseY, x + GAUGE_X, y + GAUGE_Y - 2, 140, 40)) {
+        MachineBlockEntity tanked = menu.getMachine();
+        int fluidRow = y + GAUGE_Y + (tanked != null && tanked.hasFuelSlot() ? 14 : 0); // the TANK gauge sits under the HEAT gauge when there is one
+        if (menu.fluidCapacity() > 0 && over(mouseX, mouseY, x + GAUGE_X, fluidRow - 2, 136, 12)) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.machine.tank", String.format("%,d", menu.fluid()), String.format("%,d", menu.fluidCapacity())), mouseX, mouseY);
         }
     }

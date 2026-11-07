@@ -50,6 +50,13 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
             public int getCapacity() {
                 return tankCapacity();
             }
+
+            /** Forge's fill reads the {@code capacity} field, so it follows the config only once set here. A tank over a lowered size keeps its fluid and takes no more. */
+            @Override
+            public int fill(FluidStack resource, FluidAction action) {
+                setCapacity(tankCapacity());
+                return getFluidAmount() >= capacity ? 0 : super.fill(resource, action);
+            }
         };
         this.fluidCap = LazyOptional.of(() -> tank);
     }

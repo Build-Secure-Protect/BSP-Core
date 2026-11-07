@@ -104,6 +104,7 @@ public final class Kit {
      * from someone's inventory would otherwise hand every taker a copy of that one totem, in that person's name, and all but one
      * copy would turn into husks. Each hand-out mints a new totem for the taker instead ({@code TotemMint.fresh}). Called on every
      * save and every load (the world's copy, the editor's packet, the database), so a kit saved before this rule is cleaned too.
+     * Store credit tickets are kept blank the same way (no serial), so every taker's ticket is minted fresh with its own balance.
      * Returns true when something changed.
      */
     public boolean blankTotems() {
@@ -113,6 +114,9 @@ public final class Kit {
             ItemStack s = items.get(i);
             if (s.is(totem) && s.hasTag()) {
                 items.set(i, com.mrgregles.bsp_core.totem.TotemMint.blank(s.getCount()));
+                changed = true;
+            } else if (com.mrgregles.bsp_core.credit.StoreCredit.minted(s)) {
+                items.set(i, com.mrgregles.bsp_core.credit.StoreCredit.blank(s));
                 changed = true;
             }
         }

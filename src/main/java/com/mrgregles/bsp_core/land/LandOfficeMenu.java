@@ -131,9 +131,24 @@ public class LandOfficeMenu extends AbstractContainerMenu {
         BSPNetwork.sendTo(sp, new LandOfficeDataPacket(plots, Bank.pieces(sp.server, sp.getUUID()), RegionGuardClaims.present(),
                 RegionGuardClaims.claimsAllowed(sp.serverLevel()), menu.selection, message, ok, coinTexts(sp, plots, menu.selection),
                 menu.at, mayChoosePlots(sp)));
+        if (!RegionGuardClaims.paysInCoins()) { // credit pays pieces prices only
+            com.mrgregles.bsp_core.credit.CreditStrip.sendOffice(sp, plots);
+        } else {
+            com.mrgregles.bsp_core.network.BSPNetwork.sendTo(sp, new com.mrgregles.bsp_core.network.CreditStripPacket(true, List.of()));
+        }
     }
 
     /** BSP-Core admins and operators (permission level 2) see the ADMIN key; Region Guard checks again before it opens OFFICE PLOTS. */
+    /** Where store credit is spent for a plot bought here: the plot's name (Region Guard's listing), or its id if it has none. */
+    public static com.mrgregles.bsp_core.credit.CreditPlace creditPlace(ServerPlayer sp, LandOfficeMenu menu, String plotId) {
+        for (Plot p : RegionGuardClaims.listings(sp.serverLevel(), sp.getUUID(), sp.blockPosition(), menu.at)) {
+            if (p.id().equals(plotId)) {
+                return com.mrgregles.bsp_core.credit.CreditPlace.plot(p.name().isBlank() ? p.id() : p.name());
+            }
+        }
+        return com.mrgregles.bsp_core.credit.CreditPlace.plot(plotId);
+    }
+
     public static boolean mayChoosePlots(ServerPlayer sp) {
         return com.mrgregles.bsp_core.admin.Admins.isAdmin(sp) || sp.hasPermissions(2);
     }

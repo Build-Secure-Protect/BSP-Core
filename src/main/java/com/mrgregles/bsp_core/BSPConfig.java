@@ -74,6 +74,12 @@ public final class BSPConfig {
     // ------------------------------------------------------------------ machines
 
     public static final ForgeConfigSpec.IntValue TCRUC_NUGGETS, TCRUC_SLAG, TCRUC_TICKS, FORGE_TICKS;
+    /** Lava tanks of the Tetrium Crucible and the Combination Forge: mB per job and tank size. */
+    public static final ForgeConfigSpec.IntValue TCRUC_LAVA_PER_ORE, TCRUC_LAVA_TANK, FORGE_LAVA_PER_JOB, FORGE_LAVA_TANK;
+    /** Extra Tetrium Nuggets per ore for each Crucible Yield Upgrade fitted. */
+    public static final ForgeConfigSpec.IntValue TCRUC_PER_UPGRADE;
+    /** Set once the old default of 2 nuggets per ore has been moved to 4 (see {@link #moveOldCrucibleYield()}). */
+    public static final ForgeConfigSpec.BooleanValue TCRUC_NUGGETS_MOVED;
     /** Speed gain and lava saving of RF Upgrade Mk I, II, III while powered. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> RF_BONUS;
     public static final ForgeConfigSpec.IntValue RF_PER_TICK, RF_CAPACITY;
@@ -362,14 +368,20 @@ public final class BSPConfig {
         BUILDER.pop();
 
         BUILDER.comment("Tetrium Crucible").push("tetrium_crucible");
-        TCRUC_NUGGETS = BUILDER.comment("Tetrium Nuggets from one ore.").defineInRange("nuggetsPerOre", 2, 0, 64);
+        TCRUC_NUGGETS = BUILDER.comment("Tetrium Nuggets from one ore with no Crucible Yield Upgrade fitted.").defineInRange("nuggetsPerOre", 4, 0, 64);
+        TCRUC_PER_UPGRADE = BUILDER.comment("Extra Tetrium Nuggets per ore for each Crucible Yield Upgrade fitted (up to three). With all three fitted the slag per ore doubles too.").defineInRange("nuggetsPerUpgrade", 2, 0, 16);
+        TCRUC_NUGGETS_MOVED = BUILDER.comment("Set by the mod the first time it loads this file: a nuggetsPerOre of 2 (the old default) is moved to 4 once. Leave it as it is; a 2 set after that is kept.").define("nuggetsPerOreMoved", false);
         TCRUC_SLAG = BUILDER.comment("Tetrium Slag from one ore.").defineInRange("slagPerOre", 1, 0, 64);
         TCRUC_TICKS = BUILDER.comment("Ticks to process one ore (20 ticks = 1 second).").defineInRange("ticksPerOre", 300, 1, 1_000_000);
+        TCRUC_LAVA_PER_ORE = BUILDER.comment("Lava used per ore when the crucible runs on its lava tank instead of furnace fuel, in millibuckets.").defineInRange("lavaPerOre", 100, 0, 100_000);
+        TCRUC_LAVA_TANK = BUILDER.comment("Lava tank size in millibuckets. Pipes fill it from any side; a lava bucket used on the block pours into it.").defineInRange("lavaTank", 8000, 1000, 1_000_000);
         BUILDER.pop();
 
         BUILDER.comment("Combination Forge").push("combination_forge");
         FORGE_TICKS = BUILDER.comment("Ticks to forge nine nuggets into one ingot when burning coal or other furnace fuel.").defineInRange("ticksPerIngot", 600, 1, 1_000_000);
         FORGE_RF_MULTIPLIER = BUILDER.comment("How many times faster the forge runs on RF than on fuel (2 = coal is 100% slower).").defineInRange("rfSpeedMultiplier", 2.0, 1.0, 100.0);
+        FORGE_LAVA_PER_JOB = BUILDER.comment("Lava used per ingot or plate when the forge runs on its lava tank instead of furnace fuel, in millibuckets. Not used while it runs on RF.").defineInRange("lavaPerJob", 200, 0, 100_000);
+        FORGE_LAVA_TANK = BUILDER.comment("Lava tank size in millibuckets. Pipes fill it from any side; a lava bucket used on the block pours into it.").defineInRange("lavaTank", 8000, 1000, 1_000_000);
         BUILDER.pop();
 
         BUILDER.comment("Illyrium Crucible (multiblock). Runs on lava only.").push("illyrium_crucible");
@@ -819,4 +831,35 @@ public final class BSPConfig {
     }
 
     private BSPConfig() {}
+
+    /**
+     * Moves a saved {@code tetrium_crucible.nuggetsPerOre} of 2 (the default before the Crucible Yield Upgrade) to the new default
+     * of 4, once per config file: the marker is set either way, so an admin who sets 2 again later keeps it. Returns whether the
+     * value was moved. Saves the file when anything changed.
+     */
+    public static boolean moveOldCrucibleYield() {
+        if (TCRUC_NUGGETS_MOVED.get()) {
+            return false;
+        }
+        boolean moved = TCRUC_NUGGETS.get() == 2;
+        if (moved) {
+            TCRUC_NUGGETS.set(4);
+            BSPCore.LOGGER.info("BSP-Core: tetrium_crucible.nuggetsPerOre was the old default of 2 and is now 4 (the new default)");
+        }
+        TCRUC_NUGGETS_MOVED.set(true);
+        SPEC.save();
+        return moved;
+    }
+
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = BSPCore.MODID, bus = net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD)
+    public static final class ConfigSteps {
+        private ConfigSteps() {}
+
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void onLoad(net.minecraftforge.fml.event.config.ModConfigEvent.Loading event) {
+            if (event.getConfig().getSpec() == SPEC) {
+                moveOldCrucibleYield();
+            }
+        }
+    }
 }

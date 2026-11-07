@@ -94,6 +94,11 @@ public class MachineBlock extends BaseEntityBlock {
             }
             return InteractionResult.SUCCESS;
         }
+        // a lava bucket (or any lava container) used on a Tetrium Crucible or Combination Forge pours into its tank
+        if (player instanceof ServerPlayer && level.getBlockEntity(pos) instanceof LavaTankMachineBlockEntity
+                && net.minecraftforge.fluids.FluidUtil.interactWithFluidHandler(player, hand, level, pos, hit.getDirection())) {
+            return InteractionResult.SUCCESS;
+        }
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof MachineBlockEntity machine) {
             NetworkHooks.openScreen(serverPlayer,
                     new SimpleMenuProvider((id, inv, p) -> new MachineMenu(id, inv, machine, machine.data), Component.translatable(machine.titleKey())),

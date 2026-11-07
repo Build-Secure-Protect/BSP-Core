@@ -10,8 +10,11 @@
     },
     {
       "type": "patchouli:crafting",
-      "recipe": "bsp_core:shatter_blank",
-      "recipe2": "bsp_core:copper_coin_blank",
+      "recipe": "bsp_core:shatter_blank"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:copper_coin_blank",
       "text": "Each tier's blank is crafted around the blank of the tier below it."
     },
     {

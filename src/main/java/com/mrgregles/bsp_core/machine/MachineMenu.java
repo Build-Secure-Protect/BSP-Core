@@ -18,6 +18,13 @@ import javax.annotation.Nullable;
 /** One menu for every {@link MachineBlockEntity}; the machine's layout decides the slots. */
 public class MachineMenu extends AbstractContainerMenu {
     public static final int INV_Y = 152, INV_X = 82, IN_X = 14, OUT_X = 152, PIPE_Y = 30, FUEL_X = 152, FUEL_Y = 74, UP_X = 196, UP_Y = 124, BTN_POWER = 6, BTN_DEMO = 7;
+    /** In the UPGRADES row the machine's own upgrade slots touch, like an inventory row; the RF slot follows after this gap, since it does a different job. */
+    public static final int UP_STEP = 18, RF_GAP = 12;
+
+    /** Left edge of the RF slot in the UPGRADES row of a machine with {@code upgrades} UPGRADE slots. */
+    public static int rfX(int upgrades) {
+        return UP_X + UP_STEP * upgrades + (upgrades > 0 ? RF_GAP : 0);
+    }
 
     @Nullable
     private final MachineBlockEntity machine;
@@ -44,6 +51,7 @@ public class MachineMenu extends AbstractContainerMenu {
             // Slots are placed by role for the HUD layout: inputs on the left of the pipeline, outputs on the right,
             // the fuel or fluid container under the outputs, upgrades in their own row.
             int ins = 0, outs = 0, ups = 0;
+            int upgrades = (int) machine.layout().stream().filter(s -> s.role() == MachineBlockEntity.Role.UPGRADE).count();
             for (int i = 0; i < machine.layout().size(); i++) {
                 MachineBlockEntity.Slot s = machine.layout().get(i);
                 final boolean output = s.role() == MachineBlockEntity.Role.OUTPUT;
@@ -52,7 +60,8 @@ public class MachineMenu extends AbstractContainerMenu {
                     case INPUT -> { sx = IN_X + 20 * ins++; sy = PIPE_Y; }
                     case OUTPUT -> { sx = OUT_X + 20 * outs++; sy = PIPE_Y; }
                     case FUEL -> { sx = FUEL_X; sy = FUEL_Y; }
-                    default -> { sx = UP_X + 20 * ups++; sy = UP_Y; }
+                    case UPGRADE -> { sx = UP_X + UP_STEP * ups++; sy = UP_Y; }
+                    default -> { sx = rfX(upgrades); sy = UP_Y; } // the RF slot
                 }
                 addSlot(new SlotItemHandler(machine.getItems(), i, sx, sy) {
                     @Override

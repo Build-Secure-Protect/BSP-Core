@@ -295,6 +295,18 @@ public final class RegionGuardClaims {
         }
     }
 
+    /** Region Guard's share of a claim's price paid back when it is given up, in percent; -1 when it cannot be read. */
+    public static int refundPercent() {
+        if (!present()) {
+            return -1;
+        }
+        try {
+            return Api.refundPercent();
+        } catch (LinkageError | RuntimeException e) {
+            return -1;
+        }
+    }
+
     /** Touches Region Guard's classes only when it is installed. */
     private static final class Api {
         private static com.mrgregles.bsp_region_guard.api.ClaimService claims() {
@@ -347,9 +359,19 @@ public final class RegionGuardClaims {
             return c == null ? null : new int[]{c.minX(), c.minZ(), c.maxX(), c.maxZ()};
         }
 
+        static int refundPercent() {
+            return com.mrgregles.bsp_region_guard.RegionGuardConfig.getOr(com.mrgregles.bsp_region_guard.RegionGuardConfig.CLAIM_REFUND_PERCENT, 50);
+        }
+
         static void listen() {
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_region_guard.api.event.ClaimPurchasedEvent e) -> refreshOffices(e.getEntity().getServer()));
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_region_guard.api.event.ClaimAbandonedEvent e) -> refreshOffices(e.getEntity().getServer()));
+            // store credit: the share of the refund that credit paid for is taken back (Store Credit task 5)
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener((com.mrgregles.bsp_region_guard.api.event.ClaimAbandonedEvent e) -> {
+                if (e.getEntity().getServer() != null) {
+                    com.mrgregles.bsp_core.credit.CreditLand.abandoned(e.getEntity().getServer(), e.getEntity().getUUID(), e.dimension() == null ? "" : e.dimension().location().toString(), e.claimId(), e.refund());
+                }
+            });
         }
 
         /** Every player with the office open sees the change at once. */

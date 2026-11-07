@@ -157,21 +157,23 @@ A fake totem. While it has power, rival Totem Compasses within its range point a
 
 You may have five placed.
 
-**Page 2**  `[recipe] magnet_core, decoy_totem`
+**Page 2**  `[recipe] magnet_core`
 
 The *Magnet Core* is the hard part: six Charged Magnatite Ingots around an Illyrium Processor.
 
-**Page 3**  `[recipe] decoy_power_base`
+**Page 3**  `[recipe] decoy_totem`
+
+**Page 4**  `[recipe] decoy_power_base`
 
 A decoy must stand on a *Decoy Power Base*, fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol.
 
-**Page 4: Taking the bait**
+**Page 5: Taking the bait**
 
 An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.
 
 Only you can mine a working decoy. Anyone can mine a broken or unpowered one.
 
-**Page 5: Sockets**
+**Page 6: Sockets**
 
 Right-click your decoy to fit parts. A socket opens when the one before it is filled.
 
@@ -180,7 +182,7 @@ Right-click your decoy to fit parts. A socket opens when the one before it is fi
 - **Traps**: a charge, then a Trap Amplifier, then a second charge.
 - **Casing**: each Reinforced Casing survives one more attempt.
 
-**Page 6: Trap charges**
+**Page 7: Trap charges**
 
 Each charge is used up when it goes off.
 
@@ -191,15 +193,17 @@ Each charge is used up when it goes off.
 - Fatigue: Mining Fatigue.
 - Warp: throws the thief up to 30 blocks away.
 
-**Page 7**  `[recipe] range_coil_mk1, range_coil_mk2`
+**Page 8**  `[recipe] range_coil_mk1, range_coil_mk2`
 
-**Page 8**  `[recipe] range_coil_mk3, trap_amplifier`
+**Page 9**  `[recipe] range_coil_mk3, trap_amplifier`
 
-**Page 9**  `[recipe] blast_charge, warp_charge`
+**Page 10**  `[recipe] blast_charge`
 
 The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard.
 
-**Page 10**  `[recipe] reinforced_casing`
+**Page 11**  `[recipe] warp_charge`
+
+**Page 12**  `[recipe] reinforced_casing`
 
 ## Plasma and Projectors
 
@@ -223,35 +227,43 @@ The chain, in order:
 - *Projector Base* at the end of the cable, holding what arrives.
 - *Projector* standing on the base.
 
-**Page 4**  `[recipe] plasma_extractor, plasma_interface`
+**Page 4**  `[recipe] plasma_extractor`
 
-Stack extractors under the totem to split the flow between several interfaces. An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing.
+Stack extractors under the totem to split the flow between several interfaces.
 
-**Page 5**  `[picture] Interfaces joined`
+**Page 5**  `[recipe] plasma_interface`
+
+An interface touching an extractor another group already serves is refused: its lit parts turn red and it does nothing.
+
+**Page 6**  `[picture] Interfaces joined`
 
 Touching interfaces become one body: the faces between them vanish and the frame runs round the outside. Up to twelve, any shape. A cable on any outer face is fed by the whole group, and each face sends up to 1,000 mB/t: a 6,000 mB/t totem needs six runs. The red one touches an extractor another group holds.
 
-**Page 6: Seeing the flow**
+**Page 7: Seeing the flow**
 
 Right-click any interface for its **flow view**: the group and every cable, valve, repeater, extractor, base and charger it reaches in 3D, labelled with the mB/t passing. Drag to turn, right-drag to pan, scroll to zoom.
 
 Jade shows the same figures block by block: an extractor's draw, a cable's flow, a valve's limit, a base's tank.
 
-**Page 7**  `[recipe] projector_base, totem_projector`
+**Page 8**  `[recipe] projector_base`
 
-Cables plug into the base's four sides; the projector on top draws from it. A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure.
+Cables plug into the base's four sides; the projector on top draws from it.
 
-**Page 8: The base's tank**
+**Page 9**  `[recipe] totem_projector`
+
+A projector needs 100 mB/t arriving. Right-click it: POWERS lists what the interface offers with a RECEIVE switch each; CHUNKS is the chunk picker; STATUS shows the pressure.
+
+**Page 10: The base's tank**
 
 The base holds 5,000 mB and the projector burns 20 mB/t of it, so a base that was full keeps its projector going for about four minutes after a cable is cut. A base with nothing feeding it and no projector drains by itself.
 
 A projector runs on plasma alone: no RF. With less than 100 mB/t arriving and a dry base it shows no aura.
 
-**Page 9**  `[recipe] channel_expander`
+**Page 11**  `[recipe] channel_expander`
 
 A projector receives two powers at once, three with a *Channel Expander* fitted by right-clicking the projector with it; sneak and right-click empty-handed takes it out.
 
-**Page 10: Powers and auras**
+**Page 12: Powers and auras**
 
 What a projector can receive: Fortify, Healing Aura, Alarm, Ward, Sanctuary, Cloaking, Recall and Anchor, at the highest level any totem on the interface has.
 
@@ -333,27 +345,33 @@ Every block of the shell holds 2,500,000 mB.
 
 Casing on the twelve edges, glass on the faces, a port on the top and one on a side. Once formed, the casing turns to glass with a lit outline along the edges and the uprights glow as high as the plasma stands. Any box from 3 x 3 x 3 up to 12 x 12 x 12 works the same way.
 
-**Page 3**  `[recipe] tetrium_glass, tank_glass`
+**Page 3**  `[recipe] tetrium_glass`
 
 Tetrium Glass is ordinary glass round a Tetrium Nugget; Tank Glass is Tetrium Glass round a Tetrium Plate. A wall of Tank Glass draws as one sheet.
 
-**Page 4**  `[recipe] tank_casing, tank_port`
+**Page 4**  `[recipe] tank_glass`
 
-A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks. Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face.
+**Page 5**  `[recipe] tank_casing`
 
-**Page 5: Seeing it**
+A port takes plasma from a run that comes from an interface, and gives plasma to a run that only leads to bases, chargers or other tanks.
+
+**Page 6**  `[recipe] tank_port`
+
+Point the wrench at it to set Input or Output only. Each port gives up to 1,000 mB/t, like an interface face.
+
+**Page 7: Seeing it**
 
 Right-click any block of the tank: the screen shows the tank in 3D with its plasma at the level it holds, each port with its setting and what passes, and the first few cables out of each port. Jade reads the level on any block.
 
 When the tank forms, a sweep of light runs over it and the casing turns to glass with a lit outline along the edges; the four uprights glow as high as the plasma stands, so the level can be read from outside. Plasma coming in through a port above the surface pours down to it; the level rises evenly through the whole tank.
 
-**Page 6: Powers in the plasma**
+**Page 8: Powers in the plasma**
 
 Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest. The tank's Output ports pass them on to injectors with every mB they give, with or without the totem, until that plasma is used up.
 
 Plain plasma fed in mixes with it, and the powers fade as the mix runs down. The tank screen lists the powers the plasma carries.
 
-**Page 7: Breaking and rebuilding**
+**Page 9: Breaking and rebuilding**
 
 Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.
 
@@ -429,35 +447,43 @@ Stamping copies a power at the level the totem has. While the item sits in a fed
 
 **Batteries** take Base powers: the ones a projector can receive. **Cells** take Carried powers: the ones that work from your offhand.
 
-**Page 5**  `[recipe] plasma_battery_1, plasma_battery_2`
+**Page 5**  `[recipe] plasma_battery_1`
 
-Tier I holds 40,000 mB and no powers. Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below.
+Tier I holds 40,000 mB and no powers.
 
-**Page 6**  `[recipe] plasma_battery_3, plasma_battery_4`
+**Page 6**  `[recipe] plasma_battery_2`
 
-**Page 7**  `[picture] A battery as source`
+Tiers II, III and IV hold 200,000, 1,000,000 and 5,000,000 mB and two, three and four Base powers. Each tier is built around the one below.
+
+**Page 7**  `[recipe] plasma_battery_3, plasma_battery_4`
+
+**Page 8**  `[picture] A battery as source`
 
 The four tiers, and a charged battery standing on an extractor: it feeds at 100 mB/t with the powers stamped into it, until it runs dry. The projector gets those powers as if a totem stood there.
 
-**Page 8: Batteries as a source**
+**Page 9: Batteries as a source**
 
 A battery on an extractor feeds it at 100 mB/t with its stamped powers until it runs dry, so projectors and chargers keep working while your totem is away or stolen. The battery lies along an axis; the wrench turns it. A battery keeps its charge and powers when mined.
 
-**Page 9**  `[recipe] power_cell_1, power_cell_2`
+**Page 10**  `[recipe] power_cell_1`
 
 A *Power Cell* holds Carried powers: 8,000 mB and one power for Tier I, 24,000 and two for II, 60,000 and three for III.
 
-**Page 10**  `[recipe] power_cell_3, wave_emitter`
+**Page 11**  `[recipe] power_cell_2`
+
+**Page 12**  `[recipe] power_cell_3`
+
+**Page 13**  `[recipe] wave_emitter`
 
 The *Wave Emitter* runs on one cell. Its hover text and the cell's own show the charge and the powers stamped in.
 
-**Page 11: The Wave Emitter**
+**Page 14: The Wave Emitter**
 
 Right-click the emitter at the air (no block within four blocks) to open it: put a Power Cell in the slot, press ON, and read the cell's powers and how long it will last. Put the emitter in your **offhand**: you get the cell's powers as if you carried the totem, while it draws 20 mB/t. It switches off when the cell runs dry.
 
 Right-click at a nearby block to switch it without opening the screen; sneak there to take the cell out.
 
-**Page 12: Out and about**
+**Page 15: Out and about**
 
 So the totem can stay safe at home while you go out: a Tier III cell at 20 mB/t lasts 50 minutes.
 
@@ -675,13 +701,21 @@ Tetrium, Illyrium and Magnatite, from first ore to refined ingot.
 
 **Page 2**  `[recipe] tetrium_crucible`
 
-The *Tetrium Crucible* burns furnace fuel and turns each ore into Tetrium Nuggets and Tetrium Slag.
+The *Tetrium Crucible* burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag.
 
-**Page 3**  `[recipe] tetrium_ingot_from_nuggets, combination_forge`
+**Page 3**  `[recipe] crucible_yield_upgrade`
 
-Nine nuggets make an ingot by hand. The *Combination Forge* does the same job for you and also presses plates.
+Up to three *Crucible Yield Upgrades* fit a Tetrium Crucible. Each adds two nuggets per ore; three double the slag.
 
-**Page 4**  `[recipe] slag_brick_from_smelting`
+**Page 4**  `[recipe] tetrium_ingot_from_nuggets`
+
+Nine nuggets make an ingot by hand.
+
+**Page 5**  `[recipe] combination_forge`
+
+The *Combination Forge* does the same job for you, on fuel or lava, and also presses plates.
+
+**Page 6**  `[recipe] slag_brick_from_smelting`
 
 Keep your slag. Smelted into *Slag Bricks* it goes into almost every machine part.
 
@@ -705,13 +739,19 @@ With no crusher, put any pickaxe and one ingot in a crafting grid. The pickaxe l
 - Illyrium Refinery: dust, water and a filter give Pure Illyrium Dust.
 - Back in the Crucible: Pure Illyrium Dust and Tetrium Dust alloy into Illyrium Nuggets.
 
-**Page 2**  `[recipe] illyrium_ingot_from_nuggets, illyrium_forge_upgrade`
+**Page 2**  `[recipe] illyrium_ingot_from_nuggets`
 
-Nine nuggets make an ingot by hand. To forge Illyrium in the Combination Forge, fit the *Illyrium Forge Upgrade*.
+Nine nuggets make an ingot by hand.
 
-**Page 3**  `[recipe] iron_filter, diamond_filter`
+**Page 3**  `[recipe] illyrium_forge_upgrade`
+
+To forge Illyrium in the Combination Forge, fit the *Illyrium Forge Upgrade*.
+
+**Page 4**  `[recipe] iron_filter`
 
 Filters wear out. Better filters refine far more dust before they are used up.
+
+**Page 5**  `[recipe] diamond_filter`
 
 ## Magnatite
 
@@ -814,7 +854,7 @@ Controller at the bottom front centre. 8 Casing, 1 Core, 2 Tank Glass, 1 Item Ha
 
 **Page 1**
 
-Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on the Crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.
+Fit an RF Upgrade to a machine and it can take RF. It then runs faster and, on either crucible, uses less lava. Mk I, II and III give 5%, 10% and 30%.
 
 The Combination Forge runs on RF alone with an upgrade, at twice its coal speed.
 
@@ -901,15 +941,17 @@ Seven mould pieces and a core make one mould. Each piece looks like the totem wi
 
 A piece lasts three pours, then cracks. It takes no enchantment and no repair. The *Totem Core* becomes the forged totem's orb, so every pour needs a new one.
 
-**Page 2**  `[recipe] mould_shell, base_mould`
+**Page 2**  `[recipe] mould_shell`
 
 Mould Shells come two at a time; every piece is built from them.
 
-**Page 3**  `[recipe] foot_mould, torso_mould`
+**Page 3**  `[recipe] base_mould`
 
-**Page 4**  `[recipe] arm_mould, head_mould`
+**Page 4**  `[recipe] foot_mould, torso_mould`
 
-**Page 5**  `[recipe] totem_core`
+**Page 5**  `[recipe] arm_mould, head_mould`
+
+**Page 6**  `[recipe] totem_core`
 
 ---
 
@@ -925,11 +967,13 @@ There are five coins: Copper, Gold, Diamond, Netherite and Illyrium. Each is wor
 
 A coin starts as a *Shatter Blank*, is built up into a tier's coin blank, and is then pressed in the Shatter Coin Factory.
 
-**Page 2**  `[recipe] shatter_blank, copper_coin_blank`
+**Page 2**  `[recipe] shatter_blank`
+
+**Page 3**  `[recipe] copper_coin_blank`
 
 Each tier's blank is crafted around the blank of the tier below it.
 
-**Page 3**  `[recipe] gold_coin_blank, diamond_coin_blank`
+**Page 4**  `[recipe] gold_coin_blank, diamond_coin_blank`
 
 ## The Shatter Coin Factory
 
@@ -1270,4 +1314,28 @@ The *Radiation Shielding Door* blocks nearly all radiation while it is shut and 
 **Page 6**  `[recipe] radiation_shielding_door`
 
 All three are as hard as iron.
+
+---
+
+# Store Credit
+
+Tickets that pay at chosen shops, at the Land Office or for teleports, before your bank.
+
+## Store Credit Tickets
+
+**Page 1**  `[item shown] store_credit`
+
+A *Store Credit Ticket* holds Shatter Pieces to spend at the places its tooltip names: certain shops and the shops inside them, plots at the Land Office, or teleports. Keep it in your inventory and it pays there before your bank. The server's staff give them out, often as a thank-you for supporting the server.
+
+**Page 2: Paying**
+
+Where a ticket works, the strip along the bottom of the shop or Land Office screen turns into the ticket. Click it to pay from your bank instead, and again to use the ticket.
+
+The ticket pays what it holds and your bank pays the rest. With several tickets, the one that runs out soonest pays first. Your first purchase with a ticket makes it yours alone.
+
+**Page 3: The clock**
+
+Some tickets last a set time from their first purchase. The clock starts with that purchase.
+
+A warning comes a day before the end and an hour before it. When the time is up, whatever is left is gone, and the ticket with it.
 

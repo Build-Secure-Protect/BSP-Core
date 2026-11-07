@@ -171,6 +171,11 @@ public final class NetworkStorage {
         return countsWanted() && (!enabled() || market == null); // connected only once the network's market is built too
     }
 
+    /** Whether this server's local records are in the network database (or it has none to copy up): only then may a full read drop local ones. */
+    public static boolean migratedHere() {
+        return migratedHere;
+    }
+
     /** True while this server is writing to and reading from the network database. */
     public static boolean enabled() {
         return store != null;
@@ -386,6 +391,7 @@ public final class NetworkStorage {
                     }
                 }
                 case "steal_watch" -> refreshStealWatches(srv);
+                case "credit" -> com.mrgregles.bsp_core.credit.CreditSync.heard(srv, payload);
                 case "kit" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.kit.KitSync.apply(srv, List.of(), payload.substring(1));
@@ -473,6 +479,7 @@ public final class NetworkStorage {
                 teamReload(null);
                 allianceReload(null);
                 kitReload(null);
+                com.mrgregles.bsp_core.credit.CreditSync.load(server, migrated);
                 s.marketEnsurePot();
                 orders = newOrders(s); // before the market: down() turns false with the market, and an order then must find its store
                 market = newMarket(s);
@@ -925,6 +932,7 @@ public final class NetworkStorage {
             allianceReload(null);
             kitReload(null, false); // never prunes: a kit written here a moment ago may not be in the read yet
             shopReload(null);
+            com.mrgregles.bsp_core.credit.CreditSync.catchUp(server);
         }
         long due = retryAtMs;
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && due > 0 && store == null && !stopping && System.currentTimeMillis() >= due) {
@@ -1429,6 +1437,10 @@ public final class NetworkStorage {
         }
         Map<UUID, List<com.mrgregles.bsp_core.kit.KitLedger.Redeem>> kitRows = new HashMap<>();
         com.mrgregles.bsp_core.kit.KitLedger.get(srv).allRedeems().forEach((id, rows) -> kitRows.put(id, List.copyOf(rows)));
+        List<com.mrgregles.bsp_core.credit.CreditKind> creditKinds = new java.util.ArrayList<>();
+        com.mrgregles.bsp_core.credit.CreditLedger.get(srv).kinds().forEach(k -> creditKinds.add(k.copy()));
+        List<com.mrgregles.bsp_core.credit.CreditTicket> creditTickets = new java.util.ArrayList<>();
+        com.mrgregles.bsp_core.credit.CreditLedger.get(srv).tickets().forEach(t -> creditTickets.add(com.mrgregles.bsp_core.credit.CreditTicket.load(t.save())));
         worker().execute(() -> {
             List<String> lines;
             try (MySqlStore s = fromConfig()) {
@@ -1450,11 +1462,33 @@ public final class NetworkStorage {
                             kitRowCount++;
                         }
                     }
+                    DbCredit credit = new DbCredit(s);
+                    int creditCount = 0;
+                    try {
+                        for (com.mrgregles.bsp_core.credit.CreditKind k : creditKinds) {
+                            if (!credit.kindExists(k.id)) {
+                                credit.writeKind(k); // never over a kind edited on another server
+                            }
+                        }
+                        for (com.mrgregles.bsp_core.credit.CreditTicket t : creditTickets) {
+                            if (credit.insertTicket(t)) { // a ticket the network has already keeps its row
+                                creditCount++;
+                                if (t.firstUseMs > 0 || t.voided || t.warned != 0) {
+                                    s.creditTicketMigrate(t.serial, t.firstUseMs, t.voided, t.warned);
+                                }
+                            }
+                        }
+                    } catch (SQLException e) {
+                        throw e;
+                    } catch (Exception e) {
+                        throw new SQLException(e);
+                    }
                     migratedHere = true;
                     lines = List.of("Migrated to " + s.describe() + ".",
                             "First-join grants: " + n[0] + " added, " + n[1] + " already in the database.",
                             "Placed totems written: " + n[2] + ". Factory slices written: " + n[3] + ".",
                             "Kits written: " + kits.size() + ", kit records: " + kitRowCount + ".",
+                            "Store credit kinds: " + creditKinds.size() + ", tickets written: " + creditCount + ". Spend no store credit on this server until it restarts in mysql mode: the copies up are as they are now.",
                             "The local records were not changed and stay as a backup.",
                             enabled() ? "Network storage is on." : "Now set storage.mode = \"mysql\" in the server config and restart the server.");
                 }
@@ -1846,6 +1880,37 @@ public final class NetworkStorage {
                 BSPCore.LOGGER.error("BSP-Core storage: could not read the shop trades: {}", e.toString());
             }
             var done = rows;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** Work on the store credit tables, on the storage thread. */
+    public interface CreditWork<T> {
+        T run(com.mrgregles.bsp_core.credit.CreditStore store) throws Exception;
+    }
+
+    /**
+     * Runs {@code work} on the network's store credit tables on the storage thread and hands its answer back on the server thread:
+     * null when the database is not connected or the work failed (logged). With {@code notice}, the other servers are told (Redis
+     * kind {@code credit}) once the work is done.
+     */
+    public static <T> void credit(String what, CreditWork<T> work, @Nullable String notice, Consumer<T> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            T answer = null;
+            try {
+                answer = work.run(new DbCredit(s));
+                if (notice != null) {
+                    publish("credit", notice);
+                }
+            } catch (Exception e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not {}: {}", what, e.toString());
+            }
+            T done = answer;
             onServer(() -> then.accept(done));
         });
     }
