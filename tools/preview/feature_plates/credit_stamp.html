@@ -300,8 +300,8 @@ canvas.gui.shop{ max-width:600px; }
     return w; }
   function tips(){
     var g = frame("tip", 420, 82, 3); if (!g) return; fill(g, 0, 0, 420, 82, BG);
-    var a = [["Store Credit: Donor 10,000", "#ffaa00"], ["10,000 pieces", "#55ff55"], ["Spends at: Spawn Market, any plot,", "#aaaaaa"], ["teleports", "#aaaaaa"], ["30 days from the first purchase", "#ffff55"], ["Belongs to Steve", "#aaaaaa"]];
-    var b = [["Store Credit: Donor 10,000", "#ffaa00"], ["2,000 of 10,000 pieces left", "#55ff55"], ["Spends at: Spawn Market, any plot,", "#aaaaaa"], ["teleports", "#aaaaaa"], ["29 days 4 hours left", "#ffff55"], ["Belongs to Steve", "#aaaaaa"], ["#7Q2F-91KD", "#555555"]];
+    var a = [["Store Credit: Donor 10,000", "#ffaa00"], ["10,000 pieces", "#55ff55"], ["Spends at: Spawn Market, any plot,", "#aaaaaa"], ["  teleports", "#aaaaaa"], ["30 days from the first purchase", "#ffff55"], ["Belongs to Steve", "#aaaaaa"], ["#K3M8-4TWA", "#555555"]];
+    var b = [["Store Credit: Donor 10,000", "#ffaa00"], ["2,000 of 10,000 pieces left", "#55ff55"], ["Spends at: Spawn Market, any plot,", "#aaaaaa"], ["  teleports", "#aaaaaa"], ["29 days 4 hours left", "#ffff55"], ["Belongs to Steve", "#aaaaaa"], ["#7Q2F-91KD", "#555555"]];
     var w1 = tooltip(g, 4, 4, a); var w2 = tooltip(g, 214, 4, b);
     check("Tooltip: the two tooltips sit side by side", 4 + w1 < 214 && 214 + w2 <= 420);
   }
@@ -498,11 +498,14 @@ canvas.gui.shop{ max-width:600px; }
       fill(g, x, y, 7, 7, PHOS_DIM); fill(g, x + 1, y + 1, 5, 5, SCREEN); if (on) txt(g, "✓", x, y - 1, PHOS, 0.75); small(g, "use credit", x + 10, y + 1, PHOS); y += 12;
       small(g, "price", x, y, PHOS_DIM); smallR(g, "6,000", PX + PWD - 4, y, AMBER); y += 8; small(g, "credit", x, y, PHOS_DIM); smallR(g, on ? "−6,000" : "0", PX + PWD - 4, y, PHOS); y += 8;
       fill(g, x, y, PWD - 8, 1, PHOS_DIM); y += 3; small(g, "bank", x, y, PHOS_DIM); smallR(g, on ? "0" : "6,000", PX + PWD - 4, y, AMBER); }
-    if (concept === "c"){ if (on){ small(g, "6,000 credit", x, y, PHOS); small(g, "0 from the bank", x, y + 8, PHOS_DIM); } else smallFit(g, "12,400 left after", x, y, PHOS_DIM, PWD - 6); check("Land C: the sum fits the side panel", sw("6,000 credit") <= PWD - 6 && sw("0 from the bank") <= PWD - 6); }
+    if (concept === "c"){ if (on){ // the screen wraps each line to the panel, as CashMachine.wrap does
+      var wrapped = function(t){ var out = [], line = ""; t.split(" ").forEach(function(w){ var n = line ? line + " " + w : w; if (line && sw(n) > PWD - 6){ out.push(line); line = w; } else line = n; }); out.push(line); return out; };
+      var yy = y; wrapped("6,000 from credit").forEach(function(l){ small(g, l, x, yy, PHOS); yy += 8; }); yy += 3; wrapped("0 from the bank").forEach(function(l){ small(g, l, x, yy, PHOS_DIM); yy += 8; }); }
+      else smallFit(g, "12,400 left after", x, y, PHOS_DIM, PWD - 6); }
     check("Land " + concept.toUpperCase() + ": side panel lines fit", sw("16 x 16 blocks") <= PWD - 6 && sw("ticket: all of it") <= PWD - 6);
     ["Zoom in", "Zoom out", "Centre"].forEach(function(t, i){ cashKey(g, LKX, SY + i * (LKH + 3), LKW, LKH, t); });
     cashKey(g, LKX, SY + LSH - LKH, LKW, LKH, "Buy");
-    if (concept === "c" && on){ var end = ticketStrip(g, SX, LSTRIP, LW - 2 * SX, 22, k, "✓ PAY WITH CREDIT · Sanctuary Plot · 6,000 left"); smallR(g, "bank 12,400", LW - SX - 6, LSTRIP + 9, "#1a1b20");
+    if (concept === "c" && on){ var end = ticketStrip(g, SX, LSTRIP, LW - 2 * SX, 22, k, "✓ PAY WITH CREDIT · 6,000"); smallR(g, "bank 12,400", LW - SX - 6, LSTRIP + 9, "#1a1b20");
       check("Land C: the ticket strip's words fit", end + 4 <= LW - SX - 6 - sw("bank 12,400")); return; }
     screen(g, SX, LSTRIP, LW - 2 * SX, 22); var left = "land office: Region Guard holds the claims";
     if (concept === "a"){ var bal = on ? "balance 12,400 · credit 6,000" : "balance 12,400"; small(g, left, SX + 6, LSTRIP + 4, PHOS_DIM); small(g, bal, SX + 6, LSTRIP + 12, on ? PHOS : PHOS_DIM); cashKey(g, LKX, LSTRIP + 2, LKW, 16, on ? "Credit on" : "Credit off", true, on);

@@ -11,7 +11,7 @@
  },
  "result": {
   "fluid": "bsp_core:molten_tetrium",
-  "amount": 20
+  "amount": 40
  },
  "temperature": 900,
  "time": 300

@@ -6,8 +6,8 @@ forge:mod_loaded condition, so BSP-Core loads without either mod.
   python3 tools/gen_molten_recipes.py
 
 The owner's rule (2026-10-27): another mod may never make more metal than the BSP machines do.
-- Ore melts to exactly the nuggets a BSP machine makes from it (90 mB an ingot, 10 mB a nugget): Tetrium 20 mB
-  (the Tetrium Crucible's 2 nuggets), Magnatite 30 mB (the Magnetic Centrifuge's 3), in the machine's own time.
+- Ore melts to exactly the nuggets a BSP machine makes from it (90 mB an ingot, 10 mB a nugget): Tetrium 40 mB
+  (the Tetrium Crucible's 4 nuggets, with no Yield Upgrade), Magnatite 30 mB (the Magnetic Centrifuge's 3), in the machine's own time.
   Plain tconstruct:melting, never tconstruct:ore_melting, so the smeltery's ore rate and the foundry's
   by-products never apply. The by-products (slag, Carbon Dust) stay with the BSP machines.
 - Illyrium ore, Dirty Illyrium and Charged Magnatite never melt: a melt would skip the refinery, or the charge.
@@ -23,7 +23,7 @@ OUT = DATA / "bsp_core/recipes/molten"
 
 # metal: (Tinkers melting temperature, [(item, mB, Tinkers time, Thermal energy)])
 MELT = {
-    "tetrium": (900, [("raw_tetrium", 20, 300, 6000), ("tetrium_ore", 20, 300, 6000), ("deepslate_tetrium_ore", 20, 300, 6000),
+    "tetrium": (900, [("raw_tetrium", 40, 300, 6000), ("tetrium_ore", 40, 300, 6000), ("deepslate_tetrium_ore", 40, 300, 6000),
                       ("tetrium_nugget", 10, 20, 1000), ("tetrium_ingot", 90, 60, 4000)]),
     "magnatite": (1000, [("raw_magnatite", 30, 600, 12000), ("magnatite_ore", 30, 600, 12000), ("deepslate_magnatite_ore", 30, 600, 12000),
                          ("magnatite_nugget", 10, 20, 1000), ("magnatite_ingot", 90, 60, 4000)]),

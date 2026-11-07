@@ -406,7 +406,7 @@ def plasma():
               "Works on every BSP machine, on a coin factory slice through a Motivator cell, and on other mods' machines. Cut the cable and it drops back to normal in a second.") + '</div></div>'
           + '<div class="jobs">' + chain("plasma_interface", ("a run in",), "tank_port", ("runs out, a face's worth each",), "projector_base", "+", "battery_charger", "+", "plasma_injector", size=36)
           + chain("plasma_injector", ("300 mB/t: twice the speed|500 mB/t: three times",), "combination_forge", size=36) + '</div>',
-          "Overclock travels with the plasma: every injector fed from a totem with Overclock is stronger, by a quarter to double its speed-up by level. Tank plasma carries no Overclock.")
+          "Overclock travels with the plasma: every injector fed from a totem with Overclock is stronger, by a quarter to double its speed-up by level. A tank keeps the powers of the totem that filled it.")
     plate("batteries", "Batteries, cells and the Wave Emitter",
           '<div class="split"><div class="col">' + h3("Battery Charger") + render("battery_charger", "Battery Charger", "5/2")
           + p("Cable into its back. Fills the battery or cell standing in it and stamps the interface's powers into it. Hoppers and pipes may feed empties in and take full ones out on any other side.")
@@ -573,7 +573,7 @@ def recipe_cards():
 
 
 # what Tinkers' Construct and Thermal melt BSP metal into (gen_molten_recipes.py): never more than the BSP machines give
-MELTS = [("raw_tetrium", "20 mB, 2 nuggets' worth (the crucible gives 4)"), ("raw_magnatite", "30 mB, as the Centrifuge's 3 nuggets"),
+MELTS = [("raw_tetrium", "40 mB, as the Crucible's 4 nuggets"), ("raw_magnatite", "30 mB, as the Centrifuge's 3 nuggets"),
          ("tetrium_nugget", "10 mB a nugget of any of the three"), ("illyrium_ingot", "90 mB an ingot of any of the three")]
 MELTING = ('<div class="norecipe">' + h3("Melting in Tinkers' Construct and Thermal") + '<ul class="legend">'
            + "".join(f'<li>{icon(i, 24)} <span><b>{html.escape(name_of(full(i)))}</b> {html.escape(t)}</span></li>' for i, t in MELTS)

@@ -1824,14 +1824,14 @@ Covered by GameTest `molten_metals_are_fluids_and_bsp_stays_off_material_tags` (
 
 ## Tinkers and Thermal melting (Totem Forge, task 2, 2026-10-27)
 
-Covered by GameTest `molten_recipes_load_only_with_their_mods`: without Tinkers or Thermal Expansion none of the 39 recipes loads; with them (`./gradlew runGameTestServer -PpackMods=<the pack's mods folder>`, which loads the pack's own Tinkers 3.12.1, Mantle, Thermal Foundation and Expansion 11.0.1, CoFH Core and JEI) all 24 Tinkers and 15 Thermal recipes load. Checked 2026-10-27: 150/150 both ways. Untested: what the machines actually do with them in a client.
+Covered by GameTests `molten_tetrium_ore_melts_to_the_crucibles_nuggets` (Raw Tetrium and both ores melt to the crucible's default 4 nuggets, 40 mB, read from the recipe files) and `molten_recipes_load_only_with_their_mods`: without Tinkers or Thermal Expansion none of the 39 recipes loads; with them (`./gradlew runGameTestServer -PpackMods=<the pack's mods folder>`, which loads the pack's own Tinkers 3.12.1, Mantle, Thermal Foundation and Expansion 11.0.1, CoFH Core and JEI) all 24 Tinkers and 15 Thermal recipes load. Checked 2026-10-27: 150/150 both ways. Untested: what the machines actually do with them in a client.
 
-- [ ] Melter or smeltery (lava fuel): Raw Tetrium or Tetrium Ore gives 20 mB of Molten Tetrium; a Tetrium Ingot 90 mB, a nugget 10 mB. Raw Magnatite or Magnatite Ore gives 30 mB of Molten Magnatite.
+- [ ] Melter or smeltery (lava fuel): Raw Tetrium or Tetrium Ore gives 40 mB of Molten Tetrium (the Tetrium Crucible's 4 nuggets); a Tetrium Ingot 90 mB, a nugget 10 mB. Raw Magnatite or Magnatite Ore gives 30 mB of Molten Magnatite.
 - [ ] A Foundry: the same ores give the same amounts, with no by-product fluid.
 - [ ] Illyrium Ore, Raw Illyrium, a Dirty Illyrium Ingot and a Charged Magnatite Ingot do not melt anywhere (JEI shows no melting recipe for them).
 - [ ] Illyrium Ingot or nugget needs a fuel hotter than lava (1400 °C): the melter on lava does not melt it; blazing blood does.
 - [ ] Casting table: gold and sand ingot casts give one ingot per 90 mB, nugget casts one nugget per 10 mB, for all three metals.
-- [ ] Thermal Magma Crucible: the same amounts as Tinkers for every item above. Fit an augment (an output or a fluid augment) and check the ore still gives 20 mB or 30 mB.
+- [ ] Thermal Magma Crucible: the same amounts as Tinkers for every item above. Fit an augment (an output or a fluid augment) and check the ore still gives 40 mB or 30 mB.
 - [ ] Thermal Blast Chiller with the Chiller Ingot Cast: 90 mB gives one ingot.
 - [ ] JEI's Tinkers and Thermal pages show these recipes and nothing else for BSP metals.
 

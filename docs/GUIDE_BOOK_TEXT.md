@@ -775,7 +775,7 @@ Fit the *Copper Tetrium Coil* to a centrifuge and it can magnetise ingots into *
 
 Tetrium, Magnatite and Illyrium melt in a Tinkers' smeltery or a Thermal Magma Crucible, and pipe and store like any fluid. A nugget is 10 mB and an ingot 90 mB, and both cast back one for one.
 
-Ore melts to exactly what the BSP machines make from it: Tetrium ore 20 mB, two nuggets; Magnatite ore 30 mB, three. The slag and the Carbon Dust come only from the BSP machines.
+Ore melts to exactly what the BSP machines make from it: Tetrium ore 40 mB, four nuggets; Magnatite ore 30 mB, three. The slag and the Carbon Dust come only from the BSP machines.
 
 Illyrium ore, Dirty Illyrium and Charged Magnatite do not melt: the Crucible, the Refinery and the Centrifuge are their only way.
 

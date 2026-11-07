@@ -7276,6 +7276,32 @@ public class BspGameTests {
         h.succeed();
     }
 
+    /**
+     * Tinkers' and Thermal melt Raw Tetrium and both Tetrium ores to the Tetrium Crucible's own nuggets with no Yield Upgrade (the
+     * config's default, 4, at 10 mB a nugget): read from the recipe files themselves, so it holds without either mod loaded.
+     */
+    @GameTest(template = EMPTY)
+    public void molten_tetrium_ore_melts_to_the_crucibles_nuggets(GameTestHelper h) {
+        int want = com.mrgregles.bsp_core.BSPConfig.TCRUC_NUGGETS.getDefault() * 10;
+        var resources = h.getLevel().getServer().getResourceManager();
+        for (String item : new String[] {"raw_tetrium", "tetrium_ore", "deepslate_tetrium_ore"}) {
+            for (String kind : new String[] {"tinkers_melting", "thermal_crucible"}) {
+                var file = new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "recipes/molten/" + kind + "_" + item + ".json");
+                var res = resources.getResource(file);
+                h.assertTrue(res.isPresent(), "missing " + file);
+                try (var reader = res.get().openAsReader()) {
+                    var json = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+                    var result = json.get("result");
+                    int mb = (result.isJsonArray() ? result.getAsJsonArray().get(0) : result).getAsJsonObject().get("amount").getAsInt();
+                    h.assertTrue(mb == want, file + " melts to " + mb + " mB, the crucible's " + com.mrgregles.bsp_core.BSPConfig.TCRUC_NUGGETS.getDefault() + " nuggets are " + want);
+                } catch (java.io.IOException e) {
+                    h.fail(file + ": " + e);
+                }
+            }
+        }
+        h.succeed();
+    }
+
     // ------------------------------------------------------------------ Totem Forge structure (task 3)
 
     /** A Totem Forge controller at {@code at} facing north, with every part its own structure lists (the hollow stays air). */

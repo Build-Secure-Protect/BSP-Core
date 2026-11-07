@@ -2,6 +2,12 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
+## [Unreleased]
+
+### Fixed
+- **Tinkers' Construct and Thermal melt Tetrium ore to 4 nuggets.** Raw Tetrium, Tetrium Ore and Deepslate Tetrium Ore melt to 40 mB of Molten Tetrium (it was 20 mB, 2 nuggets), the same as the Tetrium Crucible's 4 nuggets with no Yield Upgrade since 1.14.0. Magnatite is unchanged at 30 mB. The guide book's Molten Metals page says so too.
+- **CurseForge pictures match the game.** The store credit ticket picture shows a fresh ticket's serial number and indents the wrapped "teleports" line, as the tooltip does. The Land Office picture shows the strip as "✓ PAY WITH CREDIT · 6,000" and the plot card as "6,000 from credit" and "0 from the bank". The Plasma Tank and Plasma Injector plate no longer says tank plasma carries no Overclock: a tank keeps the powers of the totem that filled it.
+
 ## [1.14.0] - 2026-11-07
 
 **Network protocol 10:** every player needs this version's client to join a server running it (the Coin Factory screen gets one more value per lane, and the shop and Land Office screens show store credit).
