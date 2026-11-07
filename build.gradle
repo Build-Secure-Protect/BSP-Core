@@ -199,7 +199,8 @@ dependencies {
 
     // Opt-in, dev runs only: `./gradlew runGameTestServer -PpackMods=<the pack instance's mods folder>` loads Tinkers' Construct and
     // Thermal from the pack's own jars, so GameTest molten_recipes_load_only_with_their_mods checks the molten-metal recipes against
-    // the real mods, whatever versions the pack holds.
+    // the real mods, whatever versions the pack holds; and Voltaic with Electrodynamics (its radioactive item list), so the Lead-Lined
+    // Chest's radiation GameTests run against the pack's real radiation system.
     if (project.hasProperty('packMods')) {
         // each jar is found in the folder by its name, so a pack update needs no change here
         def packDir = file(project.property('packMods'))
@@ -217,6 +218,8 @@ dependencies {
         runtimeOnly fg.deobf(packJar('cofh_core'))
         runtimeOnly fg.deobf(packJar('thermal_foundation'))
         runtimeOnly fg.deobf(packJar('thermal_expansion'))
+        runtimeOnly fg.deobf(packJar('Voltaic'))
+        runtimeOnly fg.deobf(packJar('Electrodynamics'))
     }
 
     // Patchouli: the guide book is data only, so there is no compile dependency; loaded in dev runs to read the book.

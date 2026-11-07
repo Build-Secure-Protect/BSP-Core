@@ -30,6 +30,10 @@ public final class ModCreativeTabs {
                 ModItems.DECOY_UPGRADES.values().forEach(i -> output.accept(i.get()));
                 ModItems.PROJECTOR_ITEMS.forEach(i -> output.accept(i.get()));
                 output.accept(ModItems.COIN_VAULT.get());
+                output.accept(ModItems.LEAD_LINED_CHEST.get());
+                output.accept(ModItems.RADIATION_SHIELDING_PANEL.get());
+                output.accept(ModItems.RADIATION_SHIELDING_WINDOW.get());
+                output.accept(ModItems.RADIATION_SHIELDING_DOOR.get());
                 output.accept(ModItems.SCORE_SCREEN.get());
                 output.accept(ModItems.ADMIN_RACK.get());
                 output.accept(ModItems.ANTI_TOTEM.get());

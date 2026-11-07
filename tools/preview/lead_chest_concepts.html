@@ -1,0 +1,314 @@
+<title>Lead-Lined Chest Looks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Layout: the BSP concept board. Three looks each for the lead-lined chest (single and double), the radiation shielding set (panel, window, door) and the chest's screen. The 3D views share one WebGL context; screens are drawn at GUI pixel size with the game's own font (ascii.png). */
+:root{ --bg:#eef0ee; --panel:#ffffff; --line:#d3d8d4; --fg:#191c1f; --muted:#5c6470; --acc:#8a7a12; --hz:#e7c51d;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1214; --panel:#171b1f; --line:#2a3036; --fg:#e7eaee; --muted:#9aa4b0; --acc:#e7c51d; --hz:#e7c51d; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1214; --panel:#171b1f; --line:#2a3036; --fg:#e7eaee; --muted:#9aa4b0; --acc:#e7c51d; --hz:#e7c51d; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+.lede b{ color:var(--fg); }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; max-width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2c3236 0%,#0c0e10 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:4/3; }
+canvas.gui{ width:100%; max-width:100%; height:auto; display:block; background:#0c0e10; border-radius:4px; image-rendering:pixelated; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; cursor:pointer; }
+.ctl input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.scroll{ overflow-x:auto; } table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ color:var(--muted); font-weight:600; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:8px; max-width:80ch; } ol b{ color:var(--fg); }
+.stripe{ height:6px; border-radius:2px; background:repeating-linear-gradient(-45deg,var(--hz) 0 8px,#1b1d1f 8px 16px); max-width:220px; }
+.checks{ font-size:12px; color:var(--muted); }
+</style>
+<div class="wrap">
+<section><div class="stripe"></div><h1>Lead-Lined Chest Looks</h1>
+<p class="lede">Radioactive items in an ordinary chest keep radiating. Anything in a <b>lead-lined chest</b> never does. The chest joins a neighbour into a double chest, like a vanilla chest, and its recipe is eight lead plates around a chest. Alongside it come three <b>radiation shielding</b> pieces for building a shielded room: a panel that stops all radiation, a window that lets 10% through and a door. This page shows three looks for the chest, three for the shielding set and three for the chest's screen. Pick one of each, or mix parts.</p>
+<div class="card"><div class="ctl">
+<label><input type="checkbox" id="double"> Double chest</label>
+<label><input type="checkbox" id="open"> Lid and door open</label>
+<label><input type="checkbox" id="night"> Night (shows what glows)</label>
+<span style="color:var(--muted)">Drag a view to turn it. A stone block stands beside each one for scale.</span></div></div></section>
+
+<section><h2>1. The chest: three looks</h2><div class="grid3" id="chests"></div></section>
+
+<section><h2>2. The shielding set: three looks</h2>
+<p class="lede">Each view shows a short wall built from the set: panels, a window in the second column and a door in the third. Voltaic reads one shielding value per block, so the door shields the same whether it is open or shut.</p>
+<div class="grid3" id="shields"></div></section>
+
+<section><h2>3. The screen: three looks</h2>
+<p class="lede">These are drawn at the game's GUI pixel size with its own font. Tick "Double chest" above to see 54 slots. The items in the slots are examples: raw uranium, raw yellorium, yellorite ore, Mekanism plutonium and polonium pellets, yellow cake and a spent fuel rod.</p>
+<div class="grid3" id="screens"></div>
+<p class="checks" id="checks"></p></section>
+
+<section><h2>4. Side by side</h2>
+<div class="card"><div class="scroll"><table class="t"><thead><tr><th></th><th>A</th><th>B</th><th>C</th></tr></thead><tbody>
+<tr><td><b>Chest</b></td><td><b>Lead Strongbox.</b> A blue-grey lead box on a dark plinth. It has riveted straps over the lid, capped corners and a heavy hasp with a round padlock. A yellow radiation plate sits on the lid, and a pale lead seam shows where the lid meets the body.</td><td><b>Reactor Cask.</b> A rounded transport cask with two ribs, a hazard stripe round the lid seam and hex bolts along the front. It has carry handles on both ends, with a dose tag hanging from one. A round lamp glows green when sealed and amber when open.</td><td><b>Hazard Locker.</b> A lab locker with a padded front of six lead cushions. It has hazard stripes on the lid edge, a round pressure gauge on the front, toggle clamps on both sides and "Pb" stencilled on the lid.</td></tr>
+<tr><td><b>Shielding set</b></td><td><b>Riveted Lead Sheet.</b> Matt hammered lead with a raised border and rivets. The window is thick lead glass, faintly yellow, in a riveted frame with a cross bar. The door has two raised panels, a radiation stencil and a lever handle.</td><td><b>Lab Tile.</b> Four pale tiles per face with sunk grout lines and a screw in each tile. The window is thick glass in a stepped frame. The door is a hatch with a round porthole, a push bar and a hazard band at kick height.</td><td><b>Bunker Plate.</b> Dark tread plate with hex bolts and a small "Pb" stencil. The window is a slit of thick glass under a hood. The door is a vault door with a round wheel, heavy hinges and a radiation sign.</td></tr>
+<tr><td><b>Screen</b></td><td><b>Vanilla chest.</b> The game's own grey chest screen, so it reads as "a chest" at once.</td><td><b>Lead panel.</b> The same layout in blue-grey lead, with rivets in the corners and a green "SHIELDED" tag on the Inventory line.</td><td><b>BSP dark.</b> BSP-Core's dark screens, with a hazard stripe under the title and one line under the slots: "Nothing in here radiates."</td></tr>
+<tr><td><b>Glows</b></td><td>Nothing.</td><td>The cask's lamp. On the door, nothing.</td><td>The gauge face, faintly.</td></tr>
+<tr><td><b>Built with</b></td><td colspan="3">Block models from a generator script, like the other BSP blocks. Minecraft models are boxes, so the round parts here (the padlock, the cask's edges, the gauge, the porthole, the wheel) are drawn with few sides and will look stepped in game. The lid opens through a block-entity renderer, as a vanilla chest's does. The window is drawn with the translucent render type so the glass shows through.</td></tr>
+</tbody></table></div></div></section>
+
+<section><h2>5. Pick, with defaults</h2>
+<div class="card"><ol>
+<li><b>The chest.</b> The default is <b>A, Lead Strongbox</b>, because it still reads as a chest from across a room, and the yellow plate says what it is for. With B, the chest looks like reactor equipment and suits a reactor hall. With C, it looks like lab furniture and suits Nuclear Science bases.</li>
+<li><b>The shielding set.</b> The default is <b>A, Riveted Lead Sheet</b>, so the wall and the chest look made of the same metal. With B, a shielded room looks like a clean lab. With C, it looks like a bunker, and the vault door reads as the strongest door in the base, which it isn't (it is as hard as iron).</li>
+<li><b>The screen.</b> The default is <b>B, Lead panel</b>: players know at once that it is a chest, and the tag tells them it is shielded. With A, it is the vanilla screen with nothing added. With C, it matches BSP-Core's other screens and states the rule in words.</li>
+</ol></div></section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const el=id=>document.getElementById(id);
+  const reduce=typeof matchMedia==="function"&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const state={double:false, open:false, night:false};
+  const CHECKS=[]; let checking=true; function check(name,ok){ if(checking) CHECKS.push({name,ok:!!ok}); }
+  window.__leadChestChecks=CHECKS;
+
+  // ================================================================ 3D
+  const HAS3D=typeof THREE!=="undefined"&&typeof document.createElement('canvas').getContext==="function";
+  const LEAD=0x5d6573, LEAD2=0x3d434c, LEAD3=0x737c8a, LINING=0xaab0b8, IRON=0x2a2e33, YEL=0xe7c51d, BLK=0x16181a, STONE=0x6c6f73,
+        CREAM=0xeae4d5, GLASSY=0xd9c97a, GLASSC=0x9fd8c8, GREEN=0x58f29a, AMBER=0xf2b544, RED=0xc0392b, TILE=0x8a93a0, GROUT=0x3a3f47, DARKP=0x34383e, BRASS=0xb8893a, WHITE=0xdfe3e6;
+  function mat(c,glow,op){ const m=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ m.transparent=true; m.opacity=op; m.depthWrite=false; } return m; }
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat(c,glow,op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos,rx,ry,rz){ const s=new THREE.Group(); s.position.set(pos[0],pos[1],pos[2]); if(rx) s.rotation.x=rx; if(ry) s.rotation.y=ry; if(rz) s.rotation.z=rz; g.add(s); return s; }
+  // a cylinder with few sides (as a block model would step it); axis 'x' | 'y' | 'z'
+  function cyl(g,pos,r,h,axis,c,sides,glow){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,sides||8),mat(c,glow)); m.position.set(pos[0],pos[1],pos[2]); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; }
+  function tor(g,pos,R,r,axis,c,arc){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,4,10,arc||Math.PI*2),mat(c)); m.position.set(pos[0],pos[1],pos[2]); if(axis==='x') m.rotation.y=Math.PI/2; if(axis==='y') m.rotation.x=Math.PI/2; g.add(m); return m; }
+  // the radiation trefoil on a plate: centre dot and three 60-degree blades. face: 'up' (on a top face) or 'front' (facing -z)
+  function trefoil(g,pos,r,face,c){ const s=grp(g,pos); if(face==='up') s.rotation.x=-Math.PI/2; else s.rotation.y=Math.PI;
+    for(let i=0;i<3;i++){ const b=new THREE.Mesh(new THREE.RingGeometry(r*0.28,r,8,1,(face==='up'?Math.PI/2:-Math.PI/2)-Math.PI/6+i*2*Math.PI/3,Math.PI/3),mat(c)); s.add(b); }
+    const d=new THREE.Mesh(new THREE.CircleGeometry(r*0.17,8),mat(c)); s.add(d); s.traverse(o=>{ if(o.material) o.material.side=THREE.DoubleSide; }); return s; }
+  // tiny 3x5 stencil letters on a face
+  const GLYPH={P:["##.","#.#","##.","#..","#.."],b:["#..","#..","##.","#.#","##."]};
+  // seen from the front (-z), screen-right is -x, so letters run toward -x; on a top face the first row is the far (back) one
+  function stencil(g,str,x,y,z,k,c,face){ let cx=x; for(const ch of str){ const rows=GLYPH[ch]; rows.forEach((row,j)=>{ for(let i=0;i<3;i++) if(row[i]==='#'){
+      if(face==='up') bx(g,[cx-(i+1)*k,y,z-(j+1)*k],[cx-i*k,y+0.08,z-j*k],c);
+      else bx(g,[cx-(i+1)*k,y-(j+1)*k,z-0.08],[cx-i*k,y-j*k,z],c); } }); cx-=4*k; } }
+  // a box with rounded edges along x (box core plus four cylinders), as a cask
+  function rbox(g,f,t,r,c){ const L=t[0]-f[0];
+    bx(g,[f[0],f[1]+r,f[2]],[t[0],t[1]-r,t[2]],c); bx(g,[f[0],f[1],f[2]+r],[t[0],t[1],t[2]-r],c);
+    for(const [y,z] of [[f[1]+r,f[2]+r],[f[1]+r,t[2]-r],[t[1]-r,f[2]+r],[t[1]-r,t[2]-r]]) cyl(g,[f[0]+L/2,y,z],r,L,'x',c,8); }
+  function floor(g,w){ bx(g,[-24,-1,-24],[w+40,0,30],0x1a1d20); bx(g,[w+4,0,0],[w+20,16,16],STONE); }
+  function hazard(g,x0,x1,y0,y1,z){ const n=Math.max(2,Math.round((x1-x0)/1.6)); const w=(x1-x0)/n; for(let i=0;i<n;i++) bx(g,[x0+i*w,y0,z-0.1],[x0+(i+1)*w,y1,z],i%2?BLK:YEL); }
+
+  // ---- A. Lead Strongbox
+  function strongbox(g,W){ floor(g,W);
+    bx(g,[0.5,0,0.5],[W+1.5,1,15.5],LEAD2);
+    bx(g,[1,1,1],[W+1,10,15],LEAD);
+    for(const x of [1,W+1]) for(const z of [1,15]) bx(g,[x-0.6,1,z-0.6],[x+0.6,10,z+0.6],LEAD2);
+    const straps=W>20?[3.5,W/2-2,W/2+3,W-2.5]:[3.5,W-2.5];
+    for(const sx of straps){ bx(g,[sx-0.9,1,0.5],[sx+0.9,10,1],LEAD2); for(const y of [2.5,5.5,8.5]) cyl(g,[sx,y,0.4],0.35,0.3,'z',IRON,6); }
+    const lid=grp(g,[0,10,15]);
+    bx(lid,[1,0,-14],[W+1,0.6,0],LINING); bx(lid,[1,0.6,-14],[W+1,4,0],LEAD); bx(lid,[1.5,4,-13.5],[W+0.5,4.4,-0.5],LEAD3);
+    for(const sx of straps){ bx(lid,[sx-0.9,0.6,-14.4],[sx+0.9,4.5,-13.8],LEAD2); bx(lid,[sx-0.9,4.4,-14],[sx+0.9,4.6,0],LEAD2); cyl(lid,[sx,2.6,-14.5],0.35,0.3,'z',IRON,6); }
+    const cx=1+W/2; bx(lid,[cx-3,4.4,-10],[cx+3,4.6,-4],YEL); trefoil(lid,[cx,4.62,-7],2.5,'up',BLK);
+    bx(lid,[cx-1.4,-1.5,-14.6],[cx+1.4,2.5,-14],IRON);
+    // the padlock on the body, under the hasp
+    cyl(g,[cx,7.2,0.3],1.5,1,'z',IRON,8); tor(g,[cx,8.9,0.3],1,0.3,'z',IRON,Math.PI); bx(g,[cx-0.3,6.5,-0.25],[cx+0.3,7.5,-0.2],BLK);
+    // inside: the thick pale lining and a dark well
+    bx(g,[2,9.99,2],[W,10.02,14],0x15171a); bx(g,[1,9.6,1],[W+1,10,2],LINING); bx(g,[1,9.6,14],[W+1,10,15],LINING);
+    return t=>{ lid.rotation.x=state.open?1.25:0; }; }
+
+  // ---- B. Reactor Cask
+  function cask(g,W){ floor(g,W);
+    bx(g,[1.5,0,2],[W+0.5,1,14],IRON); for(const x of [2.5,W-0.5]) bx(g,[x-1,0,1],[x+1,1.6,15],IRON);
+    rbox(g,[1,1,1],[W+1,9.5,15],2.2,LEAD);
+    const ribs=W>20?[4,W/2+1,W-2]:[4,W-2]; for(const rx of ribs) rbox(g,[rx-0.6,0.8,0.7],[rx+0.6,9.5,15.3],2.4,LEAD2);
+    hazard(g,1.6,W+0.4,8.6,9.5,1);
+    for(let x=3; x<W; x+=3.2) cyl(g,[x,9.9,0.7],0.45,0.6,'z',IRON,6);
+    // carry handles on both ends, a dose tag on a chain from one
+    for(const side of [-1,1]){ const x=side<0?0.2:W+1.8; tor(g,[x,6,8],2.2,0.35,'x',IRON,Math.PI); bx(g,[side<0?0.4:W+1.1,3.6,6.2],[side<0?0.9:W+1.6,4.2,9.8],IRON); }
+    for(let i=0;i<4;i++) bx(g,[-0.1,7.9-i*0.7,7.85],[0.3,8.4-i*0.7,8.15],BRASS);
+    const tag=grp(g,[0.1,4.8,8]); bx(tag,[-0.15,-1.6,-1.1],[0.15,0,1.1],CREAM); bx(tag,[-0.2,-0.6,-0.8],[0.2,-0.3,0.8],RED);
+    const lid=grp(g,[0,9.5,15]); rbox(lid,[1,0,-14],[W+1,4,0],2,LEAD3); bx(lid,[1.3,-0.05,-13.7],[W+0.7,0.4,-0.3],LINING);
+    for(const rx of ribs) rbox(lid,[rx-0.6,0,-14.3],[rx+0.6,4.3,0.3],2.1,LEAD2);
+    trefoil(lid,[1+W/2,4.32,-7],2.2,'up',YEL);
+    const lampG=cyl(g,[1+W/2,5.3,0.6],1.1,0.5,'z',GREEN,8,true), lampA=cyl(g,[1+W/2,5.3,0.6],1.1,0.5,'z',AMBER,8,true); cyl(g,[1+W/2,5.3,0.85],1.5,0.4,'z',IRON,8);
+    bx(g,[2,9.49,2],[W,9.52,14],0x15171a);
+    return t=>{ lid.rotation.x=state.open?1.2:0; lampG.visible=!state.open; lampA.visible=state.open; if(!reduce) tag.rotation.x=Math.sin(t*1.4)*0.08; }; }
+
+  // ---- C. Hazard Locker
+  function locker(g,W){ floor(g,W);
+    bx(g,[1,0,1],[W+1,1,15],IRON);
+    bx(g,[1,1,1],[W+1,10,15],LEAD2);
+    const cols=W>20?6:3, cw=(W-2)/cols; for(let i=0;i<cols;i++) for(let j=0;j<2;j++){ const x0=2+i*cw, y0=1.8+j*4; bx(g,[x0+0.2,y0,0.6],[x0+cw-0.2,y0+3.6,1],LEAD); bx(g,[x0+0.9,y0+0.7,0.35],[x0+cw-0.9,y0+2.9,0.6],LEAD3); }
+    // the gauge, round with a glass and a needle
+    const gx=W>20?W/2+1:W-2.4; cyl(g,[gx,7.6,0.2],1.8,0.6,'z',IRON,10); const face=cyl(g,[gx,7.6,-0.12],1.4,0.1,'z',WHITE,10,true); const needle=grp(g,[gx,7.6,-0.2]); bx(needle,[-0.12,0,-0.05],[0.12,1.1,0],RED);
+    for(const side of [-1,1]){ const x=side<0?0.4:W+1.6; bx(g,[x-0.4,6.5,6],[x+0.4,9,10],IRON); bx(g,[x-0.5,9,7.2],[x+0.5,11.6,8.8],BRASS); }
+    const lid=grp(g,[0,10,15]); bx(lid,[1,0,-14],[W+1,0.5,0],LINING); bx(lid,[1,0.5,-14],[W+1,3.4,0],LEAD); hazard(lid,1,W+1,0.5,3.4,-14);
+    stencil(lid,"Pb",1+W/2+4,3.42,-4.2,1.1,YEL,'up');
+    bx(g,[2,9.99,2],[W,10.02,14],0x15171a);
+    return t=>{ lid.rotation.x=state.open?1.25:0; face.material.color.setHex(state.night?0xcfe8d8:WHITE); if(!reduce) needle.rotation.z=-0.6+Math.sin(t*0.7)*0.15; }; }
+
+  // ---- the shielding set: a wall 4 columns wide, 2 high. column 1 top is the window, column 2 is the door
+  function wall(g,panel,windowPiece,door){ bx(g,[-24,-1,-24],[90,0,30],0x1a1d20); bx(g,[68,0,0],[84,16,16],STONE);
+    for(const [cx,cy] of [[0,0],[0,1],[1,0],[3,0],[3,1]]){ const s=grp(g,[cx*16,cy*16,0]); panel(s); }
+    const w=grp(g,[16,16,0]); windowPiece(w);
+    const hinge=grp(g,[32,0,0]); const d=grp(hinge,[0,0,0]); door(d);
+    return t=>{ d.rotation.y=state.open?-1.4:0; }; }
+  function faceBoth(g,fn){ fn(g,0,-1); const b=grp(g,[16,0,16],0,Math.PI); fn(b,0,-1); }
+
+  function sheetPanel(g){ bx(g,[0,0,0],[16,16,16],LEAD); faceBoth(g,(s)=>{
+      bx(s,[0,0,-0.4],[16,1.2,0],LEAD2); bx(s,[0,14.8,-0.4],[16,16,0],LEAD2); bx(s,[0,0,-0.4],[1.2,16,0],LEAD2); bx(s,[14.8,0,-0.4],[16,16,0],LEAD2);
+      for(const [x,y] of [[1.6,1.6],[8,1.6],[14.4,1.6],[1.6,8],[14.4,8],[1.6,14.4],[8,14.4],[14.4,14.4]]) cyl(s,[x,y,-0.45],0.45,0.3,'z',LEAD3,6);
+      for(const [x,y,w,h] of [[3,4,3,2],[9,9,4,2],[5,11,2,1.5],[10,3.5,2,1.5]]) bx(s,[x,y,-0.1],[x+w,y+h,0],0x535a66); }); }
+  function sheetWindow(g){ for(const [f,t] of [[[0,0,6],[16,2,10]],[[0,14,6],[16,16,10]],[[0,0,6],[2,16,10]],[[14,0,6],[16,16,10]],[[7.4,2,6.5],[8.6,14,9.5]],[[2,7.4,6.5],[14,8.6,9.5]]]) bx(g,f,t,LEAD2);
+      for(const [x,y] of [[1,1],[15,1],[1,15],[15,15]]){ cyl(g,[x,y,5.8],0.45,0.4,'z',LEAD3,6); }
+      bx(g,[2,2,6.8],[14,14,9.2],GLASSY,false,.4); }
+  function sheetDoor(g){ const D=3; bx(g,[0,0,0],[16,32,D],LEAD);
+      for(const y0 of [3,18]){ bx(g,[2.5,y0,-0.4],[13.5,y0+11,0],LEAD2); bx(g,[3.5,y0+1,-0.6],[12.5,y0+10,-0.4],LEAD3); }
+      bx(g,[4.5,21.5,-0.65],[11.5,28.5,-0.6],YEL); trefoil(g,[8,25,-0.7],3,'front',BLK);
+      for(const y of [1.5,16,30.5]) for(const x of [1.2,14.8]) cyl(g,[x,y,-0.3],0.45,0.4,'z',LEAD3,6);
+      bx(g,[12.6,15,-1.4],[13.4,17,-0.2],IRON); bx(g,[10,15.6,-1.6],[13.4,16.4,-1.2],IRON);
+      for(const y of [4,27]) cyl(g,[0,y,D/2],0.8,4,'y',IRON,6); }
+
+  function tilePanel(g){ bx(g,[0,0,0],[16,16,16],GROUT); faceBoth(g,(s)=>{
+      for(const [x,y] of [[0.5,0.5],[8.5,0.5],[0.5,8.5],[8.5,8.5]]){ bx(s,[x,y,-0.35],[x+7,y+7,0],TILE); cyl(s,[x+5.8,y+5.8,-0.4],0.35,0.2,'z',LEAD2,6); } }); }
+  function tileWindow(g){ for(const [f,t] of [[[0,0,5],[16,1.5,11]],[[0,14.5,5],[16,16,11]],[[0,0,5],[1.5,16,11]],[[14.5,0,5],[16,16,11]]]) bx(g,f,t,TILE);
+      for(const [f,t] of [[[1.5,1.5,6],[14.5,2.5,10]],[[1.5,13.5,6],[14.5,14.5,10]],[[1.5,1.5,6],[2.5,14.5,10]],[[13.5,1.5,6],[14.5,14.5,10]]]) bx(g,f,t,GROUT);
+      bx(g,[2.5,2.5,6.5],[13.5,13.5,9.5],GLASSC,false,.38); }
+  function tileDoor(g){ const D=3; bx(g,[0,0,0],[16,32,D],TILE); bx(g,[0.5,0.5,-0.2],[15.5,31.5,0],0x7c8592);
+      hazard(g,0.5,15.5,2,4.5,-0.2);
+      tor(g,[8,23,-0.3],3.6,0.6,'z',LEAD2); const glass=cyl(g,[8,23,0],3.2,0.6,'z',GLASSC,10); glass.material.transparent=true; glass.material.opacity=.45;
+      for(let i=0;i<8;i++){ const a=i*Math.PI/4; cyl(g,[8+Math.cos(a)*3.6,23+Math.sin(a)*3.6,-0.8],0.3,0.3,'z',IRON,6); }
+      bx(g,[2.5,13.6,-1.6],[13.5,14.6,-1.0],IRON); for(const x of [3,13]) bx(g,[x-0.4,13.6,-1.0],[x+0.4,14.6,0],IRON);
+      for(const y of [5,27]) cyl(g,[0,y,D/2],0.9,3,'y',LEAD2,8); }
+
+  function bunkerPanel(g){ bx(g,[0,0,0],[16,16,16],DARKP); faceBoth(g,(s)=>{
+      for(let i=0;i<5;i++) for(let j=0;j<5;j++){ const m=bx(s,[0,0,-0.2],[1.6,0.5,0],0x484d55); m.position.set(2+i*3+(j%2)*1.2,2.4+j*2.8,-0.1); m.rotation.z=(i+j)%2?0.6:-0.6; }
+      for(const [x,y] of [[1.4,1.4],[14.6,1.4],[1.4,14.6],[14.6,14.6]]) cyl(s,[x,y,-0.35],0.7,0.5,'z',IRON,6);
+      stencil(s,"Pb",6.6,4.4,0,0.55,WHITE,'front'); }); }
+  function bunkerWindow(g){ bx(g,[0,0,0],[16,6,16],DARKP); bx(g,[0,10,0],[16,16,16],DARKP); bx(g,[0,6,0],[2,10,16],DARKP); bx(g,[14,6,0],[16,10,16],DARKP);
+      bx(g,[2,6,5],[14,10,11],GLASSY,false,.42); bx(g,[1,10,-2.2],[15,11,0],IRON); for(const x of [1.6,14.4]) bx(g,[x-0.4,10,-2.2],[x+0.4,11.8,0],IRON);
+      for(const [x,y] of [[1.4,1.4],[14.6,1.4],[1.4,14.6],[14.6,14.6]]) cyl(g,[x,y,-0.25],0.7,0.5,'z',IRON,6); }
+  function bunkerDoor(g){ const D=3; bx(g,[0,0,0],[16,32,D],DARKP); bx(g,[1,1,-0.3],[15,31,0],0x2c3035);
+      for(let y=2;y<31;y+=3.5) for(const x of [1.6,14.4]) cyl(g,[x,y,-0.55],0.6,0.5,'z',IRON,6);
+      const wheel=grp(g,[8,15,-1.4]); tor(wheel,[0,0,0],3.6,0.45,'z',BRASS); for(let i=0;i<3;i++){ const sp=bx(wheel,[-3.6,-0.25,-0.2],[3.6,0.25,0.2],BRASS); sp.rotation.z=i*Math.PI/3; } cyl(wheel,[0,0,0.3],0.9,1.2,'z',IRON,8);
+      bx(g,[4.5,23,-0.4],[11.5,29,-0.3],YEL); trefoil(g,[8,26,-0.45],2.6,'front',BLK);
+      for(const y of [5,15,27]) { bx(g,[-1.4,y-1.5,0],[0.6,y+1.5,D],IRON); cyl(g,[-0.4,y,D/2],0.9,3.4,'y',IRON,8); }
+      return wheel; }
+
+  // ---- one WebGL context for every view
+  const views=[];
+  let renderer=null, canvas=null;
+  if(HAS3D){ try{ canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1';
+      renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); document.body.appendChild(canvas); renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0); }catch(e){ renderer=null; } }
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,3000); const amb=new THREE.AmbientLight(0xffffff,.72); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.75); d.position.set(14,30,-24); scene.add(d);
+    const v={view,scene,cam,opts,amb,d,ry:opts.ry||3.55,rx:.42,drag:false,g:null,tick:null,build}; let lx=0,ly=0;
+    v.rebuild=()=>{ if(v.g) scene.remove(v.g); v.g=new THREE.Group(); scene.add(v.g); v.tick=build(v.g); };
+    v.rebuild();
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  function loop(now){ if(!renderer) return; const t=now/1000; const W=innerWidth, H=innerHeight; const pr=renderer.getPixelRatio();
+    if(canvas.width!==Math.round(W*pr)||canvas.height!==Math.round(H*pr)) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue;
+      v.amb.intensity=state.night?.12:.72; v.d.intensity=state.night?.1:.75; if(v.tick) v.tick(t); if(!reduce&&!v.drag) v.ry+=.0025;
+      const o=typeof v.opts.dist==='function'?v.opts.dist():v.opts.dist, T=typeof v.opts.target==='function'?v.opts.target():v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*o*Math.cos(v.rx),T[1]+Math.sin(v.rx)*o,T[2]+Math.cos(v.ry)*o*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); }
+  function card(parent,name,text,cls){ const c=document.createElement('div'); c.className='card'; const h=document.createElement('h3'); h.textContent=name; c.appendChild(h);
+    const v=document.createElement('div'); v.className='view'+(cls?' '+cls:''); c.appendChild(v); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); parent.appendChild(c); return v; }
+  const chestW=()=>state.double?30:14;
+  const CHESTS=[['A. Lead Strongbox','A blue-grey lead box on a dark plinth. Riveted straps run over the lid, the corners are capped, and a heavy hasp drops onto a round padlock. A yellow radiation plate sits on the lid. Open it and the pale lead lining shows, a finger thick.',strongbox],
+    ['B. Reactor Cask','A rounded transport cask with two dark ribs, a hazard stripe round the lid seam, hex bolts along the front and carry handles on both ends, with a dose tag swinging from one. The round lamp glows green while sealed and amber while open.',cask],
+    ['C. Hazard Locker','A lab locker with a padded front of six lead cushions, a round pressure gauge whose needle twitches, toggle clamps on both sides, hazard stripes on the lid edge and "Pb" stencilled on the lid.',locker]];
+  const SHIELDS=[['A. Riveted Lead Sheet','Hammered lead panels with a raised border and eight rivets. The window is thick lead glass, faintly yellow, in a riveted frame with a cross bar. The door has two raised panels, a radiation stencil and a lever handle.',[sheetPanel,sheetWindow,sheetDoor]],
+    ['B. Lab Tile','Four pale tiles per face with sunk grout lines and a screw in each tile. The window is thick glass in a stepped frame. The door is a hatch with a round porthole, a push bar and a hazard band at kick height.',[tilePanel,tileWindow,tileDoor]],
+    ['C. Bunker Plate','Dark tread plate with hex bolts and a small "Pb" stencil. The window is a slit of thick glass under a hood. The door is a vault door with a brass wheel, heavy hinges and a radiation sign.',[bunkerPanel,bunkerWindow,bunkerDoor]]];
+  if(renderer){
+    for(const [n,txt,b] of CHESTS){ const v=card(el('chests'),n,txt); makeView(v,g=>b(g,chestW()),{dist:()=>state.double?92:72,target:()=>[(chestW()+18)/2,6,8]}); }
+    for(const [n,txt,b] of SHIELDS){ const v=card(el('shields'),n,txt,'wide'); makeView(v,g=>wall(g,b[0],b[1],b[2]),{dist:128,target:[40,14,6],ry:3.5}); }
+    requestAnimationFrame(loop);
+  } else {
+    for(const [n,txt] of CHESTS.concat(SHIELDS)){ const v=card(el(SHIELDS.some(s=>s[0]===n)?'shields':'chests'),n,txt); v.textContent='3D view needs WebGL.'; v.style.cssText+='display:grid;place-items:center;color:#9aa4b0;font-size:13px;'; }
+  }
+
+  // ================================================================ screens (GUI pixels)
+  const ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  const W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  const font=new Image(), tints={}; let ready=false;
+  function adv(c){ return c===32?4:(c<256?W[c]+1:6); }
+  function mw(s){ let w=0; for(let i=0;i<s.length;i++) w+=adv(s.charCodeAt(i)); return w; }
+  function tint(col){ if(tints[col]) return tints[col]; const c=document.createElement('canvas'); c.width=128; c.height=128; const g=c.getContext('2d');
+    g.drawImage(font,0,0); g.globalCompositeOperation='source-in'; g.fillStyle=col; g.fillRect(0,0,128,128); return tints[col]=c; }
+  function txt(g,s,x,y,col,k,shadow){ k=k||1; if(shadow) txt(g,s,x+k,y+k,shadow,k); if(!ready||!g.drawImage) return x+mw(s)*k; const t=tint(col);
+    for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); if(c!==32&&c<256&&W[c]>0) g.drawImage(t,(c%16)*8,Math.floor(c/16)*8,W[c],8,x,y,W[c]*k,8*k); x+=adv(c)*k; } return x; }
+  function fill(g,x,y,w,h,c){ g.fillStyle=c; g.fillRect(x,y,w,h); }
+  function px(g,rows,x,y,col){ rows.forEach((r,j)=>{ for(let i=0;i<r.length;i++) if(r[i]==='#') fill(g,x+i,y+j,1,1,col); }); }
+  const TREFOIL=["##...##","###.###",".##.##.","...#...","..###..",".#####.","..###.."];
+
+  // item icons, 16x16, drawn from masks
+  const LUMP=["................","......####......","....########....","...##########...","..############..","..#############.",".##############.",".##############.",".#############..","..############..","..###########...","...#########....","....######......","................","................","................"];
+  const PELLET=["................","................","................","......####......",".....######.....","....########....","....########....","....########....","....########....","....########....","....########....",".....######.....","......####......","................","................","................"];
+  const ROD=["................",".......##.......","......####......","......####......","......####......","......####......","......####......","......####......","......####......","......####......","......####......","......####......","......####......",".......##.......","................","................"];
+  const DUST=["................","................","................","................","................","................","........##......","......######....",".....########...","...###########..","..#############.",".###############","................","................","................","................"];
+  function icon(g,kind,x,y){ const I={
+      uranium:[LUMP,"#55703f","#8fcf4f"], yellorium:[LUMP,"#a9a22b","#efe86a"], yellorite:[null,"#7c7c7c","#e2d63a"],
+      plutonium:[PELLET,"#3c4152","#8fe0ff"], polonium:[PELLET,"#5b4a3a","#ffb15c"], yellowcake:[DUST,"#c9a825","#f0d860"], spent:[ROD,"#5d6573","#4fdc7a"] }[kind];
+    if(I[0]===null){ fill(g,x+1,y+1,14,14,I[1]); fill(g,x+1,y+1,14,1,"#9a9a9a"); fill(g,x+1,y+14,14,1,"#5a5a5a"); for(const [a,b] of [[3,3],[9,4],[5,8],[11,10],[4,12],[12,6]]){ fill(g,x+a,y+b,2,2,I[2]); } return; }
+    px(g,I[0],x,y,I[1]); for(let j=0;j<16;j++) for(let i=0;i<16;i++){ if(I[0][j][i]!=='#') continue; const h=(i*7+j*13)%11; if(h===0||h===5) fill(g,x+i,y+j,1,1,I[2]); }
+    if(kind==='spent'){ fill(g,x+6,y+6,4,2,I[2]); } if(kind==='plutonium'||kind==='polonium'){ fill(g,x+5,y+5,2,2,I[2]); } }
+  function count(g,n,x,y){ const s=String(n); txt(g,s,x+17-mw(s),y+9,"#ffffff",1,"#3f3f3f"); }
+  const SAMPLE=[["uranium",64],["uranium",64],["yellorium",64],["yellorium",37],["yellorite",64],["plutonium",12],["polonium",5],["yellowcake",22],["spent",1]];
+  const SAMPLE2=[[9,"uranium",64],[10,"yellorium",64],[30,"plutonium",64],[31,"spent",1],[40,"yellorite",48]];
+
+  // three palettes; each draws the screen frame, a slot and the labels
+  const VAN={ panel:"#c6c6c6", hi:"#ffffff", lo:"#555555", edge:"#000000", slot:"#8b8b8b", sHi:"#ffffff", sLo:"#373737", title:"#404040", shadow:null };
+  const LEADP={ panel:"#5d6573", hi:"#8a93a2", lo:"#2e333b", edge:"#15181c", slot:"#3a404a", sHi:"#737c8a", sLo:"#1f2328", title:"#e6eaf2", shadow:"#262a30" };
+  const DARK={ panel:"#10151c", hi:"#2a2f3a", lo:"#2a2f3a", edge:"#2a2f3a", slot:"#0c0e12", sHi:"#2a2f3a", sLo:"#2a2f3a", title:"#e6eaf2", shadow:null };
+  function frame(g,P,w,h){ fill(g,0,0,w,h,P.edge); fill(g,1,1,w-2,h-2,P.panel); fill(g,1,1,w-3,1,P.hi); fill(g,1,1,1,h-3,P.hi); fill(g,2,h-2,w-3,1,P.lo); fill(g,w-2,2,1,h-3,P.lo); }
+  function slot(g,P,x,y){ fill(g,x,y,18,18,P.slot); fill(g,x,y,17,1,P.sLo); fill(g,x,y,1,17,P.sLo); fill(g,x+1,y+17,17,1,P.sHi); fill(g,x+17,y+1,1,17,P.sHi); }
+
+  // layout as ChestMenu: slots from y 18 at 18 px; player inventory 13 below the chest rows (C adds a 12 px line); hotbar 4 below
+  function layout(concept,rows){ const extra=concept==='c'?12:0; const inv=18+rows*18+13+extra; return { rows, extra, inv, hot:inv+58, h:inv+58+24, w:176, invLabel:inv-11 }; }
+  function screen(cv,concept){ const rows=state.double?6:3, L=layout(concept,rows); const k=2; cv.width=(L.w+8)*k; cv.height=(L.h+8)*k; cv.style.aspectRatio=(L.w+8)+'/'+(L.h+8);
+    const g=cv.getContext('2d'); if(!g||!g.setTransform) return L; g.imageSmoothingEnabled=false; g.setTransform(k,0,0,k,4*k,4*k);
+    const P=concept==='a'?VAN:concept==='b'?LEADP:DARK; frame(g,P,L.w,L.h);
+    const title=state.double?"Large Lead-Lined Chest":"Lead-Lined Chest";
+    if(concept==='b'){ for(const [x,y] of [[3,3],[L.w-5,3],[3,L.h-5],[L.w-5,L.h-5]]){ fill(g,x,y,2,2,"#9aa3b0"); fill(g,x+1,y+1,1,1,"#2e333b"); } }
+    txt(g,title,8,6,P.title,1,P.shadow);
+    if(concept==='b'){ const label="SHIELDED", tw=mw(label)+13, tx=L.w-8-tw, ty=L.invLabel-2; fill(g,tx,ty,tw,11,"#173a26"); fill(g,tx,ty,tw,1,"#2f7a4c"); px(g,TREFOIL,tx+3,ty+2,"#58f29a"); txt(g,label,tx+12,ty+2,"#58f29a");
+      check('B: SHIELDED tag clears the Inventory label ('+(rows*9)+' slots)',8+mw("Inventory")+4<=tx);
+      check('B: SHIELDED tag sits between the chest rows and the inventory ('+(rows*9)+' slots)',ty>=17+rows*18+1&&ty+11<=L.inv-1); }
+    if(concept==='c'){ for(let i=0;i<L.w-16;i+=4){ fill(g,8+i,15,2,2,"#e7c51d"); fill(g,10+i,15,2,2,"#1b1d1f"); } }
+    for(let r=0;r<rows;r++) for(let c=0;c<9;c++) slot(g,P,7+c*18,17+r*18);
+    const items=state.double?SAMPLE.map((s,i)=>[i,s[0],s[1]]).concat(SAMPLE2):SAMPLE.map((s,i)=>[i<9?i:i,s[0],s[1]]);
+    for(const [i,kind,n] of items){ if(i>=rows*9) continue; const x=8+(i%9)*18, y=18+Math.floor(i/9)*18; icon(g,kind,x,y); if(n>1) count(g,n,x,y); }
+    if(concept==='c'){ const line="Nothing in here radiates.", ly=18+rows*18+3; px(g,TREFOIL,8,ly+1,"#58f29a"); txt(g,line,18,ly,"#9aa3b5");
+      check('C: footer line fits the panel ('+(rows*9)+' slots)',18+mw(line)<=L.w-8); }
+    txt(g,"Inventory",8,L.invLabel,P.title,1,P.shadow);
+    for(let r=0;r<3;r++) for(let c=0;c<9;c++) slot(g,P,7+c*18,L.inv-1+r*18);
+    for(let c=0;c<9;c++) slot(g,P,7+c*18,L.hot-1);
+    check(concept.toUpperCase()+': title fits beside the edges ('+(rows*9)+' slots)',8+mw(title)<=L.w-8);
+    check(concept.toUpperCase()+': hotbar ends inside the panel ('+(rows*9)+' slots)',L.hot-1+18<=L.h-5);
+    check(concept.toUpperCase()+': inventory label clears the chest rows ('+(rows*9)+' slots)',L.invLabel>=18+rows*18+(concept==='c'?L.extra:1));
+    return L; }
+  const SCREENS=[['A. Vanilla chest','The game\'s own chest screen, with nothing added. Players know it is a chest at once, and the block itself has to say it is shielded.','a'],
+    ['B. Lead panel','The vanilla layout in blue-grey lead with rivets in the corners. A green "SHIELDED" tag with the radiation sign sits on the Inventory line, opposite the label, where it fits at both sizes.','b'],
+    ['C. BSP dark','BSP-Core\'s dark screens, with a hazard stripe under the title and one line under the slots that states the rule. It is 12 px taller than a chest screen.','c']];
+  const guis=[];
+  for(const [n,text,c] of SCREENS){ const d=document.createElement('div'); d.className='card'; const h=document.createElement('h3'); h.textContent=n; d.appendChild(h);
+    const cv=document.createElement('canvas'); cv.className='gui'; cv.setAttribute('role','img'); cv.setAttribute('aria-label',n+' screen mock-up'); d.appendChild(cv); const p=document.createElement('p'); p.textContent=text; d.appendChild(p); el('screens').appendChild(d); guis.push([cv,c]); }
+  function drawScreens(){ CHECKS.length=0; const keep=state.double; for(const dbl of [false,true]){ state.double=dbl; for(const [cv,c] of guis) screen(cv,c); } state.double=keep; checking=false; for(const [cv,c] of guis) screen(cv,c); checking=true;
+    const okN=CHECKS.filter(c=>c.ok).length, bad=CHECKS.filter(c=>!c.ok).map(c=>c.name); el('checks').textContent='Layout checks: '+okN+' of '+CHECKS.length+' pass'+(bad.length?'. Failing: '+bad.join('; '):'.'); }
+  font.onload=()=>{ ready=true; drawScreens(); }; font.src=ASCII; drawScreens();
+
+  el('double').addEventListener('change',e=>{ state.double=e.target.checked; for(const v of views) if(v.opts.dist&&typeof v.opts.dist==='function') v.rebuild(); drawScreens(); });
+  el('open').addEventListener('change',e=>{ state.open=e.target.checked; });
+  el('night').addEventListener('change',e=>{ state.night=e.target.checked; });
+})();
+</script>

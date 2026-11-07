@@ -2606,5 +2606,14 @@
   "gui.bsp_core.land.banned": "Banned",
   "gui.bsp_core.land.banned_count": "%s BANNED",
   "gui.bsp_core.land.admin": "Admin",
-  "message.bsp_core.land.not_listed": "This Land Office does not sell that plot."
+  "message.bsp_core.land.not_listed": "This Land Office does not sell that plot.",
+  "block.bsp_core.lead_lined_chest": "Lead-Lined Chest",
+  "container.bsp_core.lead_lined_chest_double": "Large Lead-Lined Chest",
+  "gui.bsp_core.lead_chest.shielded": "SHIELDED",
+  "gui.bsp_core.lead_chest.shielded_tip": "Lead-lined: nothing in this chest gives off radiation, however much is in it.",
+  "block.bsp_core.radiation_shielding_panel": "Radiation Shielding Panel",
+  "block.bsp_core.radiation_shielding_window": "Radiation Shielding Window",
+  "block.bsp_core.radiation_shielding_door": "Radiation Shielding Door",
+  "jei.bsp_core.info.lead_lined_chest": "A chest whose contents never give off radiation, however much raw uranium, yellorium, pellets or fuel rods are in it. In an ordinary chest they do, through walls. Two side by side join into a large chest; hoppers, pipes and comparators work as with any chest. The light on the lid is green while it is shut and amber while it is open. Lead plates from any mod make it.",
+  "jei.bsp_core.info.radiation_shielding": "For walling off radiation. The Panel stops all of it, the Window lets a tenth through (and all the light), the Door blocks nearly all of it while shut and almost none while open, by hand or redstone. Panels side by side join into one riveted wall; windows in one plane join into one sheet of glass. As hard as iron."
 }

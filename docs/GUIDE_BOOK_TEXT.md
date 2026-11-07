@@ -1219,3 +1219,55 @@ The **LOTTERY** tab on a Trade Post turns a drum of the names of everyone in, be
 
 The *Portable Banker* shows the pot and your chance on its account page, and Score Screens can show the **Lottery** board.
 
+---
+
+# Radiation
+
+Uranium, pellets and fuel rods give off radiation. Store them safely and wall it in.
+
+## The Lead-Lined Chest
+
+**Page 1**  `[item shown] lead_lined_chest`
+
+Raw uranium and yellorium, yellorite ore, plutonium and polonium pellets, yellow cake and fuel rods give off radiation from an ordinary chest, through walls. A full chest of raw uranium reaches about eighteen blocks.
+
+Nothing in a *Lead-Lined Chest* gives off radiation, however much is in it.
+
+**Page 2: A chest like any other**
+
+Two side by side join into a large chest. Hoppers and pipes reach it from any side, comparators read it, and breaking it spills what is inside.
+
+The light on the lid glows green while it is shut and amber while it is open, and its screen carries a green **SHIELDED** tag.
+
+**Page 3**  `[recipe] lead_lined_chest`
+
+Eight lead plates round a wooden chest. Any mod's lead plates will do.
+
+## Radiation Shielding
+
+**Page 1: How it travels**
+
+Radiation spreads from its source in straight lines and weakens with distance. Each block in its way takes some off: an ordinary wall very little, water a little more, a block of lead nearly all of it.
+
+A Geiger counter clicks when it reaches you, and a dose shows as the Radiation effect.
+
+**Page 2**  `[item shown] radiation_shielding_panel`
+
+A *Radiation Shielding Panel* stops all radiation passing through it. Wall a reactor or a store room with panels and nothing reaches the other side.
+
+Panels side by side join into one riveted wall.
+
+**Page 3**  `[item shown] radiation_shielding_window`
+
+The *Radiation Shielding Window* is a thick lead-framed pane. It lets a tenth of the radiation through and all of the light. Windows side by side join into one sheet of glass.
+
+**Page 4**  `[item shown] radiation_shielding_door`
+
+The *Radiation Shielding Door* blocks nearly all radiation while it is shut and almost none while it is open. Open it by hand or with redstone, and keep it shut.
+
+**Page 5**  `[recipe] radiation_shielding_panel, radiation_shielding_window`
+
+**Page 6**  `[recipe] radiation_shielding_door`
+
+All three are as hard as iron.
+

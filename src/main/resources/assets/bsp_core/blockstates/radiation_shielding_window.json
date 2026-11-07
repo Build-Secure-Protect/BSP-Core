@@ -1,0 +1,11 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "bsp_core:block/radiation_shielding_window"
+    },
+    "axis=z": {
+      "model": "bsp_core:block/radiation_shielding_window",
+      "y": 90
+    }
+  }
+}

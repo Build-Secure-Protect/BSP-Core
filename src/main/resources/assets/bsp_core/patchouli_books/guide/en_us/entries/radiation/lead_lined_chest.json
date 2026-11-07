@@ -1,0 +1,23 @@
+{
+  "name": "The Lead-Lined Chest",
+  "category": "bsp_core:radiation",
+  "icon": "bsp_core:lead_lined_chest",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:lead_lined_chest",
+      "text": "Raw uranium and yellorium, yellorite ore, plutonium and polonium pellets, yellow cake and fuel rods give off radiation from an ordinary chest, through walls. A full chest of raw uranium reaches about eighteen blocks.$(br2)Nothing in a $(item)Lead-Lined Chest$() gives off radiation, however much is in it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Two side by side join into a large chest. Hoppers and pipes reach it from any side, comparators read it, and breaking it spills what is inside.$(br2)The light on the lid glows green while it is shut and amber while it is open, and its screen carries a green $(l)SHIELDED$() tag.",
+      "title": "A chest like any other"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:lead_lined_chest",
+      "text": "Eight lead plates round a wooden chest. Any mod's lead plates will do."
+    }
+  ]
+}

@@ -32,6 +32,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.TOTEM_FORGE.get(), TotemForgeScreen::new);
             MenuScreens.register(ModMenus.TOTEM_COMPASS.get(), TotemCompassScreen::new);
             MenuScreens.register(ModMenus.COIN_VAULT.get(), CoinVaultScreen::new);
+            MenuScreens.register(ModMenus.LEAD_LINED_CHEST.get(), LeadLinedChestScreen::new);
             MenuScreens.register(ModMenus.DECOY.get(), DecoyScreen::new);
             MenuScreens.register(ModMenus.SEASON_REWARDS.get(), SeasonRewardsScreen::new);
             MenuScreens.register(ModMenus.BATTERY_CHARGER.get(), BatteryChargerScreen::new);
@@ -52,6 +53,30 @@ public final class ClientSetup {
         });
     }
 
+    /** Radiation Shielding Panels and Windows join like connected-texture blocks: their baked models are wrapped (ShieldJoinedModel). */
+    @SubscribeEvent
+    public static void onModifyBaking(net.minecraftforge.client.event.ModelEvent.ModifyBakingResult event) {
+        for (var entry : java.util.List.of(java.util.Map.entry(com.mrgregles.bsp_core.registry.ModBlocks.RADIATION_SHIELDING_PANEL.get(), false),
+                java.util.Map.entry(com.mrgregles.bsp_core.registry.ModBlocks.RADIATION_SHIELDING_WINDOW.get(), true))) {
+            String name = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(entry.getKey()).getPath();
+            for (var state : entry.getKey().getStateDefinition().getPossibleStates()) {
+                var location = net.minecraft.client.renderer.block.BlockModelShaper.stateToModelLocation(state);
+                var model = event.getModels().get(location);
+                if (model != null) {
+                    event.getModels().put(location, new ShieldJoinedModel(model, name, entry.getValue()));
+                }
+            }
+        }
+    }
+
+    /** Models no block state names, drawn by renderers: the Lead-Lined Chest's lids. */
+    @SubscribeEvent
+    public static void onRegisterModels(net.minecraftforge.client.event.ModelEvent.RegisterAdditional event) {
+        event.register(LeadLinedChestRenderer.LID);
+        event.register(LeadLinedChestRenderer.LID_LEFT);
+        event.register(LeadLinedChestRenderer.LID_RIGHT);
+    }
+
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.SHATTER_TOTEM_ITEM.get(), ShatterTotemItemRenderer::new);
@@ -59,6 +84,7 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SCORE_SCREEN.get(), ScoreScreenRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_VAULT.get(), CoinVaultRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.LEAD_LINED_CHEST.get(), LeadLinedChestRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DECOY_TOTEM.get(), DecoyTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_PROJECTOR.get(), TotemProjectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_CABLE.get(), PlasmaCableRenderer::new);

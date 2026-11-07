@@ -100,6 +100,12 @@ public final class ModBlocks {
     }
 
     public static final RegistryObject<Block> COIN_VAULT = BLOCKS.register("coin_vault", com.mrgregles.bsp_core.vault.CoinVaultBlock::new);
+    /** A chest whose contents never radiate (Voltaic's container scan skips it): see {@code shield/LeadLinedChestBlockEntity}. */
+    public static final RegistryObject<Block> LEAD_LINED_CHEST = BLOCKS.register("lead_lined_chest", com.mrgregles.bsp_core.shield.LeadLinedChestBlock::new);
+    /** The radiation shielding set (see {@code shield/ShieldingBlocks}): what each lets through is Voltaic data. */
+    public static final RegistryObject<Block> RADIATION_SHIELDING_PANEL = BLOCKS.register("radiation_shielding_panel", com.mrgregles.bsp_core.shield.ShieldingBlocks::panel);
+    public static final RegistryObject<Block> RADIATION_SHIELDING_WINDOW = BLOCKS.register("radiation_shielding_window", com.mrgregles.bsp_core.shield.ShieldingBlocks::window);
+    public static final RegistryObject<Block> RADIATION_SHIELDING_DOOR = BLOCKS.register("radiation_shielding_door", com.mrgregles.bsp_core.shield.ShieldingBlocks::door);
 
     public static final RegistryObject<Block> SCORE_SCREEN = BLOCKS.register("score_screen", com.mrgregles.bsp_core.score.ScoreScreenBlock::new);
     public static final RegistryObject<Block> BANK_ATM = BLOCKS.register("bank_atm", com.mrgregles.bsp_core.bank.BankAtmBlock::new);

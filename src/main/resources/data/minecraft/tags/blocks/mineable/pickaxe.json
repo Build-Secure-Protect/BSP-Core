@@ -109,6 +109,10 @@
     "bsp_core:forge_hearth",
     "bsp_core:melt_tank",
     "bsp_core:pour_head",
-    "bsp_core:forge_cap"
+    "bsp_core:forge_cap",
+    "bsp_core:lead_lined_chest",
+    "bsp_core:radiation_shielding_panel",
+    "bsp_core:radiation_shielding_window",
+    "bsp_core:radiation_shielding_door"
   ]
 }

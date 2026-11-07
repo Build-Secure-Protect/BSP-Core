@@ -102,6 +102,11 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.vault.CoinVaultBlockEntity::new, ModBlocks.COIN_VAULT.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.shield.LeadLinedChestBlockEntity>> LEAD_LINED_CHEST =
+            BLOCK_ENTITIES.register("lead_lined_chest", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.shield.LeadLinedChestBlockEntity::new, ModBlocks.LEAD_LINED_CHEST.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.zone.AntiTotemBlockEntity>> ANTI_TOTEM =
             BLOCK_ENTITIES.register("anti_totem", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.zone.AntiTotemBlockEntity::new, ModBlocks.ANTI_TOTEM.get()).build(null));

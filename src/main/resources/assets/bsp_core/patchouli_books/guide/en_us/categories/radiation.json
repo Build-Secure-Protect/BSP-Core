@@ -1,0 +1,6 @@
+{
+  "name": "Radiation",
+  "description": "Uranium, pellets and fuel rods give off radiation. Store them safely and wall it in.",
+  "icon": "bsp_core:lead_lined_chest",
+  "sortnum": 4
+}

@@ -46,11 +46,34 @@ public final class RegionGuardZones {
         }
     }
 
+    /**
+     * Whether Region Guard lets {@code player} open containers at {@code pos} (its chest-access flag); true when it is absent. Used so
+     * a Lead-Lined Chest placed outside a claim cannot join a claimed one and open it from outside.
+     */
+    public static boolean mayOpenChest(ServerLevel level, BlockPos pos, @Nullable Player player) {
+        if (!present()) {
+            return true;
+        }
+        try {
+            return Api.chestAccess(level, pos, player);
+        } catch (LinkageError | RuntimeException e) {
+            if (!warned) {
+                warned = true;
+                BSPCore.LOGGER.warn("BSP-Core could not ask Region Guard about chest access ({}); allowing. Is Region Guard's API older than expected?", e.toString());
+            }
+            return true;
+        }
+    }
+
     /** Touches Region Guard's classes only when it is installed. */
     private static final class Api {
         static boolean allows(ServerLevel level, BlockPos pos, String key, @Nullable Player player) {
             var flag = key.equals(ZoneLedger.TOTEM_PLACE) ? com.mrgregles.bsp_region_guard.flag.Flags.TOTEM_PLACE : com.mrgregles.bsp_region_guard.flag.Flags.TOTEM_DROP;
             return com.mrgregles.bsp_region_guard.api.RegionGuardApi.get().regions().allows(level, pos, flag, player);
+        }
+
+        static boolean chestAccess(ServerLevel level, BlockPos pos, @Nullable Player player) {
+            return com.mrgregles.bsp_region_guard.api.RegionGuardApi.get().regions().allows(level, pos, com.mrgregles.bsp_region_guard.flag.Flags.CHEST_ACCESS, player);
         }
     }
 }

@@ -1,0 +1,225 @@
+<title>Lead-Lined Chest Looks, Round 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Layout: the BSP concept board, round 2. The picked chest (A's box with C's front) with three sci-fi lids, and the shielding set joining like connected-texture blocks, on three wall layouts. One WebGL context draws every view. */
+:root{ --bg:#eef0ee; --panel:#ffffff; --line:#d3d8d4; --fg:#191c1f; --muted:#5c6470; --acc:#8a7a12; --hz:#e7c51d;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1214; --panel:#171b1f; --line:#2a3036; --fg:#e7eaee; --muted:#9aa4b0; --acc:#e7c51d; --hz:#e7c51d; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1214; --panel:#171b1f; --line:#2a3036; --fg:#e7eaee; --muted:#9aa4b0; --acc:#e7c51d; --hz:#e7c51d; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+.lede b{ color:var(--fg); }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; max-width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 72%,#2c3236 0%,#0c0e10 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view.wide{ aspect-ratio:4/3; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; } .ctl label{ display:flex; gap:8px; align-items:center; cursor:pointer; }
+.ctl input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+ol{ margin:0; padding-left:20px; } ol li{ margin-bottom:8px; max-width:80ch; } ol b{ color:var(--fg); }
+.stripe{ height:6px; border-radius:2px; background:repeating-linear-gradient(-45deg,var(--hz) 0 8px,#1b1d1f 8px 16px); max-width:220px; }
+.checks{ font-size:12px; color:var(--muted); }
+</style>
+<div class="wrap">
+<section><div class="stripe"></div><h1>Lead-Lined Chest Looks, Round 2</h1>
+<p class="lede">These are your picks put together. The chest has <b>A's box</b> without the straps, padlock and corner posts, and keeps the <b>radiation plate</b> on the lid. It takes <b>C's padded squares and gauge</b> on the front. Section 1 shows three sci-fi lids for it. The shielding set has <b>A's panels and door</b> and <b>B's window</b>, and both join like connected-texture blocks: the border and rivets run only round the outside of a group. The screen is <b>B, the lead panel</b>, unchanged from round 1.</p>
+<div class="card"><div class="ctl">
+<label><input type="checkbox" id="double"> Double chest</label>
+<label><input type="checkbox" id="open"> Lid and door open</label>
+<label><input type="checkbox" id="night"> Night (shows what glows)</label>
+<label><input type="checkbox" id="leadframe" checked> Window frame in lead</label>
+<span style="color:var(--muted)">Drag a view to turn it.</span></div></div></section>
+
+<section><h2>1. The chest: three sci-fi lids</h2><div class="grid3" id="chests"></div></section>
+
+<section><h2>2. The shielding set, joined</h2>
+<p class="lede">The same set is built three ways. A block's edge keeps its border and rivets only where the next block is not the same kind. Panels join panels and windows join windows. A panel next to a window or the door keeps its border, so the opening is framed. Where a group turns an inside corner, the border closes the corner as well. Untick "Window frame in lead" to see B's window in its own pale frame.</p>
+<div class="grid3" id="shields"></div>
+<p class="checks" id="checks"></p></section>
+
+<section><h2>3. Pick, with defaults</h2>
+<div class="card"><ol>
+<li><b>The lid.</b> The default is <b>1, Rail Frame</b>: a raised rail runs round the top with cut corners, a green light line runs just inside it, and the radiation plate sits sunk in the middle. It reads as sci-fi from every side without changing the box's shape. With 2, Armoured Spine, the lid gets a raised spine from front to back with vents and two lights, which gives the strongest machine look. With 3, Seal Ring, angled brackets clamp the four corners and the plate sits in a raised ring like a hatch seal.</li>
+<li><b>The window frame.</b> The default is that the window frame is lead, so a window sits in a lead wall as part of the same set. Otherwise the window keeps B's pale tile frame, which stands out from the lead panels.</li>
+<li><b>The gauge on a double chest.</b> The default is that a double chest has one gauge, on the top-right square of the front as you face it, and both halves share its reading. Otherwise each half keeps its own gauge, so a double chest shows two.</li>
+<li><b>How the joining is built.</b> The default is that BSP-Core draws the joined blocks itself, looking at all eight neighbours on each face, so inside corners close and nothing new is needed in the pack. Otherwise the blocks use Fusion, the connected-texture library already in the pack for Connected Glass. That means less code, but BSP-Core then needs Fusion installed.</li>
+</ol></div></section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const el=id=>document.getElementById(id);
+  const reduce=typeof matchMedia==="function"&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const state={double:false, open:false, night:false, leadframe:true};
+  const CHECKS=[]; function check(name,ok){ CHECKS.push({name,ok:!!ok}); } window.__leadChest2Checks=CHECKS;
+
+  const LEAD=0x5d6573, LEAD2=0x3d434c, LEAD3=0x737c8a, LINING=0xaab0b8, IRON=0x2a2e33, YEL=0xe7c51d, BLK=0x16181a, STONE=0x6c6f73,
+        GLASSC=0x9fd8c8, GREEN=0x58f29a, GREEND=0x1f5a38, RED=0xc0392b, TILE=0x8a93a0, GROUT=0x3a3f47, WHITE=0xdfe3e6;
+  // ---------------------------------------------------------------- the connection rule, kept apart from drawing so Node can check it
+  const PRESETS={
+    room:{name:'Room wall', rows:["PPPPP","PWWPD","PPPPD"]},
+    steps:{name:'Stepped wall', rows:["PP...","PPP..","PPPPD","PPPPD"]},
+    windows:{name:'Window wall', rows:["PPPPPP","PWWPWP","PWWPPP"]}};
+  function at(rows,c,r){ return r<0||r>=rows.length||c<0||c>=rows[r].length?'.':rows[r][c]; }
+  // edges of one front face, as seen: true = this edge shows its border (the neighbour is not the same kind)
+  function edges(rows,c,r){ const k=at(rows,c,r), s=(dc,dr)=>at(rows,c+dc,r+dr)===k;
+    const e={t:!s(0,-1), b:!s(0,1), l:!s(-1,0), r:!s(1,0)};
+    // an inside corner: both sides join but the diagonal does not, so the corner piece closes it
+    e.itl=!e.t&&!e.l&&!s(-1,-1); e.itr=!e.t&&!e.r&&!s(1,-1); e.ibl=!e.b&&!e.l&&!s(-1,1); e.ibr=!e.b&&!e.r&&!s(1,1); return e; }
+  // checks on the rule itself
+  (function(){ const R=PRESETS.room.rows; let e=edges(R,0,0); check('Room: the top-left panel shows its top and left border only',e.t&&e.l&&!e.r&&!e.b);
+    e=edges(R,3,0); check('Room: the top panel over a panel shows only its top border',e.t&&!e.l&&!e.r&&!e.b);
+    e=edges(R,1,1); check('Room: the left window shows top, bottom and left frame, and joins right',e.t&&e.b&&e.l&&!e.r);
+    e=edges(R,3,1); check('Room: the panel beside the door keeps its right border',e.r);
+    e=edges(R,1,0); check('Room: the panel above the window keeps its bottom border',e.b);
+    const S=PRESETS.steps.rows; e=edges(S,1,1); check('Steps: the inside corner closes at top-right',e.itr&&!e.t&&!e.r);
+    const W=PRESETS.windows.rows; e=edges(W,1,1); check('Windows: the 2x2 window joins right and down',!e.r&&!e.b&&e.t&&e.l);
+    e=edges(W,4,1); check('Windows: the lone window frames all four sides',e.t&&e.b&&e.l&&e.r); })();
+
+  const HAS3D=typeof THREE!=="undefined";
+  function mat(c,glow,op){ const m=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ m.transparent=true; m.opacity=op; m.depthWrite=false; } return m; }
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat(c,glow,op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function grp(g,pos,rx,ry,rz){ const s=new THREE.Group(); s.position.set(pos[0],pos[1],pos[2]); if(rx) s.rotation.x=rx; if(ry) s.rotation.y=ry; if(rz) s.rotation.z=rz; g.add(s); return s; }
+  function cyl(g,pos,r,h,axis,c,sides,glow){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,sides||8),mat(c,glow)); m.position.set(pos[0],pos[1],pos[2]); if(axis==='x') m.rotation.z=Math.PI/2; if(axis==='z') m.rotation.x=Math.PI/2; g.add(m); return m; }
+  function trefoil(g,pos,r,face,c){ const s=grp(g,pos); if(face==='up') s.rotation.x=-Math.PI/2; else s.rotation.y=Math.PI;
+    for(let i=0;i<3;i++){ const b=new THREE.Mesh(new THREE.RingGeometry(r*0.28,r,8,1,(face==='up'?Math.PI/2:-Math.PI/2)-Math.PI/6+i*2*Math.PI/3,Math.PI/3),mat(c)); s.add(b); }
+    s.add(new THREE.Mesh(new THREE.CircleGeometry(r*0.17,8),mat(c))); s.traverse(o=>{ if(o.material) o.material.side=THREE.DoubleSide; }); return s; }
+
+  // ---------------------------------------------------------------- the chest: A's box, C's front, a sci-fi lid
+  // seen from the front (-z), screen-right is -x
+  function body(g,W){ bx(g,[-24,-1,-24],[W+40,0,30],0x1a1d20); bx(g,[W+4,0,0],[W+20,16,16],STONE);
+    bx(g,[0.5,0,0.5],[W+1.5,1,15.5],LEAD2); bx(g,[1,1,1],[W+1,10,15],LEAD);
+    bx(g,[1.6,1.4,0.7],[W+0.4,9.6,1],LEAD2); // the sunk bed the squares sit in
+    const cols=W>20?6:3, cw=(W-2)/cols; let gauge=null, needle=null;
+    for(let i=0;i<cols;i++) for(let j=0;j<2;j++){ const x0=2+i*cw, y0=1.8+j*4;
+      if(i===0&&j===1){ // the top square on the right as seen holds the gauge
+        const gx=x0+cw/2; cyl(g,[gx,y0+1.8,0.4],1.75,0.6,'z',IRON,10); gauge=cyl(g,[gx,y0+1.8,0.06],1.4,0.1,'z',WHITE,10,true);
+        needle=grp(g,[gx,y0+1.8,-0.02]); bx(needle,[-0.12,0,-0.05],[0.12,1.1,0],RED); for(const a of [-0.9,0,0.9]){ const tk=bx(g,[-0.08,1.1,-0.02],[0.08,1.35,0.02],BLK); tk.position.set(gx+Math.sin(a)*1.2,y0+1.8+Math.cos(a)*1.2,0); }
+        continue; }
+      bx(g,[x0+0.2,y0,0.4],[x0+cw-0.2,y0+3.6,0.8],LEAD3); bx(g,[x0+0.9,y0+0.7,0.2],[x0+cw-0.9,y0+2.9,0.4],LEAD); }
+    bx(g,[2,9.99,2],[W,10.02,14],0x15171a); bx(g,[1,9.6,1],[W+1,10,2],LINING); bx(g,[1,9.6,14],[W+1,10,15],LINING);
+    const lid=grp(g,[0,10,15]); bx(lid,[1,0,-14],[W+1,0.6,0],LINING); bx(lid,[1,0.6,-14],[W+1,4,0],LEAD);
+    return {lid, gauge, needle}; }
+  function plate(lid,cx,cz,y,size){ bx(lid,[cx-size/2,y,cz-size/2],[cx+size/2,y+0.2,cz+size/2],YEL); trefoil(lid,[cx,y+0.22,cz],size*0.42,'up',BLK); }
+  function ticker(p,extra){ return t=>{ p.lid.rotation.x=state.open?1.25:0; p.gauge.material.color.setHex(state.night?0xcfe8d8:WHITE); if(!reduce) p.needle.rotation.z=-0.6+Math.sin(t*0.7)*0.15; if(extra) extra(t); }; }
+
+  // 1. Rail Frame: a raised rail round the top with cut corners, a green light line inside it, the plate sunk in the middle
+  function railFrame(g,W){ const p=body(g,W), L=p.lid, x0=1, x1=W+1, z0=-14, z1=0;
+    bx(L,[x0+2,4,z0],[x1-2,4.9,z0+1.3],LEAD2); bx(L,[x0+2,4,z1-1.3],[x1-2,4.9,z1],LEAD2); bx(L,[x0,4,z0+2],[x0+1.3,4.9,z1-2],LEAD2); bx(L,[x1-1.3,4,z0+2],[x1,4.9,z1-2],LEAD2);
+    for(const [cx,cz] of [[x0+1.4,z0+1.4],[x1-1.4,z0+1.4],[x0+1.4,z1-1.4],[x1-1.4,z1-1.4]]){ const k=bx(L,[-1.3,4,-1.3],[1.3,4.9,1.3],LEAD2); k.position.set(cx,4.45,cz); k.rotation.y=Math.PI/4; }
+    const glow=[]; glow.push(bx(L,[x0+2.4,4,z0+1.7],[x1-2.4,4.08,z0+2],GREEN,true)); glow.push(bx(L,[x0+2.4,4,z1-2],[x1-2.4,4.08,z1-1.7],GREEN,true));
+    glow.push(bx(L,[x0+1.7,4,z0+2.4],[x0+2,4.08,z1-2.4],GREEN,true)); glow.push(bx(L,[x1-2,4,z0+2.4],[x1-1.7,4.08,z1-2.4],GREEN,true));
+    bx(L,[x0+1.3,0.6,z0-0.15],[x1-1.3,1.2,z0],GREEND); // a dark seam line on the lid's front edge
+    bx(L,[(x0+x1)/2-3.6,3.8,-10.6],[(x0+x1)/2+3.6,4.0,-3.4],LEAD2); plate(L,(x0+x1)/2,-7,3.9,6);
+    return ticker(p,()=>glow.forEach(m=>m.material.color.setHex(state.open?0xf2b544:GREEN))); }
+
+  // 2. Armoured Spine: a stepped spine front to back on each half, vent slots either side, two lights at its front
+  function spine(g,W){ const p=body(g,W), L=p.lid; const centres=W>20?[1+W/4,1+3*W/4]:[1+W/2]; const lights=[];
+    for(const cx of centres){ bx(L,[cx-3.6,4,-14],[cx+3.6,4.6,0],LEAD2); bx(L,[cx-2.6,4.6,-13.4],[cx+2.6,5.2,-0.6],LEAD3); plate(L,cx,-7.5,5.2,4.6);
+      for(const side of [-1,1]) for(let i=0;i<3;i++){ const vx=cx+side*5.2; bx(L,[vx-1,3.95,-11.5+i*3.4],[vx+1,4.05,-10.5+i*3.4],IRON); }
+      for(const dx of [-1.2,1.2]) lights.push(cyl(L,[cx+dx,4.9,-14.05],0.45,0.3,'z',GREEN,8,true)); }
+    bx(L,[1,0.6,-14.15],[W+1,1.1,-14],GREEND);
+    return ticker(p,()=>lights.forEach(m=>m.material.color.setHex(state.open?0xf2b544:GREEN))); }
+
+  // 3. Seal Ring: angled corner brackets wrapping the lid's corners, groove lines toward the middle, the plate in a raised octagonal ring
+  function sealRing(g,W){ const p=body(g,W), L=p.lid, x0=1, x1=W+1; const cx=(x0+x1)/2;
+    for(const [bxp,bzp,sx,sz] of [[x0,-14,1,1],[x1,-14,-1,1],[x0,0,1,-1],[x1,0,-1,-1]]){
+      bx(L,[Math.min(bxp,bxp+sx*3.2),3.7,Math.min(bzp,bzp+sz*1.1)],[Math.max(bxp,bxp+sx*3.2),4.6,Math.max(bzp,bzp+sz*1.1)],LEAD2);
+      bx(L,[Math.min(bxp,bxp+sx*1.1),3.7,Math.min(bzp,bzp+sz*3.2)],[Math.max(bxp,bxp+sx*1.1),4.6,Math.max(bzp,bzp+sz*3.2)],LEAD2);
+      bx(L,[Math.min(bxp-sx*0.1,bxp+sx*1.1),1.5,Math.min(bzp-sz*0.1,bzp+sz*3.2)],[Math.max(bxp-sx*0.1,bxp+sx*1.1),3.7,Math.max(bzp-sz*0.1,bzp+sz*3.2)],LEAD2);
+      const gr=bx(L,[-0.15,3.97,-2.2],[0.15,4.03,2.2],IRON); gr.position.set(bxp+sx*4.4,4,bzp+sz*3.2); gr.rotation.y=sx*sz>0?-Math.PI/4:Math.PI/4; }
+    cyl(L,[cx,4.25,-7],4.1,0.5,'y',LEAD2,8); cyl(L,[cx,4.45,-7],3.3,0.5,'y',LEAD3,8);
+    const disc=cyl(L,[cx,4.72,-7],2.9,0.05,'y',YEL,8); trefoil(L,[cx,4.76,-7],2.4,'up',BLK);
+    const dot=cyl(L,[cx,4.55,-11.3],0.45,0.3,'y',GREEN,8,true);
+    return ticker(p,()=>dot.material.color.setHex(state.open?0xf2b544:GREEN)); }
+
+  // ---------------------------------------------------------------- the shielding set, joined
+  // decorate the front face of one block; u runs left to right as seen, v bottom to top; world x = 16 - u
+  function fx(u){ return 16-u; }
+  function quad(g,u0,v0,u1,v1,z0,z1,c,glow,op){ return bx(g,[fx(u1),v0,z0],[fx(u0),v1,z1],c,glow,op); }
+  function rivet(g,u,v,z){ cyl(g,[fx(u),v,z],0.45,0.3,'z',LEAD3,6); }
+  function panelFace(g,e){ const B=1.2, z0=-0.4;
+    if(e.t) quad(g,0,16-B,16,16,z0,0,LEAD2); if(e.b) quad(g,0,0,16,B,z0,0,LEAD2); if(e.l) quad(g,0,0,B,16,z0,0,LEAD2); if(e.r) quad(g,16-B,0,16,16,z0,0,LEAD2);
+    for(const [k,u,v] of [['itl',0,16-B],['itr',16-B,16-B],['ibl',0,0],['ibr',16-B,0]]) if(e[k]) quad(g,u,v,u+B,v+B,z0,0,LEAD2);
+    const rv=[]; if(e.t&&e.l) rv.push([1.6,14.4]); if(e.t&&e.r) rv.push([14.4,14.4]); if(e.b&&e.l) rv.push([1.6,1.6]); if(e.b&&e.r) rv.push([14.4,1.6]);
+    if(e.t) rv.push([8,14.4]); if(e.b) rv.push([8,1.6]); if(e.l) rv.push([1.6,8]); if(e.r) rv.push([14.4,8]);
+    if(e.itl) rv.push([0.6,15.4]); if(e.itr) rv.push([15.4,15.4]); if(e.ibl) rv.push([0.6,0.6]); if(e.ibr) rv.push([15.4,0.6]);
+    for(const [u,v] of rv) rivet(g,u,v,-0.45);
+    for(const [u,v,w,h] of [[3,4,3,2],[9,9,4,2],[5,11,2,1.5],[10,3.5,2,1.5]]) quad(g,u,v,u+w,v+h,-0.1,0,0x535a66);
+    return rv.length; }
+  function mirror(e){ return {t:e.t,b:e.b,l:e.r,r:e.l,itl:e.itr,itr:e.itl,ibl:e.ibr,ibr:e.ibl}; }
+  function windowFrame(g,e){ const F1=state.leadframe?LEAD2:TILE, F2=state.leadframe?LEAD:GROUT;
+    // B's stepped frame: an outer strip and an inner step, drawn only on edges that show
+    if(e.t){ quad(g,0,14.5,16,16,5,11,F1); quad(g,e.l?1.5:0,13.5,e.r?14.5:16,14.5,6,10,F2); }
+    if(e.b){ quad(g,0,0,16,1.5,5,11,F1); quad(g,e.l?1.5:0,1.5,e.r?14.5:16,2.5,6,10,F2); }
+    if(e.l){ quad(g,0,0,1.5,16,5,11,F1); quad(g,1.5,e.b?1.5:0,2.5,e.t?14.5:16,6,10,F2); }
+    if(e.r){ quad(g,14.5,0,16,16,5,11,F1); quad(g,13.5,e.b?1.5:0,14.5,e.t?14.5:16,6,10,F2); }
+    for(const [k,u,v] of [['itl',0,14.5],['itr',14.5,14.5],['ibl',0,0],['ibr',14.5,0]]) if(e[k]) quad(g,u,v,u+1.5,v+1.5,5,11,F1); }
+  function sheetDoor(g){ const D=3; bx(g,[0,0,0],[16,32,D],LEAD);
+    for(const y0 of [3,18]){ bx(g,[2.5,y0,-0.4],[13.5,y0+11,0],LEAD2); bx(g,[3.5,y0+1,-0.6],[12.5,y0+10,-0.4],LEAD3); }
+    bx(g,[4.5,21.5,-0.65],[11.5,28.5,-0.6],YEL); trefoil(g,[8,25,-0.7],3,'front',BLK);
+    for(const y of [1.5,16,30.5]) for(const x of [1.2,14.8]) cyl(g,[x,y,-0.3],0.45,0.4,'z',LEAD3,6);
+    bx(g,[12.6,15,-1.4],[13.4,17,-0.2],IRON); bx(g,[10,15.6,-1.6],[13.4,16.4,-1.2],IRON); for(const y of [4,27]) cyl(g,[0,y,D/2],0.8,4,'y',IRON,6); }
+  function wall(g,rows){ const R=rows.length, C=Math.max(...rows.map(r=>r.length)); const doors=[];
+    bx(g,[-40,-1,-30],[C*16+30,0,40],0x1a1d20); bx(g,[-22,0,0],[-6,16,16],STONE);
+    const X=c=>(C-1-c)*16, Y=r=>(R-1-r)*16;
+    for(let r=0;r<R;r++) for(let c=0;c<C;c++){ const k=at(rows,c,r); if(k==='.') continue; const s=grp(g,[X(c),Y(r),0]); const e=edges(rows,c,r);
+      if(k==='P'){ bx(s,[0,0,0],[16,16,16],LEAD); panelFace(s,e); const back=grp(s,[16,0,16],0,Math.PI); panelFace(back,mirror(e));
+        if(e.t) bx(s,[0,15.8,0.6],[16,16.3,15.4],LEAD2); }
+      else if(k==='W') windowFrame(s,e);
+      else if(k==='D'&&at(rows,c,r+1)!=='D'){ const hinge=grp(s,[0,0,0]); sheetDoor(hinge); doors.push(hinge); } }
+    // seamless glass: one pane per joined group of windows (the presets' groups are rectangles)
+    const seen={}; for(let r=0;r<R;r++) for(let c=0;c<C;c++){ if(at(rows,c,r)!=='W'||seen[c+','+r]) continue; let c1=c, r1=r; while(at(rows,c1+1,r)==='W') c1++; while(at(rows,c,r1+1)==='W') r1++;
+      for(let rr=r;rr<=r1;rr++) for(let cc=c;cc<=c1;cc++) seen[cc+','+rr]=1;
+      bx(g,[X(c1)+2.5,Y(r1)+2.5,6.5],[X(c)+16-2.5,Y(r)+16-2.5,9.5],GLASSC,false,.38); }
+    return t=>{ doors.forEach(d=>d.rotation.y=state.open?-1.4:0); }; }
+
+  // ---------------------------------------------------------------- one WebGL context
+  const views=[]; let renderer=null, canvas=null;
+  if(HAS3D){ try{ canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1';
+      renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); document.body.appendChild(canvas); renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0); }catch(e){ renderer=null; } }
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,3000); const amb=new THREE.AmbientLight(0xffffff,.72); scene.add(amb); const d=new THREE.DirectionalLight(0xffffff,.75); d.position.set(14,30,-24); scene.add(d);
+    const v={view,scene,cam,opts,amb,d,ry:opts.ry||3.55,rx:.42,drag:false,g:null,tick:null}; let lx=0,ly=0;
+    v.rebuild=()=>{ if(v.g) scene.remove(v.g); v.g=new THREE.Group(); scene.add(v.g); v.tick=build(v.g); }; v.rebuild();
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);});
+    view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+    view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  function loop(now){ const t=now/1000; const W=innerWidth, H=innerHeight; const pr=renderer.getPixelRatio();
+    if(canvas.width!==Math.round(W*pr)||canvas.height!==Math.round(H*pr)) renderer.setSize(W,H,false);
+    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue;
+      v.amb.intensity=state.night?.12:.72; v.d.intensity=state.night?.1:.75; if(v.tick) v.tick(t); if(!reduce&&!v.drag) v.ry+=.0025;
+      const o=typeof v.opts.dist==='function'?v.opts.dist():v.opts.dist, T=typeof v.opts.target==='function'?v.opts.target():v.opts.target;
+      v.cam.position.set(T[0]+Math.sin(v.ry)*o*Math.cos(v.rx),T[1]+Math.sin(v.rx)*o,T[2]+Math.cos(v.ry)*o*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); }
+    requestAnimationFrame(loop); }
+  function card(parent,name,text,cls){ const c=document.createElement('div'); c.className='card'; const h=document.createElement('h3'); h.textContent=name; c.appendChild(h);
+    const v=document.createElement('div'); v.className='view'+(cls?' '+cls:''); c.appendChild(v); const p=document.createElement('p'); p.textContent=text; c.appendChild(p); parent.appendChild(c); return v; }
+  const chestW=()=>state.double?30:14;
+  const CHESTS=[['1. Rail Frame','A raised rail runs round the top with cut corners, and a green light line runs just inside it. The radiation plate sits sunk in the middle, and a dark seam marks the lid\'s front edge. The light turns amber while the lid is open.',railFrame],
+    ['2. Armoured Spine','A stepped spine runs front to back over the lid, one per half on a double chest, with the radiation plate on top. Vent slots sit on either side, and two lights at the front glow green while shut and amber while open.',spine],
+    ['3. Seal Ring','Angled brackets clamp the four corners of the lid, with groove lines running in toward the middle. The radiation plate sits in a raised octagonal ring like a hatch seal, with one light in front of it.',sealRing]];
+  const WALLS=[['room','Room wall: five wide and three high, with a two-block window and the door. The panels form one group, so rivets run only round its outside and round the window and the door.'],
+    ['steps','Stepped wall: the top edge steps down. Each step has a border on its outer edges, and the inside corners close.'],
+    ['windows','Window wall: a 2x2 window with one pane of glass and a frame round it, and a single window beside it with its own frame.']];
+  if(renderer){
+    for(const [n,txt,b] of CHESTS){ const v=card(el('chests'),n,txt); makeView(v,g=>b(g,chestW()),{dist:()=>state.double?90:68,target:()=>[(chestW()+18)/2,7,8],chest:true}); }
+    for(const [key,txt] of WALLS){ const P=PRESETS[key]; const C=Math.max(...P.rows.map(r=>r.length)), R=P.rows.length;
+      const v=card(el('shields'),P.name,txt,'wide'); makeView(v,g=>wall(g,P.rows),{dist:Math.max(C,R)*16*1.75,target:[(C*16-22)/2,R*8,6],ry:3.3,wall:true}); }
+    requestAnimationFrame(loop);
+  } else { for(const [n,txt] of CHESTS) card(el('chests'),n,txt).textContent='3D view needs WebGL.'; for(const [k,txt] of WALLS) card(el('shields'),PRESETS[k].name,txt,'wide').textContent='3D view needs WebGL.'; }
+  const okN=CHECKS.filter(c=>c.ok).length, bad=CHECKS.filter(c=>!c.ok).map(c=>c.name); el('checks').textContent='Joining checks: '+okN+' of '+CHECKS.length+' pass'+(bad.length?'. Failing: '+bad.join('; '):'.');
+  el('double').addEventListener('change',e=>{ state.double=e.target.checked; views.filter(v=>v.opts.chest).forEach(v=>v.rebuild()); });
+  el('open').addEventListener('change',e=>{ state.open=e.target.checked; });
+  el('night').addEventListener('change',e=>{ state.night=e.target.checked; });
+  el('leadframe').addEventListener('change',e=>{ state.leadframe=e.target.checked; views.filter(v=>v.opts.wall).forEach(v=>v.rebuild()); });
+})();
+</script>

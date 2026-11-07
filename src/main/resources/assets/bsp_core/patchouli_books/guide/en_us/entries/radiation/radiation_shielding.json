@@ -1,0 +1,38 @@
+{
+  "name": "Radiation Shielding",
+  "category": "bsp_core:radiation",
+  "icon": "bsp_core:radiation_shielding_panel",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Radiation spreads from its source in straight lines and weakens with distance. Each block in its way takes some off: an ordinary wall very little, water a little more, a block of lead nearly all of it.$(br2)A Geiger counter clicks when it reaches you, and a dose shows as the Radiation effect.",
+      "title": "How it travels"
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:radiation_shielding_panel",
+      "text": "A $(item)Radiation Shielding Panel$() stops all radiation passing through it. Wall a reactor or a store room with panels and nothing reaches the other side.$(br2)Panels side by side join into one riveted wall."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:radiation_shielding_window",
+      "text": "The $(item)Radiation Shielding Window$() is a thick lead-framed pane. It lets a tenth of the radiation through and all of the light. Windows side by side join into one sheet of glass."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:radiation_shielding_door",
+      "text": "The $(item)Radiation Shielding Door$() blocks nearly all radiation while it is shut and almost none while it is open. Open it by hand or with redstone, and keep it shut."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:radiation_shielding_panel",
+      "recipe2": "bsp_core:radiation_shielding_window"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:radiation_shielding_door",
+      "text": "All three are as hard as iron."
+    }
+  ]
+}

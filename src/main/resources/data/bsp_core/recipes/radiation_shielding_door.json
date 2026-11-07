@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PP",
+    "PP",
+    "PP"
+  ],
+  "key": {
+    "P": {
+      "item": "bsp_core:radiation_shielding_panel"
+    }
+  },
+  "result": {
+    "item": "bsp_core:radiation_shielding_door",
+    "count": 3
+  }
+}

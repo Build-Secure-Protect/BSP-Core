@@ -98,6 +98,7 @@ CATEGORIES = [
     ("materials", "The Three Metals", "Tetrium, Illyrium and Magnatite, from first ore to refined ingot.", "bsp_core:illyrium_ingot"),
     ("machines", "Machines", "The parts every machine is made of, and how to build the multiblocks, the Totem Forge among them.", "bsp_core:illyrium_crucible"),
     ("coins", "Shatter Coins", "Coins pay for the strongest totem upgrades. You press them yourself.", "bsp_core:gold_shatter_coin"),
+    ("radiation", "Radiation", "Uranium, pellets and fuel rods give off radiation. Store them safely and wall it in.", "bsp_core:lead_lined_chest"),
 ]
 
 GUIDE_TIP = "$(br2)Stuck on a build? Empty your hand and $(l)sneak + right-click$() the controller for the step-by-step Assembly Guide."
@@ -394,6 +395,19 @@ ENTRIES = [
         text("The network has one lottery pot. It fills from the $(l:coins/market)market$()'s taxes and from half of what players pay for shop items.$(br2)Everyone who has played on the network in the past week is in the lottery, with one equal chance each. There are no tickets to buy or earn. Operators and staff ranks are left out."),
         text("An admin draws the lottery when they choose. Chat on every server counts down from 5 and then names the winner and what they won.$(br2)The winner takes the whole pot, straight into their bank. A winner who is offline is told when they next log in.$(br2)After a draw the pot starts again, and everyone who keeps playing is in the next one.", "The draw"),
         text("The $(l)LOTTERY$() tab on a $(l:coins/trade_post)Trade Post$() turns a drum of the names of everyone in, beside the pot, how many are in and your own chance. The last five winners are along the bottom.$(br2)The $(item)Portable Banker$() shows the pot and your chance on its account page, and Score Screens can show the $(l)Lottery$() board.", "Watching the pot"),
+    ]),
+    ("radiation", "lead_lined_chest", "The Lead-Lined Chest", "bsp_core:lead_lined_chest", 0, [
+        spot("bsp_core:lead_lined_chest", "Raw uranium and yellorium, yellorite ore, plutonium and polonium pellets, yellow cake and fuel rods give off radiation from an ordinary chest, through walls. A full chest of raw uranium reaches about eighteen blocks.$(br2)Nothing in a $(item)Lead-Lined Chest$() gives off radiation, however much is in it."),
+        text("Two side by side join into a large chest. Hoppers and pipes reach it from any side, comparators read it, and breaking it spills what is inside.$(br2)The light on the lid glows green while it is shut and amber while it is open, and its screen carries a green $(l)SHIELDED$() tag.", "A chest like any other"),
+        craft("lead_lined_chest", None, "Eight lead plates round a wooden chest. Any mod's lead plates will do."),
+    ]),
+    ("radiation", "radiation_shielding", "Radiation Shielding", "bsp_core:radiation_shielding_panel", 1, [
+        text("Radiation spreads from its source in straight lines and weakens with distance. Each block in its way takes some off: an ordinary wall very little, water a little more, a block of lead nearly all of it.$(br2)A Geiger counter clicks when it reaches you, and a dose shows as the Radiation effect.", "How it travels"),
+        spot("bsp_core:radiation_shielding_panel", "A $(item)Radiation Shielding Panel$() stops all radiation passing through it. Wall a reactor or a store room with panels and nothing reaches the other side.$(br2)Panels side by side join into one riveted wall."),
+        spot("bsp_core:radiation_shielding_window", "The $(item)Radiation Shielding Window$() is a thick lead-framed pane. It lets a tenth of the radiation through and all of the light. Windows side by side join into one sheet of glass."),
+        spot("bsp_core:radiation_shielding_door", "The $(item)Radiation Shielding Door$() blocks nearly all radiation while it is shut and almost none while it is open. Open it by hand or with redstone, and keep it shut."),
+        craft("radiation_shielding_panel", "radiation_shielding_window"),
+        craft("radiation_shielding_door", None, "All three are as hard as iron."),
     ]),
     ("coins", "motivators", "Motivators", "bsp_core:factory_motivator", 2, [
         spot("bsp_core:factory_motivator", "Place up to three on top of a complete factory slice. One, two or three cut that slice's press time by 15%, 30% or 50%.$(br2)They pulse faster the more a slice has, and link up with their neighbours."),

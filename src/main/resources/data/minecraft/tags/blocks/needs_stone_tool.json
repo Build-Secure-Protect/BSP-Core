@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "bsp_core:radiation_shielding_panel",
+    "bsp_core:radiation_shielding_window",
+    "bsp_core:radiation_shielding_door"
+  ]
+}

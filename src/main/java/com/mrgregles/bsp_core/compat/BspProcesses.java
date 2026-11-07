@@ -163,6 +163,8 @@ public final class BspProcesses {
             Map.entry("jei.bsp_core.info.copper_coil", List.of("copper_tetrium_coil")),
             Map.entry("jei.bsp_core.info.magnatite_ore", List.of("magnatite_ore", "deepslate_magnatite_ore")),
             Map.entry("jei.bsp_core.info.vault", List.of("coin_vault")),
+            Map.entry("jei.bsp_core.info.lead_lined_chest", List.of("lead_lined_chest")),
+            Map.entry("jei.bsp_core.info.radiation_shielding", List.of("radiation_shielding_panel", "radiation_shielding_window", "radiation_shielding_door")),
             Map.entry("jei.bsp_core.info.extractor", List.of("plasma_extractor")),
             Map.entry("jei.bsp_core.info.interface", List.of("plasma_interface")),
             Map.entry("jei.bsp_core.info.injector", List.of("plasma_injector")),
