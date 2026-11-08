@@ -6,7 +6,25 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "bsp_core:radiation_shielding_window"
+          "name": "bsp_core:radiation_shielding_window",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "bsp_core:radiation_shielding_window",
+              "properties": [
+                "coated"
+              ],
+              "conditions": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "bsp_core:radiation_shielding_window",
+                  "properties": {
+                    "coated": "true"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ],
       "conditions": [

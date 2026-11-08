@@ -6,7 +6,25 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "bsp_core:radiation_shielding_panel"
+          "name": "bsp_core:radiation_shielding_panel",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "bsp_core:radiation_shielding_panel",
+              "properties": [
+                "coated"
+              ],
+              "conditions": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "bsp_core:radiation_shielding_panel",
+                  "properties": {
+                    "coated": "true"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ],
       "conditions": [

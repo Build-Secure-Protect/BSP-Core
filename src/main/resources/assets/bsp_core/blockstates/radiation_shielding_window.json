@@ -1,10 +1,17 @@
 {
   "variants": {
-    "axis=x": {
+    "axis=x,coated=false": {
       "model": "bsp_core:block/radiation_shielding_window"
     },
-    "axis=z": {
+    "axis=x,coated=true": {
+      "model": "bsp_core:block/radiation_shielding_window_coated"
+    },
+    "axis=z,coated=false": {
       "model": "bsp_core:block/radiation_shielding_window",
+      "y": 90
+    },
+    "axis=z,coated=true": {
+      "model": "bsp_core:block/radiation_shielding_window_coated",
       "y": 90
     }
   }

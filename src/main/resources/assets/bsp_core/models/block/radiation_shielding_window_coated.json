@@ -1,0 +1,47 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "bsp_core:block/radiation_shielding_window_coated",
+    "glass": "bsp_core:block/radiation_shielding_window_coated",
+    "edge": "bsp_core:block/lead_chest_dark"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        5
+      ],
+      "to": [
+        16,
+        16,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#glass"
+        },
+        "south": {
+          "texture": "#glass"
+        },
+        "east": {
+          "texture": "#edge",
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#edge",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#edge",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#edge",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}

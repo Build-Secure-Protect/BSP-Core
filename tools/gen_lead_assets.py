@@ -317,6 +317,46 @@ def window_piece(edges, inner):
     return px
 
 
+# Totem Radiation Coating (adjustment 2, look A): a thin Illyrium-turquoise glaze, a bright top and left edge, turquoise rivets
+COAT, GLINT = (25, 211, 176, 255), (140, 255, 230, 255)
+
+
+def glaze(px, glass=False):
+    """The coated look of a texture: the glaze over it, keeping its transparency (glass is tinted less)."""
+    from gen_material_assets import mix
+
+    def g(x, y):
+        c = px(x, y)
+        if c[3] == 0:
+            return c
+        lum = c[0] * .3 + c[1] * .59 + c[2] * .11
+        out = mix(c, COAT, 0.18 if glass else 0.3)
+        if x == 0 or y == 0:
+            out = mix(out, GLINT, 0.55)
+        elif lum > 165 and not glass:
+            out = mix(out, GLINT, 0.8)
+        return out[:3] + (c[3],)
+    return g
+
+
+def coating_tin_px(x, y):
+    """The Totem Radiation Coating: a lead-grey tin with a turquoise band and a drip down from the lid (item look A)."""
+    outline, g1, g2, g3, t1, t2, t3 = "#1E2228", "#9AA2AD", "#6B737E", "#4A515B", "#19D3B0", "#8CFFE6", "#0B8F78"
+    if x == 6 and 4 <= y <= 6:
+        return hexc(t2 if y == 4 else t1)
+    if 7 <= y <= 10 and 4 <= x <= 11:
+        return hexc(t2 if y == 7 else t3 if x > 9 else t1)
+    if 4 <= y <= 14 and 3 <= x <= 12:
+        if x in (3, 12) or y == 14:
+            return hexc(outline)
+        return hexc(g1 if x < 6 else g2 if x < 10 else g3)
+    if y == 2 and 4 <= x <= 11:
+        return hexc(outline)
+    if y == 3 and 3 <= x <= 12:
+        return hexc(outline if x in (3, 12) else "#C9CED8" if x < 8 else g1)
+    return (0, 0, 0, 0)
+
+
 def door_px(top):
     """A's door face: lead with a dark edge and rivets at the corners and the middle rail (the raised panels and the handle are model
     elements). Rivets sit at both ends of the door's height and where the halves meet."""
@@ -360,7 +400,7 @@ DOOR_UV["top_right"]["up"] = [16, 3, 0, 0]
 DOOR_UV["top_right_open"]["up"] = [0, 0, 16, 3]
 
 
-def door_model(variant):
+def door_model(variant, coated=False):
     """A's door on vanilla's door slab (x 0 to 3): a raised panel on each face of each half, the radiation plate on the upper panel,
     and on the lower half a lever handle on the side away from the hinge (z 14 or z 2, as the variant puts the hinge)."""
     top = variant.startswith("top")
@@ -389,8 +429,9 @@ def door_model(variant):
         b0, b1 = (hz - 2.6, hz + 0.4) if hz == 14 else (hz - 0.4, hz + 2.6)
         els += [el([-0.6, 13.6, hz - 0.5], [0, 15, hz + 0.5], "iron"), el([-1.4, 14, b0], [-0.6, 14.6, b1], "iron"),
                 el([3, 13.6, hz - 0.5], [3.6, 15, hz + 0.5], "iron"), el([3.6, 14, b0], [4.4, 14.6, b1], "iron")]
-    return {"ambientocclusion": False, "textures": {"particle": f"bsp_core:block/radiation_shielding_door_{face_tex}",
-            face_tex: f"bsp_core:block/radiation_shielding_door_{face_tex}", "dark": TEXTURES["dark"], "light": TEXTURES["light"],
+    c = "_coated" if coated else ""
+    return {"ambientocclusion": False, "textures": {"particle": f"bsp_core:block/radiation_shielding_door_{face_tex}{c}",
+            face_tex: f"bsp_core:block/radiation_shielding_door_{face_tex}{c}", "dark": TEXTURES["dark"], "light": TEXTURES["light"],
             "plate": TEXTURES["plate"], "iron": TEXTURES["iron"]}, "elements": els}
 
 
@@ -400,9 +441,19 @@ def shield_set():
     for suffix, edges in PIECES.items():
         write_png(tex / f"radiation_shielding_panel{suffix}.png", 16, 16, panel_piece(edges, suffix == "_inner"))
         write_png(tex / f"radiation_shielding_window{suffix}.png", 16, 16, window_piece(edges, suffix == "_inner"))
+        # the coated pieces: ShieldJoinedModel takes <texture>_coated<suffix> for a coated block
+        write_png(tex / f"radiation_shielding_panel_coated{suffix}.png", 16, 16, glaze(panel_piece(edges, suffix == "_inner")))
+        write_png(tex / f"radiation_shielding_window_coated{suffix}.png", 16, 16, glaze(window_piece(edges, suffix == "_inner"), glass=True))
     write_png(tex / "radiation_shielding_door_bottom.png", 16, 16, door_px(False))
     write_png(tex / "radiation_shielding_door_top.png", 16, 16, door_px(True))
+    write_png(tex / "radiation_shielding_door_bottom_coated.png", 16, 16, glaze(door_px(False)))
+    write_png(tex / "radiation_shielding_door_top_coated.png", 16, 16, glaze(door_px(True)))
     write_png(ASSETS / "textures/item/radiation_shielding_door.png", 16, 16, door_item_px)
+    write_png(ASSETS / "textures/item/radiation_shielding_door_coated.png", 16, 16, glaze(door_item_px))
+    write_png(ASSETS / "textures/item/totem_radiation_coating.png", 16, 16, coating_tin_px)
+    write(ASSETS / "models/item/totem_radiation_coating.json", {"parent": "minecraft:item/generated", "textures": {"layer0": "bsp_core:item/totem_radiation_coating"}})
+    write(ASSETS / "models/block/radiation_shielding_panel_coated.json", {"parent": "minecraft:block/cube_all",
+                                                                            "textures": {"all": "bsp_core:block/radiation_shielding_panel_coated"}})
     write(ASSETS / "models/block/radiation_shielding_panel.json", {"parent": "minecraft:block/cube_all",
                                                                      "textures": {"all": "bsp_core:block/radiation_shielding_panel"}})
     # the window: a pane 6 pixels deep (z 5 to 11) running east to west; the glass faces front and back, the lead frame's edges on the
@@ -412,17 +463,31 @@ def shield_set():
           "elements": [{"from": [0, 0, 5], "to": [16, 16, 11], "faces": {
               "north": {"texture": "#glass"}, "south": {"texture": "#glass"},
               **{d: {"texture": "#edge", "cullface": d} for d in ("east", "west", "up", "down")}}}]})
+    window_model = json.loads((ASSETS / "models/block/radiation_shielding_window.json").read_text())
+    window_model["textures"]["particle"] = window_model["textures"]["glass"] = "bsp_core:block/radiation_shielding_window_coated"
+    write(ASSETS / "models/block/radiation_shielding_window_coated.json", window_model)
     write(ASSETS / "blockstates/radiation_shielding_window.json", {"variants": {
-        "axis=x": {"model": "bsp_core:block/radiation_shielding_window"},
-        "axis=z": {"model": "bsp_core:block/radiation_shielding_window", "y": 90}}})
-    write(ASSETS / "blockstates/radiation_shielding_panel.json", {"variants": {"": {"model": "bsp_core:block/radiation_shielding_panel"}}})
+        f"axis={a},coated={c}": {"model": f"bsp_core:block/radiation_shielding_window{'_coated' if c == 'true' else ''}", **({"y": 90} if a == "z" else {})}
+        for a in ("x", "z") for c in ("false", "true")}})
+    write(ASSETS / "blockstates/radiation_shielding_panel.json", {"variants": {
+        "coated=false": {"model": "bsp_core:block/radiation_shielding_panel"}, "coated=true": {"model": "bsp_core:block/radiation_shielding_panel_coated"}}})
     for b in ("radiation_shielding_panel", "radiation_shielding_window"):
-        write(ASSETS / f"models/item/{b}.json", {"parent": f"bsp_core:block/{b}"})
+        # a coated item (BlockStateTag coated=true) shows the glaze: the bsp_core:coated item property picks the coated model
+        write(ASSETS / f"models/item/{b}.json", {"parent": f"bsp_core:block/{b}",
+                                                 "overrides": [{"predicate": {"bsp_core:coated": 1}, "model": f"bsp_core:item/{b}_coated"}]})
+        write(ASSETS / f"models/item/{b}_coated.json", {"parent": f"bsp_core:block/{b}_coated"})
+        # breaking a coated block keeps the coating on the item (a plain one drops with no tag, so it stacks with crafted ones)
         write(DATA / f"bsp_core/loot_tables/blocks/{b}.json", {"type": "minecraft:block", "pools": [{
-            "rolls": 1, "entries": [{"type": "minecraft:item", "name": f"bsp_core:{b}"}], "conditions": [{"condition": "minecraft:survives_explosion"}]}]})
+            "rolls": 1, "entries": [{"type": "minecraft:item", "name": f"bsp_core:{b}", "functions": [
+                {"function": "minecraft:copy_state", "block": f"bsp_core:{b}", "properties": ["coated"], "conditions": [
+                    {"condition": "minecraft:block_state_property", "block": f"bsp_core:{b}", "properties": {"coated": "true"}}]}]}],
+            "conditions": [{"condition": "minecraft:survives_explosion"}]}]})
     for v in DOOR_UV:
         write(ASSETS / f"models/block/radiation_shielding_door_{v}.json", door_model(v))
-    write(ASSETS / "models/item/radiation_shielding_door.json", {"parent": "minecraft:item/generated", "textures": {"layer0": "bsp_core:item/radiation_shielding_door"}})
+        write(ASSETS / f"models/block/radiation_shielding_door_{v}_coated.json", door_model(v, coated=True))
+    write(ASSETS / "models/item/radiation_shielding_door.json", {"parent": "minecraft:item/generated", "textures": {"layer0": "bsp_core:item/radiation_shielding_door"},
+                                                                 "overrides": [{"predicate": {"bsp_core:coated": 1}, "model": "bsp_core:item/radiation_shielding_door_coated"}]})
+    write(ASSETS / "models/item/radiation_shielding_door_coated.json", {"parent": "minecraft:item/generated", "textures": {"layer0": "bsp_core:item/radiation_shielding_door_coated"}})
     # vanilla's iron door block state, with this door's models
     rot = {"east": 0, "south": 90, "west": 180, "north": 270}
     variants = {}
@@ -430,16 +495,19 @@ def shield_set():
         for half, part in (("lower", "bottom"), ("upper", "top")):
             for hinge in ("left", "right"):
                 for is_open in (False, True):
-                    y = (base + (90 if hinge == "left" else 270)) % 360 if is_open else base
-                    v = {"model": f"bsp_core:block/radiation_shielding_door_{part}_{hinge}{'_open' if is_open else ''}"}
-                    if y:
-                        v["y"] = y
-                    variants[f"facing={facing},half={half},hinge={hinge},open={'true' if is_open else 'false'}"] = v
+                    for coated in (False, True):
+                        y = (base + (90 if hinge == "left" else 270)) % 360 if is_open else base
+                        v = {"model": f"bsp_core:block/radiation_shielding_door_{part}_{hinge}{'_open' if is_open else ''}{'_coated' if coated else ''}"}
+                        if y:
+                            v["y"] = y
+                        variants[f"coated={'true' if coated else 'false'},facing={facing},half={half},hinge={hinge},open={'true' if is_open else 'false'}"] = v
     write(ASSETS / "blockstates/radiation_shielding_door.json", {"variants": variants})
     # a door drops once, from its lower half, as vanilla's doors
     write(DATA / "bsp_core/loot_tables/blocks/radiation_shielding_door.json", {"type": "minecraft:block", "pools": [{
         "rolls": 1, "entries": [{"type": "minecraft:item", "name": "bsp_core:radiation_shielding_door", "conditions": [{
-            "condition": "minecraft:block_state_property", "block": "bsp_core:radiation_shielding_door", "properties": {"half": "lower"}}]}],
+            "condition": "minecraft:block_state_property", "block": "bsp_core:radiation_shielding_door", "properties": {"half": "lower"}}],
+            "functions": [{"function": "minecraft:copy_state", "block": "bsp_core:radiation_shielding_door", "properties": ["coated"], "conditions": [
+                {"condition": "minecraft:block_state_property", "block": "bsp_core:radiation_shielding_door", "properties": {"coated": "true"}}]}]}],
         "conditions": [{"condition": "minecraft:survives_explosion"}]}]})
     tag("mineable/pickaxe", SHIELD_BLOCKS)
     tag("needs_stone_tool", SHIELD_BLOCKS)
@@ -455,6 +523,11 @@ def shield_set():
     write(DATA / "bsp_core/recipes/radiation_shielding_door.json", {"type": "minecraft:crafting_shaped", "category": "redstone",
           "pattern": ["PP", "PP", "PP"], "key": {"P": {"item": "bsp_core:radiation_shielding_panel"}},
           "result": {"item": "bsp_core:radiation_shielding_door", "count": 3}})
+    # Totem Radiation Coating: 1 Pure Illyrium Dust in the middle, 4 Lead Plates on the sides, 4 Tetrium Dust in the corners, for 4
+    write(DATA / "bsp_core/recipes/totem_radiation_coating.json", {**plates, "type": "minecraft:crafting_shaped", "category": "misc",
+          "pattern": ["TPT", "PIP", "TPT"], "key": {"T": {"item": "bsp_core:tetrium_dust"}, "P": {"tag": "forge:plates/lead"},
+                                                   "I": {"item": "bsp_core:pure_illyrium_dust"}},
+          "result": {"item": "bsp_core:totem_radiation_coating", "count": 4}})
 
 
 def main():

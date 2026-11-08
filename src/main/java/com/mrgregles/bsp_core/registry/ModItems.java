@@ -220,11 +220,13 @@ public final class ModItems {
     public static final RegistryObject<Item> LEAD_LINED_CHEST = ITEMS.register("lead_lined_chest",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.LEAD_LINED_CHEST.get(), new Item.Properties()));
     public static final RegistryObject<Item> RADIATION_SHIELDING_PANEL = ITEMS.register("radiation_shielding_panel",
-            () -> new net.minecraft.world.item.BlockItem(ModBlocks.RADIATION_SHIELDING_PANEL.get(), new Item.Properties()));
+            () -> com.mrgregles.bsp_core.shield.ShieldItems.block(ModBlocks.RADIATION_SHIELDING_PANEL.get()));
     public static final RegistryObject<Item> RADIATION_SHIELDING_WINDOW = ITEMS.register("radiation_shielding_window",
-            () -> new net.minecraft.world.item.BlockItem(ModBlocks.RADIATION_SHIELDING_WINDOW.get(), new Item.Properties()));
+            () -> com.mrgregles.bsp_core.shield.ShieldItems.block(ModBlocks.RADIATION_SHIELDING_WINDOW.get()));
     public static final RegistryObject<Item> RADIATION_SHIELDING_DOOR = ITEMS.register("radiation_shielding_door",
-            () -> new net.minecraft.world.item.DoubleHighBlockItem(ModBlocks.RADIATION_SHIELDING_DOOR.get(), new Item.Properties()));
+            () -> com.mrgregles.bsp_core.shield.ShieldItems.door(ModBlocks.RADIATION_SHIELDING_DOOR.get()));
+    public static final RegistryObject<Item> TOTEM_RADIATION_COATING = ITEMS.register("totem_radiation_coating",
+            () -> new com.mrgregles.bsp_core.shield.TotemCoatingItem(new Item.Properties()));
 
     public static final RegistryObject<Item> SCORE_SCREEN = ITEMS.register("score_screen",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SCORE_SCREEN.get()));

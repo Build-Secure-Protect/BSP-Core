@@ -34,6 +34,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RADIATION_SHIELDING_PANEL.get());
                 output.accept(ModItems.RADIATION_SHIELDING_WINDOW.get());
                 output.accept(ModItems.RADIATION_SHIELDING_DOOR.get());
+                output.accept(ModItems.TOTEM_RADIATION_COATING.get());
                 output.accept(ModItems.SCORE_SCREEN.get());
                 output.accept(ModItems.ADMIN_RACK.get());
                 output.accept(ModItems.ANTI_TOTEM.get());

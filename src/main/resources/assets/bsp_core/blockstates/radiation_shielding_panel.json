@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
+    "coated=false": {
       "model": "bsp_core:block/radiation_shielding_panel"
+    },
+    "coated=true": {
+      "model": "bsp_core:block/radiation_shielding_panel_coated"
     }
   }
 }

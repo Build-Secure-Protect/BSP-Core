@@ -415,6 +415,14 @@
   "gui.bsp_core.demo.tip": "Operators only: play the working animation with nothing in the machine",
   "gui.bsp_core.compass.upgrade_price": "x%s %s",
   "gui.bsp_core.compass.upgrade_tip": "Takes %s off the cooldown",
+  "gui.bsp_core.radiation.label": "RADIATION",
+  "gui.bsp_core.radiation.info": "Every totem tier and upgrade increases the totem radiation and makes it easier for your enemies to find.",
+  "gui.bsp_core.radiation.tip": "Seen by tracking compasses from up to %s blocks away",
+  "gui.bsp_core.radiation.tip_coated": "Coated layers round it: %s (%s blocks without them)",
+  "gui.bsp_core.radiation.tip_none": "Gives off no totem radiation: no compass finds it",
+  "gui.bsp_core.radiation.tip_weak": "Too weak for any compass to see",
+  "gui.bsp_core.radiation.tip_unclaimed": "Unclaimed: no compass tracks it",
+  "gui.bsp_core.radiation.off": "Totem radiation is off on this server",
   "gui.bsp_core.compass.reach": "REACH",
   "gui.bsp_core.compass.wider": "WIDER",
   "gui.bsp_core.compass.deeper": "DEEPER",
@@ -2802,5 +2810,11 @@
   "gui.bsp_core.credit.admin.state_no_limit": "no limit",
   "gui.bsp_core.credit.admin.unbound": "unbound",
   "gui.bsp_core.credit.admin.void": "VOID",
-  "gui.bsp_core.credit.admin.id": "id %s"
+  "gui.bsp_core.credit.admin.id": "id %s",
+  "item.bsp_core.totem_radiation_coating": "Totem Radiation Coating",
+  "tooltip.bsp_core.coating": "Use on a Radiation Shielding Panel, Window or Door to coat it. Coated shielding round a totem weakens its totem radiation.",
+  "tooltip.bsp_core.coating.coated": "Coated against totem radiation",
+  "message.bsp_core.coating.only_shielding": "Only Radiation Shielding Panels, Windows and Doors take the coating",
+  "message.bsp_core.coating.already": "This block is already coated",
+  "jei.bsp_core.info.totem_radiation_coating": "Use it on a Radiation Shielding Panel, Window or Door to coat that block; a door takes one tin for both halves. Coated shielding all round a totem, within 32 blocks, weakens the totem radiation that lets rival Totem Compasses find it: each layer the radiation passes through takes a fifth off how far away the totem is seen, up to 4 layers. An open door does not count. The coating cannot be taken off, and a coated block keeps it when broken."
 }

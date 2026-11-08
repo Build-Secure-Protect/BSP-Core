@@ -43,6 +43,8 @@ public class TotemLedger extends SavedData {
     private final Map<GlobalPos, Integer> tiers = new HashMap<>();
     /** Upgrade levels of each placed totem (non-zero only), so other mods can read them without loading the totem's chunk. */
     private final Map<GlobalPos, Map<String, Integer>> levels = new HashMap<>();
+    /** Layers of Totem Radiation Coating round each placed totem, as last counted while it was loaded (none when absent). */
+    private final Map<GlobalPos, Integer> coated = new HashMap<>();
 
     // --- identity: where each totem (by id) was last seen, and which instance of it is the real one ---
 
@@ -313,7 +315,11 @@ public class TotemLedger extends SavedData {
         if (placedFor(owner).contains(pos) && tierAt(pos) == tier) {
             return; // nothing changed
         }
+        Integer layers = coated.get(pos); // the coating round the spot stays when the tier or the owner changes
         recordRemoved(pos);
+        if (layers != null) {
+            coated.put(pos, layers);
+        }
         tiers.put(pos, tier);
         com.mrgregles.bsp_core.score.ScoreService.markDirty();
         placed.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
@@ -364,6 +370,30 @@ public class TotemLedger extends SavedData {
         return levels.containsKey(pos);
     }
 
+    /** Every upgrade level of the placed totem at {@code pos} added up; 0 when it has none or they are unknown. */
+    public int levelSum(GlobalPos pos) {
+        Map<String, Integer> l = levels.get(pos);
+        return l == null ? 0 : l.values().stream().mapToInt(Integer::intValue).sum();
+    }
+
+    /** Layers of Totem Radiation Coating round the placed totem at {@code pos}, as last counted. */
+    public int coatedLayers(GlobalPos pos) {
+        return coated.getOrDefault(pos, 0);
+    }
+
+    /** Keeps the coated layers counted round the placed totem at {@code pos}. */
+    public void recordCoatedLayers(GlobalPos pos, int layers) {
+        if (!tiers.containsKey(pos) || coatedLayers(pos) == layers) {
+            return;
+        }
+        if (layers <= 0) {
+            coated.remove(pos);
+        } else {
+            coated.put(pos, layers);
+        }
+        setDirty();
+    }
+
     /** The level of upgrade {@code key} on the placed totem at {@code pos}; 0 when it has none or is unknown. */
     public int levelAt(GlobalPos pos, String key) {
         Map<String, Integer> l = levels.get(pos);
@@ -379,6 +409,7 @@ public class TotemLedger extends SavedData {
         if (changed) {
             tiers.remove(pos);
             levels.remove(pos);
+            coated.remove(pos);
             com.mrgregles.bsp_core.score.ScoreService.markDirty();
             setDirty();
             com.mrgregles.bsp_core.storage.NetworkStorage.totemRemoved(pos);
@@ -416,6 +447,9 @@ public class TotemLedger extends SavedData {
                 CompoundTag lt = new CompoundTag();
                 l.forEach(lt::putInt);
                 entry.put("Levels", lt);
+            }
+            if (coated.containsKey(pos)) {
+                entry.putInt("Coated", coated.get(pos));
             }
             placedList.add(entry);
         }));
@@ -460,6 +494,9 @@ public class TotemLedger extends SavedData {
                     l.put(key, lt.getInt(key));
                 }
                 ledger.levels.put(pos, Map.copyOf(l));
+            }
+            if (entry.getInt("Coated") > 0) {
+                ledger.coated.put(pos, entry.getInt("Coated"));
             }
         }
         for (Tag raw : tag.getList(TAG_TOTEMS, Tag.TAG_COMPOUND)) {

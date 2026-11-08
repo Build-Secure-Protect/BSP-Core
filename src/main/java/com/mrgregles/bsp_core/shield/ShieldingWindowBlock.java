@@ -27,12 +27,12 @@ public class ShieldingWindowBlock extends Block {
 
     public ShieldingWindowBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(AXIS, Direction.Axis.X));
+        registerDefaultState(stateDefinition.any().setValue(AXIS, Direction.Axis.X).setValue(TotemCoating.COATED, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(AXIS);
+        builder.add(AXIS, TotemCoating.COATED);
     }
 
     /** Across the player's view: facing north or south it runs east to west. */

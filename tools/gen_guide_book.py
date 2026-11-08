@@ -271,10 +271,15 @@ ENTRIES = [
         text("$(l)Tripwire$() (Base, after Alarm, Tier II): your placed totem gives a full redstone signal from every side while an outsider is near: anyone but you, your team, your allies and the friends on its access list.$(br2)One range opens with each tier: 16 blocks at II, 32 at III, 64 at IV, 128 at V.", "Tripwire"),
         text("Dust, lamps, doors and pistons touching the totem take the signal, held three seconds after the last outsider goes, and the studs round its base glow red. It watches only while its chunk is loaded.$(br2)NEXT on its card picks a shorter range, or off. Thief's Step hides from a Tripwire set to its level or lower.", "Wiring a Tripwire"),
     ]),
+    ("totem", "radiation", "Totem Radiation", "bsp_core:totem_radiation_coating", 4, [
+        text("Every placed totem gives off $(l)totem radiation$(). It is harmless: it is what lets a rival's $(l:totem/compass)Totem Compass$() find the totem.$(br2)Its level is one for each tier above Tier I plus every upgrade level. A Tier I totem with nothing bought gives off none."),
+        text("The higher the level, the further away a compass sees the totem:$(br)$(li)Level 7: 9 blocks$(li)Level 27: 127$(li)Level 63: 689$(li)Level 120 and up: 2,500$(br2)Depth counts; ordinary blocks in between do not hide it.", "How far"),
+        text("Far from a totem the needle points beside it, and closes in as you get nearer, so two bearings do not cross on the totem.$(br2)Your totem's screen shows its radiation along the bottom. $(l:radiation/coating)Totem Radiation Coating$() on shielding round it weakens it.", "Finding and hiding"),
+    ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
         spot("bsp_core:totem_compass", "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
         text("A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, at first.$(br2)$(l)WIDER$() and $(l)DEEPER$() on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.", "Reach"),
-        text("With no rival totem within reach, the needle spins and the screen says so. The tracking time keeps running.$(br2)Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.", "Reading the compass"),
+        text("With no rival totem in reach giving off enough $(l:totem/radiation)radiation$(), the needle spins and the screen says so.$(br2)Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.", "Reading the compass"),
         craft("totem_compass"),
     ]),
     ("materials", "tetrium", "Tetrium", "bsp_core:tetrium_ingot", 0, [
@@ -403,6 +408,11 @@ ENTRIES = [
         text("The network has one lottery pot. It fills from the $(l:coins/market)market$()'s taxes and from half of what players pay for shop items.$(br2)Everyone who has played on the network in the past week is in the lottery, with one equal chance each. There are no tickets to buy or earn. Operators and staff ranks are left out."),
         text("An admin draws the lottery when they choose. Chat on every server counts down from 5 and then names the winner and what they won.$(br2)The winner takes the whole pot, straight into their bank. A winner who is offline is told when they next log in.$(br2)After a draw the pot starts again, and everyone who keeps playing is in the next one.", "The draw"),
         text("The $(l)LOTTERY$() tab on a $(l:coins/trade_post)Trade Post$() turns a drum of the names of everyone in, beside the pot, how many are in and your own chance. The last five winners are along the bottom.$(br2)The $(item)Portable Banker$() shows the pot and your chance on its account page, and Score Screens can show the $(l)Lottery$() board.", "Watching the pot"),
+    ]),
+    ("radiation", "coating", "Totem Radiation Coating", "bsp_core:totem_radiation_coating", 2, [
+        spot("bsp_core:totem_radiation_coating", "Use a $(item)Totem Radiation Coating$() on a Radiation Shielding Panel, Window or Door to coat it: one tin per block, one for a whole door. It stays on when the block is broken and placed again."),
+        text("Coated shielding all round a totem, within 32 blocks, weakens its $(l:totem/radiation)radiation$(): each coated layer takes a fifth off how far away it is seen, up to four.$(br2)A coated roof alone does nothing, and an open door does not count.", "Layers"),
+        craft("totem_radiation_coating", None, "Pure Illyrium Dust, Lead Plates and Tetrium Dust make four."),
     ]),
     ("radiation", "lead_lined_chest", "The Lead-Lined Chest", "bsp_core:lead_lined_chest", 0, [
         spot("bsp_core:lead_lined_chest", "Raw uranium and yellorium, yellorite ore, plutonium and polonium pellets, yellow cake and fuel rods give off radiation from an ordinary chest, through walls. A full chest of raw uranium reaches about eighteen blocks.$(br2)Nothing in a $(item)Lead-Lined Chest$() gives off radiation, however much is in it."),

@@ -56,6 +56,12 @@ public final class ClientSetup {
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
                     new net.minecraft.resources.ResourceLocation("angle"),
                     new net.minecraft.client.renderer.item.CompassItemPropertyFunction((level, stack, entity) -> com.mrgregles.bsp_core.compass.TotemCompassItem.target(stack)));
+            // a coated shielding panel, window or door shows its glaze in the inventory (the item models' overrides)
+            for (var item : java.util.List.of(com.mrgregles.bsp_core.registry.ModItems.RADIATION_SHIELDING_PANEL.get(),
+                    com.mrgregles.bsp_core.registry.ModItems.RADIATION_SHIELDING_WINDOW.get(), com.mrgregles.bsp_core.registry.ModItems.RADIATION_SHIELDING_DOOR.get())) {
+                net.minecraft.client.renderer.item.ItemProperties.register(item, new net.minecraft.resources.ResourceLocation(com.mrgregles.bsp_core.BSPCore.MODID, "coated"),
+                        (stack, level, entity, seed) -> com.mrgregles.bsp_core.shield.TotemCoating.coated(stack) ? 1f : 0f);
+            }
             // a store credit ticket's C or D mark (the model's overrides pick the overlay)
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.STORE_CREDIT.get(),
                     new net.minecraft.resources.ResourceLocation(com.mrgregles.bsp_core.BSPCore.MODID, "mark"),

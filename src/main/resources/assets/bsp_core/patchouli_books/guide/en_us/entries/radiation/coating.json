@@ -1,0 +1,23 @@
+{
+  "name": "Totem Radiation Coating",
+  "category": "bsp_core:radiation",
+  "icon": "bsp_core:totem_radiation_coating",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:totem_radiation_coating",
+      "text": "Use a $(item)Totem Radiation Coating$() on a Radiation Shielding Panel, Window or Door to coat it: one tin per block, one for a whole door. It stays on when the block is broken and placed again."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Coated shielding all round a totem, within 32 blocks, weakens its $(l:totem/radiation)radiation$(): each coated layer takes a fifth off how far away it is seen, up to four.$(br2)A coated roof alone does nothing, and an open door does not count.",
+      "title": "Layers"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:totem_radiation_coating",
+      "text": "Pure Illyrium Dust, Lead Plates and Tetrium Dust make four."
+    }
+  ]
+}

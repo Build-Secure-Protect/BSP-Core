@@ -166,6 +166,7 @@ public final class BspProcesses {
             Map.entry("jei.bsp_core.info.vault", List.of("coin_vault")),
             Map.entry("jei.bsp_core.info.lead_lined_chest", List.of("lead_lined_chest")),
             Map.entry("jei.bsp_core.info.radiation_shielding", List.of("radiation_shielding_panel", "radiation_shielding_window", "radiation_shielding_door")),
+            Map.entry("jei.bsp_core.info.totem_radiation_coating", List.of("totem_radiation_coating")),
             Map.entry("jei.bsp_core.info.store_credit", List.of("store_credit")),
             Map.entry("jei.bsp_core.info.extractor", List.of("plasma_extractor")),
             Map.entry("jei.bsp_core.info.interface", List.of("plasma_interface")),

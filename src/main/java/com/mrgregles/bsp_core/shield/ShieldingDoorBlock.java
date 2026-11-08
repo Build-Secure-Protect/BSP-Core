@@ -19,10 +19,20 @@ import net.minecraft.world.phys.BlockHitResult;
 public class ShieldingDoorBlock extends DoorBlock {
     public ShieldingDoorBlock(Properties properties, BlockSetType type) {
         super(properties, type);
+        registerDefaultState(defaultBlockState().setValue(TotemCoating.COATED, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(TotemCoating.COATED);
     }
 
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (player.getItemInHand(hand).getItem() instanceof TotemCoatingItem) {
+            return InteractionResult.PASS; // the coating is used on the door, it does not open it
+        }
         state = state.cycle(OPEN);
         level.setBlock(pos, state, 10);
         boolean open = state.getValue(OPEN);

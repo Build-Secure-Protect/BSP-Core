@@ -37,7 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link ShieldJoins#mask}. So a wall of panels shows one riveted border round the whole group, and joined windows one frame round one
  * sheet of glass. The masks are worked out where the block is drawn ({@link #getModelData}); the quads are made once per face and mask
  * and kept. The window's four lead edges are its block model's, dropped between joined windows by {@link ShieldingWindowBlock}.
- * Items and blocks with no world around them show every edge.
+ * Items and blocks with no world around them show every edge. A coated block ({@link com.mrgregles.bsp_core.shield.TotemCoating})
+ * takes the same five pieces with the turquoise glaze ({@code <texture>_coated<suffix>}).
  */
 public class ShieldJoinedModel extends BakedModelWrapper<BakedModel> {
     private static final ModelProperty<Long> MASKS = new ModelProperty<>();
@@ -48,7 +49,7 @@ public class ShieldJoinedModel extends BakedModelWrapper<BakedModel> {
     private final boolean window;
     private final Map<Integer, List<BakedQuad>> cache = new ConcurrentHashMap<>();
     @Nullable
-    private volatile TextureAtlasSprite[] sprites;
+    private volatile TextureAtlasSprite[] sprites, coatedSprites;
 
     /** {@code texture} is the base name, such as {@code radiation_shielding_panel}; the five pieces are it and its suffixes. */
     public ShieldJoinedModel(BakedModel original, String texture, boolean window) {
@@ -57,15 +58,19 @@ public class ShieldJoinedModel extends BakedModelWrapper<BakedModel> {
         this.window = window;
     }
 
-    private TextureAtlasSprite[] sprites() {
-        TextureAtlasSprite[] s = sprites;
+    private TextureAtlasSprite[] sprites(boolean coated) {
+        TextureAtlasSprite[] s = coated ? coatedSprites : sprites;
         if (s == null) {
             var atlas = Minecraft.getInstance().getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS);
             s = new TextureAtlasSprite[SUFFIX.length];
             for (int i = 0; i < SUFFIX.length; i++) {
-                s[i] = atlas.getSprite(new ResourceLocation(BSPCore.MODID, "block/" + texture + SUFFIX[i]));
+                s[i] = atlas.getSprite(new ResourceLocation(BSPCore.MODID, "block/" + texture + (coated ? "_coated" : "") + SUFFIX[i]));
             }
-            sprites = s;
+            if (coated) {
+                coatedSprites = s;
+            } else {
+                sprites = s;
+            }
         }
         return s;
     }
@@ -86,8 +91,9 @@ public class ShieldJoinedModel extends BakedModelWrapper<BakedModel> {
 
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData data, @Nullable RenderType type) {
+        boolean coated = state != null && com.mrgregles.bsp_core.shield.TotemCoating.coated(state);
         if (!window) {
-            return side == null ? List.of() : faces(side, mask(data, side), Direction.Axis.X); // a panel's faces all lie on the block's sides
+            return side == null ? List.of() : faces(side, mask(data, side), Direction.Axis.X, coated); // a panel's faces all lie on the block's sides
         }
         Direction.Axis runs = state != null && state.hasProperty(ShieldingWindowBlock.AXIS) ? state.getValue(ShieldingWindowBlock.AXIS) : Direction.Axis.X;
         Direction.Axis thin = runs == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X;
@@ -96,7 +102,7 @@ public class ShieldJoinedModel extends BakedModelWrapper<BakedModel> {
         }
         List<BakedQuad> out = new ArrayList<>();
         for (Direction d : new Direction[] {Direction.get(Direction.AxisDirection.NEGATIVE, thin), Direction.get(Direction.AxisDirection.POSITIVE, thin)}) {
-            out.addAll(faces(d, mask(data, d), runs));
+            out.addAll(faces(d, mask(data, d), runs, coated));
         }
         return out;
     }
@@ -107,10 +113,10 @@ public class ShieldJoinedModel extends BakedModelWrapper<BakedModel> {
     }
 
     /** The four quarters of face {@code face} for {@code mask}; for a window, {@code runs} places the pane (6 pixels deep, 5 to 11). */
-    private List<BakedQuad> faces(Direction face, int mask, Direction.Axis runs) {
-        int key = (face.ordinal() << 9) | ((runs == Direction.Axis.Z ? 1 : 0) << 8) | mask;
+    private List<BakedQuad> faces(Direction face, int mask, Direction.Axis runs, boolean coated) {
+        int key = ((coated ? 1 : 0) << 12) | (face.ordinal() << 9) | ((runs == Direction.Axis.Z ? 1 : 0) << 8) | mask;
         return cache.computeIfAbsent(key, k -> {
-            TextureAtlasSprite[] s = sprites();
+            TextureAtlasSprite[] s = sprites(coated);
             float[] lo = {0, 0, 0}, hi = {16, 16, 16};
             if (window) {
                 int a = runs == Direction.Axis.X ? 2 : 0; // the pane is thin along z when it runs along x

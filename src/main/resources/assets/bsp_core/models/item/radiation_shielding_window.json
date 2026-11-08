@@ -1,3 +1,11 @@
 {
-  "parent": "bsp_core:block/radiation_shielding_window"
+  "parent": "bsp_core:block/radiation_shielding_window",
+  "overrides": [
+    {
+      "predicate": {
+        "bsp_core:coated": 1
+      },
+      "model": "bsp_core:item/radiation_shielding_window_coated"
+    }
+  ]
 }

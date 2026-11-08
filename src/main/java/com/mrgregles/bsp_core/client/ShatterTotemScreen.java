@@ -44,7 +44,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     public ShatterTotemScreen(ShatterTotemMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = 326;
-        this.imageHeight = STATUS_Y + 48;
+        this.imageHeight = RAD_Y + 33; // the radiation strip runs along the bottom
     }
 
     @Override
@@ -113,6 +113,104 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     private boolean mayUpgrade() {
         ShatterTotemBlockEntity totem = menu.getTotem();
         return isOwner() || admin || totem != null && totem.hasAccess(minecraft.player.getUUID(), com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES);
+    }
+
+    /**
+     * The radiation strip along the bottom (readout B): a rule at {@code RAD_Y}, then RADIATION and the totem's level, a bar of how
+     * far away a tracking compass sees it out of {@code maxSeenAt} (marked in fifths, a gold notch at the distance, a dim stretch for
+     * what the coating takes away), and the i key that shows the owner's sentence.
+     */
+    private static final int RAD_Y = STATUS_Y + 47, BAR_X = 74, BAR_W = 224, BAR_H = 8, INFO_X = 305, INFO_S = 11, INFO_W = 158;
+    private static final int RAD_LOW = 0xFF19D3B0, RAD_MID = 0xFFFFD23A, RAD_HIGH = 0xFFFF6B5C, GOLD_NOTCH = 0xFFFFD23A;
+    /** The i key's sentence is showing (until clicked again or the mouse leaves it). */
+    private boolean radInfo;
+
+    private static int radColour(double share) {
+        return share < 0.25 ? RAD_LOW : share < 0.6 ? RAD_MID : RAD_HIGH;
+    }
+
+    private static boolean in(double mx, double my, int x, int y, int w, int h) {
+        return mx >= x && mx < x + w && my >= y && my < y + h;
+    }
+
+    private static int maxSeen() {
+        return Math.max(1, com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.RADIATION_MAX_SEEN, 2500));
+    }
+
+    private int infoHeight() {
+        return font.split(Component.translatable("gui.bsp_core.radiation.info"), Math.round((INFO_W - 8) / 0.75f)).size() * 7 + 7;
+    }
+
+    /** How far away tracking compasses see this totem: none while it has no owner (only owned totems are in the ledger). */
+    private static int seenNow(ShatterTotemBlockEntity totem) {
+        return totem.getOwner().isEmpty() ? 0 : com.mrgregles.bsp_core.totem.TotemRadiation.seenAt(totem.radiationLevel(), totem.coatedLayers());
+    }
+
+    /** The bar, its marks and the i key (screen coordinates). */
+    private void radiationBg(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
+        g.fill(x + 10, y + RAD_Y, x + imageWidth - 10, y + RAD_Y + 1, DIM);
+        int bx = x + BAR_X, by = y + RAD_Y + 7;
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        if (totem == null || !com.mrgregles.bsp_core.totem.TotemRadiation.enabled()) {
+            return; // no bar and no i key: the sentence would not be true
+        }
+        boolean infoHover = in(mouseX, mouseY, x + INFO_X, y + RAD_Y + 6, INFO_S, INFO_S);
+        g.fill(x + INFO_X, y + RAD_Y + 6, x + INFO_X + INFO_S, y + RAD_Y + 6 + INFO_S, TQ);
+        g.fill(x + INFO_X + 1, y + RAD_Y + 7, x + INFO_X + INFO_S - 1, y + RAD_Y + 5 + INFO_S, radInfo || infoHover ? 0xFF14362F : SLOT_BG);
+        g.fill(bx, by, bx + BAR_W, by + BAR_H, DIM);
+        g.fill(bx + 1, by + 1, bx + BAR_W - 1, by + BAR_H - 1, SLOT_BG);
+        int level = totem.radiationLevel(), max = maxSeen(), inner = BAR_W - 2;
+        int bare = Math.min(max, com.mrgregles.bsp_core.totem.TotemRadiation.bareSeenAt(level));
+        int seen = Math.min(max, seenNow(totem));
+        int a = (int) Math.round(inner * (double) seen / max), b = (int) Math.round(inner * (double) bare / max);
+        int colour = radColour((double) seen / max);
+        if (b > a) {
+            g.fill(bx + 1 + a, by + 1, bx + 1 + b, by + BAR_H - 1, (colour & 0x00FFFFFF) | 0x4D000000); // what the coating takes away
+        }
+        g.fill(bx + 1, by + 1, bx + 1 + a, by + BAR_H - 1, colour);
+        if (seen > 0) {
+            g.fill(bx + 1 + a, by - 2, bx + 2 + a, by + BAR_H + 2, GOLD_NOTCH);
+        }
+        for (int k = 0; k <= 5; k++) {
+            int tx = bx + 1 + Math.round(inner * k / 5f);
+            g.fill(tx, by + BAR_H, tx + 1, by + BAR_H + 2, 0xFF9AA3B5);
+        }
+    }
+
+    /** RADIATION, the level, the marks' distances and the i key's sentence (panel coordinates). */
+    private void radiationLabels(GuiGraphics g) {
+        Component label = Component.translatable("gui.bsp_core.radiation.label");
+        small(g, label, 10, RAD_Y + 9, MUTED);
+        if (com.mrgregles.bsp_core.totem.TotemRadiation.enabled()) {
+            g.drawString(font, "i", INFO_X + 4, RAD_Y + 8, TQ & 0xFFFFFF, false);
+        }
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        if (totem == null) {
+            return;
+        }
+        int numberX = 10 + Math.round(font.width(label) * 0.75f) + 4;
+        g.drawString(font, String.valueOf(totem.radiationLevel()), numberX, RAD_Y + 7, 0xFFD23A, false);
+        if (!com.mrgregles.bsp_core.totem.TotemRadiation.enabled()) {
+            small(g, Component.translatable("gui.bsp_core.radiation.off"), BAR_X, RAD_Y + 9, MUTED);
+        } else {
+            int max = maxSeen(), inner = BAR_W - 2;
+            for (int k = 0; k <= 5; k++) {
+                String mark = String.format(Locale.ROOT, "%,d", Math.round(max * k / 5f));
+                int w = Math.round(font.width(mark) * 0.75f), tx = BAR_X + 1 + Math.round(inner * k / 5f);
+                small(g, Component.literal(mark), k == 0 ? tx : k == 5 ? tx - w + 1 : tx - w / 2, RAD_Y + 20, MUTED);
+            }
+        }
+        if (radInfo) {
+            Component info = Component.translatable("gui.bsp_core.radiation.info");
+            int lines = font.split(info, Math.round((INFO_W - 8) / 0.75f)).size(), h = lines * 7 + 7;
+            int bx = INFO_X + INFO_S - INFO_W, by = RAD_Y - 2 - h;
+            g.pose().pushPose();
+            g.pose().translate(0, 0, 300); // over the status lines and any item drawn there
+            g.fill(bx, by, bx + INFO_W, by + h, TQ);
+            g.fill(bx + 1, by + 1, bx + INFO_W - 1, by + h - 1, SLOT_BG);
+            CashMachine.smallWrap(g, font, info, bx + 4, by + 4, INFO_W - 8, 0xE8EAF0);
+            g.pose().popPose();
+        }
     }
 
     private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, T_ACCESS = 3, T_TEAM = 4, MAP_TILE = 24, ACC_ROW = 18, ACC_Y = TREE_Y + 22, ACC_COL = 118, ACC_W = 40, ACC_GAP = 46;
@@ -272,6 +370,14 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     public boolean mouseClicked(double mx, double my, int button) {
         int x = leftPos, y = topPos;
         int[] tabs = tabs();
+        if (in(mx, my, x + INFO_X, y + RAD_Y + 6, INFO_S, INFO_S) && com.mrgregles.bsp_core.totem.TotemRadiation.enabled()) {
+            radInfo = !radInfo;
+            return true;
+        }
+        if (radInfo && in(mx, my, x + INFO_X + INFO_S - INFO_W, y + RAD_Y - 2 - infoHeight(), INFO_W, infoHeight())) {
+            radInfo = false; // a click on the open box closes it and reaches nothing under it (STEAL, the admin keys)
+            return true;
+        }
         if (my >= y + 3 && my < y + 16) { // tabs sit in the header
             if (mx >= x + aurasX() && mx < x + aurasX() + AURAS_W) {
                 com.mrgregles.bsp_core.BSPClientConfig.toggleAuras();
@@ -382,6 +488,34 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (hover != null) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.tree.node", Component.translatable(hover.translationKey()), level(hover), hover.maxLevel()), mouseX, mouseY);
         }
+        if (radInfo) { // the sentence stays while the mouse is on the key or the box
+            Component info = Component.translatable("gui.bsp_core.radiation.info");
+            int h = font.split(info, Math.round((INFO_W - 8) / 0.75f)).size() * 7 + 7;
+            boolean onKey = in(mouseX, mouseY, leftPos + INFO_X, topPos + RAD_Y + 6, INFO_S, INFO_S);
+            boolean onBox = in(mouseX, mouseY, leftPos + INFO_X + INFO_S - INFO_W, topPos + RAD_Y - 2 - h, INFO_W, h + 8);
+            radInfo = onKey || onBox;
+        }
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        if (totem != null && com.mrgregles.bsp_core.totem.TotemRadiation.enabled()
+                && in(mouseX, mouseY, leftPos + BAR_X, topPos + RAD_Y + 5, BAR_W, BAR_H + 4)) {
+            int level = totem.radiationLevel(), layers = com.mrgregles.bsp_core.totem.TotemRadiation.countedLayers(totem.coatedLayers());
+            int seen = seenNow(totem);
+            java.util.List<Component> tip = new java.util.ArrayList<>();
+            if (totem.getOwner().isEmpty()) {
+                tip.add(Component.translatable("gui.bsp_core.radiation.tip_unclaimed"));
+            } else if (level <= 0) {
+                tip.add(Component.translatable("gui.bsp_core.radiation.tip_none"));
+            } else if (seen <= 0) {
+                tip.add(Component.translatable("gui.bsp_core.radiation.tip_weak"));
+            } else {
+                tip.add(Component.translatable("gui.bsp_core.radiation.tip", String.format(Locale.ROOT, "%,d", seen)));
+                if (layers > 0) {
+                    tip.add(Component.translatable("gui.bsp_core.radiation.tip_coated", layers,
+                            String.format(Locale.ROOT, "%,d", com.mrgregles.bsp_core.totem.TotemRadiation.bareSeenAt(level))).withStyle(ChatFormatting.AQUA));
+                }
+            }
+            g.renderComponentTooltip(font, tip, mouseX, mouseY);
+        }
     }
 
     @Override
@@ -389,6 +523,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         int x = leftPos, y = topPos;
         g.fill(x - 1, y - 1, x + imageWidth + 1, y + imageHeight + 1, operatorTab ? VIO : TQ);
         g.fill(x, y, x + imageWidth, y + imageHeight, BG);
+        radiationBg(g, x, y, mouseX, mouseY);
         int[] tabs = tabs();
         for (int i = 0; i < tabs.length; i++) {
             int tx = x + tabX(i, tabs.length);
@@ -534,6 +669,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
+        radiationLabels(g); // on every tab; the i key's box is raised over what is drawn after it
         // the tier joins the title only while the header has room for it
         String head = title.getString().toUpperCase(Locale.ROOT);
         if (tabs().length < 2) {

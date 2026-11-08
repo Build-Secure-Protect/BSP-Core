@@ -42,6 +42,12 @@ public class CompassRangeGameTests {
         return GlobalPos.of(h.getLevel().dimension(), pos);
     }
 
+    /** A placed rival totem at full radiation (Tier V and 116 upgrade levels: level 120), so only the compass's reach decides here. */
+    private static void bright(TotemLedger ledger, UUID owner, GlobalPos p) {
+        ledger.recordPlaced(owner, p, 4);
+        ledger.recordLevels(p, java.util.Map.of("output", 116)); // the ledger only adds the levels up: 4 + 116 = 120
+    }
+
     @GameTest(template = EMPTY, batch = BATCH)
     public void compass_finds_rival_totems_only_within_its_reach(GameTestHelper h) {
         var server = h.getLevel().getServer();
@@ -57,7 +63,7 @@ public class CompassRangeGameTests {
                     "a new compass reaches 100 across and 10 up or down");
             GlobalPos far = at(h, here.offset(150, 0, 0)), diagonal = at(h, here.offset(80, 0, 80)), deep = at(h, here.offset(20, -30, 0));
             for (GlobalPos p : List.of(far, diagonal, deep)) {
-                ledger.recordPlaced(rival, p);
+                bright(ledger, rival, p);
                 placed.add(p);
             }
             h.assertTrue(TotemCompassItem.nearest(seeker, true, compass) == null,
@@ -70,7 +76,7 @@ public class CompassRangeGameTests {
             h.assertTrue(deep.pos().equals(TotemCompassItem.nearest(seeker, true, compass)), "at 35 up or down the deep one, nearest of all, is found");
 
             BlockPos above = here.offset(0, 36, 0);
-            ledger.recordPlaced(rival, at(h, above));
+            bright(ledger, rival, at(h, above));
             placed.add(at(h, above));
             h.assertTrue(deep.pos().equals(TotemCompassItem.nearest(seeker, true, compass)), "36 up is beyond 35 up or down");
 

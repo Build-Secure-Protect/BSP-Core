@@ -37,7 +37,7 @@ public final class ShieldingBlocks {
     }
 
     public static Block panel() {
-        return new Block(metal());
+        return new ShieldingPanelBlock(metal());
     }
 
     public static Block window() {

@@ -87,6 +87,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     public void setOwner(@Nullable TotemOwner owner) {
         TotemOwner previous = this.owner;
+        layersCounted = false; // counted again at the next tick: a new owner (or none) re-records this place in the ledger
         if (owner != null && (this.owner == null || !this.owner.uuid().equals(owner.uuid()))) {
             ownedSince = System.currentTimeMillis();
             access.clear(); // a new owner starts with nobody let in
@@ -517,8 +518,66 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
     }
 
+    /** Whether the coated layers round this totem have been counted since it loaded (they are counted at its first tick). */
+    private boolean layersCounted;
+    /** The coated layers last counted round this totem; sent to clients for the radiation readout, never saved (counted again at load). */
+    private int coatedLayers;
+
+    /** Layers of Totem Radiation Coating round this totem, as last counted (on a client, as last synced). */
+    public int coatedLayers() {
+        return coatedLayers;
+    }
+
+    /** This totem's radiation level: its tier steps plus every upgrade level ({@link TotemRadiation}). */
+    public int radiationLevel() {
+        int sum = 0;
+        for (TotemUpgrades.Buff buff : TotemUpgrades.Buff.values()) {
+            sum += getUpgradeLevel(buff);
+        }
+        return TotemRadiation.level(getTier(), sum);
+    }
+
+    /** Counts the Totem Radiation Coating round the totem into the ledger: at the first tick, then every {@code checkSeconds}. */
+    private void coatingTick(ServerLevel level) {
+        int period = Math.max(1, BSPConfig.getOr(BSPConfig.RADIATION_CHECK_SECONDS, 30)) * 20;
+        if (owner == null || layersCounted && Math.floorMod(level.getGameTime() + worldPosition.hashCode(), period) != 0) {
+            return; // spread over the period by position, so totems do not all count on one tick
+        }
+        boolean first = !layersCounted;
+        layersCounted = true; // a count that cannot be made now (a chunk round it not loaded) keeps the last one until the next period
+        int layers = TotemRadiation.countLayers(level, worldPosition);
+        if (layers < 0 && first) {
+            layers = TotemLedger.get(level.getServer()).coatedLayers(GlobalPos.of(level.dimension(), worldPosition)); // the screen shows the kept count
+            if (layers != coatedLayers) {
+                coatedLayers = layers;
+                sync();
+            }
+            return;
+        }
+        if (layers >= 0) {
+            TotemLedger.get(level.getServer()).recordCoatedLayers(GlobalPos.of(level.dimension(), worldPosition), layers);
+            if (layers != coatedLayers) {
+                coatedLayers = layers;
+                sync(); // the readout on the totem's screen
+            }
+        }
+    }
+
+    /** A last count as the chunk unloads, so the ledger keeps what was round the totem when it was last seen (if its neighbours are still there). */
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        if (level instanceof ServerLevel sl && owner != null) {
+            int layers = TotemRadiation.countLayers(sl, worldPosition);
+            if (layers >= 0) {
+                TotemLedger.get(sl.getServer()).recordCoatedLayers(GlobalPos.of(sl.dimension(), worldPosition), layers);
+            }
+        }
+    }
+
     /** Server tick, registered by the block. */
     public void serverTick(ServerLevel level) {
+        coatingTick(level);
         if (tripSignal) {
             if (tripUntil == 0) {
                 tripUntil = level.getGameTime() + 21; // loaded with the signal on: keep it until the next look says otherwise
@@ -1172,6 +1231,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         owner = TotemOwner.load(tag).orElse(null);
         ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
+        if (tag.contains("CoatedLayers")) { // only in a sync to a client; a world load counts again at the first tick
+            coatedLayers = tag.getInt("CoatedLayers");
+        }
         access = TotemAccess.load(tag);
         teammates.clear();
         if (tag.contains("Teammates")) {
@@ -1199,6 +1261,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
+        tag.putInt("CoatedLayers", coatedLayers);
         if (owner != null && level instanceof ServerLevel sl && com.mrgregles.bsp_core.team.Teams.enabled()) {
             net.minecraft.nbt.ListTag mates = new net.minecraft.nbt.ListTag();
             for (UUID m : com.mrgregles.bsp_core.api.BspTeams.teammates(sl.getServer(), owner.uuid())) {

@@ -2,5 +2,13 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "bsp_core:item/radiation_shielding_door"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "bsp_core:coated": 1
+      },
+      "model": "bsp_core:item/radiation_shielding_door_coated"
+    }
+  ]
 }

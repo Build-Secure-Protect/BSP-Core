@@ -1,0 +1,33 @@
+{
+  "conditions": [
+    {
+      "type": "forge:not",
+      "value": {
+        "type": "forge:tag_empty",
+        "tag": "forge:plates/lead"
+      }
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "TPT",
+    "PIP",
+    "TPT"
+  ],
+  "key": {
+    "T": {
+      "item": "bsp_core:tetrium_dust"
+    },
+    "P": {
+      "tag": "forge:plates/lead"
+    },
+    "I": {
+      "item": "bsp_core:pure_illyrium_dust"
+    }
+  },
+  "result": {
+    "item": "bsp_core:totem_radiation_coating",
+    "count": 4
+  }
+}

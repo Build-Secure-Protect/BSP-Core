@@ -387,14 +387,18 @@ public class TotemCompassItem extends Item {
 
     /**
      * Nearest placed totem in the player's dimension: their own at any distance, or with {@code rivals} someone else's within
-     * the compass's reach (across and up or down), or null.
+     * the compass's reach (across and up or down) and within its own seen-at distance ({@link com.mrgregles.bsp_core.totem.TotemRadiation}),
+     * or null. For a rival the answer is where the needle points: the totem, or a spot beside it when its signal is weak.
      */
     @Nullable
     public static BlockPos nearest(ServerPlayer player, boolean rivals, ItemStack compass) {
-        BlockPos best = null, at = player.blockPosition();
+        BlockPos at = player.blockPosition();
+        GlobalPos best = null;
+        int bestSeenAt = 0;
         double bestDist = Double.MAX_VALUE;
         int across = rangeBlocks(compass, Range.ACROSS), upDown = rangeBlocks(compass, Range.DEPTH);
-        for (Map.Entry<UUID, Set<GlobalPos>> e : TotemLedger.get(player.server).allPlaced().entrySet()) {
+        TotemLedger ledger = TotemLedger.get(player.server);
+        for (Map.Entry<UUID, Set<GlobalPos>> e : ledger.allPlaced().entrySet()) {
             if (e.getKey().equals(player.getUUID()) == rivals) {
                 continue;
             }
@@ -405,14 +409,25 @@ public class TotemCompassItem extends Item {
                 if (pos.dimension() != player.level().dimension() || rivals && !inReach(at, pos.pos(), across, upDown)) {
                     continue;
                 }
-                double d = pos.pos().distSqr(player.blockPosition());
-                if (d < bestDist) {
-                    bestDist = d;
-                    best = pos.pos();
+                double d = pos.pos().distSqr(at);
+                if (d >= bestDist) {
+                    continue;
                 }
+                // a rival totem must also give off enough radiation to be seen from here
+                int seenAt = rivals ? com.mrgregles.bsp_core.totem.TotemRadiation.seenAt(ledger, pos) : 0;
+                if (rivals && !com.mrgregles.bsp_core.totem.TotemRadiation.sees(at, pos.pos(), seenAt)) {
+                    continue;
+                }
+                bestDist = d;
+                best = pos;
+                bestSeenAt = seenAt;
             }
         }
-        return best;
+        if (best == null) {
+            return null;
+        }
+        // a weak signal points beside the totem, so two bearings do not cross on it
+        return rivals ? com.mrgregles.bsp_core.totem.TotemRadiation.pointAt(best, at, bestSeenAt, System.currentTimeMillis()) : best.pos();
     }
 
     /** Client and server: where the needle should point, or null to spin. */

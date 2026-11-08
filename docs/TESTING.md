@@ -3114,3 +3114,43 @@ The reach rules and the buying are covered by `CompassRangeGameTests` (batch `co
 - [ ] Carry an upgraded compass to another server of the network: it keeps its levels. A new compass made there starts at 100 / 10.
 - [ ] A Decoy Totem still takes over a tracking compass inside the decoy's range.
 
+## Totem radiation (2026-11-08, Unreleased)
+
+The rules are covered by `TotemRadiationGameTests` (batch `totem_radiation`). The coating, the layer count and the totem's readout come in later steps. In game, with a compass at full reach (creative, or `/data merge` the levels):
+
+- [ ] A rival's Tier I totem with nothing bought: tracking never finds it, even standing next to it.
+- [ ] A rival's totem at about level 27 (Tier III, 25 upgrade levels): from 200 blocks the needle spins; from about 60 it points straight at it; from about 100 it points a little to one side, and the spot is the same from another side of the totem.
+- [ ] A rival's Tier V totem with most upgrades (level 120 or more): found from 2,000 blocks if the compass reaches that far; the needle leads to a spot up to a few hundred blocks off, and closes in on the totem as you walk.
+- [ ] A rival's level-27 totem 100 blocks straight down: found from directly above.
+- [ ] `totemRadiation.enabled = false`: every totem in the compass's reach is found again, pointed at exactly.
+
+## Totem Radiation Coating (2026-11-08, Unreleased)
+
+Applying, doors and drops are covered by `TotemCoatingGameTests` (batch `totem_coating`). In game:
+
+- [ ] Craft: Pure Illyrium Dust in the middle, Lead Plates on the four sides, Tetrium Dust in the corners gives 4 tins. JEI shows the recipe.
+- [ ] Right-click a Radiation Shielding Panel with a tin: the wax-on sparkle and sound, the panel takes a turquoise glaze, one tin goes. Again: "This block is already coated" and no tin goes. On stone: "Only Radiation Shielding Panels, Windows and Doors take the coating".
+- [ ] A wall of panels, half coated: the riveted border still runs round the whole wall; coated panels show the glaze with the same border.
+- [ ] A coated window: lightly turquoise glass, still see-through; joined windows still form one sheet.
+- [ ] Right-click a shut door with a tin: both halves turn turquoise, the door stays shut, one tin goes. Without a tin the door opens by hand as before.
+- [ ] Break a coated panel, window and door: each drops with the glaze in the inventory and "Coated against totem radiation" in its tooltip; placed again it is coated. They do not stack with plain ones.
+- [ ] Creative: the tin is in the BSP tab after the door; using it costs nothing.
+- [ ] Old worlds: shielding placed before the update loads plain.
+- [ ] Layers: a rival's level-63 totem (seen from 689) inside one closed box of coated shielding within 32 blocks. After 30 seconds a full-reach compass finds it from 551 but not 600; inside two boxes, from 441 but not 500. Open a coated door in the inner box: within 30 seconds the totem counts one layer fewer. A coated roof with plain walls does nothing.
+- [ ] A large coated base (a 30 by 30 room, two layers) causes no tick spike when the totem counts (watch `/forge tps` or spark while standing in it for a minute).
+- [ ] Raise that totem's tier: the coating still counts at once (no 30-second window where it shows uncoated).
+
+### The radiation strip on the totem's screen
+- [ ] Open your own totem (any tab): under the owner lines, a rule, then RADIATION and the level (tier steps plus upgrade levels; a new Tier I totem shows 0 and an empty bar with no notch). The bar's marks read 0, 500, 1,000, 1,500, 2,000, 2,500 and do not touch.
+- [ ] A level-63 totem: the bar fills to about a quarter (689 of 2,500) in gold with the notch at its end. Inside 2 coated layers (after up to 30 seconds): it fills to 441 in turquoise, a dim stretch runs on to 689, the notch moves to 441.
+- [ ] Hover over the bar: "Seen by tracking compasses from up to 441 blocks away" and "2 coated layers round it: 689 blocks without them".
+- [ ] Click **i**: a turquoise box above the strip with the sentence in four short lines, over the status lines and the STEAL button. Click again, click on the box, or move the mouse off the key and the box: it goes. A click on the box never steals, and on the Operator tab never unclaims.
+- [ ] A rival's totem (the STEAL view) shows the same strip; the STEAL button is not covered unless the box is open.
+- [ ] `totemRadiation.enabled = false`: the strip says "Totem radiation is off on this server" and has no bar and no i key.
+- [ ] Operator tab (admin): the second row of keys (Cancel / Finish steal, Reset buffs) sits above the strip's rule, not across it.
+- [ ] Hover over the bar of an unclaimed totem: "Unclaimed: no compass tracks it". A Tier I totem with one upgrade level: "Too weak for any compass to see". With one coated layer: "Coated layers round it: 1 (… blocks without them)".
+- [ ] Break a plain panel: it stacks with freshly crafted panels.
+- [ ] At GUI scale 3 and 4 the taller screen still fits (it scales down).
+- [ ] Guide book: Totem Radiation (totem category) has three pages and Totem Radiation Coating (Radiation category) a spotlight, "Layers" and the recipe; none is squashed to a smaller font. The links between them and to the compass open the right entries.
+- [ ] JEI and EMI: the tin has an info page and its recipe.
+

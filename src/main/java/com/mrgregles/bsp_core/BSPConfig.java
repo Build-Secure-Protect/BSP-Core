@@ -107,6 +107,9 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_UPGRADE_TIERS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_RANGE_ACROSS, COMPASS_RANGE_UP_DOWN, COMPASS_RANGE_COSTS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_RANGE_TIERS;
+    public static final ForgeConfigSpec.BooleanValue RADIATION_ENABLED;
+    public static final ForgeConfigSpec.IntValue RADIATION_FULL_LEVEL, RADIATION_MAX_SEEN, RADIATION_MAX_LAYERS, RADIATION_CHECK_RADIUS, RADIATION_CHECK_SECONDS;
+    public static final ForgeConfigSpec.DoubleValue RADIATION_EXPONENT, RADIATION_BLUR, RADIATION_LAYER_CUT;
 
     // ------------------------------------------------------------------ admin
 
@@ -486,6 +489,21 @@ public final class BSPConfig {
         CENT_RF_CHARGING = BUILDER.comment("RF per tick, per layer, while charging.").defineInRange("rfPerTickCharging", 240, 0, 1_000_000);
         CENT_MAGNETISE_TICKS = BUILDER.comment("Ticks to magnetise one Resonance Crystal (with a Magnatite Nugget in the upgrade slot).").defineInRange("magnetiseTicks", 600, 1, 1_000_000);
         CENT_MAGNETISE_TICKS_FULL = BUILDER.comment("Ticks to magnetise with all six layers.").defineInRange("magnetiseTicksFullStack", 400, 1, 1_000_000);
+        BUILDER.pop();
+
+        BUILDER.comment("Totem radiation: how far away a tracking Totem Compass can see a totem. Harmless, and apart from Voltaic's radiation.",
+                "A totem's radiation level is its tier steps plus every upgrade level it has bought.").push("totemRadiation");
+        RADIATION_ENABLED = BUILDER.comment("When false every totem in a compass's reach is seen, as before totem radiation.").define("enabled", true);
+        RADIATION_FULL_LEVEL = BUILDER.comment("The radiation level at which a totem is seen from maxSeenAt blocks.").defineInRange("fullLevel", 120, 1, 1000);
+        RADIATION_MAX_SEEN = BUILDER.comment("How far away (blocks, straight line) a totem at fullLevel or above is seen.").defineInRange("maxSeenAt", 2500, 1, 100000);
+        RADIATION_EXPONENT = BUILDER.comment("Seen-at distance = maxSeenAt x (level / fullLevel) ^ exponent. 2 follows the Stefan-Boltzmann law (power grows with",
+                        "the fourth power of the level and spreads with the square of the distance).").defineInRange("exponent", 2.0, 0.25, 4.0);
+        RADIATION_BLUR = BUILDER.comment("At the very edge of a totem's seen-at distance the needle points this far off the totem, as a share of the distance to it.",
+                        "The error shrinks to nothing by half the seen-at distance. The spot's direction holds for a day (UTC).").defineInRange("blurFraction", 0.2, 0.0, 1.0);
+        RADIATION_LAYER_CUT = BUILDER.comment("Share of the seen-at distance each layer of Totem Radiation Coating around a totem takes away.").defineInRange("layerCut", 0.2, 0.0, 0.9);
+        RADIATION_MAX_LAYERS = BUILDER.comment("The most coated layers that count.").defineInRange("maxLayers", 4, 0, 16);
+        RADIATION_CHECK_RADIUS = BUILDER.comment("How far from the totem (blocks) coated blocks count.").defineInRange("checkRadius", 32, 4, 64);
+        RADIATION_CHECK_SECONDS = BUILDER.comment("How often a loaded totem counts its coated layers again.").defineInRange("checkSeconds", 30, 5, 3600);
         BUILDER.pop();
 
         BUILDER.comment("Decoy Totems: fake totems that mislead Totem Compasses.").push("decoy");

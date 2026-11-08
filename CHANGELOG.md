@@ -6,11 +6,38 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 Network protocol 12: every player needs the new client (the Totem Compass screen syncs its range levels). On a network, update every server together.
 
+### Added
+- **Totem Radiation Coating.** A tin, crafted 4 at a time from 1 Pure Illyrium Dust, 4 Lead Plates and 4 Tetrium Dust (shown when lead plates exist in the pack).
+  - Used on a Radiation Shielding Panel, Window or Door, it coats that block: one tin per block, and a door takes one for both halves (with a tin in hand the door does not open).
+  - The coated block shows a turquoise glaze; joined panels and windows keep joining.
+  - The coating cannot be removed, and a coated block drops still coated, with a tooltip line and the glaze on its item. A plain block drops with no tag, so it stacks with crafted ones.
+  - Coated shielding round a totem weakens its totem radiation. A placed totem counts the coating round it when it loads and then every 30 seconds (`checkSeconds`). Its layers are whole coated walls round it within 32 blocks (`checkRadius`): a closed box of coated shielding is one layer, a second box round that two, and a box with an opening counts nothing; a door counts only while shut. Each layer takes a fifth off the distance a compass sees it from (`layerCut`), up to 4 layers (`maxLayers`).
+  - The count is kept in the totem ledger, so a compass never loads the totem's chunk. It survives a tier change or a steal, and is counted again when the totem is moved. While a chunk within the radius is not ready, the totem keeps its last count (no chunk is loaded or waited for); it also counts once more as its own chunk unloads.
+  - The coating changes nothing about Voltaic's shielding.
+  - The block states gain `coated` (false on existing blocks).
+
 ### Changed
 - **The Totem Compass's rival tracking has a reach.** A compass tracking rivals finds only totems within its reach: within so many blocks of the holder across the ground (a circle around them), and so many above or below the holder's height. A new compass reaches 100 blocks each way (a circle 200 wide) and 10 up or down. Two ladders of six upgrades, bought on the compass and kept on it (they travel with it between servers and are lost with it), raise the reach to 250 / 500 / 900 / 1,400 / 1,900 / 2,500 blocks each way and 20 / 35 / 55 / 80 / 110 / 150 up or down. Shortening the price list stops further buying but never takes back reach a compass already has. Each level costs the same on both ladders: 10 Copper, 10 Gold, 10 Diamond, 10 Netherite, 20 Illyrium, 40 Illyrium coins. With no rival in reach the needle spins and the loaded tracking time keeps running. Pointing to your own nearest totem has no limit. A working Decoy Totem still takes over a tracking compass inside the decoy's own range. Settings in `compass`: `rangeAcross`, `rangeUpDown` (the first entry is a new compass's reach), `rangeUpgradeCoins`, `rangeUpgradeCoinTiers`; saved configs gain them with these defaults. **Existing compasses start at the bottom (100 each way, 10 up or down).**
+- **Totem radiation.** A tracking compass sees a rival totem only when the totem gives off enough totem radiation to reach it. Totem radiation is harmless and has nothing to do with Voltaic's radiation.
+  - A totem's radiation level is its tier steps (Tier I 0 to Tier V 4) plus every upgrade level it has bought. A Tier I totem with nothing bought gives off none and is never seen.
+  - The level sets how far away the totem is seen: 2,500 × (level ÷ 120)², at most 2,500 (the Stefan-Boltzmann law: power grows with the fourth power of the level and spreads with the square of the distance). For example, level 7 is seen from 9 blocks, 27 from 127, 63 from 689, and 120 and up from 2,500.
+  - The distance is a straight line, so depth counts; ordinary blocks in between do not.
+  - A compass finds a rival totem only inside both its own reach and the totem's seen-at distance.
+  - In the outer half of a totem's seen-at distance the needle points at a spot beside the totem, off by up to a fifth of the distance at the very edge and exact by halfway. The spot's direction holds for a day (UTC), so bearings taken from two places cross on that spot, not on the totem.
+  - The compass works from the totem ledger and loads no chunk. A totem whose upgrade levels were never kept (not loaded since 1.10.1) counts its tier only until it next loads.
+  - Settings in the new server config section `totemRadiation`: `enabled`, `fullLevel` 120, `maxSeenAt` 2,500, `exponent` 2, `blurFraction` 0.2, `layerCut` 0.2, `maxLayers` 4, `checkRadius` 32, `checkSeconds` 30 (the last four are for the Totem Radiation Coating).
+- **The totem's screen shows its totem radiation** in a strip along the bottom (the screen is 32 pixels taller, clear of the admin keys), on every tab:
+  - RADIATION and the level;
+  - a bar of how far away a tracking compass sees the totem, out of `maxSeenAt`, marked every fifth (0 to 2,500 by default), with a gold notch at the distance and a dim stretch for what the coating takes away;
+  - an **i** key that shows "Every totem tier and upgrade increases the totem radiation and makes it easier for your enemies to find." until it is clicked again or the mouse leaves it (a click on the open box only closes it);
+  - hovering over the bar gives the distance, and with coating the layers and the distance without them; an unclaimed totem, one with nothing bought and one too weak to be seen each say so;
+  - with totem radiation turned off the strip says so and has no bar and no i key.
+  
+  The totem sends its counted layers to clients with its block update (nothing is saved).
 - **The Totem Compass screen has a REACH panel** under the cooldown (the screen is 64 pixels taller). It draws the compass's reach from the side: the holder in the middle, a turquoise box as far across and as far up or down as it finds rivals, the next level of each as a dotted gold outline, and both distances written in. WIDER and DEEPER buy the next level of each, with the price under each key (red when you have too few coins; hovering says what the next level reaches). While tracking finds no rival within reach, the panel's heading says "No rival totem within range" in red. The compass's tooltip gains a line with its reach.
 - **A Totem Compass shows its range levels on its icon** in the hotbar, inventory and containers: a turquoise pip per Across level along the bottom edge and a gold pip per Up or down level up the right edge, drawn over the item like a durability bar (not on the compass in the hand). A new compass shows none.
 - Main totem: an entry for a totem no longer standing is never counted as anyone's main totem and never has its chunks loaded, even before the next clean-up (a region that was reset is not generated again at start).
+- Guide book: a Totem Radiation entry under the totem (what it is, how far each level is seen, the blurred bearing) and a Totem Radiation Coating entry under Radiation (using it, layers, the recipe); the compass's "Reading the compass" page names radiation. JEI and EMI show an info page for the tin.
 - Guide book, The Totem Compass: the first page says the compass finds rivals within its reach; two new pages, "Reach" (the two ladders, their tops, upgrades staying with the compass) and "Reading the compass" (the spinning needle, the pips).
 
 ### Fixed

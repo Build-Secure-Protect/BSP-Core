@@ -128,7 +128,7 @@ A compass finds rival totems only within its **reach**: 100 blocks from you acro
 
 **Page 3: Reading the compass**
 
-With no rival totem within reach, the needle spins and the screen says so. The tracking time keeps running.
+With no rival totem in reach giving off enough radiation, the needle spins and the screen says so.
 
 Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.
 
@@ -160,6 +160,31 @@ The screens the admins put up show what first, second and third place will win. 
 A placed totem counts for its owner. A carried totem counts for whoever is carrying it.
 
 Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server. A screen can also show other boards, such as which servers players call home, and turn through its pages.
+
+## Totem Radiation
+
+**Page 1**
+
+Every placed totem gives off **totem radiation**. It is harmless: it is what lets a rival's Totem Compass find the totem.
+
+Its level is one for each tier above Tier I plus every upgrade level. A Tier I totem with nothing bought gives off none.
+
+**Page 2: How far**
+
+The higher the level, the further away a compass sees the totem:
+
+- Level 7: 9 blocks
+- Level 27: 127
+- Level 63: 689
+- Level 120 and up: 2,500
+
+Depth counts; ordinary blocks in between do not hide it.
+
+**Page 3: Finding and hiding**
+
+Far from a totem the needle points beside it, and closes in as you get nearer, so two bearings do not cross on the totem.
+
+Your totem's screen shows its radiation along the bottom. Totem Radiation Coating on shielding round it weakens it.
 
 ## Decoy Totems
 
@@ -1340,6 +1365,22 @@ The *Radiation Shielding Door* blocks nearly all radiation while it is shut and 
 **Page 6**  `[recipe] radiation_shielding_door`
 
 All three are as hard as iron.
+
+## Totem Radiation Coating
+
+**Page 1**  `[item shown] totem_radiation_coating`
+
+Use a *Totem Radiation Coating* on a Radiation Shielding Panel, Window or Door to coat it: one tin per block, one for a whole door. It stays on when the block is broken and placed again.
+
+**Page 2: Layers**
+
+Coated shielding all round a totem, within 32 blocks, weakens its radiation: each coated layer takes a fifth off how far away it is seen, up to four.
+
+A coated roof alone does nothing, and an open door does not count.
+
+**Page 3**  `[recipe] totem_radiation_coating`
+
+Pure Illyrium Dust, Lead Plates and Tetrium Dust make four.
 
 ---
 
