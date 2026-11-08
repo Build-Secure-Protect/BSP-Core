@@ -3,6 +3,7 @@ package com.mrgregles.bsp_core.chunk;
 import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.admin.Admins;
+import com.mrgregles.bsp_core.data.TotemLedger;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.ChunkViewPacket;
 import com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity;
@@ -46,8 +47,13 @@ import java.util.UUID;
  *       totem's allowance be picked around the projector instead. Like the totem's, the projector's
  *       own chunk is always one of them (as soon as the allowance has one free), so a projector that
  *       holds chunks is always running and paying RF. Its chunks are held while it is fed and powered.</li>
- *   <li>A player's main totem is the one they have held longest. Any other totem of theirs counts as
- *       Anchor level 1 at most: one chunk, the one it stands in.</li>
+ *   <li>A player's main totem is remembered by its totem id ({@link ChunkLedger#mains}): the first one they placed here.
+ *       It stays main while it is theirs, also while it is carried or moved. It is forgotten when it is stolen or retired, and
+ *       the next one is picked (highest Anchor, then highest tier, then held longest). While the remembered one is not placed
+ *       here, the same pick stands in for it. Any other totem of theirs counts as Anchor level 1 at most: one chunk, the one
+ *       it stands in.</li>
+ *   <li>An entry for a totem the totem ledger no longer lists as placed (its block went without the block's own removal: a
+ *       world edit, a region reset, a wipe of an unloaded chunk) is dropped ({@link #prune}), so it can never stay main.</li>
  *   <li>When a totem changes owner every chunk picked for it is dropped; its own chunk stays.</li>
  * </ul>
  * Everything here runs on the server thread.
@@ -93,11 +99,18 @@ public final class ChunkLoading {
             .<Map.Entry<GlobalPos, ChunkLedger.Totem>>comparingLong(e -> e.getValue().since)
             .thenComparing(e -> e.getKey().dimension().location().toString()).thenComparingLong(e -> e.getKey().pos().asLong());
 
-    /** The owner's placed totems, main totem first. */
+    /** The totems the totem ledger lists as placed for {@code owner}, or null when no server is running (nothing is left out). */
+    @Nullable
+    private static Set<GlobalPos> standing(@Nullable MinecraftServer server, UUID owner) {
+        return server == null ? null : TotemLedger.get(server).placedFor(owner);
+    }
+
+    /** The owner's placed totems, held longest first. An entry the totem ledger does not list as placed (see {@link #prune}) is left out. */
     private static List<Map.Entry<GlobalPos, ChunkLedger.Totem>> totemsOf(ChunkLedger ledger, UUID owner) {
         List<Map.Entry<GlobalPos, ChunkLedger.Totem>> out = new ArrayList<>();
+        Set<GlobalPos> standing = standing(net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer(), owner);
         for (Map.Entry<GlobalPos, ChunkLedger.Totem> e : ledger.totems.entrySet()) {
-            if (e.getValue().owner.equals(owner)) {
+            if (e.getValue().owner.equals(owner) && (standing == null || standing.contains(e.getKey()))) {
                 out.add(e);
             }
         }
@@ -105,11 +118,56 @@ public final class ChunkLoading {
         return out;
     }
 
-    private static boolean isMain(ChunkLedger ledger, GlobalPos pos, ChunkLedger.Totem totem) {
-        return totemsOf(ledger, totem.owner).get(0).getKey().equals(pos);
+    /** Which of a player's totems is picked as main when none is remembered: highest Anchor, then highest tier, then held longest. */
+    private static Comparator<Map.Entry<GlobalPos, ChunkLedger.Totem>> pickOrder(@Nullable TotemLedger tiers) {
+        return Comparator.<Map.Entry<GlobalPos, ChunkLedger.Totem>>comparingInt(e -> -e.getValue().anchor)
+                .thenComparingInt(e -> tiers == null ? 0 : -tiers.tierAt(e.getKey()))
+                .thenComparing(OLDEST_FIRST);
     }
 
-    /** Whether the totem at {@code pos} is its owner's main totem (also true for a totem the ledger does not know). */
+    /**
+     * The owner's main totem among those placed here: the remembered one when it stands here; otherwise the pick. A pick is
+     * remembered when nothing is remembered for the owner yet (their first totem, or the main one was stolen or retired).
+     */
+    @Nullable
+    private static GlobalPos mainOf(ChunkLedger ledger, UUID owner) {
+        List<Map.Entry<GlobalPos, ChunkLedger.Totem>> mine = totemsOf(ledger, owner);
+        if (mine.isEmpty()) {
+            return null;
+        }
+        UUID remembered = ledger.mains.get(owner);
+        if (remembered != null) {
+            for (Map.Entry<GlobalPos, ChunkLedger.Totem> e : mine) {
+                if (remembered.equals(e.getValue().id)) {
+                    return e.getKey();
+                }
+            }
+            MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+            TotemLedger.Sighting seen = server == null ? null : TotemLedger.get(server).sighting(remembered);
+            if (seen != null && seen.where() == TotemLedger.RETIRED) {
+                ledger.mains.remove(owner); // wiped or retired: it never comes back
+                ledger.setDirty();
+                remembered = null;
+            }
+        }
+        MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+        mine.sort(pickOrder(server == null ? null : TotemLedger.get(server)));
+        Map.Entry<GlobalPos, ChunkLedger.Totem> pick = mine.get(0);
+        if (remembered == null && pick.getValue().id != null) {
+            ledger.mains.put(owner, pick.getValue().id);
+            ledger.setDirty();
+        }
+        return pick.getKey();
+    }
+
+    private static boolean isMain(ChunkLedger ledger, GlobalPos pos, ChunkLedger.Totem totem) {
+        return pos.equals(mainOf(ledger, totem.owner));
+    }
+
+    /**
+     * Whether the totem at {@code pos} is its owner's main totem (also true for a totem the ledger does not know). Server thread
+     * only: the first answer for an owner with nothing remembered remembers the pick.
+     */
     public static boolean isMain(ServerLevel level, BlockPos pos) {
         ChunkLedger ledger = ChunkLedger.get(level.getServer());
         GlobalPos here = GlobalPos.of(level.dimension(), pos);
@@ -231,10 +289,14 @@ public final class ChunkLoading {
         Map<GlobalPos, Set<Long>> want = new HashMap<>();
         if (enabled()) {
             boolean onlineOnly = BSPConfig.getOr(BSPConfig.CHUNKS_OWNER_ONLINE, false);
+            TotemLedger placed = TotemLedger.get(server);
             for (Map.Entry<GlobalPos, ChunkLedger.Totem> e : ledger.totems.entrySet()) {
                 UUID owner = e.getValue().owner;
                 if (onlineOnly && (owner.equals(leaving) || server.getPlayerList().getPlayer(owner) == null)) {
                     continue;
+                }
+                if (!placed.placedFor(owner).contains(e.getKey())) {
+                    continue; // a totem no longer standing: never load its chunks (a region reset would be generated again); prune drops it
                 }
                 want.put(e.getKey(), new HashSet<>(e.getValue().chunks));
                 for (Map.Entry<GlobalPos, ChunkLedger.Projector> pe : ledger.projectors.entrySet()) {
@@ -295,8 +357,10 @@ public final class ChunkLoading {
         GlobalPos pos = GlobalPos.of(level.dimension(), be.getBlockPos());
         UUID owner = be.getOwner().get().uuid();
         int anchor = be.getUpgradeLevel(Buff.ANCHOR), survey = be.getUpgradeLevel(Buff.SURVEY);
+        UUID id = be.totemId();
         ChunkLedger.Totem totem = ledger.totems.get(pos);
-        if (totem != null && totem.owner.equals(owner) && totem.since == be.ownedSince() && totem.anchor == anchor && totem.survey == survey) {
+        if (totem != null && totem.owner.equals(owner) && totem.since == be.ownedSince() && totem.anchor == anchor && totem.survey == survey
+                && java.util.Objects.equals(totem.id, id)) {
             return;
         }
         UUID previous = null;
@@ -308,9 +372,16 @@ public final class ChunkLoading {
             previous = totem.owner;
             totem.chunks.clear();
             projectorsOf(ledger, pos).forEach(p -> p.chunks.clear());
+            if (id != null && id.equals(ledger.mains.get(previous))) {
+                ledger.mains.remove(previous); // their main totem was stolen: another of theirs is picked
+            }
+        }
+        if (id != null && !id.equals(ledger.mains.get(owner))) {
+            ledger.mains.values().remove(id); // a totem is nobody else's main once it is this owner's (for a remembered id whose steal was missed)
         }
         totem.owner = owner;
         totem.since = be.ownedSince();
+        totem.id = id;
         totem.anchor = anchor;
         totem.survey = survey;
         tidy(ledger, owner);
@@ -331,6 +402,38 @@ public final class ChunkLoading {
         ledger.projectors.values().removeIf(p -> p.totem.equals(pos));
         tidy(ledger, totem.owner); // another of their totems may now be the main one
         apply(level.getServer(), null);
+    }
+
+    /**
+     * Drops every entry for a totem the totem ledger does not list as placed there for that owner: its block went without the
+     * block's own removal (a world edit, a region reset, a wipe or a ledger check of a chunk that was not loaded). Such an entry
+     * would hold chunks for nothing and, being old, stay its owner's main totem for good. Both ledgers are written together
+     * whenever a totem loads, is placed, changes owner or is removed, so a standing totem is always in both. Returns how many went.
+     */
+    public static int prune(MinecraftServer server) {
+        ChunkLedger ledger = ChunkLedger.get(server);
+        TotemLedger placed = TotemLedger.get(server);
+        Set<UUID> owners = new HashSet<>();
+        Iterator<Map.Entry<GlobalPos, ChunkLedger.Totem>> it = ledger.totems.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<GlobalPos, ChunkLedger.Totem> e = it.next();
+            if (!placed.placedFor(e.getValue().owner).contains(e.getKey())) {
+                GlobalPos pos = e.getKey();
+                it.remove();
+                ledger.projectors.values().removeIf(p -> p.totem.equals(pos));
+                owners.add(e.getValue().owner);
+                if (e.getValue().id != null && e.getValue().id.equals(ledger.mains.get(e.getValue().owner))) {
+                    ledger.mains.remove(e.getValue().owner); // the main totem went with it: their next one is picked
+                }
+                BSPCore.LOGGER.warn("The chunk ledger listed a Shatter Totem of {} at {} in {}, but the totem ledger has none placed there; the entry is dropped",
+                        e.getValue().owner, pos.pos(), pos.dimension().location());
+            }
+        }
+        if (!owners.isEmpty()) {
+            owners.forEach(o -> tidy(ledger, o));
+            apply(server, null);
+        }
+        return owners.size();
     }
 
     /** The chunks picked at a totem, as x and z offsets from its own chunk, so the item can carry them to where it is placed next. */
@@ -551,6 +654,7 @@ public final class ChunkLoading {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         APPLIED.clear();
+        prune(event.getServer());
         refresh(event.getServer());
     }
 
@@ -560,7 +664,7 @@ public final class ChunkLoading {
         FED.clear();
     }
 
-    /** Every five seconds: projectors that no generator has fed for a while stop holding their chunks. */
+    /** Every five seconds: entries for totems no longer placed are dropped, and projectors that no generator has fed for a while stop holding their chunks. */
     @SubscribeEvent
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
         MinecraftServer server = event.getServer();
@@ -568,6 +672,7 @@ public final class ChunkLoading {
         if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || now % 100 != 0) {
             return;
         }
+        prune(server); // a totem ledger check or a wipe may have forgotten a totem since
         ChunkLedger ledger = ChunkLedger.get(server);
         long limit = (BSPConfig.getOr(BSPConfig.CABLE_CHECK_SECONDS, 30) + 15) * 20L;
         boolean changed = false;

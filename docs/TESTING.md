@@ -740,7 +740,7 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - [ ] Projector: the CHUNKS tab explains how to get chunk loading there until Anchor is received.
 - [ ] Receive Anchor on a fed projector: the CHUNKS tab shows a map centred on the projector. The projector's own chunk is picked automatically (if the totem has one left) and cannot be removed; any other chunk within range can be picked in any order while the totem has chunks left. With the totem's allowance already full the projector map shows nothing picked and clicks say no chunks are left. Picks made here use the totem's allowance: the totem's CHUNKS tab shows them in violet and counts them.
 - [ ] Cut the projector's plasma (break the cable) while you are near it: within a few seconds its chunks stop loading (the picks are kept and come back when it is fed again). Break the projector: its picks are freed.
-- [ ] Second totem: with two placed totems owned by one player, the newer one shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Remove the older totem: the newer one becomes the main totem and its full allowance returns.
+- [ ] Second totem: with two placed totems owned by one player, the one placed later shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Have the first one stolen: the other becomes the main totem and its full allowance returns.
 - [ ] Admin panel, Settings: the "Chunks: load always / owner online" button switches. With "owner online", the owner logging out unloads their chunks and logging in loads them again.
 - [ ] Config: `chunks.enabled = false` stops all loading and the tab says so; `chunks.maxPerPlayer = 2` limits a player to 2 chunks in total.
 - [ ] Long cable run: put a projector several chunks from the totem receiving Anchor, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
@@ -3082,3 +3082,35 @@ Covered by GameTests (batch `vault_interest`): `a_clock_going_back_pays_nothing_
 - [ ] Stop MySQL and SAVE in the VAULT tab: the answer says the database is not connected; the table is unchanged.
 - [ ] Put a written book with many full pages, or a filled shulker box, in the prize table as several prizes and SAVE: past about 32 KB the tab says the table is too big, and the admin stays connected.
 - [ ] Empty the prize table, wait for a roll and Redeem: the chat says the rolls keep waiting.
+
+## Main totem remembered (2026-11-08, Unreleased)
+
+Server-side rules are covered by the GameTests in `MainTotemGameTests` (batch `main_totem`). In game:
+
+- [ ] A player with four placed totems: the first one placed buys Anchor 2 and 3 and Survey; the other three show "Not your main totem" on the CHUNKS tab and refuse Anchor 2 with "Only your main totem can go further".
+- [ ] Pick the main totem up and place it somewhere else: it keeps its chunk layout and is still the main totem. While it is carried, another of the player's totems shows as main.
+- [ ] Have a second player steal the main totem: one of the owner's other totems (the highest tier) shows as main at once and can buy Anchor 2. The thief's own first totem stays their main totem; the stolen one loads only its own chunk.
+- [ ] Restart the server: the same totems are main as before the restart.
+- [ ] On the live server where the report came from: the player's main totem buys Anchor again after the update. The log shows any "The chunk ledger listed a Shatter Totem ... the entry is dropped" lines at start; send them if the main totem is still refused.
+
+## Compass range (2026-11-08, Unreleased)
+
+The reach rules and the buying are covered by `CompassRangeGameTests` (batch `compass_range`).
+
+- [ ] Open a new compass: the screen is taller, with REACH under the cooldown line. The side view shows a small turquoise box, "100 each way" bottom left, "10 up or down" top right, "next" in gold bottom right, and a dotted gold outline a little wider and a little taller than the box.
+- [ ] WIDER with 10 Copper Coins: the coins go, the box widens, the label reads "250 each way" and the price under WIDER reads "10 Gold". Hovering over WIDER says "Next level: 500 blocks each way". With too few coins the price is red and the key is grey.
+- [ ] DEEPER works the same way for up or down, starting at 10 Copper.
+- [ ] Buy both ladders to the top (creative is free, and says "Free" under the keys): both keys read "Maxed", the prices and "next" go, and the box fills most of the panel; the distance labels stay clear of it and "ground" keeps a dark patch behind it.
+- [ ] Start tracking where no rival totem is in reach: the needle spins and "No rival totem within range" shows in red beside REACH. Walk into reach without closing the screen: within about a second the line goes; close it and the needle points.
+- [ ] Hover over the compass in the inventory: the tooltip has "Reach: 500 blocks around you, 20 up or down" (or the compass's own levels) in aqua.
+- [ ] At GUI scale 3 and 4 on a small window the whole screen still fits (it scales down).
+- [ ] Hotbar pips: a new compass in the hotbar looks as it does today. After WIDER twice, two turquoise pips sit along its bottom edge from the left; after DEEPER once, one gold pip sits at the bottom of its right edge. At 6 and 6 the bottom shows six turquoise pips and the right edge six gold ones, with the needle still turning. The pips show in the inventory and in a chest too, but not on the compass held in the hand or dropped on the ground.
+- [ ] The pips are readable at GUI scale 2 and do not hide the needle's tip at any angle.
+- [ ] Guide book, Totem Compass entry: the pages "Reach" and "Reading the compass" follow the first page, and neither is squashed to a smaller font.
+
+- [ ] A new compass, loaded and started 150 blocks from a rival totem on the same level: the needle spins. Walk to within 100 blocks: it points at the totem.
+- [ ] A rival totem 30 blocks below you, 20 across: a new compass does not find it; one with Up or down level 2 (35) does.
+- [ ] With no coins loaded, the compass points to your own totem from 3,000 blocks away.
+- [ ] Carry an upgraded compass to another server of the network: it keeps its levels. A new compass made there starts at 100 / 10.
+- [ ] A Decoy Totem still takes over a tracking compass inside the decoy's range.
+

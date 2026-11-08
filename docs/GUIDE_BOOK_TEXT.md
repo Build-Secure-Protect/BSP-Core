@@ -116,11 +116,23 @@ No upgrade can make a totem impossible to steal: blocks can always be mined, and
 
 **Page 1**  `[item shown] totem_compass`
 
-Points to your own nearest totem. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem instead.
+Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.
 
 After tracking it needs to cool down. Upgrades shorten the cooldown.
 
-**Page 2**  `[recipe] totem_compass`
+**Page 2: Reach**
+
+A compass finds rival totems only within its **reach**: 100 blocks from you across the ground and 10 above or below, at first.
+
+**WIDER** and **DEEPER** on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.
+
+**Page 3: Reading the compass**
+
+With no rival totem within reach, the needle spins and the screen says so. The tracking time keeps running.
+
+Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.
+
+**Page 4**  `[recipe] totem_compass`
 
 ## Scores and Seasons
 
@@ -413,9 +425,9 @@ A projector adds no chunks. It lets you spend whatever is left of the totem's ch
 
 **Page 5: More than one totem**
 
-Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.
+Only your main totem, the first you placed, gets the full allowance. Your other totems load the chunk they stand in and no more, and cannot take Anchor past level 1.
 
-Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.
+Moved, it stays your main totem. Stolen, your next totem takes its place: most Anchor first, then highest tier.
 
 **Page 6: Stolen and moved totems**
 

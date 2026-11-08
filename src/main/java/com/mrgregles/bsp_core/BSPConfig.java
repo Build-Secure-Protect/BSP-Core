@@ -105,6 +105,8 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue COMPASS_COOLDOWN, COMPASS_MIN_COOLDOWN, COMPASS_COOLDOWN_STEP;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_UPGRADE_COSTS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_UPGRADE_TIERS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_RANGE_ACROSS, COMPASS_RANGE_UP_DOWN, COMPASS_RANGE_COSTS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_RANGE_TIERS;
 
     // ------------------------------------------------------------------ admin
 
@@ -450,6 +452,19 @@ public final class BSPConfig {
         COMPASS_UPGRADE_TIERS = BUILDER.comment("Which Shatter Coin each cooldown upgrade level is paid in: copper, gold, diamond, netherite or illyrium.",
                         "One entry per level, matching cooldownUpgradeCoins. A short list repeats its last entry.")
                 .defineList("cooldownUpgradeCoinTiers", List.of("copper", "gold", "diamond", "netherite", "illyrium", "illyrium", "illyrium"),
+                        o -> o instanceof String str && java.util.Arrays.stream(com.mrgregles.bsp_core.coin.CoinTier.values()).anyMatch(t -> t.key.equals(str)));
+        COMPASS_RANGE_ACROSS = BUILDER.comment("How far across (blocks, any direction on the ground) a rival-tracking compass finds totems: the first entry with no",
+                        "upgrade, then one entry per Across upgrade level. Your own totems are found at any distance.")
+                .defineList("rangeAcross", List.of(100, 250, 500, 900, 1400, 1900, 2500), BSPConfig::isPositiveInt);
+        COMPASS_RANGE_UP_DOWN = BUILDER.comment("How far up or down (blocks) from the holder a rival-tracking compass finds totems: the first entry with no upgrade,",
+                        "then one entry per Up or down upgrade level.")
+                .defineList("rangeUpDown", List.of(10, 20, 35, 55, 80, 110, 150), BSPConfig::isPositiveInt);
+        COMPASS_RANGE_COSTS = BUILDER.comment("How many coins each range upgrade level costs, for Across and Up or down alike. The kind of coin is set in",
+                        "rangeUpgradeCoinTiers. The number of levels is the shortest of this list and the two range lists (less their first entry).")
+                .defineList("rangeUpgradeCoins", List.of(10, 10, 10, 10, 20, 40), BSPConfig::isPositiveInt);
+        COMPASS_RANGE_TIERS = BUILDER.comment("Which Shatter Coin each range upgrade level is paid in: copper, gold, diamond, netherite or illyrium.",
+                        "One entry per level, matching rangeUpgradeCoins. A short list repeats its last entry.")
+                .defineList("rangeUpgradeCoinTiers", List.of("copper", "gold", "diamond", "netherite", "illyrium", "illyrium"),
                         o -> o instanceof String str && java.util.Arrays.stream(com.mrgregles.bsp_core.coin.CoinTier.values()).anyMatch(t -> t.key.equals(str)));
         BUILDER.pop();
 

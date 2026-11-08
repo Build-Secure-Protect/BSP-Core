@@ -19,7 +19,7 @@ public final class BSPNetwork {
      * 10: store credit on the shop and Land Office screens ({@link CreditStripPacket}, {@link CreditTogglePacket}) its stamp ({@link CreditNoticePacket}) and the admin panel's CREDIT tab ({@link CreditAdminPacket}, {@link CreditTicketsPacket}, {@link CreditAdminActionPacket}).
      * 11: the Coin Vault screen's synced values carry the waiting vault prize rolls; the admin panel's VAULT tab ({@link VaultPrizeAdminPacket}, {@link VaultPrizeEditPacket}).
      */
-    private static final String PROTOCOL = "11";
+    private static final String PROTOCOL = "12";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

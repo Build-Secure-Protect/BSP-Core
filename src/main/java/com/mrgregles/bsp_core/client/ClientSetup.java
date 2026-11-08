@@ -17,6 +17,12 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 public final class ClientSetup {
     private ClientSetup() {}
 
+    /** The Totem Compass's range levels as pips on its icon in a slot ({@link CompassPips}). */
+    @SubscribeEvent
+    public static void onRegisterItemDecorations(net.minecraftforge.client.event.RegisterItemDecorationsEvent event) {
+        event.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(), new CompassPips());
+    }
+
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {

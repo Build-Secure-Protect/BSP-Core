@@ -34,8 +34,11 @@ public class ChunkLedger extends SavedData {
     /** A placed totem with an owner. {@code chunks} are packed chunk positions in the totem's dimension, in the order they were picked. */
     public static final class Totem {
         public UUID owner;
-        /** When the owner got this totem (ms); the one held longest is their main totem. */
+        /** When the owner got this totem (ms); among totems tied otherwise, the one held longest is picked as the main totem. */
         public long since;
+        /** The totem's permanent id ({@link com.mrgregles.bsp_core.totem.TotemIdentity}); null until its block has loaded once since ids were kept here. */
+        @Nullable
+        public UUID id;
         public int anchor, survey;
         public final Set<Long> chunks = new LinkedHashSet<>();
     }
@@ -50,6 +53,8 @@ public class ChunkLedger extends SavedData {
 
     public final Map<GlobalPos, Totem> totems = new HashMap<>();
     public final Map<GlobalPos, Projector> projectors = new HashMap<>();
+    /** Each player's main totem, by totem id: the one they placed first, kept until it is stolen or retired. */
+    public final Map<UUID, UUID> mains = new HashMap<>();
 
     public static ChunkLedger get(MinecraftServer server) {
         ServerLevel overworld = server.getLevel(Level.OVERWORLD);
@@ -82,6 +87,9 @@ public class ChunkLedger extends SavedData {
             e.putLong("Since", t.since);
             e.putInt("Anchor", t.anchor);
             e.putInt("Survey", t.survey);
+            if (t.id != null) {
+                e.putUUID("Id", t.id);
+            }
             totemList.add(e);
         });
         tag.put("Totems", totemList);
@@ -94,6 +102,14 @@ public class ChunkLedger extends SavedData {
             projectorList.add(e);
         });
         tag.put("Projectors", projectorList);
+        ListTag mainList = new ListTag();
+        mains.forEach((owner, id) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Owner", owner);
+            e.putUUID("Id", id);
+            mainList.add(e);
+        });
+        tag.put("Mains", mainList);
         return tag;
     }
 
@@ -110,6 +126,7 @@ public class ChunkLedger extends SavedData {
             t.since = e.getLong("Since");
             t.anchor = e.getInt("Anchor");
             t.survey = e.getInt("Survey");
+            t.id = e.hasUUID("Id") ? e.getUUID("Id") : null;
             for (long c : e.getLongArray("Chunks")) {
                 t.chunks.add(c);
             }
@@ -128,6 +145,12 @@ public class ChunkLedger extends SavedData {
                 p.chunks.add(c);
             }
             ledger.projectors.put(pos, p);
+        }
+        for (Tag raw : tag.getList("Mains", Tag.TAG_COMPOUND)) {
+            CompoundTag e = (CompoundTag) raw;
+            if (e.hasUUID("Owner") && e.hasUUID("Id")) {
+                ledger.mains.put(e.getUUID("Owner"), e.getUUID("Id"));
+            }
         }
         return ledger;
     }

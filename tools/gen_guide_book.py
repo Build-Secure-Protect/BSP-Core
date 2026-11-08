@@ -221,7 +221,7 @@ ENTRIES = [
         text("$(l)Anchor$(), from Tier II:$(br)$(li)Level 1: 1 chunk$(li)Level 2: 3 chunks$(li)Level 3: 6 chunks$(br2)$(l)Survey$(), from Tier III, once Anchor is level 2:$(br)$(li)Without it: pick within 3 by 3 chunks$(li)Level 1: 5 by 5$(li)Level 2: 7 by 7$(br2)The chunk the totem stands in is always loaded and counts as one.", "Anchor and Survey"),
         text("Once Anchor has a level, your totem's panel gains a $(l)CHUNKS$() tab. It shows a map of the ground around the totem, one square for each chunk, north at the top.$(br2)Click a square to load that chunk. Click it again to let it go. Turquoise squares are loaded from here, violet ones from a projector, dark ones are out of range.", "Choosing chunks"),
         text("Receive $(l)Anchor$() on a $(l:totem/projectors)Projector$() and it gets a chunk map of its own, centred on the projector.$(br2)A projector adds no chunks. It lets you spend whatever is left of the totem's chunks further away: click any chunks within range of the projector. The projector's own chunk is always one of them, so it keeps running and keeps drawing plasma. Its chunks stay loaded while plasma reaches it.", "Through a projector"),
-        text("Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.$(br2)Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.", "More than one totem"),
+        text("Only your main totem, the first you placed, gets the full allowance. Your other totems load the chunk they stand in and no more, and cannot take Anchor past level 1.$(br2)Moved, it stays your main totem. Stolen, your next totem takes its place: most Anchor first, then highest tier.", "More than one totem"),
         text("When a totem is stolen, every chunk chosen for it is let go, at the totem and at its projectors. The thief keeps the upgrades and chooses again.$(br2)If you pick your own totem up and place it somewhere else, it remembers the layout.$(br2)The server may be set to load chunks only while you are online.", "Stolen and moved totems"),
     ]),
     ("totem", "batteries", "Batteries and Cells", "bsp_core:plasma_battery_2", 10, [
@@ -272,7 +272,9 @@ ENTRIES = [
         text("Dust, lamps, doors and pistons touching the totem take the signal, held three seconds after the last outsider goes, and the studs round its base glow red. It watches only while its chunk is loaded.$(br2)NEXT on its card picks a shorter range, or off. Thief's Step hides from a Tripwire set to its level or lower.", "Wiring a Tripwire"),
     ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
-        spot("bsp_core:totem_compass", "Points to your own nearest totem. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
+        spot("bsp_core:totem_compass", "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
+        text("A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, at first.$(br2)$(l)WIDER$() and $(l)DEEPER$() on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.", "Reach"),
+        text("With no rival totem within reach, the needle spins and the screen says so. The tracking time keeps running.$(br2)Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.", "Reading the compass"),
         craft("totem_compass"),
     ]),
     ("materials", "tetrium", "Tetrium", "bsp_core:tetrium_ingot", 0, [

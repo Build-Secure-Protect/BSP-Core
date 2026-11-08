@@ -38,7 +38,9 @@ import java.util.UUID;
  */
 public class TotemCompassItem extends Item {
     public static final String STORED = "Stored", TRACK_UNTIL = "TrackUntilMs", COOLDOWN_UNTIL = "CooldownUntilMs", LEVEL = "CooldownLevel",
-            TARGET = "TargetPos", TARGET_DIM = "TargetDim";
+            TARGET = "TargetPos", TARGET_DIM = "TargetDim", RANGE_ACROSS = "RangeAcross", RANGE_DEPTH = "RangeDepth";
+    /** The two range ladders: how far across, and how far up or down, a rival-tracking compass finds totems. */
+    public enum Range { ACROSS, DEPTH }
     /** Older compasses kept the server's game time in ticks, which differs from server to server. */
     private static final String OLD_TRACK_UNTIL = "TrackUntil", OLD_COOLDOWN_UNTIL = "CooldownUntil";
     /** A converted old time further ahead than this is taken to come from another server's clock, and dropped. */
@@ -131,6 +133,76 @@ public class TotemCompassItem extends Item {
             }
         }
         return CoinTier.COPPER;
+    }
+
+    // ------------------------------------------------------------------ range
+
+    private static List<? extends Integer> rangeList(Range r) {
+        return BSPConfig.getOr(r == Range.ACROSS ? BSPConfig.COMPASS_RANGE_ACROSS : BSPConfig.COMPASS_RANGE_UP_DOWN, List.<Integer>of());
+    }
+
+    /** Range upgrade levels each ladder has: the shortest of the price list and the range list less its first entry. */
+    public static int maxRangeLevel() {
+        int ladders = Math.min(rangeList(Range.ACROSS).size(), rangeList(Range.DEPTH).size()) - 1;
+        return Math.max(0, Math.min(ladders, BSPConfig.getOr(BSPConfig.COMPASS_RANGE_COSTS, List.<Integer>of()).size()));
+    }
+
+    /**
+     * The compass's level on a range ladder (0 for a new compass). Capped by the range list only, not by the price list: a
+     * shorter price list stops further buying but never takes back reach already bought.
+     */
+    public static int rangeLevel(ItemStack s, Range r) {
+        int top = Math.max(0, rangeList(r).size() - 1);
+        return s.hasTag() ? Math.max(0, Math.min(top, s.getTag().getInt(r == Range.ACROSS ? RANGE_ACROSS : RANGE_DEPTH))) : 0;
+    }
+
+    /** Blocks the ladder reaches at {@code level}. */
+    public static int rangeBlocks(Range r, int level) {
+        return BSPConfig.levelValue(rangeList(r), level + 1, r == Range.ACROSS ? 100 : 10);
+    }
+
+    /** Blocks this compass reaches on the ladder. */
+    public static int rangeBlocks(ItemStack s, Range r) {
+        return rangeBlocks(r, rangeLevel(s, r));
+    }
+
+    /** Coins the range level after {@code level} costs, or -1 at the top. The coin is {@link #rangeCoin(int)}. */
+    public static int rangeCost(int level) {
+        return level < 0 || level >= maxRangeLevel() ? -1 : BSPConfig.getOr(BSPConfig.COMPASS_RANGE_COSTS, List.<Integer>of()).get(level);
+    }
+
+    /** The Shatter Coin that pays for the range level after {@code level}. */
+    public static CoinTier rangeCoin(int level) {
+        String key = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.COMPASS_RANGE_TIERS, java.util.List.<String>of()), level + 1, "copper");
+        for (CoinTier tier : CoinTier.values()) {
+            if (tier.key.equals(key)) {
+                return tier;
+            }
+        }
+        return CoinTier.COPPER;
+    }
+
+    /** Buys the next level of {@code r} on the compass in hand: takes its coins (none in creative). Returns whether it was bought. */
+    public static boolean buyRange(ServerPlayer player, ItemStack compass, Range r) {
+        int level = rangeLevel(compass, r), cost = rangeCost(level);
+        if (cost < 0) {
+            return false;
+        }
+        if (!player.isCreative()) {
+            net.minecraft.world.item.Item coin = rangeCoin(level).coin();
+            if (player.getInventory().countItem(coin) < cost) {
+                return false;
+            }
+            player.getInventory().clearOrCountMatchingItems(st -> st.is(coin), cost, player.inventoryMenu.getCraftSlots());
+        }
+        compass.getOrCreateTag().putInt(r == Range.ACROSS ? RANGE_ACROSS : RANGE_DEPTH, level + 1);
+        return true;
+    }
+
+    /** Whether a totem at {@code totem} is within reach of a compass held at {@code at}: inside the circle across and the band up or down. */
+    public static boolean inReach(BlockPos at, BlockPos totem, int across, int upDown) {
+        long dx = totem.getX() - at.getX(), dz = totem.getZ() - at.getZ();
+        return dx * dx + dz * dz <= (long) across * across && Math.abs(totem.getY() - at.getY()) <= upDown;
     }
 
     // ------------------------------------------------------------------ actions (server)
@@ -283,7 +355,7 @@ public class TotemCompassItem extends Item {
         }
         upgradeTimes(player, stack);
         boolean rivals = trackingLeft(stack, System.currentTimeMillis()) > 0;
-        BlockPos best = nearest(player, rivals);
+        BlockPos best = nearest(player, rivals, stack);
         if (rivals) {
             // a working Decoy Totem within its range takes over the needle
             BlockPos decoy = com.mrgregles.bsp_core.decoy.DecoyLedger.get(player.server).fool(level.dimension(), player.blockPosition(), player.getUUID());
@@ -313,9 +385,15 @@ public class TotemCompassItem extends Item {
                 || !com.mrgregles.bsp_core.api.BspTeams.sameTeam(server, player, owner);
     }
 
-    private static BlockPos nearest(ServerPlayer player, boolean rivals) {
-        BlockPos best = null;
+    /**
+     * Nearest placed totem in the player's dimension: their own at any distance, or with {@code rivals} someone else's within
+     * the compass's reach (across and up or down), or null.
+     */
+    @Nullable
+    public static BlockPos nearest(ServerPlayer player, boolean rivals, ItemStack compass) {
+        BlockPos best = null, at = player.blockPosition();
         double bestDist = Double.MAX_VALUE;
+        int across = rangeBlocks(compass, Range.ACROSS), upDown = rangeBlocks(compass, Range.DEPTH);
         for (Map.Entry<UUID, Set<GlobalPos>> e : TotemLedger.get(player.server).allPlaced().entrySet()) {
             if (e.getKey().equals(player.getUUID()) == rivals) {
                 continue;
@@ -324,7 +402,7 @@ public class TotemCompassItem extends Item {
                 continue;
             }
             for (GlobalPos pos : e.getValue()) {
-                if (pos.dimension() != player.level().dimension()) {
+                if (pos.dimension() != player.level().dimension() || rivals && !inReach(at, pos.pos(), across, upDown)) {
                     continue;
                 }
                 double d = pos.pos().distSqr(player.blockPosition());
@@ -371,6 +449,8 @@ public class TotemCompassItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.bsp_core.compass").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.bsp_core.compass.reach", String.format(java.util.Locale.ROOT, "%,d", rangeBlocks(stack, Range.ACROSS)),
+                String.format(java.util.Locale.ROOT, "%,d", rangeBlocks(stack, Range.DEPTH))).withStyle(ChatFormatting.AQUA));
         if (stored(stack) > 0) {
             tooltip.add(Component.translatable("tooltip.bsp_core.compass.stored", stored(stack)).withStyle(ChatFormatting.GOLD));
         }

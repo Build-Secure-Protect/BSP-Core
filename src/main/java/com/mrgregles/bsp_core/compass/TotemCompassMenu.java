@@ -13,10 +13,10 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Slotless menu for the Totem Compass. Buttons: 0-4 load one coin of that tier, 5 start tracking,
- * 6 buy a cooldown upgrade. Values are synced through data slots so the screen is always current.
+ * 6 buy a cooldown upgrade, 7 buy the next Across range level, 8 the next Up or down range level. Values are synced through data slots so the screen is always current.
  */
 public class TotemCompassMenu extends AbstractContainerMenu {
-    public static final int BTN_START = 5, BTN_UPGRADE = 6;
+    public static final int BTN_START = 5, BTN_UPGRADE = 6, BTN_WIDER = 7, BTN_DEEPER = 8, DATA_COUNT = 9;
     private final Player player;
     private final InteractionHand hand;
     private final ContainerData data;
@@ -25,7 +25,7 @@ public class TotemCompassMenu extends AbstractContainerMenu {
         super(ModMenus.TOTEM_COMPASS.get(), id);
         this.player = inv.player;
         this.hand = hand;
-        this.data = player.level().isClientSide ? new SimpleContainerData(6) : new ContainerData() {
+        this.data = player.level().isClientSide ? new SimpleContainerData(DATA_COUNT) : new ContainerData() {
             @Override
             public int get(int i) {
                 ItemStack s = compass();
@@ -39,6 +39,10 @@ public class TotemCompassMenu extends AbstractContainerMenu {
                     case 3 -> TotemCompassItem.level(s);
                     case 4 -> Math.min(Short.MAX_VALUE, TotemCompassItem.upgradeCost(s));
                     case 5 -> TotemCompassItem.cooldownSeconds(s);
+                    case 6 -> TotemCompassItem.rangeLevel(s, TotemCompassItem.Range.ACROSS);
+                    case 7 -> TotemCompassItem.rangeLevel(s, TotemCompassItem.Range.DEPTH);
+                    // tracking and no rival within reach: sent here, since the client's copy of the compass is not updated while this slotless menu is open
+                    case 8 -> TotemCompassItem.trackingLeft(s, now) > 0 && TotemCompassItem.target(s) == null ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -48,7 +52,7 @@ public class TotemCompassMenu extends AbstractContainerMenu {
 
             @Override
             public int getCount() {
-                return 6;
+                return DATA_COUNT;
             }
         };
         addDataSlots(data);
@@ -59,12 +63,17 @@ public class TotemCompassMenu extends AbstractContainerMenu {
         return held.getItem() instanceof TotemCompassItem ? held : ItemStack.EMPTY;
     }
 
+    public InteractionHand hand() { return hand; }
     public int stored() { return data.get(0); }
     public int trackingLeft() { return data.get(1); }
     public int cooldownLeft() { return data.get(2); }
     public int level() { return data.get(3); }
     public int upgradeCost() { return (short) data.get(4); }
     public int cooldownSeconds() { return data.get(5); }
+    /** The compass's level on a range ladder; the screen reads the blocks and prices from the synced server config. */
+    public int rangeLevel(TotemCompassItem.Range r) { return data.get(r == TotemCompassItem.Range.ACROSS ? 6 : 7); }
+    /** Tracking, but the server found no rival totem within reach. */
+    public boolean noneInReach() { return data.get(8) != 0; }
 
     @Override
     public boolean clickMenuButton(Player p, int id) {
@@ -79,6 +88,8 @@ public class TotemCompassMenu extends AbstractContainerMenu {
             TotemCompassItem.startTracking(sp, compass);
         } else if (id == BTN_UPGRADE) {
             TotemCompassItem.buyUpgrade(sp, compass);
+        } else if (id == BTN_WIDER || id == BTN_DEEPER) {
+            TotemCompassItem.buyRange(sp, compass, id == BTN_WIDER ? TotemCompassItem.Range.ACROSS : TotemCompassItem.Range.DEPTH);
         } else {
             return false;
         }

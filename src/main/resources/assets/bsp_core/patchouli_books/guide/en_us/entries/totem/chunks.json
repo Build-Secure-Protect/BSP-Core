@@ -25,7 +25,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Only your main totem, the one you have held longest, gets the full allowance. Every other totem you place loads the chunk it stands in and no more, and cannot take Anchor past level 1.$(br2)Lose your main totem and the next one you hold takes its place, with whatever upgrades it has.",
+      "text": "Only your main totem, the first you placed, gets the full allowance. Your other totems load the chunk they stand in and no more, and cannot take Anchor past level 1.$(br2)Moved, it stays your main totem. Stolen, your next totem takes its place: most Anchor first, then highest tier.",
       "title": "More than one totem"
     },
     {
