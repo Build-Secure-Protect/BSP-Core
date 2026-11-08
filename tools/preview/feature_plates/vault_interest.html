@@ -1,0 +1,168 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+.bsp-target { width: 410px !important; max-width: none !important; }</style><title>Coin Vault Interest Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* The Coin Vault's INTEREST tab as built in 1.15.0 (CoinVaultScreen 196 x 226, the owner's pick B), drawn at GUI pixel size with the game's font for the CurseForge feature plate; helpers from compass_range_concepts.html. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:"IBM Plex Sans",system-ui,sans-serif; margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1000px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:16px; }
+h1{ font-size:26px; margin:0; }
+.checks{ font:12px ui-monospace,Menlo,monospace; color:var(--muted); }
+canvas.gui{ width:100%; height:auto; display:block; image-rendering:pixelated; }
+#plate{ display:flex; flex-direction:column; gap:12px; }
+</style>
+<div class="wrap">
+<h1>Coin Vault Interest Plate</h1>
+<canvas class="gui" id="v-r"></canvas>
+<p class="checks" id="checks"></p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (1 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (1 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 3 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+
+  // ------------------------------------------------------------ plate helpers: real item textures, item counts, vanilla tooltips
+  var IMGS = {}, K = 4;
+  function loadItems(map){ Object.keys(map).forEach(function(k){ var im = new Image(); im.onload = function(){ drawAll(); }; im.src = map[k]; IMGS[k] = im; }); }
+  function item(g, name, x, y, ghost){ var im = IMGS[name]; if (im && im.complete && im.naturalWidth) g.drawImage(im, x, y, 16, 16); }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+  function quarter(h){ var c = rgb(h); return hex(c.map(function(v){ return (v & 0xfc) >> 2; })); }
+  /** GuiGraphics.renderComponentTooltip at its drawn position: TooltipRenderUtil's frame, text with its drop shadow, 2 px under the first line. */
+  function tooltip(g, x, y, lines){
+    var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); }); var h = lines.length * 10 - (lines.length === 1 ? 2 : 0);
+    var BGT = "#100010", TOP = "#24005b", BOT = "#180033";
+    fill(g, x - 3, y - 4, w + 6, 1, BGT); fill(g, x - 3, y + h + 3, w + 6, 1, BGT); fill(g, x - 3, y - 3, w + 6, h + 6, BGT);
+    fill(g, x - 4, y - 3, 1, h + 6, BGT); fill(g, x + w + 3, y - 3, 1, h + 6, BGT);
+    var gr = g.createLinearGradient(0, y - 2, 0, y + h + 2); gr.addColorStop(0, TOP); gr.addColorStop(1, BOT);
+    g.fillStyle = gr; g.fillRect(x - 3, y - 2, 1, h + 4); g.fillRect(x + w + 2, y - 2, 1, h + 4);
+    fill(g, x - 3, y - 3, w + 6, 1, TOP); fill(g, x - 3, y + h + 2, w + 6, 1, BOT);
+    var ty = y; lines.forEach(function(l, i){ txt(g, l[0], x + 1, ty + 1, quarter(l[1])); txt(g, l[0], x, ty, l[1]); ty += 10 + (i === 0 ? 2 : 0); });
+    return { x0: x - 4, x1: x + w + 4, y0: y - 4, y1: y + h + 4 };
+  }
+  function backdrop(g, w, h){ fill(g, 0, 0, w, h, "#1b2028"); }
+
+  // ------------------------------------------------------------ CoinVaultScreen's INTEREST tab as built in 1.15.0 (196 x 226)
+  var VW = 196, VH = 226, M = 8, X0 = 17, RIGHT = X0 + 162, TAB_Y = 20, TAB_W = 39, TAB_H = 13, TAB_GAP = 2, BODY_Y = 37, STRIP_Y = 107,
+      BTN_X = RIGHT - 50, BTN_W = 50, BTN_H = 18, INV_Y = 144, HOVER = "#3a3210", COLS = [X0 + 50, X0 + 86, X0 + 128];
+  // the example: 24 Diamond and 4 Netherite coins (128 coin value, the x2 step) earn 25.6 XP levels, 76.8 Tetrium and 2 Illyrium a day
+  // (coinValuePerUnit 10, 1 XP and 3 Tetrium a unit, 32 high value an ingot); one day's worth waits, 2 prize rolls, the next in 5 h 12 m
+  var VALUE = 128, STEPS = [0, 32, 128, 512], MULTS = [1, 1.5, 2, 3], RATES = [25.6, 76.8, 2], WAITING = [25, 76, 2], PRIZES = 2, MOST = 6, NEXT_MIN = 312;
+  function num(d){ return Math.abs(d - Math.round(d)) < 1e-6 ? String(Math.round(d)) : Math.abs(d * 10 - Math.round(d * 10)) < 1e-6 ? d.toFixed(1) : d.toFixed(2); }
+  /** CoinVaultScreen.fit: small text shrunk to fit, never below half size */
+  function vfit(g, s, x, y, col, max){ var w = mw(s), k = w <= 0 ? 0.75 : Math.max(0.5, Math.min(0.75, max / w)); check("'" + s + "' readable in " + max + " px", k >= 0.6);
+    return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); }
+  function button(g, x, y, w, label, enabled){ fill(g, x, y, w, BTN_H, enabled ? GOLD : DIM); fill(g, x + 1, y + 1, w - 2, BTN_H - 2, SLOT);
+    txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + 5, enabled ? GOLD : OFF); }
+
+  function drawAll(){ CHECKS.length = 0;
+    var g = frame("v-r", VW + 2 * M, VH + 2 * M, K); if (!g) return; backdrop(g, VW + 2 * M, VH + 2 * M); g.translate(M, M);
+    // renderBg
+    fill(g, -1, -1, VW + 2, VH + 2, GOLD); fill(g, 0, 0, VW, VH, BG);
+    for (var i = 0; i < 4; i++){ var tx = X0 + i * (TAB_W + TAB_GAP), on = i === 3;
+      fill(g, tx, TAB_Y, TAB_W, TAB_H, on ? GOLD : DIM); fill(g, tx + 1, TAB_Y + 1, TAB_W - 2, TAB_H - (on ? 1 : 2), on ? BG : SLOT); }
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 9; c++){ var sx = X0 + 1 + c * 18, sy = r < 3 ? INV_Y + r * 18 : INV_Y + 58;
+      fill(g, sx - 1, sy - 1, 18, 18, "#3a3f4b"); fill(g, sx, sy, 16, 16, SLOT); }
+    var n = STEPS.length, w = Math.floor((162 - 2 * (n - 1)) / n), cur = 0; STEPS.forEach(function(s, i){ if (VALUE >= s) cur = i; });
+    for (var j = 0; j < n; j++){ var bx = X0 + j * (w + 2); fill(g, bx, 48, w, 11, j === cur ? GOLD : DIM); fill(g, bx + 1, 49, w - 2, 9, j === cur ? HOVER : SLOT); }
+    fill(g, X0, 79, 162, 1, DIM);
+    for (var p = 0; p < MOST; p++){ var px = COLS[0] + p * 8; fill(g, px, 110, 6, 6, p < PRIZES ? TQ : DIM); if (p >= PRIZES) fill(g, px + 1, 111, 4, 4, SLOT); }
+    button(g, BTN_X, STRIP_Y, BTN_W, "Redeem", true);
+    // renderLabels
+    txt(g, "COIN VAULT", 10, 8, GOLD); var own = "Owner: Mrgregles"; small(g, own, VW - 10 - Math.round(mw(own) * 0.75), 10, MUTED);
+    ["STORAGE", "ACCESS", "SECURITY", "INTEREST"].forEach(function(l, i){ var k = Math.min(0.75, (TAB_W - 4) / mw(l));
+      txt(g, l, X0 + i * (TAB_W + TAB_GAP) + TAB_W / 2 - mw(l) * k / 2, TAB_Y + 4 + Math.round((0.75 - k) * 4), i === 3 ? GOLD : MUTED, k); check("Tab '" + l + "' readable", k >= 0.6); });
+    txt(g, "Inventory", X0, INV_Y - 11, MUTED);
+    small(g, "YOUR HOARD", X0, BODY_Y + 2, MUTED); var worth = VALUE + " coin value"; small(g, worth, RIGHT - Math.round(mw(worth) * 0.75), BODY_Y + 2, TEXT);
+    for (var q = 0; q < n; q++){ var qx = X0 + q * (w + 2), m = "×" + num(MULTS[q]);
+      vfit(g, m, qx + Math.floor(w / 2) - Math.floor(Math.min(w - 4, Math.round(mw(m) * 0.75)) / 2), 51, q === cur ? GOLD : MUTED, w - 4);
+      small(g, String(STEPS[q]), qx, 62, q === cur ? TEXT : OFF); }
+    vfit(g, cur + 1 < n ? (STEPS[cur + 1] - VALUE) + " more coin value for ×" + num(MULTS[cur + 1]) : "The top step: ×" + num(MULTS[cur]), X0, 71, MUTED, 162);
+    ["XP", "TETRIUM", "ILLYRIUM"].forEach(function(h, i){ small(g, h, COLS[i], 83, MUTED); small(g, num(RATES[i]), COLS[i], 91, TEXT);
+      small(g, String(WAITING[i]), COLS[i], 99, WAITING[i] > 0 ? GOLD : MUTED); });
+    small(g, "A DAY", X0, 91, MUTED); small(g, "WAITING", X0, 99, MUTED); small(g, "PRIZE ROLLS", X0, 110, MUTED);
+    check("PRIZE ROLLS clears its pips", X0 + sw("PRIZE ROLLS") + 2 <= COLS[0]);
+    var next = "next in " + Math.floor(NEXT_MIN / 60) + ":" + String(NEXT_MIN % 60).padStart(2, "0"); vfit(g, next, X0, 119, TQ, BTN_X - 4 - X0);
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".");
+    window.__plateChecks = CHECKS.slice();
+  }
+
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · Coin Vault interest</div><div class="bsp-cap">The bigger your hoard, the higher your interest! The INTEREST tab shows your step, what you earn a day and what is waiting, plus a prize roll every 12 hours.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('v-r')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

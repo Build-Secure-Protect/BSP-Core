@@ -59,10 +59,18 @@ The Magnetic Centrifuge separates the ore, and with a coil in it charges the ing
 
 ![Shatter Coins: real time, no shortcuts](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/16_coins.jpg)
 
-Coins buy totem tiers and powers, and you press them yourself, in real hours: 8 for Copper, 96 for Illyrium. The factory keeps pressing while you are offline, and a Coin Vault pays interest on what you keep in it. Rivals can pick the vault for a quarter of the coins.
+Coins buy totem tiers and powers, and you press them yourself, in real hours: 8 for Copper, 96 for Illyrium. The factory keeps pressing while you are offline. Alone you own up to 10 slices; in a team each member owns fewer, down to 5 each in a team of 5, so a big team presses more than you but never five times as much.
 
 ![Shatter Coin Factory (one slice: 1 x 2 x 3)](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/17_machine_coin_factory.jpg)
 ![Recipes 5 of 11: Magnetic Centrifuge, Shatter Coins](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/18_recipes_05.jpg)
+
+![factory repress](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_factory_repress.jpg)
+
+Every coin remembers the team that pressed it. Your own totem takes any coin, but a teammate's totem only takes your team's coins (and old ones with no stamp). Coins from before you joined go back through a factory slice in half the time and come out for your team, and so do coins you took off another team.
+
+![vault interest](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_vault_interest.jpg)
+
+A Coin Vault pays interest on what you keep in it: XP, Tetrium and Illyrium Ingots every day, more the bigger your hoard (up to x3), and a prize roll every 12 hours from the server's prize table. Rivals can pick the vault for a quarter of the coins.
 
 ## Shatter Pieces, the bank and the shops
 
@@ -166,6 +174,14 @@ A Decoy Totem looks like the real thing to everyone but you, pulls rival compass
 
 ![Recipes 9 of 11: Decoys and traps](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/28_recipes_09.jpg)
 
+![compass reach](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_compass_reach.jpg)
+
+A compass only finds rivals within its reach: 100 blocks each way and 10 up or down to start, and up to 2,500 across and 150 up or down with the WIDER and DEEPER upgrades. The reach stays on the compass, and pips on its icon show how far it goes.
+
+![radiation strip](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_radiation_strip.jpg)
+
+And it only finds a totem as far as that totem's **radiation** reaches. Every tier and every upgrade you buy makes your totem glow brighter: a Tier I totem with nothing bought is never found, a big one is seen from 2,500 blocks. Far out, the needle points beside the totem, not at it. Walls of coated radiation shielding round your totem cut how far it's seen, and new players' small totems give off nothing at all until they've found their feet.
+
 ## The Totem Forge: a second totem
 
 ![The Totem Forge: a second totem](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/29_totem_forge.jpg)
@@ -178,7 +194,7 @@ The end of the road. Build the 2 by 2 by 3 forge, melt a whole bill of metals in
 
 ![Lead-lined chests and radiation shielding](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/31_radiation.jpg)
 
-Playing with Electrodynamics or Nuclear Science? Uranium in a chest makes everyone near it sick. Put it in a Lead-Lined Chest instead: nothing inside ever gives off radiation, however much is in it. It is a chest in every other way: two side by side make a large one, hoppers, pipes and comparators work, and claims protect it. For a shielded room, panels stop everything, thick windows let a tenth through (and all the light), and the door keeps it out while it is shut. Panels and windows join into one wall and one sheet of glass.
+Playing with Electrodynamics or Nuclear Science? Uranium in a chest makes everyone near it sick. Put it in a Lead-Lined Chest instead: nothing inside ever gives off radiation, however much is in it. It is a chest in every other way: two side by side make a large one, hoppers, pipes and comparators work, and claims protect it. For a shielded room, panels stop everything, thick windows let a tenth through (and all the light), and the door keeps it out while it is shut. Panels and windows join into one wall and one sheet of glass. Coat them with a Totem Radiation Coating tin and they also hide your totem from rival compasses, a fifth for each whole wall round it.
 
 ![Recipes 11 of 11: Totem Forge, Radiation](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/32_recipes_11.jpg)
 
@@ -210,7 +226,7 @@ Every totem and every Decoy has eight lamp studs round its base. They glow red w
 
 ![teams screen](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_teams_screen.jpg)
 
-One team per player, a leader and up to five members, a name and a colour. Teammates have full access to each other's totems: open the panel, buy upgrades and raise the tier (the buyer pays), change chunks, use the plasma machines and projectors, see through the cloak, walk through the Ward and Alarm. Nobody in a team can steal from it, and the compass ignores teammates' totems. The screen opens from the TEAM tab on any totem of yours or a teammate's, from the TEAM button above your inventory, or from a key you bind.
+One team per player, a leader and up to five members, a name and a colour. Teammates have full access to each other's totems: open the panel, buy upgrades and raise the tier (the buyer pays), change chunks, use the plasma machines and projectors, see through the cloak, walk through the Ward and Alarm. Nobody in a team can steal from it, and the compass ignores teammates' totems. A team pays a little more for its upgrades: 6% for each member after the first, in Shatter Pieces from the buyer's bank, shown beside the price. The screen opens from the TEAM tab on any totem of yours or a teammate's, from the TEAM button above your inventory, or from a key you bind.
 
 ![teams invite](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_teams_invite.jpg)
 
@@ -282,14 +298,18 @@ Every totem you own scores by its tier, so stealing and upgrading both move you 
 
 ![credit admin](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_credit_admin.jpg)
 
+- **Totem radiation is yours to tune.** The RADIATION tab picks what ends the new-player protection, a BSP-RankUp rank (Sentinel to start) or hours of play (24), and sets this server's radiation numbers, with a chart of how far each level is seen. The VAULT tab fills the vault prize table, straight from your hand with enchantments and names. The team factory limit (`factory.maxPerTeamSize`) and the team surcharge (`team.upgradeSurchargePercent`) are in the config.
+
+![radiation admin](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/feature_radiation_admin.jpg)
+
 ![anti totem block](https://raw.githubusercontent.com/Mrgregles/BSP-Core/main/docs/curseforge/images/render_anti_totem_block.jpg)
 
 - **Anti Totem Block:** keeps totems and chosen machines out of spawn, hubs and arenas, and tells BSP-Teleport where homes and teleports are not allowed.
 - **Servers without totem placement:** list the safe servers of the network (spawn, a saferoom, a sanctuary) in `restrictions.noTotemServers`. Totems can be carried there but never placed or dropped, and one carried at logout goes back to its owner's last spot on a server that allows placement, so nobody parks a totem out of reach by logging off somewhere safe.
-- **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops with their stock, limits and rotating cards, store credit kinds and tickets (a spend is checked in the database, so two servers never spend the same credit), the market and its buy orders, the lottery and the daily reward, teams and alliances with their invites, kits and the admin panel across every server, and Totem Forge pours count once per player; add Redis and all of it is live, live trades between servers included. A kit taken on one server is taken everywhere; a team or an alliance made on one exists on all, and allies see each other's whereabouts across servers. `/bsp team alliances` lists the alliances and `/bsp team dissolve` ends one.
+- **Networks:** MySQL or MariaDB shares totems, limits, the leaderboard, vault totals, seasons, steal warnings, bank accounts, deposit boxes, shops with their stock, limits and rotating cards, store credit kinds and tickets (a spend is checked in the database, so two servers never spend the same credit), every player's factory slices and banked coins with their team stamps, the new-player protection, the vault prize table, compass cooldowns, the market and its buy orders, the lottery and the daily reward, teams and alliances with their invites, kits and the admin panel across every server, and Totem Forge pours count once per player; add Redis and all of it is live, live trades between servers included. A kit taken on one server is taken everywhere; a team or an alliance made on one exists on all, and allies see each other's whereabouts across servers. `/bsp team alliances` lists the alliances and `/bsp team dissolve` ends one.
 - **Discord steal warnings:** turn on `discord.enabled` and give each server its `discord.serverName`. The alerts travel over the network's Redis to the Discord bot in BSP-Velocity Additions on the proxy, which alone holds the bot's token: no game server ever has one.
 - **The other BSP mods** reach everything through `com.mrgregles.bsp_core.api`: totems, steals, seasons, teams and alliances, kits, the bank, store credit, the market and trades, zones and transfers between servers. BSP-RankUp hands out kits as rank rewards and its playtime unlocks shop cards, BSP-Teleport moves teammates between servers and takes store credit for teleports, Region Guard sells the land and picks which plots each Land Office sells, BSP-Velocity Additions carries the chat between servers and runs the Discord bot.
 
 ## Status
 
-1.14.0 is the current release: store credit tickets for the shops, the Land Office and teleports, lava tanks and the Crucible Yield Upgrade, on top of the Lead-Lined Chest and radiation shielding, a Land Office that sells its own plots, kits kept for players with no totem, Tripwire, which turns your totem into a redstone sensor for outsiders, alliances between teams, with their own chat, each other's whereabouts, the perks each team chooses to give and a price for betrayal, on top of buy orders on the Trade Post and the Wanted Board on the Score Screens, scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!
+1.15.0 is the current release: a fairer deal for teams (fewer factory slices each, coins stamped with the team that pressed them, re-pressing, and a small team surcharge on upgrades), compass reach upgrades, totem radiation with its coating and a head start for new players, and Coin Vault interest that grows with your hoard with prize rolls every 12 hours, on top of store credit tickets for the shops, the Land Office and teleports, lava tanks and the Crucible Yield Upgrade, on top of the Lead-Lined Chest and radiation shielding, a Land Office that sells its own plots, kits kept for players with no totem, Tripwire, which turns your totem into a redstone sensor for outsiders, alliances between teams, with their own chat, each other's whereabouts, the perks each team chooses to give and a price for betrayal, on top of buy orders on the Trade Post and the Wanted Board on the Score Screens, scores an admin can set by hand, the lottery, drawn by an admin and won whole by one player, a daily login reward, the Trade Post with its network-wide market and live trades, the Totem Forge with its molten metals, the spawn shops with their limits, rotations, ranks and search, Herald and the Discord steal warnings, the bank and shops, plasma across worlds, teams, kits, the boards on the Score Screens, servers without totem placement and land for Shatter Coins. Every picture on this page is drawn from the mod's own models, textures, recipes and screens, so what you see is what you get in game. Report problems at https://github.com/Mrgregles/BSP-Core/issues, and come and play it on BSP!

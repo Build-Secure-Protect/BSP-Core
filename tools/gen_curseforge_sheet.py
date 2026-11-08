@@ -315,7 +315,7 @@ def metals():
           + h3("The top blank needs the slow metal") + chain("netherite_coin_blank", "+", "illyrium_ingot", ("crafting",), "illyrium_coin_blank", ("96 hours, 800,000 RF",), "illyrium_shatter_coin")
           + h3("What coins pay for") + chain("gold_shatter_coin", ("tier gates and powers",), "shatter_totem", ("faster tracking",), "totem_compass", ("earns interest in",), "coin_vault")
           + h3("Faster: up to three Motivators on a slice") + chain("factory_motivator", ("15 %, 30 %, 50 % off",), "shatter_coin_factory", ("a Plasma Injector in a Motivator cell",), "plasma_injector"),
-          "A press costs 50,000 RF for a Copper coin and doubles each tier. Up to 10 slices side by side make one factory. Coins stack to 12.")
+          "A press costs 50,000 RF for a Copper coin and doubles each tier. You own up to 10 slices alone, 5 each in a team of 5. Coins stack to 12.")
 
 
 # ----------------------------------------------------------------------------- build plates for the multiblocks
@@ -435,8 +435,8 @@ def extras():
           + p("An ordinary Shatter Totem. Rival compasses within range point at it. Try to steal it and its traps go off.") + '</div></div>'
           + h3("Decoy sockets: coils for range, charges for traps, an amplifier to make them worse, casings to make it tougher")
           + chain("range_coil_mk1", "+", "range_coil_mk3", "+", "blast_charge", "+", "hex_charge", "+", "poison_charge", "+", "fatigue_charge", "+", "warp_charge", "+", "trap_amplifier", "+", "reinforced_casing", size=36)
-          + h3("Totem Compass") + chain("totem_compass", ("points to your own",), "shatter_totem", ("or for a while to the nearest rival's",), "decoy_totem", ("coins shorten the cooldown",), "gold_shatter_coin", size=36),
-          "A decoy within a compass's range is what the compass finds. Decoys are meant to be costly to run.")
+          + h3("Totem Compass") + chain("totem_compass", ("points to your own",), "shatter_totem", ("or for a while to the nearest rival in reach",), "decoy_totem", ("coins shorten the cooldown",), "gold_shatter_coin", size=36),
+          "A compass finds a rival only within its reach, and only as far as that totem's radiation shows. A decoy within range is what it finds.")
     plate("base_blocks", "Vault, screens and admin blocks",
           '<div class="split"><div class="col">' + h3("Coin Vault, joined") + render("coin_vault_joined", "Joined Coin Vault", "5/2")
           + p("Vault blocks of one owner join into one vault of up to 3 x 3 x 3. Coins inside earn interest. Rivals can pick the lock for a quarter of the coins.") + '</div>'
@@ -464,7 +464,8 @@ def extras():
     rad = [("lead_lined_chest", "Lead-Lined Chest", "A chest whose contents never give off radiation, however much uranium is in it. Two side by side make a large chest; hoppers, pipes and comparators work as on any chest."),
            ("radiation_shielding_panel", "Radiation Shielding Panel", "Stops all radiation passing through. Panels side by side join into one riveted wall."),
            ("radiation_shielding_window", "Radiation Shielding Window", "A thick pane of pale-green glass: lets a tenth through, and all the light. Windows in one plane join into one sheet."),
-           ("radiation_shielding_door", "Radiation Shielding Door", "Lets 3% through while shut, by hand or redstone. Open, it lets nearly everything through, so shut it.")]
+           ("radiation_shielding_door", "Radiation Shielding Door", "Lets 3% through while shut, by hand or redstone. Open, it lets nearly everything through, so shut it."),
+           ("totem_radiation_coating", "Totem Radiation Coating", "One tin coats a panel, window or door in a turquoise glaze. Whole coated walls round a totem cut how far compasses see it, a fifth a layer.")]
     plate("radiation", "Lead-lined chests and radiation shielding",
           "".join(f'<p class="hint big">{icon(i, 56)} <span><b>{html.escape(n)}.</b> {html.escape(t)}</span></p>' for i, n, t in rad)
           + h3("All made from lead plates") + '<div class="jobs">'
@@ -492,7 +493,7 @@ GROUPS = [
     ("Across worlds", ["accelerator_frame", "accelerator_intake", "decelerator_core", "decelerator_port", "link_card", "link_expander"]),
     ("Totem Forge", ["totem_forge", "metal_intake", "forge_hearth", "melt_tank", "pour_head", "forge_cap", "mould_shell", "base_mould", "foot_mould", "torso_mould",
                      "arm_mould", "head_mould", "totem_core"]),
-    ("Radiation", ["lead_lined_chest", "radiation_shielding_panel", "radiation_shielding_window", "radiation_shielding_door"]),
+    ("Radiation", ["lead_lined_chest", "radiation_shielding_panel", "radiation_shielding_window", "radiation_shielding_door", "totem_radiation_coating"]),
 ]
 # the bank's one recipe joins the coins' chunk, the link recipes follow the plasma ones
 GROUPS.insert([g for g, _ in GROUPS].index("Wave Plasma"), ("Bank", ["portable_banker"]))

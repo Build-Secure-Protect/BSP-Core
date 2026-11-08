@@ -1,0 +1,185 @@
+<title>Coin Re-press Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* The Shatter Coin Factory screen as built in 1.15.0 (CoinFactoryScreen 326 x 226, concept A: re-pressing lanes with a violet frame and bar, the team summary line, slice 6's tooltip), drawn at GUI pixel size with the game's font for the CurseForge feature plate; helpers from compass_range_concepts.html, coins and blanks are the mod's own item textures. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:"IBM Plex Sans",system-ui,sans-serif; margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1000px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:16px; }
+h1{ font-size:26px; margin:0; }
+.checks{ font:12px ui-monospace,Menlo,monospace; color:var(--muted); }
+canvas.gui{ width:100%; height:auto; display:block; image-rendering:pixelated; }
+#plate{ display:flex; flex-direction:column; gap:12px; }
+</style>
+<div class="wrap">
+<h1>Coin Re-press Plate</h1>
+<canvas class="gui" id="f-r"></canvas>
+<p class="checks" id="checks"></p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (1 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (1 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 3 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+
+  // ------------------------------------------------------------ plate helpers: real item textures, item counts, vanilla tooltips
+  var IMGS = {}, K = 4;
+  function loadItems(map){ Object.keys(map).forEach(function(k){ var im = new Image(); im.onload = function(){ drawAll(); }; im.src = map[k]; IMGS[k] = im; }); }
+  function item(g, name, x, y, ghost){ var im = IMGS[name]; if (im && im.complete && im.naturalWidth) g.drawImage(im, x, y, 16, 16); }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+  function quarter(h){ var c = rgb(h); return hex(c.map(function(v){ return (v & 0xfc) >> 2; })); }
+  /** GuiGraphics.renderComponentTooltip at its drawn position: TooltipRenderUtil's frame, text with its drop shadow, 2 px under the first line. */
+  function tooltip(g, x, y, lines){
+    var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); }); var h = lines.length * 10 - (lines.length === 1 ? 2 : 0);
+    var BGT = "#100010", TOP = "#24005b", BOT = "#180033";
+    fill(g, x - 3, y - 4, w + 6, 1, BGT); fill(g, x - 3, y + h + 3, w + 6, 1, BGT); fill(g, x - 3, y - 3, w + 6, h + 6, BGT);
+    fill(g, x - 4, y - 3, 1, h + 6, BGT); fill(g, x + w + 3, y - 3, 1, h + 6, BGT);
+    var gr = g.createLinearGradient(0, y - 2, 0, y + h + 2); gr.addColorStop(0, TOP); gr.addColorStop(1, BOT);
+    g.fillStyle = gr; g.fillRect(x - 3, y - 2, 1, h + 4); g.fillRect(x + w + 2, y - 2, 1, h + 4);
+    fill(g, x - 3, y - 3, w + 6, 1, TOP); fill(g, x - 3, y + h + 2, w + 6, 1, BOT);
+    var ty = y; lines.forEach(function(l, i){ txt(g, l[0], x + 1, ty + 1, quarter(l[1])); txt(g, l[0], x, ty, l[1]); ty += 10 + (i === 0 ? 2 : 0); });
+    return { x0: x - 4, x1: x + w + 4, y0: y - 4, y1: y + h + 4 };
+  }
+  function backdrop(g, w, h){ fill(g, 0, 0, w, h, "#1b2028"); }
+
+  // ------------------------------------------------------------ CoinFactoryScreen as built in 1.15.0 (326 x 226, re-pressing lanes in violet)
+  var FW = 326, FH = 226, M = 8, LANE_TOP = 20, LANE_BOTTOM = 102, BAR_TOP = 50, BAR_H = 22, PIP_Y = 95, BLANK_Y = 31, TRAY_Y = 75,
+      GAUGE_X = 14, GAUGE_Y = 108, POWER_X = 274, POWER_Y = 104, POWER_W = 38, POWER_H = 16, INV_X = 82, INV_Y = 144, LANE_W = 30;
+  var IN = "#3a8bff", OUT = "#ff8a3a", REDT = "#ff6b5c", GRAY = "#aaaaaa", WHITE = "#ffffff";
+  // the example: Mrgregles is in a team of 4 (maxPerTeamSize 10, 8, 7, 6, 5: 6 slices each) and owns this machine of 6 slices.
+  // Slices 1 to 3 press Gold blanks; 4 re-presses Gold coins pressed before he joined (2 more wait); 5 needs a blank; 6 re-presses its
+  // last Gold coin (one already out in the tray). A Gold coin takes 16 h, so a re-press 8 h, 6 h 48 m with one Motivator (-15%).
+  var LANES = [
+    { p: .62, mot: 1, input: ["gold_blank", 9] },
+    { p: .40, mot: 1, input: ["gold_blank", 9], tray: ["gold", 2] },
+    { p: .18, mot: 1, input: ["gold_blank", 10] },
+    { p: .35, mot: 1, re: true, input: ["gold", 2] },
+    { blocked: true, mot: 0 },
+    { p: .71, mot: 1, re: true, tray: ["gold", 1], left: 7100 }
+  ];
+  var CUTS = [0.15, 0.30, 0.50], HOVERED = 5;
+  function laneX(i, n){ return Math.floor((FW - n * LANE_W) / 2) + i * LANE_W + 7; }
+  function duration(s){ var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return d > 0 ? d + "d " + h + "h " + m + "m" : h > 0 ? h + "h " + m + "m " + x + "s" : m + "m " + x + "s"; }
+  function slot(g, x, y, edge, it, ghost){ fill(g, x - 1, y - 1, 18, 18, edge); fill(g, x, y, 16, 16, SLOT);
+    if (it){ item(g, it[0], x, y); count(g, it[1], x, y); }
+    else if (ghost){ item(g, "copper_blank", x, y); g.fillStyle = "rgba(16,21,28," + (0xa0 / 255) + ")"; g.fillRect(x, y, 16, 16); } }
+
+  function laneTip(i){ var L = LANES[i], tip = [["Slice " + (i + 1), WHITE]];
+    if (L.blocked) tip.push(["Needs a coin blank", WHITE]);
+    else if (L.re){ tip.push(["Re-pressing a Gold coin: " + duration(L.left) + " left", WHITE]); tip.push(["Half the time and RF; comes out for the owner's team", GRAY]); }
+    else tip.push(["Pressing Gold coin: " + duration(L.left || 0) + " left", WHITE]);
+    if (!L.blocked) tip.push([Math.round(L.p * 100) + "%", WHITE]);
+    tip.push(["Motivators: " + L.mot + " (-" + Math.round((L.mot ? CUTS[L.mot - 1] : 0) * 100) + "% press time)", WHITE]);
+    return tip; }
+
+  function drawAll(){ CHECKS.length = 0;
+    var n = LANES.length, mouse = [laneX(HOVERED, n) - 4, 64], tip = laneTip(HOVERED), tw = 0; tip.forEach(function(l){ tw = Math.max(tw, mw(l[0])); });
+    var W2 = Math.max(FW + 2 * M, M + mouse[0] + 12 + tw + 4 + M), H2 = FH + 2 * M;
+    var g = frame("f-r", W2, H2, K); if (!g) return; backdrop(g, W2, H2); g.translate(M, M);
+    // renderBg
+    fill(g, -1, -1, FW + 2, FH + 2, TQ); fill(g, 0, 0, FW, FH, BG);
+    LANES.forEach(function(L, i){ var lx = laneX(i, n) - 6, sx = lx + 6, frameCol = L.blocked ? BAD : L.re ? VIO : DIM;
+      fill(g, lx, LANE_TOP, 28, LANE_BOTTOM - LANE_TOP, frameCol); fill(g, lx + 1, LANE_TOP + 1, 26, LANE_BOTTOM - LANE_TOP - 2, SLOT);
+      fill(g, sx + 4, BAR_TOP, 8, BAR_H, DIM); if (L.p) fill(g, sx + 4, BAR_TOP, 8, Math.round(BAR_H * L.p), L.re ? VIO : TQ);
+      for (var k = 0; k < 3; k++) fill(g, sx + k * 6, PIP_Y, 4, 4, k < L.mot ? VIO : DIM); });
+    LANES.forEach(function(L, i){ slot(g, laneX(i, n), BLANK_Y, IN, L.input, true); slot(g, laneX(i, n), TRAY_Y, OUT, L.tray, false); });
+    var inv = { 2: ["gold", 5], 3: ["diamond", 2], 27: ["gold_blank", 12], 28: ["gold", 7] };
+    for (var s = 0; s < 36; s++){ var row = s < 27 ? Math.floor(s / 9) : 3, col = s % 9, sy = row < 3 ? INV_Y + row * 18 : INV_Y + 58; slot(g, INV_X + col * 18, sy, "#3a3f4b", inv[s], false); }
+    for (var c = 0; c < 12; c++) fill(g, GAUGE_X + 30 + c * 9, GAUGE_Y - 1, 7, 8, c < 9 ? GOLD : DIM);
+    var px = POWER_X, py = POWER_Y; fill(g, px - 1, py - 1, POWER_W + 2, POWER_H + 2, TQ); fill(g, px, py, POWER_W, POWER_H, SLOT);
+    fill(g, px + 4, py + 6, POWER_W - 8, POWER_H - 12, TQ); var kx = px + 2 + (POWER_W - 16);
+    fill(g, kx, py + 2, 12, POWER_H - 4, "#c9ced8"); fill(g, kx + 1, py + 3, 10, POWER_H - 6, "#8a909c"); fill(g, kx + 5, py + 4, 2, POWER_H - 8, TQ);
+    // renderLabels
+    var title = "SHATTER COIN FACTORY CONTROLLER", st = "ATTENTION"; txt(g, title, 10, 8, TQ); txt(g, st, FW - 10 - mw(st), 8, REDT);
+    check("Title clears ATTENTION", 10 + mw(title) + 6 <= FW - 10 - mw(st));
+    var mots = 0; LANES.forEach(function(L, i){ var num = String(i + 1); txt(g, num, laneX(i, n) - 6 + 14 - Math.floor(mw(num) / 2), LANE_TOP + 2, MUTED); mots += L.mot; });
+    txt(g, "RF", GAUGE_X, GAUGE_Y, MUTED);
+    var plx = GAUGE_X + 144; txt(g, "PLASMA", plx, GAUGE_Y, MUTED); var cx = plx + mw("PLASMA") + 4; for (var p = 0; p < 6; p++) fill(g, cx + p * 7, GAUGE_Y - 1, 5, 8, DIM);
+    small(g, "POWER", POWER_X - 4 - Math.round(mw("POWER") * 0.75), POWER_Y + 5, MUTED);
+    check("Plasma cells end clear of POWER", cx + 5 * 7 + 5 + 2 <= POWER_X - 4 - Math.round(mw("POWER") * 0.75));
+    var summary = "Owner: Mrgregles  Slices: " + n + "/10  Owns " + n + "/6 (team of 4)  Motivators: " + mots, k2 = Math.min(0.75, (FW - 2 * GAUGE_X) / mw(summary));
+    txt(g, summary, GAUGE_X, GAUGE_Y + 14 + (6 - 8 * k2) / 2, MUTED, k2); check("Summary at full small size", k2 === 0.75);
+    txt(g, "Inventory", INV_X, INV_Y - 11, MUTED);
+    // the tooltip of the hovered lane, where renderComponentTooltip puts it (12 right of and 12 above the mouse)
+    var box = tooltip(g, mouse[0] + 12, mouse[1] - 12, tip);
+    check("Tooltip ends above the summary line", box.y1 <= GAUGE_Y + 14);
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".") + " Canvas " + W2 + " x " + H2 + ".";
+    window.__plateChecks = CHECKS.slice();
+  }
+
+  loadItems({
+    "gold": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmv8/qkLBnw7qgTHMAAxD8Gne0cYNNwDZkK4Jc/5jGIDNZnQDQBikGW4ALttxaUY2AGwINgNgmskyAF0xPi9gGIDNNmyuQTEAORxwacYbiDADYNFDyAAM22EAOZHg8gpOzeiGICvEhvHmB4o04zMIlzoAvTpLT298i8sAAAAASUVORK5CYII=",
+    "diamond": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmk/+/o+C859/AmOYARiG4NOsvXIH3ABkQ7omzPmPYQA2m9ENAGGQZrgBuGzHpRnZALAh2AyAaSbLAHTF+LyAYQA227C5BsUA5HDApRlvIMIMgEUPIQMwbIcB5ESCyys4NaMbgqwQG8abHyjSjM8gXOoAuN9tYffehokAAAAASUVORK5CYII=",
+    "gold_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgElEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCms/va0PBh1cngDHMAAxDiNGMbkjXhDn/MQwgpBmGQZrhBuCyHZdmZAPAhmAzAJ9mggYQ0ozXAGI0YxiAHA6kGoASC7DoIdl2GEBOJCRrRjcEWSE2jDc/UKQZn0G41AEABoVG/TVwIQUAAAAASUVORK5CYII=",
+    "copper_blank": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAf0lEQVR42mNgwAG+fPv1HxkzEAvQNZJkECHNJ8/dAGOCmvfN60bBaxrSwBhmAIYhxGhGN6Rrwpz/GAYQ0gzDIM1wA3DZjkszsgFgQ7AZgE8zQQMIacZrADGaMQxADgdSDUCJBVj0kGw7DCAnEpI1oxuCrBAbxpsfKNKMzyBc6gAfsjN9+QXKAAAAAABJRU5ErkJggg=="
+  });
+
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>

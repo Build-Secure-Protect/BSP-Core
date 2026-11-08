@@ -1,0 +1,173 @@
+<title>Totem Radiation Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* The radiation strip along the foot of the placed totem's screen as built in 1.15.0 (ShatterTotemScreen, readout B): the owner lines and the strip with the i key's sentence open, then the strip with the bar's tooltip. Drawn at GUI pixel size with the game's font for the CurseForge feature plate; helpers from compass_range_concepts.html. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:"IBM Plex Sans",system-ui,sans-serif; margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1000px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:16px; }
+h1{ font-size:26px; margin:0; }
+.checks{ font:12px ui-monospace,Menlo,monospace; color:var(--muted); }
+canvas.gui{ width:100%; height:auto; display:block; image-rendering:pixelated; }
+#plate{ display:flex; flex-direction:column; gap:12px; }
+</style>
+<div class="wrap">
+<h1>Totem Radiation Plate</h1>
+<div id="plate"><canvas class="gui" id="r-a"></canvas><canvas class="gui" id="r-b"></canvas></div>
+<p class="checks" id="checks"></p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (1 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (1 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 3 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+
+  // ------------------------------------------------------------ plate helpers: real item textures, item counts, vanilla tooltips
+  var IMGS = {}, K = 4;
+  function loadItems(map){ Object.keys(map).forEach(function(k){ var im = new Image(); im.onload = function(){ drawAll(); }; im.src = map[k]; IMGS[k] = im; }); }
+  function item(g, name, x, y, ghost){ var im = IMGS[name]; if (im && im.complete && im.naturalWidth) g.drawImage(im, x, y, 16, 16); }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+  function quarter(h){ var c = rgb(h); return hex(c.map(function(v){ return (v & 0xfc) >> 2; })); }
+  /** GuiGraphics.renderComponentTooltip at its drawn position: TooltipRenderUtil's frame, text with its drop shadow, 2 px under the first line. */
+  function tooltip(g, x, y, lines){
+    var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); }); var h = lines.length * 10 - (lines.length === 1 ? 2 : 0);
+    var BGT = "#100010", TOP = "#24005b", BOT = "#180033";
+    fill(g, x - 3, y - 4, w + 6, 1, BGT); fill(g, x - 3, y + h + 3, w + 6, 1, BGT); fill(g, x - 3, y - 3, w + 6, h + 6, BGT);
+    fill(g, x - 4, y - 3, 1, h + 6, BGT); fill(g, x + w + 3, y - 3, 1, h + 6, BGT);
+    var gr = g.createLinearGradient(0, y - 2, 0, y + h + 2); gr.addColorStop(0, TOP); gr.addColorStop(1, BOT);
+    g.fillStyle = gr; g.fillRect(x - 3, y - 2, 1, h + 4); g.fillRect(x + w + 2, y - 2, 1, h + 4);
+    fill(g, x - 3, y - 3, w + 6, 1, TOP); fill(g, x - 3, y + h + 2, w + 6, 1, BOT);
+    var ty = y; lines.forEach(function(l, i){ txt(g, l[0], x + 1, ty + 1, quarter(l[1])); txt(g, l[0], x, ty, l[1]); ty += 10 + (i === 0 ? 2 : 0); });
+    return { x0: x - 4, x1: x + w + 4, y0: y - 4, y1: y + h + 4 };
+  }
+  function backdrop(g, w, h){ fill(g, 0, 0, w, h, "#1b2028"); }
+
+  // ------------------------------------------------------------ ShatterTotemScreen's lower part as built in 1.15.0 (326 wide; the strip of readout B)
+  var TW = 326, STATUS_Y = 213, RAD_Y = 260, TH = RAD_Y + 33, BAR_X = 74, BAR_W = 224, BAR_H = 8, INFO_X = 305, INFO_S = 11, INFO_W = 158;
+  var LIGHT = "#e8eaf0", GREEN = "#55ff55", PLASMA = "#4fb8ff", HOVERT = "#14362f", RAD_HIGH = "#ff6b5c", AQUA = "#55ffff";
+  var INFO = "Every totem tier and upgrade increases the totem radiation and makes it easier for your enemies to find.";
+  // your own Tier IV totem with 60 upgrade levels: radiation level 63 (TotemRadiation.level), seen from 689 blocks bare, 2 coated layers
+  // (layerCut 0.2) bring it to 441; maxSeenAt 2500, fullLevel 120, exponent 2
+  var LEVEL = 63, MAX = 2500, BARE = Math.round(MAX * Math.pow(LEVEL / 120, 2)), LAYERS = 2, SEEN = Math.round(BARE * Math.pow(0.8, LAYERS));
+  function radColour(f){ return f < 0.25 ? TQ : f < 0.6 ? GOLD : RAD_HIGH; }
+  function n(v){ return v.toLocaleString("en-US"); }
+  /** font.split at a width, as smallWrap and the info box use */
+  function lines(s, max){ var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+
+  // the screen from y0 down, in panel coordinates; the top edge fades into the backdrop to show it is the lower part of the screen
+  function lower(id, y0, W2, infoOpen, mouse){
+    var M = 8, H2 = TH - y0 + M + 1, g = frame(id, W2, H2, K); if (!g) return null; backdrop(g, W2, H2);
+    g.save(); g.translate(M, -y0);
+    fill(g, -1, y0, TW + 2, TH - y0 + 1, TQ); fill(g, 0, y0, TW, TH - y0, BG);
+    if (y0 < 217) fill(g, 185, y0, 134, 216 - y0, SLOT);            // the foot of the tier box (TotemTree.gate) beside the owner lines
+    // radiationBg
+    fill(g, 10, RAD_Y, TW - 20, 1, DIM);
+    var bx = BAR_X, by = RAD_Y + 7;
+    fill(g, INFO_X, RAD_Y + 6, INFO_S, INFO_S, TQ); fill(g, INFO_X + 1, RAD_Y + 7, INFO_S - 2, INFO_S - 2, infoOpen ? HOVERT : SLOT);
+    fill(g, bx, by, BAR_W, BAR_H, DIM); fill(g, bx + 1, by + 1, BAR_W - 2, BAR_H - 2, SLOT);
+    var inner = BAR_W - 2, a = Math.round(inner * SEEN / MAX), b = Math.round(inner * BARE / MAX), col = radColour(SEEN / MAX);
+    if (b > a){ g.fillStyle = alpha(col, 0x4d / 255); g.fillRect(bx + 1 + a, by + 1, b - a, BAR_H - 2); }
+    fill(g, bx + 1, by + 1, a, BAR_H - 2, col);
+    fill(g, bx + 1 + a, by - 2, 1, BAR_H + 4, GOLD);
+    for (var k = 0; k <= 5; k++){ var tx = bx + 1 + Math.round(inner * k / 5); fill(g, tx, by + BAR_H, 1, 2, "#9aa3b5"); }
+    // renderLabels: the strip first, then the owner lines
+    small(g, "RADIATION", 10, RAD_Y + 9, MUTED); txt(g, "i", INFO_X + 4, RAD_Y + 8, TQ);
+    var numberX = 10 + Math.round(mw("RADIATION") * 0.75) + 4; txt(g, String(LEVEL), numberX, RAD_Y + 7, GOLD);
+    check("The level clears the bar", numberX + mw(String(LEVEL)) + 2 <= BAR_X);
+    for (var k2 = 0; k2 <= 5; k2++){ var mark = n(Math.round(MAX * k2 / 5)), w = Math.round(mw(mark) * 0.75), tx2 = BAR_X + 1 + Math.round(inner * k2 / 5);
+      small(g, mark, k2 === 0 ? tx2 : k2 === 5 ? tx2 - w + 1 : tx2 - Math.floor(w / 2), RAD_Y + 20, MUTED); }
+    if (y0 <= STATUS_Y){ txt(g, "Owner: Mrgregles", 10, STATUS_Y, LIGHT); }
+    if (y0 <= STATUS_Y + 11) txt(g, "This totem is yours", 10, STATUS_Y + 11, GREEN);
+    if (y0 <= STATUS_Y + 22) txt(g, "Wave Plasma: 750 mB/t (Output 4 of 10)", 10, STATUS_Y + 22, PLASMA);
+    if (infoOpen){ var ls = lines(INFO, Math.round((INFO_W - 8) / 0.75)), h = ls.length * 7 + 7, ix = INFO_X + INFO_S - INFO_W, iy = RAD_Y - 2 - h;
+      fill(g, ix, iy, INFO_W, h, TQ); fill(g, ix + 1, iy + 1, INFO_W - 2, h - 2, SLOT);
+      ls.forEach(function(l, i){ small(g, l, ix + 4, iy + 4 + i * 7, LIGHT); });
+      check("The info box starts inside the picture (" + iy + " >= " + y0 + ")", iy >= y0); }
+    var box = null;
+    if (mouse) box = tooltip(g, mouse[0] + 12, mouse[1] - 12, mouse[2]);
+    g.restore();
+    // the cut edge
+    var gr = g.createLinearGradient(0, 0, 0, 4); gr.addColorStop(0, "rgba(27,32,40,1)"); gr.addColorStop(1, "rgba(27,32,40,0)"); g.fillStyle = gr; g.fillRect(0, 0, W2, 4);
+    if (box) check("The tooltip fits the picture", box.x1 + M <= W2 && box.y0 - y0 >= 0);
+    return g;
+  }
+
+  function drawAll(){ CHECKS.length = 0;
+    var tip = [["Seen by tracking compasses from up to " + n(SEEN) + " blocks away", "#ffffff"], ["Coated layers round it: " + LAYERS + " (" + n(BARE) + " blocks without them)", AQUA]];
+    // the owner lines from "This totem is yours" down (the first line sits beside the foot of the tier box), and the strip with the bar hovered
+    var tw = Math.max(mw(tip[0][0]), mw(tip[1][0])), mx = 80, wa = TW + 16, wb = Math.max(wa, 8 + mx + 12 + tw + 4 + 8);
+    lower("r-a", 220, wa, true, null);
+    lower("r-b", 248, wb, false, [mx, RAD_Y + 12, tip]);
+    el("r-a").style.width = (100 * wa / wb) + "%";   // the same scale for both, the panels lined up on the left
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".") + " Bare " + BARE + ", seen " + SEEN + ".";
+    window.__plateChecks = CHECKS.slice();
+  }
+
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>

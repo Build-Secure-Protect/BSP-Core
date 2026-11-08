@@ -1,0 +1,203 @@
+<style id="bsp-plate">
+html, body { margin: 0 !important; padding: 0 !important; width: 800px; height: 600px; overflow: hidden; background: #0f1115 !important; }
+body > * { visibility: hidden; }
+.bsp-band, .bsp-cap { visibility: visible; position: fixed; left: 0; width: 800px; box-sizing: border-box; z-index: 9;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #e8eaf0; }
+.bsp-band { top: 0; height: 44px; padding: 10px 20px; background: #171a21; border-bottom: 1px solid #2a2f3a; font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+.bsp-band b { color: #19d3b0; font-weight: 600; }
+.bsp-cap { bottom: 0; min-height: 52px; padding: 9px 20px; background: #171a21; border-top: 1px solid #2a2f3a; font-size: 13px; line-height: 1.35; color: #9aa3b5; }
+.bsp-target { visibility: visible !important; position: fixed !important; left: 50% !important; top: 62px !important; margin: 0 !important;
+  transform: translateX(-50%) !important; transform-origin: top center; z-index: 5; }
+.bsp-target { width: 740px !important; max-width: none !important; }</style><title>Radiation Admin Plate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* The admin panel's RADIATION tab as built in 1.15.0 (AdminScreen 344 x 210 with RadiationAdminTab: layout A with B's chart), drawn at GUI pixel size with the game's font for the CurseForge feature plate; helpers from compass_range_concepts.html. */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:"IBM Plex Sans",system-ui,sans-serif; margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1000px; margin:0 auto; padding:28px 16px 56px; display:flex; flex-direction:column; gap:16px; }
+h1{ font-size:26px; margin:0; }
+.checks{ font:12px ui-monospace,Menlo,monospace; color:var(--muted); }
+canvas.gui{ width:100%; height:auto; display:block; image-rendering:pixelated; }
+#plate{ display:flex; flex-direction:column; gap:12px; }
+</style>
+<div class="wrap">
+<h1>Radiation Admin Plate</h1>
+<canvas class="gui" id="a-r"></canvas>
+<p class="checks" id="checks"></p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (1 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (1 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 3 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+
+  // ------------------------------------------------------------ plate helpers: real item textures, item counts, vanilla tooltips
+  var IMGS = {}, K = 4;
+  function loadItems(map){ Object.keys(map).forEach(function(k){ var im = new Image(); im.onload = function(){ drawAll(); }; im.src = map[k]; IMGS[k] = im; }); }
+  function item(g, name, x, y, ghost){ var im = IMGS[name]; if (im && im.complete && im.naturalWidth) g.drawImage(im, x, y, 16, 16); }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+  function quarter(h){ var c = rgb(h); return hex(c.map(function(v){ return (v & 0xfc) >> 2; })); }
+  /** GuiGraphics.renderComponentTooltip at its drawn position: TooltipRenderUtil's frame, text with its drop shadow, 2 px under the first line. */
+  function tooltip(g, x, y, lines){
+    var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); }); var h = lines.length * 10 - (lines.length === 1 ? 2 : 0);
+    var BGT = "#100010", TOP = "#24005b", BOT = "#180033";
+    fill(g, x - 3, y - 4, w + 6, 1, BGT); fill(g, x - 3, y + h + 3, w + 6, 1, BGT); fill(g, x - 3, y - 3, w + 6, h + 6, BGT);
+    fill(g, x - 4, y - 3, 1, h + 6, BGT); fill(g, x + w + 3, y - 3, 1, h + 6, BGT);
+    var gr = g.createLinearGradient(0, y - 2, 0, y + h + 2); gr.addColorStop(0, TOP); gr.addColorStop(1, BOT);
+    g.fillStyle = gr; g.fillRect(x - 3, y - 2, 1, h + 4); g.fillRect(x + w + 2, y - 2, 1, h + 4);
+    fill(g, x - 3, y - 3, w + 6, 1, TOP); fill(g, x - 3, y + h + 2, w + 6, 1, BOT);
+    var ty = y; lines.forEach(function(l, i){ txt(g, l[0], x + 1, ty + 1, quarter(l[1])); txt(g, l[0], x, ty, l[1]); ty += 10 + (i === 0 ? 2 : 0); });
+    return { x0: x - 4, x1: x + w + 4, y0: y - 4, y1: y + h + 4 };
+  }
+  function backdrop(g, w, h){ fill(g, 0, 0, w, h, "#1b2028"); }
+
+  // ------------------------------------------------------------ AdminScreen's RADIATION tab as built in 1.15.0 (RadiationAdminTab: layout A with B's chart)
+  var AW = 344, AH = 210, M = 8, VIO_FILL = "#2a2140", HOVER = "#2a2140";
+  var LEFT_W = 158, LIST_Y = 76, ROW_H = 13, ROWS = 6, RIGHT_X = 184, NUM_Y = 42, NUM_GAP = 14, STEP_X = 280, BOX_W = 28,
+      CHART_X = 184, CHART_Y = 140, CHART_W = 150, CHART_H = 36, SAVE_X = 270, SAVE_Y = 186, SAVE_W = 64, SAVE_H = 16, TAB_W = 37, TAB_H = 13, TABS = 7;
+  // the example network: RankUp's ladder with Sentinel chosen, 7 owners protected, the default numbers; the admin has just raised
+  // "Most coated layers" from 4 to 5, so SAVE is lit
+  var LADDER = ["newcomer", "scout", "sentinel", "guardian", "warden", "champion"], RANK = "sentinel", MODE = 0, PROTECTED = 7, ENABLED = true;
+  var NUM_KEYS = ["Full radiation at level", "Furthest seen (blocks)", "Bearing blur", "Coating cut per layer", "Most coated layers", "Coating counted within", "Counted every (s)"];
+  var NUMS = [120, 2500, 20, 20, 5, 32, 30], EXPONENT = 2.0, DIRTY = true;
+  var HELP = "Totems up to Tier II give off no radiation until their owner reaches:", NOTE = "Protection: every server. Numbers: this server.";
+  function number(i, v){ return i === 2 || i === 3 ? v + "%" : v.toLocaleString("en-US"); }
+  function cap(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function lines(s, max){ var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fitK(s, maxW){ return Math.min(0.75, maxW / Math.max(1, mw(s))); }
+  /** RadiationAdminTab.smallFit: shrunk further when wider, nudged down to keep its middle */
+  function sfit(g, s, x, y, maxW, col){ var k = fitK(s, maxW); return txt(g, s, x, y + (0.75 - k) * 4, col, k); }
+  /** RadiationAdminTab.key: always small text, centred */
+  function rkey(g, x, y, w, h, label, on, col){ fill(g, x, y, w, h, on ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT);
+    var lw = sw(label); small(g, label, x + Math.floor(w / 2) - Math.floor(lw / 2), y + Math.floor((h - 6) / 2), on ? col : OFF); check("Key '" + label + "' fits", lw <= w - 2); }
+  function stepper(g, x, y, value, on){ rkey(g, x, y, 12, 11, "−", on, TQ);
+    fill(g, x + 13, y, BOX_W, 11, DIM); fill(g, x + 14, y + 1, BOX_W - 2, 9, SLOT);
+    var w = Math.min(BOX_W - 2, sw(value)); sfit(g, value, x + 13 + BOX_W / 2 - Math.floor(w / 2), y + 3, BOX_W - 2, GOLD);
+    check("Value '" + value + "' fits its box", sw(value) <= BOX_W - 2);
+    rkey(g, x + 14 + BOX_W, y, 12, 11, "+", on, TQ); }
+  // the ↻ sign (unifont, drawn small on the 13 px REFRESH key)
+  var REFRESH = ["..###.#", ".#...##", "#...###", "#......", "#.....#", ".#...#.", "..###.."];
+
+  function header(g){
+    small(g, "ADMIN", 10, 10, VIO);
+    var rx = AW - 10 - TABS * (TAB_W + 3) - 17; fill(g, rx, 6, 14, TAB_H, TQ); fill(g, rx + 1, 7, 12, TAB_H - 2, SLOT);
+    REFRESH.forEach(function(r, j){ for (var i = 0; i < 7; i++) if (r[i] === "#") fill(g, rx + 4 + i * 0.75, 9 + j * 0.75, 0.75, 0.75, TQ); });
+    check("ADMIN clears the ↻ key", 10 + sw("ADMIN") + 2 <= rx);
+    ["PLAYERS", "SEASON", "SETTINGS", "KITS", "CREDIT", "VAULT", "RADIATION"].forEach(function(l, i){ var tx = AW - 10 - (TABS - i) * (TAB_W + 3) + 3, on = i === 6;
+      fill(g, tx, 6, TAB_W, TAB_H, on ? VIO : DIM); fill(g, tx + 1, 7, TAB_W - 2, TAB_H - 2, on ? BG : SLOT);
+      var k = fitK(l, TAB_W - 4); txt(g, l, tx + TAB_W / 2 - mw(l) * k / 2, 10 + (0.75 - k) * 4, on ? VIO : MUTED, k); check("Tab '" + l + "' readable", k >= 0.6); });
+  }
+
+  function chart(g, cx, cy){
+    fill(g, cx, cy, CHART_W, CHART_H, DIM); fill(g, cx + 1, cy + 1, CHART_W - 2, CHART_H - 2, SLOT);
+    var full = Math.max(1, NUMS[0]), max = Math.max(1, NUMS[1]), innerW = CHART_W - 4, innerH = CHART_H - 4;
+    for (var px = 0; px <= innerW; px++){ var level = 183 * px / innerW, d = ENABLED ? max * Math.pow(Math.min(1, level / full), EXPONENT) : max;
+      fill(g, cx + 2 + px, cy + CHART_H - 2 - Math.round(innerH * d / max), 1, 1, TQ); }
+    small(g, max.toLocaleString("en-US"), cx + 3, cy + 3, MUTED); small(g, "0", cx + 3, cy + CHART_H + 1, MUTED);
+    if (full <= 183){ var fx = cx + 2 + Math.round(innerW * full / 183); for (var yy = cy + 2; yy < cy + CHART_H - 2; yy += 3) fill(g, fx, yy, 1, 1, GOLD);
+      var fl = "level " + full, lx = Math.max(cx + 10, Math.min(cx + CHART_W - sw(fl), fx - Math.floor(sw(fl) / 2))); small(g, fl, lx, cy + CHART_H + 1, GOLD); }
+  }
+
+  function tab(g){
+    txt(g, "NEW-PLAYER PROTECTION", 10, 28, VIO); check("Protection heading fits the left column", 10 + mw("NEW-PLAYER PROTECTION") <= 176);
+    var hy = 40; lines(HELP, Math.round(LEFT_W / 0.75)).forEach(function(l){ small(g, l, 10, hy, MUTED); hy += 8; });
+    check("Help ends above the mode keys", hy - 2 <= 58);
+    ["RANK", "PLAYTIME", "OFF"].forEach(function(l, i){ var kx = 10 + i * 54;
+      if (MODE === i){ fill(g, kx, 58, 50, 12, VIO); fill(g, kx + 1, 59, 48, 10, VIO_FILL); small(g, l, kx + 25 - Math.floor(sw(l) / 2), 61, VIO); }
+      else rkey(g, kx, 58, 50, 12, l, true, TQ); });
+    var at = LADDER.indexOf(RANK);
+    for (var r = 0; r < ROWS && r < LADDER.length; r++){ var ry = LIST_Y + r * ROW_H, on = r === at;
+      fill(g, 10, ry, LEFT_W, ROW_H - 1, on ? VIO : DIM); fill(g, 11, ry + 1, LEFT_W - 2, ROW_H - 3, on ? VIO_FILL : SLOT);
+      var tag = on ? "protection ends here" : r < at ? "protected" : "";
+      sfit(g, cap(LADDER[r]), 15, ry + 3, LEFT_W - 12 - sw(tag), on ? VIO : r < at ? MUTED : TEXT);
+      if (tag) small(g, tag, 6 + LEFT_W - sw(tag), ry + 3, on ? GOLD : MUTED); }
+    small(g, PROTECTED + " owners' totems protected now", 10, 158, TQ);
+    fill(g, 176, 26, 1, 152, DIM);
+    txt(g, "RADIATION", RIGHT_X, 28, VIO); rkey(g, 290, 26, 44, 12, ENABLED ? "ON" : "OFF", true, ENABLED ? TQ : GOLD);
+    check("RADIATION heading clears the ON key", RIGHT_X + mw("RADIATION") + 3 <= 290);
+    for (var i = 0; i < 7; i++){ var y = NUM_Y + i * NUM_GAP; sfit(g, NUM_KEYS[i], RIGHT_X, y + 3, STEP_X - RIGHT_X - 4, TEXT);
+      check("Row '" + NUM_KEYS[i] + "' readable", fitK(NUM_KEYS[i], STEP_X - RIGHT_X - 4) >= 0.6); stepper(g, STEP_X, y, number(i, NUMS[i]), true); }
+    check("The rows end above the chart", NUM_Y + 6 * NUM_GAP + 11 <= CHART_Y);
+    chart(g, CHART_X, CHART_Y);
+    var fls = lines(NOTE, Math.round((SAVE_X - 16) / 0.75)); fls.slice(0, 2).forEach(function(l, i){ small(g, l, 10, (fls.length > 1 ? 187 : 192) + i * 7, MUTED); });
+    rkey(g, SAVE_X, SAVE_Y, SAVE_W, SAVE_H, "SAVE", DIRTY, OK);
+  }
+
+  function drawAll(){ CHECKS.length = 0;
+    var g = frame("a-r", AW + 2 * M, AH + 2 * M, K); if (!g) return; backdrop(g, AW + 2 * M, AH + 2 * M); g.translate(M, M);
+    fill(g, -1, -1, AW + 2, AH + 2, VIO); fill(g, 0, 0, AW, AH, BG);
+    header(g); tab(g);
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".");
+    window.__plateChecks = CHECKS.slice();
+  }
+
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>
+<div class="bsp-band"><b>BSP-Core</b> · The RADIATION tab</div><div class="bsp-cap">New players' totems up to Tier II give off no radiation until their owner reaches a rank or hours of play. Beside it sit the server's radiation numbers, with a chart of how far each level is seen.</div><script>document.documentElement.setAttribute('data-theme','dark');setTimeout(function(){ var el = (document.getElementById('a-r')); if (!el) { document.title = 'NO TARGET'; return; } el.classList.add('bsp-target'); var free = 600 - 44 - 52 - el.getBoundingClientRect().height; if (free > 36) el.style.setProperty('top', (44 + free / 2) + 'px', 'important'); }, 300);</script>

@@ -105,6 +105,16 @@ PLATES = [
      "A player who owns a totem sees the kit greyed, and turned over it says why.", None),
     ("herald_card", "herald_tree_concepts.html", "document.getElementById('cv-a')", "Herald on the tree",
      "Herald sits off Alarm on the tier II ring. Its card carries your own Discord line: LINK gives a code for /link in the BSP Discord.", 700),
+    ("compass_reach", "compass_reach_plate.html", "document.getElementById('c-r')", "Totem Compass reach",
+     "A compass finds rival totems only inside its reach, drawn here from the side: so far each way, so far up or down. WIDER and DEEPER buy the next level, outlined in gold.", 500),
+    ("radiation_strip", "totem_radiation_plate.html", "document.getElementById('plate')", "Totem radiation",
+     "Every tier and upgrade raises your totem's radiation. The bar shows how far away a tracking compass can see it, and every coated layer of shielding round it cuts that distance.", 760),
+    ("radiation_admin", "radiation_admin_plate.html", "document.getElementById('a-r')", "The RADIATION tab",
+     "New players' totems up to Tier II give off no radiation until their owner reaches a rank or hours of play. Beside it sit the server's radiation numbers, with a chart of how far each level is seen.", 740),
+    ("vault_interest", "vault_interest_plate.html", "document.getElementById('v-r')", "Coin Vault interest",
+     "The bigger your hoard, the higher your interest! The INTEREST tab shows your step, what you earn a day and what is waiting, plus a prize roll every 12 hours.", 410),
+    ("factory_repress", "repress_plate.html", "document.getElementById('f-r')", "Coin factories in a team",
+     "In a team each member owns fewer factory slices: 10 on your own, 5 each in a team of 5. Coins pressed outside your team go through again in half the time and come out for the team.", 790),
 ]
 
 CSS = """

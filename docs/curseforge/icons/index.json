@@ -1053,5 +1053,10 @@
     "file": "store_credit.png",
     "name": "Store Credit Ticket",
     "kind": "item"
+  },
+  "totem_radiation_coating": {
+    "file": "totem_radiation_coating.png",
+    "name": "Totem Radiation Coating",
+    "kind": "item"
   }
 }
