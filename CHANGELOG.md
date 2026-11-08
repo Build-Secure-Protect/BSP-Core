@@ -4,7 +4,7 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
-Network protocol 12: every player needs the new client (the Totem Compass screen syncs its range levels). On a network, update every server together.
+Network protocol 12: every player needs the new client (the Totem Compass screen syncs its range levels; the admin panel's RADIATION tab). On a network, update every server together.
 
 ### Added
 - **Totem Radiation Coating.** A tin, crafted 4 at a time from 1 Pure Illyrium Dust, 4 Lead Plates and 4 Tetrium Dust (shown when lead plates exist in the pack).
@@ -26,6 +26,18 @@ Network protocol 12: every player needs the new client (the Totem Compass screen
   - In the outer half of a totem's seen-at distance the needle points at a spot beside the totem, off by up to a fifth of the distance at the very edge and exact by halfway. The spot's direction holds for a day (UTC), so bearings taken from two places cross on that spot, not on the totem.
   - The compass works from the totem ledger and loads no chunk. A totem whose upgrade levels were never kept (not loaded since 1.10.1) counts its tier only until it next loads.
   - Settings in the new server config section `totemRadiation`: `enabled`, `fullLevel` 120, `maxSeenAt` 2,500, `exponent` 2, `blurFraction` 0.2, `layerCut` 0.2, `maxLayers` 4, `checkRadius` 32, `checkSeconds` 30 (the last four are for the Totem Radiation Coating).
+- **New players' totems give off no totem radiation at first.** While a totem's owner has not reached what the admins set, their totems up to Tier II give off no totem radiation, so no compass finds them.
+  - Admins choose RANK (a BSP-RankUp rank or any higher one; Sentinel to start), PLAYTIME (24 hours to start, counted as the spawn shops count it: RankUp's playtime, else Minecraft's own statistic) or OFF.
+  - On a network the setting is one record for every server (the `state` table, key `radiation_protection`).
+  - Each player's highest rank and most playtime are remembered network-wide for the season in the new table `protection_seen` (by player and season). They are read when the player logs in and every minute, from RankUp's record for offline owners of totems placed here (without RankUp, from Minecraft's own statistics file). The record only goes up and starts empty each season, so a player who reaches the rank on one server is no longer protected on any.
+  - Without BSP-RankUp, or with a rank that is not on its ladder, rank mode protects nobody and the log says so once.
+  - **The admin panel's RADIATION tab** (a seventh tab; the tabs are narrower and the heading reads ADMIN) sets it:
+    - on the left, RANK / PLAYTIME / OFF, then RankUp's ladder, lowest first (click the rank that ends the protection; the lower ranks are marked protected), or the hours played, and how many owners of totems placed here are protected now (or, in red, that the chosen rank is not on RankUp's ladder);
+    - on the right, this server's totem radiation settings with − and + (shift for bigger steps): on/off, the level for full radiation, the furthest distance, bearing blur, the coating's cut per layer, most layers, how far out and how often it is counted, with a chart of how far each level is seen that redraws as they change;
+    - SAVE stores this server's numbers in its config, and the protection for every server only when it was changed; on a network it answers once the database has the protection (if it cannot, the protection stays as it was);
+    - moderators see it with the keys greyed out, and the heading reads VIEW; a rank can only be chosen from RankUp's ladder.
+  - The admin panel's heading is short to make room for seven tabs: ADMIN, VIEW for moderators, KIT while a kit is edited.
+  - **The totem's screen shows it.** The strip's distances come from the server with the totem, so a change on the RADIATION tab shows at once for every player. While a totem is protected, its radiation strip keeps the level, empties the bar and reads "PROTECTED until the owner reaches Sentinel" (or "PROTECTED until 24 h of playtime (13 h 20 m played)"), with "New players' totems give off no totem radiation." under it. Hovering says the protection covers totems up to Tier II and what ends it. The totem works this out once a second and sends it with its block update (nothing is saved).
 - **The totem's screen shows its totem radiation** in a strip along the bottom (the screen is 32 pixels taller, clear of the admin keys), on every tab:
   - RADIATION and the level;
   - a bar of how far away a tracking compass sees the totem, out of `maxSeenAt`, marked every fifth (0 to 2,500 by default), with a gold notch at the distance and a dim stretch for what the coating takes away;
@@ -37,6 +49,7 @@ Network protocol 12: every player needs the new client (the Totem Compass screen
 - **The Totem Compass screen has a REACH panel** under the cooldown (the screen is 64 pixels taller). It draws the compass's reach from the side: the holder in the middle, a turquoise box as far across and as far up or down as it finds rivals, the next level of each as a dotted gold outline, and both distances written in. WIDER and DEEPER buy the next level of each, with the price under each key (red when you have too few coins; hovering says what the next level reaches). While tracking finds no rival within reach, the panel's heading says "No rival totem within range" in red. The compass's tooltip gains a line with its reach.
 - **A Totem Compass shows its range levels on its icon** in the hotbar, inventory and containers: a turquoise pip per Across level along the bottom edge and a gold pip per Up or down level up the right edge, drawn over the item like a durability bar (not on the compass in the hand). A new compass shows none.
 - Main totem: an entry for a totem no longer standing is never counted as anyone's main totem and never has its chunks loaded, even before the next clean-up (a region that was reset is not generated again at start).
+- Guide book, Totem Radiation: a "New players" page (a new player's totems up to Tier II give off no radiation until the rank or hours the server has chosen; the totem's screen says what ends it).
 - Guide book: a Totem Radiation entry under the totem (what it is, how far each level is seen, the blurred bearing) and a Totem Radiation Coating entry under Radiation (using it, layers, the recipe); the compass's "Reading the compass" page names radiation. JEI and EMI show an info page for the tin.
 - Guide book, The Totem Compass: the first page says the compass finds rivals within its reach; two new pages, "Reach" (the two ladders, their tops, upgrades staying with the compass) and "Reading the compass" (the spinning needle, the pips).
 

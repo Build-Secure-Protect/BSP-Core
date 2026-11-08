@@ -186,6 +186,12 @@ Far from a totem the needle points beside it, and closes in as you get nearer, s
 
 Your totem's screen shows its radiation along the bottom. Totem Radiation Coating on shielding round it weakens it.
 
+**Page 4: New players**
+
+A new player's totems up to Tier II give off no totem radiation at all, so no compass finds them, until the player reaches the rank or the hours of play the server has chosen.
+
+The bottom of the totem's screen says what ends it.
+
 ## Decoy Totems
 
 **Page 1**  `[item shown] decoy_totem`

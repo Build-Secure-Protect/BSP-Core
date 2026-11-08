@@ -1,0 +1,280 @@
+<title>Radiation Admin Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: three mock-ups of the admin panel's RADIATION tab at GUI pixel size with the game's font (ascii.png), plus the totem screen's strip while a totem is protected. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#7a4fd6; --red:#c8322a;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#b58cff; --red:#ff6b5c; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#b58cff; --red:#ff6b5c; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:26px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+section{ display:flex; flex-direction:column; gap:12px; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b, .card p b, .note b{ color:var(--fg); font-weight:600; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:78ch; }
+.stack{ display:flex; flex-direction:column; gap:12px; }
+canvas.gui{ width:100%; max-width:780px; height:auto; display:block; background:#10151c; border:1px solid #2a2f3a; image-rendering:pixelated; }
+canvas.gui.strip{ max-width:780px; }
+.note{ font-size:13px; color:var(--muted); border-left:3px solid var(--acc); padding:4px 10px; max-width:80ch; margin:0; }
+.checks{ font:12px var(--mono); color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <h1>Radiation Admin Concepts</h1>
+  <p class="lede">Three ways to lay out the admin panel's new <b>RADIATION</b> tab. Each has the new-player protection on top ("Protection ends at": a rank, playtime, or off) and the radiation numbers below it, with SAVE. The panel stays 344 by 210. Seven tabs need narrower tabs (37 pixels) and a short heading, the same in all three.</p>
+  <p class="note">The example network uses a RankUp ladder of <b>Newcomer, Scout, Sentinel, Guardian, Warden, Champion</b>, with Sentinel chosen. 7 of the 41 players who own placed totems are protected right now. The settings shown are the defaults.</p>
+
+  <section>
+    <h2>The RADIATION tab</h2>
+    <div class="stack">
+      <div class="card"><h3>A. Two columns</h3>
+        <p>Protection on the left: three keys (RANK, PLAYTIME, OFF), then the ladder as a list where the chosen rank is lit in violet and the ranks above it are marked as unprotected. With PLAYTIME the list gives way to an hours box with −/+. On the right are the radiation numbers, one row each with −/+. SAVE is at the bottom right, with "Shared by every server" beside it.</p>
+        <p><b>Updated with your note:</b> the radiation on/off key sits beside the RADIATION heading. The seven number rows are a little closer together, and under them is B's chart of how far each level is seen. It redraws as you change the numbers; the dotted gold line marks the full-radiation level.</p>
+        <canvas class="gui" id="a-a"></canvas>
+      </div>
+      <div class="card"><h3>B. A sentence and a ladder</h3>
+        <p>The top reads as a sentence: "Totems give off no radiation until their owner reaches <b>Sentinel</b>", with RANK / PLAYTIME / OFF beside it. Under it the ladder runs left to right as rungs, each with how many totem owners stand on it. Protected rungs are turquoise, and a gold line marks where protection lifts. Below that, the numbers sit in two short columns next to a small chart of how far each level is seen, which redraws as you change them.</p>
+        <canvas class="gui" id="a-b"></canvas>
+      </div>
+      <div class="card"><h3>C. Three cards</h3>
+        <p>Three cards side by side: <b>PROTECTION</b> (the three keys, the chosen rank with ‹ › to step through the ladder or the hours box, and the protected count), <b>DISTANCE</b> (full level, furthest, blur, with a mini curve) and <b>COATING</b> (cut per layer, most layers, how far out, how often). SAVE runs along the bottom.</p>
+        <canvas class="gui" id="a-c"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The totem's strip while protected (all three)</h2>
+    <p class="lede">The bottom strip on the totem's screen while its owner is protected: the level stays, the bar is empty, and the line says what ends the protection. Hovering explains: "New players' totems give off no totem radiation. Yours start at Sentinel." With playtime it reads "until 24 h of playtime (13 h 20 m played)".</p>
+    <canvas class="gui strip" id="s-rank"></canvas>
+    <canvas class="gui strip" id="s-play"></canvas>
+  </section>
+
+  <p class="checks" id="checks"></p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (2 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (2 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 4 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+  // ------------------------------------------------------------ item pictures (16 x 16 stand-ins: o outline, d dark, b body, l light)
+  var PAT = {
+    gem: ["......oooo......", "....oollbbo.....", "...olllbbbdo....", "..ollbbbbbbdo...", ".oolbbbbbbbddoo.", "ollbbbbbbbbbbddo", ".obbbbbbbbbbddo.", "..obbbbbbbbddo..",
+          "...obbbbbbddo...", "....obbbbddo....", ".....obbddo.....", "......obdo......", ".......oo......."],
+    ingot: [".....oooooooooo.", "....ollllllllbo.", "...olbbbbbbbbdo.", "..oooooooooooddo", "..olllllllllodo.", "..obbbbbbbbbodo.", "..obbbbbbbbbdo..", "..oddddddddddo..", "..oooooooooooo.."],
+    apple: ["........oo......", ".......od.......", "....ooo.dooo....", "...ollbbbbbbo...", "..olllbbbbbbdo..", "..olbbbbbbbbdo..", "..obbbbbbbbbdo..", "..obbbbbbbbddo..",
+            "..obbbbbbbbddo..", "...obbbbbbddo...", "...obbbbbddo....", "....oobbddoo....", "......oooo......"],
+    star: [".......oo.......", ".......olo......", "......olbo......", "oooooolbbdoooooo", ".olllbbbbbbbddo.", "..olbbbbbbbbdo..", "...obbbbbbbdo...", "...obbbbbbbbo...",
+           "..obbbdoobbbdo..", "..obbdo..obbdo..", ".obdo.....obdo..", ".oo.........oo.."],
+    totem: ["......oooo......", ".....olllbo.....", ".....olbbbo.....", "..ooo.obbdo.ooo.", "..ollooooooolbo.", "..olbbbbbbbbbbo.", "...oobbbbbbdoo..", ".....obbbbdo....",
+            ".....obbbbdo....", "....obbbbbbdo...", "....obbbbbbdo...", ".....obbbbdo....", "......oooo......"],
+    pellet: ["......oooo......", ".....ollbbo.....", "....ollbbbdo....", "....olbbbbdo....", "....obbbbbdo....", "....obbbbddo....", ".....obbddo.....", "......oooo......"],
+    wing: ["..oooo....oooo..", ".ollbbo..obbllo.", ".olbbbo..obbblo.", "olbbbdo..odbbblo", "obbbbdo..odbbbbo", "obbbddo..oddbbbo", "obbbdo....odbbbo", "obbddo....oddbbo",
+           "obbdo......odbbo", "obdo........odbo", "odo..........odo", "oo............oo"],
+    coin: [".....oooooo.....", "....ollllllo....", "...ollbbbbbdo...", "..olbbbbbbbbdo..", "..olbbbllbbbdo..", "..olbbbllbbbdo..", "..olbbbbbbbbdo..", "..obbbbbbbbbdo..",
+           "...obbbbbbbdo...", "....oddddddo....", ".....oooooo....."]
+  };
+  function icon(g, kind, col, x, y, k){ k = k || 1; var rows = PAT[kind], top = Math.floor((16 - rows.length) / 2);
+    var pal = { o: shade(col, -0.72), d: shade(col, -0.35), b: col, l: shade(col, 0.45) };
+    for (var r = 0; r < rows.length; r++) for (var c = 0; c < 16; c++){ var ch = rows[r].charAt(c); if (ch && ch !== ".") fill(g, x + c * k, y + (r + top) * k, k, k, pal[ch]); } }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+
+
+  // ------------------------------------------------------------ the admin panel (AdminScreen: 344 x 210, violet frame)
+  var AW = 344, AH = 210, MX = 12, MY = 8;
+  var LADDER = [["Newcomer", 12], ["Scout", 9], ["Sentinel", 8], ["Guardian", 6], ["Warden", 4], ["Champion", 2]], CHOSEN = 2;
+  var NUMS = [["Radiation", "ON"], ["Full radiation at level", "120"], ["Furthest seen (blocks)", "2,500"], ["Bearing blur", "20%"],
+              ["Coating cut per layer", "20%"], ["Most coated layers", "4"], ["Coating counted within", "32"], ["Counted every (s)", "30"]];
+  function num(n){ return n >= 1000 ? Math.floor(n / 1000) + "," + String(n % 1000).padStart(3, "0") : String(n); }
+  function panel(id){
+    var g = frame(id, AW + MX * 2, AH + MY * 2, 2); if (!g) return null;
+    fill(g, 0, 0, AW + MX * 2, AH + MY * 2, "#1b2028"); g.translate(MX, MY);
+    fill(g, -1, -1, AW + 2, AH + 2, VIO); fill(g, 0, 0, AW, AH, BG);
+    var tabs = ["PLAYERS", "SEASON", "SETTINGS", "KITS", "CREDIT", "VAULT", "RADIATION"], TW = 37;
+    var refreshX = AW - 10 - tabs.length * (TW + 3) - 17;
+    small(g, "ADMIN", 10, 10, VIO); check("Heading fits before ↻", 10 + sw("ADMIN") + 3 <= refreshX);
+    key(g, refreshX, 6, 14, 13, "r", TQ, true);
+    tabs.forEach(function(l, i){ var tx = AW - 10 - (tabs.length - i) * (TW + 3) + 3, on = i === 6;
+      fill(g, tx, 6, TW, 13, on ? VIO : DIM); fill(g, tx + 1, 7, TW - 2, on ? 12 : 11, on ? BG : SLOT);
+      var k = Math.min(0.75, (TW - 4) / mw(l)); txt(g, l, tx + Math.round(TW / 2 - mw(l) * k / 2), 10 + Math.round((0.75 - k) * 4), on ? VIO : MUTED, k);
+      check("Tab '" + l + "' readable in " + TW + " px", k >= 0.6); });
+    return g;
+  }
+  function stepper(g, x, y, value, w){ key(g, x, y, 12, 11, "−", TQ, true); fill(g, x + 13, y, w, 11, DIM); fill(g, x + 14, y + 1, w - 2, 9, SLOT);
+    small(g, value, x + 13 + Math.round(w / 2) - Math.round(sw(value) / 2), y + 3, GOLD); key(g, x + 14 + w, y, 12, 11, "+", TQ, true);
+    check("Value '" + value + "' fits its box", sw(value) <= w - 2); }
+  function modeKeys(g, x, y, w, gap, vertical){
+    ["RANK", "PLAYTIME", "OFF"].forEach(function(l, i){ var kx = vertical ? x : x + i * (w + gap), ky = vertical ? y + i * 14 : y;
+      if (i === 0){ fill(g, kx, ky, w, 12, VIO); fill(g, kx + 1, ky + 1, w - 2, 10, "#2a2140"); small(g, l, kx + Math.round(w / 2) - Math.round(sw(l) / 2), ky + 3, VIO); }
+      else key(g, kx, ky, w, 12, l, TQ, true); });
+  }
+  function saveRow(g){ small(g, "Shared by every server on the network", 10, 192, MUTED);
+    key(g, AW - 10 - 64, 186, 64, 16, "SAVE", OK, true); check("Note clears SAVE", 10 + sw("Shared by every server on the network") + 6 <= AW - 74); }
+
+  // A: two columns
+  function conceptA(){
+    var g = panel("a-a"); if (!g) return;
+    txt(g, "NEW-PLAYER PROTECTION", 10, 28, VIO); check("A heading fits left column", mw("NEW-PLAYER PROTECTION") <= 160);
+    var help = split("Totems give off no radiation until their owner reaches:", 160, 0.75); help.forEach(function(l, i){ small(g, l, 10, 40 + i * 8, MUTED); });
+    modeKeys(g, 10, 58, 50, 4, false);
+    LADDER.forEach(function(r, i){ var ry = 76 + i * 13, on = i === CHOSEN, above = i > CHOSEN;
+      fill(g, 10, ry, 158, 12, on ? VIO : DIM); fill(g, 11, ry + 1, 156, 10, on ? "#2a2140" : SLOT);
+      small(g, r[0], 15, ry + 3, on ? VIO : above ? TEXT : MUTED);
+      smallR(g, on ? "protection ends here" : i < CHOSEN ? "protected" : "", 164, ry + 3, on ? GOLD : MUTED); });
+    small(g, "7 owners' totems protected now", 10, 158, TQ);
+    fill(g, 176, 26, 1, 152, DIM);
+    txt(g, "RADIATION", 184, 28, VIO); key(g, 290, 26, 44, 12, "ON", TQ, true);
+    check("A heading clears the ON key", 184 + mw("RADIATION") + 4 <= 290);
+    NUMS.slice(1).forEach(function(n, i){ var ry = 42 + i * 14; fit(g, n[0], 184, ry + 3, TEXT, 92, "A label"); stepper(g, 280, ry, n[1], 28); });
+    // the chart: how far each level is seen with these numbers (the dotted gold line is the full-radiation level)
+    var cx = 184, cy = 140, cw = 150, ch = 36; inset(g, cx, cy, cw, ch);
+    for (var L = 0; L <= 183; L++){ var d = Math.min(2500, 2500 * Math.pow(L / 120, 2)), px = cx + 2 + Math.round((cw - 4) * L / 183), py = cy + ch - 2 - Math.round((ch - 4) * d / 2500); fill(g, px, py, 1, 1, TQ); }
+    var fx = cx + 2 + Math.round((cw - 4) * 120 / 183); for (var yy = cy + 2; yy < cy + ch - 2; yy += 3) fill(g, fx, yy, 1, 1, GOLD);
+    small(g, "2,500", cx + 3, cy + 3, MUTED); small(g, "level 120", fx - sw("level 120") - 3, cy + 3, GOLD);
+    small(g, "0", cx + 3, cy + ch + 1, MUTED); smallR(g, "level 183", cx + cw - 1, cy + ch + 1, MUTED);
+    check("A rows end above the chart", 42 + 6 * 14 + 11 <= cy - 2);
+    check("A chart's labels end above SAVE", cy + ch + 1 + 6 <= 186);
+    check("A chart labels clear each other", cx + 3 + sw("2,500") + 3 <= fx - sw("level 120") - 3);
+    saveRow(g);
+  }
+
+  // B: a sentence and a ladder
+  function conceptB(){
+    var g = panel("a-b"); if (!g) return;
+    var s1 = "Totems give off no radiation until their owner reaches";
+    small(g, s1, 10, 30, TEXT); txt(g, "Sentinel", 10, 39, GOLD); small(g, "or a higher rank.", 10 + mw("Sentinel") + 4, 41, TEXT);
+    modeKeys(g, 186, 41, 48, 2, false);
+    check("B sentence's first line ends above the keys", 30 + 7 <= 41);
+    check("B sentence's second line ends before the keys", 10 + mw("Sentinel") + 4 + sw("or a higher rank.") + 4 <= 186);
+    var rx = 10, rw = 52, ry = 58;
+    LADDER.forEach(function(r, i){ var x = rx + i * (rw + 2), prot = i < CHOSEN, on = i === CHOSEN;
+      fill(g, x, ry, rw, 26, on ? VIO : prot ? "#0b8f78" : DIM); fill(g, x + 1, ry + 1, rw - 2, 24, on ? "#2a2140" : prot ? "#0d2a26" : SLOT);
+      fit(g, r[0], x + 3, ry + 4, on ? VIO : prot ? TQ : TEXT, rw - 6, "B rung"); small(g, r[1] + " owners", x + 3, ry + 15, MUTED); });
+    fill(g, rx + CHOSEN * (rw + 2) - 2, ry - 3, 1, 32, GOLD); small(g, "protected", rx, ry + 30, TQ); smallR(g, "radiate", 334, ry + 30, TEXT);
+    check("B ladder fits", rx + LADDER.length * (rw + 2) - 2 <= 334);
+    var cols = [[0, 1, 2, 3], [4, 5, 6, 7]];
+    cols.forEach(function(c, ci){ c.forEach(function(k, j){ var x = 10 + ci * 112, y = 98 + j * 20, n = NUMS[k];
+      fit(g, n[0], x, y, TEXT, 104, "B label"); if (k === 0) key(g, x, y + 8, 50, 11, n[1], TQ, true); else stepper(g, x, y + 8, n[1], 28); }); });
+    // the chart: seen-at distance by level
+    var cx = 236, cy = 104, cw = 98, ch = 64; inset(g, cx, cy, cw, ch);
+    for (var L = 0; L <= 183; L++){ var d = Math.min(2500, 2500 * Math.pow(L / 120, 2)), px = cx + 2 + Math.round((cw - 4) * L / 183), py = cy + ch - 2 - Math.round((ch - 4) * d / 2500); fill(g, px, py, 1, 1, TQ); }
+    var fx = cx + 2 + Math.round((cw - 4) * 120 / 183); for (var yy = cy + 2; yy < cy + ch - 2; yy += 3) fill(g, fx, yy, 1, 1, GOLD);
+    small(g, "level", cx + cw - sw("level") - 2, cy + ch + 2, MUTED); small(g, "2,500", cx + 3, cy + 3, MUTED);
+    saveRow(g);
+  }
+
+  // C: three cards
+  function conceptC(){
+    var g = panel("a-c"); if (!g) return;
+    var cw = 104, gap = 6, cy = 26, chh = 152;
+    function card(i, title){ var x = 10 + i * (cw + gap); fill(g, x, cy, cw, chh, DIM); fill(g, x + 1, cy + 1, cw - 2, chh - 2, "#0e1218"); txt(g, title, x + 5, cy + 5, VIO); return x; }
+    var x0 = card(0, "PROTECTION");
+    small(g, "Ends at", x0 + 5, cy + 19, MUTED);
+    modeKeys(g, x0 + 5, cy + 28, 94, 2, true);
+    fill(g, x0 + 5, cy + 74, 94, 16, VIO); fill(g, x0 + 6, cy + 75, 92, 14, "#2a2140");
+    key(g, x0 + 6, cy + 76, 12, 12, "‹", TQ, true); key(g, x0 + 86, cy + 76, 12, 12, "›", TQ, true); txtC(g, "Sentinel", x0 + 52, cy + 78, GOLD);
+    small(g, "rank 3 of 6, and up", x0 + 5, cy + 94, MUTED);
+    var pl = split("7 owners' totems protected now", 94, 0.75); pl.forEach(function(l, i){ small(g, l, x0 + 5, cy + 110 + i * 8, TQ); });
+    var x1 = card(1, "DISTANCE");
+    [[1, 0], [2, 1], [3, 2]].forEach(function(p){ var y = cy + 20 + p[1] * 24, n = NUMS[p[0]]; fit(g, n[0], x1 + 5, y, TEXT, 94, "C label"); stepper(g, x1 + 5, y + 9, n[1], 66); });
+    var mx = x1 + 5, my = cy + 96, mwid = 94, mh = 46; inset(g, mx, my, mwid, mh);
+    for (var L = 0; L <= 183; L++){ var d = Math.min(2500, 2500 * Math.pow(L / 120, 2)); fill(g, mx + 2 + Math.round((mwid - 4) * L / 183), my + mh - 2 - Math.round((mh - 4) * d / 2500), 1, 1, TQ); }
+    var x2 = card(2, "COATING");
+    [[4, 0], [5, 1], [6, 2], [7, 3]].forEach(function(p){ var y = cy + 20 + p[1] * 24, n = NUMS[p[0]]; fit(g, n[0], x2 + 5, y, TEXT, 94, "C label"); stepper(g, x2 + 5, y + 9, n[1], 66); });
+    key(g, x2 + 5, cy + 120, 94, 12, "RADIATION ON", TQ, true);
+    check("C cards fit", 10 + 3 * cw + 2 * gap <= 334);
+    saveRow(g);
+  }
+
+  // ------------------------------------------------------------ the totem's strip while protected
+  function strip(id, line, sub){
+    var SW = 326, SH = 34, g = frame(id, SW + 16, SH + 12, 2); if (!g) return;
+    fill(g, 0, 0, SW + 16, SH + 12, "#1b2028"); g.translate(8, 6);
+    fill(g, -1, -1, SW + 2, SH + 1, TQ); fill(g, 0, 0, SW, SH, BG);
+    fill(g, 10, 1, SW - 20, 1, DIM);
+    small(g, "RADIATION", 10, 10, MUTED); txt(g, "27", 10 + sw("RADIATION") + 4, 8, GOLD);
+    fill(g, 74, 8, 224, 8, DIM); fill(g, 75, 9, 222, 6, SLOT);
+    small(g, line, 78, 10, TQ); check("Strip line fits the bar", sw(line) <= 218);
+    small(g, sub, 74, 21, MUTED);
+    key(g, 305, 7, 11, 11, "i", TQ, true);
+  }
+
+  function drawAll(){ CHECKS.length = 0;
+    conceptA(); conceptB(); conceptC();
+    strip("s-rank", "PROTECTED until the owner reaches Sentinel", "New players' totems give off no totem radiation.");
+    strip("s-play", "PROTECTED until 24 h of playtime (13 h 20 m played)", "New players' totems give off no totem radiation.");
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".");
+    window.__admChecks = CHECKS.slice(); }
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>

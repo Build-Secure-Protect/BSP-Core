@@ -18,6 +18,8 @@ public final class BSPNetwork {
      * 9: the Coin Factory screen's synced values carry each lane's press speed factor with Overclock.
      * 10: store credit on the shop and Land Office screens ({@link CreditStripPacket}, {@link CreditTogglePacket}) its stamp ({@link CreditNoticePacket}) and the admin panel's CREDIT tab ({@link CreditAdminPacket}, {@link CreditTicketsPacket}, {@link CreditAdminActionPacket}).
      * 11: the Coin Vault screen's synced values carry the waiting vault prize rolls; the admin panel's VAULT tab ({@link VaultPrizeAdminPacket}, {@link VaultPrizeEditPacket}).
+     * 12: the Totem Compass screen syncs its range levels and whether tracking found no rival in reach; the admin panel's RADIATION
+     *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}).
      */
     private static final String PROTOCOL = "12";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
@@ -273,6 +275,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(VaultPrizeEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(VaultPrizeEditPacket::encode).decoder(VaultPrizeEditPacket::decode)
                 .consumerMainThread(VaultPrizeEditPacket::handle).add();
+        CHANNEL.messageBuilder(RadiationAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RadiationAdminPacket::encode).decoder(RadiationAdminPacket::decode)
+                .consumerMainThread(RadiationAdminPacket::handle).add();
+        CHANNEL.messageBuilder(RadiationEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RadiationEditPacket::encode).decoder(RadiationEditPacket::decode)
+                .consumerMainThread(RadiationEditPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

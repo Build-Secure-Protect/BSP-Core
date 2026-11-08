@@ -523,6 +523,90 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     /** The coated layers last counted round this totem; sent to clients for the radiation readout, never saved (counted again at load). */
     private int coatedLayers;
 
+    /**
+     * New-player protection as this totem's screen shows it: -1 while it radiates, else what ends it (the {@link NewPlayerProtection.Mode}
+     * ordinal), with the rank, the hours and the owner's playtime so far (minutes). Worked out once a second; never saved.
+     */
+    private int protMode = -1, protHours;
+    private String protRank = "";
+    private long protPlayed;
+    /**
+     * The radiation readout as the server works it out (clients hold the server config only as of their login): radiation on, the
+     * furthest distance, how far this totem would be seen without coating and is seen now, and the coated layers that count.
+     */
+    private boolean radOn = true;
+    private int radMax = 2500, radBare, radSeen, radLayers;
+
+    public boolean radiationOn() {
+        return radOn;
+    }
+
+    public int radiationMax() {
+        return radMax;
+    }
+
+    public int radiationBare() {
+        return radBare;
+    }
+
+    public int radiationSeen() {
+        return radSeen;
+    }
+
+    public int radiationLayers() {
+        return radLayers;
+    }
+
+    public int protectionMode() {
+        return protMode;
+    }
+
+    public String protectionRank() {
+        return protRank;
+    }
+
+    public int protectionHours() {
+        return protHours;
+    }
+
+    public long protectionPlayedMinutes() {
+        return protPlayed;
+    }
+
+    /** Works out whether the owner's protection hides this totem, and tells the clients when that (or the playtime shown) changes. */
+    private void protectionTick(ServerLevel level) {
+        int mode = -1;
+        String rank = "";
+        int hours = 0;
+        long played = 0;
+        if (owner != null && TotemRadiation.enabled() && getTier() <= NewPlayerProtection.MAX_TIER) {
+            NewPlayerProtection p = NewPlayerProtection.get(level.getServer());
+            if (p.protects(level.getServer(), owner.uuid())) {
+                mode = p.mode.ordinal();
+                rank = p.rank;
+                hours = p.hours;
+                played = p.minutes(owner.uuid());
+            }
+        }
+        boolean on = TotemRadiation.enabled();
+        int max = Math.max(1, BSPConfig.getOr(BSPConfig.RADIATION_MAX_SEEN, 2500)), radLevel = radiationLevel(), layers = TotemRadiation.countedLayers(coatedLayers);
+        int bare = on ? Math.min(max, TotemRadiation.bareSeenAt(radLevel)) : 0;
+        int seen = !on || owner == null || mode >= 0 ? 0 : Math.min(max, TotemRadiation.seenAt(radLevel, coatedLayers));
+        if (mode != protMode || hours != protHours || played != protPlayed || !rank.equals(protRank)
+                || on != radOn || max != radMax || bare != radBare || seen != radSeen || layers != radLayers) {
+            protMode = mode;
+            protRank = rank;
+            protHours = hours;
+            protPlayed = played;
+            radOn = on;
+            radMax = max;
+            radBare = bare;
+            radSeen = seen;
+            radLayers = layers;
+            sync();
+        }
+    }
+
     /** Layers of Totem Radiation Coating round this totem, as last counted (on a client, as last synced). */
     public int coatedLayers() {
         return coatedLayers;
@@ -585,6 +669,7 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             tripwireExpire(level);
         }
         if (level.getGameTime() % 20 == 0) {
+            protectionTick(level);
             healingTick(level);
             intruderTick(level);
             tripwireCheck(level, level.players());
@@ -1234,6 +1319,19 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (tag.contains("CoatedLayers")) { // only in a sync to a client; a world load counts again at the first tick
             coatedLayers = tag.getInt("CoatedLayers");
         }
+        if (tag.contains("ProtMode")) { // likewise: the server works it out again within a second
+            protMode = tag.getInt("ProtMode");
+            protRank = tag.getString("ProtRank");
+            protHours = tag.getInt("ProtHours");
+            protPlayed = tag.getLong("ProtPlayed");
+        }
+        if (tag.contains("RadMax")) {
+            radOn = tag.getBoolean("RadOn");
+            radMax = tag.getInt("RadMax");
+            radBare = tag.getInt("RadBare");
+            radSeen = tag.getInt("RadSeen");
+            radLayers = tag.getInt("RadLayers");
+        }
         access = TotemAccess.load(tag);
         teammates.clear();
         if (tag.contains("Teammates")) {
@@ -1262,6 +1360,15 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
         tag.putInt("CoatedLayers", coatedLayers);
+        tag.putInt("ProtMode", protMode);
+        tag.putString("ProtRank", protRank);
+        tag.putInt("ProtHours", protHours);
+        tag.putLong("ProtPlayed", protPlayed);
+        tag.putBoolean("RadOn", radOn);
+        tag.putInt("RadMax", radMax);
+        tag.putInt("RadBare", radBare);
+        tag.putInt("RadSeen", radSeen);
+        tag.putInt("RadLayers", radLayers);
         if (owner != null && level instanceof ServerLevel sl && com.mrgregles.bsp_core.team.Teams.enabled()) {
             net.minecraft.nbt.ListTag mates = new net.minecraft.nbt.ListTag();
             for (UUID m : com.mrgregles.bsp_core.api.BspTeams.teammates(sl.getServer(), owner.uuid())) {

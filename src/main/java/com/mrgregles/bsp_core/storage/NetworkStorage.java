@@ -399,6 +399,22 @@ public final class NetworkStorage {
                 case "steal_watch" -> refreshStealWatches(srv);
                 case "credit" -> com.mrgregles.bsp_core.credit.CreditSync.heard(srv, payload);
                 case "vault_prizes" -> vaultPrizesReload(null);
+                case "protection" -> protectionSettingsReload(null);
+                case "protection_seen" -> {
+                    String[] parts = payload.split(":");
+                    if (parts.length == 4) {
+                        try {
+                            var p = com.mrgregles.bsp_core.totem.NewPlayerProtection.get(srv);
+                            int season = com.mrgregles.bsp_core.totem.NewPlayerProtection.currentSeason(srv);
+                            p.ensureSeason(season);
+                            if (Integer.parseInt(parts[1]) == season) {
+                                p.raise(UUID.fromString(parts[0]), Integer.parseInt(parts[2]), Long.parseLong(parts[3]));
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                            // a malformed message: the catch-up read brings it
+                        }
+                    }
+                }
                 case "kit" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.kit.KitSync.apply(srv, List.of(), payload.substring(1));
@@ -489,6 +505,9 @@ public final class NetworkStorage {
                 MinecraftServer forPrizes = server;
                 // the network's prize table replaces this server's; a network without one yet takes this server's first
                 onServer(() -> vaultPrizesReload(com.mrgregles.bsp_core.vault.VaultPrizes.get(forPrizes).snbt()));
+                // the network's protection settings replace this server's (a network without any takes this server's), and its record
+                onServer(() -> protectionSettingsReload(com.mrgregles.bsp_core.totem.NewPlayerProtection.get(forPrizes).settingsTag().toString()));
+                protectionSeenReload();
                 com.mrgregles.bsp_core.credit.CreditSync.load(server, migrated);
                 s.marketEnsurePot();
                 orders = newOrders(s); // before the market: down() turns false with the market, and an order then must find its store
@@ -946,6 +965,8 @@ public final class NetworkStorage {
             kitReload(null, false); // never prunes: a kit written here a moment ago may not be in the read yet
             shopReload(null);
             vaultPrizesReload(null);
+            protectionSettingsReload(null);
+            protectionSeenReload();
             com.mrgregles.bsp_core.credit.CreditSync.catchUp(server);
         }
         long due = retryAtMs;
@@ -2635,6 +2656,97 @@ public final class NetworkStorage {
             }
             boolean prune = pruneFull && migratedHere; // before /bsp storage migrate, kits only this server has are kept for it to copy up
             onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune));
+        });
+    }
+
+    // ------------------------------------------------------------------ new-player protection from totem radiation
+
+    private static final String PROTECTION_KEY = "radiation_protection";
+
+    /** Writes the protection settings (SNBT) to the shared state and tells the other servers; {@code done} hears whether it was stored (server thread). */
+    public static void protectionSettingsWrite(String snbt, java.util.function.Consumer<Boolean> done) {
+        MySqlStore s = store;
+        if (s == null) {
+            done.accept(false);
+            return;
+        }
+        worker().execute(() -> {
+            boolean ok;
+            try {
+                s.putState(Map.of(PROTECTION_KEY, snbt), false);
+                publish("protection", "");
+                ok = true;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not write the new-player protection settings: {}", e.toString());
+                ok = false;
+            }
+            boolean stored = ok;
+            onServer(() -> done.accept(stored));
+        });
+    }
+
+    /** Reads the network's protection settings into this server's; with {@code upload}, a network without any takes these first. */
+    public static void protectionSettingsReload(@Nullable String upload) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        long started = System.currentTimeMillis();
+        worker().execute(() -> {
+            String v;
+            try {
+                if (upload != null) {
+                    s.putState(Map.of(PROTECTION_KEY, upload), true);
+                }
+                v = s.readStateKey(PROTECTION_KEY);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the new-player protection settings: {}", e.toString());
+                return;
+            }
+            if (v != null && !v.isEmpty()) {
+                onServer(() -> {
+                    if (started >= com.mrgregles.bsp_core.totem.NewPlayerProtection.lastLocalSaveMs) { // a read begun before a save here is older than it
+                        com.mrgregles.bsp_core.totem.NewPlayerProtection.get(srv).applySnbt(v);
+                    }
+                });
+            }
+        });
+    }
+
+    /** Raises what was seen of a player in the shared table and tells the other servers at once. */
+    public static void protectionRaise(UUID id, int season, int rung, long minutes) {
+        async("record a player's rank and playtime", s -> {
+            s.protectionRaise(id, season, rung, minutes);
+            publish("protection_seen", id + ":" + season + ":" + rung + ":" + minutes);
+        });
+    }
+
+    /** Reads everything seen on the network into this server's record (values only go up). */
+    public static void protectionSeenReload() {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            Map<UUID, long[]> all;
+            try {
+                all = s.protectionRead();
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the new-player protection record: {}", e.toString());
+                return;
+            }
+            onServer(() -> {
+                var p = com.mrgregles.bsp_core.totem.NewPlayerProtection.get(srv);
+                int season = com.mrgregles.bsp_core.totem.NewPlayerProtection.currentSeason(srv);
+                p.ensureSeason(season);
+                all.forEach((id, v) -> {
+                    if (v[0] == season) { // a row from another season (a server not yet told of a new one) is not this season's
+                        p.raise(id, (int) v[1], v[2]);
+                    }
+                });
+            });
         });
     }
 

@@ -75,6 +75,17 @@ public final class TotemRadiation {
         return seenAt(level(ledger, pos), ledger.coatedLayers(pos));
     }
 
+    /**
+     * How far away the placed totem at {@code pos}, owned by {@code owner}, is seen: as {@link #seenAt(TotemLedger, GlobalPos)},
+     * and 0 while the owner is a new player under {@link NewPlayerProtection} (totems up to Tier II).
+     */
+    public static int seenAt(net.minecraft.server.MinecraftServer server, TotemLedger ledger, java.util.UUID owner, GlobalPos pos) {
+        if (enabled() && NewPlayerProtection.hides(server, owner, ledger.tierAt(pos))) {
+            return 0;
+        }
+        return seenAt(ledger, pos);
+    }
+
     /** Whether a compass at {@code from} sees a totem at {@code totem} seen from {@code seenAt} blocks. */
     public static boolean sees(BlockPos from, BlockPos totem, int seenAt) {
         if (seenAt == Integer.MAX_VALUE) {

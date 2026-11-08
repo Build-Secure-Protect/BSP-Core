@@ -414,7 +414,7 @@ public class TotemCompassItem extends Item {
                     continue;
                 }
                 // a rival totem must also give off enough radiation to be seen from here
-                int seenAt = rivals ? com.mrgregles.bsp_core.totem.TotemRadiation.seenAt(ledger, pos) : 0;
+                int seenAt = rivals ? com.mrgregles.bsp_core.totem.TotemRadiation.seenAt(player.server, ledger, e.getKey(), pos) : 0;
                 if (rivals && !com.mrgregles.bsp_core.totem.TotemRadiation.sees(at, pos.pos(), seenAt)) {
                     continue;
                 }

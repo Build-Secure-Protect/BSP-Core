@@ -289,6 +289,9 @@ final class MySqlStore implements AutoCloseable {
                     + "ends_ms BIGINT NOT NULL, server_id VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, INDEX (buyer), INDEX (placed_ms))");
             // the Totem Compass: when each player may next start tracking rivals (real clock, ms), whichever server they used
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("compass_waits") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, until_ms BIGINT NOT NULL)");
+            // new-player protection from totem radiation: the highest RankUp rung and the most playtime minutes seen per player
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("protection_seen") + " (uuid CHAR(36) NOT NULL, season INT NOT NULL, rung INT NOT NULL, minutes BIGINT NOT NULL, "
+                    + "PRIMARY KEY (uuid, season))");
             // the daily login reward: the last day each player was paid (days since 1970 on the shop clock)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("daily_rewards") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, day INT NOT NULL)");
             // the lottery: every player seen on the network, with their ranks and operator status at the time
@@ -3142,6 +3145,46 @@ final class MySqlStore implements AutoCloseable {
             ps.setLong(2, untilMs);
             ps.executeUpdate();
         }
+    }
+
+    /** Raises what was seen of {@code id} for the new-player protection: each value only goes up. */
+    void protectionRaise(UUID id, int season, int rung, long minutes) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("protection_seen") + " (uuid, season, rung, minutes) VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE rung = GREATEST(rung, VALUES(rung)), minutes = GREATEST(minutes, VALUES(minutes))")) {
+            ps.setString(1, id.toString());
+            ps.setInt(2, season);
+            ps.setInt(3, rung);
+            ps.setLong(4, minutes);
+            ps.executeUpdate();
+        }
+    }
+
+    /** What was seen for the new-player protection in the newest season on record: player to {season, rung, minutes}; older seasons are deleted. */
+    Map<UUID, long[]> protectionRead() throws SQLException {
+        Map<UUID, long[]> out = new java.util.HashMap<>();
+        int newest = Integer.MIN_VALUE;
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, season, rung, minutes FROM " + t("protection_seen")); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                try {
+                    UUID id = UUID.fromString(rs.getString(1));
+                    long[] v = {rs.getInt(2), rs.getInt(3), rs.getLong(4)};
+                    long[] had = out.get(id);
+                    if (had == null || had[0] < v[0]) {
+                        out.put(id, v);
+                    }
+                    newest = Math.max(newest, (int) v[0]);
+                } catch (IllegalArgumentException ignored) {
+                    // not a player id
+                }
+            }
+        }
+        if (newest != Integer.MIN_VALUE) {
+            try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("protection_seen") + " WHERE season < ?")) {
+                ps.setInt(1, newest - 1); // the season before stays, for a server that has not heard of the new one yet
+                ps.executeUpdate();
+            }
+        }
+        return out;
     }
 
     /** Makes {@code id}'s Totem Compass wait at least {@code untilMs} (a compass from an older version carried one). */

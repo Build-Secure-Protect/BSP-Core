@@ -64,6 +64,48 @@ public final class RankUpHook {
         }
     }
 
+    /** Where {@code group} stands on RankUp's ladder (0 = lowest), or -1 when it is not on it or there is no ladder. */
+    public static int rungIndex(MinecraftServer server, String group) {
+        return group == null ? -1 : ladder(server).indexOf(group.toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * The rung RankUp last gave {@code player} on its first ladder (0 = lowest), -1 for none or without RankUp. Read from RankUp's
+     * own record on this server, so it answers for offline players too (as of their last visit here).
+     */
+    public static int rungOf(MinecraftServer server, UUID player) {
+        if (!isPresent()) {
+            return -1;
+        }
+        try {
+            Object held = Class.forName(API).getMethod("rankOf", MinecraftServer.class, UUID.class).invoke(null, server, player);
+            if (held instanceof java.util.Optional<?> o && o.isPresent()) {
+                Object info = o.get();
+                return ((Number) info.getClass().getMethod("index").invoke(info)).intValue();
+            }
+            return -1;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            BSPCore.LOGGER.debug("BSP-RankUp rank not readable: {}", e.toString());
+            return -1;
+        }
+    }
+
+    /** RankUp's playtime count for {@code player} in minutes (offline players too, as of their last visit here), -1 when unknown. */
+    public static long playtimeMinutes(MinecraftServer server, UUID player) {
+        if (!isPresent()) {
+            return -1;
+        }
+        try {
+            Object progress = Class.forName(API).getMethod("progressOf", MinecraftServer.class, UUID.class).invoke(null, server, player);
+            Object counts = progress.getClass().getMethod("counts").invoke(progress);
+            Object minutes = ((java.util.Map<?, ?>) counts).get("playtime");
+            return minutes instanceof Number n ? n.longValue() : -1;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            BSPCore.LOGGER.debug("BSP-RankUp playtime not readable: {}", e.toString());
+            return -1;
+        }
+    }
+
     /** Whether two players are teammates on the running server (false with teams switched off, or no server). */
     public static boolean sameTeam(UUID a, UUID b) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();

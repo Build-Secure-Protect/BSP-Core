@@ -3154,3 +3154,36 @@ Applying, doors and drops are covered by `TotemCoatingGameTests` (batch `totem_c
 - [ ] Guide book: Totem Radiation (totem category) has three pages and Totem Radiation Coating (Radiation category) a spotlight, "Layers" and the recipe; none is squashed to a smaller font. The links between them and to the compass open the right entries.
 - [ ] JEI and EMI: the tin has an info page and its recipe.
 
+## New-player protection (2026-11-08, Unreleased)
+
+The rules are covered by `ProtectionGameTests` (batches `protection`, `protection_admin`, `protection_screen`). The settings live in the world's `data/bsp_core_protection.dat` and, on a network, the `state` row `radiation_protection`; they are set on the admin panel's RADIATION tab.
+
+- [ ] With BSP-RankUp and a ladder that has Sentinel: a player below Sentinel places a Tier I or II totem; a rival's tracking compass at full reach never finds it, even next to it. The same player's Tier III totem is found as usual.
+- [ ] That player reaches Sentinel (or an admin sets their rank): within a minute their totems are found.
+- [ ] On a network: the player reaches Sentinel on server A; their totem on server B is found from B within a minute, without the player visiting B.
+- [ ] End a season: everyone's record starts empty for the new season; long-time players stop being protected again once seen (at login or within a minute, from RankUp). On a network, a server that was off during the season's end does not bring last season's record back.
+- [ ] Without RankUp: the log has one line saying rank mode protects nobody; every totem radiates as before.
+- [ ] MySQL: the table `protection_seen` exists and fills as players are seen.
+
+### The RADIATION tab
+- [ ] `/bsp admin`: seven tabs, the last RADIATION (its label a little smaller to fit); the heading reads ADMIN; every tab still opens and works.
+- [ ] RADIATION, RANK: RankUp's ladder, lowest first; click Guardian: it lights violet with "protection ends here", the rows above it (the lower ranks) read "protected"; SAVE lights; save: "Saved." (on a network: "...on every server; the numbers on this one.").
+- [ ] Change only a number and SAVE: "Saved this server's numbers." The protection is untouched, even if another admin changed it on another server since this tab was opened.
+- [ ] A saved rank no longer on RankUp's ladder: no row lights, a red line says it is not on the ladder, and the numbers can still be saved.
+- [ ] PLAYTIME: the hours box with − and + (shift for 10); OFF: "Every totem radiates by its level."
+- [ ] The numbers: − and + change each, shift takes bigger steps (100 to 1,000 on the furthest distance); the chart's curve and the gold "level N" line move as Full radiation and Furthest change; ON/OFF flattens the curve to the top.
+- [ ] SAVE, then reopen the panel: the values stay; the server config's `totemRadiation` section holds them.
+- [ ] As a moderator: everything shows, every key is grey, and the heading reads VIEW in gold (on every tab). While editing a kit the heading reads KIT.
+- [ ] Without RankUp: RANK shows "BSP-RankUp is not here, or its ladder is empty: rank protection protects nobody."; the numbers still save.
+- [ ] Save with the network database down, changing the protection: the answer, on two lines at the bottom, says it could not reach the database; the numbers are saved.
+- [ ] After a SAVE that turns radiation off or changes the furthest distance, another player's open totem screen shows the change within a second or two, without reconnecting.
+- [ ] On a network: save on server A; server B's tab shows the same protection within seconds (Redis) or at the next catch-up.
+
+### The totem's strip while protected
+- [ ] A protected player's Tier I totem: the strip shows the level, an empty bar with "PROTECTED until the owner reaches Sentinel" in turquoise inside it, and "New players' totems give off no totem radiation." under it (no 0 to 2,500 marks). Hover over the bar: the Tier II rule and "This one starts when its owner reaches Sentinel."
+- [ ] PLAYTIME mode: "PROTECTED until 24 h of playtime (13 h 20 m played)"; the minutes move on within a minute or so while the owner plays.
+- [ ] The owner reaches the rank (or the hours): within about a minute (when they are next seen) the strip shows the bar again.
+- [ ] Raise the totem to Tier III: the bar shows at once (Tier III and up are never protected).
+- [ ] A visitor (STEAL view) sees the same PROTECTED line.
+- [ ] Guide book, Totem Radiation: the "New players" page follows "Finding and hiding" and is not squashed.
+

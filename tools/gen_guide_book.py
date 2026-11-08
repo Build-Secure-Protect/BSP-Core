@@ -275,6 +275,7 @@ ENTRIES = [
         text("Every placed totem gives off $(l)totem radiation$(). It is harmless: it is what lets a rival's $(l:totem/compass)Totem Compass$() find the totem.$(br2)Its level is one for each tier above Tier I plus every upgrade level. A Tier I totem with nothing bought gives off none."),
         text("The higher the level, the further away a compass sees the totem:$(br)$(li)Level 7: 9 blocks$(li)Level 27: 127$(li)Level 63: 689$(li)Level 120 and up: 2,500$(br2)Depth counts; ordinary blocks in between do not hide it.", "How far"),
         text("Far from a totem the needle points beside it, and closes in as you get nearer, so two bearings do not cross on the totem.$(br2)Your totem's screen shows its radiation along the bottom. $(l:radiation/coating)Totem Radiation Coating$() on shielding round it weakens it.", "Finding and hiding"),
+        text("A new player's totems up to Tier II give off no totem radiation at all, so no compass finds them, until the player reaches the rank or the hours of play the server has chosen.$(br2)The bottom of the totem's screen says what ends it.", "New players"),
     ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
         spot("bsp_core:totem_compass", "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
