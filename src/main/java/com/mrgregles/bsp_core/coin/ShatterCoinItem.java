@@ -32,5 +32,12 @@ public class ShatterCoinItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.bsp_core.coin.value", tier.value()).withStyle(ChatFormatting.GOLD));
+        String stamp = CoinStamp.of(stack);
+        if (stamp != null) {
+            String team = CoinStamp.teamName(stack);
+            tooltip.add((stamp.equals(CoinStamp.NONE) ? Component.translatable("tooltip.bsp_core.coin.no_team")
+                    : team.isEmpty() ? Component.translatable("tooltip.bsp_core.coin.a_team") : Component.translatable("tooltip.bsp_core.coin.team", team))
+                    .withStyle(ChatFormatting.GRAY));
+        }
     }
 }

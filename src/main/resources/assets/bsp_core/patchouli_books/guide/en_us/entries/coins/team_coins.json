@@ -1,0 +1,28 @@
+{
+  "name": "Coins in a Team",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:diamond_shatter_coin",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Alone you may own 10 factory slices. In a team each member owns fewer: 8 in a team of 2, 7 in a team of 3, 6 in a team of 4 and 5 in a team of 5. The number follows the team as it is, across every server: leave it and you are back to 10.$(br2)If you own more than your number (when your team grows), your newest slices pause until you are back within it.",
+      "title": "Factories"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Every coin a factory presses is stamped with its owner's team, or as pressed outside a team. The tooltip says which, and coins with different stamps do not stack. Banks, vaults and trades keep the stamp.$(br2)On your own totem any coin pays. On a teammate's totem only coins pressed for your team pay, and coins with no stamp at all (from loot, or older than stamps).",
+      "title": "Team stamps"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A coin pressed outside your team, or for another team, goes into a slice's blank slot like a blank. It is pressed again in half the time and for half the RF, and comes out for your team.$(br2)Coins that pay for your team already are not taken, and nothing is re-pressed while the factory's owner is in no team.",
+      "title": "Re-pressing"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.$(br2)Compass upgrades cost the same in a team or alone.",
+      "title": "Team surcharge"
+    }
+  ]
+}

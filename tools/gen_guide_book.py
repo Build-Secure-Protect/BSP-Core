@@ -365,11 +365,17 @@ ENTRIES = [
     ("coins", "factory", "The Shatter Coin Factory", "bsp_core:shatter_coin_factory", 1, [
         text("An end-game machine built in slices. One slice is 1 wide, 2 high and 3 long. Put blanks in the Blank Hatch and RF in the Power Port, both at the back.$(br2)Pressing takes real time, from hours to days by tier, and carries on while you are offline. Coins collect in the tray and must be taken by hand." + GUIDE_TIP),
         build("Factory slice", FACTORY, "bsp_core:shatter_coin_factory", "Bottom from the front: Controller, Frame, Blank Hatch. Top: Frame, Press, Power Port."),
-        text("Build slices side by side, facing the same way, and they join into one machine with one screen. You may own up to 10 slices.$(br2)Each slice presses its own blanks. RF is shared, and cabling more Power Ports charges the machine faster.", "Joining slices"),
+        text("Build slices side by side, facing the same way, and they join into one machine with one screen. Alone you may own up to 10 slices; in a team each member owns fewer (see $(l:coins/team_coins)Coins in a Team$()).$(br2)Each slice presses its own blanks. RF is shared, and cabling more Power Ports charges the machine faster.", "Joining slices"),
         craft("mint_control_circuit", "conveyor_belt"),
         craft("press_die", "factory_frame"),
         craft("factory_press", "factory_blank_hatch"),
         craft("factory_power_port", "shatter_coin_factory"),
+    ]),
+    ("coins", "team_coins", "Coins in a Team", "bsp_core:diamond_shatter_coin", 4, [
+        text("Alone you may own 10 factory slices. In a team each member owns fewer: 8 in a team of 2, 7 in a team of 3, 6 in a team of 4 and 5 in a team of 5. The number follows the team as it is, across every server: leave it and you are back to 10.$(br2)If you own more than your number (when your team grows), your newest slices pause until you are back within it.", "Factories"),
+        text("Every coin a factory presses is stamped with its owner's team, or as pressed outside a team. The tooltip says which, and coins with different stamps do not stack. Banks, vaults and trades keep the stamp.$(br2)On your own totem any coin pays. On a teammate's totem only coins pressed for your team pay, and coins with no stamp at all (from loot, or older than stamps).", "Team stamps"),
+        text("A coin pressed outside your team, or for another team, goes into a slice's blank slot like a blank. It is pressed again in half the time and for half the RF, and comes out for your team.$(br2)Coins that pay for your team already are not taken, and nothing is re-pressed while the factory's owner is in no team.", "Re-pressing"),
+        text("Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.$(br2)Compass upgrades cost the same in a team or alone.", "Team surcharge"),
     ]),
     ("coins", "vault", "The Coin Vault", "bsp_core:coin_vault", 3, [
         spot("bsp_core:coin_vault", "A safe that holds only Shatter Coins, 27 stacks of 12 per block. Nothing can pipe coins in or out.$(br2)Vault blocks of yours that touch join into one vault, up to 3 x 3 x 3. You may own 27 vault blocks."),

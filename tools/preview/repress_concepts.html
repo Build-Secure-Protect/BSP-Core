@@ -1,0 +1,269 @@
+<title>Coin Re-press Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: three stacked mock-ups of the Shatter Coin Factory screen with re-pressing, drawn at GUI pixel size with the game's own font (ascii.png), each with its lane tooltip. The mocks keep the game's dark HUD colours in both themes. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#7a52d6; --red:#c8322a;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#b58cff; --red:#ff6b5c; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#b58cff; --red:#ff6b5c; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1060px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:22px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; text-wrap:balance; }
+h3{ font-size:15px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+.lede b, .card p b, .note b{ color:var(--fg); font-weight:600; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card ul{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); max-width:80ch; }
+.stack{ display:flex; flex-direction:column; gap:16px; }
+canvas.gui{ width:100%; max-width:978px; height:auto; display:block; background:#10151c; border:1px solid #2a2f3a; image-rendering:pixelated; }
+.note{ font-size:13px; color:var(--muted); border-left:3px solid var(--acc); padding:4px 10px; max-width:80ch; margin:0; }
+.checks{ font:12px var(--mono); color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <h1>Coin Re-press Concepts</h1>
+  <p class="lede">Three ways the <b>Shatter Coin Factory</b> screen could take coins to <b>re-press</b>. A coin pressed outside its owner's team now goes back through a slice. It takes <b>half the press time and half the RF</b> of a new coin of its tier, and comes out stamped for the factory owner's current team.</p>
+  <p class="note">The example: <b>Mrgregles</b> is in <b>Iron Wolves</b> (a team of 4) and owns a machine of 6 slices. Slices 1 to 3 press Gold blanks. Slice 4 re-presses 3 Gold coins pressed before Mrgregles joined (one is on the press, 2 wait). Slice 5 needs a blank. Slice 6 re-presses a Copper coin. Each mock-up shows the tooltip for slice 4. Item pictures are stand-ins; the game draws the real ones.</p>
+
+  <div class="stack">
+    <div class="card"><h3>A. Same slot, violet lane</h3>
+      <p>A coin goes into the <b>blank slot</b>, like a blank. The lane shows it is re-pressing: a violet <b>RE</b> under the slice number, and a violet bar. The empty slot's ghost keeps showing a blank. Nothing else on the screen changes.</p>
+      <ul><li>Quickest to use: shift-click puts coins that need re-pressing into free lanes, as it does with blanks today.</li><li>A slice holds blanks or coins, not both at once.</li></ul>
+      <canvas class="gui" id="c-a"></canvas>
+    </div>
+    <div class="card"><h3>B. A switch on each lane</h3>
+      <p>Each lane has a small key between its slot and its bar: <b>PR</b> (press blanks) or <b>RE</b> (re-press coins). In RE the slot's edge turns violet, its ghost shows a coin, and it takes coins only. The bar is a little shorter to make room for the key.</p>
+      <ul><li>Nobody drops a coin in by mistake: a lane takes one kind only.</li><li>One click per lane to switch, and the slot must be empty to switch.</li></ul>
+      <canvas class="gui" id="c-b"></canvas>
+    </div>
+    <div class="card"><h3>C. A RE-PRESS tab with its own queue</h3>
+      <p>Two tabs beside the title: <b>PRESS</b> (today's screen) and <b>RE-PRESS</b>. On RE-PRESS each lane has a second, violet slot for coins, so a slice holds blanks and coins at once. It re-presses its coins first (they are quicker), then goes back to its blanks. A small number under each lane on the other tab says what is waiting there.</p>
+      <ul><li>Re-pressing never means taking blanks out first.</li><li>Each slice keeps a third slot; the screen gets tabs.</li></ul>
+      <canvas class="gui" id="c-c"></canvas>
+    </div>
+  </div>
+
+  <p class="note"><b>For all three:</b> a slot takes only coins that need re-pressing (pressed for another team, or outside a team, while the owner is in one). Coins already pressed for the team, and coins with no stamp, are refused, as they work on the team's totems already. The tray takes the re-pressed coin as it takes a new one.</p>
+  <p class="checks" id="checks">Layout checks: not run yet.</p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var el = function(id){ return document.getElementById(id); };
+  var CHECKS = [];
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  // ------------------------------------------------------------ the game's font (ascii.png), widths measured from the same file
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function sw(s){ return Math.round(mw(s) * 0.75); }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function txt(g, s, x, y, col, k){ k = k || 1; if (!ready) return x + mw(s) * k; var t = tint(col);
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·"){ dot(g, x, y + 3 * k, k, col); }
+      else if (ch === "…"){ for (var d = 0; d < 3; d++) dot(g, x + d * 2 * k, y + 6 * k, k, col); }
+      else if (ch === "›"){ dot(g, x, y + 2 * k, k, col); dot(g, x + k, y + 3 * k, k, col); dot(g, x + 2 * k, y + 4 * k, k, col); dot(g, x + k, y + 5 * k, k, col); dot(g, x, y + 6 * k, k, col); }
+      else if (ch === "✓"){ [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); }); }
+      else if (ch === "✗"){ for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); } }
+      else if (ch === "×"){ for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (2 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (2 + r) * k, k, col); } }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 4 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+  function small(g, s, x, y, col){ return txt(g, s, x, y, col, 0.75); }
+  function smallFit(g, s, x, y, col, max){ var k = Math.min(0.75, max / mw(s)); return txt(g, s, x, y + Math.round((0.75 - k) * 4), col, k); } // shrinks like CashMachine.fit
+  function smallR(g, s, rx, y, col){ return small(g, s, rx - sw(s), y, col); }
+  function txtR(g, s, rx, y, col){ return txt(g, s, rx - mw(s), y, col); }
+  function txtC(g, s, cx, y, col, k){ k = k || 1; return txt(g, s, Math.round(cx - mw(s) * k / 2), y, col, k); }
+  function split(s, max, k){ k = k || 0.75; var out = [], line = ""; s.split(" ").forEach(function(w){ var t = line ? line + " " + w : w; if (mw(t) * k > max && line){ out.push(line); line = w; } else line = t; }); if (line) out.push(line); return out; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function frame(id, w, h, k){ var cv = el(id); if (!cv) return null; cv.width = Math.round(w * k); cv.height = Math.round(h * k); var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.setTransform(k, 0, 0, k, 0, 0); return g; }
+
+  // ------------------------------------------------------------ colours
+  var DYES = [["white","#F9FFFE"],["orange","#F9801D"],["magenta","#C74EBD"],["light blue","#3AB3DA"],["yellow","#FED83D"],["lime","#80C71F"],["pink","#F38BAA"],["gray","#474F52"],
+              ["light gray","#9D9D97"],["cyan","#169C9C"],["purple","#8932B8"],["blue","#3C44AA"],["brown","#835432"],["green","#5E7C16"],["red","#B02E26"],["black","#1D1D21"]];
+  function dye(name){ for (var i = 0; i < DYES.length; i++) if (DYES[i][0] === name) return DYES[i][1]; return DYES[10][1]; }
+  function rgb(h){ var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+  function hex(a){ return "#" + a.map(function(v){ v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function shade(h, f){ var c = rgb(h); return hex(c.map(function(v){ return f >= 0 ? v + (255 - v) * f : v * (1 + f); })); }
+  function lum(h){ var c = rgb(h); return c[0] * .3 + c[1] * .59 + c[2] * .11; }
+  function alpha(h, a){ var c = rgb(h); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+
+  // admin panel (AdminScreen / KitAdminTab)
+  var BG = "#10151c", SLOT = "#0c0e12", DIM = "#2a2f3a", VIO = "#b58cff", TQ = "#19d3b0", BAD = "#d63b2f", GOLD = "#ffd23a",
+      MUTED = "#9aa3b5", TEXT = "#e6eaf2", OFF = "#6b7385", HOVERV = "#2a2140", OK = "#58f29a", WARN = "#f2b544";
+
+  // ------------------------------------------------------------ shared pieces
+  var PW = 344, VGOLD = "#ffd23a", VHOVER = "#3a3210", VSLOT_EDGE = "#6b5a1e", INV_EDGE = "#3a3f4b";
+  function inset(g, x, y, w, h){ fill(g, x, y, w, h, DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); }
+  function key(g, x, y, w, h, label, col, enabled){ enabled = enabled !== false;
+    fill(g, x, y, w, h, enabled ? col : DIM); fill(g, x + 1, y + 1, w - 2, h - 2, SLOT); var c = enabled ? col : OFF;
+    if (h < 14) small(g, label, x + Math.floor(w / 2) - Math.floor(sw(label) / 2), y + Math.floor((h - 6) / 2), c);
+    else txt(g, label, x + Math.floor(w / 2) - Math.floor(mw(label) / 2), y + Math.floor((h - 8) / 2), c);
+    check("Key '" + label + "' fits", (h < 14 ? sw(label) : mw(label)) <= w - 4); }
+  function field(g, x, y, w, value, col){ inset(g, x, y, w, 11); small(g, value, x + 3, y + 3, col || TEXT); check("Field '" + value + "' fits its box", sw(value) <= w - 5); }
+  function fit(g, s, x, y, col, max, what){ check((what || "Text") + " '" + s + "' readable in " + max + " px", Math.min(0.75, max / mw(s)) >= 0.55); return smallFit(g, s, x, y, col, max); }
+  function pip(g, x, y, on, col){ fill(g, x, y, 6, 6, on ? col : DIM); if (!on) fill(g, x + 1, y + 1, 4, 4, SLOT); }
+
+  // ------------------------------------------------------------ item pictures (16 x 16 stand-ins: o outline, d dark, b body, l light)
+  var PAT = {
+    gem: ["......oooo......", "....oollbbo.....", "...olllbbbdo....", "..ollbbbbbbdo...", ".oolbbbbbbbddoo.", "ollbbbbbbbbbbddo", ".obbbbbbbbbbddo.", "..obbbbbbbbddo..",
+          "...obbbbbbddo...", "....obbbbddo....", ".....obbddo.....", "......obdo......", ".......oo......."],
+    ingot: [".....oooooooooo.", "....ollllllllbo.", "...olbbbbbbbbdo.", "..oooooooooooddo", "..olllllllllodo.", "..obbbbbbbbbodo.", "..obbbbbbbbbdo..", "..oddddddddddo..", "..oooooooooooo.."],
+    apple: ["........oo......", ".......od.......", "....ooo.dooo....", "...ollbbbbbbo...", "..olllbbbbbbdo..", "..olbbbbbbbbdo..", "..obbbbbbbbbdo..", "..obbbbbbbbddo..",
+            "..obbbbbbbbddo..", "...obbbbbbddo...", "...obbbbbddo....", "....oobbddoo....", "......oooo......"],
+    star: [".......oo.......", ".......olo......", "......olbo......", "oooooolbbdoooooo", ".olllbbbbbbbddo.", "..olbbbbbbbbdo..", "...obbbbbbbdo...", "...obbbbbbbbo...",
+           "..obbbdoobbbdo..", "..obbdo..obbdo..", ".obdo.....obdo..", ".oo.........oo.."],
+    totem: ["......oooo......", ".....olllbo.....", ".....olbbbo.....", "..ooo.obbdo.ooo.", "..ollooooooolbo.", "..olbbbbbbbbbbo.", "...oobbbbbbdoo..", ".....obbbbdo....",
+            ".....obbbbdo....", "....obbbbbbdo...", "....obbbbbbdo...", ".....obbbbdo....", "......oooo......"],
+    pellet: ["......oooo......", ".....ollbbo.....", "....ollbbbdo....", "....olbbbbdo....", "....obbbbbdo....", "....obbbbddo....", ".....obbddo.....", "......oooo......"],
+    wing: ["..oooo....oooo..", ".ollbbo..obbllo.", ".olbbbo..obbblo.", "olbbbdo..odbbblo", "obbbbdo..odbbbbo", "obbbddo..oddbbbo", "obbbdo....odbbbo", "obbddo....oddbbo",
+           "obbdo......odbbo", "obdo........odbo", "odo..........odo", "oo............oo"],
+    coin: [".....oooooo.....", "....ollllllo....", "...ollbbbbbdo...", "..olbbbbbbbbdo..", "..olbbbllbbbdo..", "..olbbbllbbbdo..", "..olbbbbbbbbdo..", "..obbbbbbbbbdo..",
+           "...obbbbbbbdo...", "....oddddddo....", ".....oooooo....."]
+  };
+  function icon(g, kind, col, x, y, k){ k = k || 1; var rows = PAT[kind], top = Math.floor((16 - rows.length) / 2);
+    var pal = { o: shade(col, -0.72), d: shade(col, -0.35), b: col, l: shade(col, 0.45) };
+    for (var r = 0; r < rows.length; r++) for (var c = 0; c < 16; c++){ var ch = rows[r].charAt(c); if (ch && ch !== ".") fill(g, x + c * k, y + (r + top) * k, k, k, pal[ch]); } }
+  function count(g, n, x, y){ if (n > 1){ var s = String(n); txt(g, s, x + 18 - mw(s), y + 10, "#3f3f3f"); txt(g, s, x + 17 - mw(s), y + 9, "#ffffff"); } }
+
+
+  // ------------------------------------------------------------ the factory screen (CoinFactoryScreen / CoinFactoryMenu)
+  var FW = 326, FH = 226, K = 3, LANE_TOP = 20, LANE_BOTTOM = 102, BAR_TOP = 50, BAR_H = 22, PIP_Y = 95, BLANK_Y = 31, TRAY_Y = 75,
+      GAUGE_X = 14, GAUGE_Y = 108, POWER_X = 274, POWER_Y = 104, POWER_W = 38, POWER_H = 16, INV_X = 82, INV_Y = 144;
+  var IN = "#3a8bff", OUT = "#ff8a3a", RE = "#b58cff", REDIM = "#3a2c5c", FBG = "#10151c", BORDER = TQ, GHOSTA = "rgba(16,21,28,.63)";
+  var TIERS = { copper: "#d07a43", gold: "#ffd23a", diamond: "#5fe3e6", netherite: "#7a6a7e", illyrium: "#c77dff" };
+  function laneX(i, n){ return Math.floor((FW - n * 30) / 2) + i * 30 + 7; }
+  function laneLeft(i, n){ return laneX(i, n) - 6; }
+
+  function coinIcon(g, tier, x, y){ icon(g, "coin", TIERS[tier], x, y, 1); }
+  function blankIcon(g, tier, x, y){ icon(g, "coin", shade(TIERS[tier], -0.45), x, y, 1); fill(g, x + 6, y + 6, 4, 3, shade(TIERS[tier], -0.6)); }
+  function slot(g, x, y, edge, item){
+    fill(g, x - 1, y - 1, 18, 18, edge); fill(g, x, y, 16, 16, SLOT);
+    if (!item) return;
+    if (item.ghost){ (item.kind === "coin" ? coinIcon : blankIcon)(g, item.tier, x, y); fill(g, x, y, 16, 16, GHOSTA); return; }
+    (item.kind === "coin" ? coinIcon : blankIcon)(g, item.tier, x, y); count(g, item.n, x, y);
+  }
+
+  // A Minecraft tooltip box with its lines, the first one white.
+  function tooltip(g, x, y, lines){
+    var w = 0; lines.forEach(function(l){ w = Math.max(w, mw(l[0])); });
+    var h = lines.length * 10 + 6;
+    if (x + w + 8 > FW) x = FW - w - 8;
+    fill(g, x - 3, y - 4, w + 6, h + 2, "#100010"); fill(g, x - 4, y - 3, w + 8, h, "#100010");
+    fill(g, x - 3, y - 3, w + 6, 1, "#5000ff"); fill(g, x - 3, y + h - 4, w + 6, 1, "#28007f");
+    fill(g, x - 3, y - 2, 1, h - 3, "#4000c8"); fill(g, x + w + 2, y - 2, 1, h - 3, "#4000c8");
+    lines.forEach(function(l, i){ txt(g, l[0], x, y + i * 10 + (i ? 2 : 0), l[1]); });
+    check("Tooltip fits on the screen (" + w + " px)", w + 8 <= FW);
+  }
+
+  // The whole screen: the lanes come from `lanes`, `extra(g, lane, lx, sx)` adds each concept's own marks.
+  function screen(id, lanes, opt){
+    var g = frame(id, FW, FH, K); if (!g) return null; var n = lanes.length;
+    fill(g, 0, 0, FW, FH, BORDER); fill(g, 1, 1, FW - 2, FH - 2, FBG);
+    txt(g, "SHATTER COIN FACTORY", 10, 8, TQ);
+    var status = "ATTENTION"; txtR(g, status, FW - 10, 8, "#ff6b5c");
+    if (opt.tabs) opt.tabs(g);
+    lanes.forEach(function(L, i){
+      var lx = laneLeft(i, n), sx = lx + 6;
+      var frameCol = L.state === "blank" ? BAD : L.state === "full" ? OUT : opt.reFrame && L.re ? RE : DIM;
+      fill(g, lx, LANE_TOP, 28, LANE_BOTTOM - LANE_TOP, frameCol); fill(g, lx + 1, LANE_TOP + 1, 26, LANE_BOTTOM - LANE_TOP - 2, SLOT);
+      var num = String(i + 1); txt(g, num, lx + 14 - Math.floor(mw(num) / 2), LANE_TOP + 2, MUTED);
+      var top = opt.barTop || BAR_TOP, h = opt.barH || BAR_H;
+      fill(g, sx + 4, top, 8, h, DIM);
+      var col = L.re ? RE : TQ;
+      if (L.p) fill(g, sx + 4, top, 8, Math.round(h * L.p), col);
+      for (var k = 0; k < 3; k++) fill(g, sx + k * 6, PIP_Y, 4, 4, k < (L.mot || 0) ? VIO : DIM);
+      slot(g, laneX(i, n), TRAY_Y, OUT, L.tray);
+      opt.lane(g, L, i, lx, sx);
+    });
+    // RF and plasma
+    txt(g, "RF", GAUGE_X, GAUGE_Y, MUTED);
+    for (var c = 0; c < 12; c++) fill(g, GAUGE_X + 30 + c * 9, GAUGE_Y - 1, 7, 8, c < 9 ? GOLD : DIM);
+    var px = GAUGE_X + 144; txt(g, "PLASMA", px, GAUGE_Y, MUTED); var cx = px + mw("PLASMA") + 4;
+    for (var p = 0; p < 6; p++) fill(g, cx + p * 7, GAUGE_Y - 1, 5, 8, DIM);
+    small(g, "POWER", POWER_X - 4 - sw("POWER"), POWER_Y + 5, MUTED);
+    fill(g, POWER_X - 1, POWER_Y - 1, POWER_W + 2, POWER_H + 2, TQ); fill(g, POWER_X, POWER_Y, POWER_W, POWER_H, SLOT);
+    fill(g, POWER_X + 4, POWER_Y + 6, POWER_W - 8, POWER_H - 12, TQ); var kx = POWER_X + 2 + (POWER_W - 16);
+    fill(g, kx, POWER_Y + 2, 12, POWER_H - 4, "#c9ced8"); fill(g, kx + 1, POWER_Y + 3, 10, POWER_H - 6, "#8a909c"); fill(g, kx + 5, POWER_Y + 4, 2, POWER_H - 8, TQ);
+    var summary = "Owner: Mrgregles  Slices: 6/10  Owns 6/6 (team of 4)  Motivators: 5";
+    small(g, summary, GAUGE_X, GAUGE_Y + 14, MUTED); check("Summary fits beside nothing (" + sw(summary) + " of " + (FW - 28) + " px)", sw(summary) <= FW - 28);
+    // inventory, with some coins pressed before Mrgregles joined (they need re-pressing)
+    txt(g, "Inventory", INV_X, INV_Y - 11, MUTED);
+    var inv = { 2: { kind: "coin", tier: "gold", n: 5 }, 3: { kind: "coin", tier: "diamond", n: 2 }, 27: { kind: "blank", tier: "gold", n: 12 }, 28: { kind: "coin", tier: "gold", n: 7 } };
+    for (var s = 0; s < 36; s++){ var row = s < 27 ? Math.floor(s / 9) : 3, col2 = s % 9, sy = row < 3 ? INV_Y + row * 18 : INV_Y + 58;
+      slot(g, INV_X + col2 * 18, sy, "#3a3f4b", inv[s]); }
+    return g;
+  }
+
+  var LANES = [
+    { p: .62, mot: 1, input: { kind: "blank", tier: "gold", n: 9 } },
+    { p: .40, mot: 1, input: { kind: "blank", tier: "gold", n: 9 }, tray: { kind: "coin", tier: "gold", n: 2 } },
+    { p: .18, mot: 1, input: { kind: "blank", tier: "gold", n: 10 } },
+    { p: .02, mot: 1, re: true, input: { kind: "coin", tier: "gold", n: 2 } },
+    { state: "blank", mot: 0 },
+    { p: .71, mot: 1, re: true, tray: { kind: "coin", tier: "copper", n: 3 } }
+  ];
+  var TIP = [["Slice 4", "#ffffff"], ["Re-pressing a Gold coin: 7 h 51 m left", TEXT], ["Half the time and RF of a new one", MUTED],
+             ["Comes out for team Iron Wolves", RE], ["Motivators: 1 (-15% press time)", MUTED]];
+
+  // A. coins in the blank slot; RE under the number and a violet bar
+  function conceptA(){
+    var g = screen("c-a", LANES, { reFrame: true, lane: function(g, L, i){
+      slot(g, laneX(i, LANES.length), BLANK_Y, IN, L.input || { ghost: true, kind: "blank", tier: "copper" });
+    } });
+    if (g) tooltip(g, 128, 112, TIP);
+  }
+
+  // B. a PR / RE key per lane between the slot and a shorter bar
+  function conceptB(){
+    var KEY_Y = 50, n = LANES.length;
+    var g = screen("c-b", LANES, { barTop: 61, barH: 11, lane: function(g, L, i, lx, sx){
+      var re = !!L.re || i === 5;
+      slot(g, laneX(i, n), BLANK_Y, re ? RE : IN, L.input || { ghost: true, kind: re ? "coin" : "blank", tier: re ? "gold" : "copper" });
+      key(g, lx + 6, KEY_Y, 16, 9, re ? "RE" : "PR", re ? RE : IN);
+    } });
+    if (g) tooltip(g, 128, 112, TIP.concat([["The key switches when the slot is empty", MUTED]]));
+  }
+
+  // C. PRESS / RE-PRESS tabs; on RE-PRESS each lane has a violet coin slot, with the blanks waiting counted under the lane
+  function conceptC(){
+    var n = LANES.length;
+    var lanes = LANES.map(function(L, i){ var c = Object.assign({}, L);
+      if (i === 3){ c.input = { kind: "coin", tier: "gold", n: 2 }; c.waiting = 8; }
+      if (i === 5){ c.input = null; c.waiting = 0; }
+      if (i < 3) c.waiting = L.input.n;
+      return c; });
+    var g = screen("c-c", lanes, {
+      tabs: function(g){
+        fill(g, 140, 4, 46, 14, DIM); fill(g, 141, 5, 44, 12, SLOT); txtC(g, "PRESS", 163, 7, MUTED);
+        fill(g, 190, 4, 62, 14, RE); fill(g, 191, 5, 60, 12, "#1c1530"); txtC(g, "RE-PRESS", 221, 7, RE);
+        check("Tab 'RE-PRESS' fits", mw("RE-PRESS") <= 58); check("Tabs clear the title and the status word", 10 + mw("SHATTER COIN FACTORY") + 6 <= 140 && 252 + 6 <= FW - 10 - mw("ATTENTION")); },
+      lane: function(g, L, i, lx){
+        slot(g, laneX(i, n), BLANK_Y, RE, L.input && L.input.kind === "coin" ? L.input : { ghost: true, kind: "coin", tier: "gold" });
+        if (L.waiting){ fill(g, lx + 21, LANE_TOP + 3, 4, 4, IN); } // blanks wait on the PRESS tab
+      } });
+    if (g) tooltip(g, 128, 112, TIP.concat([["8 Gold blanks wait on PRESS", MUTED]]));
+  }
+
+  // ------------------------------------------------------------ wiring
+  function drawAll(){ CHECKS.length = 0;
+    conceptA(); conceptB(); conceptC();
+    var bad = CHECKS.filter(function(c){ return !c.ok; }), out = el("checks");
+    if (out) out.textContent = "Layout checks with the game's glyph widths: " + (CHECKS.length - bad.length) + " of " + CHECKS.length + " pass" + (bad.length ? ". Failing: " + bad.map(function(b){ return b.name; }).join("; ") : ".");
+    window.__repressChecks = CHECKS.slice(); }
+  font.onload = function(){ ready = true; drawAll(); };
+  font.src = ASCII;
+  drawAll();
+})();
+</script>

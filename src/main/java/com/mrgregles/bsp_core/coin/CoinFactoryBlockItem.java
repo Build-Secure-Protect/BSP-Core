@@ -1,6 +1,5 @@
 package com.mrgregles.bsp_core.coin;
 
-import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.data.FactoryLedger;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -16,7 +15,7 @@ import net.minecraft.world.level.block.Block;
 import javax.annotation.Nullable;
 import java.util.List;
 
-/** Placing a factory is refused once the player already owns {@code factory.maxPerPlayer}. */
+/** Placing a factory is refused once the player already owns as many slices as their team's size allows ({@link FactoryCap}). */
 public class CoinFactoryBlockItem extends BlockItem {
     public CoinFactoryBlockItem(Block block) {
         super(block, new Properties());
@@ -25,9 +24,9 @@ public class CoinFactoryBlockItem extends BlockItem {
     @Override
     public InteractionResult place(BlockPlaceContext ctx) {
         if (ctx.getPlayer() instanceof ServerPlayer player) {
-            int limit = BSPConfig.FACTORY_MAX_PER_PLAYER.get();
+            int limit = FactoryCap.cap(player.server, player.getUUID());
             if (FactoryLedger.get(player.server).count(player.getUUID()) >= limit) {
-                player.displayClientMessage(Component.translatable("message.bsp_core.factory.limit", limit).withStyle(ChatFormatting.RED), true);
+                player.displayClientMessage(limitMessage(player, limit), true);
                 player.inventoryMenu.sendAllDataToRemote(); // undo the client's optimistic placement
                 return InteractionResult.FAIL;
             }
@@ -38,7 +37,7 @@ public class CoinFactoryBlockItem extends BlockItem {
             // and take the slice back if slices placed on other servers since then put the player over the limit.
             net.minecraft.core.BlockPos pos = ctx.getClickedPos();
             net.minecraft.server.level.ServerLevel level = player.serverLevel();
-            int limit = BSPConfig.FACTORY_MAX_PER_PLAYER.get();
+            int limit = FactoryCap.cap(player.server, player.getUUID());
             com.mrgregles.bsp_core.storage.NetworkStorage.countSlicesElsewhere(player.getUUID(), elsewhere -> {
                 if (FactoryLedger.get(player.server).localCount(player.getUUID()) + elsewhere <= limit
                         || !(level.getBlockEntity(pos) instanceof CoinFactoryBlockEntity factory) || !player.getUUID().equals(factory.getOwner())) {
@@ -51,10 +50,17 @@ public class CoinFactoryBlockItem extends BlockItem {
                         player.drop(back, false);
                     }
                 }
-                player.displayClientMessage(Component.translatable("message.bsp_core.factory.limit", limit).withStyle(ChatFormatting.RED), false);
+                player.displayClientMessage(limitMessage(player, limit), false);
             });
         }
         return result;
+    }
+
+    /** "You already own the maximum of 10 ..." alone, or "Your team of 4 may own 6 ... each" in a team. */
+    static Component limitMessage(ServerPlayer player, int limit) {
+        int size = FactoryCap.teamSize(player.server, player.getUUID());
+        return (size > 1 ? Component.translatable("message.bsp_core.factory.team_limit", size, limit)
+                : Component.translatable("message.bsp_core.factory.limit", limit)).withStyle(ChatFormatting.RED);
     }
 
     @Override

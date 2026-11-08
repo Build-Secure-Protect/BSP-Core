@@ -19,7 +19,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Build slices side by side, facing the same way, and they join into one machine with one screen. You may own up to 10 slices.$(br2)Each slice presses its own blanks. RF is shared, and cabling more Power Ports charges the machine faster.",
+      "text": "Build slices side by side, facing the same way, and they join into one machine with one screen. Alone you may own up to 10 slices; in a team each member owns fewer (see $(l:coins/team_coins)Coins in a Team$()).$(br2)Each slice presses its own blanks. RF is shared, and cabling more Power Ports charges the machine faster.",
       "title": "Joining slices"
     },
     {

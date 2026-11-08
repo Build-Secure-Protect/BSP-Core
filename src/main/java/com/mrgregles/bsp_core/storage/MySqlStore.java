@@ -151,6 +151,13 @@ final class MySqlStore implements AutoCloseable {
             }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("factory_slices") + " (" + place + ", owner_uuid CHAR(36) NOT NULL, "
                     + "PRIMARY KEY (server_id, dimension, x, y, z), INDEX (owner_uuid))");
+            try { // when each slice was placed, so the team factory limit pauses the same newest slices on every server; 0 for slices placed before
+                st.executeUpdate("ALTER TABLE " + t("factory_slices") + " ADD COLUMN placed_ms BIGINT NOT NULL DEFAULT 0");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) { // 1060: the column is there already
+                    throw e;
+                }
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("scores") + " (server_id VARCHAR(64) NOT NULL, uuid CHAR(36) NOT NULL, name VARCHAR(32) NOT NULL, "
                     + "totems INT NOT NULL, points INT NOT NULL, best_tier INT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
                     + "PRIMARY KEY (server_id, uuid), INDEX (uuid))");
@@ -190,6 +197,9 @@ final class MySqlStore implements AutoCloseable {
                     + "pieces BIGINT NOT NULL DEFAULT 0, c0 INT NOT NULL DEFAULT 0, c1 INT NOT NULL DEFAULT 0, c2 INT NOT NULL DEFAULT 0, c3 INT NOT NULL DEFAULT 0, c4 INT NOT NULL DEFAULT 0, "
                     + "accept_pay TINYINT NOT NULL DEFAULT 1, remote_shops TINYINT NOT NULL DEFAULT 0, remote_market TINYINT NOT NULL DEFAULT 0, seen_ms BIGINT NOT NULL DEFAULT 0, "
                     + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, INDEX (name))");
+            // how many of each account's banked coins carry each team stamp (the rest of bank_accounts.c0..c4 are clean)
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_coin_stamps") + " (uuid CHAR(36) NOT NULL, stamp VARCHAR(40) NOT NULL, tier TINYINT NOT NULL, "
+                    + "name VARCHAR(64) NOT NULL DEFAULT '', n INT NOT NULL, PRIMARY KEY (uuid, stamp, tier))");
             try { // the Portable Banker's market unlock, added to a bank_accounts made before it
                 st.executeUpdate("ALTER TABLE " + t("bank_accounts") + " ADD COLUMN remote_market TINYINT NOT NULL DEFAULT 0");
             } catch (SQLException e) {
@@ -901,15 +911,6 @@ final class MySqlStore implements AutoCloseable {
 
     // ------------------------------------------------------------------ placed totems and factory slices
 
-    private void upsert(String table, UUID owner, GlobalPos pos) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t(table) + " (server_id, dimension, x, y, z, owner_uuid) VALUES (?, ?, ?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE owner_uuid = VALUES(owner_uuid)")) {
-            place(ps, pos);
-            ps.setString(6, owner.toString());
-            ps.executeUpdate();
-        }
-    }
-
     private void delete(String table, GlobalPos pos) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t(table) + " WHERE server_id = ? AND dimension = ? AND x = ? AND y = ? AND z = ?")) {
             place(ps, pos);
@@ -991,8 +992,38 @@ final class MySqlStore implements AutoCloseable {
         delete("totems", pos);
     }
 
-    void sliceAdded(UUID owner, GlobalPos pos) throws SQLException {
-        upsert("factory_slices", owner, pos);
+    void sliceAdded(UUID owner, GlobalPos pos, long placedMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement(sliceUpsert())) {
+            sliceRow(ps, owner, pos, placedMs);
+            ps.executeUpdate();
+        }
+    }
+
+    /** {@link #sliceAdded} for every slice on this server in one batch: at connect, so rows written before placing times were kept get them. */
+    void slicesAll(Map<UUID, Map<GlobalPos, Long>> all) throws SQLException {
+        if (all.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement ps = conn().prepareStatement(sliceUpsert())) {
+            for (var e : all.entrySet()) {
+                for (var slice : e.getValue().entrySet()) {
+                    sliceRow(ps, e.getKey(), slice.getKey(), slice.getValue());
+                    ps.addBatch();
+                }
+            }
+            ps.executeBatch();
+        }
+    }
+
+    private String sliceUpsert() {
+        return "INSERT INTO " + t("factory_slices") + " (server_id, dimension, x, y, z, owner_uuid, placed_ms) VALUES (?, ?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE owner_uuid = VALUES(owner_uuid), placed_ms = VALUES(placed_ms)";
+    }
+
+    private void sliceRow(PreparedStatement ps, UUID owner, GlobalPos pos, long placedMs) throws SQLException {
+        place(ps, pos);
+        ps.setString(6, owner.toString());
+        ps.setLong(7, placedMs);
     }
 
     void sliceRemoved(GlobalPos pos) throws SQLException {
@@ -1000,14 +1031,38 @@ final class MySqlStore implements AutoCloseable {
     }
 
     /** Factory slices this player owns on every other server of the network. */
-    int slicesElsewhere(UUID owner) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("SELECT COUNT(*) FROM " + t("factory_slices") + " WHERE owner_uuid = ? AND server_id <> ?")) {
-            ps.setString(1, owner.toString());
-            ps.setString(2, serverId);
+    java.util.List<com.mrgregles.bsp_core.data.FactoryLedger.Slice> slicesElsewhere(UUID owner) throws SQLException {
+        return slicesElsewhere(java.util.List.of(owner)).getOrDefault(owner, java.util.List.of());
+    }
+
+    /** The factory slices these players own on every other server of the network, by owner. */
+    Map<UUID, java.util.List<com.mrgregles.bsp_core.data.FactoryLedger.Slice>> slicesElsewhere(Collection<UUID> owners) throws SQLException {
+        Map<UUID, java.util.List<com.mrgregles.bsp_core.data.FactoryLedger.Slice>> out = new java.util.HashMap<>();
+        if (owners.isEmpty()) {
+            return out;
+        }
+        String marks = String.join(", ", java.util.Collections.nCopies(owners.size(), "?"));
+        try (PreparedStatement ps = conn().prepareStatement("SELECT owner_uuid, server_id, dimension, x, y, z, placed_ms FROM " + t("factory_slices")
+                + " WHERE server_id <> ? AND owner_uuid IN (" + marks + ")")) {
+            ps.setString(1, serverId);
+            int i = 2;
+            for (UUID owner : owners) {
+                ps.setString(i++, owner.toString());
+            }
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
+                while (rs.next()) {
+                    try {
+                        UUID owner = UUID.fromString(rs.getString(1));
+                        long pos = net.minecraft.core.BlockPos.asLong(rs.getInt(4), rs.getInt(5), rs.getInt(6));
+                        out.computeIfAbsent(owner, k -> new java.util.ArrayList<>())
+                                .add(new com.mrgregles.bsp_core.data.FactoryLedger.Slice(rs.getLong(7), rs.getString(2), rs.getString(3), pos));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
             }
         }
+        return out;
     }
 
     // ------------------------------------------------------------------ leaderboard
@@ -1236,7 +1291,7 @@ final class MySqlStore implements AutoCloseable {
      *
      * @return {grants added, grants already there, totems written, slices written}
      */
-    int[] migrate(Collection<UUID> grants, Map<UUID, Set<GlobalPos>> totems, Map<UUID, Set<GlobalPos>> slices) throws SQLException {
+    int[] migrate(Collection<UUID> grants, Map<UUID, Set<GlobalPos>> totems, Map<UUID, Map<GlobalPos, Long>> slices) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
@@ -1268,8 +1323,8 @@ final class MySqlStore implements AutoCloseable {
                 }
             }
             for (var e : slices.entrySet()) {
-                for (GlobalPos pos : e.getValue()) {
-                    sliceAdded(e.getKey(), pos);
+                for (var slice : e.getValue().entrySet()) {
+                    sliceAdded(e.getKey(), slice.getKey(), slice.getValue());
                     s++;
                 }
             }
@@ -1306,10 +1361,38 @@ final class MySqlStore implements AutoCloseable {
 
     /** The account, or null if the network has none for this player. */
     BankAccount bankRead(UUID id) throws SQLException {
+        BankAccount a;
         try (PreparedStatement ps = conn().prepareStatement("SELECT * FROM " + t("bank_accounts") + " WHERE uuid = ?")) {
             ps.setString(1, id.toString());
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? bankRow(rs) : null;
+                a = rs.next() ? bankRow(rs) : null;
+            }
+        }
+        if (a != null) {
+            bankStamps(conn(), id, a.stamps, false);
+        }
+        return a;
+    }
+
+    /** Reads an account's stamp breakdown into {@code into}; {@code lock} holds the rows for the transaction. */
+    private void bankStamps(Connection c, UUID id, Map<String, com.mrgregles.bsp_core.bank.BankStamps.Held> into, boolean lock) throws SQLException {
+        into.clear();
+        try (PreparedStatement ps = c.prepareStatement("SELECT stamp, tier, name, n FROM " + t("bank_coin_stamps") + " WHERE uuid = ? AND n > 0 ORDER BY stamp, tier"
+                + (lock ? " FOR UPDATE" : ""))) {
+            ps.setString(1, id.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int tier = rs.getInt(2);
+                    if (tier < 0 || tier >= com.mrgregles.bsp_core.coin.CoinTier.values().length) {
+                        continue;
+                    }
+                    var held = into.computeIfAbsent(rs.getString(1), k -> new com.mrgregles.bsp_core.bank.BankStamps.Held(""));
+                    String name = rs.getString(3);
+                    if (!name.isEmpty()) {
+                        held.name = name;
+                    }
+                    held.counts[tier] += rs.getInt(4);
+                }
             }
         }
     }
@@ -1339,10 +1422,71 @@ final class MySqlStore implements AutoCloseable {
      * anywhere leaves nothing changed. Null when refused (below zero, or no account).
      */
     BankAccount bankAdjust(UUID id, long dPieces, int[] dCoins, @javax.annotation.Nullable BankTransaction log) throws SQLException {
+        return bankAdjust(id, dPieces, dCoins, log, null, null, 0, null);
+    }
+
+    /**
+     * {@link #bankAdjust(UUID, long, int[], BankTransaction)} that also moves the coins' team stamps: {@code add} lots going into the
+     * bank, or {@code take} coins of {@code tier} going out, picked under lock for {@code team} (its own first, then clean, then
+     * the rest). The account read back carries what was picked in {@link BankAccount#picked}.
+     */
+    BankAccount bankAdjust(UUID id, long dPieces, int[] dCoins, @javax.annotation.Nullable BankTransaction log, @javax.annotation.Nullable com.mrgregles.bsp_core.coin.CoinTier tier,
+                           @javax.annotation.Nullable List<com.mrgregles.bsp_core.bank.BankStamps.Lot> add, int take, @javax.annotation.Nullable String team) throws SQLException {
         Connection c = conn();
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
         try {
+            List<com.mrgregles.bsp_core.bank.BankStamps.Lot> picked = null;
+            if (tier != null && take > 0) {
+                int total = -1;
+                try (PreparedStatement ps = c.prepareStatement("SELECT c" + tier.ordinal() + " FROM " + t("bank_accounts") + " WHERE uuid = ? FOR UPDATE")) {
+                    ps.setString(1, id.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            total = rs.getInt(1);
+                        }
+                    }
+                }
+                if (total < take) {
+                    c.rollback();
+                    return null;
+                }
+                Map<String, com.mrgregles.bsp_core.bank.BankStamps.Held> held = new java.util.LinkedHashMap<>();
+                bankStamps(c, id, held, true);
+                picked = com.mrgregles.bsp_core.bank.BankStamps.pick(total, held, tier, take, team);
+                try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_coin_stamps") + " SET n = n - ? WHERE uuid = ? AND stamp = ? AND tier = ?")) {
+                    for (var lot : picked) {
+                        if (lot.stamp() != null) {
+                            ps.setInt(1, lot.count());
+                            ps.setString(2, id.toString());
+                            ps.setString(3, lot.stamp());
+                            ps.setInt(4, tier.ordinal());
+                            ps.addBatch();
+                        }
+                    }
+                    ps.executeBatch();
+                }
+                try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("bank_coin_stamps") + " WHERE uuid = ? AND n <= 0")) {
+                    ps.setString(1, id.toString());
+                    ps.executeUpdate();
+                }
+            }
+            if (tier != null && add != null) {
+                try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bank_coin_stamps") + " (uuid, stamp, tier, name, n) VALUES (?, ?, ?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE n = n + VALUES(n), name = IF(VALUES(name) = '', name, VALUES(name))")) {
+                    for (var lot : add) {
+                        if (lot.stamp() != null && lot.count() > 0) {
+                            ps.setString(1, id.toString());
+                            ps.setString(2, lot.stamp());
+                            ps.setInt(3, tier.ordinal());
+                            ps.setString(4, lot.name());
+                            ps.setInt(5, lot.count());
+                            ps.addBatch();
+                        }
+                    }
+                    ps.executeBatch();
+                }
+            }
             try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = pieces + ?, c0 = c0 + ?, c1 = c1 + ?, c2 = c2 + ?, c3 = c3 + ?, c4 = c4 + ? "
                     + "WHERE uuid = ? AND pieces + ? >= 0 AND c0 + ? >= 0 AND c1 + ? >= 0 AND c2 + ? >= 0 AND c3 + ? >= 0 AND c4 + ? >= 0")) {
                 ps.setLong(1, dPieces);
@@ -1368,6 +1512,10 @@ final class MySqlStore implements AutoCloseable {
                 try (ResultSet rs = ps.executeQuery()) {
                     after = rs.next() ? bankRow(rs) : null;
                 }
+            }
+            if (after != null) {
+                bankStamps(c, id, after.stamps, false);
+                after.picked = picked;
             }
             c.commit();
             return after;

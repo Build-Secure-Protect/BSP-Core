@@ -225,11 +225,11 @@ public final class Bank {
             then.accept(BankResult.fail("amount"));
             return;
         }
-        if (player.getInventory().countItem(tier.coin()) < count) {
+        if (BankStamps.count(player, tier) < count) {
             then.accept(BankResult.fail("coins_short"));
             return;
         }
-        player.getInventory().clearOrCountMatchingItems(st -> st.is(tier.coin()), count, player.inventoryMenu.getCraftSlots());
+        List<BankStamps.Lot> lots = BankStamps.takeFromInventory(player, tier, count); // banked coins keep their team stamps
         player.inventoryMenu.broadcastChanges();
         UUID id = player.getUUID();
         String what = count + " " + tierName(tier) + (count == 1 ? " coin" : " coins");
@@ -243,9 +243,10 @@ public final class Bank {
             dCoins[tier.ordinal()] = count;
             t = new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.DEPOSIT, "Shatter Bank", "banked " + what, 0, tier.ordinal(), count, serverId());
         }
-        adjust(server, id, dPieces, dCoins, t, r -> {
+        StampChange change = convert ? null : new StampChange(tier, lots, 0, null);
+        adjust(server, id, dPieces, dCoins, t, change, r -> {
             if (!r.ok()) {
-                giveCoins(server, player, tier, count); // the database did not take them: hand the coins back
+                giveStacks(server, player, BankStamps.stacks(tier, lots)); // the database did not take them: hand the same coins back
             }
             then.accept(r);
         });
@@ -261,22 +262,40 @@ public final class Bank {
         dCoins[tier.ordinal()] = -count;
         String what = count + " " + tierName(tier) + (count == 1 ? " coin" : " coins");
         BankTransaction t = new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.WITHDRAW, "Shatter Bank", "took out " + what, 0, tier.ordinal(), -count, serverId());
-        adjust(server, player.getUUID(), 0, dCoins, t, r -> {
+        com.mrgregles.bsp_core.team.Team team = com.mrgregles.bsp_core.coin.CoinStamp.teamOf(server, player.getUUID());
+        StampChange change = new StampChange(tier, List.of(), count, team == null ? null : team.id.toString());
+        adjust(server, player.getUUID(), 0, dCoins, t, change, r -> {
             if (r.ok()) {
-                giveCoins(server, player, tier, count);
+                // the coins come back with the stamps they went in with: this team's first, then clean ones, then the rest
+                giveStacks(server, player, BankStamps.stacks(tier, change.picked == null ? List.of(new BankStamps.Lot(null, "", count)) : change.picked));
             }
             then.accept(r);
         });
     }
 
-    /** Coins into the player's inventory; a player who left while the database answered gets them at their next login instead. */
-    private static void giveCoins(MinecraftServer server, Player player, CoinTier tier, int count) {
-        List<ItemStack> stacks = new java.util.ArrayList<>();
-        while (count > 0) {
-            int batch = Math.min(count, 64);
-            stacks.add(new ItemStack(tier.coin(), batch));
-            count -= batch;
+    /**
+     * The stamps a coin deposit or withdrawal moves with the counts: {@code add} (stamped and clean lots) going in, or {@code take}
+     * coins of {@code tier} going out, picked for {@code team}. {@link #picked} is set to what was taken before the answer runs.
+     */
+    static final class StampChange {
+        final CoinTier tier;
+        final List<BankStamps.Lot> add;
+        final int take;
+        @Nullable
+        final String team;
+        @Nullable
+        List<BankStamps.Lot> picked;
+
+        StampChange(CoinTier tier, List<BankStamps.Lot> add, int take, @Nullable String team) {
+            this.tier = tier;
+            this.add = add;
+            this.take = take;
+            this.team = team;
         }
+    }
+
+    /** Coin stacks into the player's inventory; a player who left while the database answered gets them at their next login instead. */
+    private static void giveStacks(MinecraftServer server, Player player, List<ItemStack> stacks) {
         if (player instanceof ServerPlayer sp && sp.hasDisconnected()) {
             com.mrgregles.bsp_core.admin.AdminService.deliver(server, player.getUUID(), stacks, "message.bsp_core.bank.coins_delivered");
             return;
@@ -371,9 +390,13 @@ public final class Bank {
             then.accept(BankResult.fail("unreachable"));
             return;
         }
-        if (!com.mrgregles.bsp_core.coin.CoinWallet.take(player, tier, count)) {
+        if (BankStamps.count(player, tier) < count) {
             then.accept(BankResult.fail(shortKey));
             return;
+        }
+        List<BankStamps.Lot> taken = BankStamps.takeFromInventory(player, tier, count); // handed back as they were if the unlock fails
+        if (player instanceof ServerPlayer sp) {
+            sp.inventoryMenu.broadcastChanges();
         }
         Runnable done = () -> {
             setLocal.run();
@@ -389,7 +412,7 @@ public final class Bank {
                 done.run();
                 return;
             }
-            giveCoins(server, player, tier, count);
+            giveStacks(server, player, BankStamps.stacks(tier, taken));
             if (set != null) {
                 setLocal.run(); // it was on already: this server's copy was behind
             }
@@ -549,6 +572,11 @@ public final class Bank {
 
     /** The one place balances change: a signed pieces delta and signed coin deltas, refused as a whole if anything would go below zero. */
     private static void adjust(MinecraftServer server, UUID id, long dPieces, @Nullable int[] dCoins, BankTransaction t, Consumer<BankResult> then) {
+        adjust(server, id, dPieces, dCoins, t, null, then);
+    }
+
+    /** {@link #adjust} that also moves the coins' team stamps ({@code stamps}, null when no coins go in or out of the bank). */
+    private static void adjust(MinecraftServer server, UUID id, long dPieces, @Nullable int[] dCoins, BankTransaction t, @Nullable StampChange stamps, Consumer<BankResult> then) {
         BankLedger ledger = BankLedger.get(server);
         BankAccount a = ledger.account(id);
         int[] dc = dCoins == null ? new int[CoinTier.values().length] : dCoins;
@@ -568,6 +596,13 @@ public final class Bank {
                     return;
                 }
             }
+            if (stamps != null && stamps.take > 0) {
+                stamps.picked = BankStamps.pick(a, stamps.tier, stamps.take, stamps.team); // read before the count goes down
+                BankStamps.remove(a, stamps.tier, stamps.picked);
+            }
+            if (stamps != null) {
+                BankStamps.add(a, stamps.tier, stamps.add);
+            }
             a.pieces += dPieces;
             for (int i = 0; i < dc.length; i++) {
                 a.coins[i] += dc[i];
@@ -576,7 +611,8 @@ public final class Bank {
             then.accept(BankResult.ok(a.pieces));
             return;
         }
-        NetworkStorage.bankAdjust(id, dPieces, dc, t, (row, reached) -> {
+        NetworkStorage.bankAdjust(id, dPieces, dc, t, stamps == null ? null : stamps.tier, stamps == null ? null : stamps.add,
+                stamps == null ? 0 : stamps.take, stamps == null ? null : stamps.team, (row, reached) -> {
             if (!reached) {
                 then.accept(BankResult.fail("unreachable")); // rolled back: nothing changed
                 return;
@@ -584,6 +620,9 @@ public final class Bank {
             if (row == null) {
                 then.accept(BankResult.fail("short"));
                 return;
+            }
+            if (stamps != null) {
+                stamps.picked = row.picked;
             }
             a.copyMoneyFrom(row);
             ledger.setDirty();

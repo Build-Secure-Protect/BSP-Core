@@ -170,6 +170,10 @@ public class VaultPrizes extends SavedData {
                 break;
             }
             ItemStack out = p.stack().copy();
+            if (out.getItem() instanceof com.mrgregles.bsp_core.coin.ShatterCoinItem) {
+                // a prize coin is new, so it is stamped for the team the player is in now, as a pressed coin is
+                com.mrgregles.bsp_core.coin.CoinStamp.stamp(out, com.mrgregles.bsp_core.coin.CoinStamp.teamOf(player.server, player.getUUID()));
+            }
             Component name = out.getHoverName().copy();
             if (!player.getInventory().add(out)) {
                 player.drop(out, false);

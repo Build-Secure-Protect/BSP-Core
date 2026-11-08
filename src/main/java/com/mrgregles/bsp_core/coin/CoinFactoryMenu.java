@@ -24,8 +24,10 @@ import java.util.List;
  */
 public class CoinFactoryMenu extends AbstractContainerMenu {
     public static final int WIDTH = 326, LANE_W = 30, BLANK_Y = 31, TRAY_Y = 75, INV_X = 82, INV_Y = 144, BTN_POWER = 0, BTN_DEMO = 1;
-    /** Per slice: tier + 1, progress in thousandths, seconds left (two shorts), Motivators, plasma mB/t, state, press speed factor in hundredths. */
-    private static final int PER = 8, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 9;
+    /** Per slice: tier + 1 (with {@link #REPRESS_BIT} while re-pressing), progress in thousandths, seconds left (two shorts), Motivators, plasma mB/t, state, press speed factor in hundredths. */
+    /** Set on a lane's tier value while its job is a re-press. */
+    private static final int REPRESS_BIT = 16;
+    private static final int PER = 8, SHARED = CoinFactoryBlockEntity.MAX_SLICES * PER, DATA_COUNT = SHARED + 11;
 
     @Nullable
     private final CoinFactoryBlockEntity origin;
@@ -50,10 +52,13 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
         for (int i = 0; i < count; i++) {
             // screen left = the slice on the viewer's left, which is the far end of the row order
             ItemStackHandler handler = slices == null ? new ItemStackHandler(CoinFactoryBlockEntity.SLOTS) : slices.get(count - 1 - i).getItems();
+            CoinFactoryBlockEntity slice = slices == null ? null : slices.get(count - 1 - i);
             addSlot(new SlotItemHandler(handler, CoinFactoryBlockEntity.SLOT_INPUT, laneX(i, count), BLANK_Y) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
-                    return stack.getItem() instanceof CoinBlankItem;
+                    // a blank, or a coin to re-press for the owner's team (the client takes any stamped coin; the server decides)
+                    return stack.getItem() instanceof CoinBlankItem || stack.getItem() instanceof ShatterCoinItem
+                            && (slice == null ? CoinStamp.of(stack) != null : slice.needsRepress(stack));
                 }
             });
             addSlot(new SlotItemHandler(handler, CoinFactoryBlockEntity.SLOT_OUTPUT, laneX(i, count), TRAY_Y) {
@@ -92,7 +97,7 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
                     CoinFactoryBlockEntity s = slices.get(n - 1 - lane);
                     long rem = s.remainingSeconds();
                     return switch (i % PER) {
-                        case 0 -> s.getJobTier() == null ? 0 : s.getJobTier().ordinal() + 1;
+                        case 0 -> (s.getJobTier() == null ? 0 : s.getJobTier().ordinal() + 1) | (s.isRepressing() ? REPRESS_BIT : 0);
                         case 1 -> Math.round(s.progressFraction() * 1000);
                         case 2 -> (int) (rem & 0xFFFF);
                         case 3 -> (int) ((rem >>> 16) & 0xFFFF);
@@ -116,7 +121,10 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
                     case 5 -> intake & 0xFFFF;
                     case 6 -> (intake >>> 16) & 0xFFFF;
                     case 7 -> cables;
-                    default -> origin.getLevel() instanceof ServerLevel sl && origin.getOwner() != null ? FactoryLedger.get(sl.getServer()).count(origin.getOwner()) : 0;
+                    case 8 -> origin.getLevel() instanceof ServerLevel sl && origin.getOwner() != null ? FactoryLedger.get(sl.getServer()).count(origin.getOwner()) : 0;
+                    // the owner's limit and team size come from the server: the config is the server's, sent to clients only at login
+                    case 9 -> origin.getLevel() instanceof ServerLevel sl && origin.getOwner() != null ? FactoryCap.cap(sl.getServer(), origin.getOwner()) : 0;
+                    default -> origin.getLevel() instanceof ServerLevel sl && origin.getOwner() != null ? FactoryCap.teamSize(sl.getServer(), origin.getOwner()) : 1;
                 };
             }
 
@@ -138,7 +146,12 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
 
     @Nullable
     public CoinTier jobTier(int lane) {
-        return CoinTier.byOrdinal(data.get(lane * PER) - 1);
+        return CoinTier.byOrdinal((data.get(lane * PER) & ~REPRESS_BIT) - 1);
+    }
+
+    /** Whether the lane's job re-presses a coin. */
+    public boolean repressing(int lane) {
+        return (data.get(lane * PER) & REPRESS_BIT) != 0;
     }
 
     public float progress(int lane) {
@@ -192,8 +205,19 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
         return data.get(SHARED + 7);
     }
 
+    /** The slices the factory's owner owns, across the network. */
     public int ownedCount() {
         return data.get(SHARED + 8);
+    }
+
+    /** The slices the owner may own at their team's size. */
+    public int ownerCap() {
+        return data.get(SHARED + 9);
+    }
+
+    /** The owner's team size: 1 in no team. */
+    public int ownerTeamSize() {
+        return Math.max(1, data.get(SHARED + 10));
     }
 
     @Nullable
@@ -228,7 +252,8 @@ public class CoinFactoryMenu extends AbstractContainerMenu {
             if (!moveItemStackTo(stack, machineSlots, slots.size(), true)) {
                 return ItemStack.EMPTY;
             }
-        } else if (stack.getItem() instanceof CoinBlankItem) {
+        } else if (stack.getItem() instanceof CoinBlankItem || stack.getItem() instanceof ShatterCoinItem) {
+            // blanks, and coins to re-press, go into the lanes' blank slots (each slot says what it takes)
             for (int lane = 0; lane < sliceCount && !stack.isEmpty(); lane++) {
                 moveItemStackTo(stack, lane * 2, lane * 2 + 1, false);
             }

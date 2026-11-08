@@ -292,7 +292,7 @@ public class CoinFactoryRenderer implements BlockEntityRenderer<CoinFactoryBlock
         }
         CoinTier job = f.visualTier();
         if (working && job != null) {
-            ItemStack blank = new ItemStack(job.blank()), coin = new ItemStack(job.coin());
+            ItemStack blank = new ItemStack(f.isRepressing() && !f.isDemo() ? job.coin() : job.blank()), coin = new ItemStack(job.coin()); // a re-press carries a coin in
             float total = 0;
             float[] len = new float[PATH.length - 1];
             for (int i = 0; i < len.length; i++) {

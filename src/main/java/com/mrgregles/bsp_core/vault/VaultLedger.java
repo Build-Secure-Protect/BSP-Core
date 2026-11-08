@@ -49,6 +49,8 @@ public class VaultLedger extends SavedData {
         long netMs;
         /** Coins from vaults somebody else broke, waiting for the owner to collect. */
         int[] recovered = new int[CoinTier.values().length];
+        /** The team-stamped coins among {@link #recovered}, kept as stacks so they go back with their stamps; the rest are clean. */
+        final java.util.List<net.minecraft.world.item.ItemStack> recoveredStamped = new java.util.ArrayList<>();
 
         /** Coins of each tier across all of this player's vaults. */
         public int[] coins() {
@@ -327,18 +329,45 @@ public class VaultLedger extends SavedData {
 
     /** Keeps the coins of a vault that someone other than its owner broke, for the owner to collect. */
     public void addRecovered(UUID owner, int[] coins) {
+        addRecovered(owner, coins, java.util.List.of());
+    }
+
+    /** {@link #addRecovered(UUID, int[])} with the team-stamped stacks among those coins, kept as they are. */
+    public void addRecovered(UUID owner, int[] coins, java.util.List<net.minecraft.world.item.ItemStack> stamped) {
         Account a = account(owner);
         for (int i = 0; i < a.recovered.length; i++) {
             a.recovered[i] += coins[i];
         }
+        for (net.minecraft.world.item.ItemStack st : stamped) {
+            a.recoveredStamped.add(st.copy());
+        }
         setDirty();
     }
 
-    /** Hands back, and clears, the coins waiting for the owner. */
-    public int[] takeRecovered(UUID owner) {
+    /** Hands back, and clears, the coins waiting for the owner, as stacks: the stamped ones as they were kept, the rest clean. */
+    public java.util.List<net.minecraft.world.item.ItemStack> takeRecoveredStacks(UUID owner) {
         Account a = account(owner);
-        int[] out = a.recovered;
-        a.recovered = new int[out.length];
+        int[] left = a.recovered.clone();
+        java.util.List<net.minecraft.world.item.ItemStack> out = new java.util.ArrayList<>();
+        for (net.minecraft.world.item.ItemStack st : a.recoveredStamped) {
+            if (st.getItem() instanceof com.mrgregles.bsp_core.coin.ShatterCoinItem coin) {
+                int n = Math.min(st.getCount(), left[coin.tier.ordinal()]);
+                if (n > 0) {
+                    out.add(st.copyWithCount(n));
+                    left[coin.tier.ordinal()] -= n;
+                }
+            }
+        }
+        for (CoinTier tier : CoinTier.values()) {
+            int n = left[tier.ordinal()];
+            while (n > 0) {
+                net.minecraft.world.item.ItemStack st = new net.minecraft.world.item.ItemStack(tier.coin(), Math.min(n, com.mrgregles.bsp_core.coin.ShatterCoinItem.STACK));
+                n -= st.getCount();
+                out.add(st);
+            }
+        }
+        a.recovered = new int[a.recovered.length];
+        a.recoveredStamped.clear();
         setDirty();
         return out;
     }
@@ -349,6 +378,7 @@ public class VaultLedger extends SavedData {
         for (Account a : accounts.values()) {
             a.xp = a.tetrium = a.illyrium = a.prizes = 0;
             a.recovered = new int[CoinTier.values().length];
+            a.recoveredStamped.clear();
             a.lastMs = a.netMs = now;
         }
         setDirty();
@@ -397,6 +427,11 @@ public class VaultLedger extends SavedData {
             e.putLong("LastMs", a.lastMs);
             e.putLong("NetMs", a.netMs);
             e.putIntArray("Recovered", a.recovered);
+            if (!a.recoveredStamped.isEmpty()) {
+                ListTag stamped = new ListTag();
+                a.recoveredStamped.forEach(st -> stamped.add(st.save(new CompoundTag())));
+                e.put("RecoveredStamped", stamped);
+            }
             ListTag vaults = new ListTag();
             a.vaults.forEach((pos, coins) -> {
                 CompoundTag v = new CompoundTag();
@@ -428,6 +463,12 @@ public class VaultLedger extends SavedData {
             a.netMs = e.getLong("NetMs");
             if (e.getIntArray("Recovered").length == a.recovered.length) {
                 a.recovered = e.getIntArray("Recovered");
+            }
+            for (Tag rs : e.getList("RecoveredStamped", Tag.TAG_COMPOUND)) {
+                net.minecraft.world.item.ItemStack st = net.minecraft.world.item.ItemStack.of((CompoundTag) rs);
+                if (!st.isEmpty()) {
+                    a.recoveredStamped.add(st);
+                }
             }
             for (Tag rv : e.getList("Vaults", Tag.TAG_COMPOUND)) {
                 CompoundTag v = (CompoundTag) rv;

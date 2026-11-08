@@ -246,6 +246,10 @@ BspStoreCredit.charge(player, price, TP, "BSP Teleport", "Warp Mines", receipt -
 - `testTicket(player, pieces, use)`: GameTests only; a minted ticket holding `pieces` for that use, in the player's inventory.
 - Coin prices are not paid with credit. Guard the calls (`NoClassDefFoundError`) to keep working with an older BSP-Core.
 
+## Coin stamps (since 1.15.0)
+
+A Shatter Coin pressed by a Coin Factory carries the string tag `PressTeam`: the factory owner's team id, or `none` outside a team; `PressTeamName` holds the team's name for the tooltip. A coin without `PressTeam` is clean. Differently stamped coins do not stack. A mod that takes coins should accept any stamp (`BspCoins.pay` does; its change carries the stamp of the coin it broke). A mod that keeps coins and hands them back should hand back the same stacks, tags included, not new coins. `BspCoins.give` makes new coins stamped for the receiver's current team (`none` outside a team).
+
 ## Shop import file (format 1)
 
 `/bsp shop import <file> [test]` reads `config/bsp_core/shops/<file>.json` (letters, digits, `_`, `-`, `.` only; no folders). All or nothing: one error refuses the file. A shop whose id is on the server is replaced whole: when its cards are the same items (with the same data, lot size and section) in the same places, its counts and draw stay and its change time keeps its date, and only a card whose limits, refill rules or match rule changed starts its counts again; otherwise its counts and draw start again. Shops not named are untouched; nothing is deleted. Names hold up to 64 characters, a requirement's reason 64 and its permission 128. The full report is written to `<file>-report.txt` beside it.

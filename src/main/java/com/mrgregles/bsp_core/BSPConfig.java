@@ -70,6 +70,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends Number>> FACTORY_MOTIVATOR_REDUCTIONS;
     public static final ForgeConfigSpec.DoubleValue FACTORY_MAX_REDUCTION;
     public static final ForgeConfigSpec.IntValue FACTORY_MAX_PER_PLAYER;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> FACTORY_MAX_PER_TEAM_SIZE;
 
     // ------------------------------------------------------------------ machines
 
@@ -134,6 +135,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.BooleanValue CHUNKS_ENABLED, CHUNKS_OWNER_ONLINE;
     public static final ForgeConfigSpec.BooleanValue TEAM_ENABLED, TEAM_MEMBERS_INVITE, TEAM_CHAT_TAG, TEAM_TEAMMATES_STEAL, TEAM_COMPASS_IGNORES;
     public static final ForgeConfigSpec.BooleanValue PROXY_RELAY_CHAT;
+    public static final ForgeConfigSpec.IntValue TEAM_UPGRADE_SURCHARGE;
     public static final ForgeConfigSpec.IntValue TEAM_MAX_MEMBERS, TEAM_INVITE_SECONDS, TEAM_HISTORY_SIZE, TEAM_NAME_MIN, TEAM_NAME_MAX;
     public static final ForgeConfigSpec.BooleanValue ALLIANCE_ENABLED, ALLIANCE_ALLOW_CLOAK, ALLIANCE_ALLOW_WARD, ALLIANCE_ALLOW_ALARM, ALLIANCE_ALLOW_MACHINES;
     public static final ForgeConfigSpec.IntValue ALLIANCE_MAX_TEAMS, ALLIANCE_BREAK_HOURS, ALLIANCE_POSITION_SECONDS, ALLIANCE_LEFT_HOURS;
@@ -366,8 +368,12 @@ public final class BSPConfig {
                 .defineList("motivatorTimeReduction", List.of(0.15, 0.30, 0.50), o -> o instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() < 1);
         FACTORY_MAX_REDUCTION = BUILDER.comment("Upper limit on the combined reduction, so time can never reach zero.")
                 .defineInRange("maxTotalReduction", 0.75, 0.0, 0.99);
-        FACTORY_MAX_PER_PLAYER = BUILDER.comment("How many factory slices (controllers) one player may own on this server. A joined machine holds at most 10.")
+        FACTORY_MAX_PER_PLAYER = BUILDER.comment("Most factory slices (controllers) any one player may own across the network, whatever maxPerTeamSize says. A joined machine holds at most 10.")
                 .defineInRange("maxPerPlayer", 10, 0, 10_000);
+        FACTORY_MAX_PER_TEAM_SIZE = BUILDER.comment("How many factory slices each player may own, by the size of their team: the first number for a player in no team,",
+                        "then a team of 2, 3, 4, 5. Larger teams use the last number. Counted across the network, by the team's current members.",
+                        "A player over it (after joining a team, or when their team grows) keeps their slices, but the newest ones over it pause until they are under it again.")
+                .defineList("maxPerTeamSize", List.of(10, 8, 7, 6, 5), o -> o instanceof Integer i && i >= 0);
         BUILDER.pop();
 
         BUILDER.comment("RF upgrades for the processing machines").push("rf_upgrade");
@@ -749,6 +755,10 @@ public final class BSPConfig {
         BUILDER.comment("Teams: players who share full access to each other's totems.").push("team");
         TEAM_ENABLED = BUILDER.comment("Master switch. When false nobody can make or join a team; teams that exist keep their names but give no access.").define("enabled", true);
         TEAM_MAX_MEMBERS = BUILDER.comment("Most players in one team, the leader included. An invite that is waiting holds a seat.").defineInRange("maxMembers", 5, 1, 100);
+        TEAM_UPGRADE_SURCHARGE = BUILDER.comment("Extra cost of totem tier raises and upgrades, in percent, for each member of the totem owner's team after the first",
+                        "(a team of 4 pays 3 x this). Paid in Shatter Pieces from the buyer's bank: the price's copper value x bank.piecesPerCopper x the percent.",
+                        "Compass upgrades do not pay it. 0 turns it off.")
+                .defineInRange("upgradeSurchargePercent", 6, 0, 100);
         TEAM_MEMBERS_INVITE = BUILDER.comment("When true every member may invite; when false only the leader.").define("membersInvite", true);
         TEAM_INVITE_SECONDS = BUILDER.comment("How long an invite waits for an answer.").defineInRange("inviteSeconds", 60, 5, 3600);
         TEAM_HISTORY_SIZE = BUILDER.comment("How many lines the team's board keeps.").defineInRange("historySize", 50, 0, 1000);

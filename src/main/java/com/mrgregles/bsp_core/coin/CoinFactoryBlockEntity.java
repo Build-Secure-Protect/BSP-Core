@@ -45,7 +45,7 @@ import java.util.UUID;
 public class CoinFactoryBlockEntity extends BlockEntity {
     public static final int SLOT_INPUT = 0, SLOT_OUTPUT = 1, SLOTS = 2, MAX_SLICES = 10, MOTIVATOR_CELLS = 3;
     /** Slice state shown on the screen. */
-    public static final int STATE_NEEDS_BLANK = 0, STATE_PRESSING = 1, STATE_TRAY_FULL = 2, STATE_NEEDS_RF = 3, STATE_REDSTONE = 4;
+    public static final int STATE_NEEDS_BLANK = 0, STATE_PRESSING = 1, STATE_TRAY_FULL = 2, STATE_NEEDS_RF = 3, STATE_REDSTONE = 4, STATE_OVER_CAP = 5, STATE_TRAY_OTHER_TEAM = 6, STATE_COIN_DONE = 7;
 
     public enum SideMode {
         NONE, INPUT, OUTPUT, BOTH;
@@ -75,7 +75,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return slot == SLOT_INPUT ? stack.getItem() instanceof CoinBlankItem : stack.getItem() instanceof ShatterCoinItem;
+            return slot == SLOT_INPUT ? stack.getItem() instanceof CoinBlankItem || needsRepress(stack) : stack.getItem() instanceof ShatterCoinItem;
         }
     };
 
@@ -88,6 +88,8 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     private boolean formed;
     /** True while a redstone signal at the controller is holding this slice paused. */
     private boolean powered;
+    /** True while the slice is one of its owner's newest beyond their team's factory limit ({@link FactoryCap}). Server side, saved. */
+    private boolean overCap;
     private boolean demo;
     /** The feeding totem's Overclock scale, through the injectors (1.0 with none). Saved, since a press catches up on its unloaded time at the saved speed. Server side. */
     private double overclock = 1.0, plasmaScale = 1.0;
@@ -99,6 +101,8 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
     /** Tier being pressed, or -1 when idle. */
     private int jobTier = -1;
+    /** The job is a re-press: a coin going through again at half the time and RF, coming out for the owner's team. */
+    private boolean jobRepress;
     /** Progress of the current press in base (un-motivated) milliseconds. */
     private double progressMs;
     /** Wall-clock time the progress was last brought up to date. */
@@ -150,7 +154,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
     /** True while a blank is on the line and the machine is running. */
     public boolean isWorking() {
-        return formed && (demo || (enabled && !powered && jobTier >= 0 && progressFraction() < 1f));
+        return formed && (demo || (enabled && !powered && !overCap && jobTier >= 0 && progressFraction() < 1f));
     }
 
     /** Demo mode: an operator has set this slice to play its working animation with nothing in it. */
@@ -180,6 +184,41 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     @Nullable
     public CoinTier getJobTier() {
         return CoinTier.byOrdinal(jobTier);
+    }
+
+    /** Whether the current job re-presses a coin. */
+    public boolean isRepressing() {
+        return jobTier >= 0 && jobRepress;
+    }
+
+    /**
+     * Whether {@code stack} is a coin this slice re-presses: one pressed for another team or outside a team, while the owner is in
+     * a team. Coins pressed for the owner's team, and coins with no stamp, already pay on the team's totems. A client, which does
+     * not know the owner's team, takes any stamped coin; the server decides.
+     */
+    public boolean needsRepress(ItemStack stack) {
+        if (!(stack.getItem() instanceof ShatterCoinItem)) {
+            return false;
+        }
+        String stamp = CoinStamp.of(stack);
+        if (stamp == null || owner == null) {
+            return false;
+        }
+        if (!(level instanceof ServerLevel sl)) {
+            return true;
+        }
+        com.mrgregles.bsp_core.team.Team team = CoinStamp.teamOf(sl.getServer(), owner);
+        return team != null && !stamp.equals(team.id.toString());
+    }
+
+    /** Base milliseconds of the current kind of job for {@code tier}: half for a re-press. */
+    private double jobMillis(CoinTier tier) {
+        return jobRepress ? tier.pressMillis() / 2.0 : tier.pressMillis();
+    }
+
+    /** RF a job of {@code tier} takes when it starts: half for a re-press. */
+    private static int jobEnergy(CoinTier tier, boolean repress) {
+        return repress ? tier.energyPerCoin() / 2 : tier.energyPerCoin();
     }
 
     public int motivatorMask() {
@@ -226,27 +265,45 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         if (tier == null) {
             return 0;
         }
-        return (long) Math.ceil(Math.max(0, tier.pressMillis() - progressMs) / speed() / 1000.0);
+        return (long) Math.ceil(Math.max(0, jobMillis(tier) - progressMs) / speed() / 1000.0);
     }
 
     public float progressFraction() {
         CoinTier tier = getJobTier();
-        return tier == null ? 0f : (float) Math.min(1.0, progressMs / tier.pressMillis());
+        return tier == null ? 0f : (float) Math.min(1.0, progressMs / jobMillis(tier));
+    }
+
+    /** Whether the slice is paused for being over its owner's team factory limit. */
+    public boolean isOverCap() {
+        return overCap;
     }
 
     public int stateCode() {
+        if (overCap) {
+            return STATE_OVER_CAP;
+        }
         if (powered) {
             return STATE_REDSTONE;
         }
         CoinTier tier = getJobTier();
         if (tier != null) {
-            return progressFraction() >= 1f ? STATE_TRAY_FULL : STATE_PRESSING;
+            return progressFraction() >= 1f ? trayState(tier) : STATE_PRESSING;
         }
-        if (!(items.getStackInSlot(SLOT_INPUT).getItem() instanceof CoinBlankItem blank)) {
+        ItemStack in = items.getStackInSlot(SLOT_INPUT);
+        if (in.getItem() instanceof ShatterCoinItem coin) {
+            if (!needsRepress(in)) {
+                return STATE_COIN_DONE; // the owner's team changed: this coin pays for it already, or the owner is in no team
+            }
+            if (!canOutput(coin.tier)) {
+                return trayState(coin.tier);
+            }
+            return poolStored() < jobEnergy(coin.tier, true) ? STATE_NEEDS_RF : STATE_PRESSING;
+        }
+        if (!(in.getItem() instanceof CoinBlankItem blank)) {
             return STATE_NEEDS_BLANK;
         }
         if (!canOutput(blank.tier)) {
-            return STATE_TRAY_FULL;
+            return trayState(blank.tier);
         }
         return poolStored() < blank.tier.energyPerCoin() ? STATE_NEEDS_RF : STATE_PRESSING;
     }
@@ -493,6 +550,17 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         }
         intakeRate = (int) (intakeAcc / 20);
         intakeAcc = 0;
+        // first, before anything else settles the press: the team factory limit
+        // (on a network, not before this server has read the owner's slices elsewhere: until then the saved state stands)
+        GlobalPos here = GlobalPos.of(level.dimension(), worldPosition);
+        boolean over = owner != null && com.mrgregles.bsp_core.storage.NetworkStorage.slicesKnown() ? FactoryCap.overCap(level.getServer(), owner, here) : overCap;
+        if (over != overCap) {
+            long now = System.currentTimeMillis();
+            // pausing: count the press only up to the join that put this slice over the limit (it may have been unloaded then)
+            advance(over ? Math.max(lastUpdateMs, Math.min(now, FactoryCap.overSince(level.getServer(), owner, here))) : now);
+            overCap = over;
+            setChanged();
+        }
         double aura = plasmaScale; // the feeding totem's Overclock, through the injectors
         if (aura != overclock) {
             advance(System.currentTimeMillis()); // settle progress at the old speed first
@@ -516,7 +584,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
     /** Brings the slice up to date with the wall clock, finishing and starting presses as needed. */
     public void advance(long now) {
-        if (lastUpdateMs <= 0 || now < lastUpdateMs || !formed || !enabled || powered) {
+        if (lastUpdateMs <= 0 || now < lastUpdateMs || !formed || !enabled || powered || overCap) {
             lastUpdateMs = now; // first run, clock moved backwards, or the line is stopped
             syncIfVisualChanged();
             return;
@@ -526,7 +594,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
             if (tier != null) {
                 double speed = speed();
                 long elapsed = now - lastUpdateMs;
-                double needed = (tier.pressMillis() - progressMs) / speed;
+                double needed = (jobMillis(tier) - progressMs) / speed;
                 if (elapsed < needed) {
                     progressMs += elapsed * speed;
                     lastUpdateMs = now;
@@ -534,14 +602,15 @@ public class CoinFactoryBlockEntity extends BlockEntity {
                 }
                 if (!canOutput(tier)) {
                     // finished but the tray is full: hold at 100% until coins are taken
-                    progressMs = tier.pressMillis();
+                    progressMs = jobMillis(tier);
                     lastUpdateMs = now;
                     break;
                 }
                 ItemStack out = items.getStackInSlot(SLOT_OUTPUT);
-                items.setStackInSlot(SLOT_OUTPUT, out.isEmpty() ? new ItemStack(tier.coin()) : out.copyWithCount(out.getCount() + 1));
+                items.setStackInSlot(SLOT_OUTPUT, pressed(tier).copyWithCount(out.isEmpty() ? 1 : out.getCount() + 1)); // the tray takes the stamp as it is now
                 lastUpdateMs += (long) Math.max(0, needed);
                 jobTier = -1;
+                jobRepress = false;
                 progressMs = 0;
             }
             if (!tryStartJob()) {
@@ -555,22 +624,54 @@ public class CoinFactoryBlockEntity extends BlockEntity {
 
     private boolean tryStartJob() {
         ItemStack in = items.getStackInSlot(SLOT_INPUT);
-        if (!(in.getItem() instanceof CoinBlankItem blank)) {
+        CoinTier tier;
+        boolean repress;
+        if (in.getItem() instanceof CoinBlankItem blank) {
+            tier = blank.tier;
+            repress = false;
+        } else if (in.getItem() instanceof ShatterCoinItem coin && needsRepress(in)) {
+            tier = coin.tier;
+            repress = true;
+        } else {
             return false;
         }
-        CoinTier tier = blank.tier;
-        if (!canOutput(tier) || !poolConsume(tier.energyPerCoin())) {
+        if (!canOutput(tier) || !poolConsume(jobEnergy(tier, repress))) {
             return false;
         }
         items.setStackInSlot(SLOT_INPUT, in.copyWithCount(in.getCount() - 1));
         jobTier = tier.ordinal();
+        jobRepress = repress;
         progressMs = 0;
         return true;
     }
 
+    /** Whether a coin of {@code tier} pressed now fits on the tray: an empty tray, or a stack of the same coin with the same team stamp and room. */
     private boolean canOutput(CoinTier tier) {
         ItemStack out = items.getStackInSlot(SLOT_OUTPUT);
-        return out.isEmpty() || (out.is(tier.coin()) && out.getCount() < out.getMaxStackSize());
+        if (out.isEmpty()) {
+            return true;
+        }
+        if (!out.is(tier.coin()) || out.getCount() >= out.getMaxStackSize()) {
+            return false;
+        }
+        // the same team by id (a renamed team's coins still join); a tray of coins pressed before stamps takes the owner's stamp
+        String tray = CoinStamp.of(out);
+        return tray == null || tray.equals(CoinStamp.of(pressed(tier)));
+    }
+
+    /** Why the tray takes no more: full, or holding coins pressed for another team than the owner's now (they cannot stack). */
+    private int trayState(CoinTier tier) {
+        ItemStack out = items.getStackInSlot(SLOT_OUTPUT);
+        return !out.isEmpty() && out.is(tier.coin()) && out.getCount() < out.getMaxStackSize() ? STATE_TRAY_OTHER_TEAM : STATE_TRAY_FULL;
+    }
+
+    /** A coin of {@code tier} as this slice presses it now: stamped with the team its owner is in (or as pressed outside a team). */
+    public ItemStack pressed(CoinTier tier) {
+        ItemStack coin = new ItemStack(tier.coin());
+        if (level instanceof ServerLevel sl) {
+            CoinStamp.stamp(coin, CoinStamp.teamOf(sl.getServer(), owner));
+        }
+        return coin;
     }
 
     // ------------------------------------------------------------------ persistence + sync
@@ -593,11 +694,13 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         tag.putBoolean("Enabled", enabled);
         tag.putBoolean("Formed", formed);
         tag.putBoolean("Powered", powered);
+        tag.putBoolean("OverCap", overCap);
         tag.putBoolean("Demo", demo);
         tag.putInt("Motivators", motivatorMask);
         tag.putDouble("Plasma", plasma);
         tag.putDouble("Overclock", overclock);
         tag.putInt("JobTier", jobTier);
+        tag.putBoolean("JobRepress", jobRepress);
         tag.putDouble("ProgressMs", progressMs);
         tag.putLong("LastUpdateMs", lastUpdateMs);
     }
@@ -616,11 +719,13 @@ public class CoinFactoryBlockEntity extends BlockEntity {
         enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
         formed = tag.getBoolean("Formed");
         powered = tag.getBoolean("Powered");
+        overCap = tag.getBoolean("OverCap");
         demo = tag.getBoolean("Demo");
         motivatorMask = tag.getInt("Motivators");
         plasma = tag.contains("Plasma") ? tag.getDouble("Plasma") : 1.0;
         overclock = tag.contains("Overclock") ? tag.getDouble("Overclock") : 1.0;
         jobTier = tag.contains("JobTier") ? tag.getInt("JobTier") : -1;
+        jobRepress = tag.getBoolean("JobRepress");
         progressMs = tag.getDouble("ProgressMs");
         lastUpdateMs = tag.getLong("LastUpdateMs");
     }
@@ -628,6 +733,7 @@ public class CoinFactoryBlockEntity extends BlockEntity {
     /** What the renderer shows: formed, running, tier on the line, coins in the tray, Motivators. */
     private int visualHash() {
         int h = jobTier + 1;
+        h = h * 2 + (jobRepress ? 1 : 0);
         h = h * 31 + (items.getStackInSlot(SLOT_INPUT).getItem() instanceof CoinBlankItem b ? b.tier.ordinal() + 1 : 0);
         CoinTier tray = trayTier();
         h = h * 31 + (tray == null ? 0 : tray.ordinal() + 1);

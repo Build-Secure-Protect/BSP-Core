@@ -19,7 +19,8 @@ public final class BSPNetwork {
      * 10: store credit on the shop and Land Office screens ({@link CreditStripPacket}, {@link CreditTogglePacket}) its stamp ({@link CreditNoticePacket}) and the admin panel's CREDIT tab ({@link CreditAdminPacket}, {@link CreditTicketsPacket}, {@link CreditAdminActionPacket}).
      * 11: the Coin Vault screen's synced values carry the waiting vault prize rolls; the admin panel's VAULT tab ({@link VaultPrizeAdminPacket}, {@link VaultPrizeEditPacket}).
      * 12: the Totem Compass screen syncs its range levels and whether tracking found no rival in reach; the admin panel's RADIATION
-     *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}).
+     *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}); the Coin Factory screen's synced values carry the owner's
+     *     team factory limit and team size, and a lane's re-press flag; the carried totem's upgrade screen syncs the team surcharge.
      */
     private static final String PROTOCOL = "12";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(

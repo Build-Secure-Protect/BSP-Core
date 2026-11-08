@@ -102,6 +102,8 @@ public class TotemUpgradeScreen extends AbstractContainerScreen<TotemUpgradeMenu
         int x = leftPos, y = topPos;
         g.fill(x - 1, y - 1, x + imageWidth + 1, y + imageHeight + 1, TQ);
         g.fill(x, y, x + imageWidth, y + imageHeight, BG);
+        tree.surchargePct = menu.surchargePercent();
+        tree.surchargeRate = menu.surchargeRate();
         // the TEAM tab, drawn as the placed panel draws its tabs
         int tx = x + tabX();
         g.fill(tx, y + 3, tx + TAB_W, y + 16, overTab(mouseX, mouseY) ? TQ : DIM);

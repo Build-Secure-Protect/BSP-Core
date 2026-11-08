@@ -364,7 +364,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (!mayUpgrade()) {
             return level(b) >= b.maxLevel() ? null : Component.translatable("gui.bsp_core.tree.not_yours");
         }
-        return TotemUpgrades.whyNot(b, this::level, tier(), minecraft.player);
+        return TotemUpgrades.whyNot(b, this::level, tier(), minecraft.player, purse());
     }
 
     /** Herald's card carries the viewer's own Discord line wherever Discord is on (where it is off, the card says so instead). */
@@ -400,7 +400,13 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     }
 
     private boolean canRaise() {
-        return mayUpgrade() && tier() < TotemUpgrades.MAX_TIER && TotemUpgrades.whyNotGate(tier(), minecraft.player) == null;
+        return mayUpgrade() && tier() < TotemUpgrades.MAX_TIER && TotemUpgrades.whyNotGate(tier(), minecraft.player, purse()) == null;
+    }
+
+    /** Which of the viewer's coins pay here: on someone else's totem only those pressed for the owner's team, and clean ones. */
+    private com.mrgregles.bsp_core.coin.CoinStamp.Purse purse() {
+        ShatterTotemBlockEntity totem = menu.getTotem();
+        return totem == null ? com.mrgregles.bsp_core.coin.CoinStamp.Purse.ANY : totem.clientPurse(minecraft.player.getUUID());
     }
 
     @Override
@@ -566,6 +572,9 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         int x = leftPos, y = topPos;
         g.fill(x - 1, y - 1, x + imageWidth + 1, y + imageHeight + 1, operatorTab ? VIO : TQ);
         g.fill(x, y, x + imageWidth, y + imageHeight, BG);
+        ShatterTotemBlockEntity surchargeOn = menu.getTotem();
+        tree.surchargePct = surchargeOn == null || operatorTab ? 0 : surchargeOn.clientSurcharge();
+        tree.surchargeRate = surchargeOn == null ? 0 : surchargeOn.clientSurchargeRate();
         radiationBg(g, x, y, mouseX, mouseY);
         int[] tabs = tabs();
         for (int i = 0; i < tabs.length; i++) {
@@ -593,7 +602,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
             chunks(g, x, y, mouseX, mouseY);
             return;
         }
-        TotemTree.wallet(g, font, x + 10, y + WALLET_Y, minecraft.player);
+        TotemTree.wallet(g, font, x + 10, y + WALLET_Y, minecraft.player, purse());
         tree.render(g, font, x + TREE_X, y + TREE_Y, this::level, tier());
         Buff b = tree.selected;
         if (operatorTab) {

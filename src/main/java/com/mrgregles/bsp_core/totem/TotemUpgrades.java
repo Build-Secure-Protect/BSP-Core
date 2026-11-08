@@ -248,19 +248,32 @@ public final class TotemUpgrades {
     }
 
     @Nullable
-    private static Component cannotPay(Price price, Player player) {
+    private static Component cannotPay(Price price, Player player, com.mrgregles.bsp_core.coin.CoinStamp.Purse purse) {
         if (player.isCreative()) {
             return null;
         }
-        if (player.getInventory().countItem(price.coin().coin()) < price.coins()) {
-            return Component.translatable("gui.bsp_core.tree.why.coins", price.coins(), new ItemStack(price.coin().coin()).getHoverName());
+        net.minecraft.world.item.Item coin = price.coin().coin();
+        int usable = com.mrgregles.bsp_core.coin.CoinStamp.count(player, coin, purse);
+        if (usable < price.coins()) {
+            int other = com.mrgregles.bsp_core.coin.CoinStamp.unusable(player, coin, purse);
+            if (other > 0 && usable + other >= price.coins()) {
+                // they hold enough, but some were pressed outside the totem owner's team (the card's two lines take the short form)
+                return Component.translatable(player.level().isClientSide ? "gui.bsp_core.tree.why.stamp_short" : "gui.bsp_core.tree.why.stamp", other, Component.translatable("tier.bsp_core." + price.coin().key));
+            }
+            return Component.translatable("gui.bsp_core.tree.why.coins", price.coins(), new ItemStack(coin).getHoverName());
         }
         return player.experienceLevel < price.xp() ? Component.translatable("gui.bsp_core.tree.why.xp", price.xp()) : null;
     }
 
-    /** Why {@code player} cannot buy the next level of {@code buff} right now, or null if they can (or it is maxed). */
+    /** {@link #whyNot(Buff, ToIntFunction, int, Player, com.mrgregles.bsp_core.coin.CoinStamp.Purse)} with any coin paying. */
     @Nullable
     public static Component whyNot(Buff buff, ToIntFunction<Buff> levels, int totemTier, Player player) {
+        return whyNot(buff, levels, totemTier, player, com.mrgregles.bsp_core.coin.CoinStamp.Purse.ANY);
+    }
+
+    /** Why {@code player} cannot buy the next level of {@code buff} right now, or null if they can (or it is maxed). {@code purse} says which coins pay. */
+    @Nullable
+    public static Component whyNot(Buff buff, ToIntFunction<Buff> levels, int totemTier, Player player, com.mrgregles.bsp_core.coin.CoinStamp.Purse purse) {
         if (buff == Buff.HERALD && !com.mrgregles.bsp_core.discord.Herald.available()) {
             return Component.translatable("gui.bsp_core.tree.why.discord");
         }
@@ -279,22 +292,31 @@ public final class TotemUpgrades {
         if (price.tier() > totemTier) {
             return Component.translatable("gui.bsp_core.tree.why.cap", roman(totemTier), roman(price.tier()));
         }
-        return cannotPay(price, player);
+        return cannotPay(price, player, purse);
+    }
+
+    /** {@link #whyNotGate(int, Player, com.mrgregles.bsp_core.coin.CoinStamp.Purse)} with any coin paying. */
+    @Nullable
+    public static Component whyNotGate(int tier, Player player) {
+        return whyNotGate(tier, player, com.mrgregles.bsp_core.coin.CoinStamp.Purse.ANY);
     }
 
     /** Why {@code player} cannot raise the totem from {@code tier}, or null if they can (or it is at the top). */
     @Nullable
-    public static Component whyNotGate(int tier, Player player) {
+    public static Component whyNotGate(int tier, Player player, com.mrgregles.bsp_core.coin.CoinStamp.Purse purse) {
         Price price = gatePrice(tier);
-        return price == null ? null : cannotPay(price, player);
+        return price == null ? null : cannotPay(price, player, purse);
     }
 
-    /** Takes the coins and XP. Call only after {@link #whyNot} or {@link #whyNotGate} returned null. */
-    public static void pay(ServerPlayer player, Price price) {
+    /**
+     * Takes the coins and XP, the coins {@code purse} allows in its order (on your own totem those pressed outside your team
+     * first). Call only after {@link #whyNot} or {@link #whyNotGate} with the same purse returned null.
+     */
+    public static void pay(ServerPlayer player, Price price, com.mrgregles.bsp_core.coin.CoinStamp.Purse purse) {
         if (player.isCreative()) {
             return;
         }
-        player.getInventory().clearOrCountMatchingItems(st -> st.is(price.coin().coin()), price.coins(), player.inventoryMenu.getCraftSlots());
+        com.mrgregles.bsp_core.coin.CoinStamp.take(player, price.coin().coin(), price.coins(), purse);
         player.giveExperienceLevels(-price.xp());
         // The totem screens have no slots, and while one is open the client ignores ordinary inventory updates
         // (except the hotbar), so the coin counts on screen went stale. Send the whole inventory again.

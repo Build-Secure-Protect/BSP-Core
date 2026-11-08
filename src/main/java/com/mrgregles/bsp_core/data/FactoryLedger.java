@@ -12,16 +12,44 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Which Shatter Coin Factories each player owns on this server, for the per-player limit. */
+/**
+ * Which Shatter Coin Factories each player owns on this server, for the per-player limit, and when
+ * each was placed, so the team limit pauses the newest slices first.
+ */
 public class FactoryLedger extends SavedData {
     private static final String DATA_NAME = BSPCore.MODID + "_factories";
-    private final Map<UUID, Set<GlobalPos>> owned = new HashMap<>();
+    /** Owner → slice → wall-clock ms it was placed (0 for slices placed before the time was kept). */
+    private final Map<UUID, Map<GlobalPos, Long>> owned = new HashMap<>();
+
+    /**
+     * One slice anywhere on the network, in the order the team limit keeps them: oldest first, then
+     * by server, dimension and position so every server ranks the same slices the same way.
+     */
+    public record Slice(long placedMs, String server, String dimension, long pos) implements Comparable<Slice> {
+        public static Slice of(long placedMs, String server, GlobalPos at) {
+            return new Slice(placedMs, server, at.dimension().location().toString(), at.pos().asLong());
+        }
+
+        @Override
+        public int compareTo(Slice o) {
+            int c = Long.compare(placedMs, o.placedMs);
+            if (c == 0) {
+                c = server.compareTo(o.server);
+            }
+            if (c == 0) {
+                c = dimension.compareTo(o.dimension);
+            }
+            return c != 0 ? c : Long.compare(pos, o.pos);
+        }
+    }
 
     public static FactoryLedger get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(FactoryLedger::load, FactoryLedger::new, DATA_NAME);
@@ -29,32 +57,65 @@ public class FactoryLedger extends SavedData {
 
     /** Slices the player owns: those on this server plus, with network storage on, those on every other server. */
     public int count(UUID owner) {
-        return owned.getOrDefault(owner, Set.of()).size() + com.mrgregles.bsp_core.storage.NetworkStorage.slicesElsewhere(owner);
+        return localCount(owner) + com.mrgregles.bsp_core.storage.NetworkStorage.slicesElsewhere(owner);
     }
 
     /** Slices the player owns on this server only. */
     public int localCount(UUID owner) {
-        return owned.getOrDefault(owner, Set.of()).size();
+        return owned.getOrDefault(owner, Map.of()).size();
     }
 
     /** Every factory slice on this server, by owner. */
     public Map<UUID, Set<GlobalPos>> all() {
-        return java.util.Collections.unmodifiableMap(owned);
+        Map<UUID, Set<GlobalPos>> out = new HashMap<>();
+        owned.forEach((owner, slices) -> out.put(owner, Collections.unmodifiableSet(slices.keySet())));
+        return Collections.unmodifiableMap(out);
+    }
+
+    /** Every factory slice on this server with the time it was placed, by owner. A copy. */
+    public Map<UUID, Map<GlobalPos, Long>> allWithTimes() {
+        Map<UUID, Map<GlobalPos, Long>> out = new HashMap<>();
+        owned.forEach((owner, slices) -> out.put(owner, new HashMap<>(slices)));
+        return out;
+    }
+
+    /** The player's slices on this server and, on a network, on every other server, oldest first. */
+    public List<Slice> ranked(UUID owner) {
+        String here = com.mrgregles.bsp_core.bank.Bank.serverId();
+        List<Slice> out = new ArrayList<>(com.mrgregles.bsp_core.storage.NetworkStorage.slicesElsewhereList(owner));
+        owned.getOrDefault(owner, Map.of()).forEach((pos, ms) -> out.add(Slice.of(ms, here, pos)));
+        Collections.sort(out);
+        return out;
+    }
+
+    /** When the slice at {@code pos} was placed, or -1 if it is not in the ledger. */
+    public long placedAt(GlobalPos pos) {
+        for (Map<GlobalPos, Long> slices : owned.values()) {
+            Long ms = slices.get(pos);
+            if (ms != null) {
+                return ms;
+            }
+        }
+        return -1;
     }
 
     public void add(UUID owner, GlobalPos pos) {
+        add(owner, pos, System.currentTimeMillis());
+    }
+
+    public void add(UUID owner, GlobalPos pos, long placedMs) {
         remove(pos);
-        owned.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
+        owned.computeIfAbsent(owner, k -> new HashMap<>()).put(pos, placedMs);
         setDirty();
-        com.mrgregles.bsp_core.storage.NetworkStorage.sliceAdded(owner, pos);
+        com.mrgregles.bsp_core.storage.NetworkStorage.sliceAdded(owner, pos, placedMs);
     }
 
     public void remove(GlobalPos pos) {
         boolean changed = false;
-        for (Set<GlobalPos> set : owned.values()) {
-            changed |= set.remove(pos);
+        for (Map<GlobalPos, Long> slices : owned.values()) {
+            changed |= slices.remove(pos) != null;
         }
-        owned.values().removeIf(Set::isEmpty);
+        owned.values().removeIf(Map::isEmpty);
         if (changed) {
             setDirty();
             com.mrgregles.bsp_core.storage.NetworkStorage.sliceRemoved(pos);
@@ -64,11 +125,12 @@ public class FactoryLedger extends SavedData {
     @Override
     public CompoundTag save(CompoundTag tag) {
         ListTag list = new ListTag();
-        owned.forEach((owner, set) -> set.forEach(pos -> {
+        owned.forEach((owner, slices) -> slices.forEach((pos, ms) -> {
             CompoundTag e = new CompoundTag();
             e.putUUID("Owner", owner);
             e.putString("Dim", pos.dimension().location().toString());
             e.putLong("Pos", pos.pos().asLong());
+            e.putLong("Placed", ms);
             list.add(e);
         }));
         tag.put("Factories", list);
@@ -83,8 +145,8 @@ public class FactoryLedger extends SavedData {
             if (dim == null || !e.hasUUID("Owner")) {
                 continue;
             }
-            ledger.owned.computeIfAbsent(e.getUUID("Owner"), k -> new HashSet<>())
-                    .add(GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(e.getLong("Pos"))));
+            ledger.owned.computeIfAbsent(e.getUUID("Owner"), k -> new HashMap<>())
+                    .put(GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(e.getLong("Pos"))), e.getLong("Placed"));
         }
         return ledger;
     }

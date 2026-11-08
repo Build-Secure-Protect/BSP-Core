@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -45,18 +46,28 @@ public record UpgradeRequestPacket(InteractionHand hand, int buffOrdinal) {
             return;
         }
         int tier = TotemUpgrades.getTier(totem);
+        // a carried totem someone else owns takes only coins pressed for the owner's team (or clean ones)
+        UUID owner = com.mrgregles.bsp_core.totem.TotemOwner.fromStack(totem).map(com.mrgregles.bsp_core.totem.TotemOwner::uuid).orElse(null);
+        com.mrgregles.bsp_core.coin.CoinStamp.Purse purse = com.mrgregles.bsp_core.coin.CoinStamp.forTotem(player.server, player.getUUID(), owner);
+        int surcharge = com.mrgregles.bsp_core.totem.TeamSurcharge.percent(player.server, owner, player.getUUID());
         if (ordinal == RAISE_TIER) {
             TotemUpgrades.Price price = TotemUpgrades.gatePrice(tier);
-            Component why = TotemUpgrades.whyNotGate(tier, player);
+            Component why = TotemUpgrades.whyNotGate(tier, player, purse);
             if (price == null || why != null) {
                 player.displayClientMessage((why == null ? Component.translatable("gui.bsp_core.tree.gate.max") : why).copy().withStyle(ChatFormatting.RED), true);
                 return;
             }
-            TotemUpgrades.pay(player, price);
-            TotemUpgrades.setTier(totem, tier + 1);
-            com.mrgregles.bsp_core.score.ScoreService.markDirty();
-            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(tier + 1)).withStyle(ChatFormatting.GOLD), true);
-            BSPCore.LOGGER.info("{} raised a held totem to tier {}", player.getGameProfile().getName(), tier + 2);
+            com.mrgregles.bsp_core.totem.TeamSurcharge.charge(player, price, surcharge, "raise a carried totem to Tier " + TotemUpgrades.roman(tier + 1),
+                    () -> player.getItemInHand(hand) == totem && TotemUpgrades.getTier(totem) == tier
+                            && com.mrgregles.bsp_core.totem.TeamSurcharge.percent(player.server, owner, player.getUUID()) == surcharge
+                            && TotemUpgrades.whyNotGate(tier, player, purseFor(player, owner)) == null, () -> {
+                        TotemUpgrades.pay(player, price, purseFor(player, owner)); // read again: the bank may have answered after a team change
+                        TotemUpgrades.setTier(totem, tier + 1);
+                        com.mrgregles.bsp_core.score.ScoreService.markDirty();
+                        player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(tier + 1)).withStyle(ChatFormatting.GOLD), true);
+                        BSPCore.LOGGER.info("{} raised a held totem to tier {}", player.getGameProfile().getName(), tier + 2);
+                        pushHand(player, hand, totem);
+                    });
         } else {
             TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(ordinal);
             if (buff == null || buff.placedOnly) {
@@ -64,18 +75,31 @@ public record UpgradeRequestPacket(InteractionHand hand, int buffOrdinal) {
             }
             int level = TotemUpgrades.getLevel(totem, buff);
             TotemUpgrades.Price price = TotemUpgrades.price(buff, level);
-            Component why = TotemUpgrades.whyNot(buff, b -> TotemUpgrades.getLevel(totem, b), tier, player);
+            Component why = TotemUpgrades.whyNot(buff, b -> TotemUpgrades.getLevel(totem, b), tier, player, purse);
             if (price == null || why != null) {
                 player.displayClientMessage((why == null ? Component.translatable("message.bsp_core.upgrade.maxed") : why).copy().withStyle(ChatFormatting.RED), true);
                 return;
             }
-            TotemUpgrades.pay(player, price);
-            TotemUpgrades.setLevel(totem, buff, level + 1);
-            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
-                    Component.translatable(buff.translationKey()), level + 1).withStyle(ChatFormatting.GOLD), true);
-            BSPCore.LOGGER.info("{} upgraded {} to level {}", player.getGameProfile().getName(), buff.key, level + 1);
+            com.mrgregles.bsp_core.totem.TeamSurcharge.charge(player, price, surcharge, buff.key + " level " + (level + 1) + " on a carried totem",
+                    () -> player.getItemInHand(hand) == totem && TotemUpgrades.getLevel(totem, buff) == level
+                            && com.mrgregles.bsp_core.totem.TeamSurcharge.percent(player.server, owner, player.getUUID()) == surcharge
+                            && TotemUpgrades.whyNot(buff, b -> TotemUpgrades.getLevel(totem, b), TotemUpgrades.getTier(totem), player, purseFor(player, owner)) == null, () -> {
+                        TotemUpgrades.pay(player, price, purseFor(player, owner)); // read again: the bank may have answered after a team change
+                        TotemUpgrades.setLevel(totem, buff, level + 1);
+                        player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
+                                Component.translatable(buff.translationKey()), level + 1).withStyle(ChatFormatting.GOLD), true);
+                        BSPCore.LOGGER.info("{} upgraded {} to level {}", player.getGameProfile().getName(), buff.key, level + 1);
+                        pushHand(player, hand, totem);
+                    });
         }
-        // The upgrade menu has no slots, so the open container never re-sends the hand slot. Push it directly.
+    }
+
+    private static com.mrgregles.bsp_core.coin.CoinStamp.Purse purseFor(ServerPlayer player, @javax.annotation.Nullable UUID owner) {
+        return com.mrgregles.bsp_core.coin.CoinStamp.forTotem(player.server, player.getUUID(), owner);
+    }
+
+    /** The upgrade menu has no slots, so the open container never re-sends the hand slot. Push it directly. */
+    private static void pushHand(ServerPlayer player, InteractionHand hand, ItemStack totem) {
         int slot = hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : Inventory.SLOT_OFFHAND;
         player.connection.send(new ClientboundContainerSetSlotPacket(-2, 0, slot, totem.copy()));
     }

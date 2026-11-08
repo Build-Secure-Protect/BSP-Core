@@ -141,6 +141,13 @@ public final class BspProcesses {
                             Component.translatable("jei.bsp_core.press_rf", String.format("%,d", tier.energyPerCoin())),
                             Component.translatable("jei.bsp_core.press_note"))));
         }
+        for (CoinTier tier : CoinTier.values()) { // re-pressing: a coin from outside the owner's team goes through again at half the time and RF
+            ItemStack outside = com.mrgregles.bsp_core.coin.CoinStamp.stamp(new ItemStack(tier.coin()), null);
+            coins.add(new Process(List.of(List.of(outside)), List.of(), null, 0, List.of(new ItemStack(tier.coin())), List.of(),
+                    List.of(Component.translatable("jei.bsp_core.press_time", hours(tier.pressMillis() / 2 / 3_600_000.0)),
+                            Component.translatable("jei.bsp_core.press_rf", String.format("%,d", tier.energyPerCoin() / 2)),
+                            Component.translatable("jei.bsp_core.repress_note"))));
+        }
         out.put("coin_pressing", coins);
 
         List<ItemStack> picks = List.of(new ItemStack(Items.WOODEN_PICKAXE), new ItemStack(Items.STONE_PICKAXE), new ItemStack(Items.IRON_PICKAXE),

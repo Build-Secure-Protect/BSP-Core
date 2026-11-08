@@ -3083,7 +3083,7 @@ Covered by GameTests (batch `vault_interest`): `a_clock_going_back_pays_nothing_
 - [ ] Put a written book with many full pages, or a filled shulker box, in the prize table as several prizes and SAVE: past about 32 KB the tab says the table is too big, and the admin stays connected.
 - [ ] Empty the prize table, wait for a roll and Redeem: the chat says the rolls keep waiting.
 
-## Main totem remembered (2026-11-08, Unreleased)
+## Main totem remembered (2026-11-08, 1.15.0)
 
 Server-side rules are covered by the GameTests in `MainTotemGameTests` (batch `main_totem`). In game:
 
@@ -3093,7 +3093,7 @@ Server-side rules are covered by the GameTests in `MainTotemGameTests` (batch `m
 - [ ] Restart the server: the same totems are main as before the restart.
 - [ ] On the live server where the report came from: the player's main totem buys Anchor again after the update. The log shows any "The chunk ledger listed a Shatter Totem ... the entry is dropped" lines at start; send them if the main totem is still refused.
 
-## Compass range (2026-11-08, Unreleased)
+## Compass range (2026-11-08, 1.15.0)
 
 The reach rules and the buying are covered by `CompassRangeGameTests` (batch `compass_range`).
 
@@ -3114,7 +3114,7 @@ The reach rules and the buying are covered by `CompassRangeGameTests` (batch `co
 - [ ] Carry an upgraded compass to another server of the network: it keeps its levels. A new compass made there starts at 100 / 10.
 - [ ] A Decoy Totem still takes over a tracking compass inside the decoy's range.
 
-## Totem radiation (2026-11-08, Unreleased)
+## Totem radiation (2026-11-08, 1.15.0)
 
 The rules are covered by `TotemRadiationGameTests` (batch `totem_radiation`). The coating, the layer count and the totem's readout come in later steps. In game, with a compass at full reach (creative, or `/data merge` the levels):
 
@@ -3124,7 +3124,7 @@ The rules are covered by `TotemRadiationGameTests` (batch `totem_radiation`). Th
 - [ ] A rival's level-27 totem 100 blocks straight down: found from directly above.
 - [ ] `totemRadiation.enabled = false`: every totem in the compass's reach is found again, pointed at exactly.
 
-## Totem Radiation Coating (2026-11-08, Unreleased)
+## Totem Radiation Coating (2026-11-08, 1.15.0)
 
 Applying, doors and drops are covered by `TotemCoatingGameTests` (batch `totem_coating`). In game:
 
@@ -3154,7 +3154,7 @@ Applying, doors and drops are covered by `TotemCoatingGameTests` (batch `totem_c
 - [ ] Guide book: Totem Radiation (totem category) has three pages and Totem Radiation Coating (Radiation category) a spotlight, "Layers" and the recipe; none is squashed to a smaller font. The links between them and to the compass open the right entries.
 - [ ] JEI and EMI: the tin has an info page and its recipe.
 
-## New-player protection (2026-11-08, Unreleased)
+## New-player protection (2026-11-08, 1.15.0)
 
 The rules are covered by `ProtectionGameTests` (batches `protection`, `protection_admin`, `protection_screen`). The settings live in the world's `data/bsp_core_protection.dat` and, on a network, the `state` row `radiation_protection`; they are set on the admin panel's RADIATION tab.
 
@@ -3186,4 +3186,71 @@ The rules are covered by `ProtectionGameTests` (batches `protection`, `protectio
 - [ ] Raise the totem to Tier III: the bar shows at once (Tier III and up are never protected).
 - [ ] A visitor (STEAL view) sees the same PROTECTED line.
 - [ ] Guide book, Totem Radiation: the "New players" page follows "Finding and hiding" and is not squashed.
+
+## Team factory limit (2026-11-08, 1.15.0)
+
+The rules are covered by `FactoryCapGameTests` (batch `factory_cap`): the number for each team size, the refusal when placing, the newest slice pausing and pressing again, a slice that was unloaded when the team grew, and the ranking with slices on other servers. The screen and the network are not covered.
+
+- [ ] Alone with 10 slices: placing an eleventh is refused with "You already own the maximum of 10 Shatter Coin Factory slices". The factory screen's summary reads "... (owns 10/10) ...".
+- [ ] Join a team of 4 (6 each) while owning 8 slices: within a second or two the 2 slices placed last show "Paused: over the owner's factory limit" on their lanes (hover the lane), the heading reads ATTENTION, and their press bars stop. The other 6 keep pressing. The summary reads "Owner: ... Slices: .../10  Owns 8/6 (team of 4)  Motivators: ...". It fits on one line and stays clear of the POWER key, also with a long owner name.
+- [ ] A teammate opens the same factory: the summary shows the owner's numbers, not the teammate's.
+- [ ] In that team, placing a seventh slice is refused with "Your team of 4 may own 6 Shatter Coin Factory slices each".
+- [ ] Break one of the 6 running slices: one paused slice presses again within a second or two (the older of the two).
+- [ ] Leave the team: every slice presses again; the summary is back to "(owns 7/10)". The team left behind (now 3) takes 7 each.
+- [ ] Save, restart the server: paused slices stay paused and running ones run; no slice catches up time it spent paused.
+- [ ] Config: set `factory.maxPerTeamSize` to [10, 9, 8, 7, 6] and reload: the limits follow; `maxPerPlayer` 8 caps everyone at 8.
+- [ ] MySQL: `factory_slices` has the column `placed_ms`; new slices get the time they were placed, and older rows get their server's saved times when that server connects.
+- [ ] Network: a player with 4 slices on server A and 4 on server B joins a team of 4 (6 each): the 2 newest of the 8 pause (whichever servers they are on), within five minutes on the server they are not on. Leave the team: they press again.
+
+## Coin stamp (2026-11-08, 1.15.0)
+
+The rules are covered by `CoinStampGameTests` (batch `coin_stamp`): stamping and the tray, a teammate's totem, your own totem's spending order, the client's view of which coins pay. The screens are not covered.
+
+- [ ] In a team, press a coin: its tooltip reads "Pressed for team <Name>" (grey, under the value). Alone: "Pressed outside a team". A coin from before the update has no such line.
+- [ ] Coins pressed for the team and outside a team sit in separate stacks; old coins stack with neither.
+- [ ] Leave the team with team coins on a factory's tray: the slice stops with "Take the coins out: pressed outside the owner's team" on its lane; take them and it presses on.
+- [ ] Open a teammate's totem holding only coins pressed outside the team: the wallet row shows 0 of that tier, the card reads "Re-press N Gold coins" (one line, also on the Herald and Tripwire cards), Buy and Raise stay off. Clicking anyway (or through a stale screen) gives "N of your Gold coins were pressed outside this team: re-press them" in the action bar, whole on screen.
+- [ ] Add team coins: the wallet counts them, Buy lights, buying takes only those; the outside coins stay.
+- [ ] Your own totem with both kinds: buying takes the outside ones first.
+- [ ] A friend on the access list of a player in a team: same as a teammate. A friend of a player in no team: any coins pay.
+- [ ] Carrying a teammate's totem: the same refusal in the action bar (the carried screen counts all coins; the server decides).
+- [ ] Lockpick a vault holding stamped coins: the coins you get keep their tooltips.
+- [ ] Bank: put 2 team coins, 2 outside-a-team coins and 1 old coin of one tier in the bank, then take 3 out: the 2 team coins and the old one come back; the last 2 come back still "Pressed outside a team". On a network, do the deposit on one server and the withdrawal on another: the same.
+- [ ] MySQL: the table `bank_coin_stamps` exists and has a row per stamp and tier while stamped coins are banked; rows go when they are taken out.
+- [ ] Pay a spawn shop 1 Copper with only a Gold coin pressed outside a team: the change carries "Pressed outside a team". Sell to a spawn shop for coins while in a team: the coins read "Pressed for team <Name>".
+- [ ] A vault prize that is a coin reads "Pressed for team <Name>" (or outside a team).
+- [ ] Have someone else break your vault holding stamped coins; open another vault of yours: the coins come back with their tooltips.
+
+## Re-pressing (2026-11-08, 1.15.0)
+
+Covered by `CoinStampGameTests` (batch `coin_stamp`): half the time and RF, the stamp on the way out, which coins a slot takes, shift-click, a coin left when the owner leaves the team. The screen and the belt are not covered.
+
+- [ ] In a team, shift-click Gold coins pressed outside the team (or another team's) from the inventory: they go into a free lane's blank slot. Coins pressed for the team, and old coins, stay in the inventory.
+- [ ] The lane gets a violet frame and a violet bar; hovering says "Re-pressing a Gold coin: ... left" and "Half the time and RF; comes out for the owner's team". The time is half a Gold press (8 h with no upgrades).
+- [ ] The belt carries a coin in, not a blank. The RF gauge drops by half a Gold coin's RF when it starts.
+- [ ] The finished coin reads "Pressed for team <Name>" and pays on a teammate's totem.
+- [ ] Leave the team with coins waiting in the slot: the lane turns red, "No re-press needed for the owner's team now: take it out". Alone, the slot takes no coins at all.
+- [ ] Hover the empty blank slot: "Coin blanks, or coins to re-press, go here". All tooltips fit on screen at GUI scale 3 on a 1280 x 720 window.
+
+## Team surcharge (2026-11-08, 1.15.0)
+
+Covered by `TeamSurchargeGameTests` (batch `surcharge`): the percent per team size, the Pieces, a teammate paying from their bank, refusing one Piece short, nothing alone, the carried screen's numbers. The card and network are not covered.
+
+- [ ] Alone: a totem's card and Raise box show no surcharge, and buying takes no Pieces.
+- [ ] In a team of 4, open a team member's totem: the card shows "+18% team" over "... Pieces" in violet to the right of the price, on two lines that do not touch the XP; the Raise box shows the same between the price and the (narrower) Raise key, and "Raise" fits in its key.
+- [ ] Buy a level: the coins, XP and the Pieces go; the bank's log has "+18% team surcharge: ...". With too few Pieces: "The team surcharge is ... Pieces and your bank holds ..." and nothing is taken.
+- [ ] A member leaves: within a moment the card shows +12%. Carry the totem (right-click with it): the upgrade screen shows the same surcharge.
+- [ ] Compass upgrades cost the same as before in a team.
+- [ ] Creative: prices read "free" and no surcharge shows.
+- [ ] Operator tab on the totem: the gate's − / + halves still work in the narrower key.
+- [ ] Network: buy on server A with the bank on the database; the Pieces leave the network balance; with the database down, buying in a team says the bank could not take the surcharge.
+
+## Team coin balance audit fixes (2026-11-08, 1.15.0)
+
+Covered by `a_renamed_team_keeps_pressing_and_an_old_tray_takes_the_stamp` and `a_slice_goes_over_at_the_join_that_crossed_the_limit`. The network parts are not covered.
+
+- [ ] A factory with old coins on its tray from before the update: the next coin joins them and the whole tray reads "Pressed for team <Name>" (or outside a team); the press does not stop.
+- [ ] Rename the team while coins sit on a tray: the next coin joins them and the tray shows the new name.
+- [ ] Network: a player over the limit with paused slices on server B; restart B: the paused slices stay paused (also while the database is unreachable at start).
+- [ ] Network, team surcharge: stop the database between clicking Buy and the answer: the buyer is told the bank could not take it, or, if the bank took it and the purchase no longer holds, that it went back (a failed return is logged as an error with the player and amount, and the player is told to ask an admin).
 

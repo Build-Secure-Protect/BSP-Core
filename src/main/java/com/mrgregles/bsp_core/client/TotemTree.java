@@ -24,13 +24,17 @@ import java.util.function.ToIntFunction;
  * the price of raising the totem's tier. Shared by the held-totem and placed-totem screens.
  */
 public final class TotemTree {
-    public static final int W = 170, H = 170, DETAIL_W = 128, BUY_Y = 108, BTN_H = 16, GATE_Y = 144, GATE_BTN_X = 78, GATE_BTN_W = 50, WALLET_H = 16;
+    public static final int W = 170, H = 170, DETAIL_W = 128, BUY_Y = 108, BTN_H = 16, GATE_Y = 144, GATE_BTN_X = 96, GATE_BTN_W = 32, WALLET_H = 16;
     private static final int CX = TreeLayout.CX, CY = TreeLayout.CY, NODE = TreeLayout.NODE;
     private static final int[] RING = TreeLayout.RING;
     private static final int SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, RING_ON = 0xFF27566B, TQ = 0xFF19D3B0, XP = 0x8FE04A, MUTED = 0x9AA3B5, BAD = 0xFF6B5C;
     /** Branch colours: Carried (XP green), Base (coin gold), Raid (red). */
     private static final int[] COLOUR = {0xFF8FE04A, 0xFFFFD23A, 0xFFFF6B5C};
     public Buff selected = Buff.MINING_SPEED;
+    /** The team surcharge on this totem (percent) and Pieces per copper value, from the server; the screen sets them before drawing. */
+    public int surchargePct;
+    public long surchargeRate;
+    private static final int TEAM = 0xFFB58CFF;
 
     public static int colour(Buff buff) {
         return COLOUR[buff.branch().ordinal()];
@@ -191,6 +195,27 @@ public final class TotemTree {
         return nx + 2 + font.width(xp);
     }
 
+    /**
+     * The team surcharge on a price, in two small lines ending at {@code right}: "+18% team" and "960 Pieces", shrunk to {@code maxW}
+     * when wider. Nothing alone, in creative, or when the server sent no surcharge.
+     */
+    private void surcharge(GuiGraphics g, Font font, int right, int y, int maxW, TotemUpgrades.Price price) {
+        if (surchargePct <= 0 || creative() || maxW <= 0) {
+            return;
+        }
+        long pieces = com.mrgregles.bsp_core.totem.TeamSurcharge.pieces(price, surchargePct, surchargeRate);
+        Component[] lines = {Component.translatable("gui.bsp_core.tree.surcharge", surchargePct),
+                Component.translatable("gui.bsp_core.tree.surcharge_pieces", com.mrgregles.bsp_core.bank.Bank.format(pieces))};
+        for (int i = 0; i < lines.length; i++) {
+            float k = Math.min(0.75f, maxW / (float) Math.max(1, font.width(lines[i])));
+            g.pose().pushPose();
+            g.pose().translate(right - font.width(lines[i]) * k, y + i * 7, 0);
+            g.pose().scale(k, k, 1f);
+            g.drawString(font, lines[i], 0, 0, TEAM, false);
+            g.pose().popPose();
+        }
+    }
+
     private static void button(GuiGraphics g, Font font, int x, int y, int w, Component label, boolean enabled, int mouseX, int mouseY) {
         boolean hover = enabled && mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + BTN_H;
         g.fill(x, y, x + w, y + BTN_H, enabled ? TQ : DIM);
@@ -222,7 +247,8 @@ public final class TotemTree {
         if (price != null) {
             small(g, font, Component.translatable("gui.bsp_core.tree.next"), x, y + 63, MUTED);
             wrapped(g, font, effect(b, level + 1), x, y + 71, 0xE8EAF0, 2);
-            price(g, font, x, y + 89, price);
+            int end = price(g, font, x, y + 89, price);
+            surcharge(g, font, x + DETAIL_W, y + 89 + 2, x + DETAIL_W - end - 4, price);
         }
         button(g, font, x, y + BUY_Y, DETAIL_W, button, enabled, mouseX, mouseY);
         if (blocked != null) {
@@ -245,6 +271,8 @@ public final class TotemTree {
             g.renderItem(new ItemStack(price.coin().coin()), x, y + GATE_Y + 10);
             g.drawString(font, "x" + price.coins(), x + 17, y + GATE_Y + 9, 0xE8EAF0, false);
             g.drawString(font, price.xp() + " XP", x + 17, y + GATE_Y + 19, XP, false);
+            int end = x + 19 + Math.max(font.width("x" + price.coins()), font.width(price.xp() + " XP"));
+            surcharge(g, font, x + GATE_BTN_X - 3, y + GATE_Y + 11, x + GATE_BTN_X - 3 - end - 2, price);
         }
         button(g, font, x + GATE_BTN_X, y + GATE_Y + 11, GATE_BTN_W, button, enabled, mouseX, mouseY);
     }
@@ -349,6 +377,11 @@ public final class TotemTree {
 
     /** XP levels and how many of each Shatter Coin the player carries, in one row. */
     public static void wallet(GuiGraphics g, Font font, int x, int y, Player player) {
+        wallet(g, font, x, y, player, com.mrgregles.bsp_core.coin.CoinStamp.Purse.ANY);
+    }
+
+    /** XP levels and how many of each Shatter Coin the player carries that pay under {@code purse}, in one row. */
+    public static void wallet(GuiGraphics g, Font font, int x, int y, Player player, com.mrgregles.bsp_core.coin.CoinStamp.Purse purse) {
         if (player.isCreative()) {
             g.drawString(font, Component.translatable("gui.bsp_core.tree.creative"), x, y + 4, XP, false);
             return;
@@ -358,7 +391,7 @@ public final class TotemTree {
         int cx = x + 44;
         for (CoinTier tier : CoinTier.values()) {
             g.renderItem(new ItemStack(tier.coin()), cx, y);
-            g.drawString(font, String.valueOf(player.getInventory().countItem(tier.coin())), cx + 17, y + 4, 0xE8EAF0, false);
+            g.drawString(font, String.valueOf(com.mrgregles.bsp_core.coin.CoinStamp.count(player, tier.coin(), purse)), cx + 17, y + 4, 0xE8EAF0, false);
             cx += 52;
         }
     }

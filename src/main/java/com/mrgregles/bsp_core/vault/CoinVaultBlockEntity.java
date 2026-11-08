@@ -555,20 +555,17 @@ public class CoinVaultBlockEntity extends BlockEntity {
         for (CoinTier tier : CoinTier.values()) {
             int need = taken[tier.ordinal()];
             got += need;
+            // the thief gets the very coins taken, so each keeps its team stamp
             for (CoinVaultBlockEntity v : group) {
                 for (int s = 0; s < SLOTS && need > 0; s++) {
                     ItemStack st = v.items.getStackInSlot(s);
                     if (st.is(tier.coin())) {
-                        need -= v.items.extractItem(s, need, false).getCount();
+                        ItemStack out = v.items.extractItem(s, need, false);
+                        need -= out.getCount();
+                        if (!thiefPlayer.getInventory().add(out)) {
+                            thiefPlayer.drop(out, false);
+                        }
                     }
-                }
-            }
-            int give = taken[tier.ordinal()];
-            while (give > 0) {
-                ItemStack out = new ItemStack(tier.coin(), Math.min(give, ShatterCoinItem.STACK));
-                give -= out.getCount();
-                if (!thiefPlayer.getInventory().add(out)) {
-                    thiefPlayer.drop(out, false);
                 }
             }
         }
@@ -609,24 +606,25 @@ public class CoinVaultBlockEntity extends BlockEntity {
             total += c;
         }
         if (total > 0) {
-            ledger.addRecovered(owner, coins);
+            List<ItemStack> stamped = new java.util.ArrayList<>(); // these go back to the owner with their team stamps
+            for (int i = 0; i < SLOTS; i++) {
+                ItemStack s = items.getStackInSlot(i);
+                if (s.getItem() instanceof ShatterCoinItem && com.mrgregles.bsp_core.coin.CoinStamp.of(s) != null) {
+                    stamped.add(s.copy());
+                }
+            }
+            ledger.addRecovered(owner, coins, stamped);
         }
         tell(sl, owner, Component.translatable("message.bsp_core.vault.broken", worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), total).withStyle(ChatFormatting.RED));
     }
 
     /** Gives the owner the coins kept from their broken vaults. */
     public static void collectRecovered(ServerPlayer player) {
-        int[] coins = VaultLedger.get(player.server).takeRecovered(player.getUUID());
         int total = 0;
-        for (CoinTier tier : CoinTier.values()) {
-            int give = coins[tier.ordinal()];
-            total += give;
-            while (give > 0) {
-                ItemStack out = new ItemStack(tier.coin(), Math.min(give, ShatterCoinItem.STACK));
-                give -= out.getCount();
-                if (!player.getInventory().add(out)) {
-                    player.drop(out, false);
-                }
+        for (ItemStack out : VaultLedger.get(player.server).takeRecoveredStacks(player.getUUID())) {
+            total += out.getCount();
+            if (!player.getInventory().add(out)) {
+                player.drop(out, false);
             }
         }
         if (total > 0) {

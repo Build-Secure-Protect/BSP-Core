@@ -1034,7 +1034,7 @@ Bottom from the front: Controller, Frame, Blank Hatch. Top: Frame, Press, Power 
 
 **Page 3: Joining slices**
 
-Build slices side by side, facing the same way, and they join into one machine with one screen. You may own up to 10 slices.
+Build slices side by side, facing the same way, and they join into one machine with one screen. Alone you may own up to 10 slices; in a team each member owns fewer (see Coins in a Team).
 
 Each slice presses its own blanks. RF is shared, and cabling more Power Ports charges the machine faster.
 
@@ -1101,6 +1101,32 @@ While your vaults hold 32 coin value or more, counting every server, you earn a 
 Each roll is a random item from the server's prize table, given when you press **Redeem**. The rarer the prize, the less often it comes up; when you win a rare one, the chat tells you the odds.
 
 The vault's **Interest** tab shows your step, what you earn a day, what is waiting and when the next roll comes.
+
+## Coins in a Team
+
+**Page 1: Factories**
+
+Alone you may own 10 factory slices. In a team each member owns fewer: 8 in a team of 2, 7 in a team of 3, 6 in a team of 4 and 5 in a team of 5. The number follows the team as it is, across every server: leave it and you are back to 10.
+
+If you own more than your number (when your team grows), your newest slices pause until you are back within it.
+
+**Page 2: Team stamps**
+
+Every coin a factory presses is stamped with its owner's team, or as pressed outside a team. The tooltip says which, and coins with different stamps do not stack. Banks, vaults and trades keep the stamp.
+
+On your own totem any coin pays. On a teammate's totem only coins pressed for your team pay, and coins with no stamp at all (from loot, or older than stamps).
+
+**Page 3: Re-pressing**
+
+A coin pressed outside your team, or for another team, goes into a slice's blank slot like a blank. It is pressed again in half the time and for half the RF, and comes out for your team.
+
+Coins that pay for your team already are not taken, and nothing is re-pressed while the factory's owner is in no team.
+
+**Page 4: Team surcharge**
+
+Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.
+
+Compass upgrades cost the same in a team or alone.
 
 ## The Shatter Bank
 

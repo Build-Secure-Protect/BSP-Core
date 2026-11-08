@@ -14,6 +14,11 @@ import net.minecraft.nbt.CompoundTag;
 public final class BankAccount {
     public long pieces;
     public final int[] coins = new int[CoinTier.values().length];
+    /** How many of the banked coins carry each team stamp ({@link BankStamps}); the rest are clean. */
+    public final java.util.Map<String, BankStamps.Held> stamps = new java.util.LinkedHashMap<>();
+    /** The coins the last withdrawal handed out, as the database chose them. Server side, never saved. */
+    @javax.annotation.Nullable
+    public transient java.util.List<BankStamps.Lot> picked;
     /** Set once the starting pieces were given, so they are never given twice. */
     public boolean granted;
     /** Whether other players may pay this one. */
@@ -51,6 +56,7 @@ public final class BankAccount {
     public void copyMoneyFrom(BankAccount o) {
         pieces = o.pieces;
         System.arraycopy(o.coins, 0, coins, 0, coins.length);
+        BankStamps.copy(o.stamps, stamps);
         granted = o.granted;
         acceptPay = o.acceptPay;
         remoteShops = o.remoteShops;
@@ -63,6 +69,7 @@ public final class BankAccount {
     public void copyFrom(BankAccount o) {
         pieces = o.pieces;
         System.arraycopy(o.coins, 0, coins, 0, coins.length);
+        BankStamps.copy(o.stamps, stamps);
         granted = o.granted;
         acceptPay = o.acceptPay;
         remoteShops = o.remoteShops;
@@ -80,6 +87,9 @@ public final class BankAccount {
         CompoundTag tag = new CompoundTag();
         tag.putLong("Pieces", pieces);
         tag.putIntArray("Coins", coins.clone());
+        if (!stamps.isEmpty()) {
+            tag.put("Stamps", BankStamps.save(stamps));
+        }
         tag.putBoolean("Granted", granted);
         tag.putBoolean("AcceptPay", acceptPay);
         tag.putBoolean("RemoteShops", remoteShops);
@@ -97,6 +107,7 @@ public final class BankAccount {
         a.pieces = tag.getLong("Pieces");
         int[] c = tag.getIntArray("Coins");
         System.arraycopy(c, 0, a.coins, 0, Math.min(c.length, a.coins.length));
+        BankStamps.load(tag.getList("Stamps", net.minecraft.nbt.Tag.TAG_COMPOUND), a.stamps);
         a.granted = tag.getBoolean("Granted");
         a.acceptPay = !tag.contains("AcceptPay") || tag.getBoolean("AcceptPay");
         a.remoteShops = tag.getBoolean("RemoteShops");

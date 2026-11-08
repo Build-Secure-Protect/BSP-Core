@@ -81,13 +81,14 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         // lanes
         for (int i = 0; i < n; i++) {
             int lx = x + laneLeft(i), sx = lx + 6, state = menu.state(i);
-            int frame = state == CoinFactoryBlockEntity.STATE_TRAY_FULL ? OUT : state == CoinFactoryBlockEntity.STATE_PRESSING ? DIM : BAD;
+            boolean re = menu.repressing(i); // a re-press shows in violet: its frame and its bar
+            int frame = state == CoinFactoryBlockEntity.STATE_TRAY_FULL ? OUT : state == CoinFactoryBlockEntity.STATE_PRESSING ? (re ? VIO : DIM) : BAD;
             g.fill(lx, y + LANE_TOP, lx + 28, y + LANE_BOTTOM, frame);
             g.fill(lx + 1, y + LANE_TOP + 1, lx + 27, y + LANE_BOTTOM - 1, SLOT_BG);
             // progress bar, filling from the back (top) toward the tray
             g.fill(sx + 4, y + BAR_TOP, sx + 12, y + BAR_TOP + BAR_H, DIM);
             float p = menu.jobTier(i) == null ? 0 : menu.progress(i);
-            g.fill(sx + 4, y + BAR_TOP, sx + 12, y + BAR_TOP + Math.round(BAR_H * Mth.clamp(p, 0, 1)), state == CoinFactoryBlockEntity.STATE_TRAY_FULL ? OUT : TQ);
+            g.fill(sx + 4, y + BAR_TOP, sx + 12, y + BAR_TOP + Math.round(BAR_H * Mth.clamp(p, 0, 1)), state == CoinFactoryBlockEntity.STATE_TRAY_FULL ? OUT : re ? VIO : TQ);
             for (int k = 0; k < CoinFactoryBlockEntity.MOTIVATOR_CELLS; k++) {
                 g.fill(sx + k * 6, y + PIP_Y, sx + k * 6 + 4, y + PIP_Y + 4, k < menu.motivators(i) ? VIO : DIM);
             }
@@ -134,6 +135,16 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
         g.pose().popPose();
     }
 
+    /** {@link #small}, shrunk further when wider than {@code maxW} (a long owner name with the team's part of the summary). */
+    private void small(GuiGraphics g, Component text, int x, int y, int maxW, int colour) {
+        float scale = Math.min(0.75f, (float) maxW / Math.max(1, font.width(text)));
+        g.pose().pushPose();
+        g.pose().translate(x, y + (6 - 8 * scale) / 2f, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, text, 0, 0, colour, false);
+        g.pose().popPose();
+    }
+
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         int n = menu.sliceCount();
@@ -165,8 +176,11 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
 
         CoinFactoryBlockEntity factory = menu.getFactory();
         String owner = factory == null || factory.getOwnerName().isEmpty() ? "-" : factory.getOwnerName();
-        small(g, Component.translatable("gui.bsp_core.factory.summary", owner, n, CoinFactoryBlockEntity.MAX_SLICES, menu.ownedCount(),
-                BSPConfig.getOr(BSPConfig.FACTORY_MAX_PER_PLAYER, 10), motivators), GAUGE_X, GAUGE_Y + 14, MUTED);
+        int team = menu.ownerTeamSize();
+        small(g, team > 1
+                ? Component.translatable("gui.bsp_core.factory.summary_team", owner, n, CoinFactoryBlockEntity.MAX_SLICES, menu.ownedCount(), menu.ownerCap(), team, motivators)
+                : Component.translatable("gui.bsp_core.factory.summary", owner, n, CoinFactoryBlockEntity.MAX_SLICES, menu.ownedCount(), menu.ownerCap(), motivators),
+                GAUGE_X, GAUGE_Y + 14, imageWidth - 2 * GAUGE_X, MUTED);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, MUTED, false);
     }
 
@@ -179,8 +193,14 @@ public class CoinFactoryScreen extends AbstractContainerScreen<CoinFactoryMenu> 
             case CoinFactoryBlockEntity.STATE_NEEDS_RF -> tip.add(Component.translatable("gui.bsp_core.factory.need.rf_short"));
             case CoinFactoryBlockEntity.STATE_TRAY_FULL -> tip.add(Component.translatable("gui.bsp_core.factory.need.output"));
             case CoinFactoryBlockEntity.STATE_REDSTONE -> tip.add(Component.translatable("gui.bsp_core.factory.redstone"));
+            case CoinFactoryBlockEntity.STATE_OVER_CAP -> tip.add(Component.translatable("gui.bsp_core.factory.over_cap"));
+            case CoinFactoryBlockEntity.STATE_TRAY_OTHER_TEAM -> tip.add(Component.translatable("gui.bsp_core.factory.need.output_team"));
+            case CoinFactoryBlockEntity.STATE_COIN_DONE -> tip.add(Component.translatable("gui.bsp_core.factory.coin_done"));
             default -> {
-                if (tier != null) {
+                if (tier != null && menu.repressing(lane)) {
+                    tip.add(Component.translatable("gui.bsp_core.factory.repressing", Component.translatable("tier.bsp_core." + tier.key), duration(menu.remainingSeconds(lane))));
+                    tip.add(Component.translatable("gui.bsp_core.factory.repress_note").withStyle(net.minecraft.ChatFormatting.GRAY));
+                } else if (tier != null) {
                     tip.add(Component.translatable("gui.bsp_core.factory.pressing", Component.translatable("tier.bsp_core." + tier.key), duration(menu.remainingSeconds(lane))));
                 } else {
                     tip.add(Component.translatable("gui.bsp_core.factory.starting"));

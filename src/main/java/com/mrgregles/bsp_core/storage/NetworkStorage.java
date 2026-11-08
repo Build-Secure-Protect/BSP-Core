@@ -57,7 +57,10 @@ public final class NetworkStorage {
     private static volatile boolean stopping;
     /** Whether this server's local records were copied to the database ({@code /bsp storage migrate}), as read at the start. */
     private static volatile boolean migratedHere = true;
-    private static final Map<UUID, Integer> slicesElsewhere = new ConcurrentHashMap<>();
+    /** The factory slices each player owns on the other servers, as last read: at login, on placing, and every five minutes for owners with slices here. */
+    private static final Map<UUID, List<FactoryLedger.Slice>> slicesElsewhere = new ConcurrentHashMap<>();
+    /** True once this connection has read the slices the owners here have on other servers: until then the team limit keeps each slice's saved state. */
+    private static volatile boolean slicesRead;
     /** What each player keeps in Coin Vaults on the other servers, as last read: five coin counts, blocks, the Illyrium-interest flag and the prize-roll flag. */
     private static volatile Map<UUID, int[]> vaultsElsewhere = Map.of();
     private static final int[] NO_VAULTS = new int[8];
@@ -564,6 +567,9 @@ public final class NetworkStorage {
         com.mrgregles.bsp_core.totem.StealBacks.pushLosses(srv); // losses recorded here while the database was out of reach
         List<TotemLevels> levels = TotemLedger.get(srv).levelRows();
         async("write the placed totems' levels", s -> s.totemLevelsAll(levels)); // rows written before the levels were kept get them now
+        Map<UUID, Map<GlobalPos, Long>> slices = FactoryLedger.get(srv).allWithTimes();
+        async("write the factory slices' placing times", s -> s.slicesAll(slices)); // rows written before the times were kept get them now
+        refreshAllSlices(srv);
         long now = System.currentTimeMillis();
         for (ServerPlayer p : srv.getPlayerList().getPlayers()) {
             UUID id = p.getUUID();
@@ -640,6 +646,7 @@ public final class NetworkStorage {
         stopping = false;
         retryAtMs = 0;
         slicesElsewhere.clear();
+        slicesRead = false;
         vaultsElsewhere = Map.of();
         vaultsKnown = false;
         stealsElsewhere = List.of();
@@ -715,8 +722,10 @@ public final class NetworkStorage {
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        slicesElsewhere.remove(event.getEntity().getUUID());
         UUID id = event.getEntity().getUUID();
+        if (FactoryLedger.get(event.getEntity().getServer()).localCount(id) == 0) {
+            slicesElsewhere.remove(id); // kept for owners with slices here: their slices check the team limit while they are away
+        }
         async("mark a player gone", s -> {
             s.onlineGone(id);
             publish("online", "");
@@ -773,8 +782,8 @@ public final class NetworkStorage {
         async("record a placed totem's levels", s -> s.totemLevels(owner, pos, text));
     }
 
-    public static void sliceAdded(UUID owner, GlobalPos pos) {
-        async("record a factory slice", s -> s.sliceAdded(owner, pos));
+    public static void sliceAdded(UUID owner, GlobalPos pos, long placedMs) {
+        async("record a factory slice", s -> s.sliceAdded(owner, pos, placedMs));
     }
 
     public static void sliceRemoved(GlobalPos pos) {
@@ -783,12 +792,43 @@ public final class NetworkStorage {
 
     /** Factory slices the player owns on other servers, as last read from the database (0 when storage is local). */
     public static int slicesElsewhere(UUID owner) {
-        return slicesElsewhere.getOrDefault(owner, 0);
+        return slicesElsewhere.getOrDefault(owner, List.of()).size();
     }
 
-    /** Re-reads how many slices the player owns on other servers. Called on login and can be called again at any time. */
+    /** Whether the team factory limit can be worked out here: always with local storage; on a network once the slices elsewhere were read. */
+    public static boolean slicesKnown() {
+        return !countsWanted() || slicesRead; // a network server (connected or not) waits for its read
+    }
+
+    /** The factory slices the player owns on other servers, as last read (empty when storage is local). */
+    public static List<FactoryLedger.Slice> slicesElsewhereList(UUID owner) {
+        return slicesElsewhere.getOrDefault(owner, List.of());
+    }
+
+    /** GameTests only: sets the slices the player is said to own elsewhere ({@code null} forgets them). */
+    public static void slicesElsewhereForTest(UUID owner, @Nullable List<FactoryLedger.Slice> slices) {
+        if (slices == null) {
+            slicesElsewhere.remove(owner);
+        } else {
+            slicesElsewhere.put(owner, List.copyOf(slices));
+        }
+    }
+
+    /** Re-reads the slices the player owns on other servers. Called on login and can be called again at any time. */
     public static void refreshSlices(UUID owner) {
-        async("count factory slices", s -> slicesElsewhere.put(owner, s.slicesElsewhere(owner)));
+        async("read factory slices", s -> slicesElsewhere.put(owner, List.copyOf(s.slicesElsewhere(owner))));
+    }
+
+    /** Re-reads the slices on other servers of every owner with a slice here, so the team limit holds while they are away. */
+    private static void refreshAllSlices(MinecraftServer srv) {
+        Set<UUID> owners = new HashSet<>(FactoryLedger.get(srv).all().keySet());
+        async("read factory slices", s -> {
+            Map<UUID, List<FactoryLedger.Slice>> read = s.slicesElsewhere(owners);
+            for (UUID owner : owners) {
+                slicesElsewhere.put(owner, List.copyOf(read.getOrDefault(owner, List.of())));
+            }
+            slicesRead = true;
+        });
     }
 
     /**
@@ -804,9 +844,9 @@ public final class NetworkStorage {
         }
         worker().execute(() -> {
             try {
-                int n = s.slicesElsewhere(owner);
-                slicesElsewhere.put(owner, n);
-                onServer(() -> then.accept(n));
+                List<FactoryLedger.Slice> read = List.copyOf(s.slicesElsewhere(owner));
+                slicesElsewhere.put(owner, read);
+                onServer(() -> then.accept(read.size()));
             } catch (SQLException | RuntimeException e) {
                 BSPCore.LOGGER.error("BSP-Core storage: could not count factory slices for {}: {}", owner, e.toString());
             }
@@ -960,6 +1000,7 @@ public final class NetworkStorage {
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && store != null && ++catchUpTicks >= CATCH_UP_TICKS) {
             // a Redis message missed (a reconnect gap, a dropped publish) is never re-sent: teams, kits and shops are read whole now and then
             catchUpTicks = 0;
+            refreshAllSlices(event.getServer());
             teamReload(null);
             allianceReload(null);
             kitReload(null, false); // never prunes: a kit written here a moment ago may not be in the read yet
@@ -1471,7 +1512,8 @@ public final class NetworkStorage {
         TotemLedger totems = TotemLedger.get(srv);
         FactoryLedger factories = FactoryLedger.get(srv);
         Set<UUID> grants = new HashSet<>(totems.allGranted());
-        Map<UUID, Set<GlobalPos>> placed = copy(totems.allPlaced()), slices = copy(factories.all());
+        Map<UUID, Set<GlobalPos>> placed = copy(totems.allPlaced());
+        Map<UUID, Map<GlobalPos, Long>> slices = factories.allWithTimes();
         List<TotemLevels> levels = totems.levelRows();
         List<com.mrgregles.bsp_core.kit.Kit> kits = new java.util.ArrayList<>();
         for (com.mrgregles.bsp_core.kit.Kit k : com.mrgregles.bsp_core.kit.KitLedger.get(srv).all()) {
@@ -1592,6 +1634,13 @@ public final class NetworkStorage {
      */
     public static void bankAdjust(UUID id, long dPieces, int[] dCoins, @Nullable com.mrgregles.bsp_core.bank.BankTransaction log,
                                   java.util.function.BiConsumer<com.mrgregles.bsp_core.bank.BankAccount, Boolean> then) {
+        bankAdjust(id, dPieces, dCoins, log, null, null, 0, null, then);
+    }
+
+    /** {@link #bankAdjust} that also moves banked coins' team stamps (see {@link MySqlStore#bankAdjust(UUID, long, int[], com.mrgregles.bsp_core.bank.BankTransaction, com.mrgregles.bsp_core.coin.CoinTier, List, int, String)}). */
+    public static void bankAdjust(UUID id, long dPieces, int[] dCoins, @Nullable com.mrgregles.bsp_core.bank.BankTransaction log, @Nullable com.mrgregles.bsp_core.coin.CoinTier tier,
+                                  @Nullable List<com.mrgregles.bsp_core.bank.BankStamps.Lot> add, int take, @Nullable String team,
+                                  java.util.function.BiConsumer<com.mrgregles.bsp_core.bank.BankAccount, Boolean> then) {
         MySqlStore s = store;
         if (s == null) {
             then.accept(null, false);
@@ -1601,7 +1650,7 @@ public final class NetworkStorage {
             com.mrgregles.bsp_core.bank.BankAccount row = null;
             boolean reached = false;
             try {
-                row = s.bankAdjust(id, dPieces, dCoins, log);
+                row = s.bankAdjust(id, dPieces, dCoins, log, tier, add, take, team);
                 reached = true;
                 if (row != null) {
                     publish("bank", id.toString());

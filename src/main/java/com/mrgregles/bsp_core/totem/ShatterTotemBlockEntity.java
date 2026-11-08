@@ -56,6 +56,23 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     private long ownedSince;
     /** Friends the owner has let in and what each may do. Cleared when the totem changes hands. */
     private java.util.List<TotemAccess> access = new java.util.ArrayList<>();
+    /** The team surcharge percent and Pieces per copper value as last synced to this client (0 when none). */
+    private int surcharge;
+    private long surchargeRate;
+
+    /** The team surcharge percent on this totem, as last synced (client). */
+    public int clientSurcharge() {
+        return surcharge;
+    }
+
+    /** Pieces per copper value for the surcharge, as last synced (client). */
+    public long clientSurchargeRate() {
+        return surchargeRate;
+    }
+
+    /** The owner's team as last synced to this client (null in none); the server asks the team ledger instead. */
+    @Nullable
+    private UUID ownerTeam;
     /** The owner's teammates as last synced to this client; the server asks the team ledger instead. */
     private final java.util.Set<UUID> teammates = new java.util.HashSet<>();
     /** The owner's allies and the perks the owner's team gives them, as last synced to this client; the server asks the alliances. */
@@ -949,17 +966,24 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             return;
         }
         int tier = getTier();
+        // on a totem someone else owns, only coins pressed for the owner's team (or clean ones) pay
+        com.mrgregles.bsp_core.coin.CoinStamp.Purse purse = purseFor(player);
+        int surcharge = surchargeFor(player);
         if (ordinal == com.mrgregles.bsp_core.network.UpgradeRequestPacket.RAISE_TIER) {
             TotemUpgrades.Price price = TotemUpgrades.gatePrice(tier);
-            Component why = TotemUpgrades.whyNotGate(tier, player);
+            Component why = TotemUpgrades.whyNotGate(tier, player, purse);
             if (price == null || why != null) {
                 player.displayClientMessage((why == null ? Component.translatable("gui.bsp_core.tree.gate.max") : why).copy().withStyle(ChatFormatting.RED), true);
                 return;
             }
-            TotemUpgrades.pay(player, price);
-            setTier(tier + 1);
-            player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(tier + 1)).withStyle(ChatFormatting.GOLD), true);
-            BSPCore.LOGGER.info("{} raised the totem at {} to tier {}", player.getGameProfile().getName(), worldPosition, tier + 2);
+            // the team surcharge comes from the bank first; the coins and XP once it is paid
+            TeamSurcharge.charge(player, price, surcharge, "raise to Tier " + TotemUpgrades.roman(tier + 1),
+                    () -> !isRemoved() && getTier() == tier && mayUpgrade(player) && surchargeFor(player) == surcharge && TotemUpgrades.whyNotGate(tier, player, purseFor(player)) == null, () -> {
+                        TotemUpgrades.pay(player, price, purseFor(player)); // read again: the bank may have answered after a team change
+                        setTier(tier + 1);
+                        player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.tier_raised", TotemUpgrades.roman(tier + 1)).withStyle(ChatFormatting.GOLD), true);
+                        BSPCore.LOGGER.info("{} raised the totem at {} to tier {}", player.getGameProfile().getName(), worldPosition, tier + 2);
+                    });
             return;
         }
         TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(ordinal);
@@ -973,19 +997,23 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             return;
         }
         TotemUpgrades.Price price = TotemUpgrades.price(buff, lvl);
-        Component why = TotemUpgrades.whyNot(buff, this::getUpgradeLevel, tier, player);
+        Component why = TotemUpgrades.whyNot(buff, this::getUpgradeLevel, tier, player, purse);
         if (price == null || why != null) {
             player.displayClientMessage((why == null ? Component.translatable("message.bsp_core.upgrade.maxed") : why).copy().withStyle(ChatFormatting.RED), true);
             return;
         }
-        TotemUpgrades.pay(player, price);
-        setUpgradeLevel(buff, lvl + 1);
-        if (buff == TotemUpgrades.Buff.TRIPWIRE) {
-            setTripwireRange(-1); // a new range is put to use at once (owner's rule)
-        }
-        player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
-                Component.translatable(buff.translationKey()), lvl + 1).withStyle(ChatFormatting.GOLD), true);
-        BSPCore.LOGGER.info("{} bought {} level {} at {}", player.getGameProfile().getName(), buff.key, lvl + 1, worldPosition);
+        TeamSurcharge.charge(player, price, surcharge, buff.key + " level " + (lvl + 1),
+                () -> !isRemoved() && getUpgradeLevel(buff) == lvl && mayUpgrade(player) && surchargeFor(player) == surcharge
+                        && TotemUpgrades.whyNot(buff, this::getUpgradeLevel, getTier(), player, purseFor(player)) == null, () -> {
+                    TotemUpgrades.pay(player, price, purseFor(player)); // read again: the bank may have answered after a team change
+                    setUpgradeLevel(buff, lvl + 1);
+                    if (buff == TotemUpgrades.Buff.TRIPWIRE) {
+                        setTripwireRange(-1); // a new range is put to use at once (owner's rule)
+                    }
+                    player.displayClientMessage(Component.translatable("message.bsp_core.upgrade.bought",
+                            Component.translatable(buff.translationKey()), lvl + 1).withStyle(ChatFormatting.GOLD), true);
+                    BSPCore.LOGGER.info("{} bought {} level {} at {}", player.getGameProfile().getName(), buff.key, lvl + 1, worldPosition);
+                });
     }
 
     /** Keeps the ledger's owner, tier and upgrade levels for this totem current; scores and other mods' lookups read the ledger. */
@@ -1055,6 +1083,28 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             return com.mrgregles.bsp_core.team.Teams.enabled() && com.mrgregles.bsp_core.api.BspTeams.sameTeam(sl.getServer(), owner.uuid(), player);
         }
         return teammates.contains(player);
+    }
+
+    /** Which coins pay when {@code player} buys here (server). */
+    private com.mrgregles.bsp_core.coin.CoinStamp.Purse purseFor(ServerPlayer player) {
+        return com.mrgregles.bsp_core.coin.CoinStamp.forTotem(player.server, player.getUUID(), owner == null ? null : owner.uuid());
+    }
+
+    /** The team surcharge percent when {@code player} buys here (server). */
+    private int surchargeFor(ServerPlayer player) {
+        return TeamSurcharge.percent(player.server, owner == null ? null : owner.uuid(), player.getUUID());
+    }
+
+    /**
+     * Which coins pay when {@code viewer} buys here, on a client: any on their own (or an unowned) totem; on someone else's, only
+     * coins pressed for the owner's team as last synced, and clean ones. The server works it out again with {@link
+     * com.mrgregles.bsp_core.coin.CoinStamp#forTotem}.
+     */
+    public com.mrgregles.bsp_core.coin.CoinStamp.Purse clientPurse(UUID viewer) {
+        if (owner == null || owner.uuid().equals(viewer)) {
+            return com.mrgregles.bsp_core.coin.CoinStamp.Purse.ANY;
+        }
+        return new com.mrgregles.bsp_core.coin.CoinStamp.Purse(false, ownerTeam == null ? null : ownerTeam.toString(), null);
     }
 
     /** Sends the block's data again so clients learn a team change (a teammate joined or left). */
@@ -1333,6 +1383,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             radLayers = tag.getInt("RadLayers");
         }
         access = TotemAccess.load(tag);
+        ownerTeam = tag.hasUUID("OwnerTeam") ? tag.getUUID("OwnerTeam") : null;
+        surcharge = tag.getInt("Surcharge");
+        surchargeRate = tag.getLong("SurchargeRate");
         teammates.clear();
         if (tag.contains("Teammates")) {
             for (net.minecraft.nbt.Tag raw : tag.getList("Teammates", net.minecraft.nbt.Tag.TAG_INT_ARRAY)) {
@@ -1369,7 +1422,16 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         tag.putInt("RadBare", radBare);
         tag.putInt("RadSeen", radSeen);
         tag.putInt("RadLayers", radLayers);
+        if (owner != null && level instanceof ServerLevel sl) {
+            // the team surcharge's numbers come from the server: its config reaches clients only at login
+            tag.putInt("Surcharge", TeamSurcharge.percent(sl.getServer(), owner.uuid(), owner.uuid()));
+            tag.putLong("SurchargeRate", TeamSurcharge.perCopper());
+        }
         if (owner != null && level instanceof ServerLevel sl && com.mrgregles.bsp_core.team.Teams.enabled()) {
+            com.mrgregles.bsp_core.team.Team ownerTeam = com.mrgregles.bsp_core.team.Teams.teamOf(sl.getServer(), owner.uuid());
+            if (ownerTeam != null) {
+                tag.putUUID("OwnerTeam", ownerTeam.id); // which coins pay here for someone else (the coin stamp)
+            }
             net.minecraft.nbt.ListTag mates = new net.minecraft.nbt.ListTag();
             for (UUID m : com.mrgregles.bsp_core.api.BspTeams.teammates(sl.getServer(), owner.uuid())) {
                 mates.add(net.minecraft.nbt.NbtUtils.createUUID(m));
