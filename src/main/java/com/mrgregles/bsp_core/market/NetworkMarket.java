@@ -50,6 +50,10 @@ public final class NetworkMarket implements MarketStore {
     private boolean refreshing, refreshAgain;
     /** While a refresh reads: lots this server added or removed itself, which the read may not have seen. */
     private final java.util.Set<String> addedDuring = new java.util.HashSet<>(), removedDuring = new java.util.HashSet<>();
+    /** When the copy was last read whole (0 never). */
+    private long readMs;
+    /** Callers of {@link #refresh(MinecraftServer, Runnable)}: waiting for the next read to start, and riding on the read under way. */
+    private final List<Runnable> afterRefresh = new ArrayList<>(), riding = new ArrayList<>();
 
     /**
      * @param worker   runs the database calls (the storage thread)
@@ -123,6 +127,8 @@ public final class NetworkMarket implements MarketStore {
         refreshing = true;
         addedDuring.clear();
         removedDuring.clear();
+        riding.addAll(afterRefresh);
+        afterRefresh.clear();
         java.util.Set<String> known = new java.util.HashSet<>();
         open.forEach(l -> known.add(l.id));
         run("read the market", () -> {
@@ -151,17 +157,43 @@ public final class NetworkMarket implements MarketStore {
                 }
             }
             open = next;
+            readMs = Market.now();
             refreshDone(server);
         }, () -> refreshDone(server));
+    }
+
+    @Override
+    public long readMs() {
+        return readMs;
+    }
+
+    @Override
+    public void refresh(MinecraftServer server, Runnable then) {
+        afterRefresh.add(then);
+        refresh(server);
     }
 
     private void refreshDone(MinecraftServer server) {
         refreshing = false;
         addedDuring.clear();
         removedDuring.clear();
+        List<Runnable> done = new ArrayList<>(riding);
+        riding.clear();
         if (refreshAgain) {
             refreshAgain = false;
             refresh(server);
+        }
+        runWaiting(done);
+    }
+
+    /** Runs the callbacks whose refresh has ended; one that throws never keeps the others from running. */
+    static void runWaiting(List<Runnable> done) {
+        for (Runnable r : done) {
+            try {
+                r.run();
+            } catch (RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core market: a caller waiting for a refresh failed", e);
+            }
         }
     }
 

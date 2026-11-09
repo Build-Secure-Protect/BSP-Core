@@ -82,6 +82,23 @@ public final class LotteryPage {
         }));
     }
 
+    /**
+     * Who is in (names in alphabetical order, ignoring case) and the past wins (newest first), from the shared copy: at once when
+     * it is fresh, else after reading it again (on a network a read that fails keeps the last copy). For {@code BspLottery}.
+     */
+    public static void inAndWins(MinecraftServer server, java.util.function.BiConsumer<List<String>, List<LotteryWin>> then) {
+        withCopy(server, c -> {
+            List<String> names = new ArrayList<>();
+            for (Lottery.Entry e : c.entries) {
+                if (e.in()) {
+                    names.add(e.player().name());
+                }
+            }
+            names.sort(String.CASE_INSENSITIVE_ORDER);
+            then.accept(List.copyOf(names), List.copyOf(c.wins));
+        });
+    }
+
     private static LotteryPageView build(MinecraftServer server, UUID player, Copy c, long now) {
         List<String> names = new ArrayList<>();
         int standing = -1;

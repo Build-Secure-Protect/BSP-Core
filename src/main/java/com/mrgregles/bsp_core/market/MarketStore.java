@@ -41,6 +41,16 @@ public interface MarketStore {
     /** The open lots this server knows of, newest first. On a network, a copy a moment behind the database. */
     List<MarketLot> open(MinecraftServer server);
 
+    /** When {@link #open} was last read whole from where the lots live: {@link Market#now} on a single server; 0 before the first read on a network. */
+    default long readMs() {
+        return Market.now();
+    }
+
+    /** Reads the open lots again and then runs {@code then} on the server thread, whether the read worked or not; at once on a single server. */
+    default void refresh(MinecraftServer server, Runnable then) {
+        then.run();
+    }
+
     /**
      * Buys a lot whole: takes it off the market, the price plus {@code tax} from the buyer, the price to the seller, the tax to
      * the pot. Answers "ok" with the lot, "gone" (bought, cancelled or ended first), "short", "unreachable" or "unsure_buy"

@@ -38,6 +38,10 @@ public final class NetworkOrders implements OrderStore {
     /** Server thread only. */
     private List<BuyOrder> open = new ArrayList<>();
     private boolean refreshing, refreshAgain, settling;
+    /** When the copy was last read whole (0 never). */
+    private long readMs;
+    /** Callers of {@link #refresh(MinecraftServer, Runnable)}: waiting for the next read to start, and riding on the read under way. */
+    private final List<Runnable> afterRefresh = new ArrayList<>(), riding = new ArrayList<>();
 
     public NetworkOrders(OrderDb db, Executor worker, Consumer<Runnable> onServer, Runnable announce, Function<MinecraftServer, OrderLedger> held, Consumer<UUID> boxChanged) {
         this.db = db;
@@ -95,20 +99,37 @@ public final class NetworkOrders implements OrderStore {
             return;
         }
         refreshing = true;
+        riding.addAll(afterRefresh);
+        afterRefresh.clear();
         run("read the buy orders", db::orders, read -> {
             List<BuyOrder> next = new ArrayList<>(read);
             next.sort(java.util.Comparator.comparingLong((BuyOrder o) -> o.placedMs).reversed().thenComparing(o -> o.id));
             open = next;
+            readMs = Market.now();
             refreshDone(server);
         }, untouched -> refreshDone(server));
     }
 
+    @Override
+    public long readMs() {
+        return readMs;
+    }
+
+    @Override
+    public void refresh(MinecraftServer server, Runnable then) {
+        afterRefresh.add(then);
+        refresh(server);
+    }
+
     private void refreshDone(MinecraftServer server) {
         refreshing = false;
+        List<Runnable> done = new ArrayList<>(riding);
+        riding.clear();
         if (refreshAgain) {
             refreshAgain = false;
             refresh(server);
         }
+        NetworkMarket.runWaiting(done);
     }
 
     /** Fills whose answer was lost: each settled once the database can say (the items to the seller's box unless the fill went in). */

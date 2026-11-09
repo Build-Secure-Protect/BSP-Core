@@ -3254,3 +3254,14 @@ Covered by `a_renamed_team_keeps_pressing_and_an_old_tray_takes_the_stamp` and `
 - [ ] Network: a player over the limit with paused slices on server B; restart B: the paused slices stay paused (also while the database is unreachable at start).
 - [ ] Network, team surcharge: stop the database between clicking Buy and the answer: the buyer is told the bank could not take it, or, if the bank took it and the purchase no longer holds, that it went back (a failed return is logged as an error with the player and amount, and the player is told to ask an admin).
 
+## Market and lottery api (2026-11-08, 1.16.0, BSP-Server Utilities request SU-BC1)
+
+GameTests: `market_api` (lots and orders listed with their items intact, ended ones and a filled order left out, a lot listed until its last millisecond) and `lottery_api` (the summary after an add, the names in, an empty pot refused alike through the api and the command, a draw through the api, "busy" during a draw, the summary's newest win after it). These need a network or Server Utilities:
+
+- [ ] MySQL network, two servers: list a lot and place an order on server A. On server B, `BspMarket.openLots` / `openOrders` (through Server Utilities' panel) show them within a minute, or at once after `BspMarket.refresh`; `lotsReadMs` moves on at each read.
+- [ ] Stop MySQL, call `BspMarket.refresh`: its callback still runs, and `lotsReadMs` stays at the last good read.
+- [ ] Start a network server with MySQL stopped: `BspMarket.openLots` is empty with `lotsReadMs` 0, and `BspLottery.connected()` is false with an empty summary.
+- [ ] MySQL network: draw from the panel on server A. The countdown shows on both servers, the winner is paid once, the wins list on both shows it, and A's log names the staff member as the one who started it. `BspLottery.summary` on server B shows `COUNTING` during the count.
+- [ ] Draw from the panel on server A and, during the count, `/bsp lottery draw` on server B: B answers that a draw is already running.
+- [ ] MySQL stopped: a draw from the panel answers "unreachable" and nothing shows.
+

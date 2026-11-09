@@ -42,6 +42,16 @@ public interface OrderStore {
     /** The open orders this server knows of, newest first. On a network, a copy a moment behind the database. */
     List<BuyOrder> open(MinecraftServer server);
 
+    /** When {@link #open} was last read whole from where the orders live: {@link Market#now} on a single server; 0 before the first read on a network. */
+    default long readMs() {
+        return Market.now();
+    }
+
+    /** Reads the open orders again and then runs {@code then} on the server thread, whether the read worked or not; at once on a single server. */
+    default void refresh(MinecraftServer server, Runnable then) {
+        then.run();
+    }
+
     /**
      * Sends {@code count} of the order's item (already taken from the seller) to the order {@code seen} (this server's copy
      * of it): as many as it still wants go to the buyer's Collect box, the seller is paid for them less the tax, the tax goes

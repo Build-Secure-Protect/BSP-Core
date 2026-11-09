@@ -4,6 +4,15 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-08
+
+Network protocol 12, as 1.15.0: players keep the 1.15.0 client, and 1.15.0 and 1.16.0 servers can share a network (no new tables or messages). Only the api for other mods is new.
+
+### Added
+- **Market and lottery api for other mods** (for BSP-Server Utilities' staff web panel; `docs/API.md`):
+  - `BspMarket.openLots` and `openOrders` list the open lots (with copies of their items) and buy orders, newest first, leaving out those past their end and orders with nothing left to send. On a network they answer from the server's copy of the market, with the time it was last read and a `refresh` that reads it again.
+  - `BspLottery.summary` gives the pot, how many players are in, where the draw stands and the past winners (nothing while a network server's database is not connected); `entrants` gives the names of those in; `draw` draws the lottery as `/bsp lottery draw` does, with the same answers, and writes the given name in the server log as who started it.
+
 ## [1.15.0] - 2026-11-08
 
 Network protocol 12: every player needs the new client (the Totem Compass screen syncs its range levels; the admin panel's RADIATION tab; the Coin Factory screen's team limit and re-pressing; the carried totem's upgrade screen's team surcharge). On a network, update every server together: servers on 1.14.x and 1.15.0 cannot run side by side (new tables and columns `bank_coin_stamps` and `factory_slices.placed_ms`, coin stamps).
