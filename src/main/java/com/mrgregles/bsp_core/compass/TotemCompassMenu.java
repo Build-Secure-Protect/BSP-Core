@@ -42,7 +42,7 @@ public class TotemCompassMenu extends AbstractContainerMenu {
                     case 6 -> TotemCompassItem.rangeLevel(s, TotemCompassItem.Range.ACROSS);
                     case 7 -> TotemCompassItem.rangeLevel(s, TotemCompassItem.Range.DEPTH);
                     // tracking and no rival within reach: sent here, since the client's copy of the compass is not updated while this slotless menu is open
-                    case 8 -> TotemCompassItem.trackingLeft(s, now) > 0 && TotemCompassItem.target(s) == null ? 1 : 0;
+                    case 8 -> TotemCompassItem.trackingLeft(s, now) > 0 && TotemCompassItem.target(s) == null ? (TotemCompassItem.radiationDetected(s) ? 2 : 1) : 0;
                     default -> 0;
                 };
             }
@@ -73,7 +73,10 @@ public class TotemCompassMenu extends AbstractContainerMenu {
     /** The compass's level on a range ladder; the screen reads the blocks and prices from the synced server config. */
     public int rangeLevel(TotemCompassItem.Range r) { return data.get(r == TotemCompassItem.Range.ACROSS ? 6 : 7); }
     /** Tracking, but the server found no rival totem within reach. */
-    public boolean noneInReach() { return data.get(8) != 0; }
+    /** Tracking, nothing in reach and no rival's radiation felt. */
+    public boolean noneInReach() { return data.get(8) == 1; }
+    /** Tracking, nothing in reach, but a rival totem's radiation reaches the holder. */
+    public boolean radiationDetected() { return data.get(8) == 2; }
 
     @Override
     public boolean clickMenuButton(Player p, int id) {

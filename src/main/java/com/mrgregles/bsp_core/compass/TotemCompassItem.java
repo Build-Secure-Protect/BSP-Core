@@ -37,6 +37,8 @@ import java.util.UUID;
  * network the {@code compass_waits} table), so a new compass cannot skip it, on this server or another.
  */
 public class TotemCompassItem extends Item {
+    /** Set while tracking when no rival totem is in reach but a rival's radiation reaches the holder: the needle turns slowly. */
+    public static final String RADIATION = "Radiation";
     public static final String STORED = "Stored", TRACK_UNTIL = "TrackUntilMs", COOLDOWN_UNTIL = "CooldownUntilMs", LEVEL = "CooldownLevel",
             TARGET = "TargetPos", TARGET_DIM = "TargetDim", RANGE_ACROSS = "RangeAcross", RANGE_DEPTH = "RangeDepth";
     /** The two range ladders: how far across, and how far up or down, a rival-tracking compass finds totems. */
@@ -353,8 +355,18 @@ public class TotemCompassItem extends Item {
         if (level.isClientSide || level.getGameTime() % 20 != 0 || !(entity instanceof ServerPlayer player)) {
             return;
         }
+        aim(player, stack);
+    }
+
+    /** Once a second (server): where the needle points, written into the stack, and whether a rival's radiation is felt. */
+    public static void aim(ServerPlayer player, ItemStack stack) {
+        aim(player, stack, System.currentTimeMillis());
+    }
+
+    public static void aim(ServerPlayer player, ItemStack stack, long nowMs) {
+        Level level = player.level();
         upgradeTimes(player, stack);
-        boolean rivals = trackingLeft(stack, System.currentTimeMillis()) > 0;
+        boolean rivals = trackingLeft(stack, nowMs) > 0;
         BlockPos best = nearest(player, rivals, stack);
         if (rivals) {
             // a working Decoy Totem within its range takes over the needle
@@ -371,6 +383,53 @@ public class TotemCompassItem extends Item {
             tag.put(TARGET, NbtUtils.writeBlockPos(best));
             tag.putString(TARGET_DIM, level.dimension().location().toString());
         }
+        if (rivals && best == null && radiationNearby(player, stack, nowMs)) {
+            tag.putBoolean(RADIATION, true);
+        } else {
+            tag.remove(RADIATION);
+        }
+    }
+
+    /**
+     * Whether some rival totem's radiation is felt by the holder ({@link com.mrgregles.bsp_core.totem.TotemRadiation#felt}), for a
+     * tracking compass that points at nothing; in reach or not. Never while totem radiation is turned off.
+     */
+    public static boolean radiationNearby(ServerPlayer player, ItemStack compass) {
+        return radiationNearby(player, compass, System.currentTimeMillis());
+    }
+
+    public static boolean radiationNearby(ServerPlayer player, ItemStack compass, long nowMs) {
+        if (!com.mrgregles.bsp_core.totem.TotemRadiation.enabled()) {
+            return false;
+        }
+        BlockPos at = player.blockPosition();
+        double limit = com.mrgregles.bsp_core.totem.TotemRadiation.feltLimit(), limitSq = limit * limit;
+        TotemLedger ledger = TotemLedger.get(player.server);
+        for (Map.Entry<UUID, Set<GlobalPos>> e : ledger.allPlaced().entrySet()) {
+            if (e.getKey().equals(player.getUUID()) || !isRival(player.server, player.getUUID(), e.getKey())) {
+                continue;
+            }
+            for (GlobalPos pos : e.getValue()) {
+                if (pos.dimension() != player.level().dimension()) {
+                    continue;
+                }
+                double dx = pos.pos().getX() - at.getX(), dz = pos.pos().getZ() - at.getZ();
+                if (dx * dx + dz * dz > limitSq) {
+                    continue;
+                }
+                int seenAt = com.mrgregles.bsp_core.totem.TotemRadiation.seenAt(player.server, ledger, e.getKey(), pos);
+                if (com.mrgregles.bsp_core.totem.TotemRadiation.felt(pos, at, seenAt, nowMs)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Client and server: whether the compass is in the radiation-detected state (no target, a rival's radiation felt). */
+    public static boolean radiationDetected(ItemStack stack) {
+        return stack.hasTag() && stack.getTag().getBoolean(RADIATION) && !stack.getTag().contains(TARGET)
+                && trackingLeft(stack, System.currentTimeMillis()) > 0;
     }
 
     /** Nearest placed totem in the player's dimension: their own, or someone else's when {@code rivals}. */

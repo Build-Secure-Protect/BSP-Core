@@ -1,0 +1,708 @@
+<title>Radiation Detected Popup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Three looks for the Totem Compass's "Totem radiation detected" popup, in an in-game view at GUI scale 3. Dark only, like the mod's plates. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --gold:#ffd23a;
+  --sans:"IBM Plex Sans","Segoe UI",system-ui,sans-serif; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--sans); font-size:15px; line-height:1.55; margin:0; }
+.wrap{ max-width:1080px; margin:0 auto; padding-block:32px 64px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:28px; margin:0; text-wrap:balance; } h1 b{ color:var(--tq); font-weight:600; }
+h2{ font-size:19px; margin:0; font-weight:600; text-wrap:balance; }
+p{ margin:0; max-width:72ch; } .lede{ color:var(--muted); }
+section{ display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--line); padding-top:24px; }
+.tag{ font:600 12px var(--sans); letter-spacing:.1em; text-transform:uppercase; color:var(--tq); }
+canvas{ width:100%; height:auto; display:block; border:1px solid var(--line); image-rendering:pixelated; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; align-items:start; }
+.pair > div{ display:flex; flex-direction:column; gap:8px; min-width:0; }
+.gold{ color:var(--gold); font-weight:600; }
+</style>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <h1><b>BSP-Core</b> · Totem radiation detected</h1>
+    <p class="lede">While tracking, a rival totem's radiation reaches you but the totem is outside your compass's reach. The needle points nowhere and turns slowly, and a popup says <span class="gold">Totem radiation detected</span>. Three looks for the popup follow; the needle and the compass screen are the same in all three.</p>
+  </header>
+  <section>
+    <span class="tag">Look A</span>
+    <h2>The words sit above the hotbar in gold, where the game puts its own short messages, and fade unless the compass keeps them up.</h2>
+    <canvas id="A"></canvas>
+  </section>
+  <section>
+    <span class="tag">Look B</span>
+    <h2>A dark chip above the hotbar, edged in gold like the Sentinel strip's chips, with the compass turning on its left and a slow gold pulse on its right.</h2>
+    <canvas id="B"></canvas>
+  </section>
+  <section>
+    <span class="tag">Look C</span>
+    <h2>A toast in the top right, where advancements arrive, in the mod's turquoise frame, with a second line saying the totem is not in your reach yet.</h2>
+    <canvas id="C"></canvas>
+  </section>
+  <section>
+    <span class="tag">In every look</span>
+    <div class="pair">
+      <div><h2>The needle: today's wobble with nothing found, and the steady turn, once every 4 seconds, when radiation is detected.</h2><canvas id="N"></canvas></div>
+      <div><h2>The compass screen says the same words in gold where it says "No rival totem within range" today.</h2><canvas id="S"></canvas></div>
+    </div>
+    <p class="lede">The popup shows only while the compass is in your hand, and gives no strength, count or distance. A rival totem in your reach still wins: the needle points at it as it does today.</p>
+  </section>
+</div>
+<script>var TEX = {"totem": "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAH6ElEQVR42u2a328UVRTHNxHBRqINBanbSnWLUdNtCYKm1BIQfxAEWgnW1B8xLZQqQRsTCUbwB2iDiiaGhMSX+qYkvpg+keizia8++ea7/4DP45zDnvHMmXPuzGy3tDNzb/INsN3Nbj+fe+859y612jobI7/fCrR89s/fgfWz+rXLQc2P1YXPI+HzeIodhi8FuODzn3miHYJvAZbPsX7m6a4y/Kyv96Rzwl9p5Pa0c+m6l3Cn4EsJAN8LuMPwKQTfS1gH8CsvwFVUV1Jss8KvtIAs8DslgAM/8+syptISOt1qup6vwa+0gNWCr71u68I8Rkrgj5OQygjo/+j9VKDatUO78KUA/jhfEZUSQEmb3fLSjYtwweewtcIrBVRuG+IS0kRYEtLgu2KtjsoKyCOinVbT2oYq3ZJy8N1Tk5lEuATkne2VPxcQ7K7N96kSpAjXlzDtzHbr+ZURMPHd15EAiiYBkgd+ntmuPb9S2xBIgHAJfFviQuB5LvjWbJeHLl8LxDYkBZAEeFwKoFWTtdvRTr2u7afSxVhbBRy6TBrELAL8BZ3SkmoCtO0pS4H18FdwJpBSZLGG5C26Hn4OCXLWr7aASn8xY21Dcua7JHj4HZRgQZcrgwR4+B0Ysu+3BGjFul34I8s/YUCiF2AIsFpUrSXNBf+3X2I1pNLwh69eCTAXPzSvI1wi2l0BlRcwfP1aEMFvJWtLqq2CvAWZfylTLfBLNwKEz/LI6VlM/wfnbkeBT6tDk9BOS1qpryQRuhYhIhLARNB1BK8T2iqgGe0FcPA3fwgwDPrZW8sJEad//hHT/958QsLRrz5HCRu7NiduSXms/3aS5aqidOChvYvgswB8irYiNtUHbktgIkAABARArAu6di/fSiWAemseTYQGXoZESAG0ItppSVVBN74pvgDoq2MJwZ//849YNBEaeEsEFwDRinWW/Z6DpxT/KqG1XUgRAL7/0wuxSPD3HxhTI0UcvnwJExNgdE0WfBTAwJdOgCWC4HOgS//+FcWSoImglZDomJgI9YsZBTzm28XyCZAirBm/4+IpM1KMtSL4+3WfOIaRe7yW5sK7CL8cAkTnQpHQCCbNfIItZ721OrQawUXEBDjAy5RHABOhwcoqgFZH2nYEuXtr7/8SwvdGAQp4uGviKZWIvvnZQErY0N2DsSRoW5CU44IP7SvAh8D7kwBIDLy4byqlCABAkQKyishahLVzhHx/BM+vOaQEh4hC1gQOgALQux4bzCUiFXzKgQ7e13XX5BJBBbmQAra8eMgUQMkqQj7ezsk67dKPC+DgCy2AYgnIKiICL07W2oFOJtr3LSlMggZ+5+InmEILoFgC0kRAUeXniL7FS1EIvlwR286ewsQEGKvDBb6wAvpemwogaQK2HB13iqCuRp4nSABfERACLgVoW1UW8IUXsP+dMxgpYOb7xUgAJY8AebLmsLkA7Tb2gbm3MBz89pnXdfgfX8AUXgBECpAS6DFVgHGyhsjZDiHI9DpcHS3YMQEhZICfENACX1wBJycDiCWAgPOth0sxBSgiYgIE5OggxmY7wmewYwIEeMz5heIK4CKkALn/88ekAO1kTSIQvtjLTQHKNoPwFfAPvnIC4RdSgCZBFuG8AuTJWpvdEjS9xiquGvjJL79A+IUXIEVoXRDfhrIKkCJcXYwpwABP4QJK8/0wL65cAO+EqDYkBMy8oUpAuFb7GEKlg6ALPM1yKWBoaA9mcPrVoBIC+GOqAIoU4JjddAZxgZcCOHhKaQVY9cApQIhwzW5VgABPGXruMIaDL5UAKcF1NSEF9Dx7AKOJUGd3CzQdAl3gmyenMBr4wePHMbWyDZcI7SBGAlACHPJcAhhcOoOo4GdnMS7wFNiSamUcmohMAihcgAJZE0BftGQBzwVQSieh/kQzcROaqAGtVjYhIIzs2THn3o4nfIy+5coDfuDpUczY2AsxCaUQQb8ICKCkCYhiCZDgWwH4B+fmMBz82PS0Dv/Q8xiXgMKKkL8AF9Bo7sIkBOzZm5TQEoHwLfBXryBogh8JCCED/ISAFnguoPHUaOzzgoxCr4h6fSCAaCJIAAUeQ/g8QoIGfvfEBIZmegSfweYC9h45loAP4CnW7Ic0Go9jCifAEiEFUCwRHHzf+DhGCtC2GYQfggb4XAAH7xJA4AsvQIqg5S0FWCI4eBmruPKZTgI08Bp8Cb7wAoZ37wteevnN6N98f4W/axLUFQFJEyC2GcjDI09iNPB8vyfQ8FkbjzaLK6CnZ3tMAPwy2zbcFdQfasREuIp1VhEu8ARaCrBmPIHv27gBPyuH39u7o1gCKCRg8J5NGBLhqhFSANULTYQLvBTg2mqeOXgEwY/c24UhAQCeUrh2lCQM7RpF8CQAtiRXjZAiZOdkCVjJHs8FwJ/wmQsLXg4EHs4oEiFXgIzsw6UA3r4C+Oa+/SsqrlwAfEbc/8OU70oCwFMcAvK0rwBfCsgDnguAlBK8JoLXCC2uYm0JcHY1BnjaZgB+rWpDFmvZumbpmgB+WleDM9sAX4o9flVEhPChXqS1rzTjIVo7CeE9vQefVURLALWvsCIApFYj+MyG18GMp3aSBHjwOUUAcN6+agLwjCG2Fuzfw+fxdpIEeLJtdk0AMa+AUreTayUCtpY0ASCqMu3keijWvriusQgPfo1FePB++OGHH3744Ycffvjhhx9++OGHH34UZfwHFLgKIs/0GuwAAAAASUVORK5CYII=", "c00": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAoUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCMIwwCMDzMAqyHomkE29/x/BsbIYlgNwKYZRCMbABMDYWutNDDGagCyQpgByGI4DUDXjO4CZAxSh2EAumYQPqEiA8bommGuwBkGMIXoBiBrxmsATCGyAXgDEQRg0YPNKwQ1IxsAwoQ0YzUA2RCYInQ/49WMDNA1EK2RHAAA4p5Elo+DpHgAAAAASUVORK5CYII=", "c01": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAmUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMMwyA+DADsBqCTTOI7vmPKobVAFyakQ1AFrPWSgNjrAYgK4QZgC6G1QBsmk+oyKB4AdmFGAaga4YZAMLommGuwBkGMIX4NOM1AKYQ2QC8gQgCsOjB5hWCmpENAGFCmrEagGwITBG6n/FqRgboGojWSA4AACkAO5apuC2LAAAAAElFTkSuQmCC", "c02": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAnElEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4gGARANMwCrIbg0IxsAEsNqAD7NPf+fgTGymLVWGhhjNQBZIcwAdDGsBmDTfEJFBmwAshhMHYYB6JphBoAwumaYK3CGAUwhPs14DYBpRjYAbyCCACx6sHmFoGZkA0CYkGasBiAbAlOE7me8mpEBugaiNZIDAOEdPEvkfyDdAAAAAElFTkSuQmCC", "c03": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBqCT3PP/2f/QQAkhtUAQjaDDABhGN9aKw2MsRpASDNOA7BpPqEig6EZpg7DAHTNMANAGF0zzBU4w4AYzXgNACnEpRmrASAAix5sXiGoGdkAECakGasByIbAFKH7Ga9mZICugWiN5AAAlUw9VuQiL8gAAAAASUVORK5CYII=", "c04": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDMIgMSwGkBIc8//Z2AMAiC+tVYaGGM1AJdmEIaJYTUAm+YTKjIYmmHqMAzAphmG0TXDXIEzDIjRjNcAkEJcmrEaAAKw6EH3ClGakQ0AYUKasRqAbAhMEbqf8WpGBugaiNZIDgAAh1BDiLeEsBMAAAAASUVORK5CYII=", "c05": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGju+f/sPwiA2NZaaWCM1QBcmmEYpwHYNJ9QkUHRiOxCDAOwaYZhdM0wV+AMA2wa0TXjNQBXDMDYGAaAACx6yNKMbAAIE9KM1QBkQ2CK0P2MVzMyQNdAtEZyAAD2hz1WwxEvFgAAAABJRU5ErkJggg==", "c06": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwG4NPf8f/YfBrAagE3zCRUZsEYYRjYQwwBkzSCNyBibV3B6AWYAvnDAGwZkBSIIwKKHLM3IBoAwIc1YDUA2BKYI3c94NSMDdA1EayQHAADEhDxLEwQdIgAAAABJRU5ErkJggg==", "c07": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAi0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwGENIMAVgOwaT6hIvO/5/8zFAwCIHUYBiBrBmlExthcg9MLxIQD3jAgKxBBABY9ZGlGNgCECWnGagCyITBF6H7GqxkZoGsgWiM5AABHoTuWV4N0HwAAAABJRU5ErkJggg==", "c08": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAiElEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwGENOM0AFnhCRUZOO75/wwFgwBIHYYByLYQMgDmCpxhQMgreMOArEAEAVj0kKUZ2QAQJqQZqwHIhsAUofsZr2ZkgK6BaI3kAAA9z0SW0kSL8gAAAABJRU5ErkJggg==", "c09": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjElEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwGENOM0AFnhCRUZFIzNQAwDsNkM0tzz/xkKBgGYK3CGAT6vgADeMCArEEEAFj1kaUY2AIQJacZqALIhMEUwzcgacWpGBugaiNZIDgAAo3s7aenQliYAAAAASUVORK5CYII=", "c10": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAj0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwEghSdUZHBqxmkAskKQAcgYm2swDMDmbJDmnv/P4BjZEpxewOVskAEwgDcMyApEEIBFD1makQ0AYUKasRqAbAhMEXKAEdSMDNA1EK2RHAAAR1c8HgpyOlUAAAAASUVORK5CYII=", "c11": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAmElEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwEghSdUZMAYl4FYDUBXCDME2SBkAzEMwOZskOae/8/AGN01OL2AzdkwQ2AG4Q0DXIEI0gwCWA0AAVj0kBwD6AaAMCHNWA1ANgSmCDnACGpGBugaiNZIDgAAEis9g1jafJMAAAAASUVORK5CYII=", "c12": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAm0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsB2DSfUJHB0AxjW2ulgTFWA2CaYRiba7AagK4Q3RB012AYgM3PIM09/5+BMbpXcHoBXSHMABBG1ozXAHTXwAwAAawGgAAsenBFH17NyAaAMKHow2oAsiEwReh+xqsZGaBrIFojOQAA7dhD4gDxofIAAAAASUVORK5CYII=", "c13": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAn0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsB2DSfUJHB0AxjW2ulgTFWA2AKQQbADEF3DVYDsClENgTdNRgGYPMzSHPP/2dYvYLTC+gKQQbADEHWjNcAdNcgG4LVABCARQ82r4A0gwBOzcgGgDCh6MNqALIhMEXofsarGRmgayBaIzkAANaYPYNT+RDsAAAAAElFTkSuQmCC", "c14": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAoUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsB2DSfUJEBY2wGWmulgTFWA5AVwgxAdw1WA7ApRHcFsmswDMDmZ5Dmnv/PMDTDXIEzDJAVIhuArBmvAciuARkAwngDEQRg0YPNKyCAVzOyASCM7hWYATDNWA1ANgSmCN3PeDUjA3QNRGskBwAA1+A8Hj/Z5j4AAAAASUVORK5CYII=", "c15": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAnklEQVR42rWRwQ1AQBBFVeHCCSdXR0XowkUrSnDTgiJUoo2VkXz5Wd8uEpP8ZMm8l5ndJPmjlmlzKq/BNCtcWTfn99DNR6KwgYBxtkAgJTEY/6TgDl6rXArbuj8iBdwIgT+NFKhGE/AUPM1FoHY2eHTbBcYUt3fAjSxgOCjgaSAIXqIVnsdfxQRRmAUWFqAYlgKWoMnfOQhz+cBj8Evt1uc7aXOrk04AAAAASUVORK5CYII=", "c16": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAnklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBuDSfUJEBY3QDrbXSwBirAcgKYQaguwarAdicjewCdK9gGIDNzz3/n4ExumaYK3CGAUwhugHImvEaAFOIbADeQAQBWPQgK4QZQFAzsgEgDFMMA+iasRqAbAhMEbqf8WpGBugaiNZIDgAAIzZElrKvy4kAAAAASUVORK5CYII=", "c17": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAmklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsB+DSfUJHBELPWSgNjrAag2wwyAF0MqwG4NMNcgO4VDAOw+bnn/zMMA2DqcHoBWSHIAFya8RoAU4hsAN5ABAFY9CArhBlAUDOyASAMUggD2DRjNQDZEJgidD/j1YwM0DUQrZEcAABCsDuWrh/jJAAAAABJRU5ErkJggg==", "c18": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAl0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsB+DSfUJEBY2Qxa600MMZqALrN6JpxGoBLMwhj8wqGAdj83PP/GYYBMHU4vYCsEGQALs14DYBpRjYAbyCCACx6YApBgGjNyAaAMLIB2DRjNQDZEJgidD/j1YwM0DUQrZEcAABsJjxL1swjjwAAAABJRU5ErkJggg==", "c19": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBhDSfUJFBEbPWSgNjrAZg0wzCyGJYDSBWM0wdhgHY/Nzz/xmGATB1OL2ArBmEcWnGawA+zVgNAAFY9IAUggCyAQQ1IxsAwoRsxmoAsiEwReh+xqsZGaBrIFojOQAA9LY9VsRJm4UAAAAASUVORK5CYII=", "c20": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBhDSfUJFBEbPWSgNjrAZg0wzDeA0gVjNMHYYB6Jp7/j8DY2yaYa7AGQYwzSCMSzNOA0AAn2asBoAALHpACkGAJM3IBoAwIc1YDUA2BKYI3c94NSMDdA1EayQHAAA35kOIvkZOfwAAAABJRU5ErkJggg==", "c21": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAkklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwHYNJ9QkQFjvAZg0wzTiKwZpg7DAHTNPf+fgTE2zTBXYPUCTCMI4woHvGEAAvg0YzUABGDRQ3IMoBsAwoQ0YzUA2RCYInQ/49WMDNA1EK2RHAAAk3s9VsII5pUAAAAASUVORK5CYII=", "c22": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjElEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwG4NJ9QkcFvADbNIE3IGNlADAOQNff8fwbHyBqRLcHqBRgAacQXDnjDgKxABAFY9JClGdkAECakGasByIbAFKH7Ga9mZICugWiN5AAAiL88S8UXnNkAAAAASUVORK5CYII=", "c23": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAiklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwGENOM0AJvCEyoyKBjZQAwDQIIg0PP/GQpG1ohsCVYvgAAx4YA3DMgKRBCARQ9ZmpENAGFCmrEagGwITBG6n/FqRgboGojWSA4AACQPO5bqVBIyAAAAAElFTkSuQmCC", "c24": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAiElEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYqwGENOM0ACQBAj3/n6HgEyoycIxsIIYBIEFiDIC5BqcXiAkHvGFAViCCACx6yNKMbAAIE9KM1QBkQ2CK0P2MVzMyQNdAtEZyAADIBUSWIxvPmgAAAABJRU5ErkJggg==", "c25": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAi0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYwwAQIKQZpwEgCRDo+f8MBZ9QkcFqIIYB2GwGaUbGyK7B6gV8zkbXjNcAkgMRBGDRQ5ZmZANAmJBmrAYgGwJThO5nvJqRAboGojWSAwARMTtp1Zt9WwAAAABJRU5ErkJggg==", "c26": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsBxGqGsa210sAYwwAY6Pn/DKdmnAYgKwQZAMMnVGSwugbDAGzOBmlGxsiWYPUCPmeDDEDWjNcAkgMRBGDRQ5ZmZANAmJBmrAYgGwJThO5nvJqRAboGojWSAwBO9zweXg4ExAAAAABJRU5ErkJggg==", "c27": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBpCSDNMDKsByJpBoOf/M6yaYWxrrTQwxmoASDMM43INVgPQFcIMOaEig9U1GAZg8zNIMwyjuwanF7A5G2YIsma8BuCKAZxhAAKw6CFLM7IBIExIM1YDkA2BKUL3M17NyABdA9EayQEALuo9gymUOBYAAAAASUVORK5CYII=", "c28": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAn0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBqCrBkE0DXDDMRqALrmnv/PwBhdM4xtrZUGxlgNACmEGQAzBN01WA1AVwgz4ISKDFavYBiAzc8gzTCM7hWcXkBXiGwIsma8BqC7BlkzVgNAABY9uKIPr2ZkA0CYkGasBiAbAlOE7me8mpEBugaiNZIDAD9XQ+IE9pfWAAAAAElFTkSuQmCC", "c29": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAoUlEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCNMM4wNwjADsBqCrBkEev4/Q9EMMxCrAeg2gzSjG4DsGmutNDDGagBMIbIh6F7BagA2hSADTqjIYPUKhgHomkEYpBndAJg6nF5AV4hsCLJmvAaguwZkAN5ABAFY9GDzCkHNyAaAMCHNWA1ANgSmCN3PeDUjA3QNRGskBwAAam49g2SnP5EAAAAASUVORK5CYII=", "c30": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAo0lEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCMIgDSD2DAMMwCrIciaYQYga4a5BqsB6JpBCnv+PwNjZDEY21orDYyxGoCsEGYAulewGoBNIciAEyoyWL2CYQC6ZhAGaUY3AKYOpxfQFSIbgKwZrwHIroG5Am8gggAserB5haBmZANAmJBmrAYgGwJThO5nvJqRAboGojWSAwC+XzweuLCfMgAAAABJRU5ErkJggg==", "c31": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAoklEQVR42mNgoAXYMufZf2yYZI1i0kr/lbWM4fxs/8VgTFAzSCMMgNgwDDMAqyHImmE29/x/hmIASAyrAdg0g2hkA2BiIGytlQbGWA1AVggzAFkMpwHYFIIMOKEigyIGU4dhALpmEAZpRjcApg6nF9AVIhuArBmvAciugRmANxBBABY92LxCUDOyASBMSDNWA5ANgSlC9zNezcgAXQPRGskBAN22O2nAKcPoAAAAAElFTkSuQmCC"};
+/* Totem radiation and Totem Compass reach pictures. One world, drawn from above (a Minecraft map, 1 map pixel = 16 blocks)
+   and from the side (a cut along the line from the totem to the player, 1 cell = 8 blocks), with the radiation rings and
+   the compass reach on top. Numbers are BSP-Core's server defaults (BSPConfig): radiation seenAt = 2500 x (level / 120)^2,
+   needle exact inside half of it; compass reach across 100/250/500/900/1400/1900/2500, up or down 10/20/35/55/80/110/150.
+   A compass finds a rival totem when the totem is in its reach (circle across, band up or down) AND the compass is inside the
+   totem's seen-at distance (straight line). */
+var RR = (function(){
+  "use strict";
+  // ------------------------------------------------------------ rules (BSPConfig defaults)
+  var ACROSS = [100, 250, 500, 900, 1400, 1900, 2500], DEPTH = [10, 20, 35, 55, 80, 110, 150];
+  var FULL = 120, MAXSEEN = 2500, EXP = 2;
+  function seenAt(level){ if (level <= 0) return 0; return Math.round(MAXSEEN * Math.pow(Math.min(1, level / FULL), EXP)); }
+  var TIER_NAMES = ["Tier I", "Tier II", "Tier III", "Tier IV", "Tier V"];
+
+  // ------------------------------------------------------------ the three pairs. The totem stands at the same base in all three.
+  var T = [-420, -330];
+  var PAIRS = {
+    1: { tier: 3, upgrades: 60, aL: 2, dL: 2, P: [301, 109], s0: -460,
+         head: "Mid-level totem, mid-level compass", verdict: "found" },
+    2: { tier: 4, upgrades: 120, aL: 1, dL: 1, P: [35, 197], s0: -460,
+         head: "High-level totem, low-level compass", verdict: "found" },
+    3: { tier: 3, upgrades: 60, aL: 2, dL: 2, P: [1100, 800], s0: -150,
+         head: "Mid-level totem, mid-level compass, too far apart", verdict: "not found" },
+    4: { tier: 3, upgrades: 60, aL: 2, dL: 2, P: [901, 631], s0: -150,
+         head: "Mid-level totem, mid-level compass, circles just overlapping", verdict: "not found", why: true }
+  };
+
+  // ------------------------------------------------------------ the world
+  function hash(ix, iz, s){ var h = Math.imul(ix | 0, 374761393) ^ Math.imul(iz | 0, 668265263) ^ Math.imul(s | 0, 1442695041);
+    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+  function vnoise(x, z, s){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+    var a = hash(ix, iz, s), b = hash(ix + 1, iz, s), c = hash(ix, iz + 1, s), d = hash(ix + 1, iz + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
+  function fbm(x, z, s, o){ var t = 0, amp = 1, sum = 0, f = 1; for (var i = 0; i < o; i++){ t += vnoise(x * f, z * f, s + i * 17) * amp; sum += amp; amp *= 0.5; f *= 2.03; } return t / sum; }
+  var SEA = 63;
+  function rawHeight(x, z){
+    var c = fbm(x / 1150 + 3.1, z / 1150 - 1.7, 11, 4), d = fbm(x / 260, z / 260, 31, 4);
+    var h = 66 + (c - 0.45) * 110 + (d - 0.5) * 26;
+    var ridge = 1 - Math.abs(2 * fbm(x / 480, z / 480, 53, 3) - 1), mt = Math.min(1, Math.max(0, c - 0.6) / 0.12);
+    h += Math.pow(ridge, 2.4) * 95 * mt;
+    var rv = Math.abs(fbm(x / 640 + 9, z / 640 + 4, 71, 3) - 0.5);
+    if (rv < 0.016 && h < 105) h = Math.min(h, SEA - 2 - (0.016 - rv) * 260);
+    // the hill the base is dug into
+    var bt = Math.hypot(x - T[0], z - T[1]); h += 34 * Math.exp(-bt * bt / (2 * 110 * 110));
+    return h;
+  }
+  function height(x, z){ return Math.round(rawHeight(x, z)); }
+  function biome(x, z, h){
+    if (h < SEA) return "water";
+    if (h >= 150) return "snow";
+    if (h >= 118) return hash(Math.floor(x / 8), Math.floor(z / 8), 5) < (h - 118) / 40 ? "snow" : "stone";
+    var t = fbm(x / 900, z / 900, 91, 2), m = fbm(x / 420, z / 420, 97, 3);
+    if (t > 0.6) return "sand";
+    if (h <= SEA + 1) return "sand";
+    if (m > 0.53) return "forest";
+    return "plains";
+  }
+  // vanilla map colours (MapColor) and brightness steps
+  var MAPC = { water: [64, 64, 255], plains: [127, 178, 56], forest: [0, 124, 0], sand: [247, 233, 163], stone: [112, 112, 112], snow: [255, 255, 255] };
+  var BRIGHT = [180, 220, 255, 135];
+
+  // ------------------------------------------------------------ positions for a pair
+  function solve(n){
+    var p = PAIRS[n], L = p.tier + p.upgrades, seen = seenAt(L), across = ACROSS[p.aL], depth = DEPTH[p.dL];
+    var P = [T[0] + p.P[0], T[1] + p.P[1]];
+    var yP = height(P[0], P[1]) + 1;                 // feet on the top block
+    var yT = height(T[0], T[1]) - 40;                // the base: 40 blocks under its hill
+    var dx = T[0] - P[0], dz = T[1] - P[1], flat = Math.hypot(dx, dz), dy = yT - yP, straight = Math.hypot(flat, dy);
+    var inReach = flat <= across && Math.abs(dy) <= depth, sees = straight <= seen, found = inReach && sees;
+    return { n: n, p: p, L: L, seen: seen, half: seen / 2, across: across, depth: depth, aL: p.aL, dL: p.dL, P: P, yP: yP, T: T, yT: yT,
+             surfT: height(T[0], T[1]), flat: flat, dy: dy, straight: straight, inReach: inReach, sees: sees, found: found,
+             exact: straight <= seen / 2, tierName: TIER_NAMES[p.tier] };
+  }
+
+  // ------------------------------------------------------------ the game's font
+  var ASCII = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABGdBTUEAALGPC/xhBQAABY1JREFUeNrtnNuS4yAMRP3/P937PpsEXVpI4E6VaiqT2GA4CN3IA+CRvFc0CAJAgyAAJAJAIgAkAkAiACQCQCIAJAJAIgAkAkAiACQCQCIAJK8FAMbPQfrO6v9IXv+Qr4eznW7BRAD+vr61j8D9QXzGJwEZpk0+CwDL9dYJzvQFrEEJaggIAI4GiE5+VBWD/D3vAqi+/mf/J2gAS3vW7QUNGuDZdH1J27s7AOf+b7EDsGEbQOUkTAdgxxaQ9QIyWwDLi+gCIwWvfOGBhllHHIBlhGWMvOeHlwBHGxEbhNX/DhjgtMP+A8CrYr0q2hvIAbg+NorfT9AE4ef/ZESh2FpGwMhbrd7MYFUDwQDYayi7IoFw+Ope9W1V0ZkBzbqY3i0Ag20A9/N/mhgQ1ExmAkFewaxcQ+UWgI7J99gAzwYboFolMwBAgwGIgm3Q5QVYYvlZK9tqhFaHkhHY3pgaY3skU3745X4+qyDEoyHY17M1UGRLQWKldW+JyzgAY4Amu1nZAWYYuZl7Y5HwWhnxrjjAt057VuBTQHhm/1/FOdhGFhL9swTIEPzcFAeAM/vWoeKeJhXaqQE8908B8AiAUgAmuMVLDYBiAHAZALgFAMYe3eUFZL2YrBfAuj+KgEp5AZLLzwVUr2CLm3mSGxrpf9YLAGErfKK5gF35c3Tsgc5MaCSUnU0Hewtj6Rqg2gaYAEBlXr8agFTByi4rujPbyNAAFc/VUZl8JQDWo2Eo1BBVtRLjAEAhIJUArGLplYdPjwdgVXef8kNJ+fodBSvRgg1GNhGVAEjur0f4CujEM29IPmj3sTBMMO4iJWEnAzCp/8+JADBi6dmcPYI2BCMS6Slb7y4IoVZkMYhmZg+RMDKzySzWSaBVwUZVQUg4GxgxJHanOzMVO7tC2VbAjgNgej2AN6HSla9nxRFGagCQbIBMzcAJFTuMKGNJPcCb/ODqNo6rB9Dhid5nZGUhERlPAdD/fCBe79ZCXj9+ZeRkK4JOMEKrvZStC8TrB6PIj97pxkXTydHJZEUCt2UDq9w0NFnBQM4dm1AvsEUDZEOpmf0wA0C2IMQKR8YNHQ9AdbaLWQ8A8vUMvz/Tv9ZkEWsFK45w8LkAycsPhkgEgEQASASARABIBIBEAEgEgKQt4LQ1La2Bn1cvgOI2IADOKhgpbUOD//KaRU2ANIAmQABIxh7frjL+BIA0zFUAWKqNIBDu1wCrej3gfbEE3B4I8hRs4mWTv/z8RkNq9xZQbcSxoogfv6d98I5jbq/WAJYtYOfqhGwAibwAyXkAwKBSPv3Fh/fWg6RMf37VNjPWsHq2SPuM+7vbzRyuxA8rHALgHACmawCrmxWdgNX9sXjOVfu/XlX336oBrKv/BA1gvS6rATIL4ToN4F2B3hXqXYHVGoDRv0z/8VYbILuCsvevtlFCGu5NXoAAKNIAp9gAAmChAXbk1auvrwYk48ZNuF4ACIB3APBpG4oAgMW9I5a7p3+R1xNpXBqg/tknHA1bJoMqXt33z67w6hU6SgNML87sjBROiPXT+ycABIAAEAAz0qm7ijcz7WcmJroNZ7/vNqAEgABwWZQVExDNDEbaj46RNMAhK1AagBi1yvjpIKzwyP2rYw/P5j5QgWFa4TuyXZ3ZwGj/BIAAEAAC4BIAJHMOwAK+A7IC4PDJ97wXAC+YfGQnXwDc8csfqSyvBvgcAGD8vzSAbAABcKsGsLjB2gIkNQAg+Jn3eyvKTy7IRLCtsv5ZkzSWwQdp8q0/duT9DA7LevfvGFqhj6TQ0xrAmw1jaQiQNAAModpuADKApwGYqgEiKwgJSLBBFUcBAGmBjrcBGBB5t4DqvRhJACwLc4sG6PqRRYaKbD19wwradGmAyioeJgCnZPP0O4EJQ0e+O1n+Aa1MJ+LeSEbXAAAAAElFTkSuQmCC";
+  var W = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,5,5,5,5,1,3,3,3,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,3,1,3,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,5,0,0,0,0,0,0,4,4,0,0,5,0,0,0,6,6,7,8,8,5,5,5,7,7,5,7,7,7,7,7,5,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8,8,4,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,7,5,0,6,5,5,5,7,4,5,6,4,5,0,6,4,4,5,0];
+
+  var font = new Image(), tints = {}, ready = false;
+  var EXTRA = { "·": 2, "…": 6, "›": 4, "✓": 7, "✗": 7, "×": 6, "−": 6, "≤": 6, ">": 5 };
+  function adv(c){ var ch = String.fromCharCode(c); if (EXTRA[ch]) return EXTRA[ch]; return c === 32 ? 4 : (c < 256 ? W[c] + 1 : 6); }
+  function mw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += adv(s.charCodeAt(i)); return w; }
+  function tint(col){ if (tints[col]) return tints[col]; var c = document.createElement("canvas"); c.width = 128; c.height = 128; var g = c.getContext("2d");
+    g.drawImage(font, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 128, 128); return tints[col] = c; }
+  function dot(g, x, y, k, col){ g.fillStyle = col; g.fillRect(x, y, k, k); }
+  function px(g, s, x, y, col, k, shadow){ k = k || 2; if (shadow) px(g, s, x + k, y + k, shadow, k);
+    var t = tint(col); g.imageSmoothingEnabled = false;
+    for (var i = 0; i < s.length; i++){ var c = s.charCodeAt(i), ch = s[i];
+      if (ch === "·") dot(g, x, y + 3 * k, k, col);
+      else if (ch === "✓") [[0,4],[1,5],[2,6],[3,5],[4,4],[5,3],[5,2]].forEach(function(p){ dot(g, x + p[0] * k, y + p[1] * k, k, col); });
+      else if (ch === "✗") for (var q = 0; q < 6; q++){ dot(g, x + q * k, y + (1 + q) * k, k, col); dot(g, x + (5 - q) * k, y + (1 + q) * k, k, col); }
+      else if (ch === "×") for (var r = 0; r < 5; r++){ dot(g, x + r * k, y + (1 + r) * k, k, col); dot(g, x + (4 - r) * k, y + (1 + r) * k, k, col); }
+      else if (ch === "−"){ g.fillStyle = col; g.fillRect(x, y + 3 * k, 5 * k, k); }
+      else if (ch === "≤"){ [[4,0],[2,1],[3,1],[0,2],[1,2],[2,3],[3,3],[4,4]].forEach(function(p){ dot(g, x + p[0] * k, y + (p[1] + 1) * k, k, col); }); g.fillStyle = col; g.fillRect(x, y + 7 * k, 5 * k, k); }
+      else if (c !== 32 && c < 256 && W[c] > 0) g.drawImage(t, (c % 16) * 8, Math.floor(c / 16) * 8, W[c], 8, x, y, W[c] * k, 8 * k);
+      x += adv(c) * k; }
+    return x; }
+
+  // ------------------------------------------------------------ colours (the mod's GUI palette)
+  var C = { bg: "#0f1115", band: "#171a21", line: "#2a2f3a", fg: "#e8eaf0", muted: "#9aa3b5", gui: "#10151c", slot: "#0c0e12", dim: "#2a2f3a",
+            tq: "#19d3b0", gold: "#ffd23a", ok: "#58f29a", bad: "#ff6b5e", off: "#6b7385" };
+  function rgba(h, a){ var n = parseInt(h.slice(1), 16); return "rgba(" + (n >> 16) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
+  function fill(g, x, y, w, h, c){ g.fillStyle = c; g.fillRect(x, y, w, h); }
+  function box(g, x, y, w, h, c, t){ t = t || 1; fill(g, x, y, w, t, c); fill(g, x, y + h - t, w, t, c); fill(g, x, y, t, h, c); fill(g, x + w - t, y, t, h, c); }
+  var SANS = '"IBM Plex Sans", "Segoe UI", system-ui, sans-serif';
+  function sans(g, s, x, y, size, col, weight, align){ g.font = (weight || 400) + " " + size + "px " + SANS; g.fillStyle = col; g.textAlign = align || "left"; g.textBaseline = "alphabetic"; g.fillText(s, x, y); g.textAlign = "left"; return g.measureText(s).width; }
+  function sansW(g, s, size, weight){ g.font = (weight || 400) + " " + size + "px " + SANS; return g.measureText(s).width; }
+  function wrap(g, s, x, y, maxW, size, lh, col, weight){ var words = s.split(" "), line = "", yy = y;
+    words.forEach(function(w){ var t = line ? line + " " + w : w; if (sansW(g, t, size, weight) > maxW && line){ sans(g, line, x, yy, size, col, weight); yy += lh; line = w; } else line = t; });
+    if (line){ sans(g, line, x, yy, size, col, weight); yy += lh; } return yy; }
+  // rich: [[text, colour, weight], ...] wrapped as one paragraph
+  function rich(g, parts, x, y, maxW, size, lh){ var words = []; parts.forEach(function(p){ p[0].split(" ").forEach(function(w, i){ if (w) words.push([w, p[1], p[2] || 400]); }); });
+    var cx = x, yy = y, space = sansW(g, " ", size);
+    words.forEach(function(w){ var ww = sansW(g, w[0], size, w[2]); if (cx > x && cx + ww > x + maxW){ cx = x; yy += lh; } sans(g, w[0], cx, yy, size, w[1], w[2]); cx += ww + space; });
+    return yy + lh; }
+  function blocks(n){ return Math.round(n).toLocaleString("en-US"); }
+
+  // ------------------------------------------------------------ images
+  var IMG = {};
+  function loadAll(done){ var keys = Object.keys(TEX), left = keys.length + 1;
+    function one(){ if (--left === 0) done(); }
+    keys.forEach(function(k){ var im = new Image(); im.onload = one; im.onerror = one; im.src = "data:image/png;base64," + TEX[k]; IMG[k] = im; });
+    font.onload = function(){ ready = true; one(); }; font.onerror = one; font.src = ASCII; }
+  function totemIcon(g, cx, cy, size){ g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(IMG.totem, cx - size / 2, cy - size / 2, size, size); g.imageSmoothingEnabled = false; }
+  function compassIcon(g, x, y, size, frame){ g.imageSmoothingEnabled = false; g.drawImage(IMG["c" + String(frame).padStart(2, "0")], x, y, size, size); }
+  function frameToward(dx, dy){ var a = Math.atan2(dx, -dy); if (a < 0) a += Math.PI * 2; return Math.round(a / (Math.PI * 2) * 32) % 32; }
+  // an original player face, 8 x 8
+  var FACE = ["HHHHHHHH", "BBBBBBBB", "HSSSSSSH", "HSSSSSSH", "SgwSSwgS", "SSSnnSSS", "SSSMMSSS", "HSSSSSSH"];
+  var FACEC = { H: "#b5562a", B: "#19d3b0", S: "#e8b48c", w: "#f4f4f4", g: "#2f8f5a", n: "#cf9a74", m: "#c98b6d", M: "#8a4a3a" };
+  function head(g, cx, cy, t){ var s = 8 * t, x0 = Math.round(cx - s / 2), y0 = Math.round(cy - s / 2);
+    fill(g, x0 - 3, y0 - 3, s + 6, s + 6, "#0c0e12"); fill(g, x0 - 2, y0 - 2, s + 4, s + 4, "#ffffff");
+    for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) fill(g, x0 + c * t, y0 + r * t, t, t, FACEC[FACE[r][c]]); }
+  // a side-on figure facing left, texel grid 16 x 32 (columns -6..9), feet at (fx, fy)
+  var BODY = { hair: "#b5562a", band: "#19d3b0", skin: "#d9a27a", eye: "#f4f4f4", pupil: "#2f8f5a", coat: "#2c3e66", coatL: "#3a5185", pants: "#3b3f8f", boot: "#4a4a4f", sleeve: "#2c3e66" };
+  function figure(g, fx, fy, t, frame, facing){
+    var dir = facing === "right" ? -1 : 1;     // drawn facing left; mirrored to face right
+    function cell(c, r, col){ var x = dir > 0 ? c : 3 - c; fill(g, Math.round(fx + (x - 2) * t), Math.round(fy - (32 - r) * t), Math.ceil(t), Math.ceil(t), col); }
+    var r, c;
+    for (r = 0; r < 8; r++) for (c = 0; c < 8; c++){ var col = BODY.skin;
+      if (r < 2 || c >= 6 && r < 6) col = BODY.hair; if (r === 2) col = BODY.band; if (r === 4 && c === 0) col = BODY.eye; if (r === 4 && c === 1) col = BODY.pupil; if (r === 6 && c === 0) col = "#a66a52";
+      cell(c - 2, r, col); }
+    for (r = 8; r < 20; r++) for (c = 0; c < 4; c++) cell(c, r, c === 0 ? BODY.coatL : BODY.coat);
+    for (r = 20; r < 32; r++) for (c = 0; c < 4; c++) cell(c, r, r >= 30 ? BODY.boot : BODY.pants);
+    // the front arm, raised and holding the compass out in front
+    for (r = 9; r < 13; r++) for (c = -7; c < 3; c++) cell(c, r, c < -5 ? BODY.skin : BODY.sleeve);
+    var hx = dir > 0 ? Math.round(fx + (-8 - 2) * t) - 2 : Math.round(fx + (3 + 8 - 2) * t) + 2, hy = Math.round(fy - (32 - 7) * t);
+    var size = Math.round(t * 10); compassIcon(g, dir > 0 ? hx - size / 2 : hx - size / 2, hy - size / 2, size, frame);
+    return { x: hx, y: hy }; }
+
+  // ------------------------------------------------------------ top view: the map
+  var MAP = { cells: 128, block: 16, cpx: 6 };   // 128 x 128 cells, 16 blocks a cell, 6 px a cell: 768 px for 2,048 blocks
+  var mapCache = null;
+  function mapCells(){
+    if (mapCache) return mapCache; var n = MAP.cells, hs = [], out = [];
+    for (var j = -1; j < n; j++){ hs[j] = []; for (var i = 0; i < n; i++){ var x = -1024 + i * 16 + 8, z = -1024 + j * 16 + 8; hs[j][i] = rawHeight(x, z); } }
+    for (var j2 = 0; j2 < n; j2++){ out[j2] = []; for (var i2 = 0; i2 < n; i2++){
+      var x2 = -1024 + i2 * 16 + 8, z2 = -1024 + j2 * 16 + 8, h = hs[j2][i2], b = biome(x2, z2, Math.round(h)), base = MAPC[b], step;
+      if (b === "forest" && hash(i2, j2, 3) < 0.22) base = MAPC.plains;
+      if (b === "plains" && hash(i2, j2, 4) < 0.08) base = MAPC.forest;
+      if (b === "water"){ var depth = SEA - h, d = depth * 0.1 + ((i2 + j2) & 1) * 0.2; step = d < 0.5 ? 2 : d > 0.9 ? 0 : 1; }
+      else { var dd = (h - hs[j2 - 1][i2]) * 4 / (4 + 4) + (((i2 + j2) & 1) - 0.5) * 0.4; step = dd > 0.6 ? 2 : dd < -0.6 ? 0 : 1; }
+      var k = BRIGHT[step] / 255; out[j2][i2] = "rgb(" + Math.floor(base[0] * k) + "," + Math.floor(base[1] * k) + "," + Math.floor(base[2] * k) + ")"; } }
+    return mapCache = out; }
+  function drawMap(g, x0, y0, dimmed){ var cells = mapCells(), s = MAP.cpx;
+    for (var j = 0; j < MAP.cells; j++) for (var i = 0; i < MAP.cells; i++) fill(g, x0 + i * s, y0 + j * s, s, s, cells[j][i]);
+    if (dimmed){ fill(g, x0, y0, MAP.cells * s, MAP.cells * s, "rgba(12,14,18,0.48)"); } }
+  function parchment(g, x, y, size, border){
+    var cols = ["#d6bf8e", "#cfb481", "#dcc89b", "#c9ad78"];
+    for (var yy = 0; yy < size; yy += 4) for (var xx = 0; xx < size; xx += 4){ if (xx >= border && xx < size - border && yy >= border && yy < size - border) continue;
+      fill(g, x + xx, y + yy, 4, 4, cols[Math.floor(hash(xx, yy, 9) * 4)]); }
+    box(g, x, y, size, size, "#6b4e2a", 4); box(g, x + border - 4, y + border - 4, size - 2 * border + 8, size - 2 * border + 8, "#a3824f", 4);
+  }
+
+  // ------------------------------------------------------------ side view: the cut from the totem to the player
+  var SIDE = { cell: 8, cpx: 6, yMin: -64, yMax: 320 };
+  function sideCells(sv, cols){
+    var out = [], ux = (sv.P[0] - sv.T[0]) / sv.flat, uz = (sv.P[1] - sv.T[1]) / sv.flat, rows = (SIDE.yMax - SIDE.yMin) / SIDE.cell;
+    for (var c = 0; c < cols; c++){ var s = sv.s0 + (c + 0.5) * SIDE.cell, x = sv.T[0] + ux * s, z = sv.T[1] + uz * s, h = height(x, z), b = biome(x, z, h), col = [];
+      for (var r = 0; r < rows; r++){ var yTop = SIDE.yMax - r * SIDE.cell, y = yTop - SIDE.cell / 2, j = hash(c, r, 21), kind;
+        if (y > h + 4){ kind = y <= SEA && h < SEA ? "water" : (b === "forest" && y < h + 14 && hash(c, 0, 33) < 0.6 ? "leaf" : "air"); }
+        else if (y > h - 4) kind = b === "water" ? "sand" : b === "sand" ? "sand" : b === "snow" ? "snow" : b === "stone" ? "stone" : "grass";
+        else if (y > h - 12 && b !== "stone" && b !== "snow") kind = b === "sand" ? "sandstone" : "dirt";
+        else if (y < -56) kind = "bedrock";
+        else { kind = y < 0 ? "deepslate" : "stone";
+          var cave = fbm(s / 70, y / 26, 61, 3); if (cave > 0.66 && y < h - 20) kind = "cave";
+          else if (j < 0.035) kind = y < 0 ? (j < 0.012 ? "diamond" : "redstone") : (j < 0.02 ? "coal" : "iron"); }
+        col.push({ kind: kind, j: j }); }
+      out.push({ s: s, h: h, b: b, cells: col }); }
+    return out; }
+  var SIDEC = { air: null, water: "#3f76e4", leaf: "#3f7a26", grass: "#5f9f35", sand: "#dbcf9c", snow: "#f0f4f8", stone: "#7d7d7d", dirt: "#7a573b", sandstone: "#cdbd84",
+                deepslate: "#4f4f56", bedrock: "#2c2c2c", cave: "#1d1b1a", coal: "#2e2e2e", iron: "#c9a98a", redstone: "#a8231d", diamond: "#5fe0d8" };
+  function jitter(hex, j){ var n = parseInt(hex.slice(1), 16), f = 0.9 + j * 0.2; return "rgb(" + Math.min(255, (n >> 16) * f | 0) + "," + Math.min(255, (n >> 8 & 255) * f | 0) + "," + Math.min(255, (n & 255) * f | 0) + ")"; }
+
+  return { ACROSS: ACROSS, DEPTH: DEPTH, PAIRS: PAIRS, T: T, solve: solve, seenAt: seenAt, height: height, C: C, rgba: rgba, fill: fill, box: box, px: px, mw: mw,
+           sans: sans, sansW: sansW, wrap: wrap, rich: rich, blocks: blocks, loadAll: loadAll, totemIcon: totemIcon, compassIcon: compassIcon, frameToward: frameToward,
+           head: head, figure: figure, MAP: MAP, drawMap: drawMap, parchment: parchment, SIDE: SIDE, sideCells: sideCells, SIDEC: SIDEC, jitter: jitter, hash: hash };
+})();
+
+/* Draws one picture: RRDraw(canvas, style "A" | "B" | "C", pair 1 | 2 | 3, view "top" | "side"). */
+var RRDraw = (function(){
+  "use strict";
+  var R = RR, C = R.C, fill = R.fill, box = R.box, px = R.px, mw = R.mw, sans = R.sans, sansW = R.sansW, rich = R.rich, blocks = R.blocks;
+  var TW = 1280, TH = 960, SW = 1280, SH = 572;
+  var CHECKS = [], CLAMP = null;
+  function check(name, ok){ CHECKS.push({ name: name, ok: !!ok }); }
+
+  function setup(cv, w, h){ cv.width = w; cv.height = h; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; fill(g, 0, 0, w, h, C.bg); return g; }
+  function circle(g, x, y, r){ g.beginPath(); g.arc(x, y, Math.max(0, r), 0, Math.PI * 2); }
+  function ring(g, x, y, r, col, width, dash){ circle(g, x, y, r); g.strokeStyle = col; g.lineWidth = width; g.setLineDash(dash || []); g.stroke(); g.setLineDash([]); }
+  function line(g, x1, y1, x2, y2, col, width, dash){ g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.strokeStyle = col; g.lineWidth = width; g.setLineDash(dash || []); g.stroke(); g.setLineDash([]); }
+  function arrowHead(g, x, y, ang, col, size){ g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(ang - 0.45) * size, y - Math.sin(ang - 0.45) * size);
+    g.lineTo(x - Math.cos(ang + 0.45) * size, y - Math.sin(ang + 0.45) * size); g.closePath(); g.fillStyle = col; g.fill(); }
+  function roundRect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+  // ------------------------------------------------------------ words
+  function words(S, view){
+    var p = S.p, dyWord = S.dy < 0 ? blocks(-S.dy) + " down" : S.dy > 0 ? blocks(S.dy) + " up" : "level";
+    return {
+      title: "Totem radiation and the compass",
+      sub: "Pair " + S.n + " of 4 · " + p.head + " · " + (view === "top" ? "from above" : "from the side"),
+      level: "Radiation " + S.L, tier: S.tierName + ", " + p.upgrades + " upgrade levels",
+      seen: blocks(S.seen), half: blocks(Math.round(S.half)), across: blocks(S.across), depth: blocks(S.depth),
+      flat: blocks(S.flat), straight: blocks(S.straight), dyWord: dyWord, overlap: blocks(S.seen + S.across - S.flat),
+      reachShort: blocks(S.flat - S.across), radShort: blocks(S.straight - S.seen), nearEnough: blocks(Math.min(S.across, S.seen)),
+      caption: S.p.why ? "Why not: the compass never compares the circles. It checks two points: the totem must be inside your reach (turquoise), and you must be inside its radiation (gold). Here your reach ends " + blocks(S.flat - S.across) + " blocks short of the totem, and its radiation ends " + blocks(S.straight - S.seen) + " blocks short of you." : "A tracking compass finds a rival totem when both are true: the totem is inside the compass's reach (turquoise), and the compass is inside the totem's radiation (gold). Server defaults, no coated walls. Icons are not to scale."
+    };
+  }
+
+  // ------------------------------------------------------------ frame: band and caption
+  function band(g, w, style, Wd){
+    if (style === "B"){
+      px(g, Wd.title.toUpperCase(), 24, 18, C.tq, 3);
+      var r = "BSP-CORE"; px(g, r, w - 24 - mw(r) * 2, 22, C.muted, 2);
+      fill(g, 0, 50, w, 2, C.tq);
+      sans(g, Wd.sub, 24, 74, 15, C.muted, 500);
+      return 86;
+    }
+    fill(g, 0, 0, w, 56, C.band); fill(g, 0, 56, w, 1, C.line);
+    var x = 24 + sans(g, "BSP-Core", 24, 36, 23, C.tq, 600); sans(g, " · " + Wd.title, x, 36, 23, C.fg, 600);
+    sans(g, Wd.sub, w - 24, 35, 15, C.muted, 500, "right");
+    return 72;
+  }
+  function caption(g, w, h, Wd){
+    fill(g, 0, h - 64, w, 64, C.band); fill(g, 0, h - 64, w, 1, C.line);
+    R.wrap(g, Wd.caption, 24, h - 38, w - 48, 15, 20, C.muted, 400);
+  }
+
+  // ------------------------------------------------------------ labels in the three styles
+  function chip(g, style, s, x, y, col, align){
+    // returns the box; x,y is the anchor (left/centre/right, top)
+    var w, h;
+    if (style === "B"){ w = sansW(g, s, 15, 600) + 16; h = 26; }
+    else { w = mw(s) * 2 + 14; h = 26; }
+    if (align === "c") x -= w / 2; else if (align === "r") x -= w;
+    if (CLAMP){ x = Math.max(CLAMP[0], Math.min(CLAMP[2] - w, x)); y = Math.max(CLAMP[1], Math.min(CLAMP[3] - h, y)); }
+    x = Math.round(x); y = Math.round(y);
+    if (style === "B"){ roundRect(g, x, y, w, h, 13); g.fillStyle = "rgba(15,17,21,0.88)"; g.fill(); g.lineWidth = 1.5; g.strokeStyle = col; g.stroke(); sans(g, s, x + 8, y + 18, 15, col, 600); }
+    else { fill(g, x, y, w, h, "rgba(12,14,18,0.9)"); box(g, x, y, w, h, col, 2); px(g, s, x + 7, y + 5, col, 2); }
+    return { x: x, y: y, w: w, h: h };
+  }
+  function bestAngle(cx, cy, r, bounds, avoid, prefer){
+    var best = null, bestScore = -1e9;
+    for (var a = 0; a < 360; a += 5){ var t = a * Math.PI / 180, x = cx + Math.cos(t) * r, y = cy + Math.sin(t) * r;
+      if (x < bounds[0] || x > bounds[2] || y < bounds[1] || y > bounds[3]) continue;
+      var score = 0; avoid.forEach(function(p){ score += Math.min(260, Math.hypot(x - p[0], y - p[1])) * (p[2] || 1); });
+      if (prefer != null) score -= Math.abs(((a - prefer + 540) % 360) - 180) < 1 ? 0 : (180 - Math.abs(((a - prefer + 540) % 360) - 180)) * 0.6;
+      if (score > bestScore){ bestScore = score; best = { a: t, x: x, y: y }; } }
+    return best; }
+
+  // ------------------------------------------------------------ the top view
+  function drawTop(cv, style, n){
+    var S = R.solve(n), Wd = words(S, "top"), g = setup(cv, TW, TH), top = band(g, TW, style, Wd);
+    var fx = 24, fy = top, FS = 800, mx = fx + 16, my = fy + 16, MS = R.MAP.cells * R.MAP.cpx, ps = MS / 2048;
+    if (style === "A") R.parchment(g, fx, fy, FS, 16); else { fill(g, fx, fy, FS, FS, C.band); box(g, fx, fy, FS, FS, C.line, 1); }
+    R.drawMap(g, mx, my, style === "C");
+    function X(x){ return mx + (x + 1024) * ps; } function Y(z){ return my + (z + 1024) * ps; }
+    var tx = X(S.T[0]), ty = Y(S.T[1]), pxx = X(S.P[0]), pyy = Y(S.P[1]), Rr = S.seen * ps, Rc = S.across * ps;
+    g.save(); g.beginPath(); g.rect(mx, my, MS, MS); g.clip();
+    if (style === "C"){ // survey grid every 256 blocks
+      for (var v = -1024; v <= 1024; v += 256){ line(g, X(v), my, X(v), my + MS, "rgba(232,234,240,0.16)", 1); line(g, mx, Y(v), mx + MS, Y(v), "rgba(232,234,240,0.16)", 1); } }
+    // radiation: drop-off shading and rings at quarters of the seen-at distance
+    var gr = g.createRadialGradient(tx, ty, 0, tx, ty, Rr); gr.addColorStop(0, R.rgba(C.gold, style === "C" ? 0.42 : 0.36)); gr.addColorStop(0.5, R.rgba(C.gold, 0.17)); gr.addColorStop(1, R.rgba(C.gold, 0.06));
+    circle(g, tx, ty, Rr); g.fillStyle = gr; g.fill();
+    ring(g, tx, ty, Rr * 0.25, R.rgba(C.gold, 0.55), 1.5); ring(g, tx, ty, Rr * 0.75, R.rgba(C.gold, 0.55), 1.5);
+    ring(g, tx, ty, Rr * 0.5, C.gold, 2, [8, 6]); ring(g, tx, ty, Rr, C.gold, 3);
+    // compass reach
+    circle(g, pxx, pyy, Rc); g.fillStyle = R.rgba(C.tq, 0.2); g.fill(); ring(g, pxx, pyy, Rc, C.tq, 3);
+    // the needle
+    if (S.found){ var ang = Math.atan2(ty - pyy, tx - pxx), d = Math.hypot(tx - pxx, ty - pyy);
+      line(g, pxx + Math.cos(ang) * 22, pyy + Math.sin(ang) * 22, tx - Math.cos(ang) * 28, ty - Math.sin(ang) * 28, "#ffffff", 2.5, [6, 5]);
+      arrowHead(g, tx - Math.cos(ang) * 26, ty - Math.sin(ang) * 26, ang, "#ffffff", 12); }
+    if (style === "C"){ // measure line between them
+      var a2 = Math.atan2(pyy - ty, pxx - tx), nx = -Math.sin(a2) * 0, ny = 0;
+      if (!S.found) line(g, tx, ty, pxx, pyy, "rgba(255,255,255,0.75)", 1.5, [3, 4]); }
+    g.restore();
+    // icons
+    R.totemIcon(g, tx, ty, 52);
+    var frame = S.found ? R.frameToward(tx - pxx, ty - pyy) : 5;
+    R.head(g, pxx - 14, pyy, 5); R.compassIcon(g, pxx + 12, pyy - 4, 36, frame);
+    if (!S.found){ ring(g, pxx + 30, pyy + 14, 26, "rgba(255,255,255,0.8)", 2, [4, 5]); }
+    // labels on the map
+    var bounds = [mx + 70, my + 30, mx + MS - 70, my + MS - 40], avoid = [[tx, ty, 1.3], [pxx, pyy, 1.3]];
+    CLAMP = [mx + 8, my + 8, mx + MS - 8, my + MS - 44];
+    if (style === "C") drawSurveyDims(g, S, tx, ty, pxx, pyy, Rr, Rc, bounds, avoid);
+    else {
+      var ra = Rr <= MS * 1.4 ? bestAngle(tx, ty, Rr, bounds, avoid.concat([[pxx, pyy, 1]]), 225) : null;
+      if (ra) chip(g, style, Wd.seen + " blocks: seen-at edge", ra.x, ra.y - 13, C.gold, "c");
+      else chip(g, style, "Radiation reaches " + Wd.seen + " blocks, past this map", mx + MS / 2, my + 14, C.gold, "c");
+      var ha = bestAngle(tx, ty, Rr * 0.5, bounds, avoid.concat(ra ? [[ra.x, ra.y, 1]] : []), 200);
+      if (ha) chip(g, style, Wd.half + ": needle points right at it", ha.x, ha.y - 13, C.gold, "c");
+      var ca = bestAngle(pxx, pyy, Rc, bounds, avoid.concat(ra ? [[ra.x, ra.y, 1.5]] : []).concat(ha ? [[ha.x, ha.y, 1.5]] : []), 45);
+      if (ca) chip(g, style, Wd.across + " each way", ca.x, ca.y - 13, C.tq, "c");
+      var lineLen = Math.hypot(pxx - tx, pyy - ty);
+      if (S.found && lineLen > 260) chip(g, style, Wd.flat + " blocks across", (tx + pxx) / 2, (ty + pyy) / 2 - 13, "#ffffff", "c");
+      else if (!S.found){ line(g, tx, ty, pxx, pyy, "rgba(255,255,255,0.8)", 2, [3, 5]); chip(g, style, Wd.flat + " blocks across", (tx + pxx) / 2, (ty + pyy) / 2 - 13, "#ffffff", "c");
+        chip(g, style, "No rival totem within range", pxx, pyy + 40, "#ffffff", "c"); }
+    }
+    CLAMP = null;
+    if (style === "A"){ // the map's scale on a parchment tab
+      var note = "1 map pixel = 16 blocks", nw = mw(note) * 2 + 16; fill(g, mx + 10, my + MS - 34, nw, 26, "#d6bf8e"); box(g, mx + 10, my + MS - 34, nw, 26, "#6b4e2a", 2); px(g, note, mx + 18, my + MS - 29, "#4a3518", 2); }
+    else { var sb = 512 * ps; fill(g, mx + 20, my + MS - 26, sb, 4, "#ffffff"); fill(g, mx + 20, my + MS - 32, 2, 12, "#ffffff"); fill(g, mx + 18 + sb, my + MS - 32, 2, 12, "#ffffff");
+      if (style === "B") sans(g, "512 blocks", mx + 28 + sb, my + MS - 19, 14, "#ffffff", 600); else px(g, "512 blocks", mx + 28 + sb, my + MS - 32, "#ffffff", 2); }
+    legendTop(g, style, S, Wd, 848, top, 408, FS);
+    caption(g, TW, TH, Wd);
+    checks(S);
+  }
+
+  function drawSurveyDims(g, S, tx, ty, pxx, pyy, Rr, Rc, bounds, avoid){
+    // radius lines with their numbers, and the distance between them
+    function dim(cx, cy, r, ang, col, label){ var ex = cx + Math.cos(ang) * r, ey = cy + Math.sin(ang) * r;
+      line(g, cx + Math.cos(ang) * 30, cy + Math.sin(ang) * 30, ex, ey, col, 2); arrowHead(g, ex, ey, ang, col, 11);
+      var f = r < 140 ? (r + 40) / r : 0.62, mx2 = cx + Math.cos(ang) * r * f, my2 = cy + Math.sin(ang) * r * f; chip(g, "C", label, mx2, my2 - 13, col, "c"); }
+    var visible = function(a, cx, cy, r){ var x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; return x > bounds[0] && x < bounds[2] && y > bounds[1] && y < bounds[3]; };
+    var toP = Math.atan2(pyy - ty, pxx - tx);
+    var aR = [toP + Math.PI * 0.75, toP - Math.PI * 0.75, toP + Math.PI, toP + Math.PI / 2].filter(function(a){ return visible(a, tx, ty, Rr); })[0];
+    if (aR != null) dim(tx, ty, Rr, aR, C.gold, "r " + blocks(S.seen)); else chip(g, "C", "r " + blocks(S.seen) + ": past this map", (bounds[0] + bounds[2]) / 2, bounds[1] - 16, C.gold, "c");
+    var aH = aR != null ? aR + 0.5 : toP + Math.PI * 0.75; if (!visible(aH, tx, ty, Rr * 0.5)) aH = toP - Math.PI / 2;
+    dim(tx, ty, Rr * 0.5, aH, C.gold, "exact " + blocks(Math.round(S.half)));
+    var aC = [toP + Math.PI * 0.6, toP - Math.PI * 0.6, toP + Math.PI / 2, toP - Math.PI / 2].filter(function(a){ return visible(a, pxx, pyy, Rc); })[0];
+    if (aC == null) aC = toP + Math.PI * 0.6; dim(pxx, pyy, Rc, aC, C.tq, "r " + blocks(S.across));
+    var tAt = !S.found && S.flat < S.seen + S.across ? 0.35 : 0.5, mx2 = tx + (pxx - tx) * tAt, my2 = ty + (pyy - ty) * tAt, la = Math.atan2(pyy - ty, pxx - tx), off = Math.hypot(pxx - tx, pyy - ty) > 260 ? 0 : 74;
+    var nx = -Math.sin(la), ny = Math.cos(la); if (nx * Math.cos(aC) + ny * Math.sin(aC) > 0){ nx = -nx; ny = -ny; }
+    if (off) line(g, mx2, my2, mx2 + nx * (off - 14), my2 + ny * (off - 14), "rgba(255,255,255,0.8)", 1.5);
+    if (!S.p.why) chip(g, "C", blocks(S.flat) + " across", mx2 + nx * off, my2 + ny * off - 13, "#ffffff", "c");
+    if (S.p.why){ // each circle stops short of the other's centre
+      var d4 = Math.hypot(pxx - tx, pyy - ty), u4x = (pxx - tx) / d4, u4y = (pyy - ty) / d4, n4x = -u4y, n4y = u4x;
+      var gap = function(ax, ay, bx, by, side, col, label){ var ox4 = n4x * side, oy4 = n4y * side;
+        line(g, ax + ox4, ay + oy4, bx + ox4, by + oy4, col, 3); [[ax, ay], [bx, by]].forEach(function(e){ line(g, e[0] + ox4 * 0.5, e[1] + oy4 * 0.5, e[0] + ox4 * 1.5, e[1] + oy4 * 1.5, col, 3); });
+        var cx4 = (ax + bx) / 2 + ox4 * 2, cy4 = (ay + by) / 2 + oy4 * 2; chip(g, "C", label, cx4, cy4 - 13, col, "c"); };
+      gap(pxx - u4x * Rc, pyy - u4y * Rc, tx + u4x * 30, ty + u4y * 30, -22, C.tq, blocks(S.flat - S.across) + " short");
+      gap(tx + u4x * Rr, ty + u4y * Rr, pxx - u4x * 30, pyy - u4y * 30, 22, C.gold, blocks(S.straight - S.seen) + " short"); }
+    if (!S.found && S.flat < S.seen + S.across){ // the lens where the circles overlap
+      var dd = Math.hypot(pxx - tx, pyy - ty), ux = (pxx - tx) / dd, uy = (pyy - ty) / dd, mid = (Rr + dd - Rc) / 2;
+      var lx = tx + ux * mid, ly = ty + uy * mid, ex = lx + 130, ey = ly - 150;
+      line(g, lx, ly, ex, ey, "#ffffff", 1.5); circle(g, lx, ly, 5); g.fillStyle = "#ffffff"; g.fill();
+      chip(g, "C", "circles overlap " + blocks(S.seen + S.across - S.flat), ex - 10, ey, "#ffffff", "l"); }
+  }
+
+  // ------------------------------------------------------------ the legend beside the map
+  function legendTop(g, style, S, Wd, x, y, w, h){
+    if (style === "A") return guiPanel(g, S, Wd, x, y, w, h);
+    if (style === "B") return sheetRows(g, S, Wd, x, y, w, h);
+    return surveyTests(g, S, Wd, x, y, w, h); }
+
+  function ruler(g, S, x, y, w){ // the totem screen's radiation ruler, 0 to 2,500
+    fill(g, x, y, w, 14, C.dim); fill(g, x + 2, y + 2, w - 4, 10, C.slot);
+    var at = Math.round((w - 4) * Math.min(1, S.seen / 2500)); fill(g, x + 2, y + 2, at, 10, C.tq); fill(g, x + 2 + at - 1, y - 4, 3, 22, C.gold);
+    [0, 1000, 2000].forEach(function(v){ var lx = x + 2 + Math.round((w - 4) * v / 2500); fill(g, lx, y + 14, 2, 5, C.muted); px(g, blocks(v), lx - (v ? mw(blocks(v)) : 0), y + 22, C.muted, 2); }); }
+  function verdictLines(S, Wd){
+    var dyAbs = Math.abs(S.dy), cmp = function(a, b){ return a <= b ? " ≤ " : " > "; };
+    return [
+      [S.flat <= S.across, Wd.flat + " across" + cmp(S.flat, S.across) + Wd.across],
+      [dyAbs <= S.depth, (S.dy === 0 ? "0 up or down" : Wd.dyWord) + cmp(dyAbs, S.depth) + Wd.depth],
+      [S.sees, Wd.straight + " away" + cmp(S.straight, S.seen) + Wd.seen]];
+  }
+  function guiPanel(g, S, Wd, x, y, w, h){
+    fill(g, x, y, w, h, C.tq); fill(g, x + 2, y + 2, w - 4, h - 4, C.gui);
+    var lx = x + 22, cy = y + 22;
+    px(g, "TOTEM RADIATION", lx, cy, C.tq, 2); cy += 30;
+    fill(g, lx, cy, 60, 60, C.dim); fill(g, lx + 2, cy + 2, 56, 56, C.slot); R.totemIcon(g, lx + 30, cy + 30, 52);
+    var nx = px(g, "RADIATION ", lx + 76, cy + 8, C.muted, 2); px(g, String(S.L), nx, cy + 8, C.gold, 2);
+    sans(g, Wd.tier, lx + 76, cy + 48, 15, C.muted, 500); cy += 78;
+    ruler(g, S, lx, cy, w - 44); cy += 52;
+    cy = rich(g, [["Seen by tracking compasses up to", C.fg], [Wd.seen + " blocks", C.gold, 700], ["away in a straight line. Inside", C.fg], [Wd.half, C.gold, 700], ["the needle points right at it; further out it points beside it.", C.fg]], lx, cy + 6, w - 44, 15, 21);
+    cy += 10; fill(g, lx, cy, w - 44, 2, C.dim); cy += 20;
+    px(g, "TOTEM COMPASS", lx, cy, C.tq, 2); cy += 30;
+    fill(g, lx, cy, 60, 60, C.dim); fill(g, lx + 2, cy + 2, 56, 56, C.slot); R.compassIcon(g, lx + 6, cy + 6, 48, S.found ? 8 : 5);
+    var ax = px(g, "ACROSS ", lx + 76, cy + 6, C.muted, 2); px(g, Wd.across, ax, cy + 6, C.tq, 2); px(g, "lvl " + S.aL, x + w - 22 - mw("lvl " + S.aL) * 2, cy + 6, C.off, 2);
+    var dx = px(g, "UP OR DOWN ", lx + 76, cy + 34, C.muted, 2); px(g, Wd.depth, dx, cy + 34, C.tq, 2); px(g, "lvl " + S.dL, x + w - 22 - mw("lvl " + S.dL) * 2, cy + 34, C.off, 2);
+    cy += 78;
+    cy = rich(g, [["Finds rival totems within", C.fg], [Wd.across + " blocks", C.tq, 700], ["each way across the ground and", C.fg], [Wd.depth + " blocks", C.tq, 700], ["up or down from your feet.", C.fg]], lx, cy, w - 44, 15, 21);
+    cy += 10; fill(g, lx, cy, w - 44, 2, C.dim); cy += 20;
+    px(g, "ON THIS MAP", lx, cy, C.tq, 2); cy += 32;
+    verdictLines(S, Wd).forEach(function(v){ px(g, v[0] ? "✓" : "✗", lx, cy, v[0] ? C.ok : C.bad, 2); px(g, v[1], lx + 24, cy, C.fg, 2); cy += 26; });
+    cy += 10;
+    var big = S.found ? "FOUND" : "NOT FOUND"; px(g, big, lx, cy, S.found ? C.ok : C.bad, 4, "#0a2a1c"); cy += 48;
+    rich(g, [[S.found ? (S.exact ? "The needle points straight at the totem." : "The needle points beside the totem, closer as you go.") : "The needle spins: no rival totem within range.", C.fg]], lx, cy, w - 44, 15, 21);
+    check("Panel fits", cy + 30 < y + h);
+  }
+  function sheetRows(g, S, Wd, x, y, w, h){
+    var cy = y + 8;
+    function row(icon, parts){ fill(g, x, cy, 64, 64, C.band); box(g, x, cy, 64, 64, C.line, 1); icon(x + 32, cy + 32); var end = rich(g, parts, x + 80, cy + 18, w - 80, 15, 21); cy = Math.max(cy + 78, end + 12); }
+    px(g, "THE TOTEM", x, cy, C.gold, 2); cy += 28;
+    row(function(cx, cyy){ R.totemIcon(g, cx, cyy, 56); }, [["Radiation " + S.L + ".", C.fg, 700], [Wd.tier + ". Every tier and upgrade adds to it.", C.fg]]);
+    row(function(cx, cyy){ fill(g, cx - 20, cyy - 2, 40, 4, C.gold); }, [["Seen up to " + Wd.seen + " blocks", C.gold, 700], ["away, in a straight line through the ground. The gold rings mark quarters of that distance.", C.fg]]);
+    row(function(cx, cyy){ for (var i = -20; i < 20; i += 12) fill(g, cx + i, cyy - 1, 7, 3, C.gold); }, [["Right at it inside " + Wd.half + ".", C.gold, 700], ["Further out the needle points beside the totem, and closes in as you get nearer.", C.fg]]);
+    cy += 6; px(g, "THE COMPASS", x, cy, C.tq, 2); cy += 28;
+    row(function(cx, cyy){ R.compassIcon(g, cx - 24, cyy - 24, 48, 8); }, [["Across " + Wd.across + ", up or down " + Wd.depth + ".", C.tq, 700], ["Upgrade level " + S.aL + " across and " + S.dL + " up or down. It looks for rival totems only inside this reach.", C.fg]]);
+    cy += 6; px(g, "HERE", x, cy, S.found ? C.ok : C.bad, 2); cy += 28;
+    var v = verdictLines(S, Wd);
+    v.forEach(function(l){ sans(g, l[0] ? "✓" : "✗", x, cy + 14, 17, l[0] ? C.ok : C.bad, 700); px(g, l[1], x + 26, cy, C.fg, 2); cy += 28; });
+    cy += 8; sans(g, S.found ? "Found." : "Not found.", x, cy + 26, 30, S.found ? C.ok : C.bad, 700); cy += 58;
+    rich(g, [[S.found ? (S.exact ? "The needle points straight at the totem." : "The needle points beside the totem.") : "Too far apart: the needle spins and the screen says no rival totem within range.", C.fg]], x, cy, w, 15, 21);
+  }
+  function surveyTests(g, S, Wd, x, y, w, h){
+    var cy = y + 4;
+    px(g, "THE TWO TESTS", x, cy, C.fg, 2); cy += 22;
+    cy = rich(g, [["A compass finds a rival totem only when it passes both.", C.muted]], x, cy + 14, w, 15, 21) + 6;
+    function test(num, title, col, lines, pass){
+      var top = cy; fill(g, x, cy, w, 4, col); cy += 18;
+      px(g, num, x, cy, col, 3); sans(g, title, x + 34, cy + 18, 17, C.fg, 600); cy += 40;
+      lines.forEach(function(l){ px(g, l[0] ? "✓" : "✗", x + 34, cy, l[0] ? C.ok : C.bad, 2); px(g, l[1], x + 58, cy, C.fg, 2); cy += 26; });
+      px(g, pass ? "PASS" : "FAIL", x + w - mw(pass ? "PASS" : "FAIL") * 2, top + 18, pass ? C.ok : C.bad, 2);
+      cy += 12; }
+    var v = verdictLines(S, Wd);
+    test("1", "The totem is in the compass's reach", C.tq, [v[0], v[1]], v[0][0] && v[1][0]);
+    cy = rich(g, [["Level " + S.aL + " across reaches " + Wd.across + " blocks each way; level " + S.dL + " up or down reaches " + Wd.depth + ".", C.muted]], x + 34, cy, w - 34, 14, 19) + 12;
+    test("2", "The compass is in the totem's radiation", C.gold, [v[2]], v[2][0]);
+    cy = rich(g, [["Radiation " + S.L + " (" + Wd.tier + ") is seen from " + Wd.seen + " blocks. Inside " + Wd.half + " the needle is exact.", C.muted]], x + 34, cy, w - 34, 14, 19) + 16;
+    fill(g, x, cy, w, 2, C.line); cy += 22;
+    sans(g, S.found ? "Found" : "Not found", x, cy + 26, 30, S.found ? C.ok : C.bad, 700); cy += 58;
+    if (S.p.why){
+      cy = rich(g, [["Why not, when the circles overlap?", C.fg, 700]], x, cy, w, 16, 22) + 4;
+      cy = rich(g, [["The compass never compares the two circles. It checks two points: the", C.fg], ["totem", C.fg, 700], ["must be inside your", C.fg], ["turquoise reach,", C.tq, 700], ["and", C.fg], ["you", C.fg, 700], ["must be inside its", C.fg], ["gold radiation.", C.gold, 700]], x, cy, w, 15, 21) + 8;
+      cy = rich(g, [["Your reach ends", C.fg], [Wd.reachShort + " blocks short", C.tq, 700], ["of the totem (" + Wd.flat + " − " + Wd.across + ").", C.fg]], x, cy, w, 15, 21) + 4;
+      cy = rich(g, [["Its radiation ends", C.fg], [Wd.radShort + " blocks short", C.gold, 700], ["of you (" + Wd.straight + " − " + Wd.seen + ").", C.fg]], x, cy, w, 15, 21) + 8;
+      cy = rich(g, [["The " + Wd.overlap + " blocks where the circles overlap hold neither of you, so the needle spins. Each circle has to reach the other's centre: come within " + Wd.nearEnough + " blocks across and " + Wd.depth + " up or down of the totem and both are true.", C.fg]], x, cy, w, 15, 21);
+      check("Pair 4: why text fits", cy < y + h); return; }
+    rich(g, [[S.found ? (S.exact ? "The needle points straight at the totem." : "The needle points beside it, closing in as you get nearer.") : "The needle spins. Move closer, or widen the compass.", C.fg]], x, cy, w, 15, 21);
+  }
+
+  // ------------------------------------------------------------ the side view
+  function drawSide(cv, style, n){
+    var S = R.solve(n), Wd = words(S, "side"), g = setup(cv, SW, SH), top = band(g, SW, style, Wd);
+    var SD = R.SIDE, k = SD.cpx / SD.cell, cols = Math.floor((SW - 48) / SD.cpx), rows = (SD.yMax - SD.yMin) / SD.cell;
+    var x0 = 24, y0 = top, pw = cols * SD.cpx, ph = rows * SD.cpx, s0 = S.p.s0;
+    function SX(s){ return x0 + (s - s0) * k; } function SY(y){ return y0 + (SD.yMax - y) * k; }
+    var cut = R.sideCells({ T: S.T, P: S.P, flat: S.flat, s0: s0 }, cols);
+    // sky, then the ground cut
+    var sky = g.createLinearGradient(0, y0, 0, y0 + ph); sky.addColorStop(0, "#6f9dee"); sky.addColorStop(0.7, "#b9d1fb"); g.fillStyle = sky; g.fillRect(x0, y0, pw, ph);
+    cut.forEach(function(col, c){ col.cells.forEach(function(cell, r){ var hex = R.SIDEC[cell.kind]; if (!hex) return; fill(g, x0 + c * SD.cpx, y0 + r * SD.cpx, SD.cpx, SD.cpx, R.jitter(hex, cell.j)); }); });
+    if (style === "C") fill(g, x0, y0, pw, ph, "rgba(12,14,18,0.42)");
+    // the base round the totem: a dug-out room
+    var tX = SX(0), tY = SY(S.yT), pX = SX(S.flat), pY = SY(S.yP);
+    fill(g, Math.round(tX - 24), Math.round(tY - 19), 48, 34, "#2a2420"); box(g, Math.round(tX - 24), Math.round(tY - 19), 48, 34, "#4a3d33", 2);
+    g.save(); g.beginPath(); g.rect(x0, y0, pw, ph); g.clip();
+    var Rr = S.seen * k, Rc = S.across * k, Hc = S.depth * k;
+    var gr = g.createRadialGradient(tX, tY, 0, tX, tY, Rr); gr.addColorStop(0, R.rgba(C.gold, 0.36)); gr.addColorStop(0.5, R.rgba(C.gold, 0.16)); gr.addColorStop(1, R.rgba(C.gold, 0.05));
+    circle(g, tX, tY, Rr); g.fillStyle = gr; g.fill();
+    ring(g, tX, tY, Rr * 0.25, R.rgba(C.gold, 0.6), 1.5); ring(g, tX, tY, Rr * 0.75, R.rgba(C.gold, 0.6), 1.5);
+    ring(g, tX, tY, Rr * 0.5, C.gold, 2, [8, 6]); ring(g, tX, tY, Rr, C.gold, 3);
+    // the compass reach: across each way, up or down from the feet
+    g.fillStyle = R.rgba(C.tq, 0.24); g.fillRect(pX - Rc, pY - Hc, Rc * 2, Hc * 2); g.lineWidth = 3; g.strokeStyle = C.tq; g.strokeRect(pX - Rc, pY - Hc, Rc * 2, Hc * 2);
+    line(g, pX - Rc, pY, pX + Rc, pY, R.rgba(C.tq, 0.6), 1, [4, 4]);
+    if (S.found){ var hx = pX - 26, hy = pY - 36, ang = Math.atan2(tY - hy, tX - hx);
+      line(g, hx, hy, tX + 26 * Math.cos(ang + Math.PI), tY + 26 * Math.sin(ang + Math.PI), "#ffffff", 2.5, [6, 5]); arrowHead(g, tX - Math.cos(ang) * 24, tY - Math.sin(ang) * 24, ang, "#ffffff", 12); }
+    g.restore();
+    box(g, x0, y0, pw, ph, C.line, 1);
+    R.totemIcon(g, tX, tY, 34);
+    R.figure(g, pX, pY, 2, S.found ? 24 : 5, "left");
+    CLAMP = [x0 + 6, y0 + 6, x0 + pw - 6, y0 + ph - 6];
+    // labels
+    var bounds = [x0 + 80, y0 + 20, x0 + pw - 80, y0 + ph - 30];
+    if (style === "C") sideDims(g, S, tX, tY, pX, pY, Rr, Rc, Hc, x0, y0, pw, ph);
+    else {
+      // the ring labels go where the ring crosses the top of the picture or on its upper arc
+      var ra = sideRingSpot(tX, tY, Rr, x0, y0, pw, ph, y0 + 34);
+      if (ra) chip(g, style, Wd.seen + ": seen-at edge", ra[0], ra[1], C.gold, ra[2]);
+      else chip(g, style, "Radiation reaches " + Wd.seen + " blocks, past this picture", x0 + pw - 12, y0 + 10, C.gold, "r");
+      var ha = sideRingSpot(tX, tY, Rr * 0.5, x0, y0, pw, ph, y0 + 76);
+      if (ha) chip(g, style, Wd.half + ": needle points right at it", ha[0], ha[1], C.gold, ha[2]);
+      var cx = Math.min(pX + Rc, x0 + pw - 10);
+      chip(g, style, Wd.across + " each way", Math.max(pX - Rc + 8, x0 + 8), pY + Hc + 8, C.tq, "l");
+      chip(g, style, Wd.depth + " up or down", cx - 10, pY - Hc - 34, C.tq, "r");
+      if (S.found) chip(g, style, Wd.straight + " in a straight line", (tX + pX) / 2 - 30, Math.min(tY, pY) - 84, "#ffffff", "c");
+      else chip(g, style, "No rival totem within range", pX, pY - 92, "#ffffff", "c");
+    }
+    CLAMP = null;
+    // height marks on the left edge
+    [300, 200, 100, 0].forEach(function(v){ var yy = Math.round(SY(v));
+      if (style === "B"){ var tw = sansW(g, "y " + v, 13, 600); fill(g, x0 + 1, yy - 9, tw + 10, 18, "rgba(15,17,21,0.7)"); sans(g, "y " + v, x0 + 6, yy + 5, 13, "#ffffff", 600); }
+      else { fill(g, x0 + 1, yy - 9, mw("y " + v) * 2 + 10, 18, "rgba(12,14,18,0.7)"); px(g, "y " + v, x0 + 6, yy - 7, "#ffffff", 2); } });
+    legendSide(g, style, S, Wd, 24, y0 + ph + 16, SW - 48, SH - 64 - (y0 + ph + 16) - 12);
+    caption(g, SW, SH, Wd);
+    checks(S);
+  }
+  function sideRingSpot(cx, cy, r, x0, y0, pw, ph, yLine){
+    // where the ring crosses a line across the sky, right of the totem first
+    var dy = cy - yLine; if (r <= dy) return null; var dx = Math.sqrt(r * r - dy * dy);
+    if (cx + dx < x0 + pw - 60) return [cx + dx + 8, yLine - 13, "l"];
+    if (cx - dx > x0 + 60) return [cx - dx - 8, yLine - 13, "r"];
+    return null; }
+  function sideDims(g, S, tX, tY, pX, pY, Rr, Rc, Hc, x0, y0, pw, ph){
+    function dim(x1, y1, x2, y2, col, label, lx, ly){ line(g, x1, y1, x2, y2, col, 2); var a = Math.atan2(y2 - y1, x2 - x1); arrowHead(g, x2, y2, a, col, 11); chip(g, "C", label, lx, ly, col, "c"); }
+    // radiation radius drawn up-left from the totem, to where it meets the ring or the picture's edge
+    var a = Math.asin(Math.min(0.9, (y0 + ph - 50 - tY) / Rr)) * 0.8, ex = tX + Math.cos(a) * Rr, ey = tY + Math.sin(a) * Rr;
+    if (ex < x0 + pw - 4) dim(tX + 22, tY + 4, ex, ey, C.gold, "r " + blocks(S.seen), tX + Math.cos(a) * Rr * 0.5, tY + Math.sin(a) * Rr * 0.5 - 13);
+    else { var edge = x0 + pw - 70; line(g, tX + 22, tY + 4, edge, tY + 4 + (edge - tX) * Math.tan(a), C.gold, 2, [10, 6]); chip(g, "C", "r " + blocks(S.seen) + ", past the edge", edge, tY + (edge - tX) * Math.tan(a) - 13, C.gold, "r"); }
+    var b = Math.PI * 0.9, hx = tX + Math.cos(b) * Rr * 0.5, hy = tY + Math.sin(b) * Rr * 0.5;
+    if (hx <= x0 + 10){ b = -Math.PI * 0.22; hx = tX + Math.cos(b) * Rr * 0.5; hy = tY + Math.sin(b) * Rr * 0.5; }
+    if (hx > x0 + 10 && hx < x0 + pw - 10 && hy > y0 + 10 && hy < y0 + ph - 10) dim(tX - 24, tY, hx, hy, C.gold, "exact " + blocks(Math.round(S.half)), tX + Math.cos(b) * Rr * 0.3, tY + Math.sin(b) * Rr * 0.3 + 18);
+    var right = Math.min(pX + Rc, x0 + pw - 6);
+    dim(pX + 30, pY + Hc + 14, right, pY + Hc + 14, C.tq, "r " + blocks(S.across), (pX + right) / 2 + 20, pY + Hc + 20);
+    line(g, right + 0, pY + Hc + 6, right, pY + Hc + 22, C.tq, 2);
+    var gx = Math.max(pX - Rc - 14, x0 + 30); line(g, gx, pY - Hc, gx, pY + Hc, C.tq, 2); fill(g, gx - 6, Math.round(pY - Hc) - 1, 12, 2, C.tq); fill(g, gx - 6, Math.round(pY + Hc) - 1, 12, 2, C.tq);
+    if (S.p.why) chip(g, "C", blocks(S.depth) + " up or down", pX - 24, pY + Hc + 8, C.tq, "r"); else chip(g, "C", blocks(S.depth) + " up or down", gx - 8, pY - Hc - 34, C.tq, "l");
+    var by = y0 + ph - 18, mid = (tX + pX) / 2;
+    line(g, tX, by, pX, by, "#ffffff", 2); fill(g, Math.round(tX) - 1, by - 7, 2, 14, "#ffffff"); fill(g, Math.round(pX) - 1, by - 7, 2, 14, "#ffffff");
+    line(g, tX, tY + 18, tX, by - 8, "rgba(255,255,255,0.5)", 1, [3, 4]); line(g, pX, pY + 4, pX, by - 8, "rgba(255,255,255,0.5)", 1, [3, 4]);
+    chip(g, "C", blocks(S.flat) + " across, totem " + (S.dy < 0 ? blocks(-S.dy) + " down" : blocks(S.dy) + " up"), mid, by - 13, "#ffffff", "c");
+    if (!S.found && !S.p.why) chip(g, "C", "No rival totem within range", pX + 40, pY - 116, "#ffffff", "c");
+    if (S.p.why){ // each circle stops short of the other's centre
+      var y1 = y0 + 46, y2 = y0 + 104, ring2 = tX + Math.sqrt(Math.max(0, Rr * Rr - (tY - y2) * (tY - y2))), lxb = pX - Rc;
+      var seg = function(a, b, yy, col, label){ line(g, a, yy, b, yy, col, 3); fill(g, Math.round(a) - 1, yy - 8, 3, 16, col); fill(g, Math.round(b) - 1, yy - 8, 3, 16, col); chip(g, "C", label, (a + b) / 2, yy - 36, col, "c"); };
+      line(g, tX, tY - 18, tX, y1 + 8, "rgba(255,255,255,0.5)", 1, [3, 4]); line(g, lxb, pY - Hc, lxb, y1 + 8, R.rgba(C.tq, 0.7), 1, [3, 4]); line(g, pX, pY - 66, pX, y2 + 8, "rgba(255,255,255,0.5)", 1, [3, 4]);
+      seg(tX, lxb, y1, C.tq, "reach ends " + blocks(S.flat - S.across) + " short of the totem");
+      seg(ring2, pX, y2, C.gold, "radiation ends " + blocks(S.straight - S.seen) + " short of you"); }
+    if (!S.found && S.flat < S.seen + S.across){ var oy = pY - Hc - 12, rx = tX + Math.sqrt(Math.max(0, Rr * Rr - (tY - oy) * (tY - oy))), lx2 = pX - Rc, ox = (lx2 + rx) / 2;
+      line(g, lx2, oy, rx, oy, "#ffffff", 2); fill(g, Math.round(lx2) - 1, oy - 7, 2, 14, "#ffffff"); fill(g, Math.round(rx) - 1, oy - 7, 2, 14, "#ffffff");
+      line(g, lx2, oy + 8, lx2, pY - Hc - 2, "rgba(255,255,255,0.6)", 1, [3, 3]); chip(g, "C", "circles overlap " + blocks(S.seen + S.across - S.flat), ox, oy - 36, "#ffffff", "c"); }
+  }
+  function legendSide(g, style, S, Wd, x, y, w, h){
+    var colW = Math.floor((w - 40) / 3), v = verdictLines(S, Wd);
+    var blocksOf = [
+      { col: C.gold, head: "TOTEM RADIATION " + S.L, icon: function(cx, cy){ R.totemIcon(g, cx, cy, 44); },
+        parts: [["Seen up to", C.fg], [Wd.seen + " blocks", C.gold, 700], ["in a straight line, so depth counts. Exact inside " + Wd.half + ".", C.fg]] },
+      { col: C.tq, head: "COMPASS REACH", icon: function(cx, cy){ R.compassIcon(g, cx - 20, cy - 20, 40, 8); },
+        parts: [["A flat band:", C.fg], [Wd.across + " each way", C.tq, 700], ["and", C.fg], [Wd.depth + " up or down", C.tq, 700], ["from your feet.", C.fg]] },
+      { col: S.found ? C.ok : C.bad, head: S.found ? "FOUND" : "NOT FOUND", icon: null,
+        lines: v } ];
+    blocksOf.forEach(function(b, i){ var bx = x + i * (colW + 20), by = y;
+      if (style === "A"){ fill(g, bx, by, colW, h, b.col); fill(g, bx + 2, by + 2, colW - 4, h - 4, C.gui); }
+      else if (style === "B"){ fill(g, bx, by, colW, 3, b.col); }
+      else { fill(g, bx, by, 4, h, b.col); }
+      var ix = bx + 18, iy = by + 16;
+      if (style === "B") px(g, b.head, ix - 18, iy, b.col, 2); else px(g, b.head, ix, iy, b.col, 2);
+      var tx0 = style === "B" ? bx : ix;
+      if (b.lines){ var ly = iy + 30; b.lines.forEach(function(l){ px(g, l[0] ? "✓" : "✗", tx0, ly, l[0] ? C.ok : C.bad, 2); px(g, l[1], tx0 + 24, ly, C.fg, 2); ly += 25; }); }
+      else { if (b.icon) b.icon(tx0 + 22, iy + 52); rich(g, b.parts, tx0 + 56, iy + 42, colW - (tx0 - bx) - 70, 15, 20); }
+    });
+  }
+
+  function checks(S){
+    check("Pair " + S.n + ": verdict as intended", (S.p.verdict === "found") === S.found);
+    if (S.n === 3) check("Pair 3: circles do not overlap", S.flat > S.seen + S.across);
+    if (S.n !== 3) check("Pair " + S.n + ": circles overlap", S.flat < S.seen + S.across);
+    if (S.n === 4) check("Pair 4: only just overlapping (under 150 blocks)", S.seen + S.across - S.flat < 150);
+    check("Pair " + S.n + ": totem underground", S.yT < S.surfT - 8);
+    check("Pair " + S.n + ": totem on the map", Math.abs(S.T[0]) < 1000 && Math.abs(S.T[1]) < 1000 && Math.abs(S.P[0]) < 1000 && Math.abs(S.P[1]) < 1000);
+  }
+
+  function draw(cv, style, n, view){ CHECKS = []; if (view === "side") drawSide(cv, style, n); else drawTop(cv, style, n); return CHECKS.slice(); }
+  return { draw: draw, solve: R.solve, TW: TW, TH: TH, SW: SW, SH: SH };
+})();
+
+/* Mock-ups of the "Totem radiation detected" popup: three looks in an in-game view at GUI scale 3, the compass screen's line,
+   and the needle's slow turn beside today's random wobble. Drawn with the game's font and the real compass textures. */
+var POP = (function(){
+  "use strict";
+  var R = RR, C = R.C, fill = R.fill, box = R.box, px = R.px, mw = R.mw;
+  var K = 3, GW = 426, GH = 240;           // GUI pixels; the canvas is K times bigger
+  var TEXT = "Totem radiation detected";
+  var BG = "rgba(11,13,17,0.85)", CHIP = "#1c2028";
+
+  function scene(g){
+    // sky, far hills, near grass, a little blur of a world behind the GUI (screen pixels)
+    var W = GW * K, H = GH * K, sky = g.createLinearGradient(0, 0, 0, H * 0.62); sky.addColorStop(0, "#7ea7f0"); sky.addColorStop(1, "#c4d8fb");
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    for (var x = 0; x < W; x += 12){ var h1 = Math.round(H * 0.5 + Math.sin(x / 140) * 26 + Math.sin(x / 47) * 9), h2 = Math.round(H * 0.62 + Math.sin(x / 90 + 2) * 16 + Math.sin(x / 31) * 6);
+      fill(g, x, h1, 12, H - h1, "#8fa6b8"); fill(g, x, h2, 12, H - h2, R.hash(x, 1, 7) < 0.5 ? "#5f9f35" : "#5a962f");
+      for (var y = h2 + 12; y < H; y += 12) fill(g, x, y, 12, 12, R.jitter(y - h2 > 40 ? "#7d7d7d" : "#7a573b", R.hash(x, y, 3))); }
+    for (var t = 0; t < 7; t++){ var tx = 80 + t * 170 + Math.round(R.hash(t, 2, 9) * 60), ty = Math.round(H * 0.62 + Math.sin(tx / 90 + 2) * 16 + Math.sin(tx / 31) * 6);
+      fill(g, tx + 18, ty - 48, 12, 48, "#6b4f2e"); fill(g, tx - 6, ty - 84, 60, 40, "#3f7a26"); fill(g, tx + 6, ty - 100, 36, 18, "#3f7a26"); }
+    // crosshair
+    fill(g, W / 2 - 1.5 * K, H / 2 - 4.5 * K, K, 9 * K, "rgba(255,255,255,0.85)"); fill(g, W / 2 - 4.5 * K, H / 2 - 1.5 * K, 9 * K, K, "rgba(255,255,255,0.85)");
+  }
+  // GUI-pixel helpers on a context scaled by K
+  function hotbar(g, frame){
+    var x0 = Math.floor(GW / 2) - 91, y0 = GH - 22;
+    fill(g, x0, y0, 182, 22, "rgba(0,0,0,0.55)"); box(g, x0, y0, 182, 22, "#3a3a3a", 1);
+    for (var i = 0; i < 9; i++){ var sx = x0 + 1 + i * 20; box(g, sx, y0 + 1, 20, 20, "#7c7c7c", 1); fill(g, sx + 1, y0 + 2, 18, 18, "rgba(139,139,139,0.35)"); }
+    var sel = 0, sx2 = x0 - 1 + sel * 20; box(g, sx2, y0 - 1, 24, 24, "#000000", 1); box(g, sx2 + 1, y0, 22, 22, "#ffffff", 1); box(g, sx2 + 2, y0 + 1, 20, 20, "#a0a0a0", 1);
+    R.compassIcon(g, x0 + 3, y0 + 3, 16, frame);
+    // pips like the compass's upgrade marks (CompassPips): two across, two up or down
+    for (var p = 0; p < 2; p++){ fill(g, x0 + 4 + p * 3, y0 + 18, 2, 1, C.tq); fill(g, x0 + 18, y0 + 16 - p * 3, 1, 2, C.gold); }
+    // a couple of other items as plain shapes, so the bar does not look empty
+    [[2, "#8b6b3e"], [3, "#9aa3b5"], [5, "#3f7a26"]].forEach(function(it){ var ix = x0 + 3 + it[0] * 20; fill(g, ix + 3, y0 + 6, 10, 10, it[1]); box(g, ix + 3, y0 + 6, 10, 10, "rgba(0,0,0,0.4)", 1); });
+    // hearts and food as dots
+    for (var h = 0; h < 10; h++){ fill(g, x0 + h * 8 + 1, y0 - 9, 7, 6, "#c3232b"); fill(g, x0 + h * 8 + 2, y0 - 8, 2, 2, "#ff8a8a"); fill(g, x0 + 101 + h * 8, y0 - 9, 7, 6, "#a0682e"); }
+    fill(g, x0, y0 - 3, 182, 2, "rgba(0,0,0,0.6)"); fill(g, x0, y0 - 3, 70, 2, "#80ff20");
+  }
+  function lookA(g){ // the action bar line, as the game shows "You may not rest now"
+    var w = mw(TEXT), x = Math.round(GW / 2 - w / 2), y = GH - 72;
+    px(g, TEXT, x, y, C.gold, 1, "#3f3410");
+  }
+  function lookB(g, t){ // a chip just above the hotbar, in the Sentinel strip's chip style
+    var text = TEXT.toUpperCase(), w = mw(text) + 30, x = Math.round(GW / 2 - w / 2), y = GH - 52;
+    fill(g, x, y, w, 15, BG); fill(g, x, y, w, 1, C.gold); fill(g, x, y + 14, w, 1, C.gold);
+    R.compassIcon(g, x + 3, y - 1, 16, Math.floor(t / 125) % 32);
+    px(g, text, x + 22, y + 4, C.gold, 1);
+    var pulse = 0.5 + 0.5 * Math.sin(t / 300); fill(g, x + w - 6, y + 6, 3, 3, "rgba(255,210,58," + (0.35 + 0.65 * pulse).toFixed(2) + ")");
+  }
+  function lookC(g, t){ // a toast in the top right, as advancements and recipes arrive
+    var w = 160, h = 32, x = GW - w, y = 0;
+    fill(g, x, y, w, h, C.gui); box(g, x, y, w, h, C.tq, 1); fill(g, x + 1, y + h - 2, w - 2, 1, C.gold);
+    fill(g, x + 6, y + 7, 18, 18, C.slot); R.compassIcon(g, x + 7, y + 8, 16, Math.floor(t / 125) % 32);
+    px(g, TEXT, x + 30, y + 7, C.gold, 1); px(g, "Not in your reach yet", x + 30, y + 18, C.muted, 1);
+  }
+  function drawScene(cv, look, t){
+    cv.width = GW * K; cv.height = GH * K; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
+    scene(g); g.save(); g.scale(K, K);
+    hotbar(g, Math.floor(t / 125) % 32);
+    if (look === "A") lookA(g); else if (look === "B") lookB(g, t); else lookC(g, t);
+    g.restore();
+  }
+  // the compass screen's REACH row (TotemCompassScreen, 236 wide): today's red line and the new gold one
+  function drawScreenRow(cv){
+    var k = 4, w = 236, h = 74; cv.width = (w + 16) * k; cv.height = (h + 16) * k; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.scale(k, k);
+    fill(g, 0, 0, w + 16, h + 16, "#1b2028"); g.translate(8, 8);
+    fill(g, -1, -1, w + 2, h + 2, C.tq); fill(g, 0, 0, w, h, C.gui);
+    function row(y, text, col){ fill(g, 10, y + 3, w - 20, 1, C.dim); fill(g, 10, y, 30, 7, C.gui); px(g, "REACH", 10, y + 1, C.muted, 0.75);
+      var tw = Math.round(mw(text) * 0.75); fill(g, w - 10 - tw - 4, y, tw + 4, 7, C.gui); px(g, text, w - 10 - tw, y + 1, col, 0.75);
+      fill(g, 10, y + 12, 150, 18, C.dim); fill(g, 11, y + 13, 148, 16, C.slot); fill(g, 40, y + 16, 90, 10, "rgba(25,211,176,0.22)"); box(g, 40, y + 16, 90, 10, C.tq, 1); fill(g, 84, y + 19, 2, 4, "#ffffff"); }
+    px(g, "Today, nothing in range:", 10, 4, C.muted, 0.75); row(12, "No rival totem within range", "#ff6b5e");
+    px(g, "Radiation detected:", 10, 44, C.muted, 0.75); row(52, TEXT, C.gold);
+  }
+  // the needle: today's wobble (vanilla CompassItemPropertyFunction with no target) against one turn every 4 s
+  function drawNeedles(cv, t, state){
+    var k = 6; cv.width = 104 * k; cv.height = 44 * k; var g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.scale(k, k);
+    fill(g, 0, 0, 104, 44, "#1b2028");
+    fill(g, 10, 4, 24, 24, C.slot); box(g, 10, 4, 24, 24, C.dim, 1); R.compassIcon(g, 14, 8, 16, state.wobble);
+    fill(g, 70, 4, 24, 24, C.slot); box(g, 70, 4, 24, 24, C.dim, 1); R.compassIcon(g, 74, 8, 16, Math.floor((t % 4000) / 4000 * 32) % 32);
+    px(g, "nothing", 22 - Math.round(mw("nothing") * 0.375), 32, C.muted, 0.75); px(g, "radiation", 82 - Math.round(mw("radiation") * 0.375), 32, C.gold, 0.75);
+  }
+  return { drawScene: drawScene, drawScreenRow: drawScreenRow, drawNeedles: drawNeedles };
+})();
+
+(function(){
+  var reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var wob = { rot: Math.random(), d: 0, last: 0, frame: 0 };
+  function wobble(now){ // vanilla CompassItemPropertyFunction with no target: chases a fresh random angle every tick
+    while (now - wob.last >= 50){ wob.last += 50; var to = Math.random() - wob.rot; to -= Math.floor(to + 0.5); wob.d += to * 0.1; wob.d *= 0.8; wob.rot = ((wob.rot + wob.d) % 1 + 1) % 1; }
+    wob.frame = Math.floor(wob.rot * 32) % 32; }
+  function frame(now){ var t = reduce ? 1200 : now; if (!wob.last) wob.last = now; wobble(now);
+    ["A","B","C"].forEach(function(l){ POP.drawScene(document.getElementById(l), l, t); });
+    POP.drawNeedles(document.getElementById("N"), t, { wobble: reduce ? 3 : wob.frame });
+    if (!reduce) requestAnimationFrame(frame); }
+  RR.loadAll(function(){ POP.drawScreenRow(document.getElementById("S")); requestAnimationFrame(frame); });
+})();
+</script>

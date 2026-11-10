@@ -128,11 +128,17 @@ A compass finds rival totems only within its **reach**: 100 blocks from you acro
 
 **Page 3: Reading the compass**
 
-With no rival totem in reach giving off enough radiation, the needle spins and the screen says so.
+While tracking, the needle points to a rival totem in your reach whose radiation reaches you.
+
+With none, but a rival's radiation detected, the needle turns slowly and **Totem radiation detected** shows above your hotbar.
+
+Otherwise it wobbles.
+
+**Page 4: Upgrade pips**
 
 Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.
 
-**Page 4**  `[recipe] totem_compass`
+**Page 5**  `[recipe] totem_compass`
 
 ## Scores and Seasons
 

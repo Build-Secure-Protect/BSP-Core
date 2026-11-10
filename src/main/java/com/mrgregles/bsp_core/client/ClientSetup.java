@@ -52,10 +52,19 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.STALL_DISPLAY.get(), StallDisplayScreen::new);
             MenuScreens.register(ModMenus.LAND_OFFICE.get(), LandOfficeScreen::new);
             MenuScreens.register(ModMenus.SHOP_LIST.get(), ShopListScreen::new);
-            // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack
+            // needle angle, exactly as the vanilla compass does it, aimed at the position the server wrote into the stack;
+            // with a rival's radiation felt but nothing in reach, a steady slow turn instead of the vanilla wobble
+            var needle = new net.minecraft.client.renderer.item.CompassItemPropertyFunction((level, stack, entity) -> com.mrgregles.bsp_core.compass.TotemCompassItem.target(stack));
             net.minecraft.client.renderer.item.ItemProperties.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(),
                     new net.minecraft.resources.ResourceLocation("angle"),
-                    new net.minecraft.client.renderer.item.CompassItemPropertyFunction((level, stack, entity) -> com.mrgregles.bsp_core.compass.TotemCompassItem.target(stack)));
+                    (net.minecraft.client.renderer.item.ClampedItemPropertyFunction) (stack, level, entity, seed) -> {
+                        if (com.mrgregles.bsp_core.compass.TotemCompassItem.radiationDetected(stack)) {
+                            var world = level != null ? level : entity != null ? entity.level() : net.minecraft.client.Minecraft.getInstance().level;
+                            long t = world != null ? world.getGameTime() : 0L;
+                            return (t % CompassRadiationHud.TURN_TICKS) / (float) CompassRadiationHud.TURN_TICKS;
+                        }
+                        return needle.unclampedCall(stack, level, entity, seed);
+                    });
             // a coated shielding panel, window or door shows its glaze in the inventory (the item models' overrides)
             for (var item : java.util.List.of(com.mrgregles.bsp_core.registry.ModItems.RADIATION_SHIELDING_PANEL.get(),
                     com.mrgregles.bsp_core.registry.ModItems.RADIATION_SHIELDING_WINDOW.get(), com.mrgregles.bsp_core.registry.ModItems.RADIATION_SHIELDING_DOOR.get())) {
@@ -144,6 +153,7 @@ public final class ClientSetup {
         event.registerAboveAll("xray_ring", XrayClient.INSTANCE);
         event.registerAboveAll("siege_ring", SiegeClient.INSTANCE);
         event.registerAboveAll("sentinel_strip", SentinelHud.INSTANCE);
+        event.registerAboveAll("compass_radiation", CompassRadiationHud.INSTANCE);
         event.registerAboveAll("wrench_ends", WrenchHud.INSTANCE);
         event.registerAboveAll("team_prompts", PromptHud.INSTANCE);
         event.registerAboveAll("team_chat_badge", TeamChatBadge.INSTANCE);

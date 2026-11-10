@@ -114,6 +114,36 @@ public final class TotemRadiation {
         return at.offset((int) Math.round(Math.cos(angle) * off), 0, (int) Math.round(Math.sin(angle) * off));
     }
 
+    /**
+     * Where a compass that points at nothing measures a totem's radiation from: a point of the day, at least a tenth of the seen-at
+     * distance from the totem ({@code blurFraction} of it when larger), across in the direction the needle's blur uses
+     * ({@link #pointAt}) and up or down by a second angle of the day, at most 60 degrees.
+     */
+    public static BlockPos feltFrom(GlobalPos totem, int seenAt, long nowMs) {
+        BlockPos at = totem.pos();
+        if (seenAt <= 0 || seenAt == Integer.MAX_VALUE) {
+            return at;
+        }
+        double off = Math.max(0.1, BSPConfig.getOr(BSPConfig.RADIATION_BLUR, 0.2)) * seenAt;
+        long day = nowMs / DAY_MS;
+        double angle = direction(totem, day), tilt = (direction(totem, day ^ 0x5DEECE66DL) / (2 * Math.PI) - 0.5) * (2 * Math.PI / 3);
+        double across = Math.cos(tilt) * off;
+        return at.offset((int) Math.round(Math.cos(angle) * across), (int) Math.round(Math.sin(tilt) * off), (int) Math.round(Math.sin(angle) * across));
+    }
+
+    /** Whether the radiation of a totem seen from {@code seenAt} blocks is felt by a compass at {@code from} that points at nothing. */
+    public static boolean felt(GlobalPos totem, BlockPos from, int seenAt, long nowMs) {
+        if (seenAt <= 0 || seenAt == Integer.MAX_VALUE) {
+            return false;
+        }
+        return from.distSqr(feltFrom(totem, seenAt, nowMs)) <= (double) seenAt * seenAt;
+    }
+
+    /** No totem is felt further away than this, across the ground: the largest seen-at distance and the point of the day's offset. */
+    public static double feltLimit() {
+        return BSPConfig.getOr(BSPConfig.RADIATION_MAX_SEEN, 2500) * (1.0 + Math.max(0.1, BSPConfig.getOr(BSPConfig.RADIATION_BLUR, 0.2))) + 2;
+    }
+
     // ------------------------------------------------------------------ coated layers
 
     /**

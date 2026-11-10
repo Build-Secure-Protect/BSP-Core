@@ -267,6 +267,10 @@ public class TotemCompassScreen extends AbstractContainerScreen<TotemCompassMenu
             Component none = Component.translatable("gui.bsp_core.compass.none_in_reach");
             g.fill(imageWidth - 10 - smallWidth(none) - 4, REACH_Y, imageWidth - 10, REACH_Y + 7, BG);
             small(g, none, imageWidth - 10 - smallWidth(none), REACH_Y + 1, BAD & 0xFFFFFF);
+        } else if (menu.radiationDetected()) {
+            Component felt = Component.translatable("gui.bsp_core.compass.radiation_detected");
+            g.fill(imageWidth - 10 - smallWidth(felt) - 4, REACH_Y, imageWidth - 10, REACH_Y + 7, BG);
+            small(g, felt, imageWidth - 10 - smallWidth(felt), REACH_Y + 1, GOLD & 0xFFFFFF);
         }
         int aLevel = menu.rangeLevel(Range.ACROSS), dLevel = menu.rangeLevel(Range.DEPTH);
         Component ground = Component.translatable("gui.bsp_core.compass.ground");

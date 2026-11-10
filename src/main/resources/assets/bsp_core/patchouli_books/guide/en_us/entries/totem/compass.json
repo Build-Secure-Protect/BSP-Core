@@ -16,8 +16,13 @@
     },
     {
       "type": "patchouli:text",
-      "text": "With no rival totem in reach giving off enough $(l:totem/radiation)radiation$(), the needle spins and the screen says so.$(br2)Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.",
+      "text": "While tracking, the needle points to a rival totem in your reach whose $(l:totem/radiation)radiation$() reaches you.$(br2)With none, but a rival's radiation detected, the needle turns slowly and $(l)Totem radiation detected$() shows above your hotbar.$(br2)Otherwise it wobbles.",
       "title": "Reading the compass"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.",
+      "title": "Upgrade pips"
     },
     {
       "type": "patchouli:crafting",

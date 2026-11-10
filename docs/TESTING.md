@@ -3265,3 +3265,18 @@ GameTests: `market_api` (lots and orders listed with their items intact, ended o
 - [ ] Draw from the panel on server A and, during the count, `/bsp lottery draw` on server B: B answers that a draw is already running.
 - [ ] MySQL stopped: a draw from the panel answers "unreachable" and nothing shows.
 
+## Totem radiation detected (2026-11-09, unreleased)
+
+GameTests (batch `compass_range`): `compass_feels_radiation_from_a_rival_totem_outside_its_reach` (a rival's level-63 totem, seen from 689, detected 400 blocks out by a new compass with no needle target; the screen's state; cleared when nothing is detected; the needle points again once the reach covers the totem; nothing while not tracking, and the state ends with the tracking time) and `compass_detects_radiation_with_the_totem_in_reach_but_unseen`; batch `compass_radiation_off`: `compass_detects_no_radiation_with_radiation_turned_off`. In game, with a rival's Tier IV totem of about level 63 and a new compass loaded with coins and tracking:
+
+- [ ] About 400 blocks from the totem, on any side: the needle turns steadily, once every 4 seconds; "TOTEM RADIATION DETECTED" sits above the hotbar with the compass turning on its left and a gold dot pulsing on its right; the compass screen says "Totem radiation detected" in gold.
+- [ ] The chip shows with the compass in the off hand too, and goes when you switch to another item or open F1.
+- [ ] With armour and absorption hearts (several rows), and while riding a horse: the chip stays 2 pixels above the game's own action-bar messages (play a music disc or try to sleep in daytime to see one), which stay above the hearts.
+- [ ] While a Recall offer card is up (your totem being stolen): the chip sits above the card.
+- [ ] Walk away to 900 blocks: within a second the needle wobbles as with nothing in range, the chip goes, and the screen says "No rival totem within range".
+- [ ] Buy WIDER until the reach covers the totem, closer than 689 blocks: the needle points again and the chip goes.
+- [ ] Let the tracking time run out: the chip goes and the needle points at your own nearest totem.
+- [ ] A working Decoy Totem in its range: the needle points at the decoy, no chip.
+- [ ] A new player's protected Tier II totem nearby: never detected.
+- [ ] `totemRadiation.enabled = false`: never detected.
+- [ ] Drop the compass while it turns slowly, or put it in an item frame: it keeps turning until its tracking time is over, then wobbles.

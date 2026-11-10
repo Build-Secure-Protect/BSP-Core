@@ -458,6 +458,8 @@
   "gui.bsp_core.compass.range_price": "%s %s",
   "gui.bsp_core.compass.free": "Free",
   "gui.bsp_core.compass.none_in_reach": "No rival totem within range",
+  "gui.bsp_core.compass.radiation_detected": "Totem radiation detected",
+  "hud.bsp_core.compass.radiation_detected": "TOTEM RADIATION DETECTED",
   "gui.bsp_core.compass.wider_tip": "Next level: %s blocks each way",
   "gui.bsp_core.compass.deeper_tip": "Next level: %s blocks up or down",
   "tooltip.bsp_core.compass.reach": "Reach: %s blocks around you, %s up or down",

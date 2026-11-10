@@ -280,7 +280,8 @@ ENTRIES = [
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
         spot("bsp_core:totem_compass", "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
         text("A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, at first.$(br2)$(l)WIDER$() and $(l)DEEPER$() on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.", "Reach"),
-        text("With no rival totem in reach giving off enough $(l:totem/radiation)radiation$(), the needle spins and the screen says so.$(br2)Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.", "Reading the compass"),
+        text("While tracking, the needle points to a rival totem in your reach whose $(l:totem/radiation)radiation$() reaches you.$(br2)With none, but a rival's radiation detected, the needle turns slowly and $(l)Totem radiation detected$() shows above your hotbar.$(br2)Otherwise it wobbles.", "Reading the compass"),
+        text("Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.", "Upgrade pips"),
         craft("totem_compass"),
     ]),
     ("materials", "tetrium", "Tetrium", "bsp_core:tetrium_ingot", 0, [

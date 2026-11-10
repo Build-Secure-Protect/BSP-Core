@@ -31,6 +31,16 @@ public final class RecallHud implements IGuiOverlay {
     private static final int BG = 0xE010151C, RED = 0xFFFF6B5C, TQ = 0xFF19D3B0, DIM = 0xFF2A2F3A, TEXT = 0xE6EAF2, MUTED = 0x9AA3B5;
     @Nullable
     private static RecallOfferPacket offer;
+
+    /** Whether the offer card is up (other overlays above the hotbar keep clear of it). */
+    static boolean showing() {
+        return offer != null;
+    }
+
+    /** The top of the card, as drawn in {@link #render}. */
+    static int top(int height) {
+        return height - 134;
+    }
     private static long until;
 
     private RecallHud() {}
@@ -64,7 +74,7 @@ public final class RecallHud implements IGuiOverlay {
             return;
         }
         Font font = gui.getFont();
-        int w = 190, h = 46, x = width / 2 - w / 2, y = height - 134; // above the action bar and the held item's name
+        int w = 190, h = 46, x = width / 2 - w / 2, y = top(height); // above the action bar and the held item's name
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, RED);
         g.fill(x, y, x + w, y + h, BG);
         // the draining ring, drawn as a wedge of dots
