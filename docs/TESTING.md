@@ -3323,3 +3323,14 @@ In game, in the pack (right and left hatches are as seen from the front of the c
 - [ ] **Functional Storage:** a drawer with a Pull Upgrade under a crucible takes the outputs.
 - [ ] **Vanilla hopper** under a crucible takes the outputs, and one above feeds ore.
 - [ ] **A multiblock across two chunks** with pipes on its hatches: fly 20 chunks away and back. The pipes work again without being rebuilt.
+
+## BSP keys in Controls (2026-11-10, 1.16.2)
+
+GameTest (batch `event_names`): `event_handlers_have_names_of_their_own`. It reads the mod's scan data and fails if two `@SubscribeEvent` handlers share a package, class simple name, method name and event (Forge merges those into one listener). In game, with the new client:
+
+- [ ] Options > Controls > Key Binds, BSP Core category: X-ray on/off (X), Siege on/off (V), Accept a Recall (R), Decline a Recall (N), Open the Team screen (unbound), Accept a team invite (Y), Decline a team invite (H), Open the kit browser (unbound), Show or hide totem auras (unbound). Each is listed once.
+- [ ] X toggles X-ray, V toggles Siege (where allowed), and R/N answer a Recall offer (have another player start taking your placed totem).
+- [ ] Y/H answer a team invite.
+- [ ] Bind the kit browser and the aura key to free keys: each opens the kit browser or shows and hides totem auras.
+- [ ] In the pack, press V with no Siege power while Mekanism armour is on: Mekanism's head mode changes and the action bar says you have no Siege (both use V; rebinding either ends it).
+- [ ] A game with the old saved controls (six X-ray lines in `options.txt`): it starts, X-ray stays on X, and after leaving Controls `options.txt` holds one line per BSP key.

@@ -402,16 +402,18 @@ public final class XrayClient implements IGuiOverlay {
 
     @Mod.EventBusSubscriber(modid = BSPCore.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static final class Register {
+        // a name of its own: Forge names each listener by class simple name and method, so same-named handlers in this package would collapse into one
         @SubscribeEvent
-        public static void onKeys(RegisterKeyMappingsEvent event) {
+        public static void onXrayKeys(RegisterKeyMappingsEvent event) {
             event.register(TOGGLE);
         }
     }
 
     @Mod.EventBusSubscriber(modid = BSPCore.MODID, value = Dist.CLIENT)
     public static final class Events {
+        // a name of its own: Forge names each listener by class simple name and method, so same-named handlers in this package would collapse into one
         @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
+        public static void onXrayClientTick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) {
                 return;
             }
