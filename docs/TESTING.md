@@ -3265,7 +3265,7 @@ GameTests: `market_api` (lots and orders listed with their items intact, ended o
 - [ ] Draw from the panel on server A and, during the count, `/bsp lottery draw` on server B: B answers that a draw is already running.
 - [ ] MySQL stopped: a draw from the panel answers "unreachable" and nothing shows.
 
-## Totem radiation detected (2026-11-09, unreleased)
+## Totem radiation detected (2026-11-09, 1.16.0)
 
 GameTests (batch `compass_range`): `compass_feels_radiation_from_a_rival_totem_outside_its_reach` (a rival's level-63 totem, seen from 689, detected 400 blocks out by a new compass with no needle target; the screen's state; cleared when nothing is detected; the needle points again once the reach covers the totem; nothing while not tracking, and the state ends with the tracking time) and `compass_detects_radiation_with_the_totem_in_reach_but_unseen`; batch `compass_radiation_off`: `compass_detects_no_radiation_with_radiation_turned_off`. In game, with a rival's Tier IV totem of about level 63 and a new compass loaded with coins and tracking:
 

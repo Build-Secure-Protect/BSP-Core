@@ -4,14 +4,12 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
-### Added
-- **Totem radiation detected.** While a Totem Compass is tracking and points at no rival totem, but a rival totem's radiation is detected nearby, the needle points nowhere and turns slowly, once every 4 seconds (instead of the wobble when nothing is felt), a chip above the hotbar says "TOTEM RADIATION DETECTED" while the compass is in either hand, and the compass screen says "Totem radiation detected" where it says "No rival totem within range" otherwise. Search until your reach covers the totem: a rival in reach whose radiation reaches you still wins, and the needle points at it. The state ends with the tracking time. Only while tracking; a working Decoy Totem still takes over the needle. The state rides on the compass stack (`Radiation`) and the screen's existing data slot, so the network protocol stays 12, but players need the new client to see the slow turn, the chip and the screen line.
+## [1.16.0] - 2026-11-10
 
-## [1.16.0] - 2026-11-08
-
-Network protocol 12, as 1.15.0: players keep the 1.15.0 client, and 1.15.0 and 1.16.0 servers can share a network (no new tables or messages). Only the api for other mods is new.
+Network protocol 12, as 1.15.0: 1.15.0 and 1.16.0 servers can share a network (no new tables or messages), and a 1.15.0 client can still join. Players need the 1.16.0 client to see the compass's "Totem radiation detected" state (the slow needle turn, the chip above the hotbar and the screen line); a 1.15.0 client sees the wobble and "No rival totem within range" instead.
 
 ### Added
+- **Totem radiation detected.** While a Totem Compass is tracking and points at no rival totem, but a rival totem's radiation is detected nearby, the needle points nowhere and turns slowly, once every 4 seconds (instead of the wobble when nothing is felt), a chip above the hotbar says "TOTEM RADIATION DETECTED" while the compass is in either hand, and the compass screen says "Totem radiation detected" where it says "No rival totem within range" otherwise. Search until your reach covers the totem: a rival in reach whose radiation reaches you still wins, and the needle points at it. The state ends with the tracking time. Only while tracking; a working Decoy Totem still takes over the needle.
 - **Market and lottery api for other mods** (for BSP-Server Utilities' staff web panel; `docs/API.md`):
   - `BspMarket.openLots` and `openOrders` list the open lots (with copies of their items) and buy orders, newest first, leaving out those past their end and orders with nothing left to send. On a network they answer from the server's copy of the market, with the time it was last read and a `refresh` that reads it again.
   - `BspLottery.summary` gives the pot, how many players are in, where the draw stands and the past winners (nothing while a network server's database is not connected); `entrants` gives the names of those in; `draw` draws the lottery as `/bsp lottery draw` does, with the same answers, and writes the given name in the server log as who started it.
