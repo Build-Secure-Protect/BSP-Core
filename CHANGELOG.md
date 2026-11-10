@@ -4,6 +4,30 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-11-10
+
+Network protocol 12, as 1.16.0: 1.16.0 and 1.16.1 servers and clients can mix. Only the server needs 1.16.1 for the fixes.
+
+### Fixed
+- **Automation on BSP machines.** Pipes, AE2 buses and other mods' transport working one moment and failing the next. Checked against the pack's AE2, Refined Storage, Mekanism, EnderIO, Create, XNet, Integrated Tunnels, Functional Storage, Sophisticated Storage, Industrial Foregoing and hoppers.
+  - **Inputs the machine cannot use come back out** through a face (or Item Hatch) that gives outputs, so they no longer block their slot and every other item that slot takes:
+    - Tetrium Slag left in the Illyrium Crucible's additive slot while it alloys, and Tetrium Dust left there while it smelts;
+    - Illyrium Nuggets in a Combination Forge with no Illyrium Forge Upgrade;
+    - a Magnatite Ingot in a Magnetic Centrifuge without its Copper-Tetrium Coil, and a Resonance Crystal without Magnatite Nuggets in the coil slot.
+    Inputs the current job uses never come out, and faces and hatches that only take items in give nothing back.
+  - **Fuel and fluid slots keep what they will still use.** Magma Blocks and Lava Buckets in the Illyrium Crucible's lava slot, and Water Buckets in the Illyrium Refinery's, stay in until used; the empty bucket they leave comes out, as from the Tetrium Crucible and Combination Forge.
+  - **Multiblock ports keep their connection.**
+    - An Item Hatch, Lava Pylon or other port hands pipes one handler as soon as it joins its controller, and keeps it. While the structure stands it reaches the machine; while it is broken or unfinished it reaches nothing.
+    - EnderIO conduits keep their side settings and filters when a structure breaks.
+    - Mekanism, XNet and Sophisticated Storage connect as soon as the hatch joins, without the pipe being rebuilt.
+  - **Every face answers pipes the same way.** "Can this go in?" matches what an insert takes: never an upgrade, never through an output-only face. A face shows a slot's contents only when it can fill or empty that slot, so upgrades, and inputs seen from an output-only face, look empty.
+    - Industrial Foregoing's transporter no longer stops at an input or upgrade.
+    - Refined Storage's importer no longer slows down on them, and its External Storage no longer lists them as stock.
+  - **The Totem Forge's input slot tells pipes its real limit** (the ingots it still needs), so Mekanism does not send more than it takes.
+  - **Machines keep their own copy of a stack pipes hand them.** Industrial Foregoing's conveyor passes the stack of an item on the belt.
+  - **Handlers come back when Forge revives a block's capabilities.** Every machine, the Coin Factory's ports and the Battery Charger make their item, fluid and energy handlers again, instead of staying unreachable until broken and replaced.
+  - **The Coin Factory's Blank Hatch says it takes coins to re-press**, as it always did, so pipes that ask first send them.
+
 ## [1.16.0] - 2026-11-10
 
 Network protocol 12, as 1.15.0: 1.15.0 and 1.16.0 servers can share a network (no new tables or messages), and a 1.15.0 client can still join. Players need the 1.16.0 client to see the compass's "Totem radiation detected" state (the slow needle turn, the chip above the hotbar and the screen line); a 1.15.0 client sees the wobble and "No rival totem within range" instead.

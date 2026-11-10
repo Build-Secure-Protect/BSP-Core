@@ -90,7 +90,7 @@ public abstract class LavaTankMachineBlockEntity extends MachineBlockEntity {
             return FluidStack.EMPTY;
         }
     };
-    private final LazyOptional<IFluidHandler> fluidCap = LazyOptional.of(() -> fillOnly);
+    private LazyOptional<IFluidHandler> fluidCap = LazyOptional.of(() -> fillOnly);
 
     protected LavaTankMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, List<Slot> layout) {
         super(type, pos, state, layout);
@@ -197,6 +197,12 @@ public abstract class LavaTankMachineBlockEntity extends MachineBlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
         fluidCap.invalidate();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        fluidCap = LazyOptional.of(() -> fillOnly);
     }
 
     @Override

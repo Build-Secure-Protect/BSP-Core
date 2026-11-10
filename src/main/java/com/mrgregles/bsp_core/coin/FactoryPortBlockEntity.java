@@ -31,8 +31,8 @@ public class FactoryPortBlockEntity extends BlockEntity {
     private long intakeTick;
     private int intakeThisTick;
 
-    private final LazyOptional<IItemHandler> itemCap = LazyOptional.of(BlankInput::new);
-    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(PowerInput::new);
+    private LazyOptional<IItemHandler> itemCap = LazyOptional.of(BlankInput::new);
+    private LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(PowerInput::new);
 
     public FactoryPortBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FACTORY_PORT.get(), pos, state);
@@ -69,6 +69,14 @@ public class FactoryPortBlockEntity extends BlockEntity {
         energyCap.invalidate();
     }
 
+    /** An invalidated LazyOptional stays dead: make new ones when Forge revives this port's capabilities. */
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        itemCap = LazyOptional.of(BlankInput::new);
+        energyCap = LazyOptional.of(PowerInput::new);
+    }
+
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
@@ -101,7 +109,11 @@ public class FactoryPortBlockEntity extends BlockEntity {
         @Override
         public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
             CoinFactoryBlockEntity f = factory();
-            return f == null ? stack : f.getItems().insertItem(CoinFactoryBlockEntity.SLOT_INPUT, stack, simulate);
+            if (f == null || stack.isEmpty()) {
+                return stack;
+            }
+            ItemStack left = f.getItems().insertItem(CoinFactoryBlockEntity.SLOT_INPUT, stack.copy(), simulate); // the factory keeps its own copy
+            return left.getCount() == stack.getCount() ? stack : left;
         }
 
         @Nonnull
@@ -115,9 +127,11 @@ public class FactoryPortBlockEntity extends BlockEntity {
             return 64;
         }
 
+        /** The same answer {@link #insertItem} gives: blanks and coins to re-press, while the factory stands. */
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return stack.getItem() instanceof CoinBlankItem;
+            CoinFactoryBlockEntity f = factory();
+            return f != null && f.getItems().isItemValid(CoinFactoryBlockEntity.SLOT_INPUT, stack);
         }
     }
 

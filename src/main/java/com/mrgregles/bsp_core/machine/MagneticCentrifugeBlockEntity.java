@@ -196,6 +196,18 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
         return hasCoil() && items.getStackInSlot(IN).is(ModItems.MAGNATITE_INGOT.get());
     }
 
+    /** An ingot without the Copper-Tetrium Coil, or a crystal without Magnatite Nuggets, in the coil slot goes back to pipes (pipes cannot fit the coil slot). */
+    @Override
+    protected boolean unusableInput(int slot, ItemStack stack) {
+        if (slot != IN) {
+            return false;
+        }
+        if (stack.is(ModItems.MAGNATITE_INGOT.get())) {
+            return !hasCoil();
+        }
+        return stack.is(ModItems.RESONANCE_CRYSTAL.get()) && !items.getStackInSlot(COIL).is(ModItems.MAGNATITE_NUGGET.get());
+    }
+
     private boolean separating() {
         return items.getStackInSlot(IN).is(MAGNATITE_ORES);
     }

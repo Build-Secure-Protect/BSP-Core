@@ -199,7 +199,7 @@ public class TotemForgeBlockEntity extends MultiblockControllerBlockEntity {
     @Nullable
     private net.minecraft.server.level.ServerPlayer thiefPlayer;
     private float sentSet;
-    private final LazyOptional<IFluidHandler> metalCap = LazyOptional.of(MetalTanks::new);
+    private LazyOptional<IFluidHandler> metalCap = LazyOptional.of(MetalTanks::new);
 
     public TotemForgeBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TOTEM_FORGE.get(), pos, state, LAYOUT, Fluids.LAVA);
@@ -329,6 +329,12 @@ public class TotemForgeBlockEntity extends MultiblockControllerBlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
         metalCap.invalidate();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        metalCap = LazyOptional.of(MetalTanks::new);
     }
 
     // ------------------------------------------------------------------ melting

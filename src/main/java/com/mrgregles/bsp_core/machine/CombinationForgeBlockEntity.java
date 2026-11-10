@@ -38,6 +38,12 @@ public class CombinationForgeBlockEntity extends LavaTankMachineBlockEntity {
         };
     }
 
+    /** Illyrium Nuggets with no Illyrium Forge Upgrade fitted go back to pipes: pipes cannot fit the upgrade, and the nuggets would block the slot. */
+    @Override
+    protected boolean unusableInput(int slot, ItemStack stack) {
+        return slot == IN && stack.is(ModItems.ILLYRIUM_NUGGET.get()) && !hasIllyriumUpgrade();
+    }
+
     /** How many of the input one job uses: one ingot for a plate, nine nuggets for an ingot. */
     private int inputCost() {
         return items.getStackInSlot(IN).is(ModItems.TETRIUM_INGOT.get()) ? 1 : NUGGETS_PER_INGOT;

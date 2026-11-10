@@ -55,11 +55,14 @@ public abstract class MachineBlockEntity extends BlockEntity {
     private boolean enabled = true;
     private double speedCarry;
     private final MachineEnergy energy = new MachineEnergy();
-    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energy);
-
+    /** One handler per face (what that face's mode allows) and one for {@code null} (the machine's own access). They are made once and
+     *  handed out on every call, so a pipe that keeps one keeps working; {@link #reviveCaps} makes new ones after Forge invalidated them. */
+    private final SidedView[] sideViews = new SidedView[6];
+    private final SidedView unsidedView = new SidedView(null);
+    private LazyOptional<IEnergyStorage> energyCap;
     @SuppressWarnings("unchecked")
     private final LazyOptional<IItemHandler>[] sideCaps = new LazyOptional[6];
-    private final LazyOptional<IItemHandler> unsidedCap = LazyOptional.of(() -> new SidedView(null));
+    private LazyOptional<IItemHandler> unsidedCap;
 
     protected MachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, List<Slot> layout) {
         super(type, pos, state);
@@ -91,7 +94,17 @@ public abstract class MachineBlockEntity extends BlockEntity {
         };
         for (Direction d : Direction.values()) {
             sides[d.get3DDataValue()] = d == Direction.DOWN ? SideMode.OUTPUT : d == Direction.UP ? SideMode.INPUT : SideMode.BOTH;
-            sideCaps[d.get3DDataValue()] = LazyOptional.of(() -> new SidedView(d));
+            sideViews[d.get3DDataValue()] = new SidedView(d);
+        }
+        makeCaps();
+    }
+
+    private void makeCaps() {
+        energyCap = LazyOptional.of(() -> energy);
+        unsidedCap = LazyOptional.of(() -> unsidedView);
+        for (int i = 0; i < 6; i++) {
+            SidedView view = sideViews[i];
+            sideCaps[i] = LazyOptional.of(() -> view);
         }
     }
 
@@ -102,6 +115,15 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     /** Whether pipes may take {@code stack} out of {@code slot} even through a side set to input only (the Totem Forge's spent lava buckets). */
     protected boolean alwaysExtractable(int slot, ItemStack stack) {
+        return false;
+    }
+
+    /**
+     * Whether pipes may take {@code stack} back out of input slot {@code slot} (through a face that allows output) because the machine
+     * cannot use it however much more arrives, for example Tetrium Slag left in the Illyrium Crucible's additive slot while it alloys.
+     * Without this such a stack blocks the slot, and every other item it takes, until a player clears it.
+     */
+    protected boolean unusableInput(int slot, ItemStack stack) {
         return false;
     }
 
@@ -466,6 +488,13 @@ public abstract class MachineBlockEntity extends BlockEntity {
         }
     }
 
+    /** Forge revives a block entity's capabilities after invalidating them; an invalidated LazyOptional stays dead, so make new ones. */
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        makeCaps();
+    }
+
     /** What pipes and hoppers see: inputs and fuel can be inserted, outputs extracted, gated by the face's mode. */
     private class SidedView implements IItemHandler {
         @Nullable
@@ -484,45 +513,70 @@ public abstract class MachineBlockEntity extends BlockEntity {
             return items.getSlots();
         }
 
+        /** Whether items go into this slot through this face: input and fuel slots, through a face that takes items in. */
+        private boolean takesIn(int slot) {
+            Role role = layout.get(slot).role();
+            return mode().allowsInput() && (role == Role.INPUT || role == Role.FUEL);
+        }
+
+        /**
+         * Whether what is in this slot comes out through this face: outputs, what is left in a fuel slot that it would not take now (the
+         * empty bucket a lava or water bucket leaves; never magma blocks or water buckets still to be used, which burn no time) and inputs
+         * the machine cannot use, through a face that gives items out (or anywhere, for {@link #alwaysExtractable}).
+         */
+        private boolean givesOut(int slot) {
+            ItemStack there = items.getStackInSlot(slot);
+            if (there.isEmpty() || (!mode().allowsOutput() && !alwaysExtractable(slot, there))) {
+                return false;
+            }
+            Role role = layout.get(slot).role();
+            return role == Role.OUTPUT || (role == Role.FUEL && !items.isItemValid(slot, there)) || (role == Role.INPUT && unusableInput(slot, there));
+        }
+
+        /**
+         * What a slot holds, as this face sees it: a slot this face can neither fill nor empty (upgrades, and inputs seen from an
+         * output-only face) looks empty. Pipes that walk the slots and stop at the first one they cannot empty (Industrial Foregoing's
+         * transporter), and storage views that list every slot (Refined Storage's External Storage), then see only what they can move.
+         * Through a face that takes items in, inputs show, so pipes can top them up and AE2's blocking mode sees them.
+         */
         @Nonnull
         @Override
         public ItemStack getStackInSlot(int slot) {
-            return items.getStackInSlot(slot);
+            return takesIn(slot) || givesOut(slot) ? items.getStackInSlot(slot) : ItemStack.EMPTY;
         }
 
+        /** The machine works on its own copy: a pipe may hand over a stack it still holds (Industrial Foregoing's conveyor gives an item entity's own). */
         @Nonnull
         @Override
         public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-            Role role = layout.get(slot).role();
-            if (!mode().allowsInput() || (role != Role.INPUT && role != Role.FUEL)) {
+            if (stack.isEmpty() || !takesIn(slot)) {
                 return stack;
             }
-            return items.insertItem(slot, stack, simulate);
+            ItemStack left = items.insertItem(slot, stack.copy(), simulate);
+            return left.getCount() == stack.getCount() ? stack : left;
         }
 
         @Nonnull
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (!mode().allowsOutput() && !alwaysExtractable(slot, items.getStackInSlot(slot))) {
-                return ItemStack.EMPTY;
-            }
-            Role role = layout.get(slot).role();
-            // outputs, plus empty buckets left in the fuel slot
-            boolean spentFuel = role == Role.FUEL && ForgeHooks.getBurnTime(items.getStackInSlot(slot), null) <= 0;
-            if (role != Role.OUTPUT && !spentFuel) {
-                return ItemStack.EMPTY;
-            }
-            return items.extractItem(slot, amount, simulate);
+            return givesOut(slot) ? items.extractItem(slot, amount, simulate) : ItemStack.EMPTY;
         }
 
+        /**
+         * The most this slot holds of what is in it now, the per-item cap included (the Totem Forge takes only the ingots it still needs):
+         * Mekanism plans items already on their way from this number without asking the machine again.
+         */
         @Override
         public int getSlotLimit(int slot) {
-            return items.getSlotLimit(slot);
+            ItemStack there = items.getStackInSlot(slot);
+            int limit = items.getSlotLimit(slot);
+            return there.isEmpty() ? limit : Math.min(limit, Math.min(there.getMaxStackSize(), stackLimit(slot, there)));
         }
 
+        /** The same answer {@link #insertItem} gives: only input and fuel slots, only through a face that takes items in. Pipes that check this first (Mekanism) then never plan a move the insert refuses. */
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return items.isItemValid(slot, stack);
+            return takesIn(slot) && items.isItemValid(slot, stack);
         }
     }
 

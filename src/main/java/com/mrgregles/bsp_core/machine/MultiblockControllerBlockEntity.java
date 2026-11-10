@@ -35,7 +35,7 @@ import java.util.List;
  */
 public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity {
     protected final FluidTank tank;
-    private final LazyOptional<IFluidHandler> fluidCap;
+    private LazyOptional<IFluidHandler> fluidCap;
     private boolean formed;
 
     protected MultiblockControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, List<Slot> layout, Fluid fluid) {
@@ -123,6 +123,7 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
             if (ok != formed) {
                 formed = ok;
                 showParts(ok);
+                refreshPorts(level);
                 setChanged();
                 level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             }
@@ -132,6 +133,15 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
         }
         if (formed) {
             super.serverTick(level);
+        }
+    }
+
+    /** The structure formed or broke: every port of this controller drops the handlers it gave pipes, so they ask again. */
+    private void refreshPorts(ServerLevel level) {
+        for (Part part : parts()) {
+            if (level.getBlockEntity(part.pos()) instanceof MachinePortBlockEntity port && worldPosition.equals(port.controller())) {
+                port.refresh();
+            }
         }
     }
 
@@ -312,6 +322,12 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
     public void invalidateCaps() {
         super.invalidateCaps();
         fluidCap.invalidate();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        fluidCap = LazyOptional.of(() -> tank);
     }
 
     @Override

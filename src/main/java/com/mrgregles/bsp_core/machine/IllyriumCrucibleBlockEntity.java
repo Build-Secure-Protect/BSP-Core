@@ -112,6 +112,15 @@ public class IllyriumCrucibleBlockEntity extends MultiblockControllerBlockEntity
         };
     }
 
+    /** An additive the main input's job does not take (slag while alloying, Tetrium Dust while smelting) goes back to pipes, so it never blocks the slot. */
+    @Override
+    protected boolean unusableInput(int slot, ItemStack stack) {
+        if (slot != ADDITIVE) {
+            return false;
+        }
+        return smelting() ? !stack.is(ModItems.TETRIUM_SLAG.get()) : alloying() && !stack.is(ModItems.TETRIUM_DUST.get());
+    }
+
     private boolean smelting() {
         return items.getStackInSlot(MAIN).is(ILLYRIUM_ORES);
     }

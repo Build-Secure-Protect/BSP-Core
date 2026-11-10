@@ -97,7 +97,7 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
             return PlasmaItems.isChargeable(stack) && PlasmaItems.stored(stack) < PlasmaItems.capacity(stack);
         }
     };
-    private final net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> automationCap = net.minecraftforge.common.util.LazyOptional.of(() -> automation);
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> automationCap = net.minecraftforge.common.util.LazyOptional.of(() -> automation);
 
     public BatteryChargerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BATTERY_CHARGER.get(), pos, state);
@@ -115,6 +115,13 @@ public class BatteryChargerBlockEntity extends BlockEntity implements PlasmaRece
     public void invalidateCaps() {
         super.invalidateCaps();
         automationCap.invalidate();
+    }
+
+    /** An invalidated LazyOptional stays dead: make a new one when Forge revives this charger's capabilities. */
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        automationCap = net.minecraftforge.common.util.LazyOptional.of(() -> automation);
     }
 
     public ItemStackHandler getItems() {

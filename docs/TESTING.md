@@ -3280,3 +3280,46 @@ GameTests (batch `compass_range`): `compass_feels_radiation_from_a_rival_totem_o
 - [ ] A new player's protected Tier II totem nearby: never detected.
 - [ ] `totemRadiation.enabled = false`: never detected.
 - [ ] Drop the compass while it turns slowly, or put it in an item frame: it keeps turning until its tracking time is over, then wobbles.
+
+## Machine automation (2026-11-10, 1.16.1)
+
+GameTests (batch `automation`, 13):
+- Every tick for 1,000 ticks, these ask for the item handler, push an input in and pull the outputs out. The handler is always there, an input always goes in while its slot has room, and the outputs come out.
+  - `automation_tetrium_crucible_every_tick`
+  - `automation_combination_forge_every_tick`
+  - `automation_illyrium_crucible_hatches_every_tick`
+- `automation_every_machine_answers_pipes_alike` covers every machine, every face and every slot, against about thirty items:
+  - "valid" matches what an insert takes;
+  - a slot shows its contents exactly when the face can fill or empty it;
+  - a simulated take-out matches the real one;
+  - a controller's faces connect to nothing.
+- `automation_valid_follows_the_face`: what each face shows, and that the machine keeps its own copy of a handed stack.
+- `automation_slot_limit_is_the_real_cap`: the Totem Forge's limit.
+- `automation_hatch_follows_the_structure` and `automation_pylons_follow_the_structure`: one handler that stays, reaching the machine only while it is formed.
+- `automation_handlers_come_back_after_revive`.
+- `automation_fluid_containers_stay_until_used`: magma, lava and water buckets.
+- `automation_leftover_slag_goes_back`, `automation_forge_returns_nuggets_it_cannot_use` and `automation_centrifuge_returns_ingots_it_cannot_use`.
+
+In game, in the pack (right and left hatches are as seen from the front of the controller):
+
+- [ ] **AE2:** an export bus on the right Item Hatch of an alloying Illyrium Crucible pushes Tetrium Dust, and an import bus on the left hatch pulls Illyrium Nuggets. Leave it 10 minutes: dust is topped up as it is used, about one a minute without cards, and the nuggets come out.
+- [ ] **AE2 pattern provider in blocking mode** on a Tetrium Crucible's side: it waits while ore is still in the machine, and pushes the next pattern once the ore is used up.
+- [ ] **AE2 storage bus** on a crucible's bottom face lists only the nuggets and slag, not the ore or the upgrades.
+- [ ] **Tetrium Crucible and Combination Forge:** an export bus on a side, an import bus on the bottom; both keep going for 10 minutes.
+- [ ] **Combination Forge, no upgrade:** push Illyrium Nuggets in. The import bus takes them back out, and Tetrium Nuggets go in after. Fit the upgrade: the Illyrium Nuggets stay and become ingots.
+- [ ] **Illyrium Crucible, leftover slag:** with Pure Illyrium Dust in the main slot and one Tetrium Slag left in the additive slot, an import bus on the left hatch takes the slag out and dust goes in. With Illyrium Ore in the main slot, the slag stays.
+- [ ] **Illyrium Crucible fed Magma Blocks** through the right hatch, with an import bus on the left hatch: the magma stays in and melts; only nuggets come out. The same with Water Buckets into the Illyrium Refinery: the water buckets stay and the empty buckets come out.
+- [ ] **Refined Storage:**
+  - An Importer under a crucible pulls nuggets and slag at full speed, with ore and upgrades in the machine.
+  - An External Storage on its bottom face lists only the outputs.
+  - An Exporter on a side feeds ore.
+- [ ] **Mekanism:** a Logistical Transporter in pull mode on a crucible's bottom moves the outputs into a chest, and one on a side feeds ore. Put a transporter on the Totem Forge's Metal Intake hatch feeding ingots: no ingots bounce back or sit idle in the pipe once the forge has all it needs.
+- [ ] **EnderIO:** item conduits on the right (insert) and left (extract) hatches of an Illyrium Crucible, with a filter in one. Break a casing: the flow stops. Put the casing back: it starts again, with the conduits' settings and the filter still in place.
+- [ ] **Industrial Foregoing:** an Item Transporter extracting from a crucible's bottom keeps taking nuggets while ore and upgrades sit in the machine. A conveyor with an Insertion Upgrade into a crucible's top feeds ore.
+- [ ] **Create:** a funnel feeds a crucible's side from a belt, and a funnel under it pulls the outputs.
+- [ ] **XNet:** an item channel with an extractor on a crucible's bottom and an inserter on its side moves items both ways. Before the Illyrium Crucible is finished, the controller's screen offers an Item connector on a hatch as soon as the hatch is in place.
+- [ ] **Integrated Tunnels:** an importer on a crucible's bottom and an exporter on its side, with no part errors.
+- [ ] **Sophisticated Storage:** a chest with a Hopper Upgrade below an Item Hatch placed before the structure is finished starts taking outputs once the crucible forms.
+- [ ] **Functional Storage:** a drawer with a Pull Upgrade under a crucible takes the outputs.
+- [ ] **Vanilla hopper** under a crucible takes the outputs, and one above feeds ore.
+- [ ] **A multiblock across two chunks** with pipes on its hatches: fly 20 chunks away and back. The pipes work again without being rebuilt.
