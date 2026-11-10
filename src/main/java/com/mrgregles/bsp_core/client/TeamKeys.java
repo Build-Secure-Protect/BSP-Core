@@ -19,8 +19,9 @@ public final class TeamKeys {
 
     public static final KeyMapping OPEN = new KeyMapping("key.bsp_core.team_open", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), "key.categories.bsp_core");
     /** The team prompts' own pair, apart from the Recall offer's R and N. */
-    public static final KeyMapping ACCEPT = new KeyMapping("key.bsp_core.team_accept", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_Y, "key.categories.bsp_core");
-    public static final KeyMapping DECLINE = new KeyMapping("key.bsp_core.team_decline", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_H, "key.categories.bsp_core");
+    // default keys nothing else in the pack uses (every letter is taken): Insert accepts, Delete below it declines
+    public static final KeyMapping ACCEPT = new KeyMapping("key.bsp_core.team_accept", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_INSERT, "key.categories.bsp_core");
+    public static final KeyMapping DECLINE = new KeyMapping("key.bsp_core.team_decline", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_DELETE, "key.categories.bsp_core");
 
     /** Asks the server for the Team screen. */
     public static void open() {

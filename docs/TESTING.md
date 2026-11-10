@@ -3326,11 +3326,16 @@ In game, in the pack (right and left hatches are as seen from the front of the c
 
 ## BSP keys in Controls (2026-11-10, 1.16.2)
 
-GameTest (batch `event_names`): `event_handlers_have_names_of_their_own`. It reads the mod's scan data and fails if two `@SubscribeEvent` handlers share a package, class simple name, method name and event (Forge merges those into one listener). In game, with the new client:
+GameTest (batch `event_names`): `event_handlers_have_names_of_their_own`. It reads the mod's scan data and fails if two `@SubscribeEvent` handlers share a package, class simple name, method name and event (Forge merges those into one listener).
 
-- [ ] Options > Controls > Key Binds, BSP Core category: X-ray on/off (X), Siege on/off (V), Accept a Recall (R), Decline a Recall (N), Open the Team screen (unbound), Accept a team invite (Y), Decline a team invite (H), Open the kit browser (unbound), Show or hide totem auras (unbound). Each is listed once.
-- [ ] X toggles X-ray, V toggles Siege (where allowed), and R/N answer a Recall offer (have another player start taking your placed totem).
-- [ ] Y/H answer a team invite.
-- [ ] Bind the kit browser and the aura key to free keys: each opens the kit browser or shows and hides totem auras.
-- [ ] In the pack, press V with no Siege power while Mekanism armour is on: Mekanism's head mode changes and the action bar says you have no Siege (both use V; rebinding either ends it).
-- [ ] A game with the old saved controls (six X-ray lines in `options.txt`): it starts, X-ray stays on X, and after leaving Controls `options.txt` holds one line per BSP key.
+The defaults are Siege on 0, Recall accept and decline on Home and End, team invite accept and decline on Insert and Delete, and X-ray on X. They were chosen against the pack's saved controls, where every letter key is taken. In game, in the pack, with the 1.16.2 client and a fresh `options.txt` (or Controls > Reset All):
+
+- [ ] Options > Controls > Key Binds, BSP Core category:
+  - X-ray on/off (X), Siege on/off (0), Accept a Recall (Home), Decline a Recall (End), Accept a team invite (Insert), Decline a team invite (Delete).
+  - Open the Team screen, Open the kit browser and Show or hide totem auras are unbound.
+  - Each key is listed once, and none shows red (no conflict).
+- [ ] X toggles X-ray. 0 toggles Siege with the power; without it, the action bar says so. With Mekanism armour on, V changes the head mode only.
+- [ ] A Recall card reads "[HOME] Recall [END] Stay" and fits the card; Home and End answer it (have another player start taking your placed totem).
+- [ ] A team invite card reads "INSERT accept · DELETE decline · …" and fits the card; Insert and Delete answer it.
+- [ ] Bind the kit browser and the aura key to free keys: each opens the kit browser, or shows and hides totem auras.
+- [ ] A game with the old saved controls (six X-ray lines in `options.txt`): it starts, and X-ray stays on X. After leaving Controls, `options.txt` holds one line per BSP key.

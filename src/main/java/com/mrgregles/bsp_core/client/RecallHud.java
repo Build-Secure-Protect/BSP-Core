@@ -26,8 +26,9 @@ import java.util.Locale;
 /** The Recall offer ("Compass Card"): a small card above the hotbar with an arrow toward the totem, its distance, a draining ring and the two keys. */
 public final class RecallHud implements IGuiOverlay {
     public static final RecallHud INSTANCE = new RecallHud();
-    public static final KeyMapping ACCEPT = new KeyMapping("key.bsp_core.recall_accept", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_R, "key.categories.bsp_core");
-    public static final KeyMapping DECLINE = new KeyMapping("key.bsp_core.recall_decline", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_N, "key.categories.bsp_core");
+    // default keys nothing else in the pack uses (every letter is taken): Home accepts, End below it declines
+    public static final KeyMapping ACCEPT = new KeyMapping("key.bsp_core.recall_accept", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_HOME, "key.categories.bsp_core");
+    public static final KeyMapping DECLINE = new KeyMapping("key.bsp_core.recall_decline", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_END, "key.categories.bsp_core");
     private static final int BG = 0xE010151C, RED = 0xFFFF6B5C, TQ = 0xFF19D3B0, DIM = 0xFF2A2F3A, TEXT = 0xE6EAF2, MUTED = 0x9AA3B5;
     @Nullable
     private static RecallOfferPacket offer;

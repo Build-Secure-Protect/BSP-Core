@@ -22,7 +22,8 @@ import net.minecraftforge.fml.common.Mod;
 /** Siege's key and its ring by the crosshair (orange while on, grey while recharging), the mirror of X-ray's on the other side. */
 public final class SiegeClient implements IGuiOverlay {
     public static final SiegeClient INSTANCE = new SiegeClient();
-    public static final KeyMapping TOGGLE = new KeyMapping("key.bsp_core.siege", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_V, "key.categories.bsp_core");
+    /** 0 by default: every letter is taken by another mod in the pack (V by Mekanism, Curios and CoFH). */
+    public static final KeyMapping TOGGLE = new KeyMapping("key.bsp_core.siege", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, InputConstants.KEY_0, "key.categories.bsp_core");
     private static long onUntil, readyAt, total, rechargeTotal;
 
     private SiegeClient() {}

@@ -6,15 +6,25 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [1.16.2] - 2026-11-10
 
-Network protocol 12, as 1.16.0 and 1.16.1: servers and clients of the three can mix. Players need the 1.16.2 client for the fix (it is in client code).
+Network protocol 12, as 1.16.0 and 1.16.1: servers and clients of the three can mix. Players need the 1.16.2 client for these changes (they are in client code).
 
 ### Fixed
 - **BSP keys in Controls.** "X-ray on/off" was listed six times, and the Siege, Recall accept/decline, Team (open, accept, decline), kit browser and totem aura keys were missing and did nothing.
   - Six of BSP-Core's client handlers shared one listener name and were merged into one by Forge: each kind (registering keys, reading key presses each tick) ran only one handler several times over.
   - Each handler now has a name of its own, and every key is listed once and works.
-  - A game's saved controls with the six X-ray lines load as they are; the other keys start on their defaults (Siege V, Recall R/N, Team invite Y/H, X-ray X).
-  - Some of these defaults share a key with other mods in the pack (V: Mekanism head mode, CoFH mode change; R: Iris shader reload, Quark variant selector and others; N, Y, H likewise). Both actions run on a shared key; rebind either in Controls. Recall and team keys act only while an offer or invite is shown.
+  - A game's saved controls with the six X-ray lines load as they are, with X-ray on X; the other keys start on their new defaults (below).
 - A GameTest reads the mod's scan data and fails if two event handlers would share a listener name again.
+
+### Changed
+- **BSP's default keys** use keys nothing else in the pack uses (every letter key is taken by another mod):
+  - Siege on/off: 0 (was V, shared with Mekanism head mode, the Curios crafting stick and CoFH mode change).
+  - Accept / decline a Recall: Home / End (were R / N).
+  - Accept / decline a team invite: Insert / Delete (were Y / H).
+  - Accept is always the upper key of the pair.
+  - X-ray stays on X (shared only with Minecraft's creative-only Load Toolbar Activator).
+  - The kit browser, Team screen and totem auras keys stay unbound.
+  - The Recall and invite cards show whatever key is bound.
+  - Players keep a key they have already set; Controls > Reset puts a key on its new default.
 
 ## [1.16.1] - 2026-11-10
 
