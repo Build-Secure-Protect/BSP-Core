@@ -44,6 +44,17 @@ public final class BSPConfig {
     /** Dimensions in which a Shatter Totem may be placed, dropped or auto-placed. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_DIMENSIONS, ACTIVE_DIMENSIONS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> NO_TOTEM_SERVERS;
+    /** Plasma Tank Mob Chamber: which drop tags plasma with which mob power, and how much ({@link com.mrgregles.bsp_core.chamber.MobPowers}). */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHAMBER_DROP_POWERS;
+    public static final ForgeConfigSpec.IntValue CHAMBER_MB_PER_WORTH;
+    /** Mob Chamber spawning ({@link com.mrgregles.bsp_core.chamber.ChamberSpawner}). */
+    public static final ForgeConfigSpec.IntValue CHAMBER_TIMER_SECONDS, CHAMBER_TIMER_STEP, CHAMBER_TIMER_MIN, CHAMBER_FLOOR_PER_MOB, CHAMBER_CAP, CHAMBER_SERVER_CAP;
+    public static final ForgeConfigSpec.DoubleValue CHAMBER_START_FRACTION, CHAMBER_BURN;
+    public static final ForgeConfigSpec.IntValue CHAMBER_FEED_PER_SECOND;
+    /** Mob powers at a Projector ({@link com.mrgregles.bsp_core.chamber.MobPowerEffects}): one entry per level, I to III. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> MOB_POWER_REACH, MOB_MEND_PER_SECOND;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> MOB_GROWTH_BOOST;
+    public static final ForgeConfigSpec.IntValue MOB_KEEP_MINUTES;
 
     /** Seconds a dropped totem lies on the ground before it places itself as a block. */
     public static final ForgeConfigSpec.IntValue GROUND_SECONDS_BEFORE_PLACE;
@@ -77,6 +88,10 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue TCRUC_NUGGETS, TCRUC_SLAG, TCRUC_TICKS, FORGE_TICKS;
     /** Lava tanks of the Tetrium Crucible and the Combination Forge: mB per job and tank size. */
     public static final ForgeConfigSpec.IntValue TCRUC_LAVA_PER_ORE, TCRUC_LAVA_TANK, FORGE_LAVA_PER_JOB, FORGE_LAVA_TANK;
+    /** Ticks a lava bucket burns in the fuel slot of the Tetrium Crucible and of the Combination Forge (other fuels burn as in a furnace). */
+    public static final ForgeConfigSpec.IntValue TCRUC_BUCKET_TICKS, FORGE_BUCKET_TICKS;
+    /** Set once the old tank lava rates (100 and 200 mB) have been moved to the new defaults (see {@link #moveOldLavaRates()}). */
+    public static final ForgeConfigSpec.BooleanValue LAVA_RATES_MOVED;
     /** Extra Tetrium Nuggets per ore for each Crucible Yield Upgrade fitted. */
     public static final ForgeConfigSpec.IntValue TCRUC_PER_UPGRADE;
     /** Set once the old default of 2 nuggets per ore has been moved to 4 (see {@link #moveOldCrucibleYield()}). */
@@ -389,14 +404,17 @@ public final class BSPConfig {
         TCRUC_NUGGETS_MOVED = BUILDER.comment("Set by the mod the first time it loads this file: a nuggetsPerOre of 2 (the old default) is moved to 4 once. Leave it as it is; a 2 set after that is kept.").define("nuggetsPerOreMoved", false);
         TCRUC_SLAG = BUILDER.comment("Tetrium Slag from one ore.").defineInRange("slagPerOre", 1, 0, 64);
         TCRUC_TICKS = BUILDER.comment("Ticks to process one ore (20 ticks = 1 second).").defineInRange("ticksPerOre", 300, 1, 1_000_000);
-        TCRUC_LAVA_PER_ORE = BUILDER.comment("Lava used per ore when the crucible runs on its lava tank instead of furnace fuel, in millibuckets.").defineInRange("lavaPerOre", 100, 0, 100_000);
+        TCRUC_LAVA_PER_ORE = BUILDER.comment("Lava used per ore when the crucible runs on its lava tank instead of furnace fuel, in millibuckets. 40 makes a bucket poured into the tank last 25 ores.").defineInRange("lavaPerOre", 40, 0, 100_000);
+        TCRUC_BUCKET_TICKS = BUILDER.comment("Ticks a lava bucket burns in the crucible's fuel slot. 3000 is 10 ores at 300 ticks each; a bucket poured into the tank goes further. Other fuels burn as in a furnace.").defineInRange("lavaBucketTicks", 3000, 1, 1_000_000);
+        LAVA_RATES_MOVED = BUILDER.comment("Set by the mod the first time it loads this file: a lavaPerOre of 100 here and a lavaPerJob of 200 on the Combination Forge (the old defaults) are moved to 40 and 80 once. Leave it as it is; values set after that are kept.").define("lavaRatesMoved", false);
         TCRUC_LAVA_TANK = BUILDER.comment("Lava tank size in millibuckets. Pipes fill it from any side; a lava bucket used on the block pours into it.").defineInRange("lavaTank", 8000, 1000, 1_000_000);
         BUILDER.pop();
 
         BUILDER.comment("Combination Forge").push("combination_forge");
         FORGE_TICKS = BUILDER.comment("Ticks to forge nine nuggets into one ingot when burning coal or other furnace fuel.").defineInRange("ticksPerIngot", 600, 1, 1_000_000);
         FORGE_RF_MULTIPLIER = BUILDER.comment("How many times faster the forge runs on RF than on fuel (2 = coal is 100% slower).").defineInRange("rfSpeedMultiplier", 2.0, 1.0, 100.0);
-        FORGE_LAVA_PER_JOB = BUILDER.comment("Lava used per ingot or plate when the forge runs on its lava tank instead of furnace fuel, in millibuckets. Not used while it runs on RF.").defineInRange("lavaPerJob", 200, 0, 100_000);
+        FORGE_LAVA_PER_JOB = BUILDER.comment("Lava used per ingot or plate when the forge runs on its lava tank instead of furnace fuel, in millibuckets. Not used while it runs on RF. 80 makes a bucket poured into the tank last 12 jobs.").defineInRange("lavaPerJob", 80, 0, 100_000);
+        FORGE_BUCKET_TICKS = BUILDER.comment("Ticks a lava bucket burns in the forge's fuel slot. 3000 is 5 jobs at 600 ticks each; a bucket poured into the tank goes further. Other fuels burn as in a furnace.").defineInRange("lavaBucketTicks", 3000, 1, 1_000_000);
         FORGE_LAVA_TANK = BUILDER.comment("Lava tank size in millibuckets. Pipes fill it from any side; a lava bucket used on the block pours into it.").defineInRange("lavaTank", 8000, 1000, 1_000_000);
         BUILDER.pop();
 
@@ -840,6 +858,38 @@ public final class BSPConfig {
                 .define("redisChannel", "bsp_core:discord");
         BUILDER.pop();
 
+        BUILDER.comment("The Plasma Tank Mob Chamber: mobs spawn in a tank with a Spawn Grate, the plasma kills them, and their drops tag plasma with powers.").push("mob_chamber");
+        CHAMBER_DROP_POWERS = BUILDER.comment("Which drop tags plasma with which power: \"item=power,worth\". Worth 1 tags mbPerWorth of plain plasma at level I (a level II tag costs",
+                        "twice the items, level III four times). Powers: growth, wither, warp_ward, undead_ward, haste, snare, wireframe, keep, scorch, fire_ward, mending,",
+                        "lantern, tide. A line for an item no mod adds (a pack without that mod) is left out. A drop with no line is loot only.")
+                .defineList("dropPowers", List.of(
+                        "minecraft:bone=growth,1", "bsp_core:wither_bone=wither,1", "minecraft:ender_pearl=warp_ward,5", "tconstruct:ender_slime_ball=warp_ward,1",
+                        "minecraft:rotten_flesh=undead_ward,1", "minecraft:gunpowder=haste,1", "minecraft:string=snare,1", "minecraft:spider_eye=wireframe,0.05",
+                        "minecraft:slime_ball=keep,1", "tconstruct:sky_slime_ball=keep,1", "minecraft:blaze_rod=scorch,5", "minecraft:coal=scorch,1",
+                        "minecraft:magma_cream=fire_ward,5", "minecraft:ghast_tear=mending,5", "minecraft:glowstone_dust=lantern,1",
+                        "minecraft:prismarine_shard=tide,1", "minecraft:prismarine_crystals=tide,1"), BSPConfig::isDropPower);
+        CHAMBER_MB_PER_WORTH = BUILDER.comment("Plain plasma one item of worth 1 tags at level I, in millibuckets. A projecting Projector burns projectorUse (20 mB a tick): 24000 is one minute of it.")
+                .defineInRange("mbPerWorth", 24_000, 1, 100_000_000);
+        CHAMBER_TIMER_SECONDS = BUILDER.comment("Seconds between spawns in a chamber 4 blocks wide (its wider floor side).").defineInRange("timerSeconds", 30, 1, 3600);
+        CHAMBER_TIMER_STEP = BUILDER.comment("Seconds less per block wider than 4.").defineInRange("timerStepSeconds", 2, 0, 3600);
+        CHAMBER_TIMER_MIN = BUILDER.comment("The fastest a chamber spawns, in seconds, however big. 14 is reached at 12 wide.").defineInRange("timerMinSeconds", 14, 1, 3600);
+        CHAMBER_FLOOR_PER_MOB = BUILDER.comment("Blocks of inside floor per mob alive at once: 4 is one mob per 2x2 of floor. At least one.").defineInRange("floorPerMob", 4, 1, 1024);
+        CHAMBER_CAP = BUILDER.comment("Most mobs alive at once in one chamber.").defineInRange("mobsPerChamber", 16, 1, 1024);
+        CHAMBER_SERVER_CAP = BUILDER.comment("Most chamber mobs alive at once on the whole server (loaded ones).").defineInRange("mobsPerServer", 200, 0, 100_000);
+        CHAMBER_START_FRACTION = BUILDER.comment("How full the tank must be for mobs to spawn: 0.15 is 15%. Shown as the \"mobs spawn\" mark on the fill meter.")
+                .defineInRange("startFraction", 0.15, 0.0, 1.0);
+        CHAMBER_BURN = BUILDER.comment("Health a second the plasma burns from a mob inside a chamber (even a drained one). A zombie has 20.").defineInRange("burnPerSecond", 4.0, 0.0, 10_000.0);
+        CHAMBER_FEED_PER_SECOND = BUILDER.comment("Most items a chamber feeds into its plasma a second, while the loot store has them and the plain plasma covers them.")
+                .defineInRange("feedItemsPerSecond", 64, 1, 4096);
+        MOB_POWER_REACH = BUILDER.comment("How far a Projector's mob powers reach, in blocks round it (a cube), at levels I, II and III.")
+                .defineList("powerReach", List.of(16, 24, 32), BSPConfig::isPositiveInt);
+        MOB_GROWTH_BOOST = BUILDER.comment("Growth: extra random ticks on crops, saplings, cane and the like in reach, as a share of the world's own (0.5 is half as many again), at levels I, II and III.")
+                .defineList("growthBoost", List.of(0.5, 1.0, 2.0), BSPConfig::isFraction4);
+        MOB_MEND_PER_SECOND = BUILDER.comment("Mending: durability a second given back to the team's held tools in reach, at levels I, II and III.")
+                .defineList("mendPerSecond", List.of(1, 2, 4), BSPConfig::isPositiveInt);
+        MOB_KEEP_MINUTES = BUILDER.comment("Keep: minutes an item dropped in reach lies before it despawns (the game's own is 5).").defineInRange("keepMinutes", 20, 1, 1440);
+        BUILDER.pop();
+
         BUILDER.comment("How the totem is drawn").push("visuals");
         AURA_SPHERE_VIEW_DISTANCE = BUILDER.comment("Aura radius spheres are only drawn when the viewer is within this many blocks of the totem.")
                 .defineInRange("auraSphereViewDistance", 32, 1, 256);
@@ -894,6 +944,14 @@ public final class BSPConfig {
         return o instanceof Integer i && i >= 0;
     }
 
+    private static boolean isFraction4(Object o) {
+        return o instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() <= 100;
+    }
+
+    private static boolean isDropPower(Object o) {
+        return o instanceof String s && com.mrgregles.bsp_core.chamber.MobPowers.parse(s) != null;
+    }
+
     private static boolean isPositiveInt(Object o) {
         return o instanceof Integer i && i > 0;
     }
@@ -945,6 +1003,33 @@ public final class BSPConfig {
         return moved;
     }
 
+    /**
+     * Moves a saved {@code tetrium_crucible.lavaPerOre} of 100 and {@code combination_forge.lavaPerJob} of 200 (the defaults before
+     * tank lava was made the better buy) to the new defaults of 40 and 80, once per config file; each is moved only if it still has
+     * its old default. The marker is set either way, so values an admin sets later are kept. Returns whether anything was moved;
+     * saves the file then.
+     */
+    public static boolean moveOldLavaRates() {
+        if (LAVA_RATES_MOVED.get()) {
+            return false;
+        }
+        boolean moved = false;
+        if (TCRUC_LAVA_PER_ORE.get() == 100) {
+            TCRUC_LAVA_PER_ORE.set(40);
+            moved = true;
+        }
+        if (FORGE_LAVA_PER_JOB.get() == 200) {
+            FORGE_LAVA_PER_JOB.set(80);
+            moved = true;
+        }
+        if (moved) {
+            BSPCore.LOGGER.info("BSP-Core: the Tetrium Crucible and Combination Forge had the old tank lava rates and now have the new ones (lavaPerOre 40, lavaPerJob 80)");
+        }
+        LAVA_RATES_MOVED.set(true);
+        SPEC.save();
+        return moved;
+    }
+
     @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = BSPCore.MODID, bus = net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD)
     public static final class ConfigSteps {
         private ConfigSteps() {}
@@ -954,6 +1039,7 @@ public final class BSPConfig {
             if (event.getConfig().getSpec() == SPEC) {
                 moveOldCrucibleYield();
                 moveOldVaultRates();
+                moveOldLavaRates();
             }
         }
     }

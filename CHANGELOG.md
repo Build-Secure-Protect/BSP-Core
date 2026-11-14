@@ -4,6 +4,69 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-11-13
+
+Network protocol 13: servers and clients must both have this version.
+
+### Added
+- **Mob powers, the first part of the Plasma Tank Mob Chamber.** Thirteen powers that plasma can carry, tagged later by a chamber's kills: Growth, Wither, Warp Ward, Undead Ward, Haste, Snare, Wireframe, Keep, Scorch, Fire Ward, Mending, Lantern and Tide.
+  - A Projector fed with their plasma gives them out in a cube round it: 16 blocks at level I, 24 at II, 32 at III. They take no channel; a Projector carries every mob power its plasma brings, beside its two (or three) totem powers.
+  - For the team (the owner, their team, and anyone the Projector's Ward leaves alone): **Haste** (Haste I to III), **Fire Ward** (fire and lava do not hurt), **Tide** (water breathing), **Mending** (held tools mend 1, 2 or 4 durability a second).
+  - For the area: **Growth** (crops, saplings, cane and the like get extra growth ticks, half as many again at I, twice at II, three times at III), **Keep** (items dropped in reach last 20 minutes), **Undead Ward** (zombies and skeletons do not spawn naturally), **Lantern** (no monster spawns naturally). Neither ward stops a Mob Chamber's own mobs.
+  - What Growth grows and what Undead Ward stops are tags a pack can add to: `bsp_core:growth` (blocks) and `bsp_core:undead_ward` (entity types).
+  - New config keys under `mob_chamber`: `powerReach`, `growthBoost`, `mendPerSecond`, `keepMinutes`.
+  - For outsiders (anyone not on the team, except players new-player protection still covers, and players in creative or spectator): **Wither** (Wither I to III), **Snare** (Slowness I to III), **Scorch** (set alight for a second, every second).
+  - **Mob-power plasma is kept apart by amount** all the way: in cables, Accelerator links, Projector Bases and Tank Ports. A little of it never carries its power onto other plasma: each mob power a Projector gives burns its own plasma, 400 mB a second, and stops when that runs out, while plain or totem plasma keeps the Projector itself going. A power is given at the lowest level its second's plasma came at.
+  - A Projector Base keeps room of its own for mob-power plasma, so an interface feeding the same base never crowds out a Tank Extractor. A base fed by several runs at once (an interface with the totem's powers and a Tank Extractor with a mob power) gives all their powers, teams and Anchor together.
+  - **Warp Ward** keeps outsiders from teleporting into or out of reach: an ender pearl is spent and chorus fruit eaten, but they stay where they are, with a line in the action bar. A teleport mod can ask the same through the new API `BspWarpWard` (`docs/API.md`).
+  - **Wireframe**: while a team member stands in reach, every outsider in reach is drawn for them through walls as a wire figure: each body part outlined in thin pink lines, turning and walking as the player does. A raider with Shroud on the totem in their offhand stays hidden for Shroud's seconds after first stepping in; only a minute out of reach starts them again.
+  - They are never on a totem: not on the tree, not for sale, no orb. They travel with plasma like the totem's powers, through tanks, cables and the Accelerator.
+  - New config list `mob_chamber.dropPowers` (`item=power,worth`) says which drop tags which power, and `mob_chamber.mbPerWorth` (24000) how much plasma one item tags.
+  - Saved tanks, batteries and projectors load as they were.
+- **Tank Extractor.** A Separator Drum set against a Tank Port. It sends one of the tank's pools into the cables touching it: plain plasma, the totem-powered plasma with the totem's powers, or one mob power's pool at its highest level. The ◀ and ▶ buttons on its front step through the pools; the sight glass shows the pool's colour. It never sends back into its own tank. Through an Accelerator the power reaches the far world. Crafted from Tetrium Glass, two copper ingots, a Tank Casing and a Tetrium Plate.
+- **Wither Bone.** What a wither skeleton's bones will become in a chamber, so their power (Wither) stays apart from a bone's (Growth).
+- **Plasma pools in a tank.** A Plasma Tank keeps its plasma in pools that never mix: plain plasma, totem-powered plasma, and one pool per mob power. A mob power's pool keeps each level (I to III) apart and reads as its highest.
+  - Ports give out plain and totem plasma together, with the totem's powers, as before. A mob pool stays in the tank until a Tank Extractor sends it.
+  - The tank screen's fill bar shows each pool as a band of its own colour.
+  - A tank saved by an older version loads with its powered plasma in the totem pool and the rest plain.
+- **Spawn Grate and the Mob Chamber.** A Plasma Tank block for any face, in place of Tank Glass: a tank with one is a Mob Chamber. Crafted from a redstone lamp, two iron bars, a Tank Casing and a Tetrium Plate.
+  - Once the tank is 15% full, the chamber spawns a mob every 30 seconds (4 wide), 2 seconds sooner per block wider, down to 14 seconds at 12 wide.
+  - It picks from what the chamber's biome, and any structure it stands in, would spawn, limited to mobs that fit inside. Light and floor do not matter, and the world's mob cap is not used.
+  - Up to one mob per 2x2 of inside floor, 16 per chamber, 200 per server.
+  - The chamber's mobs stand still (no AI) and the plasma burns them, 4 health a second, even once the tank runs dry. Break the tank and they wake, as they were.
+  - A chamber can spawn every kind of mob, monsters only, or everything but monsters: the ALL / HOSTILE / PASSIVE switch on the tank screen's CHAMBER tab.
+  - **The CHAMBER tab** (a second tab on the tank's screen, for a chamber): the fill bar with a gold "mobs spawn" mark at 15% and the pools as bands; the switch; when the next mob comes and how many are alive; every mob that can spawn here with its chance and what its drop gives; the 27-slot loot store; and the power picker. Click a drop with a power to feed it, pick level I, II or III, and see how much plasma one item tags and how many projector-minutes that is. Click it again to stop.
+  - The Spawn Grate glows red on the inside, and its lamp flashes when a mob appears.
+  - **JEI and EMI** have a Mob Chamber page for every mob a chamber can spawn on the server: its spawn egg (the tooltip lists the biomes and structures it spawns in), the Spawn Grate, its main drop (the tooltip says what the power does), and the smallest tank it fits. The server sends the list as players join and on `/reload`.
+  - The guide book has an entry, "The Mob Chamber", with the powers on three pages; the Plasma Tank entry describes how the pools keep plasma apart.
+  - What the chamber's mobs drop goes into the tank's loot store, 27 slots, instead of the floor; when the store is full, the rest is lost. A wither skeleton's bones come out as Wither Bones.
+  - A hopper or pipe on a Tank Port takes the loot out. Nothing can be put in through a port.
+  - Each kill turns 10 mB of plain plasma into its drops' powers, at level I.
+  - A chamber kill drops what a player's kill would (blaze rods, spider eyes), with no XP and no looting.
+  - **Feeding a power:** pick a drop with a power and a level; the chamber takes those items from its loot store and turns plain plasma into the power. One common item (a bone, rotten flesh, string) tags 24,000 mB at level I, a minute of a Projector (a stack, about an hour); level II takes twice the items for the same plasma, level III four times. Rare drops (ender pearl, blaze rod, magma cream, ghast tear) tag five times as much; a spider eye a twentieth. An item is used only when the plain plasma covers all of it. The picker is on the CHAMBER tab.
+  - New config key `mob_chamber.feedItemsPerSecond` (64).
+  - Breaking the tank spills the loot store where the block broke.
+  - New config keys under `mob_chamber`: `timerSeconds`, `timerStepSeconds`, `timerMinSeconds`, `floorPerMob`, `mobsPerChamber`, `mobsPerServer`, `startFraction`, `burnPerSecond`.
+
+### Changed
+- **Lava on the Tetrium Crucible and the Combination Forge.** A lava bucket goes further poured into the machine's tank than burnt in its fuel slot:
+  - Tetrium Crucible: 40 mB of tank lava per ore, so a poured bucket lasts 25 ores; a bucket in the fuel slot burns 3,000 ticks, 10 ores.
+  - Combination Forge: 80 mB of tank lava per job, so a poured bucket lasts 12 jobs; a bucket in the fuel slot burns 3,000 ticks, 5 jobs.
+  - Other fuels burn as in a furnace.
+  - New config keys `tetrium_crucible.lavaBucketTicks` and `combination_forge.lavaBucketTicks` (both 3000).
+  - A server config still on the old tank rates (`lavaPerOre` 100, `lavaPerJob` 200) moves to 40 and 80 once, on load; other values are kept.
+  - The guide's crucible page and the JEI/EMI notes give the new figures.
+- **No mobs spawn naturally inside a Plasma Tank.** The inside of a formed tank was a place mobs could spawn. A Mob Chamber spawns its own.
+- **A tank's screen answers the player who opened it.** Its refresh and the CHAMBER tab's settings are taken only from a player who opened it by right-clicking the tank (so land protection decides who may), while they stay near it.
+- **A broken Plasma Tank remembers its powers.** Break a block and put it back, or rebuild over the old box, and every pool comes back with its powers and levels. Before, the plasma came back with no powers.
+
+### Fixed
+- Power levels on the tank screen, the Accelerator screen and in Jade read one too high (Overclock II showed as III), and any level above V showed as V.
+- A big tank's screen stopped refreshing when you stood more than 8 blocks from its corner block; it refreshes anywhere within 8 blocks of the tank.
+- A Projector fed from a Plasma Tank did not know its owner: the tank passed on no team, so the Projector's Ward and Alarm treated the owner as an intruder and anyone could change what it received. A tank now remembers who fed it (the totems' owners, teams, friends with access and allies) while that plasma lasts, keeps it through a break and rebuild, and passes it on with what its ports and a Tank Extractor send. The first to feed it sets that team; later feeds change it only when they come from that team or players it trusts.
+- A Projector Base remembers the team of the plasma in it through a restart, and a Projector keeps the team it knows when a feed brings none, so the owners are never treated as intruders while the base runs on what it holds.
+- A Shatter Totem given Mob Chamber powers in its NBT never gives or shows them.
+
 ## [1.16.2] - 2026-11-10
 
 Network protocol 12, as 1.16.0 and 1.16.1: servers and clients of the three can mix. Players need the 1.16.2 client for these changes (they are in client code).

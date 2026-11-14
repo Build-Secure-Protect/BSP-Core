@@ -70,8 +70,8 @@ public record UpgradeRequestPacket(InteractionHand hand, int buffOrdinal) {
                     });
         } else {
             TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(ordinal);
-            if (buff == null || buff.placedOnly) {
-                return; // Base upgrades are bought at the placed totem
+            if (buff == null || buff.placedOnly || !buff.onTotem()) {
+                return; // Base upgrades are bought at the placed totem; Mob Chamber powers are never on a totem
             }
             int level = TotemUpgrades.getLevel(totem, buff);
             TotemUpgrades.Price price = TotemUpgrades.price(buff, level);

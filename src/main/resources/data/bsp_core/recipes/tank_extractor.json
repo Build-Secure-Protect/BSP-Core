@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " G ",
+    "BCB",
+    " P "
+  ],
+  "key": {
+    "G": {
+      "item": "bsp_core:tetrium_glass"
+    },
+    "B": {
+      "item": "minecraft:copper_ingot"
+    },
+    "C": {
+      "item": "bsp_core:tank_casing"
+    },
+    "P": {
+      "item": "bsp_core:tetrium_plate"
+    }
+  },
+  "result": {
+    "item": "bsp_core:tank_extractor"
+  }
+}

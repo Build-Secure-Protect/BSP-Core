@@ -3339,3 +3339,227 @@ The defaults are Siege on 0, Recall accept and decline on Home and End, team inv
 - [ ] A team invite card reads "INSERT accept · DELETE decline · …" and fits the card; Insert and Delete answer it.
 - [ ] Bind the kit browser and the aura key to free keys: each opens the kit browser, or shows and hides totem auras.
 - [ ] A game with the old saved controls (six X-ray lines in `options.txt`): it starts, and X-ray stays on X. After leaving Controls, `options.txt` holds one line per BSP key.
+
+## Lava bucket burnt or poured (2026-11-11, 1.17.0)
+
+GameTests (batch `lava_tank`): `a_poured_bucket_goes_further_than_a_burnt_one`, `crucible_fuel_slot_burns_a_lava_bucket_for_its_configured_time`, `forge_fuel_slot_burns_a_lava_bucket_for_its_configured_time`; the shipped-defaults checks in `lava_tank_takes_lava_from_any_side_and_cannot_be_drained` and `forge_runs_on_lava_with_no_fuel` read 40 and 80. Batch `lava_rates`: `old_tank_lava_rates_move_once`.
+
+In game, on a fresh world or a server config with no edits:
+
+- [ ] `config/bsp_core-common.toml` (or the server's copy): `tetrium_crucible.lavaPerOre = 40`, `lavaBucketTicks = 3000`, `lavaRatesMoved = true`; `combination_forge.lavaPerJob = 80`, `lavaBucketTicks = 3000`.
+- [ ] A config that still has `lavaPerOre = 100` and `lavaPerJob = 200` from an older version: after one start they read 40 and 80, and the log says the old tank lava rates were moved. Set 100 again and restart: it stays 100.
+- [ ] Tetrium Crucible with only a lava bucket in the fuel slot and a stack of Tetrium Ore: 10 ores smelt, the empty bucket stays in the slot, the HEAT gauge empties.
+- [ ] The same crucible with the bucket poured in (right-click with it) and no fuel: 25 ores smelt, the tank gauge falls 40 mB an ore.
+- [ ] Combination Forge on a lava bucket in the fuel slot: 5 ingots from nuggets. Poured into its tank: 12 ingots, 80 mB each.
+- [ ] Coal still burns 1,600 ticks in either fuel slot, as in a furnace: about 5 crucible ores.
+- [ ] JEI or EMI on the crucible reads "Fuel or 40 mB lava"; on the forge "Fuel, 80 mB lava, or RF".
+- [ ] Guide, Tetrium page, crucible recipe: "A lava bucket poured in lasts 25 ores; burnt as fuel, 10." The page fits without shrinking its text.
+
+## Mob powers as data (2026-11-11, 1.17.0)
+
+GameTests (batch `chamber`): `mob_powers_come_after_every_totem_power`, `no_totem_can_hold_a_mob_power`, `a_mob_power_rides_plasma_and_an_old_save_still_loads`, `the_drop_table_names_each_drop_its_power`, `a_drop_line_must_name_a_mob_power_and_a_worth`; `every_upgrade_on_the_tree_can_be_clicked_and_has_its_own_label` now checks the totem's powers only.
+
+In game:
+
+- [ ] A 1.16.2 client cannot join a server of this version (protocol 13), and the reverse.
+- [ ] A world with a filled Plasma Tank, a charged Plasma Battery and a running Projector from 1.16.2 loads with the same plasma and powers.
+- [ ] The totem's upgrade tree looks as before: no new nodes, every node clickable, no new orbs round a placed totem.
+- [ ] `/bsp buff growth 2` holding a totem says there is no power called growth; the suggestions list only the totem's powers.
+- [ ] The config file has a `mob_chamber` section with `dropPowers` (17 lines) and `mbPerWorth = 24000`. A bad line (for example `minecraft:bone=damage,1`) is refused by the config check on load (note what Forge does with the list: drops the line or puts the default back).
+- [ ] The Wither Bone is in the BSP creative tab: a black bone with grey knuckles, named "Wither Bone".
+
+## Plasma pools in a tank (2026-11-11, 1.17.0)
+
+GameTests (batch `chamber`, class `TankPoolGameTests`): `plasma_sorts_into_pools_as_it_arrives`, `draining_one_pool_leaves_the_others`, `a_port_drains_plain_and_totem_in_proportion`, `an_old_tank_loads_with_its_powers_in_the_totem_pool`, `a_broken_tank_remembers_every_pool`, `a_smaller_tank_loses_plain_plasma_first`, `an_old_dormant_tank_comes_back_as_plain_plasma`. The older `tank_passes_on_the_powers_its_plasma_carries_until_it_is_used_up` still passes unchanged.
+
+In game:
+
+- [ ] A tank filled by a totem with powers in 1.16.2 opens in this version with the same amount, and its screen still lists the powers. Its ports still pass the powers on to a Projector.
+- [ ] The fill bar: plain plasma is blue (#4CB2FA), totem plasma teal (#19D3B0). A tank fed partly from a totem and partly from a plain source shows two bands side by side, widths in proportion.
+- [ ] Break one glass block of a tank holding totem-powered plasma and put it back: the plasma and its powers come back (screen and Jade).
+- [ ] Rebuild a tank smaller over the old box: what does not fit is lost from plain plasma first.
+- [ ] Jade on a tank lists the powers as before.
+
+## Spawn Grate, and no natural spawns in tanks (2026-11-11, 1.17.0)
+
+GameTests (batch `tank_spawn`): `no_mob_spawns_naturally_inside_a_formed_tank`, `a_block_put_inside_still_counts_as_inside`, `an_unformed_box_is_left_to_the_game`, `a_spawn_grate_makes_the_tank_a_chamber`, `a_spawn_grate_goes_on_a_face_not_an_edge`.
+
+In game:
+
+- [ ] Build a 5-wide tank in the dark (or at night, away from light) and leave it for a few minutes: no mob appears inside. Before this version zombies and skeletons could.
+- [ ] The Spawn Grate in the creative tab and JEI: crafted from a redstone lamp (top), iron bars either side of a Tank Casing, a Tetrium Plate below.
+- [ ] Its look on every face: dark frame round a recess with five light bars, a skull plate with two dark eyes and a red lamp. Mined with an iron pickaxe or better, drops itself.
+- [ ] Put a grate on a face of a tank in place of a glass block: the tank forms. On an edge it does not.
+- [ ] Jade and the tank screen behave as for any tank (the chamber tab comes later).
+
+## Mob Chamber spawning (2026-11-11, 1.17.0)
+
+GameTests (batch `chamber_spawn`): `the_timer_shrinks_and_the_cap_grows_with_size`, `a_chamber_spawns_from_the_start_mark_with_no_ai`, `the_switch_picks_monsters_or_the_rest`, `only_mobs_that_fit_spawn`, `the_plasma_burns_a_mob_in_about_five_seconds`, `a_mob_put_inside_is_claimed_and_a_broken_tank_wakes_it`, `a_chamber_enderman_does_not_teleport_out`, `a_plain_tank_does_not_spawn`.
+
+In game (the chamber screen and the loot come later; watch through the glass):
+
+- [ ] A 6-wide chamber in the plains, 15% full or more: a mob appears about every 26 seconds, stands still, and dies about 5 seconds later. Below 15% nothing appears.
+- [ ] No more than four alive at once in a 6-wide chamber; one at a time in a 4-wide one.
+- [ ] Endermen appear only when the inside is 3 blocks tall or more, and do not teleport out when burned.
+- [ ] Zombies and skeletons burn in daylight through the glass as well; that is the sun, not the plasma.
+- [ ] Break one glass block while a mob stands inside: it starts to move, and later despawns like any mob.
+- [ ] Peaceful: no monsters spawn in a chamber; animals still do in ALL mode.
+- [ ] In a nether fortress, a chamber spawns blazes and wither skeletons (the structure's list).
+- [ ] Death messages read "... burned up in plasma" (seen with a named mob, or in the log).
+- [ ] The chamber's mobs give no experience.
+
+## Mob Chamber loot store (2026-11-11, 1.17.0)
+
+GameTests (batch `chamber_loot`): `a_kills_drops_go_into_the_store_and_tag_ten_mb`, `a_wither_skeletons_bones_are_wither_bones`, `a_kill_tag_keeps_a_pools_level_and_needs_plain_plasma`, `others_drops_and_a_full_store`, `a_hopper_under_a_port_empties_the_store`, `a_broken_tank_spills_its_loot`, `a_chicken_burned_in_a_chamber_leaves_its_meat_in_the_store`.
+
+In game:
+
+- [ ] A chamber running at night: no items on its floor; a hopper under a Tank Port fills with bones, rotten flesh, string and gunpowder.
+- [ ] A hopper above a Tank Port does not push into it.
+- [ ] A pipe from another mod (Mekanism logistical transporter, Pipez item pipe) on a Tank Port pulls the loot.
+- [ ] In a nether fortress chamber, wither skeletons leave Wither Bones and coal, not bones.
+- [ ] Jade on the tank lists Undead Ward, Growth and the like at level I after a few kills, each a few tens of mB (10 mB a kill).
+- [ ] Break a glass block of a chamber with loot in it: the loot falls out there.
+
+## Feeding a power (2026-11-11, 1.17.0)
+
+GameTests (batch `chamber_feed`): `an_item_tags_a_projector_minute_at_level_one_less_at_two_and_three`, `rare_drops_tag_more_and_spider_eyes_far_less`, `feeding_waits_for_plasma_and_stops_when_the_items_run_out`, `the_tab_picks_only_drops_with_a_power`, `a_chamber_feeds_on_its_own_each_second`. Pools by level: `mob_levels_are_saved_and_merged_apart` (batch `chamber`), and `plasma_sorts_into_pools_as_it_arrives` now checks that levels stay apart.
+
+In game: see the CHAMBER tab section below.
+
+## Tank Extractor (2026-11-11, 1.17.0)
+
+GameTests (batch `tank_extractor`): `each_pool_leaves_with_its_own_power`, `the_buttons_step_through_the_pools`, `a_projector_base_by_the_extractor_gets_growth_and_nothing_else`, `a_mob_power_crosses_to_the_nether_through_an_accelerator`.
+
+In game:
+
+- [ ] Place a Tank Extractor against a Tank Port, front facing you: the ◀ and ▶ buttons sit on the ledge under a POOL plate, the drum lies between two end plates with two gold bands.
+- [ ] Click ▶: the action bar reads "Sending: Totem powers (... mB)", then each mob power in turn; ◀ steps back. Not against a port: "Set it against a Tank Port".
+- [ ] The sight glass (front and top) glows in the pool's colour: blue plain, teal totem, green Growth, and so on. The item in the inventory shows blue.
+- [ ] Cables from the extractor to a Projector Base: the base's plasma carries the chosen power (Jade). The tank's other pools stay.
+- [ ] Through an Accelerator to another world: a Decelerator there receives the mob power (Jade on the core).
+- [ ] The extractor does not push the plasma back into its own tank's ports; another tank's port receives it into that tank's matching pool.
+- [ ] Recipe: Tetrium Glass on top, copper ingots either side of a Tank Casing, a Tetrium Plate below. Iron pickaxe, drops itself.
+
+## Mob powers at a Projector: team and area (2026-11-12, 1.17.0)
+
+GameTests (batch `mob_powers`): `mob_powers_arrive_without_a_channel`, `team_powers_reach_the_team_in_reach_only`, `growth_ticks_crops_and_scales_with_the_world`; batches `mob_powers_keep`, `mob_powers_undead`, `mob_powers_lantern`: `keep_holds_items_dropped_in_reach`, `undead_ward_stops_zombies_and_skeletons`, `lantern_stops_every_monster_but_not_animals`.
+
+In game (a Tank Extractor sending a mob pool to a Projector Base and Projector):
+
+- [ ] The Projector still offers its totem powers on two channels; the mob powers apply on top without being chosen.
+- [ ] Haste: the owner mines faster within 16 blocks at level I; a friend with Ward access too; a stranger not.
+- [ ] Fire Ward: the owner stands in lava without harm within reach. Tide: breathes under water.
+- [ ] Mending: a damaged pickaxe in the owner's hand loses its damage bar slowly while in reach.
+- [ ] Growth: a wheat field round the Projector grows visibly faster than one outside its reach.
+- [ ] Keep: an item thrown down in reach is still there after 6 minutes; one outside is gone at 5.
+- [ ] Undead Ward: at night no zombies or skeletons spawn in reach, creepers still do. Lantern: no monsters at all; cows and sheep still spawn.
+- [ ] A Mob Chamber inside Lantern's reach still spawns its own mobs.
+
+## Mob powers at a Projector: outsiders (2026-11-12, 1.17.0)
+
+GameTest (batch `mob_powers_outsiders`): `outsider_powers_spare_the_team_allies_and_protected_players`.
+
+In game, a Projector carrying Wither, Snare and Scorch:
+
+- [ ] A stranger walking into reach withers, slows, and catches fire for a second every second; the fire stops a second after they leave.
+- [ ] The owner, a teammate, a player with Ward access and an ally with the Ward perk feel nothing.
+- [ ] With new-player protection on (admin panel, RADIATION tab), a protected newcomer feels nothing; once past it, they do.
+- [ ] A player in creative or spectator feels nothing.
+- [ ] Level I reaches 16 blocks, II 24: a stranger at 20 blocks feels a level II power but not a level I one.
+
+## Warp Ward (2026-11-12, 1.17.0)
+
+GameTest (batch `mob_powers_warp`): `warp_ward_holds_outsiders_in_and_keeps_them_out`.
+
+In game, a Projector carrying Warp Ward I (16 blocks):
+
+- [ ] A stranger in reach throws a pearl out: it lands, they stay, "A Warp Ward holds you here". Chorus fruit the same.
+- [ ] A stranger outside throws a pearl in: they stay outside, "A Warp Ward keeps you out".
+- [ ] The owner, a teammate, a Ward friend and an ally with the Ward perk pearl in and out freely; so does a player in creative.
+- [ ] Pearls outside the reach work as usual.
+- [ ] With BSP-Teleport built against this version (request WW-1), /home into the reach is refused for a stranger.
+
+## Wireframe (2026-11-12, 1.17.0)
+
+GameTest (batch `mob_powers_wireframe`): `wireframe_shows_outsiders_to_the_team_in_reach_after_shroud` (who is sent to whom). The drawing is client-side and has no GameTest. Look A of `tools/preview/wireframe_concepts.html`, the owner's pick.
+
+In game, two players, a Projector carrying Wireframe I (16 blocks), the owner inside its reach:
+
+- [ ] A stranger walking behind a wall in reach shows as a pink wire figure through the wall: head, body, two arms, two legs.
+- [ ] The figure faces where the stranger's body faces, the head turns and tilts with their look, arms and legs swing as they walk, and it shrinks when they crouch.
+- [ ] The figure goes when the stranger leaves reach (within about two seconds), and when the owner leaves reach.
+- [ ] A teammate or Ward friend in reach shows no figure; the stranger sees no figure of the owner.
+- [ ] A raider with a totem carrying Shroud in the offhand shows only after Shroud's seconds; stepping out and straight back in does not hide them again; after a minute away, stepping back in hides them again for that long.
+- [ ] Lines stay thin and readable in daylight, at night, and against water and glass.
+
+## The CHAMBER tab and the Spawn Grate's light (2026-11-12, 1.17.0)
+
+GameTest (batch `chamber_spawn`): `the_chamber_tab_gets_what_it_shows` (the view's data, each mob's drop and power, the packet read back whole, the spawn time sent for the lamp). The screen and the grate's light are client-side, with no GameTest.
+
+In game, a 6-wide chamber in the plains with a Spawn Grate:
+
+- [ ] Right-click the tank: TANK and CHAMBER tabs at the top right; a plain tank shows no tabs.
+- [ ] CHAMBER: the fill bar across the top with the pool bands and a gold notch at 15% labelled MOBS SPAWN; the percent and mB at the right.
+- [ ] Left: "SPAWNS HERE · PLAINS", the ALL / HOSTILE / PASSIVE switch (click: the list and the tank's spawns follow), the status (below the mark / next in N s · alive of max / nothing can spawn / the server's limit), and up to eight mobs with a spawn egg, the name, the chance and the drop's power or "loot only".
+- [ ] Right: the 27 loot slots with counts and tooltips; drops with a power can be clicked and get a teal frame; a second click stops feeding.
+- [ ] Under the loot: FEED, the power's name in its colour, I / II / III; "N bones in the store", "24,000 mB of Growth I an item", "about 1.0 projector-minutes an item"; with nothing picked, the hint to click a drop.
+- [ ] Feeding happens: the loot count falls and the fill bar's Growth band grows while plain plasma lasts.
+- [ ] "Mobs up to 3 blocks tall fit" for a 5-tall tank.
+- [ ] Nothing spills past the panel at the default GUI scale and at the largest that fits; the text is the tank screen's small type.
+- [ ] The Spawn Grate glows soft red on its inside face (seen through the tank glass), and when a mob appears the glow brightens and the lamp under the skull on the outside flashes red for a second.
+
+## Mob Chamber in the guide book and the recipe viewers (2026-11-12, 1.17.0)
+
+GameTest (batch `chamber`): `the_recipe_viewers_get_a_page_per_mob` (the roster: biomes, structures, smallest tank, drop and power; the packet read back whole; a page per mob built from it).
+
+In game:
+
+- [ ] Guide book, The Shatter Totem: "The Mob Chamber" after Chunk Loading, eleven pages with the Spawn Grate and Tank Extractor recipes; every page fits without its text shrinking.
+- [ ] The Plasma Tank entry's "Powers in the plasma" and "Breaking and rebuilding" pages read as the tank works (pools kept apart; powers kept on a break).
+- [ ] JEI: a Mob Chamber category with the Spawn Grate as its catalyst. Zombie: egg, grate, rotten flesh; "Tank 3x4x3 or bigger", "Hostile, N places", "Gives Undead Ward". The egg's tooltip lists plains and other biomes; the rotten flesh's tooltip says what Undead Ward does.
+- [ ] Look up a bone in JEI: the skeleton's chamber page is among its sources. Look up the Spawn Grate: every mob's page.
+- [ ] Blaze and wither skeleton pages say "Nether Fortress (structure)".
+- [ ] EMI shows the same pages. On a fresh join to a server both viewers have them (the list arrives before they load); after `/reload` the pages are rebuilt.
+- [ ] A modded mob from a biome modifier (Tinkers' sky slime) has a page.
+
+## Mob-power plasma kept apart by amount (2026-11-12, 1.17.0)
+
+GameTests: `a_store_keeps_mob_plasma_apart_by_amount`, `a_tank_port_pools_each_kind_by_amount` (batch `mob_powers`), `a_trickle_gives_its_power_only_while_its_own_plasma_lasts` (batch `mob_powers_base`); the extractor and Nether tests read the stores by amount.
+
+In game:
+
+- [ ] A Projector fed by an interface (a totem) and a Tank Extractor sending Haste at once: Haste shows only while the extractor's Haste lasts at 400 mB a second; with the extractor empty, the projector stays on (the totem) and Haste stops.
+- [ ] Through an Accelerator with plain plasma and a little Haste mixed: the far tank's Haste pool grows by the Haste sent, not by the whole flow.
+- [ ] Jade on a Decelerator core and a Projector Base: the totem powers listed as before.
+
+## A tank passes on who fed it (2026-11-13, 1.17.0)
+
+GameTests (batch `chamber`): `a_tank_remembers_who_fed_it_while_that_plasma_lasts`, `a_projector_base_fed_from_a_tank_knows_the_team`.
+
+In game:
+
+- [ ] Totem with Ward feeds a tank; the tank feeds a Projector Base and Projector choosing Ward. The owner and a teammate stand in reach unharmed; a stranger is weakened. Before this, the owner was weakened too.
+- [ ] The owner can change what the Projector receives; a stranger cannot.
+- [ ] Break a glass block of the tank and put it back: the same holds.
+- [ ] Let the tank run dry, then fill it from another player's totem: that player's team is the team.
+
+
+## Audit fixes before 1.17.0 (2026-11-13, 1.17.0)
+
+- [ ] Wither I from a Projector hurts an outsider about half a heart every two seconds, not only blackens the hearts.
+- [ ] Scorch hurts a raider wearing Fire Protection armour once a second.
+- [ ] A Projector Base fed by an interface (with Fortify) and a Tank Extractor (with Haste) gives both, and keeps giving Haste while the interface keeps the base full.
+- [ ] Haste III trickling into a base beside plenty of Haste I gives Haste I.
+- [ ] Switch the Tank Extractor from a mob pool to Plain: the base's leftover mob plasma runs the Projector as plain plasma instead of blocking it.
+- [ ] Restart the server with a Projector running off its base: its owner is still team (no Wither, Ward leaves them alone) and others cannot change what it receives.
+- [ ] Another player cables their own interface into your tank's Input port: your tank-fed Projectors still treat them as an outsider.
+- [ ] Drain a chamber with mobs in it to empty: the mobs keep burning and their drops still go into the loot store.
+- [ ] A blaze chamber (Nether fortress) fills its loot store with blaze rods; a spider chamber with spider eyes. No XP orbs appear.
+- [ ] A wither skeleton chamber's CHAMBER tab row says Wither Bone / Wither after every restart.
+- [ ] A big slime in a full chamber splits: the extra small slimes vanish instead of crowding the tank.
+- [ ] A name-tagged mob trapped while a tank forms keeps its name and stays persistent when the tank is broken.
+- [ ] With `/gamerule doTileDrops false`, breaking a chamber still spills its loot store.
+- [ ] More than 16 mobs can spawn: the "+N more" line counts every one of them.
+- [ ] Open the CHAMBER tab of a chamber feeding at level III: the III button is lit from the first frame.
+- [ ] A raider with Shroud steps out of a Wireframe reach and straight back in: they show as soon as their first Shroud time ran out.

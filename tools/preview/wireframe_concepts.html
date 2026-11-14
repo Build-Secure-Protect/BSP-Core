@@ -1,0 +1,111 @@
+<title>Wireframe Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages. One WebGL context draws every 3D view; the tank screen is drawn on canvas at GUI pixel size (380 x 214), doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --bad:#c23a2c; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --bad:#c23a2c; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1020px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:34px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.gui{ width:100%; max-width:760px; aspect-ratio:380/214; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; cursor:pointer; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; }
+.ctl input[type=range]{ width:200px; max-width:100%; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible, input:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:620px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.sprites{ display:flex; flex-wrap:wrap; gap:14px; } .sprites .card{ flex:1 1 220px; align-items:flex-start; }
+.sprites canvas{ width:128px; height:128px; image-rendering:pixelated; background:#8b8b8b; border:2px solid #373737; }
+.swatch{ display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:4px; }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="pill">BSP-Core · mock-ups for the owner's pick</span>
+    <h1>Wireframe: three looks</h1>
+    <p class="lede">Wireframe is the Mob Chamber power made from many spider eyes. While you stand in a Projector's reach, every outsider in that reach is drawn for you through walls. A raider with Shroud on the totem in their offhand stays hidden for Shroud's seconds after stepping in. Each view below shows a raider walking behind a stone wall, with the Projector and you (the owner) on the near side. The pink is the Wireframe pool's colour. Drag a view to turn it.</p>
+  </header>
+
+  <section>
+    <h2>How the raider is drawn</h2>
+    <div class="grid3" id="looks"></div>
+  </section>
+
+  <section>
+    <h2>Your pick</h2>
+    <div class="card">
+      <p><b>1. The look.</b> (a) Every body part outlined in lines, the raider's limbs swinging as they walk: the wireframe you described <b>(default)</b>. (b) Only the outline of their hitbox, with their name and distance above it, as Sentinel's markers show intruders. (c) A faint filled shape with bright edges and a pulsing ring at their feet, the easiest to see from far off.</p>
+      <p><b>2. Who sees it.</b> (a) Everyone on the projector's team who stands in reach: the owner, their team, Ward friends and allies with the Ward perk <b>(default)</b>. (b) Only the owner and players with Upgrades access.</p>
+      <p>Built already, whatever the look: the server works out who sees whom once a second (GameTested), and Shroud's delay restarts if the raider steps out and back in.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const PINK=0xff5a7a, STONE=0x7d7d80, STONE2=0x6a6a6e, HULL=0x2a2f3a, TRIM=0x8a909c, ION=0x4cb2fa, SKIN=0xc89878, SHIRT=0x3a6ea5, PANTS=0x2c2c58;
+  function mat(c,glow,op){ const m=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ m.transparent=true; m.opacity=op; m.depthWrite=op>.6; } return m; }
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat(c,glow,op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  // lines drawn through everything, as the game would draw them with no depth test
+  function edges(g,f,t,c,op){ const geo=new THREE.EdgesGeometry(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2])); const m=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:c,depthTest:false,transparent:true,opacity:op===undefined?1:op})); m.renderOrder=10; m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ghost(g,f,t,c,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:op,depthTest:false,depthWrite:false})); m.renderOrder=9; m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function tag(g,text,p,w,h){ const c=document.createElement('canvas'); c.width=w*24; c.height=h*24; const x=c.getContext('2d'); x.fillStyle='rgba(16,10,14,.72)'; x.fillRect(0,0,c.width,c.height); x.fillStyle='#ff8aa0'; x.font='bold '+Math.floor(c.height*.55)+'px Silkscreen, monospace'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(text,c.width/2,c.height/2+1);
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true})); s.scale.set(w,h,1); s.position.set(...p); s.renderOrder=11; g.add(s); return s; }
+
+  // a player in game pixels (16 a block): head 8, body 8x12x4, arms and legs 4x12x4; parts hang from their joints so they can swing
+  function person(g,skin,shirt,pants){ const P=new THREE.Group(); g.add(P); const part=(x0,y0,z0,x1,y1,z1,c,pivot)=>{ const j=new THREE.Group(); j.position.set(...pivot); P.add(j); bx(j,[x0-pivot[0],y0-pivot[1],z0-pivot[2]],[x1-pivot[0],y1-pivot[1],z1-pivot[2]],c); return j; };
+    part(-4,24,-4,4,32,4,skin,[0,24,0]); part(-4,12,-2,4,24,2,shirt,[0,12,0]); const la=part(4,12,-2,8,24,2,shirt,[6,22,0]), ra=part(-8,12,-2,-4,24,2,shirt,[-6,22,0]);
+    const ll=part(0,0,-2,4,12,2,pants,[2,12,0]), rl=part(-4,0,-2,0,12,2,pants,[-2,12,0]); return {P,limbs:[la,ra,ll,rl]}; }
+  // the same shape as joints holding drawing parts, for the wire looks
+  function wirePerson(g,draw){ const P=new THREE.Group(); g.add(P); const part=(f,t,pivot)=>{ const j=new THREE.Group(); j.position.set(...pivot); P.add(j); draw(j,[f[0]-pivot[0],f[1]-pivot[1],f[2]-pivot[2]],[t[0]-pivot[0],t[1]-pivot[1],t[2]-pivot[2]]); return j; };
+    part([-4,24,-4],[4,32,4],[0,24,0]); part([-4,12,-2],[4,24,2],[0,12,0]); const la=part([4,12,-2],[8,24,2],[6,22,0]), ra=part([-8,12,-2],[-4,24,2],[-6,22,0]);
+    const ll=part([0,0,-2],[4,12,2],[2,12,0]), rl=part([-4,0,-2],[0,12,2],[-2,12,0]); return {P,limbs:[la,ra,ll,rl]}; }
+  function swing(limbs,t){ const a=Math.sin(t*5)*.6; limbs[0].rotation.x=a; limbs[1].rotation.x=-a; limbs[2].rotation.x=-a; limbs[3].rotation.x=a; }
+
+  // the yard: grass, a stone wall between, the Projector on its base and the owner on the near side
+  function yard(g){ bx(g,[-64,-2,-48],[64,0,64],0x4a7a3a); for(let x=-48;x<48;x+=16) for(let y=0;y<48;y+=16) bx(g,[x,y,-2],[x+16,y+16,14],((x/16+y/16)&1)?STONE:STONE2);
+    bx(g,[24,0,30],[40,10,46],HULL); bx(g,[26,10,32],[38,12,44],TRIM); bx(g,[28,12,34],[36,26,42],HULL); bx(g,[29,26,35],[35,30,41],ION,true);
+    const me=person(g,SKIN,0x2d8a5a,0x3a3a3a); me.P.position.set(14,0,40); me.P.rotation.y=Math.PI; return me; }
+  // the raider behind the wall: the real model, hidden by the wall; the look is drawn on top
+  function raider(g){ const r=person(g,SKIN,SHIRT,PANTS); r.P.position.set(0,0,-30); return r; }
+
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,20); scene.add(d);
+    const v={view,scene,cam,opts,ry:opts.ry,rx:opts.rx,drag:false}; const g=new THREE.Group(); scene.add(g); v.tick=build(g); let lx=0,ly=0;
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);}); view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.1,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; }); view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth,H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; if(v.tick) v.tick(reduce?1.2:t); if(!reduce&&!v.drag) v.ry+=.002; const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); } requestAnimationFrame(loop); })(t0);
+
+  // the raider walks along behind the wall; every look follows the same path
+  function walk(t){ return {x:Math.sin(t*.5)*30, face:Math.cos(t*.5)>0?Math.PI/2:-Math.PI/2}; }
+  const LOOKS=[
+    ['A. Wire Figure','<b>Every body part outlined</b> in thin pink lines, the head, body, arms and legs, swinging as the raider walks. It shows which way they face and what they are doing. Drawn through walls only for you.', g=>{ yard(g); const real=raider(g); const w=wirePerson(g,(j,f,t)=>edges(j,f,t,0xff86a0));
+      return t=>{ const s=walk(t); for(const P of [real.P,w.P]){ P.position.x=s.x; P.rotation.y=s.face; } swing(real.limbs,t); swing(w.limbs,t); }; }],
+    ['B. Hitbox Tag','<b>One outline box</b> the size of the raider (0.6 by 1.8 blocks) with their name and distance above it, like Sentinel\'s markers. The quietest of the three; it does not show where they look.', g=>{ yard(g); const real=raider(g); const box=new THREE.Group(); g.add(box); edges(box,[-5,0,-5],[5,29,5],0xff86a0); const label=tag(g,'Raider 14 m',[0,38,-30],26,5);
+      return t=>{ const s=walk(t); real.P.position.x=s.x; real.P.rotation.y=s.face; swing(real.limbs,t); box.position.set(s.x,0,-30); label.position.x=s.x; }; }],
+    ['C. Ghost Shell','<b>A faint pink filled shape with bright edges</b>, and a ring pulsing at the raider\'s feet. The easiest to spot from far off or in a busy base; also the loudest.', g=>{ yard(g); const real=raider(g); const w=wirePerson(g,(j,f,t)=>{ ghost(j,f,t,PINK,.22); edges(j,f,t,0xffb0c0); });
+      const ring=new THREE.Mesh(new THREE.RingGeometry(7,8.5,32),new THREE.MeshBasicMaterial({color:PINK,transparent:true,depthTest:false,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.renderOrder=9; g.add(ring);
+      return t=>{ const s=walk(t); for(const P of [real.P,w.P]){ P.position.x=s.x; P.rotation.y=s.face; } swing(real.limbs,t); swing(w.limbs,t); ring.position.set(s.x,.3,-30); const k=1+((t*1.2)%1)*.8; ring.scale.set(k,k,1); ring.material.opacity=1-((t*1.2)%1); }; }]];
+  for(const [name,text,build] of LOOKS){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el('looks').appendChild(c); const v=document.createElement('div'); v.className='view'; v.setAttribute('role','img'); v.setAttribute('aria-label',name+': a raider behind a wall, a 3D view you can drag to turn'); c.appendChild(v); makeView(v,build,{dist:165,target:[-4,14,-12],ry:-.55,rx:.42}); const p=document.createElement('p'); p.innerHTML=text; c.appendChild(p); }
+})();
+</script>

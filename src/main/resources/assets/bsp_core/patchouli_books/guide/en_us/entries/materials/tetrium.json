@@ -11,7 +11,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "bsp_core:tetrium_crucible",
-      "text": "The $(item)Tetrium Crucible$() burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag."
+      "text": "The $(item)Tetrium Crucible$() burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag. A lava bucket poured in lasts 25 ores; burnt as fuel, 10."
     },
     {
       "type": "patchouli:crafting",

@@ -29,6 +29,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.MAGNET_CORE.get());
                 ModItems.DECOY_UPGRADES.values().forEach(i -> output.accept(i.get()));
                 ModItems.PROJECTOR_ITEMS.forEach(i -> output.accept(i.get()));
+                output.accept(ModItems.WITHER_BONE.get());
                 output.accept(ModItems.COIN_VAULT.get());
                 output.accept(ModItems.LEAD_LINED_CHEST.get());
                 output.accept(ModItems.RADIATION_SHIELDING_PANEL.get());

@@ -32,7 +32,12 @@ public final class TotemUpgrades {
     private static final int VERSION = 2;
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V"};
 
-    public enum Branch { CARRIED, BASE, RAID }
+    /**
+     * Where a power comes from. {@code MOB} powers are never on a totem: a Plasma Tank Mob Chamber tags plasma with them from its kills'
+     * drops, and a Projector gives them out ({@link com.mrgregles.bsp_core.chamber.MobPowers}). They ride the plasma path by ordinal like
+     * the totem's powers, but are never on the tree, for sale, or orbs on a totem.
+     */
+    public enum Branch { CARRIED, BASE, RAID, MOB }
 
     /** What the next level or tier costs: {@code coins} of one specific coin, and XP levels. */
     public record Price(CoinTier coin, int coins, int xp, int tier) {
@@ -90,7 +95,38 @@ public final class TotemUpgrades {
          * Base, on the Walls path after Alarm: a redstone signal while an outsider is near, one range per totem tier from Tier II
          * (16, 32, 64, 128 by default). Priced like a Raid power. Its rules are in {@link ShatterTotemBlockEntity#tripwireCheck}.
          */
-        TRIPWIRE("tripwire", Branch.BASE, 1, "alarm", 2, false);
+        TRIPWIRE("tripwire", Branch.BASE, 1, "alarm", 2, false),
+        // ---- Mob powers, from a Mob Chamber's kills: never on a totem. Levels I to III. Saves and packets read powers by their place in
+        // this list: a new power of any kind goes at the very end, after these, and nothing here is ever moved or removed.
+        /** Mob, team: crops, saplings and cane in reach grow faster. From bones. */
+        GROWTH("growth", Branch.MOB, 0, null, -1, false),
+        /** Mob, outsiders: Wither in reach. From Wither Bones. */
+        WITHER("wither", Branch.MOB, 0, null, -1, false),
+        /** Mob, outsiders: no pearl or chorus teleport into or out of reach. From ender pearls. */
+        WARP_WARD("warp_ward", Branch.MOB, 0, null, -1, false),
+        /** Mob, area: zombies and skeletons do not spawn naturally in reach. From rotten flesh. */
+        UNDEAD_WARD("undead_ward", Branch.MOB, 0, null, -1, false),
+        /** Mob, team: Haste in reach. From gunpowder. */
+        HASTE("haste", Branch.MOB, 0, null, -1, false),
+        /** Mob, outsiders: move slowly in reach. From string. */
+        SNARE("snare", Branch.MOB, 0, null, -1, false),
+        /** Mob, outsiders: drawn as wireframes for the owner while the owner is in reach. From many spider eyes. */
+        WIREFRAME("wireframe", Branch.MOB, 0, null, -1, false),
+        /** Mob, area: dropped items last 20 minutes. From slime balls. */
+        KEEP("keep", Branch.MOB, 0, null, -1, false),
+        /** Mob, outsiders: set burning every 20 ticks. From blaze rods and coal. */
+        SCORCH("scorch", Branch.MOB, 0, null, -1, false),
+        /** Mob, team: fire and lava do not hurt. From magma cream. */
+        FIRE_WARD("fire_ward", Branch.MOB, 0, null, -1, false),
+        /** Mob, team: held tools slowly mend. From ghast tears. */
+        MENDING("mending", Branch.MOB, 0, null, -1, false),
+        /** Mob, area: no hostile mobs spawn naturally in reach. From glowstone dust. */
+        LANTERN("lantern", Branch.MOB, 0, null, -1, false),
+        /** Mob, team: water breathing in reach. From prismarine. */
+        TIDE("tide", Branch.MOB, 0, null, -1, false);
+
+        /** Levels a mob power has: I, II and III. */
+        public static final int MOB_LEVELS = 3;
 
         public final String key;
         private final Branch branch;
@@ -123,6 +159,11 @@ public final class TotemUpgrades {
             return branch;
         }
 
+        /** A power a totem can hold: on the tree, for sale, an orb. False for the Mob Chamber's powers. */
+        public boolean onTotem() {
+            return branch != Branch.MOB;
+        }
+
         /** The upgrade before this one on its path, or null if it starts the path. */
         @Nullable
         public Buff parent() {
@@ -138,6 +179,9 @@ public final class TotemUpgrades {
 
         public int maxLevel() {
             // the two chunk upgrades are short: three sizes of allowance, two of range
+            if (branch == Branch.MOB) {
+                return MOB_LEVELS;
+            }
             return switch (this) { case ANCHOR -> 3; case SURVEY -> 2; case OUTPUT -> 10; case BOUNCY, CLOAKING, RECALL_BLOCK, THIEF_STEP, SIEGE, HARVEST, SENTINEL, TRIPWIRE -> 4; case EXTRA_HOMES, SWIFT_TRAVEL -> 3; case XRAY -> 5; case RECALL -> 7; default -> single ? 1 : LEVELS_PER_TIER * (MAX_TIER + 1 - tier); };
         }
 
@@ -174,7 +218,7 @@ public final class TotemUpgrades {
                 case SANCTUARY -> BSPConfig.levelValue(BSPConfig.SANCTUARY_RADIUS.get(), level, 0);
                 case HARVEST -> BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_RADIUS, List.<Integer>of()), level, 8);
                 case TRIPWIRE -> BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.TRIPWIRE_RANGES, List.<Integer>of()), level, 16 << Math.min(3, level - 1));
-                default -> 0;
+                default -> branch == Branch.MOB ? BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.MOB_POWER_REACH, List.<Integer>of()), level, 8 + 8 * level) : 0;
             };
         }
 
@@ -185,10 +229,30 @@ public final class TotemUpgrades {
         }
     }
 
+    /** The powers a totem can hold, in {@link Buff} order: every power but the Mob Chamber's. Lists, trees and orbs go by this. */
+    public static final List<Buff> TOTEM_BUFFS = java.util.Arrays.stream(Buff.values()).filter(Buff::onTotem).toList();
+
     private TotemUpgrades() {}
 
     public static String roman(int tier) {
         return ROMAN[Math.max(0, Math.min(MAX_TIER, tier))];
+    }
+
+    /** A power's level (counted from 1) in Roman numerals: 1 is I, 4 is IV, 10 is X. {@link #roman} takes a tier, counted from 0. */
+    public static String levelRoman(int level) {
+        if (level <= 0) {
+            return "0";
+        }
+        int[] v = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+        String[] r = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < v.length; i++) {
+            while (level >= v[i]) {
+                level -= v[i];
+                b.append(r[i]);
+            }
+        }
+        return b.toString();
     }
 
     // ------------------------------------------------------------------ prices and rules
@@ -200,7 +264,7 @@ public final class TotemUpgrades {
     /** Price of taking {@code buff} from {@code level} to the next, or null if it is already maxed. */
     @Nullable
     public static Price price(Buff buff, int level) {
-        if (level >= buff.maxLevel()) {
+        if (!buff.onTotem() || level >= buff.maxLevel()) {
             return null;
         }
         // powers with their own level counts (Recall, X-ray, Output, ...) never price past the top tier's coin
@@ -210,12 +274,12 @@ public final class TotemUpgrades {
         var coins = switch (pricing) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_COINS;
             case BASE -> BSPConfig.BASE_LEVEL_COINS;
-            case RAID -> BSPConfig.RAID_LEVEL_COINS;
+            case RAID, MOB -> BSPConfig.RAID_LEVEL_COINS; // MOB never reaches here
         };
         var xp = switch (pricing) {
             case CARRIED -> BSPConfig.CARRIED_LEVEL_XP;
             case BASE -> BSPConfig.BASE_LEVEL_XP;
-            case RAID -> BSPConfig.RAID_LEVEL_XP;
+            case RAID, MOB -> BSPConfig.RAID_LEVEL_XP;
         };
         int xpLevels = pick(xp, step, 1) * (tier + 1);
         if (CHEAP.contains(buff)) {
@@ -244,7 +308,7 @@ public final class TotemUpgrades {
     /** Whether the upgrade is open on the tree: the totem is at its tier and its parent is far enough along. */
     public static boolean unlocked(Buff buff, ToIntFunction<Buff> levels, int totemTier) {
         Buff parent = buff.parent();
-        return totemTier >= buff.tier && (parent == null || levels.applyAsInt(parent) >= unlockLevel(parent));
+        return buff.onTotem() && totemTier >= buff.tier && (parent == null || levels.applyAsInt(parent) >= unlockLevel(parent));
     }
 
     @Nullable
@@ -274,6 +338,9 @@ public final class TotemUpgrades {
     /** Why {@code player} cannot buy the next level of {@code buff} right now, or null if they can (or it is maxed). {@code purse} says which coins pay. */
     @Nullable
     public static Component whyNot(Buff buff, ToIntFunction<Buff> levels, int totemTier, Player player, com.mrgregles.bsp_core.coin.CoinStamp.Purse purse) {
+        if (!buff.onTotem()) {
+            return Component.translatable("gui.bsp_core.tree.why.mob");
+        }
         if (buff == Buff.HERALD && !com.mrgregles.bsp_core.discord.Herald.available()) {
             return Component.translatable("gui.bsp_core.tree.why.discord");
         }
@@ -359,10 +426,14 @@ public final class TotemUpgrades {
 
     public static int getLevel(ItemStack stack, Buff buff) {
         CompoundTag tag = stack.getTag();
-        return tag == null ? 0 : tag.getCompound(TAG_UPGRADES).getInt(buff.key);
+        // the Mob Chamber's powers are never on a totem, even one given with them in its NBT
+        return tag == null || !buff.onTotem() ? 0 : tag.getCompound(TAG_UPGRADES).getInt(buff.key);
     }
 
     public static void setLevel(ItemStack stack, Buff buff, int level) {
+        if (!buff.onTotem()) {
+            return; // the Mob Chamber's powers are never on a totem
+        }
         CompoundTag root = stack.getOrCreateTag();
         CompoundTag upgrades = root.getCompound(TAG_UPGRADES);
         upgrades.putInt(buff.key, level);

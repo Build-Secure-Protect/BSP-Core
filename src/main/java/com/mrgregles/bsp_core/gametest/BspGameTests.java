@@ -243,10 +243,10 @@ public class BspGameTests {
         h.assertTrue(instance.equals(ledger.currentInstance(id)), "the first sighting sets the instance");
         ledger.seen(id, UUID.randomUUID(), holder, com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now + 1);
         h.assertTrue(instance.equals(ledger.currentInstance(id)), "a stale copy's sighting is ignored");
-        h.assertTrue(ledger.lostHeld(now + 30, 60).isEmpty(), "not lost yet");
+        h.assertTrue(!ledger.lostHeld(now + 30, 60).contains(id), "not lost yet"); // the ledger is shared: other tests' totems may be in it
         h.assertTrue(ledger.lostHeld(now + 100, 60).contains(id), "lost after a minute unseen in the hands");
         ledger.seen(id, instance, null, com.mrgregles.bsp_core.data.TotemLedger.PLACED, null, now + 50);
-        h.assertTrue(ledger.lostHeld(now + 1000, 60).isEmpty(), "a placed totem is never lost");
+        h.assertTrue(!ledger.lostHeld(now + 1000, 60).contains(id), "a placed totem is never lost");
         ledger.seen(id, instance, holder, com.mrgregles.bsp_core.data.TotemLedger.HELD, null, now + 60);
         var fresh = ledger.reissue(id, now + 200);
         h.assertTrue(!fresh.instance().equals(instance) && fresh.instance().equals(ledger.currentInstance(id)), "reissue makes a new current instance");
@@ -2411,7 +2411,11 @@ public class BspGameTests {
         com.mrgregles.bsp_core.shop.Shops.save(server, shop);
         var zone = com.mrgregles.bsp_core.shop.Shops.zone();
         long t0 = java.time.ZonedDateTime.of(2026, 10, 26, 12, 0, 0, 0, zone).toInstant().toEpochMilli(); // Monday noon
-        long week = 7 * 86_400_000L, mondayMidnight = t0 - 12 * 3_600_000L;
+        // whole weeks on the shop's clock: a week is not always 7 x 24 h (the switch from summer time falls in it in some zones)
+        long nextMonday = java.time.ZonedDateTime.of(2026, 11, 2, 0, 0, 0, 0, zone).toInstant().toEpochMilli(),
+                mondayAfter = java.time.ZonedDateTime.of(2026, 11, 9, 0, 0, 0, 0, zone).toInstant().toEpochMilli(),
+                monday3 = java.time.ZonedDateTime.of(2026, 11, 16, 0, 0, 0, 0, zone).toInstant().toEpochMilli(),
+                monday4 = java.time.ZonedDateTime.of(2026, 11, 23, 0, 0, 0, 0, zone).toInstant().toEpochMilli();
         long[] clock = {t0};
         List<net.minecraft.network.chat.Component> said = new ArrayList<>();
         com.mrgregles.bsp_core.shop.Shops.useClock(() -> clock[0]);
@@ -2419,10 +2423,10 @@ public class BspGameTests {
         try {
             var first = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
             h.assertTrue(first.size() == 2 && said.isEmpty(), "the first draw is made and only noted: " + first);
-            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.nextChange(server, shop, clock[0]) == mondayMidnight + week, "the next change is next Monday 00:00");
+            h.assertTrue(com.mrgregles.bsp_core.shop.Shops.nextChange(server, shop, clock[0]) == nextMonday, "the next change is next Monday 00:00");
             clock[0] = t0 + 86_400_000L;
             h.assertTrue(com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]).equals(first), "Tuesday: the same cards");
-            clock[0] = mondayMidnight + week + 60_000L;
+            clock[0] = nextMonday + 60_000L;
             var second = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
             h.assertTrue(second.size() == 2 && second.stream().noneMatch(first::contains) && !second.contains(4), "next Monday: two cards not shown yet this cycle, never the weight-0 one: " + first + " " + second);
             h.assertTrue(said.size() == 1, "one announcement: " + said.size());
@@ -2430,7 +2434,7 @@ public class BspGameTests {
             h.assertTrue(line.startsWith("[Shops] Challenge now buys ") && line.contains(shop.item(second.get(0)).stack.getHoverName().getString()) && line.endsWith("Next change Monday 00:00."), "it names the shop, the cards and the next change: " + line);
             com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
             h.assertTrue(said.size() == 1, "and it is said once");
-            clock[0] = mondayMidnight + 2 * week + 60_000L;
+            clock[0] = mondayAfter + 60_000L;
             var third = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
             java.util.Set<Integer> cycle = new java.util.HashSet<>(first);
             cycle.addAll(second);
@@ -2472,21 +2476,21 @@ public class BspGameTests {
             var store = new MemoryCounts();
             com.mrgregles.bsp_core.shop.Shops.useCountStore(store);
             try {
-                clock[0] = mondayMidnight + 3 * week + 30_000L;
+                clock[0] = monday3 + 30_000L;
                 store.drawLocked(id, row -> {
                     row.shown.clear();
                     row.shown.addAll(List.of(0, 1));
                     row.used.clear();
                     row.used.addAll(List.of(0, 1));
                     row.drawnAt = clock[0];
-                    row.nextAt = mondayMidnight + 4 * week;
+                    row.nextAt = monday4;
                     return row;
                 });
                 clock[0] += 30_000L;
                 int before2 = said.size();
                 var net = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
                 h.assertTrue(net.equals(List.of(0, 1)) && said.size() == before2 + 1, "another server drew first: this one takes its draw and tells its own players: " + net);
-                clock[0] = mondayMidnight + 4 * week + 60_000L;
+                clock[0] = monday4 + 60_000L;
                 var next = com.mrgregles.bsp_core.shop.Shops.visible(server, shop, clock[0]);
                 h.assertTrue(next.stream().noneMatch(List.of(0, 1)::contains) && store.draws.get(id).used.containsAll(next), "the network's cycle goes on from its own record: " + next + " " + store.draws.get(id).used);
                 List<Integer> cycle0 = new ArrayList<>(store.draws.get(id).used), swapped = new ArrayList<>();
@@ -6750,11 +6754,11 @@ public class BspGameTests {
     @GameTest(template = EMPTY)
     public void every_upgrade_on_the_tree_can_be_clicked_and_has_its_own_label(GameTestHelper h) {
         java.util.Set<String> labels = new java.util.HashSet<>();
-        for (TotemUpgrades.Buff b : TotemUpgrades.Buff.values()) {
+        for (TotemUpgrades.Buff b : TotemUpgrades.TOTEM_BUFFS) {
             int[] p = com.mrgregles.bsp_core.client.TreeLayout.at(b);
             h.assertTrue(com.mrgregles.bsp_core.client.TreeLayout.nodeAt(p[0], p[1]) == b, "clicking " + b + "'s node picks it, not a node drawn on the same spot");
             h.assertTrue(labels.add(com.mrgregles.bsp_core.client.TreeLayout.abbr(b)), "two nodes read " + com.mrgregles.bsp_core.client.TreeLayout.abbr(b));
-            for (TotemUpgrades.Buff o : TotemUpgrades.Buff.values()) {
+            for (TotemUpgrades.Buff o : TotemUpgrades.TOTEM_BUFFS) {
                 int[] q = com.mrgregles.bsp_core.client.TreeLayout.at(o);
                 h.assertTrue(o == b || Math.abs(p[0] - q[0]) >= 9 || Math.abs(p[1] - q[1]) >= 9, b + " and " + o + " sit almost on one spot");
             }

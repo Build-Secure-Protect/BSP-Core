@@ -17,7 +17,12 @@ import java.util.List;
  * @param outputs   one stack per output slot
  * @param outputTips an extra tooltip line per output (same order), entries may be null
  * @param lines     text under the slots: time, energy, notes
+ * @param inputTips extra tooltip lines per input slot (same order), may be shorter than the inputs
  */
 public record Process(List<List<ItemStack>> inputs, List<List<ItemStack>> catalysts, @Nullable Fluid fluid, int fluidMb,
-                      List<ItemStack> outputs, List<Component> outputTips, List<Component> lines) {
+                      List<ItemStack> outputs, List<Component> outputTips, List<Component> lines, List<List<Component>> inputTips) {
+    public Process(List<List<ItemStack>> inputs, List<List<ItemStack>> catalysts, @Nullable Fluid fluid, int fluidMb,
+                   List<ItemStack> outputs, List<Component> outputTips, List<Component> lines) {
+        this(inputs, catalysts, fluid, fluidMb, outputs, outputTips, lines, List.of());
+    }
 }

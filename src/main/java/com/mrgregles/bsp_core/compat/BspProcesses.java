@@ -24,7 +24,7 @@ public final class BspProcesses {
     private BspProcesses() {}
 
     /** The machine names, in the order the viewers list them; each is a recipe category. */
-    public static final List<String> MACHINES = List.of("tetrium_crucible", "combination_forge", "illyrium_crucible", "illyrium_refinery", "magnetic_centrifuge", "coin_pressing", "hand_crushing");
+    public static final List<String> MACHINES = List.of("tetrium_crucible", "combination_forge", "illyrium_crucible", "illyrium_refinery", "magnetic_centrifuge", "coin_pressing", "hand_crushing", "mob_chamber");
 
     /** The item that stands for a machine category (its icon and workstation). */
     public static ItemStack icon(String machine) {
@@ -33,6 +33,7 @@ public final class BspProcesses {
             case "combination_forge" -> new ItemStack(ModItems.COMBINATION_FORGE.get());
             case "coin_pressing" -> new ItemStack(ModItems.COIN_FACTORY.get());
             case "hand_crushing" -> new ItemStack(Items.IRON_PICKAXE);
+            case "mob_chamber" -> new ItemStack(ModBlocksItem.spawnGrate());
             default -> stack(machine);
         };
     }
@@ -41,6 +42,7 @@ public final class BspProcesses {
     public static String titleKey(String machine) {
         return switch (machine) {
             case "tetrium_crucible", "combination_forge" -> "block.bsp_core." + machine;
+            case "mob_chamber" -> "jei.bsp_core.mob_chamber";
             default -> "jei.bsp_core." + machine;
         };
     }
@@ -85,8 +87,8 @@ public final class BspProcesses {
     /** Every machine's jobs, keyed by the machine name used for the recipe category ids. */
     public static Map<String, List<Process>> all() {
         Map<String, List<Process>> out = new LinkedHashMap<>();
-        Component fuel = Component.translatable("jei.bsp_core.fuel_or_lava", cfg(BSPConfig.TCRUC_LAVA_PER_ORE, 100)),
-                fuelOrRf = Component.translatable("jei.bsp_core.fuel_lava_or_rf", cfg(BSPConfig.FORGE_LAVA_PER_JOB, 200));
+        Component fuel = Component.translatable("jei.bsp_core.fuel_or_lava", cfg(BSPConfig.TCRUC_LAVA_PER_ORE, 40)),
+                fuelOrRf = Component.translatable("jei.bsp_core.fuel_lava_or_rf", cfg(BSPConfig.FORGE_LAVA_PER_JOB, 80));
         Component lavaNote = Component.translatable("jei.bsp_core.lava_note");
 
         out.put("tetrium_crucible", List.of(new Process(List.of(ores("tetrium")), List.of(), null, 0,
@@ -157,6 +159,76 @@ public final class BspProcesses {
                 crush(picks, ModItems.TETRIUM_INGOT.get(), ModItems.TETRIUM_DUST.get(), tetChance, ModItems.TETRIUM_NUGGET.get(), cfg(BSPConfig.CRUSH_TETRIUM_NUGGETS, 3)),
                 crush(picks, ModItems.DIRTY_ILLYRIUM_INGOT.get(), ModItems.DIRTY_ILLYRIUM_DUST.get(), dirtyChance, ModItems.DIRTY_ILLYRIUM_NUGGET.get(), cfg(BSPConfig.CRUSH_DIRTY_NUGGETS, 3))));
 
+        out.put("mob_chamber", mobChamber());
+        return out;
+    }
+
+    /** Gets the Spawn Grate's item without touching client classes. */
+    private static final class ModBlocksItem {
+        static Item spawnGrate() {
+            return com.mrgregles.bsp_core.registry.ModBlocks.SPAWN_GRATE.get().asItem();
+        }
+    }
+
+    private static Component pretty(String id) {
+        ResourceLocation rl = ResourceLocation.tryParse(id);
+        String path = rl == null ? id : rl.getPath();
+        StringBuilder b = new StringBuilder();
+        for (String word : path.replace('/', '_').split("_")) {
+            if (!word.isEmpty()) {
+                b.append(b.length() > 0 ? " " : "").append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+            }
+        }
+        return Component.literal(b.toString());
+    }
+
+    /**
+     * A page per mob a Mob Chamber can spawn on this server, from the roster the server sent: the spawn egg (its tooltip lists where it
+     * spawns), the Spawn Grate, the main drop (its tooltip says what the power does), and the smallest tank, the kind, and the power.
+     */
+    public static List<Process> mobChamber() {
+        var buffs = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values();
+        List<Process> out = new ArrayList<>();
+        List<ItemStack> grate = List.of(new ItemStack(ModBlocksItem.spawnGrate()));
+        for (var e : com.mrgregles.bsp_core.chamber.ChamberRoster.client()) {
+            var type = net.minecraft.world.entity.EntityType.byString(e.entity()).orElse(null);
+            if (type == null) {
+                continue;
+            }
+            var egg = net.minecraftforge.common.ForgeSpawnEggItem.fromEntityType(type);
+            ItemStack icon = egg != null ? new ItemStack(egg) : new ItemStack(Items.SPAWNER).setHoverName(type.getDescription());
+            List<Component> where = new ArrayList<>();
+            where.add(type.getDescription().copy().withStyle(net.minecraft.ChatFormatting.WHITE));
+            where.add(Component.translatable("jei.bsp_core.chamber.spawns_in").withStyle(net.minecraft.ChatFormatting.GRAY));
+            int shown = 0, places = e.places();
+            for (String b : e.biomes()) {
+                if (shown++ < 12) {
+                    where.add(Component.translatable("biome." + b.replace(':', '.')).withStyle(net.minecraft.ChatFormatting.GREEN));
+                }
+            }
+            for (String s : e.structures()) {
+                if (shown++ < 12) {
+                    where.add(Component.translatable("jei.bsp_core.chamber.structure", pretty(s)).withStyle(net.minecraft.ChatFormatting.GOLD));
+                }
+            }
+            if (places > 12) {
+                where.add(Component.translatable("jei.bsp_core.chamber.more", places - 12).withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+            var dropId = ResourceLocation.tryParse(e.drop());
+            Item drop = dropId == null || e.drop().isEmpty() ? null : net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(dropId);
+            boolean power = e.power() >= 0 && e.power() < buffs.length;
+            List<ItemStack> outs = drop == null || drop == Items.AIR ? List.of() : List.of(new ItemStack(drop));
+            List<Component> tips = new ArrayList<>();
+            if (!outs.isEmpty()) {
+                tips.add(power ? Component.translatable(buffs[e.power()].translationKey()).append(": ").append(Component.translatable(buffs[e.power()].translationKey() + ".effect"))
+                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE) : Component.translatable("jei.bsp_core.chamber.loot_only").withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+            List<Component> lines = List.of(Component.translatable("jei.bsp_core.chamber.tank", e.side(), e.height(), e.side()),
+                    Component.translatable(e.hostile() ? "jei.bsp_core.chamber.hostile" : "jei.bsp_core.chamber.passive", places),
+                    power ? Component.translatable("jei.bsp_core.chamber.gives", Component.translatable(buffs[e.power()].translationKey()))
+                            : Component.translatable(outs.isEmpty() ? "jei.bsp_core.chamber.no_drop" : "jei.bsp_core.chamber.loot_only"));
+            out.add(new Process(List.of(List.of(icon)), List.of(grate), null, 0, outs, tips, lines, List.of(where)));
+        }
         return out;
     }
 

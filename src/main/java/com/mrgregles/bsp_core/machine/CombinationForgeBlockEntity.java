@@ -106,6 +106,11 @@ public class CombinationForgeBlockEntity extends LavaTankMachineBlockEntity {
         return BSPConfig.FORGE_LAVA_TANK.get();
     }
 
+    @Override
+    protected int lavaBucketTicks() {
+        return BSPConfig.FORGE_BUCKET_TICKS.get();
+    }
+
     /** On RF the forge runs faster than on fuel by the configured multiple, plus the upgrade's own bonus. */
     @Override
     protected double speed() {

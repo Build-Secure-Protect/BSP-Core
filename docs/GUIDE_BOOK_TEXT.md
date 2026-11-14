@@ -416,13 +416,97 @@ When the tank forms, a sweep of light runs over it and the casing turns to glass
 
 **Page 8: Powers in the plasma**
 
-Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest. The tank's Output ports pass them on to injectors with every mB they give, with or without the totem, until that plasma is used up.
+Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest, apart from plain plasma and from a Mob Chamber's powers. Its ports give out plain and totem plasma together, passing the totem's powers on with every mB until that plasma is used up, totem or no totem.
 
-Plain plasma fed in mixes with it, and the powers fade as the mix runs down. The tank screen lists the powers the plasma carries.
+The tank remembers who fed it, so a Projector fed from it knows the totem's owner, team and friends. The tank screen's fill bar shows each kind in its own colour.
 
 **Page 9: Breaking and rebuilding**
 
-Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.
+Break one block by accident and the tank goes dormant but keeps its plasma and its powers: put the block back and it is whole again. Rebuild it smaller and it keeps what fits, plain plasma going first; bigger and it keeps what it had. Take the last block away and the plasma is gone.
+
+## The Mob Chamber
+
+**Page 1**
+
+Fit a *Spawn Grate* into a face of a Plasma Tank, in place of a glass or casing block, and the tank is a **Mob Chamber**. Once it is 15% full, mobs appear inside on their own, stand still and burn away in the plasma, four health a second.
+
+What they drop goes into the tank's loot store, and their drops turn plasma into **mob powers** a Projector gives out.
+
+**Page 2**  `[recipe] spawn_grate`
+
+The grate goes on a face, never an edge. It glows red on the inside, and its lamp flashes when a mob appears. No mob ever spawns in a tank without one.
+
+**Page 3: What spawns**
+
+A chamber spawns what its biome would spawn, and what a structure it stands in would (a fortress's blazes, a swamp hut's witches), as long as the mob fits inside. Light and floor do not matter.
+
+A 4-wide chamber spawns every 30 seconds, 2 seconds sooner for each block wider: 14 seconds at 12 wide. It holds one mob for each 2 x 2 of inside floor, 16 at most.
+
+**Page 4: The CHAMBER tab**
+
+The switch on the tank screen's **CHAMBER** tab chooses **ALL**, **HOSTILE** or **PASSIVE** mobs. The tab lists every mob that can spawn in this chamber, how likely each is, and what its drop gives; it shows when the next comes and how many are alive.
+
+Break the tank and the mobs inside wake up and walk away.
+
+**Page 5: The loot**
+
+The loot store holds 27 stacks. A hopper or pipe on a Tank Port takes the loot out; nothing goes in that way. When the store is full, the rest is lost.
+
+A wither skeleton's bones come out as *Wither Bones*. Breaking the tank spills the loot where the block broke.
+
+Each kill also turns 10 mB of plain plasma into its drops' powers.
+
+**Page 6: Feeding a power**
+
+On the CHAMBER tab, click a drop that gives a power and pick level I, II or III. The chamber takes those items from the loot store, one at a time, and turns plain plasma into that power.
+
+A bone, rotten flesh or string tags 24,000 mB at level I, a minute of a Projector; a stack, about an hour. Level II takes twice the items for the same plasma, level III four times. Rare drops tag five times as much; a spider eye a twentieth.
+
+**Page 7: Sending it out**
+
+Each power's plasma, and each level, is kept apart in the tank. To send one out, set a *Tank Extractor* against a Tank Port that gives plasma out (not one set to Input). Its **<** and **>** buttons pick plain, the totem's, or one mob power; it sends that into the cables touching it, highest level first, never back into its own tank. Projectors it feeds count its placer, their team and allies as the team. An Accelerator carries the power to another world.
+
+**Page 8**  `[recipe] tank_extractor`
+
+The sight glass shows the colour of the plasma it sends.
+
+**Page 9: At a Projector**
+
+A Projector fed with mob-power plasma gives out every mob power it brings, without using a channel, round itself: 16 blocks at level I, 24 at II, 32 at III. Each power burns its own plasma and stops when that runs out; plain plasma beside it keeps the Projector going but carries no power.
+
+Team powers reach the owner, their team, friends with Ward access and allies with the Ward perk. Outsider powers reach everyone else, except new players under protection and players in creative.
+
+**Page 10: Team powers**
+
+**Haste**, from gunpowder: the team mines faster.
+
+**Fire Ward**, from magma cream: fire and lava do not hurt the team.
+
+**Mending**, from ghast tears: the team's held tools slowly mend.
+
+**Tide**, from prismarine: the team breathes under water.
+
+**Page 11: Area powers**
+
+**Growth**, from bones: crops, saplings and cane grow faster.
+
+**Keep**, from slime balls: dropped items last 20 minutes.
+
+**Undead Ward**, from rotten flesh: no zombies or skeletons spawn.
+
+**Lantern**, from glowstone dust: no monsters spawn.
+
+**Page 12: Outsider powers**
+
+**Wither**, from Wither Bones.
+
+**Snare**, from string: outsiders move slowly.
+
+**Scorch**, from blaze rods and coal: outsiders catch fire.
+
+**Warp Ward**, from ender pearls: outsiders cannot pearl in or out.
+
+**Wireframe**, from spider eyes: you see outsiders through walls.
 
 ## Chunk Loading
 
@@ -750,7 +834,7 @@ Tetrium, Illyrium and Magnatite, from first ore to refined ingot.
 
 **Page 2**  `[recipe] tetrium_crucible`
 
-The *Tetrium Crucible* burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag.
+The *Tetrium Crucible* burns furnace fuel or lava and turns each ore into Tetrium Nuggets and Tetrium Slag. A lava bucket poured in lasts 25 ores; burnt as fuel, 10.
 
 **Page 3**  `[recipe] crucible_yield_upgrade`
 

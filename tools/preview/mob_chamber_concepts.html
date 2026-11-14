@@ -1,0 +1,287 @@
+<title>Mob Chamber Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages. One WebGL context draws every 3D view; the tank screen is drawn on canvas at GUI pixel size (380 x 214), doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --ion:#4cb2fa; --bad:#ff6b5c; --gold:#ffd23a;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --bad:#c23a2c; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --bad:#c23a2c; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1020px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:34px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; background:radial-gradient(ellipse at 50% 70%,#262b36 0%,#0c0e12 70%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.gui{ width:100%; max-width:760px; aspect-ratio:380/214; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; cursor:pointer; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; font-size:13px; }
+.ctl input[type=range]{ width:200px; max-width:100%; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:3px 8px; cursor:pointer; } .hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible, input:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); } .key b{ color:var(--fg); font-weight:600; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:620px; font-size:13px; } .t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.sprites{ display:flex; flex-wrap:wrap; gap:14px; } .sprites .card{ flex:1 1 220px; align-items:flex-start; }
+.sprites canvas{ width:128px; height:128px; image-rendering:pixelated; background:#8b8b8b; border:2px solid #373737; }
+.swatch{ display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:4px; }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="pill">BSP-Core · mock-ups for the owner's pick</span>
+    <h1>Plasma Tank Mob Chamber</h1>
+    <p class="lede">A tank fitted as a chamber spawns mobs from its biome's lists on its own timer, one per 2×2 of floor, and only while it is at least 15% full. The mobs stand still with no AI and burn in the plasma. Their loot goes to the tank's loot store, and the drops you choose are fed in to tag plasma with a power that a Projector gives out in its reach. Pick one look from each of the four sets below. Drag any 3D view to turn it.</p>
+  </header>
+
+  <section>
+    <h2>1. The chamber upgrade</h2>
+    <p class="lede">What turns a plain tank into a chamber. Each view is a 6×5×6 tank in the plains: inside 4×3×4, so four mobs at once, up to 3 blocks tall. Mobs appear, burn for a few seconds at 4 health a second, fall, and drop their loot, which slides to the port into the loot store.</p>
+    <div class="ctl"><label for="lvl">Plasma level</label><input id="lvl" type="range" min="15" max="100" value="55"><span id="lvlv" class="key">55%</span><button class="hb on" id="glassBtn" type="button">Mobs: shown</button></div>
+    <div class="grid3" id="upgrades"></div>
+  </section>
+
+  <section>
+    <h2>2. The CHAMBER tab</h2>
+    <p class="lede">A second tab on the tank's screen (380 × 214 GUI pixels, drawn at twice size). It has the fill meter with the "mobs spawn" mark at 15%, the plasma pools as coloured bands, the ALL / HOSTILE / PASSIVE switch, what can spawn here, the loot store, and the power picker. Click the switch, the levels and the powers. The numbers are an example tank: 6×5×6 in the plains, 132 shell blocks, 330,000,000 mB.</p>
+    <div class="ctl"><label for="fill">Tank fill</label><input id="fill" type="range" min="0" max="100" value="61"><span id="fillv" class="key">61%</span><span class="key">Drag below 15% to see spawning stop.</span></div>
+    <div class="card"><h3>A. Two panes</h3><canvas class="gui" id="guiA" width="760" height="428"></canvas>
+      <p>The fill bar runs across the top with a gold notch at 15%. On the left: the switch, the spawn status, then every mob that can spawn here with its chance, its drop and that drop's power. On the right: the 27-slot loot store, and under it the power picker, which shows what the chosen drop will tag in mB and in projector-minutes. Everything is on one page.</p></div>
+    <div class="card"><h3>B. Gauge column</h3><canvas class="gui" id="guiB" width="760" height="428"></canvas>
+      <p>A tall fill gauge down the left edge, like the tank's lit uprights, with the "mobs spawn" tag sticking out at 15% and the pools stacked as bands from the bottom. The middle holds the spawn table, with columns for mob, chance, drop and power. The right column holds the loot store and the picker. The meter reads the same way as the tank in the world.</p></div>
+    <div class="card"><h3>C. Three sub-tabs</h3><canvas class="gui" id="guiC" width="760" height="428"></canvas>
+      <p>The fill bar stays on top, and under it three sub-tabs: SPAWNS, LOOT and POWERS, each with room for bigger rows (chance bars, a line per stored drop, a pool legend). It is the least crowded layout, but it takes more clicks to see everything at once.</p></div>
+  </section>
+
+  <section>
+    <h2>3. The Tank Extractor</h2>
+    <p class="lede">A block against a Tank Port. It sends one pool out to the cables: plain plasma, totem-powered plasma, or one mob power. The cable in each view carries the chosen pool's colour. <button class="hb" id="poolBtn" type="button">Next pool</button> <span id="poolName" class="key"></span></p>
+    <div class="grid3" id="extractors"></div>
+  </section>
+
+  <section>
+    <h2>4. The Wither Bone</h2>
+    <p class="lede">The item a wither skeleton's bones become in a chamber, so its power (Wither on outsiders) is kept apart from Growth. These are 16×16 item sprites, shown at 8× size.</p>
+    <div class="sprites" id="bones"></div>
+  </section>
+
+  <section>
+    <h2>What each part is</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>Part</th><th>Baked model or texture</th><th>Drawn by a renderer</th></tr>
+      <tr><td>Chamber A, Spawn Grate</td><td>A shell block for any face: hull frame, recessed grate bars, round vent, skull stencil plate</td><td>The red lamp pulse when a mob spawns, the red glow on the inside face</td></tr>
+      <tr><td>Chamber B, Lure Lantern</td><td>A shell block for the top face: round housing with cage bars and a violet lamp</td><td>The caged lantern hanging inside on its chain, and the violet sparks where a mob appears</td></tr>
+      <tr><td>Chamber C, Chamber Core</td><td>An item fitted into a Tank Port; the port model gains a red window and a cage ring</td><td>The grey smoke puff where a mob appears</td></tr>
+      <tr><td>Every chamber</td><td>None</td><td>The mobs themselves are real entities with no AI (server); flames, red hurt flash, falling, and the loot sliding to the port</td></tr>
+      <tr><td>Tank Extractor (all three)</td><td>The body, dial, drum or rack, and the labelled buttons</td><td>The pool colour in the lens, sight glass or cartridge, and in the cable leaving it</td></tr>
+    </table></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const el=id=>document.getElementById(id); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HULL=0x2a2f3a, HULL2=0x1e222b, TRIM=0x8a909c, MID=0x3a3f4b, COPPER=0xc87a3c, ION=0x4cb2fa, TQ=0x19d3b0, RED=0xff4a3a, VIOLET=0xb06bff;
+  // ---- pools: plain, totem, and the mob powers (owner's table of 2026-11-11)
+  const POOLS=[['Plain plasma',0x4cb2fa,'#4cb2fa'],['Totem powers',0x19d3b0,'#19d3b0'],['Growth',0x6bd34a,'#6bd34a'],['Wither',0x7a7a86,'#8a8a96'],['Warp Ward',0xb06bff,'#b06bff'],['Undead Ward',0x9aa83a,'#9aa83a'],['Haste',0xffd23a,'#ffd23a'],['Snare',0xd8d8d8,'#d8d8d8'],['Wireframe',0xff5a7a,'#ff5a7a'],['Keep',0x9be05a,'#9be05a'],['Scorch',0xff7a2a,'#ff7a2a'],['Fire Ward',0xe04a1a,'#e04a1a'],['Mending',0xff8fd0,'#ff8fd0'],['Lantern',0xffe27a,'#ffe27a'],['Tide',0x3ad6e0,'#3ad6e0']];
+  const state={lvl:.55, mobs:true, pool:2};
+
+  function mat(c,glow,op){ const m=glow?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}); if(op!==undefined){ m.transparent=true; m.opacity=op; m.depthWrite=op>.6; } return m; }
+  function bx(g,f,t,c,glow,op){ const m=new THREE.Mesh(new THREE.BoxGeometry(t[0]-f[0],t[1]-f[1],t[2]-f[2]),mat(c,glow,op)); m.position.set((f[0]+t[0])/2,(f[1]+t[1])/2,(f[2]+t[2])/2); g.add(m); return m; }
+  function ring(g,p,axis,R,r,c){ const m=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,28),new THREE.MeshBasicMaterial({color:c})); m.position.set(...p); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+  function cyl(g,p,axis,R,len,c,glow,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(R,R,len,seg||20),mat(c,glow)); m.position.set(...p); if(axis==='z') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.z=Math.PI/2; g.add(m); return m; }
+  // a text plate drawn on a canvas, for the labelled buttons
+  function label(g,text,p,w,h,fg,bg,rotY){ const c=document.createElement('canvas'); c.width=w*16; c.height=h*16; const x=c.getContext('2d'); x.fillStyle=bg||'#0b0d11'; x.fillRect(0,0,c.width,c.height); x.fillStyle=fg||'#e8eaf0'; x.font='bold '+Math.floor(c.height*.62)+'px Silkscreen, monospace'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(text,c.width/2,c.height/2+1);
+    const tex=new THREE.CanvasTexture(c); tex.magFilter=THREE.NearestFilter; const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex})); m.position.set(...p); if(rotY) m.rotation.y=rotY; g.add(m); return m; }
+  // a group whose -z is the outward face of the block at o
+  function faceFrame(g,o,face){ const grp=new THREE.Group(); grp.position.set(o[0]+8,o[1]+8,o[2]+8); grp.rotation.order='YXZ'; if(face==='s') grp.rotation.y=Math.PI; if(face==='e') grp.rotation.y=-Math.PI/2; if(face==='w') grp.rotation.y=Math.PI/2; if(face==='u') grp.rotation.x=-Math.PI/2; if(face==='d') grp.rotation.x=Math.PI/2; const inner=new THREE.Group(); inner.position.set(-8,-8,-8); grp.add(inner); g.add(grp); return inner; }
+  function ground(g,x0,z0,x1,z1){ bx(g,[x0,-6,z0],[x1,0,z1],0x3f5a30); }
+
+  // ---- the formed tank as built (look C Lit Rails): one glass sheet, dark rails on the edges, turquoise corner nodes, gauge strips on the uprights
+  function formedTank(g,W,H,D,skip){ const X=W*16,Y=H*16,Z=D*16; const glass=0x9ec5e8, op=.16;
+    const faces=[[[0,0,0],[.6,Y,Z],'w'],[[X-.6,0,0],[X,Y,Z],'e'],[[0,0,0],[X,Y,.6],'n'],[[0,0,Z-.6],[X,Y,Z],'s'],[[0,Y-.6,0],[X,Y,Z],'u'],[[0,0,0],[X,.6,Z],'d']];
+    for(const [f,t] of faces) bx(g,f,t,glass,false,op);
+    const r=3; const edges=[]; for(const y of [0,Y-r]) for(const z of [0,Z-r]) edges.push([[0,y,z],[X,y+r,z+r],true]); for(const x of [0,X-r]) for(const y of [0,Y-r]) edges.push([[x,y,0],[x+r,y+r,Z],true]); for(const x of [0,X-r]) for(const z of [0,Z-r]) edges.push([[x,0,z],[x+r,Y,z+r],false]);
+    for(const [f,t,hor] of edges){ bx(g,f,t,HULL2); }
+    for(const x of [0,X-4]) for(const y of [0,Y-4]) for(const z of [0,Z-4]) bx(g,[x,y,z],[x+4,y+4,z+4],TQ,true);
+    const gauges=[]; for(const x of [-.4,X-1]) for(const z of [-.4,Z-1]) gauges.push(bx(g,[x,4,z],[x+1.4,5,z+1.4],TQ,true)); return gauges; }
+  function plasmaBody(g,W,H,D){ const m=new THREE.Mesh(new THREE.BoxGeometry((W-1)*16,1,(D-1)*16),new THREE.MeshBasicMaterial({color:ION,transparent:true,opacity:.42,depthWrite:false})); m.position.set(W*8,8,D*8); m.renderOrder=5; g.add(m); return m; }
+  function setLevel(m,gauges,H,f){ const h=Math.max(.01,((H-1)*16)*f); m.scale.y=h; m.position.y=8+h/2; for(const gg of gauges){ gg.scale.y=Math.max(.01,h-4); gg.position.y=4+(h-4)/2+4; } }
+  // a Tank Port on a face as built: casing, trim ring and lit window, turquoise setting ring
+  function port(g,o,face,windowColour,cage){ bx(g,[o[0]+.7,o[1]+.7,o[2]+.7],[o[0]+15.3,o[1]+15.3,o[2]+15.3],HULL); const p=faceFrame(g,o,face); bx(p,[3,3,-1.2],[13,13,0],TRIM); bx(p,[5,5,-1.4],[11,11,-1.1],windowColour||ION,true); ring(p,[8,8,-1.6],'z',5.2,.45,cage?RED:TQ);
+    if(cage){ for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; const b=bx(p,[0,0,0],[1,1,3.2],MID); b.position.set(8+Math.cos(a)*6.4,8+Math.sin(a)*6.4,-2.4); } ring(p,[8,8,-4],'z',6.4,.5,MID); } return p; }
+
+  // ---- mobs: blocky stand-ins (1 block = 16). Each mob has parts that tint red when hurt, flames, a fall.
+  const MOBS={ zombie:{h:32,head:0x4f8a3a,body:0x2e9aa0,legs:0x3a4aa8,arms:0x4f8a3a,w:8}, skeleton:{h:32,head:0xc8c8c8,body:0xb8b8b8,legs:0xb0b0b0,arms:0xb8b8b8,w:5}, creeper:{h:27,head:0x5cb84a,body:0x5cb84a,legs:0x4a9a3a,arms:null,w:8}, enderman:{h:46,head:0x141414,body:0x1c1c1c,legs:0x141414,arms:0x141414,w:7} };
+  function mob(kind){ const s=MOBS[kind], grp=new THREE.Group(), parts=[]; const add=(f,t,c)=>{ const m=bx(grp,f,t,c); parts.push([m,c]); return m; };
+    const legH=kind==='enderman'?24:kind==='creeper'?7:12, bodyH=kind==='enderman'?14:kind==='creeper'?12:12, w=s.w;
+    if(kind==='creeper'){ add([-4,0,-4],[0,legH,0],s.legs); add([0,0,-4],[4,legH,0],s.legs); add([-4,0,0],[0,legH,4],s.legs); add([0,0,0],[4,legH,4],s.legs); }
+    else { add([-w/2,0,-2],[0,legH,2],s.legs); add([0,0,-2],[w/2,legH,2],s.legs); }
+    const bw=kind==='skeleton'?6:8; add([-bw/2,legH,-2],[bw/2,legH+bodyH,2],s.body);
+    if(s.arms){ const al=kind==='enderman'?22:12; const ay=legH+bodyH; const l=add([-bw/2-(kind==='skeleton'?2:4),ay-al,-2],[-bw/2,ay,2],s.arms), r=add([bw/2,ay-al,-2],[bw/2+(kind==='skeleton'?2:4),ay,2],s.arms); if(kind==='zombie'){ for(const a of [l,r]){ a.geometry.dispose(); } l.geometry=new THREE.BoxGeometry(4,4,12); l.position.set(-bw/2-2,ay-2,-6); r.geometry=new THREE.BoxGeometry(4,4,12); r.position.set(bw/2+2,ay-2,-6); } }
+    const hy=legH+bodyH; add([-4,hy,-4],[4,hy+8,4],s.head);
+    const eye=kind==='enderman'?0xc060ff:kind==='creeper'?0x101010:0x1a1a1a; bx(grp,[-3,hy+3,-4.3],[-1,hy+4.5,-4],eye,kind==='enderman'); bx(grp,[1,hy+3,-4.3],[3,hy+4.5,-4],eye,kind==='enderman'); if(kind==='creeper') bx(grp,[-1.5,hy+.6,-4.3],[1.5,hy+3,-4],0x101010);
+    const flames=[]; for(let i=0;i<5;i++){ const f=bx(grp,[-1.5,0,-1.5],[1.5,4,1.5],i%2?0xffb02a:0xff5a1a,true,.85); f.position.set((Math.random()-.5)*w*1.4,4+Math.random()*(s.h-6),(Math.random()-.5)*6); flames.push(f); }
+    grp.userData={parts,flames,kind}; return grp; }
+  function lootItem(c){ const g=new THREE.Group(); bx(g,[-2.5,0,-.4],[2.5,5,.4],c,true); return g; }
+
+  // ---- views: one WebGL context, scissored per view
+  const canvas=document.createElement('canvas'); canvas.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1'; document.body.appendChild(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setScissorTest(true); renderer.setClearColor(0,0);
+  const views=[];
+  function makeView(view,build,opts){ const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(30,1,.1,4000); scene.add(new THREE.AmbientLight(0xffffff,.75)); const d=new THREE.DirectionalLight(0xffffff,.7); d.position.set(10,30,-20); scene.add(d);
+    const v={view,scene,cam,opts,ry:opts.ry,rx:opts.rx,drag:false,build}; let lx=0,ly=0; v.rebuild=()=>{ if(v.g) scene.remove(v.g); v.g=new THREE.Group(); scene.add(v.g); v.tick=build(v.g); }; v.rebuild();
+    view.addEventListener('pointerdown',e=>{v.drag=true;lx=e.clientX;ly=e.clientY;view.setPointerCapture(e.pointerId);}); view.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry+=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.3,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; }); view.addEventListener('pointerup',()=>v.drag=false); view.addEventListener('pointercancel',()=>v.drag=false); views.push(v); return v; }
+  const t0=performance.now();
+  (function loop(now){ const t=(now-t0)/1000; const W=innerWidth,H=innerHeight; if(canvas.width!==Math.round(W*renderer.getPixelRatio())||canvas.height!==Math.round(H*renderer.getPixelRatio())) renderer.setSize(W,H,false); renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
+    for(const v of views){ const r=v.view.getBoundingClientRect(); if(r.bottom<0||r.top>H||r.right<0||r.left>W||r.width<2) continue; if(v.tick) v.tick(reduce?2.2:t); if(!reduce&&!v.drag) v.ry+=.0025; const D=v.opts.dist,T=v.opts.target; v.cam.position.set(T[0]+Math.sin(v.ry)*D*Math.cos(v.rx),T[1]+Math.sin(v.rx)*D,T[2]+Math.cos(v.ry)*D*Math.cos(v.rx)); v.cam.lookAt(T[0],T[1],T[2]); v.cam.aspect=r.width/r.height; v.cam.updateProjectionMatrix();
+      const bottom=H-r.bottom; renderer.setViewport(r.left,bottom,r.width,r.height); renderer.setScissor(r.left,bottom,r.width,r.height); renderer.render(v.scene,v.cam); } requestAnimationFrame(loop); })(t0);
+  function cards(id,list,opts){ for(const [name,text,build] of list){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+name+'</h3>'; el(id).appendChild(c); const v=document.createElement('div'); v.className='view'; v.setAttribute('role','img'); v.setAttribute('aria-label',name+', a 3D view you can drag to turn'); c.appendChild(v); makeView(v,build,opts); const p=document.createElement('p'); p.innerHTML=text; c.appendChild(p); } }
+
+  // ---- section 1: the chamber, with a spawn effect per concept
+  const TW=6,TH=5,TD=6, SPOTS=[[32,32,'zombie'],[64,32,'skeleton'],[32,64,'creeper'],[64,64,'enderman']], PORT=[5,1,3];
+  const LOOT={zombie:0x8a5a3a,skeleton:0xe8e4d8,creeper:0x707070,enderman:0x1e8a7a};
+  function chamberScene(kind){ return g=>{ const gauges=formedTank(g,TW,TH,TD); const body=plasmaBody(g,TW,TH,TD); ground(g,-20,-20,TW*16+20,TD*16+20);
+      port(g,[PORT[0]*16,PORT[1]*16,PORT[2]*16],'e',kind==='core'?RED:ION,kind==='core');
+      let lamp=null, inner=null, hang=null, sparks=[];
+      if(kind==='grate'){ const o=[0,16,48]; bx(g,[o[0]+.7,o[1]+.7,o[2]+.7],[o[0]+15.3,o[1]+15.3,o[2]+15.3],HULL); const p=faceFrame(g,o,'w'); bx(p,[1,1,-1],[15,15,0],MID); bx(p,[2.5,2.5,-.6],[13.5,10.5,-.1],0x0b0d11); for(let i=0;i<5;i++) bx(p,[2.5,3+i*1.6,-1.2],[13.5,3.7+i*1.6,-.4],TRIM); lamp=ring(p,[8,13,-1.4],'z',1.6,.55,RED); bx(p,[5,11.6,-1.15],[11,15,-1],HULL2); bx(p,[6.2,13.4,-1.3],[7.4,14.4,-1.1],0x0b0d11); bx(p,[8.6,13.4,-1.3],[9.8,14.4,-1.1],0x0b0d11);
+        inner=bx(g,[15.2,18,50],[15.6,30,62],RED,true,.5); }
+      if(kind==='lantern'){ const o=[48,64,48]; bx(g,[o[0]+.7,o[1]+.7,o[2]+.7],[o[0]+15.3,o[1]+15.3,o[2]+15.3],HULL); cyl(g,[56,81.5,56],'y',6,3,MID); cyl(g,[56,83.5,56],'y',3.6,1.6,TRIM); for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; bx(g,[0,0,0],[1,4,1],TRIM).position.set(56+Math.cos(a)*5.5,82,56+Math.sin(a)*5.5); } lamp=cyl(g,[56,85,56],'y',2.2,1.4,VIOLET,true);
+        hang=new THREE.Group(); g.add(hang); for(let i=0;i<4;i++) bx(hang,[55.4,63-i*2.4,55.4],[56.6,64-i*2.4,56.6],MID); const lj=cyl(hang,[56,50,56],'y',2.4,4.6,VIOLET,true); for(let i=0;i<4;i++){ const a=i/4*Math.PI*2+.4; bx(hang,[0,0,0],[.8,6,.8],MID).position.set(56+Math.cos(a)*3,50,56+Math.sin(a)*3); } cyl(hang,[56,53.6,56],'y',3.4,1,MID); cyl(hang,[56,46.6,56],'y',3.4,1,MID); inner=lj; }
+      const mobs=SPOTS.map(([x,z,k],i)=>{ const m=mob(k); m.position.set(x,16,z); m.rotation.y=Math.PI/2+i; g.add(m); const loot=lootItem(LOOT[k]); g.add(loot); const puff=new THREE.Mesh(new THREE.TorusGeometry(5,1.2,6,18),new THREE.MeshBasicMaterial({color:kind==='grate'?RED:kind==='lantern'?VIOLET:0x9aa3b5,transparent:true,opacity:.8,depthWrite:false})); puff.rotation.x=Math.PI/2; puff.position.set(x,17,z); g.add(puff); return {m,loot,puff,x,z,i}; });
+      return t=>{ setLevel(body,gauges,TH,state.lvl); body.material.color.setHex(ION).multiplyScalar(.85+.15*Math.sin(t*2)); const P=6;
+        let spawned=false;
+        for(const o of mobs){ const p=((t+o.i*1.5)%P+P)%P; const show=state.mobs; o.m.visible=show; o.loot.visible=false; o.puff.visible=false; if(!show) continue;
+          const parts=o.m.userData.parts;
+          if(p<.5){ const k=Math.max(.02,p/.5); o.m.scale.set(k,k,k); o.m.rotation.z=0; o.puff.visible=true; const q=p/.5; o.puff.scale.set(1+q*1.5,1+q*1.5,1); o.puff.material.opacity=.8*(1-q); spawned=true; }
+          else if(p<5){ o.m.scale.set(1,1,1); o.m.rotation.z=0; const hurt=((p-.5)%1)<.12; for(const [mm,c] of parts) mm.material.color.setHex(hurt?0xff3a2a:c); }
+          else if(p<5.4){ const q=(p-5)/.4; o.m.rotation.z=q*Math.PI/2; for(const [mm] of parts) mm.material.color.setHex(0xff3a2a); }
+          else { o.m.visible=false; for(const [mm,c] of parts) mm.material.color.setHex(c); const q=(p-5.4)/.6; o.loot.visible=true; const tx=PORT[0]*16-2, tz=PORT[2]*16+8; o.loot.position.set(o.x+(tx-o.x)*q*q,17+Math.abs(Math.sin(q*9))*2,o.z+(tz-o.z)*q*q); o.loot.rotation.y=t*3; }
+          for(const f of o.m.userData.flames){ f.visible=p>=.5&&p<5.4; const s=.7+.5*Math.abs(Math.sin(t*9+f.position.y)); f.scale.set(s,s*1.3,s); } }
+        if(lamp){ const on=spawned||Math.sin(t*3)>.6; lamp.material.color.setHex(on?(kind==='lantern'?0xe0b0ff:0xff8a7a):(kind==='lantern'?VIOLET:RED)); }
+        if(inner&&kind==='grate') inner.material.opacity=spawned?.85:.35;
+        if(hang) hang.rotation.y=Math.sin(t*.7)*.08; }; }; }
+  cards('upgrades',[
+    ['A. Spawn Grate','<b>A shell block, any face.</b> A hull frame with a recessed grate, a round vent and a small skull stencil, plus a red lamp that flashes when a mob appears. A red puff rises where it spawns. Easy to place on a tank you have already built: swap one glass block for it.',chamberScene('grate')],
+    ['B. Lure Lantern','<b>A shell block for the top face.</b> A round housing with cage bars outside, and a caged violet lantern that hangs inside on a chain (drawn by the renderer) and pulses when a mob appears in violet sparks. It is the most story-like: the lantern draws them in.',chamberScene('lantern')],
+    ['C. Chamber Core','<b>An item fitted into a Tank Port.</b> No new shell block: the port\'s window turns red and a cage ring of bars stands round it, so the port shows it is a chamber. A grey smoke puff marks each spawn. It is the cheapest to build and the least visible from across a base.',chamberScene('core')]],
+    {dist:250,target:[48,34,48],ry:Math.PI*1.25,rx:.42});
+  el('lvl').addEventListener('input',e=>{ state.lvl=e.target.value/100; el('lvlv').textContent=e.target.value+'%'; });
+  el('glassBtn').onclick=()=>{ state.mobs=!state.mobs; el('glassBtn').textContent='Mobs: '+(state.mobs?'shown':'hidden'); el('glassBtn').classList.toggle('on',state.mobs); };
+
+  // ---- section 3: the Tank Extractor against a port, three cables out
+  function extractorScene(kind){ return g=>{ // a 3 x 3 patch of formed tank wall facing north, the port in the middle, the extractor north of it
+      bx(g,[0,0,0],[48,48,.6],0x9ec5e8,false,.16); bx(g,[0,0,.6],[48,48,40],ION,false,.0); for(const [f,t] of [[[0,0,-1],[48,3,2]],[[0,45,-1],[48,48,2]],[[0,0,-1],[3,48,2]],[[45,0,-1],[48,48,2]]]) bx(g,f,t,HULL2);
+      const inside=bx(g,[1,1,1],[47,30,40],ION,false,.35); port(g,[16,16,0],'n',ION,false);
+      const E=[16,16,-16]; let lens=[], pointer=null;
+      if(kind==='dial'){ bx(g,[E[0]+1,E[1],E[2]+1],[E[0]+15,E[1]+12,E[2]+16],HULL); bx(g,[E[0]+1,E[1]+12,E[2]+1],[E[0]+15,E[1]+12.6,E[2]+15],TRIM); cyl(g,[E[0]+8,E[1]+13.4,E[2]+8],'y',5.6,1.6,MID); const seg=8; for(let i=0;i<seg;i++){ const a=i/seg*Math.PI*2; const b=bx(g,[0,0,0],[1.8,.6,1.8],POOLS[i%POOLS.length][1],true); b.position.set(E[0]+8+Math.cos(a)*4.4,E[1]+14.4,E[2]+8+Math.sin(a)*4.4); }
+        pointer=new THREE.Group(); pointer.position.set(E[0]+8,E[1]+14.6,E[2]+8); g.add(pointer); bx(pointer,[-.6,0,-.6],[.6,1.4,4.6],0xe8eaf0,true); cyl(pointer,[0,.7,0],'y',1.4,1.6,TRIM);
+        const p=faceFrame(g,E,'n'); bx(p,[3,3,-1],[13,9,0],MID); lens.push(bx(p,[4.2,4.2,-1.3],[11.8,7.8,-.9],ION,true)); label(p,'POOL',[8,10.6,-.3],8,2.2,'#e8eaf0','#1e222b',Math.PI); }
+      if(kind==='drum'){ bx(g,[E[0],E[1],E[2]+2],[E[0]+2.4,E[1]+14,E[2]+16],HULL); bx(g,[E[0]+13.6,E[1],E[2]+2],[E[0]+16,E[1]+14,E[2]+16],HULL); const d=cyl(g,[E[0]+8,E[1]+7,E[2]+9],'x',6,11.2,MID,false,24); for(const x of [E[0]+4.5,E[0]+11.5]) cyl(g,[x,E[1]+7,E[2]+9],'x',6.3,1,COPPER);
+        lens.push(bx(g,[E[0]+5.6,E[1]+10,E[2]+2.6],[E[0]+10.4,E[1]+12.6,E[2]+3.2],ION,true)); const p=faceFrame(g,E,'n'); bx(p,[2.8,1,-1],[6.4,4,0],TRIM); bx(p,[9.6,1,-1],[13.2,4,0],TRIM); label(p,'◀',[4.6,2.5,-1.05],3,2.6,'#0b0d11','#8a909c',Math.PI); label(p,'▶',[11.4,2.5,-1.05],3,2.6,'#0b0d11','#8a909c',Math.PI); label(p,'POOL',[8,5.6,-.2],5,1.6,'#e8eaf0','#1e222b',Math.PI); }
+      if(kind==='rack'){ for(const [f,t] of [[[0,0,1],[2,16,16]],[[14,0,1],[16,16,16]],[[0,0,1],[16,2,16]],[[0,14,1],[16,16,16]]]) bx(g,[E[0]+f[0],E[1]+f[1],E[2]+f[2]],[E[0]+t[0],E[1]+t[1],E[2]+t[2]],HULL); bx(g,[E[0]+2,E[1]+2,E[2]+14],[E[0]+14,E[1]+14,E[2]+16],HULL2);
+        lens.push(bx(g,[E[0]+3,E[1]+3,E[2]+6],[E[0]+13,E[1]+12,E[2]+10],ION,true,.75)); bx(g,[E[0]+2.5,E[1]+12,E[2]+5.5],[E[0]+13.5,E[1]+13.4,E[2]+10.5],TRIM); bx(g,[E[0]+6.5,E[1]+13.4,E[2]+7.2],[E[0]+9.5,E[1]+14.6,E[2]+8.8],TRIM);
+        const p=faceFrame(g,E,'n'); const lamps=[]; ['PLAIN','TOTEM','MOB'].forEach((w,i)=>{ lamps.push(bx(p,[2.6+i*4,-2.6,-1.4],[5.4+i*4,-.6,-.4],MID,true)); label(p,w,[4+i*4,-3.6,-1],3.8,1.2,'#e8eaf0','#1e222b',Math.PI); }); bx(p,[1.6,-4.6,-.6],[14.4,.2,0],HULL); g.userData.lamps=lamps; }
+      // three cables leaving the extractor north
+      const cables=[]; for(let k=1;k<=3;k++){ const z=E[2]-k*16; bx(g,[E[0]+5,E[1]+5,z],[E[0]+11,E[1]+11,z+16],0x9ec5e8,false,.25); cables.push(bx(g,[E[0]+6.4,E[1]+6.4,z-.2],[E[0]+9.6,E[1]+9.6,z+16.2],ION,true,.9)); }
+      ground(g,-20,-70,68,44);
+      return t=>{ const c=POOLS[state.pool][1]; for(const l of lens) l.material.color.setHex(c).multiplyScalar(.8+.2*Math.sin(t*3)); cables.forEach((cb,i)=>cb.material.color.setHex(c).multiplyScalar(.75+.25*Math.sin(t*5-i))); inside.material.color.setHex(ION);
+        if(pointer){ const want=-(state.pool%8)/8*Math.PI*2+Math.PI/2; pointer.rotation.y+=(want-pointer.rotation.y)*.1; }
+        if(g.userData.lamps){ const which=state.pool===0?0:state.pool===1?1:2; g.userData.lamps.forEach((l,i)=>l.material.color.setHex(i===which?c:MID)); } }; }; }
+  cards('extractors',[
+    ['A. Selector Dial','A squat hull box with a round dial on top: a ring of coloured pips, one per pool, and a pointer that turns to the chosen one. A lit lens on the front shows the pool\'s colour, under a plate labelled POOL. Right-click turns the dial; the screen lists the pools by name.',extractorScene('dial')],
+    ['B. Separator Drum','A horizontal drum with copper bands between two end plates, and a sight glass on top glowing in the pool\'s colour. Two buttons on the front, ◀ and ▶, step through the pools, under a POOL plate, the same words as its screen. It reads as a machine that splits the plasma.',extractorScene('drum')],
+    ['C. Lens Rack','An open frame holding a glass cartridge you can see from every side, filled with the chosen pool\'s colour. Three lamps on the front are labelled PLAIN, TOTEM and MOB, and the lit one shows the kind of pool. It is the lightest look and the easiest to read at a glance.',extractorScene('rack')]],
+    {dist:170,target:[24,18,-14],ry:Math.PI*.82,rx:.38});
+  const poolLabel=()=>{ el('poolName').innerHTML='<span class="swatch" style="background:'+POOLS[state.pool][2]+'"></span>'+POOLS[state.pool][0]; };
+  el('poolBtn').onclick=()=>{ state.pool=(state.pool+1)%POOLS.length; poolLabel(); }; poolLabel();
+
+  // ---- section 2: the CHAMBER tab, three layouts drawn at GUI size
+  const C={bg:'#10151c',panel:'#0c0e12',dim:'#2a2f3a',tq:'#19d3b0',muted:'#9aa3b5',text:'#e6eaf2',gold:'#ffd23a',bad:'#ff6b5c',ion:'#4fb8ff',slot:'#0c0e12',slotEdge:'#3a3f4b'};
+  const CAP=330000000, MARK=.15;
+  const MOBLIST=[ // plains, vanilla weights; inside fits mobs up to 3 blocks tall
+    {k:'zombie',n:'Zombie',w:95,host:true,drop:'flesh',dn:'Rotten Flesh',pw:'Undead Ward'},{k:'skeleton',n:'Skeleton',w:100,host:true,drop:'bone',dn:'Bone',pw:'Growth'},{k:'spider',n:'Spider',w:100,host:true,drop:'string',dn:'String',pw:'Snare'},
+    {k:'creeper',n:'Creeper',w:100,host:true,drop:'powder',dn:'Gunpowder',pw:'Haste'},{k:'enderman',n:'Enderman',w:10,host:true,drop:'pearl',dn:'Ender Pearl',pw:'Warp Ward'},{k:'witch',n:'Witch',w:5,host:true,drop:'glow',dn:'Glowstone',pw:'Lantern'},
+    {k:'zvill',n:'Zombie Villager',w:5,host:true,drop:'flesh',dn:'Rotten Flesh',pw:'Undead Ward'},{k:'sheep',n:'Sheep',w:12,host:false,drop:'wool',dn:'Wool',pw:null},{k:'pig',n:'Pig',w:10,host:false,drop:'pork',dn:'Porkchop',pw:null},
+    {k:'chicken',n:'Chicken',w:10,host:false,drop:'feather',dn:'Feather',pw:null},{k:'cow',n:'Cow',w:8,host:false,drop:'leather',dn:'Leather',pw:null}];
+  const LOOTSTORE=[['bone',41],['flesh',23],['string',17],['powder',12],['arrow',9],['eye',6],['pearl',2],['glow',1]];
+  const ITEMNAME={bone:'Bone',flesh:'Rotten Flesh',string:'String',powder:'Gunpowder',arrow:'Arrow',eye:'Spider Eye',pearl:'Ender Pearl',glow:'Glowstone'};
+  const ITEMPOWER={bone:'Growth',flesh:'Undead Ward',string:'Snare',powder:'Haste',eye:'Wireframe',pearl:'Warp Ward',glow:'Lantern'};
+  const WORTH={pearl:5,eye:1/20}; // projector-minutes per item at level I (common 1)
+  const PCOL=n=>{ const p=POOLS.find(q=>q[0]===n); return p?p[2]:C.muted; };
+  const gui={fill:.61, sw:1, lvl:2, pick:'bone', sub:0};
+  const POOLMIX=[['Plain plasma',.44],['Totem powers',.08],['Growth',.05],['Undead Ward',.03],['Haste',.01]];
+  const SW=['ALL','HOSTILE','PASSIVE'];
+  function listNow(){ const l=MOBLIST.filter(m=>gui.sw===0||(gui.sw===1?m.host:!m.host)); const tot=l.reduce((a,m)=>a+m.w,0); return l.map(m=>({...m,pc:m.w/tot*100})); }
+  const fmt=n=>Math.round(n).toLocaleString('en-GB');
+  function feedLine(){ const have=(LOOTSTORE.find(s=>s[0]===gui.pick)||[0,0])[1]; const per=120000*(WORTH[gui.pick]||1)/[1,1,2,4][gui.lvl]; return {have,mb:have*per,min:have*per/120000}; }
+  function spawnStatus(){ if(gui.fill<MARK) return [C.bad,'Mobs stop below 15%: '+fmt((MARK-gui.fill)*CAP)+' mB more']; return [C.text,'Next mob in 14 s · 3 of 4 inside']; }
+
+  // pixel helpers on a context scaled 2x
+  function R(x,c,X,Y,w,h){ x.fillStyle=c; x.fillRect(X,Y,w,h); }
+  function box(x,X,Y,w,h,bg,edge){ R(x,edge||C.dim,X,Y,w,h); R(x,bg||C.panel,X+1,Y+1,w-2,h-2); }
+  function T(x,s,X,Y,c,size,maxW,align){ x.font=(size||8)+'px Silkscreen, monospace'; x.textBaseline='top'; let str=String(s); if(maxW){ while(str.length>1&&x.measureText(str).width>maxW) str=str.slice(0,-2)+'…'; } x.textAlign=align||'left'; x.fillStyle=c||C.text; x.fillText(str,X,Y); x.textAlign='left'; return x.measureText(str).width; }
+  const HEADS={ zombie:['GGGGGGGG','GGGGGGGG','GGGGGGGG','GKKGGKKG','GGGGGGGG','GGGdGGGG','GGddddGG','GGGGGGGG'], zvill:['GGGGGGGG','GGGGGGGG','GKKGGKKG','GGGGGGGG','GGGddGGG','GGGddGGG','GGGGGGGG','GGGGGGGG'], skeleton:['WWWWWWWW','WWWWWWWW','WKKWWKKW','WWWWWWWW','WWWKKWWW','WKKKKKKW','WWWWWWWW','WWWWWWWW'],
+    spider:['BBBBBBBB','BRRBBRRB','BBBBBBBB','BRBBBBRB','BBBBBBBB','BBBBBBBB','BBBBBBBB','BBBBBBBB'], creeper:['CCCCCCCC','CCCCCCCC','CKKCCKKC','CKKCCKKC','CCCKKCCC','CCKKKKCC','CCKCCKCC','CCCCCCCC'], enderman:['BBBBBBBB','BBBBBBBB','BBBBBBBB','BBBBBBBB','BPPBBPPB','BBBBBBBB','BBBBBBBB','BBBBBBBB'],
+    witch:['HHHHHHHH','HHHHHHHH','FFFFFFFF','FKKFFKKF','FFFNNFFF','FFFNNFFF','FFFFFFFF','FFFFFFFF'], sheep:['WWWWWWWW','WSSSSSSW','WSKSSKSW','WSSSSSSW','WSSPPSSW','WWSSSSWW','WWWWWWWW','WWWWWWWW'], pig:['PPPPPPPP','PPPPPPPP','PKPPPPKP','PPPPPPPP','PPddddPP','PPdKKdPP','PPPPPPPP','PPPPPPPP'],
+    chicken:['WWWWWWWW','WWWWWWWW','WKWWWWKW','WWWWWWWW','WWYYYYWW','WWWRRWWW','WWWRRWWW','WWWWWWWW'], cow:['BBWWWWBB','BWWWWWWB','BKWWWWKB','BWWWWWWB','WWddddWW','WWdKKdWW','WWddddWW','BBWWWWBB'] };
+  const HC={G:'#4f8a3a',K:'#1a1a1a',d:'#3a5a2a',W:'#d8d8d8',B:'#202020',R:'#c0322a',C:'#5cb84a',P:'#c060ff',H:'#3b2a4a',F:'#9b7a5a',N:'#7a5a3a',S:'#e8c8b8',Y:'#e8b84a'};
+  function head(x,k,X,Y){ const rows=HEADS[k]; const map=k==='pig'?{...HC,P:'#e8a0a0',d:'#d08080'}:k==='cow'?{...HC,B:'#5a3a2a',d:'#c8a0a0'}:HC; for(let j=0;j<8;j++) for(let i=0;i<8;i++){ x.fillStyle=map[rows[j][i]]||'#888'; x.fillRect(X+i,Y+j,1,1); } }
+  function icon(x,k,X,Y){ // 12 x 12 inside a slot
+    const p=(c,a)=>{ x.fillStyle=c; for(const [i,j,w,h] of a) x.fillRect(X+i,Y+j,w||1,h||1); };
+    if(k==='bone') p('#e8e4d8',[[2,8,2,2],[8,2,2,2],[3,7,1,1],[4,6,1,1],[5,5,1,1],[6,4,1,1],[7,3,1,1],[1,9,2,2],[9,1,2,2]]);
+    if(k==='flesh') p('#8a5a3a',[[3,3,6,6],[2,4,1,4],[9,4,1,3]]), p('#b07a5a',[[4,4,2,2],[6,6,2,1]]);
+    if(k==='string') p('#e8e8e8',[[2,9,2,1],[4,8,1,1],[5,7,1,1],[6,5,1,2],[7,4,1,1],[8,3,2,1],[3,5,2,1],[5,4,1,1]]);
+    if(k==='powder') p('#707070',[[3,6,6,4],[4,4,4,2],[5,3,2,1]]), p('#9a9a9a',[[4,7,1,1],[7,8,1,1],[6,5,1,1]]);
+    if(k==='arrow') p('#c8c8c8',[[2,9,2,1],[3,8,1,1],[4,7,1,1],[5,6,1,1],[6,5,1,1],[7,4,1,1]]), p('#8a8a8a',[[8,2,2,2],[9,4,1,1],[7,2,1,1]]), p('#e8e8e8',[[1,10,1,1],[2,10,1,1]]);
+    if(k==='eye') p('#c0322a',[[3,3,6,6],[2,4,1,4],[9,4,1,4],[4,2,4,1],[4,9,4,1]]), p('#2a0a0a',[[5,5,2,2]]);
+    if(k==='pearl') p('#1e8a7a',[[3,3,6,6],[2,4,1,4],[9,4,1,4],[4,2,4,1],[4,9,4,1]]), p('#4ad6c0',[[4,4,2,2]]);
+    if(k==='glow') p('#e8c84a',[[3,4,6,5],[4,3,4,1],[5,9,2,1]]), p('#fff2a0',[[5,5,1,1],[7,6,1,1]]);
+  }
+  function slot(x,X,Y){ R(x,C.slotEdge,X,Y,18,18); R(x,C.slot,X+1,Y+1,16,16); }
+  function frame(x,title){ R(x,'#0c0e12',0,0,380,214); box(x,0,0,380,214,C.bg,C.dim); T(x,title,10,7,C.tq); // tabs
+    const tabs=['TANK','CHAMBER']; let X=380-10; for(let i=tabs.length-1;i>=0;i--){ const w=x.measureText(tabs[i]).width+12; X-=w; const on=i===1; box(x,X,4,w,13,on?'#14202a':C.panel,on?C.tq:C.dim); T(x,tabs[i],X+6,7,on?C.tq:C.muted); X-=4; } }
+  function hbar(x,X,Y,w,h,hits){ box(x,X,Y,w,h,C.panel,C.dim); let px=X+1; const tot=POOLMIX.reduce((a,p)=>a+p[1],0); for(const [n,f] of POOLMIX){ const ww=(w-2)*gui.fill*(f/tot); R(x,PCOL(n),px,Y+1,ww,h-2); px+=ww; }
+    const mx=X+1+(w-2)*MARK; R(x,C.gold,Math.round(mx),Y-3,1,h+6); R(x,C.gold,Math.round(mx)-2,Y-3,5,2); }
+  function switchRow(x,X,Y,hits,w){ const bw=w||52; SW.forEach((s,i)=>{ const on=gui.sw===i; box(x,X+i*(bw+3),Y,bw,12,on?'#14202a':C.panel,on?C.tq:C.dim); T(x,s,X+i*(bw+3)+bw/2,Y+3,on?C.tq:C.muted,8,bw-4,'center'); hits.push([X+i*(bw+3),Y,bw,12,()=>gui.sw=i]); }); }
+  function levelRow(x,X,Y,hits){ ['I','II','III'].forEach((s,i)=>{ const on=gui.lvl===i+1; box(x,X+i*21,Y,18,12,on?'#14202a':C.panel,on?C.tq:C.dim); T(x,s,X+i*21+9,Y+3,on?C.tq:C.muted,8,16,'center'); hits.push([X+i*21,Y,18,12,()=>gui.lvl=i+1]); }); }
+  function lootGrid(x,X,Y,cols,hits){ for(let i=0;i<27;i++){ const cx=X+(i%cols)*18, cy=Y+Math.floor(i/cols)*18; slot(x,cx,cy); const s=LOOTSTORE[i]; if(s){ icon(x,s[0],cx+3,cy+3); T(x,s[1],cx+17,cy+10,'#ffffff',8,0,'right'); if(ITEMPOWER[s[0]]){ if(gui.pick===s[0]){ R(x,C.tq,cx,cy,18,1); R(x,C.tq,cx,cy+17,18,1); R(x,C.tq,cx,cy,1,18); R(x,C.tq,cx+17,cy,1,18); } hits.push([cx,cy,18,18,()=>gui.pick=s[0]]); } } } }
+  function feedBlock(x,X,Y,w,hits){ const f=feedLine(); const pw=ITEMPOWER[gui.pick]; T(x,'FEED',X,Y,C.muted); T(x,pw,X+30,Y,PCOL(pw),8,w-96); levelRow(x,X+w-61,Y-3,hits);
+    T(x,f.have+' '+ITEMNAME[gui.pick]+' →',X,Y+14,C.text,8,w); T(x,fmt(f.mb)+' mB of '+pw+' '+['','I','II','III'][gui.lvl],X,Y+25,PCOL(pw),8,w); T(x,'about '+(f.min<1?f.min.toFixed(1):fmt(f.min))+' projector-minutes',X,Y+36,C.muted,8,w); }
+  function drawA(x,hits){ frame(x,'PLASMA TANK'); hbar(x,10,24,360,10,hits); T(x,'MOBS SPAWN',10+360*MARK+4,37,C.gold); T(x,Math.round(gui.fill*100)+'% · '+fmt(gui.fill*CAP)+' mB',370,37,C.ion,8,0,'right');
+    box(x,10,50,176,156,C.panel,C.dim); T(x,'SPAWNS HERE · PLAINS',16,55,C.tq,8,164); switchRow(x,16,67,hits,52); const [sc,st]=spawnStatus(); T(x,st,16,84,sc,8,164);
+    listNow().slice(0,8).forEach((m,i)=>{ const y=97+i*13; head(x,m.k,16,y); T(x,m.n,28,y+1,C.text,7,68); T(x,m.pc.toFixed(m.pc<10?1:0)+'%',120,y+1,C.muted,7,0,'right'); T(x,m.pw||'loot only',124,y+1,m.pw?PCOL(m.pw):C.muted,7,58); });
+    box(x,194,50,176,156,C.panel,C.dim); T(x,'LOOT',200,55,C.tq); T(x,'27 slots · port pipes',364,55,C.muted,8,0,'right'); lootGrid(x,201,66,9,hits); R(x,C.dim,200,124,164,1); feedBlock(x,200,132,164,hits); T(x,'Fits mobs up to 3 blocks tall',200,192,C.muted,8,164); }
+  function drawB(x,hits){ frame(x,'PLASMA TANK'); // tall gauge
+    const GX=10,GY=24,GW=16,GH=180; box(x,GX,GY,GW,GH,C.panel,C.dim); let py=GY+GH-1; const tot=POOLMIX.reduce((a,p)=>a+p[1],0); for(const [n,f] of POOLMIX){ const hh=(GH-2)*gui.fill*(f/tot); R(x,PCOL(n),GX+1,py-hh,GW-2,hh); py-=hh; }
+    const my=Math.round(GY+GH-1-(GH-2)*MARK); R(x,C.gold,GX-2,my,GW+4,1); box(x,GX+GW+2,my-5,62,11,'#2a2410',C.gold); T(x,'MOBS SPAWN',GX+GW+5,my-2,C.gold,7,58); T(x,Math.round(gui.fill*100)+'%',GX+GW+4,GY+1,C.ion,7);
+    const MX=32; T(x,'SPAWNS HERE · PLAINS',MX,36,C.tq,8,148); switchRow(x,MX,48,hits,46); const [sc,st]=spawnStatus(); T(x,st,MX,64,sc,7,148);
+    T(x,'MOB',MX+11,78,C.muted,7); T(x,'%',MX+86,78,C.muted,7,0,'right'); T(x,'POWER',MX+90,78,C.muted,7); R(x,C.dim,MX,87,148,1);
+    listNow().slice(0,7).forEach((m,i)=>{ const y=91+i*12; head(x,m.k,MX,y); T(x,m.n,MX+11,y+1,C.text,7,56); T(x,m.pc.toFixed(m.pc<10?1:0),MX+86,y+1,C.muted,7,0,'right'); T(x,m.pw||'loot only',MX+90,y+1,m.pw?PCOL(m.pw):C.muted,7,58); });
+    const RX=188; R(x,C.dim,RX-6,24,1,180); T(x,'LOOT',RX,24,C.tq); T(x,'27 slots',370,24,C.muted,7,0,'right'); lootGrid(x,RX,35,9,hits); feedBlock(x,RX,104,180,hits); T(x,'Fits mobs up to 3 blocks tall',RX,194,C.muted,7,180); }
+  function drawC(x,hits){ frame(x,'PLASMA TANK'); hbar(x,10,24,360,10,hits); T(x,'MOBS SPAWN',10+360*MARK+4,37,C.gold); T(x,Math.round(gui.fill*100)+'% · '+fmt(gui.fill*CAP)+' mB',370,37,C.ion,8,0,'right');
+    const subs=['SPAWNS','LOOT','POWERS']; subs.forEach((s,i)=>{ const on=gui.sub===i; const X=10+i*64; box(x,X,50,60,13,on?'#14202a':C.panel,on?C.tq:C.dim); T(x,s,X+30,53,on?C.tq:C.muted,8,56,'center'); hits.push([X,50,60,13,()=>gui.sub=i]); });
+    box(x,10,66,360,140,C.panel,C.dim);
+    if(gui.sub===0){ switchRow(x,16,72,hits,56); const [sc,st]=spawnStatus(); T(x,st,364,75,sc,8,170,'right'); const l=listNow(); l.slice(0,10).forEach((m,i)=>{ const col=i<5?0:1, row=i%5; const X=16+col*178, y=90+row*23; head(x,m.k,X,y); T(x,m.n,X+12,y,C.text,8,110); T(x,m.pc.toFixed(m.pc<10?1:0)+'%',X+168,y,C.muted,8,0,'right'); T(x,(m.dn)+' → '+(m.pw||'loot only'),X+12,y+10,m.pw?PCOL(m.pw):C.muted,7,156); R(x,C.dim,X+12,y+18,156,2); R(x,m.pw?PCOL(m.pw):C.muted,X+12,y+18,156*Math.min(1,m.pc/30),2); }); }
+    if(gui.sub===1){ lootGrid(x,16,72,9,hits); LOOTSTORE.forEach((s,i)=>{ const y=74+i*15; T(x,s[1]+' '+ITEMNAME[s[0]],190,y,C.text,8,94); T(x,ITEMPOWER[s[0]]||'no power',364,y,ITEMPOWER[s[0]]?PCOL(ITEMPOWER[s[0]]):C.muted,8,80,'right'); }); T(x,'Pipes and hoppers on a port take loot out',16,132,C.muted,8,170); }
+    if(gui.sub===2){ T(x,'PICK A DROP FROM THE LOOT',16,72,C.tq); let X=16; LOOTSTORE.filter(s=>ITEMPOWER[s[0]]).forEach(s=>{ const on=gui.pick===s[0]; slot(x,X,84); icon(x,s[0],X+3,87); if(on){ R(x,C.tq,X,84,18,1); R(x,C.tq,X,101,18,1); R(x,C.tq,X,84,1,18); R(x,C.tq,X+17,84,1,18); } hits.push([X,84,18,18,()=>gui.pick=s[0]]); X+=20; });
+      feedBlock(x,16,110,170,hits); T(x,'POOLS IN THE TANK',196,72,C.tq); POOLMIX.forEach(([n,f],i)=>{ const y=86+i*13; R(x,PCOL(n),196,y+1,7,7); T(x,n,207,y,C.text,8,100); T(x,fmt(f/.61*gui.fill*CAP/1e6)+'M mB',364,y,C.muted,8,0,'right'); }); } }
+  const GUIS=[['guiA',drawA],['guiB',drawB],['guiC',drawC]];
+  function redraw(){ for(const [id,fn] of GUIS){ const c=el(id); const x=c.getContext('2d'); x.setTransform(2,0,0,2,0,0); x.imageSmoothingEnabled=false; const hits=[]; fn(x,hits); c._hits=hits; } }
+  for(const [id] of GUIS){ el(id).addEventListener('click',e=>{ const c=e.currentTarget, r=c.getBoundingClientRect(); const gx=(e.clientX-r.left)/r.width*380, gy=(e.clientY-r.top)/r.height*214; for(const [X,Y,w,h,f] of c._hits||[]) if(gx>=X&&gx<X+w&&gy>=Y&&gy<Y+h){ f(); redraw(); return; } }); }
+  el('fill').addEventListener('input',e=>{ gui.fill=e.target.value/100; el('fillv').textContent=e.target.value+'%'; redraw(); });
+  redraw(); if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redraw);
+
+  // ---- section 4: Wither Bone sprites (16 x 16)
+  const BONE=['................','............##..','...........#++#.','...........#+++#','..........#+++#.','.........#+#.#..','........#+#.....','.......#+#......','......#+#.......','.....#+#........','..#.#+#.........','.#+++#..........','#+++#...........','.#++#...........','..##............','................'];
+  const SPR=[['A. Charred','Black with ash-grey knuckles: a bone burned in the plasma.',{'#':'#141414','+':'#3a3a3a'},[]],['B. Cracked','Bone-coloured with dark wither cracks down its length and a dark rim.',{'#':'#2a2a2a','+':'#c8c2b0'},[[7,8,'#2a2a2a'],[8,7,'#2a2a2a'],[10,5,'#2a2a2a'],[12,3,'#2a2a2a'],[3,12,'#2a2a2a'],[6,9,'#2a2a2a']]],['C. Smouldering','Dark grey with a dull violet glow in the cracks, the wither effect\'s colour.',{'#':'#101010','+':'#4a4a52'},[[7,8,'#8a5aa8'],[10,5,'#8a5aa8'],[12,3,'#b07ad0'],[3,12,'#8a5aa8'],[13,2,'#b07ad0']]]];
+  for(const [n,d,map,extra] of SPR){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<h3>'+n+'</h3>'; const cv=document.createElement('canvas'); cv.width=16; cv.height=16; cv.setAttribute('role','img'); cv.setAttribute('aria-label','Wither Bone sprite, '+n); const x=cv.getContext('2d'); BONE.forEach((row,j)=>[...row].forEach((ch,i)=>{ if(map[ch]){ x.fillStyle=map[ch]; x.fillRect(i,j,1,1); } })); for(const [i,j,col] of extra){ x.fillStyle=col; x.fillRect(i,j,1,1); } c.appendChild(cv); const p=document.createElement('p'); p.textContent=d; c.appendChild(p); el('bones').appendChild(c); }
+})();
+</script>

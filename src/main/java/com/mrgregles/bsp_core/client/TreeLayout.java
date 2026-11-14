@@ -21,7 +21,7 @@ public final class TreeLayout {
     private static final Map<Buff, int[]> POS = new EnumMap<>(Buff.class);
 
     static {
-        for (Buff b : Buff.values()) {
+        for (Buff b : com.mrgregles.bsp_core.totem.TotemUpgrades.TOTEM_BUFFS) {
             // two nodes on one ring of one path sit either side of the spoke; Extra Homes shares Sanctuary's ring on the Home
             // path, so it and Swift Travel after it sit 26 degrees off the spoke; Herald shares Alarm's ring, 30 degrees towards the Fight path, and
             // Tripwire too, 33 degrees the other way, above Sanctuary
@@ -53,7 +53,7 @@ public final class TreeLayout {
     public static Buff nodeAt(double x, double y) {
         Buff best = null;
         double bestD = Double.MAX_VALUE;
-        for (Buff b : Buff.values()) {
+        for (Buff b : com.mrgregles.bsp_core.totem.TotemUpgrades.TOTEM_BUFFS) {
             int[] p = POS.get(b);
             if (x >= p[0] - NODE / 2 && x < p[0] + NODE / 2 && y >= p[1] - NODE / 2 && y < p[1] + NODE / 2) {
                 double d = (x - p[0]) * (x - p[0]) + (y - p[1]) * (y - p[1]);

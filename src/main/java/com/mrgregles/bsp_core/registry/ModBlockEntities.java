@@ -141,7 +141,10 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.plasma.PlasmaRepeaterBlockEntity::new, ModBlocks.PLASMA_REPEATER.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.tank.TankPartBlockEntity>> TANK_PART =
             BLOCK_ENTITIES.register("tank_part", () -> BlockEntityType.Builder
-                    .of(com.mrgregles.bsp_core.tank.TankPartBlockEntity::new, ModBlocks.TANK_CASING.get(), ModBlocks.TANK_GLASS.get()).build(null));
+                    .of(com.mrgregles.bsp_core.tank.TankPartBlockEntity::new, ModBlocks.TANK_CASING.get(), ModBlocks.TANK_GLASS.get(), ModBlocks.SPAWN_GRATE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.tank.TankExtractorBlockEntity>> TANK_EXTRACTOR =
+            BLOCK_ENTITIES.register("tank_extractor", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.tank.TankExtractorBlockEntity::new, ModBlocks.TANK_EXTRACTOR.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.tank.TankPortBlockEntity>> TANK_PORT =
             BLOCK_ENTITIES.register("tank_port", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.tank.TankPortBlockEntity::new, ModBlocks.TANK_PORT.get()).build(null));

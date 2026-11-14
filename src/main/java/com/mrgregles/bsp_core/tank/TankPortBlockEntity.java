@@ -76,11 +76,32 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
 
     @Override
     public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
+        feed(source, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchorTotem, null);
+    }
+
+    /** Plasma in from a cable: the Mob Chamber powers' share to each power's pool at its level, the rest by its list (plain or totem). */
+    @Override
+    public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access,
+                     @Nullable net.minecraft.core.GlobalPos anchorTotem, @Nullable long[][] mob) {
         TankPartBlockEntity m = masterEntity();
         if (m == null) {
             return;
         }
-        m.add(movedMB, offeredByOrdinal);
+        long mobIn = 0;
+        if (mob != null) {
+            var buffs = Buff.values();
+            for (int i = 0; i < mob.length; i++) {
+                for (int l = 1; l < mob[i].length; l++) {
+                    if (mob[i][l] > 0 && com.mrgregles.bsp_core.plasma.MobPlasma.isMob(i)) {
+                        mobIn += m.addMob(buffs[i], l, Math.min(mob[i][l], movedMB - mobIn));
+                    }
+                }
+            }
+        }
+        m.add(Math.max(0, movedMB - mobIn), com.mrgregles.bsp_core.plasma.MobPlasma.withoutMob(offeredByOrdinal));
+        if (movedMB > mobIn) {
+            m.addFedBy(access); // who fed it travels on with the plasma
+        }
         in = pressurePerTick;
         fedAt = level == null ? 0 : level.getGameTime();
         m.portReport(worldPosition, mode.ordinal(), in, out);
@@ -98,13 +119,13 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
         if (m == null || mode == Mode.INPUT || fedLately()) {
             return 0;
         }
-        return (int) Math.min(BSPConfig.getOr(BSPConfig.INTERFACE_SIDE_MAX, 1000), Math.min(Integer.MAX_VALUE, m.stored() / 20));
+        return (int) Math.min(BSPConfig.getOr(BSPConfig.INTERFACE_SIDE_MAX, 1000), Math.min(Integer.MAX_VALUE, m.open() / 20));
     }
 
     @Override
     public int tank() {
         TankPartBlockEntity m = masterEntity();
-        return m == null ? 0 : (int) Math.min(Integer.MAX_VALUE, m.stored());
+        return m == null ? 0 : (int) Math.min(Integer.MAX_VALUE, m.open()); // mob pools stay in for a Tank Extractor
     }
 
     @Override
@@ -118,9 +139,11 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
         return true;
     }
 
+    /** Who fed the tank: a projector fed from it knows its team. */
     @Override
     public PlasmaAccess access() {
-        return new PlasmaAccess();
+        TankPartBlockEntity m = masterEntity();
+        return m == null ? new PlasmaAccess() : m.fedBy();
     }
 
     @Override
@@ -153,7 +176,7 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
         if (!fedLately()) {
             in = 0;
         }
-        if (mode != Mode.INPUT && !fedLately() && m.stored() > 0) {
+        if (mode != Mode.INPUT && !fedLately() && m.open() > 0) {
             network.tick(sl);
             out = network.lastDeliveredTotal();
         } else {
@@ -177,5 +200,69 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
         mode = Mode.values()[Math.max(0, Math.min(Mode.values().length - 1, i))];
         in = tag.getInt("In");
         out = tag.getInt("Out");
+    }
+
+    // ---- items: the chamber's loot store, out only
+
+    /** The master's loot store as hoppers and pipes see it from this port: they may take, never put in. */
+    private final net.minecraftforge.items.IItemHandler lootOut = new net.minecraftforge.items.IItemHandler() {
+        @Nullable
+        private net.minecraftforge.items.ItemStackHandler store() {
+            TankPartBlockEntity m = masterEntity();
+            return m == null ? null : m.loot();
+        }
+
+        @Override
+        public int getSlots() {
+            return TankPartBlockEntity.LOOT_SLOTS;
+        }
+
+        @Override
+        public net.minecraft.world.item.ItemStack getStackInSlot(int slot) {
+            var s = store();
+            return s == null || slot < 0 || slot >= s.getSlots() ? net.minecraft.world.item.ItemStack.EMPTY : s.getStackInSlot(slot);
+        }
+
+        @Override
+        public net.minecraft.world.item.ItemStack insertItem(int slot, net.minecraft.world.item.ItemStack stack, boolean simulate) {
+            return stack;
+        }
+
+        @Override
+        public net.minecraft.world.item.ItemStack extractItem(int slot, int amount, boolean simulate) {
+            var s = store();
+            return s == null || slot < 0 || slot >= s.getSlots() ? net.minecraft.world.item.ItemStack.EMPTY : s.extractItem(slot, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 64;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, net.minecraft.world.item.ItemStack stack) {
+            return false;
+        }
+    };
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> lootCap = net.minecraftforge.common.util.LazyOptional.of(() -> lootOut);
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, @Nullable Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            return lootCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        lootCap.invalidate();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        lootCap = net.minecraftforge.common.util.LazyOptional.of(() -> lootOut);
     }
 }

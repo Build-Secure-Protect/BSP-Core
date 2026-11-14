@@ -170,6 +170,8 @@ public final class ModItems {
     public static final RegistryObject<Item> DECOY_TOTEM = ITEMS.register("decoy_totem", () -> new com.mrgregles.bsp_core.decoy.DecoyTotemBlockItem(ModBlocks.DECOY_TOTEM.get()));
     public static final RegistryObject<Item> DECOY_POWER_BASE = ITEMS.register("decoy_power_base",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.DECOY_POWER_BASE.get(), new Item.Properties()));
+    /** What a wither skeleton's bones become when it dies in a Plasma Tank Mob Chamber, so its power (Wither) stays apart from a bone's (Growth). */
+    public static final RegistryObject<Item> WITHER_BONE = ITEMS.register("wither_bone", () -> new Item(new Item.Properties()));
     /** The hard-to-make heart of a Decoy Totem: Charged Magnatite around an Illyrium Processor. */
     public static final RegistryObject<Item> MAGNET_CORE = ITEMS.register("magnet_core", () -> new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.RARE)));
     /** The parts that go into a Decoy Totem's sockets, in tree order. */
@@ -186,7 +188,7 @@ public final class ModItems {
     public static final RegistryObject<Item> CHANNEL_EXPANDER, LINK_CARD, LINK_EXPANDER;
 
     static {
-        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.PLASMA_EXTRACTOR, ModBlocks.PLASMA_INTERFACE, ModBlocks.PLASMA_REPEATER, ModBlocks.PLASMA_VALVE, ModBlocks.PROJECTOR_BASE, ModBlocks.TOTEM_PROJECTOR, ModBlocks.TANK_CASING, ModBlocks.TANK_GLASS, ModBlocks.TANK_PORT, ModBlocks.TETRIUM_GLASS, ModBlocks.PLASMA_INJECTOR));
+        List<RegistryObject<net.minecraft.world.level.block.Block>> blocks = new ArrayList<>(List.of(ModBlocks.PLASMA_EXTRACTOR, ModBlocks.PLASMA_INTERFACE, ModBlocks.PLASMA_REPEATER, ModBlocks.PLASMA_VALVE, ModBlocks.PROJECTOR_BASE, ModBlocks.TOTEM_PROJECTOR, ModBlocks.TANK_CASING, ModBlocks.TANK_GLASS, ModBlocks.TANK_PORT, ModBlocks.SPAWN_GRATE, ModBlocks.TANK_EXTRACTOR, ModBlocks.TETRIUM_GLASS, ModBlocks.PLASMA_INJECTOR));
         blocks.addAll(ModBlocks.TOTEM_CABLES.values());
         blocks.addAll(ModBlocks.COLOURED_CABLES);
         for (var block : blocks) {

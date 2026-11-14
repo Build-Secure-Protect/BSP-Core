@@ -9,10 +9,13 @@ import com.mrgregles.bsp_core.totem.TotemUpgrades;
 public final class UpgradeOrbColors {
     /**
      * Hue in degrees per buff, in {@link TotemUpgrades.Buff} order: one for every buff (a game test checks), all different.
-     * The last six (Harvest, Sentinel, Extra Homes, Swift Travel, Herald, Tripwire) sit in the widest gaps the others left.
+     * Harvest, Sentinel, Extra Homes, Swift Travel, Herald and Tripwire sit in the widest gaps the others left; the Mob Chamber's
+     * thirteen after them fill the gaps that were left.
      */
     private static final float[] HUES = {8f, 218f, 48f, 275f, 130f, 165f, 345f, 195f, 60f, 300f, 25f, 100f, 240f, 180f, 0f, 260f, 205f, 90f, 215f, 110f, 55f, 230f, 20f, 350f, 140f, 320f,
-            75f, 288f, 150f, 37f, 335f, 310f};
+            75f, 288f, 150f, 37f, 335f, 310f,
+            // the Mob Chamber's powers (Growth to Tide): never orbs on a totem, but they colour the plasma that carries them
+            120f, 282f, 172f, 82f, 43f, 250f, 187f, 66f, 13f, 30f, 268f, 52f, 192f};
 
     /** How many buffs have their own hue. */
     public static int hues() {

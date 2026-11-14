@@ -50,6 +50,16 @@ public final class PlasmaNetwork {
 
         int[] offered();
 
+        /** Whether everything this reservoir gives is a Mob Chamber power's plasma (a Tank Extractor set to a mob pool). */
+        default boolean sendsMob() {
+            return false;
+        }
+
+        /** Takes up to {@code mB} like {@link #drain(int)}; what of it was a Mob Chamber power's plasma is added to {@code mob} ({@link MobPlasma}). */
+        default int drain(int mB, long[][] mob) {
+            return drain(mB);
+        }
+
         @javax.annotation.Nullable
         BlockPos totemPos();
 
@@ -371,6 +381,7 @@ public final class PlasmaNetwork {
             extractors.add(source);
             supply = source.flow();
             anchorTotem = source.anchor();
+            access.addAll(source.access()); // who the plasma's powers know: a tank's feeders, a Tank Extractor's placer
             int[] o = source.offered(); // a tank passes on the powers its plasma still carries
             for (int i = 0; i < o.length && i < offered.length; i++) {
                 offered[i] = Math.max(offered[i], o[i]);
@@ -449,8 +460,10 @@ public final class PlasmaNetwork {
                 }
             }
             int stock = 0;
+            boolean mobOnly = true;
             for (Reservoir extractor : extractors) {
                 stock += extractor.tank();
+                mobOnly &= extractor.sendsMob();
             }
             // what the extractors push each tick: their flow, or, with nothing feeding them, what is left in them for a while
             int rate = supply > 0 ? supply : Math.min(stock / 20, BSPConfig.getOr(BSPConfig.PROJECTOR_NEED, 100));
@@ -492,17 +505,21 @@ public final class PlasmaNetwork {
                     offer = (int) Math.floor(allocate(rate, paths, opened)[i]);
                 }
                 int arriveMax = (int) Math.floor(share[i] * k) * 20; // mB that may arrive this second
-                int want = (int) Math.ceil(Math.min(projector.wanted(), arriveMax) / k), took = 0;
+                // a run that carries only mob powers' plasma asks for the room a receiver keeps for it
+                int want = (int) Math.ceil(Math.min(mobOnly ? projector.wantedMob() : projector.wanted(), arriveMax) / k), took = 0;
+                long[][] mob = MobPlasma.empty(); // the Mob Chamber powers' plasma among what was taken, by amount
                 for (Reservoir extractor : extractors) {
-                    took += extractor.drain(want - took);
+                    took += extractor.drain(want - took, mob);
                     if (took >= want) {
                         break;
                     }
                 }
                 int moved = (int) Math.floor(took * k); // mB that actually went into the receiver this second
+                long[][] mobMoved = MobPlasma.scaled(mob, k);
                 // extractors met the demand: the run is at its share; extractors ran short: only what got through
                 int pressure = took >= want ? (int) Math.floor(share[i] * k) : moved / 20;
-                projector.feed(master, this.offered, f.repeaters, pressure, moved, access.copy(), anchorTotem);
+                // mob powers go by amount beside the list, never in it: a little of them must not label the rest
+                projector.feed(master, MobPlasma.withoutMob(this.offered), f.repeaters, pressure, moved, access.copy(), anchorTotem, mobMoved);
                 lastDelivered.put(f.projector, pressure);
                 // walked back from the receiver: every cable carries the plasma really passing it. The figure rises by the repeater's
                 // loss each time a repeater is passed (toward the interface), so the cables leaving the interface add up to the extractors'

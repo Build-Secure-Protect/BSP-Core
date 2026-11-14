@@ -277,7 +277,7 @@ public class BspJadePlugin implements IWailaPlugin {
                                 list.append(", ");
                             }
                             first = false;
-                            list.append(net.minecraft.network.chat.Component.translatable(buffs[o].translationKey())).append(" " + com.mrgregles.bsp_core.totem.TotemUpgrades.roman(Integer.parseInt(kv[1])));
+                            list.append(net.minecraft.network.chat.Component.translatable(buffs[o].translationKey())).append(" " + com.mrgregles.bsp_core.totem.TotemUpgrades.levelRoman(Integer.parseInt(kv[1])));
                         }
                         tooltip.add(net.minecraft.network.chat.Component.translatable("jade.bsp_core.tank_powers", list).withStyle(net.minecraft.ChatFormatting.GOLD));
                     }

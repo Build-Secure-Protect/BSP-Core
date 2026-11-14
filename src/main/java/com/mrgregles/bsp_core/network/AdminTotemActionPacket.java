@@ -73,7 +73,7 @@ public record AdminTotemActionPacket(BlockPos pos, Action action, String text, i
                     return;
                 }
                 TotemUpgrades.Buff buff = TotemUpgrades.Buff.byOrdinal(msg.value);
-                if (buff == null) {
+                if (buff == null || !buff.onTotem()) {
                     return;
                 }
                 int level = totem.getUpgradeLevel(buff) + (msg.text.equals("-") ? -1 : 1);

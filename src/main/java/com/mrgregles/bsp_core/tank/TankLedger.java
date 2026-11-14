@@ -24,7 +24,10 @@ public class TankLedger extends SavedData {
     public static final class Entry {
         public BlockPos min;
         public int w, h, d, remaining;
-        public long stored;
+        /** What it held, pool by pool. An entry saved before the pools reads as plain plasma. */
+        public TankPools pools = new TankPools();
+        /** Who fed it. */
+        public com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
 
         boolean onShell(BlockPos p) {
             int x = p.getX() - min.getX(), y = p.getY() - min.getY(), z = p.getZ() - min.getZ();
@@ -46,26 +49,40 @@ public class TankLedger extends SavedData {
         return level.getDataStorage().computeIfAbsent(TankLedger::load, TankLedger::new, DATA_NAME);
     }
 
-    /** A tank came apart: remember its plasma. */
-    public void remember(BlockPos min, int w, int h, int d, long stored, int remaining) {
+    /** A tank came apart: remember its plasma, every pool of it. */
+    public void remember(BlockPos min, int w, int h, int d, TankPools pools, int remaining) {
+        remember(min, w, h, d, pools, new com.mrgregles.bsp_core.plasma.PlasmaAccess(), remaining);
+    }
+
+    /** A tank came apart: remember its plasma, every pool of it, and who fed it. */
+    public void remember(BlockPos min, int w, int h, int d, TankPools pools, com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy, int remaining) {
         Entry e = new Entry();
         e.min = min.immutable();
         e.w = w;
         e.h = h;
         e.d = d;
-        e.stored = stored;
+        e.pools = pools.copy();
+        e.fedBy = fedBy.copy();
         e.remaining = remaining;
         entries.add(e);
         setDirty();
     }
 
     /** A tank formed over {@code min..dims}: the plasma of every dormant tank it overlaps, which are then forgotten. */
-    public long take(BlockPos min, int w, int h, int d) {
-        long sum = 0;
+    public TankPools take(BlockPos min, int w, int h, int d) {
+        return take(min, w, h, d, null);
+    }
+
+    /** {@link #take(BlockPos, int, int, int)}, adding who fed each dormant tank to {@code fedBy} (may be null). */
+    public TankPools take(BlockPos min, int w, int h, int d, @javax.annotation.Nullable com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy) {
+        TankPools sum = new TankPools();
         for (Iterator<Entry> it = entries.iterator(); it.hasNext(); ) {
             Entry e = it.next();
             if (e.overlaps(min, w, h, d)) {
-                sum += e.stored;
+                sum.merge(e.pools);
+                if (fedBy != null) {
+                    fedBy.addAll(e.fedBy);
+                }
                 it.remove();
                 setDirty();
             }
@@ -96,7 +113,12 @@ public class TankLedger extends SavedData {
             e.w = c.getInt("W");
             e.h = c.getInt("H");
             e.d = c.getInt("D");
-            e.stored = c.getLong("Stored");
+            e.fedBy = com.mrgregles.bsp_core.plasma.PlasmaAccess.load(c, "FedBy");
+            if (c.contains("Pools")) {
+                e.pools.load(c.getCompound("Pools"));
+            } else {
+                e.pools = TankPools.plainOf(Math.max(0, c.getLong("Stored")));
+            }
             e.remaining = c.getInt("Remaining");
             ledger.entries.add(e);
         }
@@ -112,7 +134,10 @@ public class TankLedger extends SavedData {
             c.putInt("W", e.w);
             c.putInt("H", e.h);
             c.putInt("D", e.d);
-            c.putLong("Stored", e.stored);
+            CompoundTag pools = new CompoundTag();
+            e.pools.save(pools);
+            c.put("Pools", pools);
+            e.fedBy.save(c, "FedBy");
             c.putInt("Remaining", e.remaining);
             list.add(c);
         }

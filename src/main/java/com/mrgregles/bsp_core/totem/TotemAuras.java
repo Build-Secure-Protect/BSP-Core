@@ -127,6 +127,18 @@ public final class TotemAuras {
         return best;
     }
 
+    /** Every loaded, projecting Projector whose reach for {@code buff} covers {@code pos}. */
+    public static java.util.List<com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity> projectorsCovering(ServerLevel level, BlockPos pos, TotemUpgrades.Buff buff) {
+        java.util.List<com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity> out = new java.util.ArrayList<>();
+        for (var projector : projectors(level)) {
+            int lvl = projector.isRemoved() ? 0 : projector.level(buff);
+            if (lvl > 0 && inCube(pos, projector.getBlockPos(), buff.reach(lvl))) {
+                out.add(projector);
+            }
+        }
+        return out;
+    }
+
     /** Every loaded placed totem whose reach for {@code buff} covers {@code pos}. */
     public static java.util.List<ShatterTotemBlockEntity> totemsCovering(ServerLevel level, BlockPos pos, TotemUpgrades.Buff buff) {
         java.util.List<ShatterTotemBlockEntity> out = new java.util.ArrayList<>();

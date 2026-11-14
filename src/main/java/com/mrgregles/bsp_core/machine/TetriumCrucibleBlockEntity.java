@@ -149,6 +149,11 @@ public class TetriumCrucibleBlockEntity extends LavaTankMachineBlockEntity {
     }
 
     @Override
+    protected int lavaBucketTicks() {
+        return BSPConfig.TCRUC_BUCKET_TICKS.get();
+    }
+
+    @Override
     public List<Need> missing(int fluidMb, boolean burning) {
         List<Need> out = new java.util.ArrayList<>();
         if (!items.getStackInSlot(ORE).is(TETRIUM_ORES)) {

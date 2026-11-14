@@ -26,13 +26,14 @@ import net.minecraft.world.phys.BlockHitResult;
 import javax.annotation.Nullable;
 
 /**
- * The three blocks of the Plasma Tank: Tank Casing for the edges, Tank Glass to close the faces, Tank Ports where cables meet it.
+ * The blocks of the Plasma Tank: Tank Casing for the edges, Tank Glass to close the faces, Tank Ports where cables meet it, and the Spawn
+ * Grate, which goes on a face like glass and makes the tank a Mob Chamber.
  * A hollow box of them, 3 to 12 blocks a side, forms by itself when the last block goes in ({@link TankStructure}); every block
  * then knows the master (the lowest corner), which holds the plasma. Right-click any block of a formed tank for the tank's screen;
  * an unformed block does nothing on right-click, so building is not interrupted.
  */
 public class TankBlock extends Block implements EntityBlock {
-    public enum Part { CASING, GLASS, PORT }
+    public enum Part { CASING, GLASS, PORT, GRATE }
 
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
     /**
@@ -100,7 +101,7 @@ public class TankBlock extends Block implements EntityBlock {
             return InteractionResult.PASS; // still building: let the next block go on; Jade says the tank is unfinished
         }
         if (player instanceof ServerPlayer sp) {
-            TankStructure.sendView(sp, pos);
+            TankStructure.open(sp, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

@@ -43,12 +43,12 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest. The tank's Output ports pass them on to injectors with every mB they give, with or without the totem, until that plasma is used up.$(br2)Plain plasma fed in mixes with it, and the powers fade as the mix runs down. The tank screen lists the powers the plasma carries.",
+      "text": "Plasma fed in from a totem keeps that totem's powers: Overclock, Output and the rest, apart from plain plasma and from a Mob Chamber's powers. Its ports give out plain and totem plasma together, passing the totem's powers on with every mB until that plasma is used up, totem or no totem.$(br2)The tank remembers who fed it, so a Projector fed from it knows the totem's owner, team and friends. The tank screen's fill bar shows each kind in its own colour.",
       "title": "Powers in the plasma"
     },
     {
       "type": "patchouli:text",
-      "text": "Break one block by accident and the tank goes dormant but keeps its plasma: put the block back and it is whole again. Rebuild it smaller and it keeps what fits; bigger and it keeps what it had. Take the last block away and the plasma is gone.",
+      "text": "Break one block by accident and the tank goes dormant but keeps its plasma and its powers: put the block back and it is whole again. Rebuild it smaller and it keeps what fits, plain plasma going first; bigger and it keeps what it had. Take the last block away and the plasma is gone.",
       "title": "Breaking and rebuilding"
     }
   ]

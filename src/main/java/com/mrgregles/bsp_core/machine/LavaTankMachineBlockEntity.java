@@ -102,6 +102,15 @@ public abstract class LavaTankMachineBlockEntity extends MachineBlockEntity {
     /** Tank size in mB (from the config). */
     protected abstract int lavaTankSize();
 
+    /** Ticks a lava bucket burns in the fuel slot (from the config): less than the same bucket poured into the tank. */
+    protected abstract int lavaBucketTicks();
+
+    /** A lava bucket in the fuel slot burns {@link #lavaBucketTicks()}; every other fuel burns as in a furnace. */
+    @Override
+    protected int burnTimeOf(net.minecraft.world.item.ItemStack fuel) {
+        return fuel.is(net.minecraft.world.item.Items.LAVA_BUCKET) ? lavaBucketTicks() : super.burnTimeOf(fuel);
+    }
+
     /** Whether the machine needs heat right now. The Combination Forge on RF does not. */
     protected boolean needsHeat() {
         return true;

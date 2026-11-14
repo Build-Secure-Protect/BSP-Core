@@ -413,13 +413,18 @@ public abstract class MachineBlockEntity extends BlockEntity {
         }
     }
 
+    /** Ticks {@code fuel} burns in this machine's fuel slot: as in a furnace, unless a machine says otherwise. */
+    protected int burnTimeOf(ItemStack fuel) {
+        return ForgeHooks.getBurnTime(fuel, null);
+    }
+
     private boolean tryIgnite() {
         int slot = slotOf(Role.FUEL, 0);
         if (slot < 0) {
             return false;
         }
         ItemStack fuel = items.getStackInSlot(slot);
-        int burn = ForgeHooks.getBurnTime(fuel, null);
+        int burn = burnTimeOf(fuel);
         if (burn <= 0) {
             return false;
         }

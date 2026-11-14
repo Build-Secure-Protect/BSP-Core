@@ -92,8 +92,8 @@ public class LavaTankGameTests {
     @GameTest(template = EMPTY, batch = BATCH)
     public void lava_tank_takes_lava_from_any_side_and_cannot_be_drained(GameTestHelper h) {
         TetriumCrucibleBlockEntity be = crucible(h, new BlockPos(2, 1, 2));
-        h.assertTrue(BSPConfig.TCRUC_LAVA_TANK.getDefault() == 8000 && BSPConfig.TCRUC_LAVA_PER_ORE.getDefault() == 100,
-                "shipped defaults are an 8,000 mB tank and 100 mB per ore");
+        h.assertTrue(BSPConfig.TCRUC_LAVA_TANK.getDefault() == 8000 && BSPConfig.TCRUC_LAVA_PER_ORE.getDefault() == 40,
+                "shipped defaults are an 8,000 mB tank and 40 mB per ore");
         int size = be.fluidCapacity();
         h.assertTrue(size == BSPConfig.TCRUC_LAVA_TANK.get(), "the tank is the configured size, got " + size);
         h.assertTrue(pipe(be, Direction.NORTH).fill(new FluidStack(Fluids.WATER, 1000), IFluidHandler.FluidAction.EXECUTE) == 0, "water is refused");
@@ -241,7 +241,7 @@ public class LavaTankGameTests {
     @GameTest(template = EMPTY, batch = BATCH, timeoutTicks = 3000)
     public void forge_runs_on_lava_with_no_fuel(GameTestHelper h) {
         CombinationForgeBlockEntity be = forge(h, new BlockPos(2, 1, 2));
-        h.assertTrue(BSPConfig.FORGE_LAVA_PER_JOB.getDefault() == 200 && BSPConfig.FORGE_LAVA_TANK.getDefault() == 8000, "shipped defaults are 200 mB a job and 8,000 mB");
+        h.assertTrue(BSPConfig.FORGE_LAVA_PER_JOB.getDefault() == 80 && BSPConfig.FORGE_LAVA_TANK.getDefault() == 8000, "shipped defaults are 80 mB a job and 8,000 mB");
         h.assertTrue(be.fluidCapacity() == BSPConfig.FORGE_LAVA_TANK.get(), "the forge's tank is its configured size");
         pour(be, 1000);
         be.getItems().insertItem(FORGE_IN, new ItemStack(ModItems.TETRIUM_NUGGET.get(), 9), false);
@@ -265,5 +265,77 @@ public class LavaTankGameTests {
             h.assertTrue(be.fluidAmount() == 1000, "RF ran the job, the tank still holds " + be.fluidAmount());
             h.succeed();
         }, "the forge never ran on RF");
+    }
+
+    // ------------------------------------------------------------------ a bucket burnt or poured (2026-11-11)
+
+    /** Shipped numbers: a bucket burnt in the crucible's fuel slot lasts 10 ores, the same bucket poured into its tank 25; on the forge 5 and 12. */
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void a_poured_bucket_goes_further_than_a_burnt_one(GameTestHelper h) {
+        int crucibleBurnt = BSPConfig.TCRUC_BUCKET_TICKS.getDefault() / BSPConfig.TCRUC_TICKS.getDefault();
+        int cruciblePoured = 1000 / BSPConfig.TCRUC_LAVA_PER_ORE.getDefault();
+        int forgeBurnt = BSPConfig.FORGE_BUCKET_TICKS.getDefault() / BSPConfig.FORGE_TICKS.getDefault();
+        int forgePoured = 1000 / BSPConfig.FORGE_LAVA_PER_JOB.getDefault();
+        h.assertTrue(crucibleBurnt == 10 && cruciblePoured == 25, "crucible: burnt " + crucibleBurnt + " ores, poured " + cruciblePoured);
+        h.assertTrue(forgeBurnt == 5 && forgePoured == 12, "forge: burnt " + forgeBurnt + " jobs, poured " + forgePoured);
+        h.succeed();
+    }
+
+    /** A lava bucket in the crucible's fuel slot burns the configured ticks (not a furnace's 20,000) and leaves its empty bucket; coal still burns as in a furnace. */
+    @GameTest(template = EMPTY, batch = BATCH, timeoutTicks = 1200)
+    public void crucible_fuel_slot_burns_a_lava_bucket_for_its_configured_time(GameTestHelper h) {
+        TetriumCrucibleBlockEntity bucket = crucible(h, new BlockPos(2, 1, 2)), coal = crucible(h, new BlockPos(4, 1, 2));
+        bucket.getItems().insertItem(CRUCIBLE_FUEL, new ItemStack(Items.LAVA_BUCKET), false);
+        bucket.getItems().insertItem(CRUCIBLE_ORE, rawTetrium(), false);
+        coal.getItems().insertItem(CRUCIBLE_FUEL, new ItemStack(Items.COAL), false);
+        coal.getItems().insertItem(CRUCIBLE_ORE, rawTetrium(), false);
+        when(h, 900, () -> bucket.data.get(3) > 0 && coal.data.get(3) > 0, () -> {
+            h.assertTrue(bucket.data.get(3) == BSPConfig.TCRUC_BUCKET_TICKS.get(), "the bucket burns " + BSPConfig.TCRUC_BUCKET_TICKS.get() + " ticks, got " + bucket.data.get(3));
+            h.assertTrue(bucket.getItems().getStackInSlot(CRUCIBLE_FUEL).is(Items.BUCKET), "the empty bucket stays, got " + bucket.getItems().getStackInSlot(CRUCIBLE_FUEL));
+            h.assertTrue(bucket.fluidAmount() == 0, "a burnt bucket does not fill the tank");
+            h.assertTrue(coal.data.get(3) == 1600, "coal burns as in a furnace, got " + coal.data.get(3));
+            h.succeed();
+        }, "neither crucible lit its fuel");
+    }
+
+    /** The same on the Combination Forge: its own configured time for a lava bucket in the fuel slot. */
+    @GameTest(template = EMPTY, batch = BATCH, timeoutTicks = 1200)
+    public void forge_fuel_slot_burns_a_lava_bucket_for_its_configured_time(GameTestHelper h) {
+        CombinationForgeBlockEntity be = forge(h, new BlockPos(2, 1, 2));
+        be.getItems().insertItem(FORGE_FUEL, new ItemStack(Items.LAVA_BUCKET), false);
+        be.getItems().insertItem(FORGE_IN, new ItemStack(ModItems.TETRIUM_NUGGET.get(), 9), false);
+        when(h, 900, () -> be.data.get(3) > 0, () -> {
+            h.assertTrue(be.data.get(3) == BSPConfig.FORGE_BUCKET_TICKS.get(), "the bucket burns " + BSPConfig.FORGE_BUCKET_TICKS.get() + " ticks, got " + be.data.get(3));
+            h.assertTrue(be.getItems().getStackInSlot(FORGE_FUEL).is(Items.BUCKET), "the empty bucket stays");
+            h.succeed();
+        }, "the forge never lit its lava bucket");
+    }
+
+    /** A config file with the old tank rates (100 and 200) moves to 40 and 80 once; values set after that, or other values, are kept. */
+    @GameTest(template = EMPTY, batch = "lava_rates")
+    public void old_tank_lava_rates_move_once(GameTestHelper h) {
+        int ore = BSPConfig.TCRUC_LAVA_PER_ORE.get(), job = BSPConfig.FORGE_LAVA_PER_JOB.get();
+        boolean moved = BSPConfig.LAVA_RATES_MOVED.get();
+        try {
+            h.assertTrue(moved, "the step already ran when the server loaded its config");
+            BSPConfig.TCRUC_LAVA_PER_ORE.set(100);
+            BSPConfig.FORGE_LAVA_PER_JOB.set(200);
+            BSPConfig.LAVA_RATES_MOVED.set(false);
+            h.assertTrue(BSPConfig.moveOldLavaRates() && BSPConfig.TCRUC_LAVA_PER_ORE.get() == 40 && BSPConfig.FORGE_LAVA_PER_JOB.get() == 80
+                    && BSPConfig.LAVA_RATES_MOVED.get(), "100 and 200 move to 40 and 80 and are marked");
+            BSPConfig.TCRUC_LAVA_PER_ORE.set(100);
+            h.assertTrue(!BSPConfig.moveOldLavaRates() && BSPConfig.TCRUC_LAVA_PER_ORE.get() == 100, "an admin's 100 after the step is kept");
+            BSPConfig.TCRUC_LAVA_PER_ORE.set(60);
+            BSPConfig.FORGE_LAVA_PER_JOB.set(200);
+            BSPConfig.LAVA_RATES_MOVED.set(false);
+            h.assertTrue(BSPConfig.moveOldLavaRates() && BSPConfig.TCRUC_LAVA_PER_ORE.get() == 60 && BSPConfig.FORGE_LAVA_PER_JOB.get() == 80,
+                    "a 60 is left alone while the forge's old 200 moves");
+        } finally {
+            BSPConfig.TCRUC_LAVA_PER_ORE.set(ore);
+            BSPConfig.FORGE_LAVA_PER_JOB.set(job);
+            BSPConfig.LAVA_RATES_MOVED.set(moved);
+            BSPConfig.SPEC.save();
+        }
+        h.succeed();
     }
 }

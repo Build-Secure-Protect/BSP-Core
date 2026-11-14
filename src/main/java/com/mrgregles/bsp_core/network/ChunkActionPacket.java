@@ -28,12 +28,13 @@ public record ChunkActionPacket(BlockPos pos, int action, int chunkX, int chunkZ
 
     public static void handle(ChunkActionPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
-        if (player != null && player.distanceToSqr(msg.pos.getX() + 0.5, msg.pos.getY() + 0.5, msg.pos.getZ() + 0.5) <= 64 && player.level().isLoaded(msg.pos)) {
+        if (player != null && player.level().isLoaded(msg.pos) && player.level().getBlockEntity(msg.pos) instanceof com.mrgregles.bsp_core.tank.TankPartBlockEntity) {
+            // a tank's screen: open by a right-click, and near any part of the tank (a big tank's master corner can be far off)
+            com.mrgregles.bsp_core.tank.TankStructure.refresh(player, msg.pos);
+        } else if (player != null && player.distanceToSqr(msg.pos.getX() + 0.5, msg.pos.getY() + 0.5, msg.pos.getZ() + 0.5) <= 64 && player.level().isLoaded(msg.pos)) {
             BlockEntity be = player.level().getBlockEntity(msg.pos);
             if (be instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity) {
                 com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlock.sendView(player, msg.pos);
-            } else if (be instanceof com.mrgregles.bsp_core.tank.TankPartBlockEntity) {
-                com.mrgregles.bsp_core.tank.TankStructure.sendView(player, msg.pos);
             } else if (be instanceof ShatterTotemBlockEntity || be instanceof TotemProjectorBlockEntity) {
                 if (msg.action == TOGGLE) {
                     ChunkLoading.toggle(player, msg.pos, msg.chunkX, msg.chunkZ);

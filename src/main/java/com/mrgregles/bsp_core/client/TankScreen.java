@@ -36,6 +36,12 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
     private float yaw = -32, pitch = 28, zoom = 1f, panX, panY;
     private int ticks;
     private final List<float[]> labels = new ArrayList<>();
+    /** The CHAMBER tab is showing (a Mob Chamber only); the level picked for feeding; the clickable spots of the last frame. */
+    private boolean chamberTab;
+    private int pickLevel = 1;
+    private record Hit(int x, int y, int w, int h, Runnable action) {
+    }
+    private final List<Hit> hits = new ArrayList<>();
 
     public TankScreen(BlockPos pos) {
         super(Component.translatable("gui.bsp_core.tank.title"));
@@ -44,9 +50,16 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
 
     public static void receive(TankViewPacket msg) {
         view = msg;
+        if (Minecraft.getInstance().screen instanceof TankScreen open && msg.chamber() != null && !msg.chamber().feedItem().isEmpty()) {
+            open.pickLevel = msg.chamber().feedLevel();
+        }
         Minecraft mc = Minecraft.getInstance();
         if (!(mc.screen instanceof TankScreen)) {
-            mc.setScreen(new TankScreen(msg.pos()));
+            TankScreen screen = new TankScreen(msg.pos());
+            if (msg.chamber() != null && !msg.chamber().feedItem().isEmpty()) {
+                screen.pickLevel = msg.chamber().feedLevel(); // the level being fed shows from the first frame
+            }
+            mc.setScreen(screen);
         }
     }
 
@@ -66,6 +79,9 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+        if (chamberTab) {
+            return false;
+        }
         if (button == 1 || hasShiftDown()) {
             panX += (float) dx;
             panY += (float) dy;
@@ -78,6 +94,9 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
+        if (chamberTab) {
+            return false;
+        }
         zoom = Mth.clamp(zoom * (float) Math.pow(1.15, delta), 0.25f, 8f);
         return true;
     }
@@ -89,7 +108,13 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        if (overReset(mx, my)) {
+        for (Hit hit : List.copyOf(hits)) {
+            if (mx >= hit.x && mx < hit.x + hit.w && my >= hit.y && my < hit.y + hit.h) {
+                hit.action.run();
+                return true;
+            }
+        }
+        if (!chamberTab && overReset(mx, my)) {
             zoom = 1f;
             panX = 0;
             panY = 0;
@@ -223,9 +248,20 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
         g.fill(x - 1, y - 1, x + W + 1, y + H + 1, TQ);
         g.fill(x, y, x + W, y + H, BG);
         g.drawString(font, title.getString().toUpperCase(Locale.ROOT), x + 10, y + 8, TQ & 0xFFFFFF, false);
+        TankViewPacket v = view;
+        hits.clear();
+        if (v != null && v.chamber() != null) {
+            tabs(g, x, y);
+            if (chamberTab) {
+                chamber(g, v, v.chamber(), x, y, mouseX, mouseY);
+                super.render(g, mouseX, mouseY, partialTick);
+                return;
+            }
+        } else {
+            chamberTab = false;
+        }
         g.fill(x + VIEW_X - 1, y + VIEW_Y - 1, x + VIEW_X + VIEW_W + 1, y + VIEW_Y + VIEW_H + 1, DIM);
         g.fill(x + VIEW_X, y + VIEW_Y, x + VIEW_X + VIEW_W, y + VIEW_Y + VIEW_H, SLOT_BG);
-        TankViewPacket v = view;
         int cx = x + LIST_X, row = y + VIEW_Y;
         if (v == null || v.w() < 3) {
             small(g, tr("unformed"), cx, row, BAD);
@@ -250,7 +286,7 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
         g.drawString(font, String.format("%,d mB", v.stored()), cx, row, ION & 0xFFFFFF, false);
         small(g, tr("of", String.format("%,d", v.capacity()), Math.round(frac * 100)), cx, row + 11, MUTED);
         g.fill(cx, row + 22, cx + COL_W, row + 30, SLOT_BG);
-        g.fill(cx, row + 22, cx + Math.round(COL_W * frac), row + 30, ION);
+        poolBands(g, v, cx, row + 22, Math.round(COL_W * frac));
         row += 38;
         small(g, tr("size", v.w(), v.h(), v.d(), v.w() * v.h() * v.d() - (v.w() - 2) * (v.h() - 2) * (v.d() - 2)), cx, row, TEXT);
         small(g, tr("ports", v.ports().size()), cx, row + 9, TEXT);
@@ -272,7 +308,7 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
                 var buffs = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values();
                 var buff = buffs[Math.floorMod(pw.ordinal(), buffs.length)];
                 Component name = Component.translatable(buff.translationKey());
-                String level = com.mrgregles.bsp_core.totem.TotemUpgrades.roman(pw.level());
+                String level = com.mrgregles.bsp_core.totem.TotemUpgrades.levelRoman(pw.level());
                 small(g, pw.live() ? tr("power_live", name, level) : tr("power_left", name, level, String.format("%,d", pw.mB())), cx, row, pw.live() ? ION & 0xFFFFFF : GOLD & 0xFFFFFF);
                 row += 9;
             }
@@ -307,5 +343,221 @@ public class TankScreen extends Screen implements ScreenFit.Fitted {
     @Override
     public int panelHeight() {
         return H;
+    }
+
+    // ------------------------------------------------------------------ the CHAMBER tab (layout A of tools/preview/mob_chamber_concepts.html)
+
+    private static final int PANEL = 0xFF171A21;
+
+    private void box(GuiGraphics g, int x, int y, int w, int h, int fill, int edge) {
+        g.fill(x, y, x + w, y + h, edge);
+        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
+    }
+
+    /** Small text cut to {@code maxW} panel pixels; right-aligned at {@code x} when {@code right}. */
+    private void text(GuiGraphics g, String str, int x, int y, int colour, int maxW, boolean right) {
+        String cut = maxW > 0 ? font.plainSubstrByWidth(str, Math.round(maxW / 0.75f)) : str;
+        int w = Math.round(font.width(cut) * 0.75f);
+        small(g, Component.literal(cut), right ? x - w : x, y, colour);
+    }
+
+    private void button(GuiGraphics g, int x, int y, int w, String label, boolean on, Runnable action) {
+        box(g, x, y, w, 12, on ? 0xFF14202A : PANEL, on ? TQ : DIM);
+        int tw = Math.round(font.width(label) * 0.75f);
+        small(g, Component.literal(label), x + (w - tw) / 2, y + 3, on ? TQ & 0xFFFFFF : MUTED);
+        hits.add(new Hit(x, y, w, 12, action));
+    }
+
+    /** TANK and CHAMBER, at the top right. */
+    private void tabs(GuiGraphics g, int x, int y) {
+        String[] names = {tr("tab.tank").getString(), tr("tab.chamber").getString()};
+        int at = x + W - 10;
+        for (int i = names.length - 1; i >= 0; i--) {
+            int w = Math.round(font.width(names[i]) * 0.75f) + 12;
+            at -= w;
+            boolean on = (i == 1) == chamberTab;
+            final boolean chamber = i == 1;
+            box(g, at, y + 4, w, 13, on ? 0xFF14202A : PANEL, on ? TQ : DIM);
+            small(g, Component.literal(names[i]), at + 6, y + 7, on ? TQ & 0xFFFFFF : MUTED);
+            hits.add(new Hit(at, y + 4, w, 13, () -> chamberTab = chamber));
+            at -= 4;
+        }
+    }
+
+    private void send(int action, int value, String item) {
+        BSPNetwork.CHANNEL.sendToServer(new com.mrgregles.bsp_core.network.ChamberActionPacket(pos, action, value, item));
+    }
+
+    private void chamber(GuiGraphics g, TankViewPacket v, TankViewPacket.Chamber c, int x, int y, int mouseX, int mouseY) {
+        var buffs = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values();
+        float frac = v.capacity() <= 0 ? 0 : Mth.clamp(v.stored() / (float) v.capacity(), 0f, 1f), mark = c.markPermille() / 1000f;
+        // the fill bar with the "mobs spawn" mark
+        box(g, x + 10, y + 24, 360, 10, SLOT_BG, DIM);
+        poolBands(g, v, x + 11, y + 25, Math.round(358 * frac));
+        int mx = x + 11 + Math.round(358 * mark);
+        g.fill(mx, y + 21, mx + 1, y + 37, GOLD);
+        g.fill(mx - 2, y + 21, mx + 3, y + 23, GOLD);
+        // the label beside the notch: on its right, or on its left when the mark stands far to the right (it would run into the figures)
+        text(g, tr("chamber.mark").getString(), mark > 0.6f ? mx - 4 : mx + 4, y + 37, GOLD & 0xFFFFFF, 0, mark > 0.6f);
+        text(g, Math.round(frac * 100) + "% \u00b7 " + String.format("%,d", v.stored()) + " mB", x + 370, y + 37, ION & 0xFFFFFF, 0, true);
+        // left: the switch, the status, what can spawn here
+        box(g, x + 10, y + 50, 176, 156, PANEL, DIM);
+        String biome = c.biome().isEmpty() ? "" : Component.translatable("biome." + c.biome().replace(':', '.')).getString().toUpperCase(Locale.ROOT);
+        text(g, tr("chamber.spawns", biome).getString(), x + 16, y + 55, TQ & 0xFFFFFF, 164, false);
+        String[] modes = {"all", "hostile", "passive"};
+        for (int i = 0; i < 3; i++) {
+            final int mode = i;
+            button(g, x + 16 + i * 55, y + 67, 52, tr("chamber.mode." + modes[i]).getString(), c.mode() == i, () -> send(com.mrgregles.bsp_core.network.ChamberActionPacket.MODE, mode, ""));
+        }
+        Component status;
+        int statusColour;
+        if (frac < mark) {
+            status = tr("chamber.status.low", Math.round(mark * 100));
+            statusColour = GOLD & 0xFFFFFF;
+        } else if (c.spawns().isEmpty()) {
+            status = tr("chamber.status.nothing");
+            statusColour = BAD;
+        } else if (c.serverFull()) {
+            status = tr("chamber.status.server_full");
+            statusColour = BAD;
+        } else {
+            status = c.alive() >= c.maxAlive() ? tr("chamber.status.full", c.alive(), c.maxAlive()) : tr("chamber.status.next", c.nextSeconds(), c.alive(), c.maxAlive());
+            statusColour = ION & 0xFFFFFF;
+        }
+        text(g, status.getString(), x + 16, y + 84, statusColour, 164, false);
+        int total = Math.max(c.spawnTotal(), c.spawns().size());
+        int shown = Math.min(total > 8 ? 7 : 8, c.spawns().size()); // with more to come, the last row says so
+        for (int i = 0; i < shown; i++) {
+            TankViewPacket.Spawn sp = c.spawns().get(i);
+            int ry = y + 97 + i * 13;
+            var type = net.minecraft.world.entity.EntityType.byString(sp.entity()).orElse(null);
+            if (type != null) {
+                var egg = net.minecraftforge.common.ForgeSpawnEggItem.fromEntityType(type);
+                if (egg != null) {
+                    g.pose().pushPose();
+                    g.pose().translate(x + 16, ry - 1, 0);
+                    g.pose().scale(0.5f, 0.5f, 1f);
+                    g.renderItem(new net.minecraft.world.item.ItemStack(egg), 0, 0);
+                    g.pose().popPose();
+                }
+            }
+            String name = type == null ? sp.entity() : type.getDescription().getString();
+            text(g, name, x + 28, ry + 1, TEXT, 68, false);
+            float pc = sp.permille() / 10f;
+            text(g, (pc < 10 ? String.format(Locale.ROOT, "%.1f", pc) : String.valueOf(Math.round(pc))) + "%", x + 120, ry + 1, MUTED, 0, true);
+            boolean power = sp.power() >= 0 && sp.power() < buffs.length;
+            text(g, power ? Component.translatable(buffs[sp.power()].translationKey()).getString() : tr("chamber.loot_only").getString(), x + 124, ry + 1,
+                    power ? PoolColors.mob(buffs[sp.power()]) & 0xFFFFFF : MUTED, 58, false);
+        }
+        if (total > shown) {
+            text(g, tr("chamber.more", total - shown).getString(), x + 16, y + 97 + shown * 13, MUTED, 164, false);
+        }
+        // right: the loot store, and the power picker under it
+        box(g, x + 194, y + 50, 176, 156, PANEL, DIM);
+        text(g, tr("chamber.loot").getString(), x + 200, y + 55, TQ & 0xFFFFFF, 0, false);
+        text(g, tr("chamber.loot_hint").getString(), x + 364, y + 55, MUTED, 110, true);
+        var feedId = net.minecraft.resources.ResourceLocation.tryParse(c.feedItem());
+        var feedItem = feedId == null || c.feedItem().isEmpty() ? null : net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(feedId);
+        net.minecraft.world.item.ItemStack hover = net.minecraft.world.item.ItemStack.EMPTY;
+        int have = 0;
+        for (int i = 0; i < 27 && i < c.loot().size(); i++) {
+            int sx = x + 201 + (i % 9) * 18, sy = y + 66 + (i / 9) * 18;
+            var stack = c.loot().get(i);
+            boolean picked = feedItem != null && !stack.isEmpty() && stack.is(feedItem);
+            box(g, sx, sy, 18, 18, SLOT_BG, picked ? TQ : DIM);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            have += picked ? stack.getCount() : 0;
+            g.renderItem(stack, sx + 1, sy + 1);
+            g.renderItemDecorations(font, stack, sx + 1, sy + 1);
+            if (mouseX >= sx && mouseX < sx + 18 && mouseY >= sy && mouseY < sy + 18) {
+                hover = stack;
+            }
+            if (com.mrgregles.bsp_core.chamber.MobPowers.of(stack) != null) {
+                String id = String.valueOf(net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem()));
+                hits.add(new Hit(sx, sy, 18, 18, () -> {
+                    if (picked) {
+                        send(com.mrgregles.bsp_core.network.ChamberActionPacket.FEED_OFF, 0, "");
+                    } else {
+                        send(com.mrgregles.bsp_core.network.ChamberActionPacket.FEED, pickLevel, id);
+                    }
+                }));
+            }
+        }
+        g.fill(x + 200, y + 124, x + 364, y + 125, DIM);
+        text(g, tr("chamber.feed").getString(), x + 200, y + 132, MUTED, 0, false);
+        var entry = feedItem == null ? null : com.mrgregles.bsp_core.chamber.MobPowers.of(feedItem);
+        for (int l = 1; l <= 3; l++) {
+            final int lvl = l;
+            button(g, x + 303 + (l - 1) * 21, y + 129, 18, com.mrgregles.bsp_core.totem.TotemUpgrades.levelRoman(l), pickLevel == l, () -> {
+                pickLevel = lvl;
+                if (!c.feedItem().isEmpty()) {
+                    send(com.mrgregles.bsp_core.network.ChamberActionPacket.FEED, lvl, c.feedItem());
+                }
+            });
+        }
+        if (feedItem == null || entry == null) {
+            int ly = y + 146;
+            for (var line : CashMachine.lines(font, tr("chamber.feed_pick"), Math.round(164 / 0.75f))) {
+                g.pose().pushPose();
+                g.pose().translate(x + 200, ly, 0);
+                g.pose().scale(0.75f, 0.75f, 1f);
+                g.drawString(font, line, 0, 0, MUTED, false);
+                g.pose().popPose();
+                ly += 9;
+            }
+        } else {
+            Component power = Component.translatable(entry.power().translationKey());
+            int colour = PoolColors.mob(entry.power()) & 0xFFFFFF;
+            text(g, power.getString(), x + 230, y + 132, colour, 70, false);
+            text(g, tr("chamber.feed_have", have, feedItem.getDescription().getString()).getString(), x + 200, y + 146, TEXT, 164, false);
+            long mb = c.feedMb().length >= c.feedLevel() ? c.feedMb()[Math.max(0, c.feedLevel() - 1)] : 0;
+            text(g, tr("chamber.feed_mb", String.format("%,d", mb), power, com.mrgregles.bsp_core.totem.TotemUpgrades.levelRoman(c.feedLevel())).getString(), x + 200, y + 157, colour, 164, false);
+            double minutes = c.minuteMb() <= 0 ? 0 : mb / (double) c.minuteMb();
+            text(g, tr("chamber.feed_minutes", minutes < 1 ? String.format(Locale.ROOT, "%.2f", minutes) : String.format(Locale.ROOT, "%.1f", minutes)).getString(), x + 200, y + 168, MUTED, 164, false);
+        }
+        if (!c.feedItem().isEmpty()) { // feeding can be stopped even when that drop has run out of the store
+            button(g, x + 322, y + 178, 42, tr("chamber.stop").getString(), false, () -> send(com.mrgregles.bsp_core.network.ChamberActionPacket.FEED_OFF, 0, ""));
+        }
+        text(g, tr("chamber.fits", c.maxHeight()).getString(), x + 200, y + 192, MUTED, 164, false);
+        if (!hover.isEmpty()) {
+            g.renderTooltip(font, hover, mouseX, mouseY);
+        }
+    }
+
+    /**
+     * The filled part of the fill bar, {@code width} pixels from {@code x}, split into bands by pool: plain, the totem pool, then each mob
+     * pool, in the colours of {@link PoolColors}. A pool too small for a pixel still gets one while there is room.
+     */
+    private static void poolBands(GuiGraphics g, TankViewPacket v, int x, int y, int width) {
+        if (width <= 0 || v.stored() <= 0) {
+            return;
+        }
+        java.util.List<long[]> bands = new java.util.ArrayList<>(); // {mB, colour}
+        bands.add(new long[]{v.plain(), PoolColors.PLAIN});
+        bands.add(new long[]{v.totem(), PoolColors.TOTEM});
+        var buffs = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values();
+        for (TankViewPacket.Power pw : v.powers()) {
+            if (pw.ordinal() >= 0 && pw.ordinal() < buffs.length && !buffs[pw.ordinal()].onTotem()) {
+                bands.add(new long[]{pw.mB(), PoolColors.mob(buffs[pw.ordinal()])});
+            }
+        }
+        int at = x, end = x + width;
+        long seen = 0;
+        for (int i = 0; i < bands.size() && at < end; i++) {
+            long[] b = bands.get(i);
+            if (b[0] <= 0) {
+                continue;
+            }
+            seen += b[0];
+            int to = i == bands.size() - 1 ? end : x + (int) Math.round(width * Math.min(1.0, seen / (double) v.stored()));
+            to = Math.min(end, Math.max(to, at + 1));
+            g.fill(at, y, to, y + 8, (int) b[1]);
+            at = to;
+        }
+        if (at < end) {
+            g.fill(at, y, end, y + 8, PoolColors.PLAIN); // rounding: the last pixels go to plain
+        }
     }
 }

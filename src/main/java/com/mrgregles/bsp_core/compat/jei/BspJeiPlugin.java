@@ -39,6 +39,7 @@ public class BspJeiPlugin implements IModPlugin {
     public static final RecipeType<Process> ILLYRIUM_REFINERY = RecipeType.create(BSPCore.MODID, "illyrium_refinery", Process.class);
     public static final RecipeType<Process> COIN_PRESSING = RecipeType.create(BSPCore.MODID, "coin_pressing", Process.class);
     public static final RecipeType<Process> HAND_CRUSHING = RecipeType.create(BSPCore.MODID, "hand_crushing", Process.class);
+    public static final RecipeType<Process> MOB_CHAMBER = RecipeType.create(BSPCore.MODID, "mob_chamber", Process.class);
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -61,7 +62,8 @@ public class BspJeiPlugin implements IModPlugin {
                 new ProcessCategory(gui, ILLYRIUM_REFINERY, "jei.bsp_core.illyrium_refinery", stack("illyrium_refinery")),
                 new ProcessCategory(gui, MAGNETIC_CENTRIFUGE, "jei.bsp_core.magnetic_centrifuge", stack("magnetic_centrifuge")),
                 new ProcessCategory(gui, COIN_PRESSING, "jei.bsp_core.coin_pressing", new ItemStack(ModItems.COIN_FACTORY.get())),
-                new ProcessCategory(gui, HAND_CRUSHING, "jei.bsp_core.hand_crushing", new ItemStack(Items.IRON_PICKAXE)));
+                new ProcessCategory(gui, HAND_CRUSHING, "jei.bsp_core.hand_crushing", new ItemStack(Items.IRON_PICKAXE)),
+                new ProcessCategory(gui, MOB_CHAMBER, "jei.bsp_core.mob_chamber", BspProcesses.icon("mob_chamber")));
     }
 
     // ------------------------------------------------------------------ recipes (from BspProcesses, shared with EMI)
@@ -74,6 +76,7 @@ public class BspJeiPlugin implements IModPlugin {
             case "illyrium_refinery" -> ILLYRIUM_REFINERY;
             case "magnetic_centrifuge" -> MAGNETIC_CENTRIFUGE;
             case "coin_pressing" -> COIN_PRESSING;
+            case "mob_chamber" -> MOB_CHAMBER;
             default -> HAND_CRUSHING;
         };
     }
@@ -138,5 +141,6 @@ public class BspJeiPlugin implements IModPlugin {
         reg.addRecipeCatalyst(stack("magnetic_centrifuge"), MAGNETIC_CENTRIFUGE);
         reg.addRecipeCatalyst(new ItemStack(ModItems.COIN_FACTORY.get()), COIN_PRESSING);
         reg.addRecipeCatalyst(new ItemStack(Items.CRAFTING_TABLE), HAND_CRUSHING);
+        reg.addRecipeCatalyst(BspProcesses.icon("mob_chamber"), MOB_CHAMBER);
     }
 }

@@ -92,7 +92,7 @@ public final class BSPCommands {
                         // testing: set a power's level or the tier on the totem you hold (either hand) or, with none held, the placed one you look at
                         .then(Commands.literal("buff")
                                 .then(Commands.argument("power", com.mojang.brigadier.arguments.StringArgumentType.word())
-                                        .suggests((ctx, b) -> { for (var buff : com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values()) b.suggest(buff.key); return b.buildFuture(); })
+                                        .suggests((ctx, b) -> { for (var buff : com.mrgregles.bsp_core.totem.TotemUpgrades.TOTEM_BUFFS) b.suggest(buff.key); return b.buildFuture(); })
                                         .then(Commands.argument("level", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 9))
                                                 .executes(ctx -> setBuff(ctx.getSource(), com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "power"), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "level"))))))
                         .then(Commands.literal("tier")
@@ -218,7 +218,7 @@ public final class BSPCommands {
     private static int setBuff(CommandSourceStack src, String key, int level) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
         com.mrgregles.bsp_core.totem.TotemUpgrades.Buff buff = null;
-        for (var b : com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values()) {
+        for (var b : com.mrgregles.bsp_core.totem.TotemUpgrades.TOTEM_BUFFS) { // a Mob Chamber power is never on a totem
             if (b.key.equalsIgnoreCase(key)) {
                 buff = b;
             }

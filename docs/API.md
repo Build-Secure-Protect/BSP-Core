@@ -277,6 +277,20 @@ BspStoreCredit.charge(player, price, TP, "BSP Teleport", "Warp Mines", receipt -
 - `testTicket(player, pieces, use)`: GameTests only; a minted ticket holding `pieces` for that use, in the player's inventory.
 - Coin prices are not paid with credit. Guard the calls (`NoClassDefFoundError`) to keep working with an older BSP-Core.
 
+## Warp Ward (`BspWarpWard`, BSP-Teleport request WW-1)
+
+(Since 1.17.0.) A Projector fed with plasma carrying the Mob Chamber's Warp Ward power keeps outsiders from teleporting into or out of its reach (16, 24 or 32 blocks round it at levels I to III, `mob_chamber.powerReach`). BSP-Core refuses ender pearls and chorus fruit itself (`EntityTeleportEvent.EnderPearl` / `ChorusFruit` cancelled: the pearl is spent, the fruit eaten). A teleport mod asks before it moves a player. Server thread only.
+
+```java
+Component why = BspWarpWard.why(player, targetLevel, targetPos);
+if (why != null) { player.displayClientMessage(why, true); return; }   // "A Warp Ward holds you here" / "A Warp Ward keeps you out"
+```
+
+- `why(player, toLevel, to)`: the reason, or null if no Warp Ward stops the move. The start is where the player stands; the end is `to` in `toLevel` (any loaded world on this server). `blocks(player, toLevel, to)` is the same as a yes/no.
+- An outsider is anyone the projector's Ward does not leave alone (the owner, their team, players with Ward access and allies with the Ward perk are left alone), who is not covered by new-player protection, and not in creative or spectator.
+- Only projectors in loaded chunks count. A move to another server is not checked at the far end; ask there before the player lands.
+- Guard the calls (`NoClassDefFoundError`) to keep working with an older BSP-Core.
+
 ## Coin stamps (since 1.15.0)
 
 A Shatter Coin pressed by a Coin Factory carries the string tag `PressTeam`: the factory owner's team id, or `none` outside a team; `PressTeamName` holds the team's name for the tooltip. A coin without `PressTeam` is clean. Differently stamped coins do not stack. A mod that takes coins should accept any stamp (`BspCoins.pay` does; its change carries the stamp of the coin it broke). A mod that keeps coins and hands them back should hand back the same stacks, tags included, not new coins. `BspCoins.give` makes new coins stamped for the receiver's current team (`none` outside a team).

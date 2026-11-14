@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * Finding, forming and unforming Plasma Tanks. A tank is a hollow box: every edge Tank Casing, every face block Tank Casing, Tank
- * Glass or a Tank Port, nothing inside, 3 to {@code plasma.tankMax} blocks a side. The block that completes the shell finds the box
+ * Glass, a Tank Port or a Spawn Grate (which makes the tank a Mob Chamber), nothing inside, 3 to {@code plasma.tankMax} blocks a side. The block that completes the shell finds the box
  * it belongs to by walking along the shell; a face block's own axis is tried both ways at every size.
  */
 public final class TankStructure {
@@ -122,10 +122,13 @@ public final class TankStructure {
 
     /** Forms the tank over {@code min..dims}; {@code origin} is the block that completed it, where the forming sweep starts. */
     static void form(ServerLevel sl, BlockPos min, int w, int h, int d, BlockPos origin) {
-        long remembered = TankLedger.get(sl).take(min, w, h, d);
+        com.mrgregles.bsp_core.plasma.PlasmaAccess rememberedFedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+        TankPools remembered = TankLedger.get(sl).take(min, w, h, d, rememberedFedBy);
         int[] dims = {w, h, d};
+        boolean chamber = false;
         for (BlockPos q : shell(min, w, h, d)) {
             BlockState st = sl.getBlockState(q).setValue(TankBlock.FORMED, true);
+            chamber |= ((TankBlock) st.getBlock()).part == TankBlock.Part.GRATE;
             if (((TankBlock) st.getBlock()).part == TankBlock.Part.CASING) {
                 // which axes the tank's edge runs along through this block, and which side of the block the edge lies on
                 int[] rel = {q.getX() - min.getX(), q.getY() - min.getY(), q.getZ() - min.getZ()};
@@ -146,7 +149,9 @@ public final class TankStructure {
         }
         if (sl.getBlockEntity(min) instanceof TankPartBlockEntity master) {
             master.setDims(w, h, d);
-            master.setStored(remembered);
+            master.setPools(remembered);
+            master.setFedBy(remembered.open() > 0 ? rememberedFedBy : null);
+            master.setChamber(chamber);
             master.setFormed(sl.getGameTime(), origin);
             master.sync();
         }
@@ -168,12 +173,23 @@ public final class TankStructure {
             return;
         }
         TankPartBlockEntity master = part.masterEntity();
-        if (master == null) {
-            return;
+        if (master == null || master.master() == null) {
+            return; // a copied block pointing at a master that is not one
         }
         BlockPos min = master.master();
         int w = master.w(), h = master.h(), d = master.d();
-        TankLedger.get(sl).remember(min, w, h, d, master.stored(), master.shellBlocks() - 1);
+        if (master.chamber()) {
+            com.mrgregles.bsp_core.chamber.ChamberSpawner.wake(sl, min, w, h, d); // the plasma is gone from round them: they wake
+        }
+        var loot = master.loot();
+        for (int i = 0; i < loot.getSlots(); i++) { // the loot store does not stay with a broken tank: it spills where the block broke
+            net.minecraft.world.item.ItemStack stack = loot.extractItem(i, Integer.MAX_VALUE, false);
+            if (!stack.isEmpty()) {
+                // dropped like a chest's contents, so they come out even with block drops off
+                net.minecraft.world.Containers.dropItemStack(sl, p.getX(), p.getY(), p.getZ(), stack);
+            }
+        }
+        TankLedger.get(sl).remember(min, w, h, d, master.pools(), master.fedBy(), master.shellBlocks() - 1);
         for (BlockPos q : shell(min, w, h, d)) {
             if (q.equals(p)) {
                 continue;
@@ -183,7 +199,9 @@ public final class TankStructure {
                 if (sl.getBlockEntity(q) instanceof TankPartBlockEntity other) {
                     other.setMaster(null);
                     other.setDims(0, 0, 0);
-                    other.setStored(0);
+                    other.setPools(new TankPools());
+                    other.setFedBy(null);
+                    other.setChamber(false);
                 }
                 sl.setBlock(q, unformed(st), 3);
             }
@@ -205,6 +223,52 @@ public final class TankStructure {
     }
 
     /** The screen's view of the tank the block at {@code pos} belongs to: size, level, ports and the first few cables on each. */
+    /** Who has which tank's screen open (its master), since when: set by a right-click, kept fresh by the screen's refresh. */
+    private static final java.util.Map<java.util.UUID, long[]> OPEN = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Ticks a screen stays open without a refresh (it asks once a second). */
+    private static final int OPEN_TICKS = 200;
+
+    /** A player right-clicked a block of a tank (protection mods had their say first): their screen is open on it, and they get its view. */
+    public static void open(ServerPlayer player, BlockPos pos) {
+        TankPartBlockEntity m = player.serverLevel().getBlockEntity(pos) instanceof TankPartBlockEntity part ? part.masterEntity() : null;
+        if (m != null && m.master() != null) {
+            OPEN.put(player.getUUID(), new long[]{m.master().asLong(), player.serverLevel().getGameTime()});
+        }
+        sendView(player, pos);
+    }
+
+    /** The player left: their screen is closed. */
+    public static void closed(java.util.UUID player) {
+        OPEN.remove(player);
+    }
+
+    /** Whether {@code player} near enough to a tank's box: within 8 blocks of its nearest block. */
+    public static boolean near(ServerPlayer player, TankPartBlockEntity m) {
+        BlockPos min = m.master();
+        if (min == null) {
+            return false;
+        }
+        var box = new net.minecraft.world.phys.AABB(min.getX(), min.getY(), min.getZ(), min.getX() + m.w(), min.getY() + m.h(), min.getZ() + m.d());
+        double dx = Math.max(0, Math.max(box.minX - player.getX(), player.getX() - box.maxX)), dy = Math.max(0, Math.max(box.minY - player.getEyeY(), player.getEyeY() - box.maxY)),
+                dz = Math.max(0, Math.max(box.minZ - player.getZ(), player.getZ() - box.maxZ));
+        return dx * dx + dy * dy + dz * dz <= 64;
+    }
+
+    /** Whether {@code player} has the screen of the tank whose master is {@code m} open, and stands near it. */
+    public static boolean mayUse(ServerPlayer player, TankPartBlockEntity m) {
+        long[] o = OPEN.get(player.getUUID());
+        return o != null && m.master() != null && o[0] == m.master().asLong() && player.serverLevel().getGameTime() - o[1] <= OPEN_TICKS && near(player, m);
+    }
+
+    /** The open screen asks for a fresh view: given only while the screen is open on that tank and the player is near it. */
+    public static void refresh(ServerPlayer player, BlockPos pos) {
+        TankPartBlockEntity m = player.serverLevel().getBlockEntity(pos) instanceof TankPartBlockEntity part ? part.masterEntity() : null;
+        if (m != null && mayUse(player, m)) {
+            OPEN.put(player.getUUID(), new long[]{m.master().asLong(), player.serverLevel().getGameTime()});
+            sendView(player, pos);
+        }
+    }
+
     public static void sendView(ServerPlayer player, BlockPos pos) {
         ServerLevel sl = player.serverLevel();
         if (!(sl.getBlockEntity(pos) instanceof TankPartBlockEntity part)) {
@@ -212,7 +276,7 @@ public final class TankStructure {
         }
         TankPartBlockEntity master = part.masterEntity();
         if (master == null) { // not formed: a view of just this block, so the screen can say so
-            BSPNetwork.sendTo(player, new TankViewPacket(pos, 0, 0, 0, 0, 0, List.of(), List.of(), List.of()));
+            BSPNetwork.sendTo(player, new TankViewPacket(pos, 0, 0, 0, 0, 0, 0, 0, List.of(), List.of(), List.of(), null));
             return;
         }
         List<TankViewPacket.Port> ports = new ArrayList<>();
@@ -253,7 +317,8 @@ public final class TankStructure {
             }
         }
         powers.sort((a, b) -> Long.compare(b.mB(), a.mB()));
-        BSPNetwork.sendTo(player, new TankViewPacket(master.master(), master.w(), master.h(), master.d(), master.stored(), master.capacity(), ports, cables, powers));
+        BSPNetwork.sendTo(player, new TankViewPacket(master.master(), master.w(), master.h(), master.d(), master.stored(), master.capacity(), master.pools().plain(), master.pools().totem(), ports, cables, powers,
+                master.chamber() ? com.mrgregles.bsp_core.chamber.ChamberView.build(player.serverLevel(), master) : null));
     }
 
     /** The port the wrench points at steps In and out, Input, Output. */

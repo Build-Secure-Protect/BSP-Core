@@ -22,7 +22,7 @@ public final class BSPNetwork {
      *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}); the Coin Factory screen's synced values carry the owner's
      *     team factory limit and team size, and a lane's re-press flag; the carried totem's upgrade screen syncs the team surcharge.
      */
-    private static final String PROTOCOL = "12";
+    private static final String PROTOCOL = "13";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -282,6 +282,16 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(RadiationEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(RadiationEditPacket::encode).decoder(RadiationEditPacket::decode)
                 .consumerMainThread(RadiationEditPacket::handle).add();
+        CHANNEL.messageBuilder(ChamberActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ChamberActionPacket::encode).decoder(ChamberActionPacket::decode)
+                .consumerMainThread(ChamberActionPacket::handle).add();
+        CHANNEL.messageBuilder(WireframePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(WireframePacket::encode).decoder(WireframePacket::decode)
+                .consumerMainThread(WireframePacket::handle).add();
+        // handled on the network thread, not the main one: it must be stored before the tags and recipes that follow start JEI and EMI
+        CHANNEL.messageBuilder(ChamberRosterPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ChamberRosterPacket::encode).decoder(ChamberRosterPacket::decode)
+                .consumerNetworkThread(ChamberRosterPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

@@ -87,8 +87,13 @@ public class ProcessEmiRecipe implements EmiRecipe {
     @Override
     public void addWidgets(WidgetHolder widgets) {
         int x = 5;
-        for (EmiIngredient in : inputs) {
-            widgets.addSlot(in, x, 5);
+        for (int i = 0; i < inputs.size(); i++) {
+            var slot = widgets.addSlot(inputs.get(i), x, 5);
+            if (i < job.inputTips().size()) {
+                for (Component line : job.inputTips().get(i)) {
+                    slot.appendTooltip(line);
+                }
+            }
             x += 18;
         }
         for (EmiIngredient cat : catalysts) {

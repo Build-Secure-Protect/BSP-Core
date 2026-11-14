@@ -47,6 +47,8 @@ public class TotemProjectorBlockEntity extends BlockEntity {
 
     private final int[] levels = new int[Buff.values().length];
     private final int[] offered = new int[SENDABLE.length];
+    /** The Mob Chamber's powers the plasma brings, by Buff ordinal: they take no channel and all arrive, at full level. */
+    private final int[] mobOffered = new int[Buff.values().length];
     /** Bit {@code i} set: {@link #SENDABLE}[i] is chosen. */
     private int chosen;
     private boolean expander;
@@ -68,15 +70,20 @@ public class TotemProjectorBlockEntity extends BlockEntity {
 
     /** Fed from the Projector Base below once a second: {@code deliveredPerTick} is what the base could give this second. */
     public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
-        int[] was = offered.clone();
+        int[] was = offered.clone(), wasMob = mobOffered.clone();
         for (int i = 0; i < SENDABLE.length; i++) {
             offered[i] = offeredByOrdinal[SENDABLE[i].ordinal()];
         }
-        boolean changed = !master.equals(source) || !Arrays.equals(was, offered) || this.repeaters != repeaters || this.delivered != deliveredPerTick || !this.access.editors.equals(access.editors);
+        for (Buff b : Buff.values()) {
+            mobOffered[b.ordinal()] = !b.onTotem() && b.ordinal() < offeredByOrdinal.length ? offeredByOrdinal[b.ordinal()] : 0;
+        }
+        boolean changed = !master.equals(source) || !Arrays.equals(was, offered) || !Arrays.equals(wasMob, mobOffered) || this.repeaters != repeaters || this.delivered != deliveredPerTick || access != null && !access.isEmpty() && !this.access.editors.equals(access.editors);
         source = master.immutable();
         this.repeaters = repeaters;
         this.delivered = deliveredPerTick;
-        this.access = access;
+        if (access != null && (!access.isEmpty() || this.access.isEmpty())) {
+            this.access = access; // a feed that knows nobody (plain plasma) never wipes the team the projector knows
+        }
         this.anchorTotem = anchorTotem;
         fedAt = level == null ? 0 : level.getGameTime();
         recompute();
@@ -104,6 +111,11 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         for (int i = 0; i < SENDABLE.length; i++) {
             if ((chosen & (1 << i)) != 0) {
                 levels[SENDABLE[i].ordinal()] = arriving(i);
+            }
+        }
+        for (int i = 0; i < mobOffered.length; i++) {
+            if (mobOffered[i] > 0) {
+                levels[i] = mobOffered[i];
             }
         }
     }
@@ -208,6 +220,11 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         return access.editors.contains(player);
     }
 
+    /** The team for the Mob Chamber's team powers: owners and Upgrades friends, and everyone the Ward leaves alone (team, Ward access, allies with the perk). */
+    public boolean isTeam(UUID player) {
+        return access.editors.contains(player) || access.wardSafe.contains(player);
+    }
+
     /** Whether the player may change what this projector receives and its chunks: an owner (or an Upgrades friend) of a totem on its interface, or an admin. */
     public boolean mayEdit(Player player) {
         return access.editors.isEmpty() || access.editors.contains(player.getUUID()) || Admins.isAdmin(player);
@@ -231,6 +248,8 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         boolean fed = source != null && sl.getGameTime() - fedAt <= FEED_TICKS, now = fed && powered;
         if (now) {
             effects(sl);
+        } else {
+            com.mrgregles.bsp_core.chamber.Wireframe.forget(sl, worldPosition); // not projecting: Shroud's step-in times start again
         }
         if (now != active || fed != signal) {
             active = now;
@@ -242,6 +261,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
 
     /** Healing Aura for the owners; Ward and Alarm for everyone else. The other powers are answered through TotemAuras. */
     private void effects(ServerLevel sl) {
+        com.mrgregles.bsp_core.chamber.MobPowerEffects.tick(sl, this);
         double x = worldPosition.getX() + 0.5, y = worldPosition.getY() + 0.5, z = worldPosition.getZ() + 0.5;
         int heal = levels[Buff.HEALING.ordinal()], ward = levels[Buff.WARD.ordinal()], alarm = levels[Buff.ALARM.ordinal()];
         if (heal > 0) {
@@ -291,6 +311,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     public void setRemoved() {
         super.setRemoved();
         if (level instanceof ServerLevel sl) {
+            com.mrgregles.bsp_core.chamber.Wireframe.forget(sl, worldPosition);
             TotemAuras.unregisterProjector(sl, worldPosition);
         }
     }
@@ -304,6 +325,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
 
     private void write(CompoundTag tag) {
         tag.putIntArray("Levels", levels);
+        tag.putIntArray("MobOffered", mobOffered);
         tag.putIntArray("Offered", offered);
         tag.putInt("Chosen", chosen);
         tag.putBoolean("Expander", expander);
@@ -332,10 +354,11 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
+        int[] mo = tag.getIntArray("MobOffered");
+        System.arraycopy(mo, 0, mobOffered, 0, Math.min(mo.length, mobOffered.length));
         int[] l = tag.getIntArray("Levels");
-        if (l.length == levels.length) {
-            System.arraycopy(l, 0, levels, 0, l.length);
-        }
+        // a save from before a power was added is shorter: keep what it has
+        System.arraycopy(l, 0, levels, 0, Math.min(l.length, levels.length));
         int[] o = tag.getIntArray("Offered");
         if (o.length == offered.length) {
             System.arraycopy(o, 0, offered, 0, o.length);

@@ -83,6 +83,14 @@ public final class ClientSetup {
     public static void onItemColours(net.minecraftforge.client.event.RegisterColorHandlersEvent.Item event) {
         event.register((stack, layer) -> layer == 0 ? com.mrgregles.bsp_core.credit.StoreCreditItem.tint(stack)
                 : layer == 1 ? com.mrgregles.bsp_core.credit.StoreCreditItem.printTint(stack) : -1, com.mrgregles.bsp_core.registry.ModItems.STORE_CREDIT.get());
+        event.register((stack, layer) -> layer == 0 ? PoolColors.PLAIN & 0xFFFFFF : -1, com.mrgregles.bsp_core.registry.ModBlocks.TANK_EXTRACTOR.get().asItem());
+    }
+
+    /** The Tank Extractor's sight glass (tint 0) glows in its pool's colour. */
+    @SubscribeEvent
+    public static void onBlockColours(net.minecraftforge.client.event.RegisterColorHandlersEvent.Block event) {
+        event.register((state, level, pos, tint) -> tint == 0 && state.hasProperty(com.mrgregles.bsp_core.tank.TankExtractorBlock.POOL)
+                ? PoolColors.ofPool(state.getValue(com.mrgregles.bsp_core.tank.TankExtractorBlock.POOL)) & 0xFFFFFF : -1, com.mrgregles.bsp_core.registry.ModBlocks.TANK_EXTRACTOR.get());
     }
 
     /** Radiation Shielding Panels and Windows join like connected-texture blocks: their baked models are wrapped (ShieldJoinedModel). */

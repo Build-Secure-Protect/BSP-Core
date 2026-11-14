@@ -1184,10 +1184,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     }
 
     public int getUpgradeLevel(TotemUpgrades.Buff buff) {
-        return upgrades.getInt(buff.key);
+        return buff.onTotem() ? upgrades.getInt(buff.key) : 0; // never a Mob Chamber power, whatever the NBT says
     }
 
     public void setUpgradeLevel(TotemUpgrades.Buff buff, int level) {
+        if (!buff.onTotem()) {
+            return; // the Mob Chamber's powers are never on a totem
+        }
         TotemUpgrades.stamp(upgrades).putInt(buff.key, Math.max(0, Math.min(level, buff.maxLevel())));
         if (this.level instanceof ServerLevel serverLevel) {
             recordInLedger(serverLevel);

@@ -114,7 +114,12 @@ public class DeceleratorBlockEntity extends BlockEntity {
 
     /** The accelerator hands over a second's worth of plasma with what it carries; the core pays a second of RF for it. */
     public void receive(long mB, int[] offered, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable GlobalPos anchorTotem, GlobalPos from) {
-        store.add(mB, offered);
+        receive(mB, offered, null, access, anchorTotem, from);
+    }
+
+    /** {@link #receive(long, int[], com.mrgregles.bsp_core.plasma.PlasmaAccess, GlobalPos, GlobalPos)} with the Mob Chamber powers' plasma among {@code mB} by amount. */
+    public void receive(long mB, int[] offered, @Nullable long[][] mob, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable GlobalPos anchorTotem, GlobalPos from) {
+        store.add(mB, offered, mob);
         this.access = access;
         if (anchorTotem != null) {
             this.anchorTotem = anchorTotem;

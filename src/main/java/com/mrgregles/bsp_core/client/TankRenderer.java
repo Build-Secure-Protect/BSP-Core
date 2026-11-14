@@ -42,6 +42,9 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
         if (part instanceof TankPortBlockEntity port) {
             ring(port, pose, buffers, light);
         }
+        if (part.getBlockState().is(com.mrgregles.bsp_core.registry.ModBlocks.SPAWN_GRATE.get()) && part.getBlockState().getValue(com.mrgregles.bsp_core.tank.TankBlock.FORMED)) {
+            grate(part, partialTick, pose, buffers);
+        }
         if (!part.isMaster() || part.w() < 3) {
             return;
         }
@@ -196,5 +199,65 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
             }
         }
         pose.popPose();
+    }
+
+    // ------------------------------------------------------------------ the Spawn Grate (design A): a red glow inside, the lamp flashing at a spawn
+
+    /** A point of the model built on the north face, moved to {@code face} as gen_tank_assets.py's turn() moves it, in block units. */
+    private static float[] onFace(net.minecraft.core.Direction face, float x, float y, float z) {
+        float[] p = switch (face) {
+            case SOUTH -> new float[]{16 - x, y, 16 - z};
+            case EAST -> new float[]{16 - z, y, x};
+            case WEST -> new float[]{z, y, 16 - x};
+            case UP -> new float[]{x, 16 - z, y};
+            case DOWN -> new float[]{x, z, 16 - y};
+            default -> new float[]{x, y, z};
+        };
+        return new float[]{p[0] / 16f, p[1] / 16f, p[2] / 16f};
+    }
+
+    private static void quad(VertexConsumer vc, org.joml.Matrix4f m, float[][] c, int r, int g, int b, int a) {
+        for (int i = 0; i < 4; i++) {
+            vc.vertex(m, c[i][0], c[i][1], c[i][2]).color(r, g, b, a).endVertex();
+        }
+        for (int i = 3; i >= 0; i--) { // both sides
+            vc.vertex(m, c[i][0], c[i][1], c[i][2]).color(r, g, b, a).endVertex();
+        }
+    }
+
+    private static void grate(TankPartBlockEntity part, float partialTick, PoseStack pose, MultiBufferSource buffers) {
+        TankPartBlockEntity m = part.masterEntity();
+        if (m == null || m.master() == null || m.w() < 3) {
+            return;
+        }
+        net.minecraft.core.BlockPos rel = part.getBlockPos().subtract(m.master());
+        net.minecraft.core.Direction in = rel.getX() == 0 ? net.minecraft.core.Direction.EAST : rel.getX() == m.w() - 1 ? net.minecraft.core.Direction.WEST
+                : rel.getY() == 0 ? net.minecraft.core.Direction.UP : rel.getY() == m.h() - 1 ? net.minecraft.core.Direction.DOWN
+                : rel.getZ() == 0 ? net.minecraft.core.Direction.SOUTH : net.minecraft.core.Direction.NORTH;
+        float since = part.getLevel().getGameTime() + partialTick - m.lastSpawnAt();
+        float flash = since >= 0 && since < 20 ? 1f - since / 20f : 0f;
+        float t = (part.getLevel().getGameTime() + partialTick) / 20f;
+        VertexConsumer vc = buffers.getBuffer(net.minecraft.client.renderer.RenderType.lightning());
+        org.joml.Matrix4f mat = pose.last().pose();
+        // the inside face: a soft red glow over the grate, brighter for a moment when a mob appears
+        int glow = Math.round(40 + 18 * Mth.sin(t * 2f) + 150 * flash);
+        float e = 1.003f, o = -0.003f;
+        float[][] inside = switch (in) {
+            case EAST -> new float[][]{{e, 0, 0}, {e, 1, 0}, {e, 1, 1}, {e, 0, 1}};
+            case WEST -> new float[][]{{o, 0, 0}, {o, 0, 1}, {o, 1, 1}, {o, 1, 0}};
+            case UP -> new float[][]{{0, e, 0}, {0, e, 1}, {1, e, 1}, {1, e, 0}};
+            case DOWN -> new float[][]{{0, o, 0}, {1, o, 0}, {1, o, 1}, {0, o, 1}};
+            case SOUTH -> new float[][]{{0, 0, e}, {1, 0, e}, {1, 1, e}, {0, 1, e}};
+            default -> new float[][]{{0, 0, o}, {0, 1, o}, {1, 1, o}, {1, 0, o}};
+        };
+        quad(vc, mat, inside, 255, 74, 58, Math.min(255, glow));
+        // the red lamp under the skull on the outward face: lit at a spawn, with a halo
+        if (flash > 0) {
+            net.minecraft.core.Direction out = in.getOpposite();
+            int a = Math.round(255 * flash);
+            float z = -1.45f;
+            quad(vc, mat, new float[][]{onFace(out, 7.2f, 11.7f, z), onFace(out, 8.8f, 11.7f, z), onFace(out, 8.8f, 13.1f, z), onFace(out, 7.2f, 13.1f, z)}, 255, 90, 70, a);
+            quad(vc, mat, new float[][]{onFace(out, 6.2f, 10.7f, z - 0.05f), onFace(out, 9.8f, 10.7f, z - 0.05f), onFace(out, 9.8f, 14.1f, z - 0.05f), onFace(out, 6.2f, 14.1f, z - 0.05f)}, 255, 60, 40, a / 3);
+        }
     }
 }

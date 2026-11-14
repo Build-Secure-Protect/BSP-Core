@@ -51,6 +51,10 @@ public final class ModBlocks {
     public static final RegistryObject<Block> TANK_CASING = BLOCKS.register("tank_casing", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.CASING));
     public static final RegistryObject<Block> TANK_GLASS = BLOCKS.register("tank_glass", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.GLASS));
     public static final RegistryObject<Block> TANK_PORT = BLOCKS.register("tank_port", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.PORT));
+    /** Against a Tank Port, sends one of the tank's pools into cables. */
+    public static final RegistryObject<Block> TANK_EXTRACTOR = BLOCKS.register("tank_extractor", com.mrgregles.bsp_core.tank.TankExtractorBlock::new);
+    /** A tank face block: a tank with one is a Mob Chamber. */
+    public static final RegistryObject<Block> SPAWN_GRATE = BLOCKS.register("spawn_grate", () -> new com.mrgregles.bsp_core.tank.TankBlock(com.mrgregles.bsp_core.tank.TankBlock.Part.GRATE));
     /** A plain see-through block of Tetrium-strengthened glass: the ingredient for Tank Glass. */
     public static final RegistryObject<Block> TETRIUM_GLASS = BLOCKS.register("tetrium_glass", () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
             .strength(1.0F, 6.0F).sound(SoundType.GLASS).noOcclusion().isViewBlocking((st, l, pos) -> false).isSuffocating((st, l, pos) -> false)));

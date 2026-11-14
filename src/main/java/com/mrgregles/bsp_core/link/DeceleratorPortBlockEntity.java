@@ -60,6 +60,12 @@ public class DeceleratorPortBlockEntity extends LinkPartBlockEntity implements P
     }
 
     @Override
+    public int drain(int mB, long[][] mob) {
+        DeceleratorBlockEntity core = core();
+        return core == null ? 0 : (int) core.store().drain(mB, mob); // the Mob Chamber powers' plasma goes on by amount
+    }
+
+    @Override
     public boolean claim(BlockPos by) {
         return true;
     }

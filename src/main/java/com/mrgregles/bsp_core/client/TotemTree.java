@@ -28,8 +28,8 @@ public final class TotemTree {
     private static final int CX = TreeLayout.CX, CY = TreeLayout.CY, NODE = TreeLayout.NODE;
     private static final int[] RING = TreeLayout.RING;
     private static final int SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, RING_ON = 0xFF27566B, TQ = 0xFF19D3B0, XP = 0x8FE04A, MUTED = 0x9AA3B5, BAD = 0xFF6B5C;
-    /** Branch colours: Carried (XP green), Base (coin gold), Raid (red). */
-    private static final int[] COLOUR = {0xFF8FE04A, 0xFFFFD23A, 0xFFFF6B5C};
+    /** Branch colours: Carried (XP green), Base (coin gold), Raid (red), Mob (chamber red, for plasma lists). */
+    private static final int[] COLOUR = {0xFF8FE04A, 0xFFFFD23A, 0xFFFF6B5C, 0xFFC0485A}; // and Mob (chamber red), never on the tree
     public Buff selected = Buff.MINING_SPEED;
     /** The team surcharge on this totem (percent) and Pieces per copper value, from the server; the screen sets them before drawing. */
     public int surchargePct;
@@ -69,7 +69,7 @@ public final class TotemTree {
             small(g, font, Component.literal(label), ox + CX - lw / 2, oy + CY - RING[i] - 3, tier >= i ? 0x6FB7C9 : 0x4A5160);
         }
         // spokes: from the totem, or from the previous upgrade on the path, out to each node
-        for (Buff b : Buff.values()) {
+        for (Buff b : TotemUpgrades.TOTEM_BUFFS) {
             int[] p = TreeLayout.at(b);
             Buff parent = b.parent();
             int[] from = parent == null ? new int[]{CX, CY} : TreeLayout.at(parent);
@@ -78,7 +78,7 @@ public final class TotemTree {
         g.fill(ox + CX - 8, oy + CY - 8, ox + CX + 8, oy + CY + 8, TQ);
         String t = TotemUpgrades.roman(tier);
         g.drawString(font, t, ox + CX - font.width(t) / 2, oy + CY - 4, 0x0B0D11, false);
-        for (Buff b : Buff.values()) {
+        for (Buff b : TotemUpgrades.TOTEM_BUFFS) {
             int[] p = TreeLayout.at(b);
             int x = ox + p[0] - NODE / 2, y = oy + p[1] - NODE / 2, lvl = level.applyAsInt(b), c = colour(b);
             boolean open = TotemUpgrades.unlocked(b, level, tier), maxed = lvl >= b.maxLevel();
@@ -170,6 +170,8 @@ public final class TotemTree {
             case SENTINEL -> Component.translatable(key + "." + Math.min(4, Math.max(1, level)));
             case TRIPWIRE -> Component.translatable(key, b.reach(level));
             case HARVEST -> Component.translatable(key, b.reach(level), BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_SECONDS, java.util.List.<Integer>of()), level, 120), BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25));
+            // the Mob Chamber's powers: never on the tree, but plasma lists may name what they do
+            case GROWTH, WITHER, WARP_WARD, UNDEAD_WARD, HASTE, SNARE, WIREFRAME, KEEP, SCORCH, FIRE_WARD, MENDING, LANTERN, TIDE -> Component.translatable(key);
         };
     }
 

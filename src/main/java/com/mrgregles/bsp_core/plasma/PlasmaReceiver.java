@@ -10,6 +10,11 @@ public interface PlasmaReceiver {
     /** mB this block would like this second, before pressure loss. */
     int wanted();
 
+    /** Room for plasma that is all a Mob Chamber power's ({@link MobPlasma}): the same as {@link #wanted()} unless the receiver keeps it apart. */
+    default int wantedMob() {
+        return wanted();
+    }
+
     /** Whether plasma may enter from a cable or interface that reaches this block by moving in direction {@code d}. */
     default boolean accepts(BlockPos from, BlockState state, net.minecraft.core.Direction d) {
         return true;
@@ -21,4 +26,14 @@ public interface PlasmaReceiver {
      * {@code anchorTotem} is the totem whose Anchor levels travel with the plasma, in whatever world it stands (a link may bring it from another).
      */
     void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem);
+
+    /**
+     * The feed with the Mob Chamber powers' plasma among {@code movedMB}, by amount ({@link MobPlasma}); {@code offeredByOrdinal} then lists
+     * no mob power. A receiver that keeps it apart (a tank port, a projector base, an accelerator) overrides this; any other takes it as
+     * plain plasma.
+     */
+    default void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access,
+                      @Nullable net.minecraft.core.GlobalPos anchorTotem, long[][] mob) {
+        feed(master, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchorTotem);
+    }
 }

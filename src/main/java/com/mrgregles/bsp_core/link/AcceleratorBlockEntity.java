@@ -178,7 +178,14 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
 
     @Override
     public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable GlobalPos anchorTotem) {
-        store.add(movedMB, offeredByOrdinal);
+        feed(master, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchorTotem, null);
+    }
+
+    /** The feed with the Mob Chamber powers' plasma by amount: the store keeps it apart and the links carry it across apart. */
+    @Override
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, com.mrgregles.bsp_core.plasma.PlasmaAccess access,
+                     @Nullable GlobalPos anchorTotem, @Nullable long[][] mob) {
+        store.add(movedMB, offeredByOrdinal, mob);
         receivedThisSecond += movedMB;
         inAcc += pressurePerTick;
         if (fedLately()) {
@@ -327,9 +334,10 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
                 reports.put(liveAt.get(i), new Links.Report(Links.State.IDLE, 0));
                 continue;
             }
-            long took = store.drain(share[i]);
+            long[][] mob = com.mrgregles.bsp_core.plasma.MobPlasma.empty();
+            long took = store.drain(share[i], mob);
             long arrived = Math.round(took * (1.0 - loss()));
-            live.get(i).receive(arrived, offered, access.copy(), anchorTotem, here());
+            live.get(i).receive(arrived, offered, com.mrgregles.bsp_core.plasma.MobPlasma.scaled(mob, 1.0 - loss()), access.copy(), anchorTotem, here());
             total += took;
             reports.put(liveAt.get(i), new Links.Report(Links.State.DELIVERING, (int) (arrived / 20)));
         }

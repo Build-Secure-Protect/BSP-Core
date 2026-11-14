@@ -54,8 +54,12 @@ public class ProcessCategory implements IRecipeCategory<Process> {
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, Process recipe, IFocusGroup focuses) {
         int x = 1;
-        for (var options : recipe.inputs()) {
-            builder.addSlot(RecipeIngredientRole.INPUT, x, 5).setBackground(slot, -1, -1).addItemStacks(options);
+        for (int i = 0; i < recipe.inputs().size(); i++) {
+            var in = builder.addSlot(RecipeIngredientRole.INPUT, x, 5).setBackground(slot, -1, -1).addItemStacks(recipe.inputs().get(i));
+            if (i < recipe.inputTips().size() && !recipe.inputTips().get(i).isEmpty()) {
+                java.util.List<Component> extra = recipe.inputTips().get(i);
+                in.addTooltipCallback((view, tooltip) -> tooltip.addAll(extra));
+            }
             x += 18;
         }
         if (recipe.fluid() != null) {

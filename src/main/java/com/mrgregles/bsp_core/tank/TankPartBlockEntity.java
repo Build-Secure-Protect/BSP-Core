@@ -27,7 +27,6 @@ public class TankPartBlockEntity extends BlockEntity {
     @Nullable
     protected BlockPos master;
     protected int w, h, d;
-    protected long stored;
     /** Port position to {mode, in mB/t, out mB/t}, kept by the master for the screen and the streams. */
     protected final Map<BlockPos, int[]> ports = new LinkedHashMap<>();
     /** Game time the tank last formed and the block that completed it: the renderer runs a sweep of light from there for a second. */
@@ -36,10 +35,32 @@ public class TankPartBlockEntity extends BlockEntity {
     protected BlockPos origin;
     /** Client: the level the renderer last showed, so it glides. */
     public float shown = -1;
-    /** Of the stored plasma, how much carries each totem power (by Buff ordinal), the level it carries, and when a port last fed it. */
-    private final long[] buffedMb = new long[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.values().length];
-    private final int[] buffedLevel = new int[buffedMb.length];
-    private final long[] buffedFedAt = new long[buffedMb.length];
+    /** Master: the tank has a Spawn Grate in its shell, so it is a Mob Chamber. Set when it forms. */
+    protected boolean chamber;
+    /** Master, chamber: which mobs it spawns (the CHAMBER tab's switch), and the game time of its next spawn (-1: not started). */
+    private com.mrgregles.bsp_core.chamber.ChamberSpawner.Mode chamberMode = com.mrgregles.bsp_core.chamber.ChamberSpawner.Mode.ALL;
+    private long nextSpawnAt = -1;
+    /** Master, chamber: game time of the last spawn, sent to clients so the Spawn Grates' lamps flash. */
+    private long lastSpawnAt = -1000;
+    /** Master, chamber: the drop the tank feeds into its plasma, and at which level (CHAMBER tab); null feeds nothing. */
+    @Nullable
+    private net.minecraft.world.item.Item feedItem;
+    private int feedLevel = 1;
+    /**
+     * Master: who fed the tank, from every network that put plasma in (the totems' owners, teams, friends with access, allies), kept
+     * while its plain and totem plasma last. Its ports pass it on, so a projector fed from the tank knows its team (Ward spares them).
+     */
+    private com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+    /** The plasma, in pools: plain, the totem pool with its powers, and one pool per Mob Chamber power ({@link TankPools}). */
+    private final TankPools pools = new TankPools();
+    public static final int LOOT_SLOTS = 27;
+    /** Master, chamber: what its kills dropped. Tank Ports give it to hoppers and pipes; nothing goes in from outside. */
+    private final net.minecraftforge.items.ItemStackHandler loot = new net.minecraftforge.items.ItemStackHandler(LOOT_SLOTS) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+    };
     private long syncedStored = -1;
     private boolean dirty;
 
@@ -102,6 +123,60 @@ public class TankPartBlockEntity extends BlockEntity {
         return origin;
     }
 
+    /** Whether this tank is a Mob Chamber: a Spawn Grate is part of its shell. Read on the master. */
+    public boolean chamber() {
+        return chamber;
+    }
+
+    void setChamber(boolean chamber) {
+        this.chamber = chamber;
+        nextSpawnAt = -1;
+        sync();
+    }
+
+    public com.mrgregles.bsp_core.chamber.ChamberSpawner.Mode chamberMode() {
+        return chamberMode;
+    }
+
+    public void setChamberMode(com.mrgregles.bsp_core.chamber.ChamberSpawner.Mode mode) {
+        chamberMode = mode;
+        setChanged();
+    }
+
+    @Nullable
+    public net.minecraft.world.item.Item feedItem() {
+        return feedItem;
+    }
+
+    public int feedLevel() {
+        return feedLevel;
+    }
+
+    /** Sets what the tank feeds: {@code item} (null for nothing) at {@code lvl} (1 to 3). */
+    public void setFeed(@Nullable net.minecraft.world.item.Item item, int lvl) {
+        feedItem = item;
+        feedLevel = Math.max(1, Math.min(com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.MOB_LEVELS, lvl));
+        setChanged();
+    }
+
+    public long nextSpawnAt() {
+        return nextSpawnAt;
+    }
+
+    public void setNextSpawnAt(long gameTime) {
+        nextSpawnAt = gameTime;
+    }
+
+    public long lastSpawnAt() {
+        return lastSpawnAt;
+    }
+
+    /** A mob just spawned here: the grates' lamps flash on every client. */
+    public void markSpawned(long gameTime) {
+        lastSpawnAt = gameTime;
+        sync();
+    }
+
     public int w() {
         return w;
     }
@@ -124,62 +199,126 @@ public class TankPartBlockEntity extends BlockEntity {
     }
 
     public long stored() {
-        return stored;
+        return pools.total();
     }
 
-    void setStored(long mB) {
-        stored = Math.max(0, Math.min(capacity(), mB));
-        for (int i = 0; i < buffedMb.length; i++) {
-            buffedMb[i] = Math.min(buffedMb[i], stored);
+    /** The pools the plasma is kept in. Change them through this entity's methods, which mark the tank changed. */
+    public TankPools pools() {
+        return pools;
+    }
+
+    /** What a port may give out: the plain and the totem plasma; mob pools leave only through a Tank Extractor. */
+    public long open() {
+        return pools.open();
+    }
+
+    /** Who fed the tank, while its plain and totem plasma last (a copy). */
+    public com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy() {
+        return fedBy.copy();
+    }
+
+    /**
+     * A network put plasma in: its access becomes the tank's when the tank knows nobody yet, or when it comes from the tank's own
+     * owners or players they trust (so a kicked friend drops off with the next feed). Anyone else's plasma goes in without a say in
+     * who the tank's projectors treat as the team.
+     */
+    public void addFedBy(com.mrgregles.bsp_core.plasma.PlasmaAccess access) {
+        if (access != null && !access.isEmpty() && (fedBy.isEmpty() || fedBy.trusts(access))) {
+            fedBy = access.copy();
+            setChanged();
         }
+    }
+
+    void setFedBy(com.mrgregles.bsp_core.plasma.PlasmaAccess access) {
+        fedBy = access == null ? new com.mrgregles.bsp_core.plasma.PlasmaAccess() : access.copy();
         setChanged();
     }
 
-    /** Puts up to {@code mB} in; returns what fitted. */
+    /** Puts remembered plasma back, as much as fits (a tank re-formed from a dormant one). */
+    void setPools(TankPools from) {
+        pools.clear();
+        pools.merge(from);
+        pools.trimTo(capacity());
+        setChanged();
+    }
+
+    /** Puts up to {@code mB} of plain plasma in; returns what fitted. */
     public long add(long mB) {
-        long took = Math.max(0, Math.min(mB, capacity() - stored));
-        stored += took;
+        return add(mB, null);
+    }
+
+    /**
+     * Puts plasma in as it arrives, carrying {@code offered} (levels by Buff ordinal, or null for plain): plain plasma, plasma carrying
+     * a totem's powers, and plasma carrying a mob power each go to their own pool ({@link TankPools#add}). The tank passes the totem
+     * powers on with what its ports give out until that plasma is used up, totem or no totem. Returns what fitted.
+     */
+    public long add(long mB, int[] offered) {
+        long took = Math.max(0, Math.min(mB, capacity() - stored()));
+        if (took > 0) {
+            pools.add(took, offered, level == null ? 0 : level.getGameTime());
+            setChanged();
+        }
+        return took;
+    }
+
+    /** The chamber's loot store (on the master). */
+    public net.minecraftforge.items.ItemStackHandler loot() {
+        return loot;
+    }
+
+    /** Puts {@code stack} in the loot store; returns what did not fit. */
+    public net.minecraft.world.item.ItemStack storeLoot(net.minecraft.world.item.ItemStack stack) {
+        net.minecraft.world.item.ItemStack rest = stack;
+        for (int i = 0; i < loot.getSlots() && !rest.isEmpty(); i++) {
+            rest = loot.insertItem(i, rest, false);
+        }
+        return rest;
+    }
+
+    /** Turns up to {@code mB} of plain plasma into mob power {@code b}'s pool at level {@code lvl}, as a kill (I) or feeding does; returns how much. */
+    public long tagFromPlain(com.mrgregles.bsp_core.totem.TotemUpgrades.Buff b, int lvl, long mB) {
+        long took = pools.tagFromPlain(b, lvl, mB, level == null ? 0 : level.getGameTime());
         if (took > 0) {
             setChanged();
         }
         return took;
     }
 
-    /**
-     * Puts plasma in that carries the feeding totem's powers ({@code offered} by Buff ordinal): the
-     * tank remembers how much of what it holds carries each power and at what level, and passes
-     * them on with what it gives out until that plasma is used up, totem or no totem.
-     */
-    public long add(long mB, int[] offered) {
-        long took = add(mB);
-        if (took <= 0 || offered == null) {
-            return took;
+    /** Puts up to {@code mB} into the pool of mob power {@code b} at {@code lvl}; returns what fitted. */
+    public long addMob(com.mrgregles.bsp_core.totem.TotemUpgrades.Buff b, int lvl, long mB) {
+        if (b.onTotem() || lvl <= 0) {
+            return 0;
         }
-        long now = level == null ? 0 : level.getGameTime();
-        for (int i = 0; i < buffedMb.length && i < offered.length; i++) {
-            if (offered[i] > 0) {
-                buffedMb[i] = Math.min(stored, buffedMb[i] + took);
-                buffedLevel[i] = Math.max(buffedLevel[i], offered[i]);
-                buffedFedAt[i] = now;
-            }
+        long took = Math.max(0, Math.min(mB, capacity() - stored()));
+        if (took > 0) {
+            pools.addMob(b, lvl, took, level == null ? 0 : level.getGameTime());
+            setChanged();
         }
         return took;
     }
 
-    /** Takes up to {@code mB} out; returns what came. The plasma is mixed, so each power's share leaves in proportion. */
+    /** Takes up to {@code mB} out as a port gives it: plain and totem plasma together, each power's share in proportion. Returns what came. */
     public long drain(long mB) {
-        long before = stored;
-        long took = Math.max(0, Math.min(mB, stored));
-        stored -= took;
+        long took = pools.drainOpen(mB);
         if (took > 0) {
-            for (int i = 0; i < buffedMb.length; i++) {
-                if (buffedMb[i] > 0) {
-                    buffedMb[i] = Math.max(0, Math.min(stored, buffedMb[i] - Math.round(buffedMb[i] * (double) took / before)));
-                    if (buffedMb[i] == 0) {
-                        buffedLevel[i] = 0;
-                    }
-                }
-            }
+            forgetFeeders();
+            setChanged();
+        }
+        return took;
+    }
+
+    /** Once the plain and totem plasma they fed is gone, so is who fed it (a Tank Extractor, a kill or feeding may have used it up). */
+    void forgetFeeders() {
+        if (pools.open() <= 0 && !fedBy.isEmpty()) {
+            fedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            setChanged();
+        }
+    }
+
+    /** Takes up to {@code mB} from one mob power's pool; returns what came. */
+    public long drainMob(com.mrgregles.bsp_core.totem.TotemUpgrades.Buff b, long mB) {
+        long took = pools.drainMob(b, mB);
+        if (took > 0) {
             setChanged();
         }
         return took;
@@ -187,24 +326,21 @@ public class TankPartBlockEntity extends BlockEntity {
 
     /** The totem powers the stored plasma still carries, by Buff ordinal (0 = none), for the port that gives it out. */
     public int[] offered() {
-        int[] out = new int[buffedMb.length];
-        for (int i = 0; i < out.length; i++) {
-            out[i] = buffedMb[i] > 0 ? buffedLevel[i] : 0;
-        }
-        return out;
+        return pools.offered();
     }
 
+    /** For a totem power, how much of the totem pool carries it; for a mob power, its pool. */
     public long buffedMb(int ordinal) {
-        return buffedMb[ordinal];
+        return pools.mb(ordinal);
     }
 
     public int buffedLevel(int ordinal) {
-        return buffedMb[ordinal] > 0 ? buffedLevel[ordinal] : 0;
+        return pools.level(ordinal);
     }
 
-    /** Whether a port is being fed plasma carrying this power right now (within the last couple of seconds). */
+    /** Whether plasma carrying this power came in lately (within the last couple of seconds). */
     public boolean buffLive(int ordinal) {
-        return buffedMb[ordinal] > 0 && level != null && level.getGameTime() - buffedFedAt[ordinal] <= 45;
+        return pools.mb(ordinal) > 0 && level != null && level.getGameTime() - pools.fedAt(ordinal) <= 45;
     }
 
     public Map<BlockPos, int[]> ports() {
@@ -230,11 +366,17 @@ public class TankPartBlockEntity extends BlockEntity {
         if (!isMaster() || sl.getGameTime() % 20 != 0) {
             return;
         }
+        long stored = stored();
         if (dirty || stored != syncedStored) {
             dirty = false;
             syncedStored = stored;
             sync();
         }
+        if (chamber) {
+            com.mrgregles.bsp_core.chamber.ChamberSpawner.tick(sl, this);
+            com.mrgregles.bsp_core.chamber.ChamberFeeder.feed(this, com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.CHAMBER_FEED_PER_SECOND, 64));
+        }
+        forgetFeeders();
     }
 
     protected void sync() {
@@ -259,9 +401,17 @@ public class TankPartBlockEntity extends BlockEntity {
         tag.putInt("W", w);
         tag.putInt("H", h);
         tag.putInt("D", d);
-        tag.putLong("Stored", stored);
-        tag.putLongArray("BuffMb", buffedMb.clone());
-        tag.putIntArray("BuffLevel", buffedLevel.clone());
+        tag.putLong("Stored", stored());
+        tag.putBoolean("Chamber", chamber);
+        tag.putLong("LastSpawn", lastSpawnAt);
+        fedBy.save(tag, "FedBy");
+        tag.put("Loot", loot.serializeNBT());
+        if (feedItem != null) {
+            tag.putString("FeedItem", String.valueOf(net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(feedItem)));
+        }
+        tag.putByte("FeedLevel", (byte) feedLevel);
+        tag.putByte("ChamberMode", (byte) chamberMode.ordinal());
+        pools.save(tag);
         tag.putLong("FormedAt", formedAt);
         if (origin != null) {
             tag.putLong("Origin", origin.asLong());
@@ -281,13 +431,21 @@ public class TankPartBlockEntity extends BlockEntity {
         w = tag.getInt("W");
         h = tag.getInt("H");
         d = tag.getInt("D");
-        stored = tag.getLong("Stored");
-        long[] mb = tag.getLongArray("BuffMb");
-        int[] lv = tag.getIntArray("BuffLevel");
-        for (int i = 0; i < buffedMb.length; i++) {
-            buffedMb[i] = i < mb.length ? mb[i] : 0;
-            buffedLevel[i] = i < lv.length ? lv[i] : 0;
+        pools.load(tag); // a tank saved before the pools loads with its powers in the totem pool
+        chamber = tag.getBoolean("Chamber");
+        lastSpawnAt = tag.contains("LastSpawn") ? tag.getLong("LastSpawn") : -1000;
+        fedBy = com.mrgregles.bsp_core.plasma.PlasmaAccess.load(tag, "FedBy");
+        var feedId = net.minecraft.resources.ResourceLocation.tryParse(tag.getString("FeedItem"));
+        feedItem = feedId != null && tag.contains("FeedItem") && net.minecraftforge.registries.ForgeRegistries.ITEMS.containsKey(feedId)
+                ? net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(feedId) : null;
+        feedLevel = Math.max(1, Math.min(3, tag.getByte("FeedLevel")));
+        if (tag.contains("Loot")) {
+            CompoundTag l = tag.getCompound("Loot");
+            l.putInt("Size", LOOT_SLOTS);
+            loot.deserializeNBT(l);
         }
+        var modes = com.mrgregles.bsp_core.chamber.ChamberSpawner.Mode.values();
+        chamberMode = modes[Math.floorMod(tag.getByte("ChamberMode"), modes.length)];
         formedAt = tag.contains("FormedAt") ? tag.getLong("FormedAt") : -1000;
         origin = tag.contains("Origin") ? BlockPos.of(tag.getLong("Origin")) : null;
         ports.clear();
@@ -316,6 +474,9 @@ public class TankPartBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         write(tag);
+        // who fed the tank and what its loot store holds stay on the server: the screen gets the loot from its own view packet
+        tag.remove("FedBy");
+        tag.remove("Loot");
         return tag;
     }
 

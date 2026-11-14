@@ -311,7 +311,7 @@ public class AcceleratorScreen extends Screen implements ScreenFit.Fitted {
                     list.append(", ");
                 }
                 first = false;
-                list.append(Component.translatable(buffs[p.ordinal()].translationKey())).append(" " + TotemUpgrades.roman(p.level()));
+                list.append(Component.translatable(buffs[p.ordinal()].translationKey())).append(" " + TotemUpgrades.levelRoman(p.level()));
             }
             carries = tr("carries", list);
         }
