@@ -66,6 +66,11 @@ public final class TotemPlacer {
             BSPCore.LOGGER.warn("Not placing a Shatter Totem at {} in {}: this server allows no totem placement (restrictions.noTotemServers)", around, level.dimension().location());
             return null;
         }
+        if (TotemDimensions.never(level)) {
+            // a Compact Machines room, whatever the config says: every caller keeps the totem another way (a ground totem there goes to its owner)
+            BSPCore.LOGGER.warn("Not placing a Shatter Totem at {} in {}: totems may never be in Compact Machines rooms", around, level.dimension().location());
+            return null;
+        }
         // never inside an Anti Totem zone: the nearest spot outside it instead
         BlockPos pos = findSpot(level, com.mrgregles.bsp_core.zone.ZoneLedger.get(level.getServer()).outside(level, around));
         if (pos == null) {
@@ -89,7 +94,7 @@ public final class TotemPlacer {
         }
         PlayerPersistent.LastMainPosition last = PlayerPersistent.getLastMainPosition(player).orElse(null);
         ServerLevel lastLevel = last == null ? null : last.level(player.server);
-        if (lastLevel != null) {
+        if (lastLevel != null && !TotemDimensions.never(lastLevel)) { // a spot remembered in a room (under an older config) is never used
             return new Target(lastLevel, last.pos());
         }
         ServerLevel overworld = player.server.overworld();

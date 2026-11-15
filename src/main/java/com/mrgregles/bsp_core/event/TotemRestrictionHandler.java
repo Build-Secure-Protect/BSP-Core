@@ -22,8 +22,8 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Keeps the Shatter Totem where the rules say it may be:
  * <ul>
- *   <li>Dropping it in a dimension outside {@code restrictions.allowedDimensions} is refused and the
- *       totem goes straight back into the player's inventory.</li>
+ *   <li>Dropping it in a dimension outside {@code restrictions.allowedDimensions} (or in a Compact Machines room, never allowed)
+ *       is refused and the totem goes straight back into the player's inventory.</li>
  *   <li>It may only sit in the player's own inventory. Any totem found in another container's slots
  *       while a menu is open is pulled back out.</li>
  *   <li>The player's last position in an allowed dimension is remembered for death handling.</li>
@@ -49,8 +49,8 @@ public final class TotemRestrictionHandler {
         event.setCanceled(true);
         TotemInventories.giveBack(event.getPlayer(), stack.copy());
         if (event.getPlayer() instanceof ServerPlayer player) {
-            player.displayClientMessage(Component.translatable(com.mrgregles.bsp_core.totem.NoTotemServers.here() ? "message.bsp_core.no_totem.no_place"
-                    : "message.bsp_core.shatter_totem.dimension_blocked").withStyle(ChatFormatting.RED), true);
+            player.displayClientMessage(Component.translatable(com.mrgregles.bsp_core.totem.TotemDimensions.refusalKey(player.level().dimension().location()))
+                    .withStyle(ChatFormatting.RED), true);
         }
     }
 

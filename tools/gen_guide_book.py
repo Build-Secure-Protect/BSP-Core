@@ -129,7 +129,7 @@ ENTRIES = [
         text("Once a day, the first time you log in on any server of the network, $(l)50 pieces$() go into your account, with a line in chat to say so.$(br2)If you are online when midnight comes, the new day's reward arrives then. Days run from midnight to midnight.", "Daily reward"),
     ]),
     ("totem", "your_totem", "Your Shatter Totem", "bsp_core:shatter_totem", 0, [
-        text("Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be destroyed, and the only way to make another is to pour one in a $(l:machines/totem_forge)Totem Forge$().$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it."),
+        text("Every player is given one $(item)Shatter Totem$() the first time they join. It cannot be destroyed, and the only way to make another is to pour one in a $(l:machines/totem_forge)Totem Forge$().$(br2)Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it.$(br2)A totem can never be placed or dropped inside a Compact Machines room."),
         text("Only one totem is ever yours by right, but you can hold others: any totem you steal becomes yours.$(br2)If you die to another player while carrying your totem, it is placed where you fell. A totem dropped on the ground places itself after a short while.", "Keeping it"),
         text("A totem never goes offline with you. When you log out, every totem you carry is placed where you stood, so it can still be stolen; if it is still there, untouched, when you come back, it returns to you.", "Logging out"),
     ]),

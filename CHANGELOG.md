@@ -4,6 +4,18 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-11-15
+
+Network protocol 13, as 1.17.0: 1.17.0 and 1.17.1 servers and clients can mix. Only the server needs 1.17.1 for the rule. The two new chat lines and the guide book's sentence are in the client: a 1.17.0 client shows those lines by their key names.
+
+### Changed
+- **Shatter Totems are never in Compact Machines rooms**, whatever `restrictions.allowedDimensions` says. This is fixed and cannot be switched off: a room is reachable only through its machine, and a room whose machine is lost is emptied for good.
+  - Placing and dropping a totem in a room is refused, with its own line: "Shatter Totems can never be inside Compact Machines rooms". Carrying one in a room is fine; death and logout send it to the last spot in an allowed world, as in any unlisted world.
+  - A totem found standing or lying in a room (a world from before this version, a config that listed the dimension, a command, a Totem Forge broken inside a room while it holds a set totem) goes back to its owner, now or at their next login, and is logged. Shortly after start (once a network server's database is connected) the server checks every totem it knows of standing in a room.
+  - A config that lists `compactmachines:compact_world` logs a warning at start for each time it is listed, saying it is ignored and why. The config comment and `docs/API.md` say so too.
+  - Compact Machines stays optional: the dimension is matched by its id.
+  - GameTests (batch `compact_rooms`); `./gradlew runGameTestServer -PwithCm=<the pack's mods folder>` also runs them in the real Compact Machines dimension.
+
 ## [1.17.0] - 2026-11-13
 
 Network protocol 13: servers and clients must both have this version.

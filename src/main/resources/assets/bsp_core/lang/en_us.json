@@ -9,6 +9,8 @@
   "entity.bsp_core.shatter_totem_item": "Shatter Totem",
   "message.bsp_core.shatter_totem.not_owner": "Only the owner can take this Shatter Totem",
   "message.bsp_core.shatter_totem.dimension_blocked": "The Shatter Totem cannot be placed in this dimension",
+  "message.bsp_core.shatter_totem.room_blocked": "Shatter Totems can never be inside Compact Machines rooms",
+  "message.bsp_core.shatter_totem.room_returned": "Your Shatter Totem was inside a Compact Machines room, where totems can never be. It is back with you.",
   "message.bsp_core.shatter_totem.container_blocked": "The Shatter Totem can only be kept in your own inventory",
   "message.bsp_core.shatter_totem.placed_on_death": "You were slain. Your Shatter Totem now stands at %s in %s",
   "message.bsp_core.shatter_totem.dropped_on_death": "You died. Your Shatter Totem lies at %s in %s and will set itself down shortly",

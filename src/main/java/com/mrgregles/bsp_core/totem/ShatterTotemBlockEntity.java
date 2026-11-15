@@ -207,6 +207,26 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
     }
 
+    /**
+     * Standing in a dimension where totems may never be (a Compact Machines room; placed before the rule, or by a command): the block
+     * goes and the totem goes to its owner ({@link TotemDimensions#leave}, {@link TotemDimensions#handOn}), counted in transit first so
+     * its removal is not taken for a totem lost from its place. A stale copy, a husk or a bare block is simply removed. Returns whether a
+     * live totem was handed on.
+     */
+    public boolean leaveForbiddenDimension(ServerLevel level) {
+        if (isRemoved() || level.getBlockEntity(worldPosition) != this) {
+            return false;
+        }
+        BlockPos at = worldPosition;
+        // counted in transit first, then the block goes, then the totem is handed on: never two live copies, even if a step fails
+        TotemDimensions.Leaving leaving = TotemDimensions.leave(level.getServer(), ShatterTotemBlock.toItemStack(level, at), level.dimension().location(), at);
+        level.removeBlock(at, false);
+        if (leaving != null) {
+            TotemDimensions.handOn(level.getServer(), leaving);
+        }
+        return leaving != null;
+    }
+
     // ------------------------------------------------------------------ steal
 
     public Optional<StealState> getSteal() {
@@ -678,6 +698,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     /** Server tick, registered by the block. */
     public void serverTick(ServerLevel level) {
+        if (TotemDimensions.never(level)) {
+            if (TotemDimensions.settled()) {
+                leaveForbiddenDimension(level); // never stands in a Compact Machines room: its owner gets it
+            }
+            return; // nothing else while it waits (just after a start, for the network database)
+        }
         coatingTick(level);
         if (tripSignal) {
             if (tripUntil == 0) {
@@ -846,6 +872,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
+        if (isRemoved()) {
+            return; // taken out before its first tick (the start sweep of Compact Machines rooms): nothing to register
+        }
         if (level instanceof ServerLevel serverLevel) {
             TotemAuras.register(serverLevel, this);
             recordInLedger(serverLevel);

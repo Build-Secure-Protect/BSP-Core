@@ -316,13 +316,16 @@ public final class BSPConfig {
 
         BUILDER.comment("Where and how the Shatter Totem may exist in the world").push("restrictions");
         ALLOWED_DIMENSIONS = BUILDER
-                .comment("Dimensions where the totem can be placed or dropped (registry names).")
+                .comment("Dimensions where the totem can be placed or dropped (registry names).",
+                        "Compact Machines rooms (compactmachines:compact_world) are never allowed, even when listed here, and this cannot be",
+                        "switched off: a room is reachable only through its machine, and a room whose machine is lost is emptied for good.")
                 .defineListAllowEmpty("allowedDimensions",
                         List.of("minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"),
                         o -> o instanceof String);
         ACTIVE_DIMENSIONS = BUILDER
                 .comment("Filled in by BSP-Core every time the server starts: every dimension this server has, spelled as allowedDimensions",
-                        "expects. Copy names from here into allowedDimensions above. Editing this list does nothing; it is written again at the next start.")
+                        "expects. Copy names from here into allowedDimensions above (compactmachines:compact_world is ignored there). Editing this list",
+                        "does nothing; it is written again at the next start.")
                 .defineListAllowEmpty("activeDimensions", List.of(), o -> o instanceof String);
         NO_TOTEM_SERVERS = BUILDER
                 .comment("Servers of the network (their storage.serverId) where a Shatter Totem cannot be placed or dropped anywhere. Totems may still be held there;",
@@ -916,7 +919,8 @@ public final class BSPConfig {
     }
 
     public static boolean isDimensionAllowed(net.minecraft.resources.ResourceLocation dimension) {
-        return !isNoTotemServer() && ALLOWED_DIMENSIONS.get().contains(dimension.toString()); // a no-totem server allows placement nowhere
+        // a no-totem server allows placement nowhere; a Compact Machines room never, whatever the list says
+        return !isNoTotemServer() && !com.mrgregles.bsp_core.totem.TotemDimensions.never(dimension) && ALLOWED_DIMENSIONS.get().contains(dimension.toString());
     }
 
     private static boolean isFraction(Object o) {

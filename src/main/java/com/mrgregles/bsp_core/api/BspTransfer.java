@@ -313,8 +313,8 @@ public final class BspTransfer {
 
     private static boolean placeAt(MinecraftServer server, net.minecraft.core.GlobalPos where, ItemStack totem) {
         var level = server.getLevel(where.dimension());
-        if (level == null) {
-            return false;
+        if (level == null || com.mrgregles.bsp_core.totem.TotemDimensions.never(level)) {
+            return false; // a departure saved in a Compact Machines room (before the rule): the totem stays waiting for its owner
         }
         if (!com.mrgregles.bsp_core.totem.TotemPlacer.adopt(server, totem)) {
             return true; // retired here: a husk, placed nowhere

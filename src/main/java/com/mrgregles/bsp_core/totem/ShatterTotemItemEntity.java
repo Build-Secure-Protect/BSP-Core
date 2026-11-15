@@ -34,6 +34,7 @@ import java.util.UUID;
  *   <li>Never despawns, never takes damage, immune to fire, lava and explosions, cannot be pushed.</li>
  *   <li>Falling out of the world teleports it back to the last ground position it saw (or the dimension's spawn).</li>
  *   <li>After {@code restrictions.groundSecondsBeforePlace} seconds it places itself as a block.</li>
+ *   <li>In a Compact Machines room (where totems may never be) it goes to its owner at once ({@link TotemDimensions}).</li>
  *   <li>Only its owner can pick it up, by walking into it. Everyone else must wait for it to place and steal it.</li>
  *   <li>Reports itself to the totem ledger every second, so the ledger knows the totem is in the world and not lost.</li>
  * </ul>
@@ -121,6 +122,12 @@ public class ShatterTotemItemEntity extends Entity {
         if (level().isClientSide || isRemoved()) {
             return;
         }
+        if (TotemDimensions.never(level())) {
+            if (TotemDimensions.settled()) {
+                leaveForbiddenDimension(); // never lies in a Compact Machines room: its owner gets it
+            }
+            return; // nothing else while it waits (just after a start, for the network database)
+        }
         if (onGround()) {
             lastGroundPos = blockPosition();
         }
@@ -184,6 +191,16 @@ public class ShatterTotemItemEntity extends Entity {
         } else {
             groundTicks -= 20; // nowhere to go right now (rare); retry in a second
             BSPCore.LOGGER.warn("Could not find a spot to place a Shatter Totem near {} in {}", blockPosition(), level.dimension().location());
+        }
+    }
+
+    /** In a dimension where totems may never be (a Compact Machines room): it goes to its owner and this entity goes. */
+    private void leaveForbiddenDimension() {
+        ServerLevel level = (ServerLevel) level();
+        TotemDimensions.Leaving leaving = TotemDimensions.leave(level.getServer(), getItem().copy(), level.dimension().location(), blockPosition());
+        destroy();
+        if (leaving != null) {
+            TotemDimensions.handOn(level.getServer(), leaving);
         }
     }
 

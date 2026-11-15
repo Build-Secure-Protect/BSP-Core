@@ -21,6 +21,8 @@ Every player is given one *Shatter Totem* the first time they join. It cannot be
 
 Carry it, or place it in your base. A placed totem is where your upgrades and auras work from, so most players build their base around it.
 
+A totem can never be placed or dropped inside a Compact Machines room.
+
 **Page 2: Keeping it**
 
 Only one totem is ever yours by right, but you can hold others: any totem you steal becomes yours.

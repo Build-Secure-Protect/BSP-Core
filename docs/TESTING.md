@@ -3563,3 +3563,22 @@ In game:
 - [ ] More than 16 mobs can spawn: the "+N more" line counts every one of them.
 - [ ] Open the CHAMBER tab of a chamber feeding at level III: the III button is lit from the first frame.
 - [ ] A raider with Shroud steps out of a Wireframe reach and straight back in: they show as soon as their first Shroud time ran out.
+
+
+## Compact Machines rooms: never a totem (2026-11-15, 1.17.1)
+
+GameTests (batch `compact_rooms`): `a_compact_machines_room_is_never_allowed_whatever_the_config_says`, `in_a_room_a_totem_is_never_placed_dropped_or_left_lying`, `a_totem_standing_in_a_room_goes_back_to_its_owner_and_a_stale_copy_is_just_removed`, and with `-PwithCm=<the pack's mods folder>` `in_the_real_compact_machines_dimension_a_totem_never_stands_or_lies`.
+
+In game, with Compact Machines installed:
+
+- [ ] Add `compactmachines:compact_world` to `restrictions.allowedDimensions` and start the server: one WARN says it is ignored and why.
+- [ ] Inside a room, try to place your totem: refused, with "Shatter Totems can never be inside Compact Machines rooms" in red.
+- [ ] Inside a room, press Q on your totem: it stays in your inventory, with the same line.
+- [ ] Walk into a room carrying your totem, then log out there: the totem stands at your last spot in the Overworld (or Nether, End), not in the room.
+- [ ] Die inside a room carrying your totem: it goes to your last spot in an allowed world.
+- [ ] Put your totem in a chest inside a room (with the menu open it is pulled back out at once).
+- [ ] Build a Totem Forge inside a room, pour a totem and let it set, then break the forge's controller: the totem goes to the pourer (into your inventory, or at your next login).
+- [ ] Old world: in a test world, allow the dimension on an older BSP-Core, place a totem in a room, leave the room so its chunk unloads, update, start: a second or so after the start the log says it was found and given back; it arrives at your next login (or straight away if you are online).
+- [ ] `/setblock` a totem in a room while standing there: within a second it is gone, and no totem appears anywhere (a bare block is no totem).
+- [ ] On a network server, the old-world check runs once the database is connected: a totem found in a room for an offline owner arrives at their next login on any server.
+- [ ] The guide book's "Your Shatter Totem" first page fits on the page with its new last sentence.
