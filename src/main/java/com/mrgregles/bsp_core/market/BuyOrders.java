@@ -115,6 +115,24 @@ public final class BuyOrders {
         return (int) open(server).stream().filter(o -> o.buyer.equals(buyer)).count();
     }
 
+    /** The player's open orders, newest first. */
+    public static List<BuyOrder> ordersBy(MinecraftServer server, UUID buyer) {
+        return open(server).stream().filter(o -> o.buyer.equals(buyer)).toList();
+    }
+
+    /**
+     * Staff take an order off the market (the admin page, the staff web panel): as {@link #cancel} by an admin, the held pieces back
+     * to the buyer. {@code staffName} goes in the server log; the buyer is told, at once or at their next login.
+     */
+    public static void cancelByStaff(MinecraftServer server, String id, String staffName, Consumer<OrderStore.Answer> then) {
+        cancel(server, Market.STAFF, id, true, a -> {
+            if (a.ok()) {
+                BSPCore.LOGGER.info("BSP-Core orders: order {} cancelled by staff {}", id, staffName);
+            }
+            then.accept(a);
+        });
+    }
+
     /** How many of the order's plain item the player carries: their inventory and their off hand, never what they wear. */
     public static int carried(ServerPlayer player, BuyOrder order) {
         int n = 0;
@@ -255,7 +273,7 @@ public final class BuyOrders {
             if (a.ok()) {
                 BuyOrder o = a.order();
                 if (!o.buyer.equals(by)) {
-                    NetworkStorage.tell(server, o.buyer, Component.translatable("message.bsp_core.order.removed", o.describe(), Bank.format(a.refund())));
+                    NetworkStorage.tellOrKeep(server, o.buyer, Component.translatable("message.bsp_core.order.removed", o.describe(), Bank.format(a.refund())));
                 }
                 BSPCore.LOGGER.info("BSP-Core orders: order {} ({}) of {} cancelled{}, {} back", o.id, o.describe(), o.buyerName, admin && !o.buyer.equals(by) ? " by an admin" : "", Bank.format(a.refund()));
             }

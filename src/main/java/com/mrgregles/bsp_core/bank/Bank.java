@@ -72,6 +72,24 @@ public final class Bank {
         });
     }
 
+    /**
+     * A player's log, newest first, as the record has it: on a network read fresh from the database, and null when that read fails
+     * (never this server's copy, whose rows recorded since the last read carry this server's numbers, not the database's). On a
+     * single server the world's log. Refunds and the staff pages use this.
+     */
+    public static void logFresh(MinecraftServer server, UUID id, Consumer<List<BankTransaction>> then) {
+        if (!NetworkStorage.enabled()) {
+            then.accept(BankLedger.get(server).log(id));
+            return;
+        }
+        NetworkStorage.bankLogRead(id, list -> {
+            if (list != null) {
+                BankLedger.get(server).replaceLog(id, list);
+            }
+            then.accept(list);
+        });
+    }
+
     // ------------------------------------------------------------------ accounts
 
     /**

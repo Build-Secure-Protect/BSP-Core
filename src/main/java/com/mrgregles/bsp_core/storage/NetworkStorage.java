@@ -989,6 +989,19 @@ public final class NetworkStorage {
         });
     }
 
+    /**
+     * Tells a player something staff did to their account, so they always see it: at once if they are on this server, else at
+     * their next login. On a network the line waits in the database (and shows on whichever server they are on, or join next);
+     * on a single server it waits in {@link LaterMessages}.
+     */
+    public static void tellOrKeep(MinecraftServer srv, UUID player, net.minecraft.network.chat.Component message) {
+        if (srv.getPlayerList().getPlayer(player) != null || store != null) {
+            tell(srv, player, message);
+            return;
+        }
+        LaterMessages.get(srv).add(player, message);
+    }
+
     /** Ticks to the next sweep of shop counts that are full again: five minutes after the start, then daily. */
     private static int sweepTicks = 5 * 60 * 20;
 
@@ -1661,6 +1674,39 @@ public final class NetworkStorage {
             com.mrgregles.bsp_core.bank.BankAccount r = row;
             boolean ok = reached;
             onServer(() -> then.accept(r, ok));
+        });
+    }
+
+    /** One account's part of a refund: its pieces and coins change, {@code take} of its banked coins of {@code takeTier} go out with their stamps, and its REFUND row. */
+    public record RefundMove(UUID id, long dPieces, int[] dCoins, @Nullable com.mrgregles.bsp_core.coin.CoinTier takeTier, int take, com.mrgregles.bsp_core.bank.BankTransaction log) {}
+
+    /** A log row whose refunded amounts grow by these, refused if they would pass the row's own amounts. */
+    public record RefundMark(UUID id, long rowId, long pieces, int coins) {}
+
+    /** {@code key} "ok" (with each move's account after and its REFUND row's id, in order), "already" (a row has less left than asked) or "short". */
+    public record RefundOutcome(String key, List<com.mrgregles.bsp_core.bank.BankAccount> after, List<Long> logIds) {}
+
+    /** A staff refund as one database transaction ({@link MySqlStore#bankRefund}); {@code then} gets null when the database was not reached (nothing changed). */
+    public static void bankRefund(List<RefundMark> marks, List<RefundMove> moves, Consumer<RefundOutcome> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            RefundOutcome out = null;
+            try {
+                out = s.bankRefund(marks, moves);
+                if (out.key().equals("ok")) {
+                    for (RefundMove m : moves) {
+                        publish("bank", m.id().toString());
+                    }
+                }
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not refund a bank row: {}", e.toString());
+            }
+            RefundOutcome r = out;
+            onServer(() -> then.accept(r));
         });
     }
 

@@ -176,6 +176,27 @@ public final class Market {
         return (int) store(server).open(server).stream().filter(l -> l.seller.equals(seller)).count();
     }
 
+    /** The player's open lots, newest first. */
+    public static List<MarketLot> lotsBy(MinecraftServer server, UUID seller) {
+        return store(server).open(server).stream().filter(l -> l.seller.equals(seller)).toList();
+    }
+
+    /** Who a staff member's cancel counts as: never a seller, so the seller is always told. */
+    public static final UUID STAFF = new UUID(0L, 0L);
+
+    /**
+     * Staff take a lot off the market (the admin page, the staff web panel): as {@link #cancel} by an admin. {@code staffName} (who
+     * did it) goes in the server log; the seller is told, at once or at their next login.
+     */
+    public static void cancelByStaff(MinecraftServer server, String id, String staffName, Consumer<MarketResult> then) {
+        cancel(server, STAFF, id, true, r -> {
+            if (r.ok()) {
+                BSPCore.LOGGER.info("BSP-Core market: lot {} cancelled by staff {}", id, staffName);
+            }
+            then.accept(r);
+        });
+    }
+
     /** What waits in the player's Collect box. */
     public static List<ItemStack> collectBox(MinecraftServer server, UUID player) {
         return store(server).peekCollect(server, player);
@@ -320,7 +341,7 @@ public final class Market {
             }
             MarketLot lot = answer.lot();
             if (!lot.seller.equals(by)) {
-                NetworkStorage.tell(server, lot.seller, Component.translatable("message.bsp_core.market.removed", lot.describe()));
+                NetworkStorage.tellOrKeep(server, lot.seller, Component.translatable("message.bsp_core.market.removed", lot.describe()));
             }
             BSPCore.LOGGER.info("BSP-Core market: lot {} ({}) of {} cancelled{}", lot.id, lot.describe(), lot.sellerName, admin && !lot.seller.equals(by) ? " by an admin" : "");
             then.accept(MarketResult.ok(lot, List.of()));

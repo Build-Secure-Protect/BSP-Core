@@ -22,7 +22,7 @@ public final class BSPNetwork {
      *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}); the Coin Factory screen's synced values carry the owner's
      *     team factory limit and team size, and a lane's re-press flag; the carried totem's upgrade screen syncs the team surcharge.
      */
-    private static final String PROTOCOL = "13";
+    private static final String PROTOCOL = "14";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -292,6 +292,13 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(ChamberRosterPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ChamberRosterPacket::encode).decoder(ChamberRosterPacket::decode)
                 .consumerNetworkThread(ChamberRosterPacket::handle).add();
+        // the admin panel's Bank & Market page
+        CHANNEL.messageBuilder(AdminBankAskPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AdminBankAskPacket::encode).decoder(AdminBankAskPacket::decode)
+                .consumerMainThread(AdminBankAskPacket::handle).add();
+        CHANNEL.messageBuilder(AdminBankDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(AdminBankDataPacket::encode).decoder(AdminBankDataPacket::decode)
+                .consumerMainThread(AdminBankDataPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

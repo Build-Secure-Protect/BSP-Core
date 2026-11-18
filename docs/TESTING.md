@@ -3597,3 +3597,50 @@ In game, as an admin:
 - [ ] A display pinned before this version, on a shop with items of its own, still floats the same pinned item.
 - [ ] Link a display to the biggest spawn shop (all its sections): the screen opens, and the pin list ends where the screen's data runs out instead of failing.
 - [ ] Restart the server with a display pinned to a section item: right after the start the screen marks the same item.
+
+## Bank & Market admin page, part 1: bank log numbers and kept messages (2026-11-18, 1.18.0)
+
+- [ ] Start a world made with 1.17.2 that has bank history: `/bank log` shows every old row as before.
+- [ ] On a network server, the bank log reads as before after the restart (the database gains three columns on start; the server log shows no errors).
+- [ ] `/bank` balances, payments, coin conversion, deposits and shop buys still log their rows as before.
+
+## Bank & Market admin page, part 2: refund rules (2026-11-18, 1.18.0)
+
+For the network test with two servers, from the EDIT TRANSACTIONS page:
+- [ ] On a network, refund the same row from two servers at once: one refund goes through, the other says it was already refunded.
+- [ ] Refund a payment on both players while the receiver is on another server: both balances change at once on both servers, both get a chat line.
+- [ ] Refund a player who is offline everywhere: the line shows when they next join any server.
+
+## Bank & Market admin page, part 3: staff market cancels (2026-11-18, 1.18.0)
+
+From the Bank & Market page's CANCEL buttons:
+- [ ] Cancel a player's lot while they are offline: at their next login they read that an admin took it off, and the items are in their Collect box at a Trade Post.
+- [ ] Cancel a player's request: the held pieces are back in their bank at once; they read how many.
+
+## Bank & Market admin page, part 5: who may act (2026-11-18, 1.18.0)
+
+On the Bank & Market page:
+- [ ] A 1.17.x client cannot join a server of this version (protocol 14), and the reverse.
+- [ ] A moderator (in `admin.moderators`) without `bsp_core.admin.bank` opens the page: everything shows, REFUND and CANCEL are greyed.
+- [ ] Give them `/lp user <name> permission set bsp_core.admin.bank true`: after reopening, they can refund and cancel.
+
+## Bank & Market admin page, part 6: the page (2026-11-18, 1.18.0)
+
+- [ ] Admin panel > Players: pick a player; BANK & MARKET sits on the name line, right of "online"/"offline", and does not touch the score box below it, even for a 16-letter name.
+- [ ] Click it: the wide page opens with the player's pieces, the five coins in their bank, THIS WEEK (in, out, converted, refunds), the bank log and their lots and requests. ◀ PLAYERS goes back to the Players tab with the same player picked.
+- [ ] The log scrolls with the mouse wheel; the lots and requests scroll when the mouse is over them (more than five each). Hovering a log row shows its time, server, other side, detail, amounts and what is refunded; hovering a lot shows its items, price and time left.
+- [ ] CANCEL on a lot: it turns into SURE? for four seconds; a second click takes the lot off; "Done." shows at the foot; the seller's Collect box has the items.
+- [ ] CANCEL on a request: the held pieces are back in the buyer's bank; the page's pieces go up at once.
+- [ ] As a moderator without `bsp_core.admin.bank`: the heading says VIEW ONLY and CANCEL is grey.
+- [ ] GUI scale 4 on a small window (or 1080p on Auto): the page shrinks to fit; nothing runs off the panel.
+- [ ] On a network: a player on another server shows their bank as the database has it.
+
+## Bank & Market admin page, part 7: EDIT TRANSACTIONS (2026-11-18, 1.18.0)
+
+- [ ] EDIT TRANSACTIONS opens the larger log; ◀ BACK goes back to the Bank & Market page. The wheel scrolls 21 rows at a time; hovering a row shows all of it.
+- [ ] Pick a shop purchase: LEFT TO REFUND shows its pieces. FULL REFUND, SURE?, click again: "Done.", the player's pieces go up, a REFUND row appears at the top, the purchase row dims, and the player reads a chat line (or at their next login).
+- [ ] Pick a sale: the box says "Pieces to take"; refund part of it; "Refunded so far" shows the part; refund the rest later.
+- [ ] Pick a coin conversion: switch off "Take back the pieces it made", REFUND AMOUNT gives only the coins back; switch it on later and take the pieces back.
+- [ ] Pick a payment: turn on "Also take it back from:" with the receiver's name; both balances change; the receiver reads a line too. With the receiver short, "The other player no longer has that much. Nothing changed."
+- [ ] Type more than is left: the refund uses what is left at most.
+- [ ] As a moderator without `bsp_core.admin.bank`: the boxes are hidden and the buttons grey.

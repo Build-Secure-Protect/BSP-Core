@@ -210,8 +210,9 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_log") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, ms BIGINT NOT NULL, "
                     + "type VARCHAR(16) NOT NULL, with_name VARCHAR(64) NOT NULL, detail VARCHAR(255) NOT NULL, pieces BIGINT NOT NULL, coin_tier INT NOT NULL, coin_count INT NOT NULL, "
                     + "server_id VARCHAR(64) NOT NULL, INDEX (uuid, ms))");
-            for (String column : List.of("shop_id VARCHAR(32) NOT NULL DEFAULT ''", "item_id VARCHAR(128) NOT NULL DEFAULT ''")) {
-                try { // the shop report's columns, added to a bank_log made before them
+            for (String column : List.of("shop_id VARCHAR(32) NOT NULL DEFAULT ''", "item_id VARCHAR(128) NOT NULL DEFAULT ''",
+                    "refunded_pieces BIGINT NOT NULL DEFAULT 0", "refunded_coins INT NOT NULL DEFAULT 0", "refund_of BIGINT NOT NULL DEFAULT 0")) {
+                try { // the shop report's and the refunds' columns, added to a bank_log made before them
                     st.executeUpdate("ALTER TABLE " + t("bank_log") + " ADD COLUMN " + column);
                 } catch (SQLException e) {
                     if (e.getErrorCode() != 1060) { // 1060: the column is there already
@@ -1436,6 +1437,67 @@ final class MySqlStore implements AutoCloseable {
         boolean auto = c.getAutoCommit();
         c.setAutoCommit(false);
         try {
+            BankAccount after = bankAdjustIn(c, id, dPieces, dCoins, log, tier, add, take, team);
+            if (after == null) {
+                c.rollback();
+                return null;
+            }
+            c.commit();
+            return after;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** A refund as one transaction: every row marked and every account changed, or nothing. */
+    NetworkStorage.RefundOutcome bankRefund(List<NetworkStorage.RefundMark> marks, List<NetworkStorage.RefundMove> moves) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_log") + " SET refunded_pieces = refunded_pieces + ?, refunded_coins = refunded_coins + ? "
+                    + "WHERE id = ? AND uuid = ? AND refunded_pieces + ? <= ABS(pieces) AND refunded_coins + ? <= ABS(coin_count)")) {
+                for (NetworkStorage.RefundMark m : marks) {
+                    ps.setLong(1, m.pieces());
+                    ps.setInt(2, m.coins());
+                    ps.setLong(3, m.rowId());
+                    ps.setString(4, m.id().toString());
+                    ps.setLong(5, m.pieces());
+                    ps.setInt(6, m.coins());
+                    if (ps.executeUpdate() != 1) {
+                        c.rollback();
+                        return new NetworkStorage.RefundOutcome("already", List.of(), List.of());
+                    }
+                }
+            }
+            List<BankAccount> after = new ArrayList<>();
+            List<Long> ids = new ArrayList<>();
+            for (NetworkStorage.RefundMove m : moves) {
+                BankAccount a = bankAdjustIn(c, m.id(), m.dPieces(), m.dCoins(), null, m.takeTier(), null, m.take(), null);
+                if (a == null) {
+                    c.rollback();
+                    return new NetworkStorage.RefundOutcome("short", List.of(), List.of());
+                }
+                after.add(a);
+                ids.add(bankLog(c, m.id(), m.log()));
+            }
+            c.commit();
+            return new NetworkStorage.RefundOutcome("ok", after, ids);
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** The body of {@link #bankAdjust}, inside the caller's transaction on {@code c}: null when refused (the caller rolls back). */
+    private BankAccount bankAdjustIn(Connection c, UUID id, long dPieces, int[] dCoins, @javax.annotation.Nullable BankTransaction log, @javax.annotation.Nullable com.mrgregles.bsp_core.coin.CoinTier tier,
+                                     @javax.annotation.Nullable List<com.mrgregles.bsp_core.bank.BankStamps.Lot> add, int take, @javax.annotation.Nullable String team) throws SQLException {
+        {
             List<com.mrgregles.bsp_core.bank.BankStamps.Lot> picked = null;
             if (tier != null && take > 0) {
                 int total = -1;
@@ -1448,7 +1510,6 @@ final class MySqlStore implements AutoCloseable {
                     }
                 }
                 if (total < take) {
-                    c.rollback();
                     return null;
                 }
                 Map<String, com.mrgregles.bsp_core.bank.BankStamps.Held> held = new java.util.LinkedHashMap<>();
@@ -1499,7 +1560,6 @@ final class MySqlStore implements AutoCloseable {
                     ps.setInt(9 + i, dCoins[i]);
                 }
                 if (ps.executeUpdate() != 1) {
-                    c.rollback();
                     return null;
                 }
             }
@@ -1517,13 +1577,7 @@ final class MySqlStore implements AutoCloseable {
                 bankStamps(c, id, after.stamps, false);
                 after.picked = picked;
             }
-            c.commit();
             return after;
-        } catch (SQLException | RuntimeException e) {
-            c.rollback();
-            throw e;
-        } finally {
-            c.setAutoCommit(auto);
         }
     }
 
@@ -1635,13 +1689,14 @@ final class MySqlStore implements AutoCloseable {
         }
     }
 
-    void bankLog(UUID id, BankTransaction tx) throws SQLException {
-        bankLog(conn(), id, tx);
+    long bankLog(UUID id, BankTransaction tx) throws SQLException {
+        return bankLog(conn(), id, tx);
     }
 
-    /** A log row on the given connection (inside a transaction, it goes in or not with the rest). */
-    private void bankLog(Connection c, UUID id, BankTransaction tx) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+    /** A log row on the given connection (inside a transaction, it goes in or not with the rest); returns its id (0 if the driver gave none). */
+    private long bankLog(Connection c, UUID id, BankTransaction tx) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bank_log") + " (uuid, ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id, refund_of) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", java.sql.Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, id.toString());
             ps.setLong(2, tx.ms());
             ps.setString(3, tx.type().name());
@@ -1653,7 +1708,11 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(9, tx.server());
             ps.setString(10, tx.shopId());
             ps.setString(11, tx.itemId().length() > 128 ? tx.itemId().substring(0, 128) : tx.itemId());
+            ps.setLong(12, tx.refundOf());
             ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                return keys.next() ? keys.getLong(1) : 0;
+            }
         }
     }
 
@@ -1666,8 +1725,8 @@ final class MySqlStore implements AutoCloseable {
             ps.executeUpdate();
         }
         List<BankTransaction> out = new ArrayList<>();
-        try (PreparedStatement ps = conn().prepareStatement("SELECT ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id FROM " + t("bank_log")
-                + " WHERE uuid = ? ORDER BY ms DESC, id DESC LIMIT ?")) {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT ms, type, with_name, detail, pieces, coin_tier, coin_count, server_id, shop_id, item_id, id, refunded_pieces, refunded_coins, refund_of FROM "
+                + t("bank_log") + " WHERE uuid = ? ORDER BY ms DESC, id DESC LIMIT ?")) {
             ps.setString(1, id.toString());
             ps.setInt(2, limit);
             try (ResultSet rs = ps.executeQuery()) {
@@ -1678,7 +1737,8 @@ final class MySqlStore implements AutoCloseable {
                     } catch (IllegalArgumentException e) {
                         type = BankTransaction.Type.ADMIN;
                     }
-                    out.add(new BankTransaction(rs.getLong(1), type, rs.getString(3), rs.getString(4), rs.getLong(5), rs.getInt(6), rs.getInt(7), rs.getString(8), rs.getString(9), rs.getString(10)));
+                    out.add(new BankTransaction(rs.getLong(1), type, rs.getString(3), rs.getString(4), rs.getLong(5), rs.getInt(6), rs.getInt(7), rs.getString(8), rs.getString(9), rs.getString(10),
+                            rs.getLong(11), rs.getLong(12), rs.getInt(13), rs.getLong(14)));
                 }
             }
         }

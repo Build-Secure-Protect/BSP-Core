@@ -1,0 +1,331 @@
+<title>Bank and Market Admin Page</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=VT323&display=swap">
+<style>
+/* Layout: the BSP dark board. Three layouts, each a section with: where the button sits on the Players tab, the Bank & Market page,
+   and the larger EDIT TRANSACTIONS page. In-game mocks are drawn at twice the panel's pixel size and keep the Holo HUD colours in both themes. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78;
+  --h-bg:#10151c; --h-fg:#e6eaf2; --h-muted:#9aa3b5; --h-slot:#0c0e12; --h-dim:#2a2f3a; --h-tq:#19d3b0; --h-vio:#b58cff; --h-gold:#ffd23a; --h-bad:#ff6b5c; --h-good:#8fe04a; --h-hover:#2a2140;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --px:"VT323","Courier New",monospace; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1000px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:34px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h4{ margin:0; font:600 11px var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card ul{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); }
+.note{ font-size:12px; color:var(--muted); }
+button:focus-visible{ outline:2px solid #19d3b0; outline-offset:2px; }
+
+/* the in-game mock: a fixed-pixel stage scaled to its card */
+.stage{ width:100%; position:relative; overflow:hidden; border-radius:4px; background:#07090c; }
+.mc{ position:absolute; left:0; top:0; transform-origin:0 0; font-family:var(--px); color:var(--h-fg); }
+.panel{ background:var(--h-bg); border:2px solid var(--h-vio); box-shadow:0 0 0 2px #000, 0 0 24px rgba(181,140,255,.18); position:relative; }
+.hd{ display:flex; align-items:center; gap:10px; padding:8px 14px 0; font-size:22px; }
+.hd .who{ color:var(--h-vio); } .hd .tag{ font-size:17px; color:var(--h-tq); } .hd .sp{ flex:1; }
+.btn{ font-family:var(--px); font-size:18px; letter-spacing:.04em; color:var(--h-fg); background:var(--h-slot); border:2px solid var(--c, var(--h-tq)); padding:2px 8px; cursor:pointer; line-height:1.1; white-space:nowrap; }
+.btn:hover{ background:var(--h-hover); }
+.btn.off{ border-color:var(--h-dim); color:var(--h-muted); cursor:default; }
+.btn.arm{ background:var(--c); color:#000; }
+.slot{ background:var(--h-slot); border:2px solid var(--h-dim); }
+.lab{ font-size:15px; color:var(--h-muted); letter-spacing:.06em; text-transform:uppercase; }
+.gold{ color:var(--h-gold); } .vio{ color:var(--h-vio); } .tq{ color:var(--h-tq); } .bad{ color:var(--h-bad); } .good{ color:var(--h-good); } .mut{ color:var(--h-muted); }
+.coin{ width:18px; height:18px; border-radius:50%; display:inline-block; box-shadow:inset -3px -3px 0 rgba(0,0,0,.35), inset 2px 2px 0 rgba(255,255,255,.35); flex:none; }
+.c0{ background:#c87533 } .c1{ background:#ffd23a } .c2{ background:#5fe0e0 } .c3{ background:#4f4549 } .c4{ background:#b58cff }
+.ico{ width:22px; height:22px; flex:none; display:inline-grid; place-items:center; font-size:13px; color:#000; border:2px solid rgba(0,0,0,.4); }
+.rows{ overflow:hidden; }
+.row{ display:grid; align-items:center; gap:8px; font-size:17px; padding:1px 6px; border-bottom:1px solid #161b23; white-space:nowrap; }
+.row > span{ overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.row.sel{ background:var(--h-hover); outline:2px solid var(--h-vio); outline-offset:-2px; }
+.row.refunded{ opacity:.55; }
+.pill{ font-size:14px; padding:0 4px; border:1px solid currentColor; letter-spacing:.05em; }
+.scrollbar{ position:absolute; right:3px; width:4px; background:var(--h-dim); }
+.tabs{ display:flex; gap:4px; }
+.tab{ font-size:17px; padding:1px 9px; border:2px solid var(--h-dim); color:var(--h-muted); background:var(--h-slot); cursor:pointer; }
+.tab.on{ border-color:var(--h-vio); color:var(--h-fg); background:var(--h-hover); }
+.chip{ font-size:15px; padding:0 6px; border:2px solid var(--h-dim); color:var(--h-muted); cursor:pointer; background:var(--h-slot); }
+.chip.on{ border-color:var(--h-tq); color:var(--h-fg); }
+.toast{ font-size:16px; color:var(--h-good); }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Bank &amp; Market admin page</h1>
+    <p class="lede">Three layouts for the admin panel's new page. Each shows where the BANK &amp; MARKET button sits on the Players tab, the page itself (coins, pieces, the bank log, EDIT TRANSACTIONS, and the player's market lots and requests), and the larger page that refunds transactions. The mocks are drawn at twice the panel's in-game pixel size. Click a REFUND button to see the second-click confirm. The player, rows and lots are examples.</p>
+  </header>
+
+  <!-- ====================================================== A -->
+  <section id="a">
+    <h2>A · Ledger and shelf</h2>
+    <div class="card">
+      <h4>Players tab: three buttons share the bottom row</h4>
+      <div class="stage" data-w="420" data-h="64"><div class="mc" style="width:420px;height:64px;padding:12px">
+        <div style="display:flex;gap:10px">
+          <span class="btn">TP PLAYER</span><span class="btn" style="--c:var(--h-gold)">BANK &amp; MARKET</span><span class="btn" style="--c:var(--h-bad)">RESET TOTEMS</span>
+        </div>
+      </div></div>
+      <p>The bottom row keeps its two buttons and gains a third between them, each a third of the row (66 px). BANK &amp; MARKET is gold, the panel's colour for money.</p>
+    </div>
+    <div class="card">
+      <h4>The page, in place of the Players tab (344 × 210)</h4>
+      <div class="stage" data-w="688" data-h="420"><div class="mc" style="width:688px;height:420px">
+        <div class="panel" style="width:688px;height:420px">
+          <div class="hd"><span class="btn" style="--c:var(--h-dim)">◀ BACK</span><span class="who">Wren_88</span><span class="tag">ONLINE</span><span class="sp"></span><span class="lab">Bank &amp; Market</span></div>
+          <div style="display:grid;grid-template-columns:170px 1fr;gap:14px;padding:10px 14px 0">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="slot" style="padding:6px 8px"><div class="lab">Pieces</div><div class="gold" style="font-size:34px;line-height:1">48,250</div></div>
+              <div class="slot" style="padding:6px 8px;display:flex;flex-direction:column;gap:3px"><div class="lab">Coins in the bank</div><div class="coins"></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div class="lab">Bank log · newest first</div>
+              <div class="slot rows logA" style="height:166px;position:relative"></div>
+              <div style="display:flex;justify-content:flex-end"><span class="btn" style="--c:var(--h-gold)">EDIT TRANSACTIONS</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:8px 14px 0">
+            <div><div class="lab">For sale on the market · 3</div><div class="slot rows lotsA" style="height:84px"></div></div>
+            <div><div class="lab">Requests · 2</div><div class="slot rows ordersA" style="height:84px"></div></div>
+          </div>
+        </div>
+      </div></div>
+      <p>The page takes the Players tab's right side and list. Balances on the left, the log on the right with its button underneath, and the market as two shelves along the foot. The log scrolls with the mouse wheel.</p>
+    </div>
+    <div class="card">
+      <h4>EDIT TRANSACTIONS: a bigger table with a REFUND per row (440 × 250)</h4>
+      <div class="stage" data-w="880" data-h="500"><div class="mc" style="width:880px;height:500px">
+        <div class="panel" style="width:880px;height:500px">
+          <div class="hd"><span class="btn" style="--c:var(--h-dim)">◀ BACK</span><span class="who">Wren_88</span><span class="mut" style="font-size:18px">· 214 transactions kept (90 days)</span><span class="sp"></span><span class="gold" style="font-size:20px">48,250 pieces</span></div>
+          <div style="padding:8px 14px 0">
+            <div class="row mut" style="grid-template-columns:120px 92px 150px 1fr 96px 112px 92px;border-bottom:2px solid var(--h-dim)"><span>WHEN</span><span>TYPE</span><span>WITH</span><span>WHAT</span><span>PIECES</span><span>COINS</span><span></span></div>
+            <div class="slot rows editA" style="height:356px"></div>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:8px"><span class="toast tA"></span><span class="sp" style="flex:1"></span><span class="mut" style="font-size:16px">Refunds go back into the bank. Wren_88 is told in chat (or at their next login).</span></div>
+          </div>
+        </div>
+      </div></div>
+      <p>Every kept row, with a REFUND button on the rows where the player lost pieces or coins. A second click within four seconds refunds; the row then shows REFUNDED and can't be refunded again.</p>
+    </div>
+  </section>
+
+  <!-- ====================================================== B -->
+  <section id="b">
+    <h2>B · Tabs on one page</h2>
+    <div class="card">
+      <h4>Players tab: the button sits on the coin line</h4>
+      <div class="stage" data-w="420" data-h="70"><div class="mc" style="width:420px;height:70px;padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:16px" class="mut">Coin Vault: 1,240 in 3 vaults <span style="flex:1"></span><span class="btn" style="--c:var(--h-gold);font-size:16px">BANK &amp; MARKET ▶</span></div>
+        <div style="display:flex;gap:16px;margin-top:6px"><span class="coin c0"></span>12 <span class="coin c1"></span>3 <span class="coin c2"></span>1 <span class="coin c3"></span>0 <span class="coin c4"></span>0</div>
+      </div></div>
+      <p>The bottom row stays as it is. The button sits at the end of the Coin Vault line, above the vault's coins, so it reads as "more about this player's money".</p>
+    </div>
+    <div class="card">
+      <h4>The page: balances on top, then BANK LOG and MARKET tabs</h4>
+      <div class="stage" data-w="688" data-h="420"><div class="mc" style="width:688px;height:420px">
+        <div class="panel" style="width:688px;height:420px">
+          <div class="hd"><span class="btn" style="--c:var(--h-dim)">◀ BACK</span><span class="who">Wren_88</span><span class="tag">ONLINE</span></div>
+          <div style="display:flex;gap:14px;align-items:center;padding:8px 14px 0">
+            <div class="slot" style="padding:4px 10px;display:flex;align-items:baseline;gap:8px"><span class="lab">Pieces</span><span class="gold" style="font-size:28px">48,250</span></div>
+            <div class="slot" style="padding:6px 10px;flex:1"><div class="coins" style="display:flex;gap:14px"></div></div>
+          </div>
+          <div style="padding:10px 14px 0;display:flex;justify-content:space-between;align-items:end">
+            <div class="tabs" data-group="b"><span class="tab on" data-t="log">BANK LOG</span><span class="tab" data-t="mkt">MARKET · 3 LOTS, 2 REQUESTS</span></div>
+            <span class="btn bEdit" style="--c:var(--h-gold)">EDIT TRANSACTIONS</span>
+          </div>
+          <div class="slot rows logB" style="height:262px;margin:6px 14px 0;position:relative"></div>
+          <div class="mktB" hidden style="margin:6px 14px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px;height:262px">
+            <div><div class="lab">For sale</div><div class="slot rows lotsB" style="height:236px"></div></div>
+            <div><div class="lab">Requests</div><div class="slot rows ordersB" style="height:236px"></div></div>
+          </div>
+        </div>
+      </div></div>
+      <p>The balances stay on top. Below them, two tabs share the space: BANK LOG (with EDIT TRANSACTIONS on its right) and MARKET. Each gets the full height, so the log shows about 15 rows at once. Click MARKET to switch.</p>
+    </div>
+    <div class="card">
+      <h4>EDIT TRANSACTIONS: filters by type, refund on the row</h4>
+      <div class="stage" data-w="880" data-h="500"><div class="mc" style="width:880px;height:500px">
+        <div class="panel" style="width:880px;height:500px">
+          <div class="hd"><span class="btn" style="--c:var(--h-dim)">◀ BACK</span><span class="who">Wren_88</span><span class="sp"></span><span class="gold" style="font-size:20px">48,250 pieces</span></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px 0" class="chipsB"></div>
+          <div style="padding:6px 14px 0">
+            <div class="row mut" style="grid-template-columns:120px 92px 150px 1fr 96px 112px 92px;border-bottom:2px solid var(--h-dim)"><span>WHEN</span><span>TYPE</span><span>WITH</span><span>WHAT</span><span>PIECES</span><span>COINS</span><span></span></div>
+            <div class="slot rows editB" style="height:330px"></div>
+            <div style="margin-top:8px" class="toast tB"></div>
+          </div>
+        </div>
+      </div></div>
+      <p>Chips along the top filter the rows by kind: ALL, SHOP, PAYMENTS, COINS (convert, bank, take out), FEES, MARKET, LOTTERY, ADMIN, REFUNDS. Otherwise it works like A.</p>
+    </div>
+  </section>
+
+  <!-- ====================================================== C -->
+  <section id="c">
+    <h2>C · A wide page of its own</h2>
+    <div class="card">
+      <h4>Players tab: the button takes the top-right corner, by the name</h4>
+      <div class="stage" data-w="420" data-h="56"><div class="mc" style="width:420px;height:56px;padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:22px"><span class="vio">Wren_88</span><span class="tq" style="font-size:17px">ONLINE</span><span style="flex:1"></span><span class="btn" style="--c:var(--h-gold)">BANK &amp; MARKET</span></div>
+      </div></div>
+      <p>The button sits on the name line, so it is the first thing seen once a player is picked. Nothing below it moves.</p>
+    </div>
+    <div class="card">
+      <h4>The page: its own wider screen in three columns (440 × 250)</h4>
+      <div class="stage" data-w="880" data-h="500"><div class="mc" style="width:880px;height:500px">
+        <div class="panel" style="width:880px;height:500px">
+          <div class="hd"><span class="btn" style="--c:var(--h-dim)">◀ PLAYERS</span><span class="who">Wren_88</span><span class="tag">ONLINE · BSP-Frostwarf</span><span class="sp"></span><span class="lab">Bank &amp; Market</span></div>
+          <div style="display:grid;grid-template-columns:180px 1fr 250px;gap:12px;padding:10px 14px 0">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="slot" style="padding:6px 8px"><div class="lab">Pieces</div><div class="gold" style="font-size:34px;line-height:1">48,250</div></div>
+              <div class="slot" style="padding:6px 8px;display:flex;flex-direction:column;gap:3px"><div class="lab">Coins in the bank</div><div class="coins"></div></div>
+              <div class="slot" style="padding:6px 8px"><div class="lab">This week</div><div style="font-size:17px">in <span class="good">+2,446</span> · out <span class="bad">−7,120</span></div><div class="mut" style="font-size:15px">2 coins converted · 1 refund</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div class="lab">Bank log</div>
+              <div class="slot rows logC" style="height:338px;position:relative"></div>
+              <div style="display:flex;justify-content:center"><span class="btn" style="--c:var(--h-gold)">EDIT TRANSACTIONS</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="lab">For sale · 3</div><div class="slot rows lotsC" style="height:170px"></div>
+              <div class="lab">Requests · 2</div><div class="slot rows ordersC" style="height:150px"></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <p>A separate, wider screen with everything visible at once: balances and a short weekly summary, a tall log with EDIT TRANSACTIONS under it, and the lots and requests in a column on the right.</p>
+    </div>
+    <div class="card">
+      <h4>EDIT TRANSACTIONS: pick a row, see what the refund gives back</h4>
+      <div class="stage" data-w="880" data-h="500"><div class="mc" style="width:880px;height:500px">
+        <div class="panel" style="width:880px;height:500px">
+          <div class="hd"><span class="btn" style="--c:var(--h-dim)">◀ BACK</span><span class="who">Wren_88</span><span class="sp"></span><span class="gold" style="font-size:20px">48,250 pieces</span></div>
+          <div style="display:grid;grid-template-columns:1fr 250px;gap:12px;padding:8px 14px 0">
+            <div style="min-width:0">
+              <div class="row mut" style="grid-template-columns:110px 86px 1fr 92px 100px;border-bottom:2px solid var(--h-dim)"><span>WHEN</span><span>TYPE</span><span>WHAT</span><span>PIECES</span><span>COINS</span></div>
+              <div class="slot rows editC" style="height:380px"></div>
+            </div>
+            <div class="slot detailC" style="padding:8px 10px;display:flex;flex-direction:column;gap:6px;height:404px"></div>
+          </div>
+        </div>
+      </div></div>
+      <p>Click a row to see it in full on the right, with exactly what a refund puts back and takes away (a conversion gives the coins back and takes the pieces it made). The REFUND button is on that panel, not on every row.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What all three share</h2>
+    <div class="card">
+      <ul>
+        <li>Moderators can open every page and read it; REFUND is greyed for them, as with the panel's other actions.</li>
+        <li>Coins shown are the ones kept in the bank account. The Coin Vault's coins stay on the Players tab.</li>
+        <li>Rows where the player gained (a sale, a payment received, a daily reward) have no REFUND. A row refunds once.</li>
+        <li>A refund writes its own REFUND row into the player's log, and the player gets a chat line only they see, at once or at their next login.</li>
+        <li>On a network, the page reads the log and lots from the database, so it shows rows from every server.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  // ---- example data (invented)
+  var coins=[["Copper",12],["Gold",3],["Diamond",1],["Netherite",0],["Illyrium",0]];
+  var rows=[
+    {id:1,when:"18 Nov 14:02",type:"BOUGHT",with:"Spawn Shop",what:"Oak Log ×64",p:-320,c:null,ref:true},
+    {id:2,when:"18 Nov 13:40",type:"CONVERT",with:"Shatter Bank",what:"converted 2 Gold coins",p:2000,c:[1,-2],ref:true},
+    {id:3,when:"17 Nov 21:15",type:"PAID",with:"Kestrel",what:"payment",p:-1500,c:null,ref:true},
+    {id:4,when:"17 Nov 20:03",type:"RECEIVED",with:"Bram",what:"payment",p:250,c:null,ref:false},
+    {id:5,when:"17 Nov 11:00",type:"RENT",with:"Safety deposit box",what:"7 days, 9 slots",p:0,c:[0,-1],ref:true},
+    {id:6,when:"16 Nov 19:44",type:"MARKET",with:"Juno",what:"bought Elytra",p:-4800,c:null,ref:true},
+    {id:7,when:"16 Nov 09:12",type:"SOLD",with:"Spawn Shop",what:"Wheat ×32",p:96,c:null,ref:false},
+    {id:8,when:"15 Nov 08:00",type:"GRANT",with:"Shatter Bank",what:"daily reward",p:100,c:null,ref:false},
+    {id:9,when:"14 Nov 22:31",type:"LOTTERY",with:"Weekly draw",what:"5 tickets",p:-500,c:null,ref:true},
+    {id:10,when:"14 Nov 18:20",type:"DEPOSIT",with:"Shatter Bank",what:"banked 5 Copper coins",p:0,c:[0,5],ref:false},
+    {id:11,when:"13 Nov 16:05",type:"WITHDRAW",with:"Shatter Bank",what:"took out 1 Diamond coin",p:0,c:[2,-1],ref:false},
+    {id:12,when:"12 Nov 10:30",type:"REFUND",with:"admin",what:"refund of 12 Nov FEE",p:0,c:[0,1],ref:false},
+    {id:13,when:"12 Nov 10:12",type:"FEE",with:"Shatter Bank",what:"coin sale markup",p:0,c:[0,-1],ref:true,done:true},
+    {id:14,when:"11 Nov 19:02",type:"BOUGHT",with:"Spawn Shop",what:"Iron Ingot ×16",p:-640,c:null,ref:true},
+    {id:15,when:"11 Nov 09:00",type:"GRANT",with:"Shatter Bank",what:"welcome",p:1000,c:null,ref:false},
+    {id:16,when:"10 Nov 21:44",type:"PAID",with:"Saffi",what:"payment",p:-200,c:null,ref:true},
+    {id:17,when:"10 Nov 14:20",type:"CONVERT",with:"Shatter Bank",what:"converted 4 Copper coins",p:400,c:[0,-4],ref:true}
+  ];
+  var lots=[["#4f4549","N","Netherite Ingot ×4","12,000","2d 4h"],["#9b6dd6","S","Shulker Box (27 items)","30,000","5h"],["#8fa3b8","E","Elytra","45,000","6d"]];
+  var orders=[["#5fe0e0","D","Diamond ×64","20/64","150 ea","3d"],["#6b3d2e","A","Ancient Debris ×16","0/16","900 ea","1d 2h"]];
+  var coinNames=["Copper","Gold","Diamond","Netherite","Illyrium"];
+  function fmt(n){ return (n>0?"+":n<0?"−":"")+Math.abs(n).toLocaleString("en-GB"); }
+  function coinTxt(c){ if(!c) return ""; return '<span class="coin c'+c[0]+'" style="width:13px;height:13px;vertical-align:-1px"></span> '+(c[1]>0?"+":"−")+Math.abs(c[1])+" "+coinNames[c[0]]; }
+  function typeCol(t){ return {BOUGHT:"tq",SOLD:"tq",PAID:"vio",RECEIVED:"vio",CONVERT:"gold",DEPOSIT:"gold",WITHDRAW:"gold",RENT:"mut",FEE:"mut",MARKET:"tq",LOTTERY:"vio",GRANT:"good",ADMIN:"bad",REFUND:"good"}[t]||""; }
+
+  document.querySelectorAll(".coins").forEach(function(el){
+    el.innerHTML=coins.map(function(c,i){ return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:18px;margin-right:6px"><span class="coin c'+i+'"></span><span class="'+(c[1]?"":"mut")+'">'+c[1]+'</span>'+(el.style.display==="flex"?"":'<span class="mut" style="font-size:15px">'+c[0]+'</span>')+'</span>'; }).join(el.style.display==="flex"?"":"<br>");
+  });
+  function smallLog(el, n){
+    el.innerHTML=rows.slice(0,n).map(function(r){
+      return '<div class="row'+(r.done?" refunded":"")+'" style="grid-template-columns:100px 78px 1fr 84px"><span class="mut">'+r.when+'</span><span class="'+typeCol(r.type)+'">'+r.type+'</span><span>'+r.what+'</span><span style="text-align:right" class="'+(r.p>0?"good":r.p<0?"bad":"mut")+'">'+(r.p?fmt(r.p):coinTxt(r.c).replace(/ (Copper|Gold|Diamond|Netherite|Illyrium)$/,""))+'</span></div>';
+    }).join("")+'<div class="scrollbar" style="top:4px;height:40%"></div>';
+  }
+  smallLog(document.querySelector(".logA"),9); smallLog(document.querySelector(".logB"),15); smallLog(document.querySelector(".logC"),18);
+  function lotRows(el){ el.innerHTML=lots.map(function(l){ return '<div class="row" style="grid-template-columns:22px 1fr 70px 52px"><span class="ico" style="background:'+l[0]+'">'+l[1]+'</span><span>'+l[2]+'</span><span class="gold" style="text-align:right">'+l[3]+'</span><span class="mut" style="text-align:right">'+l[4]+'</span></div>'; }).join(""); }
+  function orderRows(el){ el.innerHTML=orders.map(function(o){ return '<div class="row" style="grid-template-columns:22px 1fr 50px 60px 44px"><span class="ico" style="background:'+o[0]+'">'+o[1]+'</span><span>'+o[2]+'</span><span class="tq" style="text-align:right">'+o[3]+'</span><span class="gold" style="text-align:right">'+o[4]+'</span><span class="mut" style="text-align:right">'+o[5]+'</span></div>'; }).join(""); }
+  document.querySelectorAll(".lotsA,.lotsB,.lotsC").forEach(lotRows);
+  document.querySelectorAll(".ordersA,.ordersB,.ordersC").forEach(orderRows);
+
+  // ---- refund with a second click (A and B on the row)
+  function refundText(r){ var out=[]; if(r.type==="CONVERT"){ out.push("+"+Math.abs(r.c[1])+" "+coinNames[r.c[0]]+" coins"); out.push("−"+r.p.toLocaleString("en-GB")+" pieces"); }
+    else { if(r.p<0) out.push("+"+Math.abs(r.p).toLocaleString("en-GB")+" pieces"); if(r.c&&r.c[1]<0) out.push("+"+Math.abs(r.c[1])+" "+coinNames[r.c[0]]+" coin"+(Math.abs(r.c[1])>1?"s":"")); }
+    return out.join(", "); }
+  function editTable(el, toast, filter){
+    var armed=null, timer=null;
+    function draw(){
+      el.innerHTML=rows.filter(function(r){ return !filter||filter(r); }).map(function(r){
+        var b = r.done ? '<span class="pill good">REFUNDED</span>' : r.ref ? '<button class="btn'+(armed===r.id?' arm':'')+'" style="--c:var(--h-gold);font-size:15px;padding:0 6px" data-id="'+r.id+'">'+(armed===r.id?"SURE?":"REFUND")+'</button>' : '<span class="mut">—</span>';
+        return '<div class="row'+(r.done?" refunded":"")+'" style="grid-template-columns:120px 92px 150px 1fr 96px 112px 92px"><span class="mut">'+r.when+'</span><span class="'+typeCol(r.type)+'">'+r.type+'</span><span>'+r.with+'</span><span>'+r.what+'</span><span class="'+(r.p>0?"good":r.p<0?"bad":"mut")+'">'+(r.p?fmt(r.p):"")+'</span><span>'+coinTxt(r.c)+'</span><span>'+b+'</span></div>';
+      }).join("");
+    }
+    el.addEventListener("click",function(e){
+      var t=e.target.closest("button[data-id]"); if(!t) return; var id=+t.dataset.id, r=rows.find(function(x){return x.id===id;});
+      if(armed===id){ r.done=true; armed=null; clearTimeout(timer); toast.textContent="Refunded "+r.when+" "+r.type+": "+refundText(r)+". Wren_88 is told in chat."; drawAll(); return; }
+      armed=id; clearTimeout(timer); timer=setTimeout(function(){ armed=null; draw(); },4000); draw();
+    });
+    return draw;
+  }
+  var drawA=editTable(document.querySelector(".editA"), document.querySelector(".tA"));
+  var groups={ALL:null,SHOP:["BOUGHT","SOLD"],PAYMENTS:["PAID","RECEIVED"],COINS:["CONVERT","DEPOSIT","WITHDRAW"],FEES:["FEE","RENT"],MARKET:["MARKET","TAX"],LOTTERY:["LOTTERY"],ADMIN:["ADMIN","GRANT"],REFUNDS:["REFUND"]};
+  var bFilter="ALL";
+  var chips=document.querySelector(".chipsB");
+  chips.innerHTML=Object.keys(groups).map(function(k){ return '<span class="chip'+(k===bFilter?" on":"")+'" data-k="'+k+'">'+k+'</span>'; }).join("");
+  var drawB=editTable(document.querySelector(".editB"), document.querySelector(".tB"), function(r){ var g=groups[bFilter]; return !g||g.indexOf(r.type)>=0; });
+  chips.addEventListener("click",function(e){ var c=e.target.closest(".chip"); if(!c) return; bFilter=c.dataset.k; chips.querySelectorAll(".chip").forEach(function(x){ x.classList.toggle("on",x===c); }); drawB(); });
+
+  // ---- C: pick a row, refund from the detail panel
+  var selC=2, armedC=false, timerC=null;
+  var listC=document.querySelector(".editC"), detail=document.querySelector(".detailC");
+  function drawC(){
+    listC.innerHTML=rows.map(function(r){ return '<div class="row'+(r.id===selC?" sel":"")+(r.done?" refunded":"")+'" data-id="'+r.id+'" style="grid-template-columns:110px 86px 1fr 92px 100px;cursor:pointer"><span class="mut">'+r.when+'</span><span class="'+typeCol(r.type)+'">'+r.type+'</span><span>'+r.what+'</span><span class="'+(r.p>0?"good":r.p<0?"bad":"mut")+'">'+(r.p?fmt(r.p):"")+'</span><span>'+coinTxt(r.c)+'</span></div>'; }).join("");
+    var r=rows.find(function(x){return x.id===selC;});
+    var body='<div class="lab">Transaction</div><div style="font-size:20px" class="'+typeCol(r.type)+'">'+r.type+'</div><div style="font-size:17px">'+r.what+'</div><div class="mut" style="font-size:16px">'+r.when+' · with '+r.with+' · on BSP-Frostwarf</div>';
+    if(r.done) body+='<div style="margin-top:auto" class="pill good">REFUNDED</div>';
+    else if(r.ref){ body+='<div class="lab" style="margin-top:10px">A refund gives back</div><div style="font-size:19px" class="good">'+refundText(r)+'</div>';
+      if(r.type==="CONVERT") body+='<div class="mut" style="font-size:15px">Refused if the player no longer has the pieces it made.</div>';
+      body+='<div style="margin-top:auto;display:flex;justify-content:flex-end"><button class="btn'+(armedC?' arm':'')+'" style="--c:var(--h-gold)">'+(armedC?"SURE?":"REFUND")+'</button></div>'; }
+    else body+='<div class="mut" style="font-size:16px;margin-top:10px">The player gained here: nothing to refund.</div>';
+    detail.innerHTML=body;
+  }
+  listC.addEventListener("click",function(e){ var t=e.target.closest(".row[data-id]"); if(!t) return; selC=+t.dataset.id; armedC=false; drawC(); });
+  detail.addEventListener("click",function(e){ if(!e.target.closest("button")) return; var r=rows.find(function(x){return x.id===selC;});
+    if(armedC){ r.done=true; armedC=false; clearTimeout(timerC); drawAll(); return; } armedC=true; clearTimeout(timerC); timerC=setTimeout(function(){ armedC=false; drawC(); },4000); drawC(); });
+  function drawAll(){ drawA(); drawB(); drawC(); ["logA","logB","logC"].forEach(function(k,i){ smallLog(document.querySelector("."+k),[9,15,18][i]); }); }
+  drawAll();
+
+  // ---- B: log / market tabs
+  document.querySelector('.tabs[data-group="b"]').addEventListener("click",function(e){ var t=e.target.closest(".tab"); if(!t) return;
+    this.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on",x===t); });
+    var mkt=t.dataset.t==="mkt"; document.querySelector(".logB").hidden=mkt; document.querySelector(".mktB").hidden=!mkt; document.querySelector(".bEdit").style.visibility=mkt?"hidden":"visible"; });
+
+  // ---- scale each fixed-pixel mock to its card
+  function fit(){ document.querySelectorAll(".stage").forEach(function(s){ var w=+s.dataset.w, h=+s.dataset.h, k=s.clientWidth/w; s.style.height=Math.round(h*k)+"px"; s.firstElementChild.style.transform="scale("+k+")"; }); }
+  window.addEventListener("resize",fit); fit();
+})();
+</script>

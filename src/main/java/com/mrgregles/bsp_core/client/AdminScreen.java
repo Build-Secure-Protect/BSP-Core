@@ -28,7 +28,8 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             GOLD = 0xFFFFD23A, MUTED = 0x9AA3B5, TEXT = 0xE6EAF2, HOVER = 0xFF2A2140;
     private static final int LIST_X = 10, LIST_Y = 26, LIST_W = 112, ROW_H = 12, ROWS = 14, DX = 130, TOTEM_Y = 71, TOTEM_H = 11, TOTEM_ROWS = 5,
             BTN_Y = 182, BTN_W = 98, BTN_H = 18, TAB_W = 37, TAB_H = 13, TABS = 7,
-            CLEAR_W = 30, SET_W = 22, SCORE_Y = 39, CLEAR_X = W - 10 - CLEAR_W, SET_X = CLEAR_X - 3 - SET_W, BOX_X = SET_X - 3 - 38;
+            CLEAR_W = 30, SET_W = 22, SCORE_Y = 39, CLEAR_X = W - 10 - CLEAR_W, SET_X = CLEAR_X - 3 - SET_W, BOX_X = SET_X - 3 - 38,
+            BANK_W = 62, BANK_X = W - 10 - BANK_W;
     private static final long CONFIRM_MS = 4000;
 
     private AdminDataPacket data;
@@ -439,6 +440,10 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
             }
         }
         AdminDataPacket.Row r = row();
+        if (r != null && over(mx, my, x + BANK_X, y + 26, BANK_W, 11)) {
+            AdminBankScreen.open(this, r.id(), r.name()); // the Bank & Market page; read-only unless the server says this viewer may act
+            return true;
+        }
         if (r == null || !edit) {
             return super.mouseClicked(mx, my, button);
         }
@@ -663,6 +668,7 @@ public class AdminScreen extends Screen implements ScreenFit.Fitted {
         }
         g.drawString(font, sel.name(), x + DX, y + 28, VIO & 0xFFFFFF, false);
         small(g, tr(sel.online() ? "online" : "offline"), x + DX + font.width(sel.name()) + 6, y + 30, sel.online() ? TQ & 0xFFFFFF : MUTED);
+        button(g, x + BANK_X, y + 26, BANK_W, 11, tr("bank.open"), true, GOLD, mouseX, mouseY); // moderators too: the page is read-only for them
         String scoreLine = font.plainSubstrByWidth(tr("score", sel.points(), sel.totemCount()).getString(), Math.round((BOX_X - 4 - DX) / 0.75f));
         small(g, Component.literal(scoreLine), x + DX, y + SCORE_Y + 3, TEXT);
         if (edit) {

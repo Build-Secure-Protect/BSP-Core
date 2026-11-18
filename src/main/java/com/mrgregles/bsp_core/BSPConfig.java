@@ -501,7 +501,8 @@ public final class BSPConfig {
         BUILDER.comment("Who may use BSP-Core's admin tools (admin block, Score Screen settings, season controls).").push("admin");
         ADMINS = BUILDER.comment("Player names with full control. If this list is empty, every server operator is an admin.")
                 .defineListAllowEmpty(List.of("admins"), List::of, o -> o instanceof String);
-        MODERATORS = BUILDER.comment("Player names who may open the admin panel to look, but cannot change or reset anything.")
+        MODERATORS = BUILDER.comment("Player names who may open the admin panel to look, but cannot change or reset anything.",
+                        "A moderator who also holds the LuckPerms permission bsp_core.admin.bank may refund bank rows and cancel market lots and requests on the Bank & Market page.")
                 .defineListAllowEmpty(List.of("moderators"), List::of, o -> o instanceof String);
         BUILDER.pop();
 

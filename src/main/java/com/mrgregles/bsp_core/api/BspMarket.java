@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * The marketplace read-only, for other mods (BSP-Server Utilities request SU-BC1: its staff web panel). Lots are what players
@@ -28,7 +29,8 @@ import java.util.UUID;
  *
  * <p>Server thread only: from another thread (a web request, say) hand the call to the server with
  * {@code server.execute(...)}. No argument may be null. Nothing here changes the market, except that {@link #refresh} first
- * sends on what this server held while the database was away, as the minute's refresh does. Since 1.16.0.
+ * sends on what this server held while the database was away, as the minute's refresh does, and the staff cancels
+ * ({@link #cancelLot}, {@link #cancelOrder}). Since 1.16.0; the staff calls since the Bank &amp; Market page.
  */
 public final class BspMarket {
     private BspMarket() {}
@@ -110,5 +112,45 @@ public final class BspMarket {
     public static void refresh(MinecraftServer server, Runnable then) {
         Objects.requireNonNull(then, "then");
         Market.store(server).refresh(server, () -> BuyOrders.store(server).refresh(server, then));
+    }
+
+    // ------------------------------------------------------------------ staff: one player's lots and orders (the Bank & Market page)
+
+    /** The seller's open lots, newest first, as {@link #openLots} has them. */
+    public static List<Lot> lotsOf(MinecraftServer server, UUID seller) {
+        return openLots(server).stream().filter(l -> l.seller().equals(seller)).toList();
+    }
+
+    /** The buyer's open orders, newest first, as {@link #openOrders} has them. */
+    public static List<Order> ordersOf(MinecraftServer server, UUID buyer) {
+        return openOrders(server).stream().filter(o -> o.buyer().equals(buyer)).toList();
+    }
+
+    /** What a staff cancel did: {@code key} "ok" or why not; {@code piecesBack} the pieces an order's buyer got back (0 for a lot). */
+    public record Cancelled(String key, long piecesBack) {}
+
+    /**
+     * Takes a lot off the market as staff: its items go to the seller's Collect box (picked up at any Trade Post), the listing tax
+     * stays paid, and the seller is told, at once or at their next login. {@code by} (who did it) goes in the server log. No
+     * permission is checked here. {@code then} gets "ok", "gone" (already sold, cancelled or run out) or "unreachable". Server
+     * thread only; {@code then} runs on it.
+     */
+    public static void cancelLot(MinecraftServer server, String id, String by, Consumer<Cancelled> then) {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(by, "by");
+        Objects.requireNonNull(then, "then");
+        Market.cancelByStaff(server, id, by, r -> then.accept(new Cancelled(r.ok() ? "ok" : r.key(), 0)));
+    }
+
+    /**
+     * Takes a buy order off the market as staff: what it still holds goes back to the buyer's bank ({@code piecesBack}) and the buyer
+     * is told, at once or at their next login. {@code by} goes in the server log. No permission is checked here. {@code then} gets
+     * "ok", "gone" or "unreachable". Server thread only; {@code then} runs on it.
+     */
+    public static void cancelOrder(MinecraftServer server, String id, String by, Consumer<Cancelled> then) {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(by, "by");
+        Objects.requireNonNull(then, "then");
+        BuyOrders.cancelByStaff(server, id, by, a -> then.accept(new Cancelled(a.ok() ? "ok" : a.key(), a.ok() ? a.refund() : 0)));
     }
 }

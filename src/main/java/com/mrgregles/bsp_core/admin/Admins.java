@@ -35,4 +35,27 @@ public final class Admins {
     public static boolean isModerator(Player player) {
         return isAdmin(player) || listed(BSPConfig.getOr(BSPConfig.MODERATORS, List.<String>of()), player);
     }
+
+    /** The LuckPerms permission that lets a moderator refund bank rows and cancel market entries on the admin panel's Bank &amp; Market page. */
+    public static final String BANK_PERMISSION = "bsp_core.admin.bank";
+
+    /** Test hook: when set, answers whether a player holds {@link #BANK_PERMISSION} in place of LuckPerms. */
+    public static java.util.function.Predicate<Player> bankPermissionSource;
+
+    /**
+     * Who may refund and cancel on the Bank &amp; Market page: an admin, or a moderator holding {@link #BANK_PERMISSION} in LuckPerms.
+     * With no LuckPerms (or no answer from it), only admins.
+     */
+    public static boolean canBank(Player player) {
+        if (isAdmin(player)) {
+            return true;
+        }
+        if (!isModerator(player)) {
+            return false;
+        }
+        if (bankPermissionSource != null) {
+            return bankPermissionSource.test(player);
+        }
+        return Boolean.TRUE.equals(com.mrgregles.bsp_core.compat.LuckPermsBridge.hasPermission(player.getUUID(), BANK_PERMISSION));
+    }
 }
