@@ -3500,6 +3500,86 @@ public class BspGameTests {
         h.succeedWhen(() -> h.assertTrue(display.shown.is(net.minecraft.world.item.Items.GOLDEN_APPLE) && display.shopName.equals("Display Shop"), "the golden apple floats: " + display.shown));
     }
 
+    @GameTest(template = EMPTY)
+    public void stall_display_shows_the_items_of_a_shop_made_only_of_sections(GameTestHelper h) {
+        var server = server(h);
+        String tag = Long.toHexString(System.nanoTime());
+        java.util.function.BiFunction<String, com.mrgregles.bsp_core.shop.Shop.Kind, com.mrgregles.bsp_core.shop.Shop> make = (id, kind) -> com.mrgregles.bsp_core.shop.Shops.create(server, "dt" + tag + id, "Tree " + id, kind);
+        java.util.function.BiFunction<net.minecraft.world.item.Item, String, com.mrgregles.bsp_core.shop.ShopItem> card = (item, section) -> {
+            var c = new com.mrgregles.bsp_core.shop.ShopItem();
+            c.stack = new net.minecraft.world.item.ItemStack(item);
+            c.section = section;
+            if (section.isEmpty()) {
+                c.buy = 5;
+            }
+            return c;
+        };
+        var top = make.apply("t", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var food = make.apply("a", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var bakery = make.apply("n", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var vip = make.apply("v", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var empty = make.apply("e", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        food.parent = bakery.parent = vip.parent = empty.parent = top.id;
+        bakery.parent = food.id;
+        // the top shop holds section cards only: Food (with Bakery inside it), a VIP room hidden from some players, an empty section
+        top.add(card.apply(net.minecraft.world.item.Items.CHEST, food.id));
+        var vipCard = card.apply(net.minecraft.world.item.Items.BARREL, vip.id);
+        vipCard.requires = new com.mrgregles.bsp_core.shop.Requirement("bsp.test.vip", 0, true, "");
+        top.add(vipCard);
+        top.add(card.apply(net.minecraft.world.item.Items.BOOKSHELF, empty.id));
+        var apple = card.apply(net.minecraft.world.item.Items.APPLE, "");
+        apple.stockGlobal = 1;
+        food.add(apple);
+        food.add(card.apply(net.minecraft.world.item.Items.FURNACE, bakery.id));
+        bakery.add(card.apply(net.minecraft.world.item.Items.BREAD, ""));
+        bakery.add(card.apply(net.minecraft.world.item.Items.COMPASS, top.id)); // a loop back to the top is never followed
+        vip.add(card.apply(net.minecraft.world.item.Items.DIAMOND, ""));
+        for (var s : List.of(top, food, bakery, vip, empty)) {
+            com.mrgregles.bsp_core.shop.Shops.save(server, s);
+        }
+        var cards = com.mrgregles.bsp_core.shop.Shops.reachable(server, top, com.mrgregles.bsp_core.shop.Shops.now());
+        h.assertTrue(cards.size() == 2 && cards.get(0).shop() == food && cards.get(0).index() == 0 && cards.get(1).shop() == bakery && cards.get(1).index() == 0,
+                "the tree's item cards in browsing order, the hidden section and the loop left out: " + cards.stream().map(c -> c.shop().id + ":" + c.index()).toList());
+        h.assertTrue(com.mrgregles.bsp_core.shop.Shops.anyStock(server, top) && com.mrgregles.bsp_core.shop.Shops.firstItem(server, top).is(net.minecraft.world.item.Items.APPLE),
+                "a Market Stall counts the sections' stock and puts their first item on the counter");
+        BlockPos displayPos = new BlockPos(4, 1, 4);
+        h.setBlock(displayPos, com.mrgregles.bsp_core.registry.ModBlocks.STALL_DISPLAY.get().defaultBlockState());
+        var display = entity(h, displayPos, com.mrgregles.bsp_core.shop.StallDisplayBlockEntity.class);
+        h.assertTrue(display.linkShop(top.id), "linked to the shop of sections");
+        h.assertTrue(display.shown.is(net.minecraft.world.item.Items.APPLE) && !h.getBlockState(displayPos).getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN),
+                "a section's item floats and the display is whole: " + display.shown);
+        h.assertTrue(display.choose(h.getLevel(), top).is(net.minecraft.world.item.Items.BREAD) && display.choose(h.getLevel(), top).is(net.minecraft.world.item.Items.APPLE),
+                "it goes on into the nested section and round again");
+        var admin = survivor(h);
+        var pinnable = com.mrgregles.bsp_core.shop.StallDisplayMenu.pinnable(admin, display, 32_000);
+        h.assertTrue(pinnable.equals(cards), "the screen offers every item of the tree to pin");
+        h.assertTrue(com.mrgregles.bsp_core.shop.StallDisplayMenu.pinnable(admin, display, 10).size() == 1, "only as many as fit in the screen's opening data");
+        display.pin(pinnable.get(1));
+        display.refreshNow();
+        h.assertTrue(display.pinShop.equals(bakery.id) && display.pinned == 0 && display.pinSlot == 1 && display.shown.is(net.minecraft.world.item.Items.BREAD),
+                "a section's item can be pinned, and the screen marks its place: " + display.pinShop + " " + display.pinned + " " + display.pinSlot);
+        h.assertTrue(display.choose(h.getLevel(), top).is(net.minecraft.world.item.Items.BREAD) && display.choose(h.getLevel(), top).is(net.minecraft.world.item.Items.BREAD), "the pinned bread stays");
+        var saved = display.saveWithoutMetadata();
+        h.assertTrue(saved.getInt("Pinned") == 1 && saved.getInt("PinIndex") == 0 && saved.getString("PinShop").equals(bakery.id), "saved with its place in the list under the key older clients read: " + saved);
+        var copy = new com.mrgregles.bsp_core.shop.StallDisplayBlockEntity(display.getBlockPos(), display.getBlockState());
+        copy.load(saved);
+        h.assertTrue(copy.pinShop.equals(bakery.id) && copy.pinned == 0 && copy.pinSlot == 1, "loaded back (as a client or a creative copy reads it) on the same card");
+        var older = new net.minecraft.nbt.CompoundTag();
+        older.putString("ShopId", top.id);
+        older.putInt("Pinned", 2);
+        copy.load(older);
+        h.assertTrue(copy.pinShop.isEmpty() && copy.pinned == 2, "a pin saved before sections counted stays on the linked shop's card");
+        display.pin(null);
+        h.assertTrue(display.pinned == -1 && display.pinShop.isEmpty() && display.pinSlot == -1, "unpinned");
+        com.mrgregles.bsp_core.shop.Shops.ledger(server).stock(food.id, 0).stock.left = 0;
+        h.assertTrue(display.choose(h.getLevel(), top).is(net.minecraft.world.item.Items.BREAD) && display.choose(h.getLevel(), top).is(net.minecraft.world.item.Items.BREAD), "the sold-out apple is skipped");
+        bakery.item(0).hidden = true;
+        com.mrgregles.bsp_core.shop.Shops.save(server, bakery);
+        display.refreshNow();
+        h.assertTrue(display.shown.isEmpty() && h.getBlockState(displayPos).getValue(com.mrgregles.bsp_core.shop.StallDisplayBlock.BROKEN), "nothing left anywhere in the tree: neglected again");
+        h.succeed();
+    }
+
     @GameTest(template = EMPTY, timeoutTicks = 1100)
     public void market_stall_is_broken_until_assigned_then_lights_lamps_and_powers_below(GameTestHelper h) {
         var server = server(h);

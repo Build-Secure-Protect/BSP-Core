@@ -36,7 +36,13 @@ public record StallDisplayConfigPacket(Action action, int value) {
                 }
                 switch (msg.action) {
                     case INTERVAL -> display.intervalSec = Math.max(0, Math.min(600, msg.value));
-                    case PIN -> display.pinned = Math.max(-1, msg.value);
+                    case PIN -> { // the card the admin saw at that place; -1 unpins, anything else (a stale screen) is ignored
+                        if (msg.value < 0) {
+                            display.pin(null);
+                        } else if (msg.value < menu.cards.size() && menu.shopId.equals(display.shopId)) {
+                            display.pin(menu.cards.get(msg.value));
+                        }
+                    }
                     case SCALE -> display.scalePct = Math.max(0, Math.min(300, msg.value));
                     case HEIGHT -> display.heightPct = Math.max(0, Math.min(400, msg.value));
                     case RESET -> {

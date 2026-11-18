@@ -3582,3 +3582,18 @@ In game, with Compact Machines installed:
 - [ ] `/setblock` a totem in a room while standing there: within a second it is gone, and no totem appears anywhere (a bare block is no totem).
 - [ ] On a network server, the old-world check runs once the database is connected: a totem found in a room for an offline owner arrives at their next login on any server.
 - [ ] The guide book's "Your Shatter Totem" first page fits on the page with its new last sentence.
+
+## Stall Displays and shops made of sections (2026-11-18, 1.17.2)
+
+GameTest: `stall_display_shows_the_items_of_a_shop_made_only_of_sections`.
+
+In game, as an admin:
+
+- [ ] Make a shop whose page holds only section cards: section A with two items, and inside A a section B with one item. Link a Stall Display to the shop: it is whole and floats A's two items, then B's, in turn.
+- [ ] Open the display's screen: the pin list shows all three items. Pin B's item: only it floats, and the screen marks it as pinned after closing and opening again.
+- [ ] Unpin, then sell out (or hide) every item in A and B: the display goes back to its broken look.
+- [ ] Give section A's card a requirement with `hide`: A's and B's items leave the display.
+- [ ] Put a Market Stall on the same shop: green stock lamp, A's first item on the counter; Jade on the stall and on a Vendor Post for the shop says it is in stock.
+- [ ] A display pinned before this version, on a shop with items of its own, still floats the same pinned item.
+- [ ] Link a display to the biggest spawn shop (all its sections): the screen opens, and the pin list ends where the screen's data runs out instead of failing.
+- [ ] Restart the server with a display pinned to a section item: right after the start the screen marks the same item.

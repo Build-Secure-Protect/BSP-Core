@@ -4,6 +4,7 @@ import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -19,7 +20,8 @@ import java.util.List;
 /**
  * A Stall Display: shows one shop's wares floating above it, one after another, or one item an
  * admin pinned. An admin picks the shop (and the style) from the display's own screen. The server
- * picks the item every few seconds from the shop's visible lots (skipping sold-out ones) and sends
+ * picks the item every few seconds from the lots on show in the shop and its sections, in the
+ * order a player browsing meets them ({@link Shops#reachable}, skipping sold-out ones), and sends
  * it to clients; while the shop is closed by its own hours, missing or empty nothing floats and the
  * block shows its neglected look. Admins set the interval, the pin, the size and the hover height
  * from the screen; the style's own item point and scale are the defaults.
@@ -29,9 +31,15 @@ public class StallDisplayBlockEntity extends BlockEntity {
     /** What floats now (client and server), and the shop's name. */
     public ItemStack shown = ItemStack.EMPTY;
     public String shopName = "";
-    /** Admin settings: seconds between items (0 = config), the pinned item's index in the shop (-1 = all in turn), size and height in percent (0 = the style's own), the style. */
+    /** Admin settings: seconds between items (0 = config), the pinned item's index in its shop (-1 = all in turn), size and height in percent (0 = the style's own), the style. */
     public int intervalSec, pinned = -1, scalePct, heightPct, skinIndex = StallSkin.VANILLA.ordinal();
+    /** The shop or section holding the pinned item: empty for the linked shop itself (as every pin saved before sections counted). */
+    public String pinShop = "";
+    /** The pinned item's place in the screen's pin list (-1 none), kept by the server at each refresh: what the screen marks. */
+    public int pinSlot = -1;
     private int tick, cursor;
+    /** Picks the floating item (and the pin's place in the list) on the first tick after loading, not one interval later. */
+    private boolean fresh = true;
 
     public StallDisplayBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STALL_DISPLAY.get(), pos, state);
@@ -72,7 +80,7 @@ public class StallDisplayBlockEntity extends BlockEntity {
             return false;
         }
         shopId = id;
-        pinned = -1;
+        clearPin();
         cursor = 0;
         setChanged();
         refreshNow();
@@ -81,7 +89,7 @@ public class StallDisplayBlockEntity extends BlockEntity {
 
     public void unlink() {
         shopId = "";
-        pinned = -1;
+        clearPin();
         refreshNow();
     }
 
@@ -103,33 +111,67 @@ public class StallDisplayBlockEntity extends BlockEntity {
         return shop != null && shop.hours.isOpen(level) ? shop : null;
     }
 
+    private void clearPin() {
+        pinShop = "";
+        pinned = -1;
+        pinSlot = -1;
+    }
+
+    /** The shop or section the pin points into; null when it is gone. */
+    @Nullable
+    private Shop pinnedShop(MinecraftServer server, Shop shop) {
+        return pinShop.isEmpty() || pinShop.equals(shop.id) ? shop : Shops.ledger(server).shop(pinShop);
+    }
+
     /**
-     * What should float now: the pinned item if it still exists in the shop, otherwise the next
-     * visible item card with stock left, in turn; empty when there is nothing.
+     * What should float now: the pinned item if it still exists (in a section: one still reached from
+     * the shop), otherwise the next item card on show in the shop or its sections with stock left, in
+     * turn; empty when there is nothing.
      */
     public ItemStack choose(ServerLevel level, Shop shop) {
+        MinecraftServer server = level.getServer();
+        long now = Shops.now();
+        List<Shops.Card> cards = Shops.reachable(server, shop, now);
         if (pinned >= 0) {
-            ShopItem it = shop.item(pinned);
-            if (it != null && it.section.isEmpty() && !it.stack.isEmpty() && !Shops.hiddenFromSome(level.getServer(), shop, pinned)) {
+            Shop in = pinnedShop(server, shop);
+            ShopItem it = in == null ? null : in.item(pinned);
+            if (it != null && it.section.isEmpty() && !it.stack.isEmpty() && !Shops.hiddenFromSome(server, in, pinned)
+                    && (in == shop || cards.contains(new Shops.Card(in, pinned)))) {
                 return it.stack.copy();
             }
         }
-        long now = Shops.now();
-        List<Integer> visible = Shops.visible(level.getServer(), shop, now);
-        for (int tries = 0; tries < visible.size(); tries++) {
-            int i = visible.get((cursor++) % visible.size());
-            if (Shops.live(level.getServer(), shop, i, now)) {
-                return shop.item(i).stack.copy();
+        for (int tries = 0; tries < cards.size(); tries++) {
+            Shops.Card c = cards.get(Math.floorMod(cursor++, cards.size()));
+            if (Shops.live(server, c.shop(), c.index(), now)) {
+                return c.shop().item(c.index()).stack.copy();
             }
         }
         return ItemStack.EMPTY;
     }
 
-    public static void serverTick(ServerLevel level, BlockPos pos, BlockState state, StallDisplayBlockEntity be) {
-        int every = 20 * (be.intervalSec > 0 ? be.intervalSec : defaultIntervalSec());
-        if (++be.tick % every != 0) {
+    /** Pins one card of the shop or its sections (as the screen listed it); null unpins. Its place in the list is set at the next refresh. */
+    public void pin(@Nullable Shops.Card card) {
+        if (card == null) {
+            clearPin();
             return;
         }
+        pinShop = card.shop().id.equals(shopId) ? "" : card.shop().id;
+        pinned = card.index();
+        pinSlot = -1;
+    }
+
+    /** The pinned item's place in the pin list now (-1 when nothing is pinned or it is no longer there). */
+    private int pinSlotNow(MinecraftServer server, @Nullable Shop shop) {
+        Shop in = shop == null || pinned < 0 ? null : pinnedShop(server, shop);
+        return in == null ? -1 : Shops.reachable(server, shop, Shops.now()).indexOf(new Shops.Card(in, pinned));
+    }
+
+    public static void serverTick(ServerLevel level, BlockPos pos, BlockState state, StallDisplayBlockEntity be) {
+        int every = 20 * (be.intervalSec > 0 ? be.intervalSec : defaultIntervalSec());
+        if (++be.tick % every != 0 && !be.fresh) {
+            return;
+        }
+        be.fresh = false;
         be.refresh(level);
     }
 
@@ -137,6 +179,7 @@ public class StallDisplayBlockEntity extends BlockEntity {
     public void refreshNow() {
         if (level instanceof ServerLevel sl) {
             tick = 0;
+            fresh = false;
             refresh(sl);
             setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
@@ -149,6 +192,12 @@ public class StallDisplayBlockEntity extends BlockEntity {
             show(ItemStack.EMPTY, "");
         } else {
             show(choose(level, shop), shop.name);
+        }
+        int slot = pinSlotNow(level.getServer(), shop(level));
+        if (slot != pinSlot) { // sections edited: the screen marks the pin where it now is
+            pinSlot = slot;
+            setChanged();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
         // the block state carries the style and the neglected look (while nothing floats) for the model
         boolean broken = shown.isEmpty();
@@ -177,7 +226,9 @@ public class StallDisplayBlockEntity extends BlockEntity {
         tag.put("Shown", shown.save(new CompoundTag()));
         tag.putString("ShopName", shopName);
         tag.putInt("Interval", intervalSec);
-        tag.putInt("Pinned", pinned);
+        tag.putInt("Pinned", pinSlot); // the place in the pin list: what a client's screen marks (1.17.x clients read this key too)
+        tag.putInt("PinIndex", pinned);
+        tag.putString("PinShop", pinShop);
         tag.putInt("Scale", scalePct);
         tag.putInt("Height", heightPct);
         tag.putInt("Skin", skinIndex);
@@ -190,7 +241,14 @@ public class StallDisplayBlockEntity extends BlockEntity {
         shown = ItemStack.of(tag.getCompound("Shown"));
         shopName = tag.getString("ShopName");
         intervalSec = tag.getInt("Interval");
-        pinned = tag.contains("Pinned") ? tag.getInt("Pinned") : -1;
+        if (tag.contains("PinIndex")) {
+            pinned = tag.getInt("PinIndex");
+            pinSlot = tag.contains("Pinned") ? tag.getInt("Pinned") : -1;
+        } else { // saved before sections counted (or sent by such a server): "Pinned" is the card's index in the linked shop, which was also its place in the list
+            pinned = tag.contains("Pinned") ? tag.getInt("Pinned") : -1;
+            pinSlot = pinned;
+        }
+        pinShop = tag.getString("PinShop");
         scalePct = tag.getInt("Scale");
         heightPct = tag.getInt("Height");
         skinIndex = tag.contains("Skin") ? tag.getInt("Skin") : StallSkin.VANILLA.ordinal();

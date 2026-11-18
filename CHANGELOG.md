@@ -4,6 +4,16 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.17.2] - 2026-11-18
+
+Network protocol 13, as 1.17.0 and 1.17.1: only the server needs this version for the fix, and 1.17.x clients can stay.
+
+### Fixed
+- **A Stall Display linked to a shop made only of sections (sub pages) showed its broken look.** It shows the sections' items: the shop's own cards first, then each section in the order its card sits on the page, going on into sections inside sections, as a player browsing meets them. Empty and sold-out sections are skipped; the display looks broken only when nothing in the whole shop can be shown. A section whose card a requirement hides from some players stays off the display, and a rotating section gives its current draw.
+  - An admin can pin an item from any section on the display's screen; the pin is the item the admin clicked, even if the shop changed while the screen was open. On a very large shop the pin list holds as many items as the screen can carry. A pin made before this version stays on the same card.
+  - A Market Stall on such a shop lights its stock lamp, puts the first section item on its counter, and shows in stock in Jade, as do Vendor Posts in Jade.
+  - GameTest `stall_display_shows_the_items_of_a_shop_made_only_of_sections`.
+
 ## [1.17.1] - 2026-11-15
 
 Network protocol 13, as 1.17.0: 1.17.0 and 1.17.1 servers and clients can mix. Only the server needs 1.17.1 for the rule. The two new chat lines and the guide book's sentence are in the client: a 1.17.0 client shows those lines by their key names.

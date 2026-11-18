@@ -1490,15 +1490,58 @@ public final class Shops {
         return CoinWallet.totalValue(player) >= cost * CoinTier.values()[currency].value();
     }
 
-    /** True while any visible item card can still trade (see {@link #live}; cards a requirement hides from some players never count). */
+    /** True while any item card on show in the shop or its sections ({@link #reachable}) can still trade (see {@link #live}; cards a requirement hides from some players never count). */
     public static boolean anyStock(MinecraftServer server, Shop shop) {
         long now = now();
-        for (int i : visible(server, shop, now)) {
-            if (live(server, shop, i, now)) {
+        for (Card c : reachable(server, shop, now)) {
+            if (live(server, c.shop(), c.index(), now)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** An item card somewhere in a shop's tree: the shop (or section) that holds it and its index there. */
+    public record Card(Shop shop, int index) {}
+
+    /**
+     * Every item card a passer-by can reach from {@code top} by following section cards, in the order
+     * a player browsing meets them: the shop's own cards on show first, then, for each section card on
+     * show in page order, the cards of the section it opens (its own first, then its sections). A
+     * rotating section gives its current draw; a section card hidden from some players by a
+     * requirement is not followed; a section already passed, missing or deeper than
+     * {@link #MAX_DEPTH} is skipped. Stock and the item cards' own requirements are the caller's.
+     */
+    public static List<Card> reachable(MinecraftServer server, Shop top, long now) {
+        List<Card> out = new ArrayList<>();
+        walk(server, top, now, 0, new java.util.HashSet<>(), out);
+        return out;
+    }
+
+    private static void walk(MinecraftServer server, Shop shop, long now, int depth, java.util.Set<String> seen, List<Card> out) {
+        if (depth > MAX_DEPTH || !seen.add(shop.id)) {
+            return;
+        }
+        List<Shop> sections = new ArrayList<>();
+        for (int i : visible(server, shop, now)) {
+            ShopItem it = shop.item(i);
+            if (it == null) {
+                continue;
+            }
+            if (it.section.isEmpty()) {
+                if (!it.stack.isEmpty()) {
+                    out.add(new Card(shop, i));
+                }
+            } else if (!hiddenFromSome(server, shop, i)) {
+                Shop sub = ledger(server).shop(it.section);
+                if (sub != null) {
+                    sections.add(sub);
+                }
+            }
+        }
+        for (Shop sub : sections) {
+            walk(server, sub, now, depth + 1, seen, out);
+        }
     }
 
     /**
@@ -1518,12 +1561,11 @@ public final class Shops {
         return !sells || sellLeft(server, shop, index, net.minecraft.Util.NIL_UUID, now) != 0;
     }
 
-    /** The shop's first visible item card that no requirement hides, for a stall's counter; empty if it has none. */
+    /** The first item card on show that no requirement hides, in the shop or its sections ({@link #reachable}), for a stall's counter; empty if there is none. */
     public static net.minecraft.world.item.ItemStack firstItem(MinecraftServer server, Shop shop) {
-        for (int i : visible(server, shop, now())) {
-            ShopItem it = shop.item(i);
-            if (it != null && it.section.isEmpty() && !it.stack.isEmpty() && !hiddenFromSome(server, shop, i)) {
-                return it.stack.copy();
+        for (Card c : reachable(server, shop, now())) {
+            if (!hiddenFromSome(server, c.shop(), c.index())) {
+                return c.shop().item(c.index()).stack.copy();
             }
         }
         return net.minecraft.world.item.ItemStack.EMPTY;

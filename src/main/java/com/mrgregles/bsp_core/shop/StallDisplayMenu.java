@@ -22,14 +22,19 @@ import java.util.List;
  * reopens the screen with that shop's items.
  */
 public class StallDisplayMenu extends AbstractContainerMenu {
-    /** A shop item that can be pinned: its index in the shop and the stack. */
+    /** An item that can be pinned: its place in the pin list (what a pin sends back) and the stack. */
     public record Pick(int index, ItemStack stack) {}
+
+    /** What the screen's opening data may hold; Forge refuses more than 32,600 bytes. */
+    static final int OPEN_BYTES = 32_000;
 
     public final BlockPos pos;
     public final String shopId, shopName;
     public final List<Pick> items = new ArrayList<>();
     /** Every shop (id, name) an admin may show. */
     public final List<String[]> shops = new ArrayList<>();
+    /** Server only: the card behind each pick, in the same order, so a pin names the card the admin saw even if the shop changed since. */
+    public final List<Shops.Card> cards = new ArrayList<>();
 
     public StallDisplayMenu(int id, Inventory inv, BlockPos pos, String shopId, String shopName, List<Pick> items, List<String[]> shops) {
         super(ModMenus.STALL_DISPLAY.get(), id);
@@ -66,23 +71,29 @@ public class StallDisplayMenu extends AbstractContainerMenu {
         return player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) < 64;
     }
 
-    /** The shop's item cards (not sections), whatever their stock, so an admin can pin any of them. */
-    public static List<Pick> picks(ServerPlayer sp, StallDisplayBlockEntity display) {
-        List<Pick> out = new ArrayList<>();
+    /**
+     * The item cards of the shop and its sections ({@link Shops#reachable}), whatever their stock, so
+     * an admin can pin any of them: as many as fit in {@code bytes} of the screen's opening data.
+     */
+    public static List<Shops.Card> pinnable(ServerPlayer sp, StallDisplayBlockEntity display, int bytes) {
         Shop shop = display.shop(sp.serverLevel());
-        if (shop != null) {
-            for (int i : Shops.visible(sp.server, shop, System.currentTimeMillis())) {
-                ShopItem it = shop.item(i);
-                if (it != null && it.section.isEmpty() && !it.stack.isEmpty()) {
-                    out.add(new Pick(i, it.stack));
-                }
+        List<Shops.Card> out = new ArrayList<>();
+        if (shop == null) {
+            return out;
+        }
+        FriendlyByteBuf scratch = new FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        for (Shops.Card c : Shops.reachable(sp.server, shop, Shops.now())) {
+            scratch.writeVarInt(out.size());
+            scratch.writeItem(c.shop().item(c.index()).stack);
+            if (scratch.writerIndex() > bytes) {
+                break;
             }
+            out.add(c);
         }
         return out;
     }
 
     public static void open(ServerPlayer sp, StallDisplayBlockEntity display) {
-        List<Pick> items = picks(sp, display);
         Shop shop = display.shop(sp.serverLevel());
         String shopId = display.shopId, name = shop == null ? "" : shop.name;
         List<String[]> shops = new ArrayList<>();
@@ -92,21 +103,33 @@ public class StallDisplayMenu extends AbstractContainerMenu {
             }
         }
         BlockPos pos = display.getBlockPos();
-        NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> new StallDisplayMenu(id, inv, pos, shopId, name, items, shops),
-                Component.translatable("gui.bsp_core.display.title")), buf -> {
-            buf.writeBlockPos(pos);
-            buf.writeUtf(shopId, 32);
-            buf.writeUtf(name, 64);
-            buf.writeVarInt(items.size());
-            for (Pick p : items) {
-                buf.writeVarInt(p.index);
-                buf.writeItem(p.stack);
-            }
-            buf.writeVarInt(shops.size());
-            for (String[] s : shops) {
-                buf.writeUtf(s[0], 32);
-                buf.writeUtf(s[1], 64);
-            }
-        });
+        FriendlyByteBuf head = new FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        write(head, pos, shopId, name, List.of(), shops);
+        List<Shops.Card> cards = pinnable(sp, display, OPEN_BYTES - head.writerIndex() - 5);
+        List<Pick> items = new ArrayList<>();
+        for (int k = 0; k < cards.size(); k++) {
+            items.add(new Pick(k, cards.get(k).shop().item(cards.get(k).index()).stack));
+        }
+        NetworkHooks.openScreen(sp, new SimpleMenuProvider((id, inv, p) -> {
+            StallDisplayMenu menu = new StallDisplayMenu(id, inv, pos, shopId, name, items, shops);
+            menu.cards.addAll(cards);
+            return menu;
+        }, Component.translatable("gui.bsp_core.display.title")), buf -> write(buf, pos, shopId, name, items, shops));
+    }
+
+    private static void write(FriendlyByteBuf buf, BlockPos pos, String shopId, String name, List<Pick> items, List<String[]> shops) {
+        buf.writeBlockPos(pos);
+        buf.writeUtf(shopId, 32);
+        buf.writeUtf(name, 64);
+        buf.writeVarInt(items.size());
+        for (Pick p : items) {
+            buf.writeVarInt(p.index);
+            buf.writeItem(p.stack);
+        }
+        buf.writeVarInt(shops.size());
+        for (String[] s : shops) {
+            buf.writeUtf(s[0], 32);
+            buf.writeUtf(s[1], 64);
+        }
     }
 }

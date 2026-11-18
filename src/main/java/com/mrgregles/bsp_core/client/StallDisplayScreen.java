@@ -129,7 +129,7 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
             int c = (i - page * per) % COLS, r = (i - page * per) / COLS;
             if (over(mx, my, x + SX + 4 + c * CELL, y + SY + GRID_Y + r * CELL, CELL, CELL)) {
                 int idx = menu.items.get(i).index();
-                send(Action.PIN, d != null && d.pinned == idx ? -1 : idx);
+                send(Action.PIN, d != null && d.pinSlot == idx ? -1 : idx);
                 return true;
             }
         }
@@ -195,7 +195,7 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         for (int i = page * per; i < Math.min(menu.items.size(), (page + 1) * per); i++) {
             int c = (i - page * per) % COLS, r = (i - page * per) / COLS;
             int cx = x + SX + 4 + c * CELL, cy = y + SY + GRID_Y + r * CELL;
-            boolean pinned = d != null && d.pinned == menu.items.get(i).index();
+            boolean pinned = d != null && d.pinSlot == menu.items.get(i).index();
             g.fill(cx, cy, cx + CELL, cy + CELL, pinned ? 0xFF2A5A3A : 0xFF0A1F12);
             g.fill(cx + 1, cy + 1, cx + CELL - 1, cy + CELL - 1, pinned ? 0xFF143A22 : SCREEN);
             g.renderItem(menu.items.get(i).stack(), cx + 1, cy + 1);
@@ -242,7 +242,7 @@ public class StallDisplayScreen extends AbstractContainerScreen<StallDisplayMenu
         } else {
             CashMachine.wrap(g, font, tr("linked", menu.shopName), SX + 8, SY + 22, SW - 16, PHOS_DIM);
         }
-        int pinned = d == null ? -1 : d.pinned;
+        int pinned = d == null ? -1 : d.pinSlot;
         String pinnedName = "";
         for (var p : menu.items) {
             if (p.index() == pinned) {
