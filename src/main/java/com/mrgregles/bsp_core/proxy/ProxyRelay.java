@@ -46,6 +46,8 @@ public final class ProxyRelay {
     /** Last of all: whatever is still standing here is public. A cancelled event never reaches this listener. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onChat(ServerChatEvent event) {
+        // only public lines: team chat and chat Region Guard's flags block are cancelled before here and never sent. The proxy keeps
+        // what is sent for its join-time chat history (Velocity Additions T25), so anything relayed as kind "chat" is shown to joiners
         if (!enabled() || event.isCanceled()) {
             return;
         }
