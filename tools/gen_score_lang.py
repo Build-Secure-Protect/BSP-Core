@@ -16,6 +16,7 @@ KEYS = {
     "gui.bsp_core.screen.look.0": "Ledger",
     "gui.bsp_core.screen.look.1": "Tiles",
     "gui.bsp_core.screen.look.2": "Side column",
+    "gui.bsp_core.screen.look.3": "Most Wanted",
     "gui.bsp_core.screen.rotation": "In rotation",
     "gui.bsp_core.screen.every": "Every",
     "gui.bsp_core.screen.seconds": "%s s",

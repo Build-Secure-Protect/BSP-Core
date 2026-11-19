@@ -1,0 +1,22 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "log": "minecraft:block/dark_oak_log",
+  "log_top": "minecraft:block/dark_oak_log_top",
+  "beam": "minecraft:block/stripped_dark_oak_log",
+  "plank_a": "minecraft:block/stripped_spruce_log",
+  "plank_b": "minecraft:block/stripped_dark_oak_log",
+  "planks": "minecraft:block/dark_oak_planks",
+  "roof": "minecraft:block/spruce_planks",
+  "brass": "minecraft:block/gold_block",
+  "iron": "minecraft:block/iron_block",
+  "dark": "minecraft:block/black_concrete",
+  "rope": "minecraft:block/hay_block_side",
+  "paper": "minecraft:block/birch_planks",
+  "glow": "minecraft:block/shroomlight",
+  "particle": "minecraft:block/dark_oak_planks"
+ },
+ "elements": []
+}

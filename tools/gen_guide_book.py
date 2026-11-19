@@ -431,6 +431,21 @@ ENTRIES = [
         text("An admin draws the lottery when they choose. Chat on every server counts down from 5 and then names the winner and what they won.$(br2)The winner takes the whole pot, straight into their bank. A winner who is offline is told when they next log in.$(br2)After a draw the pot starts again, and everyone who keeps playing is in the next one.", "The draw"),
         text("The $(l)LOTTERY$() tab on a $(l:coins/trade_post)Trade Post$() turns a drum of the names of everyone in, beside the pot, how many are in and your own chance. The last five winners are along the bottom.$(br2)The $(item)Portable Banker$() shows the pot and your chance on its account page, and Score Screens can show the $(l)Lottery$() board.", "Watching the pot"),
     ]),
+    ("coins", "bounty_board", "The Bounty Board", "bsp_core:bounty_board", 17, [
+        spot("bsp_core:bounty_board", "A $(item)Bounty Board$() is an old wanted board with four poster screens. Each poster shows a player with a price on their head: their face, the reward, how long it has left and who offered it, the biggest first.$(br2)Its keys open $(l)BOARD$(), $(l)PLACE$() and $(l)HUNTS$()."),
+        craft("bounty_board", None, "Dark oak, two glass panes, a Basic Control Circuit and a gold ingot. Place it anywhere; it breaks with an axe."),
+        text("The bounties are the same on every server of the network. $(l)WANTED$() shows them all, six at a time, with a search and a sort. $(l)MY HUNTS$() shows the bounties you accepted, and $(l)MY BOUNTIES$() the ones you put up.$(br2)Score Screens can show the $(l)Most Wanted$() board.", "The screen"),
+    ]),
+    ("coins", "placing_bounties", "Placing a Bounty", "bsp_core:bounty_board", 18, [
+        text("On $(l)PLACE A BOUNTY$(), pick the player, then the reward: pieces from your bank, or coins of one tier from your inventory. Staff, new players still under protection and you yourself cannot be targets.$(br2)Add notes if you like. Only hunters who accept the bounty read them."),
+        text("Pick how long it runs, from an hour to 30 days. A $(l)bonus$() is an extra amount paid only if the kill comes within its own, shorter window; after that it comes back to you.$(br2)You pay the reward, the bonus and a 5% fee into the $(l:coins/lottery)lottery$() pot when you place it.", "Time and bonus"),
+        text("If nobody claims it, the reward and bonus come back when it ends; coins wait in your $(l)Collect$() box. You may cancel while nobody has accepted it. The fee stays paid either way.$(br2)The target hears that there is a price on their head. The posters say who offered it.", "When it ends"),
+    ]),
+    ("coins", "hunting", "Hunting a Bounty", "minecraft:bow", 19, [
+        text("Open a poster and press $(l)ACCEPT THIS BOUNTY$(). Its notes appear, and the kill is yours to make. You can hold five at once and drop one with $(l)ABANDON$().$(br2)You cannot hunt yourself, your own bounty, a teammate or an ally."),
+        text("Your own hit counts, and so do your arrows, tridents and other shots. A fall, lava, fire or the void counts too if you hit them in the 5 seconds before and no mob hit them since.$(br2)A mob's blow never counts, nor do your tamed wolf, TNT or a machine.", "The kill"),
+        text("One kill pays every bounty you accepted on that player, with the bonus if it came in time. Other hunters' bounties on them stay up.$(br2)Pieces go straight to your bank. Coins wait in your $(l)Collect$() box: a Bounty Board offers them to you as soon as you open it, and a Trade Post's COLLECT has them too.", "Your reward"),
+    ]),
     ("radiation", "coating", "Totem Radiation Coating", "bsp_core:totem_radiation_coating", 2, [
         spot("bsp_core:totem_radiation_coating", "Use a $(item)Totem Radiation Coating$() on a Radiation Shielding Panel, Window or Door to coat it: one tin per block, one for a whole door. It stays on when the block is broken and placed again."),
         text("Coated shielding all round a totem, within 32 blocks, weakens its $(l:totem/radiation)radiation$(): each coated layer takes a fifth off how far away it is seen, up to four.$(br2)A coated roof alone does nothing, and an open door does not count.", "Layers"),

@@ -235,6 +235,8 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
                 boardId = id;
                 if (id.equals(ClientMarket.BOARD.toString()) || id.equals(ClientOrders.BOARD.toString())) {
                     look = ScoreScreenBlockEntity.LOOK_TILES; // the Market and Wanted boards' own look (owner's pick); the admin can change it after
+                } else if (id.equals(ClientBounties.BOARD.toString())) {
+                    look = ScoreScreenBlockEntity.LOOK_LEDGER; // the Bounties board's own look (owner's pick A); Tiles and Most Wanted are a click away
                 }
                 send();
             }, BOARDS_FIT, BOARDS_PER_PAGE, boardPage, mouseX, mouseY);

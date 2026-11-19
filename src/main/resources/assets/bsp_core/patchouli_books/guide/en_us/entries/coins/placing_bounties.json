@@ -1,0 +1,22 @@
+{
+  "name": "Placing a Bounty",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:bounty_board",
+  "sortnum": 18,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "On $(l)PLACE A BOUNTY$(), pick the player, then the reward: pieces from your bank, or coins of one tier from your inventory. Staff, new players still under protection and you yourself cannot be targets.$(br2)Add notes if you like. Only hunters who accept the bounty read them."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Pick how long it runs, from an hour to 30 days. A $(l)bonus$() is an extra amount paid only if the kill comes within its own, shorter window; after that it comes back to you.$(br2)You pay the reward, the bonus and a 5% fee into the $(l:coins/lottery)lottery$() pot when you place it.",
+      "title": "Time and bonus"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "If nobody claims it, the reward and bonus come back when it ends; coins wait in your $(l)Collect$() box. You may cancel while nobody has accepted it. The fee stays paid either way.$(br2)The target hears that there is a price on their head. The posters say who offered it.",
+      "title": "When it ends"
+    }
+  ]
+}

@@ -261,6 +261,10 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             tiles(level, lines, w, top, area, u, t, speed);
             return;
         }
+        if (look == ScoreScreenBlockEntity.LOOK_SPOTLIGHT) {
+            spotlight(level, lines, w, h, top, area, u, t, speed);
+            return;
+        }
         ledger(level, lines, w * 0.04f, w * 0.96f, h, top, area, u, t, speed, 16 * u, true);
     }
 
@@ -358,6 +362,40 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             if (dividers) {
                 rect(x0, y + rh / 2 - 0.6f, x1, y + rh / 2, STRIP);
             }
+        }
+    }
+
+    /**
+     * Most Wanted: the board's first line as a large card at the left (the icon big, the value in large gold type, the text and the
+     * note under it), and the rest as ledger rows at the right. With one line, the card alone fills the middle.
+     */
+    private void spotlight(Level level, List<BspBoards.BoardLine> lines, float w, float h, float top, float area, float u, float t, float speed) {
+        BspBoards.BoardLine first = lines.get(0);
+        boolean alone = lines.size() == 1;
+        float cx0 = alone ? w * 0.25f : w * 0.03f, cx1 = alone ? w * 0.75f : w * 0.46f, cw = cx1 - cx0, cx = (cx0 + cx1) / 2;
+        rect(cx0, top + 1, cx1, top + area - 1, DARK);
+        rect(cx0, top + 1, cx1, top + 2, GOLD);
+        // the card's text needs about 46u; the icon gets what is left of the area, and goes when that is too little
+        float icon = Math.min(Math.min(cw * 0.42f, area * 0.38f), area - 46 * u);
+        if (icon < 6 * u) {
+            icon = 0;
+        }
+        float y = top + 4 * u;
+        if (!first.icon().isEmpty() && icon > 0) {
+            item(level, first.icon(), cx, y + icon / 2, icon);
+            y += icon + 3 * u;
+        }
+        if (first.value() != null) {
+            text(first.value(), cx, y + 8 * u, 16 * u, first.colour() == 0 ? GOLD : 0xFF000000 | first.colour(), 0.5f, cw - 8);
+            y += 17 * u;
+        }
+        text(first.text(), cx, y + 4 * u, 9 * u, TEXT, 0.5f, cw - 8);
+        y += 10 * u;
+        if (first.note() != null && y + 7 * u <= top + area) {
+            text(first.note(), cx, y + 3 * u, 7 * u, MUTED, 0.5f, cw - 8);
+        }
+        if (!alone) {
+            ledger(level, lines.subList(1, lines.size()), w * 0.5f, w * 0.97f, h, top, area, u, t, speed, 15 * u, true);
         }
     }
 

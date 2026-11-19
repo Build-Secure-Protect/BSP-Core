@@ -27,13 +27,69 @@ public final class Admins {
         return false;
     }
 
+    /** Test hook: when set, answers who is an admin in place of the config list and operator levels (GameTests give mock players no op level). */
+    public static java.util.function.Predicate<Player> adminSource;
+
     public static boolean isAdmin(Player player) {
+        if (adminSource != null) {
+            return adminSource.test(player);
+        }
         List<? extends String> admins = BSPConfig.getOr(BSPConfig.ADMINS, List.<String>of());
         return admins.isEmpty() ? player.hasPermissions(2) : listed(admins, player);
     }
 
     public static boolean isModerator(Player player) {
         return isAdmin(player) || listed(BSPConfig.getOr(BSPConfig.MODERATORS, List.<String>of()), player);
+    }
+
+    /** The LuckPerms permission that lets a moderator add, remove and extend bounties and blank their notes on the admin panel's BOUNTIES tab. */
+    public static final String BOUNTY_PERMISSION = "bsp_core.admin.bounty";
+
+    /** Test hook: when set, answers whether a player holds {@link #BOUNTY_PERMISSION} in place of LuckPerms. */
+    public static java.util.function.Predicate<Player> bountyPermissionSource;
+
+    /** Who may change bounties: an admin, or a moderator holding {@link #BOUNTY_PERMISSION} in LuckPerms. Without LuckPerms, only admins. */
+    public static boolean canBounty(Player player) {
+        if (isAdmin(player)) {
+            return true;
+        }
+        if (!isModerator(player)) {
+            return false;
+        }
+        if (bountyPermissionSource != null) {
+            return bountyPermissionSource.test(player);
+        }
+        return Boolean.TRUE.equals(com.mrgregles.bsp_core.compat.LuckPermsBridge.hasPermission(player.getUUID(), BOUNTY_PERMISSION));
+    }
+
+    /**
+     * Whether a player, online or not, is staff (an admin or a moderator): online, as {@link #isModerator}; offline, named in
+     * {@code admin.admins} or {@code admin.moderators}, or (when {@code admin.admins} is empty) an operator of level 2 or more in
+     * this server's ops list.
+     */
+    public static boolean isStaff(net.minecraft.server.MinecraftServer server, java.util.UUID id, String name) {
+        Player online = server.getPlayerList().getPlayer(id);
+        if (online != null) {
+            return isModerator(online);
+        }
+        List<? extends String> admins = BSPConfig.getOr(BSPConfig.ADMINS, List.<String>of());
+        if (named(admins, name) || named(BSPConfig.getOr(BSPConfig.MODERATORS, List.<String>of()), name)) {
+            return true;
+        }
+        if (!admins.isEmpty()) {
+            return false;
+        }
+        net.minecraft.server.players.ServerOpListEntry op = server.getPlayerList().getOps().get(new com.mojang.authlib.GameProfile(id, name));
+        return op != null && op.getLevel() >= 2;
+    }
+
+    private static boolean named(List<? extends String> names, String name) {
+        for (String n : names) {
+            if (n.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The LuckPerms permission that lets a moderator refund bank rows and cancel market entries on the admin panel's Bank &amp; Market page. */

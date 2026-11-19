@@ -3644,3 +3644,116 @@ On the Bank & Market page:
 - [ ] Pick a payment: turn on "Also take it back from:" with the receiver's name; both balances change; the receiver reads a line too. With the receiver short, "The other player no longer has that much. Nothing changed."
 - [ ] Type more than is left: the refund uses what is left at most.
 - [ ] As a moderator without `bsp_core.admin.bank`: the boxes are hidden and the buttons grey.
+
+## Bounty Board, part 1: the rules (2026-11-18, 1.19.0)
+
+Nothing to see in game yet: the block and its screens come in later parts. On a server with this jar:
+- [ ] `<world>/serverconfig/bsp_core-server.toml` has a `[bounty]` section with `maxDays = 30`, `minPieces = 1000`, `maxOpenPerPlayer = 5`, `maxAcceptedPerHunter = 5`, `notesMax = 256`.
+- [ ] A world from before starts without errors in the log; `data/bsp_core_bounties.dat` appears in the world after the first bounty (from part 7 on).
+
+## Bounty Board, part 2: the kill (2026-11-18, 1.19.0)
+
+Needs the screens (part 7) to place and accept a bounty; until then these wait. With a bounty on player T accepted by hunter H:
+- [ ] H kills T with a sword: H reads that the bounty is claimed, their bank shows a BOUNTY row; the placer and T read a line each (the placer at next login if away).
+- [ ] H kills T with a bow from range: claimed.
+- [ ] H hits T, a zombie lands the last hit: not claimed; the bounty stays open.
+- [ ] H knocks T into lava (or off a cliff) and T dies within 5 seconds: claimed. Wait longer than 5 seconds before T dies: not claimed.
+- [ ] H's tamed wolf kills T, or H's TNT does: not claimed.
+- [ ] Two hunters each accepted a different bounty on T: H's kill claims only H's; the other stays.
+- [ ] A coin bounty: the coins are in H's Collect box (Trade Post COLLECT for now).
+- [ ] Put a player with a bounty on them into `admin.moderators`, have them log in: the bounty ends and the placer has everything back, fee included.
+
+## Bounty Board, part 3: across the network (2026-11-18, 1.19.0)
+
+Needs two servers on one MySQL (and Redis), and the screens (part 7). Never run against a real MySQL yet.
+- [ ] Start a server on MySQL: the tables `bounties`, `bounty_hunters` and `bounty_closed` appear; nothing in the log about them.
+- [ ] Place a bounty on server A: it shows on server B's board within a second or two (Redis) or a minute (without).
+- [ ] Accept it on server B, kill the target on server A: the hunter (on A) is paid once; the bounty is gone from both boards.
+- [ ] A player with 5 open bounties placed on A cannot place a sixth on B.
+- [ ] A coin bounty claimed on A: the coins are in the hunter's Collect box on B too.
+- [ ] Stop MySQL for a minute, kill a target with a bounty on them, start MySQL again: within a minute the hunter is paid.
+
+## Bounty Board, part 4: staff, api and protocol (2026-11-18, 1.19.0)
+
+- [ ] A 1.18.0 client cannot join a server of this version (protocol 15), and the reverse.
+- [ ] Log in with a few bounties up (once the screens exist): no error in the client log; the summary arrives (the poster screens and the Score Screen board show it, from parts 6 and 9).
+- [ ] Through the staff web panel (BSP-Server Utilities, once it calls `BspBounties`): add a staff bounty, extend it, blank its notes, remove one with and one without a refund; the players named read a chat line each.
+
+## Bounty Board, part 5: the block (2026-11-18, 1.19.0)
+
+- [ ] Craft it: top row 3 dark oak slabs; middle glass pane, Basic Control Circuit, glass pane; bottom dark oak log, gold ingot, dark oak log. JEI shows the recipe.
+- [ ] Place it facing each way: it stands two wide and two high, the front toward you; with a block in the way of a part it does not place.
+- [ ] Look at it: posts, roof, WANTED sign board, four dark screens in brass, shelf with three key plaques, lantern on the right as you face it (lit). Nothing draws twice, nothing flickers, no missing-texture purple.
+- [ ] Walk up to it: you can stand in front of the shelf; the outline hugs the board, not the full 2 x 2 cubes.
+- [ ] Break any part in survival with an axe: all four parts go, one Bounty Board drops. In creative: nothing drops.
+- [ ] Blow it up with TNT: one Bounty Board drops.
+- [ ] In a Region Guard claim, a player without build rights cannot break it.
+- [ ] Right-clicking it does nothing yet (the screens come in parts 7 and 8).
+
+## Bounty Board, part 6: the posters (2026-11-19, 1.19.0)
+
+Needs bounties to show (place them through the screens from part 8, or the staff api).
+- [ ] With no bounties: the four screens say NO BOUNTY with a dim line drifting down; WANTED on the sign, BOARD / PLACE / HUNTS on the shelf, readable, lit like the wood around them (dark at night with no light near).
+- [ ] With one to four bounties: a poster each, biggest first, top left first as you face the board. Each shows the target's face in their own skin (an offline target may show Steve or Alex for a moment), WANTED, the name, the reward, a bar and "... left", and "by" the placer ("by Server" for a staff bounty).
+- [ ] A coin bounty's reward reads "3 Diamond" in the Diamond colour.
+- [ ] A bounty with a running bonus has a red BONUS tag top right; it goes when the bonus window ends.
+- [ ] A bounty in its last day has a red bar.
+- [ ] With more than four: the screens turn to the next four every six seconds.
+- [ ] The lantern flickers gently; the screens stay bright at night.
+- [ ] Turn the board each way: the posters, sign and keys read from the front every time.
+- [ ] Look closely from the side: no poster text floats in front of the brass bezels or sinks behind the dark recess.
+
+## Bounty Board, part 7: browsing and accepting (2026-11-19, 1.19.0)
+
+- [ ] Right-click the board: the screen opens on WANTED. The shelf's PLACE key opens PLACE A BOUNTY; HUNTS opens MY HUNTS.
+- [ ] Posters six at a time, three across; ◀ ▶ and the mouse wheel turn pages; the search box filters names; REWARD / ENDING / NEWEST re-sort.
+- [ ] A poster you accepted says HUNTING, one you placed says YOURS; BONUS shows while a bonus runs.
+- [ ] Click a poster: its page with the big poster, Reward, Bonus (or "window over"), Ends in, Hunters, Placed, the notes box closed ("Accept this bounty to read the notes.").
+- [ ] ACCEPT THIS BOUNTY: "Done.", the poster says HUNTING, the notes show. ABANDON undoes it.
+- [ ] On a bounty on yourself, your own, a teammate's or an ally's, the key is grey and says why.
+- [ ] Your own bounty with no hunters: CANCEL MY BOUNTY gives the reward and bonus back; with a hunter: the key is grey.
+- [ ] Walk away (over 8 blocks) and click ACCEPT: "Stand at the Bounty Board to do that."
+- [ ] With coins from a claimed bounty in your Collect box: opening the board shows YOUR COLLECT BOX first with the items (hover for names); CLAIM ALL puts them in your inventory; LATER closes the card until next time; a full inventory leaves the rest in the box.
+- [ ] GUI scale 4 / a small window: the screen shrinks to fit.
+
+## Bounty Board, part 8: placing a bounty (2026-11-19, 1.19.0)
+
+- [ ] PLACE A BOUNTY: 1 WHO lists players (online first, green dot); typing filters after a moment; staff, protected new players and you are grey with the reason.
+- [ ] Pick a player, type a reward under the minimum: the line under the summary says why and PLACE BOUNTY is grey.
+- [ ] COINS: the five tier chips; pick Diamond, type 3: the summary shows 3 Diamond coins and the fee in Copper worth.
+- [ ] Quick keys fill Ends in; a typed 31 days (over the limit) is refused; a bonus needs "if within" shorter than the bounty.
+- [ ] Notes: type a few lines (the box scrolls); it stops at the limit.
+- [ ] PLACE BOUNTY: the screen turns to MY BOUNTIES with the new poster; your bank (or coins) went down by the total shown; the target gets a chat line.
+
+## Bounty Board, part 9: Most Wanted on Score Screens (2026-11-19, 1.19.0)
+
+- [ ] A Score Screen's settings list a Bounties board ("Most Wanted"); picking it sets the Ledger look.
+- [ ] Ledger: one row per target with their head (their skin), the name (×2 with two bounties), the total, a grey note "… left · N hunting", BONUS first while a bonus runs.
+- [ ] Tiles: a tile per target with the head and the total large.
+- [ ] Most Wanted look (the fourth chip): the biggest target as a large card on the left, the rest as rows on the right; with one target, the card alone in the middle. Try it on the Market board too.
+- [ ] In the rotation, the Bounties board takes its turn like the others.
+
+## Bounty Board, part 10: the admin BOUNTIES tab (2026-11-19, 1.19.0)
+
+- [ ] The admin panel shows eight tabs; the heading is a violet diamond (VIEW in gold for a moderator); every label is readable.
+- [ ] BOUNTIES: the list with face, name, reward and time left (red under a day); ENDING shows only those ending within a day; HISTORY the closed ones with how they ended.
+- [ ] Pick one: placed by, hunters, fee, notes; BLANK empties the notes (the hunters see none after).
+- [ ] +1 H / +1 D / +7 D: the end moves; at 30 days from now the keys stop it there.
+- [ ] REMOVE + REFUND (click twice): the placer has the reward and bonus back and a chat line; REMOVE, NO REFUND: nothing back.
+- [ ] ADD: type a player's name, a reward and days: a staff bounty appears ("by Server" on its poster); an unknown name says so.
+- [ ] As a moderator without `bsp_core.admin.bounty`: everything shows, the keys are grey, the VIEW ONLY line explains why.
+
+## Bounty Board, part 11: guide and info pages (2026-11-19, 1.19.0)
+
+- [ ] The guide book's coin category has The Bounty Board (with the recipe), Placing a Bounty and Hunting a Bounty; every page's text fits without shrinking.
+- [ ] JEI / EMI: the Bounty Board has its recipe and an info page.
+
+## Bounty Board, audit fixes (2026-11-19, 1.19.0)
+
+- [ ] A coin bounty needs that many coins of its own tier (3 Diamond needs 3 Diamond coins); the fee can come from any coins.
+- [ ] Place a coin bounty with team-stamped coins, cancel it: the coins in the Collect box carry the same team stamp (tooltip).
+- [ ] On a claim edge: a board whose wing would stand in someone else's claim does not place; breaking a part outside the claim does not take the board while its other parts are inside.
+- [ ] The bounty page's notes box and the admin tab's notes box sit under their lines at GUI scale 2, 3 and 4 (no dark block over the text).
+- [ ] From 20 to 40 blocks away the posters, WANTED and the key names do not flicker.
+- [ ] The Most Wanted board's heads show the players' skins.
+

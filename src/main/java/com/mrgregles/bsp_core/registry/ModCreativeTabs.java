@@ -41,6 +41,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ANTI_TOTEM.get());
                 output.accept(ModItems.BANK_ATM.get());
                 output.accept(ModItems.TRADE_POST.get());
+                output.accept(ModItems.BOUNTY_BOARD.get());
                 output.accept(ModItems.PORTABLE_BANKER.get());
                 output.accept(ModItems.SAFETY_DEPOSIT_BOX.get());
                 output.accept(ModItems.VENDOR_POST.get());

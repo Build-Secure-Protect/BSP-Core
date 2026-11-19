@@ -1,0 +1,505 @@
+<title>Bounty Board Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages, one column. Blocks in three.js (1 block = 16 model pixels); screens drawn on canvas at GUI pixel size, doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --gold:#ffd23a; --wood:#d39a5c; --bad:#ff6b5c;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --bad:#c23a2c; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --bad:#c23a2c; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1020px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:38px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; color:var(--wood); }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:84ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; max-width:100%; background:radial-gradient(ellipse at 50% 70%,#2a2a2e 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view canvas{ display:block; width:100%; height:100%; }
+canvas.gui{ width:100%; height:auto; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; align-items:start; }
+.pair figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.pair figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.one{ max-width:780px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:4px 9px; cursor:pointer; }
+.hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; }
+.t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+.t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+.tag{ font:600 10px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:1px 6px; align-self:flex-start; }
+.tag.new{ color:var(--gold); border-color:var(--gold); }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="pill">BSP-Core · mock-ups for the owner's pick</span>
+    <h1>Bounty Board</h1>
+    <p class="lede">Players put a price on another player's head, in pieces or Shatter Coins. Hunters accept bounties at the board. When a hunter who accepted kills the target, they collect the reward, plus a bonus if the kill comes in time. Four things to pick: the block, the player screens, the Score Screen board and the admin tab. The examples run on live timers, so the countdowns tick down.</p>
+  </header>
+
+  <section>
+    <h2>1. The Bounty Board block</h2>
+    <p class="lede">An old western board with digital wanted posters. Admins place it, like the Trade Post. Drag a view to turn it. Each poster screen shows a live bounty and changes every few seconds. The labelled keys open the screen on that page.</p>
+    <div class="ctl"><button class="hb on" id="spinBtn" type="button">Turning: on</button><button class="hb" id="nightBtn" type="button">Night: off</button></div>
+    <div class="grid3">
+      <div class="card"><h3>A. Frontier Notice Board</h3><div class="view" id="viewA"></div>
+        <p><b>2 wide × 2 tall</b>, the Trade Post's footprint. Two square posts with rope lashings hold a pitched shingle roof and a backboard of six uneven planks. A carved WANTED sign sits under the roof. Four poster screens in brass bezels are nailed on, each a little crooked, with torn paper notices on the posts. A lantern hangs from the eave, and a shelf at the bottom carries the BOARD, PLACE and HUNTS keys.</p></div>
+      <div class="card"><h3>B. Sheriff's Kiosk</h3><div class="view" id="viewB"></div>
+        <p><b>3 wide × 2 tall</b>, on a plank deck. A tall middle panel holds one big screen with the sheriff's star above it. Two lower wings hold two small screens each, under their own tin awnings. A slanted desk carries the keys and a brass coin slot. A hitching rail and a water barrel stand in front.</p></div>
+      <div class="card"><h3>C. Wanted Door</h3><div class="view" id="viewC"></div>
+        <p><b>2 wide × 3 tall</b>, a braced plank door on two feet. At the top, a round clock counts down the soonest bounty to end. Below it, three landscape posters hang crooked with curled corners. A revolver cylinder at the side turns the pages, and a scrolling ticker runs above the keys. A knife is stuck in the wood and a rope coil hangs on a peg.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The player screens</h2>
+    <p class="lede">Each layout shows browsing, a bounty's page with ACCEPT, and placing a bounty. Every screen has the same four parts: the player, the reward in pieces or coins, notes for hunters only, and the time with an optional bonus. Use the switch to see a bounty as a hunter who has accepted it. Only then do the notes show.</p>
+    <div class="ctl"><button class="hb" id="hunterBtn" type="button">Viewing as: anyone</button><span class="key">Notes stay hidden until you accept.</span></div>
+    <div class="card"><h3>A. Poster Wall</h3>
+      <div class="pair"><figure><figcaption>Browse</figcaption><canvas class="gui" id="pA1"></canvas></figure><figure><figcaption>A bounty's page</figcaption><canvas class="gui" id="pA2"></canvas></figure><figure><figcaption>Place a bounty</figcaption><canvas class="gui" id="pA3"></canvas></figure></div>
+      <p>Browse shows six posters at a time, three across and two down, under the WANTED, MY HUNTS and MY BOUNTIES tabs, with a search box and a sort key. PLACE A BOUNTY stands apart at the top right. Click a poster to open its own page: a big poster on the left, and on the right the end time, the bonus, the hunter count, the notes, and ACCEPT. Placing puts four numbered blocks on one page, with the total you pay above PLACE BOUNTY.</p></div>
+    <div class="card"><h3>B. Ledger and Detail</h3>
+      <div class="pair"><figure><figcaption>Browse and accept</figcaption><canvas class="gui" id="pB1"></canvas></figure><figure><figcaption>Place a bounty (paid in coins)</figcaption><canvas class="gui" id="pB2"></canvas></figure></div>
+      <p>A list on the left gives one row per bounty: head, name, reward, time left and hunters. The right pane always shows the selected bounty, with its notes and ACCEPT, so there is no separate page. Placing has the player list down the left and the other three parts on the right. This example pays in coins, so the coin tier chips and a count show.</p></div>
+    <div class="card"><h3>C. Sheriff's Desk</h3>
+      <div class="pair"><figure><figcaption>Browse and accept</figcaption><canvas class="gui" id="pC1"></canvas></figure><figure><figcaption>Place a bounty, step 4 of 4</figcaption><canvas class="gui" id="pC2"></canvas></figure></div>
+      <p>All keys sit in one column on the right, like the bank screens: pages at the top, ACCEPT and PLACE A BOUNTY at the bottom. You flick through one big poster at a time with the arrows, and a strip of heads underneath shows where you are. Placing is a four-step wizard. Step 4 is a 30-day timeline: the flag marks the end, and the gold band marks the bonus window.</p></div>
+  </section>
+
+  <section>
+    <h2>3. The Score Screen board</h2>
+    <p class="lede">Admins pick the board in a Score Screen's settings, alone or in the rotation. Each target gets one line: their head, the total on their head, the time left on the bounty that ends soonest, and a BONUS mark while a bonus is still on offer. Calamity_Jo has two bounties, added together. Looks A and B already exist on the Score Screen. Look C is a new look.</p>
+    <div class="card one"><h3>A. Wanted Ledger <span class="tag">existing Ledger look</span></h3><canvas class="gui" id="sA"></canvas>
+      <p>One row per target: the head, the name, a grey line with the time left and the hunter count, and the reward on the right. Long boards scroll at the screen's speed. This needs no change to the Score Screen.</p></div>
+    <div class="card one"><h3>B. Poster Tiles <span class="tag">existing Tiles look</span></h3><canvas class="gui" id="sB"></canvas>
+      <p>Tiles with the head on top, the reward in large type, then the name, and the time left under that. More posters fit across on a wider screen.</p></div>
+    <div class="card one"><h3>C. Most Wanted <span class="tag new">new look</span></h3><canvas class="gui" id="sC"></canvas>
+      <p>The biggest bounty gets a large poster with a countdown to the second and a bar for its bonus window, and the next five sit in a list on the right. This is a new look in the Score Screen settings, so it is more work, and other mods' boards could use it too.</p></div>
+  </section>
+
+  <section>
+    <h2>4. The admin tab</h2>
+    <p class="lede">Staff can add a bounty, remove one with or without a refund, extend its time, see who placed it, and read or blank its notes. The panel already has seven tabs at 37 pixels, so an eighth needs room.</p>
+    <div class="card one"><h3>A. Eight narrow tabs</h3><canvas class="gui" id="aA"></canvas>
+      <p>All eight tabs shrink to 33 pixels, and the ADMIN heading shrinks to a violet diamond. The labels get small: RADIATION is the tightest. The body shows the bounty list on the left and the selected bounty on the right: who placed it, the hunters, and the notes. Along the bottom sit EXTEND +1 H, +1 D and +7 D, then REMOVE (with a refund), then REMOVE, NO REFUND, with a gap between each group.</p></div>
+    <div class="card one"><h3>B. Two rows of tabs</h3><canvas class="gui" id="aB"></canvas>
+      <p>The tabs go into two rows of four at full width with readable labels, and the panel grows 14 pixels taller. The body is a table. Clicking a row opens a strip of actions under it.</p></div>
+    <div class="card one"><h3>C. A BOUNTIES key on the PLAYERS tab</h3><canvas class="gui" id="aC"></canvas>
+      <p>No new tab. A BOUNTIES key beside BANK & MARKET opens a wide page about the selected player, like the 1.18.0 bank page. Its switches show bounties on them, placed by them, or being hunted by them, or ALL BOUNTIES, and ADD BOUNTY ON THIS PLAYER sits at the top.</p></div>
+  </section>
+
+  <section>
+    <h2>Which parts are baked and which are drawn</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>Block</th><th>Baked model (from a generator)</th><th>Drawn by the renderer</th></tr>
+      <tr><td>A. Frontier Notice Board</td><td>Posts, rope lashings, roof and ridge, planks and back battens, WANTED sign, brass bezels and nails, paper scraps, shelf and labelled keys, lantern body</td><td>The four poster screens (live bounties: head, name, reward, time left, BONUS tag) and the lantern's flicker</td></tr>
+      <tr><td>B. Sheriff's Kiosk</td><td>Deck, panels, star and disc, tin awnings, desk and keys, coin slot, hitching rail, barrel</td><td>The big screen and four small screens, and a glint on the star when a bounty is claimed</td></tr>
+      <tr><td>C. Wanted Door</td><td>Planks, rails, hinges, feet, clock case and ticks, cylinder dial, poster frames with curled corners, knife, peg and rope, keys</td><td>The clock hands (the soonest end), the three posters, the ticker, and the cylinder turning a step on each page</td></tr>
+    </table></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = id => document.getElementById(id);
+
+// ------------------------------------------------------------------ example data (made-up players)
+const H = 36e5, D = 864e5, M = 6e4, T0 = Date.now();
+const PEOPLE = {
+  ray:  {name:'Rattlesnake_Ray', skin:'#c8946a', hair:'#3a2210', eye:'#3b7a3b', hat:'#5a3a1e', band:'#b03a2e', beard:'#3a2210', online:true},
+  jo:   {name:'Calamity_Jo',     skin:'#f0c8a0', hair:'#8a2a1a', eye:'#2a6a8a', hat:'#2a2a2a', band:'#d0a040', online:true},
+  dusty:{name:'DustyMcGraw',     skin:'#e0b48c', hair:'#c9a24a', eye:'#3a5fa0', beard:'#b88a3a', online:false},
+  bart: {name:'BlackHatBart',    skin:'#d8a880', hair:'#222222', eye:'#222222', hat:'#111111', band:'#555555', beard:'#444444', online:false},
+  sam:  {name:'Snakeoil_Sam',    skin:'#a8704a', hair:'#151515', eye:'#5a3a1a', stache:'#151515', online:true},
+  weed: {name:'Tumbleweed42',    skin:'#e8c098', hair:'#d8c070', eye:'#4a8a4a', online:false},
+  kit:  {name:'KitCarsonCity',   skin:'#d09a70', hair:'#6a4a2a', eye:'#2a2a2a', hat:'#8a6a3a', band:'#3a2a1a', online:true},
+  lou:  {name:'LuckyLou',        skin:'#f2d0b0', hair:'#e0a020', eye:'#3a6a9a', online:false}
+};
+const TIERS = [['Copper','#d27d46'],['Gold','#f5c542'],['Diamond','#5fe3e3'],['Netherite','#6b5a62'],['Illyrium','#c08cff']];
+// one bounty per target here; Calamity_Jo's total is two bounties added together
+const BOUNTIES = [
+  {p:'jo',    kind:'pieces', amt:120000, n:2, end:T0+6*H+40*M, total:3*D, hunters:5, placed:'1 d ago', by:'IronFarmer', server:'survival-2',
+   note:'Took my whole iron farm. The base is under the big lake east of spawn, door behind the waterfall.'},
+  {p:'ray',   kind:'pieces', amt:45000, bonus:10000, bonusEnd:T0+1*D+2*H, end:T0+4*D+6*H, total:7*D, hunters:3, placed:'2 d ago', by:'MesaMiner', server:'survival-1',
+   note:'Rides out of the mesa base at dusk. Never alone after dark; his partner sits in the bell tower.'},
+  {p:'dusty', kind:'coins', tier:2, count:3, bonus:1, bonusEnd:T0+20*H, end:T0+2*D, total:3*D, hunters:1, placed:'1 d ago', by:'Server', server:'survival-1',
+   note:'Staff bounty for the spawn event.'},
+  {p:'bart',  kind:'pieces', amt:22500, end:T0+29*D, total:30*D, hunters:0, placed:'1 h ago', by:'GoldRushGus', server:'survival-2',
+   note:'Wears a black leather cap. Logs on around 8 pm.'},
+  {p:'sam',   kind:'coins', tier:1, count:8, end:T0+12*D, total:14*D, hunters:2, placed:'2 d ago', by:'DocHoliday', server:'survival-1',
+   note:'Sells fake totems at the market stall by the bank.'},
+  {p:'weed',  kind:'pieces', amt:1500, end:T0+3*H+12*M, total:1*D, hunters:0, placed:'21 h ago', by:'PrairieRose', server:'survival-1',
+   note:'Just for fun. Hit him with a fish.'}
+];
+const fmtN = n => n.toLocaleString('en-GB');
+function left(ms){ if(ms<=0) return 'ended'; const d=Math.floor(ms/D), h=Math.floor(ms%D/H), m=Math.floor(ms%H/M), s=Math.floor(ms%M/1000);
+  return d>0 ? d+' d '+h+' h' : h>0 ? h+' h '+m+' m' : m+' m '+s+' s'; }
+function clock(ms){ ms=Math.max(0,ms); const d=Math.floor(ms/D), h=Math.floor(ms%D/H), m=Math.floor(ms%H/M), s=Math.floor(ms%M/1000); const z=v=>String(v).padStart(2,'0'); return (d? d+'d ':'')+z(h)+':'+z(m)+':'+z(s); }
+function reward(b){ return b.kind==='pieces' ? fmtN(b.amt) : b.count+' '+TIERS[b.tier][0]; }
+function rewardLong(b){ return b.kind==='pieces' ? fmtN(b.amt)+' pieces' : b.count+' '+TIERS[b.tier][0]+' coin'+(b.count>1?'s':''); }
+function bonusLive(b){ return b.bonus && b.bonusEnd>Date.now(); }
+function bonusText(b){ return b.kind==='pieces' ? '+'+fmtN(b.bonus) : '+'+b.bonus+' '+TIERS[b.tier][0]; }
+
+// ------------------------------------------------------------------ an 8 x 8 face, the way a player head's front reads
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16, g=n>>8&255, b=n&255; r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f)); return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1); }
+function face(c,x,y,s,p){
+  for(let r=0;r<8;r++) for(let k=0;k<8;k++){
+    let col=p.skin;
+    if(p.hat){ if(r===0) col=(k>0&&k<7)?p.hat:p.hair; if(r===1) col=p.hat; if(r===2) col=p.band; }
+    else { if(r<2) col=p.hair; if(r===2&&(k<2||k>5)) col=p.hair; }
+    if(r===3&&(k===0||k===7)) col=p.hair;
+    if(r===4){ if(k===1||k===6) col='#f2f2f2'; if(k===2||k===5) col=p.eye; }
+    if(r===5&&(k===3||k===4)) col=shade(p.skin,.82);
+    if(r===6){ if(k===3||k===4) col='#6a3a2a'; if(p.beard&&(k<2||k>5)) col=p.beard; if(p.stache&&k>1&&k<6) col=p.stache; }
+    if(r===7&&p.beard&&k>0&&k<7) col=p.beard;
+    if(r===3&&k>0&&k<7&&!p.hat&&k%3===0) col=shade(p.skin,.95);
+    c.fillStyle=col; c.fillRect(x+k*s,y+r*s,s,s);
+  }
+}
+
+// ------------------------------------------------------------------ GUI drawing helpers (GUI pixels; the canvas is drawn at 2x)
+function gui(id,w,h){ const cv=el(id); cv.width=w*2; cv.height=h*2; const c=cv.getContext('2d'); c.setTransform(2,0,0,2,0,0); c.imageSmoothingEnabled=false; c.W=w; c.H=h; return c; }
+function R(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x,y,w,h); }
+function O(c,x,y,w,h,col){ R(c,x,y,w,1,col); R(c,x,y+h-1,w,1,col); R(c,x,y,1,h,col); R(c,x+w-1,y,1,h,col); }
+// text: 8 px Silkscreen as the game's font; size 6 and 7 stand in for the 0.75 small text
+function T(c,s,x,y,col,o){ o=o||{}; const sz=o.size||8; c.font=(o.bold?'700 ':'')+sz+'px '+(o.plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); c.textBaseline='top';
+  let w=c.measureText(s).width; if(o.max&&w>o.max){ while(s.length>1&&c.measureText(s+'…').width>o.max) s=s.slice(0,-1); s+='…'; w=c.measureText(s).width; }
+  const ax = o.align==='c' ? x-w/2 : o.align==='r' ? x-w : x; c.fillStyle=col; c.fillText(s,ax,y+(o.plain?0:-1)); return w; }
+function S(c,s,x,y,col,o){ o=Object.assign({size:7,plain:true},o||{}); return T(c,s,x,y,col,o); }
+function wrap(c,s,x,y,w,lh,col,maxLines){ c.font='7px "IBM Plex Sans",sans-serif'; const words=s.split(' '); let line='', n=0;
+  for(let i=0;i<words.length;i++){ const t=line?line+' '+words[i]:words[i]; if(c.measureText(t).width>w&&line){ S(c,line,x,y+n*lh,col); n++; line=words[i]; if(maxLines&&n>=maxLines) return n; } else line=t; }
+  if(line){ S(c,line,x,y+n*lh,col); n++; } return n; }
+function coin(c,x,y,r,tier){ c.fillStyle=shade(TIERS[tier][1],.6); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.fillStyle=TIERS[tier][1]; c.beginPath(); c.arc(x,y,r-1,0,7); c.fill(); c.fillStyle=shade(TIERS[tier][1],1.25); c.fillRect(x-1,y-r+2,2,1); }
+
+// the bounty screen's palette: wood bezel, dark sepia glass, amber phosphor
+const W_ = {wood:'#6b4426', woodD:'#4a2e18', woodL:'#8a5a32', brass:'#c9a24a', scr:'#140d07', scr2:'#21160b', card:'#2a1b0d', paper:'#ecd9ab', ink:'#3b2412',
+  amber:'#f2b544', amberD:'#8f6420', red:'#d0452e', green:'#7bd88f', mute:'#a88d64', dim:'#5e4a30', sel:'#3a2812'};
+function woodFrame(c){ const w=c.W, h=c.H; R(c,0,0,w,h,W_.woodD); R(c,1,1,w-2,h-2,W_.wood);
+  for(let i=0;i<14;i++){ const yy=(i*17+5)%h; R(c,1,yy,w-2,1,i%2?W_.woodL:W_.woodD); }
+  R(c,5,5,w-10,h-10,W_.woodD); R(c,6,6,w-12,h-12,W_.scr);
+  for(const [rx,ry] of [[2,2],[w-5,2],[2,h-5],[w-5,h-5]]){ R(c,rx,ry,3,3,W_.brass); R(c,rx+1,ry+1,1,1,'#f3dc8a'); } }
+function key(c,x,y,w,h,label,st){ st=st||''; const on=st==='on', hot=st==='hot', red=st==='red', off=st==='off';
+  R(c,x,y,w,h,on?W_.amber:hot?W_.red:red?'#5a1a12':W_.dim); R(c,x+1,y+1,w-2,h-2,on?'#3a2610':hot?'#4a140c':red?'#2a0c08':W_.scr2);
+  let sz=h>=14?8:6; c.font=sz+'px Silkscreen'; if(sz===8&&c.measureText(label).width>w-4) sz=6;
+  T(c,label,x+w/2,y+(h-sz+2)/2-1,off?W_.dim:on?W_.amber:hot||red?'#ff8a70':W_.paper,{align:'c',size:sz,max:w-4}); }
+function box(c,x,y,w,h,text,ph){ R(c,x,y,w,h,W_.dim); R(c,x+1,y+1,w-2,h-2,'#0c0804'); S(c,text||ph||'',x+4,y+(h-8)/2+1,text?W_.paper:W_.dim,{max:w-8}); }
+function bar(c,x,y,w,h,f,col){ R(c,x,y,w,h,'#3a2614'); R(c,x,y,Math.max(1,Math.round(w*Math.max(0,Math.min(1,f)))),h,col||W_.amber); }
+function rewardDraw(c,b,x,y,align,size){ const s=reward(b); size=size||8;
+  if(b.kind==='coins'){ const w=T(c,s,0,-99,W_.amber,{size}); const x0=align==='c'?x-(w+10)/2:align==='r'?x-w-10:x; coin(c,x0+4,y+size/2-1,4,b.tier); T(c,s,x0+10,y,W_.amber,{size}); }
+  else T(c,s,x,y,W_.amber,{align,size}); }
+function poster(c,b,x,y,w,h,o){ o=o||{}; const p=PEOPLE[b.p], now=Date.now();
+  R(c,x,y,w,h,o.sel?W_.amber:W_.amberD); R(c,x+1,y+1,w-2,h-2,W_.card);
+  T(c,'WANTED',x+w/2,y+3,W_.amber,{align:'c',size:7});
+  const fs=o.big?6:3, fw=8*fs; R(c,x+w/2-fw/2-1,y+11,fw+2,fw+2,W_.ink); face(c,x+w/2-fw/2,y+12,fs,p);
+  let yy=y+14+fw; T(c,p.name,x+w/2,yy,W_.paper,{align:'c',size:o.big?8:6,max:w-6}); yy+=o.big?11:8;
+  rewardDraw(c,b,x+w/2,yy,'c',o.big?8:7); yy+=o.big?12:9;
+  bar(c,x+5,yy,w-10,2,(b.end-now)/b.total,b.end-now<D?W_.red:W_.amber); yy+=4;
+  S(c,left(b.end-now)+' left',x+w/2,yy,W_.mute,{align:'c',size:6});
+  if(bonusLive(b)){ R(c,x+w-21,y+2,19,7,W_.red); T(c,'BONUS',x+w-11.5,y+3,'#ffe0c0',{align:'c',size:5}); }
+  if(o.accepted){ c.save(); c.translate(x+w/2,y+h/2+2); c.rotate(-.35); O(c,-26,-6,52,12,W_.green); T(c,'ACCEPTED',0,-4,W_.green,{align:'c',size:7}); c.restore(); }
+}
+const state={hunter:false};
+
+// ------------------------------------------------------------------ player screens, 320 x 220
+const SW=320, SH=220;
+function tabs(c,x,y,active,names){ let tx=x; names.forEach((n,i)=>{ c.font='6px Silkscreen'; const w=c.measureText(n).width+10; key(c,tx,y,w,11,n,i===active?'on':''); tx+=w+2; }); return tx; }
+function pA1(){ const c=gui('pA1',SW,SH); woodFrame(c);
+  tabs(c,12,11,0,['WANTED','MY HUNTS','MY BOUNTIES']); key(c,224,11,84,11,'PLACE A BOUNTY','hot');
+  box(c,12,26,150,11,'','Search a name'); key(c,166,26,60,11,'REWARD ▾'); S(c,BOUNTIES.length+' bounties',308,28,W_.mute,{align:'r'});
+  BOUNTIES.forEach((b,i)=>{ const col=i%3, row=Math.floor(i/3); poster(c,b,12+col*100,42+row*80,96,76,{sel:i===1, accepted:state.hunter&&i===1}); });
+  S(c,'page 1 of 1',SW/2,204,W_.dim,{align:'c',size:6}); }
+function notesBox(c,b,x,y,w,h,staff){ R(c,x,y,w,h,W_.dim); R(c,x+1,y+1,w-2,h-2,'#0c0804'); T(c,'NOTES',x+4,y+3,W_.mute,{size:6});
+  if(state.hunter||staff) wrap(c,b.note,x+4,y+12,w-8,9,W_.paper,Math.floor((h-14)/9));
+  else { c.fillStyle=W_.dim; for(let i=0;i<Math.floor((h-16)/9);i++) R(c,x+4,y+14+i*9,w-8-((i*23)%30),4,'#2a1c10'); R(c,x+6,y+h/2-8,w-12,18,'#0c0804'); O(c,x+6,y+h/2-8,w-12,18,W_.amberD); wrap(c,'Accept this bounty to read the notes.',x+10,y+h/2-6,w-20,8,W_.amber,2); } }
+function pA2(){ const c=gui('pA2',SW,SH); woodFrame(c); const b=BOUNTIES[1], now=Date.now();
+  key(c,12,11,40,11,'◀ BACK'); T(c,'BOUNTY ON '+PEOPLE[b.p].name.toUpperCase(),60,13,W_.paper,{size:7,max:250});
+  poster(c,b,12,28,118,176,{big:true, accepted:state.hunter});
+  let y=30; const L=(k,v,col)=>{ S(c,k,138,y,W_.mute); S(c,v,308,y,col||W_.paper,{align:'r'}); y+=11; };
+  L('Reward',rewardLong(b),W_.amber); L('Bonus',bonusText(b)+' if done in '+left(b.bonusEnd-now),W_.red); L('Ends in',left(b.end-now)); L('Hunters',b.hunters+' have accepted'); L('Placed',b.placed);
+  R(c,138,y+1,170,1,W_.dim); notesBox(c,b,138,y+5,170,62);
+  if(state.hunter){ key(c,138,186,82,16,'ABANDON'); S(c,'Kills count from 10 m after accepting.',226,190,W_.mute,{size:6,max:84}); }
+  else { key(c,138,186,170,16,'ACCEPT THIS BOUNTY','on'); } }
+function playerRow(c,pk,x,y,w,sel){ const p=PEOPLE[pk]; if(sel){ R(c,x,y,w,12,W_.sel); O(c,x,y,w,12,W_.amberD); } face(c,x+2,y+2,1,p); S(c,p.name,x+13,y+2,sel?W_.amber:W_.paper,{max:w-24}); c.fillStyle=p.online?W_.green:W_.dim; c.beginPath(); c.arc(x+w-6,y+6,2,0,7); c.fill(); }
+function sectionHead(c,n,t,x,y){ R(c,x,y,9,9,W_.amber); T(c,String(n),x+4.5,y+1,W_.scr,{align:'c',size:7}); T(c,t,x+13,y+1,W_.amber,{size:7}); }
+function summary(c,x,y,w,b){ const fee=Math.ceil((b.amt+(b.bonus||0))*0.05); R(c,x,y,w,46,W_.dim); R(c,x+1,y+1,w-2,44,'#0c0804'); let yy=y+4;
+  const L=(k,v,col)=>{ S(c,k,x+5,yy,W_.mute); S(c,v,x+w-5,yy,col||W_.paper,{align:'r'}); yy+=9; };
+  L('Reward',fmtN(b.amt)); L('Bonus, held until the end',fmtN(b.bonus||0)); L('Fee (5%, to the lottery pot)',fmtN(fee)); R(c,x+5,yy,w-10,1,W_.dim); yy+=2; L('You pay now',fmtN(b.amt+(b.bonus||0)+fee),W_.amber); }
+function pA3(){ const c=gui('pA3',SW,SH); woodFrame(c);
+  tabs(c,12,11,-1,['WANTED','MY HUNTS','MY BOUNTIES']); key(c,224,11,84,11,'PLACE A BOUNTY','on');
+  sectionHead(c,1,'WHO',12,27); box(c,12,38,152,11,'ray',''); S(c,'online first',164,28,W_.dim,{align:'r',size:6});
+  ['ray','kit','jo','dusty'].forEach((k,i)=>playerRow(c,k,12,51+i*13,152,i===0));
+  sectionHead(c,2,'REWARD',12,106); key(c,12,117,40,11,'PIECES','on'); key(c,54,117,40,11,'COINS'); box(c,98,117,66,11,'45,000');
+  sectionHead(c,3,'NOTES',12,133); R(c,12,144,152,58,W_.dim); R(c,13,145,150,56,'#0c0804'); wrap(c,'Rides out of the mesa base at dusk. Never alone after dark; his partner sits in the bell tower.|',16,148,144,9,W_.paper);
+  S(c,'Only hunters who accept see this.',16,192,W_.dim,{size:6});
+  sectionHead(c,4,'TIME AND BONUS',172,27); ['1 H','1 D','3 D','7 D','30 D'].forEach((t,i)=>key(c,172+i*27,38,25,11,t,i===3?'on':'')); S(c,'Ends in',172,52,W_.mute); box(c,230,51,78,11,'7 d 0 h');
+  S(c,'Bonus',172,67,W_.mute); box(c,230,66,78,11,'10,000'); S(c,'if done within',172,82,W_.mute); ['6 H','1 D','3 D'].forEach((t,i)=>key(c,230+i*27,81,25,11,t,i===1?'on':''));
+  summary(c,172,98,136,{amt:45000,bonus:10000}); S(c,'Price and bonus come back if nobody claims it.',172,148,W_.dim,{size:6,max:136});
+  key(c,172,186,136,16,'PLACE BOUNTY','on'); }
+
+function pB1(){ const c=gui('pB1',SW,SH); woodFrame(c); const now=Date.now();
+  tabs(c,12,11,0,['WANTED','MY HUNTS','MY BOUNTIES']); key(c,224,11,84,11,'PLACE A BOUNTY','hot');
+  box(c,12,26,174,11,'','Search a name');
+  BOUNTIES.forEach((b,i)=>{ const y=40+i*27, sel=i===1, p=PEOPLE[b.p]; R(c,12,y,174,25,sel?W_.sel:'#1a1108'); if(sel) O(c,12,y,174,25,W_.amber);
+    R(c,15,y+4,18,18,W_.ink); face(c,16,y+5,2,p); T(c,p.name,38,y+4,sel?W_.amber:W_.paper,{size:7,max:90}); rewardDraw(c,b,182,y+4,'r',7);
+    S(c,left(b.end-now)+' left · '+b.hunters+' hunter'+(b.hunters===1?'':'s'),38,y+14,W_.mute,{size:6}); if(bonusLive(b)){ R(c,148,y+15,34,7,W_.red); T(c,'BONUS',165,y+16,'#ffe0c0',{align:'c',size:5}); }
+    if(sel&&state.hunter){ T(c,'✔',176,y+15,W_.green,{size:7}); } });
+  const b=BOUNTIES[1], p=PEOPLE[b.p]; R(c,192,26,116,178,W_.card); O(c,192,26,116,178,W_.amberD);
+  T(c,'WANTED',250,30,W_.amber,{align:'c',size:7}); R(c,233,39,34,34,W_.ink); face(c,234,40,4,p);
+  T(c,p.name,250,76,W_.paper,{align:'c',size:7,max:108}); rewardDraw(c,b,250,86,'c',8); S(c,'bonus '+bonusText(b)+' in '+left(b.bonusEnd-now),250,97,W_.red,{align:'c',size:6});
+  bar(c,198,107,104,2,(b.end-now)/b.total); S(c,left(b.end-now)+' left · '+b.hunters+' hunters',250,111,W_.mute,{align:'c',size:6});
+  notesBox(c,b,196,121,108,60); key(c,196,185,108,15,state.hunter?'ABANDON':'ACCEPT',state.hunter?'':'on'); }
+function pB2(){ const c=gui('pB2',SW,SH); woodFrame(c);
+  tabs(c,12,11,-1,['WANTED','MY HUNTS','MY BOUNTIES']); key(c,224,11,84,11,'PLACE A BOUNTY','on');
+  T(c,'PLAYER',12,27,W_.amber,{size:7}); box(c,12,37,110,11,'','Search a name');
+  ['dusty','ray','kit','jo','sam','bart','weed','lou','kit'].slice(0,11).forEach((k,i)=>playerRow(c,k,12,51+i*13,110,i===0));
+  S(c,'214 players · scroll',67,191,W_.dim,{align:'c',size:6});
+  T(c,'REWARD',130,27,W_.amber,{size:7}); key(c,130,37,40,11,'PIECES'); key(c,172,37,40,11,'COINS','on');
+  TIERS.forEach((t,i)=>{ const x=130+i*36; key(c,x,52,34,13,'',i===2?'on':''); coin(c,x+7,58.5,4,i); S(c,t[0].slice(0,4),x+13,55,i===2?W_.amber:W_.mute,{size:6}); });
+  S(c,'Count',130,71,W_.mute); box(c,166,69,36,11,'3'); S(c,'= 12 copper. You hold 7 Diamond.',206,71,W_.dim,{size:6,max:102});
+  T(c,'TIME',130,87,W_.amber,{size:7}); ['1 H','1 D','3 D','7 D','30 D'].forEach((t,i)=>key(c,130+i*28,97,26,11,t,i===2?'on':''));
+  S(c,'Bonus',130,113,W_.mute); box(c,166,111,30,11,'1'); S(c,'Diamond, within',200,113,W_.mute,{size:6}); box(c,262,111,46,11,'20 h');
+  T(c,'NOTES (HUNTERS ONLY)',130,128,W_.amber,{size:7}); R(c,130,138,178,30,W_.dim); R(c,131,139,176,28,'#0c0804'); wrap(c,'Keeps his coins in a chest under the general store floor.',134,142,170,9,W_.paper);
+  S(c,'You pay now: 4 Diamond coins (price, bonus) + 1 Copper fee',130,172,W_.paper,{size:6,max:178});
+  key(c,130,184,178,17,'PLACE BOUNTY','on'); }
+
+function rightKeys(c,active,bottom){ const x=250,w=58; ['WANTED','MY HUNTS','MY BOUNTIES'].forEach((n,i)=>key(c,x,12+i*15,w,13,n,i===active?'on':''));
+  bottom.forEach((k,i)=>key(c,x,206-(bottom.length-i)*17,w,15,k[0],k[1])); }
+function pC1(){ const c=gui('pC1',SW,SH); woodFrame(c); const b=BOUNTIES[1], p=PEOPLE[b.p], now=Date.now();
+  rightKeys(c,0,[[state.hunter?'ABANDON':'ACCEPT',state.hunter?'':'on'],['PLACE BOUNTY','hot']]);
+  R(c,246,10,1,200,W_.dim);
+  key(c,12,80,14,30,'◀'); key(c,228,80,14,30,'▶');
+  poster(c,b,30,12,104,164,{big:true,accepted:state.hunter});
+  let y=14; const L=(k,v,col)=>{ S(c,k,140,y,W_.mute,{size:6}); y+=8; S(c,v,140,y,col||W_.paper,{max:84}); y+=12; };
+  L('REWARD',rewardLong(b),W_.amber); L('BONUS IF DONE IN '+left(b.bonusEnd-now),bonusText(b),W_.red); L('ENDS IN',left(b.end-now)); L('HUNTERS',b.hunters+' have accepted');
+  notesBox(c,b,138,96,86,80);
+  BOUNTIES.forEach((bb,i)=>{ const x=30+i*32; R(c,x,182,22,22,i===1?W_.amber:W_.dim); face(c,x+1,183,2.5,PEOPLE[bb.p]); });
+  S(c,'2 / 6',238,190,W_.mute,{align:'r',size:6}); }
+function pC2(){ const c=gui('pC2',SW,SH); woodFrame(c);
+  rightKeys(c,-1,[['◀ BACK',''],['PLACE BOUNTY','on']]); R(c,246,10,1,200,W_.dim);
+  ['WHO','REWARD','NOTES','TIME'].forEach((s,i)=>{ const x=12+i*58; key(c,x,12,54,12,(i+1)+' '+s,i===3?'on':i<3?'':'off'); });
+  S(c,'Rattlesnake_Ray · 45,000 pieces · note written',12,28,W_.mute,{size:6});
+  // the 30-day timeline
+  const x0=16, x1=236, y0=60, dx=(x1-x0)/30; T(c,'ENDS',12,40,W_.amber,{size:7});
+  R(c,x0,y0,x1-x0,6,'#2a1c10'); R(c,x0,y0,dx*1,6,'#7a5a14'); R(c,x0,y0,dx*7,2,W_.amber);
+  for(let d=0;d<=30;d++){ R(c,x0+d*dx,y0+6,1,d%7===0?4:2,W_.dim); if(d%7===0) S(c,d+'d',x0+d*dx,y0+11,W_.mute,{align:'c',size:6}); }
+  const ex=x0+7*dx; R(c,ex,y0-12,1,18,W_.amber); R(c,ex+1,y0-12,10,6,W_.amber); T(c,'7d',ex+6,y0-11,W_.scr,{align:'c',size:5});
+  const bx=x0+dx; R(c,bx,y0-8,1,14,'#ffd23a'); S(c,'bonus',bx+2,y0-9,'#ffd23a',{size:6});
+  ['1 H','1 D','3 D','7 D','30 D'].forEach((t,i)=>key(c,12+i*30,84,28,11,t,i===3?'on':'')); box(c,166,84,70,11,'7 d 0 h');
+  T(c,'BONUS',12,102,W_.amber,{size:7}); box(c,12,112,70,11,'10,000'); S(c,'paid if the kill comes within',86,114,W_.mute,{size:6}); box(c,190,112,46,11,'1 d 0 h');
+  summary(c,12,130,224,{amt:45000,bonus:10000}); S(c,'The maximum is 30 days. Drag the flag or the bonus line.',12,180,W_.dim,{size:6}); }
+
+// ------------------------------------------------------------------ Score Screen boards, 384 x 216
+const SS={bg:'#0b0f14', panel:'#111821', tq:'#19D3B0', gold:'#FFD23A', text:'#E6EAF2', mute:'#8d97a8', red:'#ff6b5c', line:'#1f2a36'};
+function screenBase(c,title){ R(c,0,0,c.W,c.H,'#30343c'); R(c,2,2,c.W-4,c.H-4,SS.bg); T(c,title,c.W/2,8,SS.tq,{align:'c',size:8}); R(c,12,20,c.W-24,1,SS.line); }
+function aggregated(){ return BOUNTIES.slice().sort((a,b)=>val(b)-val(a)); }
+function val(b){ return b.kind==='pieces'?b.amt:b.count*[1,2,4,8,16][b.tier]*1000; }
+function valueText(b){ return b.kind==='pieces'?fmtN(b.amt):b.count+' '+TIERS[b.tier][0]; }
+function sA(){ const c=gui('sA',384,216); screenBase(c,'MOST WANTED'); const now=Date.now();
+  aggregated().forEach((b,i)=>{ const y=26+i*31, p=PEOPLE[b.p]; if(i%2) R(c,8,y-2,368,30,SS.panel);
+    R(c,14,y+1,24,24,'#000'); face(c,14,y+1,3,p); T(c,p.name+(b.n>1?'  ×'+b.n:''),46,y+3,SS.text,{size:8});
+    S(c,left(b.end-now)+' left · '+b.hunters+' hunting',46,y+14,SS.mute,{size:7});
+    if(bonusLive(b)) { R(c,206,y+14,40,9,'#4a3a08'); T(c,'BONUS',226,y+15,SS.gold,{align:'c',size:6}); }
+    const vw=T(c,valueText(b),370,y+5,SS.gold,{align:'r',size:8}); if(b.kind==='coins') coin(c,370-vw-8,y+8,5,b.tier); }); }
+function sB(){ const c=gui('sB',384,216); screenBase(c,'MOST WANTED'); const now=Date.now(); const list=aggregated();
+  list.forEach((b,i)=>{ const col=i%3, row=Math.floor(i/3), x=10+col*122, y=26+row*94, p=PEOPLE[b.p];
+    R(c,x,y,118,90,SS.panel); O(c,x,y,118,90,SS.line); R(c,x+43,y+5,32,32,'#000'); face(c,x+43,y+5,4,p);
+    const vw=T(c,valueText(b),x+59+(b.kind==='coins'?6:0),y+42,SS.gold,{align:'c',size:10}); if(b.kind==='coins') coin(c,x+65-vw/2-8,y+47,5,b.tier); T(c,p.name,x+59,y+58,SS.text,{align:'c',size:7,max:110});
+    S(c,left(b.end-now)+' left',x+59,y+70,SS.mute,{align:'c',size:7}); if(bonusLive(b)){ R(c,x+86,y+4,28,9,'#4a3a08'); T(c,'BONUS',x+100,y+5,SS.gold,{align:'c',size:5}); } }); }
+function sC(){ const c=gui('sC',384,216); screenBase(c,'MOST WANTED'); const now=Date.now(); const list=aggregated(); const b=list[0], p=PEOPLE[b.p];
+  R(c,10,26,170,182,SS.panel); O(c,10,26,170,182,'#5a4410'); T(c,'WANTED',95,31,SS.gold,{align:'c',size:10}); R(c,61,46,68,68,'#000'); face(c,63,48,8,p);
+  T(c,p.name,95,120,SS.text,{align:'c',size:8}); T(c,valueText(b),95,133,SS.gold,{align:'c',size:14}); T(c,clock(b.end-now),95,154,SS.red,{align:'c',size:10});
+  S(c,'until this bounty ends',95,168,SS.mute,{align:'c',size:7});
+  const rb=list.find(x=>bonusLive(x))||BOUNTIES[1]; bar(c,22,184,146,4,(rb.bonusEnd-now)/(rb.bonusEnd-(rb.end-rb.total)),SS.gold);
+  S(c,'bonus window on '+PEOPLE[rb.p].name+': '+left(rb.bonusEnd-now),95,191,SS.mute,{align:'c',size:6});
+  list.slice(1).forEach((x,i)=>{ const y=28+i*36, q=PEOPLE[x.p]; R(c,188,y,186,32,i%2?SS.panel:SS.bg); R(c,192,y+4,24,24,'#000'); face(c,192,y+4,3,q);
+    T(c,q.name,222,y+5,SS.text,{size:7,max:90}); S(c,left(x.end-now)+' left',222,y+17,SS.mute,{size:6}); T(c,valueText(x),370,y+11,SS.gold,{align:'r',size:8}); }); }
+
+// ------------------------------------------------------------------ admin panel, 344 x 210 (violet Holo HUD of AdminScreen)
+const A={bg:'#10151C', slot:'#0C0E12', dim:'#2A2F3A', vio:'#B58CFF', tq:'#19D3B0', bad:'#D63B2F', gold:'#FFD23A', mute:'#9AA3B5', text:'#E6EAF2', hover:'#2A2140'};
+function aFrame(c,h){ R(c,0,0,c.W,h,A.vio); R(c,1,1,c.W-2,h-2,A.bg); }
+function aKey(c,x,y,w,h,label,col,on){ R(c,x,y,w,h,on?col:A.dim); R(c,x+1,y+1,w-2,h-2,on?A.hover:A.slot); T(c,label,x+w/2,y+(h-6)/2,col,{align:'c',size:6,max:w-4}); }
+function aTab(c,x,y,w,label,on){ R(c,x,y,w,13,on?A.vio:A.dim); R(c,x+1,y+1,w-2,11,on?A.bg:A.slot);
+  c.font='8px Silkscreen'; const full=c.measureText(label).width, k=Math.min(.75,(w-4)/full); T(c,label,x+w/2,y+3+(0.75-k)*4,on?A.vio:A.mute,{align:'c',size:8*k}); }
+const TABN=['PLAYERS','SEASON','SETTINGS','KITS','CREDIT','VAULT','RADIATION','BOUNTIES'];
+function aList(c,x,y,w,rows){ const now=Date.now(); BOUNTIES.slice(0,rows).forEach((b,i)=>{ const yy=y+i*12, sel=i===1, p=PEOPLE[b.p]; R(c,x,yy,w,11,sel?A.hover:i%2?'#141a23':A.slot);
+  face(c,x+2,yy+1.5,1,p); S(c,p.name,x+13,yy+2,sel?A.vio:A.text,{size:6.5,max:w-70}); S(c,valueText(b),x+w-36,yy+2,A.gold,{align:'r',size:6.5}); S(c,left(b.end-now),x+w-3,yy+2,A.mute,{align:'r',size:6}); }); }
+function aDetail(c,x,y,w){ const b=BOUNTIES[1], p=PEOPLE[b.p], now=Date.now(); face(c,x,y,2,p); T(c,p.name,x+20,y+1,A.text,{size:7}); S(c,'on '+b.server,x+20,y+10,A.mute,{size:6});
+  let yy=y+22; const L=(k,v,col)=>{ S(c,k,x,yy,A.mute,{size:6.5}); S(c,v,x+w,yy,col||A.text,{align:'r',size:6.5,max:w-50}); yy+=9; };
+  L('Reward',rewardLong(b),A.gold); L('Bonus',bonusText(b)+' until '+left(b.bonusEnd-now),A.gold); L('Ends in',left(b.end-now)); L('Placed by',b.by+', '+b.placed,A.vio); L('Hunters','KitCarsonCity, LuckyLou, Snakeoil_Sam',A.text);
+  R(c,x,yy+1,w,30,A.dim); R(c,x+1,yy+2,w-2,28,A.slot); S(c,'NOTES',x+3,yy+3,A.mute,{size:5.5}); wrap(c,b.note,x+3,yy+11,w-8,8,A.text,2); aKey(c,x+w-34,yy+3,31,9,'BLANK',A.bad); return yy+34; }
+function aActions(c,y){ aKey(c,10,y,30,14,'+1 H',A.tq); aKey(c,42,y,30,14,'+1 D',A.tq); aKey(c,74,y,30,14,'+7 D',A.tq); S(c,'EXTEND',57,y-8,A.mute,{align:'c',size:5.5});
+  aKey(c,124,y,92,14,'REMOVE + REFUND',A.vio); aKey(c,232,y,102,14,'REMOVE, NO REFUND',A.bad); }
+function aA(){ const c=gui('aA',344,210); aFrame(c,210); const TW=33, n=8; T(c,'◆',10,8,A.vio,{size:8});
+  const rx=344-10-n*(TW+3)-17; aKey(c,rx,6,14,13,'↻',A.tq); for(let i=0;i<n;i++) aTab(c,344-10-(n-i)*(TW+3)+3,6,TW,TABN[i],i===7);
+  ['ALL','OPEN','ENDING'].forEach((f,i)=>aKey(c,10+i*30,26,28,11,f,A.vio,i===0)); aKey(c,108,26,54,11,'ADD BOUNTY',A.tq,true);
+  aList(c,10,42,152,10); S(c,'6 open · 2 ended today',10,166,A.mute,{size:6}); aDetail(c,172,28,162); aActions(c,184); }
+function aB(){ const c=gui('aB',344,224); aFrame(c,224); T(c,'ADMIN',10,8,A.vio,{size:8}); aKey(c,62,6,14,13,'↻',A.tq);
+  const tw=(344-10-82)/4-3; for(let i=0;i<8;i++){ const row=Math.floor(i/4), col=i%4; aTab(c,82+col*(tw+3),6+row*15,tw,TABN[i],i===7); }
+  const y0=40, now=Date.now(); const cols=[[10,'TARGET'],[118,'REWARD'],[178,'ENDS IN'],[232,'HUNTERS'],[276,'PLACED BY']];
+  cols.forEach(cc=>S(c,cc[1],cc[0],y0,A.mute,{size:5.5})); R(c,10,y0+8,324,1,A.dim);
+  let y=y0+11; BOUNTIES.forEach((b,i)=>{ const sel=i===1, p=PEOPLE[b.p]; R(c,10,y,324,12,sel?A.hover:i%2?'#141a23':A.slot); face(c,12,y+2,1,p);
+    S(c,p.name,23,y+2.5,sel?A.vio:A.text,{size:6.5,max:92}); S(c,valueText(b),118,y+2.5,A.gold,{size:6.5}); S(c,left(b.end-now),178,y+2.5,A.text,{size:6.5});
+    S(c,String(b.hunters),232,y+2.5,A.text,{size:6.5}); S(c,b.by,276,y+2.5,A.vio,{size:6.5,max:56}); y+=12;
+    if(sel){ R(c,10,y,324,40,'#181226'); O(c,10,y,324,40,A.hover); wrap(c,'Notes: '+b.note,14,y+3,230,8,A.text,2);
+      aKey(c,250,y+3,80,11,'BLANK NOTES',A.bad); aKey(c,14,y+24,30,12,'+1 H',A.tq); aKey(c,46,y+24,30,12,'+1 D',A.tq); aKey(c,78,y+24,30,12,'+7 D',A.tq);
+      aKey(c,124,y+24,92,12,'REMOVE + REFUND',A.vio); aKey(c,230,y+24,100,12,'REMOVE, NO REFUND',A.bad); y+=42; } });
+  aKey(c,10,200,92,14,'ADD BOUNTY',A.tq,true); S(c,'Bonus +10,000 until '+left(BOUNTIES[1].bonusEnd-now)+' · hunters: KitCarsonCity, LuckyLou, Snakeoil_Sam',108,203,A.mute,{size:6,max:226}); }
+function aC(){ const c=gui('aC',420,240); aFrame(c,240); aKey(c,10,7,64,12,'◀ PLAYERS',A.vio); T(c,'BOUNTIES · RATTLESNAKE_RAY',84,9,A.text,{size:7});
+  aKey(c,300,7,110,12,'ADD BOUNTY ON THIS PLAYER',A.tq,true);
+  ['ON THEM','PLACED BY THEM','HUNTING','ALL BOUNTIES'].forEach((f,i)=>aKey(c,10+i*66,24,64,11,f,A.vio,i===0));
+  const now=Date.now(); R(c,10,40,200,1,A.dim);
+  [[BOUNTIES[1],'MesaMiner'],[{p:'ray',kind:'pieces',amt:8000,end:now+9*D,total:14*D,hunters:1},'PrairieRose'],[{p:'ray',kind:'coins',tier:3,count:2,end:now+20*H,total:2*D,hunters:0},'Server']].forEach((r,i)=>{
+    const b=r[0], y=44+i*16, sel=i===0; R(c,10,y,200,14,sel?A.hover:A.slot); S(c,valueText(b),14,y+3,A.gold,{size:7}); S(c,left(b.end-now),110,y+3,A.text,{size:6.5}); S(c,'by '+r[1],206,y+3,A.vio,{align:'r',size:6.5}); });
+  S(c,'Total on their head: 53,000 pieces and 2 Netherite coins',10,96,A.mute,{size:6.5});
+  T(c,'HISTORY',10,112,A.mute,{size:6}); [['Claimed by KitCarsonCity','12,000 + bonus','3 d ago',A.tq],['Ended, refunded to GoldRushGus','5,000','9 d ago',A.mute],['Removed by staff, no refund','1 Gold','12 d ago',A.bad],['Claimed by LuckyLou','30,000','20 d ago',A.tq]].forEach((h,i)=>{ const y=122+i*13;
+    R(c,10,y,200,12,i%2?'#141a23':A.slot); S(c,h[0],13,y+2.5,h[3],{size:6.5,max:110}); S(c,h[1],160,y+2.5,A.gold,{align:'r',size:6.5}); S(c,h[2],206,y+2.5,A.mute,{align:'r',size:6}); });
+  R(c,218,40,1,170,A.dim); aDetail(c,226,44,184);
+  aKey(c,226,214,30,14,'+1 H',A.tq); aKey(c,258,214,30,14,'+1 D',A.tq); aKey(c,290,214,30,14,'+7 D',A.tq);
+  aKey(c,10,214,96,14,'REMOVE + REFUND',A.vio); aKey(c,112,214,98,14,'REMOVE, NO REFUND',A.bad);
+  S(c,'Opened from the PLAYERS tab: [ BANK & MARKET ] [ BOUNTIES ]',10,190,A.mute,{size:6.5}); }
+
+function drawScreens(){ pA1(); pA2(); pA3(); pB1(); pB2(); pC1(); pC2(); sA(); sB(); sC(); aA(); aB(); aC(); }
+
+// ------------------------------------------------------------------ three.js blocks (model pixels: 1 block = 16)
+function texCanvas(w,h,draw){ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const c=cv.getContext('2d'); c.imageSmoothingEnabled=false; draw(c,w,h); const t=new THREE.CanvasTexture(cv); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.userData={cv,c}; return t; }
+let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+function woodTex(base,vertical){ return texCanvas(16,16,(c,w,h)=>{ c.fillStyle=base; c.fillRect(0,0,w,h); for(let i=0;i<10;i++){ c.fillStyle=shade(base,.72+rnd()*.5); const a=Math.floor(rnd()*16), l=4+Math.floor(rnd()*10), o=Math.floor(rnd()*16); if(vertical) c.fillRect(a,o,1,l); else c.fillRect(o,a,l,1); } c.fillStyle=shade(base,.55); if(vertical){ c.fillRect(0,0,1,h); } else c.fillRect(0,0,w,1); }); }
+function shingleTex(){ return texCanvas(16,16,(c,w,h)=>{ for(let r=0;r<4;r++){ for(let k=0;k<4;k++){ c.fillStyle=shade('#6a3b26',.8+rnd()*.35); c.fillRect(k*4+(r%2)*2,r*4,4,4); } c.fillStyle='#2e170c'; c.fillRect(0,r*4+3,w,1); } }); }
+function labelTex(text,w,h,bg,fg){ return texCanvas(w*8,h*8,(c,W,Hh)=>{ c.fillStyle=bg; c.fillRect(0,0,W,Hh); c.fillStyle=shade(bg,.6); c.fillRect(0,Hh-2,W,2); c.fillStyle=fg; c.font='bold '+Math.round(Hh*.55)+'px Silkscreen,monospace'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,W/2,Hh/2+1); }); }
+const mats={};
+function MAT(name){ if(mats[name]) return mats[name]; const L=o=>new THREE.MeshLambertMaterial(o); let m;
+  switch(name){ case 'post': m=L({map:woodTex('#5b3a1f',true)}); break; case 'plank0': m=L({map:woodTex('#8a5a32',true)}); break; case 'plank1': m=L({map:woodTex('#7a4e2b',true)}); break; case 'plank2': m=L({map:woodTex('#946238',true)}); break;
+    case 'beam': m=L({map:woodTex('#5b3a1f',false)}); break; case 'shingle': m=L({map:shingleTex()}); break; case 'brass': m=L({color:0xc9a24a}); break; case 'iron': m=L({color:0x55585e}); break; case 'dark': m=L({color:0x15100a}); break;
+    case 'rope': m=L({color:0xb8955a}); break; case 'paper': m=L({color:0xe2cf9f}); break; case 'grass': m=L({map:texCanvas(16,16,(c)=>{ for(let i=0;i<256;i++){ c.fillStyle=shade('#5d8a3a',.8+rnd()*.35); c.fillRect(i%16,Math.floor(i/16),1,1); } })}); break;
+    case 'tin': m=L({color:0x8d949c}); break; case 'cream': m=L({color:0xeee2c0}); break; case 'blade': m=L({color:0xd8dde2}); break; case 'leather': m=L({color:0x4a2a16}); break; case 'deck': m=L({map:woodTex('#7a5230',false)}); break;
+    case 'glass': m=new THREE.MeshBasicMaterial({color:0xffc060,transparent:true,opacity:.75}); break; case 'red': m=L({color:0xa8352a}); break; }
+  mats[name]=m; return m; }
+function bx(g,w,h,d,mat,x,y,z,rot){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),typeof mat==='string'?MAT(mat):mat); m.position.set(x,y,z); if(rot){ m.rotation.set(rot[0]||0,rot[1]||0,rot[2]||0); } g.add(m); return m; }
+function cy(g,rt,rb,h,mat,x,y,z,axis,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||16),typeof mat==='string'?MAT(mat):mat); m.position.set(x,y,z); if(axis==='z') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.z=Math.PI/2; g.add(m); return m; }
+function tor(g,R_,r,mat,x,y,z,axis){ const m=new THREE.Mesh(new THREE.TorusGeometry(R_,r,8,24),typeof mat==='string'?MAT(mat):mat); m.position.set(x,y,z); if(axis==='y') m.rotation.x=Math.PI/2; g.add(m); return m; }
+function plaque(g,text,w,h,x,y,z,rx){ const t=labelTex(text,w,h,'#2a1a0c','#f2b544'); const side=MAT('beam'); const mat=[side,side,side,side,new THREE.MeshLambertMaterial({map:t,emissive:0x2a1a00}),side];
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.8),mat); m.position.set(x,y,z); if(rx) m.rotation.x=rx; g.add(m); return m; }
+// a poster screen: a live canvas texture on an unlit plane
+const screens=[];
+function posterScreen(g,w,h,x,y,z,rz,kind,idx){ const pw=kind==='wide'?Math.round(w*6):Math.round(w*5), ph=kind==='wide'?Math.round(h*6):Math.round(h*5);
+  const t=texCanvas(pw,ph,()=>{}); const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t})); m.position.set(x,y,z); if(rz) m.rotation.z=rz; g.add(m);
+  screens.push({t,kind,idx}); return m; }
+function paintScreen(s,k){ const c=s.t.userData.c, w=s.t.userData.cv.width, h=s.t.userData.cv.height, b=BOUNTIES[(s.idx+k)%BOUNTIES.length], p=PEOPLE[b.p];
+  c.fillStyle='#1a1008'; c.fillRect(0,0,w,h); c.fillStyle='#8f6420'; c.fillRect(0,0,w,1); c.fillRect(0,h-1,w,1); c.fillRect(0,0,1,h); c.fillRect(w-1,0,1,h);
+  c.textBaseline='top'; c.textAlign='center';
+  if(s.kind==='wide'){ const fs=Math.max(2,Math.floor(h/16)); c.fillStyle='#3b2412'; c.fillRect(3,(h-8*fs)/2-1,8*fs+2,8*fs+2); face(c,4,(h-8*fs)/2,fs,p);
+    const tx=8*fs+8+(w-8*fs-8)/2; c.fillStyle='#f2b544'; c.font='8px Silkscreen'; c.fillText('WANTED',tx,3); c.fillStyle='#ecd9ab'; c.font='6px Silkscreen'; c.fillText(p.name.slice(0,12),tx,14); c.fillStyle='#f2b544'; c.font='8px Silkscreen'; c.fillText(reward(b),tx,23); c.fillStyle='#a88d64'; c.font='6px Silkscreen'; c.fillText(left(b.end-Date.now()),tx,h-9);
+  } else if(s.kind==='ticker'){ c.fillStyle='#0c0804'; c.fillRect(1,1,w-2,h-2); c.fillStyle='#f2b544'; c.font='8px Silkscreen'; c.textAlign='left'; const txt=BOUNTIES.map(bb=>PEOPLE[bb.p].name.toUpperCase()+' '+reward(bb)+' · ').join(''); const off=(Date.now()/40)%(c.measureText(txt).width); c.fillText(txt+txt,2-off,Math.max(0,(h-8)/2)); }
+  else { c.fillStyle='#f2b544'; c.font='7px Silkscreen'; c.fillText('WANTED',w/2,2); const fs=Math.max(2,Math.floor(w/20)); c.fillStyle='#3b2412'; c.fillRect(w/2-4*fs-1,11,8*fs+2,8*fs+2); face(c,w/2-4*fs,12,fs,p);
+    c.fillStyle='#ecd9ab'; c.font='5px Silkscreen'; c.fillText(p.name.slice(0,11),w/2,14+8*fs); c.fillStyle='#f2b544'; c.font='7px Silkscreen'; c.fillText(reward(b),w/2,21+8*fs);
+    c.fillStyle='#a88d64'; c.font='5px Silkscreen'; c.fillText(left(b.end-Date.now()),w/2,h-8); if(bonusLive(b)){ c.fillStyle='#d0452e'; c.fillRect(w-16,1,15,6); c.fillStyle='#ffe0c0'; c.font='4px Silkscreen'; c.fillText('BONUS',w-8.5,2); } }
+  s.t.needsUpdate=true; }
+
+function lantern(g,x,y,z){ cy(g,.25,.25,4,'iron',x,y+3.5,z); cy(g,1.3,1.8,.8,'iron',x,y+1.5,z,null,8); const gl=cy(g,1.3,1.3,2.6,'glass',x,y-.2,z,null,8); cy(g,1.8,1.8,.6,'iron',x,y-1.8,z,null,8);
+  for(let i=0;i<4;i++){ const a=i*Math.PI/2+Math.PI/4; bx(g,.25,2.8,.25,'iron',x+Math.cos(a)*1.4,y-.2,z+Math.sin(a)*1.4); } const L=new THREE.PointLight(0xffb050,.9,40); L.position.set(x,y,z); g.add(L); return {gl,L}; }
+
+function buildA(g){ // Frontier Notice Board, 2 x 2
+  bx(g,48,1,28,'grass',0,-.5,4);
+  for(const sx of [-1,1]){ bx(g,3,34,3,'post',sx*14.5,17,0); tor(g,2.15,.4,'rope',sx*14.5,12,0,'y'); tor(g,2.15,.4,'rope',sx*14.5,13,0,'y');
+    bx(g,1.6,7,1.6,'post',sx*11.3,26.6,0,[0,0,sx*0.75]); // knee braces
+    const scrap=bx(g,2.4,3.4,.1,'paper',sx*14.5,22+sx,1.56,[0,0,sx*.12]); bx(g,.4,.4,.3,'iron',sx*14.5,23.5+sx,1.65); }
+  bx(g,32,3,3,'beam',0,31.5,0);
+  for(const s of [1,-1]){ bx(g,38,1.2,9,'shingle',0,36,s*3.8,[s*.5,0,0]); } cy(g,.8,.8,38,'beam',0,38.3,0,'x');
+  const xs=[-10.8,-6.5,-2.2,2.2,6.5,10.8]; xs.forEach((x,i)=>bx(g,4.2,27.5+((i*7)%3)*.5,2,'plank'+(i%3),x,16,-1));
+  bx(g,26,2,1,'beam',0,8,-2.5); bx(g,26,2,1,'beam',0,25,-2.5);
+  plaque(g,'WANTED',17,4.4,0,26.6,.5);
+  for(const sx of [-1,1]) for(const nail of [-1,1]) cy(g,.35,.35,.6,'iron',sx*7.6+nail*.1,28.2,.95,'z',6);
+  [[-6.3,19,-.04],[6.3,19.2,.05],[-6.3,9.2,.03],[6.3,9,-.05]].forEach((q,i)=>{ const grp=new THREE.Group(); grp.position.set(q[0],q[1],0.4); grp.rotation.z=q[2]; g.add(grp);
+    bx(grp,11.6,.9,1.2,'brass',0,4.1,0); bx(grp,11.6,.9,1.2,'brass',0,-4.1,0); bx(grp,.9,9.1,1.2,'brass',-5.35,0,0); bx(grp,.9,9.1,1.2,'brass',5.35,0,0);
+    bx(grp,10,7.4,.4,'dark',0,0,-.35); posterScreen(grp,9.8,7.3,0,0,-.1,0,'small',i); cy(grp,.4,.4,.8,'iron',0,4.6,.7,'z',6); });
+  bx(g,28,1.4,5,'beam',0,2.4,2); [['BOARD',-8.5],['PLACE',0],['HUNTS',8.5]].forEach(k=>plaque(g,k[0],7.6,2.6,k[1],3.9,4.2));
+  bx(g,.6,.6,6,'iron',15.2,32.6,3); const ln=lantern(g,15.2,27.5,5.6); return t=>{ const f=.85+Math.sin(t*9)*.06+Math.sin(t*23)*.04; ln.L.intensity=night?1.6*f:.6*f; ln.gl.material.opacity=.6+f*.2; }; }
+
+function buildB(g){ // Sheriff's Kiosk, 3 x 2
+  bx(g,64,1,34,'grass',0,-.5,4); bx(g,46,1.5,14,'deck',0,.75,0);
+  bx(g,16,30,2.5,'plank1',0,16.5,-1); for(const sx of [-1,1]){ bx(g,2,32,3,'post',sx*8.5,17,-.5); bx(g,14,21,2,'plank'+(sx>0?2:0),sx*16,12,-1.2); bx(g,2,23,3,'post',sx*23,12.5,-.5); }
+  // big screen and frame
+  bx(g,15.6,1.2,1.4,'beam',0,25.4,.6); bx(g,15.6,1.2,1.4,'beam',0,13,.6); bx(g,1.2,13.6,1.4,'beam',-7.2,19.2,.6); bx(g,1.2,13.6,1.4,'beam',7.2,19.2,.6);
+  bx(g,13.2,11.2,.3,'dark',0,19.2,.2); posterScreen(g,13,11,0,19.2,.45,0,'wide',0);
+  // the star on its disc
+  cy(g,3.4,3.4,.8,'beam',0,29,.8,'z',24); const sh=new THREE.Shape(); for(let i=0;i<12;i++){ const r=i%2?1.25:2.8, a=i/12*Math.PI*2+Math.PI/2; const px=Math.cos(a)*r, py=Math.sin(a)*r; i?sh.lineTo(px,py):sh.moveTo(px,py); }
+  const star=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:.5,bevelEnabled:false}),new THREE.MeshLambertMaterial({color:0xd8b04a,emissive:0x221800})); star.position.set(0,29,1.2); g.add(star);
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2+Math.PI/2; const s=new THREE.Mesh(new THREE.SphereGeometry(.35,8,6),MAT('brass')); s.position.set(Math.cos(a)*2.9,29+Math.sin(a)*2.9,1.5); g.add(s); }
+  // wing screens
+  for(const sx of [-1,1]) [16.5,8.5].forEach((yy,j)=>{ bx(g,11,7.6,1,'brass',sx*16,yy,.2); bx(g,10,6.6,.3,'dark',0,0,0).position.set(sx*16,yy,.5); posterScreen(g,9.6,6.4,sx*16,yy,.75,0,'wide',1+j+(sx>0?2:0)); });
+  // roofs: tin over the middle, awnings over the wings
+  function tinRoof(w,d,x,y,z,tilt){ const grp=new THREE.Group(); grp.position.set(x,y,z); grp.rotation.x=tilt; g.add(grp); bx(grp,w,.4,d,'tin',0,0,0); for(let xx=-w/2+1;xx<=w/2-1;xx+=2) cy(grp,.45,.45,d,'tin',xx,.35,0,'z',6); bx(grp,w,.6,.6,'beam',0,-.3,d/2); }
+  tinRoof(20,11,0,32.2,1.5,.28); for(const sx of [-1,1]){ tinRoof(15,8,sx*16,23.4,2,.35); bx(g,.6,4,.6,'iron',sx*22,21.4,4.6); bx(g,.6,4,.6,'iron',sx*10,21.4,4.6); }
+  // desk with keys and the coin slot
+  const desk=new THREE.Group(); desk.position.set(0,9.6,3.4); desk.rotation.x=.55; g.add(desk); bx(desk,15,1,5.5,'beam',0,0,0);
+  [['BOARD',-4.9],['PLACE',0],['HUNTS',4.9]].forEach(k=>{ const p=plaque(desk,k[0],4.6,2.2,k[1],.7,.6); p.rotation.x=-Math.PI/2+.0; });
+  bx(g,6,1.6,.5,'brass',0,6.2,1.0); bx(g,4.4,.5,.6,'dark',0,6.2,1.05);
+  bx(g,2,8,2,'post',-15,4,10); bx(g,2,8,2,'post',15,4,10); cy(g,.9,.9,32,'beam',0,7.6,10,'x',10);
+  cy(g,3,3,7,'plank2',-20,4.5,9,null,14); tor(g,3.05,.3,'iron',-20,2.2,9,'y'); tor(g,3.05,.3,'iron',-20,6.8,9,'y'); cy(g,2.7,2.7,.2,new THREE.MeshLambertMaterial({color:0x2a5a7a}),-20,7.9,9,null,14);
+  return t=>{ star.material.emissive.setHex(Math.sin(t*1.7)>.97?0x886600:0x221800); }; }
+
+function buildC(g){ // Wanted Door, 2 x 3
+  bx(g,48,1,30,'grass',0,-.5,4);
+  [-12.5,-7.5,-2.5,2.5,7.5,12.5].forEach((x,i)=>bx(g,4.9,46,2,'plank'+(i%3),x,24,-1)); bx(g,32,2.4,1,'beam',0,44.6,.4); bx(g,32,2.4,1,'beam',0,3.6,.4);
+  const zb=bx(g,2.2,46,1,'beam',0,24,-2.5,[0,0,.58]); bx(g,30,2.2,1,'beam',0,44,-2.5); bx(g,30,2.2,1,'beam',0,4,-2.5);
+  for(const sx of [-1,1]) bx(g,4,2.4,9,'post',sx*12.5,1.2,0);
+  bx(g,34,2.6,4,'beam',0,47.4,.2); for(const sx of [-1,1]){ const s=new THREE.Mesh(new THREE.SphereGeometry(1.1,10,8),MAT('brass')); s.position.set(sx*15.5,49.4,.2); g.add(s); }
+  for(const yy of [41,7]){ bx(g,9,1.4,.4,'iron',-11.2,yy,1.1); cy(g,.8,.8,2.2,'iron',-15.6,yy,1.1,null,8); }
+  // clock
+  cy(g,5,5,1.2,'beam',0,39.5,1,'z',28); tor(g,4.6,.4,'brass',0,39.5,1.65); cy(g,4.2,4.2,.3,'cream',0,39.5,1.65,'z',28);
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; bx(g,.35,i%3?.8:1.3,.2,'dark',Math.sin(a)*3.4,39.5+Math.cos(a)*3.4,1.85,[0,0,-a]); }
+  const hh=new THREE.Group(); hh.position.set(0,39.5,1.95); g.add(hh); const hourH=bx(hh,.6,2.2,.2,'dark',0,1.1,0); const minH=new THREE.Group(); hh.add(minH); bx(minH,.4,3.2,.2,'red',0,1.6,.1);
+  // three crooked landscape posters with curled corners
+  [[29.5,-.05],[20.5,.04],[11.5,-.03]].forEach((q,i)=>{ const grp=new THREE.Group(); grp.position.set(-2,q[0],.3); grp.rotation.z=q[1]; g.add(grp);
+    bx(grp,19,8.4,.6,'paper',0,0,0); bx(grp,17.6,7.2,.2,'dark',0,0,.3); posterScreen(grp,17.4,7,0,0,.45,0,'wide',i);
+    const curl=bx(grp,2.2,2.2,.3,'paper',8.6,3.3,.6,[0,.5,Math.PI/4]); cy(grp,.35,.35,.8,'iron',-8.6,3.6,.6,'z',6); });
+  // revolver cylinder dial
+  const cylG=new THREE.Group(); cylG.position.set(12.4,21,1); g.add(cylG); cy(cylG,3,3,1.8,'iron',0,0,0,'z',18);
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; cy(cylG,.7,.7,.4,'dark',Math.cos(a)*1.9,Math.sin(a)*1.9,.8,'z',10); } cy(cylG,.5,.5,.6,'brass',0,0,.9,'z',8);
+  plaque(g,'PAGE',5,1.8,12.4,16.4,.6);
+  // ticker, ledge and keys
+  bx(g,28.4,2.6,.8,'iron',0,6.3,.5); posterScreen(g,27.6,2,0,6.3,.95,0,'ticker',0);
+  bx(g,30,1.2,4,'beam',0,2.1,2); [['BOARD',-9],['PLACE',0],['HUNTS',9]].forEach(k=>plaque(g,k[0],7.6,2.5,k[1],3.6,3.8));
+  // props: knife and rope on a peg
+  bx(g,.5,5,.15,'blade',-13.2,27,1.2,[0,0,.5]); bx(g,.9,2.6,.9,'leather',-14.6,29.4,1.2,[0,0,.5]); bx(g,1.2,.4,1,'brass',-14,28.3,1.2,[0,0,.5]);
+  cy(g,.4,.4,2.4,'post',-13.6,16,1.4,'z',8); for(let i=0;i<3;i++) tor(g,1.7,.4,'rope',-13.6+i*.15,14.2-i*.3,2+i*.35);
+  const soonest=BOUNTIES.reduce((a,b)=>a.end<b.end?a:b);
+  return t=>{ const ms=soonest.end-Date.now(); minH.rotation.z=-(ms%H)/H*Math.PI*2; hourH.rotation.z=-(ms%(12*H))/(12*H)*Math.PI*2; cylG.rotation.z=Math.floor(t/4)*Math.PI/3; }; }
+
+let night=false, spin=!reduce; const views=[];
+function makeView(id,build,dist,cy_){ const host=el(id); const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); host.appendChild(r.domElement);
+  const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.5,800); const amb=new THREE.AmbientLight(0xffffff,.62), sun=new THREE.DirectionalLight(0xfff2dd,.75); sun.position.set(-30,60,50); scene.add(amb,sun);
+  const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={host,r,scene,cam,amb,sun,tick,ry:.55,rx:.12,dist,cy:cy_,drag:false,t0:Math.random()*10};
+  let lx=0,ly=0; host.addEventListener('pointerdown',e=>{ v.drag=true; lx=e.clientX; ly=e.clientY; host.setPointerCapture(e.pointerId); });
+  host.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry-=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(.9,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+  host.addEventListener('pointerup',()=>{ v.drag=false; }); host.addEventListener('pointercancel',()=>{ v.drag=false; }); views.push(v); }
+function frame(now){ const t=now/1000; for(const v of views){ const w=v.host.clientWidth, h=v.host.clientHeight; if(!w) continue; if(v.r.domElement.width!==Math.round(w*v.r.getPixelRatio())) v.r.setSize(w,h,false); v.cam.aspect=w/h; v.cam.updateProjectionMatrix();
+    if(spin&&!v.drag) v.ry=.55*Math.sin((t+v.t0)*.35);
+    v.cam.position.set(Math.sin(v.ry)*Math.cos(v.rx)*v.dist, v.cy+Math.sin(v.rx)*v.dist, Math.cos(v.ry)*Math.cos(v.rx)*v.dist); v.cam.lookAt(0,v.cy,0);
+    v.amb.intensity=night?.18:.62; v.sun.intensity=night?.12:.75; if(v.tick) v.tick(t); v.r.render(v.scene,v.cam); }
+  requestAnimationFrame(frame); }
+
+function start(){ drawScreens();
+  if(window.THREE){ makeView('viewA',buildA,78,17); makeView('viewB',buildB,96,16); makeView('viewC',buildC,100,25);
+    let k=0; const paint=()=>{ screens.forEach(s=>paintScreen(s,k)); }; paint(); setInterval(()=>{ k++; paint(); },4000); setInterval(()=>screens.forEach(s=>{ if(s.kind==='ticker') paintScreen(s,k); }),80);
+    requestAnimationFrame(frame); }
+  setInterval(drawScreens,1000);
+  el('spinBtn').onclick=e=>{ spin=!spin; e.target.textContent='Turning: '+(spin?'on':'off'); e.target.classList.toggle('on',spin); };
+  el('nightBtn').onclick=e=>{ night=!night; e.target.textContent='Night: '+(night?'on':'off'); e.target.classList.toggle('on',night); };
+  el('hunterBtn').onclick=e=>{ state.hunter=!state.hunter; e.target.textContent='Viewing as: '+(state.hunter?'a hunter who accepted Rattlesnake_Ray':'anyone'); e.target.classList.toggle('on',state.hunter); drawScreens(); };
+}
+(document.fonts&&document.fonts.load ? Promise.all([document.fonts.load('8px Silkscreen'),document.fonts.load('7px "IBM Plex Sans"')]).catch(()=>{}) : Promise.resolve()).then(start);
+})();
+</script>

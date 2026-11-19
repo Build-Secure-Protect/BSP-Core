@@ -239,6 +239,9 @@ public final class ModItems {
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.BANK_ATM.get()));
     public static final RegistryObject<Item> TRADE_POST = ITEMS.register("trade_post",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.TRADE_POST.get()));
+    /** Players craft it (2 dark oak logs, 3 dark oak slabs, 2 glass panes, a Basic Control Circuit and a gold ingot) and place it in their bases. */
+    public static final RegistryObject<Item> BOUNTY_BOARD = ITEMS.register("bounty_board",
+            () -> new net.minecraft.world.item.BlockItem(ModBlocks.BOUNTY_BOARD.get(), new Item.Properties()));
     public static final RegistryObject<Item> SAFETY_DEPOSIT_BOX = ITEMS.register("safety_deposit_box",
             () -> new com.mrgregles.bsp_core.admin.AdminBlockItem(ModBlocks.SAFETY_DEPOSIT_BOX.get()));
     public static final RegistryObject<Item> VENDOR_POST = ITEMS.register("vendor_post",

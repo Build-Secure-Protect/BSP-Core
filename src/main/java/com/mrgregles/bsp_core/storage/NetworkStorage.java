@@ -76,6 +76,7 @@ public final class NetworkStorage {
     @Nullable
     private static volatile com.mrgregles.bsp_core.market.NetworkMarket market;
     private static volatile com.mrgregles.bsp_core.market.NetworkOrders orders;
+    private static volatile com.mrgregles.bsp_core.bounty.NetworkBounties bounties;
 
     /** A steal running on another server of the network: where, whose totem, who is stealing, and when it started and is expected to end (wall-clock ms). */
     /**
@@ -392,6 +393,12 @@ public final class NetworkStorage {
                         o.refresh(srv);
                     }
                 }
+                case "bounty" -> {
+                    var b = bounties();
+                    if (b != null) {
+                        b.refresh(srv);
+                    }
+                }
                 case "shop" -> {
                     if (payload.startsWith("-")) {
                         com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
@@ -514,6 +521,7 @@ public final class NetworkStorage {
                 com.mrgregles.bsp_core.credit.CreditSync.load(server, migrated);
                 s.marketEnsurePot();
                 orders = newOrders(s); // before the market: down() turns false with the market, and an order then must find its store
+                bounties = newBounties(s); // the same
                 market = newMarket(s);
                 MinecraftServer forTrades = server;
                 RedisLink linked = redis;
@@ -528,6 +536,10 @@ public final class NetworkStorage {
                     var o = orders;
                     if (o != null && server != null) {
                         o.refresh(server);
+                    }
+                    var b = bounties;
+                    if (b != null && server != null) {
+                        b.refresh(server);
                     }
                 });
                 s.clearSteals();
@@ -549,6 +561,7 @@ public final class NetworkStorage {
                 }
                 market = null;
                 orders = null;
+                bounties = null;
                 retryAtMs = System.currentTimeMillis() + RETRY_MS;
                 BSPCore.LOGGER.error("BSP-Core storage: storage.mode is \"mysql\" but the database could not be used ({}). Trying again in {} s; until it connects, "
                         + "the bank, the market, first-join totems and kits wait (nothing the network keeps is decided on this server's local copy).", e.toString(), RETRY_MS / 1000);
@@ -655,6 +668,7 @@ public final class NetworkStorage {
         playersElsewhere = List.of();
         market = null;
         orders = null;
+        bounties = null;
         com.mrgregles.bsp_core.trade.Trades.hub().disconnect();
         server = null;
     }
@@ -2230,6 +2244,101 @@ public final class NetworkStorage {
     @Nullable
     public static com.mrgregles.bsp_core.market.NetworkOrders orders() {
         return store != null ? orders : null;
+    }
+
+    /** The network's bounties, or null while network storage is off. */
+    @Nullable
+    public static com.mrgregles.bsp_core.bounty.NetworkBounties bounties() {
+        return store != null ? bounties : null;
+    }
+
+    /** Bank accounts whose name contains {@code q} (lower case), at most {@code limit}; empty when the database cannot be read. On the server thread. */
+    public static void bankNames(String q, int limit, Consumer<List<Map.Entry<UUID, String>>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(List.of());
+            return;
+        }
+        worker().execute(() -> {
+            List<Map.Entry<UUID, String>> rows = List.of();
+            try {
+                rows = s.bankNames(q, limit);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not list players: {}", e.toString());
+            }
+            List<Map.Entry<UUID, String>> r = rows;
+            onServer(() -> then.accept(r));
+        });
+    }
+
+    private static com.mrgregles.bsp_core.bounty.NetworkBounties newBounties(MySqlStore s) {
+        String sid = BSPConfig.getOr(BSPConfig.STORAGE_SERVER_ID, "server");
+        com.mrgregles.bsp_core.bounty.BountyDb db = new com.mrgregles.bsp_core.bounty.BountyDb() {
+            @Override
+            public Done place(com.mrgregles.bsp_core.bounty.Bounty bounty, int maxOpen) throws Exception {
+                return s.bountyPlace(bounty, maxOpen, sid);
+            }
+
+            @Override
+            public boolean placed(String id) throws Exception {
+                return s.bountyPlaced(id);
+            }
+
+            @Override
+            public List<com.mrgregles.bsp_core.bounty.Bounty> open() throws Exception {
+                return s.bountyOpen();
+            }
+
+            @Override
+            public List<com.mrgregles.bsp_core.bounty.BountyStore.Closed> closed(int limit) throws Exception {
+                return s.bountyClosed(limit);
+            }
+
+            @Override
+            public Done accept(String id, com.mrgregles.bsp_core.bounty.Bounty.Hunter hunter, int maxPerHunter, long now) throws Exception {
+                return s.bountyAccept(id, hunter, maxPerHunter, now);
+            }
+
+            @Override
+            public Done abandon(String id, UUID hunter) throws Exception {
+                return s.bountyAbandon(id, hunter);
+            }
+
+            @Override
+            public Done end(String id, com.mrgregles.bsp_core.bounty.BountyStore.Ending ending, String by, long now) throws Exception {
+                return s.bountyEnd(id, ending, by, now, sid);
+            }
+
+            @Override
+            public Done claim(String id, UUID hunter, String hunterName, long killMs, long now) throws Exception {
+                return s.bountyClaim(id, hunter, hunterName, killMs, now, sid);
+            }
+
+            @Override
+            public Done extend(String id, long endsMs) throws Exception {
+                return s.bountyChange(id, b -> b.withEnds(endsMs));
+            }
+
+            @Override
+            public Done setNotes(String id, String notes) throws Exception {
+                return s.bountyChange(id, b -> b.withNotes(notes));
+            }
+
+            @Override
+            public void sweep(long beforeMs) throws Exception {
+                s.bountySweep(beforeMs);
+            }
+        };
+        // a payout or refund in coins puts them in a Collect box in the database: this server's copy is read again, the others told
+        Consumer<UUID> boxChanged = id -> {
+            var m = market();
+            if (m != null) {
+                m.refreshBox(id);
+            }
+            publish("mbox", id.toString());
+        };
+        return new com.mrgregles.bsp_core.bounty.NetworkBounties(db, r -> worker().execute(r), NetworkStorage::onServer, () -> publish("bounty", ""),
+                com.mrgregles.bsp_core.bounty.BountyLedger::get, boxChanged);
     }
 
     /** Tells the other servers a bank account changed in the database (their cached copy re-reads it). */

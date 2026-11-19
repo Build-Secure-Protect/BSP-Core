@@ -298,6 +298,14 @@ final class MySqlStore implements AutoCloseable {
             // buy orders: the order's data (its item, how many wanted and sent, the price each) as SNBT; it changes as it fills
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("market_orders") + " (id VARCHAR(16) NOT NULL PRIMARY KEY, buyer CHAR(36) NOT NULL, placed_ms BIGINT NOT NULL, "
                     + "ends_ms BIGINT NOT NULL, server_id VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, INDEX (buyer), INDEX (placed_ms))");
+            // bounties: the open ones (the bounty's data as SNBT, hunters included; it changes as hunters come and go), each hunter's
+            // accepted bounties for the per-hunter limit, and the closed ones for the history (kept 90 days)
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bounties") + " (id VARCHAR(16) NOT NULL PRIMARY KEY, target CHAR(36) NOT NULL, placer CHAR(36) NOT NULL, "
+                    + "placed_ms BIGINT NOT NULL, ends_ms BIGINT NOT NULL, server_id VARCHAR(64) NOT NULL, data MEDIUMTEXT NOT NULL, INDEX (target), INDEX (placer), INDEX (placed_ms))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bounty_hunters") + " (bounty_id VARCHAR(16) NOT NULL, hunter CHAR(36) NOT NULL, PRIMARY KEY (bounty_id, hunter), INDEX (hunter))");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bounty_closed") + " (bounty_id VARCHAR(16) NOT NULL PRIMARY KEY, ending VARCHAR(24) NOT NULL, closed_ms BIGINT NOT NULL, "
+                    + "hunter CHAR(36) NULL, hunter_name VARCHAR(16) NOT NULL DEFAULT '', by_name VARCHAR(64) NOT NULL DEFAULT '', bonus_paid TINYINT NOT NULL DEFAULT 0, "
+                    + "data MEDIUMTEXT NOT NULL, INDEX (closed_ms))");
             // the Totem Compass: when each player may next start tracking rivals (real clock, ms), whichever server they used
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("compass_waits") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, until_ms BIGINT NOT NULL)");
             // new-player protection from totem radiation: the highest RankUp rung and the most playtime minutes seen per player
@@ -4149,5 +4157,338 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(2, serial);
             ps.executeUpdate();
         }
+    }
+
+    // ------------------------------------------------------------------ bounties (one transaction per call)
+
+    private static com.mrgregles.bsp_core.bounty.Bounty bountyOf(String data) throws SQLException {
+        try {
+            return com.mrgregles.bsp_core.bounty.Bounty.load(net.minecraft.nbt.TagParser.parseTag(data));
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            throw new SQLException("unreadable bounty: " + e.getMessage());
+        }
+    }
+
+    /** The open bounty, locked for this transaction; null when it is not open. */
+    @Nullable
+    private com.mrgregles.bsp_core.bounty.Bounty lockBounty(Connection c, String id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT data FROM " + t("bounties") + " WHERE id = ? FOR UPDATE")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? bountyOf(rs.getString(1)) : null;
+            }
+        }
+    }
+
+    private void updateBounty(Connection c, com.mrgregles.bsp_core.bounty.Bounty b) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bounties") + " SET ends_ms = ?, data = ? WHERE id = ?")) {
+            ps.setLong(1, b.endsMs);
+            ps.setString(2, b.save().toString());
+            ps.setString(3, b.id);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Takes the bounty off the board with its hunters and writes it into the history. */
+    private void closeBounty(Connection c, com.mrgregles.bsp_core.bounty.Bounty b, com.mrgregles.bsp_core.bounty.BountyStore.Ending ending, long now,
+                             @Nullable UUID hunter, String hunterName, String by, boolean bonus) throws SQLException {
+        for (String table : List.of("bounties", "bounty_hunters")) {
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t(table) + " WHERE " + (table.equals("bounties") ? "id" : "bounty_id") + " = ?")) {
+                ps.setString(1, b.id);
+                ps.executeUpdate();
+            }
+        }
+        try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("bounty_closed") + " (bounty_id, ending, closed_ms, hunter, hunter_name, by_name, bonus_paid, data) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, b.id);
+            ps.setString(2, ending.name());
+            ps.setLong(3, now);
+            ps.setString(4, hunter == null ? null : hunter.toString());
+            ps.setString(5, hunterName.length() > 16 ? hunterName.substring(0, 16) : hunterName);
+            ps.setString(6, by.length() > 64 ? by.substring(0, 64) : by);
+            ps.setInt(7, bonus ? 1 : 0);
+            ps.setString(8, b.save().toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Pieces into or out of an account with its log row, recorded in {@code moved}; false (nothing changed) when the account lacks it or is missing. */
+    private boolean bountyMove(Connection c, UUID id, long delta, String with, String detail, String serverId, BankTransaction.Type type,
+                               List<com.mrgregles.bsp_core.bounty.BountyDb.Moved> moved) throws SQLException {
+        if (delta == 0) {
+            return true;
+        }
+        if (!addPieces(c, id, delta)) {
+            return false;
+        }
+        BankTransaction row = new BankTransaction(System.currentTimeMillis(), type, with, detail, delta, -1, 0, serverId);
+        bankLog(c, id, row);
+        moved.add(new com.mrgregles.bsp_core.bounty.BountyDb.Moved(id, piecesOf(c, id), row));
+        return true;
+    }
+
+    /** {@code n} of the bounty's kind to {@code to}: pieces to the bank, coins (from {@code skip} coins in, with their stamps) to the Collect box. */
+    private void bountyGive(Connection c, com.mrgregles.bsp_core.bounty.Bounty b, UUID to, long skip, long n, String detail, String serverId,
+                            List<com.mrgregles.bsp_core.bounty.BountyDb.Moved> moved, List<UUID> boxes) throws SQLException {
+        if (n <= 0 || to.equals(com.mrgregles.bsp_core.bounty.Bounties.SERVER)) {
+            return;
+        }
+        if (b.coins()) {
+            if (b.tier() != null) {
+                insertCollect(c, to, b.coinPart(skip, n));
+                boxes.add(to);
+            }
+            return;
+        }
+        if (!bountyMove(c, to, n, b.placer.equals(to) ? b.targetName : b.placerName, detail, serverId, BankTransaction.Type.BOUNTY, moved)) {
+            com.mrgregles.bsp_core.BSPCore.LOGGER.warn("BSP-Core bounty {}: {} has no bank account on the network: {} pieces not paid", b.id, to, n);
+        }
+    }
+
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyPlace(com.mrgregles.bsp_core.bounty.Bounty b, int maxOpen, String serverId) throws SQLException {
+        return marketTx(c -> {
+            List<com.mrgregles.bsp_core.bounty.BountyDb.Moved> moved = new ArrayList<>();
+            if (!b.placer.equals(com.mrgregles.bsp_core.bounty.Bounties.SERVER)) {
+                // the placer's row first: their placings on every server queue here, so the count below sees all of them
+                lockAccounts(c, b.placer);
+                try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + t("bounties") + " WHERE placer = ?")) {
+                    ps.setString(1, b.placer.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) >= maxOpen) {
+                            throw new MarketNo("too_many");
+                        }
+                    }
+                }
+                if (!b.coins() && !bountyMove(c, b.placer, -(b.held() + b.fee), b.targetName, "bounty on " + b.targetName + ": " + b.describe(b.amount)
+                        + (b.bonus > 0 ? ", bonus " + com.mrgregles.bsp_core.bank.Bank.format(b.bonus) : "") + ", fee " + com.mrgregles.bsp_core.bank.Bank.format(b.fee),
+                        serverId, BankTransaction.Type.BOUNTY, moved)) {
+                    throw new MarketNo("short");
+                }
+            }
+            if (b.fee > 0) {
+                toPot(c, b.fee);
+                BankTransaction row = new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.TAX, b.placerName, "bounty fee, bounty " + b.id, b.fee, -1, 0, serverId);
+                bankLog(c, com.mrgregles.bsp_core.market.Market.POT, row);
+                moved.add(new com.mrgregles.bsp_core.bounty.BountyDb.Moved(com.mrgregles.bsp_core.market.Market.POT, piecesOf(c, com.mrgregles.bsp_core.market.Market.POT), row));
+            }
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("bounties") + " (id, target, placer, placed_ms, ends_ms, server_id, data) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                ps.setString(1, b.id);
+                ps.setString(2, b.target.toString());
+                ps.setString(3, b.placer.toString());
+                ps.setLong(4, b.placedMs);
+                ps.setLong(5, b.endsMs);
+                ps.setString(6, b.server.length() > 64 ? b.server.substring(0, 64) : b.server);
+                ps.setString(7, b.save().toString());
+                ps.executeUpdate();
+            }
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", b, false, moved, List.of());
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
+    boolean bountyPlaced(String id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT 1 FROM " + t("bounties") + " WHERE id = ? UNION SELECT 1 FROM " + t("bounty_closed") + " WHERE bounty_id = ?")) {
+            ps.setString(1, id);
+            ps.setString(2, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    List<com.mrgregles.bsp_core.bounty.Bounty> bountyOpen() throws SQLException {
+        List<com.mrgregles.bsp_core.bounty.Bounty> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT data FROM " + t("bounties") + " ORDER BY placed_ms DESC")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.add(bountyOf(rs.getString(1)));
+                    } catch (SQLException e) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core bounty: an unreadable bounty was skipped: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    List<com.mrgregles.bsp_core.bounty.BountyStore.Closed> bountyClosed(int limit) throws SQLException {
+        List<com.mrgregles.bsp_core.bounty.BountyStore.Closed> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT ending, closed_ms, hunter, hunter_name, by_name, bonus_paid, data FROM " + t("bounty_closed")
+                + " ORDER BY closed_ms DESC LIMIT ?")) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.mrgregles.bsp_core.bounty.BountyStore.Ending ending;
+                    try {
+                        ending = com.mrgregles.bsp_core.bounty.BountyStore.Ending.valueOf(rs.getString(1));
+                    } catch (IllegalArgumentException e) {
+                        ending = com.mrgregles.bsp_core.bounty.BountyStore.Ending.REMOVED;
+                    }
+                    String hunter = rs.getString(3);
+                    try {
+                        out.add(new com.mrgregles.bsp_core.bounty.BountyStore.Closed(bountyOf(rs.getString(7)), ending, rs.getLong(2),
+                                hunter == null ? null : UUID.fromString(hunter), rs.getString(4), rs.getString(5), rs.getInt(6) != 0));
+                    } catch (SQLException | IllegalArgumentException e) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.error("BSP-Core bounty: an unreadable closed bounty was skipped: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyAccept(String id, com.mrgregles.bsp_core.bounty.Bounty.Hunter hunter, int max, long now) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.bounty.Bounty b = lockBounty(c, id);
+            if (b == null || b.endedBy(now)) {
+                throw new MarketNo("gone");
+            }
+            if (b.hasHunter(hunter.id())) {
+                return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("already", b);
+            }
+            // the hunter's row: their accepts on every server queue here, so the count below sees all of them
+            lockAccounts(c, hunter.id());
+            try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + t("bounty_hunters") + " WHERE hunter = ?")) {
+                ps.setString(1, hunter.id().toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) >= max) {
+                        return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("too_many", b);
+                    }
+                }
+            }
+            com.mrgregles.bsp_core.bounty.Bounty after = b.withHunter(hunter);
+            updateBounty(c, after);
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("bounty_hunters") + " (bounty_id, hunter) VALUES (?, ?)")) {
+                ps.setString(1, id);
+                ps.setString(2, hunter.id().toString());
+                ps.executeUpdate();
+            }
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", after, false, List.of(), List.of());
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyAbandon(String id, UUID hunter) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.bounty.Bounty b = lockBounty(c, id);
+            if (b == null) {
+                throw new MarketNo("gone");
+            }
+            if (!b.hasHunter(hunter)) {
+                return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("not_hunter", b);
+            }
+            com.mrgregles.bsp_core.bounty.Bounty after = b.withoutHunter(hunter);
+            updateBounty(c, after);
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("bounty_hunters") + " WHERE bounty_id = ? AND hunter = ?")) {
+                ps.setString(1, id);
+                ps.setString(2, hunter.toString());
+                ps.executeUpdate();
+            }
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", after, false, List.of(), List.of());
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyEnd(String id, com.mrgregles.bsp_core.bounty.BountyStore.Ending ending, String by, long now, String serverId) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.bounty.Bounty b = lockBounty(c, id);
+            if (b == null) {
+                throw new MarketNo("gone");
+            }
+            // checked here against the locked row, not a server's copy: a cancel never takes a bounty a hunter holds, an expiry never one with time left
+            if (ending == com.mrgregles.bsp_core.bounty.BountyStore.Ending.CANCELLED && !b.hunters().isEmpty()) {
+                return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("accepted", b);
+            }
+            if (ending == com.mrgregles.bsp_core.bounty.BountyStore.Ending.EXPIRED && !b.endedBy(now)) {
+                return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("not_ended", b);
+            }
+            List<com.mrgregles.bsp_core.bounty.BountyDb.Moved> moved = new ArrayList<>();
+            List<UUID> boxes = new ArrayList<>();
+            boolean server = b.placer.equals(com.mrgregles.bsp_core.bounty.Bounties.SERVER);
+            if (!server) {
+                lockAccounts(c, b.placer, com.mrgregles.bsp_core.market.Market.POT);
+            }
+            String why = switch (ending) {
+                case CANCELLED -> "cancelled";
+                case EXPIRED -> "ran out";
+                case TARGET_STAFF -> "ended: the target is staff";
+                default -> "removed by staff";
+            };
+            if (ending != com.mrgregles.bsp_core.bounty.BountyStore.Ending.REMOVED_NO_REFUND) {
+                bountyGive(c, b, b.placer, 0, b.held(), "bounty on " + b.targetName + " " + why, serverId, moved, boxes);
+            }
+            if (ending == com.mrgregles.bsp_core.bounty.BountyStore.Ending.TARGET_STAFF && b.fee > 0 && !server) {
+                // the fee comes out of the lottery pot again, as far as the pot holds it, and back to the placer
+                long back = Math.min(Math.max(0, piecesOf(c, com.mrgregles.bsp_core.market.Market.POT)), b.fee); // only what the pot still holds
+                if (back > 0 && bountyMove(c, com.mrgregles.bsp_core.market.Market.POT, -back, b.placerName, "bounty fee returned, bounty " + b.id, serverId,
+                        BankTransaction.Type.BOUNTY, moved)) {
+                    bountyMove(c, b.placer, back, b.targetName, "bounty fee returned: " + b.targetName + " is staff", serverId, BankTransaction.Type.BOUNTY, moved);
+                }
+            }
+            closeBounty(c, b, ending, now, null, "", by, false);
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", b, false, moved, boxes);
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyClaim(String id, UUID hunter, String hunterName, long killMs, long now, String serverId) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.bounty.Bounty b = lockBounty(c, id);
+            if (b == null) {
+                throw new MarketNo("gone");
+            }
+            if (!b.hasHunter(hunter)) {
+                return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("not_hunter", b);
+            }
+            if (b.endedBy(killMs)) {
+                return com.mrgregles.bsp_core.bounty.BountyDb.Done.no("ended", b);
+            }
+            List<com.mrgregles.bsp_core.bounty.BountyDb.Moved> moved = new ArrayList<>();
+            List<UUID> boxes = new ArrayList<>();
+            lockAccounts(c, hunter, b.placer);
+            boolean bonus = b.bonusLive(killMs);
+            bountyGive(c, b, hunter, 0, b.payFor(killMs), "bounty on " + b.targetName + (bonus ? " with the bonus" : ""), serverId, moved, boxes);
+            if (b.bonus > 0 && !bonus) {
+                bountyGive(c, b, b.placer, b.amount, b.bonus, "bounty on " + b.targetName + " bonus not earned", serverId, moved, boxes);
+            }
+            closeBounty(c, b, com.mrgregles.bsp_core.bounty.BountyStore.Ending.CLAIMED, now, hunter, hunterName, hunterName, bonus);
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", b, bonus, moved, boxes);
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyChange(String id, java.util.function.UnaryOperator<com.mrgregles.bsp_core.bounty.Bounty> change) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.bounty.Bounty b = lockBounty(c, id);
+            if (b == null) {
+                throw new MarketNo("gone");
+            }
+            com.mrgregles.bsp_core.bounty.Bounty after = change.apply(b);
+            updateBounty(c, after);
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", after, false, List.of(), List.of());
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
+    void bountySweep(long beforeMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("bounty_closed") + " WHERE closed_ms < ?")) {
+            ps.setLong(1, beforeMs);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Bank accounts whose name contains {@code q} (lower case; empty for any), by name, at most {@code limit}. */
+    List<Map.Entry<UUID, String>> bankNames(String q, int limit) throws SQLException {
+        List<Map.Entry<UUID, String>> out = new ArrayList<>();
+        String like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name FROM " + t("bank_accounts") + " WHERE name <> '' AND LOWER(name) LIKE ? ORDER BY name LIMIT ?")) {
+            ps.setString(1, like);
+            ps.setInt(2, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.add(Map.entry(UUID.fromString(rs.getString(1)), rs.getString(2)));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
+            }
+        }
+        return out;
     }
 }

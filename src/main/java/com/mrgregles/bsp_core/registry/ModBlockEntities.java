@@ -91,6 +91,9 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.trade.TradePostBlockEntity>> TRADE_POST =
             BLOCK_ENTITIES.register("trade_post", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.trade.TradePostBlockEntity::new, ModBlocks.TRADE_POST.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.bounty.BountyBoardBlockEntity>> BOUNTY_BOARD =
+            BLOCK_ENTITIES.register("bounty_board", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.bounty.BountyBoardBlockEntity::new, ModBlocks.BOUNTY_BOARD.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.score.ScoreScreenBlockEntity>> SCORE_SCREEN =
             BLOCK_ENTITIES.register("score_screen", () -> BlockEntityType.Builder

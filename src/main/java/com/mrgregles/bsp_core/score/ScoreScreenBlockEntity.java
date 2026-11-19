@@ -25,8 +25,11 @@ import javax.annotation.Nullable;
 public class ScoreScreenBlockEntity extends BlockEntity {
     public static final int MODE_BOARD = 0, MODE_RULES = 1, MODE_PRIZES = 2, MODE_PAGE = 3, MODE_ROTATE = 4, MODES = 5;
     public static final int LAYOUT_LIST = 0, LAYOUT_PODIUM = 1, LAYOUT_SPOTLIGHT = 2, FONTS = 3, TITLE_MAX = 28;
-    /** How another mod's board is drawn: rows with icon, text and value; tiles with the value large; or a column beside the leaderboard. */
-    public static final int LOOK_LEDGER = 0, LOOK_TILES = 1, LOOK_SIDE = 2, LOOKS = 3;
+    /**
+     * How another mod's board is drawn: rows with icon, text and value; tiles with the value large; a column beside the leaderboard;
+     * or Most Wanted, the board's first line large at the left and the rest listed beside it.
+     */
+    public static final int LOOK_LEDGER = 0, LOOK_TILES = 1, LOOK_SIDE = 2, LOOK_SPOTLIGHT = 3, LOOKS = 4;
     /** Page ids in a rotation, beside a registered board's {@code namespace:path}. */
     public static final String PAGE_SCOREBOARD = "scoreboard", PAGE_RULES = "rules", PAGE_PRIZES = "prizes";
     public static final int ROTATE_MIN = 5, ROTATE_MAX = 120, BOARD_ID_MAX = 128;

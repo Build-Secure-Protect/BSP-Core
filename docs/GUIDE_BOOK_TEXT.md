@@ -1438,6 +1438,64 @@ The **LOTTERY** tab on a Trade Post turns a drum of the names of everyone in, be
 
 The *Portable Banker* shows the pot and your chance on its account page, and Score Screens can show the **Lottery** board.
 
+## The Bounty Board
+
+**Page 1**  `[item shown] bounty_board`
+
+A *Bounty Board* is an old wanted board with four poster screens. Each poster shows a player with a price on their head: their face, the reward, how long it has left and who offered it, the biggest first.
+
+Its keys open **BOARD**, **PLACE** and **HUNTS**.
+
+**Page 2**  `[recipe] bounty_board`
+
+Dark oak, two glass panes, a Basic Control Circuit and a gold ingot. Place it anywhere; it breaks with an axe.
+
+**Page 3: The screen**
+
+The bounties are the same on every server of the network. **WANTED** shows them all, six at a time, with a search and a sort. **MY HUNTS** shows the bounties you accepted, and **MY BOUNTIES** the ones you put up.
+
+Score Screens can show the **Most Wanted** board.
+
+## Placing a Bounty
+
+**Page 1**
+
+On **PLACE A BOUNTY**, pick the player, then the reward: pieces from your bank, or coins of one tier from your inventory. Staff, new players still under protection and you yourself cannot be targets.
+
+Add notes if you like. Only hunters who accept the bounty read them.
+
+**Page 2: Time and bonus**
+
+Pick how long it runs, from an hour to 30 days. A **bonus** is an extra amount paid only if the kill comes within its own, shorter window; after that it comes back to you.
+
+You pay the reward, the bonus and a 5% fee into the lottery pot when you place it.
+
+**Page 3: When it ends**
+
+If nobody claims it, the reward and bonus come back when it ends; coins wait in your **Collect** box. You may cancel while nobody has accepted it. The fee stays paid either way.
+
+The target hears that there is a price on their head. The posters say who offered it.
+
+## Hunting a Bounty
+
+**Page 1**
+
+Open a poster and press **ACCEPT THIS BOUNTY**. Its notes appear, and the kill is yours to make. You can hold five at once and drop one with **ABANDON**.
+
+You cannot hunt yourself, your own bounty, a teammate or an ally.
+
+**Page 2: The kill**
+
+Your own hit counts, and so do your arrows, tridents and other shots. A fall, lava, fire or the void counts too if you hit them in the 5 seconds before and no mob hit them since.
+
+A mob's blow never counts, nor do your tamed wolf, TNT or a machine.
+
+**Page 3: Your reward**
+
+One kill pays every bounty you accepted on that player, with the bonus if it came in time. Other hunters' bounties on them stay up.
+
+Pieces go straight to your bank. Coins wait in your **Collect** box: a Bounty Board offers them to you as soon as you open it, and a Trade Post's COLLECT has them too.
+
 ---
 
 # Radiation

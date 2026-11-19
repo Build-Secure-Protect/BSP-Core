@@ -28,6 +28,7 @@ public final class ClientSetup {
         event.enqueueWork(() -> {
             ClientMarket.register();
             ClientOrders.register();
+            ClientBounties.register();
             ClientLottery.register();
             MenuScreens.register(ModMenus.SHATTER_TOTEM.get(), ShatterTotemScreen::new);
             MenuScreens.register(ModMenus.TRADE_POST.get(), TradePostScreen::new);
@@ -123,6 +124,7 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.SHATTER_TOTEM.get(), ShatterTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_FACTORY.get(), CoinFactoryRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SCORE_SCREEN.get(), ScoreScreenRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.BOUNTY_BOARD.get(), BountyBoardRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_VAULT.get(), CoinVaultRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LEAD_LINED_CHEST.get(), LeadLinedChestRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DECOY_TOTEM.get(), DecoyTotemRenderer::new);

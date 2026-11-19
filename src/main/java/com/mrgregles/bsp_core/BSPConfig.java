@@ -221,6 +221,10 @@ public final class BSPConfig {
 
     public static final ForgeConfigSpec.IntValue MARKET_MAX_STACKS, MARKET_MAX_LOTS, MARKET_MAX_ORDERS, MARKET_DAYS, MARKET_TAX_PERCENT;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MARKET_REFUSED;
+
+    // ------------------------------------------------------------------ bounties
+
+    public static final ForgeConfigSpec.IntValue BOUNTY_MAX_DAYS, BOUNTY_MIN_PIECES, BOUNTY_MAX_OPEN, BOUNTY_MAX_ACCEPTED, BOUNTY_NOTES_MAX;
     public static final ForgeConfigSpec.BooleanValue STORAGE_DELIVER_ON_RESTORE;
     public static final ForgeConfigSpec.IntValue STORAGE_RESTORE_WAIT_SECONDS;
 
@@ -747,6 +751,15 @@ public final class BSPConfig {
         MARKET_REFUSED = BUILDER.comment("Items that cannot be listed, traded or ordered, as item ids (\"minecraft:elytra\") or item tags (\"#forge:shulker_boxes\").",
                         "Shatter Totems and Totem Cores are always refused, also inside shulker boxes and bundles.")
                 .defineListAllowEmpty("refusedItems", List.of(), o -> o instanceof String);
+        BUILDER.pop();
+
+        BUILDER.comment("Bounties: prices players put on other players' heads at a Bounty Board, paid to a hunter who accepted and then kills the target.",
+                        "The placer pays market.taxPercent of the reward and bonus into the lottery pot. Staff and players under new-player protection cannot be targets.").push("bounty");
+        BOUNTY_MAX_DAYS = BUILDER.comment("Longest a bounty may run, in days (the shortest is an hour). Unclaimed, the reward and bonus go back to the placer.").defineInRange("maxDays", 30, 1, 90);
+        BOUNTY_MIN_PIECES = BUILDER.comment("Smallest reward in pieces (a coin reward is at least one coin).").defineInRange("minPieces", 1000, 1, 1_000_000_000);
+        BOUNTY_MAX_OPEN = BUILDER.comment("Most open bounties one player may have placed at once.").defineInRange("maxOpenPerPlayer", 5, 1, 100);
+        BOUNTY_MAX_ACCEPTED = BUILDER.comment("Most open bounties one hunter may have accepted at once.").defineInRange("maxAcceptedPerHunter", 5, 1, 100);
+        BOUNTY_NOTES_MAX = BUILDER.comment("Most characters in a bounty's notes for hunters.").defineInRange("notesMax", 256, 0, 1000);
         BUILDER.pop();
 
         BUILDER.comment("Shops.").push("shop");

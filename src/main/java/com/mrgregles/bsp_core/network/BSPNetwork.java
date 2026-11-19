@@ -18,11 +18,12 @@ public final class BSPNetwork {
      * 9: the Coin Factory screen's synced values carry each lane's press speed factor with Overclock.
      * 10: store credit on the shop and Land Office screens ({@link CreditStripPacket}, {@link CreditTogglePacket}) its stamp ({@link CreditNoticePacket}) and the admin panel's CREDIT tab ({@link CreditAdminPacket}, {@link CreditTicketsPacket}, {@link CreditAdminActionPacket}).
      * 11: the Coin Vault screen's synced values carry the waiting vault prize rolls; the admin panel's VAULT tab ({@link VaultPrizeAdminPacket}, {@link VaultPrizeEditPacket}).
+     * 15: the Bounty Board: the bounty summary every client gets ({@link BountySummaryPacket}) and the bounty screens' packets.
      * 12: the Totem Compass screen syncs its range levels and whether tracking found no rival in reach; the admin panel's RADIATION
      *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}); the Coin Factory screen's synced values carry the owner's
      *     team factory limit and team size, and a lane's re-press flag; the carried totem's upgrade screen syncs the team surcharge.
      */
-    private static final String PROTOCOL = "14";
+    private static final String PROTOCOL = "15";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -299,6 +300,27 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(AdminBankDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(AdminBankDataPacket::encode).decoder(AdminBankDataPacket::decode)
                 .consumerMainThread(AdminBankDataPacket::handle).add();
+        CHANNEL.messageBuilder(BountySummaryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BountySummaryPacket::encode).decoder(BountySummaryPacket::decode)
+                .consumerMainThread(BountySummaryPacket::handle).add();
+        CHANNEL.messageBuilder(BountyViewPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BountyViewPacket::encode).decoder(BountyViewPacket::decode)
+                .consumerMainThread(BountyViewPacket::handle).add();
+        CHANNEL.messageBuilder(BountyActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BountyActionPacket::encode).decoder(BountyActionPacket::decode)
+                .consumerMainThread(BountyActionPacket::handle).add();
+        CHANNEL.messageBuilder(BountyPlacePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BountyPlacePacket::encode).decoder(BountyPlacePacket::decode)
+                .consumerMainThread(BountyPlacePacket::handle).add();
+        CHANNEL.messageBuilder(BountyPlayersPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BountyPlayersPacket::encode).decoder(BountyPlayersPacket::decode)
+                .consumerMainThread(BountyPlayersPacket::handle).add();
+        CHANNEL.messageBuilder(BountyAdminActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BountyAdminActionPacket::encode).decoder(BountyAdminActionPacket::decode)
+                .consumerMainThread(BountyAdminActionPacket::handle).add();
+        CHANNEL.messageBuilder(BountyAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BountyAdminPacket::encode).decoder(BountyAdminPacket::decode)
+                .consumerMainThread(BountyAdminPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

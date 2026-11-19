@@ -1,0 +1,23 @@
+{
+  "name": "The Bounty Board",
+  "category": "bsp_core:coins",
+  "icon": "bsp_core:bounty_board",
+  "sortnum": 17,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:bounty_board",
+      "text": "A $(item)Bounty Board$() is an old wanted board with four poster screens. Each poster shows a player with a price on their head: their face, the reward, how long it has left and who offered it, the biggest first.$(br2)Its keys open $(l)BOARD$(), $(l)PLACE$() and $(l)HUNTS$()."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:bounty_board",
+      "text": "Dark oak, two glass panes, a Basic Control Circuit and a gold ingot. Place it anywhere; it breaks with an axe."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The bounties are the same on every server of the network. $(l)WANTED$() shows them all, six at a time, with a search and a sort. $(l)MY HUNTS$() shows the bounties you accepted, and $(l)MY BOUNTIES$() the ones you put up.$(br2)Score Screens can show the $(l)Most Wanted$() board.",
+      "title": "The screen"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Hunting a Bounty",
+  "category": "bsp_core:coins",
+  "icon": "minecraft:bow",
+  "sortnum": 19,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Open a poster and press $(l)ACCEPT THIS BOUNTY$(). Its notes appear, and the kill is yours to make. You can hold five at once and drop one with $(l)ABANDON$().$(br2)You cannot hunt yourself, your own bounty, a teammate or an ally."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Your own hit counts, and so do your arrows, tridents and other shots. A fall, lava, fire or the void counts too if you hit them in the 5 seconds before and no mob hit them since.$(br2)A mob's blow never counts, nor do your tamed wolf, TNT or a machine.",
+      "title": "The kill"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "One kill pays every bounty you accepted on that player, with the bonus if it came in time. Other hunters' bounties on them stay up.$(br2)Pieces go straight to your bank. Coins wait in your $(l)Collect$() box: a Bounty Board offers them to you as soon as you open it, and a Trade Post's COLLECT has them too.",
+      "title": "Your reward"
+    }
+  ]
+}

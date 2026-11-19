@@ -16,7 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 public record BankTransaction(long ms, Type type, String with, String detail, long pieces, int coinTier, int coinCount, String server, String shopId, String itemId,
                               long id, long refundedPieces, int refundedCoins, long refundOf) {
     /** New types go at the end (clients read them by ordinal). */
-    public enum Type { BOUGHT, SOLD, PAID, RECEIVED, DEPOSIT, CONVERT, WITHDRAW, GRANT, ADMIN, RENT, FEE, MARKET, TAX, LOTTERY, REFUND }
+    public enum Type { BOUGHT, SOLD, PAID, RECEIVED, DEPOSIT, CONVERT, WITHDRAW, GRANT, ADMIN, RENT, FEE, MARKET, TAX, LOTTERY, REFUND, BOUNTY }
 
     /** A new row, before it is recorded. */
     public BankTransaction(long ms, Type type, String with, String detail, long pieces, int coinTier, int coinCount, String server, String shopId, String itemId) {
