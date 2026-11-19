@@ -15,6 +15,7 @@ Network protocol 15, unchanged: 1.19.x clients can stay. For BSP-Server Utilitie
 ### Fixed
 - A refund, a staff bounty call (add, remove, extend) or a staff cancel of a lot or request always answers its caller once it is done. Before, a chat line to a player that failed to send kept the answer from coming, though the money had moved. Placing, cancelling, claiming and the end of a bounty, a bank transfer, a market sale, a buy order filled and lots and orders running out tell players the same safe way. A line that fails to be built or sent is a WARN with its stack trace in the server log.
 - The server log's line for a staff extension of a bounty gives what was added, the new end and the time left to the minute. It said "to end in 2 d 0 h" after an hour was added to a fresh 2-day bounty. The placer's and hunters' chat line gives the time left to the nearest hour.
+- **A staff extension of a bounty on a network no longer loses another server's extension.** The new end was worked out from this server's copy of the board (up to a minute behind) and written as a time. Two staff extending the same bounty from two servers within that minute kept only one extension. The database now works out the new end from its own record, locked, in the same step as the write. That also extends a bounty this server has not read yet, and answers "max" from the database's end. A single server works the same way from its own record.
 
 ## [1.19.1] - 2026-11-19
 

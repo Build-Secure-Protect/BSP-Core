@@ -18,7 +18,11 @@ public interface BountyDb {
     record Moved(UUID id, long piecesAfter, BankTransaction row) {}
 
     /** An answer: "ok" or why not; the bounty as it is after the call; the accounts changed; the players whose Collect box gained coins. */
-    record Done(String key, @Nullable Bounty bounty, boolean bonusPaid, List<Moved> moved, List<UUID> boxes) {
+    record Done(String key, @Nullable Bounty bounty, boolean bonusPaid, List<Moved> moved, List<UUID> boxes, long endsBefore) {
+        public Done(String key, @Nullable Bounty bounty, boolean bonusPaid, List<Moved> moved, List<UUID> boxes) {
+            this(key, bounty, bonusPaid, moved, boxes, 0);
+        }
+
         public static Done no(String key) {
             return new Done(key, null, false, List.of(), List.of());
         }
@@ -59,7 +63,8 @@ public interface BountyDb {
     /** Closes a bounty as claimed and pays the hunter; "gone", "not_hunter" or "ended" (the kill came after the end). */
     Done claim(String id, UUID hunter, String hunterName, long killMs, long now) throws Exception;
 
-    Done extend(String id, long endsMs) throws Exception;
+    /** {@link BountyStore#extend}: the new end from the stored bounty, in the same transaction; "gone" or "max"; {@code endsBefore} set. */
+    Done extend(String id, long addMs, long now, long capMs) throws Exception;
 
     Done setNotes(String id, String notes) throws Exception;
 

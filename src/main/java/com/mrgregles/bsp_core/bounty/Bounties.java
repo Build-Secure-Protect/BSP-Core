@@ -493,24 +493,24 @@ public final class Bounties {
     }
 
     /**
-     * Staff give a bounty more time: {@code addMs} more, but never past {@code bounty.maxDays} from now. Fails with "unreachable", "gone",
-     * "time" ({@code addMs} not positive) or "max" (it already ends as late as it may). The placer and the hunters are told.
+     * Staff give a bounty more time: {@code addMs} more, but never past {@code bounty.maxDays} from now, worked out by the store from
+     * the end it holds (on a network, two servers extending at once both count). Fails with "unreachable", "gone", "time" ({@code addMs}
+     * not positive) or "max" (it already ends as late as it may). The placer and the hunters are told.
      */
     public static void extendByStaff(MinecraftServer server, String id, long addMs, String by, Consumer<Result> then) {
-        Bounty seen = find(server, id).orElse(null);
-        long cap = now() + maxDays() * DAY_MS;
-        String fail = NetworkStorage.down() ? "unreachable" : seen == null ? "gone" : addMs <= 0 ? "time" : seen.endsMs >= cap ? "max" : null;
+        String fail = NetworkStorage.down() ? "unreachable" : addMs <= 0 ? "time" : null;
         if (fail != null) {
             then.accept(Result.fail(fail));
             return;
         }
-        long from = Math.max(seen.endsMs, now());
-        long ends = Math.min(cap, from + addMs);
-        store(server).extend(server, id, ends, a -> {
+        // the store works the new end out from its own record (on a network the database's, locked), not from this server's copy,
+        // which can be a minute behind another server's extension
+        long now = now(), cap = now + maxDays() * DAY_MS;
+        store(server).extend(server, id, addMs, now, cap, a -> {
             Bounty b = a.bounty();
             if (a.ok() && b != null) {
-                long at = now();
-                String note = extendedNote(ends - from, ends, at);
+                long at = now(), ends = b.endsMs;
+                String note = extendedNote(ends - Math.max(a.endsBefore(), now), ends, at);
                 if (extendLogWatch != null) {
                     extendLogWatch.accept(note);
                 }
@@ -699,6 +699,17 @@ public final class Bounties {
         long m = Math.max(0, ms) / 60_000L;
         long d = m / (60 * 24), h = m / 60 % 24, mm = m % 60;
         return d > 0 ? d + " d " + h + " h" : h > 0 ? h + " h " + mm + " m" : mm + " m";
+    }
+
+    /**
+     * The end a staff extension gives a bounty ending at {@code endsMs}: {@code addMs} more from that end (from {@code now} when it
+     * has passed), never past {@code capMs}; -1 when it already ends at {@code capMs} or later. Every store works it out this way.
+     */
+    public static long extendedEnd(long endsMs, long addMs, long now, long capMs) {
+        if (endsMs >= capMs) {
+            return -1;
+        }
+        return Math.min(capMs, Math.max(endsMs, now) + addMs);
     }
 
     /** "2 d 0 h 55 m": {@link #span} with the minutes kept after the days too, for the server log. */

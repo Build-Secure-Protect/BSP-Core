@@ -175,16 +175,21 @@ public class LocalBounties implements BountyStore {
     }
 
     @Override
-    public void extend(MinecraftServer server, String id, long endsMs, Consumer<Answer> then) {
+    public void extend(MinecraftServer server, String id, long addMs, long now, long capMs, Consumer<Answer> then) {
         BountyLedger l = ledger(server);
         Bounty b = l.get(id);
         if (b == null) {
             then.accept(new Answer("gone", null));
             return;
         }
-        Bounty after = b.withEnds(endsMs);
+        long ends = Bounties.extendedEnd(b.endsMs, addMs, now, capMs);
+        if (ends < 0) {
+            then.accept(new Answer("max", b));
+            return;
+        }
+        Bounty after = b.withEnds(ends);
         l.put(after);
-        then.accept(new Answer("ok", after));
+        then.accept(new Answer("ok", after, false, b.endsMs));
     }
 
     @Override

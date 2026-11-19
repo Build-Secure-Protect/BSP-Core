@@ -3780,3 +3780,11 @@ On a test server with BSP-Server Utilities' staff web panel (mod 0.14.0 / panel 
 - [ ] Search for players on the panel's + ADD form: a staff member and a player under new-player protection come back with their refusal (`staff`, `protected`); others with none.
 - [ ] Refund a bank row of an online player and of an offline one: the panel says ok, the player sees the line (now or at their next login). In the server log, no WARN "could not tell".
 - [ ] Extend a fresh 2-day bounty by 1 hour: the server log reads "by 1 h 0 m, to end <date> (in 2 d 0 h 5x m)"; the placer's chat line reads "2 d 1 h".
+
+## Bounty extensions on a network (2026-11-19, 1.19.2)
+
+On two servers sharing MySQL, with one open bounty.
+
+- [ ] Extend the bounty by 1 day from server A's admin panel, then at once (within a minute) by 1 hour from server B's. The bounty ends 1 day and 1 hour later than before, on both servers' boards and in the `bounties` table (`ends_ms`).
+- [ ] Extend it from server B to the longest (30 days from now), then from server A by an hour before A's board shows the change: A answers "max", and the end stays at the cap.
+- [ ] Place a bounty on server A and extend it from server B's panel within a few seconds: it is extended (not "gone").

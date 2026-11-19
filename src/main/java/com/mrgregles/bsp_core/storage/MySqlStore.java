@@ -4465,6 +4465,23 @@ final class MySqlStore implements AutoCloseable {
         }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
     }
 
+    /** A staff extension, worked out from the locked row (see {@link com.mrgregles.bsp_core.bounty.BountyStore#extend}). */
+    com.mrgregles.bsp_core.bounty.BountyDb.Done bountyExtend(String id, long addMs, long now, long capMs) throws SQLException {
+        return marketTx(c -> {
+            com.mrgregles.bsp_core.bounty.Bounty b = lockBounty(c, id);
+            if (b == null) {
+                throw new MarketNo("gone");
+            }
+            long ends = com.mrgregles.bsp_core.bounty.Bounties.extendedEnd(b.endsMs, addMs, now, capMs);
+            if (ends < 0) {
+                throw new MarketNo("max");
+            }
+            com.mrgregles.bsp_core.bounty.Bounty after = b.withEnds(ends);
+            updateBounty(c, after);
+            return new com.mrgregles.bsp_core.bounty.BountyDb.Done("ok", after, false, List.of(), List.of(), b.endsMs);
+        }, com.mrgregles.bsp_core.bounty.BountyDb.Done::no);
+    }
+
     void bountySweep(long beforeMs) throws SQLException {
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("bounty_closed") + " WHERE closed_ms < ?")) {
             ps.setLong(1, beforeMs);

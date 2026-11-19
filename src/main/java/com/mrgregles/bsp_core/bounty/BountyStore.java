@@ -36,10 +36,17 @@ public interface BountyStore {
     /** A closed bounty, kept for the history: how it ended, when, who claimed it (null otherwise) and who closed it. */
     record Closed(Bounty bounty, Ending ending, long closedMs, @Nullable UUID hunter, String hunterName, String by, boolean bonusPaid) {}
 
-    /** An answer: {@code key} "ok" or why not ("gone", "already", "too_many", "not_hunter", "ended", "short", "unreachable"); the bounty as it is after the call. */
-    record Answer(String key, @Nullable Bounty bounty, boolean bonusPaid) {
+    /**
+     * An answer: {@code key} "ok" or why not ("gone", "already", "too_many", "not_hunter", "ended", "short", "max", "unreachable"); the
+     * bounty as it is after the call; for an extension, the end it had before ({@code endsBefore}, 0 otherwise).
+     */
+    record Answer(String key, @Nullable Bounty bounty, boolean bonusPaid, long endsBefore) {
         public Answer(String key, @Nullable Bounty bounty) {
-            this(key, bounty, false);
+            this(key, bounty, false, 0);
+        }
+
+        public Answer(String key, @Nullable Bounty bounty, boolean bonusPaid) {
+            this(key, bounty, bonusPaid, 0);
         }
 
         public boolean ok() {
@@ -76,8 +83,12 @@ public interface BountyStore {
      */
     void claim(MinecraftServer server, String id, UUID hunter, String hunterName, long killMs, Consumer<Answer> then);
 
-    /** Sets a new end time. Answers "ok" or "gone". */
-    void extend(MinecraftServer server, String id, long endsMs, Consumer<Answer> then);
+    /**
+     * Gives a bounty {@code addMs} more from the end it has in the store (from {@code now} when that has passed), never past
+     * {@code capMs} ({@link Bounties#extendedEnd}). Worked out from the stored bounty in the same step as the write, so two servers
+     * extending at once both count. Answers "ok" (with {@code endsBefore}), "gone" or "max" (it already ends at {@code capMs} or later).
+     */
+    void extend(MinecraftServer server, String id, long addMs, long now, long capMs, Consumer<Answer> then);
 
     /** Replaces the notes. Answers "ok" or "gone". */
     void setNotes(MinecraftServer server, String id, String notes, Consumer<Answer> then);

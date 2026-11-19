@@ -271,7 +271,7 @@ public final class NetworkBounties implements BountyStore {
         } else if (d.key().equals("gone")) {
             drop(id);
         }
-        then.accept(new Answer(d.key(), d.bounty()));
+        then.accept(new Answer(d.key(), d.bounty(), false, d.endsBefore()));
     }
 
     @Override
@@ -286,8 +286,8 @@ public final class NetworkBounties implements BountyStore {
     }
 
     @Override
-    public void extend(MinecraftServer server, String id, long endsMs, Consumer<Answer> then) {
-        run("extend a bounty", () -> db.extend(id, endsMs), d -> changed(d, id, then), u -> then.accept(new Answer("unreachable", null)));
+    public void extend(MinecraftServer server, String id, long addMs, long now, long capMs, Consumer<Answer> then) {
+        run("extend a bounty", () -> db.extend(id, addMs, now, capMs), d -> changed(d, id, then), u -> then.accept(new Answer("unreachable", null)));
     }
 
     @Override

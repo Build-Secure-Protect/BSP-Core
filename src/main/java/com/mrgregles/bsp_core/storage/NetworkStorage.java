@@ -2347,8 +2347,8 @@ public final class NetworkStorage {
             }
 
             @Override
-            public Done extend(String id, long endsMs) throws Exception {
-                return s.bountyChange(id, b -> b.withEnds(endsMs));
+            public Done extend(String id, long addMs, long now, long capMs) throws Exception {
+                return s.bountyExtend(id, addMs, now, capMs);
             }
 
             @Override

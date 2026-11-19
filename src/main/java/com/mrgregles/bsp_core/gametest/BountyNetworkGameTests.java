@@ -200,14 +200,18 @@ public class BountyNetworkGameTests {
         }
 
         @Override
-        public Done extend(String id, long endsMs) throws Exception {
+        public Done extend(String id, long addMs, long now, long capMs) throws Exception {
             before();
             Bounty b = open.get(id);
             if (b == null) {
                 return Done.no("gone");
             }
-            open.put(id, b.withEnds(endsMs));
-            return after(new Done("ok", open.get(id), false, List.of(), List.of()));
+            long ends = Bounties.extendedEnd(b.endsMs, addMs, now, capMs);
+            if (ends < 0) {
+                return Done.no("max");
+            }
+            open.put(id, b.withEnds(ends));
+            return after(new Done("ok", open.get(id), false, List.of(), List.of(), b.endsMs));
         }
 
         @Override
@@ -267,11 +271,59 @@ public class BountyNetworkGameTests {
         return p;
     }
 
+    /** Another server's extension, straight into the database. */
+    private static BountyDb.Done dbExtend(MemDb db, String id, long addMs, long now, long capMs) {
+        try {
+            return db.extend(id, addMs, now, capMs);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     @Nullable
     private static Bounties.Result place(MinecraftServer server, ServerPlayer placer, Bounties.Ask ask) {
         Bounties.Result[] r = new Bounties.Result[1];
         Bounties.place(server, placer, ask, x -> r[0] = x);
         return r[0];
+    }
+
+    @GameTest(template = EMPTY, batch = "bounty")
+    public void an_extension_adds_to_the_end_in_the_database_even_when_this_servers_copy_is_behind(GameTestHelper h) {
+        long start = 1_800_000_000_000L;
+        run(h, start, (server, db, net, ledger, notices) -> {
+            ServerPlayer placer = player(h, db, 100_000);
+            UUID target = UUID.randomUUID();
+            Bounties.Result placed = place(server, placer, new Bounties.Ask(target, "Wanted", Bounty.PIECES, 10_000, 0, 0, 2 * D, ""));
+            h.assertTrue(placed != null && placed.key().equals("ok"), "placed: " + (placed == null ? null : placed.key()));
+            String id = placed.bounty().id;
+            long cap = start + Bounties.maxDays() * D;
+            // another server gives it a day more: the database has it, this server's copy does not yet
+            h.assertTrue(dbExtend(db, id, D, start, cap).ok() && db.open.get(id).endsMs == start + 3 * D, "the other server's day is in the database");
+            h.assertTrue(net.open(server).get(0).endsMs == start + 2 * D, "this server's copy is still behind");
+            List<String> logged = new ArrayList<>();
+            Bounties.extendLogWatch = logged::add;
+            try {
+                com.mrgregles.bsp_core.api.BspBounties.Result[] r = new com.mrgregles.bsp_core.api.BspBounties.Result[1];
+                com.mrgregles.bsp_core.api.BspBounties.extend(server, id, H, "Mod (panel)", x -> r[0] = x);
+                h.assertTrue(r[0] != null && r[0].ok() && r[0].bounty().endsMs() == start + 3 * D + H && db.open.get(id).endsMs == start + 3 * D + H,
+                        "an hour on top of the other server's day, none lost: " + (r[0] == null ? null : r[0].bounty()));
+                h.assertTrue(net.open(server).get(0).endsMs == start + 3 * D + H, "the copy follows the database");
+                h.assertTrue(logged.size() == 1 && logged.get(0).startsWith("by 1 h 0 m, to end "), "the log says an hour was added: " + logged);
+                // a bounty placed on another server that this server has not read yet is extended all the same
+                Bounty elsewhere = new Bounty("bzzelse1", target, "Wanted", Bounties.SERVER, "Server", Bounty.PIECES, 5_000, 0, 0, 0, start, start + D, "",
+                        "other", List.of());
+                db.open.put(elsewhere.id, elsewhere);
+                com.mrgregles.bsp_core.api.BspBounties.extend(server, elsewhere.id, H, "Mod (panel)", x -> r[0] = x);
+                h.assertTrue(r[0].ok() && db.open.get(elsewhere.id).endsMs == start + D + H, "extended from the database's record: " + r[0].key());
+                // the other server already took it to the longest: the database says max, whatever the copy shows
+                h.assertTrue(dbExtend(db, id, 60 * D, start, cap).ok() && db.open.get(id).endsMs == cap, "the other server reached the cap");
+                com.mrgregles.bsp_core.api.BspBounties.extend(server, id, H, "Mod (panel)", x -> r[0] = x);
+                h.assertTrue(r[0].key().equals("max") && db.open.get(id).endsMs == cap, "already at the cap: " + r[0].key());
+                h.assertTrue(dbExtend(db, "bnothere", H, start, cap).key().equals("gone"), "no such bounty: gone");
+            } finally {
+                Bounties.extendLogWatch = null;
+            }
+        });
     }
 
     @GameTest(template = EMPTY, batch = "bounty")
