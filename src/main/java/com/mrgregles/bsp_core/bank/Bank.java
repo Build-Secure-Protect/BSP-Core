@@ -650,6 +650,6 @@ public final class Bank {
     }
 
     private static void tellReceived(MinecraftServer server, UUID to, String from, long amount) {
-        NetworkStorage.tell(server, to, Component.translatable("message.bsp_core.bank.received", format(amount), from));
+        NetworkStorage.tellSafely(server, to, () -> Component.translatable("message.bsp_core.bank.received", format(amount), from));
     }
 }

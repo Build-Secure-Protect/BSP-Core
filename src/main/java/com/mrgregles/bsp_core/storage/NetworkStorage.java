@@ -1020,29 +1020,31 @@ public final class NetworkStorage {
     public static java.util.function.BiConsumer<UUID, net.minecraft.network.chat.Component> tellWatch;
 
     /**
-     * {@link #tell}, but a failure to tell is logged and never thrown. For lines told after money or a bounty has already moved, so
-     * the caller still hears the answer.
+     * {@link #tell}, but a failure to build or tell the line is logged and never thrown. For lines told after money, items or a
+     * bounty have already moved, so the caller still hears the answer. The line is built inside the guard.
      */
-    public static void tellSafely(MinecraftServer srv, UUID player, net.minecraft.network.chat.Component message) {
+    public static void tellSafely(MinecraftServer srv, UUID player, java.util.function.Supplier<net.minecraft.network.chat.Component> message) {
         try {
+            net.minecraft.network.chat.Component line = message.get();
             if (tellWatch != null) {
-                tellWatch.accept(player, message);
+                tellWatch.accept(player, line);
             }
-            tell(srv, player, message);
+            tell(srv, player, line);
         } catch (RuntimeException e) {
-            BSPCore.LOGGER.warn("BSP-Core: could not tell {} a line (it is done all the same): {}", player, e.toString());
+            BSPCore.LOGGER.warn("BSP-Core: could not tell {} a line (it is done all the same)", player, e);
         }
     }
 
-    /** {@link #tellOrKeep}, but a failure to tell is logged and never thrown (see {@link #tellSafely}). */
-    public static void tellOrKeepSafely(MinecraftServer srv, UUID player, net.minecraft.network.chat.Component message) {
+    /** {@link #tellOrKeep}, but a failure to build or tell the line is logged and never thrown (see {@link #tellSafely}). */
+    public static void tellOrKeepSafely(MinecraftServer srv, UUID player, java.util.function.Supplier<net.minecraft.network.chat.Component> message) {
         try {
+            net.minecraft.network.chat.Component line = message.get();
             if (tellWatch != null) {
-                tellWatch.accept(player, message);
+                tellWatch.accept(player, line);
             }
-            tellOrKeep(srv, player, message);
+            tellOrKeep(srv, player, line);
         } catch (RuntimeException e) {
-            BSPCore.LOGGER.warn("BSP-Core: could not tell {} a line (it is done all the same): {}", player, e.toString());
+            BSPCore.LOGGER.warn("BSP-Core: could not tell {} a line (it is done all the same)", player, e);
         }
     }
 

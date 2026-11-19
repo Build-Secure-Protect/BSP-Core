@@ -301,7 +301,7 @@ public final class Market {
                 return;
             }
             MarketLot lot = answer.lot();
-            NetworkStorage.tell(server, lot.seller, Component.translatable("message.bsp_core.market.sold", lot.describe(), name, Bank.format(lot.price)));
+            NetworkStorage.tellSafely(server, lot.seller, () -> Component.translatable("message.bsp_core.market.sold", lot.describe(), name, Bank.format(lot.price)));
             List<ItemStack> items = lot.items();
             if (answer.boxed()) {
                 // on a network the items are already in the buyer's Collect box; empty it into the inventory when they are here
@@ -346,7 +346,7 @@ public final class Market {
             }
             MarketLot lot = answer.lot();
             if (!lot.seller.equals(by)) {
-                NetworkStorage.tellOrKeepSafely(server, lot.seller, Component.translatable("message.bsp_core.market.removed", lot.describe()));
+                NetworkStorage.tellOrKeepSafely(server, lot.seller, () -> Component.translatable("message.bsp_core.market.removed", lot.describe()));
             }
             BSPCore.LOGGER.info("BSP-Core market: lot {} ({}) of {} cancelled{}", lot.id, lot.describe(), lot.sellerName, admin && !lot.seller.equals(by) ? " by an admin" : "");
             then.accept(MarketResult.ok(lot, List.of()));
@@ -378,7 +378,7 @@ public final class Market {
         store.closeAll(server, due, answer -> {
             if (answer.ok()) {
                 MarketLot l = answer.lot();
-                NetworkStorage.tell(server, l.seller, Component.translatable("message.bsp_core.market.expired", l.describe()));
+                NetworkStorage.tellSafely(server, l.seller, () -> Component.translatable("message.bsp_core.market.expired", l.describe()));
                 BSPCore.LOGGER.info("BSP-Core market: lot {} ({}) of {} ran out", l.id, l.describe(), l.sellerName);
                 n[0]++;
             }

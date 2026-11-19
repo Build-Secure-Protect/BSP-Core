@@ -254,9 +254,9 @@ public final class Refunds {
     private static void tell(MinecraftServer server, UUID player, BankTransaction row, long dP, int tier, int dC, @Nullable UUID otherId, String playerName,
                              @Nullable BankTransaction theirs) {
         String key = dP >= 0 && dC >= 0 ? "refund_gave" : dP <= 0 && dC <= 0 ? "refund_took" : "refund_changed";
-        NetworkStorage.tellOrKeepSafely(server, player, Component.translatable("message.bsp_core.bank." + key, kind(row), when(row.ms()), amounts(dP, tier, dC)));
+        NetworkStorage.tellOrKeepSafely(server, player, () -> Component.translatable("message.bsp_core.bank." + key, kind(row), when(row.ms()), amounts(dP, tier, dC)));
         if (otherId != null && theirs != null) {
-            NetworkStorage.tellOrKeepSafely(server, otherId, Component.translatable("message.bsp_core.bank.refund_other", playerName, when(row.ms()), amounts(-dP, -1, 0)));
+            NetworkStorage.tellOrKeepSafely(server, otherId, () -> Component.translatable("message.bsp_core.bank.refund_other", playerName, when(row.ms()), amounts(-dP, -1, 0)));
         }
     }
 

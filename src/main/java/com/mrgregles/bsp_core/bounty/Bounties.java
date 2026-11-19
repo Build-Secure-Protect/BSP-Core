@@ -336,7 +336,7 @@ public final class Bounties {
             }
             BSPCore.LOGGER.info("BSP-Core bounty: {} placed bounty {} on {}: {}{}, fee {} pieces, ends in {} h", pname, b.id, b.targetName,
                     b.describe(b.amount), b.bonus > 0 ? " + bonus " + b.describe(b.bonus) : "", b.fee, ask.durationMs() / HOUR_MS);
-            NetworkStorage.tellOrKeepSafely(server, b.target, Component.translatable("message.bsp_core.bounty.placed_on_you", b.describe(b.amount), span(ask.durationMs())));
+            NetworkStorage.tellOrKeepSafely(server, b.target, () -> Component.translatable("message.bsp_core.bounty.placed_on_you", b.describe(b.amount), span(ask.durationMs())));
             then.accept(new Result("ok", b));
         });
     }
@@ -395,7 +395,7 @@ public final class Bounties {
         store(server).end(server, id, BountyStore.Ending.CANCELLED, seen.placerName, a -> {
             if (a.ok()) {
                 BSPCore.LOGGER.info("BSP-Core bounty: {} cancelled bounty {} on {}", seen.placerName, id, seen.targetName);
-                NetworkStorage.tellOrKeepSafely(server, seen.target, Component.translatable("message.bsp_core.bounty.ended_on_you"));
+                NetworkStorage.tellOrKeepSafely(server, seen.target, () -> Component.translatable("message.bsp_core.bounty.ended_on_you"));
             }
             then.accept(new Result(a.key(), a.bounty()));
         });
@@ -427,10 +427,10 @@ public final class Bounties {
                 n[0]++;
                 BSPCore.LOGGER.info("BSP-Core bounty: bounty {} on {} by {} ran out", b.id, b.targetName, b.placerName);
                 if (!b.placer.equals(SERVER)) {
-                    NetworkStorage.tellOrKeepSafely(server, b.placer, Component.translatable(b.coins() ? "message.bsp_core.bounty.expired_coins" : "message.bsp_core.bounty.expired",
+                    NetworkStorage.tellOrKeepSafely(server, b.placer, () -> Component.translatable(b.coins() ? "message.bsp_core.bounty.expired_coins" : "message.bsp_core.bounty.expired",
                             b.targetName, b.describe(b.held())));
                 }
-                NetworkStorage.tellOrKeepSafely(server, b.target, Component.translatable("message.bsp_core.bounty.ended_on_you"));
+                NetworkStorage.tellOrKeepSafely(server, b.target, () -> Component.translatable("message.bsp_core.bounty.ended_on_you"));
             });
         }
         return n[0];
@@ -461,7 +461,7 @@ public final class Bounties {
                 return;
             }
             BSPCore.LOGGER.info("BSP-Core bounty: staff {} placed bounty {} on {}: {}", by, b.id, b.targetName, b.describe(b.amount));
-            NetworkStorage.tellOrKeepSafely(server, b.target, Component.translatable("message.bsp_core.bounty.placed_on_you", b.describe(b.amount), span(ask.durationMs())));
+            NetworkStorage.tellOrKeepSafely(server, b.target, () -> Component.translatable("message.bsp_core.bounty.placed_on_you", b.describe(b.amount), span(ask.durationMs())));
             then.accept(new Result("ok", b));
         });
     }
@@ -480,13 +480,13 @@ public final class Bounties {
             if (a.ok() && b != null) {
                 BSPCore.LOGGER.info("BSP-Core bounty: staff {} removed bounty {} on {} by {}{}", by, b.id, b.targetName, b.placerName, refund ? " with a refund" : ", no refund");
                 if (!b.placer.equals(SERVER)) {
-                    NetworkStorage.tellOrKeepSafely(server, b.placer, Component.translatable(!refund ? "message.bsp_core.bounty.removed_no_refund"
+                    NetworkStorage.tellOrKeepSafely(server, b.placer, () -> Component.translatable(!refund ? "message.bsp_core.bounty.removed_no_refund"
                             : b.coins() ? "message.bsp_core.bounty.removed_coins" : "message.bsp_core.bounty.removed", b.targetName, b.describe(b.held())));
                 }
                 for (Bounty.Hunter hu : b.hunters()) {
-                    NetworkStorage.tellOrKeepSafely(server, hu.id(), Component.translatable("message.bsp_core.bounty.removed_hunter", b.targetName));
+                    NetworkStorage.tellOrKeepSafely(server, hu.id(), () -> Component.translatable("message.bsp_core.bounty.removed_hunter", b.targetName));
                 }
-                NetworkStorage.tellOrKeepSafely(server, b.target, Component.translatable("message.bsp_core.bounty.ended_on_you"));
+                NetworkStorage.tellOrKeepSafely(server, b.target, () -> Component.translatable("message.bsp_core.bounty.ended_on_you"));
             }
             then.accept(new Result(a.key(), b));
         });
@@ -510,13 +510,17 @@ public final class Bounties {
             Bounty b = a.bounty();
             if (a.ok() && b != null) {
                 long at = now();
-                BSPCore.LOGGER.info("BSP-Core bounty: staff {} extended bounty {} on {} {}", by, b.id, b.targetName, extendedNote(ends - from, ends, at));
+                String note = extendedNote(ends - from, ends, at);
+                if (extendLogWatch != null) {
+                    extendLogWatch.accept(note);
+                }
+                BSPCore.LOGGER.info("BSP-Core bounty: staff {} extended bounty {} on {} {}", by, b.id, b.targetName, note);
                 String left = spanNearest(ends - at);
                 if (!b.placer.equals(SERVER)) {
-                    NetworkStorage.tellOrKeepSafely(server, b.placer, Component.translatable("message.bsp_core.bounty.extended", b.targetName, left));
+                    NetworkStorage.tellOrKeepSafely(server, b.placer, () -> Component.translatable("message.bsp_core.bounty.extended", b.targetName, left));
                 }
                 for (Bounty.Hunter hu : b.hunters()) {
-                    NetworkStorage.tellOrKeepSafely(server, hu.id(), Component.translatable("message.bsp_core.bounty.extended", b.targetName, left));
+                    NetworkStorage.tellOrKeepSafely(server, hu.id(), () -> Component.translatable("message.bsp_core.bounty.extended", b.targetName, left));
                 }
             }
             then.accept(new Result(a.key(), b));
@@ -582,17 +586,17 @@ public final class Bounties {
         long paid = b.payFor(killMs);
         BSPCore.LOGGER.info("BSP-Core bounty: {} claimed bounty {} on {} placed by {}: {}{}", hunterName, b.id, b.targetName, b.placerName, b.describe(paid),
                 bonus ? " (bonus included)" : "");
-        NetworkStorage.tellSafely(server, hunter, Component.translatable(b.coins() ? "message.bsp_core.bounty.claimed_hunter_coins" : "message.bsp_core.bounty.claimed_hunter",
+        NetworkStorage.tellSafely(server, hunter, () -> Component.translatable(b.coins() ? "message.bsp_core.bounty.claimed_hunter_coins" : "message.bsp_core.bounty.claimed_hunter",
                 b.placerName, b.targetName, b.describe(paid)));
         if (!b.placer.equals(SERVER)) {
             if (b.bonus > 0 && !bonus) {
-                NetworkStorage.tellOrKeepSafely(server, b.placer, Component.translatable(b.coins() ? "message.bsp_core.bounty.claimed_placer_late_coins" : "message.bsp_core.bounty.claimed_placer_late",
+                NetworkStorage.tellOrKeepSafely(server, b.placer, () -> Component.translatable(b.coins() ? "message.bsp_core.bounty.claimed_placer_late_coins" : "message.bsp_core.bounty.claimed_placer_late",
                         hunterName, b.targetName, b.describe(b.bonus)));
             } else {
-                NetworkStorage.tellOrKeepSafely(server, b.placer, Component.translatable("message.bsp_core.bounty.claimed_placer", hunterName, b.targetName));
+                NetworkStorage.tellOrKeepSafely(server, b.placer, () -> Component.translatable("message.bsp_core.bounty.claimed_placer", hunterName, b.targetName));
             }
         }
-        NetworkStorage.tellOrKeepSafely(server, b.target, Component.translatable("message.bsp_core.bounty.claimed_target", hunterName, b.placerName));
+        NetworkStorage.tellOrKeepSafely(server, b.target, () -> Component.translatable("message.bsp_core.bounty.claimed_target", hunterName, b.placerName));
     }
 
     /**
@@ -681,7 +685,7 @@ public final class Bounties {
                 n[0]++;
                 BSPCore.LOGGER.info("BSP-Core bounty: bounty {} on {} ended: {} is staff", b.id, b.targetName, b.targetName);
                 if (!b.placer.equals(SERVER)) {
-                    NetworkStorage.tellOrKeepSafely(server, b.placer, Component.translatable("message.bsp_core.bounty.target_staff", b.targetName));
+                    NetworkStorage.tellOrKeepSafely(server, b.placer, () -> Component.translatable("message.bsp_core.bounty.target_staff", b.targetName));
                 }
             });
         }
@@ -707,6 +711,9 @@ public final class Bounties {
     public static String spanNearest(long ms) {
         return ms >= DAY_MS ? span((ms + HOUR_MS / 2) / HOUR_MS * HOUR_MS) : span(ms);
     }
+
+    /** Test hook: when set, hears the end of each staff extension's log line ({@link #extendedNote}). */
+    public static java.util.function.Consumer<String> extendLogWatch;
 
     /** The end of a staff extension's log line: "by 1 h 0 m, to end 21 Nov 14:02 (in 2 d 0 h 55 m)" ({@code added} as given, perhaps cut at the cap). */
     public static String extendedNote(long added, long ends, long now) {

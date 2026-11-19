@@ -210,7 +210,7 @@ server.execute(() -> BspBounties.extend(server, id, 86_400_000L, staff + " (pane
 - `extend(server, id, addMs, by, then)`: `addMs` more, never past `bounty.maxDays` from now (it stops at that). The placer and the hunters are told. Keys: `ok`, `unreachable`, `gone`, `time` (`addMs` not positive), `max` (already ends as late as it may).
 - `blankNotes(server, id, by, then)`: empties the notes. Keys: `ok`, `unreachable`, `gone`.
 - Bank rows of these moves have the type `BOUNTY` (the fee's row in the pot is `TAX`).
-- Every call answers its caller once the change is made, even when a chat line to a player fails (since 1.19.2, SU-BC3: the failure is a WARN in the server log). The same holds for `BspBank.refund` and `BspMarket.cancelLot` / `cancelOrder`.
+- Every call answers its caller once the change is made, even when a chat line to a player fails (since 1.19.2, SU-BC3: the failure is a WARN in the server log). The same holds for `BspBank.refund` and `BspMarket.cancelLot` / `cancelOrder`, and in game for bank transfers, market sales and buy orders filled.
 - The server log's line for `extend` gives what was added, the new end and the time left to the minute ("extended bounty b… on Wren_88 by 1 h 0 m, to end 21 Nov 14:02 (in 2 d 0 h 55 m)"); the players' line gives the time left to the nearest hour from a day up.
 
 ## Live trades across the network

@@ -225,7 +225,7 @@ public final class BuyOrders {
             }
             BuyOrder after = a.order();
             String what = a.sent() + " " + after.item().getHoverName().getString();
-            NetworkStorage.tell(server, after.buyer, Component.translatable(a.closed() ? "message.bsp_core.order.done" : "message.bsp_core.order.sent_you",
+            NetworkStorage.tellSafely(server, after.buyer, () -> Component.translatable(a.closed() ? "message.bsp_core.order.done" : "message.bsp_core.order.sent_you",
                     name, what, after.filled, after.wanted));
             BSPCore.LOGGER.info("BSP-Core orders: {} sent {} to {}'s order {} for {} pieces + {} tax{}", name, what, after.buyerName, after.id, a.paid(), a.tax(), a.closed() ? "; the order is filled" : "");
             then.accept(a);
@@ -273,7 +273,7 @@ public final class BuyOrders {
             if (a.ok()) {
                 BuyOrder o = a.order();
                 if (!o.buyer.equals(by)) {
-                    NetworkStorage.tellOrKeepSafely(server, o.buyer, Component.translatable("message.bsp_core.order.removed", o.describe(), Bank.format(a.refund())));
+                    NetworkStorage.tellOrKeepSafely(server, o.buyer, () -> Component.translatable("message.bsp_core.order.removed", o.describe(), Bank.format(a.refund())));
                 }
                 BSPCore.LOGGER.info("BSP-Core orders: order {} ({}) of {} cancelled{}, {} back", o.id, o.describe(), o.buyerName, admin && !o.buyer.equals(by) ? " by an admin" : "", Bank.format(a.refund()));
             }
@@ -298,7 +298,7 @@ public final class BuyOrders {
                 store(server).close(server, o.id, a -> {
                     if (a.ok()) {
                         BuyOrder c = a.order();
-                        NetworkStorage.tell(server, c.buyer, Component.translatable("message.bsp_core.order.expired", c.describe(), c.filled, Bank.format(a.refund())));
+                        NetworkStorage.tellSafely(server, c.buyer, () -> Component.translatable("message.bsp_core.order.expired", c.describe(), c.filled, Bank.format(a.refund())));
                         BSPCore.LOGGER.info("BSP-Core orders: order {} ({}) of {} ran out with {} sent; {} back", c.id, c.describe(), c.buyerName, c.filled, Bank.format(a.refund()));
                     }
                 });

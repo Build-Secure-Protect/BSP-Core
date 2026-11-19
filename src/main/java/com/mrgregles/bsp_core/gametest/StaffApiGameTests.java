@@ -74,8 +74,18 @@ public class StaffApiGameTests {
             Bounties.staffCheck = null;
             Bounties.protectedCheck = null;
             NetworkStorage.tellWatch = null;
+            Bounties.extendLogWatch = null;
         }
         h.succeed();
+    }
+
+    /** These tests use this server's own stores; with network storage on, the bank and the player search answer later. */
+    private static boolean networked(GameTestHelper h) {
+        if (NetworkStorage.enabled()) {
+            h.succeed();
+            return true;
+        }
+        return false;
     }
 
     private static ServerPlayer player(GameTestHelper h, long pieces) {
@@ -103,6 +113,9 @@ public class StaffApiGameTests {
 
     @GameTest(template = EMPTY, batch = BATCH)
     public void the_rules_in_the_api_follow_the_config_and_match_what_a_staff_bounty_may_be(GameTestHelper h) {
+        if (networked(h)) {
+            return;
+        }
         long start = 1_800_000_000_000L;
         int minBefore = BSPConfig.BOUNTY_MIN_PIECES.get(), daysBefore = BSPConfig.BOUNTY_MAX_DAYS.get(), notesBefore = BSPConfig.BOUNTY_NOTES_MAX.get();
         int openBefore = BSPConfig.BOUNTY_MAX_OPEN.get(), taxBefore = BSPConfig.MARKET_TAX_PERCENT.get();
@@ -148,6 +161,9 @@ public class StaffApiGameTests {
 
     @GameTest(template = EMPTY, batch = BATCH)
     public void each_player_from_the_search_says_whether_a_bounty_may_be_placed_on_them(GameTestHelper h) {
+        if (networked(h)) {
+            return;
+        }
         run(h, new long[]{1_800_000_000_000L}, server -> {
             String tag = "Sa" + Long.toString(System.nanoTime() % 100_000_000L, 36);
             UUID plain = account(server, tag + "Plain", 0), staff = account(server, tag + "Staff", 0), young = account(server, tag + "Young", 0);
@@ -170,8 +186,7 @@ public class StaffApiGameTests {
     @GameTest(template = EMPTY, batch = BATCH)
     public void staff_calls_answer_ok_when_telling_the_player_fails(GameTestHelper h) {
         MinecraftServer srv = h.getLevel().getServer();
-        if (NetworkStorage.enabled()) {
-            h.succeed();
+        if (networked(h)) {
             return;
         }
         long start = 1_800_000_000_000L;
@@ -182,6 +197,15 @@ public class StaffApiGameTests {
                 tried[0]++;
                 throw new IllegalStateException("gametest: telling fails");
             };
+            // a line that fails while it is built is caught too, and nothing reaches the player
+            UUID nobody = UUID.randomUUID();
+            NetworkStorage.tellOrKeepSafely(server, nobody, () -> {
+                throw new IllegalStateException("gametest: building the line fails");
+            });
+            NetworkStorage.tellSafely(server, nobody, () -> {
+                throw new IllegalStateException("gametest: building the line fails");
+            });
+            h.assertTrue(tried[0] == 0 && LaterMessages.get(server).waiting(nobody) == 0, "a line that cannot be built is not told and not kept");
             // a refund: the money moves and the caller hears ok
             UUID wren = account(server, "W" + tag, 1_000);
             BankTransaction buy = BankLedger.get(server).record(wren, new BankTransaction(System.currentTimeMillis(), BankTransaction.Type.BOUGHT, "Spawn Shop", "Oak Log x64",
@@ -239,6 +263,9 @@ public class StaffApiGameTests {
 
     @GameTest(template = EMPTY, batch = BATCH)
     public void an_extension_says_the_time_left_to_the_nearest_hour_and_logs_it_to_the_minute(GameTestHelper h) {
+        if (networked(h)) {
+            return;
+        }
         h.assertTrue(Bounties.spanExact(2 * D + 55 * M).equals("2 d 0 h 55 m"), "exact: " + Bounties.spanExact(2 * D + 55 * M));
         h.assertTrue(Bounties.spanExact(5 * H + 20 * M).equals("5 h 20 m") && Bounties.spanExact(12 * M).equals("12 m"), "under a day as span writes it");
         h.assertTrue(Bounties.spanNearest(2 * D + 55 * M).equals("2 d 1 h"), "nearest: " + Bounties.spanNearest(2 * D + 55 * M));
@@ -258,14 +285,25 @@ public class StaffApiGameTests {
                     told.add(line);
                 }
             };
+            List<String> logged = new ArrayList<>();
+            Bounties.extendLogWatch = logged::add;
             BspBounties.Result[] r = new BspBounties.Result[1];
             BspBounties.extend(server, pr[0].bounty().id, H, "Mod (panel)", x -> r[0] = x);
             h.assertTrue(r[0].ok() && r[0].bounty().endsMs() == start + 2 * D + H, "extended by an hour");
             h.assertTrue(told.size() == 1 && told.get(0).getContents() instanceof TranslatableContents t && t.getKey().equals("message.bsp_core.bounty.extended")
                     && String.valueOf(t.getArgs()[1]).equals("2 d 1 h"), "the placer reads 2 d 1 h: " + told);
-            String note = Bounties.extendedNote(H, start + 2 * D + H, now[0]);
-            h.assertTrue(note.startsWith("by 1 h 0 m, to end ") && note.endsWith("(in 2 d 0 h 55 m)")
-                    && note.contains(Refunds.when(start + 2 * D + H)), "the log line says what was added, the end and the time left: " + note);
+            h.assertTrue(logged.size() == 1, "one log line: " + logged);
+            String note = logged.get(0);
+            h.assertTrue(note.equals("by 1 h 0 m, to end " + Refunds.when(start + 2 * D + H) + " (in 2 d 0 h 55 m)"),
+                    "the log line says what was added, the end and the time left: " + note);
+            // an extension cut at bounty.maxDays logs what was really added: 30 minutes of the 2 hours asked
+            long max = Bounties.maxDays() * D;
+            Bounties.place(server, placer, new Bounties.Ask(target, "Wanted", Bounty.PIECES, 10_000, 0, 0, max - 30 * M, ""), x -> pr[0] = x);
+            h.assertTrue(pr[0].key().equals("ok"), "a bounty 30 minutes short of the longest: " + pr[0].key());
+            BspBounties.extend(server, pr[0].bounty().id, 2 * H, "Mod (panel)", x -> r[0] = x);
+            h.assertTrue(r[0].ok() && r[0].bounty().endsMs() == now[0] + max, "stopped at bounty.maxDays from now");
+            h.assertTrue(logged.size() == 2 && logged.get(1).startsWith("by 30 m, to end ") && logged.get(1).endsWith("(in " + Bounties.spanExact(max) + ")"),
+                    "the capped extension logs 30 m added: " + logged);
         });
     }
 }
