@@ -4,6 +4,18 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.19.2] - 2026-11-19
+
+Network protocol 15, unchanged: 1.19.x clients can stay. For BSP-Server Utilities' request SU-BC3.
+
+### Added
+- `BspBounties.rules(server)`: the bounty rules from this server's config (`bounty.minPieces`, `bounty.maxDays`, `bounty.notesMax`, the open and accepted limits), the fixed limits, the fee's percent and the pieces per copper unit, so a staff web page follows the server's config.
+- Each `BspBounties.Player` from `players()` carries `refusal`: null, `staff` or `protected`, so a search needs no `targetRefusal` per player.
+
+### Fixed
+- A refund, a staff bounty call (add, remove, extend) or a staff cancel of a lot or request always answers its caller once it is done. Before, a chat line to a player that failed to send kept the answer from coming, though the money had moved. Placing, cancelling, claiming and the end of a bounty tell players the same safe way. A line that fails is a WARN in the server log.
+- The server log's line for a staff extension of a bounty gives what was added, the new end and the time left to the minute. It said "to end in 2 d 0 h" after an hour was added to a fresh 2-day bounty. The placer's and hunters' chat line gives the time left to the nearest hour.
+
 ## [1.19.1] - 2026-11-19
 
 Network protocol 15, unchanged: 1.19.0 clients can stay.

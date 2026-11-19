@@ -100,9 +100,14 @@ public final class Market {
         return BSPConfig.getOr(BSPConfig.MARKET_DAYS, 7);
     }
 
+    /** {@code market.taxPercent}: the market tax, also a bounty's fee. */
+    public static int taxPercent() {
+        return BSPConfig.getOr(BSPConfig.MARKET_TAX_PERCENT, 5);
+    }
+
     /** The tax on a price: {@code market.taxPercent} of it, rounded up, at least 1 piece; 0 when the tax is off. */
     public static long tax(long price) {
-        int pct = BSPConfig.getOr(BSPConfig.MARKET_TAX_PERCENT, 5);
+        int pct = taxPercent();
         if (pct <= 0 || price <= 0) {
             return 0;
         }
@@ -341,7 +346,7 @@ public final class Market {
             }
             MarketLot lot = answer.lot();
             if (!lot.seller.equals(by)) {
-                NetworkStorage.tellOrKeep(server, lot.seller, Component.translatable("message.bsp_core.market.removed", lot.describe()));
+                NetworkStorage.tellOrKeepSafely(server, lot.seller, Component.translatable("message.bsp_core.market.removed", lot.describe()));
             }
             BSPCore.LOGGER.info("BSP-Core market: lot {} ({}) of {} cancelled{}", lot.id, lot.describe(), lot.sellerName, admin && !lot.seller.equals(by) ? " by an admin" : "");
             then.accept(MarketResult.ok(lot, List.of()));

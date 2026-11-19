@@ -3771,3 +3771,12 @@ On a test server with Waystones, BSP-Core and BSP-InventorySync installed; a pla
 - [ ] A player whose file has no `PlayerPersisted` yet: after joining it holds only `bsp_core:*` keys (plus whatever other mods add), and the totem grant, season and last spot work.
 - [ ] With the server's `logs/debug.log` open: each BSP-Core write shows a line "BSP-Core persistent data of <name>: wrote <keys> in PlayerPersisted (N other mods' keys kept: [...])", and BalmData stays in that list.
 - [ ] Recall: a recall used before the update still waits out its cooldown after it; Siege the same.
+
+## Staff apis for the web panel, SU-BC3 (2026-11-19, 1.19.2)
+
+On a test server with BSP-Server Utilities' staff web panel (mod 0.14.0 / panel 0.4.0 or later, built against these calls), and once on a network with MySQL.
+
+- [ ] Set `bounty.minPieces` to 2,500 and `bounty.maxDays` to 45 in `bsp_core-server.toml` (no restart): `BspBounties.rules` gives the new numbers, and a staff bounty of 2,500 pieces for 45 days is taken (2,499 or 45 days and a minute is refused). Put them back.
+- [ ] Search for players on the panel's + ADD form: a staff member and a player under new-player protection come back with their refusal (`staff`, `protected`); others with none.
+- [ ] Refund a bank row of an online player and of an offline one: the panel says ok, the player sees the line (now or at their next login). In the server log, no WARN "could not tell".
+- [ ] Extend a fresh 2-day bounty by 1 hour: the server log reads "by 1 h 0 m, to end <date> (in 2 d 0 h 5x m)"; the placer's chat line reads "2 d 1 h".

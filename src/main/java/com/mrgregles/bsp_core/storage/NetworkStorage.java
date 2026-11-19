@@ -1016,6 +1016,36 @@ public final class NetworkStorage {
         LaterMessages.get(srv).add(player, message);
     }
 
+    /** Test hook: when set, sees every line told through {@link #tellSafely} and {@link #tellOrKeepSafely} first (a GameTest makes it throw). */
+    public static java.util.function.BiConsumer<UUID, net.minecraft.network.chat.Component> tellWatch;
+
+    /**
+     * {@link #tell}, but a failure to tell is logged and never thrown. For lines told after money or a bounty has already moved, so
+     * the caller still hears the answer.
+     */
+    public static void tellSafely(MinecraftServer srv, UUID player, net.minecraft.network.chat.Component message) {
+        try {
+            if (tellWatch != null) {
+                tellWatch.accept(player, message);
+            }
+            tell(srv, player, message);
+        } catch (RuntimeException e) {
+            BSPCore.LOGGER.warn("BSP-Core: could not tell {} a line (it is done all the same): {}", player, e.toString());
+        }
+    }
+
+    /** {@link #tellOrKeep}, but a failure to tell is logged and never thrown (see {@link #tellSafely}). */
+    public static void tellOrKeepSafely(MinecraftServer srv, UUID player, net.minecraft.network.chat.Component message) {
+        try {
+            if (tellWatch != null) {
+                tellWatch.accept(player, message);
+            }
+            tellOrKeep(srv, player, message);
+        } catch (RuntimeException e) {
+            BSPCore.LOGGER.warn("BSP-Core: could not tell {} a line (it is done all the same): {}", player, e.toString());
+        }
+    }
+
     /** Ticks to the next sweep of shop counts that are full again: five minutes after the start, then daily. */
     private static int sweepTicks = 5 * 60 * 20;
 

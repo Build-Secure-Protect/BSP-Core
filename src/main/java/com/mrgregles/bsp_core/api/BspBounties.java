@@ -44,8 +44,31 @@ public final class BspBounties {
      */
     public record Closed(Info bounty, String ending, long closedMs, @Nullable UUID hunter, String hunterName, String by, boolean bonusPaid) {}
 
-    /** A player who can be picked as a target, and whether they are online on any server now. */
-    public record Player(UUID id, String name, boolean online) {}
+    /**
+     * A player who can be picked as a target, whether they are online on any server now, and {@code refusal}: null when a bounty may
+     * be placed on them, else "staff" or "protected" (what {@link #targetRefusal} answers, worked out once for the list).
+     */
+    public record Player(UUID id, String name, boolean online, @Nullable String refusal) {}
+
+    /**
+     * The bounty rules this server's config sets, read at each call (the config may change while the server runs). A bounty of
+     * pieces asks {@code minPieces} to {@code maxPieces}; of coins, 1 to {@code maxCoins} coins of one tier (a coin's worth in copper
+     * units: {@link BspCoins#value}; a copper unit is {@code piecesPerCopper} pieces at a bank). The bonus is 0 up to the same maximum.
+     * A bounty runs {@code minDurationMs} (an hour) to {@code maxDays} days; notes are kept to {@code notesMax} characters (longer
+     * ones are cut, not refused). A player may have {@code maxOpen} open bounties placed and {@code maxAccepted} accepted; staff
+     * bounties have no such limit and pay no fee. A player's bounty pays {@link #fee} on its reward plus bonus into the lottery pot.
+     */
+    public record Rules(long minPieces, long maxPieces, long maxCoins, int maxDays, long minDurationMs, int notesMax, int maxOpen, int maxAccepted,
+                        int taxPercent, long piecesPerCopper) {
+        public long maxDurationMs() {
+            return maxDays * Bounties.DAY_MS;
+        }
+
+        /** The fee a player pays on {@code value} (pieces, or copper units for coins): {@code taxPercent} of it rounded up, at least 1; 0 for none. */
+        public long fee(long value) {
+            return taxPercent <= 0 || value <= 0 ? 0 : Math.max(1, (value * taxPercent + 99) / 100);
+        }
+    }
 
     /** An answer: {@code key} "ok" or why not; the bounty as it is after the call (or as it was, for a removal). */
     public record Result(String key, @Nullable Info bounty) {
@@ -104,9 +127,16 @@ public final class BspBounties {
         return out;
     }
 
-    /** Every player the bank knows whose name contains {@code search} (any case; "" for all), online first, at most 200. */
+    /** Every player the bank knows whose name contains {@code search} (any case; "" for all), online first, at most 200, each with their {@code refusal}. */
     public static void players(MinecraftServer server, String search, Consumer<List<Player>> then) {
-        Bounties.knownPlayers(server, search, list -> then.accept(list.stream().map(k -> new Player(k.id(), k.name(), k.online())).toList()));
+        Bounties.knownPlayers(server, search, list -> then.accept(list.stream()
+                .map(k -> new Player(k.id(), k.name(), k.online(), Bounties.targetRefusal(server, SERVER, k.id(), k.name()))).toList()));
+    }
+
+    /** This server's bounty rules, from its config now. */
+    public static Rules rules(MinecraftServer server) {
+        return new Rules(Bounties.minPieces(), Bounties.MAX_PIECES, Bounties.MAX_COINS, Bounties.maxDays(), Bounties.HOUR_MS, Bounties.notesMax(),
+                Bounties.maxOpen(), Bounties.maxAccepted(), com.mrgregles.bsp_core.market.Market.taxPercent(), Bounties.piecesPerCopper());
     }
 
     /** Whether a bounty may be placed on this player: null when it may, else "staff" or "protected". */

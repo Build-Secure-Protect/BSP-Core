@@ -273,7 +273,7 @@ public final class BuyOrders {
             if (a.ok()) {
                 BuyOrder o = a.order();
                 if (!o.buyer.equals(by)) {
-                    NetworkStorage.tellOrKeep(server, o.buyer, Component.translatable("message.bsp_core.order.removed", o.describe(), Bank.format(a.refund())));
+                    NetworkStorage.tellOrKeepSafely(server, o.buyer, Component.translatable("message.bsp_core.order.removed", o.describe(), Bank.format(a.refund())));
                 }
                 BSPCore.LOGGER.info("BSP-Core orders: order {} ({}) of {} cancelled{}, {} back", o.id, o.describe(), o.buyerName, admin && !o.buyer.equals(by) ? " by an admin" : "", Bank.format(a.refund()));
             }
