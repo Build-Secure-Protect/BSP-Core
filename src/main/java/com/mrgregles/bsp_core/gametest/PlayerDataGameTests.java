@@ -89,8 +89,13 @@ public class PlayerDataGameTests {
         PlayerPersistent.addLogoutPlaced(p, new PlayerPersistent.LogoutPlaced(Level.OVERWORLD, new BlockPos(4, 5, 6), UUID.randomUUID(), UUID.randomUUID(), 6));
         h.assertTrue(PlayerPersistent.removeLogoutPlaced(p, id) == 1, "one logout placement dropped");
         h.assertTrue(PlayerPersistent.takeLogoutPlaced(p).size() == 1, "the other taken");
-        com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(p);
-        com.mrgregles.bsp_core.zone.ZoneHandler.dropHeld(p, id);
+        ListTag held = new ListTag();
+        held.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE).save(new CompoundTag()));
+        held.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIRT).save(new CompoundTag()));
+        PlayerPersistent.get(p).put("bsp_core:ZoneHeldTotems", held); // what holdTotems leaves (it also needs the ledger)
+        h.assertTrue(com.mrgregles.bsp_core.zone.ZoneHandler.dropHeld(p, id) == 0, "no held totem has that id");
+        h.assertTrue(com.mrgregles.bsp_core.zone.ZoneHandler.takeHeld(p).size() == 2 && !PlayerPersistent.get(p).contains("bsp_core:ZoneHeldTotems"),
+                "the held list is taken and its key removed");
 
         h.assertTrue(p.getPersistentData() == forgeData, "ForgeData is the same compound");
         h.assertTrue(p.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG) == live, "PlayerPersisted is the same compound, edited in place");
@@ -160,6 +165,17 @@ public class PlayerDataGameTests {
         h.assertTrue(after.getInt("bsp_core:SeasonSeen") == 5 && after.getInt("bsp_core:CoinEpoch") == 9, "a key already there is not overwritten");
         h.assertTrue("theirs".equals(after.getString("othermod:fresh")) && !after.contains("BalmData") && !after.contains("integrateddynamics:infoBookSpawned"),
                 "no other mod's key is read or written");
+        // the Clone event itself (as Forge posts it after restoreFrom): the handler fills in the missing keys the same way
+        ServerPlayer posted = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        CompoundTag rebuilt = new CompoundTag();
+        rebuilt.putString("othermod:fresh", "theirs");
+        rebuilt.putInt("bsp_core:SeasonSeen", 5);
+        posted.getPersistentData().put(Player.PERSISTED_NBT_TAG, rebuilt);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new PlayerEvent.Clone(posted, old, true));
+        CompoundTag afterEvent = posted.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        h.assertTrue(afterEvent == rebuilt && afterEvent.getInt("bsp_core:CoinEpoch") == 9 && afterEvent.getInt("bsp_core:SeasonSeen") == 5
+                && !afterEvent.contains("BalmData") && "theirs".equals(afterEvent.getString("othermod:fresh")),
+                "the Clone handler fills in only the missing BSP keys, in the same compound");
         // the usual case: Forge passed the same compound over, and there is nothing to copy
         ServerPlayer shared = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
         shared.getPersistentData().put(Player.PERSISTED_NBT_TAG, old.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG));
@@ -193,10 +209,30 @@ public class PlayerDataGameTests {
         h.succeed();
     }
 
+    @GameTest(template = "empty", batch = BATCH, timeoutTicks = 20)
+    public void siege_times_from_another_clock_and_old_names(GameTestHelper h) {
+        ServerPlayer p = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        long now = h.getLevel().getServer().overworld().getGameTime();
+        CompoundTag data = p.getPersistentData();
+        data.putLong("bsp_core:SiegeUntil", now + 100);
+        h.assertTrue(com.mrgregles.bsp_core.totem.Siege.active(p), "a Siege running on this clock is active");
+        data.putLong("bsp_core:SiegeUntil", now + 50_000_000L); // carried from a server whose clock is far ahead
+        h.assertFalse(com.mrgregles.bsp_core.totem.Siege.active(p), "a time from another clock counts as none");
+        data.remove("bsp_core:SiegeUntil");
+        data.putLong("SiegeUntil", now + 100);
+        h.assertTrue(com.mrgregles.bsp_core.totem.Siege.active(p), "a Siege saved under the old name still runs");
+        data.putLong("SiegeUntil", now - 5);
+        data.putLong("SiegeReadyAt", now - 5);
+        com.mrgregles.bsp_core.totem.Siege.onLogin(new PlayerEvent.PlayerLoggedInEvent(p));
+        h.assertTrue(!data.contains("SiegeUntil") && !data.contains("SiegeReadyAt"), "old-name times that are over go at login");
+        h.succeed();
+    }
+
     /**
      * A guard for the future: {@code "PlayerPersisted"} ({@link Player#PERSISTED_NBT_TAG}, inlined by the compiler) and
-     * {@code "ForgeData"} may appear in BSP-Core's classes only in {@link PlayerPersistent} and the GameTests, so every access to
-     * the shared compound goes through the helper that never replaces it.
+     * {@code "ForgeData"} may appear in BSP-Core's classes only in {@link PlayerPersistent} and the GameTests, so no other class
+     * names the shared compound (any string holding either name counts, log text included). It does not see writes to the
+     * {@code ForgeData} root through {@code getPersistentData()} itself (Siege, Cloak Blind), which use prefixed keys.
      */
     @GameTest(template = "empty", batch = BATCH, timeoutTicks = 20)
     public void only_the_helper_names_the_shared_compound(GameTestHelper h) throws Exception {

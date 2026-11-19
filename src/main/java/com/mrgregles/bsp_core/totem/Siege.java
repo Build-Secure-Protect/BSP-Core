@@ -16,15 +16,48 @@ import java.util.List;
  * then rests for the level's recharge. Server-side timers in the player's persistent data, mirrored to the client for the ring
  * by the crosshair.
  */
+@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = com.mrgregles.bsp_core.BSPCore.MODID)
 public final class Siege {
     /** In {@code ForgeData} itself (a death ends Siege), under BSP-Core's prefix like every key it keeps on a player. */
     private static final String TAG_UNTIL = com.mrgregles.bsp_core.BSPCore.MODID + ":SiegeUntil", TAG_READY = com.mrgregles.bsp_core.BSPCore.MODID + ":SiegeReadyAt";
     /** The keys as first written, without the prefix: still read, and dropped at the next use. */
     private static final String OLD_UNTIL = "SiegeUntil", OLD_READY = "SiegeReadyAt";
 
-    private static long read(Player player, String key, String old) {
+    /**
+     * A saved time, in this server's game ticks. BSP-InventorySync carries the player's data between servers whose clocks
+     * differ, so a time further ahead than the longest possible Siege and recharge came from another clock and counts as none
+     * (else Siege could stay blocked for as long as that server's clock is ahead).
+     */
+    private static long read(ServerPlayer player, String key, String old) {
         var data = player.getPersistentData();
-        return Math.max(data.getLong(key), data.getLong(old));
+        long now = now(player), window = longestWindowTicks();
+        if (data.contains(old) && (data.getLong(old) <= now || data.getLong(old) - now > window)) {
+            data.remove(old); // an old-name time that is over, or from another clock: nothing to keep it for
+        }
+        long at = Math.max(data.getLong(key), data.getLong(old));
+        return at - now > window ? 0 : at;
+    }
+
+    /** The longest Siege plus the longest recharge any level has, in ticks; an empty list counts as its default, as for the level. */
+    private static long longestWindowTicks() {
+        return (longest(BSPConfig.getOr(BSPConfig.SIEGE_SECONDS, List.<Integer>of()), 8) + longest(BSPConfig.getOr(BSPConfig.SIEGE_RECHARGE, List.<Integer>of()), 180)) * 20L;
+    }
+
+    private static long longest(List<? extends Integer> values, int fallback) {
+        long most = 0;
+        for (int v : values) {
+            most = Math.max(most, v);
+        }
+        return values.isEmpty() ? fallback : most;
+    }
+
+    /** At login, an old-name time is dropped once it is over (or from another server's clock). */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            read(player, TAG_UNTIL, OLD_UNTIL);
+            read(player, TAG_READY, OLD_READY);
+        }
     }
 
     private static void write(ServerPlayer player, long until, long ready) {

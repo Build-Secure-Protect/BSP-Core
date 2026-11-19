@@ -41,9 +41,12 @@ public final class RecallService {
     /** The key as first written, without BSP-Core's prefix: still read, and dropped at the next recall. */
     private static final String TAG_READY_OLD = "RecallReadyAt";
 
-    /** When the player may be recalled again (ms), from the prefixed key or the unprefixed one written before. */
-    static long readyAt(ServerPlayer player) {
+    /** When the player may be recalled again (ms), from the prefixed key or the unprefixed one written before (dropped once over). */
+    static long readyAt(net.minecraft.world.entity.player.Player player) {
         CompoundTag data = PlayerPersistent.get(player);
+        if (data.contains(TAG_READY_OLD) && data.getLong(TAG_READY_OLD) <= System.currentTimeMillis()) {
+            data.remove(TAG_READY_OLD);
+        }
         return Math.max(data.getLong(TAG_READY), data.getLong(TAG_READY_OLD));
     }
     /** Extra seconds a remote offer stays open on top of the prompt time, for the server transfer. */
@@ -109,6 +112,7 @@ public final class RecallService {
     @SubscribeEvent
     public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
         UUID id = event.getEntity().getUUID();
+        readyAt(event.getEntity()); // drops an old-name cooldown that is over
         if (REMOTE.remove(id) && OFFERS.containsKey(id)) {
             ARRIVING.put(id, event.getEntity().level().getGameTime() + 40);
         }

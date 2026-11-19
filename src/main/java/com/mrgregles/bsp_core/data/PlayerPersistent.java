@@ -43,8 +43,9 @@ public final class PlayerPersistent {
     /**
      * The sub-tag of the player's persistent data that survives death, as the live compound: BSP-Core edits its own
      * {@code bsp_core:*} keys in it and nothing else. The compound is shared with every other mod (Waystones' known waystones
-     * under {@code BalmData}, Integrated Dynamics, ...), so it is made only when the player has none, never replaced, and
-     * {@code ForgeData} itself is never replaced either.
+     * under {@code BalmData}, Integrated Dynamics, ...), so an existing compound is never replaced and {@code ForgeData} itself
+     * never is either. It is made when the player has none (or, as vanilla's {@code getCompound} would read it, when the key holds
+     * something that is not a compound).
      */
     public static CompoundTag get(Player player) {
         CompoundTag forgeData = player.getPersistentData();
