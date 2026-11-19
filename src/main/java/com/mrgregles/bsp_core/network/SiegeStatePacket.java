@@ -19,7 +19,8 @@ public record SiegeStatePacket(int activeTicks, int readyInTicks) {
     }
 
     public static void handle(SiegeStatePacket msg, Supplier<NetworkEvent.Context> ctx) {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> com.mrgregles.bsp_core.client.SiegeClient.receive(msg));
+        // on the main thread: at a first join the level is not made yet when the packet arrives on the network thread
+        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> com.mrgregles.bsp_core.client.SiegeClient.receive(msg)));
         ctx.get().setPacketHandled(true);
     }
 }

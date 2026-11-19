@@ -225,6 +225,52 @@ public class PlayerDataGameTests {
         data.putLong("SiegeReadyAt", now - 5);
         com.mrgregles.bsp_core.totem.Siege.onLogin(new PlayerEvent.PlayerLoggedInEvent(p));
         h.assertTrue(!data.contains("SiegeUntil") && !data.contains("SiegeReadyAt"), "old-name times that are over go at login");
+        h.assertFalse(com.mrgregles.bsp_core.totem.Siege.active(p), "and nothing runs");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", batch = BATCH, timeoutTicks = 20)
+    public void siege_recharge_carries_on_through_a_death_and_the_end(GameTestHelper h) {
+        long now = h.getLevel().getServer().overworld().getGameTime();
+        for (boolean death : new boolean[] {true, false}) {
+            ServerPlayer old = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+            CompoundTag persisted = PlayerPersistent.get(old);
+            persisted.putLong("bsp_core:SiegeUntil", now + 100);
+            persisted.putLong("bsp_core:SiegeReadyAt", now + 3000);
+            h.assertTrue(com.mrgregles.bsp_core.totem.Siege.active(old), "Siege runs");
+            ServerPlayer next = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+            next.restoreFrom(old, !death); // Forge's copy, then PlayerEvent.Clone
+            CompoundTag after = next.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+            h.assertTrue(after.getLong("bsp_core:SiegeReadyAt") == now + 3000, "the recharge carries on after " + (death ? "a death" : "the End"));
+            if (death) {
+                h.assertFalse(com.mrgregles.bsp_core.totem.Siege.active(next), "a death ends the running Siege");
+            } else {
+                h.assertTrue(com.mrgregles.bsp_core.totem.Siege.active(next), "the way home from the End does not end it");
+            }
+        }
+        // a Siege saved at the root (as before) is moved into the persisted data at the next write, and passes over a death
+        ServerPlayer was = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        was.getPersistentData().putLong("SiegeUntil", now + 100);
+        was.getPersistentData().putLong("SiegeReadyAt", now + 3000);
+        ServerPlayer then = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        then.restoreFrom(was, false);
+        h.assertTrue(then.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG).getLong("bsp_core:SiegeReadyAt") == now + 3000,
+                "an old-place recharge running at the death carries on too");
+        h.assertFalse(com.mrgregles.bsp_core.totem.Siege.active(then), "the death ended the old-place Siege");
+        // the way home from the End with times still at the root (the prefixed names of unreleased builds): moved over, still running
+        ServerPlayer inEnd = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        inEnd.getPersistentData().putLong("bsp_core:SiegeUntil", now + 100);
+        inEnd.getPersistentData().putLong("bsp_core:SiegeReadyAt", now + 3000);
+        ServerPlayer home = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        home.restoreFrom(inEnd, true);
+        CompoundTag homeData = home.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        h.assertTrue(homeData.getLong("bsp_core:SiegeUntil") == now + 100 && homeData.getLong("bsp_core:SiegeReadyAt") == now + 3000
+                && com.mrgregles.bsp_core.totem.Siege.active(home), "root times are moved over on the way home from the End and keep running");
+        // a time from another clock in the new place is dropped, so it can never start counting later
+        ServerPlayer carried = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        PlayerPersistent.get(carried).putLong("bsp_core:SiegeUntil", now + 50_000_000L);
+        h.assertFalse(com.mrgregles.bsp_core.totem.Siege.active(carried), "a time from another clock counts as none");
+        h.assertFalse(PlayerPersistent.get(carried).contains("bsp_core:SiegeUntil"), "and is removed");
         h.succeed();
     }
 

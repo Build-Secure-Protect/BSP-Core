@@ -191,6 +191,7 @@ public final class LoginSettle {
             MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, type, e -> {
                 if (e instanceof PlayerEvent pe && pe.getEntity() instanceof ServerPlayer player) {
                     release(player);
+                    com.mrgregles.bsp_core.totem.Siege.showRunning(player); // the restore brought the player's saved times
                 }
             });
             hooked = true;

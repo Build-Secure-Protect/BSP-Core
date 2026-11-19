@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_core.totem;
 
 import com.mrgregles.bsp_core.BSPConfig;
+import com.mrgregles.bsp_core.data.PlayerPersistent;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.SiegeStatePacket;
 import com.mrgregles.bsp_core.plasma.CarriedPowers;
@@ -13,28 +14,44 @@ import java.util.List;
 
 /**
  * Siege, the carried Raid power: pressed, it lets the carrier mine at full speed inside an enemy Fortify for the level's seconds,
- * then rests for the level's recharge. Server-side timers in the player's persistent data, mirrored to the client for the ring
+ * then rests for the level's recharge. Server-side timers in the player's persisted data, mirrored to the client for the ring
  * by the crosshair.
  */
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = com.mrgregles.bsp_core.BSPCore.MODID)
 public final class Siege {
-    /** In {@code ForgeData} itself (a death ends Siege), under BSP-Core's prefix like every key it keeps on a player. */
+    /**
+     * Kept with BSP-Core's other keys in the player's data that survives a respawn ({@link PlayerPersistent}), so the recharge
+     * runs on through a death or the way home from the End; a death ends a Siege that is running.
+     */
     private static final String TAG_UNTIL = com.mrgregles.bsp_core.BSPCore.MODID + ":SiegeUntil", TAG_READY = com.mrgregles.bsp_core.BSPCore.MODID + ":SiegeReadyAt";
-    /** The keys as first written, without the prefix: still read, and dropped at the next use. */
-    private static final String OLD_UNTIL = "SiegeUntil", OLD_READY = "SiegeReadyAt";
+    /** Where the times were kept before, at the root of the player's data (the unprefixed names, then the prefixed): still read, dropped once over and at the next use. */
+    private static final String[] OLD_UNTIL = {"SiegeUntil", TAG_UNTIL}, OLD_READY = {"SiegeReadyAt", TAG_READY};
 
     /**
      * A saved time, in this server's game ticks. BSP-InventorySync carries the player's data between servers whose clocks
      * differ, so a time further ahead than the longest possible Siege and recharge came from another clock and counts as none
      * (else Siege could stay blocked for as long as that server's clock is ahead).
      */
-    private static long read(ServerPlayer player, String key, String old) {
-        var data = player.getPersistentData();
+    private static long read(ServerPlayer player, String key, String[] olds) {
         long now = now(player), window = longestWindowTicks();
-        if (data.contains(old) && (data.getLong(old) <= now || data.getLong(old) - now > window)) {
-            data.remove(old); // an old-name time that is over, or from another clock: nothing to keep it for
+        var persisted = PlayerPersistent.get(player);
+        long at = persisted.getLong(key);
+        if (at - now > window) {
+            persisted.remove(key); // from another clock: kept, it would start counting once this clock came near it
+            at = 0;
         }
-        long at = Math.max(data.getLong(key), data.getLong(old));
+        var root = player.getPersistentData();
+        for (String old : olds) {
+            if (!root.contains(old)) {
+                continue;
+            }
+            long was = root.getLong(old);
+            if (was <= now || was - now > window) {
+                root.remove(old); // over, or from another clock: nothing to keep it for
+            } else {
+                at = Math.max(at, was);
+            }
+        }
         return at - now > window ? 0 : at;
     }
 
@@ -51,24 +68,66 @@ public final class Siege {
         return values.isEmpty() ? fallback : most;
     }
 
-    /** At login, an old-name time is dropped once it is over (or from another server's clock). */
+    /** At login: old-place times that are over (or from another server's clock) are dropped, and the ring shows a recharge still running. */
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            read(player, TAG_UNTIL, OLD_UNTIL);
-            read(player, TAG_READY, OLD_READY);
+            showRunning(player);
         }
     }
 
-    private static void write(ServerPlayer player, long until, long ready) {
-        var data = player.getPersistentData();
-        data.putLong(TAG_UNTIL, until);
-        data.putLong(TAG_READY, ready);
-        data.remove(OLD_UNTIL);
-        data.remove(OLD_READY);
-        if (com.mrgregles.bsp_core.BSPCore.LOGGER.isDebugEnabled()) {
-            com.mrgregles.bsp_core.BSPCore.LOGGER.debug("BSP-Core persistent data of {}: wrote {}, {} (player data root)", player.getGameProfile().getName(), TAG_UNTIL, TAG_READY);
+    /**
+     * A respawn or the way home from the End: the times carry on in the new entity (Forge passes the persisted data over whole;
+     * times still at the old place, the root, are read from the old entity), and a death ends a running Siege.
+     */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onClone(net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(event.getOriginal() instanceof ServerPlayer was)) {
+            return;
         }
+        long now = now(player), until = read(was, TAG_UNTIL, OLD_UNTIL), ready = read(was, TAG_READY, OLD_READY);
+        if (now >= until && now >= ready) {
+            return; // nothing running
+        }
+        boolean moved = false;
+        for (String[] olds : new String[][] {OLD_UNTIL, OLD_READY}) {
+            for (String old : olds) {
+                moved |= was.getPersistentData().contains(old);
+            }
+        }
+        if (moved || (event.isWasDeath() && now < until)) {
+            write(player, event.isWasDeath() && now < until ? now : until, ready);
+        }
+    }
+
+    /** After a respawn or the way home from the End the client's ring starts empty: send it what still runs. */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void onRespawn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            showRunning(player);
+        }
+    }
+
+    /**
+     * Tells the client's ring what runs now: at login, at a respawn and after BSP-InventorySync's restore. Sent even when nothing
+     * runs, so a ring left over from another server (another clock) is cleared.
+     */
+    public static void showRunning(ServerPlayer player) {
+        send(player, read(player, TAG_UNTIL, OLD_UNTIL), read(player, TAG_READY, OLD_READY));
+    }
+
+    private static void write(ServerPlayer player, long until, long ready) {
+        var persisted = PlayerPersistent.get(player);
+        persisted.putLong(TAG_UNTIL, until);
+        persisted.putLong(TAG_READY, ready);
+        var root = player.getPersistentData();
+        for (String old : OLD_UNTIL) {
+            root.remove(old);
+        }
+        for (String old : OLD_READY) {
+            root.remove(old);
+        }
+        PlayerPersistent.edited(player, TAG_UNTIL, TAG_READY);
     }
 
     private Siege() {}
