@@ -3,6 +3,7 @@ package com.mrgregles.bsp_core.data;
 import com.mrgregles.bsp_core.BSPCore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -12,6 +13,7 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 /** Helpers for BSP data stored in a player's persistent NBT, which survives death. */
+@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class PlayerPersistent {
     private static final String TAG_TOTEM_GRANTED = BSPCore.MODID + ":TotemGranted";
     private static final String TAG_LAST_MAIN_DIM = BSPCore.MODID + ":LastMainDim";
@@ -35,13 +37,91 @@ public final class PlayerPersistent {
 
     private PlayerPersistent() {}
 
-    /** The sub-tag of the player's persistent data that survives death. */
+    /** The prefix of every key BSP-Core keeps in {@code PlayerPersisted}; nothing else in that compound is BSP-Core's. */
+    public static final String KEY_PREFIX = BSPCore.MODID + ":";
+
+    /**
+     * The sub-tag of the player's persistent data that survives death, as the live compound: BSP-Core edits its own
+     * {@code bsp_core:*} keys in it and nothing else. The compound is shared with every other mod (Waystones' known waystones
+     * under {@code BalmData}, Integrated Dynamics, ...), so it is made only when the player has none, never replaced, and
+     * {@code ForgeData} itself is never replaced either.
+     */
     public static CompoundTag get(Player player) {
-        CompoundTag root = player.getPersistentData();
-        if (!root.contains(Player.PERSISTED_NBT_TAG)) {
-            root.put(Player.PERSISTED_NBT_TAG, new CompoundTag());
+        CompoundTag forgeData = player.getPersistentData();
+        if (forgeData.contains(Player.PERSISTED_NBT_TAG, Tag.TAG_COMPOUND)) {
+            return forgeData.getCompound(Player.PERSISTED_NBT_TAG); // the live reference
         }
-        return root.getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag persisted = new CompoundTag();
+        forgeData.put(Player.PERSISTED_NBT_TAG, persisted); // only when missing
+        return persisted;
+    }
+
+    /**
+     * Logs, at DEBUG (the server's {@code logs/debug.log}), that BSP-Core wrote these keys of the player's {@code PlayerPersisted},
+     * with how many other keys the compound holds, so a write that coincides with other mods' data going missing is easy to find.
+     */
+    public static void edited(Player player, String... keys) {
+        if (!BSPCore.LOGGER.isDebugEnabled()) {
+            return;
+        }
+        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        int others = 0;
+        for (String k : persisted.getAllKeys()) {
+            if (!k.startsWith(KEY_PREFIX)) {
+                others++;
+            }
+        }
+        BSPCore.LOGGER.debug("BSP-Core persistent data of {}: wrote {} in PlayerPersisted ({} other mods' keys kept: {})",
+                player.getGameProfile().getName(), String.join(", ", keys), others,
+                persisted.getAllKeys().stream().filter(k -> !k.startsWith(KEY_PREFIX)).sorted().toList());
+    }
+
+    /**
+     * Copies BSP-Core's own {@code bsp_core:*} keys from {@code from} to {@code to} where {@code to} lacks them; returns the keys
+     * copied. A key {@code to} already has is left alone, and no other mod's key is read or written.
+     */
+    public static java.util.List<String> copyOwnKeys(Player from, Player to) {
+        CompoundTag fromForgeData = from.getPersistentData();
+        if (!fromForgeData.contains(Player.PERSISTED_NBT_TAG, Tag.TAG_COMPOUND)) {
+            return java.util.List.of();
+        }
+        CompoundTag source = fromForgeData.getCompound(Player.PERSISTED_NBT_TAG);
+        java.util.List<String> copied = new java.util.ArrayList<>();
+        CompoundTag target = null;
+        for (String key : source.getAllKeys()) {
+            if (!key.startsWith(KEY_PREFIX)) {
+                continue;
+            }
+            if (target == null) {
+                target = get(to);
+            }
+            if (target == source || target.contains(key)) {
+                continue;
+            }
+            Tag value = source.get(key);
+            if (value != null) {
+                target.put(key, value.copy());
+                copied.add(key);
+            }
+        }
+        return copied;
+    }
+
+    /**
+     * A respawn, or the way home from the End: Forge has already passed {@code PlayerPersisted} to the new player whole (and other
+     * mods' Clone handlers may have run), so this only fills in a {@code bsp_core:*} key that is missing. It never rebuilds or
+     * replaces the compound.
+     */
+    @net.minecraftforge.eventbus.api.SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST)
+    public static void onClone(net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        Player now = event.getEntity(), was = event.getOriginal();
+        if (now.level().isClientSide || now == was) {
+            return;
+        }
+        java.util.List<String> copied = copyOwnKeys(was, now);
+        if (!copied.isEmpty()) {
+            edited(now, copied.toArray(String[]::new));
+        }
     }
 
     public static boolean isTotemGranted(Player player) {
@@ -50,6 +130,7 @@ public final class PlayerPersistent {
 
     public static void setTotemGranted(Player player, boolean granted) {
         get(player).putBoolean(TAG_TOTEM_GRANTED, granted);
+        edited(player, TAG_TOTEM_GRANTED);
     }
 
     /** The last season this player was brought into (given their fresh totem for, or first joined in). */
@@ -59,6 +140,7 @@ public final class PlayerPersistent {
 
     public static void setSeasonSeen(Player player, int season) {
         get(player).putInt(BSPCore.MODID + ":SeasonSeen", season);
+        edited(player, BSPCore.MODID + ":SeasonSeen");
     }
 
     public static int coinEpoch(Player player) {
@@ -67,14 +149,21 @@ public final class PlayerPersistent {
 
     public static void setCoinEpoch(Player player, int epoch) {
         get(player).putInt(BSPCore.MODID + ":CoinEpoch", epoch);
+        edited(player, BSPCore.MODID + ":CoinEpoch");
     }
 
     /** Records where the player last stood in a dimension that may hold a totem. */
     public static void setLastMainPosition(Player player, ResourceKey<Level> dimension, BlockPos pos) {
         CompoundTag tag = get(player);
-        tag.putString(TAG_LAST_MAIN_DIM, dimension.location().toString());
+        String dim = dimension.location().toString(), server = serverId();
+        // written every second while the player moves: logged only when the dimension or server changes
+        boolean moved = !dim.equals(tag.getString(TAG_LAST_MAIN_DIM)) || !server.equals(tag.getString(TAG_LAST_MAIN_SERVER));
+        tag.putString(TAG_LAST_MAIN_DIM, dim);
         tag.putLong(TAG_LAST_MAIN_POS, pos.asLong());
-        tag.putString(TAG_LAST_MAIN_SERVER, serverId());
+        tag.putString(TAG_LAST_MAIN_SERVER, server);
+        if (moved) {
+            edited(player, TAG_LAST_MAIN_DIM, TAG_LAST_MAIN_POS, TAG_LAST_MAIN_SERVER);
+        }
     }
 
     public static Optional<LastMainPosition> getLastMainPosition(Player player) {
@@ -110,6 +199,7 @@ public final class PlayerPersistent {
         e.putString("Server", serverId());
         list.add(e);
         tag.put(TAG_LOGOUT_PLACED, list);
+        edited(player, TAG_LOGOUT_PLACED);
     }
 
     /**
@@ -118,6 +208,7 @@ public final class PlayerPersistent {
      */
     public static java.util.List<LogoutPlaced> takeLogoutPlaced(Player player) {
         CompoundTag tag = get(player);
+        boolean had = tag.contains(TAG_LOGOUT_PLACED);
         java.util.List<LogoutPlaced> out = new java.util.ArrayList<>();
         net.minecraft.nbt.ListTag others = new net.minecraft.nbt.ListTag();
         for (net.minecraft.nbt.Tag raw : tag.getList(TAG_LOGOUT_PLACED, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
@@ -136,6 +227,9 @@ public final class PlayerPersistent {
             tag.remove(TAG_LOGOUT_PLACED);
         } else {
             tag.put(TAG_LOGOUT_PLACED, others);
+        }
+        if (had) {
+            edited(player, TAG_LOGOUT_PLACED);
         }
         return out;
     }
@@ -159,6 +253,7 @@ public final class PlayerPersistent {
             } else {
                 tag.put(TAG_LOGOUT_PLACED, keep);
             }
+            edited(player, TAG_LOGOUT_PLACED);
         }
         return n;
     }

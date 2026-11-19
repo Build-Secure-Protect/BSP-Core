@@ -3757,3 +3757,17 @@ Needs bounties to show (place them through the screens from part 8, or the staff
 - [ ] From 20 to 40 blocks away the posters, WANTED and the key names do not flicker.
 - [ ] The Most Wanted board's heads show the players' skins.
 
+
+## Other mods' player data is kept (Waystones) (2026-11-19, 1.19.1)
+
+On a test server with Waystones, BSP-Core and BSP-InventorySync installed; a player has discovered 2 or 3 waystones. After each step, open the player's Waystones list and read `playerdata/<uuid>.dat` with an NBT viewer: `ForgeData.PlayerPersisted.BalmData.WaystonesData.Waystones` holds the same ids, and the `bsp_core:*` keys are right. Run the steps once with BSP-InventorySync and once without it, to tell its restore apart from BSP-Core.
+
+- [ ] Log out and back in.
+- [ ] Die and respawn.
+- [ ] Change dimension (Nether and back).
+- [ ] Leave the End through the exit portal.
+- [ ] Switch servers through Velocity and back.
+- [ ] Everything BSP-Core does at login: a first-join totem grant (a fresh player on the hub), a kit owed, a season change, items owed, a coin-epoch strip.
+- [ ] A player whose file has no `PlayerPersisted` yet: after joining it holds only `bsp_core:*` keys (plus whatever other mods add), and the totem grant, season and last spot work.
+- [ ] With the server's `logs/debug.log` open: each BSP-Core write shows a line "BSP-Core persistent data of <name>: wrote <keys> in PlayerPersisted (N other mods' keys kept: [...])", and BalmData stays in that list.
+- [ ] Recall: a recall used before the update still waits out its cooldown after it; Siege the same.

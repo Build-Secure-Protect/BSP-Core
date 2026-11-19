@@ -7,6 +7,7 @@ import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.RecallOfferPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -36,7 +37,15 @@ public final class RecallService {
     private static final java.util.Set<UUID> REMOTE = new java.util.HashSet<>();
     /** Arrivals to finish: the owner logged in here with a remote offer open; the teleport runs once they are fully in. */
     private static final Map<UUID, Long> ARRIVING = new HashMap<>();
-    private static final String TAG_READY = "RecallReadyAt";
+    private static final String TAG_READY = BSPCore.MODID + ":RecallReadyAt";
+    /** The key as first written, without BSP-Core's prefix: still read, and dropped at the next recall. */
+    private static final String TAG_READY_OLD = "RecallReadyAt";
+
+    /** When the player may be recalled again (ms), from the prefixed key or the unprefixed one written before. */
+    static long readyAt(ServerPlayer player) {
+        CompoundTag data = PlayerPersistent.get(player);
+        return Math.max(data.getLong(TAG_READY), data.getLong(TAG_READY_OLD));
+    }
     /** Extra seconds a remote offer stays open on top of the prompt time, for the server transfer. */
     private static final int REMOTE_EXTRA_SECONDS = 90;
 
@@ -57,7 +66,7 @@ public final class RecallService {
             return;
         }
         int r = radius(recallLevel);
-        long now = System.currentTimeMillis(), ready = PlayerPersistent.get(player).getLong(TAG_READY);
+        long now = System.currentTimeMillis(), ready = readyAt(player);
         if (now < ready) {
             player.displayClientMessage(Component.translatable("message.bsp_core.recall.resting", (ready - now) / 60_000 + 1).withStyle(ChatFormatting.YELLOW), true);
             return;
@@ -128,7 +137,10 @@ public final class RecallService {
         float yaw = (float) Math.toDegrees(Math.atan2(-(dx / len), dz / len)) + 180f;
         player.teleportTo(offer.level, tx + 0.5, ty, tz + 0.5, yaw, 10f);
         player.fallDistance = 0;
-        PlayerPersistent.get(player).putLong(TAG_READY, System.currentTimeMillis() + BSPConfig.getOr(BSPConfig.RECALL_COOLDOWN_MINUTES, 10) * 60_000L);
+        CompoundTag persisted = PlayerPersistent.get(player);
+        persisted.putLong(TAG_READY, System.currentTimeMillis() + BSPConfig.getOr(BSPConfig.RECALL_COOLDOWN_MINUTES, 10) * 60_000L);
+        persisted.remove(TAG_READY_OLD);
+        PlayerPersistent.edited(player, TAG_READY);
         player.displayClientMessage(Component.translatable("message.bsp_core.recall.done", offer.radius).withStyle(ChatFormatting.AQUA), true);
         BSPNetwork.sendTo(player, RecallOfferPacket.clear());
         BSPCore.LOGGER.info("{} recalled to {} near the totem at {}", player.getGameProfile().getName(), new BlockPos(tx, ty, tz), offer.totem);

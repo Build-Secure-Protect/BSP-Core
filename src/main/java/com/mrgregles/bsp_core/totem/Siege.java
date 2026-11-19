@@ -17,7 +17,26 @@ import java.util.List;
  * by the crosshair.
  */
 public final class Siege {
-    private static final String TAG_UNTIL = "SiegeUntil", TAG_READY = "SiegeReadyAt";
+    /** In {@code ForgeData} itself (a death ends Siege), under BSP-Core's prefix like every key it keeps on a player. */
+    private static final String TAG_UNTIL = com.mrgregles.bsp_core.BSPCore.MODID + ":SiegeUntil", TAG_READY = com.mrgregles.bsp_core.BSPCore.MODID + ":SiegeReadyAt";
+    /** The keys as first written, without the prefix: still read, and dropped at the next use. */
+    private static final String OLD_UNTIL = "SiegeUntil", OLD_READY = "SiegeReadyAt";
+
+    private static long read(Player player, String key, String old) {
+        var data = player.getPersistentData();
+        return Math.max(data.getLong(key), data.getLong(old));
+    }
+
+    private static void write(ServerPlayer player, long until, long ready) {
+        var data = player.getPersistentData();
+        data.putLong(TAG_UNTIL, until);
+        data.putLong(TAG_READY, ready);
+        data.remove(OLD_UNTIL);
+        data.remove(OLD_READY);
+        if (com.mrgregles.bsp_core.BSPCore.LOGGER.isDebugEnabled()) {
+            com.mrgregles.bsp_core.BSPCore.LOGGER.debug("BSP-Core persistent data of {}: wrote {}, {} (player data root)", player.getGameProfile().getName(), TAG_UNTIL, TAG_READY);
+        }
+    }
 
     private Siege() {}
 
@@ -29,19 +48,19 @@ public final class Siege {
         if (!(player instanceof ServerPlayer sp)) {
             return false;
         }
-        return now(sp) < sp.getPersistentData().getLong(TAG_UNTIL);
+        return now(sp) < read(sp, TAG_UNTIL, OLD_UNTIL);
     }
 
     /** The key was pressed: start it, stop it early, or say why not. */
     public static void toggle(ServerPlayer player) {
         int lvl = CarriedPowers.level(player, TotemUpgrades.Buff.SIEGE);
-        long now = now(player), until = player.getPersistentData().getLong(TAG_UNTIL), ready = player.getPersistentData().getLong(TAG_READY);
+        long now = now(player), until = read(player, TAG_UNTIL, OLD_UNTIL), ready = read(player, TAG_READY, OLD_READY);
         if (lvl <= 0) {
             player.displayClientMessage(Component.translatable("message.bsp_core.siege.none").withStyle(ChatFormatting.RED), true);
             return;
         }
         if (now < until) {
-            player.getPersistentData().putLong(TAG_UNTIL, now); // stopped early; the recharge still runs from the use
+            write(player, now, ready); // stopped early; the recharge still runs from the use
             send(player, now, ready);
             return;
         }
@@ -53,8 +72,7 @@ public final class Siege {
         int recharge = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.SIEGE_RECHARGE, List.<Integer>of()), lvl, 180);
         until = now + seconds * 20L;
         ready = until + recharge * 20L;
-        player.getPersistentData().putLong(TAG_UNTIL, until);
-        player.getPersistentData().putLong(TAG_READY, ready);
+        write(player, until, ready);
         send(player, until, ready);
         player.displayClientMessage(Component.translatable("message.bsp_core.siege.on", seconds).withStyle(ChatFormatting.GOLD), true);
     }

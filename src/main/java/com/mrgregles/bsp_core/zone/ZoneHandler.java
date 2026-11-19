@@ -111,6 +111,7 @@ public final class ZoneHandler {
         ListTag held = data.getList(HELD, Tag.TAG_COMPOUND);
         totems.forEach(t -> held.add(t.save(new CompoundTag())));
         data.put(HELD, held);
+        PlayerPersistent.edited(player, HELD);
         player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.GOLD), false);
     }
 
@@ -133,6 +134,7 @@ public final class ZoneHandler {
             } else {
                 data.put(HELD, keep);
             }
+            PlayerPersistent.edited(player, HELD);
         }
         return n;
     }
@@ -147,7 +149,10 @@ public final class ZoneHandler {
                 out.add(stack);
             }
         }
-        data.remove(HELD);
+        if (data.contains(HELD)) {
+            data.remove(HELD);
+            PlayerPersistent.edited(player, HELD);
+        }
         return out;
     }
 

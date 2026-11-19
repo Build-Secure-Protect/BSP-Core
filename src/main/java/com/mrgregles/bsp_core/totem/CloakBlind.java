@@ -33,6 +33,7 @@ public final class CloakBlind {
     /** Server side: store and tell the client. */
     public static void set(ServerPlayer player, boolean blind) {
         player.getPersistentData().putBoolean(TAG, blind);
+        BSPCore.LOGGER.debug("BSP-Core persistent data of {}: wrote {} (player data root)", player.getGameProfile().getName(), TAG);
         BSPNetwork.sendTo(player, new CloakBlindPacket(blind));
     }
 

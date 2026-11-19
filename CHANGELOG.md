@@ -4,6 +4,17 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-11-19
+
+Network protocol 15, unchanged: 1.19.0 clients can stay.
+
+### Fixed
+- **BSP-Core edits only its own `bsp_core:*` keys in a player's saved data.** Every mod shares a player's `ForgeData.PlayerPersisted` (Waystones keeps each player's known waystones there). BSP-Core never replaced it, and it still edits it in place; it now also makes the compound only when it is missing and checks its type. On a respawn or the way home from the End it fills in only a missing `bsp_core:*` key, never rebuilding the compound. A GameTest fails if any class other than the one helper names `PlayerPersisted` or `ForgeData`. (The lost Waystones lists came from a whole-`ForgeData` restore elsewhere, not from BSP-Core.)
+- The Recall cooldown and Siege's timers are saved under BSP-Core's prefix (`bsp_core:RecallReadyAt`, `bsp_core:SiegeUntil`, `bsp_core:SiegeReadyAt`). A cooldown saved under the old names is still honoured.
+
+### Added
+- At DEBUG level (the server's `logs/debug.log`), a line for every BSP-Core write to a player's saved data: which keys it wrote, and which other mods' keys the compound still holds.
+
 ## [1.19.0] - 2026-11-19
 
 Network protocol 15: servers and clients must both have this version (the bounty summary).
