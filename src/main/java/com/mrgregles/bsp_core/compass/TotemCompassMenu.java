@@ -12,11 +12,14 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Slotless menu for the Totem Compass. Buttons: 0-4 load one coin of that tier, 5 start tracking,
- * 6 buy a cooldown upgrade, 7 buy the next Across range level, 8 the next Up or down range level. Values are synced through data slots so the screen is always current.
+ * Slotless menu for the Totem Compass. Buttons: 0-4 load one coin of that tier, 5 start tracking. The upgrades are bought at a
+ * Compass Tuner and tuned into the compass, so the compass itself sells nothing. Values are synced through data slots so the
+ * screen is always current.
  */
 public class TotemCompassMenu extends AbstractContainerMenu {
-    public static final int BTN_START = 5, BTN_UPGRADE = 6, BTN_WIDER = 7, BTN_DEEPER = 8, DATA_COUNT = 9;
+    public static final int BTN_START = 5, DATA_COUNT = 9;
+    /** What data slot 4 says about the compass's levels. */
+    public static final int UNTUNED = 0, TUNED = 1, UPGRADED_BEFORE_TUNER = 2;
     private final Player player;
     private final InteractionHand hand;
     private final ContainerData data;
@@ -37,7 +40,7 @@ public class TotemCompassMenu extends AbstractContainerMenu {
                     case 2 -> Math.min(Short.MAX_VALUE, player instanceof ServerPlayer sp && !s.isEmpty()
                             ? TotemCompassItem.cooldownLeft(sp, s) : TotemCompassItem.cooldownLeft(s, now));
                     case 3 -> TotemCompassItem.level(s);
-                    case 4 -> Math.min(Short.MAX_VALUE, TotemCompassItem.upgradeCost(s));
+                    case 4 -> tuneState(s);
                     case 5 -> TotemCompassItem.cooldownSeconds(s);
                     case 6 -> TotemCompassItem.rangeLevel(s, TotemCompassItem.Range.ACROSS);
                     case 7 -> TotemCompassItem.rangeLevel(s, TotemCompassItem.Range.DEPTH);
@@ -58,6 +61,14 @@ public class TotemCompassMenu extends AbstractContainerMenu {
         addDataSlots(data);
     }
 
+    /** Tuned by a tuner; or with levels and no tuned mark (bought on the compass before the tuner); or neither. */
+    public static int tuneState(ItemStack s) {
+        if (TotemCompassItem.isTuned(s)) {
+            return TUNED;
+        }
+        return TotemCompassItem.upgradedBeforeTuner(s) ? UPGRADED_BEFORE_TUNER : UNTUNED;
+    }
+
     private ItemStack compass() {
         ItemStack held = player.getItemInHand(hand);
         return held.getItem() instanceof TotemCompassItem ? held : ItemStack.EMPTY;
@@ -68,7 +79,7 @@ public class TotemCompassMenu extends AbstractContainerMenu {
     public int trackingLeft() { return data.get(1); }
     public int cooldownLeft() { return data.get(2); }
     public int level() { return data.get(3); }
-    public int upgradeCost() { return (short) data.get(4); }
+    public int tuneState() { return data.get(4); }
     public int cooldownSeconds() { return data.get(5); }
     /** The compass's level on a range ladder; the screen reads the blocks and prices from the synced server config. */
     public int rangeLevel(TotemCompassItem.Range r) { return data.get(r == TotemCompassItem.Range.ACROSS ? 6 : 7); }
@@ -89,10 +100,6 @@ public class TotemCompassMenu extends AbstractContainerMenu {
             TotemCompassItem.loadCoin(sp, compass, tier);
         } else if (id == BTN_START) {
             TotemCompassItem.startTracking(sp, compass);
-        } else if (id == BTN_UPGRADE) {
-            TotemCompassItem.buyUpgrade(sp, compass);
-        } else if (id == BTN_WIDER || id == BTN_DEEPER) {
-            TotemCompassItem.buyRange(sp, compass, id == BTN_WIDER ? TotemCompassItem.Range.ACROSS : TotemCompassItem.Range.DEPTH);
         } else {
             return false;
         }

@@ -123,6 +123,9 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_UPGRADE_TIERS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> COMPASS_RANGE_ACROSS, COMPASS_RANGE_UP_DOWN, COMPASS_RANGE_COSTS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMPASS_RANGE_TIERS;
+    public static final ForgeConfigSpec.IntValue TUNER_MAX, TUNER_ENERGY_CAPACITY, TUNER_FE_PER_TICK;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> TUNER_MINUTES, TUNER_SPEED_COSTS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> TUNER_SPEED_TIERS, TUNER_MATERIALS;
     public static final ForgeConfigSpec.BooleanValue RADIATION_ENABLED;
     public static final ForgeConfigSpec.IntValue RADIATION_FULL_LEVEL, RADIATION_MAX_SEEN, RADIATION_MAX_LAYERS, RADIATION_CHECK_RADIUS, RADIATION_CHECK_SECONDS;
     public static final ForgeConfigSpec.DoubleValue RADIATION_EXPONENT, RADIATION_BLUR, RADIATION_LAYER_CUT;
@@ -500,6 +503,27 @@ public final class BSPConfig {
                         "One entry per level, matching rangeUpgradeCoins. A short list repeats its last entry.")
                 .defineList("rangeUpgradeCoinTiers", List.of("copper", "gold", "diamond", "netherite", "illyrium", "illyrium"),
                         o -> o instanceof String str && java.util.Arrays.stream(com.mrgregles.bsp_core.coin.CoinTier.values()).anyMatch(t -> t.key.equals(str)));
+        BUILDER.pop();
+
+        BUILDER.comment("Compass Tuner: the block that keeps the compass upgrades and tunes compasses to them.").push("compassTuner");
+        TUNER_MAX = BUILDER.comment("Most Compass Tuners a player may have placed at once. Only the owner and their team can mine one.")
+                .defineInRange("maxPerPlayer", 1, 1, 100);
+        TUNER_ENERGY_CAPACITY = BUILDER.comment("FE a tuner holds.").defineInRange("energyCapacity", 200_000, 1_000, 100_000_000);
+        TUNER_FE_PER_TICK = BUILDER.comment("FE per tick a tuner draws while it tunes, before Wave Plasma speeds it up (the draw rises with the speed).")
+                .defineInRange("fePerTick", 100, 0, 1_000_000);
+        TUNER_MINUTES = BUILDER.comment("Minutes one tune takes: the first entry with no Tune speed upgrade, then one entry per level. Wave Plasma divides it further.")
+                .defineList("tuneMinutes", List.of(120, 90, 60, 45, 30), BSPConfig::isPositiveInt);
+        TUNER_SPEED_COSTS = BUILDER.comment("How many coins each Tune speed level costs. The kind of coin is set in speedUpgradeCoinTiers.",
+                        "The number of levels is the shortest of this list and tuneMinutes less its first entry.")
+                .defineList("speedUpgradeCoins", List.of(10, 10, 10, 20), BSPConfig::isPositiveInt);
+        TUNER_SPEED_TIERS = BUILDER.comment("Which Shatter Coin each Tune speed level is paid in: copper, gold, diamond, netherite or illyrium.",
+                        "One entry per level, matching speedUpgradeCoins. A short list repeats its last entry.")
+                .defineList("speedUpgradeCoinTiers", List.of("gold", "diamond", "netherite", "illyrium"),
+                        o -> o instanceof String str && java.util.Arrays.stream(com.mrgregles.bsp_core.coin.CoinTier.values()).anyMatch(t -> t.key.equals(str)));
+        TUNER_MATERIALS = BUILDER.comment("What one tune uses, taken when it finishes: up to four entries, each an item id or a #tag and how many,",
+                        "for example \"minecraft:lapis_lazuli 16\" or \"#forge:dusts/redstone 16\". Each entry gets its own slot in the tuner.")
+                .defineList("materials", List.of("minecraft:lapis_lazuli 16", "minecraft:quartz 16", "minecraft:redstone 16"),
+                        o -> o instanceof String str && str.trim().matches("#?[a-z0-9_.-]+:[a-z0-9_./-]+( +[0-9]+)?"));
         BUILDER.pop();
 
         BUILDER.comment("Who may use BSP-Core's admin tools (admin block, Score Screen settings, season controls).").push("admin");

@@ -215,12 +215,13 @@ Delete `serverconfig/bsp_core-server.toml` in an older test world first, so the 
 - [ ] Right-click: the screen shows "Pointing to your nearest totem". Click a coin button: one coin of that tier leaves your inventory and "Loaded" rises by 1, 5, 10, 30 or 60 seconds.
 - [ ] Press Start tracking: the needle swings to the nearest totem owned by someone else (assign a second totem to a dummy name as an operator to test). The timer counts down.
 - [ ] When tracking ends the screen shows a 10:00 cooldown, during which Start tracking is disabled and the needle points to your own totem again.
-- [ ] Buy a cooldown upgrade: coin value is taken and the cooldown length drops by one minute, down to 3:00 after seven levels.
+- [ ] A compass tuned at a Compass Tuner with Cooldown 7: the cooldown after tracking is 3:00.
 
 ## Totem Compass screen
 
-- [ ] The right-hand button reads "Shorten cooldown" and fits inside its frame. Under it is the price as a coin icon and "x4 Copper" (red when you do not have enough). Buying takes exactly those coins and nothing else; the next level asks for Gold.
-- [ ] Five coin tiles with the tracking time each adds; clicking one spends a coin and raises STORED. Start and the upgrade button grey out when they cannot be used. Header shows READY, TRACKING or COOLDOWN with a clock.
+- [ ] Beside START: "Cooldown after tracking" in small grey and the time under it (10:00 untuned). No cooldown, WIDER or DEEPER keys anywhere.
+- [ ] Five coin tiles with the tracking time each adds; clicking one spends a coin and raises STORED. Start greys out when it cannot be used. Header shows READY, TRACKING or COOLDOWN with a clock.
+- [ ] The last line reads "Untuned. Tune it at a Compass Tuner." in gold for a new compass, "Tuned at a Compass Tuner." in turquoise after a tune, and "A Compass Tuner copies its upgrades, once." on a compass upgraded on its own screen in an older version.
 
 # Materials, machines and progression
 
@@ -3095,7 +3096,7 @@ Server-side rules are covered by the GameTests in `MainTotemGameTests` (batch `m
 
 ## Compass range (2026-11-08, 1.15.0)
 
-The reach rules and the buying are covered by `CompassRangeGameTests` (batch `compass_range`).
+The reach rules are covered by `CompassRangeGameTests` (batch `compass_range`). From the Compass Tuner on, the levels are bought at a tuner, not on the compass: the WIDER, DEEPER and price lines below apply to 1.15.0 to 1.19.x only (see "Compass Tuner" below).
 
 - [ ] Open a new compass: the screen is taller, with REACH under the cooldown line. The side view shows a small turquoise box, "100 each way" bottom left, "10 up or down" top right, "next" in gold bottom right, and a dotted gold outline a little wider and a little taller than the box.
 - [ ] WIDER with 10 Copper Coins: the coins go, the box widens, the label reads "250 each way" and the price under WIDER reads "10 Gold". Hovering over WIDER says "Next level: 500 blocks each way". With too few coins the price is red and the key is grey.
@@ -3788,3 +3789,33 @@ On two servers sharing MySQL, with one open bounty.
 - [ ] Extend the bounty by 1 day from server A's admin panel, then at once (within a minute) by 1 hour from server B's. The bounty ends 1 day and 1 hour later than before, on both servers' boards and in the `bounties` table (`ends_ms`).
 - [ ] Extend it from server B to the longest (30 days from now), then from server A by an hour before A's board shows the change: A answers "max", and the end stays at the cap.
 - [ ] Place a bounty on server A and extend it from server B's panel within a few seconds: it is extended (not "gone").
+
+## Compass Tuner (2026-11-20, 1.20.0)
+
+The rules (prices, who may buy and mine, the drop, the limit, materials, the clock, FE, plasma, stopping, finishing, pipes, the handover, the screen's keys, saving) are covered by `CompassTunerGameTests` (batch `compass_range`). By hand, in a client:
+
+- [ ] Network protocol 16: a client with the 1.19.x jar (protocol 15) is refused by a server with this build, with the usual mismatch message; a client with this build joins.
+
+The block
+- [ ] Craft it: iron ingots, a lapis block, a quartz block, a redstone block and a plain compass. It faces you when placed; the recessed front panel holds the screen, the TUNE plate and the red key.
+- [ ] The brass and copper rings turn slowly round the pin; nothing pokes through the deck or the corner posts at any angle. The hoppers show lapis, quartz and redstone below their lips; the FE socket is at the back.
+- [ ] Put a compass in: it lies on the pin inside the rings, needle swinging. TUNE: the rings turn faster, the needle spins and the screen counts down (H:MM:SS) with a strip filling under it.
+- [ ] Plasma through a Plasma Injector against the tuner: the glass bulb on the back-right post fills with breathing plasma; cut the cable and it empties within a few seconds.
+- [ ] Lit from the front at night (a torch in front): the front panel and rings are lit, not black. Placed facing each of the four ways, the screen and TUNE label are on the front and read the right way round.
+- [ ] A second player (not on your team): right-click says whose it is and opens nothing; mining does nothing at all. A teammate opens and mines it.
+- [ ] Mine it with levels bought, once with a pickaxe and once by hand: it drops both times, the item's tooltip lists the levels, and placed again they are back. Try to place a second tuner: refused with a message.
+- [ ] A Wither fight next to a tuner, and a Create drill (or another mod's block breaker) pointed at one: the tuner stays.
+
+The screen
+- [ ] The dial: ticks round the rim, the compass well in the middle, the material wells at 8, 4 and 6 o'clock with a dim picture of lapis, quartz and redstone and "x16" under or beside each (red when short). Hover an empty well: "A tune takes 16 Lapis Lazuli".
+- [ ] Under the dial: "Taken when a tune finishes", the REACH heading and the box with the next level dotted gold, "Dotted gold: the next level" under it, then the inventory with nothing overlapping.
+- [ ] Right column: "TUNES INTO A COMPASS" over Across, Up or down and Cooldown, a gap, "THIS TUNER" over Tune speed. Each card: name, value, pips, a + key and the price in the coin's colour (red when short, "Free" in creative, "TOP LEVEL" at the top). Hover a +: "Next level: …".
+- [ ] FE and PL bars fill as power and plasma arrive; the plasma factor reads x1.0 without, up to x3.0.
+- [ ] TUNE is grey with the reason under it until a compass, the materials and FE are in ("Put a compass in.", "Add the materials.", "Needs FE.", "Already at these levels."), then lit. Pressed: the status reads TUNING, the rim fills with a gold hand, "x left" and "ready about HH:MM" (your clock) in the dial, and the key reads TUNING with "Take it out to stop." under it.
+- [ ] Take the compass out mid-tune: the tune is gone, the materials stay. Take the lapis out instead and wait: at the end it reads "Waiting for materials" and NEEDS MATERIALS; put it back and it finishes.
+- [ ] No FE mid-tune: the rim turns grey, "Paused · no FE" in red, status NO FE; the block's screen reads NO FE in red.
+- [ ] Leave the area for a while (unload the chunk) and come back: the countdown has moved on by the time away.
+- [ ] A compass upgraded on its own screen in an older version, put in: the gold banner "Handed over: Across …" shows over the inventory, the status reads HANDED OVER, and the cards jump to the higher levels. Take it out and put it in again: no banner, nothing changes.
+- [ ] At GUI scale 3 and 4 on a small window the whole screen fits (it scales down).
+- [ ] Hoppers: a hopper above feeds lapis, quartz and redstone into their own slots; a hopper below takes nothing out; a compass in the hopper stays there.
+- [ ] Guide book: "The Compass Tuner" entry (spotlight, Tuning, Speed, What a tune gives, the recipe) and the Totem Compass entry's Reach page point to each other. JEI/EMI: the tuner's information page.

@@ -115,6 +115,7 @@
     "bsp_core:radiation_shielding_window",
     "bsp_core:radiation_shielding_door",
     "bsp_core:spawn_grate",
-    "bsp_core:tank_extractor"
+    "bsp_core:tank_extractor",
+    "bsp_core:compass_tuner"
   ]
 }

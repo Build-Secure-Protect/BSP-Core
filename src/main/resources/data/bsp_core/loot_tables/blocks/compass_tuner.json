@@ -1,0 +1,47 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "bsp_core:compass_tuner",
+          "functions": [
+            {
+              "function": "minecraft:copy_nbt",
+              "source": "block_entity",
+              "ops": [
+                {
+                  "source": "Across",
+                  "target": "BlockEntityTag.Across",
+                  "op": "replace"
+                },
+                {
+                  "source": "Depth",
+                  "target": "BlockEntityTag.Depth",
+                  "op": "replace"
+                },
+                {
+                  "source": "Cooldown",
+                  "target": "BlockEntityTag.Cooldown",
+                  "op": "replace"
+                },
+                {
+                  "source": "Speed",
+                  "target": "BlockEntityTag.Speed",
+                  "op": "replace"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}

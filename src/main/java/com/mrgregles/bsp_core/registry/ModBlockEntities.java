@@ -130,6 +130,11 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlockEntity::new, ModBlocks.DECOY_POWER_BASE.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.compass.CompassTunerBlockEntity>> COMPASS_TUNER =
+            BLOCK_ENTITIES.register("compass_tuner", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.compass.CompassTunerBlockEntity::new, ModBlocks.COMPASS_TUNER.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity>> PLASMA_EXTRACTOR =
             BLOCK_ENTITIES.register("plasma_extractor", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity::new, ModBlocks.PLASMA_EXTRACTOR.get()).build(null));

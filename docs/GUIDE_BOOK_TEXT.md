@@ -120,13 +120,13 @@ No upgrade can make a totem impossible to steal: blocks can always be mined, and
 
 Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.
 
-After tracking it needs to cool down. Upgrades shorten the cooldown.
+After tracking it needs to cool down: 10 minutes on an untuned compass.
 
 **Page 2: Reach**
 
-A compass finds rival totems only within its **reach**: 100 blocks from you across the ground and 10 above or below, at first.
+A compass finds rival totems only within its **reach**: 100 blocks from you across the ground and 10 above or below, untuned.
 
-**WIDER** and **DEEPER** on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.
+A Compass Tuner tunes more into it, up to 2,500 and 150, and a cooldown down to 3 minutes. Its screen says whether it is tuned.
 
 **Page 3: Reading the compass**
 
@@ -136,11 +136,39 @@ With none, but a rival's radiation detected, the needle turns slowly and **Totem
 
 Otherwise it wobbles.
 
-**Page 4: Upgrade pips**
+**Page 4: Level pips**
 
-Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.
+Pips on the compass in your hotbar count its tuned levels: turquoise along the bottom for across, gold up the side for up or down.
 
 **Page 5**  `[recipe] totem_compass`
+
+## The Compass Tuner
+
+**Page 1**  `[item shown] compass_tuner`
+
+Keeps your compass upgrades, so a lost compass does not take them with it. Buy **Across**, **Up or down** and **Cooldown** on the tuner, then tune any Totem Compass to them.
+
+Only you and your team can open it or mine it. Mined, it keeps its upgrades. You may have one placed.
+
+**Page 2: Tuning**
+
+Put a compass in the middle of the dial and fill the slots on the dial: 16 lapis, 16 nether quartz and 16 redstone. Give it FE and press **TUNE**.
+
+A tune takes 2 hours and keeps counting while you are away, even with the area unloaded. The materials are used when it finishes.
+
+**Page 3: Speed**
+
+**Tune speed** brings a tune down to 30 minutes. A Plasma Injector against the tuner speeds it up further, up to three times, and it draws more FE as it does.
+
+Taking the compass out stops the tune and spends nothing.
+
+**Page 4: What a tune gives**
+
+Each level ends at the higher of the compass's and the tuner's. Levels bought during a tune need another tune.
+
+An upgraded compass that was never tuned hands its upgrades to the first tuner it goes into, once, and keeps them as well.
+
+**Page 5**  `[recipe] compass_tuner`
 
 ## Scores and Seasons
 
@@ -1218,7 +1246,7 @@ Coins that pay for your team already are not taken, and nothing is re-pressed wh
 
 Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.
 
-Compass upgrades cost the same in a team or alone.
+Compass Tuner upgrades cost the same in a team or alone.
 
 ## The Shatter Bank
 

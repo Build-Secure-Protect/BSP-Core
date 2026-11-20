@@ -219,7 +219,7 @@ public class CompassRangeGameTests {
     }
 
     @GameTest(template = EMPTY, batch = BATCH)
-    public void compass_range_upgrades_cost_their_coins_and_stay_on_the_compass(GameTestHelper h) {
+    public void the_compass_sells_no_upgrades_and_reads_the_levels_tuned_into_it(GameTestHelper h) {
         ServerPlayer player = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
         ItemStack compass = new ItemStack(ModItems.TOTEM_COMPASS.get());
         player.setItemInHand(InteractionHand.MAIN_HAND, compass);
@@ -227,32 +227,34 @@ public class CompassRangeGameTests {
         h.assertTrue(TotemCompassItem.rangeBlocks(Range.ACROSS, 6) == 2500 && TotemCompassItem.rangeBlocks(Range.DEPTH, 6) == 150, "the top levels reach 2,500 and 150");
         h.assertTrue(TotemCompassItem.rangeCost(5) == 40 && TotemCompassItem.rangeCoin(5) == CoinTier.ILLYRIUM, "the last level costs 40 Illyrium");
 
-        h.assertTrue(!TotemCompassItem.buyRange(player, compass, Range.ACROSS), "no coins, no upgrade");
-        player.getInventory().add(new ItemStack(CoinTier.COPPER.coin(), 12));
-        player.getInventory().add(new ItemStack(CoinTier.GOLD.coin(), 10));
-        h.assertTrue(TotemCompassItem.buyRange(player, compass, Range.ACROSS), "10 Copper buys Across level 1");
-        h.assertTrue(player.getInventory().countItem(CoinTier.COPPER.coin()) == 2, "and takes exactly 10 Copper");
-        h.assertTrue(!TotemCompassItem.buyRange(player, compass, Range.DEPTH), "Up or down level 1 also costs 10 Copper: 2 are not enough");
-        h.assertTrue(TotemCompassItem.buyRange(player, compass, Range.ACROSS) && player.getInventory().countItem(CoinTier.GOLD.coin()) == 0,
-                "10 Gold buys Across level 2");
-        h.assertTrue(TotemCompassItem.rangeLevel(compass, Range.ACROSS) == 2 && TotemCompassItem.rangeBlocks(compass, Range.ACROSS) == 500
-                && TotemCompassItem.rangeLevel(compass, Range.DEPTH) == 0, "the compass reaches 500 across and still 10 up or down");
+        // an untuned compass tracks at the base reach and cooldown
+        h.assertTrue(TotemCompassItem.rangeBlocks(compass, Range.ACROSS) == 100 && TotemCompassItem.rangeBlocks(compass, Range.DEPTH) == 10
+                && TotemCompassItem.cooldownSeconds(compass) == 600 && !TotemCompassItem.isTuned(compass), "untuned: 100 across, 10 up or down, 10 minutes");
+        h.assertTrue(TotemCompassMenu.tuneState(compass) == TotemCompassMenu.UNTUNED, "the screen says untuned");
 
-        // through the screen's keys
-        player.getInventory().add(new ItemStack(CoinTier.COPPER.coin(), 8));
+        // the old buy keys (6, 7, 8) do nothing, and no coins are taken
+        player.getInventory().add(new ItemStack(CoinTier.COPPER.coin(), 20));
         TotemCompassMenu menu = new TotemCompassMenu(1, player.getInventory(), InteractionHand.MAIN_HAND);
-        h.assertTrue(menu.clickMenuButton(player, TotemCompassMenu.BTN_DEEPER), "DEEPER is a key of the screen");
-        h.assertTrue(menu.rangeLevel(Range.DEPTH) == 1 && menu.rangeLevel(Range.ACROSS) == 2, "DEEPER bought Up or down level 1; the screen reads both levels");
-        h.assertTrue(TotemCompassItem.rangeBlocks(compass, Range.DEPTH) == 20, "20 up or down");
+        for (int id : new int[] {6, 7, 8}) {
+            h.assertTrue(!menu.clickMenuButton(player, id), "button " + id + " is not a key of the compass any more");
+        }
+        h.assertTrue(player.getInventory().countItem(CoinTier.COPPER.coin()) == 20 && TotemCompassItem.rangeLevel(compass, Range.ACROSS) == 0,
+                "no coins taken, no level bought");
 
-        ItemStack other = new ItemStack(ModItems.TOTEM_COMPASS.get());
-        h.assertTrue(TotemCompassItem.rangeLevel(other, Range.ACROSS) == 0 && TotemCompassItem.rangeLevel(other, Range.DEPTH) == 0,
-                "another compass starts from nothing: the upgrades belong to the compass");
+        // a tuned compass reads its levels
+        TotemCompassItem.applyTune(compass, 2, 1, 3);
+        h.assertTrue(TotemCompassItem.rangeBlocks(compass, Range.ACROSS) == 500 && TotemCompassItem.rangeBlocks(compass, Range.DEPTH) == 20
+                && TotemCompassItem.cooldownSeconds(compass) == 420 && TotemCompassItem.isTuned(compass), "tuned 2, 1, 3: 500 across, 20 up or down, 7 minutes");
+        h.assertTrue(menu.rangeLevel(Range.ACROSS) == 2 && menu.rangeLevel(Range.DEPTH) == 1 && menu.tuneState() == TotemCompassMenu.TUNED,
+                "the screen reads the tuned levels");
+        TotemCompassItem.applyTune(compass, 1, 0, 0);
+        h.assertTrue(TotemCompassItem.rangeLevel(compass, Range.ACROSS) == 2 && TotemCompassItem.level(compass) == 3, "a tune never lowers a level");
 
-        compass.getOrCreateTag().putInt(TotemCompassItem.RANGE_ACROSS, 6);
-        player.setGameMode(GameType.CREATIVE);
-        h.assertTrue(!TotemCompassItem.buyRange(player, compass, Range.ACROSS) && TotemCompassItem.rangeLevel(compass, Range.ACROSS) == 6,
-                "at the top there is nothing more to buy, even in creative");
+        // a compass upgraded before the tuner: levels and no tuned mark
+        ItemStack old = new ItemStack(ModItems.TOTEM_COMPASS.get());
+        old.getOrCreateTag().putInt(TotemCompassItem.RANGE_ACROSS, 4);
+        h.assertTrue(TotemCompassMenu.tuneState(old) == TotemCompassMenu.UPGRADED_BEFORE_TUNER && TotemCompassItem.rangeBlocks(old, Range.ACROSS) == 1400,
+                "an old upgraded compass keeps working at its levels");
         h.succeed();
     }
 }

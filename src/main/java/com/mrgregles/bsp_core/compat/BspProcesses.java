@@ -272,6 +272,7 @@ public final class BspProcesses {
             Map.entry("jei.bsp_core.info.totem_core", List.of("totem_core")),
             Map.entry("jei.bsp_core.info.molten", List.of("molten_tetrium_bucket", "molten_magnatite_bucket", "molten_illyrium_bucket")),
             Map.entry("jei.bsp_core.info.decoy_base", List.of("decoy_power_base")),
+            Map.entry("jei.bsp_core.info.compass_tuner", List.of("compass_tuner")),
             Map.entry("jei.bsp_core.info.score_screen", List.of("score_screen")),
             Map.entry("jei.bsp_core.info.admin_rack", List.of("admin_rack")),
             Map.entry("jei.bsp_core.info.anti_totem", List.of("anti_totem")),

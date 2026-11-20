@@ -292,11 +292,18 @@ ENTRIES = [
         text("A new player's totems up to Tier II give off no totem radiation at all, so no compass finds them, until the player reaches the rank or the hours of play the server has chosen.$(br2)The bottom of the totem's screen says what ends it.", "New players"),
     ]),
     ("totem", "compass", "The Totem Compass", "bsp_core:totem_compass", 3, [
-        spot("bsp_core:totem_compass", "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."),
-        text("A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, at first.$(br2)$(l)WIDER$() and $(l)DEEPER$() on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.", "Reach"),
+        spot("bsp_core:totem_compass", "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down: 10 minutes on an untuned compass."),
+        text("A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, untuned.$(br2)A $(l:totem/compass_tuner)Compass Tuner$() tunes more into it, up to 2,500 and 150, and a cooldown down to 3 minutes. Its screen says whether it is tuned.", "Reach"),
         text("While tracking, the needle points to a rival totem in your reach whose $(l:totem/radiation)radiation$() reaches you.$(br2)With none, but a rival's radiation detected, the needle turns slowly and $(l)Totem radiation detected$() shows above your hotbar.$(br2)Otherwise it wobbles.", "Reading the compass"),
-        text("Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.", "Upgrade pips"),
+        text("Pips on the compass in your hotbar count its tuned levels: turquoise along the bottom for across, gold up the side for up or down.", "Level pips"),
         craft("totem_compass"),
+    ]),
+    ("totem", "compass_tuner", "The Compass Tuner", "bsp_core:compass_tuner", 3, [
+        spot("bsp_core:compass_tuner", "Keeps your compass upgrades, so a lost compass does not take them with it. Buy $(l)Across$(), $(l)Up or down$() and $(l)Cooldown$() on the tuner, then tune any $(l:totem/compass)Totem Compass$() to them.$(br2)Only you and your team can open it or mine it. Mined, it keeps its upgrades. You may have one placed."),
+        text("Put a compass in the middle of the dial and fill the slots on the dial: 16 lapis, 16 nether quartz and 16 redstone. Give it FE and press $(l)TUNE$().$(br2)A tune takes 2 hours and keeps counting while you are away, even with the area unloaded. The materials are used when it finishes.", "Tuning"),
+        text("$(l)Tune speed$() brings a tune down to 30 minutes. A $(l:totem/injector)Plasma Injector$() against the tuner speeds it up further, up to three times, and it draws more FE as it does.$(br2)Taking the compass out stops the tune and spends nothing.", "Speed"),
+        text("Each level ends at the higher of the compass's and the tuner's. Levels bought during a tune need another tune.$(br2)An upgraded compass that was never tuned hands its upgrades to the first tuner it goes into, once, and keeps them as well.", "What a tune gives"),
+        craft("compass_tuner"),
     ]),
     ("materials", "tetrium", "Tetrium", "bsp_core:tetrium_ingot", 0, [
         text("$(item)Tetrium Ore$() is found underground in stone and deepslate. Mine it with an iron pickaxe or better. Without Silk Touch the ore drops $(item)Raw Tetrium$(); the crucibles take raw chunks and ore blocks alike, so do not smelt either."),
@@ -390,7 +397,7 @@ ENTRIES = [
         text("Alone you may own 10 factory slices. In a team each member owns fewer: 8 in a team of 2, 7 in a team of 3, 6 in a team of 4 and 5 in a team of 5. The number follows the team as it is, across every server: leave it and you are back to 10.$(br2)If you own more than your number (when your team grows), your newest slices pause until you are back within it.", "Factories"),
         text("Every coin a factory presses is stamped with its owner's team, or as pressed outside a team. The tooltip says which, and coins with different stamps do not stack. Banks, vaults and trades keep the stamp.$(br2)On your own totem any coin pays. On a teammate's totem only coins pressed for your team pay, and coins with no stamp at all (from loot, or older than stamps).", "Team stamps"),
         text("A coin pressed outside your team, or for another team, goes into a slice's blank slot like a blank. It is pressed again in half the time and for half the RF, and comes out for your team.$(br2)Coins that pay for your team already are not taken, and nothing is re-pressed while the factory's owner is in no team.", "Re-pressing"),
-        text("Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.$(br2)Compass upgrades cost the same in a team or alone.", "Team surcharge"),
+        text("Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.$(br2)Compass Tuner upgrades cost the same in a team or alone.", "Team surcharge"),
     ]),
     ("coins", "vault", "The Coin Vault", "bsp_core:coin_vault", 3, [
         spot("bsp_core:coin_vault", "A safe that holds only Shatter Coins, 27 stacks of 12 per block. Nothing can pipe coins in or out.$(br2)Vault blocks of yours that touch join into one vault, up to 3 x 3 x 3. You may own 27 vault blocks."),

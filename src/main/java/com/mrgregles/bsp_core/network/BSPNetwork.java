@@ -22,8 +22,10 @@ public final class BSPNetwork {
      * 12: the Totem Compass screen syncs its range levels and whether tracking found no rival in reach; the admin panel's RADIATION
      *     tab ({@link RadiationAdminPacket}, {@link RadiationEditPacket}); the Coin Factory screen's synced values carry the owner's
      *     team factory limit and team size, and a lane's re-press flag; the carried totem's upgrade screen syncs the team surcharge.
+     * 16: the Compass Tuner (its block, block entity data and screen); the Totem Compass screen's buy buttons (6 to 8) are gone and
+     *     its synced value 4 carries the tune state instead of the upgrade price.
      */
-    private static final String PROTOCOL = "15";
+    private static final String PROTOCOL = "16";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

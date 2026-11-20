@@ -1,0 +1,32 @@
+{
+  "name": "The Compass Tuner",
+  "category": "bsp_core:totem",
+  "icon": "bsp_core:compass_tuner",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:compass_tuner",
+      "text": "Keeps your compass upgrades, so a lost compass does not take them with it. Buy $(l)Across$(), $(l)Up or down$() and $(l)Cooldown$() on the tuner, then tune any $(l:totem/compass)Totem Compass$() to them.$(br2)Only you and your team can open it or mine it. Mined, it keeps its upgrades. You may have one placed."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Put a compass in the middle of the dial and fill the slots on the dial: 16 lapis, 16 nether quartz and 16 redstone. Give it FE and press $(l)TUNE$().$(br2)A tune takes 2 hours and keeps counting while you are away, even with the area unloaded. The materials are used when it finishes.",
+      "title": "Tuning"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tune speed$() brings a tune down to 30 minutes. A $(l:totem/injector)Plasma Injector$() against the tuner speeds it up further, up to three times, and it draws more FE as it does.$(br2)Taking the compass out stops the tune and spends nothing.",
+      "title": "Speed"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Each level ends at the higher of the compass's and the tuner's. Levels bought during a tune need another tune.$(br2)An upgraded compass that was never tuned hands its upgrades to the first tuner it goes into, once, and keeps them as well.",
+      "title": "What a tune gives"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:compass_tuner"
+    }
+  ]
+}

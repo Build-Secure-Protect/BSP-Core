@@ -170,6 +170,8 @@ public final class ModItems {
     public static final RegistryObject<Item> DECOY_TOTEM = ITEMS.register("decoy_totem", () -> new com.mrgregles.bsp_core.decoy.DecoyTotemBlockItem(ModBlocks.DECOY_TOTEM.get()));
     public static final RegistryObject<Item> DECOY_POWER_BASE = ITEMS.register("decoy_power_base",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.DECOY_POWER_BASE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> COMPASS_TUNER = ITEMS.register("compass_tuner",
+            () -> new com.mrgregles.bsp_core.compass.CompassTunerBlockItem(ModBlocks.COMPASS_TUNER.get()));
     /** What a wither skeleton's bones become when it dies in a Plasma Tank Mob Chamber, so its power (Wither) stays apart from a bone's (Growth). */
     public static final RegistryObject<Item> WITHER_BONE = ITEMS.register("wither_bone", () -> new Item(new Item.Properties()));
     /** The hard-to-make heart of a Decoy Totem: Charged Magnatite around an Illyrium Processor. */

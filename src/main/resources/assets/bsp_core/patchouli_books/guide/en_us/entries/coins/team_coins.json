@@ -21,7 +21,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.$(br2)Compass upgrades cost the same in a team or alone.",
+      "text": "Tier raises and upgrades on the totem of a player in a team cost 6% more for each member after the first: +6% in a team of 2, up to +24% in a team of 5. The extra is paid in Shatter Pieces from the buyer's bank, and the totem's card shows how many.$(br2)Compass Tuner upgrades cost the same in a team or alone.",
       "title": "Team surcharge"
     }
   ]

@@ -4,6 +4,24 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-20
+
+Network protocol 16: servers and clients must both have this version (the Compass Tuner, and the Totem Compass screen's synced values).
+
+### Added
+- **Compass Tuner**, a block that keeps the compass upgrades, so a lost compass no longer takes the coins spent on it. Its owner (and their team) buys Across, Up or down and Cooldown on the tuner at the prices the compass had, plus its own **Tune speed**: a tune takes 2 hours, then 1 h 30, 1 h, 45 min and 30 min (10 Gold, 10 Diamond, 10 Netherite, 20 Illyrium). A Totem Compass put in the middle of its dial is tuned to the tuner's levels when TUNE is pressed. On each ladder it ends at the higher of its own level and the tuner's; levels bought during a tune need another tune.
+  - A tune uses 16 lapis, 16 nether quartz and 16 redstone, taken when it finishes, and FE (100 FE/t). A Plasma Injector against the tuner speeds it up on the injectors' usual curve, up to three times, on top of Tune speed, and the FE draw rises with it. The tune runs on the real clock: while the area is unloaded it keeps counting at the Tune speed level. Taking the compass out stops the tune and spends nothing.
+  - Only the owner and their team can open, use or mine it, with any tool or none; explosions, pistons, mobs such as the Wither and block-breaking machines do not move or break it. Mined, it drops with its upgrades. One per player by default.
+  - Pipes and hoppers can put the materials in (each slot takes its own) and FE from any side; the compass goes in and out by hand.
+  - The screen: a dial with the compass in the middle, the progress round the rim and the materials on it, the reach the tuner gives under it, and the four upgrade cards, FE, plasma and TUNE on the right.
+  - The block: a slate plinth with a gimbal of brass and copper rings that turn round the compass, hoppers of lapis, quartz and redstone on its corner posts, a plasma bulb that glows while plasma arrives, and a countdown on its front screen.
+  - Config `compassTuner`: `maxPerPlayer`, `energyCapacity`, `fePerTick`, `tuneMinutes`, `speedUpgradeCoins`, `speedUpgradeCoinTiers`, `materials` (up to four items or `#tags` with counts).
+  - Guide book entry "The Compass Tuner" and a JEI/EMI information page.
+- A compass upgraded on its own screen before this version hands its upgrades to the first tuner it goes into, once (the higher level on each ladder), and keeps them.
+
+### Changed
+- **The Totem Compass sells no upgrades.** Its screen keeps the coin tiles, START and the reach view; the cooldown, WIDER and DEEPER keys are gone, and a line says whether it is tuned. An untuned compass tracks rival totems at the base reach (100 across, 10 up or down) with the 10-minute cooldown. The tooltip also gives the cooldown and whether it is tuned.
+
 ## [1.19.2] - 2026-11-19
 
 Network protocol 15, unchanged: 1.19.x clients can stay. For BSP-Server Utilities' request SU-BC3.

@@ -51,6 +51,9 @@ public final class ModMenus {
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.decoy.DecoyMenu>> DECOY = MENUS.register("decoy_totem",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.decoy.DecoyMenu(id, inv, buf.readBlockPos())));
 
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.compass.CompassTunerMenu>> COMPASS_TUNER = MENUS.register("compass_tuner",
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.compass.CompassTunerMenu(id, inv, buf.readBlockPos())));
+
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.plasma.WaveEmitterMenu>> WAVE_EMITTER = MENUS.register("wave_emitter",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.plasma.WaveEmitterMenu(id, inv, buf.readEnum(InteractionHand.class))));

@@ -41,6 +41,7 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> DECOY_TOTEM = BLOCKS.register("decoy_totem", com.mrgregles.bsp_core.decoy.DecoyTotemBlock::new);
     public static final RegistryObject<Block> DECOY_POWER_BASE = BLOCKS.register("decoy_power_base", com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlock::new);
+    public static final RegistryObject<Block> COMPASS_TUNER = BLOCKS.register("compass_tuner", com.mrgregles.bsp_core.compass.CompassTunerBlock::new);
 
     /** X-ray's stand-in for a hidden block in a client's world: no item, never placed by a server. */
     public static final RegistryObject<Block> GHOST_BLOCK = BLOCKS.register("ghost_block", com.mrgregles.bsp_core.xray.GhostBlock::new);

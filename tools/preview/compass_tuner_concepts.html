@@ -1,0 +1,408 @@
+<title>Compass Tuner Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages, one column. Blocks in three.js (1 block = 16 model pixels); screens drawn on canvas at GUI pixel size, doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --gold:#ffd23a; --brass:#d3a95c; --bad:#ff6b5c;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f1f2ee; --panel:#fff; --line:#d5d8d0; --fg:#1a1b20; --muted:#5b6170; --tq:#0c8f78; --on:#fff; --gold:#946500; --brass:#87591c; --bad:#c23a2c; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f1f2ee; --panel:#fff; --line:#d5d8d0; --fg:#1a1b20; --muted:#5b6170; --tq:#0c8f78; --on:#fff; --gold:#946500; --brass:#87591c; --bad:#c23a2c; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1020px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:38px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; color:var(--brass); }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:84ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.view{ width:100%; aspect-ratio:1/1; max-width:100%; background:radial-gradient(ellipse at 50% 70%,#2a2c33 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view canvas{ display:block; width:100%; height:100%; }
+canvas.gui{ width:100%; height:auto; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; align-items:start; }
+.pair figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.pair figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.one{ max-width:520px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:4px 9px; cursor:pointer; }
+.hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; }
+.t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+.t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.t td.n{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+@media (prefers-reduced-motion: reduce){ .view{ cursor:default; } }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="pill">BSP-Core · mock-ups for the owner's pick</span>
+    <h1>Compass Tuner</h1>
+    <p class="lede">The tuner keeps the compass upgrades, so losing a compass no longer loses the coins spent on it. Players buy Across, Up or down, Cooldown and Tune speed on the tuner at today's compass prices. A compass put in it is tuned to the tuner's levels over time. Each tune uses lapis, nether quartz and redstone, with FE, and Wave Plasma speeds it up. Everything below uses made-up example levels.</p>
+  </header>
+
+  <section>
+    <h2>1. The block</h2>
+    <p class="lede">One block each. Drag a view to turn it. Each model has a hollow or recess where the compass sits, round brass and copper parts, three feeds (lapis, quartz and redstone), a Wave Plasma inlet and an FE socket. The little screen on each block counts down the tune.</p>
+    <div class="ctl"><button class="hb on" id="spinBtn" type="button">Turning: on</button><button class="hb" id="nightBtn" type="button">Night: off</button></div>
+    <div class="grid3">
+      <div class="card"><h3>A. Gimbal Cradle <span class="pill">· picked</span></h3><div class="view" id="viewA"></div>
+        <p><b>A slate plinth with a brass gimbal.</b> The compass lies on a pin in the middle of two brass rings that turn around it while it tunes. The rings sit over a round sunken well. Three corner posts carry open hoppers filled with lapis, quartz and redstone, and copper pipes run from them into the well. The fourth post is a glass bulb that glows blue with plasma. A recessed front panel holds the countdown screen and a labelled TUNE plate. The FE socket is at the back, and a rolled chart with a red ribbon lies on the plinth.</p></div>
+      <div class="card"><h3>B. Tuning Fork Cabinet</h3><div class="view" id="viewB"></div>
+        <p><b>An iron cabinet with an open front bay.</b> The compass turns on a brass turntable inside, lit turquoise from the bay's ceiling. A tuning fork stands on the roof and hums (its prongs shiver) while it works. Three glass vials on the left wall show how much lapis, quartz and redstone is left. The plasma pipe comes in on the right through a flanged window. The top band holds the countdown, a round dial gauge and a TUNE plate. It stands on four round feet, with a leather notebook on the roof.</p></div>
+      <div class="card"><h3>C. Lodestone Coil Desk</h3><div class="view" id="viewC"></div>
+        <p><b>A slate desk with a copper coil tower.</b> The compass floats above a wound copper coil and spins while it tunes. A glass plasma tube runs up the back into the coil. The desk has a sunken tray at the front with three round cups of lapis, quartz and redstone. The tower's recessed face holds the countdown screen, a TUNE plate and a round red key. The FE socket is a red ring on the right side, and a notebook and pencil lie in the tray.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The tuner screen</h2>
+    <p class="lede">Each layout shows the same things: the compass slot, the three material slots with the amount a tune needs, FE and plasma, the time left and the clock time it should be ready, the four upgrade keys with their prices, and what the compass will get. The keys that tune a compass (Across, Up or down, Cooldown) are grouped apart from the tuner's own Tune speed key. Switch the example to see the other states.</p>
+    <div class="ctl"><button class="hb" id="st0" type="button">Ready to tune</button><button class="hb on" id="st1" type="button">Tuning</button><button class="hb" id="st2" type="button">Old compass handed over</button><button class="hb" id="st3" type="button">No FE</button></div>
+    <div class="card"><h3>A. Ladders and Bay</h3>
+      <div class="pair one"><figure><figcaption>One page</figcaption><canvas class="gui" id="sA"></canvas></figure></div>
+      <p>The upgrades are listed on the left, each with its level pips, the reach or time it gives now and next, the price and a key. The bay is on the right: the compass in a ring that fills as it tunes, the three materials under it, then FE and plasma. Everything fits on one page, so it is the closest to today's compass screen.</p></div>
+    <div class="card"><h3>B. Two Tabs</h3>
+      <div class="pair"><figure><figcaption>TUNE tab</figcaption><canvas class="gui" id="sB1"></canvas></figure><figure><figcaption>UPGRADES tab</figcaption><canvas class="gui" id="sB2"></canvas></figure></div>
+      <p>The TUNE tab reads left to right: compass in, a progress arrow with the time, then the compass it will become. Under that it says what changes (100 to 900 across, for example), and the materials sit in a row below. The UPGRADES tab reuses the compass's REACH side view, so players see the box grow when they buy WIDER or DEEPER.</p></div>
+    <div class="card"><h3>C. Dial <span class="pill">· picked, with the reach view from B</span></h3>
+      <div class="pair one"><figure><figcaption>One page</figcaption><canvas class="gui" id="sC"></canvas></figure></div>
+      <p>A big dial is the tuner's face. The compass sits in the middle, the progress runs round the rim like a clock hand, and the three materials sit on the dial at 8, 4 and 6 o'clock. Under the dial is B's REACH view: the turquoise box is the tuner's reach and the dotted gold box the next Across level. The upgrades are compact cards in the right column, with FE and plasma under them. The TUNE key sits at the bottom, apart from the upgrade keys, and is lit only when a compass, the materials and FE are in.</p></div>
+  </section>
+
+  <section>
+    <h2>3. The compass's own screen after the change</h2>
+    <p class="lede">The coin tiles, START and the REACH view stay the same. The cooldown key and the WIDER and DEEPER keys go, and a line says where the levels came from. An untuned compass still tracks, at the base reach (100 across, 10 up or down) with the 10-minute cooldown.</p>
+    <div class="ctl"><button class="hb on" id="cp0" type="button">Tuned compass</button><button class="hb" id="cp1" type="button">Untuned compass</button></div>
+    <div class="card"><div class="pair one"><figure><figcaption>Totem Compass</figcaption><canvas class="gui" id="sK"></canvas></figure></div></div>
+  </section>
+
+  <section>
+    <h2>4. The rules these pictures follow</h2>
+    <p class="lede">These are your answers from 2026-11-20.</p>
+    <div class="card scroll"><table class="t">
+      <thead><tr><th>Part</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Upgrades</td><td>Across, Up or down and Cooldown at today's compass prices; Tune speed 2 h, 1 h 30, 1 h, 45 min, 30 min for 10 Gold, 10 Diamond, 10 Netherite, 20 Illyrium. They are kept in the tuner and stay on its item when it is mined.</td></tr>
+        <tr><td>Who</td><td>Only the owner and their teammates can open, use or mine a tuner.</td></tr>
+        <tr><td>Tuning</td><td>Each ladder ends at the higher of the compass's level and the tuner's. A level bought later needs a full new tune.</td></tr>
+        <tr><td>Materials</td><td>16 lapis, 16 nether quartz and 16 redstone a tune, taken when it finishes. Admins can change the items and amounts in the config.</td></tr>
+        <tr><td>Time</td><td>The countdown runs on the real clock, loaded or not. 100 FE a tick while it tunes; plasma up to 3x on top of Tune speed, with the FE draw rising in step.</td></tr>
+        <tr><td>Starting</td><td>Players press TUNE. Materials and FE can be piped in from any side; the compass goes in and out by hand.</td></tr>
+        <tr><td>Unloaded</td><td>While the chunk is unloaded the countdown keeps running at the Tune speed level, with no FE and no plasma bonus. While loaded, no FE stops it.</td></tr>
+        <tr><td>Old compasses</td><td>The first time an upgraded compass from before the change goes into a tuner, the tuner takes the higher level on each ladder. The compass keeps its levels, counts as tuned, and never hands over again.</td></tr>
+      </tbody></table></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = id => document.getElementById(id);
+const M = 6e4, H = 36e5;
+
+// ------------------------------------------------------------------ example tuner (made-up levels)
+const ACROSS=[100,250,500,900,1400,1900,2500], DEPTH=[10,20,35,55,80,110,150];
+const COOL=[600,540,480,420,360,300,240,180];
+const SPEED=[120,90,60,45,30]; // minutes
+const RANGE_PRICE=[[10,0],[10,1],[10,2],[10,3],[20,4],[40,4]];
+const COOL_PRICE=[[4,0],[4,1],[4,2],[4,3],[2,4],[4,4],[8,4]];
+const SPEED_PRICE=[[10,1],[10,2],[10,3],[20,4]];
+const TIERS=[['Copper','#d27d46'],['Gold','#ffd23a'],['Diamond','#4aedd9'],['Netherite','#b8a8a8'],['Illyrium','#7be0ff']];
+const STATES=[
+  {name:'ready', acr:3, dep:2, cool:4, spd:1, prog:0, fe:.72, pl:.6, plF:2.0, comp:[0,0,0], mats:[40,24,52], status:'READY', col:'tq'},
+  {name:'tuning', acr:3, dep:2, cool:4, spd:1, prog:.38, fe:.72, pl:.6, plF:2.0, comp:[0,0,0], mats:[40,24,52], status:'TUNING', col:'tq'},
+  {name:'handover', acr:4, dep:3, cool:5, spd:1, prog:0, fe:.72, pl:.6, plF:2.0, comp:[4,3,5], mats:[40,24,52], status:'HANDED OVER', col:'gold',
+   banner:'Upgrades taken from this old compass: Across 4, Up or down 3, Cooldown 5.'},
+  {name:'nofe', acr:3, dep:2, cool:4, spd:1, prog:.38, fe:0, pl:.6, plF:2.0, comp:[0,0,0], mats:[40,24,52], status:'NO FE', col:'bad'}
+];
+let st=STATES[1], tunedView=true, spin=!reduce, night=false;
+const P={bg:'#10151c', tq:'#19d3b0', slot:'#0c0e12', dim:'#2a2f3a', gold:'#ffd23a', bad:'#ff6b5c', mute:'#9aa3b5', text:'#e8eaf0', hover:'#14362f', off:'#6b7385',
+  lapis:'#2f5bd8', quartz:'#ece6dc', red:'#d0261c', plasma:'#4fb8ff', green:'#8fe04a', ground:'#3d4a3a', groundT:'#5d6b58'};
+const fmt=n=>n.toLocaleString('en-GB');
+function mins(s){ s=Math.round(s); if(s>=3600){ const h=Math.floor(s/3600), m=Math.round(s%3600/60); return m?h+' h '+m+' m':h+' h'; } return Math.round(s/60)+' m'; }
+function hm(ms){ const d=new Date(ms); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function clockLeft(s){ s=Math.max(0,Math.round(s)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(x).padStart(2,'0'); }
+// tune length in seconds: the speed level's time, divided by the plasma factor
+function tuneSecs(){ return SPEED[st.spd]*60/(st.pl>0?st.plF:1); }
+const T0=Date.now();
+function leftSecs(){ if(st.prog<=0) return 0; const total=tuneSecs(); const done=st.prog*total + (st.fe>0?(Date.now()-T0)/1000:0); return Math.max(0,total-done); }
+function progNow(){ if(st.prog<=0) return 0; return 1-leftSecs()/tuneSecs(); }
+// what the compass will get: the higher on each ladder
+function gets(){ return [Math.max(st.comp[0],st.acr), Math.max(st.comp[1],st.dep), Math.max(st.comp[2],st.cool)]; }
+
+// ------------------------------------------------------------------ GUI drawing helpers (GUI pixels; the canvas is drawn at 2x)
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16, g=n>>8&255, b=n&255; r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f)); return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1); }
+function gui(id,w,h){ const cv=el(id); cv.width=w*2; cv.height=h*2; const c=cv.getContext('2d'); c.setTransform(2,0,0,2,0,0); c.imageSmoothingEnabled=false; c.W=w; c.H=h; return c; }
+function R(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x,y,w,h); }
+function O(c,x,y,w,h,col){ R(c,x,y,w,1,col); R(c,x,y+h-1,w,1,col); R(c,x,y,1,h,col); R(c,x+w-1,y,1,h,col); }
+function T(c,s,x,y,col,o){ o=o||{}; const sz=o.size||8; c.font=(o.bold?'700 ':'')+sz+'px '+(o.plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); c.textBaseline='top';
+  let w=c.measureText(s).width; if(o.max&&w>o.max){ while(s.length>1&&c.measureText(s+'…').width>o.max) s=s.slice(0,-1); s+='…'; w=c.measureText(s).width; }
+  const ax = o.align==='c' ? x-w/2 : o.align==='r' ? x-w : x; c.fillStyle=col; c.fillText(s,ax,y+(o.plain?0:-1)); return w; }
+function S(c,s,x,y,col,o){ o=Object.assign({size:7,plain:true},o||{}); return T(c,s,x,y,col,o); }
+function frame(c){ R(c,0,0,c.W,c.H,P.tq); R(c,1,1,c.W-2,c.H-2,P.bg); }
+function rule(c,x,y,w,label){ R(c,x,y+3,w,1,P.dim); if(label){ c.font='7px "IBM Plex Sans",sans-serif'; const lw=c.measureText(label).width; R(c,x,y-1,lw+6,9,P.bg); S(c,label,x,y-1,P.mute); } }
+function key(c,x,y,w,h,label,on,hot){ R(c,x,y,w,h,on?P.tq:P.dim); R(c,x+1,y+1,w-2,h-2,hot?P.hover:P.slot); T(c,label,x+w/2,y+(h-6)/2,on?P.tq:P.off,{align:'c',size:6,max:w-3}); }
+function coin(c,x,y,r,tier){ c.fillStyle=shade(TIERS[tier][1],.6); c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.fillStyle=TIERS[tier][1]; c.beginPath(); c.arc(x,y,r-1,0,7); c.fill(); c.fillStyle=shade(TIERS[tier][1],1.3); c.fillRect(x-1,y-r+2,2,1); }
+function price(c,p,x,y,align,have){ if(!p){ S(c,'TOP LEVEL',x,y,P.green,{align:align||'l',size:6.5}); return; } const s=p[0]+' '+TIERS[p[1]][0]; c.font='6.5px "IBM Plex Sans",sans-serif'; const w=c.measureText(s).width+8; const x0=align==='r'?x-w:x;
+  coin(c,x0+3,y+3.5,3,p[1]); S(c,s,x0+8,y,have===false?P.bad:P.text,{size:6.5}); }
+function pips(c,x,y,n,max,col){ for(let i=0;i<max;i++){ R(c,x+i*5,y,4,3,i<n?col:P.dim); } }
+function vbar(c,x,y,w,h,f,col,label){ R(c,x,y,w,h,P.dim); R(c,x+1,y+1,w-2,h-2,P.slot); const fh=Math.round((h-2)*Math.max(0,Math.min(1,f))); R(c,x+1,y+h-1-fh,w-2,fh,col); for(let k=1;k<4;k++) R(c,x+1,y+Math.round(h*k/4),2,1,P.dim); if(label) T(c,label,x+w/2,y+h+3,P.mute,{align:'c',size:6}); }
+function hbar(c,x,y,w,h,f,col){ R(c,x,y,w,h,P.dim); R(c,x+1,y+1,w-2,h-2,P.slot); R(c,x+1,y+1,Math.round((w-2)*Math.max(0,Math.min(1,f))),h-2,col); }
+function slot(c,x,y,big){ const s=big?26:18; R(c,x,y,s,s,P.dim); R(c,x+1,y+1,s-2,s-2,P.slot); R(c,x+1,y+1,s-2,1,'#05070a'); R(c,x+1,y+1,1,s-2,'#05070a'); }
+// items, 16 x 16 at (x, y)
+function itemCompass(c,x,y,lv){ const cx=x+8, cy=y+8; c.fillStyle='#8a6a2a'; c.beginPath(); c.arc(cx,cy,7,0,7); c.fill(); c.fillStyle='#d3a95c'; c.beginPath(); c.arc(cx,cy,6,0,7); c.fill(); c.fillStyle='#efe6cc'; c.beginPath(); c.arc(cx,cy,4.6,0,7); c.fill();
+  R(c,cx-.5,cy-4,1.5,4,'#d0261c'); R(c,cx-.5,cy,1.5,4,'#5a6070'); R(c,cx-1,cy-1,2.5,2,'#222');
+  if(lv){ for(let i=0;i<lv[0];i++) R(c,x+2+i*2,y+15,1,1,P.tq); for(let i=0;i<lv[1];i++) R(c,x+15,y+13-i*2,1,1,P.gold); } }
+function itemLapis(c,x,y,a){ c.globalAlpha=a||1; c.fillStyle='#1d3c9a'; c.beginPath(); c.moveTo(x+8,y+2); c.lineTo(x+14,y+8); c.lineTo(x+8,y+14); c.lineTo(x+2,y+8); c.fill(); c.fillStyle=P.lapis; c.beginPath(); c.moveTo(x+8,y+4); c.lineTo(x+12,y+8); c.lineTo(x+8,y+12); c.lineTo(x+4,y+8); c.fill(); R(c,x+6,y+6,2,2,'#9ab8ff'); c.globalAlpha=1; }
+function itemQuartz(c,x,y,a){ c.globalAlpha=a||1; c.fillStyle='#b9b0a2'; c.beginPath(); c.moveTo(x+3,y+13); c.lineTo(x+6,y+3); c.lineTo(x+9,y+13); c.fill(); c.beginPath(); c.moveTo(x+7,y+13); c.lineTo(x+11,y+5); c.lineTo(x+14,y+13); c.fill(); c.fillStyle=P.quartz; c.beginPath(); c.moveTo(x+4,y+13); c.lineTo(x+6,y+5); c.lineTo(x+8,y+13); c.fill(); c.beginPath(); c.moveTo(x+8.5,y+13); c.lineTo(x+11,y+7); c.lineTo(x+13,y+13); c.fill(); c.globalAlpha=1; }
+function itemRedstone(c,x,y,a){ c.globalAlpha=a||1; const pts=[[5,6],[7,5],[9,7],[6,9],[10,10],[8,11],[4,11],[11,6],[7,8],[9,9],[5,8],[12,9],[6,12],[10,12]]; pts.forEach(([px,py],i)=>R(c,x+px,y+py,2,2,i%3?P.red:'#ff5a3c')); c.globalAlpha=1; }
+function itemBlock(c,x,y,col){ R(c,x+2,y+2,12,12,shade(col,.7)); R(c,x+3,y+3,10,10,col); R(c,x+3,y+3,10,2,shade(col,1.2)); }
+function itemCoin(c,x,y,t){ coin(c,x+8,y+8,6,t); }
+const MATS=[['LAPIS',itemLapis],['QUARTZ',itemQuartz],['REDSTONE',itemRedstone]];
+function count(c,n,x,y){ const s=String(n); T(c,s,x+17,y+11,'#3a3a3a',{align:'r',size:7}); T(c,s,x+16,y+10,'#ffffff',{align:'r',size:7}); }
+function matSlot(c,i,x,y,labelBelow){ slot(c,x,y); const n=st.mats[i]; MATS[i][1](c,x+1,y+1,n?1:.3); if(n) count(c,n,x,y); if(labelBelow){ T(c,MATS[i][0],x+9,y+21,P.mute,{align:'c',size:5}); S(c,'16 a tune',x+9,y+28,n>=16?P.text:P.bad,{align:'c',size:6}); } }
+function inventory(c,x,y){ const items=[['coin',2],['coin',3],['lapis',0],['b','#7a6a58'],['b','#556a3a'],null,['coin',4],null,['b','#8a5a32'],
+  ['quartz',0],null,['b','#5a5f6a'],null,['red',0],['b','#c9b88a'],null,null,['b','#3a5a8a'],
+  null,['b','#7a6a58'],null,null,null,['b','#556a3a'],null,null,null];
+  for(let r=0;r<3;r++) for(let k=0;k<9;k++){ const sx=x+k*18, sy=y+r*18; slot(c,sx,sy); const it=items[r*9+k]; drawItem(c,it,sx+1,sy+1); }
+  const hot=[['compass',1],['b','#6a6a6a'],null,['coin',1],null,null,['b','#8a5a32'],null,['coin',0]];
+  for(let k=0;k<9;k++){ const sx=x+k*18, sy=y+58; slot(c,sx,sy); drawItem(c,hot[k],sx+1,sy+1); }
+  S(c,'Inventory',x,y-10,P.mute); }
+function drawItem(c,it,x,y){ if(!it) return; if(it[0]==='coin'){ itemCoin(c,x,y,it[1]); count(c,[24,9,3,40,6][it[1]],x-1,y-1); } else if(it[0]==='lapis'){ itemLapis(c,x,y); count(c,24,x-1,y-1); } else if(it[0]==='quartz'){ itemQuartz(c,x,y); count(c,48,x-1,y-1); } else if(it[0]==='red'){ itemRedstone(c,x,y); count(c,64,x-1,y-1); } else if(it[0]==='compass'){ itemCompass(c,x,y,null); } else itemBlock(c,x,y,it[1]); }
+function statusLine(c){ const col=P[st.col]; let s=st.status; T(c,'COMPASS TUNER',10,8,P.tq,{size:8}); T(c,s,c.W-10,8,col,{align:'r',size:8}); }
+function banner(c,x,y,w){ if(!st.banner) return 0; R(c,x,y,w,14,'#3a2f0c'); O(c,x,y,w,14,P.gold); S(c,st.banner,x+5,y+3.5,P.gold,{size:6.5,max:w-10}); return 18; }
+function timeText(){ if(st.name==='ready') return ['Ready to tune',mins(tuneSecs())+' with plasma now']; if(st.name==='handover') return ['Nothing to tune','This compass is at the tuner\'s levels']; if(st.fe<=0) return ['Paused · no FE', clockLeft(leftSecs())+' left when power is back'];
+  const l=leftSecs(); return [clockLeft(l)+' left','ready about '+hm(Date.now()+l*1000)]; }
+const ROWS=[
+  {k:'ACROSS', key:'WIDER', lv:()=>st.acr, max:6, now:l=>fmt(ACROSS[l])+' blocks', col:P.tq, price:l=>RANGE_PRICE[l]},
+  {k:'UP OR DOWN', key:'DEEPER', lv:()=>st.dep, max:6, now:l=>fmt(DEPTH[l])+' blocks', col:P.gold, price:l=>RANGE_PRICE[l]},
+  {k:'COOLDOWN', key:'SHORTER', lv:()=>st.cool, max:7, now:l=>mins(COOL[l]), col:'#c08cff', price:l=>COOL_PRICE[l]},
+  {k:'TUNE SPEED', key:'FASTER', lv:()=>st.spd, max:4, now:l=>mins(SPEED[l]*60), col:P.plasma, price:l=>SPEED_PRICE[l]}];
+function nextText(r,l){ return l>=r.max ? 'top level' : '→ '+r.now(l+1).replace(' blocks',''); }
+
+// ------------------------------------------------------------------ A. Ladders and Bay
+function sA(){ const c=gui('sA',240,300); frame(c); statusLine(c); let y=22; y+=banner(c,10,y,220);
+  rule(c,10,y,124,'TUNES INTO A COMPASS'); y+=12;
+  ROWS.forEach((r,i)=>{ if(i===3){ y+=6; rule(c,10,y,124,'THIS TUNER'); y+=12; } const l=r.lv();
+    T(c,r.k,10,y,P.text,{size:6}); S(c,r.now(l),10,y+8,r.col,{size:6.5}); S(c,nextText(r,l),54,y+8,P.mute,{size:6.5,max:38});
+    pips(c,10,y+18,l,r.max,r.col); key(c,94,y,40,14,r.key,l<r.max,i===0); price(c,l<r.max?r.price(l):null,134,y+16,'r',!(i===2)); y+=28; });
+  // the bay
+  const bx=146, cx=188, cy=60; R(c,bx-4,24+(st.banner?18:0),1,128,P.dim); const oy=st.banner?18:0;
+  c.save(); c.translate(0,oy);
+  c.strokeStyle=P.dim; c.lineWidth=4; c.beginPath(); c.arc(cx,cy,22,0,7); c.stroke();
+  const pr=progNow(); if(pr>0){ c.strokeStyle=st.fe>0?P.tq:P.off; c.beginPath(); c.arc(cx,cy,22,-Math.PI/2,-Math.PI/2+pr*Math.PI*2); c.stroke(); }
+  for(let k=0;k<12;k++){ const a=k/12*Math.PI*2; R(c,cx+Math.cos(a)*27-0.5,cy+Math.sin(a)*27-0.5,1,1,P.mute); }
+  slot(c,cx-13,cy-13,true); itemCompass(c,cx-8,cy-8,st.name==='handover'?st.comp:null);
+  const tt=timeText(); S(c,tt[0],cx,cy+32,st.fe>0?P.text:P.bad,{align:'c',size:7}); S(c,tt[1],cx,cy+41,P.mute,{align:'c',size:6});
+  const g=gets(); S(c,'Gets '+fmt(ACROSS[g[0]])+' · '+DEPTH[g[1]]+' · '+mins(COOL[g[2]]),cx,cy+50,P.gold,{align:'c',size:6.5,max:90});
+  rule(c,bx,cy+62,86,'FEED'); for(let i=0;i<3;i++) matSlot(c,i,bx+4+i*28,cy+72,true);
+  c.restore();
+  const py=164+oy; T(c,'FE',bx,py,P.mute,{size:6}); hbar(c,bx+20,py-1,66,7,st.fe,P.red); S(c,st.fe>0?fmt(Math.round(st.fe*500000))+' FE':'0 FE',bx+86,py+8,st.fe>0?P.text:P.bad,{align:'r',size:6});
+  T(c,'PLASMA',bx,py+18,P.mute,{size:6}); hbar(c,bx+30,py+17,56,7,st.pl,P.plasma); S(c,'x'+st.plF.toFixed(1)+' speed',bx+86,py+26,P.plasma,{align:'r',size:6});
+  inventory(c,39,216); }
+
+// ------------------------------------------------------------------ B. Two Tabs
+function tabs(c,active){ ['TUNE','UPGRADES'].forEach((n,i)=>{ const x=10+i*60; R(c,x,20,56,14,i===active?P.tq:P.dim); R(c,x+1,21,54,12,i===active?P.bg:P.slot); T(c,n,x+28,24,i===active?P.tq:P.off,{align:'c',size:6}); }); R(c,10,33,c.W-20,1,P.tq); R(c,10+active*60+1,33,54,1,P.bg); }
+function sB1(){ const c=gui('sB1',240,300); frame(c); T(c,'COMPASS TUNER',10,8,P.tq,{size:8}); T(c,st.status,c.W-10,8,P[st.col],{align:'r',size:8}); tabs(c,0);
+  let y=40; y+=banner(c,10,y,220);
+  slot(c,14,y+6,true); itemCompass(c,19,y+11,st.name==='handover'?st.comp:null); S(c,'IN',27,y+35,P.mute,{align:'c',size:6});
+  // arrow
+  const ax=48, aw=104, ay=y+15; R(c,ax,ay,aw,8,P.dim); R(c,ax+1,ay+1,aw-2,6,P.slot); R(c,ax+1,ay+1,Math.round((aw-2)*progNow()),6,st.fe>0?P.tq:P.off);
+  c.fillStyle=P.dim; c.beginPath(); c.moveTo(ax+aw,ay-4); c.lineTo(ax+aw+8,ay+4); c.lineTo(ax+aw,ay+12); c.fill();
+  const tt=timeText(); S(c,tt[0],ax+aw/2,ay-11,st.fe>0?P.text:P.bad,{align:'c',size:7}); S(c,tt[1],ax+aw/2,ay+11,P.mute,{align:'c',size:6});
+  slot(c,166,y+6,true); c.globalAlpha=.55; itemCompass(c,171,y+11,gets()); c.globalAlpha=1; S(c,'OUT',179,y+35,P.mute,{align:'c',size:6});
+  vbar(c,206,y,10,46,st.fe,P.red,'FE'); vbar(c,220,y,10,46,st.pl,P.plasma,'PL');
+  y+=56; rule(c,10,y,220,'THE COMPASS WILL GET'); y+=12; const g=gets(); const now=st.comp;
+  [['ACROSS',fmt(ACROSS[now[0]]),fmt(ACROSS[g[0]]),P.tq],['UP OR DOWN',DEPTH[now[1]],DEPTH[g[1]],P.gold],['COOLDOWN',mins(COOL[now[2]]),mins(COOL[g[2]]),'#c08cff']].forEach((r,i)=>{ const x=10+i*74; R(c,x,y,70,24,P.dim); R(c,x+1,y+1,68,22,P.slot);
+    T(c,r[0],x+5,y+4,P.mute,{size:5}); S(c,r[1]+'  →  '+r[2],x+5,y+12,r[1]==r[2]?P.mute:r[3],{size:7,max:62}); });
+  y+=34; rule(c,10,y,220,'FEED · TAKEN WHEN THE TUNE FINISHES'); y+=12; for(let i=0;i<3;i++){ matSlot(c,i,22+i*36,y,false); T(c,MATS[i][0],31+i*36,y+21,P.mute,{align:'c',size:5}); }
+  S(c,'16 of each a tune.',136,y+2,P.text,{size:6.5}); S(c,'Plasma x'+st.plF.toFixed(1)+' on top of',136,y+11,P.plasma,{size:6.5}); S(c,'Tune speed '+mins(SPEED[st.spd]*60)+'.',136,y+19,P.plasma,{size:6.5});
+  inventory(c,39,216); }
+function sideView(c,x,y,w,h,acr,dep,nextA,nextD){ R(c,x,y,w,h,P.slot); O(c,x,y,w,h,P.dim); const gy=y+Math.round(h*.55); R(c,x+1,gy,w-2,1,P.ground); S(c,'ground',x+3,gy+2,P.groundT,{size:5.5});
+  const sx=(w-10)/2/2500, sy=(h/2-6)/150; const cx=x+w/2;
+  function box(a,d,col,dashed){ const bw=Math.max(4,a*sx*2), bh=Math.max(3,d*sy*2); const bx=cx-bw/2, by=gy-bh/2; if(dashed){ for(let i=0;i<bw;i+=4){ R(c,bx+i,by,2,1,col); R(c,bx+i,by+bh-1,2,1,col); } for(let i=0;i<bh;i+=4){ R(c,bx,by+i,1,2,col); R(c,bx+bw-1,by+i,1,2,col); } } else { c.fillStyle='rgba(25,211,176,.22)'; c.fillRect(bx,by,bw,bh); O(c,bx,by,bw,bh,col); } }
+  if(nextA!=null) box(ACROSS[nextA],DEPTH[nextD],P.gold,true); box(ACROSS[acr],DEPTH[dep],P.tq,false);
+  R(c,cx-1,gy-4,3,4,'#fff'); R(c,cx,gy-6,1,2,'#fff');
+  S(c,fmt(ACROSS[acr])+' across',x+4,y+h-9,P.tq,{size:6}); S(c,DEPTH[dep]+' up or down',x+w-4,y+3,P.tq,{size:6,align:'r'}); }
+function sB2(){ const c=gui('sB2',240,300); frame(c); T(c,'COMPASS TUNER',10,8,P.tq,{size:8}); T(c,st.status,c.W-10,8,P[st.col],{align:'r',size:8}); tabs(c,1);
+  let y=40; y+=banner(c,10,y,220);
+  sideView(c,10,y,138,84,st.acr,st.dep,Math.min(6,st.acr+1),st.dep); S(c,'Dotted gold: after WIDER',10,y+88,P.gold,{size:6});
+  const kx=156; let ky=y;
+  ROWS.forEach((r,i)=>{ if(i===3) ky+=10; const l=r.lv(); key(c,kx,ky,74,13,r.key,l<r.max,i===0); pips(c,kx,ky+16,l,r.max,r.col); price(c,l<r.max?r.price(l):null,kx+74,ky+21,'r',i!==2); ky+=i===2?32:30; });
+  y+=100; rule(c,10,y,138,'COOLDOWN AND TUNE TIME'); y+=12;
+  S(c,'Cooldown after tracking',10,y,P.mute,{size:6.5}); S(c,mins(COOL[st.cool])+'  →  '+mins(COOL[st.cool+1]),148,y,'#c08cff',{align:'r',size:6.5});
+  S(c,'One tune takes',10,y+10,P.mute,{size:6.5}); S(c,mins(SPEED[st.spd]*60)+'  →  '+mins(SPEED[st.spd+1]*60),148,y+10,P.plasma,{align:'r',size:6.5});
+  S(c,'With plasma (x'+st.plF.toFixed(1)+')',10,y+20,P.mute,{size:6.5}); S(c,mins(SPEED[st.spd]*60/st.plF),148,y+20,P.plasma,{align:'r',size:6.5});
+  inventory(c,39,216); }
+
+// ------------------------------------------------------------------ C. Dial
+function sC(){ const c=gui('sC',240,st.banner?368:350); frame(c); statusLine(c); let y=22; y+=banner(c,10,y,220);
+  const cx=72, r=56, cy=y+r+4; c.fillStyle='#0b1016'; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill(); c.strokeStyle=P.dim; c.lineWidth=2; c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke();
+  for(let k=0;k<60;k++){ const a=k/60*Math.PI*2-Math.PI/2, l=k%5?3:6; c.strokeStyle=k%5?P.dim:P.mute; c.lineWidth=1; c.beginPath(); c.moveTo(cx+Math.cos(a)*(r-2),cy+Math.sin(a)*(r-2)); c.lineTo(cx+Math.cos(a)*(r-2-l),cy+Math.sin(a)*(r-2-l)); c.stroke(); }
+  const pr=progNow(); c.lineWidth=4; c.strokeStyle='#1a2a2a'; c.beginPath(); c.arc(cx,cy,r-12,0,7); c.stroke(); if(pr>0){ c.strokeStyle=st.fe>0?P.tq:P.off; c.beginPath(); c.arc(cx,cy,r-12,-Math.PI/2,-Math.PI/2+pr*Math.PI*2); c.stroke();
+    const a=-Math.PI/2+pr*Math.PI*2; c.lineWidth=1.5; c.strokeStyle=P.gold; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*(r-8),cy+Math.sin(a)*(r-8)); c.stroke(); }
+  slot(c,cx-13,cy-13,true); itemCompass(c,cx-8,cy-8,st.name==='handover'?st.comp:null);
+  const tt=timeText(); S(c,tt[0],cx,cy-34,st.fe>0?P.text:P.bad,{align:'c',size:7}); S(c,tt[1],cx,cy+19,P.mute,{align:'c',size:6,max:70});
+  [[210,0],[330,1],[90,2]].forEach(([deg,i])=>{ const a=deg*Math.PI/180; const sx=cx+Math.cos(a)*(r-24)-9, sy=cy+Math.sin(a)*(r-24)-9+(i===2?8:0); matSlot(c,i,Math.round(sx+(i===0?-6:i===1?6:0)),Math.round(sy),false); });
+  S(c,'16 lapis · 16 quartz · 16 redstone a tune',cx,cy+r+5,P.mute,{align:'c',size:6});
+  // the reach view from layout B, under the dial
+  const ry=cy+r+18; rule(c,10,ry,124,'REACH'); sideView(c,10,ry+14,124,62,st.acr,st.dep,st.acr<6?st.acr+1:null,st.dep);
+  S(c,'Dotted gold: after ACROSS +',10,ry+82,P.gold,{size:6});
+  // right column of cards
+  let ky=y+2; const kx=140;
+  ROWS.forEach((r_,i)=>{ if(i===3){ ky+=4; T(c,'THIS TUNER',kx,ky,P.mute,{size:5}); ky+=8; } else if(i===0){ T(c,'TUNES INTO A COMPASS',kx,ky,P.mute,{size:5}); ky+=8; }
+    const l=r_.lv(); R(c,kx,ky,90,26,P.dim); R(c,kx+1,ky+1,88,24,P.slot); T(c,r_.k,kx+4,ky+4,P.text,{size:5}); S(c,r_.now(l),kx+4,ky+11,r_.col,{size:6.5}); pips(c,kx+4,ky+20,l,r_.max,r_.col);
+    key(c,kx+66,ky+3,20,11,'+',l<r_.max,i===0); price(c,l<r_.max?r_.price(l):null,kx+86,ky+16,'r',i!==2); ky+=29; });
+  ky+=2; T(c,'FE',kx,ky+1,P.mute,{size:6}); hbar(c,kx+16,ky,74,7,st.fe,P.red); T(c,'PL',kx,ky+11,P.mute,{size:6}); hbar(c,kx+16,ky+10,74,7,st.pl,P.plasma); S(c,'x'+st.plF.toFixed(1),kx+90,ky+19,P.plasma,{align:'r',size:6});
+  // the TUNE key, apart from the upgrade keys
+  ky+=34; const canTune=st.name==='ready'; const label=st.name==='ready'?'TUNE':st.name==='handover'?'NOTHING TO TUNE':'TUNING';
+  key(c,kx,ky,90,18,label,canTune,canTune);
+  S(c,canTune?'Starts a '+mins(tuneSecs())+' tune.':st.name==='handover'?'Already at these levels.':'Take the compass out to stop.',kx+45,ky+21,P.mute,{align:'c',size:6,max:90});
+  inventory(c,39,ry+110); }
+
+// ------------------------------------------------------------------ the compass's own screen
+function sK(){ const c=gui('sK',220,196); frame(c); T(c,'TOTEM COMPASS',10,8,P.tq,{size:8}); T(c,'READY',c.W-10,8,P.green,{align:'r',size:8});
+  S(c,'Load coins',10,22,P.mute);
+  for(let i=0;i<5;i++){ const x=10+i*41; R(c,x,32,37,30,P.dim); R(c,x+1,33,35,28,P.slot); coin(c,x+18,42,6,i); S(c,'+'+[1,5,10,30,60][i]+' s',x+18,52,P.text,{align:'c',size:6.5}); }
+  S(c,'Loaded 2:30 of tracking',10,68,P.gold,{size:7});
+  key(c,10,80,60,16,'START',true,false);
+  const lv=tunedView?[3,2,4]:[0,0,0];
+  S(c,'Cooldown after tracking: '+mins(COOL[lv[2]]),80,84,P.mute,{size:7});
+  rule(c,10,104,200,'REACH'); sideView(c,10,116,200,60,lv[0],lv[1],null,null);
+  S(c,tunedView?'Tuned at a Compass Tuner: across, up or down and cooldown.':'Untuned. A Compass Tuner raises the reach and shortens the cooldown.',10,181,tunedView?P.tq:P.gold,{size:6.5,max:200}); }
+
+function drawScreens(){ sA(); sB1(); sB2(); sC(); sK(); }
+
+// ------------------------------------------------------------------ three.js blocks
+function texCanvas(w,h,draw){ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const c=cv.getContext('2d'); c.imageSmoothingEnabled=false; draw(c,w,h); const t=new THREE.CanvasTexture(cv); t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.userData={cv,c}; return t; }
+let seed=11; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+function noiseTex(base,amt){ return texCanvas(16,16,(c)=>{ for(let i=0;i<256;i++){ c.fillStyle=shade(base,1-amt+rnd()*amt*2); c.fillRect(i%16,Math.floor(i/16),1,1); } }); }
+function slateTex(){ return texCanvas(16,16,(c)=>{ for(let i=0;i<256;i++){ c.fillStyle=shade('#4a4f58',.85+rnd()*.25); c.fillRect(i%16,Math.floor(i/16),1,1); } c.fillStyle='#2c3038'; c.fillRect(0,7,16,1); c.fillRect(5,0,1,7); c.fillRect(11,8,1,8); }); }
+function labelTex(text,w,h,bg,fg){ return texCanvas(w*10,h*10,(c,W,Hh)=>{ c.fillStyle=bg; c.fillRect(0,0,W,Hh); c.fillStyle=shade(bg,.55); c.fillRect(0,Hh-2,W,2); c.fillRect(0,0,2,Hh); c.fillStyle=fg; c.font='bold '+Math.round(Hh*.5)+'px Silkscreen,monospace'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,W/2,Hh/2+1); }); }
+const mats={};
+function MAT(name){ if(mats[name]) return mats[name]; const L=o=>new THREE.MeshLambertMaterial(o); let m;
+  switch(name){
+    case 'slate': m=L({map:slateTex()}); break; case 'slateD': m=L({map:noiseTex('#2b2f36',.12)}); break; case 'dark': m=L({color:0x0d0f13}); break;
+    case 'iron': m=L({map:noiseTex('#8a9099',.08)}); break; case 'ironD': m=L({map:noiseTex('#5a6068',.1)}); break;
+    case 'brass': m=L({color:0xc9a24a}); break; case 'brassD': m=L({color:0x8a6a2a}); break; case 'copper': m=L({color:0xc4703e}); break; case 'copperD': m=L({color:0x8a4a26}); break;
+    case 'lapis': m=L({map:noiseTex('#2f5bd8',.25)}); break; case 'quartz': m=L({map:noiseTex('#e8e2d6',.06)}); break; case 'redstone': m=L({map:noiseTex('#b81e16',.3),emissive:0x3a0000}); break;
+    case 'face': m=L({color:0xefe6cc}); break; case 'needleR': m=L({color:0xd0261c,emissive:0x400000}); break; case 'needleW': m=L({color:0x5a6070}); break;
+    case 'glass': m=new THREE.MeshLambertMaterial({color:0xbfe6ff,transparent:true,opacity:.35}); break;
+    case 'plasma': m=new THREE.MeshBasicMaterial({color:0x4fb8ff,transparent:true,opacity:.85}); break;
+    case 'tqGlow': m=new THREE.MeshBasicMaterial({color:0x19d3b0}); break;
+    case 'red': m=L({color:0xa8261c}); break; case 'paper': m=L({color:0xe2d3a8}); break; case 'leather': m=L({color:0x5a3218}); break; case 'ribbon': m=L({color:0xb0201a}); break;
+    case 'grass': m=L({map:noiseTex('#5d8a3a',.18)}); break; case 'wood': m=L({map:noiseTex('#7a5230',.15)}); break; }
+  mats[name]=m; return m; }
+function bx(g,w,h,d,mat,x,y,z,rot){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),typeof mat==='string'?MAT(mat):mat); m.position.set(x,y,z); if(rot){ m.rotation.set(rot[0]||0,rot[1]||0,rot[2]||0); } g.add(m); return m; }
+function cy(g,rt,rb,h,mat,x,y,z,axis,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20),typeof mat==='string'?MAT(mat):mat); m.position.set(x,y,z); if(axis==='z') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.z=Math.PI/2; g.add(m); return m; }
+function tor(g,R_,r,mat,x,y,z,axis){ const m=new THREE.Mesh(new THREE.TorusGeometry(R_,r,8,28),typeof mat==='string'?MAT(mat):mat); m.position.set(x,y,z); if(axis==='y') m.rotation.x=Math.PI/2; if(axis==='x') m.rotation.y=Math.PI/2; g.add(m); return m; }
+// a labelled plate: the face toward +z (or rotated)
+function plate(g,text,w,h,x,y,z,ry,bg,fg){ const t=labelTex(text,w,h,bg||'#1a1d22',fg||'#19d3b0'); const side=MAT('ironD'); const mat=[side,side,side,side,new THREE.MeshLambertMaterial({map:t,emissive:0x0a2a24}),side];
+  const m=bx(g,w,h,.5,mat,x,y,z); if(ry) m.rotation.y=ry; return m; }
+// the countdown screen on a block face
+const blockScreens=[];
+function screen(g,w,h,x,y,z,ry){ const t=texCanvas(w*8,h*8,()=>{}); const side=MAT('dark'); const mat=[side,side,side,side,new THREE.MeshBasicMaterial({map:t}),side]; const m=bx(g,w,h,.3,mat,x,y,z); if(ry) m.rotation.y=ry; blockScreens.push(t); return m; }
+function paintBlockScreens(){ blockScreens.forEach(t=>{ const c=t.userData.c, W=t.userData.cv.width, Hh=t.userData.cv.height; c.fillStyle='#071412'; c.fillRect(0,0,W,Hh); c.fillStyle='#0f2a26'; for(let yy=1;yy<Hh;yy+=2) c.fillRect(0,yy,W,1);
+  const l=leftSecs(); c.fillStyle=st.fe>0?'#19d3b0':'#ff6b5c'; c.font='bold '+Math.round(Hh*.46)+'px Silkscreen,monospace'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(st.name==='ready'?'READY':st.name==='handover'?'DONE':st.fe>0?clockLeft(l):'NO FE',W/2,Hh*.42);
+  const pr=progNow(); c.fillStyle='#163a34'; c.fillRect(4,Hh-7,W-8,4); c.fillStyle='#19d3b0'; c.fillRect(4,Hh-7,Math.round((W-8)*pr),4); t.needsUpdate=true; }); }
+function compassModel(g,x,y,z){ const grp=new THREE.Group(); grp.position.set(x,y,z); g.add(grp); cy(grp,2.6,2.6,.7,'brassD',0,0,0); cy(grp,2.4,2.4,.75,'brass',0,.05,0); cy(grp,1.9,1.9,.2,'face',0,.42,0); tor(grp,2.35,.18,'brassD',0,.4,0,'y');
+  const nd=new THREE.Group(); nd.position.y=.56; grp.add(nd); bx(nd,.35,.12,1.6,'needleR',0,0,-.8); bx(nd,.35,.12,1.6,'needleW',0,0,.8); cy(nd,.25,.25,.2,'brassD',0,.05,0); cy(grp,.5,.5,.6,'brass',0,-.6,0); return {grp,nd}; }
+function ground(g){ bx(g,26,1,26,'grass',0,-.5,0); }
+
+function buildA(g){ ground(g);
+  // plinth, its front recessed between a frame
+  bx(g,16,4,15,'slate',0,2,-.5); bx(g,2,4,1,'slate',-7,2,7.5); bx(g,2,4,1,'slate',7,2,7.5); bx(g,12,1,1,'slate',0,3.5,7.5); bx(g,12,.6,1,'slate',0,.3,7.5); bx(g,12,2.4,.2,'slateD',0,1.8,7.05);
+  bx(g,16.4,.6,16.4,'slateD',0,4.1,0); // the deck lip
+  screen(g,6,1.8,-2,1.9,7.3); plate(g,'TUNE',3,1.2,3.8,2.1,7.3); cy(g,.5,.5,.4,'red',6,2.1,7.3,'z');
+  // the round sunken well and the pin
+  tor(g,4.8,.45,'brass',0,4.55,0,'y'); cy(g,4.4,4.4,.3,'dark',0,4.3,0); cy(g,3.6,3.6,.12,'tqGlow',0,4.47,0); cy(g,.35,.35,4,'ironD',0,6.4,0); cy(g,1.2,1.6,.8,'brassD',0,4.8,0);
+  const cmp=compassModel(g,0,8.6,0);
+  // the gimbal: two rings that turn around the compass
+  const outer=new THREE.Group(); outer.position.set(0,8.6,0); g.add(outer); tor(outer,5.6,.38,'brass',0,0,0); cy(outer,.5,.5,1,'brassD',5.6,0,0,'x'); cy(outer,.5,.5,1,'brassD',-5.6,0,0,'x');
+  const inner=new THREE.Group(); outer.add(inner); tor(inner,4.6,.3,'copper',0,0,0,'x'); cy(inner,.4,.4,.8,'copperD',0,4.6,0); cy(inner,.4,.4,.8,'copperD',0,-4.6,0);
+  // corner posts with hoppers; the back-right one is the plasma bulb
+  const posts=[[-6.6,6.6,'lapis'],[6.6,6.6,'quartz'],[-6.6,-6.6,'redstone'],[6.6,-6.6,null]]; let glow=null;
+  posts.forEach(([x,z,m])=>{ cy(g,.8,.9,7,'ironD',x,7.9,z); tor(g,.95,.2,'brass',x,5,z,'y');
+    if(m){ cy(g,1.7,.7,2,'iron',x,12.3,z); tor(g,1.7,.22,'brass',x,13.3,z,'y'); cy(g,1.45,1.45,.3,m,x,12.85,z); cy(g,.6,.6,.25,m,x+.3,13.05,z-.2);
+      const ang=Math.atan2(-x,-z); bx(g,.7,.7,6.5,'copper',x*.55,4.75,z*.55,[0,ang,0]); }
+    else { cy(g,1.1,1.1,.5,'brassD',x,11.6,z); glow=cy(g,1,1,2.6,'plasma',x,13.1,z); cy(g,1.3,1.3,3,'glass',x,13.1,z); cy(g,1.1,1.1,.5,'brassD',x,14.8,z); cy(g,.3,.3,.8,'brass',x,15.4,z); } });
+  // FE socket at the back
+  bx(g,4.4,2.6,.8,'dark',0,2,-8.3); tor(g,.9,.25,'red',-1,2,-8.75); tor(g,.9,.25,'ironD',1,2,-8.75); plate(g,'FE',2,1,0,3.7,-8.4,Math.PI,'#1a1d22','#ff6b5c');
+  // story: a rolled chart with a ribbon
+  cy(g,.6,.6,5,'paper',-3.6,4.9,5.6,'x'); tor(g,.65,.15,'ribbon',-3.6,4.9,5.6,'x'); cy(g,.62,.62,.1,'brassD',-1.1,4.9,5.6,'x');
+  return t=>{ outer.rotation.y=t*.5; inner.rotation.z=t*.8; cmp.nd.rotation.y=Math.sin(t*1.3)*1.2+t*.2; if(glow) glow.material.opacity=.6+.3*Math.sin(t*3); }; }
+
+function buildB(g){ ground(g);
+  [[-5.4,-5.4],[5.4,-5.4],[-5.4,5.4],[5.4,5.4]].forEach(([x,z])=>{ cy(g,1,1.2,1,'ironD',x,.5,z); tor(g,1.05,.15,'brass',x,.9,z,'y'); });
+  // the hollow cabinet: floor, roof band, back and side walls around an open bay
+  bx(g,12,1.5,12,'iron',0,1.75,0); bx(g,12,2.6,12,'iron',0,8.8,0); bx(g,12,5,1.2,'iron',0,5,-5.4); bx(g,1.2,5,12,'iron',-5.4,5,0); bx(g,1.2,5,12,'iron',5.4,5,0);
+  bx(g,12.4,.4,12.4,'ironD',0,10.2,0); bx(g,12.4,.4,12.4,'ironD',0,2.55,0); bx(g,9.4,4.6,.2,'slateD',0,5,-4.75);
+  for(let i=0;i<3;i++) bx(g,9,.12,.1,'tqGlow',0,3.8+i*1.2,-4.6); bx(g,8,.2,6,'tqGlow',0,7.4,0); // the bay's ceiling light
+  const table=new THREE.Group(); table.position.set(0,3,0); g.add(table); cy(table,3.4,3.7,.7,'brassD',0,0,0); cy(table,3.2,3.2,.75,'brass',0,.05,0); for(let k=0;k<8;k++){ const a=k/8*Math.PI*2; bx(table,.3,.1,.8,'brassD',Math.cos(a)*2.8,.45,Math.sin(a)*2.8,[0,-a,0]); }
+  const cmp=compassModel(table,0,.85,0);
+  // the roof band: countdown, dial and TUNE plate
+  screen(g,4.4,1.8,-3.2,8.8,6.15); const dial=cy(g,1.2,1.2,.3,'face',1.2,8.8,6.1,'z'); tor(g,1.25,.18,'brass',1.2,8.8,6.2); const hand=bx(g,.18,1,.12,'needleR',1.2,8.8,6.35); plate(g,'TUNE',2.4,1.2,4.2,8.8,6.15);
+  // the tuning fork
+  bx(g,4,1,2,'ironD',0,10.9,0); cy(g,.5,.5,1.4,'iron',0,12,0); bx(g,3.6,.8,.9,'iron',0,13,0); const pl=bx(g,.8,3.4,.8,'iron',-1.4,15,0), pr=bx(g,.8,3.4,.8,'iron',1.4,15,0); cy(g,.35,.35,.35,'tqGlow',0,13.6,0);
+  // the vials on the left wall
+  bx(g,.4,6,9,'brassD',-6.2,5.6,0); [['lapis',.75],['quartz',.45],['redstone',.9]].forEach(([m,f],i)=>{ const z=-3.2+i*3.2; cy(g,.85,.85,5,'glass',-7,5.6,z); cy(g,.7,.7,5*f*.95,m,-7,3.1+5*f*.95/2+.05,z); cy(g,.95,.95,.5,'brass',-7,8.3,z); cy(g,.95,.95,.5,'brass',-7,2.9,z); });
+  // the plasma inlet on the right
+  tor(g,1.5,.3,'brass',6.1,5.6,0,'x'); bx(g,.3,2.2,2.2,'plasma',6.05,5.6,0); cy(g,.8,.8,2,'ironD',7.2,5.6,0,'x'); tor(g,.9,.2,'brassD',8,5.6,0,'x');
+  // FE socket at the back and a notebook on the roof
+  bx(g,3.6,2.2,.6,'dark',0,5,-6.3); tor(g,.7,.22,'red',-.8,5,-6.65); tor(g,.7,.22,'ironD',.8,5,-6.65); plate(g,'FE',1.8,.9,0,6.6,-6.3,Math.PI,'#1a1d22','#ff6b5c');
+  bx(g,3,.5,2.2,'leather',3.4,10.65,-3,[0,.3,0]); bx(g,2.8,.3,2,'paper',3.4,10.75,-3,[0,.3,0]);
+  return t=>{ table.rotation.y=t*.4; cmp.nd.rotation.y=Math.sin(t*1.7)*1.4; const j=Math.sin(t*45)*.05; pl.position.x=-1.4-j; pr.position.x=1.4+j; hand.rotation.z=-progNow()*Math.PI*2; hand.position.x=1.2+Math.sin(-hand.rotation.z)*.0; }; }
+
+function buildC(g){ ground(g);
+  // the desk: front half low, with a sunken tray; the tower at the back
+  bx(g,16,6,10,'slate',0,3,3); bx(g,16.2,.5,10.2,'slateD',0,6.1,3); bx(g,13,.4,6,'dark',0,6.2,4.2); bx(g,13.4,.6,.6,'slate',0,6.5,7.3); bx(g,13.4,.6,.6,'slate',0,6.5,1.1); bx(g,.6,.6,6.8,'slate',-6.7,6.5,4.2); bx(g,.6,.6,6.8,'slate',6.7,6.5,4.2);
+  bx(g,12,10,6,'slate',0,5,-5); bx(g,12.4,.5,6.4,'slateD',0,10.2,-5);
+  // the tower's recessed face: countdown, TUNE plate, round key
+  bx(g,10,4,.3,'slateD',0,8.2,-1.95); bx(g,10.6,.5,.6,'slate',0,10.3,-1.8); bx(g,.5,4.6,.6,'slate',-5.2,8.1,-1.8); bx(g,.5,4.6,.6,'slate',5.2,8.1,-1.8);
+  screen(g,5.4,2.2,-1.6,8.4,-1.7); plate(g,'TUNE',2.4,1,3.4,9,-1.7); cy(g,.55,.55,.5,'red',3.4,7.5,-1.6,'z'); tor(g,.6,.12,'brass',3.4,7.5,-1.5);
+  // three cups in the tray
+  [['lapis',-4.5],['quartz',0],['redstone',4.5]].forEach(([m,x])=>{ cy(g,1.6,1.3,1.6,'copper',x,7,4.4); tor(g,1.55,.22,'copperD',x,7.8,4.4,'y'); cy(g,1.35,1.35,.2,'dark',x,7.75,4.4); cy(g,1.3,1.3,.3,m,x,7.45,4.4); });
+  // notebook and pencil
+  bx(g,2.6,.4,1.8,'leather',5.3,6.6,2.3,[0,-.25,0]); bx(g,2.4,.25,1.6,'paper',5.3,6.75,2.3,[0,-.25,0]); cy(g,.15,.15,2.6,'wood',3.6,6.6,2.1,'x');
+  // the coil and the floating compass
+  cy(g,1.5,1.5,4.4,'ironD',0,12.6,-5); for(let i=0;i<7;i++) tor(g,1.8,.32,i%2?'copper':'copperD',0,10.8+i*.62,-5,'y'); cy(g,2.4,2.4,.5,'brassD',0,10.6,-5); cy(g,2.2,2.2,.4,'brass',0,14.9,-5);
+  const cmp=compassModel(g,0,15.9,-5);
+  // the plasma tube up the back into the coil, and the FE ring on the right
+  const tube=cy(g,.45,.45,11,'plasma',0,6.5,-8.4); cy(g,.6,.6,11,'glass',0,6.5,-8.4); bx(g,1.2,1.2,3.4,'glass',0,12.4,-7,[0,0,0]); bx(g,.8,.8,3,'plasma',0,12.4,-7);
+  for(let i=0;i<4;i++) tor(g,.65,.12,'brass',0,2+i*3,-8.4,'y');
+  tor(g,1.2,.35,'red',8.1,3,3,'x'); cy(g,.85,.85,.3,'dark',8.1,3,3,'x'); plate(g,'FE',2,1,8.05,5,3,Math.PI/2,'#1a1d22','#ff6b5c');
+  return t=>{ cmp.grp.position.y=15.9+Math.sin(t*1.6)*.35; cmp.grp.rotation.y=t*.9; cmp.nd.rotation.y=Math.sin(t*2.1)*1.6; tube.material.opacity=.6+.3*Math.sin(t*2.5); }; }
+
+const views=[];
+function makeView(id,build,dist,cy_){ const host=el(id); const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); host.appendChild(r.domElement);
+  const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.5,800); const amb=new THREE.AmbientLight(0xffffff,.62), sun=new THREE.DirectionalLight(0xfff2dd,.75); sun.position.set(-30,60,50); scene.add(amb,sun);
+  const g=new THREE.Group(); scene.add(g); const tick=build(g); const v={host,r,scene,cam,amb,sun,tick,ry:.6,rx:.32,dist,cy:cy_,drag:false,t0:Math.random()*10};
+  let lx=0,ly=0; host.addEventListener('pointerdown',e=>{ v.drag=true; lx=e.clientX; ly=e.clientY; host.setPointerCapture(e.pointerId); });
+  host.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry-=(e.clientX-lx)*.01; v.rx=Math.max(-.2,Math.min(1.1,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+  host.addEventListener('pointerup',()=>{ v.drag=false; }); host.addEventListener('pointercancel',()=>{ v.drag=false; }); views.push(v); }
+function frameLoop(now){ const t=now/1000; for(const v of views){ const w=v.host.clientWidth, h=v.host.clientHeight; if(!w) continue; if(v.r.domElement.width!==Math.round(w*v.r.getPixelRatio())) v.r.setSize(w,h,false); v.cam.aspect=w/h; v.cam.updateProjectionMatrix();
+    if(spin&&!v.drag) v.ry=.6*Math.sin((t+v.t0)*.35)+.25;
+    v.cam.position.set(Math.sin(v.ry)*Math.cos(v.rx)*v.dist, v.cy+Math.sin(v.rx)*v.dist, Math.cos(v.ry)*Math.cos(v.rx)*v.dist); v.cam.lookAt(0,v.cy,0);
+    v.amb.intensity=night?.18:.62; v.sun.intensity=night?.12:.75; if(v.tick) v.tick(reduce?0:t); v.r.render(v.scene,v.cam); }
+  requestAnimationFrame(frameLoop); }
+
+function pick(prefix,n,i){ for(let k=0;k<n;k++) el(prefix+k).classList.toggle('on',k===i); }
+function start(){ drawScreens();
+  if(window.THREE){ makeView('viewA',buildA,52,7.5); makeView('viewB',buildB,52,7.5); makeView('viewC',buildC,54,8); paintBlockScreens(); requestAnimationFrame(frameLoop); }
+  setInterval(()=>{ drawScreens(); if(window.THREE) paintBlockScreens(); },1000);
+  el('spinBtn').onclick=e=>{ spin=!spin; e.target.textContent='Turning: '+(spin?'on':'off'); e.target.classList.toggle('on',spin); };
+  el('nightBtn').onclick=e=>{ night=!night; e.target.textContent='Night: '+(night?'on':'off'); e.target.classList.toggle('on',night); };
+  [0,1,2,3].forEach(i=>{ el('st'+i).onclick=()=>{ st=STATES[i]; pick('st',4,i); drawScreens(); if(window.THREE) paintBlockScreens(); }; });
+  [0,1].forEach(i=>{ el('cp'+i).onclick=()=>{ tunedView=i===0; pick('cp',2,i); sK(); }; });
+}
+(document.fonts&&document.fonts.load ? Promise.all([document.fonts.load('8px Silkscreen'),document.fonts.load('7px "IBM Plex Sans"')]).catch(()=>{}) : Promise.resolve()).then(start);
+})();
+</script>

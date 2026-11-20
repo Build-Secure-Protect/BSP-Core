@@ -20,6 +20,7 @@ public final class ModCreativeTabs {
             .displayItems((params, output) -> {
                 output.accept(ModItems.SHATTER_TOTEM.get());
                 output.accept(ModItems.TOTEM_COMPASS.get());
+                output.accept(ModItems.COMPASS_TUNER.get());
                 output.accept(ModItems.COIN_FACTORY.get());
                 ModItems.BLANKS.values().forEach(i -> output.accept(i.get()));
                 ModItems.COINS.values().forEach(i -> output.accept(i.get()));

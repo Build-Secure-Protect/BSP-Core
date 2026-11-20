@@ -7,11 +7,11 @@
     {
       "type": "patchouli:spotlight",
       "item": "bsp_core:totem_compass",
-      "text": "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down. Upgrades shorten the cooldown."
+      "text": "Points to your own nearest totem, however far. Load it with Shatter Coins and start tracking, and for a while it points to the nearest rival totem within its reach instead.$(br2)After tracking it needs to cool down: 10 minutes on an untuned compass."
     },
     {
       "type": "patchouli:text",
-      "text": "A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, at first.$(br2)$(l)WIDER$() and $(l)DEEPER$() on its screen buy more, up to 2,500 and 150. The upgrades stay with that compass.",
+      "text": "A compass finds rival totems only within its $(l)reach$(): 100 blocks from you across the ground and 10 above or below, untuned.$(br2)A $(l:totem/compass_tuner)Compass Tuner$() tunes more into it, up to 2,500 and 150, and a cooldown down to 3 minutes. Its screen says whether it is tuned.",
       "title": "Reach"
     },
     {
@@ -21,8 +21,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Pips on the compass in your hotbar count its upgrades: turquoise along the bottom for across, gold up the side for up or down.",
-      "title": "Upgrade pips"
+      "text": "Pips on the compass in your hotbar count its tuned levels: turquoise along the bottom for across, gold up the side for up or down.",
+      "title": "Level pips"
     },
     {
       "type": "patchouli:crafting",

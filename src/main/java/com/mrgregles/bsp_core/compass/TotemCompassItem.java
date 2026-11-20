@@ -35,6 +35,9 @@ import java.util.UUID;
  * position once a second and the client's needle reads it. Times are real-clock milliseconds, so a compass carried to another
  * server of the network reads them the same there. The wait also belongs to the player ({@link CompassCooldowns}, and on a
  * network the {@code compass_waits} table), so a new compass cannot skip it, on this server or another.
+ *
+ * <p>Its reach (Across, Up or down) and its cooldown level are tuned into it by a {@link CompassTunerBlockEntity Compass Tuner};
+ * nothing is bought on the compass itself. An untuned compass tracks at the first entry of each ladder.
  */
 public class TotemCompassItem extends Item {
     /** Set while tracking when no rival totem is in reach but a rival's radiation reaches the holder: the needle turns slowly. */
@@ -106,24 +109,69 @@ public class TotemCompassItem extends Item {
         }
     }
 
+    /** Set on a compass a Compass Tuner has tuned. A compass with levels and without it was upgraded before the tuner. */
+    public static final String TUNED = "Tuned";
+
+    public static boolean isTuned(ItemStack s) {
+        return s.hasTag() && s.getTag().getBoolean(TUNED);
+    }
+
+    /** Set on an old upgraded compass when it handed its upgrades to a Compass Tuner (it is marked tuned as well). */
+    public static final String HANDED_OVER = "HandedOver";
+
+    /** Levels bought on the compass itself before the tuner, and never tuned or handed over: the one-time handover applies. */
+    public static boolean upgradedBeforeTuner(ItemStack s) {
+        if (!(s.getItem() instanceof TotemCompassItem) || isTuned(s) || s.hasTag() && s.getTag().getBoolean(HANDED_OVER)) {
+            return false;
+        }
+        return level(s) > 0 || rangeLevel(s, Range.ACROSS) > 0 || rangeLevel(s, Range.DEPTH) > 0;
+    }
+
+    /** The handover happened: the compass keeps its levels, counts as tuned, and never hands over again. */
+    public static void markHandedOver(ItemStack s) {
+        CompoundTag tag = s.getOrCreateTag();
+        tag.putBoolean(HANDED_OVER, true);
+        tag.putBoolean(TUNED, true);
+    }
+
+    /** A finished tune: the compass gets these levels (never lower than it had) and the tuned mark. */
+    public static void applyTune(ItemStack s, int across, int depth, int cooldown) {
+        CompoundTag tag = s.getOrCreateTag();
+        tag.putInt(RANGE_ACROSS, Math.max(rangeLevel(s, Range.ACROSS), across));
+        tag.putInt(RANGE_DEPTH, Math.max(rangeLevel(s, Range.DEPTH), depth));
+        tag.putInt(LEVEL, Math.max(level(s), cooldown));
+        tag.putBoolean(TUNED, true);
+    }
+
     public static int level(ItemStack s) {
         return s.hasTag() ? s.getTag().getInt(LEVEL) : 0;
     }
 
     public static int maxLevel() {
-        int span = BSPConfig.COMPASS_COOLDOWN.get() - BSPConfig.COMPASS_MIN_COOLDOWN.get();
-        int steps = (int) Math.ceil(Math.max(0, span) / (double) BSPConfig.COMPASS_COOLDOWN_STEP.get());
-        return Math.min(steps, BSPConfig.COMPASS_UPGRADE_COSTS.get().size());
+        int span = BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN, 600) - BSPConfig.getOr(BSPConfig.COMPASS_MIN_COOLDOWN, 180);
+        int steps = (int) Math.ceil(Math.max(0, span) / (double) Math.max(1, BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN_STEP, 60)));
+        return Math.min(steps, BSPConfig.getOr(BSPConfig.COMPASS_UPGRADE_COSTS, List.<Integer>of()).size());
     }
 
     public static int cooldownSeconds(ItemStack s) {
-        return Math.max(BSPConfig.COMPASS_MIN_COOLDOWN.get(), BSPConfig.COMPASS_COOLDOWN.get() - level(s) * BSPConfig.COMPASS_COOLDOWN_STEP.get());
+        return cooldownSeconds(level(s));
+    }
+
+    /** The cooldown in seconds after tracking at cooldown level {@code level}. */
+    public static int cooldownSeconds(int level) {
+        // read safely: the tooltip may ask before the server's config has arrived
+        return Math.max(BSPConfig.getOr(BSPConfig.COMPASS_MIN_COOLDOWN, 180),
+                BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN, 600) - Math.max(0, level) * BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN_STEP, 60));
     }
 
     /** How many coins the next cooldown upgrade costs, or -1 if fully upgraded. The coin is {@link #upgradeCoin(int)}. */
     public static int upgradeCost(ItemStack s) {
-        int lvl = level(s);
-        return lvl >= maxLevel() ? -1 : BSPConfig.COMPASS_UPGRADE_COSTS.get().get(lvl);
+        return cooldownCost(level(s));
+    }
+
+    /** Coins the cooldown level after {@code level} costs, or -1 at the top. The coin is {@link #upgradeCoin(int)}. */
+    public static int cooldownCost(int level) {
+        return level < 0 || level >= maxLevel() ? -1 : BSPConfig.getOr(BSPConfig.COMPASS_UPGRADE_COSTS, List.<Integer>of()).get(level);
     }
 
     /** The Shatter Coin that pays for the upgrade from {@code level} to the next. */
@@ -158,6 +206,17 @@ public class TotemCompassItem extends Item {
         return s.hasTag() ? Math.max(0, Math.min(top, s.getTag().getInt(r == Range.ACROSS ? RANGE_ACROSS : RANGE_DEPTH))) : 0;
     }
 
+    /** The highest level a range ladder's reach list has (its length less one): more gives no more reach. */
+    public static int rangeTop(Range r) {
+        return Math.max(0, rangeList(r).size() - 1);
+    }
+
+    /** The highest cooldown level that still shortens the cooldown: past it the cooldown stays at its shortest. */
+    public static int cooldownTop() {
+        int span = BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN, 600) - BSPConfig.getOr(BSPConfig.COMPASS_MIN_COOLDOWN, 180);
+        return (int) Math.ceil(Math.max(0, span) / (double) Math.max(1, BSPConfig.getOr(BSPConfig.COMPASS_COOLDOWN_STEP, 60)));
+    }
+
     /** Blocks the ladder reaches at {@code level}. */
     public static int rangeBlocks(Range r, int level) {
         return BSPConfig.levelValue(rangeList(r), level + 1, r == Range.ACROSS ? 100 : 10);
@@ -182,23 +241,6 @@ public class TotemCompassItem extends Item {
             }
         }
         return CoinTier.COPPER;
-    }
-
-    /** Buys the next level of {@code r} on the compass in hand: takes its coins (none in creative). Returns whether it was bought. */
-    public static boolean buyRange(ServerPlayer player, ItemStack compass, Range r) {
-        int level = rangeLevel(compass, r), cost = rangeCost(level);
-        if (cost < 0) {
-            return false;
-        }
-        if (!player.isCreative()) {
-            net.minecraft.world.item.Item coin = rangeCoin(level).coin();
-            if (player.getInventory().countItem(coin) < cost) {
-                return false;
-            }
-            player.getInventory().clearOrCountMatchingItems(st -> st.is(coin), cost, player.inventoryMenu.getCraftSlots());
-        }
-        compass.getOrCreateTag().putInt(r == Range.ACROSS ? RANGE_ACROSS : RANGE_DEPTH, level + 1);
-        return true;
     }
 
     /** Whether a totem at {@code totem} is within reach of a compass held at {@code at}: inside the circle across and the band up or down. */
@@ -331,21 +373,6 @@ public class TotemCompassItem extends Item {
         CompassCooldowns waits = CompassCooldowns.get(player.server);
         waits.prune(now);
         waits.start(player.getUUID(), cooldownUntil);
-    }
-
-    public static void buyUpgrade(ServerPlayer player, ItemStack compass) {
-        int cost = upgradeCost(compass);
-        if (cost < 0) {
-            return;
-        }
-        if (!player.isCreative()) {
-            net.minecraft.world.item.Item coin = upgradeCoin(level(compass)).coin();
-            if (player.getInventory().countItem(coin) < cost) {
-                return;
-            }
-            player.getInventory().clearOrCountMatchingItems(st -> st.is(coin), cost, player.inventoryMenu.getCraftSlots());
-        }
-        compass.getOrCreateTag().putInt(LEVEL, level(compass) + 1);
     }
 
     // ------------------------------------------------------------------ targeting
@@ -525,6 +552,10 @@ public class TotemCompassItem extends Item {
         tooltip.add(Component.translatable("tooltip.bsp_core.compass").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.bsp_core.compass.reach", String.format(java.util.Locale.ROOT, "%,d", rangeBlocks(stack, Range.ACROSS)),
                 String.format(java.util.Locale.ROOT, "%,d", rangeBlocks(stack, Range.DEPTH))).withStyle(ChatFormatting.AQUA));
+        int cd = cooldownSeconds(stack);
+        tooltip.add(Component.translatable("tooltip.bsp_core.compass.cooldown", String.format(java.util.Locale.ROOT, "%d:%02d", cd / 60, cd % 60))
+                .withStyle(ChatFormatting.AQUA));
+        tooltip.add(Component.translatable(isTuned(stack) ? "tooltip.bsp_core.compass.tuned" : "tooltip.bsp_core.compass.untuned").withStyle(ChatFormatting.DARK_GRAY));
         if (stored(stack) > 0) {
             tooltip.add(Component.translatable("tooltip.bsp_core.compass.stored", stored(stack)).withStyle(ChatFormatting.GOLD));
         }
