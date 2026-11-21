@@ -42,14 +42,20 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
     @Nullable
     private BlockPos source;
     @Nullable
-    private net.minecraft.core.GlobalPos anchorTotem;
+    private Anchor anchorTotem;
     private long fedAt = -1000;
+    /**
+     * After a load, the runs come back one by one: until this game time the saved Anchor is kept over a different one, so a restart
+     * does not swap totems (and clear the projector's picked chunks) before every run has fed again. Long.MIN_VALUE: not loaded.
+     */
+    private long settleUntil = Long.MIN_VALUE;
+    private boolean justLoaded;
     private boolean signal;
     private int syncedTank = -1;
     /** Client only: the level the renderer is showing, gliding toward the synced tank. */
     public float shown;
 
-    private record Feed(int[] offered, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchor, int repeaters, int delivered, long at) {}
+    private record Feed(int[] offered, PlasmaAccess access, @Nullable Anchor anchor, int repeaters, int delivered, long at) {}
 
     public ProjectorBaseBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PROJECTOR_BASE.get(), pos, state);
@@ -101,7 +107,7 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
     }
 
     @Nullable
-    public net.minecraft.core.GlobalPos anchorTotem() {
+    public Anchor anchorTotem() {
         return anchorTotem;
     }
 
@@ -193,13 +199,13 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
     }
 
     @Override
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access, @Nullable Anchor anchorTotem) {
         feed(master, offeredByOrdinal, repeaters, deliveredPerTick, movedMB, access, anchorTotem, null);
     }
 
     @Override
     public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, int movedMB, PlasmaAccess access,
-                     @Nullable net.minecraft.core.GlobalPos anchorTotem, @Nullable long[][] mobIn) {
+                     @Nullable Anchor anchorTotem, @Nullable long[][] mobIn) {
         long mobMoved = 0;
         if (mobIn != null) {
             long room = Math.max(0, mobCapacity() - MobPlasma.total(mob)), came = Math.min(MobPlasma.total(mobIn), movedMB);
@@ -225,12 +231,16 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
         setChanged();
     }
 
-    /** Joins what the runs still feeding said: every power at its highest, every team, the first Anchor; the source is the latest. */
+    /**
+     * Joins what the runs still feeding said: every power at its highest, every team, and the Anchor whose editors are everyone the
+     * runs know (else the highest); the source is the latest.
+     */
     private void join(long now) {
         feeds.values().removeIf(f -> now - f.at() > FEED_TICKS);
         java.util.Arrays.fill(offered, 0);
         PlasmaAccess joined = new PlasmaAccess();
-        net.minecraft.core.GlobalPos anchor = null;
+        java.util.List<Anchor> anchors = new java.util.ArrayList<>();
+        java.util.List<Integer> levels = new java.util.ArrayList<>();
         Feed latest = null;
         BlockPos latestAt = null;
         for (var e : feeds.entrySet()) {
@@ -239,8 +249,9 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
                 offered[i] = Math.max(offered[i], f.offered()[i]);
             }
             joined.addAll(f.access());
-            if (anchor == null) {
-                anchor = f.anchor();
+            if (f.anchor() != null) {
+                anchors.add(f.anchor());
+                levels.add(Buff.ANCHOR.ordinal() < f.offered().length ? f.offered()[Buff.ANCHOR.ordinal()] : 0);
             }
             if (latest == null || f.at() > latest.at()) {
                 latest = f;
@@ -251,7 +262,14 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
             return;
         }
         access = joined;
-        anchorTotem = anchor;
+        if (justLoaded) {
+            settleUntil = now + FEED_TICKS;
+            justLoaded = false;
+        }
+        Anchor picked = Anchor.pick(anchors, levels, joined.editors, anchorTotem);
+        if (!(now < settleUntil && anchorTotem != null && picked != null && !picked.totem().equals(anchorTotem.totem()))) {
+            anchorTotem = picked;
+        }
         source = latestAt;
         repeaters = latest.repeaters();
         delivered = latest.delivered();
@@ -306,7 +324,7 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
         if (source != null) {
             tag.putLong("Source", source.asLong());
         }
-        com.mrgregles.bsp_core.link.Links.save(tag, "Totem", anchorTotem);
+        Anchor.save(tag, "Totem", anchorTotem);
     }
 
     @Override
@@ -324,7 +342,8 @@ public class ProjectorBaseBlockEntity extends BlockEntity implements PlasmaRecei
         mob = MobPlasma.load(tag, "Mob");
         fitMob();
         source = tag.contains("Source") ? BlockPos.of(tag.getLong("Source")) : null;
-        anchorTotem = com.mrgregles.bsp_core.link.Links.load(tag, "Totem");
+        anchorTotem = Anchor.load(tag, "Totem");
+        justLoaded = anchorTotem != null;
     }
 
     @Override

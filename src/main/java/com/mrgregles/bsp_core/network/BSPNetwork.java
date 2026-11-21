@@ -26,8 +26,9 @@ public final class BSPNetwork {
      *     its synced value 4 carries the tune state instead of the upgrade price.
      * 17: Plasma Batteries hold no Anchor, so the Battery Charger screen's synced values are one power row shorter; the chunk
      *     view's NO_TOTEM flag.
+     * 18: the chunk view's ANCHOR_STALE, ANCHOR_OUTSIDERS and ANCHOR_RECHOOSE flags.
      */
-    private static final String PROTOCOL = "17";
+    private static final String PROTOCOL = "18";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

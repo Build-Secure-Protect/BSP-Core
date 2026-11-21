@@ -235,13 +235,13 @@ public class TankExtractorGameTests {
             access.editors.add(owner);
             int[] anchor = new int[Buff.values().length];
             anchor[Buff.ANCHOR.ordinal()] = 2;
-            ((com.mrgregles.bsp_core.tank.TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), anchor, 0, 50, 1_000, access, totem, null);
+            ((com.mrgregles.bsp_core.tank.TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), anchor, 0, 50, 1_000, access, new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, java.util.Set.of(owner)), null);
             TankExtractorBlockEntity ex = extractor(h);
             ex.setPool(TankExtractorBlockEntity.TOTEM);
             ex.setOwner(stranger);
             h.assertTrue(ex.offered()[Buff.ANCHOR.ordinal()] == 2 && ex.anchor() == null, "placed by someone who did not feed the tank: Anchor goes on without its totem");
             ex.setOwner(owner);
-            h.assertTrue(totem.equals(ex.anchor()), "placed by the feeder: the totem goes with it");
+            h.assertTrue(ex.anchor() != null && totem.equals(ex.anchor().totem()), "placed by the feeder: the totem goes with it");
             ex.setPool(TankExtractorBlockEntity.PLAIN);
             h.assertTrue(ex.anchor() == null, "the plain pool carries no Anchor");
             ex.setPool(TankExtractorBlockEntity.TOTEM);

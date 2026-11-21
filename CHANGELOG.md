@@ -4,6 +4,20 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.20.2] - 2026-11-21
+
+Network protocol 18: servers and clients must both have this version (the projector's CHUNKS tab).
+
+### Changed
+- **A projector holds chunks only for the people of the totem its Anchor comes from.** Plasma carrying Anchor now also carries who owns that totem and who may upgrade it (the owner, Upgrades friends and the owner's team), through interfaces, tanks, Plasma Accelerator links and Projector Bases. A projector loads chunks under the totem only while everyone who may change the projector, and the player who chose Anchor there, may also upgrade the totem, and while the totem still has the owner the plasma came from. While the totem is loaded, who may upgrade it is read from the totem itself. A projector whose runs also bring someone else's plasma keeps its other powers, and its CHUNKS tab says why it holds no chunks. Anchor plasma stored before this version holds chunks again once fresh plasma comes from the totem; the tab says so meanwhile. A projector that received Anchor before this version keeps it while fed from the same totem; fed from another, Anchor must be chosen again, and the tab says so. A projector that anyone may change (one fed only plasma that knows nobody) holds no chunks.
+- When several runs feed one Projector Base, Interface group or Plasma Accelerator, the Anchor passed on is the one whose totem's people include everyone feeding, then the highest, then the one already in use. An Accelerator or Decelerator lets go of an Anchor once none of its stored plasma carries it.
+- Who may write Link Cards at a Plasma Accelerator follows the runs feeding it each second.
+- After a restart, a Projector Base keeps its Anchor's totem while its runs come back, so the projector's picked chunks are not cleared.
+- A Plasma Tank counts as its team only plasma from totems owned by its owners, their Upgrades friends or their team; feeds from several of them in the same second are joined. A friend or ally with only Ward (or Alarm, or Machines) on the owner's totem can still feed it, but their plasma no longer changes who the tank's projectors treat as the team.
+
+### Fixed
+- A power could keep arriving from a Plasma Accelerator or Decelerator after its plasma had gone through, because a few mB of its share never left the store.
+
 ## [1.20.1] - 2026-11-21
 
 Network protocol 17: servers and clients must both have this version (the Battery Charger screen's synced values).

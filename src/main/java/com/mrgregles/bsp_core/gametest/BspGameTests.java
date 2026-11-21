@@ -4095,7 +4095,9 @@ public class BspGameTests {
             h.assertTrue(core.store().stored() > 0, "plasma arrived in the Nether: " + core.store().stored());
             h.assertTrue(core.store().offered()[oc] == 2, "Overclock II crossed with it");
             var totemAt = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(start.above()));
-            h.assertTrue(totemAt.equals(core.anchorTotem()), "the anchor totem is named with its world: " + core.anchorTotem());
+            h.assertTrue(core.anchorTotem() != null && totemAt.equals(core.anchorTotem().totem()), "the anchor totem is named with its world: " + core.anchorTotem());
+            h.assertTrue(core.anchorTotem().owner().equals(totem[0].getOwner().get().uuid()) && core.anchorTotem().editors().contains(totem[0].getOwner().get().uuid()),
+                    "with its owner and editors: " + core.anchorTotem());
             h.assertTrue(core.access().users.contains(totem[0].getOwner().get().uuid()), "the totem's access list came along");
             var report = a.report(core.here());
             h.assertTrue(report.state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING && report.rate() > 0, "the link reports delivering: " + report);
@@ -4271,7 +4273,7 @@ public class BspGameTests {
                     + ", in " + core.inRate() + ", port " + (portBe == null ? "none" : portBe.getClass().getSimpleName() + " controller " + ((com.mrgregles.bsp_core.link.LinkPartBlockEntity) portBe).controller())
                     + ", base tank " + base.tank() + ", link " + a.report(core.here()));
             h.assertTrue(base.tank() > 0, "the Projector Base fills");
-            h.assertTrue(totemAt.equals(base.anchorTotem()), "the base names the Overworld totem with its world: " + base.anchorTotem());
+            h.assertTrue(base.anchorTotem() != null && totemAt.equals(base.anchorTotem().totem()), "the base names the Overworld totem with its world: " + base.anchorTotem());
             h.assertTrue(base.offered()[TotemUpgrades.Buff.ANCHOR.ordinal()] == 2, "Anchor II is offered in the Nether");
             int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(TotemUpgrades.Buff.ANCHOR);
             projector.toggle(anchorIndex); // the player picks Anchor on the projector
@@ -4284,6 +4286,351 @@ public class BspGameTests {
                 h.succeed();
             });
         });
+    }
+
+    // ------------------------------------------------------------------ Anchor rights across joined runs
+
+    private static int[] anchorOffer(int level) {
+        int[] o = new int[TotemUpgrades.Buff.values().length];
+        o[TotemUpgrades.Buff.ANCHOR.ordinal()] = level;
+        return o;
+    }
+
+    private static com.mrgregles.bsp_core.plasma.PlasmaAccess editorsOf(UUID... ids) {
+        var a = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+        for (UUID id : ids) {
+            a.editors.add(id);
+            a.users.add(id);
+        }
+        return a;
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 1200)
+    public void an_interface_group_with_another_owners_totem_holds_no_chunks_under_the_anchor(GameTestHelper h) {
+        UUID anchorite = UUID.randomUUID(), other = UUID.randomUUID();
+        BlockPos e1 = new BlockPos(1, 1, 1), iface = e1.east(), e2 = iface.east(), basePos = iface.south(3), projPos = basePos.above();
+        h.setBlock(e1, ModBlocks.PLASMA_EXTRACTOR.get());
+        h.setBlock(e1.above(), ModBlocks.SHATTER_TOTEM.get());
+        ShatterTotemBlockEntity mine = entity(h, e1.above(), ShatterTotemBlockEntity.class);
+        mine.setOwner(new TotemOwner(anchorite, "Anchorite"));
+        mine.setUpgradeLevel(TotemUpgrades.Buff.OUTPUT, 3);
+        mine.setUpgradeLevel(TotemUpgrades.Buff.ANCHOR, 1);
+        h.setBlock(e2, ModBlocks.PLASMA_EXTRACTOR.get());
+        h.setBlock(e2.above(), ModBlocks.SHATTER_TOTEM.get());
+        ShatterTotemBlockEntity theirs = entity(h, e2.above(), ShatterTotemBlockEntity.class);
+        theirs.setOwner(new TotemOwner(other, "Other"));
+        theirs.setUpgradeLevel(TotemUpgrades.Buff.OUTPUT, 3);
+        h.setBlock(iface, ModBlocks.PLASMA_INTERFACE.get());
+        h.setBlock(iface.south(), cable(TotemCableBlock.Kind.ILLYRIUM));
+        h.setBlock(iface.south(2), cable(TotemCableBlock.Kind.ILLYRIUM));
+        h.setBlock(basePos, ModBlocks.PROJECTOR_BASE.get());
+        h.setBlock(projPos, ModBlocks.TOTEM_PROJECTOR.get());
+        var totemAt = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(e1.above()));
+        var projAt = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(projPos));
+        int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(TotemUpgrades.Buff.ANCHOR);
+        int[] step = {0}, waited = {0};
+        h.onEachTick(() -> {
+            var base = entity(h, basePos, com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity.class);
+            var projector = entity(h, projPos, com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.class);
+            var entry = com.mrgregles.bsp_core.chunk.ChunkLedger.get(h.getLevel().getServer()).projectors.get(projAt);
+            switch (step[0]) {
+                case 0 -> {
+                    var a = base.anchorTotem();
+                    if (a != null && base.access().editors.contains(anchorite) && base.access().editors.contains(other) && projector.offered(anchorIndex) > 0) {
+                        h.assertTrue(totemAt.equals(a.totem()) && a.owner().equals(anchorite), "the Anchor is the Anchorite's totem: " + a);
+                        h.assertTrue(a.editors().contains(anchorite) && !a.editors().contains(other), "with that totem's editors only: " + a.editors());
+                        projector.toggle(anchorIndex, anchorite); // the Anchorite, who may edit the projector, receives Anchor
+                        step[0] = 1;
+                    }
+                }
+                case 1 -> {
+                    // several projector seconds after Anchor is chosen, so the chunk ledger has been asked
+                    if (projector.isActive() && projector.chosenLevel(TotemUpgrades.Buff.ANCHOR) > 0 && ++waited[0] > 60) {
+                        h.assertTrue(projector.anchorOutsiders(), "the CHUNKS tab says someone outside the totem may change the projector");
+                        h.assertTrue(entry == null || !entry.on, "and no chunks are held under the Anchorite's totem");
+                        h.setBlock(e2, Blocks.AIR); // the other owner's plasma stops joining the run
+                        step[0] = 2;
+                    }
+                }
+                case 2 -> {
+                    if (entry != null && entry.on) {
+                        h.assertTrue(totemAt.equals(entry.totem), "fed by the Anchorite alone, the projector holds chunks under that totem: " + entry.totem);
+                        h.assertTrue(!projector.anchorOutsiders() && !projector.anchorStale(), "and the tab no longer warns");
+                        com.mrgregles.bsp_core.chunk.ChunkLoading.projectorRemoved(h.getLevel(), h.absolutePos(projPos));
+                        step[0] = 3;
+                        h.succeed();
+                    }
+                }
+                default -> { }
+            }
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 400)
+    public void an_accelerator_joins_only_the_runs_feeding_it_now_and_keeps_the_covering_anchor(GameTestHelper h) {
+        UUID owner = UUID.randomUUID(), friend = UUID.randomUUID(), late = UUID.randomUUID();
+        BlockPos intake = new BlockPos(3, 1, 3);
+        h.setBlock(intake, ModBlocks.ACCELERATOR_INTAKE.get().defaultBlockState().setValue(com.mrgregles.bsp_core.link.AcceleratorIntakeBlock.FACING, net.minecraft.core.Direction.NORTH));
+        var a = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
+        var dim = h.getLevel().dimension();
+        var ownerA = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(0, 1, 0))), owner, Set.of(owner, friend));
+        var friendA = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(1, 1, 0))), friend, Set.of(friend));
+        BlockPos m1 = h.absolutePos(new BlockPos(0, 1, 5)), m2 = h.absolutePos(new BlockPos(1, 1, 5)), m3 = h.absolutePos(new BlockPos(2, 1, 5));
+        a.feed(m1, anchorOffer(2), 0, 50, 1_000, editorsOf(owner), ownerA, null);
+        a.feed(m2, anchorOffer(3), 0, 50, 1_000, editorsOf(friend), friendA, null);
+        h.assertTrue(a.access().editors.containsAll(Set.of(owner, friend)), "two runs feeding: both are editors");
+        h.assertTrue(ownerA.equals(a.anchorTotem()), "the Anchor whose editors are everyone feeding stays: " + a.anchorTotem());
+        a.feed(m3, anchorOffer(0), 0, 50, 1_000, editorsOf(late), null, null);
+        int[] ticks = {0};
+        h.onEachTick(() -> {
+            if (ticks[0]++ < 50) {
+                a.feed(m1, anchorOffer(2), 0, 50, 100, editorsOf(owner), ownerA, null); // only the owner's run feeds from now on
+                return;
+            }
+            if (ticks[0] == 52) {
+                h.assertTrue(a.fedLately() && a.access().editors.equals(Set.of(owner)), "a second later only the run feeding it now counts: " + a.access().editors);
+                h.assertTrue(ownerA.equals(a.anchorTotem()), "and its Anchor: " + a.anchorTotem());
+                a.store().drain(Long.MAX_VALUE);
+                a.feed(m1, anchorOffer(0), 0, 50, 100, editorsOf(owner), null, null);
+                h.assertTrue(a.anchorTotem() == null, "once no stored plasma carries Anchor, no Anchor goes on: " + a.anchorTotem());
+                net.minecraft.nbt.CompoundTag tag = a.saveWithoutMetadata();
+                h.assertTrue(!tag.contains("AnchorDim"), "nothing to save");
+                a.feed(m1, anchorOffer(2), 0, 50, 100, editorsOf(owner), ownerA, null);
+                h.assertTrue(ownerA.equals(com.mrgregles.bsp_core.plasma.Anchor.load(a.saveWithoutMetadata(), "Anchor")), "saved with owner and editors");
+                h.assertTrue(!a.getUpdateTag().contains("AnchorDim") && !a.getUpdateTag().contains("AnchorEditors"), "and kept on the server");
+                h.succeed();
+            }
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_decelerator_drops_its_anchor_with_its_anchor_plasma(GameTestHelper h) {
+        UUID owner = UUID.randomUUID();
+        BlockPos corePos = new BlockPos(3, 1, 3);
+        h.setBlock(corePos, ModBlocks.DECELERATOR_CORE.get());
+        var core = entity(h, corePos, com.mrgregles.bsp_core.link.DeceleratorBlockEntity.class);
+        var dim = h.getLevel().dimension();
+        var from = net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(0, 1, 5)));
+        var anchor = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(0, 1, 0))), owner, Set.of(owner));
+        core.receive(1_000, anchorOffer(2), editorsOf(owner), anchor, from);
+        h.assertTrue(anchor.equals(core.anchorTotem()), "the Anchor arrives with its owner and editors");
+        core.receive(1_000, anchorOffer(0), editorsOf(owner), null, from);
+        h.assertTrue(anchor.equals(core.anchorTotem()), "kept while stored plasma still carries Anchor");
+        h.assertTrue(anchor.equals(com.mrgregles.bsp_core.plasma.Anchor.load(core.saveWithoutMetadata(), "Anchor")) && !core.getUpdateTag().contains("AnchorDim"),
+                "saved on the server, never sent to clients");
+        core.store().drain(Long.MAX_VALUE);
+        h.assertTrue(core.anchorTotem() == null, "the Anchor plasma is gone: so is the Anchor");
+        core.receive(1_000, anchorOffer(0), editorsOf(owner), null, from);
+        h.assertTrue(core.anchorTotem() == null, "plain plasma does not bring it back");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_projector_base_joining_two_runs_picks_the_anchor_that_covers_both(GameTestHelper h) {
+        UUID owner = UUID.randomUUID(), friend = UUID.randomUUID();
+        BlockPos basePos = new BlockPos(3, 1, 3);
+        h.setBlock(basePos, ModBlocks.PROJECTOR_BASE.get());
+        var base = entity(h, basePos, com.mrgregles.bsp_core.plasma.ProjectorBaseBlockEntity.class);
+        var dim = h.getLevel().dimension();
+        var shared = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(0, 1, 0))), owner, Set.of(owner, friend));
+        var narrow = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(1, 1, 0))), friend, Set.of(friend));
+        BlockPos m1 = h.absolutePos(new BlockPos(0, 1, 5)), m2 = h.absolutePos(new BlockPos(1, 1, 5));
+        base.feed(m2, anchorOffer(3), 0, 50, 100, editorsOf(friend), narrow, null);
+        base.feed(m1, anchorOffer(2), 0, 50, 100, editorsOf(owner), shared, null);
+        h.assertTrue(base.access().editors.containsAll(Set.of(owner, friend)), "both runs' editors are joined");
+        h.assertTrue(shared.equals(base.anchorTotem()), "the Anchor whose editors cover both runs is picked over a higher one: " + base.anchorTotem());
+        base.feed(m2, anchorOffer(3), 0, 50, 100, editorsOf(friend), narrow, null);
+        h.assertTrue(shared.equals(base.anchorTotem()), "whichever run fed last");
+        var mineOnly = new com.mrgregles.bsp_core.plasma.Anchor(shared.totem(), owner, Set.of(owner));
+        base.feed(m1, anchorOffer(2), 0, 50, 100, editorsOf(owner), mineOnly, null);
+        h.assertTrue(narrow.equals(base.anchorTotem()), "with none covering both, the highest Anchor is passed on (and the projector holds no chunks): " + base.anchorTotem());
+        h.assertTrue(narrow.equals(com.mrgregles.bsp_core.plasma.Anchor.load(base.saveWithoutMetadata(), "Totem")), "saved with owner and editors");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 1500)
+    public void a_projector_holds_chunks_only_under_a_fresh_anchor_whose_editors_cover_it(GameTestHelper h) {
+        UUID owner = UUID.randomUUID(), outsider = UUID.randomUUID(), thief = UUID.randomUUID();
+        BlockPos projPos = new BlockPos(3, 1, 3);
+        h.setBlock(projPos, ModBlocks.TOTEM_PROJECTOR.get());
+        var server = h.getLevel().getServer();
+        var dim = h.getLevel().dimension();
+        var totem = net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(0, 1, 0)));
+        var projAt = net.minecraft.core.GlobalPos.of(dim, h.absolutePos(projPos));
+        var good = new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, Set.of(owner));
+        var theirs = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(1, 1, 0))), thief, Set.of(thief));
+        var legacy = new com.mrgregles.bsp_core.plasma.Anchor(totem, null, Set.of()); // as loaded from a save made before owners travelled
+        int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(TotemUpgrades.Buff.ANCHOR);
+        var ledger = com.mrgregles.bsp_core.chunk.ChunkLedger.get(server);
+        var stolen = new com.mrgregles.bsp_core.chunk.ChunkLedger.Totem();
+        stolen.owner = thief;
+        ledger.totems.remove(totem); // the world persists between runs: nothing left from a failed one
+        ledger.projectors.remove(projAt);
+        Object[] feed = {editorsOf(owner), good};
+        int[] step = {0}, waited = {0};
+        Runnable cleanUp = () -> {
+            ledger.totems.remove(totem);
+            com.mrgregles.bsp_core.chunk.ChunkLoading.projectorRemoved(h.getLevel(), h.absolutePos(projPos));
+        };
+        Runnable next = () -> {
+            step[0]++;
+            waited[0] = 0;
+        };
+        h.onEachTick(() -> {
+            if (step[0] >= 9) {
+                return;
+            }
+            if (step[0] == 6) {
+                ledger.totems.put(totem, stolen); // put back every tick: the ledger prunes totems no one placed
+            }
+            var p = entity(h, projPos, com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.class);
+            p.feed(h.absolutePos(projPos.below()), anchorOffer(2), 0, p.need(), (com.mrgregles.bsp_core.plasma.PlasmaAccess) feed[0], (com.mrgregles.bsp_core.plasma.Anchor) feed[1]);
+            p.power(true);
+            var entry = ledger.projectors.get(projAt);
+            boolean on = entry != null && entry.on && totem.equals(entry.totem), off = !on && ++waited[0] > 45;
+            switch (step[0]) {
+                case 0 -> {
+                    if (p.offered(anchorIndex) > 0) {
+                        p.toggle(anchorIndex, owner); // the owner chooses Anchor
+                        next.run();
+                    }
+                }
+                case 1 -> { // the totem's own people run it: chunks are held
+                    if (on) {
+                        h.assertTrue(!p.anchorOutsiders() && !p.anchorStale(), "no warning while it holds chunks");
+                        feed[0] = editorsOf(owner, outsider);
+                        next.run();
+                    }
+                }
+                case 2 -> { // someone outside the totem's editors may now change the projector
+                    if (off) {
+                        h.assertTrue(p.anchorOutsiders(), "an outsider among the projector's editors: the tab says so");
+                        feed[0] = editorsOf(thief);
+                        feed[1] = theirs;
+                        next.run();
+                    }
+                }
+                case 3 -> { // the run is switched to another player's plasma alone, Anchor still chosen by the owner
+                    var e = ledger.projectors.get(projAt);
+                    h.assertTrue(e == null || !e.on, "no chunks under the other player's totem for a choice they did not make");
+                    if (off) {
+                        h.assertTrue(p.anchorRechoose(), "who chose Anchor is not one of that totem's editors: it must be chosen again: " + p.anchorWhy());
+                        feed[0] = editorsOf(owner);
+                        feed[1] = good;
+                        next.run();
+                    }
+                }
+                case 4 -> {
+                    if (on) {
+                        next.run();
+                    }
+                }
+                case 5 -> {
+                    ledger.totems.put(totem, stolen); // the totem changes hands; the plasma still names the owner it came from
+                    next.run();
+                }
+                case 6 -> {
+                    if (off) {
+                        h.assertTrue(p.anchorStale(), "changed hands: the tab says the Anchor must come fresh");
+                        ledger.totems.remove(totem);
+                        next.run();
+                    }
+                }
+                case 7 -> {
+                    if (on) {
+                        feed[1] = legacy;
+                        next.run();
+                    }
+                }
+                case 8 -> {
+                    if (off) {
+                        h.assertTrue(p.anchorStale(), "an Anchor knowing nobody: the tab says it must come fresh");
+                        var saved = com.mrgregles.bsp_core.plasma.Anchor.load(p.saveWithoutMetadata(), "Totem");
+                        h.assertTrue(saved != null && totem.equals(saved.totem()) && !saved.known(), "an Anchor saved without owner and editors loads knowing nobody");
+                        h.assertTrue(p.saveWithoutMetadata().hasUUID("AnchorBy"), "who chose Anchor is saved");
+                        feed[1] = good;
+                        next.run();
+                        cleanUp.run();
+                        h.succeed();
+                    }
+                }
+                default -> { }
+            }
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 900)
+    public void a_stranger_choosing_anchor_on_a_projector_nobody_owns_holds_no_chunks(GameTestHelper h) {
+        UUID owner = UUID.randomUUID(), stranger = UUID.randomUUID();
+        BlockPos projPos = new BlockPos(3, 1, 3);
+        h.setBlock(projPos, ModBlocks.TOTEM_PROJECTOR.get());
+        var dim = h.getLevel().dimension();
+        var totem = net.minecraft.core.GlobalPos.of(dim, h.absolutePos(new BlockPos(0, 1, 0)));
+        var projAt = net.minecraft.core.GlobalPos.of(dim, h.absolutePos(projPos));
+        var good = new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, Set.of(owner));
+        var ledger = com.mrgregles.bsp_core.chunk.ChunkLedger.get(h.getLevel().getServer());
+        ledger.totems.remove(totem);
+        ledger.projectors.remove(projAt);
+        int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(TotemUpgrades.Buff.ANCHOR);
+        Object[] feed = {new com.mrgregles.bsp_core.plasma.PlasmaAccess()}; // a run that knows nobody: anyone may change the projector
+        int[] step = {0}, waited = {0};
+        h.onEachTick(() -> {
+            if (step[0] >= 3) {
+                return;
+            }
+            var p = entity(h, projPos, com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.class);
+            p.feed(h.absolutePos(projPos.below()), anchorOffer(2), 0, p.need(), (com.mrgregles.bsp_core.plasma.PlasmaAccess) feed[0], good);
+            p.power(true);
+            var entry = ledger.projectors.get(projAt);
+            h.assertTrue(entry == null || !entry.on, "never any chunks for the stranger's choice");
+            switch (step[0]) {
+                case 0 -> {
+                    if (p.offered(anchorIndex) > 0) {
+                        h.assertTrue(p.mayEdit(h.makeMockPlayer()), "nobody known: anyone may change it");
+                        p.toggle(anchorIndex, stranger, false); // a stranger, not an admin, chooses Anchor
+                        step[0] = 1;
+                    }
+                }
+                case 1 -> {
+                    if (++waited[0] > 45) {
+                        h.assertTrue(p.anchorOutsiders(), "a projector anyone may change holds no one's chunks");
+                        feed[0] = editorsOf(owner); // the owner's own run comes back
+                        waited[0] = 0;
+                        step[0] = 2;
+                    }
+                }
+                case 2 -> {
+                    if (++waited[0] > 45) {
+                        h.assertTrue(p.anchorRechoose(), "the stranger's choice stays theirs: the owner must choose Anchor again");
+                        step[0] = 3;
+                        com.mrgregles.bsp_core.chunk.ChunkLoading.projectorRemoved(h.getLevel(), h.absolutePos(projPos));
+                        h.succeed();
+                    }
+                }
+                default -> { }
+            }
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void an_anchor_holds_only_for_editors_its_loaded_totem_still_has(GameTestHelper h) {
+        UUID owner = UUID.randomUUID(), removed = UUID.randomUUID(), thief = UUID.randomUUID();
+        BlockPos at = new BlockPos(2, 1, 2);
+        h.setBlock(at, ModBlocks.SHATTER_TOTEM.get());
+        ShatterTotemBlockEntity totem = entity(h, at, ShatterTotemBlockEntity.class);
+        totem.setOwner(new TotemOwner(owner, "Owner"));
+        var server = h.getLevel().getServer();
+        var pos = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(at));
+        var a = new com.mrgregles.bsp_core.plasma.Anchor(pos, owner, Set.of(owner, removed)); // the plasma left while "removed" was still a friend
+        h.assertTrue(a.hold(server, Set.of(owner)) == com.mrgregles.bsp_core.plasma.Anchor.Hold.HOLDS, "the owner: holds");
+        h.assertTrue(a.hold(server, Set.of(owner, removed)) == com.mrgregles.bsp_core.plasma.Anchor.Hold.OUTSIDERS,
+                "a friend the loaded totem no longer has: not held, though the plasma still lists them");
+        var away = new com.mrgregles.bsp_core.plasma.Anchor(net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(at.east(3))), owner, Set.of(owner, removed));
+        h.assertTrue(away.hold(server, Set.of(owner, removed)) == com.mrgregles.bsp_core.plasma.Anchor.Hold.HOLDS, "no totem to read there: the editors the plasma carries decide");
+        totem.setOwner(new TotemOwner(thief, "Thief"));
+        h.assertTrue(a.hold(server, Set.of(owner)) == com.mrgregles.bsp_core.plasma.Anchor.Hold.STALE, "the totem changed hands: stale: " + a.hold(server, Set.of(owner)));
+        h.setBlock(at, Blocks.AIR);
+        h.succeed();
     }
 
     @GameTest(template = EMPTY, timeoutTicks = 900)

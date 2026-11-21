@@ -176,7 +176,9 @@ public class ProjectorScreen extends Screen implements ScreenFit.Fitted {
         int dx = x + 10 + TILE * 7 + 10;
         g.drawString(font, tr("chunks", v.used(), v.slots()), dx, y + 26, TEXT, false);
         ChunkMap.pips(g, dx, y + 38, v);
-        String hint = v.has(ChunkViewPacket.NO_TOTEM) ? "no_totem" : !v.has(ChunkViewPacket.EDIT) ? "not_owner"
+        String hint = v.has(ChunkViewPacket.NO_TOTEM) ? "no_totem" : v.has(ChunkViewPacket.ANCHOR_STALE) ? "stale"
+ : v.has(ChunkViewPacket.ANCHOR_OUTSIDERS) ? "outsiders"
+                : v.has(ChunkViewPacket.ANCHOR_RECHOOSE) ? "rechoose" : !v.has(ChunkViewPacket.EDIT) ? "not_owner"
                 : !v.has(ChunkViewPacket.LOADING) ? "needs_power" : "hint";
         int textW = W - (dx - x) - 10, hy = CashMachine.smallWrap(g, font, tr("chunks." + hint), dx, y + 52, textW, v.has(ChunkViewPacket.LOADING) ? MUTED : BAD);
         if (v.has(ChunkViewPacket.LOADING)) { // the allowance and range are the totem's only once the projector holds chunks under it

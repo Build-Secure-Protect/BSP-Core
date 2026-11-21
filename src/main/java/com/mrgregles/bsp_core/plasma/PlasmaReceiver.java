@@ -23,9 +23,10 @@ public interface PlasmaReceiver {
     /**
      * Called once a second by the interface group at {@code master}. {@code pressurePerTick} is the pressure on the run after repeaters
      * (the extractors' share, whether or not this block had room for it); {@code movedMB} is what actually went into the tank this second.
-     * {@code anchorTotem} is the totem whose Anchor levels travel with the plasma, in whatever world it stands (a link may bring it from another).
+     * {@code anchor} is the totem whose Anchor levels travel with the plasma, in whatever world it stands (a link may bring it from another),
+     * with who owned it and could edit it when the plasma left it.
      */
-    void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem);
+    void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable Anchor anchor);
 
     /**
      * The feed with the Mob Chamber powers' plasma among {@code movedMB}, by amount ({@link MobPlasma}); {@code offeredByOrdinal} then lists
@@ -33,7 +34,7 @@ public interface PlasmaReceiver {
      * plain plasma.
      */
     default void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access,
-                      @Nullable net.minecraft.core.GlobalPos anchorTotem, long[][] mob) {
-        feed(master, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchorTotem);
+                      @Nullable Anchor anchor, long[][] mob) {
+        feed(master, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchor);
     }
 }

@@ -33,8 +33,9 @@ public class DeceleratorBlockEntity extends BlockEntity {
     private final LinkEnergy energy = new LinkEnergy(DeceleratorBlockEntity::rfPerTick, this::setChanged);
     private final net.minecraftforge.common.util.LazyOptional<net.minecraftforge.energy.IEnergyStorage> energyCap = net.minecraftforge.common.util.LazyOptional.of(() -> energy);
     private com.mrgregles.bsp_core.plasma.PlasmaAccess access = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+    /** The totem whose Anchor the plasma carries, with who owned and could edit it; dropped once no stored plasma carries Anchor. */
     @Nullable
-    private GlobalPos anchorTotem;
+    private com.mrgregles.bsp_core.plasma.Anchor anchorTotem;
     private long fedAt = -1000;
     private int inRate, outRate;
     /** 0 formed and dark, 1 RF connected, 2 receiving: synced for the renderer. */
@@ -67,8 +68,17 @@ public class DeceleratorBlockEntity extends BlockEntity {
     }
 
     @Nullable
-    public GlobalPos anchorTotem() {
+    public com.mrgregles.bsp_core.plasma.Anchor anchorTotem() {
+        forgetAnchor(); // the port drains the store between receives
         return anchorTotem;
+    }
+
+    /** Once no stored plasma carries Anchor, no totem's Anchor travels on from here. */
+    private void forgetAnchor() {
+        if (anchorTotem != null && store.offered()[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.ANCHOR.ordinal()] <= 0) {
+            anchorTotem = null;
+            setChanged();
+        }
     }
 
     /** mB/t that came through the link last second. */
@@ -113,17 +123,18 @@ public class DeceleratorBlockEntity extends BlockEntity {
     }
 
     /** The accelerator hands over a second's worth of plasma with what it carries; the core pays a second of RF for it. */
-    public void receive(long mB, int[] offered, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable GlobalPos anchorTotem, GlobalPos from) {
+    public void receive(long mB, int[] offered, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem, GlobalPos from) {
         receive(mB, offered, null, access, anchorTotem, from);
     }
 
-    /** {@link #receive(long, int[], com.mrgregles.bsp_core.plasma.PlasmaAccess, GlobalPos, GlobalPos)} with the Mob Chamber powers' plasma among {@code mB} by amount. */
-    public void receive(long mB, int[] offered, @Nullable long[][] mob, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable GlobalPos anchorTotem, GlobalPos from) {
+    /** {@link #receive(long, int[], com.mrgregles.bsp_core.plasma.PlasmaAccess, com.mrgregles.bsp_core.plasma.Anchor, GlobalPos)} with the Mob Chamber powers' plasma among {@code mB} by amount. */
+    public void receive(long mB, int[] offered, @Nullable long[][] mob, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem, GlobalPos from) {
         store.add(mB, offered, mob);
         this.access = access;
         if (anchorTotem != null) {
             this.anchorTotem = anchorTotem;
         }
+        forgetAnchor();
         fedAt = level == null ? 0 : level.getGameTime();
         inRate = (int) (mB / 20);
         energy.useSecond();
@@ -328,7 +339,6 @@ public class DeceleratorBlockEntity extends BlockEntity {
         tag.putInt("OutRate", outRate);
         tag.putByte("Show", (byte) clientState);
         store.save(tag, "Plasma");
-        Links.save(tag, "Anchor", anchorTotem);
         Links.saveAccess(tag, "Access", access);
     }
 
@@ -336,6 +346,7 @@ public class DeceleratorBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         write(tag);
+        com.mrgregles.bsp_core.plasma.Anchor.save(tag, "Anchor", anchorTotem); // server only: the client never needs who may edit the totem
     }
 
     @Override
@@ -348,7 +359,7 @@ public class DeceleratorBlockEntity extends BlockEntity {
         outRate = tag.getInt("OutRate");
         clientState = tag.getByte("Show");
         store.load(tag, "Plasma");
-        anchorTotem = Links.load(tag, "Anchor");
+        anchorTotem = com.mrgregles.bsp_core.plasma.Anchor.load(tag, "Anchor");
         access = Links.loadAccess(tag, "Access");
     }
 

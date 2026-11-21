@@ -238,9 +238,9 @@ public class TankExtractorBlockEntity extends BlockEntity implements PlasmaNetwo
      */
     @Nullable
     @Override
-    public net.minecraft.core.GlobalPos anchor() {
+    public com.mrgregles.bsp_core.plasma.Anchor anchor() {
         TankPartBlockEntity m = attachedTank();
-        return m == null || pool != TOTEM || owner == null || !m.fedBy().editors.contains(owner) ? null : m.anchorTotem();
+        return m == null || pool != TOTEM || owner == null || !m.fedBy().editors.contains(owner) ? null : m.heldAnchor();
     }
 
     @Override

@@ -3836,3 +3836,20 @@ The rules (a tank keeps the Anchor totem while its plasma carries Anchor, saved,
 - [ ] Battery Charger with a tier IV battery on a run from a totem with Anchor: the screen lists no Anchor row for the battery; a Power Cell lists its Carried powers as before.
 - [ ] A battery stamped with Anchor on 1.20.0: its tooltip no longer lists Anchor, it has that power slot free, and on an extractor it gives the projector no Anchor.
 
+## Anchor and who may run the projector (2026-11-21, 1.20.2)
+
+The rules (an Anchor carries its totem's owner and editors; a projector holds chunks only while all its editors, and who chose Anchor there, are among them, the loaded totem still counts them, and the totem has not changed hands; an Anchor saved without them waits for fresh plasma; the Projector Base, Interface group and Accelerator pass on the Anchor that covers everyone feeding; Accelerator and Decelerator drop it with their Anchor plasma; a Ward-only friend's feed leaving a tank's team and Anchor alone) are covered by `BspGameTests` (default batch) and `TankPoolGameTests` (batch `chamber`). By hand, in a client:
+
+- [ ] Network protocol 18: a client with the 1.20.1 jar (protocol 17) is refused by a server with this build; a client with this build joins.
+- [ ] A totem with Anchor 2, its interface cabled to a Projector Base and Projector. Receive Anchor: the projector holds chunks as before. A teammate's totem added to the same interface group: it still holds chunks.
+- [ ] A second player, not on the team and with no Upgrades on the first totem, joins their totem's plasma to the same run. Within a few seconds the projector stops holding chunks and its CHUNKS tab says in red that someone who may change the projector cannot upgrade the Anchor's totem. Its other powers keep working. Take their plasma off the run: within a few seconds it holds chunks again.
+- [ ] The same with the second player's run into the same Accelerator Intake, with the projector beyond the link: no chunks while both feed, chunks again a second or two after their run stops.
+- [ ] Give the second player Upgrades on the first totem: the shared run holds chunks.
+- [ ] A friend with only Ward on your totem feeds your Plasma Tank from their own totem: your projectors on that tank keep holding chunks, and the tank's team stays yours.
+- [ ] Take a friend's Upgrades away (or remove them from the team) while their run feeds the shared projector: within a few seconds it stops holding chunks.
+- [ ] A projector whose run changes to another player's totem keeps its other powers, but holds no chunks under that totem until that totem's owner or team chooses Anchor there.
+- [ ] A world saved with 1.20.1 and a projector holding chunks through a link or a tank: after the update the CHUNKS tab says the Anchor must come fresh from its totem, then within a few seconds of the totem feeding again it holds chunks.
+- [ ] A world saved with 1.20.1 and a projector holding chunks straight from an interface: after the update it holds chunks again within a few seconds, without choosing Anchor again.
+- [ ] Two teammates' totems feed one Plasma Tank, one of them with an Upgrades friend the other does not have: the tank's projectors give the same CHUNKS reason every time the screen is opened, also after a restart.
+- [ ] Restart the server with a projector holding chunks from a Projector Base fed by two of the owner's totems: its picked chunks are still picked afterwards.
+- [ ] The CHUNKS tab's new red lines stay inside the panel at the default GUI scale and at scale 3.

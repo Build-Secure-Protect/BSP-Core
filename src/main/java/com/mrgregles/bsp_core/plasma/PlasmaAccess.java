@@ -15,6 +15,8 @@ import java.util.UUID;
  */
 public final class PlasmaAccess {
     public final Set<UUID> editors = new HashSet<>(), users = new HashSet<>(), alarmSafe = new HashSet<>(), wardSafe = new HashSet<>();
+    /** The owners of the totems (or the players who placed the blocks) this access was gathered from. */
+    public final Set<UUID> owners = new HashSet<>();
 
     public static PlasmaAccess of(ShatterTotemBlockEntity totem) {
         PlasmaAccess out = new PlasmaAccess();
@@ -24,6 +26,7 @@ public final class PlasmaAccess {
 
     public void add(ShatterTotemBlockEntity totem) {
         totem.getOwner().ifPresent(o -> {
+            owners.add(o.uuid());
             editors.add(o.uuid());
             users.add(o.uuid());
             alarmSafe.add(o.uuid());
@@ -79,6 +82,7 @@ public final class PlasmaAccess {
      */
     public static PlasmaAccess forPlayer(net.minecraft.server.MinecraftServer server, UUID owner) {
         PlasmaAccess out = new PlasmaAccess();
+        out.owners.add(owner);
         out.editors.add(owner);
         out.users.add(owner);
         out.alarmSafe.add(owner);
@@ -114,6 +118,7 @@ public final class PlasmaAccess {
         tag.putLongArray(key + "Users", ids(users));
         tag.putLongArray(key + "Alarm", ids(alarmSafe));
         tag.putLongArray(key + "Ward", ids(wardSafe));
+        tag.putLongArray(key + "Owners", ids(owners));
     }
 
     public static PlasmaAccess load(net.minecraft.nbt.CompoundTag tag, String key) {
@@ -122,6 +127,7 @@ public final class PlasmaAccess {
         uuids(tag.getLongArray(key + "Users"), out.users);
         uuids(tag.getLongArray(key + "Alarm"), out.alarmSafe);
         uuids(tag.getLongArray(key + "Ward"), out.wardSafe);
+        uuids(tag.getLongArray(key + "Owners"), out.owners);
         return out;
     }
 
@@ -146,16 +152,17 @@ public final class PlasmaAccess {
         users.addAll(other.users);
         alarmSafe.addAll(other.alarmSafe);
         wardSafe.addAll(other.wardSafe);
+        owners.addAll(other.owners);
     }
 
-    /** Whether {@code other}'s owners are among this access's owners or the players its Ward spares (the same team, a friend, an ally). */
+    /**
+     * Whether every owner behind {@code other} is among this access's editors: its owners, their Upgrades friends and their team. A
+     * friend or ally with only Ward, Alarm or Machines is not trusted, and neither is a totem whose own friends list merely names one
+     * of ours. An access that knows no owners (saved before they were kept) is held to all of its editors instead.
+     */
     public boolean trusts(PlasmaAccess other) {
-        for (UUID id : other.editors) {
-            if (editors.contains(id) || wardSafe.contains(id)) {
-                return true;
-            }
-        }
-        return false;
+        Set<UUID> who = other.owners.isEmpty() ? other.editors : other.owners;
+        return !who.isEmpty() && editors.containsAll(who);
     }
 
     public PlasmaAccess copy() {

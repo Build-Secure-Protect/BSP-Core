@@ -75,6 +75,16 @@ public class PlasmaExtractorBlockEntity extends BlockEntity implements PlasmaNet
         return totemPos;
     }
 
+    /** The totem above when it holds Anchor, with its owner and who may edit what it feeds; null under a battery or without Anchor. */
+    @Nullable
+    @Override
+    public Anchor anchor() {
+        if (totemPos == null || owner == null || level == null || offered[Buff.ANCHOR.ordinal()] <= 0) {
+            return null;
+        }
+        return Anchor.of(net.minecraft.core.GlobalPos.of(level.dimension(), totemPos), owner, access);
+    }
+
     /** Level of each power the totem (or battery) above holds, by {@link Buff#ordinal()}; zero while nothing is above. */
     public int[] offered() {
         return offered;

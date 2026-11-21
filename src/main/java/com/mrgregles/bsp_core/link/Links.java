@@ -46,12 +46,14 @@ public final class Links {
     public static void saveAccess(CompoundTag tag, String key, com.mrgregles.bsp_core.plasma.PlasmaAccess access) {
         tag.putLongArray(key + "Users", ids(access.users));
         tag.putLongArray(key + "Editors", ids(access.editors));
+        tag.putLongArray(key + "Owners", ids(access.owners));
     }
 
     public static com.mrgregles.bsp_core.plasma.PlasmaAccess loadAccess(CompoundTag tag, String key) {
         com.mrgregles.bsp_core.plasma.PlasmaAccess out = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
         out.users.addAll(uuids(tag.getLongArray(key + "Users")));
         out.editors.addAll(uuids(tag.getLongArray(key + "Editors")));
+        out.owners.addAll(uuids(tag.getLongArray(key + "Owners")));
         return out;
     }
 

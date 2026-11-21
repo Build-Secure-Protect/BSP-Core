@@ -44,6 +44,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     /** The powers a projector can receive, in screen order. Indexes into {@link #chosen}. */
     public static final Buff[] SENDABLE = {Buff.FORTIFY, Buff.HEALING, Buff.ALARM, Buff.WARD, Buff.SANCTUARY, Buff.ANCHOR};
     private static final int FEED_TICKS = 50;
+    private static final int ANCHOR_INDEX = Arrays.asList(SENDABLE).indexOf(Buff.ANCHOR);
 
     private final int[] levels = new int[Buff.values().length];
     private final int[] offered = new int[SENDABLE.length];
@@ -56,7 +57,17 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     @Nullable
     private BlockPos source;
     @Nullable
-    private net.minecraft.core.GlobalPos anchorTotem;
+    private com.mrgregles.bsp_core.plasma.Anchor anchorTotem;
+    /**
+     * Who chose Anchor here, when one of the projector's editors did; chunks are held only while they are one of the Anchor totem's
+     * editors too. Null when an admin chose it, or it was chosen before this was kept: the Anchor's owner is adopted the first time
+     * the projector may hold chunks.
+     */
+    @Nullable
+    private UUID anchorBy;
+    /** Loaded from a save made before {@link #anchorBy} was kept: the totem it then held under, the only one whose owner is adopted. */
+    @Nullable
+    private net.minecraft.core.GlobalPos adoptAt;
     private com.mrgregles.bsp_core.plasma.PlasmaAccess access = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
     private long fedAt = -1000;
     private boolean active, signal, powered;
@@ -69,7 +80,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     // ------------------------------------------------------------------ what the interface tells it
 
     /** Fed from the Projector Base below once a second: {@code deliveredPerTick} is what the base could give this second. */
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int deliveredPerTick, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem) {
         int[] was = offered.clone(), wasMob = mobOffered.clone();
         for (int i = 0; i < SENDABLE.length; i++) {
             offered[i] = offeredByOrdinal[SENDABLE[i].ordinal()];
@@ -118,6 +129,9 @@ public class TotemProjectorBlockEntity extends BlockEntity {
                 levels[i] = mobOffered[i];
             }
         }
+        if ((chosen & (1 << ANCHOR_INDEX)) == 0) {
+            anchorBy = null;
+        }
     }
 
     /** The level of {@link #SENDABLE}[i] that would arrive if it is chosen: full alone, lower by one per repeater with company. */
@@ -143,6 +157,19 @@ public class TotemProjectorBlockEntity extends BlockEntity {
 
     /** Switches power {@code index} of {@link #SENDABLE} on or off, within the number of channels. */
     public void toggle(int index) {
+        toggle(index, null);
+    }
+
+    /** {@link #toggle(int, UUID, boolean)} by a player who is not an admin. */
+    public void toggle(int index, @Nullable UUID by) {
+        toggle(index, by, false);
+    }
+
+    /**
+     * {@link #toggle(int)} by player {@code by} (null for none): who switches Anchor on is kept ({@link #anchorBy}). An admin who is
+     * not one of the projector's editors, or no player, switches it on for the owner of the Anchor arriving now.
+     */
+    public void toggle(int index, @Nullable UUID by, boolean admin) {
         if (index < 0 || index >= SENDABLE.length) {
             return;
         }
@@ -151,6 +178,10 @@ public class TotemProjectorBlockEntity extends BlockEntity {
             chosen &= ~bit;
         } else if (Integer.bitCount(chosen) < channels() && offered[index] > 0) {
             chosen |= bit;
+            if (index == ANCHOR_INDEX) {
+                anchorBy = by != null && (!admin || access.editors.contains(by)) ? by : anchorTotem == null ? null : anchorTotem.owner();
+                adoptAt = null;
+            }
         }
         recompute();
         sync();
@@ -198,6 +229,75 @@ public class TotemProjectorBlockEntity extends BlockEntity {
     /** Whether Anchor is chosen and arriving but came without the totem it belongs to, so no chunks can be held from here. */
     public boolean anchorWithoutTotem() {
         return chosenLevel(Buff.ANCHOR) > 0 && anchorTotem == null;
+    }
+
+    /** The projector's editors and who chose Anchor here: everyone the Anchor's totem must count among its editors. */
+    private Set<UUID> holders() {
+        Set<UUID> ids = new HashSet<>(access.editors);
+        if (anchorBy != null) {
+            ids.add(anchorBy);
+        }
+        return ids;
+    }
+
+    /** Why a projector with Anchor chosen and its totem known does or does not hold chunks. */
+    public enum AnchorWhy { HOLDS, STALE, OUTSIDERS, RECHOOSE }
+
+    /**
+     * Whether chunks may be held under the arriving Anchor, and if not why; null when Anchor is not chosen or came without its totem.
+     * OUTSIDERS: someone who may change the projector is not one of the totem's editors (feeding it differently can fix it).
+     * RECHOOSE: only who chose Anchor here is not (or it was chosen before the chooser was kept, under another totem): it must be
+     * chosen again.
+     */
+    @Nullable
+    public AnchorWhy anchorWhy() {
+        if (anchorTotem == null || level == null || chosenLevel(Buff.ANCHOR) <= 0) {
+            return null;
+        }
+        if (access.editors.isEmpty()) {
+            return AnchorWhy.OUTSIDERS; // a projector anyone may change holds no one's chunks
+        }
+        var server = level.getServer();
+        var hold = anchorTotem.hold(server, holders());
+        if (hold == com.mrgregles.bsp_core.plasma.Anchor.Hold.STALE) {
+            return AnchorWhy.STALE;
+        }
+        if (hold == com.mrgregles.bsp_core.plasma.Anchor.Hold.OUTSIDERS) {
+            return anchorBy != null && anchorTotem.holdsFor(server, access.editors) ? AnchorWhy.RECHOOSE : AnchorWhy.OUTSIDERS;
+        }
+        return anchorBy == null && adoptAt != null && !adoptAt.equals(anchorTotem.totem()) ? AnchorWhy.RECHOOSE : AnchorWhy.HOLDS;
+    }
+
+    /** Whether Anchor came with its totem, but that totem changed hands since, or the plasma is from before owners travelled with it. */
+    public boolean anchorStale() {
+        return anchorWhy() == AnchorWhy.STALE;
+    }
+
+    /** Whether Anchor came with its totem, but someone who may change this projector is not one of that totem's editors. */
+    public boolean anchorOutsiders() {
+        return anchorWhy() == AnchorWhy.OUTSIDERS;
+    }
+
+    /** Whether Anchor must be chosen again here by one of its totem's editors before chunks are held. */
+    public boolean anchorRechoose() {
+        return anchorWhy() == AnchorWhy.RECHOOSE;
+    }
+
+    /**
+     * The totem to hold chunks under: the Anchor's, while the totem is still the owner's it came from and everyone who may change this
+     * projector, and whoever chose Anchor here, may upgrade that totem; otherwise null.
+     */
+    @Nullable
+    private net.minecraft.core.GlobalPos chunkTotem(ServerLevel sl) {
+        if (anchorWhy() != AnchorWhy.HOLDS) {
+            return null;
+        }
+        if (anchorBy == null) { // chosen before the chooser was kept: the owner's, since the totem it held under then still feeds it
+            anchorBy = anchorTotem.owner();
+            adoptAt = null;
+            setChanged();
+        }
+        return anchorTotem.totem();
     }
 
     public int chosen() {
@@ -261,7 +361,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
             signal = fed;
             sync();
         }
-        ChunkLoading.projector(sl, worldPosition, now && levels[Buff.ANCHOR.ordinal()] > 0 ? anchorTotem : null);
+        ChunkLoading.projector(sl, worldPosition, now && levels[Buff.ANCHOR.ordinal()] > 0 ? chunkTotem(sl) : null);
     }
 
     /** Healing Aura for the owners; Ward and Alarm for everyone else. The other powers are answered through TotemAuras. */
@@ -353,7 +453,11 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         write(tag);
         // fedAt and the anchor totem are saved (not synced) so a restart does not look like a lost signal and drop the projector's chunks
         tag.putLong("FedAt", fedAt);
-        com.mrgregles.bsp_core.link.Links.save(tag, "Totem", anchorTotem);
+        com.mrgregles.bsp_core.plasma.Anchor.save(tag, "Totem", anchorTotem);
+        if (anchorBy != null) {
+            tag.putUUID("AnchorBy", anchorBy);
+        }
+        com.mrgregles.bsp_core.link.Links.save(tag, "Adopt", adoptAt);
     }
 
     @Override
@@ -369,6 +473,7 @@ public class TotemProjectorBlockEntity extends BlockEntity {
             System.arraycopy(o, 0, offered, 0, o.length);
         }
         chosen = tag.getInt("Chosen");
+        anchorBy = tag.hasUUID("AnchorBy") ? tag.getUUID("AnchorBy") : null;
         expander = tag.getBoolean("Expander");
         repeaters = tag.getInt("Repeaters");
         delivered = tag.getInt("Delivered");
@@ -382,7 +487,10 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         }
         if (tag.contains("FedAt")) {
             fedAt = tag.getLong("FedAt");
-            anchorTotem = com.mrgregles.bsp_core.link.Links.load(tag, "Totem");
+            anchorTotem = com.mrgregles.bsp_core.plasma.Anchor.load(tag, "Totem");
+            // a save from before the chooser was kept has no editors with its Anchor: the totem it held under then is the one to adopt
+            adoptAt = tag.contains("AdoptDim") ? com.mrgregles.bsp_core.link.Links.load(tag, "Adopt")
+                    : anchorBy == null && (chosen & (1 << ANCHOR_INDEX)) != 0 && anchorTotem != null && !tag.contains("TotemEditors") ? anchorTotem.totem() : null;
         }
     }
 

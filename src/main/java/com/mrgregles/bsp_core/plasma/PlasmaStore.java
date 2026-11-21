@@ -83,7 +83,8 @@ public final class PlasmaStore {
         if (took > 0) {
             for (int i = 0; i < buffedMb.length; i++) {
                 if (buffedMb[i] > 0) {
-                    buffedMb[i] = Math.max(0, Math.min(stored, buffedMb[i] - Math.round(buffedMb[i] * (double) took / before)));
+                    // rounded up, so a share never sticks at a few mB while plasma keeps passing through
+                    buffedMb[i] = Math.max(0, Math.min(stored, buffedMb[i] - (long) Math.ceil(buffedMb[i] * (double) took / before)));
                     if (buffedMb[i] == 0) {
                         buffedLevel[i] = 0;
                     }

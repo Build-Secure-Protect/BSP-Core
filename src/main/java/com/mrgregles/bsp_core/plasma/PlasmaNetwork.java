@@ -65,9 +65,12 @@ public final class PlasmaNetwork {
 
         int cloak();
 
-        /** The totem whose Anchor travels with this reservoir's plasma, in its own world: a source that got it through a link passes it on. */
+        /**
+         * The totem whose Anchor travels with this reservoir's plasma, in its own world, with who owned and could edit it: an extractor
+         * under a totem names its own; a source that got it through a link or a tank passes it on.
+         */
         @javax.annotation.Nullable
-        default net.minecraft.core.GlobalPos anchor() {
+        default Anchor anchor() {
             return null;
         }
     }
@@ -92,7 +95,9 @@ public final class PlasmaNetwork {
     private int supply, cloak;
     private final int[] offered = new int[Buff.values().length];
     private PlasmaAccess access = new PlasmaAccess();
-    private net.minecraft.core.GlobalPos anchorTotem;
+    private Anchor anchor;
+    /** The Anchor the group passed on last second, kept on a tie. */
+    private Anchor lastAnchor;
 
     PlasmaNetwork(PlasmaInterfaceBlockEntity home) {
         this.home = home;
@@ -373,14 +378,14 @@ public final class PlasmaNetwork {
         cloak = 0;
         java.util.Arrays.fill(offered, 0);
         access = new PlasmaAccess();
-        anchorTotem = null;
+        anchor = null;
         extractorFlow.clear();
         if (source != null) { // a port: one reservoir, one member, no group to work out
             members = List.of(here);
             clusterAll = members;
             extractors.add(source);
             supply = source.flow();
-            anchorTotem = source.anchor();
+            anchor = source.anchor();
             access.addAll(source.access()); // who the plasma's powers know: a tank's feeders, a Tank Extractor's placer
             int[] o = source.offered(); // a tank passes on the powers its plasma still carries
             for (int i = 0; i < o.length && i < offered.length; i++) {
@@ -402,7 +407,8 @@ public final class PlasmaNetwork {
         }
         // extractors: claim every extractor a member touches; an extractor another group holds makes that member show its seam
         Set<BlockPos> extractorSet = new HashSet<>();
-        int bestAnchor = 0;
+        List<Anchor> anchors = new ArrayList<>();
+        List<Integer> anchorLevels = new ArrayList<>();
         for (BlockPos m : source != null ? List.<BlockPos>of() : members) {
             boolean foreign = false;
             for (Direction d : Direction.values()) {
@@ -421,15 +427,21 @@ public final class PlasmaNetwork {
                     for (int i = 0; i < o.length; i++) {
                         offered[i] = Math.max(offered[i], o[i]);
                     }
-                    if (o[Buff.ANCHOR.ordinal()] > bestAnchor && extractor.totemPos() != null) {
-                        bestAnchor = o[Buff.ANCHOR.ordinal()];
-                        anchorTotem = net.minecraft.core.GlobalPos.of(sl.dimension(), extractor.totemPos());
+                    Anchor a = extractor.anchor();
+                    if (a != null) {
+                        anchors.add(a);
+                        anchorLevels.add(o[Buff.ANCHOR.ordinal()]);
                     }
                 }
             }
             if (foreign) {
                 mark(sl, m, true);
             }
+        }
+        if (source == null) {
+            // several totems on one group: the Anchor whose editors are everyone the group's plasma knows, if there is one
+            anchor = Anchor.pick(anchors, anchorLevels, access.editors, lastAnchor);
+            lastAnchor = anchor;
         }
         for (BlockPos m : members) {
             if (sl.getBlockEntity(m) instanceof PlasmaInterfaceBlockEntity be) {
@@ -519,7 +531,7 @@ public final class PlasmaNetwork {
                 // extractors met the demand: the run is at its share; extractors ran short: only what got through
                 int pressure = took >= want ? (int) Math.floor(share[i] * k) : moved / 20;
                 // mob powers go by amount beside the list, never in it: a little of them must not label the rest
-                projector.feed(master, MobPlasma.withoutMob(this.offered), f.repeaters, pressure, moved, access.copy(), anchorTotem, mobMoved);
+                projector.feed(master, MobPlasma.withoutMob(this.offered), f.repeaters, pressure, moved, access.copy(), anchor, mobMoved);
                 lastDelivered.put(f.projector, pressure);
                 // walked back from the receiver: every cable carries the plasma really passing it. The figure rises by the repeater's
                 // loss each time a repeater is passed (toward the interface), so the cables leaving the interface add up to the extractors'

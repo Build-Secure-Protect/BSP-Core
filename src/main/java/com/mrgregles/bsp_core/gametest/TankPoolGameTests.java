@@ -258,20 +258,22 @@ public class TankPoolGameTests {
             var port = (TankPortBlockEntity) h.getBlockEntity(PORT);
             var mine = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
             mine.editors.add(owner);
+            mine.editors.add(friend); // an Upgrades friend
             mine.wardSafe.add(owner);
             mine.wardSafe.add(friend);
+            mine.wardSafe.add(raider); // the raider has Ward on the owner's totem, nothing more
             var theirs = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
             theirs.editors.add(raider);
             theirs.wardSafe.add(raider);
             port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, null, null);
             port.feed(h.absolutePos(TANK), new int[Buff.values().length], 0, 50, 1, theirs, null, null);
-            h.assertTrue(m.fedBy().editors.contains(owner) && !m.fedBy().editors.contains(raider) && !m.fedBy().wardSafe.contains(raider),
-                    "a stranger's plasma goes in without making them the team");
+            h.assertTrue(m.fedBy().editors.contains(owner) && !m.fedBy().editors.contains(raider),
+                    "a Ward-only friend's plasma goes in without making them the team: " + m.fedBy().editors);
             var friends = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
             friends.editors.add(friend);
             friends.wardSafe.add(friend);
             port.feed(h.absolutePos(TANK), new int[Buff.values().length], 0, 50, 10, friends, null, null);
-            h.assertTrue(m.fedBy().editors.contains(friend), "a player the team trusts may feed it and be known");
+            h.assertTrue(m.fedBy().editors.contains(friend) && m.fedBy().editors.contains(owner), "an Upgrades friend may feed it and be known, beside the owner: " + m.fedBy().editors);
             m.pools().drainOpen(Long.MAX_VALUE); // used up some other way (an extractor, a kill)
             m.serverTick(h.getLevel());
             for (int i = 0; i < 20 && !m.fedBy().isEmpty(); i++) {
@@ -317,6 +319,8 @@ public class TankPoolGameTests {
         java.util.UUID owner = java.util.UUID.randomUUID(), raider = java.util.UUID.randomUUID();
         var totem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(0, 1, 0)));
         var theirTotem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(1, 1, 0)));
+        var mineA = new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, java.util.Set.of(owner));
+        var theirA = new com.mrgregles.bsp_core.plasma.Anchor(theirTotem, raider, java.util.Set.of(raider));
         h.succeedWhen(() -> {
             TankPartBlockEntity m = master(h);
             m.drain(m.stored());
@@ -325,30 +329,30 @@ public class TankPoolGameTests {
             mine.editors.add(owner);
             var theirs = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
             theirs.editors.add(raider);
-            port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, totem, null);
+            port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, mineA, null);
             h.assertTrue(port.anchor() == null, "plasma without Anchor names no Anchor totem");
-            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, totem, null);
-            h.assertTrue(totem.equals(port.anchor()) && totem.equals(m.anchorTotem()), "plasma carrying Anchor brings its totem, and the port passes it on: " + port.anchor());
-            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 10, theirs, theirTotem, null);
-            h.assertTrue(totem.equals(port.anchor()), "a stranger's Anchor does not take the tank over");
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, mineA, null);
+            h.assertTrue(mineA.equals(port.anchor()) && totem.equals(m.anchorTotem()), "plasma carrying Anchor brings its totem, and the port passes it on: " + port.anchor());
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 10, theirs, theirA, null);
+            h.assertTrue(mineA.equals(port.anchor()), "a stranger's Anchor does not take the tank over");
             m.drain(m.stored());
             port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, null, null);
-            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 1_000, theirs, theirTotem, null);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 1_000, theirs, theirA, null);
             h.assertTrue(m.offered()[Buff.ANCHOR.ordinal()] == 3 && port.anchor() == null, "nor names its totem in a tank someone else fed, even one with no Anchor yet");
             m.drain(m.stored());
             var ledger = com.mrgregles.bsp_core.chunk.ChunkLedger.get(h.getLevel().getServer());
             var known = new com.mrgregles.bsp_core.chunk.ChunkLedger.Totem();
             known.owner = owner;
             ledger.totems.put(totem, known);
-            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, totem, null);
-            h.assertTrue(totem.equals(port.anchor()), "the owner's own Anchor names its totem");
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, mineA, null);
+            h.assertTrue(mineA.equals(port.anchor()), "the owner's own Anchor names its totem");
             known.owner = raider;
             boolean stolenDrops = port.anchor() == null;
             known.owner = owner;
             ledger.totems.remove(totem);
             h.assertTrue(stolenDrops, "the totem changes hands: its old plasma no longer names it");
             m.drain(m.stored());
-            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, totem, null);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, mineA, null);
             CompoundTag tag = m.saveWithoutMetadata();
             m.load(tag);
             h.assertTrue(totem.equals(m.anchorTotem()), "saved with the tank");
@@ -359,6 +363,70 @@ public class TankPoolGameTests {
             h.assertTrue(totem.equals(again.anchorTotem()), "kept through a break and rebuild, with the plasma: " + again.anchorTotem());
             again.drain(again.stored());
             h.assertTrue(again.anchorTotem() == null && port.anchor() == null, "the plasma that carried Anchor is gone: so is its totem");
+        });
+    }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void a_ward_only_friends_feed_leaves_the_tanks_feeders_and_anchor_alone(GameTestHelper h) {
+        buildTank(h);
+        java.util.UUID owner = java.util.UUID.randomUUID(), wardFriend = java.util.UUID.randomUUID();
+        var totem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(0, 1, 0)));
+        var theirTotem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(1, 1, 0)));
+        var anchor = new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, java.util.Set.of(owner));
+        var theirAnchor = new com.mrgregles.bsp_core.plasma.Anchor(theirTotem, wardFriend, java.util.Set.of(wardFriend));
+        h.succeedWhen(() -> {
+            TankPartBlockEntity m = master(h);
+            m.drain(m.stored());
+            var port = (TankPortBlockEntity) h.getBlockEntity(PORT);
+            var mine = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            mine.editors.add(owner);
+            mine.wardSafe.add(owner);
+            mine.wardSafe.add(wardFriend); // a friend with only Ward on the owner's totem
+            var friends = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            friends.editors.add(wardFriend);
+            friends.wardSafe.add(wardFriend);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, anchor, null);
+            h.assertTrue(anchor.equals(port.anchor()) && anchor.holdsFor(h.getLevel().getServer(), port.access().editors), "the owner's feed: its projectors may hold chunks");
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 1_000, friends, theirAnchor, null);
+            h.assertTrue(port.access().editors.equals(java.util.Set.of(owner)), "the Ward friend's feed does not change who fed the tank: " + port.access().editors);
+            h.assertTrue(anchor.equals(port.anchor()), "nor its Anchor");
+            h.assertTrue(anchor.holdsFor(h.getLevel().getServer(), port.access().editors), "so the owner's projectors on it keep holding chunks");
+            m.drain(m.stored());
+        });
+    }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void a_totem_naming_the_owner_as_its_friend_does_not_take_over_the_tank(GameTestHelper h) {
+        buildTank(h);
+        java.util.UUID owner = java.util.UUID.randomUUID(), other = java.util.UUID.randomUUID();
+        var totem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(0, 1, 0)));
+        var otherTotem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(1, 1, 0)));
+        var anchor = new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, java.util.Set.of(owner));
+        var otherAnchor = new com.mrgregles.bsp_core.plasma.Anchor(otherTotem, other, java.util.Set.of(other, owner));
+        h.succeedWhen(() -> {
+            TankPartBlockEntity m = master(h);
+            m.drain(m.stored());
+            var port = (TankPortBlockEntity) h.getBlockEntity(PORT);
+            var mine = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            mine.owners.add(owner);
+            mine.editors.add(owner);
+            var theirs = new com.mrgregles.bsp_core.plasma.PlasmaAccess(); // another player's totem, with the owner on its Upgrades list
+            theirs.owners.add(other);
+            theirs.editors.add(other);
+            theirs.editors.add(owner);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, anchor, null);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 1_000, theirs, otherAnchor, null);
+            h.assertTrue(port.access().editors.equals(java.util.Set.of(owner)), "their feed does not join the tank's team: " + port.access().editors);
+            h.assertTrue(anchor.equals(port.anchor()), "nor replace its Anchor: " + port.anchor());
+            var friend = new com.mrgregles.bsp_core.plasma.PlasmaAccess(); // the owner's own Upgrades friend's totem
+            java.util.UUID upgrades = java.util.UUID.randomUUID();
+            mine.editors.add(upgrades);
+            port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, anchor, null);
+            friend.owners.add(upgrades);
+            friend.editors.add(upgrades);
+            port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, friend, null, null);
+            h.assertTrue(port.access().editors.contains(upgrades) && port.access().editors.contains(owner), "an Upgrades friend's own totem is trusted: " + port.access().editors);
+            m.drain(m.stored());
         });
     }
 
@@ -399,7 +467,7 @@ public class TankPoolGameTests {
                 case 2 -> {
                     if (projector.isActive() && projector.anchorWithoutTotem()) {
                         h.assertTrue(entry == null || !entry.on, "Anchor without its totem holds no chunks");
-                        ((TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, access, totem, null);
+                        ((TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, access, new com.mrgregles.bsp_core.plasma.Anchor(totem, owner, java.util.Set.of(owner)), null);
                         step[0] = 3;
                     }
                 }

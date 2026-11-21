@@ -44,10 +44,15 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
     private final com.mrgregles.bsp_core.plasma.PlasmaStore store = new com.mrgregles.bsp_core.plasma.PlasmaStore(AcceleratorBlockEntity::capacity);
     private final LinkEnergy energy = new LinkEnergy(AcceleratorBlockEntity::rfPerTick, this::setChanged);
     private final net.minecraftforge.common.util.LazyOptional<net.minecraftforge.energy.IEnergyStorage> energyCap = net.minecraftforge.common.util.LazyOptional.of(() -> energy);
-    /** The totem whose Anchor the plasma carries, in its own world. */
+    /** The totem whose Anchor the plasma carries, in its own world, with who owned and could edit it; dropped once no stored plasma carries Anchor. */
     @Nullable
-    private GlobalPos anchorTotem;
+    private com.mrgregles.bsp_core.plasma.Anchor anchorTotem;
     private long fedAt = -1000;
+    /** Who fed it since the last hop, and the Anchors that came with them (not saved): at each hop they become {@code access} and the anchor. */
+    private com.mrgregles.bsp_core.plasma.PlasmaAccess window = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+    private final List<com.mrgregles.bsp_core.plasma.Anchor> windowAnchors = new ArrayList<>();
+    private final List<Integer> windowLevels = new ArrayList<>();
+    private int windowFeeds;
     /** This second's intake: pressure offered by the runs feeding it, and mB moved in, both summed since the last tick. */
     private int inAcc, receivedThisSecond;
     private int inRate, outRate;
@@ -114,8 +119,16 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
     }
 
     @Nullable
-    public GlobalPos anchorTotem() {
+    public com.mrgregles.bsp_core.plasma.Anchor anchorTotem() {
         return anchorTotem;
+    }
+
+    /** Once no stored plasma carries Anchor, no totem's Anchor travels on from here. */
+    private void forgetAnchor() {
+        if (anchorTotem != null && store.offered()[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.ANCHOR.ordinal()] <= 0) {
+            anchorTotem = null;
+            setChanged();
+        }
     }
 
     /** mB/t offered by the runs feeding the intake, last second. */
@@ -177,14 +190,14 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
     }
 
     @Override
-    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable GlobalPos anchorTotem) {
+    public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, com.mrgregles.bsp_core.plasma.PlasmaAccess access, @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem) {
         feed(master, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchorTotem, null);
     }
 
     /** The feed with the Mob Chamber powers' plasma by amount: the store keeps it apart and the links carry it across apart. */
     @Override
     public void feed(BlockPos master, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, com.mrgregles.bsp_core.plasma.PlasmaAccess access,
-                     @Nullable GlobalPos anchorTotem, @Nullable long[][] mob) {
+                     @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem, @Nullable long[][] mob) {
         store.add(movedMB, offeredByOrdinal, mob);
         receivedThisSecond += movedMB;
         inAcc += pressurePerTick;
@@ -193,9 +206,18 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
         } else {
             this.access = access.copy();
         }
-        if (anchorTotem != null) {
+        if (anchorTotem != null && this.anchorTotem == null) { // the first Anchor goes on at once; after that the hop picks among the second's feeds
             this.anchorTotem = anchorTotem;
         }
+        // and at the next hop only the runs that fed it this second count, so a run that stopped (or a friend since removed) drops off
+        window.addAll(access);
+        windowFeeds++;
+        if (anchorTotem != null) {
+            windowAnchors.add(anchorTotem);
+            int a = com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.ANCHOR.ordinal();
+            windowLevels.add(offeredByOrdinal != null && a < offeredByOrdinal.length ? offeredByOrdinal[a] : 0);
+        }
+        forgetAnchor();
         fedAt = level == null ? 0 : level.getGameTime();
         setChanged();
     }
@@ -262,6 +284,18 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
 
     private void hop(ServerLevel sl) {
         long now = sl.getGameTime();
+        if (windowFeeds > 0) {
+            access = window;
+            com.mrgregles.bsp_core.plasma.Anchor picked = com.mrgregles.bsp_core.plasma.Anchor.pick(windowAnchors, windowLevels, window.editors, anchorTotem);
+            if (picked != null) {
+                anchorTotem = picked;
+            }
+            window = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            windowAnchors.clear();
+            windowLevels.clear();
+            windowFeeds = 0;
+            setChanged();
+        }
         inRate = inAcc;
         inAcc = 0;
         receivedThisSecond = 0;
@@ -341,6 +375,7 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
             total += took;
             reports.put(liveAt.get(i), new Links.Report(Links.State.DELIVERING, (int) (arrived / 20)));
         }
+        forgetAnchor();
         if (total > 0) {
             energy.useSecond();
             outRate = (int) (total / 20);
@@ -553,7 +588,6 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
         tag.putInt("OutRate", outRate);
         tag.putByte("Show", (byte) clientState);
         store.save(tag, "Plasma");
-        Links.save(tag, "Anchor", anchorTotem);
         Links.saveAccess(tag, "Access", access);
         ListTag list = new ListTag();
         for (GlobalPos p : links) {
@@ -568,6 +602,7 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         write(tag);
+        com.mrgregles.bsp_core.plasma.Anchor.save(tag, "Anchor", anchorTotem); // server only: the client never needs who may edit the totem
     }
 
     @Override
@@ -580,7 +615,7 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
         outRate = tag.getInt("OutRate");
         clientState = tag.getByte("Show");
         store.load(tag, "Plasma");
-        anchorTotem = Links.load(tag, "Anchor");
+        anchorTotem = com.mrgregles.bsp_core.plasma.Anchor.load(tag, "Anchor");
         access = Links.loadAccess(tag, "Access");
         links.clear();
         for (Tag t : tag.getList("Links", Tag.TAG_COMPOUND)) {

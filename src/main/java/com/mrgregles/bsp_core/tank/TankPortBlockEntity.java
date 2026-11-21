@@ -75,14 +75,14 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
     }
 
     @Override
-    public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable net.minecraft.core.GlobalPos anchorTotem) {
+    public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access, @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem) {
         feed(source, offeredByOrdinal, repeaters, pressurePerTick, movedMB, access, anchorTotem, null);
     }
 
     /** Plasma in from a cable: the Mob Chamber powers' share to each power's pool at its level, the rest by its list (plain or totem). */
     @Override
     public void feed(BlockPos source, int[] offeredByOrdinal, int repeaters, int pressurePerTick, int movedMB, PlasmaAccess access,
-                     @Nullable net.minecraft.core.GlobalPos anchorTotem, @Nullable long[][] mob) {
+                     @Nullable com.mrgregles.bsp_core.plasma.Anchor anchorTotem, @Nullable long[][] mob) {
         TankPartBlockEntity m = masterEntity();
         if (m == null) {
             return;
@@ -170,9 +170,9 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
     /** The totem whose Anchor the stored plasma carries, so a projector fed from the tank holds chunks under it. */
     @Nullable
     @Override
-    public net.minecraft.core.GlobalPos anchor() {
+    public com.mrgregles.bsp_core.plasma.Anchor anchor() {
         TankPartBlockEntity m = masterEntity();
-        return m == null ? null : m.anchorTotem();
+        return m == null ? null : m.heldAnchor();
     }
 
     @Override

@@ -5,7 +5,6 @@ import com.mrgregles.bsp_core.plasma.PlasmaNetwork;
 import com.mrgregles.bsp_core.registry.ModBlockEntities;
 import com.mrgregles.bsp_core.totem.TotemUpgrades.Buff;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -95,7 +94,7 @@ public class DeceleratorPortBlockEntity extends LinkPartBlockEntity implements P
 
     @Nullable
     @Override
-    public GlobalPos anchor() {
+    public com.mrgregles.bsp_core.plasma.Anchor anchor() {
         DeceleratorBlockEntity core = core();
         return core == null ? null : core.anchorTotem();
     }

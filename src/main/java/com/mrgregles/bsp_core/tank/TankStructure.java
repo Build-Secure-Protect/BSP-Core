@@ -153,7 +153,7 @@ public final class TankStructure {
             master.setPools(remembered);
             master.setFedBy(remembered.open() > 0 ? rememberedFedBy : null);
             TankLedger.Entry anchor = rememberedAnchor.get(); // read only while the plasma still carries Anchor and the totem is still theirs
-            master.setAnchorTotem(anchor == null ? null : anchor.anchor, anchor == null ? null : anchor.anchorOwner);
+            master.setAnchor(anchor == null ? null : anchor.anchor);
             master.setChamber(chamber);
             master.setFormed(sl.getGameTime(), origin);
             master.sync();
@@ -192,7 +192,7 @@ public final class TankStructure {
                 net.minecraft.world.Containers.dropItemStack(sl, p.getX(), p.getY(), p.getZ(), stack);
             }
         }
-        TankLedger.get(sl).remember(min, w, h, d, master.pools(), master.fedBy(), master.anchorTotem(), master.anchorOwner(), master.shellBlocks() - 1);
+        TankLedger.get(sl).remember(min, w, h, d, master.pools(), master.fedBy(), master.heldAnchor(), master.shellBlocks() - 1);
         for (BlockPos q : shell(min, w, h, d)) {
             if (q.equals(p)) {
                 continue;
@@ -204,7 +204,7 @@ public final class TankStructure {
                     other.setDims(0, 0, 0);
                     other.setPools(new TankPools());
                     other.setFedBy(null);
-                    other.setAnchorTotem(null, null);
+                    other.setAnchor(null);
                     other.setChamber(false);
                 }
                 sl.setBlock(q, unformed(st), 3);

@@ -575,9 +575,21 @@ public final class ChunkLoading {
             }
             flags |= (p.hasSignal() ? ChunkViewPacket.SIGNAL : 0) | (p.isActive() ? ChunkViewPacket.ACTIVE : 0) | (projector != null && projector.on ? ChunkViewPacket.LOADING : 0)
                     | (p.hasExpander() ? ChunkViewPacket.EXPANDER : 0) | (p.mayEdit(player) ? ChunkViewPacket.EDIT : 0)
-                    | (p.anchorWithoutTotem() ? ChunkViewPacket.NO_TOTEM : 0);
+                    | (p.anchorWithoutTotem() ? ChunkViewPacket.NO_TOTEM : 0) | anchorFlag(p.anchorWhy());
         }
         BSPNetwork.sendTo(player, new ChunkViewPacket(blockPos, isProjector, slots, used, radius, longs(mine), longs(others), flags, delivered, levels, offered, chosen, channels, repeaters, tank));
+    }
+
+    private static int anchorFlag(@Nullable TotemProjectorBlockEntity.AnchorWhy why) {
+        if (why == null) {
+            return 0;
+        }
+        return switch (why) {
+            case STALE -> ChunkViewPacket.ANCHOR_STALE;
+            case OUTSIDERS -> ChunkViewPacket.ANCHOR_OUTSIDERS;
+            case RECHOOSE -> ChunkViewPacket.ANCHOR_RECHOOSE;
+            case HOLDS -> 0;
+        };
     }
 
     /** The RECEIVE switch for {@link TotemProjectorBlockEntity#SENDABLE}[index] on the projector at {@code blockPos}. */
@@ -587,7 +599,7 @@ public final class ChunkLoading {
                 refuse(player, "not_owner");
                 return;
             }
-            p.toggle(index);
+            p.toggle(index, player.getUUID(), com.mrgregles.bsp_core.admin.Admins.isAdmin(player));
             sendView(player, blockPos, false);
         }
     }
