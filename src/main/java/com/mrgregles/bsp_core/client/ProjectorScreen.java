@@ -56,7 +56,7 @@ public class ProjectorScreen extends Screen implements ScreenFit.Fitted {
 
     private static boolean chunks(ChunkViewPacket v) {
         int i = anchorIndex();
-        return i >= 0 && i < v.levels().length && v.levels()[i] > 0 && v.has(ChunkViewPacket.ENABLED);
+        return i >= 0 && i < v.levels().length && v.levels()[i] > 0 && (v.chosen() & (1 << i)) != 0 && v.has(ChunkViewPacket.ENABLED); // until Anchor is received the tab says how to receive it
     }
 
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
@@ -176,9 +176,12 @@ public class ProjectorScreen extends Screen implements ScreenFit.Fitted {
         int dx = x + 10 + TILE * 7 + 10;
         g.drawString(font, tr("chunks", v.used(), v.slots()), dx, y + 26, TEXT, false);
         ChunkMap.pips(g, dx, y + 38, v);
-        String hint = !v.has(ChunkViewPacket.EDIT) ? "not_owner" : !v.has(ChunkViewPacket.LOADING) ? "needs_power" : "hint";
-        small(g, tr("chunks." + hint), dx, y + 52, v.has(ChunkViewPacket.LOADING) ? MUTED : BAD);
-        small(g, tr("chunks.shared", v.radius() * 2 + 1), dx, y + 61, MUTED);
+        String hint = v.has(ChunkViewPacket.NO_TOTEM) ? "no_totem" : !v.has(ChunkViewPacket.EDIT) ? "not_owner"
+                : !v.has(ChunkViewPacket.LOADING) ? "needs_power" : "hint";
+        int textW = W - (dx - x) - 10, hy = CashMachine.smallWrap(g, font, tr("chunks." + hint), dx, y + 52, textW, v.has(ChunkViewPacket.LOADING) ? MUTED : BAD);
+        if (v.has(ChunkViewPacket.LOADING)) { // the allowance and range are the totem's only once the projector holds chunks under it
+            CashMachine.smallWrap(g, font, tr("chunks.shared", v.radius() * 2 + 1), dx, y + 54 + hy, textW, MUTED);
+        }
     }
 
     private void status(GuiGraphics g, int x, int y, ChunkViewPacket v) {

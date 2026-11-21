@@ -4,6 +4,17 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-11-21
+
+Network protocol 17: servers and clients must both have this version (the Battery Charger screen's synced values).
+
+### Fixed
+- **A projector fed through a Plasma Tank could receive Anchor but never load chunks.** The tank passed Anchor's level on but not the totem it belongs to, so the projector's CHUNKS tab showed "0 / 0" and clicks said chunk loading was not available. A tank now keeps the totem with the plasma that carries its Anchor, and its ports and a Tank Extractor on the totem pool pass it on, also after the tank is broken and rebuilt. As with who the tank counts as its team, it keeps the totem for Anchor plasma from its own feeders or players they trust, until that plasma is used up or the totem changes hands; a Tank Extractor passes it on when its placer is one of those feeders. A tank filled before this version passes Anchor's totem on once it is fed from the totem again.
+- The projector's CHUNKS tab says when Anchor arrived without its totem, instead of asking for a signal and plasma it already has. Until Anchor is received the tab says how to receive it. The allowance line shows only while the projector holds chunks, and both lines wrap inside the panel.
+
+### Changed
+- **Plasma Batteries cannot hold Anchor.** Chunk loading belongs to a placed totem, and a battery stands in for none. The Battery Charger does not offer Anchor for a battery, and an Anchor stamped on a battery before is ignored and takes no power slot. Guide book page "Batteries and Cells" updated.
+
 ## [1.20.0] - 2026-11-20
 
 Network protocol 16: servers and clients must both have this version (the Compass Tuner, and the Totem Compass screen's synced values).

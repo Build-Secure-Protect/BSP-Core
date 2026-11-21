@@ -310,4 +310,125 @@ public class TankPoolGameTests {
             }
         });
     }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void a_tank_keeps_the_anchor_totem_while_its_plasma_carries_anchor(GameTestHelper h) {
+        buildTank(h);
+        java.util.UUID owner = java.util.UUID.randomUUID(), raider = java.util.UUID.randomUUID();
+        var totem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(0, 1, 0)));
+        var theirTotem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(1, 1, 0)));
+        h.succeedWhen(() -> {
+            TankPartBlockEntity m = master(h);
+            m.drain(m.stored());
+            var port = (TankPortBlockEntity) h.getBlockEntity(PORT);
+            var mine = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            mine.editors.add(owner);
+            var theirs = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            theirs.editors.add(raider);
+            port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, totem, null);
+            h.assertTrue(port.anchor() == null, "plasma without Anchor names no Anchor totem");
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, totem, null);
+            h.assertTrue(totem.equals(port.anchor()) && totem.equals(m.anchorTotem()), "plasma carrying Anchor brings its totem, and the port passes it on: " + port.anchor());
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 10, theirs, theirTotem, null);
+            h.assertTrue(totem.equals(port.anchor()), "a stranger's Anchor does not take the tank over");
+            m.drain(m.stored());
+            port.feed(h.absolutePos(TANK), offered(Buff.WARD, 1), 0, 50, 1_000, mine, null, null);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 3), 0, 50, 1_000, theirs, theirTotem, null);
+            h.assertTrue(m.offered()[Buff.ANCHOR.ordinal()] == 3 && port.anchor() == null, "nor names its totem in a tank someone else fed, even one with no Anchor yet");
+            m.drain(m.stored());
+            var ledger = com.mrgregles.bsp_core.chunk.ChunkLedger.get(h.getLevel().getServer());
+            var known = new com.mrgregles.bsp_core.chunk.ChunkLedger.Totem();
+            known.owner = owner;
+            ledger.totems.put(totem, known);
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, totem, null);
+            h.assertTrue(totem.equals(port.anchor()), "the owner's own Anchor names its totem");
+            known.owner = raider;
+            boolean stolenDrops = port.anchor() == null;
+            known.owner = owner;
+            ledger.totems.remove(totem);
+            h.assertTrue(stolenDrops, "the totem changes hands: its old plasma no longer names it");
+            m.drain(m.stored());
+            port.feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, mine, totem, null);
+            CompoundTag tag = m.saveWithoutMetadata();
+            m.load(tag);
+            h.assertTrue(totem.equals(m.anchorTotem()), "saved with the tank");
+            h.assertTrue(!m.getUpdateTag().contains("AnchorDim"), "and kept on the server");
+            h.setBlock(GLASS, Blocks.AIR);
+            h.setBlock(GLASS, ModBlocks.TANK_GLASS.get());
+            TankPartBlockEntity again = master(h);
+            h.assertTrue(totem.equals(again.anchorTotem()), "kept through a break and rebuild, with the plasma: " + again.anchorTotem());
+            again.drain(again.stored());
+            h.assertTrue(again.anchorTotem() == null && port.anchor() == null, "the plasma that carried Anchor is gone: so is its totem");
+        });
+    }
+
+    @GameTest(template = EMPTY, batch = BATCH, timeoutTicks = 900)
+    public void a_projector_fed_from_a_tank_holds_chunks_under_the_anchor_totem(GameTestHelper h) {
+        buildTank(h);
+        BlockPos base = PORT.above(), proj = base.above();
+        h.setBlock(base, ModBlocks.PROJECTOR_BASE.get());
+        h.setBlock(proj, ModBlocks.TOTEM_PROJECTOR.get());
+        java.util.UUID owner = java.util.UUID.randomUUID();
+        var access = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+        access.editors.add(owner);
+        access.wardSafe.add(owner);
+        var totem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(0, 1, 0)));
+        var projAt = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(proj));
+        int anchorIndex = java.util.Arrays.asList(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE).indexOf(Buff.ANCHOR);
+        int[] step = {0};
+        h.onEachTick(() -> {
+            var level = h.getLevel();
+            var projector = (com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity) h.getBlockEntity(proj);
+            var entry = com.mrgregles.bsp_core.chunk.ChunkLedger.get(level.getServer()).projectors.get(projAt);
+            switch (step[0]) {
+                case 0 -> { // a tank filled before its Anchor totem was kept: Anchor arrives without it
+                    if (!level.getBlockState(h.absolutePos(TANK)).getValue(TankBlock.FORMED)) {
+                        return;
+                    }
+                    TankPartBlockEntity m = master(h);
+                    m.drain(m.stored());
+                    ((TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 50_000, access, null, null);
+                    step[0] = 1;
+                }
+                case 1 -> {
+                    if (projector.offered(anchorIndex) > 0) {
+                        projector.toggle(anchorIndex); // the owner receives Anchor
+                        step[0] = 2;
+                    }
+                }
+                case 2 -> {
+                    if (projector.isActive() && projector.anchorWithoutTotem()) {
+                        h.assertTrue(entry == null || !entry.on, "Anchor without its totem holds no chunks");
+                        ((TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), offered(Buff.ANCHOR, 2), 0, 50, 1_000, access, totem, null);
+                        step[0] = 3;
+                    }
+                }
+                case 3 -> {
+                    if (entry != null && entry.on) {
+                        h.assertTrue(totem.equals(entry.totem), "the ledger lists the projector under the tank's Anchor totem: " + entry.totem);
+                        h.assertTrue(!projector.anchorWithoutTotem(), "and the screen no longer says the totem is missing");
+                        com.mrgregles.bsp_core.chunk.ChunkLoading.projectorRemoved(level, h.absolutePos(proj));
+                        master(h).drain(Long.MAX_VALUE);
+                        h.succeed();
+                    }
+                }
+                default -> { }
+            }
+        });
+    }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void a_battery_never_carries_anchor(GameTestHelper h) {
+        var battery = new net.minecraft.world.item.ItemStack(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(
+                new net.minecraft.resources.ResourceLocation(BSPCore.MODID, "plasma_battery_4")));
+        h.assertTrue(com.mrgregles.bsp_core.plasma.PlasmaItems.isBattery(battery), "a tier IV Plasma Battery");
+        var allowed = java.util.Arrays.asList(com.mrgregles.bsp_core.plasma.PlasmaItems.allowed(battery));
+        h.assertTrue(!allowed.contains(Buff.ANCHOR) && allowed.contains(Buff.WARD), "a battery may hold Ward but not Anchor: " + allowed);
+        com.mrgregles.bsp_core.plasma.PlasmaItems.setPower(battery, Buff.ANCHOR, 3); // stamped before Anchor was taken off batteries
+        com.mrgregles.bsp_core.plasma.PlasmaItems.setPower(battery, Buff.WARD, 2);
+        int[] p = com.mrgregles.bsp_core.plasma.PlasmaItems.powers(battery);
+        h.assertTrue(p[Buff.ANCHOR.ordinal()] == 0 && p[Buff.WARD.ordinal()] == 2, "an old Anchor stamp is ignored; Ward stays");
+        h.assertTrue(com.mrgregles.bsp_core.plasma.PlasmaItems.powerCount(battery) == 1, "and takes no power slot");
+        h.succeed();
+    }
 }

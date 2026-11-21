@@ -574,7 +574,8 @@ public final class ChunkLoading {
                 levels[i] = p.hasSignal() ? p.arriving(i) : 0;
             }
             flags |= (p.hasSignal() ? ChunkViewPacket.SIGNAL : 0) | (p.isActive() ? ChunkViewPacket.ACTIVE : 0) | (projector != null && projector.on ? ChunkViewPacket.LOADING : 0)
-                    | (p.hasExpander() ? ChunkViewPacket.EXPANDER : 0) | (p.mayEdit(player) ? ChunkViewPacket.EDIT : 0);
+                    | (p.hasExpander() ? ChunkViewPacket.EXPANDER : 0) | (p.mayEdit(player) ? ChunkViewPacket.EDIT : 0)
+                    | (p.anchorWithoutTotem() ? ChunkViewPacket.NO_TOTEM : 0);
         }
         BSPNetwork.sendTo(player, new ChunkViewPacket(blockPos, isProjector, slots, used, radius, longs(mine), longs(others), flags, delivered, levels, offered, chosen, channels, repeaters, tank));
     }

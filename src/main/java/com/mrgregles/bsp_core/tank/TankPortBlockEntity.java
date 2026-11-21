@@ -98,9 +98,13 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
                 }
             }
         }
+        m.forgetFeeders(); // a record left from plasma already used up this second must not come back with the new plasma
         m.add(Math.max(0, movedMB - mobIn), com.mrgregles.bsp_core.plasma.MobPlasma.withoutMob(offeredByOrdinal));
         if (movedMB > mobIn) {
             m.addFedBy(access); // who fed it travels on with the plasma
+            if (offeredByOrdinal != null && offeredByOrdinal.length > Buff.ANCHOR.ordinal() && offeredByOrdinal[Buff.ANCHOR.ordinal()] > 0) {
+                m.addAnchor(anchorTotem, access); // and so does the totem its Anchor belongs to, when the tank trusts who fed it
+            }
         }
         in = pressurePerTick;
         fedAt = level == null ? 0 : level.getGameTime();
@@ -161,6 +165,14 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
     @Override
     public int cloak() {
         return 0;
+    }
+
+    /** The totem whose Anchor the stored plasma carries, so a projector fed from the tank holds chunks under it. */
+    @Nullable
+    @Override
+    public net.minecraft.core.GlobalPos anchor() {
+        TankPartBlockEntity m = masterEntity();
+        return m == null ? null : m.anchorTotem();
     }
 
     @Override

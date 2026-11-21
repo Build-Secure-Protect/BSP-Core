@@ -195,6 +195,11 @@ public class TotemProjectorBlockEntity extends BlockEntity {
         return signal ? offered[i] : 0;
     }
 
+    /** Whether Anchor is chosen and arriving but came without the totem it belongs to, so no chunks can be held from here. */
+    public boolean anchorWithoutTotem() {
+        return chosenLevel(Buff.ANCHOR) > 0 && anchorTotem == null;
+    }
+
     public int chosen() {
         return chosen;
     }

@@ -608,7 +608,7 @@ Place the charger facing you: the cable goes into its **back**, and only there. 
 
 Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.
 
-**Batteries** take Base powers: the ones a projector can receive. **Cells** take Carried powers: the ones that work from your offhand.
+**Batteries** take Base powers: the ones a projector can receive, all but Anchor. Chunk loading belongs to a placed totem, so Anchor travels only in the totem's own plasma, through cables, tanks and links. **Cells** take Carried powers: the ones that work from your offhand.
 
 **Page 5**  `[recipe] plasma_battery_1`
 

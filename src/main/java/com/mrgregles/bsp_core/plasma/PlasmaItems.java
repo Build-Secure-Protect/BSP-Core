@@ -18,8 +18,12 @@ import java.util.List;
  */
 public final class PlasmaItems {
     public static final String TAG = "Plasma", STORED = "Stored", POWERS = "Powers";
-    /** Powers a battery may hold: those a projector receives. */
-    public static final Buff[] BATTERY_POWERS = com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE;
+    /**
+     * Powers a battery may hold: those a projector receives, except Anchor. Chunk loading always belongs to a placed totem, and a
+     * battery stands in for no totem, so Anchor cannot be stored in one.
+     */
+    public static final Buff[] BATTERY_POWERS = java.util.Arrays.stream(com.mrgregles.bsp_core.projector.TotemProjectorBlockEntity.SENDABLE)
+            .filter(b -> b != Buff.ANCHOR).toArray(Buff[]::new);
     /** Powers a cell may hold: the totem's Carried powers, which the Wave Emitter gives its carrier. */
     public static final Buff[] CELL_POWERS = carried();
 
@@ -96,10 +100,11 @@ public final class PlasmaItems {
     }
 
     /** Levels by {@link Buff#ordinal()} stamped into the item; zeros elsewhere. */
+    /** The stamped powers by Buff ordinal; only those the item may hold count (an Anchor stamped on a battery before is ignored). */
     public static int[] powers(ItemStack stack) {
         int[] out = new int[Buff.values().length];
         CompoundTag p = tag(stack).getCompound(POWERS);
-        for (Buff b : Buff.values()) {
+        for (Buff b : allowed(stack)) {
             out[b.ordinal()] = p.getInt(b.key);
         }
         return out;

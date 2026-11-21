@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  * @param delivered a projector's plasma arriving, mB/t; {@code offered}, {@code levels} (arriving) and {@code chosen} follow the projector's SENDABLE order
  */
 public record ChunkViewPacket(BlockPos pos, boolean projector, int slots, int used, int radius, long[] mine, long[] others, int flags, int delivered, int[] levels, int[] offered, int chosen, int channels, int repeaters, int tank) {
-    public static final int OPEN = 1, EDIT = 2, MAIN = 4, ENABLED = 8, ONLINE_ONLY = 16, SIGNAL = 32, ACTIVE = 64, LOADING = 128, EXPANDER = 256;
+    public static final int OPEN = 1, EDIT = 2, MAIN = 4, ENABLED = 8, ONLINE_ONLY = 16, SIGNAL = 32, ACTIVE = 64, LOADING = 128, EXPANDER = 256, NO_TOTEM = 512;
 
     public boolean has(int flag) {
         return (flags & flag) != 0;

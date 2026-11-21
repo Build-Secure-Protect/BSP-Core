@@ -167,6 +167,7 @@ public class TankExtractorBlockEntity extends BlockEntity implements PlasmaNetwo
         }
         if (took > 0) {
             m.setChanged();
+            m.forgetFeeders(); // the last of the totem plasma gone takes who fed it and its Anchor totem with it at once
         }
         return (int) took;
     }
@@ -229,6 +230,17 @@ public class TankExtractorBlockEntity extends BlockEntity implements PlasmaNetwo
     @Override
     public int cloak() {
         return 0;
+    }
+
+    /**
+     * Set to the totem pool, it passes on the totem whose Anchor that plasma carries, but only when the player who placed it is one
+     * of those who fed the tank (an owner or Upgrades friend of the feeding totem): its own access lets its placer run what it feeds.
+     */
+    @Nullable
+    @Override
+    public net.minecraft.core.GlobalPos anchor() {
+        TankPartBlockEntity m = attachedTank();
+        return m == null || pool != TOTEM || owner == null || !m.fedBy().editors.contains(owner) ? null : m.anchorTotem();
     }
 
     @Override

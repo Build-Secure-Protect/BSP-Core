@@ -51,6 +51,15 @@ public class TankPartBlockEntity extends BlockEntity {
      * while its plain and totem plasma last. Its ports pass it on, so a projector fed from the tank knows its team (Ward spares them).
      */
     private com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+    /**
+     * Master: the totem whose Anchor the stored plasma carries, in its own world, kept while the plasma still carries Anchor. Its ports
+     * and a Tank Extractor on the totem pool pass it on, so a projector fed from the tank holds chunks under that totem's allowance.
+     */
+    @Nullable
+    private net.minecraft.core.GlobalPos anchorTotem;
+    /** Master: who owned the Anchor totem when its plasma came in; null when the chunk ledger did not know the totem then. */
+    @Nullable
+    private java.util.UUID anchorOwner;
     /** The plasma, in pools: plain, the totem pool with its powers, and one pool per Mob Chamber power ({@link TankPools}). */
     private final TankPools pools = new TankPools();
     public static final int LOOT_SLOTS = 27;
@@ -234,6 +243,56 @@ public class TankPartBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    /**
+     * The totem whose Anchor the stored plasma carries, or null once no stored plasma carries Anchor, and null once that totem has
+     * changed hands since its plasma came in (the plasma belongs to the owner who fed it, not to whoever holds the totem now).
+     */
+    @Nullable
+    public net.minecraft.core.GlobalPos anchorTotem() {
+        if (anchorTotem == null || pools.offered()[com.mrgregles.bsp_core.totem.TotemUpgrades.Buff.ANCHOR.ordinal()] <= 0) {
+            return null;
+        }
+        java.util.UUID now = ledgerOwner(anchorTotem);
+        return anchorOwner != null && now != null && !now.equals(anchorOwner) ? null : anchorTotem;
+    }
+
+    @Nullable
+    java.util.UUID anchorOwner() {
+        return anchorOwner;
+    }
+
+    /** Who the chunk ledger says owns the totem at {@code totem} right now, or null when it does not know it (or off the server). */
+    @Nullable
+    private java.util.UUID ledgerOwner(net.minecraft.core.GlobalPos totem) {
+        if (!(level instanceof ServerLevel sl)) {
+            return null;
+        }
+        var entry = com.mrgregles.bsp_core.chunk.ChunkLedger.get(sl.getServer()).totems.get(totem);
+        return entry == null ? null : entry.owner;
+    }
+
+    /**
+     * A network put plasma carrying Anchor in, from the totem at {@code totem}, with {@code access}. It becomes the tank's Anchor
+     * totem only when the tank trusts that access (the tank's own feeders or players they trust, as {@link #addFedBy} decides; call
+     * that first, so a first feed into an empty tank counts). Anyone else's Anchor goes in without naming its totem.
+     */
+    public void addAnchor(@Nullable net.minecraft.core.GlobalPos totem, com.mrgregles.bsp_core.plasma.PlasmaAccess access) {
+        if (totem != null && access != null && !access.isEmpty() && fedBy.trusts(access)) {
+            java.util.UUID owner = ledgerOwner(totem);
+            if (!totem.equals(anchorTotem) || !java.util.Objects.equals(owner, anchorOwner)) {
+                anchorTotem = totem;
+                anchorOwner = owner;
+                setChanged();
+            }
+        }
+    }
+
+    void setAnchorTotem(@Nullable net.minecraft.core.GlobalPos totem, @Nullable java.util.UUID owner) {
+        anchorTotem = totem;
+        anchorOwner = totem == null ? null : owner;
+        setChanged();
+    }
+
     /** Puts remembered plasma back, as much as fits (a tank re-formed from a dormant one). */
     void setPools(TankPools from) {
         pools.clear();
@@ -311,6 +370,11 @@ public class TankPartBlockEntity extends BlockEntity {
     void forgetFeeders() {
         if (pools.open() <= 0 && !fedBy.isEmpty()) {
             fedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            setChanged();
+        }
+        if (anchorTotem != null && anchorTotem() == null) { // the plasma that carried Anchor is used up, or the totem changed hands
+            anchorTotem = null;
+            anchorOwner = null;
             setChanged();
         }
     }
@@ -405,6 +469,10 @@ public class TankPartBlockEntity extends BlockEntity {
         tag.putBoolean("Chamber", chamber);
         tag.putLong("LastSpawn", lastSpawnAt);
         fedBy.save(tag, "FedBy");
+        com.mrgregles.bsp_core.link.Links.save(tag, "Anchor", anchorTotem);
+        if (anchorTotem != null && anchorOwner != null) {
+            tag.putUUID("AnchorOwner", anchorOwner);
+        }
         tag.put("Loot", loot.serializeNBT());
         if (feedItem != null) {
             tag.putString("FeedItem", String.valueOf(net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(feedItem)));
@@ -435,6 +503,8 @@ public class TankPartBlockEntity extends BlockEntity {
         chamber = tag.getBoolean("Chamber");
         lastSpawnAt = tag.contains("LastSpawn") ? tag.getLong("LastSpawn") : -1000;
         fedBy = com.mrgregles.bsp_core.plasma.PlasmaAccess.load(tag, "FedBy");
+        anchorTotem = com.mrgregles.bsp_core.link.Links.load(tag, "Anchor");
+        anchorOwner = anchorTotem != null && tag.hasUUID("AnchorOwner") ? tag.getUUID("AnchorOwner") : null;
         var feedId = net.minecraft.resources.ResourceLocation.tryParse(tag.getString("FeedItem"));
         feedItem = feedId != null && tag.contains("FeedItem") && net.minecraftforge.registries.ForgeRegistries.ITEMS.containsKey(feedId)
                 ? net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(feedId) : null;
@@ -476,6 +546,9 @@ public class TankPartBlockEntity extends BlockEntity {
         write(tag);
         // who fed the tank and what its loot store holds stay on the server: the screen gets the loot from its own view packet
         tag.remove("FedBy");
+        tag.remove("AnchorDim");
+        tag.remove("AnchorPos");
+        tag.remove("AnchorOwner");
         tag.remove("Loot");
         return tag;
     }

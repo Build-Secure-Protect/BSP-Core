@@ -28,6 +28,12 @@ public class TankLedger extends SavedData {
         public TankPools pools = new TankPools();
         /** Who fed it. */
         public com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+        /** The totem whose Anchor its plasma carried, or null. */
+        @javax.annotation.Nullable
+        public net.minecraft.core.GlobalPos anchor;
+        /** Who owned that totem when its plasma came in, or null. */
+        @javax.annotation.Nullable
+        public java.util.UUID anchorOwner;
 
         boolean onShell(BlockPos p) {
             int x = p.getX() - min.getX(), y = p.getY() - min.getY(), z = p.getZ() - min.getZ();
@@ -56,7 +62,15 @@ public class TankLedger extends SavedData {
 
     /** A tank came apart: remember its plasma, every pool of it, and who fed it. */
     public void remember(BlockPos min, int w, int h, int d, TankPools pools, com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy, int remaining) {
+        remember(min, w, h, d, pools, fedBy, null, null, remaining);
+    }
+
+    /** A tank came apart: remember its plasma, every pool of it, who fed it and the totem whose Anchor it carried. */
+    public void remember(BlockPos min, int w, int h, int d, TankPools pools, com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy,
+                         @javax.annotation.Nullable net.minecraft.core.GlobalPos anchor, @javax.annotation.Nullable java.util.UUID anchorOwner, int remaining) {
         Entry e = new Entry();
+        e.anchor = anchor;
+        e.anchorOwner = anchor == null ? null : anchorOwner;
         e.min = min.immutable();
         e.w = w;
         e.h = h;
@@ -75,6 +89,15 @@ public class TankLedger extends SavedData {
 
     /** {@link #take(BlockPos, int, int, int)}, adding who fed each dormant tank to {@code fedBy} (may be null). */
     public TankPools take(BlockPos min, int w, int h, int d, @javax.annotation.Nullable com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy) {
+        return take(min, w, h, d, fedBy, null);
+    }
+
+    /**
+     * {@link #take(BlockPos, int, int, int, com.mrgregles.bsp_core.plasma.PlasmaAccess)}, putting the first dormant tank's Anchor totem
+     * found in {@code anchor} (may be null) as an {@link Entry} with only {@code anchor} and {@code anchorOwner} set.
+     */
+    public TankPools take(BlockPos min, int w, int h, int d, @javax.annotation.Nullable com.mrgregles.bsp_core.plasma.PlasmaAccess fedBy,
+                          @javax.annotation.Nullable java.util.concurrent.atomic.AtomicReference<Entry> anchor) {
         TankPools sum = new TankPools();
         for (Iterator<Entry> it = entries.iterator(); it.hasNext(); ) {
             Entry e = it.next();
@@ -82,6 +105,12 @@ public class TankLedger extends SavedData {
                 sum.merge(e.pools);
                 if (fedBy != null) {
                     fedBy.addAll(e.fedBy);
+                }
+                if (anchor != null && anchor.get() == null && e.anchor != null) {
+                    Entry found = new Entry();
+                    found.anchor = e.anchor;
+                    found.anchorOwner = e.anchorOwner;
+                    anchor.set(found);
                 }
                 it.remove();
                 setDirty();
@@ -114,6 +143,8 @@ public class TankLedger extends SavedData {
             e.h = c.getInt("H");
             e.d = c.getInt("D");
             e.fedBy = com.mrgregles.bsp_core.plasma.PlasmaAccess.load(c, "FedBy");
+            e.anchor = com.mrgregles.bsp_core.link.Links.load(c, "Anchor");
+            e.anchorOwner = e.anchor != null && c.hasUUID("AnchorOwner") ? c.getUUID("AnchorOwner") : null;
             if (c.contains("Pools")) {
                 e.pools.load(c.getCompound("Pools"));
             } else {
@@ -138,6 +169,10 @@ public class TankLedger extends SavedData {
             e.pools.save(pools);
             c.put("Pools", pools);
             e.fedBy.save(c, "FedBy");
+            com.mrgregles.bsp_core.link.Links.save(c, "Anchor", e.anchor);
+            if (e.anchor != null && e.anchorOwner != null) {
+                c.putUUID("AnchorOwner", e.anchorOwner);
+            }
             c.putInt("Remaining", e.remaining);
             list.add(c);
         }

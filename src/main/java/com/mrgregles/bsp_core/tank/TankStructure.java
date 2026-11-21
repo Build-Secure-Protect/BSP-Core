@@ -123,7 +123,8 @@ public final class TankStructure {
     /** Forms the tank over {@code min..dims}; {@code origin} is the block that completed it, where the forming sweep starts. */
     static void form(ServerLevel sl, BlockPos min, int w, int h, int d, BlockPos origin) {
         com.mrgregles.bsp_core.plasma.PlasmaAccess rememberedFedBy = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
-        TankPools remembered = TankLedger.get(sl).take(min, w, h, d, rememberedFedBy);
+        java.util.concurrent.atomic.AtomicReference<TankLedger.Entry> rememberedAnchor = new java.util.concurrent.atomic.AtomicReference<>();
+        TankPools remembered = TankLedger.get(sl).take(min, w, h, d, rememberedFedBy, rememberedAnchor);
         int[] dims = {w, h, d};
         boolean chamber = false;
         for (BlockPos q : shell(min, w, h, d)) {
@@ -151,6 +152,8 @@ public final class TankStructure {
             master.setDims(w, h, d);
             master.setPools(remembered);
             master.setFedBy(remembered.open() > 0 ? rememberedFedBy : null);
+            TankLedger.Entry anchor = rememberedAnchor.get(); // read only while the plasma still carries Anchor and the totem is still theirs
+            master.setAnchorTotem(anchor == null ? null : anchor.anchor, anchor == null ? null : anchor.anchorOwner);
             master.setChamber(chamber);
             master.setFormed(sl.getGameTime(), origin);
             master.sync();
@@ -189,7 +192,7 @@ public final class TankStructure {
                 net.minecraft.world.Containers.dropItemStack(sl, p.getX(), p.getY(), p.getZ(), stack);
             }
         }
-        TankLedger.get(sl).remember(min, w, h, d, master.pools(), master.fedBy(), master.shellBlocks() - 1);
+        TankLedger.get(sl).remember(min, w, h, d, master.pools(), master.fedBy(), master.anchorTotem(), master.anchorOwner(), master.shellBlocks() - 1);
         for (BlockPos q : shell(min, w, h, d)) {
             if (q.equals(p)) {
                 continue;
@@ -201,6 +204,7 @@ public final class TankStructure {
                     other.setDims(0, 0, 0);
                     other.setPools(new TankPools());
                     other.setFedBy(null);
+                    other.setAnchorTotem(null, null);
                     other.setChamber(false);
                 }
                 sl.setBlock(q, unformed(st), 3);

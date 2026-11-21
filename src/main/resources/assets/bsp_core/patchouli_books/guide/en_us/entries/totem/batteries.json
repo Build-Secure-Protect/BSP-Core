@@ -21,7 +21,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.$(br2)$(l)Batteries$() take Base powers: the ones a projector can receive. $(l)Cells$() take Carried powers: the ones that work from your offhand.",
+      "text": "Stamping copies a power at the level the totem has. While the item sits in a fed charger, a stamped power follows the totem's level if it changes. Take the item out and the levels are fixed.$(br2)$(l)Batteries$() take Base powers: the ones a projector can receive, all but Anchor. Chunk loading belongs to a placed totem, so Anchor travels only in the totem's own plasma, through cables, tanks and links. $(l)Cells$() take Carried powers: the ones that work from your offhand.",
       "title": "What gets stamped"
     },
     {

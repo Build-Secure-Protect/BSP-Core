@@ -3819,3 +3819,20 @@ The screen
 - [ ] At GUI scale 3 and 4 on a small window the whole screen fits (it scales down).
 - [ ] Hoppers: a hopper above feeds lapis, quartz and redstone into their own slots; a hopper below takes nothing out; a compass in the hopper stays there.
 - [ ] Guide book: "The Compass Tuner" entry (spotlight, Tuning, Speed, What a tune gives, the recipe) and the Totem Compass entry's Reach page point to each other. JEI/EMI: the tuner's information page.
+
+## Anchor through tanks, and batteries without Anchor (2026-11-21, 1.20.1)
+
+The rules (a tank keeps the Anchor totem while its plasma carries Anchor, saved, kept through a break and rebuild, not taken over by a stranger's feed, gone with the plasma; a projector fed from a tank listed under that totem; a battery never carrying Anchor) are covered by `TankPoolGameTests` (batch `chamber`) and `TankExtractorGameTests` (batch `tank_extractor`). By hand, in a client:
+
+- [ ] Network protocol 17: a client with the 1.20.0 jar (protocol 16) is refused by a server with this build; a client with this build joins.
+- [ ] Totem with Anchor 2 or 3, its interface cabled into a Plasma Tank, a Tank Port cabled on to a Projector Base and Projector. Receive Anchor on the projector: the CHUNKS tab shows the totem's allowance (for example "CHUNKS 2 / 3"), the projector's own chunk is in, and other chunks can be picked. The totem's own CHUNKS tab counts them in violet.
+- [ ] The same through a Plasma Accelerator link with a tank on either side (a tank before the Accelerator Intake, or after the Decelerator Port), with the projector in another world: the projector holds chunks under the totem.
+- [ ] A tank filled before this build: the projector's CHUNKS tab says in red that the Anchor arrived without its totem. Feed the tank from the totem again: within a few seconds the projector holds chunks.
+- [ ] Break one block of the tank and put it back: the projector keeps (or regains within a few seconds) its chunks.
+- [ ] Let the tank run dry of Anchor plasma: the projector stops holding chunks.
+- [ ] A Tank Extractor on the totem pool, placed by the player who fed the tank, feeding a projector: it holds chunks under the totem. The same extractor placed by a player who never fed the tank: the projector says the Anchor arrived without its totem.
+- [ ] Projector offered Anchor but not receiving it: the CHUNKS tab says to receive Anchor on the POWERS tab.
+- [ ] The CHUNKS tab's text stays inside the panel at the default GUI scale and at scale 3; the "From the totem's allowance" line is under the wrapped hint, not over it.
+- [ ] Battery Charger with a tier IV battery on a run from a totem with Anchor: the screen lists no Anchor row for the battery; a Power Cell lists its Carried powers as before.
+- [ ] A battery stamped with Anchor on 1.20.0: its tooltip no longer lists Anchor, it has that power slot free, and on an extractor it gives the projector no Anchor.
+

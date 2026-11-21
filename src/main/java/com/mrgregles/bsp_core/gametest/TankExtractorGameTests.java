@@ -222,4 +222,32 @@ public class TankExtractorGameTests {
             return "no Growth reached the Nether: ring " + a.isFormed() + ", intake " + a.inRate() + ", extractor out " + extractor(h).out() + ", core " + core.isFormed() + " " + core.store().stored();
         });
     }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void a_tank_extractor_passes_the_anchor_totem_only_for_a_feeder(GameTestHelper h) {
+        build(h);
+        java.util.UUID owner = java.util.UUID.randomUUID(), stranger = java.util.UUID.randomUUID();
+        var totem = net.minecraft.core.GlobalPos.of(h.getLevel().dimension(), h.absolutePos(new BlockPos(0, 1, 0)));
+        h.succeedWhen(() -> {
+            TankPartBlockEntity m = master(h);
+            m.drain(m.stored());
+            var access = new com.mrgregles.bsp_core.plasma.PlasmaAccess();
+            access.editors.add(owner);
+            int[] anchor = new int[Buff.values().length];
+            anchor[Buff.ANCHOR.ordinal()] = 2;
+            ((com.mrgregles.bsp_core.tank.TankPortBlockEntity) h.getBlockEntity(PORT)).feed(h.absolutePos(TANK), anchor, 0, 50, 1_000, access, totem, null);
+            TankExtractorBlockEntity ex = extractor(h);
+            ex.setPool(TankExtractorBlockEntity.TOTEM);
+            ex.setOwner(stranger);
+            h.assertTrue(ex.offered()[Buff.ANCHOR.ordinal()] == 2 && ex.anchor() == null, "placed by someone who did not feed the tank: Anchor goes on without its totem");
+            ex.setOwner(owner);
+            h.assertTrue(totem.equals(ex.anchor()), "placed by the feeder: the totem goes with it");
+            ex.setPool(TankExtractorBlockEntity.PLAIN);
+            h.assertTrue(ex.anchor() == null, "the plain pool carries no Anchor");
+            ex.setPool(TankExtractorBlockEntity.TOTEM);
+            ex.drain(1_000);
+            h.assertTrue(m.anchorTotem() == null && ex.anchor() == null, "drained dry: the totem is forgotten at once");
+            ex.setOwner(null);
+        });
+    }
 }

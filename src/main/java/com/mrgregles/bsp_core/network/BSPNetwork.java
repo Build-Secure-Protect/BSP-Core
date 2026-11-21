@@ -24,8 +24,10 @@ public final class BSPNetwork {
      *     team factory limit and team size, and a lane's re-press flag; the carried totem's upgrade screen syncs the team surcharge.
      * 16: the Compass Tuner (its block, block entity data and screen); the Totem Compass screen's buy buttons (6 to 8) are gone and
      *     its synced value 4 carries the tune state instead of the upgrade price.
+     * 17: Plasma Batteries hold no Anchor, so the Battery Charger screen's synced values are one power row shorter; the chunk
+     *     view's NO_TOTEM flag.
      */
-    private static final String PROTOCOL = "16";
+    private static final String PROTOCOL = "17";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

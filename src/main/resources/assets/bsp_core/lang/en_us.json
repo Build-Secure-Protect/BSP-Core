@@ -1683,6 +1683,7 @@
   "gui.bsp_core.projector.chunks_off2": "on the POWERS tab.",
   "gui.bsp_core.projector.chunks.hint": "Click chunks. The projector's own is always in.",
   "gui.bsp_core.projector.chunks.needs_power": "Needs a signal and plasma to hold chunks.",
+  "gui.bsp_core.projector.chunks.no_totem": "This Anchor arrived without its totem, so no chunks can be held from here. Feed the run from the totem's own plasma.",
   "gui.bsp_core.projector.chunks.not_owner": "Only the totem's owner can change this.",
   "gui.bsp_core.projector.chunks.shared": "From the totem's allowance. Range %1$s x %1$s",
   "gui.bsp_core.tank.powers": "Powers in the plasma:",
