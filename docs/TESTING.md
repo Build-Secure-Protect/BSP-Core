@@ -3853,3 +3853,21 @@ The rules (an Anchor carries its totem's owner and editors; a projector holds ch
 - [ ] Two teammates' totems feed one Plasma Tank, one of them with an Upgrades friend the other does not have: the tank's projectors give the same CHUNKS reason every time the screen is opened, also after a restart.
 - [ ] Restart the server with a projector holding chunks from a Projector Base fed by two of the owner's totems: its picked chunks are still picked afterwards.
 - [ ] The CHUNKS tab's new red lines stay inside the panel at the default GUI scale and at scale 3.
+
+## Cloak fade with and without shaders (2026-11-21, unreleased)
+Set up as in "Cloaking: generated land and hidden players": a totem with Cloaking and a base around it, viewed by an outsider (or an operator after `/bsp cloak see off`). Walk into the aura and back out for each line.
+- [ ] Shaders off: walking in, the real blocks fade in over the fake land from clear to solid over `effects.cloakFadeSeconds`, then the real blocks take over without a jump in brightness. Block sides are shaded about as the real blocks are (tops brightest), and the shading does not change as you turn the camera. Walking out, the base fades out over the fake land.
+- [ ] The same with each shader pack in turn: BSL, Complementary Reimagined, Bliss, MakeUp, Sildur's. The blocks are never black or dark at the start; they start clear and turn solid. Note any pack where they look too bright, unlit or a different colour while fading, or flicker.
+- [ ] With a shader pack, glass, torches and leaves in the base fade in too, and the players inside fade with the blocks.
+- [ ] In the Nether, with shaders off: a cloaked base there fades in with even shading, and its fog matches the land around it; turning your head does not change how fogged the fading blocks are. The same underwater (a base by a lake) and with Blindness (`/effect give @s blindness 30`).
+- [ ] Switch shaders on (or off) in the middle of a fade-in: the fade carries on in the right look, with no garbled or flickering blocks.
+- [ ] After a fade, with shaders off, mobs, dropped items and players nearby are lit as usual (the fade leaves the world's lighting as it found it).
+
+## X-ray with and without shaders (2026-11-21, unreleased)
+Hold a Wave Emitter with X-ray stamped (or `/bsp totem buff xray 3` on a held totem) and press X underground.
+- [ ] Shaders off: X-ray looks exactly as before: faint glass rock, fainter the further, the furthest band still just visible; ores bright; gold and red marks.
+- [ ] The same with each shader pack in turn: BSL, Complementary Reimagined, Bliss, MakeUp, Sildur's. The rock is see-through faint glass, never solid or black. The furthest rock is a little stronger than with shaders off. Ores still show bright through it. Note any pack where the rock is unlit, too bright, flickers or is missing.
+- [ ] With each shader pack, near a chest, a machine and a spawner: the gold and red marks show through the walls, full bright even in a dark cave, never solid. A gold mark is faint enough that you can still tell which machine is under it; it is a little stronger than with shaders off. Note any pack where a mark is missing, solid, dark or drawn in front of nearer blocks oddly.
+- [ ] Switch shaders on (or off) while X-ray runs: for under half a second the rock is not drawn, then it is back in the right look. No crash, no leftover ghosts once X-ray ends.
+- [ ] With shaders off after X-ray, mobs, dropped items and players nearby are lit as usual.
+- [ ] With `xrayStrength` set to 0 for the carried level, X-ray shows no rock and no marks, with shaders on or off.

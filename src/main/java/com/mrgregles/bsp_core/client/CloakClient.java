@@ -407,6 +407,13 @@ public final class CloakClient {
         float now = mc.level.getGameTime() + event.getPartialTick();
         for (Entry e : CLOAKS.values()) {
             if ((e.revealing() || e.fadingOut()) && e.mesh != null) {
+                if (BlockShells.stale(e.mesh)) { // shaders switched on or off mid-fade: built for the other layout
+                    e.mesh.close();
+                    e.mesh = BlockShells.build(mc.level, e.real, e.origin);
+                    if (e.mesh == null) {
+                        continue;
+                    }
+                }
                 BlockShells.draw(e.mesh, e.origin, event, e.alpha(now));
             }
         }

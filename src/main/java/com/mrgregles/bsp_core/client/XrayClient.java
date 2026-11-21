@@ -21,6 +21,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -279,8 +280,11 @@ public final class XrayClient implements IGuiOverlay {
         }
     }
 
-    /** The world as it really is: ghost positions answer with the block under them, and everything is fully lit. */
-    private record RealView(ClientLevel level) implements BlockAndTintGetter {
+    /**
+     * The world as it really is: ghost positions answer with the block under them, and everything is fully lit. With
+     * {@code shade} off, faces carry no side shade of their own: the shells' entity shader shades them by normal itself.
+     */
+    private record RealView(ClientLevel level, boolean shade) implements BlockAndTintGetter {
         @Override
         public BlockState getBlockState(BlockPos pos) {
             BlockState real = GHOSTS.get(pos);
@@ -309,8 +313,8 @@ public final class XrayClient implements IGuiOverlay {
         }
 
         @Override
-        public float getShade(Direction dir, boolean shade) {
-            return level.getShade(dir, shade);
+        public float getShade(Direction dir, boolean shaded) {
+            return shade ? level.getShade(dir, shaded) : 1f;
         }
 
         @Override
@@ -339,29 +343,40 @@ public final class XrayClient implements IGuiOverlay {
     private static BufferBuilder oreBuilder;
     /** What the buffers were last built from: a scan that finds the same ghosts, ores and centre builds nothing. */
     private static boolean ghostsChanged = true;
+    /** Whether the shells were built for a shader pack (entity layer) or without one (terrain layer); a switch rebuilds them. */
+    private static boolean shellsForShaders;
     private static List<BlockPos> lastOres = List.of();
     /** New ghosts per scan, so switching on spreads the block changes over a few scans instead of one frame. */
     private static final int GHOSTS_PER_SCAN = 4096;
 
-    /** Builds the shells of the ghosted blocks (faces culled against the real neighbours, so only surfaces are drawn) by depth band, and the ores. */
+    /**
+     * Builds the shells of the ghosted blocks (faces culled against the real neighbours, so only surfaces are drawn) by depth
+     * band, and the ores. Without a shader pack the shells are translucent terrain, drawn at any strength. With one, terrain's
+     * alpha means shading to the pack, so the shells are made for {@link BlockShells}' layer instead (entity format, filled
+     * through its {@link BlockShells.Opaque} so the alpha is left for the strength alone), which every pack draws see-through.
+     * The ores stay ordinary cutout terrain, drawn solid.
+     */
     private static void rebuild(ClientLevel level, BlockPos centre, List<BlockPos> oreList) {
         dropBuffers();
         origin = centre.immutable();
-        RealView view = new RealView(level);
+        shellsForShaders = BlockShells.shaderPackInUse();
+        RealView view = new RealView(level, true), shellView = new RealView(level, !shellsForShaders);
         RandomSource random = RandomSource.create();
         PoseStack pose = new PoseStack();
         BufferBuilder[] builders = BUILDERS;
+        com.mojang.blaze3d.vertex.VertexConsumer[] shells = new com.mojang.blaze3d.vertex.VertexConsumer[BANDS];
         for (int i = 0; i < BANDS; i++) {
             if (builders[i] == null) {
                 builders[i] = new BufferBuilder(1 << 16); // made once and kept: a BufferBuilder's native memory is never given back
             }
-            builders[i].begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+            builders[i].begin(VertexFormat.Mode.QUADS, shellsForShaders ? DefaultVertexFormat.NEW_ENTITY : DefaultVertexFormat.BLOCK);
+            shells[i] = shellsForShaders ? new BlockShells.Opaque(builders[i]) : builders[i];
         }
         for (Map.Entry<BlockPos, BlockState> e : GHOSTS.entrySet()) {
             BlockPos p = e.getKey();
             int d = Math.max(Math.abs(p.getX() - centre.getX()), Math.max(Math.abs(p.getY() - centre.getY()), Math.abs(p.getZ() - centre.getZ())));
             int band = Math.min(BANDS - 1, d * BANDS / Math.max(1, radius + 1));
-            emit(view, p, e.getValue(), pose, builders[band], random);
+            emit(shellView, p, e.getValue(), pose, shells[band], random);
         }
         for (int i = 0; i < BANDS; i++) {
             SHELLS[i] = upload(builders[i]);
@@ -376,7 +391,7 @@ public final class XrayClient implements IGuiOverlay {
         ores = upload(oreBuilder);
     }
 
-    private static void emit(RealView view, BlockPos p, BlockState st, PoseStack pose, BufferBuilder into, RandomSource random) {
+    private static void emit(RealView view, BlockPos p, BlockState st, PoseStack pose, com.mojang.blaze3d.vertex.VertexConsumer into, RandomSource random) {
         pose.pushPose();
         pose.translate(p.getX() - origin.getX(), p.getY() - origin.getY(), p.getZ() - origin.getZ());
         var dispatcher = Minecraft.getInstance().getBlockRenderer();
@@ -384,6 +399,11 @@ public final class XrayClient implements IGuiOverlay {
             dispatcher.renderBatched(st, p, view, pose, into, true, random, ModelData.EMPTY, type);
         }
         pose.popPose();
+    }
+
+    /** How strongly depth band {@code band} (0 nearest) is drawn: half the level's strength near, down to 30 % of that in the furthest. */
+    private static float bandAlpha(float strength, int band) {
+        return strength * SHELL * (1f - 0.7f * band / (float) (BANDS - 1));
     }
 
     @Nullable
@@ -468,52 +488,87 @@ public final class XrayClient implements IGuiOverlay {
                 RenderType.cutoutMipped().clearRenderState();
             }
             // the shells: see-through, no depth write, fainter the further the band
-            RenderType.translucent().setupRenderState();
-            RenderSystem.depthMask(false);
-            for (int i = 0; i < BANDS; i++) {
-                if (SHELLS[i] == null) {
-                    continue;
+            boolean shaders = BlockShells.shaderPackInUse();
+            if (shaders != shellsForShaders) {
+                ghostsChanged = true; // shaders switched on or off: built for the other layer, so rebuilt at the next scan and not drawn until then
+            } else if (shaders) {
+                // a shader pack's terrain reads the alpha as shading, so its own layer; it drops the faintest, so each band keeps at least that
+                BlockShells.begin();
+                for (int i = 0; i < BANDS; i++) {
+                    float a = BlockShells.floored(bandAlpha(strength, i));
+                    if (SHELLS[i] != null && a > 0f) {
+                        BlockShells.drawOne(SHELLS[i], model, projection, a);
+                    }
                 }
-                float a = strength * SHELL * (1f - 0.7f * i / (float) (BANDS - 1));
-                RenderSystem.setShaderColor(1f, 1f, 1f, a);
-                SHELLS[i].bind();
-                SHELLS[i].drawWithShader(model, projection, RenderSystem.getShader());
-                VertexBuffer.unbind();
+                BlockShells.end(event);
+            } else {
+                RenderType.translucent().setupRenderState();
+                RenderSystem.depthMask(false);
+                for (int i = 0; i < BANDS; i++) {
+                    if (SHELLS[i] == null) {
+                        continue;
+                    }
+                    RenderSystem.setShaderColor(1f, 1f, 1f, bandAlpha(strength, i));
+                    SHELLS[i].bind();
+                    SHELLS[i].drawWithShader(model, projection, RenderSystem.getShader());
+                    VertexBuffer.unbind();
+                }
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+                RenderSystem.depthMask(true);
+                RenderType.translucent().clearRenderState();
             }
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            RenderSystem.depthMask(true);
-            RenderType.translucent().clearRenderState();
             if (MARKS.isEmpty()) {
                 return;
             }
-            // containers and spawners: a lit mark through everything, as before
+            // containers and spawners: a lit mark through everything, as before. With a shader pack the plain colour shader becomes
+            // the pack's "basic" program, which some packs draw half or fully solid and light by the world (BSL raises the alpha to
+            // at least a half, Sildur's turns blending off), so then the marks go through the see-through text background layer
+            // instead: an entity-translucent program to the pack, full bright, which drops the faintest, so each mark keeps at least that
+            boolean shaderMarks = BlockShells.shaderPackInUse();
             pose.pushPose();
             pose.translate(-cam.x, -cam.y, -cam.z);
             Matrix4f m = pose.last().pose();
-            RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
+            RenderType markType = RenderType.textBackgroundSeeThrough();
+            if (shaderMarks) {
+                markType.setupRenderState(); // its shader, blending, no depth write, the lightmap
+                RenderSystem.disableDepthTest(); // "no depth test" in a render type only leaves the test as it was: switched off here
+            } else {
+                RenderSystem.setShader(GameRenderer::getPositionColorShader);
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                RenderSystem.disableDepthTest();
+                RenderSystem.depthMask(false);
+            }
             BufferBuilder b = Tesselator.getInstance().getBuilder();
-            b.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            b.begin(VertexFormat.Mode.QUADS, shaderMarks ? DefaultVertexFormat.POSITION_COLOR_LIGHTMAP : DefaultVertexFormat.POSITION_COLOR);
             for (Mark mark : MARKS) {
                 double d = Math.sqrt(mark.pos.distSqr(mc.player.blockPosition()));
                 float a = strength * mark.alpha * (1f - 0.6f * (float) Math.min(1, d / Math.max(1, radius)));
+                if (shaderMarks) {
+                    a = BlockShells.floored(a); // a strength of 0 stays invisible
+                }
                 int r = (mark.colour >> 16) & 0xFF, g = (mark.colour >> 8) & 0xFF, bl = mark.colour & 0xFF, al = Math.round(a * 255);
                 float x0 = mark.pos.getX() + 0.15f, y0 = mark.pos.getY() + 0.15f, z0 = mark.pos.getZ() + 0.15f, x1 = x0 + 0.7f, y1 = y0 + 0.7f, z1 = z0 + 0.7f;
                 float[][] faces = {{x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1}, {x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0}, {x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1},
                         {x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0}, {x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0}, {x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1}};
                 for (float[] f : faces) {
                     for (int i = 0; i < 4; i++) {
-                        b.vertex(m, f[i * 3], f[i * 3 + 1], f[i * 3 + 2]).color(r, g, bl, al).endVertex();
+                        b.vertex(m, f[i * 3], f[i * 3 + 1], f[i * 3 + 2]).color(r, g, bl, al);
+                        if (shaderMarks) {
+                            b.uv2(LightTexture.FULL_BRIGHT);
+                        }
+                        b.endVertex();
                     }
                 }
             }
             Tesselator.getInstance().end();
-            RenderSystem.depthMask(true);
+            if (shaderMarks) {
+                markType.clearRenderState();
+            } else {
+                RenderSystem.depthMask(true);
+                RenderSystem.disableBlend();
+            }
             RenderSystem.enableDepthTest();
-            RenderSystem.disableBlend();
             pose.popPose();
         }
     }

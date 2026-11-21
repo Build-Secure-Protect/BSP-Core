@@ -4,6 +4,11 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Fixed
+- **A Cloaked base fades in by opacity with a shader pack on.** Walking into a Cloak's aura with shaders (Oculus) showed the whole base at once, drawn black, its colour slowly coming back. The real blocks are now drawn the way shader packs draw see-through things, so they turn from clear to solid with shaders on or off, and fade out the same way when you walk away.
+- **X-ray's see-through rock is see-through with a shader pack on.** With shaders the rock in range was drawn solid and dark instead of as faint glass. With a shader pack on, X-ray now draws it the way shader packs draw see-through things; the furthest rock shows a little stronger than without shaders, the faintest a shader pack still draws. Without shaders X-ray looks as before. Switching shaders on or off while X-ray runs redraws the rock within half a second.
+- **X-ray's gold and red marks stay faint and lit with a shader pack on.** Some shader packs drew them half or fully solid, shaded by the world's light. With a shader pack on they are now drawn full bright and see-through; the faintest gold marks show a little stronger than without shaders, the faintest a shader pack still draws. Without shaders they look as before.
+
 ## [1.20.2] - 2026-11-21
 
 Network protocol 18: servers and clients must both have this version (the projector's CHUNKS tab).
