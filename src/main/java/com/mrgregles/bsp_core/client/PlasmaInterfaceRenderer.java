@@ -39,7 +39,7 @@ public class PlasmaInterfaceRenderer implements BlockEntityRenderer<PlasmaInterf
         BlockPos pos = be.getBlockPos();
         boolean refused = be.getBlockState().hasProperty(PlasmaInterfaceBlock.REFUSED) && be.getBlockState().getValue(PlasmaInterfaceBlock.REFUSED);
         int colour = refused ? RED : be.lit() ? BLUE : GREY;
-        float k = refused ? 0.85f + 0.15f * (float) Math.sin((level.getGameTime() + partialTick) * 0.4) : be.lit() ? 1f : 0.55f;
+        float k = refused ? 0.85f + 0.15f * (float) Math.sin(AnimTime.ticks(partialTick) * 0.4) : be.lit() ? 1f : 0.55f;
         pose.pushPose();
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
         MachineKit kit = new MachineKit(pose, buffers, light);

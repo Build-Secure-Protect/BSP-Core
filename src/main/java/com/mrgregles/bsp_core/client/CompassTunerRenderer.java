@@ -46,7 +46,7 @@ public class CompassTunerRenderer implements BlockEntityRenderer<CompassTunerBlo
         Direction facing = tuner.getBlockState().getValue(CompassTunerBlock.FACING);
         int lit = LevelRenderer.getLightColor(tuner.getLevel(), tuner.getBlockPos().relative(facing));
         int litTop = LevelRenderer.getLightColor(tuner.getLevel(), tuner.getBlockPos().above());
-        float t = (tuner.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         boolean running = tuner.isTuning() && !tuner.clientStalled();
 
         pose.pushPose();

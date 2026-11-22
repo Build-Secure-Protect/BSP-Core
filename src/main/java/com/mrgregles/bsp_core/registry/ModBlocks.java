@@ -40,6 +40,7 @@ public final class ModBlocks {
     public static final RegistryObject<Block> ANTI_TOTEM = BLOCKS.register("anti_totem", com.mrgregles.bsp_core.zone.AntiTotemBlock::new);
 
     public static final RegistryObject<Block> DECOY_TOTEM = BLOCKS.register("decoy_totem", com.mrgregles.bsp_core.decoy.DecoyTotemBlock::new);
+    public static final RegistryObject<Block> DEMO_TOTEM = BLOCKS.register("demo_totem", com.mrgregles.bsp_core.demo.DemoTotemBlock::new);
     public static final RegistryObject<Block> DECOY_POWER_BASE = BLOCKS.register("decoy_power_base", com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlock::new);
     public static final RegistryObject<Block> COMPASS_TUNER = BLOCKS.register("compass_tuner", com.mrgregles.bsp_core.compass.CompassTunerBlock::new);
 

@@ -44,7 +44,7 @@ public class DeceleratorRenderer implements BlockEntityRenderer<DeceleratorBlock
         // inside the core's own block the light is zero: take the brightest of the block in front of it and the one above
         net.minecraft.core.BlockPos p = be.getBlockPos();
         light = Math.max(net.minecraft.client.renderer.LevelRenderer.getLightColor(be.getLevel(), p.relative(be.facing())), net.minecraft.client.renderer.LevelRenderer.getLightColor(be.getLevel(), p.above()));
-        float t = (be.getLevel().getGameTime() + partial) / 20f;
+        float t = AnimTime.ticks(partial) / 20f;
         MeshDraw d = new MeshDraw(buffers);
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);

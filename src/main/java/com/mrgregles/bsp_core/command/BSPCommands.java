@@ -26,6 +26,7 @@ import net.minecraftforge.fml.common.Mod;
  * Operator commands:
  * <pre>
  * /bsp totem give &lt;player&gt;     give a fresh totem owned by that player (ignores the first-join record)
+ * /bsp totem demo [player] [count]  give Demo Totems (yourself without a player; admins only)
  * /bsp totem reset &lt;player&gt;    forget that the player was granted, so first join grants again
  * /bsp totem locate &lt;player&gt;   list where that player's placed totems stand
  * /bsp totem owner              show the owner of the totem in your main hand
@@ -67,6 +68,13 @@ public final class BSPCommands {
                         .then(Commands.literal("give")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::give)))
+                        .then(Commands.literal("demo")
+                                .executes(ctx -> giveDemo(ctx.getSource(), ctx.getSource().getPlayerOrException(), 1))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(ctx -> giveDemo(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"), 1))
+                                        .then(Commands.argument("count", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, com.mrgregles.bsp_core.demo.DemoTotems.MAX_COUNT))
+                                                .executes(ctx -> giveDemo(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "count"))))))
                         .then(Commands.literal("reset")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(BSPCommands::reset)))
@@ -404,6 +412,17 @@ public final class BSPCommands {
         FirstJoinHandler.grant(target, TotemLedger.get(ctx.getSource().getServer()));
         ctx.getSource().sendSuccess(() -> Component.translatable("command.bsp_core.totem.give", target.getDisplayName()), true);
         return 1;
+    }
+
+    /** Demo Totems for an admin; a player who is not an admin gets none. */
+    private static int giveDemo(CommandSourceStack source, ServerPlayer target, int count) {
+        String why = com.mrgregles.bsp_core.demo.DemoTotems.give(target, count);
+        if (why != null) {
+            source.sendFailure(Component.translatable(why, target.getDisplayName()));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.translatable("command.bsp_core.demo.given", count, target.getDisplayName()), true);
+        return count;
     }
 
     private static int reset(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,looks=false": {
+      "model": "bsp_core:block/shatter_totem_owned"
+    },
+    "facing=north,looks=true": {
+      "model": "bsp_core:block/shatter_totem_bare"
+    },
+    "facing=east,looks=false": {
+      "model": "bsp_core:block/shatter_totem_owned",
+      "y": 90
+    },
+    "facing=east,looks=true": {
+      "model": "bsp_core:block/shatter_totem_bare",
+      "y": 90
+    },
+    "facing=south,looks=false": {
+      "model": "bsp_core:block/shatter_totem_owned",
+      "y": 180
+    },
+    "facing=south,looks=true": {
+      "model": "bsp_core:block/shatter_totem_bare",
+      "y": 180
+    },
+    "facing=west,looks=false": {
+      "model": "bsp_core:block/shatter_totem_owned",
+      "y": 270
+    },
+    "facing=west,looks=true": {
+      "model": "bsp_core:block/shatter_totem_bare",
+      "y": 270
+    }
+  }
+}

@@ -3383,5 +3383,15 @@
   "gui.bsp_core.screen.vip.link_ok": "A right-click on the key opens the link prompt",
   "gui.bsp_core.screen.vip.link_none": "No link: the key is hidden",
   "gui.bsp_core.screen.vip.link_bad": "Not a web address: the saved link stays",
-  "gui.bsp_core.screen.vip.link_unsaved": "Saved on Enter, Back or Done"
+  "gui.bsp_core.screen.vip.link_unsaved": "Saved on Enter, Back or Done",
+  "block.bsp_core.demo_totem": "Demo Totem",
+  "tooltip.bsp_core.demo_totem": "Admins only. For show: it does nothing a Shatter Totem does.",
+  "message.bsp_core.demo.place_admins": "Only admins can place demo totems",
+  "message.bsp_core.demo.mine_admins": "Only admins can mine demo totems",
+  "command.bsp_core.demo.given": "Gave %s Demo Totem(s) to %s",
+  "command.bsp_core.demo.not_admin": "%s is not an admin: Demo Totems are for admins only",
+  "message.bsp_core.looks.demo_admins": "Only admins can dress demo totems",
+  "gui.bsp_core.looks.demo_shown": "A demo totem, for show: it does nothing a Shatter Totem does. Only admins change its look.",
+  "gui.bsp_core.looks.plain": "PLAIN",
+  "gui.bsp_core.looks.plain_body": "The totem's own gold body, as on a totem without a look. Pick a hat below, or none."
 }

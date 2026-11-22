@@ -70,12 +70,17 @@ public final class CloakClient {
         }
 
         /** How solid the real blocks are drawn right now, 0..1, from whichever fade is running. */
-        float alpha(float now) {
+        float alpha(long now) {
+            return alpha(now, 0f);
+        }
+
+        /** As {@link #alpha(long)}, a fraction of a tick on: the ticks since the fade began are counted whole first (a float of the game time drops the fraction). */
+        float alpha(long now, float partial) {
             if (revealing()) {
-                return Math.max(0f, Math.min(1f, (now - revealStart) / (float) Math.max(1, fadeTicks())));
+                return Math.max(0f, Math.min(1f, ((now - revealStart) + partial) / (float) Math.max(1, fadeTicks())));
             }
             if (fadingOut()) {
-                return Math.max(0f, Math.min(1f, 1f - (now - fadeOutStart) / (float) Math.max(1, fadeOutTicks())));
+                return Math.max(0f, Math.min(1f, 1f - ((now - fadeOutStart) + partial) / (float) Math.max(1, fadeOutTicks())));
             }
             return 0f;
         }
@@ -325,7 +330,7 @@ public final class CloakClient {
         }
         event.setCanceled(true);
         if (e.revealing() || e.fadingOut()) {
-            FadedEntities.render(event, e.alpha(mc.level.getGameTime() + event.getPartialTick()));
+            FadedEntities.render(event, e.alpha(mc.level.getGameTime(), event.getPartialTick()));
         }
     }
 
@@ -404,7 +409,8 @@ public final class CloakClient {
         if (mc.level == null) {
             return;
         }
-        float now = mc.level.getGameTime() + event.getPartialTick();
+        long now = mc.level.getGameTime();
+        float partial = event.getPartialTick();
         for (Entry e : CLOAKS.values()) {
             if ((e.revealing() || e.fadingOut()) && e.mesh != null) {
                 if (BlockShells.stale(e.mesh)) { // shaders switched on or off mid-fade: built for the other layout
@@ -414,7 +420,7 @@ public final class CloakClient {
                         continue;
                     }
                 }
-                BlockShells.draw(e.mesh, e.origin, event, e.alpha(now));
+                BlockShells.draw(e.mesh, e.origin, event, e.alpha(now, partial));
             }
         }
     }

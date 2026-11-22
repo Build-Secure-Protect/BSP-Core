@@ -19,6 +19,7 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(ModItems.SHATTER_TOTEM.get()))
             .displayItems((params, output) -> {
                 output.accept(ModItems.SHATTER_TOTEM.get());
+                output.accept(ModItems.DEMO_TOTEM.get()); // admins only: the command or this tab
                 output.accept(ModItems.TOTEM_COMPASS.get());
                 output.accept(ModItems.COMPASS_TUNER.get());
                 output.accept(ModItems.COIN_FACTORY.get());

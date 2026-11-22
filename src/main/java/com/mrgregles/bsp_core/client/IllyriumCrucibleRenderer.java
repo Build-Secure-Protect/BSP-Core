@@ -40,7 +40,7 @@ public class IllyriumCrucibleRenderer extends MultiblockGhostRenderer<IllyriumCr
         if (!c.isFormed() || c.getLevel() == null) {
             return;
         }
-        float t = (c.getLevel().getGameTime() + partialTick) / 20f; // seconds, as in the concept page
+        float t = AnimTime.ticks(partialTick) / 20f; // seconds, as in the concept page
         boolean working = c.isWorking();
         float p = c.progressFraction();
         float fuel = c.isDemo() ? 0.75f : c.fluidCapacity() <= 0 ? 0 : Math.min(1f, c.fluidAmount() / (float) c.fluidCapacity());

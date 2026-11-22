@@ -98,7 +98,7 @@ public class LeadLinedChestRenderer implements BlockEntityRenderer<LeadLinedChes
         // the gauge's needle, in front of the dial, trembling a little about a steady reading
         if (type != ChestType.RIGHT) {
             float gx = type == ChestType.SINGLE ? GAUGE_SINGLE_X : GAUGE_LEFT_X;
-            float t = (chest.getLevel().getGameTime() + partial) / 20f + p.asLong() % 7;
+            float t = AnimTime.ticks(partial) / 20f + p.asLong() % 7;
             float angle = -0.6f + (float) Math.sin(t * 0.7) * 0.15f + (float) Math.sin(t * 5.3) * 0.02f;
             pose.pushPose();
             pose.translate(gx / 16, GAUGE_Y / 16, -0.05 / 16); // a quarter pixel in front of the dial's face (z 0.2)

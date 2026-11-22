@@ -84,7 +84,7 @@ public class VendorPostRenderer implements BlockEntityRenderer<VendorPostBlockEn
         }
         Direction facing = post.getBlockState().getValue(VendorPostBlock.FACING);
         boolean open = post.getBlockState().getValue(VendorPostBlock.OPEN);
-        float t = post.getLevel().getGameTime() + partial;
+        float t = AnimTime.ticks(partial); // smooth on an old world (see AnimTime)
         // the lamp overlay on the front
         pose.pushPose();
         pose.translate(0.5, 0, 0.5);

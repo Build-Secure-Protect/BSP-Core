@@ -42,7 +42,7 @@ import java.util.UUID;
  * after which the attempt fails; the thief dying or logging out fails it at once. Success makes
  * the thief the new owner.
  */
-public class ShatterTotemBlockEntity extends BlockEntity {
+public class ShatterTotemBlockEntity extends BlockEntity implements com.mrgregles.bsp_core.looks.Dressable {
     private static final int SYNC_INTERVAL = 20;
 
     @Nullable

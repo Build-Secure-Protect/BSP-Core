@@ -54,7 +54,7 @@ public class LandOfficeRenderer implements BlockEntityRenderer<LandOfficeBlockEn
             return;
         }
         boolean busy = office.inUse();
-        float t = office.getLevel().getGameTime() + partial;
+        float t = AnimTime.ticks(partial);
         pose.pushPose();
         pose.translate(0.5, 0, 0.5);
         pose.mulPose(Axis.YP.rotationDegrees(-yRot(office.getBlockState().getValue(HorizontalDirectionalBlock.FACING))));

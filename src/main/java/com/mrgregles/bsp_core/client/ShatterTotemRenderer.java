@@ -85,7 +85,7 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
     public void render(ShatterTotemBlockEntity totem, float partialTick, PoseStack pose, MultiBufferSource buffers, int packedLight, int packedOverlay) {
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS_TEX);
         long gameTime = totem.getLevel() == null ? 0 : totem.getLevel().getGameTime();
-        float time = gameTime + partialTick;
+        float time = AnimTime.ticks(partialTick); // smooth on an old world; gameTime stays for the sparks' whole ticks
 
         // --- a look: the body and head the bare model leaves out, and the state band round the plinth top
         net.minecraft.world.level.block.state.BlockState state = totem.getBlockState();

@@ -49,7 +49,7 @@ public class CoinVaultRenderer implements BlockEntityRenderer<CoinVaultBlockEnti
         pose.translate(-w / 2.0, 0, -d / 2.0);
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
         MachineKit k = new MachineKit(pose, buffers, lit);
-        float t = (vault.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
 
         // body, one plate per block so the plating is not stretched
         for (int x = 0; x < w; x++) {

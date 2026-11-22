@@ -106,6 +106,46 @@ public final class TotemLooks {
         return null;
     }
 
+    /**
+     * Why the player may not put this look on a Demo Totem, or null when they may: any admin, with a sound look made for them and any
+     * known hat (exclusive ones too). No VIP rank or hat permission is needed, and no owner is asked.
+     */
+    @Nullable
+    public static String demoRefusal(ServerPlayer player, TotemLook look) {
+        if (!com.mrgregles.bsp_core.demo.DemoTotems.isAdmin(player)) {
+            return "demo_admins";
+        }
+        if (!look.owner().equals(player.getUUID())) {
+            return "not_yours";
+        }
+        return look.problem();
+    }
+
+    /** Puts the look on the demo when {@link #demoRefusal} allows it; returns the refusal, or null when it was put on. */
+    @Nullable
+    public static String applyDemo(ServerPlayer player, com.mrgregles.bsp_core.demo.DemoTotemBlockEntity demo, TotemLook look) {
+        String why = demoRefusal(player, look);
+        if (why == null) {
+            demo.setLook(look.madeAt(System.currentTimeMillis()), player.getGameProfile().getName());
+        }
+        return why;
+    }
+
+    /** What the LOOKS tab is told for an admin at a Demo Totem: their own saved looks, with dressing and every hat. Never stored. */
+    public static LookOwner demoRecord(@Nullable LookOwner record) {
+        return demoRecord(record, "");
+    }
+
+    /** As {@link #demoRecord(LookOwner)}, with the demo's plain-body hat in {@code hatChoice} (the tab's draft starts from it). */
+    public static LookOwner demoRecord(@Nullable LookOwner record, String plainHat) {
+        LookOwner r = record == null ? new LookOwner() : record.copy();
+        r.hatChoice = plainHat;
+        r.dressing = true;
+        r.owned.clear();
+        r.owned.addAll(TotemHats.IDS);
+        return r;
+    }
+
     /** Puts the look on the totem when {@link #refusal} allows it; returns the refusal, or null when it was put on. */
     @Nullable
     public static String apply(ServerPlayer player, ShatterTotemBlockEntity totem, TotemLook look) {

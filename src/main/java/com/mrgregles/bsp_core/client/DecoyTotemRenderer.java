@@ -46,18 +46,12 @@ public class DecoyTotemRenderer implements BlockEntityRenderer<DecoyTotemBlockEn
         var facing = totem.getValue(ShatterTotemBlock.FACING);
         var level = decoy.getLevel();
         int lit = Math.max(light, net.minecraft.client.renderer.LevelRenderer.getLightColor(level, decoy.getBlockPos().above()));
-        float time = level.getGameTime() + partialTick;
+        float time = AnimTime.ticks(partialTick);
         Minecraft.getInstance().getBlockRenderer().renderSingleBlock(totem.setValue(ShatterTotemBlock.LOOKS, body != null), pose, buffers, light,
                 OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
-        if (body != null) {
-            var skin = body.head() == com.mrgregles.bsp_core.looks.TotemLook.Head.PLAYER && decoy.getOwner() != null
-                    ? PlayerSkins.get(new com.mrgregles.bsp_core.totem.TotemOwner(decoy.getOwner(), decoy.getOwnerName())) : null;
-            LookBodyDraw.draw(pose, buffers, body, facing, lit, 0, skin);
-            ShatterTotemRenderer.band(pose, buffers, 0); // the same gold band a dressed totem has
-        }
-        if (!hat.isEmpty()) {
-            HatDraw.draw(pose, buffers, hat, facing, body != null && body.hatTint() ? body.mainColour() : null, lit, time);
-        }
+        // the body, the same gold band a dressed totem has, and the hat
+        TotemDress.draw(pose, buffers, body, hat, facing, lit, time,
+                decoy.getOwner() == null ? null : new com.mrgregles.bsp_core.totem.TotemOwner(decoy.getOwner(), decoy.getOwnerName()));
         java.util.UUID leader = ClientScores.leader();
         if (leader != null && leader.equals(decoy.getOwner())
                 && Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(decoy.getBlockPos())) < LeaderGlow.REACH * LeaderGlow.REACH) {
@@ -80,7 +74,7 @@ public class DecoyTotemRenderer implements BlockEntityRenderer<DecoyTotemBlockEn
             disguise(decoy, totem, pose, buffers, light, partialTick);
             return;
         }
-        float t = (decoy.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         pose.pushPose();
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
         MachineKit k = new MachineKit(pose, buffers, light);

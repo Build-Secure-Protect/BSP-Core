@@ -125,6 +125,11 @@ public final class ModBlockEntities {
                     .of(com.mrgregles.bsp_core.decoy.DecoyTotemBlockEntity::new, ModBlocks.DECOY_TOTEM.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.demo.DemoTotemBlockEntity>> DEMO_TOTEM =
+            BLOCK_ENTITIES.register("demo_totem", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.demo.DemoTotemBlockEntity::new, ModBlocks.DEMO_TOTEM.get()).build(null));
+
+    @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlockEntity>> DECOY_POWER_BASE =
             BLOCK_ENTITIES.register("decoy_power_base", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlockEntity::new, ModBlocks.DECOY_POWER_BASE.get()).build(null));

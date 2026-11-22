@@ -112,7 +112,7 @@ public class CoinFactoryRenderer implements BlockEntityRenderer<CoinFactoryBlock
         }
         this.pose = pose;
         this.buffers = buffers;
-        float t = (level.getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         boolean working = f.isWorking(), on = f.isEnabled() || f.isDemo();
         float run = working ? t : 0, lamp = on ? 0.7f + 0.3f * Mth.sin(t * 3) : 0.25f;
         float phase = (f.getBlockPos().asLong() & 7) * 0.8f;
@@ -397,7 +397,7 @@ public class CoinFactoryRenderer implements BlockEntityRenderer<CoinFactoryBlock
 
     /** Build guide: each missing block at half size, gently pulsing, where it must be placed. */
     private void ghosts(CoinFactoryBlockEntity f, Level level, float partialTick, PoseStack pose, MultiBufferSource buffers) {
-        float scale = 0.42f + 0.06f * Mth.sin((level.getGameTime() + partialTick) * 0.15f);
+        float scale = 0.42f + 0.06f * Mth.sin(AnimTime.ticks(partialTick) * 0.15f);
         BlockPos origin = f.getBlockPos();
         var renderer = Minecraft.getInstance().getBlockRenderer();
         for (CoinFactoryBlockEntity.Part part : f.missingParts()) {

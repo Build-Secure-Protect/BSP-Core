@@ -57,7 +57,7 @@ public class AcceleratorRenderer implements BlockEntityRenderer<AcceleratorBlock
         boolean rf = state >= 1, on = state >= 2;
         // the light the dispatcher gives is read inside the intake's own block, which is solid and so dark: take the hole's instead
         light = net.minecraft.client.renderer.LevelRenderer.getLightColor(be.getLevel(), be.hole());
-        float t = (be.getLevel().getGameTime() + partial) / 20f; // seconds
+        float t = AnimTime.ticks(partial) / 20f; // seconds
         MeshDraw d = new MeshDraw(buffers);
         pose.pushPose();
         // the intake's own frame, turned to its facing, then the hole's centre one block up

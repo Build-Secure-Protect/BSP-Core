@@ -66,7 +66,7 @@ public class TotemForgeRenderer extends MultiblockGhostRenderer<TotemForgeBlockE
         if (!c.isFormed() || c.getLevel() == null) {
             return;
         }
-        float t = (c.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         Show s = c.isDemo() ? Show.demo(t) : new Show(c.mouldMask(), c.metalFraction(), c.pourFraction(), c.setFraction());
         boolean hot = c.isDemo() || c.fluidAmount() > 0, rf = c.rfActive();
         // the controller is a solid block, so its own light reads dark: take the light of the hollow above it

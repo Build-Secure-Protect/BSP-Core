@@ -28,7 +28,7 @@ public class StallDisplayRenderer implements BlockEntityRenderer<StallDisplayBlo
         if (display.shown.isEmpty() || display.getLevel() == null) {
             return;
         }
-        float t = display.getLevel().getGameTime() + partial;
+        float t = AnimTime.ticks(partial); // smooth on an old world (see AnimTime)
         pose.pushPose();
         var state = display.getBlockState();
         var skin = display.skin();

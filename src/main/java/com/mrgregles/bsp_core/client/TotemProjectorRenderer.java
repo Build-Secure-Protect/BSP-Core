@@ -28,7 +28,7 @@ public class TotemProjectorRenderer implements BlockEntityRenderer<TotemProjecto
         if (projector.getLevel() == null) {
             return;
         }
-        float t = (projector.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         boolean on = projector.isActive(), standby = !on && projector.hasSignal();
         pose.pushPose();
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);

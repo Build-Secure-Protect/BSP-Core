@@ -107,7 +107,7 @@ public class PlasmaCableRenderer implements BlockEntityRenderer<PlasmaCableBlock
             return;
         }
         float drain = age <= STALE ? 1f : 1f - (age - STALE) / (float) DRAIN;
-        float t = (cable.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         float frac = Mth.clamp(cable.flow() / (float) Math.max(1, BSPConfig.getOr(BSPConfig.PROJECTOR_NEED, 100)), 0.15f, 1f) * drain;
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(PLASMA);
         VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS));

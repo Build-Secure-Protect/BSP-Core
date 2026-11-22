@@ -135,6 +135,7 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.COIN_VAULT.get(), CoinVaultRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LEAD_LINED_CHEST.get(), LeadLinedChestRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DECOY_TOTEM.get(), DecoyTotemRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.DEMO_TOTEM.get(), DemoTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMPASS_TUNER.get(), CompassTunerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_PROJECTOR.get(), TotemProjectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_CABLE.get(), PlasmaCableRenderer::new);

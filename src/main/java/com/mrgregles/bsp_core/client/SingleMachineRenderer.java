@@ -40,7 +40,7 @@ public abstract class SingleMachineRenderer<T extends MachineBlockEntity> implem
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
         this.pose = pose;
         this.k = new MachineKit(pose, buffers, light);
-        draw(machine, (machine.getLevel().getGameTime() + partialTick) / 20f);
+        draw(machine, AnimTime.ticks(partialTick) / 20f);
         pose.popPose();
     }
 

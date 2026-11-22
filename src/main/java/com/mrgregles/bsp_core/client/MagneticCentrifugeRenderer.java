@@ -45,7 +45,7 @@ public class MagneticCentrifugeRenderer extends MultiblockGhostRenderer<Magnetic
         if (!c.isFormed() || c.getLevel() == null) {
             return;
         }
-        float t = (c.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         boolean working = c.isWorking(), coil = c.hasCoil() || c.isDemo(), charging = working && coil && (c.charging() || c.isDemo());
         int layers = c.layers();
 

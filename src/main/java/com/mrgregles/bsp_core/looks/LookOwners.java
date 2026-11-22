@@ -175,6 +175,12 @@ public final class LookOwners extends SavedData {
     /** Saves a look in the owner's list (slot 0 to {@link LookOwner#MAX_SAVED} - 1; the next free one with -1). Returns a refusal, or null. */
     @Nullable
     public String saveLook(ServerPlayer player, int slot, TotemLook look) {
+        return saveLook(player, slot, look, false);
+    }
+
+    /** As {@link #saveLook(ServerPlayer, int, TotemLook)}; {@code demoAdmin}: an admin saving from a Demo Totem's tab, who needs no dressing. */
+    @Nullable
+    public String saveLook(ServerPlayer player, int slot, TotemLook look, boolean demoAdmin) {
         if (!look.owner().equals(player.getUUID())) {
             return "not_yours";
         }
@@ -182,11 +188,12 @@ public final class LookOwners extends SavedData {
         if (problem != null) {
             return problem;
         }
-        if (!TotemLooks.mayDress(player)) {
+        if (!demoAdmin && !TotemLooks.mayDress(player)) {
             return "no_dressing";
         }
         check(player);
-        LookOwner r = owners.get(player.getUUID()).copy();
+        LookOwner r = owners.get(player.getUUID());
+        r = r == null ? new LookOwner() : r.copy(); // an admin without dressing has no record until their first saved look
         if (slot < 0) {
             slot = r.saved.size();
         }

@@ -31,7 +31,7 @@ public class PlasmaInjectorRenderer implements BlockEntityRenderer<PlasmaInjecto
             return;
         }
         Direction facing = injector.getBlockState().getValue(PlasmaInjectorBlock.FACING);
-        float time = injector.getLevel().getGameTime() + partialTick;
+        float time = AnimTime.ticks(partialTick);
         float speed = 0.5f + rate / 250f; // strokes per second, with the rate
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);

@@ -30,7 +30,7 @@ public class MultiblockGhostRenderer<T extends MultiblockControllerBlockEntity> 
         if (missing.isEmpty()) {
             return;
         }
-        float time = controller.getLevel().getGameTime() + partialTick;
+        float time = AnimTime.ticks(partialTick);
         float scale = 0.42f + 0.06f * Mth.sin(time * 0.15f);
         BlockPos origin = controller.getBlockPos();
         var renderer = Minecraft.getInstance().getBlockRenderer();

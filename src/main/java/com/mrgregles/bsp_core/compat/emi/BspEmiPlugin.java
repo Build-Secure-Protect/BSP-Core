@@ -35,6 +35,8 @@ public class BspEmiPlugin implements EmiPlugin {
 
     @Override
     public void register(EmiRegistry registry) {
+        // admins only (a command or the creative tab): players browsing recipes never see it
+        registry.removeEmiStacks(s -> s.getItemStack().is(com.mrgregles.bsp_core.registry.ModItems.DEMO_TOTEM.get()));
         // the TEAM and KITS buttons (and Region Guard's BANNED) in the inventory's top left corner: EMI's panels leave them free
         registry.addGenericExclusionArea((screen, out) -> {
             for (int[] r : com.mrgregles.bsp_core.client.TeamInventoryButton.areas(screen)) {

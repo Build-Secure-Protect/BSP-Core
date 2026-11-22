@@ -46,10 +46,15 @@ public class BspJeiPlugin implements IModPlugin {
         return UID;
     }
 
-    /** Once JEI is running, holding Shift over a multiblock block in JEI opens its Assembly Guide. */
+    /**
+     * Once JEI is running, holding Shift over a multiblock block in JEI opens its Assembly Guide. The Demo Totem is taken out of
+     * the item list: only admins get it (a command or the creative tab), so players browsing recipes never see it.
+     */
     @Override
     public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime runtime) {
         JeiGuideHover.attach(runtime);
+        runtime.getIngredientManager().removeIngredientsAtRuntime(mezz.jei.api.constants.VanillaTypes.ITEM_STACK,
+                java.util.List.of(new net.minecraft.world.item.ItemStack(com.mrgregles.bsp_core.registry.ModItems.DEMO_TOTEM.get())));
     }
 
     @Override

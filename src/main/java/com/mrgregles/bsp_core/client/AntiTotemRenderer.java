@@ -31,7 +31,7 @@ public class AntiTotemRenderer implements BlockEntityRenderer<AntiTotemBlockEnti
         if (zone.getLevel() == null) {
             return;
         }
-        float t = (zone.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         int colour = zone.colour();
         pose.pushPose();
         pose.translate(0.5, 0.5 + Mth.sin(t * 1.5f) * 0.04, 0.5);

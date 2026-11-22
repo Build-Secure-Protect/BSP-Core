@@ -21,7 +21,7 @@ public class PlasmaRepeaterRenderer implements BlockEntityRenderer<PlasmaRepeate
         }
         Direction facing = repeater.getBlockState().getValue(PlasmaRepeaterBlock.FACING);
         boolean on = repeater.flow() > 0;
-        float t = (repeater.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);
         // turn so the model's +x is the block's facing

@@ -56,7 +56,7 @@ public class BankAtmRenderer implements BlockEntityRenderer<BankAtmBlockEntity> 
         if (atm.getLevel() == null || !atm.getBlockState().hasProperty(BankAtmBlock.FACING)) {
             return;
         }
-        float t = (atm.getLevel().getGameTime() + partial);
+        float t = AnimTime.ticks(partial);
         pose.pushPose();
         pose.translate(0.5, 0, 0.5);
         pose.mulPose(Axis.YP.rotationDegrees(-yRot(atm.getBlockState().getValue(BankAtmBlock.FACING))));

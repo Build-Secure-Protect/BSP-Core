@@ -60,7 +60,7 @@ public class MarketStallRenderer implements BlockEntityRenderer<MarketStallBlock
             return;
         }
         StallSkin skin = state.getValue(MarketStallBlock.SKIN);
-        float t = stall.getLevel().getGameTime() + partial;
+        float t = AnimTime.ticks(partial); // smooth on an old world (see AnimTime)
         pose.pushPose();
         pose.translate(0.5, 0, 0.5);
         pose.mulPose(Axis.YP.rotationDegrees(-yRot(state.getValue(MarketStallBlock.FACING))));

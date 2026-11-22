@@ -43,7 +43,7 @@ public class IllyriumRefineryRenderer extends MultiblockGhostRenderer<IllyriumRe
         if (!r.isFormed() || r.getLevel() == null) {
             return;
         }
-        float t = (r.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         boolean working = r.isWorking();
         float p = r.progressFraction();
         float water = r.isDemo() ? 0.75f : r.fluidCapacity() <= 0 ? 0 : Math.min(1f, r.fluidAmount() / (float) r.fluidCapacity());

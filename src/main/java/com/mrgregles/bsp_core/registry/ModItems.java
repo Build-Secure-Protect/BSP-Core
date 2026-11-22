@@ -168,6 +168,7 @@ public final class ModItems {
             () -> new com.mrgregles.bsp_core.zone.AntiTotemBlockItem(ModBlocks.ANTI_TOTEM.get()));
 
     public static final RegistryObject<Item> DECOY_TOTEM = ITEMS.register("decoy_totem", () -> new com.mrgregles.bsp_core.decoy.DecoyTotemBlockItem(ModBlocks.DECOY_TOTEM.get()));
+    public static final RegistryObject<Item> DEMO_TOTEM = ITEMS.register("demo_totem", () -> new com.mrgregles.bsp_core.demo.DemoTotemBlockItem(ModBlocks.DEMO_TOTEM.get()));
     public static final RegistryObject<Item> DECOY_POWER_BASE = ITEMS.register("decoy_power_base",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.DECOY_POWER_BASE.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMPASS_TUNER = ITEMS.register("compass_tuner",

@@ -12,7 +12,7 @@ import com.mrgregles.bsp_core.looks.TotemHats;
 import com.mrgregles.bsp_core.looks.TotemLook;
 import com.mrgregles.bsp_core.registry.ModBlocks;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlock;
-import com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity;
+import com.mrgregles.bsp_core.looks.Dressable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -35,6 +35,8 @@ import java.util.Locale;
  * right BODY (one colour or a gradient, a colour square with a hue strip, eight quick colours, the gradient's stops), HEAD, HAT and
  * SAVE / RESET. The edits are a draft until SAVE puts the look on this totem; the server checks everything. A player without
  * dressing sees the tab locked but for a HAT row of the hats they bought, which chooses the hat for all their undressed totems.
+ * Read-only (a Demo Totem seen by someone who is not an admin): the totem turning in the well in its look, its hat named, nothing
+ * to change.
  */
 public final class LooksTab {
     private static final int TQ = 0xFF19D3B0, SLOT_BG = 0xFF0C0E12, DIM = 0xFF2A2F3A, MUTED = 0xFF9AA3B5, TEXT = 0xFFE8EAF0, HOVER = 0xFF14362F,
@@ -100,16 +102,45 @@ public final class LooksTab {
         ClientLooks.request(at);
     }
 
+    /** Only to look at: a Demo Totem for a player who is not an admin. */
+    private boolean readOnly;
+
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+    /** Open on a Demo Totem: until the server says the player may dress it, the read-only view, never the locked one. */
+    private boolean demo;
+
+    public void setDemo(boolean demo) {
+        this.demo = demo;
+    }
+
+    /**
+     * A demo's draft is the plain baked gold body (a fourth BODY key, PLAIN), wearing only {@link #hat}, as a totem without a look
+     * wears a bought hat. SAVE then sends the hat alone; MY HEAD and the hat in the body's colours do not apply.
+     */
+    private boolean plainBody;
+
+    /** The BODY keys: three on a totem, four on a demo (PLAIN last). */
+    private int bodyKeyW() {
+        return demo ? 42 : 56;
+    }
+
+    private int bodyKeyX(int k) {
+        return X + k * (bodyKeyW() + (demo ? 2 : 3));
+    }
+
     private boolean dressing() {
-        return ClientLooks.pos().equals(pos) && ClientLooks.record().dressing;
+        return !readOnly && ClientLooks.pos().equals(pos) && ClientLooks.record().dressing;
     }
 
     private List<String> owned() {
-        return ClientLooks.pos().equals(pos) ? ClientLooks.record().owned : List.of();
+        return readOnly || demo && !dressing() ? TotemHats.IDS : ClientLooks.pos().equals(pos) ? ClientLooks.record().owned : List.of();
     }
 
     /** Takes the totem's own look into the draft the first time data arrives (and again after a SAVE or RESET came back). */
-    private void sync(@Nullable ShatterTotemBlockEntity totem) {
+    private void sync(@Nullable Dressable totem) {
         if (!ClientLooks.pos().equals(pos) || ClientLooks.version() == seenVersion) {
             return;
         }
@@ -119,6 +150,7 @@ public final class LooksTab {
         }
         TotemLook l = ClientLooks.look();
         if (l != null) {
+            plainBody = false;
             mode = l.mode();
             int[] c = l.colours();
             if (l.mode() == TotemLook.Mode.SOLID) {
@@ -137,6 +169,17 @@ public final class LooksTab {
             head = l.head();
             hat = l.hat();
             hatTint = l.hatTint();
+        } else if (demo) {
+            // a plain demo: start from what it wears, the baked gold body and its hat
+            plainBody = true;
+            mode = TotemLook.Mode.SOLID;
+            bodyMode = mode;
+            solid = 0xE3B341;
+            head = TotemLook.Head.TOTEM;
+            hatTint = false;
+            String h = ClientLooks.record().hatChoice; // the demo's plain hat, sent with the data (the block's update may come later)
+            hat = TotemHats.known(h) ? h : "";
+            hasPainting = false;
         } else {
             // a plain totem: start from plain gold
             mode = TotemLook.Mode.SOLID;
@@ -200,7 +243,7 @@ public final class LooksTab {
 
     // ------------------------------------------------------------------ drawing
 
-    public void renderBg(GuiGraphics g, int x, int y, int mouseX, int mouseY, float partial, @Nullable ShatterTotemBlockEntity totem) {
+    public void renderBg(GuiGraphics g, int x, int y, int mouseX, int mouseY, float partial, @Nullable Dressable totem) {
         sync(totem);
         boolean dress = dressing();
         if (bench && !dress) {
@@ -220,7 +263,49 @@ public final class LooksTab {
         g.fill(x + WELL_X + 1, y + WELL_Y + 1, x + WELL_X + WELL_W - 1, y + WELL_Y + WELL_H - 1, WELL);
         preview(g, x + WELL_X + WELL_W / 2, y + WELL_Y + WELL_H - 14, 64, totem, partial, dress);
 
-        // the saved looks
+        long wait = ClientLooks.waitMs();
+        if (!readOnly) {
+            savedRow(g, x, y, mouseX, mouseY, dress, wait);
+        }
+
+        key(g, x + WELL_X, y + 230, 18, 14, "<", true, false, mouseX, mouseY);
+        key(g, x + WELL_X + 20, y + 230, 18, 14, ">", true, false, mouseX, mouseY);
+        keyC(g, x + WELL_X + 40, y + 230, 84, 14, Component.translatable("gui.bsp_core.looks.see_steal"), true, seeSteal, mouseX, mouseY, BAD);
+
+        if (!dress) {
+            if (readOnly || demo) {
+                shown(g, x, y, mouseX, mouseY, totem);
+            } else {
+                locked(g, x, y, mouseX, mouseY);
+            }
+            return;
+        }
+        rule(g, x + X, y + 22, W, Component.translatable("gui.bsp_core.looks.body"));
+        int kw = bodyKeyW();
+        keyC(g, x + bodyKeyX(0), y + 31, kw, 13, Component.translatable("gui.bsp_core.looks.solid"), true, !plainBody && mode == TotemLook.Mode.SOLID, mouseX, mouseY, TQ);
+        keyC(g, x + bodyKeyX(1), y + 31, kw, 13, Component.translatable("gui.bsp_core.looks.gradient"), true, !plainBody && mode == TotemLook.Mode.GRADIENT, mouseX, mouseY, TQ);
+        keyC(g, x + bodyKeyX(2), y + 31, kw, 13, Component.translatable("gui.bsp_core.looks.paint"), true, !plainBody && mode == TotemLook.Mode.PAINT, mouseX, mouseY, TQ);
+        if (demo) {
+            keyC(g, x + bodyKeyX(3), y + 31, kw, 13, Component.translatable("gui.bsp_core.looks.plain"), true, plainBody, mouseX, mouseY, TQ);
+        }
+        if (plainBody) {
+            int ly = y + SV_Y;
+            for (var line : font.split(Component.translatable("gui.bsp_core.looks.plain_body"), Math.round(W / 0.75f))) {
+                g.pose().pushPose();
+                g.pose().translate(x + X, ly, 0);
+                g.pose().scale(0.75f, 0.75f, 1f);
+                g.drawString(font, line, 0, 0, TEXT, false);
+                g.pose().popPose();
+                ly += 8;
+            }
+            headHatSave(g, x, y, mouseX, mouseY, wait);
+            return;
+        }
+        pageAfterKeys(g, x, y, mouseX, mouseY, wait);
+    }
+
+    /** The saved looks under the well, and the key that keeps the draft among them. */
+    private void savedRow(GuiGraphics g, int x, int y, int mouseX, int mouseY, boolean dress, long wait) {
         small(g, Component.translatable("gui.bsp_core.looks.saved"), x + WELL_X, y + SAVED_Y - 8, MUTED);
         List<TotemLook> saved = dress ? ClientLooks.record().saved : List.of();
         for (int k = 0; k < LookOwner.MAX_SAVED; k++) {
@@ -232,21 +317,11 @@ public final class LooksTab {
                 swatchOf(g, saved.get(k), sx + 3, sy + 3, 14, 8);
             }
         }
-        long wait = ClientLooks.waitMs();
-        key(g, x + WELL_X + 105, y + SAVED_Y, 19, 14, wait > 0 ? String.valueOf((wait + 999) / 1000) : "+", dress, false, mouseX, mouseY);
+        key(g, x + WELL_X + 105, y + SAVED_Y, 19, 14, wait > 0 ? String.valueOf((wait + 999) / 1000) : "+", dress && !plainBody, false, mouseX, mouseY);
+    }
 
-        key(g, x + WELL_X, y + 230, 18, 14, "<", true, false, mouseX, mouseY);
-        key(g, x + WELL_X + 20, y + 230, 18, 14, ">", true, false, mouseX, mouseY);
-        keyC(g, x + WELL_X + 40, y + 230, 84, 14, Component.translatable("gui.bsp_core.looks.see_steal"), true, seeSteal, mouseX, mouseY, BAD);
-
-        if (!dress) {
-            locked(g, x, y, mouseX, mouseY);
-            return;
-        }
-        rule(g, x + X, y + 22, W, Component.translatable("gui.bsp_core.looks.body"));
-        keyC(g, x + X, y + 31, 56, 13, Component.translatable("gui.bsp_core.looks.solid"), true, mode == TotemLook.Mode.SOLID, mouseX, mouseY, TQ);
-        keyC(g, x + X + 59, y + 31, 56, 13, Component.translatable("gui.bsp_core.looks.gradient"), true, mode == TotemLook.Mode.GRADIENT, mouseX, mouseY, TQ);
-        keyC(g, x + X + 118, y + 31, 56, 13, Component.translatable("gui.bsp_core.looks.paint"), true, mode == TotemLook.Mode.PAINT, mouseX, mouseY, TQ);
+    /** The BODY page under its three keys, then HEAD, HAT and SAVE / RESET. */
+    private void pageAfterKeys(GuiGraphics g, int x, int y, int mouseX, int mouseY, long wait) {
         if (mode == TotemLook.Mode.PAINT) {
             long used = java.util.stream.IntStream.range(0, TotemLook.PAINT_PIXELS).map(i -> PaintTools.pixel(paint, i)).distinct().count();
             int ly = y + SV_Y;
@@ -307,16 +382,34 @@ public final class LooksTab {
 
     private void headHatSave(GuiGraphics g, int x, int y, int mouseX, int mouseY, long wait) {
         rule(g, x + X, y + 141, W, Component.translatable("gui.bsp_core.looks.head"));
-        keyC(g, x + X, y + HEAD_Y, 85, 13, Component.translatable("gui.bsp_core.looks.totem_face"), true, head == TotemLook.Head.TOTEM, mouseX, mouseY, TQ);
-        keyC(g, x + X + 89, y + HEAD_Y, 85, 13, Component.translatable("gui.bsp_core.looks.my_head"), true, head == TotemLook.Head.PLAYER, mouseX, mouseY, TQ);
+        keyC(g, x + X, y + HEAD_Y, 85, 13, Component.translatable("gui.bsp_core.looks.totem_face"), !plainBody, plainBody || head == TotemLook.Head.TOTEM, mouseX, mouseY, TQ);
+        keyC(g, x + X + 89, y + HEAD_Y, 85, 13, Component.translatable("gui.bsp_core.looks.my_head"), !plainBody, !plainBody && head == TotemLook.Head.PLAYER, mouseX, mouseY, TQ);
 
         rule(g, x + X, y + 168, W, Component.translatable("gui.bsp_core.looks.hat"));
         hatGrid(g, x, y, mouseX, mouseY, hat, true);
         small(g, hat.isEmpty() ? Component.translatable("gui.bsp_core.looks.no_hat") : Component.translatable("gui.bsp_core.looks.hat." + hat), x + X, y + 225, GOLD);
-        keyC(g, x + X + 96, y + 221, 78, 12, Component.translatable(hatTint ? "gui.bsp_core.looks.hat_body" : "gui.bsp_core.looks.hat_own"), !hat.isEmpty(), hatTint, mouseX, mouseY, TQ);
+        keyC(g, x + X + 96, y + 221, 78, 12, Component.translatable(hatTint && !plainBody ? "gui.bsp_core.looks.hat_body" : "gui.bsp_core.looks.hat_own"), !hat.isEmpty() && !plainBody, hatTint && !plainBody, mouseX, mouseY, TQ);
 
         keyC(g, x + X, y + SAVE_Y, 85, 16, wait > 0 ? Component.translatable("gui.bsp_core.looks.wait", (wait + 999) / 1000) : Component.translatable("gui.bsp_core.looks.save"), wait <= 0, wait <= 0, mouseX, mouseY, TQ);
         keyC(g, x + X + 89, y + SAVE_Y, 85, 16, Component.translatable("gui.bsp_core.looks.reset"), true, false, mouseX, mouseY, TQ);
+    }
+
+    /** A Demo Totem for a player who is not an admin: one line saying what it is, and its hat lit in the grid. */
+    private void shown(GuiGraphics g, int x, int y, int mouseX, int mouseY, @Nullable Dressable totem) {
+        rule(g, x + X, y + 22, W, Component.translatable("gui.bsp_core.looks.body"));
+        int ly = y + 34;
+        for (var line : font.split(Component.translatable("gui.bsp_core.looks.demo_shown"), Math.round(W / 0.75f))) {
+            g.pose().pushPose();
+            g.pose().translate(x + X, ly, 0);
+            g.pose().scale(0.75f, 0.75f, 1f);
+            g.drawString(font, line, 0, 0, TEXT, false);
+            g.pose().popPose();
+            ly += 8;
+        }
+        String worn = totem == null ? "" : totem.shownHat();
+        rule(g, x + X, y + 168, W, Component.translatable("gui.bsp_core.looks.hat"));
+        hatGrid(g, x, y, mouseX, mouseY, worn, false);
+        small(g, worn.isEmpty() ? Component.translatable("gui.bsp_core.looks.no_hat") : Component.translatable("gui.bsp_core.looks.hat." + worn), x + X, y + 225, GOLD);
     }
 
     /** The tab without dressing: one line saying what gives it, and the hats the player has for all their undressed totems. */
@@ -357,7 +450,7 @@ public final class LooksTab {
             String id = ids.get(k);
             boolean have = id.isEmpty() || owned().contains(id);
             boolean on = id.equals(chosen);
-            g.fill(cx, cy, cx + CELL, cy + CELL, on ? TQ : in(mouseX, mouseY, cx, cy, CELL, CELL) && have ? 0xFF3A6058 : DIM);
+            g.fill(cx, cy, cx + CELL, cy + CELL, on ? TQ : in(mouseX, mouseY, cx, cy, CELL, CELL) && have && !readOnly && !(demo && !dressing()) ? 0xFF3A6058 : DIM);
             g.fill(cx + 1, cy + 1, cx + CELL - 1, cy + CELL - 1, SLOT_BG);
             if (id.isEmpty()) {
                 for (int d = 0; d < CELL - 8; d++) {
@@ -390,12 +483,12 @@ public final class LooksTab {
     }
 
     /** The totem turning in the well: the draft on a dressed totem, or what the totem wears now when locked. */
-    private void preview(GuiGraphics g, int cx, int bottom, float scale, @Nullable ShatterTotemBlockEntity totem, float partial, boolean dress) {
+    private void preview(GuiGraphics g, int cx, int bottom, float scale, @Nullable Dressable totem, float partial, boolean dress) {
         Minecraft mc = Minecraft.getInstance();
-        float time = mc.level == null ? 0 : mc.level.getGameTime() + partial;
-        TotemLook body = dress ? draft() : totem == null ? null : totem.shownBody();
+        float time = AnimTime.ticks(); // not the screen's frame delta, and not the game time (a float loses its fraction on an old world)
+        TotemLook body = dress ? plainBody ? null : draft() : totem == null ? null : totem.shownBody();
         String hatNow = dress ? hat : totem == null ? "" : totem.shownHat();
-        if (!dress && ClientLooks.pos().equals(pos)) {
+        if (!dress && !readOnly && !demo && ClientLooks.pos().equals(pos)) {
             hatNow = ClientLooks.record().autoHat().isEmpty() ? hatNow : ClientLooks.record().autoHat();
         }
         PoseStack pose = g.pose();
@@ -404,7 +497,7 @@ public final class LooksTab {
         pose.mulPoseMatrix(new org.joml.Matrix4f().scaling(1, -1, 1));
         pose.scale(scale, scale, scale);
         pose.mulPose(Axis.XP.rotationDegrees(-12));
-        float turn = dragging != null && dragging.equals("well") ? yaw : yaw + (time - spinFrom) * 0.6f;
+        float turn = dragging != null && dragging.equals("well") ? yaw : yaw + AnimTime.since(spinFrom) * 0.6f;
         pose.mulPose(Axis.YP.rotationDegrees(turn));
         pose.translate(-0.5, 0, -0.5);
         Lighting.setupForEntityInInventory();
@@ -414,13 +507,15 @@ public final class LooksTab {
                 .setValue(ShatterTotemBlock.LOOKS, body != null);
         mc.getBlockRenderer().renderSingleBlock(state, pose, g.bufferSource(), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
         if (body != null) {
-            var skin = body.head() == TotemLook.Head.PLAYER && mc.player != null
-                    ? PlayerSkins.get(new com.mrgregles.bsp_core.totem.TotemOwner(mc.player.getUUID(), mc.player.getGameProfile().getName())) : null;
+            // a demo shown as it is wears its dresser's head (or the totem's face); a draft, or a totem's own tab, the viewer's
+            com.mrgregles.bsp_core.totem.TotemOwner skinOf = !dress && (readOnly || demo) ? totem == null ? null : totem.skinOwner()
+                    : mc.player == null ? null : new com.mrgregles.bsp_core.totem.TotemOwner(mc.player.getUUID(), mc.player.getGameProfile().getName());
+            var skin = body.head() == TotemLook.Head.PLAYER && skinOf != null ? PlayerSkins.get(skinOf) : null;
             var texture = dress ? LookTextures.bench(body) : LookTextures.get(body); // a draft changes as it is edited: one texture, rewritten
             LookBodyDraw.draw(pose, g.bufferSource(), texture, Direction.NORTH, LightTexture.FULL_BRIGHT, seeSteal ? LookBodyDraw.stealPulse(time) : 0, skin);
         }
         if (!hatNow.isEmpty()) {
-            HatDraw.draw(pose, g.bufferSource(), hatNow, Direction.NORTH, body != null && hatTint && dress ? body.mainColour() : null, LightTexture.FULL_BRIGHT, time);
+            HatDraw.draw(pose, g.bufferSource(), hatNow, Direction.NORTH, body != null && body.hatTint() ? body.mainColour() : null, LightTexture.FULL_BRIGHT, time);
         }
         g.flush();
         Lighting.setupFor3DItems();
@@ -477,7 +572,7 @@ public final class LooksTab {
         return -1;
     }
 
-    private void benchBg(GuiGraphics g, int x, int y, int mouseX, int mouseY, float partial, @Nullable ShatterTotemBlockEntity totem) {
+    private void benchBg(GuiGraphics g, int x, int y, int mouseX, int mouseY, float partial, @Nullable Dressable totem) {
         pickX = B_X;
         pickY = 148;
         pickW = 104;
@@ -676,10 +771,8 @@ public final class LooksTab {
             return true;
         }
         if (in(mx, my, x + B_X, y + 24, 140, 118)) {
-            Minecraft mc = Minecraft.getInstance();
-            float now = mc.level == null ? 0 : mc.level.getGameTime();
-            yaw += (now - spinFrom) * 0.6f;
-            spinFrom = now;
+            yaw += AnimTime.since(spinFrom) * 0.6f;
+            spinFrom = AnimTime.ticks();
             dragging = "well";
             return true;
         }
@@ -688,17 +781,15 @@ public final class LooksTab {
 
     // ------------------------------------------------------------------ input
 
-    public boolean mouseClicked(double mxd, double myd, int button, int x, int y, @Nullable ShatterTotemBlockEntity totem) {
+    public boolean mouseClicked(double mxd, double myd, int button, int x, int y, @Nullable Dressable totem) {
         int mx = (int) mxd, my = (int) myd;
         boolean dress = dressing();
         if (bench && dress) {
             return benchClicked(mx, my, x, y);
         }
         if (in(mx, my, x + WELL_X, y + WELL_Y, WELL_W, WELL_H)) {
-            Minecraft mc = Minecraft.getInstance();
-            float now = mc.level == null ? 0 : mc.level.getGameTime();
-            yaw += (now - spinFrom) * 0.6f; // keep the turn so far, so the totem does not jump when grabbed
-            spinFrom = now;
+            yaw += AnimTime.since(spinFrom) * 0.6f; // keep the turn so far, so the totem does not jump when grabbed
+            spinFrom = AnimTime.ticks();
             dragging = "well";
             return true;
         }
@@ -709,6 +800,9 @@ public final class LooksTab {
         if (in(mx, my, x + WELL_X + 40, y + 230, 84, 14)) {
             seeSteal = !seeSteal;
             return true;
+        }
+        if (readOnly || demo && !dress) {
+            return false; // a demo seen by a player who is not an admin (or before an admin's data came): nothing else to press
         }
         List<String> ids = new ArrayList<>();
         ids.add("");
@@ -745,17 +839,29 @@ public final class LooksTab {
             }
         }
         if (in(mx, my, x + WELL_X + 105, y + SAVED_Y, 19, 14)) {
-            ClientLooks.send(pos, LookActions.Action.SAVE, -1, "", draft());
+            if (!plainBody) { // a plain body is no look to keep
+                ClientLooks.send(pos, LookActions.Action.SAVE, -1, "", draft());
+            }
             return true;
         }
-        if (in(mx, my, x + X + 118, y + 31, 56, 13)) {
+        if (demo && in(mx, my, x + bodyKeyX(3), y + 31, bodyKeyW(), 13)) {
+            plainBody = true;
+            touched = true;
+            return true;
+        }
+        if (in(mx, my, x + bodyKeyX(2), y + 31, bodyKeyW(), 13)) {
+            plainBody = false;
             openBench();
             return true;
         }
         for (int k = 0; k < 2; k++) {
-            if (in(mx, my, x + X + k * 59, y + 31, 56, 13)) {
+            if (in(mx, my, x + bodyKeyX(k), y + 31, bodyKeyW(), 13)) {
                 TotemLook.Mode m = k == 0 ? TotemLook.Mode.SOLID : TotemLook.Mode.GRADIENT;
                 bodyMode = m;
+                if (plainBody) {
+                    plainBody = false;
+                    touched = true;
+                }
                 if (m != mode) {
                     if (m == TotemLook.Mode.GRADIENT) {
                         selStop = 0;
@@ -767,7 +873,7 @@ public final class LooksTab {
                 return true;
             }
         }
-        if (mode == TotemLook.Mode.PAINT) {
+        if (plainBody || mode == TotemLook.Mode.PAINT) {
             return headHatClicked(mx, my, x, y);
         }
         if (in(mx, my, x + SV_X, y + SV_Y, SV_W, SV_H)) {
@@ -817,18 +923,23 @@ public final class LooksTab {
 
     /** HEAD, the hat's colours, SAVE and RESET, the same on every body page. */
     private boolean headHatClicked(int mx, int my, int x, int y) {
-        if (in(mx, my, x + X, y + HEAD_Y, 85, 13) || in(mx, my, x + X + 89, y + HEAD_Y, 85, 13)) {
+        if (!plainBody && (in(mx, my, x + X, y + HEAD_Y, 85, 13) || in(mx, my, x + X + 89, y + HEAD_Y, 85, 13))) {
             head = in(mx, my, x + X, y + HEAD_Y, 85, 13) ? TotemLook.Head.TOTEM : TotemLook.Head.PLAYER;
             touched = true;
             return true;
         }
-        if (in(mx, my, x + X + 96, y + 221, 78, 12) && !hat.isEmpty()) {
+        if (in(mx, my, x + X + 96, y + 221, 78, 12) && !hat.isEmpty() && !plainBody) {
             hatTint = !hatTint;
             touched = true;
             return true;
         }
         if (in(mx, my, x + X, y + SAVE_Y, 85, 16) && ClientLooks.waitMs() <= 0) {
-            ClientLooks.send(pos, LookActions.Action.PUT, 0, "", draft());
+            if (plainBody) {
+                // a demo's plain body: the server takes any look off and puts the hat on the baked body
+                ClientLooks.send(pos, LookActions.Action.CHOOSE_HAT, LookActions.DEMO_SLOT, hat.isEmpty() ? LookOwner.NO_HAT : hat, null);
+            } else {
+                ClientLooks.send(pos, LookActions.Action.PUT, 0, "", draft());
+            }
             touched = false;
             seenVersion = ClientLooks.version(); // take the server's reply, not the data from before the click
             return true;
@@ -837,6 +948,7 @@ public final class LooksTab {
             ClientLooks.send(pos, LookActions.Action.TAKE_OFF, 0, "", null);
             touched = false;
             seenVersion = ClientLooks.version();
+            plainBody = demo; // a demo goes back to its plain baked body
             mode = TotemLook.Mode.SOLID;
             solid = 0xE3B341;
             head = TotemLook.Head.TOTEM;
@@ -850,6 +962,7 @@ public final class LooksTab {
     }
 
     private void loadFrom(TotemLook l) {
+        plainBody = false;
         mode = l.mode();
         int[] c = l.colours();
         if (l.mode() == TotemLook.Mode.GRADIENT) {
@@ -885,8 +998,7 @@ public final class LooksTab {
 
     public boolean mouseReleased() {
         if (dragging != null && dragging.equals("well")) {
-            Minecraft mc = Minecraft.getInstance();
-            spinFrom = mc.level == null ? 0 : mc.level.getGameTime(); // carry on turning from where it was left
+            spinFrom = AnimTime.ticks(); // carry on turning from where it was left
         }
         boolean was = dragging != null;
         dragging = null;
@@ -943,9 +1055,9 @@ public final class LooksTab {
                     return;
                 }
             }
-            if (in(mouseX, mouseY, x + WELL_X + 105, y + SAVED_Y, 19, 14)) {
+            if (in(mouseX, mouseY, x + WELL_X + 105, y + SAVED_Y, 19, 14) && !plainBody) {
                 g.renderComponentTooltip(font, List.of(Component.translatable("gui.bsp_core.looks.keep_tip")), mouseX, mouseY);
-            } else if (in(mouseX, mouseY, x + X + 118, y + 31, 56, 13)) {
+            } else if (in(mouseX, mouseY, x + bodyKeyX(2), y + 31, bodyKeyW(), 13)) {
                 g.renderComponentTooltip(font, List.of(Component.translatable("gui.bsp_core.looks.paint_tip")), mouseX, mouseY);
             }
         }

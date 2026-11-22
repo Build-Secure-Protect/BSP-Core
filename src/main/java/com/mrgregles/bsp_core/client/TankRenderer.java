@@ -65,7 +65,7 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
         float x0 = 8.05f, y0 = 8.05f, z0 = 8.05f, x1 = (part.w() - 1) * 16 + 7.95f, y1 = (part.h() - 1) * 16 + 7.95f, z1 = (part.d() - 1) * 16 + 7.95f;
         PlasmaRender.tank(vc, pose, sprite, x0, y0, z0, x1, y1, z1, frac);
         float surface = y0 + (y1 - y0) * frac;
-        float t = (part.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         BlockPos min = part.getBlockPos();
         gauge(part, pose, buffers, light, surface, t);
         sweep(part, pose, buffers, light, partialTick);
@@ -234,9 +234,9 @@ public class TankRenderer implements BlockEntityRenderer<TankPartBlockEntity> {
         net.minecraft.core.Direction in = rel.getX() == 0 ? net.minecraft.core.Direction.EAST : rel.getX() == m.w() - 1 ? net.minecraft.core.Direction.WEST
                 : rel.getY() == 0 ? net.minecraft.core.Direction.UP : rel.getY() == m.h() - 1 ? net.minecraft.core.Direction.DOWN
                 : rel.getZ() == 0 ? net.minecraft.core.Direction.SOUTH : net.minecraft.core.Direction.NORTH;
-        float since = part.getLevel().getGameTime() + partialTick - m.lastSpawnAt();
+        float since = (part.getLevel().getGameTime() - m.lastSpawnAt()) + partialTick; // the difference in whole ticks first: a float of the game time drops the fraction
         float flash = since >= 0 && since < 20 ? 1f - since / 20f : 0f;
-        float t = (part.getLevel().getGameTime() + partialTick) / 20f;
+        float t = AnimTime.ticks(partialTick) / 20f;
         VertexConsumer vc = buffers.getBuffer(net.minecraft.client.renderer.RenderType.lightning());
         org.joml.Matrix4f mat = pose.last().pose();
         // the inside face: a soft red glow over the grate, brighter for a moment when a mob appears
