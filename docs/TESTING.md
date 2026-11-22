@@ -4047,3 +4047,12 @@ Covered in part by GameTest `a_click_on_a_screen_finds_its_canvas_point` (where 
 - [ ] Seen from 40 blocks away and more: the banner's gold edges, the key and the head frames do not flicker.
 - [ ] The heads are as bright as the rest of the board on screens facing north, south, east and west.
 - [ ] The guide book, Scores and Seasons, has a page "The VIPs board".
+
+## Magnetic Centrifuge: a stack of nuggets in the upgrade slot (2026-11-22, unreleased)
+Covered by GameTest `automation_centrifuge_upgrade_slot_holds_a_stack_of_nuggets` (64 nuggets go in by hand and by shift-click, one coil only, the Item Hatch puts no nuggets anywhere; formed and powered, one job uses one crystal and one nugget).
+- [ ] Open a formed centrifuge and put a full stack of Magnatite Nuggets in the upgrade slot by hand: all 64 go in. Shift-click a stack from your inventory into an empty upgrade slot: all 64 go in.
+- [ ] With Resonance Crystals in the input slot and the nuggets in the upgrade slot, each Charged Resonance Crystal takes 30 s (20 s with six layers) and uses one nugget: the stack goes 64, 63, 62, ... and the machine keeps going until the crystals or the nuggets run out.
+- [ ] A Copper Tetrium Coil still goes in one at a time, and the centrifuge still charges Magnatite Ingots with it and separates Magnatite Ore as before.
+- [ ] A hopper or pipe on the Item Hatch still fills only the input slot (ore, ingots, crystals); nuggets piped in are refused.
+- [ ] Other machines' upgrade slots (Combination Forge, Illyrium Refinery, the Tetrium Crucible's yield slots) still hold one upgrade each.
+

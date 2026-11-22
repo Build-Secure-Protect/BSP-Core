@@ -38,7 +38,7 @@ import java.util.List;
  *       chance, one in {@code centrifuge.chargeOdds} for the number of layers, to become a Charged
  *       Magnatite Ingot. A failed try leaves the ingot where it is, to be tried again. With six
  *       layers each try is quicker.</li>
- *   <li><b>Magnetising</b> (needs Magnatite Nuggets in the upgrade slot): a Resonance Crystal and
+ *   <li><b>Magnetising</b> (needs Magnatite Nuggets in the upgrade slot, which holds a stack of them): a Resonance Crystal and
  *       one nugget become a Charged Resonance Crystal, the heart of every Plasma Battery and Power Cell.</li>
  * </ul>
  */
@@ -240,6 +240,18 @@ public class MagneticCentrifugeBlockEntity extends MultiblockControllerBlockEnti
             case COIL -> stack.is(ModItems.COPPER_TETRIUM_COIL.get()) || stack.is(ModItems.MAGNATITE_NUGGET.get());
             default -> false;
         };
+    }
+
+    /** The upgrade slot holds a whole stack, so a player can leave a stack of Magnatite Nuggets to magnetise crystal after crystal. */
+    @Override
+    protected int slotCapacity(int slot) {
+        return slot == COIL ? 64 : super.slotCapacity(slot);
+    }
+
+    /** ...but only one Copper Tetrium Coil, whatever its stack size. */
+    @Override
+    protected int stackLimit(int slot, ItemStack stack) {
+        return slot == COIL && stack.is(ModItems.COPPER_TETRIUM_COIL.get()) ? 1 : super.stackLimit(slot, stack);
     }
 
     @Override

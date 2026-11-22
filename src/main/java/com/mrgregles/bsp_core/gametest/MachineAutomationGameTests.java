@@ -467,4 +467,65 @@ public class MachineAutomationGameTests {
         h.assertTrue(be.getItems().getStackInSlot(0).getCount() == 3 && own.extractItem(0, 64, false).isEmpty(), "ore stays in");
         h.succeed();
     }
+
+    /**
+     * The upgrade slot takes a whole stack of Magnatite Nuggets, by hand and by shift-click, but still only one Copper Tetrium Coil; the
+     * Item Hatch still puts no nuggets anywhere. Formed and powered, the centrifuge magnetises one Resonance Crystal with one nugget a job.
+     */
+    @GameTest(template = EMPTY, batch = BATCH, timeoutTicks = 1200)
+    public void automation_centrifuge_upgrade_slot_holds_a_stack_of_nuggets(GameTestHelper h) {
+        final int in = 0, coil = 1, out = 2;
+        BlockPos p = new BlockPos(3, 1, 3);
+        h.setBlock(p, ModBlocks.MAGNETIC_CENTRIFUGE.get().defaultBlockState().setValue(MachineBlock.FACING, Direction.NORTH));
+        MagneticCentrifugeBlockEntity be = (MagneticCentrifugeBlockEntity) h.getBlockEntity(p);
+        var items = be.getItems();
+        ItemStack left = items.insertItem(coil, new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 64), false);
+        h.assertTrue(left.isEmpty() && items.getStackInSlot(coil).getCount() == 64, "the upgrade slot takes 64 nuggets, left over " + left);
+        items.setStackInSlot(coil, ItemStack.EMPTY);
+        left = items.insertItem(coil, new ItemStack(ModItems.COPPER_TETRIUM_COIL.get(), 2), false);
+        h.assertTrue(left.getCount() == 1 && items.getStackInSlot(coil).getCount() == 1, "the upgrade slot holds one coil, got " + items.getStackInSlot(coil));
+        h.assertTrue(items.insertItem(coil, new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 8), false).getCount() == 8, "no nuggets go in beside the coil");
+        items.setStackInSlot(coil, ItemStack.EMPTY);
+        h.assertTrue(items.insertItem(in, new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 8), false).getCount() == 8, "the input slot refuses nuggets");
+
+        var player = MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
+        var menu = new com.mrgregles.bsp_core.machine.MachineMenu(0, player.getInventory(), be, be.data);
+        player.getInventory().setItem(0, new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 64));
+        int hotbar0 = be.layout().size() + 27;
+        h.assertTrue(menu.slots.get(hotbar0).getItem().getCount() == 64, "menu slot " + hotbar0 + " is the first hotbar slot");
+        menu.quickMoveStack(player, hotbar0);
+        h.assertTrue(items.getStackInSlot(coil).is(ModItems.MAGNATITE_NUGGET.get()) && items.getStackInSlot(coil).getCount() == 64
+                && player.getInventory().getItem(0).isEmpty(), "a shift-click moves all 64 nuggets into the upgrade slot, got "
+                + items.getStackInSlot(coil) + " with " + player.getInventory().getItem(0) + " left in the hotbar");
+
+        items.setStackInSlot(in, new ItemStack(ModItems.RESONANCE_CRYSTAL.get(), 2));
+        fillRf(be);
+        for (var part : be.parts()) {
+            h.getLevel().setBlockAndUpdate(part.pos(), part.block().defaultBlockState());
+        }
+        when(h, FORM_TICKS, be::isFormed, () -> {
+            BlockPos hatch = be.itemPorts().get(0);
+            for (Direction d : Direction.values()) {
+                IItemHandler pipe = handler(h, hatch, d);
+                h.assertTrue(pipe != null && pipe.insertItem(coil, new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 4), false).getCount() == 4
+                        && pipe.insertItem(in, new ItemStack(ModItems.MAGNATITE_NUGGET.get(), 4), false).getCount() == 4, "the hatch takes no nuggets from " + d);
+            }
+            when(h, be.workTime() + 300, () -> !items.getStackInSlot(out).isEmpty(), () -> { // one magnetising job, with room to spare
+                h.assertTrue(items.getStackInSlot(out).is(ModItems.CHARGED_RESONANCE_CRYSTAL.get()) && items.getStackInSlot(out).getCount() == 1,
+                        "one job makes one Charged Resonance Crystal, got " + items.getStackInSlot(out));
+                h.assertTrue(items.getStackInSlot(in).getCount() == 1, "one job uses one crystal, " + items.getStackInSlot(in) + " left");
+                h.assertTrue(items.getStackInSlot(coil).getCount() == 63, "one job uses one nugget, " + items.getStackInSlot(coil) + " left");
+                h.succeed();
+            }, "the centrifuge never magnetised a crystal");
+        }, "the centrifuge never formed");
+    }
+
+    /** Fills a machine's RF buffer through its own energy handler, 2000 RF a call as a cable would. */
+    private static void fillRf(MachineBlockEntity m) {
+        var energy = m.getCapability(ForgeCapabilities.ENERGY, null).orElseThrow(IllegalStateException::new);
+        int calls = 0;
+        while (calls++ < 200 && energy.receiveEnergy(2000, false) > 0) {
+            // until the buffer is full
+        }
+    }
 }

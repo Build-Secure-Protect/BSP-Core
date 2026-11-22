@@ -14,6 +14,9 @@ Network protocol 21: servers and clients must both have this version (the VIPs b
   - Staff commands: `/bsp vips` lists the VIPs and the groups read; `/bsp vips refresh` reads them again at once.
   - The guide book's Scores and Seasons entry has a page on the board.
 
+### Fixed
+- **The Magnetic Centrifuge takes a whole stack of Magnatite Nuggets.** Its upgrade slot held one item, like every machine's upgrade slot, so a player making Charged Resonance Crystals had to put a nugget in by hand before each crystal. The slot now holds up to 64 nuggets, by hand or by shift-click, and the centrifuge still uses one nugget for each crystal it magnetises, so a stack lasts 64 crystals. It still holds only one Copper Tetrium Coil. Pipes and hoppers still fill only the input slot, as before; the other machines' upgrade slots are unchanged.
+
 ## [1.21.1] - 2026-11-22
 
 Network protocol 20: servers and clients must both have this version.

@@ -83,8 +83,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
             @Override
             public int getSlotLimit(int slot) {
-                Role role = layout.get(slot).role();
-                return role == Role.UPGRADE || role == Role.RF ? 1 : 64;
+                return slotCapacity(slot);
             }
 
             @Override
@@ -125,6 +124,16 @@ public abstract class MachineBlockEntity extends BlockEntity {
      */
     protected boolean unusableInput(int slot, ItemStack stack) {
         return false;
+    }
+
+    /**
+     * How many items {@code slot} holds at most, whatever they are: one in an upgrade or RF slot, a stack elsewhere. A machine raises it
+     * for an upgrade slot that also takes something it uses up (the Magnetic Centrifuge's Magnatite Nuggets);
+     * {@link #stackLimit} still keeps a single upgrade item to one.
+     */
+    protected int slotCapacity(int slot) {
+        Role role = layout.get(slot).role();
+        return role == Role.UPGRADE || role == Role.RF ? 1 : 64;
     }
 
     /** How many of {@code stack} the slot may hold at most, for pipes, hoppers and the screen alike; a machine lowers it to take only what it can use. */
