@@ -1,0 +1,240 @@
+<title>VIP Board Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&family=VT323&display=swap">
+<style>
+/* Board like the other BSP concept pages: one column of sections, three cards a row; canvases at Score Screen pixel size (64 per panel, drawn 3x). */
+:root{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78;
+  --display:"Oswald",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; }
+.wrap{ max-width:1100px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:30px; }
+h1{ font-family:var(--display); font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:.02em; }
+h2{ font-family:var(--display); font-size:19px; margin:0; color:var(--acc); text-wrap:balance; letter-spacing:.02em; }
+h3{ font-family:var(--display); font-size:15px; margin:0; letter-spacing:.03em; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:80ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; }
+.seg{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.btn{ font:600 12px var(--body); color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:5px 12px; cursor:pointer; }
+.btn[aria-pressed="true"]{ border-color:var(--acc); color:var(--acc); }
+.btn:focus-visible, input:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+label.sl{ font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+.shot{ background:#1b1d22; border-radius:4px; padding:12px; overflow-x:auto; display:flex; justify-content:center; }
+canvas.gui{ display:block; width:100%; height:auto; image-rendering:pixelated; }
+ul.d{ margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:3px; } ul.d b{ color:var(--fg); font-weight:600; }
+.chat{ background:#1b1d22; border-radius:4px; padding:14px; font-family:VT323,ui-monospace,monospace; font-size:20px; line-height:1.15; color:#fff; min-height:120px; display:flex; flex-direction:column; justify-content:flex-end; gap:2px; }
+.chat div{ background:rgba(0,0,0,.45); padding:1px 6px; width:fit-content; max-width:100%; text-shadow:2px 2px 0 #3f3f3f; overflow-wrap:anywhere; }
+.chat .g{ color:#ffaa00; } .chat .a{ color:#55ffff; text-decoration:underline; } .chat .w{ color:#fff; } .chat .gr{ color:#aaaaaa; }
+code{ font-size:12px; }
+</style>
+<div class="wrap">
+<section><h1>VIP Board Concepts</h1>
+<p class="lede">A new board for the Score Screen that shows every VIP as a head tile with their name underneath. An admin's message sits at the top, a second message and the support link at the bottom; only the tiles between them scroll. Each concept is drawn on a 4 by 3 screen at the Score Screen's own pixel size, with made-up players and faces. Everything here is the screen's renderer: the Score Screen block itself does not change.</p>
+<div class="card"><h3>What the pictures assume (the defaults of the questions in chat)</h3>
+<ul class="d">
+<li><b>VIPs:</b> everyone in the LuckPerms group <code>vip</code>, online or not, the same on every server.</li>
+<li><b>Order:</b> alphabetical.</li>
+<li><b>The texts and link</b> are typed in each Score Screen's own settings (section 3). <code>&amp;6</code> turns the top message gold.</li>
+<li><b>The link</b> opens Minecraft's own "open this website?" prompt when a player right-clicks it on the screen (section 4).</li>
+</ul></div>
+<div class="card"><div class="seg" role="group" aria-label="How many VIPs" id="state">
+<button class="btn" data-s="many" aria-pressed="true">18 VIPs (they scroll)</button><button class="btn" data-s="few" aria-pressed="false">4 VIPs (they fit)</button><button class="btn" data-s="none" aria-pressed="false">No VIPs yet</button>
+<button class="btn" id="area" aria-pressed="false">Show where a click opens the link</button>
+<label class="sl" for="speed">Scroll speed (the screen's SPEED setting) <input type="range" id="speed" min="0" max="100" value="40"> <span id="speedV">40</span></label></div></div>
+</section>
+
+<section><h2>1. Three looks on a 4 by 3 screen</h2>
+<div class="grid3">
+<div class="card"><h3>A. Wall of heads</h3><div class="shot"><canvas class="gui" id="c0"></canvas></div><p>The board's usual turquoise title strip ("OUR VIPS"), the top message under it in up to two lines. The middle is a grid of dark tiles, a face with its hat layer and the name under it, rising slowly and fading out under the top message and above the bottom strip. When everyone fits the grid stands still, centred. At the foot a strip with the second message and the address, underlined with a pointer.</p></div>
+<div class="card"><h3>B. Marquee</h3><div class="shot"><canvas class="gui" id="c1"></canvas></div><p>The top message takes the title's place on a purple banner with gold edges, in the VIP tag's colours (no message: "OUR VIPS"). Two rows of heads in gold-edged squares slide sideways like a film strip, the lower row half a tile behind. At the foot the message at the left and a SUPPORT key at the right, with the address small under it.</p></div>
+<div class="card"><h3>C. Portrait gallery</h3><div class="shot"><canvas class="gui" id="c2"></canvas></div><p>A dark velvet wall. The top message on a gold ribbon with notched ends. Each VIP is a portrait in a bevelled gold frame with their name on a brass plate. A row holds for a few seconds, then the wall glides up by one row, like a lift. At the foot the message and the address in gold, with "RIGHT-CLICK TO OPEN" beside it.</p></div>
+</div></section>
+
+<section><h2>2. The same looks on a small 2 by 2 screen</h2>
+<p class="lede">On a small screen the messages drop to one line each and shrink to fit, and the tiles get smaller. Under 2 by 2 there is no room for tiles; the screen shows the two messages and the link only.</p>
+<div class="grid3">
+<div class="card"><h3>A. Wall of heads</h3><div class="shot"><canvas class="gui" id="s0"></canvas></div></div>
+<div class="card"><h3>B. Marquee</h3><div class="shot"><canvas class="gui" id="s1"></canvas></div></div>
+<div class="card"><h3>C. Portrait gallery</h3><div class="shot"><canvas class="gui" id="s2"></canvas></div></div>
+</div></section>
+
+<section><h2>3. Where an admin types the texts</h2>
+<p class="lede">The Score Screen settings (an admin right-clicks the screen). With SHOW on BOARD and the VIPs board picked, the rows that do nothing for this board (look, rotation, layout) give their place to three boxes. In a rotation that includes the VIPs board, a VIP TEXTS key opens the same three boxes. The link is refused unless it starts with <code>http://</code> or <code>https://</code>.</p>
+<div class="grid2">
+<div class="card"><h3>Settings with the VIPs board</h3><div class="shot"><canvas class="gui" id="cfg"></canvas></div><p>TOP and BOTTOM take up to 80 characters each; LINK up to 200. Every change shows on the screen in the world at once, as the other settings do.</p></div>
+<div class="card"><h3>The other way (question VB3, option b)</h3><div class="shot"><canvas class="gui" id="cfg2"></canvas></div><p>Typed once for the whole network with <code>/bsp vips message top|bottom|link &lt;text&gt;</code> (or a page in the admin panel), so every VIP board on every server shows the same words. The screen's settings only pick the board.</p></div>
+</div></section>
+
+<section><h2>4. What a player sees when they click the link</h2>
+<p class="lede">There is no separate window for players: the Score Screen is only a block in the world, so "clicking" is a right-click on the screen. The game works out where on the face the click landed.</p>
+<div class="grid2">
+<div class="card"><h3>Default: Minecraft's own link prompt</h3><div class="shot"><canvas class="gui" id="prompt"></canvas></div><p>A right-click on the link line opens the game's standard prompt with the full address: YES opens the browser, COPY TO CLIPBOARD copies it, NO closes it. A right-click anywhere else on the board does nothing for players; admins get the settings there as now.</p></div>
+<div class="card"><h3>Option: a line in chat</h3><div class="chat" id="chat"><div><span class="gr">[BSP] </span><span class="w">Support the server: </span><span class="a">shop.buildsecureprotect.com/products/vip</span></div></div><p>A right-click anywhere on the VIPs board puts one clickable line in that player's chat (clicking it opens the same prompt). Easier to hit from a distance, but it adds to chat.</p></div>
+</div></section>
+</div>
+
+<script>
+(function(){
+  const el=id=>document.getElementById(id);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const R=3, FONT='VT323, ui-monospace, monospace';
+
+  /* ---------- example data ---------- */
+  const ALL=['Alex','Ash','Dax_77','Juno42','Kira_B','Lumen','Mira','Nyx','Otto','Pip','Quill','Rook','Saga','Tobbe','Vex','Wren','Yara','Zed_9'];
+  const FEW=['Ash','Kira_B','Tobbe','Wren'];
+  const TOP='Thank you to everyone who keeps BSP running!';
+  const BOTTOM='VIPs get Totem Looks, every hat and the gold VIP tag.';
+  const LINK='shop.buildsecureprotect.com/products/vip';
+  let state='many', speed=40, showArea=false;
+
+  /* ---------- made-up 8x8 faces (front of the skin plus a hat layer) ---------- */
+  function hash(s){ let h=7; for(const c of s) h=(h*31+c.charCodeAt(0))>>>0; return h; }
+  function rng(seed){ let s=seed||1; return ()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
+  function shade(hex,f){ const n=parseInt(hex.slice(1),16); const c=[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(v*f)))); return '#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''); }
+  const SKIN=['#f1c7a5','#e0a47b','#c68642','#8d5524','#f5d0b5','#a66a3f'], HAIR=['#2b1d14','#5a3a1e','#d8b25a','#9b2f1f','#1b1b1b','#e8e8e8','#3d6bd1','#7a3fb0'], EYES=['#3b6fd1','#3a8a3a','#5a3a1e','#7a3fb0','#1b1b1b'], CAPS=['#c8382e','#2f6fd6','#2e8b57','#f2b544','#222831'];
+  const FACES={};
+  function faceOf(name){ if(FACES[name]) return FACES[name]; const r=rng(hash(name)); const p=a=>a[Math.floor(r()*a.length)];
+    const sk=p(SKIN), hr=p(HAIR), ey=p(EYES), beard=r()<0.22, cap=r()<0.28?p(CAPS):null, glasses=!cap&&r()<0.2; const fringe=[...Array(8)].map(()=>r()<0.45);
+    const m=[]; for(let y=0;y<8;y++){ const row=[]; for(let x=0;x<8;x++){ let c=sk;
+      if(y<2) c=hr; else if(y===2) c=(x===0||x===7||fringe[x])?hr:sk; else if(y===3) c=(x===0||x===7)?hr:sk;
+      else if(y===4){ if(x===1||x===6) c='#ffffff'; else if(x===2||x===5) c=ey; }
+      else if(y===5){ if(x===3||x===4) c=shade(sk,0.8); }
+      else if(y===6){ if(x>=2&&x<=5) c=beard?shade(hr,0.8):shade(sk,0.62); else if(beard) c=hr; }
+      else if(y===7&&beard&&x>0&&x<7) c=hr;
+      if(cap&&(y<2||(y===2&&x>=0))) c=y===2?shade(cap,0.7):cap;
+      if(glasses&&y===4&&x>=1&&x<=6) c=(x===3||x===4)?'#1b1b1b':(x===1||x===6)?'#1b1b1b':'#9fd4ff';
+      row.push(c); } m.push(row); }
+    return FACES[name]=m; }
+  function face(g,x,y,s,name){ const m=faceOf(name), k=s/8; for(let j=0;j<8;j++) for(let i=0;i<8;i++){ g.fillStyle=m[j][i]; g.fillRect(x+i*k,y+j*k,k+0.02,k+0.02); } }
+
+  /* ---------- drawing helpers (canvas pixels, y down) ---------- */
+  function gui(cv,w,h){ cv.width=w*R; cv.height=h*R; cv.style.maxWidth=Math.round(w*2.4)+'px'; const g=cv.getContext('2d'); g.setTransform(R,0,0,R,0,0); g.imageSmoothingEnabled=false; g.textBaseline='middle'; return g; }
+  function fill(g,x,y,w,h,c){ g.fillStyle=c; g.fillRect(x,y,w,h); }
+  function frame(g,x,y,w,h,c){ fill(g,x,y,w,1,c); fill(g,x,y+h-1,w,1,c); fill(g,x,y,1,h,c); fill(g,x+w-1,y,1,h,c); }
+  function width(g,s,size){ g.font=size+'px '+FONT; return g.measureText(s).width; }
+  /* text centred on y; shrunk to max; align 0 left, .5 centre, 1 right; returns drawn width */
+  function txt(g,s,x,y,c,size,align,max){ size=size||10; align=align||0; const w=width(g,s,size); const k=max&&w>max?max/w:1;
+    g.save(); g.translate(x-w*k*align,y); g.scale(k,k); g.fillStyle=c; g.fillText(s,0,0); g.restore(); return w*k; }
+  function lines(g,s,max,size){ const words=s.split(' '), out=[]; let line=''; for(const wd of words){ const t=line?line+' '+wd:wd; if(line&&width(g,t,size)>max){ out.push(line); line=wd; } else line=t; } if(line) out.push(line); return out; }
+  /* wraps into at most n lines, shrinking the size until it fits */
+  function fitLines(g,s,max,size,n){ let sz=size, ls=lines(g,s,max,sz); while(ls.length>n&&sz>4.5){ sz-=0.5; ls=lines(g,s,max,sz); } if(ls.length>n) ls=n===1?[ls.join(' ')]:[...ls.slice(0,n-1),ls.slice(n-1).join(' ')]; return {ls,sz}; }
+  function para(g,s,cx,y,max,c,size,n,lh){ const f=fitLines(g,s,max,size,n); f.ls.forEach((l,i)=>txt(g,l,cx,y+i*(lh||f.sz*0.95),c,f.sz,0.5,max)); return f.ls.length; }
+  function clip(g,x,y,w,h,fn){ g.save(); g.beginPath(); g.rect(x,y,w,h); g.clip(); fn(); g.restore(); }
+  function fade(g,x,y,w,h,c,down){ const gr=g.createLinearGradient(0,y,0,y+h); const a=c+'ff', b=c+'00'; gr.addColorStop(0,down?a:b); gr.addColorStop(1,down?b:a); g.fillStyle=gr; g.fillRect(x,y,w,h); }
+  function dash(g,x,y,w,h){ g.save(); g.setLineDash([2,2]); g.lineWidth=1; g.strokeStyle='#55ffff'; g.strokeRect(x+0.5,y+0.5,w-1,h-1); g.restore(); txt(g,'CLICK AREA',x+w-2,y-3,'#55ffff',6,1); }
+  function listFor(){ return state==='many'?ALL:state==='few'?FEW:[]; }
+  function screen(g,W,H,bg){ fill(g,0,0,W,H,'#2a2f3a'); fill(g,1,1,W-2,H-2,bg); for(let i=64;i<W;i+=64) fill(g,i,1,1,H-2,'rgba(0,0,0,0.25)'); for(let j=64;j<H;j+=64) fill(g,1,j,W-2,1,'rgba(0,0,0,0.25)'); }
+  const px=t=>t*speed/100*14; /* scroll in canvas pixels per second at this speed */
+
+  /* a grid of tiles in a window: still and centred when it fits, else rising round and round */
+  function grid(g,list,x,y,w,h,tw,th,gap,off,tile){ const n=list.length; const cols=Math.max(1,Math.floor((w+gap)/(tw+gap))), rows=Math.ceil(n/cols), rh=th+gap, total=rows*rh;
+    const x0=x+(w-(cols*(tw+gap)-gap))/2; const pos=(i)=>{ const r=Math.floor(i/cols), c=i%cols, inRow=r===rows-1?n-r*cols:cols; return [x0+c*(tw+gap)+(cols-inRow)*(tw+gap)/2, r*rh]; };
+    clip(g,x,y,w,h,()=>{ if(total-gap<=h){ const y0=y+(h-(total-gap))/2; list.forEach((nm,i)=>{ const p=pos(i); tile(nm,p[0],y0+p[1]); }); return; }
+      const cyc=total+rh*0.5, o=((off%cyc)+cyc)%cyc; for(let k=0;k<3;k++) list.forEach((nm,i)=>{ const p=pos(i), yy=y+p[1]-o+k*cyc; if(yy>y-th&&yy<y+h) tile(nm,p[0],yy); }); });
+    return total-gap>h; }
+
+  /* ---------- A. Wall of heads ---------- */
+  const SB={BG:'#070a0e',TQ:'#19d3b0',GOLD:'#ffd23a',TEXT:'#e8eaf0',MUTED:'#9aa3b5',STRIP:'#10151c',TILE:'#121822',EDGE:'#1f2733'};
+  function conceptA(g,W,H,t){ screen(g,W,H,SB.BG); const small=H<160, u=small?0.72:1, list=listFor();
+    const th=small?12:15; fill(g,3,3,W-6,th,SB.STRIP); txt(g,'OUR VIPS',W/2,3+th/2+0.5,SB.TQ,small?9:12,0.5); fill(g,3,3+th,W-6,1,SB.TQ);
+    let y=3+th+4; const n=para(g,TOP,W/2,y+5*u,W-14,SB.GOLD,small?7:9,small?1:2,9*u); y+=n*9*u+3;
+    const footH=small?24:40, fy=H-3-footH, win=[4,y,W-8,fy-y-3];
+    if(!list.length){ txt(g,'No VIPs yet',W/2,win[1]+win[3]/2,SB.MUTED,small?8:10,0.5); }
+    else { const tw=small?26:40, tH=small?30:44; const moving=grid(g,list,...win,tw,tH,small?3:4,px(t),(nm,x,yy)=>{ fill(g,x,yy,tw,tH,SB.TILE); frame(g,x,yy,tw,tH,SB.EDGE); const fs=small?16:24; face(g,x+(tw-fs)/2,yy+3,fs,nm); txt(g,nm,x+tw/2,yy+tH-(small?5:7),SB.TEXT,small?6:8,0.5,tw-3); });
+      if(moving){ fade(g,win[0],win[1],win[2],6,'#070a0e',true); fade(g,win[0],win[1]+win[3]-6,win[2],6,'#070a0e',false); } }
+    fill(g,3,fy,W-6,footH,SB.STRIP); fill(g,3,fy,W-6,1,SB.EDGE);
+    const m=para(g,BOTTOM,W/2,fy+(small?6:8),W-14,SB.TEXT,small?6.5:8,small?1:2,8);
+    const ly=fy+footH-(small?7:9), lw=txt(g,'▶ '+LINK,W/2,ly,SB.TQ,small?6.5:9,0.5,W-14); fill(g,W/2-lw/2,ly+(small?3.5:4.5),lw,1,SB.TQ);
+    if(showArea) dash(g,4,ly-(small?6:7),W-8,small?12:14); }
+
+  /* ---------- B. Marquee ---------- */
+  const MB={BG:'#0b0812',PUR:'#3b1a5c',PURL:'#5b2a86',GOLD:'#ffd23a',GOLDD:'#a8741a',TEXT:'#ece6f6',MUTED:'#a99bbd',STRIP:'#140f1d'};
+  function conceptB(g,W,H,t){ screen(g,W,H,MB.BG); const small=H<160, list=listFor();
+    const bh=small?18:30; fill(g,3,3,W-6,bh,MB.PUR); fill(g,3,3,W-6,1,MB.GOLD); fill(g,3,3+bh-1,W-6,1,MB.GOLD); fill(g,3,4,W-6,1,MB.PURL);
+    for(let i=8;i<W-8;i+=10){ fill(g,i,3+bh-3,2,1,MB.GOLDD); }
+    para(g,TOP,W/2,3+(small?bh/2:9),W-16,MB.GOLD,small?7:10,small?1:2,11);
+    const footH=small?26:36, fy=H-3-footH, wy=3+bh+4, wh=fy-wy-4;
+    if(!list.length){ txt(g,'No VIPs yet',W/2,wy+wh/2,MB.MUTED,small?8:10,0.5); }
+    else { const rowsN=small?1:2, rh=wh/rowsN, ts=small?20:26, tw=ts+(small?14:18), names=list;
+      clip(g,4,wy,W-8,wh,()=>{ for(let r=0;r<rowsN;r++){ const rowList=names.filter((_,i)=>i%rowsN===r); const total=rowList.length*tw; const fits=total<=W-8;
+        const off=fits?0:((px(t)+r*tw/2)%total); const x0=fits?(W-total)/2:4-off; const yy=wy+r*rh+2;
+        for(let k=0;k<(fits?1:3);k++) rowList.forEach((nm,i)=>{ const x=x0+i*tw+k*total; if(x<-tw||x>W) return; const fx=x+(tw-ts)/2;
+          fill(g,fx-1,yy-1,ts+2,ts+2,MB.GOLD); fill(g,fx,yy,ts,ts,MB.PUR); face(g,fx+2,yy+2,ts-4,nm); txt(g,nm,x+tw/2,yy+ts+(small?5:6),MB.TEXT,small?6:8,0.5,tw-2); }); } });
+      if(!(list.length/(small?1:2)*tw<=W-8)){ g.save(); const gl=g.createLinearGradient(4,0,16,0); gl.addColorStop(0,'#0b0812ff'); gl.addColorStop(1,'#0b081200'); g.fillStyle=gl; g.fillRect(4,wy,12,wh);
+        const gr=g.createLinearGradient(W-16,0,W-4,0); gr.addColorStop(0,'#0b081200'); gr.addColorStop(1,'#0b0812ff'); g.fillStyle=gr; g.fillRect(W-16,wy,12,wh); g.restore(); } }
+    fill(g,3,fy,W-6,footH,MB.STRIP); fill(g,3,fy,W-6,1,MB.GOLDD);
+    const kw=small?54:84, kx=W-6-kw, ky=fy+4, kh=small?11:15;
+    const mw=kx-12; const f=fitLines(g,BOTTOM,mw,small?6:8,small?2:3); f.ls.forEach((l,i)=>txt(g,l,8,fy+(small?7:9)+i*f.sz,MB.TEXT,f.sz,0,mw));
+    fill(g,kx,ky+1,kw,kh,MB.GOLDD); fill(g,kx,ky,kw,kh,MB.GOLD); txt(g,'SUPPORT ▸',kx+kw/2,ky+kh/2+0.5,MB.PUR,small?7:10,0.5,kw-4);
+    txt(g,LINK,kx+kw/2,ky+kh+(small?5:7),MB.MUTED,small?4.5:6,0.5,kw+4);
+    if(showArea) dash(g,kx-2,ky-2,kw+4,kh+(small?9:13)); }
+
+  /* ---------- C. Portrait gallery ---------- */
+  const GB={BG:'#160c20',VEL:'#1e1029',VELL:'#2a173a',GOLD:'#e8b43a',GOLDL:'#ffe08a',GOLDD:'#8a5a12',BRASS:'#c9a25a',BRASSD:'#6e5524',RIB:'#d9a636',TEXT:'#efe7d6',MUTED:'#b6a7c4'};
+  function conceptC(g,W,H,t){ screen(g,W,H,GB.BG); for(let x=2;x<W-2;x+=6) fill(g,x,2,3,H-4,GB.VEL); const small=H<160, list=listFor();
+    const rh=small?14:24, ry=4; fill(g,10,ry,W-20,rh,GB.RIB); fill(g,10,ry,W-20,1,GB.GOLDL); fill(g,10,ry+rh-1,W-20,1,GB.GOLDD);
+    g.fillStyle=GB.GOLDD; g.beginPath(); g.moveTo(3,ry+2); g.lineTo(12,ry+2); g.lineTo(12,ry+rh+2); g.lineTo(3,ry+rh+2); g.lineTo(7,ry+rh/2+2); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(W-3,ry+2); g.lineTo(W-12,ry+2); g.lineTo(W-12,ry+rh+2); g.lineTo(W-3,ry+rh+2); g.lineTo(W-7,ry+rh/2+2); g.closePath(); g.fill();
+    para(g,TOP,W/2,ry+(small?rh/2:7),W-30,'#3a1f08',small?7:9,small?1:2,9);
+    const footH=small?26:38, fy=H-3-footH, wy=ry+rh+5, wh=fy-wy-3;
+    if(!list.length){ txt(g,'No VIPs yet',W/2,wy+wh/2,GB.MUTED,small?8:10,0.5); }
+    else { const fs=small?22:34, tw=fs+(small?8:14), tH=fs+(small?11:15), gap=small?3:4, rowH=tH+gap;
+      /* hold, then glide one row: 4 s per row at speed 40 */
+      const per=speed?Math.max(1.2,160/Math.max(1,speed)):1e9, k=Math.floor(t/per), ph=(t%per)/per, ease=ph<0.75?0:(1-Math.cos((ph-0.75)/0.25*Math.PI))/2;
+      grid(g,list,4,wy,W-8,wh,tw,tH,gap,(k+ease)*rowH,(nm,x,yy)=>{ const fx=x+(tw-fs)/2;
+        fill(g,fx-3,yy-3+3,fs+6,fs+6,GB.GOLDD); fill(g,fx-3,yy,fs+5,fs+5,GB.GOLDL); fill(g,fx-2,yy+1,fs+4,fs+4,GB.GOLD); fill(g,fx,yy+3,fs,fs,GB.VELL);
+        face(g,fx+fs*0.15,yy+3+fs*0.15,fs*0.7,nm);
+        const pw=tw-2, py=yy+fs+(small?5:7); fill(g,x+1,py,pw,small?6:8,GB.BRASS); fill(g,x+1,py+(small?5:7),pw,1,GB.BRASSD); txt(g,nm,x+tw/2,py+(small?3:4.5),'#2a1a06',small?5:7,0.5,pw-2); });
+      fade(g,4,wy,W-8,5,'#160c20',true); fade(g,4,wy+wh-5,W-8,5,'#160c20',false); }
+    fill(g,3,fy,W-6,footH,'#0d0714'); fill(g,3,fy,W-6,1,GB.GOLDD);
+    para(g,BOTTOM,W/2,fy+(small?6:8),W-16,GB.MUTED,small?6:8,small?1:2,8);
+    const ly=fy+footH-(small?7:10); const hint=small?'':'  RIGHT-CLICK TO OPEN'; const hw=hint?width(g,hint,6):0, lw=Math.min(width(g,LINK,small?6.5:8.5),W-14-hw), x0=W/2-(lw+hw)/2;
+    txt(g,LINK,x0,ly,GB.GOLD,small?6.5:8.5,0,lw); fill(g,x0,ly+4,lw,1,GB.GOLD); if(hint) txt(g,hint,x0+lw,ly,GB.MUTED,6,0);
+    if(showArea) dash(g,4,ly-7,W-8,14); }
+
+  const CONCEPTS=[conceptA,conceptB,conceptC];
+  const big=[0,1,2].map(i=>gui(el('c'+i),256,192)), sm=[0,1,2].map(i=>gui(el('s'+i),128,128));
+
+  /* ---------- 3. settings (ScoreScreenConfigScreen colours, 330 x 276) ---------- */
+  const CF={BG:'#10151c',VIO:'#b58cff',SLOT:'#0c0e12',DIM:'#2a2f3a',MUTED:'#9aa3b5',TEXT:'#e8eaf0'};
+  function chip(g,x,y,s,on){ const w=width(g,s,9)+8; fill(g,x,y,w,14,on?'#241a3a':CF.SLOT); frame(g,x,y,w,14,on?CF.VIO:CF.DIM); txt(g,s,x+4,y+7.5,on?CF.VIO:CF.MUTED,9); return w+3; }
+  function box(g,x,y,w,s,hint,cur){ fill(g,x,y,w,15,CF.SLOT); frame(g,x,y,w,15,cur?'#ffffff':CF.DIM); txt(g,s+(cur?'_':''),x+4,y+8,CF.TEXT,9,0,w-30); if(hint) txt(g,hint,x+w-4,y+8,CF.MUTED,7,1); }
+  function settings(cv){ const W=330,H=276,g=gui(cv,W,H); fill(g,0,0,W,H,CF.BG); frame(g,0,0,W,H,CF.DIM); txt(g,'SCORE SCREEN',W/2,12,CF.VIO,11,0.5);
+    const rows=[['SHOW',g2=>{ let x=86; ['BOARD','RULES','PRIZES','ONE BOARD','ROTATE'].forEach(s=>x+=chip(g2,x,0,s,s==='ONE BOARD')); }],
+      ['BOARD',g2=>{ let x=86; ['MARKET','WANTED','LOTTERY','BOUNTIES','VIPS'].forEach(s=>x+=chip(g2,x,0,s,s==='VIPS')); }],
+      ['TOP',g2=>box(g2,86,0,234,'&6Thank you to everyone who keeps BSP run','47/80',true)],
+      ['BOTTOM',g2=>box(g2,86,0,234,'VIPs get Totem Looks, every hat and th','52/80')],
+      ['LINK',g2=>box(g2,86,0,234,'https://shop.buildsecureprotect.com/pro','')],
+      ['FONT',g2=>{ let x=86; ['MINECRAFT','UNIFORM','BOLD'].forEach(s=>x+=chip(g2,x,0,s,s==='MINECRAFT')); }],
+      ['SIZE',g2=>{ let x=86; ['-'].forEach(s=>x+=chip(g2,x,0,s)); txt(g2,'100%',x+4,7.5,CF.TEXT,9); chip(g2,x+34,0,'+'); }],
+      ['SPEED',g2=>{ let x=86; x+=chip(g2,x,0,'-'); txt(g2,'40',x+4,7.5,CF.TEXT,9); chip(g2,x+22,0,'+'); txt(g2,'0 STANDS STILL',x+44,7.5,CF.MUTED,7); }],
+      ['HEADING',g2=>box(g2,86,0,234,'OUR VIPS','')]];
+    rows.forEach((r,i)=>{ const y=26+i*22-3; txt(g,r[0],10,y+8,CF.MUTED,9); g.save(); g.translate(0,y); r[1](g); g.restore(); });
+    txt(g,'The link must start with http:// or https://',W/2,H-14,CF.MUTED,8,0.5); }
+  function settings2(cv){ const W=330,H=150,g=gui(cv,W,H); fill(g,0,0,W,H,'#000000'); g.fillStyle='rgba(0,0,0,0.5)'; g.fillRect(0,H-30,W,30);
+    const L=[['#aaaaaa','> /bsp vips message top &6Thank you to everyone who keeps BSP running!'],['#55ff55','[BSP] The top message of every VIP board is set.'],['#aaaaaa','> /bsp vips message link https://shop.buildsecureprotect.com/products/vip'],['#55ff55','[BSP] The support link of every VIP board is set.']];
+    L.forEach((l,i)=>{ fill(g,4,10+i*16,W-8,14,'rgba(0,0,0,0.45)'); txt(g,l[1],8,17+i*16,l[0],9,0,W-16); });
+    fill(g,4,H-22,W-8,14,'rgba(255,255,255,0.08)'); txt(g,'> /bsp vips message bottom _',8,H-15,'#ffffff',9); }
+
+  /* ---------- 4. Minecraft's link prompt (ConfirmLinkScreen) ---------- */
+  function mcButton(g,x,y,w,s){ fill(g,x,y,w,20,'#000000'); fill(g,x+1,y+1,w-2,18,'#6f6f6f'); fill(g,x+1,y+1,w-2,1,'#a8a8a8'); fill(g,x+1,y+18,w-2,1,'#4a4a4a'); txt(g,s,x+w/2,y+10.5,'#ffffff',10,0.5); }
+  function prompt(cv){ const W=330,H=170,g=gui(cv,W,H); fill(g,0,0,W,H,'#1d2430'); for(let i=0;i<18;i++){ fill(g,(i*37)%W,(i*53)%H,20,14,'rgba(255,255,255,0.04)'); } fill(g,0,0,W,H,'rgba(0,0,0,0.55)');
+    txt(g,'Are you sure you want to open the following website?',W/2,40,'#ffffff',10,0.5,W-20);
+    txt(g,'https://'+LINK,W/2,58,'#ffffff',10,0.5,W-20); txt(g,"Never open links from people that you don't trust!",W/2,76,'#ff5555',10,0.5,W-20);
+    mcButton(g,16,110,96,'Yes'); mcButton(g,117,110,96,'Copy to Clipboard'); mcButton(g,218,110,96,'No'); }
+
+  function drawAll(t){ CONCEPTS.forEach((f,i)=>{ f(big[i],256,192,t); f(sm[i],128,128,t); }); }
+  function still(){ drawAll(0); settings(el('cfg')); settings2(el('cfg2')); prompt(el('prompt')); }
+  still(); if(document.fonts) document.fonts.ready.then(still);
+  let t0=performance.now(); function loop(now){ drawAll((now-t0)/1000); requestAnimationFrame(loop); } if(!reduce) requestAnimationFrame(loop);
+
+  el('state').querySelectorAll('button[data-s]').forEach(b=>b.addEventListener('click',()=>{ el('state').querySelectorAll('button[data-s]').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false')); state=b.dataset.s; if(reduce) drawAll(0); }));
+  el('area').addEventListener('click',()=>{ showArea=!showArea; el('area').setAttribute('aria-pressed',showArea?'true':'false'); if(reduce) drawAll(0); });
+  el('speed').addEventListener('input',e=>{ speed=+e.target.value; el('speedV').textContent=speed; if(reduce) drawAll(0); });
+})();
+</script>
