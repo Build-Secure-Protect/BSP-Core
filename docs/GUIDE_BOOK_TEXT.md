@@ -232,7 +232,7 @@ The bottom of the totem's screen says what ends it.
 
 **Page 1**  `[item shown] decoy_totem`
 
-A fake totem. While it has power, rival Totem Compasses within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.
+A fake totem. While it has power, rival Totem Compasses within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem, dressed like your nearest totem. You see the idol with a ghost of the totem around it.
 
 You may have five placed.
 
@@ -283,6 +283,34 @@ The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Pris
 **Page 11**  `[recipe] warp_charge`
 
 **Page 12**  `[recipe] reinforced_casing`
+
+## Totem Looks
+
+**Page 1**
+
+Your totems can be dressed. Open a placed totem of yours and choose **LOOKS**.
+
+With the VIP rank you choose the body: one colour, a gradient of two or three, or paint it pixel by pixel. Then the head, the totem's own or yours, and a hat.
+
+Each totem has its own look. **SAVED LOOKS** keeps five to put on your other totems.
+
+**Page 2: Hats**
+
+Thirteen hats, from a top hat and a halo to a beer cap and a propeller cap. VIP has them all; a hat can also be bought on its own.
+
+A hat of your own is worn by all your totems that have no look of their own, with or without VIP. A hat can take the body's colours.
+
+**Page 3: Who sees what**
+
+A look belongs to its owner: a stolen totem is plain for its thief. When the VIP rank ends, your totems are plain gold until it returns, and then their looks come back.
+
+A totem being stolen still pulses red, and a gold band round its base shows whatever its colours.
+
+**Page 4: The leader's glow**
+
+The player with the most points glows. All their totems wear a thin gold glow and give off gold sparks.
+
+If two players share the most points, nobody glows. The sparks can be switched off in the client settings.
 
 ## Plasma and Projectors
 

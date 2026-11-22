@@ -7,6 +7,8 @@ public final class BSPClientConfig {
     public static final ForgeConfigSpec SPEC;
     /** Whether aura cubes are drawn for this player. Also switched from the totem panel's header and a keybind. */
     public static final ForgeConfigSpec.BooleanValue SHOW_AURAS;
+    /** Whether the Score Leader's totems give off sparks for this player. */
+    public static final ForgeConfigSpec.BooleanValue LEADER_SPARKS;
     /** Whether the TEAM button is drawn above the inventory. */
     public static final ForgeConfigSpec.BooleanValue TEAM_BUTTON, KITS_BUTTON;
     /** How big the shop screens are drawn, in percent, where the window has room. */
@@ -16,6 +18,9 @@ public final class BSPClientConfig {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
         b.comment("What this player sees").push("auras");
         SHOW_AURAS = b.comment("Draw the aura cubes of totems and projectors. Hiding them changes nothing about what they do.").define("showAuras", true);
+        b.pop();
+        b.comment("Totem looks").push("looks");
+        LEADER_SPARKS = b.comment("Show the gold sparks rising from the Score Leader's totems. The gold glow stays. Minecraft's own Particles setting also thins them out.").define("leaderSparks", true);
         b.pop();
         b.comment("Teams").push("team");
         TEAM_BUTTON = b.comment("Draw the TEAM button above the inventory, which opens the Team screen. Turn it off if another mod's button sits there; the key binding and the totem screens still open it.").define("teamButton", true);
@@ -34,6 +39,10 @@ public final class BSPClientConfig {
 
     public static boolean showAuras() {
         return BSPConfig.getOr(SHOW_AURAS, true);
+    }
+
+    public static boolean leaderSparks() {
+        return BSPConfig.getOr(LEADER_SPARKS, true);
     }
 
     public static boolean teamButton() {

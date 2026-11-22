@@ -250,9 +250,10 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         }
     }
 
-    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, T_ACCESS = 3, T_TEAM = 4, MAP_TILE = 24, ACC_ROW = 18, ACC_Y = TREE_Y + 22, ACC_COL = 118, ACC_W = 40, ACC_GAP = 46;
+    private static final int T_TOTEM = 0, T_CHUNKS = 1, T_OPERATOR = 2, T_ACCESS = 3, T_TEAM = 4, T_LOOKS = 5, MAP_TILE = 24, ACC_ROW = 18, ACC_Y = TREE_Y + 22, ACC_COL = 118, ACC_W = 40, ACC_GAP = 46;
     private static final int[] ACC_FLAGS = {com.mrgregles.bsp_core.totem.TotemAccess.UPGRADES, com.mrgregles.bsp_core.totem.TotemAccess.ALARM, com.mrgregles.bsp_core.totem.TotemAccess.WARD, com.mrgregles.bsp_core.totem.TotemAccess.MACHINES};
-    private boolean chunksTab, accessTab;
+    private boolean chunksTab, accessTab, looksTab;
+    private LooksTab looks;
     private EditBox nameBox;
     private Button addButton;
     private int chunkTicks;
@@ -280,6 +281,9 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (admin) {
             out.add(T_OPERATOR);
         }
+        if (isOwner()) {
+            out.add(T_LOOKS); // dressing the totem; locked but for bought hats without the VIP rank
+        }
         if (isOwner() || teammate()) {
             if (!out.contains(T_TOTEM)) {
                 out.add(0, T_TOTEM);
@@ -300,7 +304,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     }
 
     private int currentTab() {
-        return operatorTab ? T_OPERATOR : chunksTab ? T_CHUNKS : accessTab ? T_ACCESS : T_TOTEM;
+        return operatorTab ? T_OPERATOR : chunksTab ? T_CHUNKS : accessTab ? T_ACCESS : looksTab ? T_LOOKS : T_TOTEM;
     }
 
     private void setTab(int tab) {
@@ -311,6 +315,13 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         operatorTab = tab == T_OPERATOR;
         chunksTab = tab == T_CHUNKS;
         accessTab = tab == T_ACCESS;
+        looksTab = tab == T_LOOKS;
+        if (looksTab) {
+            if (looks == null) {
+                looks = new LooksTab(font);
+            }
+            looks.open(menu.getPos());
+        }
         if (chunksTab) {
             ChunkMap.request(menu.getPos());
         }
@@ -325,6 +336,9 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (accessTab && !(isOwner() || admin)) {
             accessTab = false;
         }
+        if (looksTab && !isOwner()) {
+            looksTab = false; // stolen while the tab was open
+        }
         if (nameBox != null) {
             nameBox.setVisible(accessTab);
             addButton.visible = accessTab;
@@ -333,7 +347,7 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 nameBox.setFocused(false);
             }
         }
-        boolean canSteal = !operatorTab && !chunksTab && !accessTab && totem != null && !isOwner() && !teammate() && totem.getSteal().isEmpty();
+        boolean canSteal = !operatorTab && !chunksTab && !accessTab && !looksTab && totem != null && !isOwner() && !teammate() && totem.getSteal().isEmpty();
         stealButton.visible = canSteal;
         stealButton.active = canSteal;
         for (Button b : adminButtons) {
@@ -433,6 +447,9 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
                 }
             }
         }
+        if (looksTab && looks != null) {
+            return looks.mouseClicked(mx, my, button, x, y, menu.getTotem()) || super.mouseClicked(mx, my, button);
+        }
         if (accessTab) {
             ShatterTotemBlockEntity totem = menu.getTotem();
             if (totem != null) {
@@ -495,6 +512,22 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     }
 
     @Override
+    public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+        if (looksTab && looks != null && looks.mouseDragged(mx, my, dx, leftPos, topPos)) {
+            return true;
+        }
+        return super.mouseDragged(mx, my, button, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(double mx, double my, int button) {
+        if (looksTab && looks != null && looks.mouseReleased()) {
+            return true;
+        }
+        return super.mouseReleased(mx, my, button);
+    }
+
+    @Override
     public boolean keyPressed(int key, int scan, int mods) {
         if (nameBox != null && nameBox.isFocused()) {
             if (key == GLFW.GLFW_KEY_ESCAPE) {
@@ -527,7 +560,10 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
-        Buff hover = chunksTab || accessTab ? null : tree.nodeAt(mouseX, mouseY, leftPos + TREE_X, topPos + TREE_Y);
+        Buff hover = chunksTab || accessTab || looksTab ? null : tree.nodeAt(mouseX, mouseY, leftPos + TREE_X, topPos + TREE_Y);
+        if (looksTab && looks != null) {
+            looks.renderTooltips(g, mouseX, mouseY, leftPos, topPos);
+        }
         if (hover != null) {
             g.renderTooltip(font, Component.translatable("gui.bsp_core.tree.node", Component.translatable(hover.translationKey()), level(hover), hover.maxLevel()), mouseX, mouseY);
         }
@@ -596,6 +632,10 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         g.fill(kx + 1, sy + 2, kx + 7, sy + SWITCH_H - 2, 0xFF8A909C);
         if (accessTab) {
             accessRows(g, x, y, mouseX, mouseY);
+            return;
+        }
+        if (looksTab && looks != null) {
+            looks.renderBg(g, x, y, mouseX, mouseY, partialTick, menu.getTotem());
             return;
         }
         if (chunksTab) {
@@ -727,18 +767,20 @@ public class ShatterTotemScreen extends AbstractContainerScreen<ShatterTotemMenu
         if (tabs().length < 2) {
             head += "  " + Component.translatable("gui.bsp_core.tree.tier", TotemUpgrades.roman(tier())).getString();
         }
-        g.drawString(font, CashMachine.cut(font, head, aurasX() - 14), 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false); // clear of the AURAS switch
+        if (aurasX() - 14 > 24) { // six tabs leave no room for the title
+            g.drawString(font, CashMachine.cut(font, head, aurasX() - 14), 10, 7, (operatorTab ? VIO : TQ) & 0xFFFFFF, false); // clear of the AURAS switch
+        }
         boolean shown = com.mrgregles.bsp_core.BSPClientConfig.showAuras();
         Component auras = Component.translatable("gui.bsp_core.tree.auras.label");
         small(g, auras, aurasX(), 7, shown ? TQ & 0xFFFFFF : MUTED);
         int[] tabs = tabs();
-        String[] tabKeys = {"totem", "chunks", "operator", "access", "team"};
+        String[] tabKeys = {"totem", "chunks", "operator", "access", "team", "looks"};
         for (int i = 0; i < tabs.length; i++) {
             Component label = Component.translatable("gui.bsp_core.tree.tab." + tabKeys[tabs[i]]);
             small(g, label, tabX(i, tabs.length) + TAB_W / 2 - font.width(label) * 3 / 8, 7, tabs[i] != currentTab() ? MUTED : (tabs[i] == T_OPERATOR ? VIO : TQ) & 0xFFFFFF);
         }
         ShatterTotemBlockEntity totem = menu.getTotem();
-        if (totem == null || operatorTab || accessTab) {
+        if (totem == null || operatorTab || accessTab || looksTab) {
             return;
         }
         Component ownerLine = totem.getOwner()

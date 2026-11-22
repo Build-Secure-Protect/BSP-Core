@@ -3854,7 +3854,7 @@ The rules (an Anchor carries its totem's owner and editors; a projector holds ch
 - [ ] Restart the server with a projector holding chunks from a Projector Base fed by two of the owner's totems: its picked chunks are still picked afterwards.
 - [ ] The CHUNKS tab's new red lines stay inside the panel at the default GUI scale and at scale 3.
 
-## Cloak fade with and without shaders (2026-11-21, unreleased)
+## Cloak fade with and without shaders (2026-11-21, 1.21.0)
 Set up as in "Cloaking: generated land and hidden players": a totem with Cloaking and a base around it, viewed by an outsider (or an operator after `/bsp cloak see off`). Walk into the aura and back out for each line.
 - [ ] Shaders off: walking in, the real blocks fade in over the fake land from clear to solid over `effects.cloakFadeSeconds`, then the real blocks take over without a jump in brightness. Block sides are shaded about as the real blocks are (tops brightest), and the shading does not change as you turn the camera. Walking out, the base fades out over the fake land.
 - [ ] The same with each shader pack in turn: BSL, Complementary Reimagined, Bliss, MakeUp, Sildur's. The blocks are never black or dark at the start; they start clear and turn solid. Note any pack where they look too bright, unlit or a different colour while fading, or flicker.
@@ -3863,7 +3863,7 @@ Set up as in "Cloaking: generated land and hidden players": a totem with Cloakin
 - [ ] Switch shaders on (or off) in the middle of a fade-in: the fade carries on in the right look, with no garbled or flickering blocks.
 - [ ] After a fade, with shaders off, mobs, dropped items and players nearby are lit as usual (the fade leaves the world's lighting as it found it).
 
-## X-ray with and without shaders (2026-11-21, unreleased)
+## X-ray with and without shaders (2026-11-21, 1.21.0)
 Hold a Wave Emitter with X-ray stamped (or `/bsp totem buff xray 3` on a held totem) and press X underground.
 - [ ] Shaders off: X-ray looks exactly as before: faint glass rock, fainter the further, the furthest band still just visible; ores bright; gold and red marks.
 - [ ] The same with each shader pack in turn: BSL, Complementary Reimagined, Bliss, MakeUp, Sildur's. The rock is see-through faint glass, never solid or black. The furthest rock is a little stronger than with shaders off. Ores still show bright through it. Note any pack where the rock is unlit, too bright, flickers or is missing.
@@ -3871,3 +3871,117 @@ Hold a Wave Emitter with X-ray stamped (or `/bsp totem buff xray 3` on a held to
 - [ ] Switch shaders on (or off) while X-ray runs: for under half a second the rock is not drawn, then it is back in the right look. No crash, no leftover ghosts once X-ray ends.
 - [ ] With shaders off after X-ray, mobs, dropped items and players nearby are lit as usual.
 - [ ] With `xrayStrength` set to 0 for the carried level, X-ray shows no rock and no marks, with shaders on or off.
+
+## Totem looks, part 1: the look a totem keeps (2026-11-21, 1.21.0)
+Server-side checks. Use an operator.
+- [ ] After a start, the server config has a `[looks]` section with `exclusiveHats = []` and the hat ids in its comment.
+- [ ] Hold a Shatter Totem and run `/bsp looks show`: it says the held totem is plain. Look at a placed totem with empty hands: it says the same for the placed one. Look at nothing: it asks you to hold or look at a totem.
+- [ ] `/bsp looks clear` on a plain totem says it is plain and logs nothing.
+- [ ] A moderator who is not an operator can run `/bsp looks show`; a player who is neither cannot see the command.
+- [ ] Place, pick up and place a totem again, and restart the server: nothing about the totem changes (no errors in the log about a look).
+
+## Totem looks, part 2: what each owner has (2026-11-21, 1.21.0)
+Needs LuckPerms; use two test players, A and B. Use `/bsp looks show <player>` to read the record.
+- [ ] `lp user A permission set bsp_core.looks true`, then A logs in: `/bsp looks show A` says dressing yes and lists every hat. The server log says nothing for a first record.
+- [ ] B logs in with no permissions: `/bsp looks show B` says B has never had dressing or a hat.
+- [ ] `lp user B permission set bsp_core.looks.hat.beanie true` while B is online: within five minutes (or at B's next login) `/bsp looks show B` lists beanie as bought and as the hat on undressed totems. Then add `bsp_core.looks.hat.halo`: halo becomes the hat on undressed totems.
+- [ ] `lp user A permission unset bsp_core.looks` while A is online: within five minutes the log says A no longer has totem dressing, and `/bsp looks show A` says dressing no. Set it again: dressing yes again.
+- [ ] Network: with two servers on the database and Redis, change B's hats on one server; `/bsp looks show B` on the other server shows the change within a few seconds of the first server's check.
+- [ ] `/bsp looks clear A`: the reply counts the looks taken off here; the log names who cleared whom. On the other server, `/bsp looks show A` shows no saved looks.
+- [ ] Restart a server: the records are still there.
+
+## Totem looks, part 3: block state and sync (2026-11-21, 1.21.0)
+Players need the new client (protocol 19).
+- [ ] A plain totem looks exactly as before in every state: owned (gold), unclaimed (turquoise), being stolen (pulsing red). F3 on it shows `looks: false`.
+- [ ] Join with an older client: the server refuses it for a mod version mismatch.
+- [ ] Restart the server with a placed totem: no errors in the log about the totem's model or block state.
+
+## Totem looks, part 4: the body drawn (2026-11-21, 1.21.0)
+Dress a totem from the LOOKS tab (part 7a) as an owner holding `bsp_core.looks`. Check each with shaders off, then with each shader pack (BSL, Complementary Reimagined, Bliss, MakeUp, Sildur's).
+- [ ] A dressed totem in one colour: the body and head stand exactly where a plain totem's do (bowed head, kneeling, hands round the orb), with no gaps, no doubled faces and no flicker against the plinth or the orb. Turn the totem to all four facings: the body turns with the plinth and orb.
+- [ ] The colour is mottled like the gold totem and fades into the stone toward the knees; the creeper face and the chest crack show.
+- [ ] A gradient top to base runs from the top of the head to the knees; side to side runs across the arms.
+- [ ] A painted look shows its pixels on the right faces (paint the head's front a different colour and check it is the face side).
+- [ ] Lighting: the body darkens at night and in a dark room like a mob, and is never black in daylight. Under a shader pack it is lit and shadowed like a mob, not full bright, not black.
+- [ ] Being stolen: the body pulses red about once a second, at the same pace as a plain totem being stolen next to it. The thin band round the plinth's top is gold while owned and pulses red while stolen, and stays clear of the lamp studs.
+- [ ] Many dressed totems in view (20 or more): no drop in frame rate compared with plain totems.
+- [ ] The owner's VIP lapses (`lp user <name> permission unset bsp_core.looks`, then wait up to five minutes): the totem goes back to the plain gold model without a missing body.
+
+## Totem looks, part 5: the owner's own head (2026-11-21, 1.21.0)
+Pick MY HEAD on the LOOKS tab. Use an owner whose skin has a clear face, a hat layer (glasses, a hood or a helmet) and a different back.
+- [ ] The owner's face is on the totem's front (where the creeper face was), not on a side or the back, and is not mirrored (a side parting or a badge on one side is on the same side as on the player).
+- [ ] The back of the head shows the skin's back; the left and right sides are the skin's sides; the top shows the hair the right way round (the fringe toward the face). Note what the underside shows (it is barely visible under the bow).
+- [ ] The hat layer sits half a pixel out all round, bowed with the head, with see-through parts see-through.
+- [ ] The owner logged out: after relogging the viewer (new session), the head still shows the owner's skin within a few seconds. Until it arrives the totem shows its own face, never a blank or black head.
+- [ ] A player with the default skin (no custom skin) shows a default skin head.
+- [ ] With each shader pack: the head is lit like the body, not full bright and not black.
+- [ ] Being stolen: the head pulses red with the body.
+
+## Totem looks, part 6: hats (2026-11-21, 1.21.0)
+Pick hats on the LOOKS tab; a bought hat (`lp user <name> permission set bsp_core.looks.hat.beanie true`, then relog) shows on a plain totem without it. Check with shaders off, then with each shader pack.
+- [ ] Each of the 13 hats sits on the head without floating or sinking, bowed forward with the head, the front of each hat (peaks, badges, the top hat's buckle) toward the totem's face. Turn the totem to all four facings: the hat turns with it.
+- [ ] The beer cap's straws run from the cans to the front of the face; the Viking and devil horns curve up and out; the party hat leans to one side; the top hat leans a little.
+- [ ] The halo floats above the head, bobs slowly and glows (full bright at night); the wizard hat's stars and moon glow; the propeller spins.
+- [ ] Hats are lit by the world (darker at night, in caves), and no face of a hat is black while lit (an inside-out face would show as dark).
+- [ ] In the body's colours: a violet body gives a violet beanie with darker violet ribbing and pale violet stripes; a painted body uses its most used colour; metal, cans, horns and glowing parts keep their colours.
+- [ ] A plain totem whose owner bought a hat wears it; the owner's VIP lapsing keeps the bought hat on.
+- [ ] Shader packs: glowing parts never show through blocks in front of them; hats never flicker against the head.
+- [ ] Twenty hatted totems in view: no drop in frame rate compared with plain totems.
+
+## Totem looks, part 7a: the LOOKS tab (2026-11-21, 1.21.0)
+Players need the new client. Use an owner with `bsp_core.looks` (VIP) and one without. This is also the way in for the checks in parts 4 to 6.
+- [ ] The LOOKS tab shows for the totem's owner only (not for teammates, friends or other players), between the other tabs and TEAM. With six tabs (an operator who owns a totem with Anchor) the header still fits and the title gives way.
+- [ ] VIP: the preview turns slowly; dragging it turns it, and letting go carries on from there without a jump; < and > turn it by 45 degrees; SEE STEAL makes it pulse red.
+- [ ] SOLID: clicking and dragging on the colour square and the hue strip change the preview at once; a quick colour sets it; the hex shows the colour.
+- [ ] GRADIENT: three stops under the bar; clicking a stop picks the colour being edited (the label says top, middle or base); 2 STOPS / 3 STOPS and TOP TO BASE / SIDE TO SIDE change the preview.
+- [ ] MY HEAD shows the owner's skin head in the preview. The hat grid shows all 13 hats as small turning-free pictures; the chosen one is outlined; OWN COLOURS / BODY COLOURS repaints it.
+- [ ] SAVE puts the look on the totem (it shows in the world at once, for other players too); for 10 seconds SAVE shows WAIT and a second save is refused with a message. RESET makes the totem plain gold.
+- [ ] SAVED LOOKS: + keeps the current look (up to five; a sixth is refused); clicking one loads it into the tab; shift-click drops it; on another of the owner's totems the same saved looks are there.
+- [ ] Without VIP: the tab says looks come with the VIP rank; the hat grid shows the owner's bought hats lit and the rest dimmed with a lock; clicking a bought hat (or the crossed NO HAT cell) changes the hat on all the owner's undressed totems.
+- [ ] Every label fits its key at GUI scale 2, 3 and 4; nothing runs past the panel's right edge.
+- [ ] The preview and hat pictures look right with a shader pack on (the GUI is not drawn by shaders, but check nothing turns black).
+
+## Totem looks, part 7b: the paint bench (2026-11-21, 1.21.0)
+A VIP owner on the LOOKS tab.
+- [ ] PAINT opens the bench starting from the body as it was: the same colours, the creeper face and the chest crack.
+- [ ] Each part key (HEAD, BODY, L KNEE, R KNEE, L ARM, R ARM, L HAND, R HAND) shows that part unfolded: top and underside on the first row, then right side, front, left side and back. Hovering a pixel names its face, column and row; with the mirror on, its twin is outlined too.
+- [ ] PEN paints a pixel and, dragged, a line; with the mirror on the left arm's front paints the right arm's too, and one eye paints the other. FILL fills the joined pixels of one colour on one face only. PICK takes a pixel's colour slot. UNDO steps back through 40 changes.
+- [ ] Clicking a colour slot and dragging on the colour square or hue strip changes that slot everywhere it is used, in the unfolded part and the preview at once.
+- [ ] Paint the head's front: it shows on the totem's face (not a side or the back), the right way round. Paint the left arm's outside: it shows on the totem's left arm.
+- [ ] START FROM BODY repaints from the tab's colour or gradient; BLANK fills everything with the chosen slot; both can be undone.
+- [ ] SAVE puts the painting on the totem: other players see it; the server log names the player and says it was painted. BACK keeps the painting on the tab (PAINT is lit, with a line saying how many colours it uses); SOLID or GRADIENT leaves it.
+- [ ] Save a painting in SAVED LOOKS and load it on another totem: the painting comes back whole.
+- [ ] `/bsp looks clear <player>` takes a painting off and empties the saved looks.
+- [ ] Every label fits at GUI scale 2, 3 and 4.
+
+## Score Leader glow (2026-11-21, 1.21.0)
+Use `/bsp score set` (or real totems) to make one player the leader. Check with shaders off, then with each shader pack.
+- [ ] The leader's totems wear a thin gold glow round the body and head, slowly brighter and fainter, and gold sparks drift up from the plinth about four a second, fading out about two blocks up. A dressed totem and a hat keep their own look under the glow.
+- [ ] Other players' totems do not glow. Make a second player equal on points: within a few seconds of the board updating nobody glows. Give one of them a point more: that one glows.
+- [ ] Walk away: past 32 blocks the glow and sparks stop; come back and they return. A wall between you and the totem hides the glow; sparks stay behind blocks too.
+- [ ] A cloaked leader's base: from outside the cloak, no glow or sparks show.
+- [ ] `config/bsp_core-client.toml` `[looks] leaderSparks = false`: no sparks, the glow stays. Minecraft's Video Settings, Particles: Decreased gives fewer, Minimal gives none.
+- [ ] Ten of the leader's totems in view: no more than about 40 sparks in the air at once, and no drop in frame rate.
+- [ ] Shader packs: the glow is see-through light, never solid, never black; sparks show and are not doubled.
+
+## Decoy Totems with looks (2026-11-21, 1.21.0)
+An owner with a dressed totem and a working decoy a few blocks away; a second player looks at both.
+- [ ] The second player sees the decoy with the same look and hat as the owner's totem beside it (a painted look, MY HEAD and a hat in the body's colours included), turned the decoy's way.
+- [ ] Change the real totem's look (or take it off): within about two seconds the decoy changes the same way.
+- [ ] The owner's VIP lapses: the real totem and the decoy both turn plain gold at the same time, keeping a bought hat.
+- [ ] Make the owner the Score Leader: the decoy glows and gives off sparks like the real totem.
+- [ ] The owner still sees the hollow idol with its faint ghost.
+- [ ] A decoy with none of its owner's totems within about 60 blocks is a plain owned totem.
+- [ ] A decoy without power, or broken, shows the bare idol to everyone, with no look, hat or glow.
+- [ ] Looking up at a hatted decoy from right below it, the hat does not vanish at the edge of the screen.
+
+## Totem looks: checks from the audit (2026-11-22, 1.21.0)
+- [ ] A dressed totem with MY HEAD: the body keeps its own colours (not stripes of the skin) with shaders off and on, and in the LOOKS tab's preview.
+- [ ] RESET: the preview turns plain gold at once and stays plain; SAVE then keeps it plain. SAVE never flickers back to the old look.
+- [ ] Paint, press BACK, pick SOLID, then PAINT again: the painting is still there.
+- [ ] A dressed decoy has the same gold band round its base as the dressed totem beside it.
+- [ ] The underside of a MY HEAD head (look from below with F5) matches the skin's chin the right way round.
+- [ ] Hats you do not own are dimmed with a lock over their picture in the hat grid.
+- [ ] With the LOOKS tab open (and on the bench), the frame rate stays close to the upgrade tree's.
+- [ ] On a network: `/bsp looks clear <player>` on one server takes the looks off that player's loaded totems on the other servers within a few seconds, and their saved looks do not come back.
+

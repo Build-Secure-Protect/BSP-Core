@@ -4,6 +4,24 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-22
+
+Network protocol 19: servers and clients must both have this version (totem looks).
+
+### Added
+- **Totem looks.** A totem's owner with the VIP rank (LuckPerms permission `bsp_core.looks`) dresses each placed totem from a new LOOKS tab in the totem screen:
+  - the body in one colour (mottled and fading into the plinth's stone, like the gold totem), a gradient of two or three colours (top to base or side to side), or painted pixel by pixel on the **paint bench** (each part unfolded at the totem's own size, 16 colours, pen, fill, pick, undo and a left-right mirror; it starts from the body as it was);
+  - the totem's own creeper face or the owner's **player-skin head**, hat layer included;
+  - one of thirteen **hats**: top hat, halo, flat cap, beer cap, sports cap, beanie, wizard hat, devil horns, cowboy hat, Viking helmet, party hat, chef's hat and propeller cap, each in its own colours or the body's. The halo bobs and glows, the wizard hat's stars glow, the propeller spins.
+  - A turning preview shows the look before SAVE puts it on (changes wait 10 seconds); RESET takes it off. Up to five SAVED LOOKS carry a look to the owner's other totems.
+- Each totem keeps its own look, also when picked up and placed again. A totem that changes owner (a steal, a transfer, a staff reassignment) is plain for its new owner. A totem being stolen still pulses red, and a thin gold band round its base shows its state whatever its colours.
+- The VIP rank is checked at login and every five minutes. When it ends the looks are hidden, not deleted, and come back with it. Players see only what a totem shows. With network storage the owners' records are shared between servers (new table `look_owners`, Redis kind `looks`).
+- **Hats on their own.** `bsp_core.looks.hat.<hat id>` gives one hat without the rest of the tab (for a store or a season prize): the newest one bought is worn by the owner's totems that have no look of their own, and the locked tab picks between the hats they have. Server config `[looks] exclusiveHats` lists hats the VIP rank does not include. Hat ids are in `docs/API.md`.
+- **The Score Leader's totems glow.** The one player with the most points (at least one, and no one else on the same points) has every totem wrapped in a thin, breathing gold glow, with gold sparks (`bsp_core:leader_spark`) drifting up about four times a second. When two players share the top score nobody glows. Shown within 32 blocks; shader packs draw the glow as light. Client config `[looks] leaderSparks` turns the sparks off; Minecraft's Particles setting thins them too.
+- **Decoy Totems dress like their owner's totems.** To everyone but its owner, a working Decoy Totem wears the look, hat and gold band of its owner's nearest totem, and the Score Leader's glow when its owner leads.
+- Staff commands (operators and moderators): `/bsp looks show` and `/bsp looks clear` on the held or looked-at totem, and `/bsp looks show <player>` and `/bsp looks clear <player>` (every look of theirs, on every server, as their totems load or are placed, and their saved looks). Every look put on or saved is logged with the player's name.
+- The guide book has a Totem Looks page, and the totem's JEI and EMI information mentions the LOOKS tab.
+
 ### Fixed
 - **A Cloaked base fades in by opacity with a shader pack on.** Walking into a Cloak's aura with shaders (Oculus) showed the whole base at once, drawn black, its colour slowly coming back. The real blocks are now drawn the way shader packs draw see-through things, so they turn from clear to solid with shaders on or off, and fade out the same way when you walk away.
 - **X-ray's see-through rock is see-through with a shader pack on.** With shaders the rock in range was drawn solid and dark instead of as faint glass. With a shader pack on, X-ray now draws it the way shader packs draw see-through things; the furthest rock shows a little stronger than without shaders, the faintest a shader pack still draws. Without shaders X-ray looks as before. Switching shaders on or off while X-ray runs redraws the rock within half a second.

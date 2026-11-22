@@ -365,6 +365,10 @@ def stud_elements(lo=2, hi=14):
     return out
 
 
+# The cuboids a totem look draws in the renderer (TotemLook.PARTS); left out of the bare model.
+LOOK_PARTS = {"head", "torso", "knee_l", "knee_r", "arm_l", "arm_r", "hand_l", "hand_r"}
+
+
 def variant_guardian():
     """Kneeling, head bowed, orb raised to the chest."""
     return model([
@@ -481,6 +485,11 @@ def write_assets(variant):
             "parent": "bsp_core:block/shatter_totem_geometry",
             "textures": {"atlas": f"bsp_core:block/shatter_totem_{state}", "particle": f"bsp_core:block/shatter_totem_{state}"},
         }, indent=2))
+    # a totem wearing a look: the plinth, the lamp studs and the orb stay baked; the renderer draws the body and head itself
+    bare = dict(geo)
+    bare["elements"] = [e for e in geo["elements"] if e.get("name") not in LOOK_PARTS]
+    bare["textures"] = {"atlas": "bsp_core:block/shatter_totem_owned", "particle": "bsp_core:block/shatter_totem_owned"}
+    (models / "block/shatter_totem_bare.json").write_text(json.dumps(bare, indent=2))
     (models / "item/shatter_totem.json").write_text(json.dumps({
         "parent": "bsp_core:block/shatter_totem_geometry",
         "textures": {"atlas": "bsp_core:item/shatter_totem", "particle": "bsp_core:item/shatter_totem"},
@@ -490,10 +499,11 @@ def write_assets(variant):
     variants = {}
     for st in ("owned", "unclaimed", "stealing"):
         for facing, rot in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
-            v = {"model": f"bsp_core:block/shatter_totem_{st}"}
-            if rot:
-                v["y"] = rot
-            variants[f"facing={facing},glow={st}"] = v
+            for looks in ("false", "true"):
+                v = {"model": "bsp_core:block/shatter_totem_bare" if looks == "true" else f"bsp_core:block/shatter_totem_{st}"}
+                if rot:
+                    v["y"] = rot
+                variants[f"facing={facing},glow={st},looks={looks}"] = v
     (ASSETS / "blockstates/shatter_totem.json").write_text(json.dumps({"variants": variants}, indent=2))
 
     for state, (make_frames, frametime) in STATES.items():

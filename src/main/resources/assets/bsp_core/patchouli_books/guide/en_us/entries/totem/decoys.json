@@ -7,7 +7,7 @@
     {
       "type": "patchouli:spotlight",
       "item": "bsp_core:decoy_totem",
-      "text": "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."
+      "text": "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem, dressed like your nearest totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."
     },
     {
       "type": "patchouli:crafting",

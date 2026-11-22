@@ -37,6 +37,7 @@ public class BSPCore {
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
+        com.mrgregles.bsp_core.registry.ModParticles.PARTICLES.register(modEventBus);
         ModCreativeTabs.TABS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
         com.mrgregles.bsp_core.plasma.ModFluids.register(modEventBus);

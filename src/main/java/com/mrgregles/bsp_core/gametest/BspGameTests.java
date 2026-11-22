@@ -5274,7 +5274,7 @@ public class BspGameTests {
             h.assertTrue(in != null, "the totem's blockstate file is in the jar");
             var variants = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in)).getAsJsonObject().getAsJsonObject("variants");
             for (var d : List.of(net.minecraft.core.Direction.NORTH, net.minecraft.core.Direction.EAST, net.minecraft.core.Direction.SOUTH, net.minecraft.core.Direction.WEST)) {
-                var v = variants.getAsJsonObject("facing=" + d.getName() + ",glow=owned");
+                var v = variants.getAsJsonObject("facing=" + d.getName() + ",glow=owned,looks=false");
                 int y = v.has("y") ? v.get("y").getAsInt() : 0;
                 h.assertTrue(com.mrgregles.bsp_core.totem.TotemOrbLayout.modelTurn(d) == y, "facing " + d + ": the ring turns " + y + " degrees like the model");
             }

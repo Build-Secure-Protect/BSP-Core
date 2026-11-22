@@ -28,7 +28,7 @@ public final class BSPNetwork {
      *     view's NO_TOTEM flag.
      * 18: the chunk view's ANCHOR_STALE, ANCHOR_OUTSIDERS and ANCHOR_RECHOOSE flags.
      */
-    private static final String PROTOCOL = "18";
+    private static final String PROTOCOL = "19";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -326,6 +326,12 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(BountyAdminPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BountyAdminPacket::encode).decoder(BountyAdminPacket::decode)
                 .consumerMainThread(BountyAdminPacket::handle).add();
+        CHANNEL.messageBuilder(LookActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(LookActionPacket::encode).decoder(LookActionPacket::decode)
+                .consumerMainThread(LookActionPacket::handle).add();
+        CHANNEL.messageBuilder(LookDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LookDataPacket::encode).decoder(LookDataPacket::decode)
+                .consumerMainThread(LookDataPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

@@ -40,6 +40,7 @@ public record TotemOwner(UUID uuid, String name) {
     public void applyTo(ItemStack stack) {
         if (!fromStack(stack).map(o -> o.uuid().equals(uuid)).orElse(false)) {
             stack.getOrCreateTag().putLong(TAG_OWNED_SINCE, System.currentTimeMillis());
+            stack.getOrCreateTag().remove(com.mrgregles.bsp_core.looks.TotemLook.TAG); // a look is its owner's: a new owner gets a plain totem
         }
         save(stack.getOrCreateTag());
     }
@@ -47,5 +48,6 @@ public record TotemOwner(UUID uuid, String name) {
     public static void clear(CompoundTag tag) {
         tag.remove(TAG_OWNER_UUID);
         tag.remove(TAG_OWNER_NAME);
+        tag.remove(com.mrgregles.bsp_core.looks.TotemLook.TAG);
     }
 }

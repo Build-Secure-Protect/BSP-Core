@@ -70,6 +70,8 @@ public class ShatterTotemBlock extends BaseEntityBlock {
     public static final EnumProperty<Glow> GLOW = EnumProperty.create("glow", Glow.class);
     /** Which way the statue faces; the model's face is on its north side at facing=north. */
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    /** The totem wears a look: the bare model (plinth, studs, orb) is baked and the renderer draws the body and head. */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty LOOKS = net.minecraft.world.level.block.state.properties.BooleanProperty.create("looks");
 
     public ShatterTotemBlock() {
         super(Properties.of()
@@ -81,12 +83,13 @@ public class ShatterTotemBlock extends BaseEntityBlock {
                 .pushReaction(PushReaction.BLOCK));
         registerDefaultState(stateDefinition.any()
                 .setValue(GLOW, Glow.UNCLAIMED)
-                .setValue(FACING, net.minecraft.core.Direction.NORTH));
+                .setValue(FACING, net.minecraft.core.Direction.NORTH)
+                .setValue(LOOKS, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(GLOW, FACING);
+        builder.add(GLOW, FACING, LOOKS);
     }
 
     @Nullable

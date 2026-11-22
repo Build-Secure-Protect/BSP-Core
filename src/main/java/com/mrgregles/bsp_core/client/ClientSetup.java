@@ -19,6 +19,11 @@ public final class ClientSetup {
 
     /** The Totem Compass's range levels as pips on its icon in a slot ({@link CompassPips}). */
     @SubscribeEvent
+    public static void onRegisterParticles(net.minecraftforge.client.event.RegisterParticleProvidersEvent event) {
+        event.registerSpriteSet(com.mrgregles.bsp_core.registry.ModParticles.LEADER_SPARK.get(), LeaderSparkParticle.Provider::new);
+    }
+
+    @SubscribeEvent
     public static void onRegisterItemDecorations(net.minecraftforge.client.event.RegisterItemDecorationsEvent event) {
         event.register(com.mrgregles.bsp_core.registry.ModItems.TOTEM_COMPASS.get(), new CompassPips());
     }

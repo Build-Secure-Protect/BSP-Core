@@ -89,6 +89,12 @@ public class DecoyTotemBlockEntity extends BlockEntity {
         return items;
     }
 
+    /** Drawn as a totem that may wear a hat and glow: tall enough for the tallest hat and the leader's sparks. */
+    @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox() {
+        return new net.minecraft.world.phys.AABB(worldPosition).expandTowards(0, 2, 0).inflate(0.5);
+    }
+
     @Nullable
     public UUID getOwner() {
         return owner;

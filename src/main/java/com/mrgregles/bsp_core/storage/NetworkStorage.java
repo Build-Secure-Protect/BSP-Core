@@ -309,6 +309,13 @@ public final class NetworkStorage {
                         collectTotemReturns(srv);
                     }
                 }
+                case "looks" -> {
+                    try {
+                        lookOwnerRead(srv, UUID.fromString(payload), () -> {}); // a player's looks changed on another server
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
                 case "steal" -> refreshSteals();
                 case "totem_destroyed" -> {
                     try {
@@ -583,6 +590,8 @@ public final class NetworkStorage {
         Map<UUID, Map<GlobalPos, Long>> slices = FactoryLedger.get(srv).allWithTimes();
         async("write the factory slices' placing times", s -> s.slicesAll(slices)); // rows written before the times were kept get them now
         refreshAllSlices(srv);
+        com.mrgregles.bsp_core.looks.LookOwners.get(srv).pushAll(); // changes made here while the database was out of reach
+        lookOwnerRead(srv, null, () -> {}); // every player's totem looks, for the totems here whose owners are elsewhere
         long now = System.currentTimeMillis();
         for (ServerPlayer p : srv.getPlayerList().getPlayers()) {
             UUID id = p.getUUID();
@@ -1980,6 +1989,78 @@ public final class NetworkStorage {
     /** Gives back a Totem Compass claim whose compass did not start (see {@link MySqlStore#compassRelease}). */
     public static void compassRelease(UUID id, long untilMs) {
         async("give back a Totem Compass start", s -> s.compassRelease(id, untilMs));
+    }
+
+    // ------------------------------------------------------------------ totem looks
+
+    /** NBT to text for the database: base64 of the uncompressed tag. */
+    public static String lookData(net.minecraft.nbt.CompoundTag tag) {
+        try {
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            net.minecraft.nbt.NbtIo.write(tag, new java.io.DataOutputStream(out));
+            return java.util.Base64.getEncoder().encodeToString(out.toByteArray());
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Text from the database back to NBT; null when it is empty or unreadable. */
+    @Nullable
+    public static net.minecraft.nbt.CompoundTag lookData(String data) {
+        if (data == null || data.isEmpty()) {
+            return null;
+        }
+        try {
+            return net.minecraft.nbt.NbtIo.read(new java.io.DataInputStream(new java.io.ByteArrayInputStream(java.util.Base64.getDecoder().decode(data))));
+        } catch (java.io.IOException | IllegalArgumentException e) {
+            BSPCore.LOGGER.warn("BSP-Core storage: a totem look record could not be read: {}", e.toString());
+            return null;
+        }
+    }
+
+    /** Writes a player's look record to the network and tells the other servers; nothing without a database. */
+    public static void lookOwnerWrite(UUID id, net.minecraft.nbt.CompoundTag record, long updatedMs) {
+        String data = lookData(record);
+        async("write a player's totem looks", s -> {
+            s.lookOwnerWrite(id, data, updatedMs);
+            publish("looks", id.toString());
+        });
+    }
+
+    /** Records on the network that staff cleared a player's looks at {@code clearedMs}. */
+    public static void lookOwnerCleared(UUID id, long clearedMs) {
+        async("record a totem looks clear", s -> {
+            s.lookOwnerCleared(id, clearedMs);
+            publish("looks", id.toString());
+        });
+    }
+
+    /** Reads one player's look record (all players' with {@code id} null) into this server, then runs {@code then} on the server thread. */
+    public static void lookOwnerRead(MinecraftServer srv, @Nullable UUID id, Runnable then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.run();
+            return;
+        }
+        worker().execute(() -> {
+            List<MySqlStore.LookOwnerRow> rows = List.of();
+            try {
+                rows = s.lookOwners(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read totem looks: {}", e.toString());
+            }
+            List<MySqlStore.LookOwnerRow> got = rows;
+            onServer(() -> {
+                var owners = com.mrgregles.bsp_core.looks.LookOwners.get(srv);
+                for (MySqlStore.LookOwnerRow r : got) {
+                    net.minecraft.nbt.CompoundTag data = lookData(r.data());
+                    if (data != null || r.clearedMs() > 0) {
+                        owners.arrived(srv, r.id(), data == null ? new net.minecraft.nbt.CompoundTag() : data, r.clearedMs());
+                    }
+                }
+                then.run();
+            });
+        });
     }
 
     /** Raises a player's Totem Compass wait on the network to at least {@code untilMs}; nothing without a database. */

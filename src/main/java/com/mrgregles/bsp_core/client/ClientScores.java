@@ -10,8 +10,17 @@ public final class ClientScores {
 
     private ClientScores() {}
 
+    private static volatile java.util.UUID leader;
+
     public static void accept(List<ScoreService.Entry> entries) {
         board = List.copyOf(entries);
+        leader = com.mrgregles.bsp_core.looks.ScoreLeader.leader(board);
+    }
+
+    /** The Score Leader: the one player with the most points (none on a tie, or with no points). */
+    @javax.annotation.Nullable
+    public static java.util.UUID leader() {
+        return leader;
     }
 
     private static volatile List<net.minecraft.world.item.ItemStack> prizes = List.of();

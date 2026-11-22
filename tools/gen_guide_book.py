@@ -151,7 +151,7 @@ ENTRIES = [
         text("A placed totem counts for its owner. A carried totem counts for whoever is carrying it.$(br2)Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server. A screen can also show other boards, such as which servers players call home, and turn through its pages.", "How it is counted"),
     ]),
     ("totem", "decoys", "Decoy Totems", "bsp_core:decoy_totem", 5, [
-        spot("bsp_core:decoy_totem", "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."),
+        spot("bsp_core:decoy_totem", "A fake totem. While it has power, rival $(l:totem/compass)Totem Compasses$() within its range point at it instead of a real totem, and everyone but you sees an ordinary Shatter Totem, dressed like your nearest totem. You see the idol with a ghost of the totem around it.$(br2)You may have five placed."),
         craft("magnet_core", None, "The $(item)Magnet Core$() is the hard part: six Charged Magnatite Ingots around an Illyrium Processor."), craft("decoy_totem"),
         craft("decoy_power_base", None, "A decoy must stand on a $(item)Decoy Power Base$(), fed with RF from its sides or from below. It draws 100 RF every tick. Without power the disguise drops and everyone sees the bare idol."),
         text("An enemy who tries to steal a decoy finds out it is fake. Its traps go off and it takes a hit. When it has taken more hits than it has casings it breaks, and does nothing until you repair it with Magnatite Ingots.$(br2)Only you can mine a working decoy. Anyone can mine a broken or unpowered one.", "Taking the bait"),
@@ -161,6 +161,12 @@ ENTRIES = [
         craft("range_coil_mk3", "trap_amplifier"),
         craft("blast_charge", None, "The other charges swap the middle item: Fermented Spider Eye, Spider Eye or Prismarine Shard."), craft("warp_charge"),
         craft("reinforced_casing"),
+    ]),
+    ("totem", "looks", "Totem Looks", "minecraft:leather_helmet", 5, [
+        text("Your totems can be dressed. Open a placed totem of yours and choose $(l)LOOKS$().$(br2)With the VIP rank you choose the body: one colour, a gradient of two or three, or paint it pixel by pixel. Then the head, the totem's own or yours, and a hat.$(br2)Each totem has its own look. $(l)SAVED LOOKS$() keeps five to put on your other totems."),
+        text("Thirteen hats, from a top hat and a halo to a beer cap and a propeller cap. VIP has them all; a hat can also be bought on its own.$(br2)A hat of your own is worn by all your totems that have no look of their own, with or without VIP. A hat can take the body's colours.", "Hats"),
+        text("A look belongs to its owner: a stolen totem is plain for its thief. When the VIP rank ends, your totems are plain gold until it returns, and then their looks come back.$(br2)A totem being stolen still pulses red, and a gold band round its base shows whatever its colours.", "Who sees what"),
+        text("The player with the most points glows. All their totems wear a thin gold glow and give off gold sparks.$(br2)If two players share the most points, nobody glows. The sparks can be switched off in the client settings.", "The leader's glow"),
     ]),
     ("totem", "projectors", "Plasma and Projectors", "bsp_core:totem_projector", 6, [
         text("A placed totem gives off $(l)Wave Plasma$(): 100 mB every tick, up to 6,000 with the ten levels of the $(l)Output$() upgrade. The totem panel shows the figure. Drawn out and piped to a $(item)Projector$(), it recreates the totem's base powers as a second aura somewhere else: over a mine, a farm, or a second wall.$(br2)The projector works for whoever owns the totem. If your totem is stolen, so is the aura."),

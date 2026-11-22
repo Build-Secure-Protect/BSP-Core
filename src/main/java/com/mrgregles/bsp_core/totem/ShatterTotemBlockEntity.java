@@ -84,8 +84,74 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     @Nullable
     private CloakSnapshot.Builder cloakBuilder;
 
+    /** How the owner dressed this totem; dropped when the totem changes owner. */
+    @Nullable
+    private com.mrgregles.bsp_core.looks.TotemLook look;
+
     public ShatterTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SHATTER_TOTEM.get(), pos, state);
+    }
+
+    // ------------------------------------------------------------------ look
+
+    /** The totem's look, or null when it is plain. Only a look made for the current owner counts. */
+    @Nullable
+    public com.mrgregles.bsp_core.looks.TotemLook getLook() {
+        return look != null && owner != null && look.owner().equals(owner.uuid()) ? look : null;
+    }
+
+    /** Puts on (or, with null, takes off) a look. Callers check the rules first ({@link com.mrgregles.bsp_core.looks.TotemLooks}). */
+    public void setLook(@Nullable com.mrgregles.bsp_core.looks.TotemLook look) {
+        this.look = look;
+        setChanged();
+        if (level instanceof ServerLevel) {
+            computeShown();
+            updateBlockState();
+            sync();
+        }
+    }
+
+    /** What the totem shows (server: as last worked out from its look and its owner's dressing and hats; client: as last received). */
+    @Nullable
+    private com.mrgregles.bsp_core.looks.TotemLook shownBody;
+    private String shownHat = "";
+    /** Work out again what the totem shows at its next tick (it was just loaded: its owner's record may have changed meanwhile). */
+    private boolean lookCheck = true;
+
+    /** The body look clients draw, or null for the plain baked totem. */
+    @Nullable
+    public com.mrgregles.bsp_core.looks.TotemLook shownBody() {
+        return shownBody;
+    }
+
+    /** The hat clients draw, or "" for none. */
+    public String shownHat() {
+        return shownHat;
+    }
+
+    /** Works out what the totem shows now (server); true when that changed. */
+    private boolean computeShown() {
+        if (!(level instanceof ServerLevel sl)) {
+            return false;
+        }
+        var owners = com.mrgregles.bsp_core.looks.LookOwners.get(sl.getServer());
+        if (look != null && owners.cleared(look)) {
+            look = null; // staff cleared this owner's looks, here or on another server
+            setChanged();
+        }
+        var s = owners.shown(this);
+        boolean changed = !java.util.Objects.equals(s.body(), shownBody) || !s.hat().equals(shownHat);
+        shownBody = s.body();
+        shownHat = s.hat();
+        return changed;
+    }
+
+    /** Works out again what the totem shows (after its owner's dressing or hats changed) and tells clients when that changed. */
+    public void refreshLook() {
+        if (computeShown()) {
+            updateBlockState();
+            sync();
+        }
     }
 
     // ------------------------------------------------------------------ owner
@@ -108,6 +174,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (owner != null && (this.owner == null || !this.owner.uuid().equals(owner.uuid()))) {
             ownedSince = System.currentTimeMillis();
             access.clear(); // a new owner starts with nobody let in
+        }
+        if (look != null && (owner == null || !look.owner().equals(owner.uuid()))) {
+            look = null; // a look is its owner's: a steal, a transfer or an unclaim leaves the totem plain
         }
         this.owner = owner;
         setChanged();
@@ -145,6 +214,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         CompoundTag carried = stack.getTag();
         tripRange = carried != null && carried.contains("TripRange") ? carried.getInt("TripRange") : -1; // moving a totem keeps its Tripwire setting
         setOwner(TotemOwner.fromStack(stack).orElse(null));
+        com.mrgregles.bsp_core.looks.TotemLook carriedLook = com.mrgregles.bsp_core.looks.TotemLook.readFor(stack.getTag(), owner == null ? null : owner.uuid());
+        if (carriedLook != null && level instanceof ServerLevel lookLevel && com.mrgregles.bsp_core.looks.LookOwners.get(lookLevel.getServer()).cleared(carriedLook)) {
+            carriedLook = null; // staff took this owner's looks off while the totem was carried or stored
+        }
+        if (carriedLook != null) {
+            setLook(carriedLook); // moving a totem keeps its look; a look made for someone else is left behind
+        }
         CompoundTag tag = stack.getTag();
         if (tag != null && owner != null && level instanceof ServerLevel serverLevel) {
             // placing it is not a change of owner: keep the time the item carried, its access list and its chunk choices
@@ -181,6 +257,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         }
         if (tripRange != -1) {
             tag.putInt("TripRange", tripRange);
+        }
+        if (getLook() != null) {
+            tag.put(com.mrgregles.bsp_core.looks.TotemLook.TAG, look.save());
         }
     }
 
@@ -698,6 +777,13 @@ public class ShatterTotemBlockEntity extends BlockEntity {
 
     /** Server tick, registered by the block. */
     public void serverTick(ServerLevel level) {
+        if (lookCheck) {
+            lookCheck = false;
+            refreshLook(); // not in onLoad: the block state may not change while its chunk loads
+            if (getBlockState().getValue(ShatterTotemBlock.LOOKS) != (shownBody != null)) {
+                updateBlockState(); // saved with a look its owner can no longer show (or the other way round)
+            }
+        }
         if (TotemDimensions.never(level)) {
             if (TotemDimensions.settled()) {
                 leaveForbiddenDimension(level); // never stands in a Compact Machines room: its owner gets it
@@ -876,6 +962,10 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             return; // taken out before its first tick (the start sweep of Compact Machines rooms): nothing to register
         }
         if (level instanceof ServerLevel serverLevel) {
+            if (look != null && com.mrgregles.bsp_core.looks.LookOwners.get(serverLevel.getServer()).cleared(look)) {
+                look = null; // staff took this owner's looks off while the totem was unloaded
+                setChanged();
+            }
             TotemAuras.register(serverLevel, this);
             recordInLedger(serverLevel);
             ChunkLoading.totemChanged(this);
@@ -1265,7 +1355,8 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (!(current.getBlock() instanceof ShatterTotemBlock)) {
             return;
         }
-        BlockState wanted = current.setValue(ShatterTotemBlock.GLOW, desiredGlow());
+        computeShown();
+        BlockState wanted = current.setValue(ShatterTotemBlock.GLOW, desiredGlow()).setValue(ShatterTotemBlock.LOOKS, shownBody != null);
         if (wanted != current) {
             serverLevel.setBlock(worldPosition, wanted, Block.UPDATE_ALL);
         }
@@ -1363,6 +1454,9 @@ public class ShatterTotemBlockEntity extends BlockEntity {
         if (!upgrades.isEmpty()) {
             tag.put(TotemUpgrades.TAG_UPGRADES, upgrades.copy());
         }
+        if (getLook() != null) {
+            tag.put(com.mrgregles.bsp_core.looks.TotemLook.TAG, look.save()); // also how clients learn the look
+        }
         TotemIdentity.copy(identity, tag);
         if (tripRange != -1) {
             tag.putInt("TripRange", tripRange);
@@ -1397,6 +1491,12 @@ public class ShatterTotemBlockEntity extends BlockEntity {
             harvestLast = tag.getLong("HarvestLast");
         }
         owner = TotemOwner.load(tag).orElse(null);
+        look = com.mrgregles.bsp_core.looks.TotemLook.readFor(tag, owner == null ? null : owner.uuid());
+        if (tag.contains("Shown")) { // only in a sync to a client
+            CompoundTag shown = tag.getCompound("Shown");
+            shownBody = shown.contains("Body") ? com.mrgregles.bsp_core.looks.TotemLook.load(shown.getCompound("Body")) : null;
+            shownHat = com.mrgregles.bsp_core.looks.TotemHats.known(shown.getString("Hat")) ? shown.getString("Hat") : "";
+        }
         ownedSince = tag.getLong(TotemOwner.TAG_OWNED_SINCE);
         if (tag.contains("CoatedLayers")) { // only in a sync to a client; a world load counts again at the first tick
             coatedLayers = tag.getInt("CoatedLayers");
@@ -1444,6 +1544,15 @@ public class ShatterTotemBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
+        // clients get what the totem shows, never the look itself (a look hidden while its owner has no dressing stays private)
+        tag.remove(com.mrgregles.bsp_core.looks.TotemLook.TAG);
+        computeShown();
+        CompoundTag shown = new CompoundTag();
+        if (shownBody != null) {
+            shown.put("Body", shownBody.save());
+        }
+        shown.putString("Hat", shownHat);
+        tag.put("Shown", shown);
         tag.putInt("CoatedLayers", coatedLayers);
         tag.putInt("ProtMode", protMode);
         tag.putString("ProtRank", protRank);

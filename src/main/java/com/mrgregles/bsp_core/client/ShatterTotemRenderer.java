@@ -56,13 +56,76 @@ public class ShatterTotemRenderer implements BlockEntityRenderer<ShatterTotemBlo
         }
     }
 
+    /**
+     * The state band of a totem wearing a look: a thin strip round the plinth's top edge, in block units, above the lamp studs (which
+     * end 1.8 px up), straddling the plinth's sides so it never fights them. Gold while owned, pulsing red while being stolen, so a
+     * painted body never hides what the totem's colour would say.
+     */
+    private static final float[][] BAND = {
+            {1.85f / 16, 1.8f / 16, 1.85f / 16, 14.15f / 16, 2.05f / 16, 2.15f / 16},   // north
+            {1.85f / 16, 1.8f / 16, 13.85f / 16, 14.15f / 16, 2.05f / 16, 14.15f / 16}, // south
+            {1.85f / 16, 1.8f / 16, 2.15f / 16, 2.15f / 16, 2.05f / 16, 13.85f / 16},   // west
+            {13.85f / 16, 1.8f / 16, 2.15f / 16, 14.15f / 16, 2.05f / 16, 13.85f / 16}, // east
+    };
+
     public ShatterTotemRenderer(BlockEntityRendererProvider.Context ctx) {}
+
+    /** The state band round the plinth top of a totem (or a decoy) wearing a look: gold, pulsing red while {@code steal} > 0. */
+    public static void band(PoseStack pose, MultiBufferSource buffers, float steal) {
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS_TEX);
+        VertexConsumer band = buffers.getBuffer(RenderType.cutout());
+        float bu = sprite.getU(ORB_U0 + 0.5f), bv = sprite.getV(ORB_V0 + 0.5f);
+        int br = 255, bg = Math.round(210 - 160 * steal), bb = Math.round(58 - 30 * steal);
+        for (float[] box : BAND) {
+            litBox(band, pose.last().pose(), pose.last().normal(), box, bu, bv, br, bg, bb);
+        }
+    }
 
     @Override
     public void render(ShatterTotemBlockEntity totem, float partialTick, PoseStack pose, MultiBufferSource buffers, int packedLight, int packedOverlay) {
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ATLAS_TEX);
         long gameTime = totem.getLevel() == null ? 0 : totem.getLevel().getGameTime();
         float time = gameTime + partialTick;
+
+        // --- a look: the body and head the bare model leaves out, and the state band round the plinth top
+        net.minecraft.world.level.block.state.BlockState state = totem.getBlockState();
+        if (state.hasProperty(com.mrgregles.bsp_core.totem.ShatterTotemBlock.LOOKS) && state.getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.LOOKS)
+                && totem.shownBody() != null && totem.getLevel() != null) {
+            boolean stealing = state.getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.GLOW) == com.mrgregles.bsp_core.totem.ShatterTotemBlock.Glow.STEALING;
+            float steal = stealing ? LookBodyDraw.stealPulse(time) : 0f;
+            int light = Math.max(packedLight, net.minecraft.client.renderer.LevelRenderer.getLightColor(totem.getLevel(), totem.getBlockPos().above()));
+            net.minecraft.core.Direction facing = state.hasProperty(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING)
+                    ? state.getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING) : net.minecraft.core.Direction.NORTH;
+            com.mrgregles.bsp_core.looks.TotemLook look = totem.shownBody();
+            net.minecraft.resources.ResourceLocation skin = look.head() == com.mrgregles.bsp_core.looks.TotemLook.Head.PLAYER
+                    ? totem.getOwner().map(PlayerSkins::get).orElse(null) : null; // the totem's own face until the skin is known
+            LookBodyDraw.draw(pose, buffers, look, facing, light, steal, skin);
+            band(pose, buffers, steal);
+        } else if (state.hasProperty(com.mrgregles.bsp_core.totem.ShatterTotemBlock.LOOKS) && state.getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.LOOKS)) {
+            // the block state says "look" before the look itself has arrived (or after it went): draw the baked body meanwhile
+            Minecraft.getInstance().getBlockRenderer().renderSingleBlock(state.setValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.LOOKS, false),
+                    pose, buffers, packedLight, packedOverlay, net.minecraftforge.client.model.data.ModelData.EMPTY, null);
+        }
+
+        // --- the Score Leader's totems: a gold shell and rising sparks, near the viewer only
+        java.util.UUID leader = ClientScores.leader();
+        if (leader != null && totem.getLevel() != null && totem.getOwner().map(o -> o.uuid().equals(leader)).orElse(false)
+                && Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(totem.getBlockPos())) < LeaderGlow.REACH * LeaderGlow.REACH) {
+            net.minecraft.core.Direction glowFacing = state.hasProperty(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING)
+                    ? state.getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING) : net.minecraft.core.Direction.NORTH;
+            LeaderGlow.shell(pose, buffers, glowFacing, time);
+            LeaderGlow.sparks(totem, totem.getLevel(), totem.getBlockPos(), gameTime);
+        }
+
+        // --- the hat: on a dressed totem, or a bought hat on a plain one
+        if (!totem.shownHat().isEmpty() && totem.getLevel() != null) {
+            int light = Math.max(packedLight, net.minecraft.client.renderer.LevelRenderer.getLightColor(totem.getLevel(), totem.getBlockPos().above()));
+            net.minecraft.core.Direction facing = state.hasProperty(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING)
+                    ? state.getValue(com.mrgregles.bsp_core.totem.ShatterTotemBlock.FACING) : net.minecraft.core.Direction.NORTH;
+            com.mrgregles.bsp_core.looks.TotemLook body = totem.shownBody();
+            Integer tint = body != null && body.hatTint() ? body.mainColour() : null;
+            HatDraw.draw(pose, buffers, totem.shownHat(), facing, tint, light, time);
+        }
 
         TotemUpgrades.Buff[] buffs = TotemUpgrades.Buff.values();
         int active = 0;

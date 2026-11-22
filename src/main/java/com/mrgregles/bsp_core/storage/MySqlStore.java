@@ -306,6 +306,9 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bounty_closed") + " (bounty_id VARCHAR(16) NOT NULL PRIMARY KEY, ending VARCHAR(24) NOT NULL, closed_ms BIGINT NOT NULL, "
                     + "hunter CHAR(36) NULL, hunter_name VARCHAR(16) NOT NULL DEFAULT '', by_name VARCHAR(64) NOT NULL DEFAULT '', bonus_paid TINYINT NOT NULL DEFAULT 0, "
                     + "data MEDIUMTEXT NOT NULL, INDEX (closed_ms))");
+            // totem looks: each player's dressing and hats as last checked, their saved looks (NBT, base64) and when staff last cleared them
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("look_owners") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, data MEDIUMTEXT NOT NULL, "
+                    + "updated_ms BIGINT NOT NULL, cleared_ms BIGINT NOT NULL DEFAULT 0)");
             // the Totem Compass: when each player may next start tracking rivals (real clock, ms), whichever server they used
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("compass_waits") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, until_ms BIGINT NOT NULL)");
             // new-player protection from totem radiation: the highest RankUp rung and the most playtime minutes seen per player
@@ -3398,6 +3401,51 @@ final class MySqlStore implements AutoCloseable {
             try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("protection_seen") + " WHERE season < ?")) {
                 ps.setInt(1, newest - 1); // the season before stays, for a server that has not heard of the new one yet
                 ps.executeUpdate();
+            }
+        }
+        return out;
+    }
+
+    /** One player's look record as the database holds it. */
+    public record LookOwnerRow(UUID id, String data, long updatedMs, long clearedMs) {
+    }
+
+    /** Writes a player's look record unless the database holds a newer one; a staff clear's time is never lowered. */
+    void lookOwnerWrite(UUID id, String data, long updatedMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("look_owners") + " (uuid, data, updated_ms) VALUES (?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE data = IF(VALUES(updated_ms) > updated_ms, VALUES(data), data), updated_ms = GREATEST(updated_ms, VALUES(updated_ms))")) {
+            ps.setString(1, id.toString());
+            ps.setString(2, data);
+            ps.setLong(3, updatedMs);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Records that staff cleared a player's looks at {@code clearedMs}. */
+    void lookOwnerCleared(UUID id, long clearedMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("look_owners") + " (uuid, data, updated_ms, cleared_ms) VALUES (?, '', 0, ?) "
+                + "ON DUPLICATE KEY UPDATE cleared_ms = GREATEST(cleared_ms, VALUES(cleared_ms))")) {
+            ps.setString(1, id.toString());
+            ps.setLong(2, clearedMs);
+            ps.executeUpdate();
+        }
+    }
+
+    /** One player's look record, or null when there is none; with {@code id} null, every player's. */
+    List<LookOwnerRow> lookOwners(@Nullable UUID id) throws SQLException {
+        List<LookOwnerRow> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, data, updated_ms, cleared_ms FROM " + t("look_owners") + (id == null ? "" : " WHERE uuid = ?"))) {
+            if (id != null) {
+                ps.setString(1, id.toString());
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    try {
+                        out.add(new LookOwnerRow(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getLong(3), rs.getLong(4)));
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
             }
         }
         return out;

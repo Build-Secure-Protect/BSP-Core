@@ -107,6 +107,14 @@ public final class BSPCommands {
                                     com.mrgregles.bsp_core.totem.RecallService.acceptRemote(ctx.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "server"));
                                     return 1;
                                 })))
+                // staff: what a totem wears, and taking it off (the held totem, or with none held the placed one looked at)
+                .then(Commands.literal("looks").requires(src -> src.hasPermission(2) || src.getEntity() instanceof ServerPlayer p && com.mrgregles.bsp_core.admin.Admins.isModerator(p))
+                        .then(Commands.literal("show").executes(ctx -> looks(ctx.getSource(), false))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .executes(ctx -> looksOf(ctx.getSource(), net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles(ctx, "player"), false))))
+                        .then(Commands.literal("clear").executes(ctx -> looks(ctx.getSource(), true))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.GameProfileArgument.gameProfile())
+                                        .executes(ctx -> looksOf(ctx.getSource(), net.minecraft.commands.arguments.GameProfileArgument.getGameProfiles(ctx, "player"), true)))))
                 .then(Commands.literal("cloak").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("see")
                                 .executes(ctx -> cloakSee(ctx.getSource(), null))
@@ -202,6 +210,69 @@ public final class BSPCommands {
 
     private static int discord(CommandSourceStack src, com.mrgregles.bsp_core.discord.DiscordLinks.Action action) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         com.mrgregles.bsp_core.discord.DiscordLinks.act(src.getPlayerOrException(), action, true);
+        return 1;
+    }
+
+    /** {@code /bsp looks show|clear}: the look on the totem held in either hand or, with none held, on the placed one looked at. */
+    private static int looks(CommandSourceStack src, boolean clear) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = src.getPlayerOrException();
+        for (net.minecraft.world.InteractionHand hand : net.minecraft.world.InteractionHand.values()) {
+            ItemStack held = player.getItemInHand(hand);
+            if (TotemInventories.isTotem(held)) {
+                var owner = TotemOwner.fromStack(held);
+                var look = com.mrgregles.bsp_core.looks.TotemLook.readFor(held.getTag(), owner.map(TotemOwner::uuid).orElse(null));
+                return lookReply(src, look, owner.map(TotemOwner::name).orElse("nobody"), "held totem", clear, () -> held.getOrCreateTag().remove(com.mrgregles.bsp_core.looks.TotemLook.TAG));
+            }
+        }
+        var totem = lookedAt(player);
+        if (totem == null) {
+            src.sendFailure(Component.literal("Hold a Shatter Totem or look at a placed one."));
+            return 0;
+        }
+        return lookReply(src, totem.getLook(), totem.ownerName(), "totem at " + totem.getBlockPos().toShortString(), clear, () -> totem.setLook(null));
+    }
+
+    /** {@code /bsp looks show|clear <player>}: a player's dressing, hats and saved looks; or every look of theirs taken off. */
+    private static int looksOf(CommandSourceStack src, java.util.Collection<com.mojang.authlib.GameProfile> profiles, boolean clear) {
+        var owners = com.mrgregles.bsp_core.looks.LookOwners.get(src.getServer());
+        int n = 0;
+        for (com.mojang.authlib.GameProfile gp : profiles) {
+            String name = gp.getName();
+            if (clear) {
+                int off = owners.clearPlayer(src.getServer(), gp.getId());
+                BSPCore.LOGGER.info("{} cleared every totem look of {} ({} taken off at once here)", src.getTextName(), name, off);
+                src.sendSuccess(() -> Component.literal("Cleared " + name + "'s totem looks and saved looks: " + off
+                        + " taken off here now, the rest as their totems load or are placed, on every server."), true);
+                n++;
+                continue;
+            }
+            var r = owners.record(gp.getId());
+            if (r == null) {
+                src.sendSuccess(() -> Component.literal(name + " has never had dressing or a hat."), false);
+                continue;
+            }
+            String hats = r.owned.isEmpty() ? "none" : String.join(", ", r.owned);
+            String bought = r.bought.isEmpty() ? "none" : String.join(", ", r.bought.keySet());
+            String auto = r.autoHat().isEmpty() ? "none" : r.autoHat();
+            src.sendSuccess(() -> Component.literal(name + ": dressing " + (r.dressing ? "yes" : "no") + "; hats " + hats + "; bought " + bought
+                    + "; hat on undressed totems " + auto + "; " + r.saved.size() + " saved looks."), false);
+            n++;
+        }
+        return n;
+    }
+
+    private static int lookReply(CommandSourceStack src, @javax.annotation.Nullable com.mrgregles.bsp_core.looks.TotemLook look, String owner, String what, boolean clear, Runnable takeOff) {
+        if (look == null) {
+            src.sendSuccess(() -> Component.literal(owner + "'s " + what + " is plain."), false);
+            return 0;
+        }
+        if (!clear) {
+            src.sendSuccess(() -> Component.literal(owner + "'s " + what + ": " + look), false);
+            return 1;
+        }
+        takeOff.run();
+        BSPCore.LOGGER.info("{} took the look off {}'s {} ({})", src.getTextName(), owner, what, look);
+        src.sendSuccess(() -> Component.literal("Took the look off " + owner + "'s " + what + "."), true);
         return 1;
     }
 

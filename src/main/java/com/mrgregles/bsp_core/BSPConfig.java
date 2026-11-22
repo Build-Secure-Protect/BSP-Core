@@ -234,6 +234,7 @@ public final class BSPConfig {
     // ------------------------------------------------------------------ visuals
 
     public static final ForgeConfigSpec.IntValue AURA_SPHERE_VIEW_DISTANCE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOOKS_EXCLUSIVE_HATS;
 
     public static final ForgeConfigSpec SPEC;
 
@@ -934,6 +935,14 @@ public final class BSPConfig {
         BUILDER.comment("How the totem is drawn").push("visuals");
         AURA_SPHERE_VIEW_DISTANCE = BUILDER.comment("Aura radius spheres are only drawn when the viewer is within this many blocks of the totem.")
                 .defineInRange("auraSphereViewDistance", 32, 1, 256);
+        BUILDER.pop();
+
+        BUILDER.comment("Totem looks: how an owner may dress each of their totems (body colour, head, hat). Dressing takes the LuckPerms",
+                "permission bsp_core.looks (give it to the VIP rank); a single hat takes bsp_core.looks.hat.<hat id>.").push("looks");
+        LOOKS_EXCLUSIVE_HATS = BUILDER.comment("Hats that bsp_core.looks does not include: they come only with their own permission",
+                        "(a season prize or a store purchase). Hat ids: top_hat, halo, flat_cap, beer_cap, sports_cap, beanie, wizard, devil,",
+                        "cowboy, viking, party, chef, propeller.")
+                .defineListAllowEmpty("exclusiveHats", List.of(), o -> o instanceof String);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

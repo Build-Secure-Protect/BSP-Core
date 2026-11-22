@@ -7,6 +7,7 @@ import com.mrgregles.bsp_core.decoy.DecoyTotemBlock;
 import com.mrgregles.bsp_core.decoy.DecoyTotemBlockEntity;
 import com.mrgregles.bsp_core.registry.ModBlocks;
 import com.mrgregles.bsp_core.totem.ShatterTotemBlock;
+import com.mrgregles.bsp_core.totem.ShatterTotemBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
@@ -34,6 +35,37 @@ public class DecoyTotemRenderer implements BlockEntityRenderer<DecoyTotemBlockEn
 
     public DecoyTotemRenderer(BlockEntityRendererProvider.Context ctx) {}
 
+    /**
+     * What fools everyone but the owner: an ordinary owned totem dressed like its owner's nearest real totem (its look and hat, see
+     * {@link DecoyLooks}), and glowing with the Score Leader's gold when its owner leads, exactly as the real totems are drawn.
+     */
+    private static void disguise(DecoyTotemBlockEntity decoy, BlockState totem, PoseStack pose, MultiBufferSource buffers, int light, float partialTick) {
+        ShatterTotemBlockEntity real = DecoyLooks.copied(decoy);
+        com.mrgregles.bsp_core.looks.TotemLook body = real == null ? null : real.shownBody();
+        String hat = real == null ? "" : real.shownHat();
+        var facing = totem.getValue(ShatterTotemBlock.FACING);
+        var level = decoy.getLevel();
+        int lit = Math.max(light, net.minecraft.client.renderer.LevelRenderer.getLightColor(level, decoy.getBlockPos().above()));
+        float time = level.getGameTime() + partialTick;
+        Minecraft.getInstance().getBlockRenderer().renderSingleBlock(totem.setValue(ShatterTotemBlock.LOOKS, body != null), pose, buffers, light,
+                OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
+        if (body != null) {
+            var skin = body.head() == com.mrgregles.bsp_core.looks.TotemLook.Head.PLAYER && decoy.getOwner() != null
+                    ? PlayerSkins.get(new com.mrgregles.bsp_core.totem.TotemOwner(decoy.getOwner(), decoy.getOwnerName())) : null;
+            LookBodyDraw.draw(pose, buffers, body, facing, lit, 0, skin);
+            ShatterTotemRenderer.band(pose, buffers, 0); // the same gold band a dressed totem has
+        }
+        if (!hat.isEmpty()) {
+            HatDraw.draw(pose, buffers, hat, facing, body != null && body.hatTint() ? body.mainColour() : null, lit, time);
+        }
+        java.util.UUID leader = ClientScores.leader();
+        if (leader != null && leader.equals(decoy.getOwner())
+                && Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(decoy.getBlockPos())) < LeaderGlow.REACH * LeaderGlow.REACH) {
+            LeaderGlow.shell(pose, buffers, facing, time);
+            LeaderGlow.sparks(decoy, level, decoy.getBlockPos(), level.getGameTime());
+        }
+    }
+
     @Override
     public void render(DecoyTotemBlockEntity decoy, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
         if (decoy.getLevel() == null) {
@@ -45,7 +77,7 @@ public class DecoyTotemRenderer implements BlockEntityRenderer<DecoyTotemBlockEn
                 .setValue(ShatterTotemBlock.FACING, decoy.getBlockState().getValue(DecoyTotemBlock.FACING)).setValue(ShatterTotemBlock.GLOW, ShatterTotemBlock.Glow.OWNED);
         var blocks = Minecraft.getInstance().getBlockRenderer();
         if (active && !mine) {
-            blocks.renderSingleBlock(totem, pose, buffers, light, OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
+            disguise(decoy, totem, pose, buffers, light, partialTick);
             return;
         }
         float t = (decoy.getLevel().getGameTime() + partialTick) / 20f;
