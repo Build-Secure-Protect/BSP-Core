@@ -4,6 +4,9 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Fixed
+- **A VIP's or operator's new totem wears no hat.** A totem with no look of its own wore its owner's hat of choice, by default the hat LuckPerms granted them last (often the chef's hat). A VIP or operator whose permissions include the hat nodes (`*`, `bsp_core.looks.*`, or a VIP group with `bsp_core.looks.hat.<id>`) counted every hat as bought. A totem without a look now wears no hat while its owner has the VIP rank (`bsp_core.looks`) or is an operator; they pick a hat in the LOOKS tab. A player with hats but no VIP, or whose VIP has ended, still has their chosen hat, by default the newest, put on by itself. `/bsp looks show <player>` reports the hat undressed totems wear by the same rule.
+
 ## [1.21.2] - 2026-11-22
 
 Network protocol 21: servers and clients must both have this version (the VIPs board).

@@ -144,7 +144,7 @@ public final class LooksTab {
             solid = 0xE3B341;
             head = TotemLook.Head.TOTEM;
             hatTint = false;
-            hat = totem == null ? "" : totem.shownHat();
+            hat = ""; // a plain totem of an owner who dresses totems wears no hat
             hasPainting = false;
         }
         takeColour();

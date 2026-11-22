@@ -64,6 +64,14 @@ public final class LookOwner {
         return newestBought();
     }
 
+    /**
+     * The hat this player's totems wear when they have no look: none for a player with dressing (they pick the hat in the LOOKS
+     * tab, and every hat they have would otherwise count as bought), otherwise {@link #autoHat()}.
+     */
+    public String plainHat() {
+        return dressing ? "" : autoHat();
+    }
+
     /** Whether there is anything worth keeping: a record for every player would only fill the database. */
     public boolean worthKeeping() {
         return dressing || !owned.isEmpty() || !bought.isEmpty() || !saved.isEmpty() || clearedBefore > 0 || !hatChoice.isEmpty();

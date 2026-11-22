@@ -165,7 +165,7 @@ ENTRIES = [
     ]),
     ("totem", "looks", "Totem Looks", "minecraft:leather_helmet", 5, [
         text("Your totems can be dressed. Open a placed totem of yours and choose $(l)LOOKS$().$(br2)With the VIP rank you choose the body: one colour, a gradient of two or three, or paint it pixel by pixel. Then the head, the totem's own or yours, and a hat.$(br2)Each totem has its own look. $(l)SAVED LOOKS$() keeps five to put on your other totems."),
-        text("Thirteen hats, from a top hat and a halo to a beer cap and a propeller cap. VIP has them all; a hat can also be bought on its own.$(br2)A hat of your own is worn by all your totems that have no look of their own, with or without VIP. A hat can take the body's colours.", "Hats"),
+        text("Thirteen hats, from a top hat and a halo to a beer cap and a propeller cap. VIP has them all; a hat can also be bought on its own.$(br2)Without VIP, a hat you bought is worn by all your totems, and the LOOKS tab picks which. With VIP, a totem wears the hat its look gives it. A hat can take the body's colours.", "Hats"),
         text("A look belongs to its owner: a stolen totem is plain for its thief. When the VIP rank ends, your totems are plain gold until it returns, and then their looks come back.$(br2)A totem being stolen still pulses red, and a gold band round its base shows whatever its colours.", "Who sees what"),
         text("The player with the most points glows. All their totems wear a thin gold glow and give off gold sparks.$(br2)If two players share the most points, nobody glows. The sparks can be switched off in the client settings.", "The leader's glow"),
     ]),

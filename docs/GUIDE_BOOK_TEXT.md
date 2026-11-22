@@ -304,7 +304,7 @@ Each totem has its own look. **SAVED LOOKS** keeps five to put on your other tot
 
 Thirteen hats, from a top hat and a halo to a beer cap and a propeller cap. VIP has them all; a hat can also be bought on its own.
 
-A hat of your own is worn by all your totems that have no look of their own, with or without VIP. A hat can take the body's colours.
+Without VIP, a hat you bought is worn by all your totems, and the LOOKS tab picks which. With VIP, a totem wears the hat its look gives it. A hat can take the body's colours.
 
 **Page 3: Who sees what**
 

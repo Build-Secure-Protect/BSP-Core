@@ -61,8 +61,9 @@ public final class LookOwners extends SavedData {
 
     /**
      * What a totem with this look shows for an owner with this record. The body, the head and the look's own hat need dressing:
-     * when the owner has lost it (VIP lapsed) the look is hidden, not deleted. A totem whose look does not choose the hat (the owner
-     * has no dressing, or the totem has no look) wears the owner's hat of choice among those they have, by default the newest bought.
+     * when the owner has lost it (VIP lapsed) the look is hidden, not deleted. A totem with no look wears no hat while its owner
+     * has dressing; an owner without dressing (a hat buyer, or a VIP lapsed) has every totem of theirs wear their hat of choice
+     * among those they have, by default the newest bought.
      */
     public static Shown shown(@Nullable TotemLook look, @Nullable LookOwner owner) {
         if (owner == null) {
@@ -72,7 +73,7 @@ public final class LookOwners extends SavedData {
             String hat = look.hat().isEmpty() || owner.owned.contains(look.hat()) ? look.hat() : "";
             return new Shown(look, hat);
         }
-        return new Shown(null, owner.autoHat());
+        return new Shown(null, owner.plainHat());
     }
 
     /** What this totem shows now, from its look and its owner's record here. */

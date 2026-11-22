@@ -204,6 +204,8 @@ public class LooksGameTests {
         h.assertTrue("".equals(LookOwners.shown(look.withHat(""), vip).hat()), "a look without a hat shows none");
         h.assertTrue("".equals(LookOwners.shown(look.withHat("wizard"), vip).hat()), "a hat the owner no longer has is not shown");
         h.assertTrue(LookOwners.shown(null, vip).body() == null, "an undressed totem stays plain");
+        vip.bought.put("beanie", 100L);
+        h.assertTrue("".equals(LookOwners.shown(null, vip).hat()), "a VIP's undressed totem wears no hat, bought hats or not");
 
         LookOwner lapsed = new LookOwner();
         lapsed.owned.add("beanie");
@@ -350,9 +352,13 @@ public class LooksGameTests {
             h.assertTrue(state.get() && "top_hat".equals(totem.shownHat()), "VIP back: the look is back");
 
             totem.setLook(null);
-            h.assertTrue(!state.get() && "beanie".equals(totem.shownHat()), "taken off: plain, with the bought hat");
+            h.assertTrue(!state.get() && totem.shownHat().isEmpty(), "taken off by a VIP: plain, no hat (they pick hats in the tab)");
             CompoundTag sent = totem.getUpdateTag().getCompound("Shown");
-            h.assertTrue(!sent.contains("Body") && "beanie".equals(sent.getString("Hat")), "clients are told the plain body and the hat: " + sent);
+            h.assertTrue(!sent.contains("Body") && sent.getString("Hat").isEmpty(), "clients are told the plain body and no hat: " + sent);
+            nodes.get(vip.getUUID()).remove(TotemLooks.DRESS_PERMISSION);
+            all.check(vip);
+            h.assertTrue("beanie".equals(totem.shownHat()) && "beanie".equals(totem.getUpdateTag().getCompound("Shown").getString("Hat")),
+                    "VIP lapsed: the plain totem wears the bought hat");
             totem.setLook(TotemLook.solid(vip.getUUID(), 1));
             totem.setOwner(null);
             h.assertTrue(!state.get() && totem.shownBody() == null && totem.shownHat().isEmpty(), "unclaimed: plain, no hat");
@@ -361,6 +367,59 @@ public class LooksGameTests {
             ((ShatterTotemBlockEntity) h.getBlockEntity(pos)).setOwner(null);
         }
         h.succeed();
+    }
+
+    /**
+     * A VIP or an operator with every hat (LuckPerms {@code *} or {@code bsp_core.looks.*} answers yes to every hat node, so every
+     * hat counts as bought) places a totem: it wears no hat. A hat buyer without dressing still gets their hat on by itself.
+     */
+    @GameTest(template = EMPTY, batch = BATCH)
+    public static void a_placed_totem_of_a_vip_wears_no_hat(GameTestHelper h) {
+        ServerPlayer vip = player(h), buyer = player(h);
+        BlockPos pos = new BlockPos(1, 2, 1), other = new BlockPos(3, 2, 1);
+        var realSource = TotemLooks.permissionSource;
+        List<UUID> ids = new java.util.ArrayList<>();
+        try {
+            TotemLooks.permissionSource = (id, node) -> id.equals(vip.getUUID()) || id.equals(buyer.getUUID()) && node.equals(TotemHats.permission("chef"));
+            LookOwners all = LookOwners.get(h.getLevel().getServer());
+            all.check(vip);
+            all.check(buyer);
+            h.assertTrue(all.record(vip.getUUID()).dressing && all.record(vip.getUUID()).bought.size() == TotemHats.IDS.size(), "every hat counts as bought for the VIP");
+            ShatterTotemBlockEntity placed = placeFromItem(h, vip, pos, ids);
+            h.assertTrue(placed.getLook() == null && placed.shownHat().isEmpty(), "the VIP's placed totem wears no hat, got " + placed.shownHat());
+            h.assertTrue(placed.getUpdateTag().getCompound("Shown").getString("Hat").isEmpty(), "clients are told no hat");
+            ShatterTotemBlockEntity bought = placeFromItem(h, buyer, other, ids);
+            h.assertTrue("chef".equals(bought.shownHat()), "a buyer without VIP wears their hat, got " + bought.shownHat());
+        } finally {
+            TotemLooks.permissionSource = realSource;
+            for (BlockPos p : List.of(pos, other)) {
+                if (h.getBlockEntity(p) instanceof ShatterTotemBlockEntity be) {
+                    be.setOwner(null); // unclaimed first, so the removal hands nothing back
+                    h.getLevel().removeBlock(h.absolutePos(p), false);
+                }
+            }
+            var ledger = com.mrgregles.bsp_core.data.TotemLedger.get(h.getLevel().getServer());
+            ids.forEach(ledger::forget);
+        }
+        h.succeed();
+    }
+
+    /** Places a fresh totem owned by {@code p} the way a player does (sneak and use the item on the block below). */
+    private static ShatterTotemBlockEntity placeFromItem(GameTestHelper h, ServerPlayer p, BlockPos pos, List<UUID> ids) {
+        BlockPos abs = h.absolutePos(pos), ground = abs.below();
+        h.getLevel().setBlockAndUpdate(ground, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+        ItemStack stack = new ItemStack(ModItems.SHATTER_TOTEM.get());
+        com.mrgregles.bsp_core.totem.TotemIdentity.ensure(stack);
+        ids.add(com.mrgregles.bsp_core.totem.TotemIdentity.id(stack)); // forgotten by the ledger afterwards
+        owner(p).applyTo(stack);
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack);
+        standAt(h, p, pos, 1.5);
+        p.setShiftKeyDown(true);
+        stack.useOn(new net.minecraft.world.item.context.UseOnContext(p, net.minecraft.world.InteractionHand.MAIN_HAND,
+                new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(ground).add(0, 0.5, 0), net.minecraft.core.Direction.UP, ground, false)));
+        p.setShiftKeyDown(false);
+        h.assertTrue(h.getBlockEntity(pos) instanceof ShatterTotemBlockEntity, "the totem is placed");
+        return (ShatterTotemBlockEntity) h.getBlockEntity(pos);
     }
 
     @GameTest(template = EMPTY, batch = BATCH)

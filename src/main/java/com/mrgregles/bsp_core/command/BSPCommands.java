@@ -253,7 +253,7 @@ public final class BSPCommands {
             }
             String hats = r.owned.isEmpty() ? "none" : String.join(", ", r.owned);
             String bought = r.bought.isEmpty() ? "none" : String.join(", ", r.bought.keySet());
-            String auto = r.autoHat().isEmpty() ? "none" : r.autoHat();
+            String auto = r.plainHat().isEmpty() ? "none" : r.plainHat();
             src.sendSuccess(() -> Component.literal(name + ": dressing " + (r.dressing ? "yes" : "no") + "; hats " + hats + "; bought " + bought
                     + "; hat on undressed totems " + auto + "; " + r.saved.size() + " saved looks."), false);
             n++;

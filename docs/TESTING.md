@@ -4000,6 +4000,15 @@ An owner with a dressed totem and a working decoy a few blocks away; a second pl
 - [ ] With the LOOKS tab open (and on the bench), the frame rate stays close to the upgrade tree's.
 - [ ] On a network: `/bsp looks clear <player>` on one server takes the looks off that player's loaded totems on the other servers within a few seconds, and their saved looks do not come back.
 
+
+## Totem looks: a new totem's hat (2026-11-22, unreleased)
+Covered by GameTest `a_placed_totem_of_a_vip_wears_no_hat` (a VIP whose permissions say yes to every hat places a totem: no hat; a chef's-hat buyer without VIP: the chef's hat) and the updated `the_block_state_follows_what_the_totem_shows`. Needs LuckPerms.
+- [ ] As an operator with LuckPerms `*` (or a player with `bsp_core.looks.*`), place a new totem: it has no hat, and the LOOKS tab's hat grid has NO HAT picked. `/bsp looks show <you>` says "hat on undressed totems none".
+- [ ] Put a look with a hat on, then RESET: the totem is plain with no hat.
+- [ ] A player with only `bsp_core.looks.hat.chef` places a totem: it wears the chef's hat.
+- [ ] Give a player `bsp_core.looks` and `bsp_core.looks.hat.beanie`; their plain totem has no hat. Unset `bsp_core.looks`: within five minutes (or at their next login) the plain totem wears the beanie, and `/bsp looks show <player>` says "hat on undressed totems beanie".
+
+
 ## VIPs board, part 1: the VIP list (2026-11-22, 1.21.2)
 Covered by GameTests `vip_groups_include_the_groups_that_inherit_them` and `the_vip_list_follows_luckperms` (LuckPerms replaced by a test hook). Needs LuckPerms; on the network, LuckPerms with shared storage.
 - [ ] With LuckPerms, give two players the group `vip` (one of them offline): `/bsp vips` lists both by name, in alphabetical order, and names the groups (`vip`).
