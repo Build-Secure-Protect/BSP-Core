@@ -4000,7 +4000,7 @@ An owner with a dressed totem and a working decoy a few blocks away; a second pl
 - [ ] With the LOOKS tab open (and on the bench), the frame rate stays close to the upgrade tree's.
 - [ ] On a network: `/bsp looks clear <player>` on one server takes the looks off that player's loaded totems on the other servers within a few seconds, and their saved looks do not come back.
 
-## VIPs board, part 1: the VIP list (2026-11-22, unreleased)
+## VIPs board, part 1: the VIP list (2026-11-22, 1.21.2)
 Covered by GameTests `vip_groups_include_the_groups_that_inherit_them` and `the_vip_list_follows_luckperms` (LuckPerms replaced by a test hook). Needs LuckPerms; on the network, LuckPerms with shared storage.
 - [ ] With LuckPerms, give two players the group `vip` (one of them offline): `/bsp vips` lists both by name, in alphabetical order, and names the groups (`vip`).
 - [ ] `lp creategroup mvp`, `lp group mvp parent add vip`, put a third player in `mvp` only: after `/bsp vips refresh` they are listed too.
@@ -4012,7 +4012,7 @@ Covered by GameTests `vip_groups_include_the_groups_that_inherit_them` and `the_
 - [ ] A player who is neither an operator nor a moderator cannot run `/bsp vips`.
 - [ ] Set `[vipBoard] groups = []`: `/bsp vips` says "No VIPs found in the LuckPerms groups: (none set)".
 
-## VIPs board, part 2: the list on players' games (2026-11-22, unreleased)
+## VIPs board, part 2: the list on players' games (2026-11-22, 1.21.2)
 Covered by GameTests `the_vip_list_reaches_clients_whole` and `the_vips_board_joins_only_rotations_that_tick_it`. Network protocol 21: the server and every player need this version. The board's own look (banner, sliding heads, SUPPORT key) is part 4; for now it is a plain list.
 - [ ] In a Score Screen's settings, SHOW on one board: OUR VIPS is among the boards. Picked, the screen lists the VIPs with their heads, sorted by name.
 - [ ] A screen on ROTATE whose pages were never changed does not show OUR VIPS. Tick it in the rotation row: it comes round with the others.
@@ -4021,13 +4021,13 @@ Covered by GameTests `the_vip_list_reaches_clients_whole` and `the_vips_board_jo
 - [ ] Leave the server and join a single-player world: a Score Screen there shows no VIPs from the server.
 - [ ] A 1.21.1 client cannot join a server with this version (protocol mismatch message).
 
-## VIPs board, part 3: the screen's texts (2026-11-22, unreleased)
+## VIPs board, part 3: the screen's texts (2026-11-22, 1.21.2)
 Covered by GameTests `only_web_addresses_may_be_the_support_link` and `a_score_screen_keeps_its_vip_texts`. The rows to type the texts come in part 6 and the drawing in part 4, so for now check only that nothing is lost.
 - [ ] Change any Score Screen setting (font, heading, board): the screen works as before, and nothing about it is lost after a server restart.
 - [ ] Break and place a Score Screen, then reopen its settings: they open with the defaults and nothing errors in the log.
 - [ ] A Score Screen placed before this version loads with no VIP texts and no errors.
 
-## VIPs board, parts 4 to 6: the look, the key and the settings (2026-11-22, unreleased)
+## VIPs board, parts 4 to 6: the look, the key and the settings (2026-11-22, 1.21.2)
 Covered in part by GameTest `a_click_on_a_screen_finds_its_canvas_point` (where a click lands on the screen, every facing). The drawing and the prompt have not been seen in a client.
 - [ ] A 4 by 3 screen on OUR VIPS with a few VIPs: a purple banner with gold edges across the top reading OUR VIPS; the heads in gold frames with names under them, centred and still.
 - [ ] With more VIPs than fit across: two rows (on a 3-high screen) slide left slowly, the lower row half a head behind; heads are cut cleanly at the screen's sides and names fade out before the edges. SPEED 0 stops them.
@@ -4048,7 +4048,7 @@ Covered in part by GameTest `a_click_on_a_screen_finds_its_canvas_point` (where 
 - [ ] The heads are as bright as the rest of the board on screens facing north, south, east and west.
 - [ ] The guide book, Scores and Seasons, has a page "The VIPs board".
 
-## Magnetic Centrifuge: a stack of nuggets in the upgrade slot (2026-11-22, unreleased)
+## Magnetic Centrifuge: a stack of nuggets in the upgrade slot (2026-11-22, 1.21.2)
 Covered by GameTest `automation_centrifuge_upgrade_slot_holds_a_stack_of_nuggets` (64 nuggets go in by hand and by shift-click, one coil only, the Item Hatch puts no nuggets anywhere; formed and powered, one job uses one crystal and one nugget).
 - [ ] Open a formed centrifuge and put a full stack of Magnatite Nuggets in the upgrade slot by hand: all 64 go in. Shift-click a stack from your inventory into an empty upgrade slot: all 64 go in.
 - [ ] With Resonance Crystals in the input slot and the nuggets in the upgrade slot, each Charged Resonance Crystal takes 30 s (20 s with six layers) and uses one nugget: the stack goes 64, 63, 62, ... and the machine keeps going until the crystals or the nuggets run out.

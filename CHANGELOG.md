@@ -4,6 +4,8 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.21.2] - 2026-11-22
+
 Network protocol 21: servers and clients must both have this version (the VIPs board).
 
 ### Added
