@@ -337,7 +337,7 @@ A totem's look is saved on the totem block entity (`Look` in its tag) and on its
 
 ## Demo Totems (`bsp_core:demo_totem`)
 
-(Since the release after 1.21.2.) A Demo Totem is an ordinary block and item, not a Shatter Totem: `BspTotems.isTotem(ItemStack)` is false for it, and no API call, event, score or ledger ever sees it. Inventory sync mods carry it like any item. Its block entity keeps `Look` (a totem look, as above) and `LookBy` (the dressing admin's name) in its tag; the item keeps the same two keys at the top of its tag, and a plain one has no tag. Only admins (`restrictions.admins`, or operators when that list is empty) place, break or dress it; `/bsp totem demo [player] [count]` gives it to admins only.
+(Since 1.22.0.) A Demo Totem is an ordinary block and item, not a Shatter Totem: `BspTotems.isTotem(ItemStack)` is false for it, and no API call, event, score or ledger ever sees it. Inventory sync mods carry it like any item. Its block entity keeps `Look` (a totem look, as above) and `LookBy` (the dressing admin's name) in its tag; the item keeps the same two keys at the top of its tag, and a plain one has no tag. Only admins (`restrictions.admins`, or operators when that list is empty) place, break or dress it; `/bsp totem demo [player] [count]` gives it to admins only.
 
 ## Lead-Lined Chest
 

@@ -4001,7 +4001,7 @@ An owner with a dressed totem and a working decoy a few blocks away; a second pl
 - [ ] On a network: `/bsp looks clear <player>` on one server takes the looks off that player's loaded totems on the other servers within a few seconds, and their saved looks do not come back.
 
 
-## Totem looks: a new totem's hat (2026-11-22, unreleased)
+## Totem looks: a new totem's hat (2026-11-22, 1.22.0)
 Covered by GameTest `a_placed_totem_of_a_vip_wears_no_hat` (a VIP whose permissions say yes to every hat places a totem: no hat; a chef's-hat buyer without VIP: the chef's hat) and the updated `the_block_state_follows_what_the_totem_shows`. Needs LuckPerms.
 - [ ] As an operator with LuckPerms `*` (or a player with `bsp_core.looks.*`), place a new totem: it has no hat, and the LOOKS tab's hat grid has NO HAT picked. `/bsp looks show <you>` says "hat on undressed totems none".
 - [ ] Put a look with a hat on, then RESET: the totem is plain with no hat.
@@ -4066,7 +4066,7 @@ Covered by GameTest `automation_centrifuge_upgrade_slot_holds_a_stack_of_nuggets
 - [ ] Other machines' upgrade slots (Combination Forge, Illyrium Refinery, the Tetrium Crucible's yield slots) still hold one upgrade each.
 - [ ] Hover the empty upgrade slot: the tooltip reads "Copper Tetrium Coil to charge ingots, or Magnatite Nuggets to charge crystals" on one line, inside the window at GUI scale 3 on a 1280 by 720 window.
 
-## Demo Totems, part 1: the block (2026-11-22, unreleased)
+## Demo Totems, part 1: the block (2026-11-22, 1.22.0)
 Covered by GameTests `a_demo_totem_is_no_totem_to_the_rules` (not a totem to the carrying rules, kept through a logout, no admin transfer), `only_admins_place_a_demo_totem`, `only_admins_break_a_demo_totem` (creative included) and `a_demo_totem_keeps_its_look_when_mined`. Not seen in a client. The look is not drawn yet (task 4): a demo placed from an item with a look shows only the plinth until then.
 - [ ] As an admin, take a Demo Totem from BSP-Core's creative tab (right after the Shatter Totem): it shines like a totem's item, its name is purple, the tooltip reads "Admins only. For show: it does nothing a Shatter Totem does."
 - [ ] Place it beside a real owned totem: the same gold body, the same size, facing you, the same light. Breaking particles are gold.
@@ -4076,7 +4076,7 @@ Covered by GameTests `a_demo_totem_is_no_totem_to_the_rules` (not a totem to the
 - [ ] TNT beside it and a piston pushing it: it stays.
 - [ ] Two plain demos stack; a stack holds 64.
 
-## Demo Totems, part 2: the command (2026-11-22, unreleased)
+## Demo Totems, part 2: the command (2026-11-22, 1.22.0)
 Covered by GameTest `the_demo_command_gives_only_to_admins` (refused for a player who is not an admin, the count given, at most 64, plain items). Not seen in a client.
 - [ ] As an operator, `/bsp totem demo`: one Demo Totem in your inventory. `/bsp totem demo <your name> 10`: ten more, in one stack. The chat line reads "Gave 10 Demo Totem(s) to <name>".
 - [ ] `/bsp totem demo <a player who is not an admin>`: a red line "<name> is not an admin: Demo Totems are for admins only", and they get nothing.
@@ -4084,14 +4084,14 @@ Covered by GameTest `the_demo_command_gives_only_to_admins` (refused for a playe
 - [ ] A player who is not an operator does not see `/bsp totem` at all (tab completion), as before.
 - [ ] From the server console, `/bsp totem demo` without a name: an error that a player is needed; with an admin's name it works.
 
-## Demo Totems, part 3: the look rules (2026-11-22, unreleased)
+## Demo Totems, part 3: the look rules (2026-11-22, 1.22.0)
 Covered by GameTest `admins_dress_a_demo_totem` (a non-admin refused, too far refused, an admin with no VIP rank or hat dresses a demo with a hat, a look made for someone else refused, no 10 s wait, saving from a demo without VIP, a saved look put on a demo, the tab's record with every hat, a staff clear leaves demos dressed, only admins take a look off, anyone may ask for the data). Nothing to see in a client until the tab (task 5) and the drawing (task 4); check these then.
 - [ ] As an admin without the VIP rank, dress a demo, then right away dress it again: no "Wait 10 seconds" message.
 - [ ] Right after dressing a demo, dress one of your own totems (as a VIP): no wait carried over from the demo.
 - [ ] `/bsp looks clear <admin>`: the admin's demos keep their looks; their own totems go plain.
 - [ ] The server log has a line for every look put on or taken off a demo, with the admin's name and the position.
 
-## Demo Totems, part 4: the look drawn (2026-11-22, unreleased)
+## Demo Totems, part 4: the look drawn (2026-11-22, 1.22.0)
 Client drawing only; never seen in a client. Until the tab (task 5), dress a demo by placing a demo item that carries a look: mine a dressed demo, or use `/give @s bsp_core:demo_totem{Look:{...}}` with a look tag copied from a dressed totem's item. The decoy's disguise now draws through the same helper (`TotemDress`): check a disguised decoy too.
 - [ ] A demo with a solid colour beside a real totem with the same look: the same body, head, gold band and hat, side by side, facing as placed. Turn round them: nothing missing from any side.
 - [ ] Gradient and painted looks on a demo, and a hat drawn in the body's colours.
@@ -4102,7 +4102,7 @@ Client drawing only; never seen in a client. Until the tab (task 5), dress a dem
 - [ ] With shader packs on and off: the demo's look draws as a real totem's does.
 - [ ] A powered decoy seen by a rival, copying a dressed totem's look: unchanged (body, band, hat, leader glow).
 
-## Demo Totems, part 5: the LOOKS screen (2026-11-22, unreleased)
+## Demo Totems, part 5: the LOOKS screen (2026-11-22, 1.22.0)
 Client screen; never seen in a client. The totem screen's LOOKS tab now takes any "dressable" (`looks/Dressable`): check a real totem's LOOKS tab too.
 - [ ] As an admin without the VIP rank, right-click a Demo Totem: a screen titled DEMO TOTEM with one LOOKS tab, the same layout as a totem's LOOKS tab. Every hat is lit (exclusive ones too), the saved looks row shows your saved looks.
 - [ ] Dress it (SOLID, GRADIENT, PAINT on the bench, MY HEAD, a hat in its own and in the body's colours), press SAVE: the demo in the world changes at once. SAVE again at once: no wait.
@@ -4114,14 +4114,14 @@ Client screen; never seen in a client. The totem screen's LOOKS tab now takes an
 - [ ] At GUI scale 3 on a 1280 by 720 window: the screen fits (shrunk like the totem's) and clicks land where the keys are drawn.
 - [ ] A real totem's LOOKS tab: unchanged for a VIP owner (dressing), and for an owner without VIP (locked, bought hats row).
 
-## Demo Totems, part 6: JEI, EMI and Jade (2026-11-22, unreleased)
+## Demo Totems, part 6: JEI, EMI and Jade (2026-11-22, 1.22.0)
 Client only; never seen in a client.
 - [ ] JEI: search "demo" or "totem": no Demo Totem in the item list (the Shatter Totem and Decoy Totem are there). After F3+T (resource reload) still none.
 - [ ] EMI (with JEI off, or in its own list): no Demo Totem either, with or without a look on a held one.
 - [ ] The creative tab still has it, right after the Shatter Totem.
 - [ ] Jade on a placed demo: "Demo Totem" and "BSP-Core", no owner line; on a real totem and on a working decoy seen by a rival: "Shatter Totem" as before.
 
-## Demo Totems: checks from the audit (2026-11-22, unreleased)
+## Demo Totems: checks from the audit (2026-11-22, 1.22.0)
 Covered by GameTest `audit_demo_totem_checks` (a fake player is never an admin; the place event refused for a non-admin; a demo loaded with a look gets the matching state on its first tick; an over-long dresser name dropped; a plain demo's update tag is not empty). Not seen in a client.
 - [ ] As a player who is not an admin, with a demo in the offhand and a Construction Wand: no demos are placed, "Only admins can place demo totems".
 - [ ] A Create drill and a mechanical piston or glued contraption next to a demo: it is not broken or moved. A Mekanism cardboard box on it: refused.
@@ -4131,7 +4131,7 @@ Covered by GameTest `audit_demo_totem_checks` (a fake player is never an admin; 
 - [ ] `/setblock ~ ~ ~ bsp_core:demo_totem{Look:{...}}` (a look tag copied from a dressed demo's item): it shows the look within a tick.
 - [ ] As an admin, open a demo's screen: no locked VIP line or bought-hats row flashes before the controls appear. E closes the screen.
 
-## Demo Totems: a hat on the plain body (2026-11-22, unreleased)
+## Demo Totems: a hat on the plain body (2026-11-22, 1.22.0)
 Covered by GameTest `a_demo_wears_a_hat_on_its_plain_body` (admins only, unknown hat refused, no look and the baked body, the admin's own hat choice untouched, the tab told the hat, the item keeps it, a look brings its own hat, NO HAT, RESET). Not seen in a client.
 - [ ] As an admin, a demo's LOOKS tab: four BODY keys (SOLID, GRADIENT, PAINT, PLAIN), all labels inside their keys. A plain demo opens on PLAIN, with the line "The totem's own gold body, ..." and MY HEAD and "hat in the body's colours" greyed out.
 - [ ] PLAIN, pick the top hat, SAVE: the demo in the world is the plain gold totem with the top hat, exactly like a non-VIP's totem wearing a bought top hat beside it. The draft keeps the top hat after the save.
@@ -4139,14 +4139,14 @@ Covered by GameTest `a_demo_wears_a_hat_on_its_plain_body` (admins only, unknown
 - [ ] "+" (keep the look) does nothing on PLAIN. RESET: plain gold, no hat, the tab back on PLAIN.
 - [ ] Mine the plain demo with its hat and place it again: the hat is back. A player who is not an admin sees the hat named in the read-only screen.
 
-## Smooth spinning: LOOKS tab and shop displays (2026-11-22, unreleased)
+## Smooth spinning: LOOKS tab and shop displays (2026-11-22, 1.22.0)
 Not seen in a client. Check on a world older than ten days of game time (`/time query gametime` over 16,777,216), and on a new one.
 - [ ] The totem turning in a LOOKS tab (a real totem's and a demo's): smooth at 60 fps and more, no ticking steps. Drag it and let go: it carries on from where it was left, no jump. The paint bench's turning totem too.
 - [ ] A hat that moves (the propeller cap) in the LOOKS preview: smooth.
 - [ ] A Market Stall's item and a Stall Display's item: turn and bob smoothly. The Vendor Post's red lamp still blinks once a second when unassigned, and its figure moves as before.
 - [ ] Open the game menu in single player: the spins stop and carry on from the same place afterwards.
 
-## Smooth spinning: every other renderer (2026-11-22, unreleased)
+## Smooth spinning: every other renderer (2026-11-22, 1.22.0)
 Not seen in a client. On a world with `/time query gametime` over 16,777,216, at 60 fps or more, each of these should move smoothly (before, in small steps):
 - [ ] A Shatter Totem: upgrade orbs bobbing and turning, aura cubes, a propeller cap, the Score Leader's shell, the steal pulse on a dressed totem. A working decoy seen by a rival: the same, in step with a real totem beside it.
 - [ ] Machines and multiblocks: Tetrium Crucible, Illyrium Crucible, Illyrium Refinery, Magnetic Centrifuge, Totem Forge, the single machines, the assembly ghost, the Plasma Tank and its mob chamber grate (the flash when a mob appears), the plasma cable, repeater, interface (the refused blink) and injector, the Totem Projector, the Plasma Accelerator and Decelerator.
@@ -4154,7 +4154,7 @@ Not seen in a client. On a world with `/time query gametime` over 16,777,216, at
 - [ ] The Cloak: walking into and out of a cloaked base, the real blocks and entities fade in and out smoothly, as long as set (`cloak fadeSeconds`).
 - [ ] The Trade Post and the Score Screen were already smooth (their own wrap); unchanged.
 
-## Demo Totems and smooth spinning: checks from the second audit (2026-11-22, unreleased)
+## Demo Totems and smooth spinning: checks from the second audit (2026-11-22, 1.22.0)
 Covered by `a_demo_wears_a_hat_on_its_plain_body` (the hat saved and sent to clients; from too far, or where the demo was mined, the hat is refused and the admin's own hat choice stays untouched). Not seen in a client.
 - [ ] As an admin with your own totems wearing a bought hat: open a demo, pick PLAIN and a hat, step back to the edge of reach and press SAVE. Your own totems keep their hat.
 - [ ] Pause single player with a totem's LOOKS tab open behind the menu (a screenshot, F1): the preview stands still, no jitter.

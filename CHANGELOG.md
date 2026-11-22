@@ -4,6 +4,10 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-11-22
+
+Network protocol 21, unchanged since 1.21.2, but this version registers a new block and item (the Demo Totem), so servers and clients must both have it.
+
 ### Added
 - **Demo Totems.** A Demo Totem is a block for admins, for decoration and for showing players what totems can look like. Placed, it looks exactly like an owned Shatter Totem, and it does nothing a totem does: it has no upgrades, cannot be stolen, is counted nowhere (scores, the board, compasses, decoys) and none of the totem's rules apply to it. It can be placed in any dimension, kept in chests and kept in the inventory through a logout.
   - Only admins (the `restrictions.admins` list, or operators when it is empty) can place it or mine it, in survival or creative, by hand or with a placing tool; machines acting for a player never count as an admin. Explosions, pistons, mobs, Create's contraptions and drills, and Mekanism's cardboard box cannot move or break it. Mining it gives the item back with its look, and in creative a middle-click copies it with its look. Plain demos stack to 64.
