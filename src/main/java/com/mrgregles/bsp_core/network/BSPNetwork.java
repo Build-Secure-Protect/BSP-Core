@@ -29,8 +29,9 @@ public final class BSPNetwork {
      * 18: the chunk view's ANCHOR_STALE, ANCHOR_OUTSIDERS and ANCHOR_RECHOOSE flags.
      * 19: totem looks.
      * 20: the CREDIT tab's plot names carry the servers they are on.
+     * 21: the VIPs board (VipListPacket; the Score Screen settings carry its texts and support link).
      */
-    private static final String PROTOCOL = "20";
+    private static final String PROTOCOL = "21";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -334,6 +335,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(LookDataPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(LookDataPacket::encode).decoder(LookDataPacket::decode)
                 .consumerMainThread(LookDataPacket::handle).add();
+        CHANNEL.messageBuilder(VipListPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(VipListPacket::encode).decoder(VipListPacket::decode)
+                .consumerMainThread(VipListPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

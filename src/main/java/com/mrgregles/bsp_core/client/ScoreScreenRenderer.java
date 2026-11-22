@@ -37,7 +37,8 @@ import java.util.List;
  * The leaderboard comes from {@link ClientScores}, which the server keeps up to date.
  */
 public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlockEntity> {
-    private static final int PX = 64, BG = 0xFF070A0E, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, SILVER = 0xFF8A909C, TEXT = 0xFFE8EAF0, MUTED = 0xFF9AA3B5, STRIP = 0xFF10151C, DARK = 0xFF0B0D11;
+    public static final int PX = 64;
+    private static final int BG = 0xFF070A0E, TQ = 0xFF19D3B0, GOLD = 0xFFFFD23A, SILVER = 0xFF8A909C, TEXT = 0xFFE8EAF0, MUTED = 0xFF9AA3B5, STRIP = 0xFF10151C, DARK = 0xFF0B0D11;
     private static final Style[] FONTS = {Style.EMPTY, Style.EMPTY.withFont(new ResourceLocation("minecraft", "uniform")), Style.EMPTY.withBold(true)};
 
     private final Font font;
@@ -112,7 +113,7 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
             return; // another panel of this screen draws it
         }
         int[] wh = ScoreScreenBlock.size(level, screen.getBlockPos(), facing);
-        float w = wh[0] * PX, h = wh[1] * PX, t = ((level.getGameTime() & 0xFFFFF) + partialTick) / 20f; // the world's ticks would outgrow a float's fractions in days; wraps every ~14.5 hours
+        float w = wh[0] * PX, h = wh[1] * PX, t = clock(level, partialTick);
         this.pose = pose;
         this.buffers = buffers;
         this.style = FONTS[Mth.clamp(screen.font(), 0, FONTS.length - 1)];
@@ -123,30 +124,26 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
         pose.translate(-0.5, wh[1] - 0.5, -0.3125 + 0.004); // top-left corner of the joined face, just in front of the panels
         pose.scale(1f / PX, -1f / PX, 1f / PX);
 
-        float u = Math.min(wh[0] / 5f, wh[1] / 2.2f) * screen.size() / 100f, speed = screen.speed() / 100f;
+        float u = unit(screen, wh[0], wh[1]), speed = screen.speed() / 100f;
         rect(0, 0, w, h, BG);
         float th = 22 * u, top = th + 6, area = h - top - 4;
         // which page: a fixed mode, or the rotation's page for this moment
-        String page;
-        int pageIndex = 0, pageCount = 1;
-        alpha = 1f;
+        Shown shown = shown(screen, t);
+        String page = shown.page();
+        int pageIndex = shown.index(), pageCount = shown.count();
+        alpha = shown.alpha();
         boolean side = screen.look() == ScoreScreenBlockEntity.LOOK_SIDE;
-        if (screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE) {
-            List<String> pages = rotation(screen, side);
-            pageCount = Math.max(1, pages.size());
-            int secs = Math.max(1, screen.rotateSeconds());
-            pageIndex = (int) ((long) (t / secs) % pageCount);
-            page = pages.isEmpty() ? ScoreScreenBlockEntity.PAGE_SCOREBOARD : pages.get(pageIndex);
-            float phase = t % secs;
-            alpha = Mth.clamp(phase / 0.5f, 0.15f, 1f);
-        } else {
-            page = screen.mode() == ScoreScreenBlockEntity.MODE_RULES ? ScoreScreenBlockEntity.PAGE_RULES
-                    : screen.mode() == ScoreScreenBlockEntity.MODE_PRIZES ? ScoreScreenBlockEntity.PAGE_PRIZES
-                    : screen.mode() == ScoreScreenBlockEntity.MODE_PAGE ? screen.boardId() : ScoreScreenBlockEntity.PAGE_SCOREBOARD;
-        }
         boolean rules = page.equals(ScoreScreenBlockEntity.PAGE_RULES), prizes = page.equals(ScoreScreenBlockEntity.PAGE_PRIZES), scoreboard = page.equals(ScoreScreenBlockEntity.PAGE_SCOREBOARD);
         BspBoards.Board modBoard = rules || prizes || scoreboard ? null : boardOf(page);
         boolean sideBoard = side && !rules && !prizes && (modBoard != null || screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE || screen.mode() == ScoreScreenBlockEntity.MODE_PAGE);
+        if (modBoard != null && !sideBoard && modBoard.id().equals(ClientVips.BOARD)) {
+            // the VIPs board draws its own banner in place of the title strip
+            pose.translate(0, 0, 0.2f);
+            vipBoard(screen, modBoard, w, h, u, t, speed, screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE && pageCount > 1 ? pageIndex : -1, pageCount);
+            alpha = 1f;
+            pose.popPose();
+            return;
+        }
         float keep = alpha;
         alpha = 1f; // the strip never fades
         Component heading = rules ? Component.translatable("screen.bsp_core.rules.title")
@@ -184,6 +181,222 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
         pose.popPose();
     }
 
+    // ------------------------------------------------------------------ which page is shown
+
+    /** The page a screen shows at time {@code t} (seconds), its place in the rotation, and how far its fade-in has come. */
+    public record Shown(String page, int index, int count, float alpha) {}
+
+    public static Shown shown(ScoreScreenBlockEntity screen, float t) {
+        if (screen.mode() == ScoreScreenBlockEntity.MODE_ROTATE) {
+            List<String> pages = rotation(screen, screen.look() == ScoreScreenBlockEntity.LOOK_SIDE);
+            int count = Math.max(1, pages.size()), secs = Math.max(1, screen.rotateSeconds());
+            int index = (int) ((long) (t / secs) % count);
+            return new Shown(pages.isEmpty() ? ScoreScreenBlockEntity.PAGE_SCOREBOARD : pages.get(index), index, count, Mth.clamp((t % secs) / 0.5f, 0.15f, 1f));
+        }
+        String page = screen.mode() == ScoreScreenBlockEntity.MODE_RULES ? ScoreScreenBlockEntity.PAGE_RULES
+                : screen.mode() == ScoreScreenBlockEntity.MODE_PRIZES ? ScoreScreenBlockEntity.PAGE_PRIZES
+                : screen.mode() == ScoreScreenBlockEntity.MODE_PAGE ? screen.boardId() : ScoreScreenBlockEntity.PAGE_SCOREBOARD;
+        return new Shown(page, 0, 1, 1f);
+    }
+
+    /** The screen's clock in seconds, as the renderer reads it: the world's ticks wrapped every ~14.5 hours so a float keeps its fractions. */
+    public static float clock(Level level, float partialTick) {
+        return ((level.getGameTime() & 0xFFFFF) + partialTick) / 20f;
+    }
+
+    /** Text unit of a {@code panelsW} by {@code panelsH} screen at the screen's size setting. */
+    public static float unit(ScoreScreenBlockEntity screen, int panelsW, int panelsH) {
+        return Math.min(panelsW / 5f, panelsH / 2.2f) * screen.size() / 100f;
+    }
+
+    /** Whether the screen shows the whole VIPs board at time {@code t} (not as the Side look's column). */
+    public static boolean showsVips(ScoreScreenBlockEntity screen, float t) {
+        return screen.look() != ScoreScreenBlockEntity.LOOK_SIDE && shown(screen, t).page().equals(ScoreScreenBlockEntity.PAGE_VIPS)
+                && BspBoards.board(ClientVips.BOARD).isPresent();
+    }
+
+    /** The VIPs board's layout on this screen, with the screen's font: what is drawn and what a click is tested against. */
+    public static VipBoardLayout vipLayout(Font font, ScoreScreenBlockEntity screen, Component title, float w, float h, float u, boolean dots) {
+        return VipBoardLayout.of(font, FONTS[Mth.clamp(screen.font(), 0, FONTS.length - 1)], screen.vip(), title, w, h, u, dots);
+    }
+
+    // ------------------------------------------------------------------ the VIPs board (look B, owner's pick 2026-11-22)
+
+    private static final int VIP_PURPLE = 0xFF3B1A5C, VIP_PURPLE_L = 0xFF5B2A86, VIP_GOLD_D = 0xFFA8741A, VIP_FOOT = 0xFF140F1D;
+
+    /**
+     * The VIPs board: the admin's top message on a purple banner with gold edges (the board's title when there is none), rows of
+     * heads in gold frames with the names under them sliding sideways when a row is wider than the screen (each row half a head
+     * behind the one above), and a footer with the bottom message and the SUPPORT key. Only the heads move.
+     */
+    private void vipBoard(ScoreScreenBlockEntity screen, BspBoards.Board b, float w, float h, float u, float t, float speed, int dotIndex, int dotCount) {
+        VipBoardLayout l = vipLayout(font, screen, b.title(), w, h, u, dotIndex >= 0);
+        // banner: edges and fill side by side, never stacked, so nothing fights for depth at a distance; the trim one layer up
+        float bb = l.bannerBottom();
+        rect(2, 2, w - 2, 3, GOLD);
+        rect(2, 3, w - 2, 4, VIP_PURPLE_L);
+        rect(2, 4, w - 2, bb - 1, VIP_PURPLE);
+        rect(2, bb - 1, w - 2, bb, GOLD);
+        pose.pushPose();
+        pose.translate(0, 0, LAYER);
+        for (float x = 8 * u; x < w - 8 * u; x += 10 * u) {
+            rect(x, bb - 3.2f, x + 2 * u, bb - 2.4f, VIP_GOLD_D);
+        }
+        pose.popPose();
+        float lh = l.topPx() * VipBoardLayout.LEADING;
+        for (int i = 0; i < l.topLines().size(); i++) {
+            text(l.topLines().get(i), w / 2, 2 + 4 * u + i * lh + lh / 2, l.topPx(), GOLD, 0.5f, w - 8);
+        }
+        if (dotIndex >= 0) {
+            dots(w, l.dotsY(), u, dotIndex, dotCount);
+        }
+
+        // footer: its line and fill side by side; the key and its shadow one layer up, side by side
+        float ft = l.footTop();
+        if (ft < h - 2) {
+            rect(2, ft, w - 2, ft + 1, VIP_GOLD_D);
+            rect(2, ft + 1, w - 2, h - 2, VIP_FOOT);
+            float[] k = l.key();
+            if (k != null) {
+                pose.pushPose();
+                pose.translate(0, 0, LAYER);
+                rect(k[0], k[1], k[2], k[3], GOLD);
+                rect(k[0], k[3], k[2], k[3] + 1.2f * u, VIP_GOLD_D);
+                pose.popPose();
+                text(l.keyText(), (k[0] + k[2]) / 2, (k[1] + k[3]) / 2 + 0.5f, l.keyPx(), VIP_PURPLE, 0.5f, k[2] - k[0] - 4 * u);
+            }
+            float bh = l.bottomPx() * VipBoardLayout.LEADING, by = ft + (h - 2 - ft - l.bottomLines().size() * bh) / 2;
+            for (int i = 0; i < l.bottomLines().size(); i++) {
+                if (k != null) {
+                    text(l.bottomLines().get(i), 6 * u, by + i * bh + bh / 2, l.bottomPx(), TEXT, 0f, VipBoardLayout.messageWidth(w, k, u));
+                } else {
+                    text(l.bottomLines().get(i), w / 2, by + i * bh + bh / 2, l.bottomPx(), TEXT, 0.5f, VipBoardLayout.messageWidth(w, null, u));
+                }
+            }
+        }
+
+        // the heads
+        List<com.mrgregles.bsp_core.score.VipList.Vip> vips = ClientVips.vips();
+        float band = l.tilesBottom() - l.tilesTop();
+        if (vips.isEmpty()) {
+            if (band > 6 * u) {
+                text(Component.translatable("screen.bsp_core.vips.none"), w / 2, l.tilesTop() + band / 2, 10 * u, MUTED, 0.5f, w - 12);
+            }
+            return;
+        }
+        int rows = Math.min(l.rows(), vips.size());
+        if (rows < 1) {
+            return;
+        }
+        float ts = l.tile(), tw = ts + 16 * u, y0 = l.tilesTop() + (band - rows * l.rowH()) / 2 + 2 * u, left = 4, right = w - 4;
+        for (int r = 0; r < rows; r++) {
+            List<com.mrgregles.bsp_core.score.VipList.Vip> row = new java.util.ArrayList<>();
+            for (int i = r; i < vips.size(); i += rows) {
+                row.add(vips.get(i));
+            }
+            float total = row.size() * tw, ry = y0 + r * l.rowH();
+            if (total <= right - left) {
+                float x0 = (w - total) / 2;
+                for (int i = 0; i < row.size(); i++) {
+                    vipTile(row.get(i), x0 + i * tw, ry, ts, tw, u, left, right, false);
+                }
+                continue;
+            }
+            float off = ((t * speed * 16 * u + r * tw / 2) % total + total) % total;
+            for (int k = 0; left - off + k * total < right; k++) {
+                for (int i = 0; i < row.size(); i++) {
+                    float x = left - off + k * total + i * tw;
+                    if (x + tw > left && x < right) {
+                        vipTile(row.get(i), x, ry, ts, tw, u, left, right, true);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Depth between stacked layers of the board: smaller steps flicker on a screen seen from far off. */
+    private static final float LAYER = 0.2f;
+
+    /**
+     * One VIP: a gold frame round their face, cut at the band's ends, and their name under it. On a sliding row the name fades out
+     * near the ends; on a still row it is always whole.
+     */
+    private void vipTile(com.mrgregles.bsp_core.score.VipList.Vip v, float x, float y, float ts, float tw, float u, float left, float right, boolean sliding) {
+        float fx = x + (tw - ts) / 2, inset = 2 * u;
+        // the frame as four strips round the purple square, side by side
+        cropRect(fx - 1, y - 1, fx + ts + 1, y, GOLD, left, right);
+        cropRect(fx - 1, y + ts, fx + ts + 1, y + ts + 1, GOLD, left, right);
+        cropRect(fx - 1, y, fx, y + ts, GOLD, left, right);
+        cropRect(fx + ts, y, fx + ts + 1, y + ts, GOLD, left, right);
+        cropRect(fx, y, fx + ts, y + ts, VIP_PURPLE, left, right);
+        face(v, fx + inset, y + inset, ts - 2 * inset, left, right);
+        Component name = Component.literal(v.name()).withStyle(style);
+        float px = 7 * u, a = 1f;
+        if (sliding) {
+            float nw = Math.min(font.width(name) * px / 8f, tw - 2 * u), cx = x + tw / 2;
+            float room = Math.min(cx - nw / 2 - left, right - (cx + nw / 2));
+            a = Mth.clamp(room / (8 * u), 0f, 1f);
+            if (a < 0.15f) {
+                return;
+            }
+        }
+        float keep = alpha;
+        alpha = keep * a;
+        text(name, x + tw / 2, y + ts + 1.5f * u + px / 2, px, TEXT, 0.5f, tw - 2 * u);
+        alpha = keep;
+    }
+
+    /** A rectangle cut to the band between {@code left} and {@code right}. */
+    private void cropRect(float x0, float y0, float x1, float y1, int argb, float left, float right) {
+        float a = Math.max(x0, left), b = Math.min(x1, right);
+        if (b > a) {
+            rect(a, y0, b, y1, argb);
+        }
+    }
+
+    /** The front of a VIP's head and its hat layer, {@code size} square, cut to the band (the skin's picture is cut with it). */
+    private void face(com.mrgregles.bsp_core.score.VipList.Vip v, float x, float y, float size, float left, float right) {
+        float a = Math.max(x, left), b = Math.min(x + size, right);
+        if (b <= a) {
+            return;
+        }
+        RenderType type = net.minecraft.client.renderer.blockentity.SkullBlockRenderer.getRenderType(net.minecraft.world.level.block.SkullBlock.Types.PLAYER,
+                BountyBoardRenderer.profile(v.id(), v.name()));
+        VertexConsumer vc = buffers.getBuffer(type);
+        float s0 = (a - x) / size, s1 = (b - x) / size;
+        skinQuad(vc, a, y, b, y + size, 8 / 64f + s0 * 8 / 64f, 8 / 64f + s1 * 8 / 64f, 8 / 64f, 2 * LAYER);
+        skinQuad(vc, a, y, b, y + size, 40 / 64f + s0 * 8 / 64f, 40 / 64f + s1 * 8 / 64f, 8 / 64f, 4 * LAYER);
+    }
+
+    private void skinQuad(VertexConsumer vc, float x0, float y0, float x1, float y1, float u0, float u1, float v0, float z) {
+        Matrix4f m = pose.last().pose();
+        org.joml.Matrix3f n = pose.last().normal();
+        float v1 = v0 + 8 / 64f;
+        int a = Math.round(255 * Mth.clamp(alpha, 0f, 1f));
+        float[][] p = {{x0, y0}, {x0, y1}, {x1, y1}, {x1, y0}};
+        float[][] uv = {{u0, v0}, {u0, v1}, {u1, v1}, {u1, v0}};
+        for (int pass = 0; pass < 2; pass++) { // both windings, as the rectangles
+            for (int i = 0; i < 4; i++) {
+                int k = pass == 0 ? i : 3 - i;
+                vc.vertex(m, p[k][0], p[k][1], z).color(255, 255, 255, a).uv(uv[k][0], uv[k][1]).overlayCoords(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY)
+                        .uv2(LightTexture.FULL_BRIGHT).normal(n, 0, -1, 0).endVertex(); // canvas -y is world up: lit like a top face, the same on every facing
+            }
+        }
+    }
+
+    private void text(net.minecraft.util.FormattedCharSequence seq, float x, float y, float px, int colour, float align, float maxWidth) {
+        colour = faded(colour);
+        float w = font.width(seq), k = px / 8f;
+        if (w * k > maxWidth && w > 0) {
+            k = maxWidth / w;
+        }
+        pose.pushPose();
+        pose.translate(x, y, 0.4f);
+        pose.scale(k, k, 1f);
+        font.drawInBatch(seq, -w * align, -4f, colour, false, pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+        pose.popPose();
+    }
+
     // ------------------------------------------------------------------ other mods' boards (BSP-Teleport R8)
 
     /** Boards this client found missing: shown once as "not installed here", then left out of rotations. */
@@ -202,7 +415,9 @@ public class ScoreScreenRenderer implements BlockEntityRenderer<ScoreScreenBlock
         if (source.isEmpty()) {
             out.add(ScoreScreenBlockEntity.PAGE_SCOREBOARD);
             for (BspBoards.Board b : BspBoards.boards()) {
-                out.add(b.id().toString());
+                if (ScoreScreenBlockEntity.inDefaultRotation(b.id().toString())) {
+                    out.add(b.id().toString());
+                }
             }
         } else {
             out.addAll(source);

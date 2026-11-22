@@ -121,6 +121,16 @@ public class ScoreScreenBlock extends BaseEntityBlock {
         return new int[]{w, h};
     }
 
+    /**
+     * Where a point on a screen's face lands on its canvas (64 pixels a panel, from the top-left as seen from the front, y down),
+     * for a screen of {@code panelsH} rows whose bottom-left panel is {@code origin}. The renderer's placing of the canvas, undone.
+     */
+    public static float[] canvasPoint(net.minecraft.world.phys.Vec3 hit, BlockPos origin, Direction facing, int panelsH) {
+        org.joml.Vector3f v = new org.joml.Vector3f((float) (hit.x - origin.getX() - 0.5), (float) (hit.y - origin.getY() - 0.5), (float) (hit.z - origin.getZ() - 0.5));
+        v.rotateY((float) Math.toRadians(facing.toYRot())); // the renderer turns the canvas by -yRot (plain JOML: this runs on servers too)
+        return new float[]{(v.x + 0.5f) * 64, (panelsH - 0.5f - v.y) * 64};
+    }
+
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (player instanceof ServerPlayer sp && Admins.isAdmin(sp)) {

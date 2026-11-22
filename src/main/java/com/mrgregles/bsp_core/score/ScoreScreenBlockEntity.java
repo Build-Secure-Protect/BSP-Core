@@ -32,8 +32,27 @@ public class ScoreScreenBlockEntity extends BlockEntity {
     public static final int LOOK_LEDGER = 0, LOOK_TILES = 1, LOOK_SIDE = 2, LOOK_SPOTLIGHT = 3, LOOKS = 4;
     /** Page ids in a rotation, beside a registered board's {@code namespace:path}. */
     public static final String PAGE_SCOREBOARD = "scoreboard", PAGE_RULES = "rules", PAGE_PRIZES = "prizes";
+    /** The VIPs board's id. Unlike other boards it is not in the default rotation: it joins a rotation only where an admin ticks it. */
+    public static final String PAGE_VIPS = "bsp_core:vips";
+
+    /** Whether a registered board joins the rotation of a screen whose pages were never chosen. */
+    public static boolean inDefaultRotation(String boardId) {
+        return !PAGE_VIPS.equals(boardId);
+    }
     public static final int ROTATE_MIN = 5, ROTATE_MAX = 120, BOARD_ID_MAX = 128;
 
+    /** Longest VIPs board message (top and bottom), link label and link address, in characters. */
+    public static final int VIP_TEXT_MAX = 80, LINK_LABEL_MAX = 24, LINK_MAX = 200;
+
+    /**
+     * What an admin wrote for the VIPs board on this screen: the message on the banner at the top, the message at the bottom, the
+     * support key's label and the address it opens ("" for none). {@code &} colour codes are kept as typed and drawn as colours.
+     */
+    public record VipTexts(String top, String bottom, String label, String link) {
+        public static final VipTexts NONE = new VipTexts("", "", "", "");
+    }
+
+    private VipTexts vip = VipTexts.NONE;
     private int mode = MODE_BOARD, layout = LAYOUT_LIST, font, size = 100, speed = 40, look = LOOK_LEDGER, rotateSeconds = 10;
     private String title = "TOTEM LEADERBOARD", boardId = "";
     private List<String> pages = new ArrayList<>();
@@ -87,6 +106,76 @@ public class ScoreScreenBlockEntity extends BlockEntity {
         return pages;
     }
 
+    /** The VIPs board texts of this screen. */
+    public VipTexts vip() {
+        return vip;
+    }
+
+    /**
+     * Whether {@code link} may be the support key's address: empty (no key), or an {@code http} or {@code https} address with a
+     * host, at most {@link #LINK_MAX} plain ASCII characters (no spaces). Checked here when an admin saves and on the client before opening it.
+     */
+    public static boolean validLink(String link) {
+        if (link == null) {
+            return false;
+        }
+        if (link.isEmpty()) {
+            return true;
+        }
+        if (link.length() > LINK_MAX) {
+            return false;
+        }
+        for (int i = 0; i < link.length(); i++) {
+            char c = link.charAt(i);
+            if (c <= ' ' || c > '~') {
+                return false; // plain ASCII only: no spaces, and no invisible or look-alike characters that would disguise the address in the prompt
+            }
+        }
+        try {
+            java.net.URI uri = new java.net.URI(link);
+            String scheme = uri.getScheme();
+            return scheme != null && (scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))
+                    && uri.getHost() != null && !uri.getHost().isEmpty() && uri.getRawUserInfo() == null;
+        } catch (java.net.URISyntaxException e) {
+            return false;
+        }
+    }
+
+    /** A text as stored: no control characters or section signs (colours are written with {@code &}), ends trimmed, cut to {@code max}. */
+    public static String cleanText(String s, int max) {
+        if (s == null) {
+            return "";
+        }
+        StringBuilder b = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= 32 && c != 127 && c != '\u00A7') {
+                b.append(c);
+            }
+        }
+        String t = b.toString().strip();
+        return t.length() > max ? t.substring(0, max).strip() : t;
+    }
+
+    /**
+     * New VIPs board texts, kept as {@link #cleanText cleaned}. A link that is not {@link #validLink valid} is ignored and the
+     * screen keeps the link it had; true when the link was taken.
+     */
+    private boolean setVip(VipTexts texts) {
+        String link = texts.link() == null ? "" : texts.link().strip();
+        boolean ok = validLink(link);
+        vip = new VipTexts(cleanText(texts.top(), VIP_TEXT_MAX), cleanText(texts.bottom(), VIP_TEXT_MAX), cleanText(texts.label(), LINK_LABEL_MAX),
+                ok ? link : vip.link());
+        return ok;
+    }
+
+    /** All settings at once, the VIPs board texts too; true when the link was taken (see {@link #setVip}). */
+    public boolean configure(int mode, int layout, int font, int size, int speed, String title, String boardId, int look, int rotateSeconds, List<String> pages, VipTexts texts) {
+        boolean ok = setVip(texts);
+        configure(mode, layout, font, size, speed, title, boardId, look, rotateSeconds, pages);
+        return ok;
+    }
+
     public void configure(int mode, int layout, int font, int size, int speed, String title) {
         configure(mode, layout, font, size, speed, title, boardId, look, rotateSeconds, pages);
     }
@@ -137,6 +226,10 @@ public class ScoreScreenBlockEntity extends BlockEntity {
             list.add(StringTag.valueOf(p));
         }
         tag.put("Pages", list);
+        tag.putString("VipTop", vip.top());
+        tag.putString("VipBottom", vip.bottom());
+        tag.putString("VipLabel", vip.label());
+        tag.putString("VipLink", vip.link());
     }
 
     @Override
@@ -156,6 +249,9 @@ public class ScoreScreenBlockEntity extends BlockEntity {
             for (Tag t : tag.getList("Pages", Tag.TAG_STRING)) {
                 pages.add(t.getAsString());
             }
+            String link = tag.getString("VipLink");
+            vip = new VipTexts(cleanText(tag.getString("VipTop"), VIP_TEXT_MAX), cleanText(tag.getString("VipBottom"), VIP_TEXT_MAX),
+                    cleanText(tag.getString("VipLabel"), LINK_LABEL_MAX), validLink(link) ? link : "");
         }
     }
 

@@ -22,6 +22,22 @@ KEYS = {
     "gui.bsp_core.screen.seconds": "%s s",
     "screen.bsp_core.board.missing": "Board %s is not installed here",
     "screen.bsp_core.board.empty": "Nothing on this board yet",
+    # the VIPs board (2026-11-22)
+    "screen.bsp_core.vips.title": "OUR VIPS",
+    "screen.bsp_core.vips.support": "SUPPORT",
+    "screen.bsp_core.vips.none": "No VIPs yet",
+    "gui.bsp_core.screen.vip_texts": "VIP texts",
+    "gui.bsp_core.screen.back": "Back",
+    "gui.bsp_core.screen.vip.top": "Top",
+    "gui.bsp_core.screen.vip.bottom": "Bottom",
+    "gui.bsp_core.screen.vip.label": "Key label",
+    "gui.bsp_core.screen.vip.link": "Link",
+    "gui.bsp_core.screen.vip.colours": "Colours: &6 gold &c red &a green &l bold &r plain",
+    "gui.bsp_core.screen.vip.label_hint": "Shown on the key. Empty: SUPPORT",
+    "gui.bsp_core.screen.vip.link_ok": "A right-click on the key opens the link prompt",
+    "gui.bsp_core.screen.vip.link_none": "No link: the key is hidden",
+    "gui.bsp_core.screen.vip.link_bad": "Not a web address: the saved link stays",
+    "gui.bsp_core.screen.vip.link_unsaved": "Saved on Enter, Back or Done",
 }
 lang = json.loads(LANG.read_text())
 lang.update(KEYS)

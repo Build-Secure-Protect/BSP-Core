@@ -235,6 +235,7 @@ public final class BSPConfig {
 
     public static final ForgeConfigSpec.IntValue AURA_SPHERE_VIEW_DISTANCE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOOKS_EXCLUSIVE_HATS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> VIP_BOARD_GROUPS;
 
     public static final ForgeConfigSpec SPEC;
 
@@ -943,6 +944,11 @@ public final class BSPConfig {
                         "(a season prize or a store purchase). Hat ids: top_hat, halo, flat_cap, beer_cap, sports_cap, beanie, wizard, devil,",
                         "cowboy, viking, party, chef, propeller.")
                 .defineListAllowEmpty("exclusiveHats", List.of(), o -> o instanceof String);
+        BUILDER.pop();
+
+        BUILDER.comment("The VIPs board of the Score Screen: every player in these LuckPerms groups, online or not, with their head and name.").push("vipBoard");
+        VIP_BOARD_GROUPS = BUILDER.comment("LuckPerms groups whose members are VIPs. A group that inherits one of these counts too. Without LuckPerms the board is empty.")
+                .defineListAllowEmpty("groups", List.of("vip"), o -> o instanceof String);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

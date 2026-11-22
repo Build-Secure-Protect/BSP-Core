@@ -31,6 +31,11 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
 
     private final BlockPos origin;
     private final String initialTitle;
+    /** The VIPs board texts as the screen had them, then as typed on the VIP TEXTS page. */
+    private ScoreScreenBlockEntity.VipTexts vip;
+    /** The VIP TEXTS page: the top and bottom messages, the key's label and its link, in place of the other rows. */
+    private boolean textsPage;
+    private EditBox vipTop, vipBottom, vipLabel, vipLink;
     private int mode, layout, fontIndex, size, speed, look, rotate;
     private String boardId;
     private List<String> pages;
@@ -52,6 +57,7 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
         this.boardId = screen.boardId();
         this.pages = new ArrayList<>(screen.pages());
         this.initialTitle = screen.title();
+        this.vip = screen.vip();
     }
 
     private int left() {
@@ -74,10 +80,78 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
         title.setValue(keep);
         title.setResponder(s -> send());
         addRenderableWidget(title);
+        int bx = left() + OPT_X, bw = W - OPT_X - 10;
+        vipTop = vipBox(bx, rowY(0) + 1, bw, ScoreScreenBlockEntity.VIP_TEXT_MAX, vipTop != null ? vipTop.getValue() : vip.top(), "top");
+        vipBottom = vipBox(bx, rowY(2) + 1, bw, ScoreScreenBlockEntity.VIP_TEXT_MAX, vipBottom != null ? vipBottom.getValue() : vip.bottom(), "bottom");
+        vipLabel = vipBox(bx, rowY(4) + 1, bw, ScoreScreenBlockEntity.LINK_LABEL_MAX, vipLabel != null ? vipLabel.getValue() : vip.label(), "label");
+        vipLink = vipBox(bx, rowY(6) + 1, bw, ScoreScreenBlockEntity.LINK_MAX, vipLink != null ? vipLink.getValue() : vip.link(), "link");
+        vipLink.setResponder(s -> {}); // the link is saved whole, on BACK, DONE, Escape or Enter, never half typed
+        showPage();
+    }
+
+    private EditBox vipBox(int x, int y, int w, int max, String value, String name) {
+        EditBox box = new EditBox(font, x, y, w, 16, Component.translatable("gui.bsp_core.screen.vip." + name));
+        box.setMaxLength(max);
+        box.setValue(value);
+        box.setResponder(s -> send());
+        addRenderableWidget(box);
+        return box;
+    }
+
+    /** Shows the boxes of the page that is open and hides the others. */
+    private void showPage() {
+        title.setVisible(!textsPage);
+        for (EditBox b : vipBoxes()) {
+            b.setVisible(textsPage);
+            if (!textsPage) {
+                b.setFocused(false);
+            }
+        }
+        if (textsPage) {
+            title.setFocused(false);
+        }
+    }
+
+    private List<EditBox> vipBoxes() {
+        return List.of(vipTop, vipBottom, vipLabel, vipLink);
+    }
+
+    /** Whether this screen shows the whole VIPs board, alone or in its rotation (not as the Side look's column): only then is the VIP TEXTS key offered. */
+    private boolean showsVips() {
+        return look != ScoreScreenBlockEntity.LOOK_SIDE && (mode == ScoreScreenBlockEntity.MODE_PAGE && ScoreScreenBlockEntity.PAGE_VIPS.equals(boardId)
+                || mode == ScoreScreenBlockEntity.MODE_ROTATE && rotation().contains(ScoreScreenBlockEntity.PAGE_VIPS));
+    }
+
+    /** Takes the link box's address when it is a web address (or empty), and sends it; a bad one leaves the saved link as it was. */
+    private void commitLink() {
+        if (vipLink == null) {
+            return;
+        }
+        String link = vipLink.getValue().strip();
+        if (ScoreScreenBlockEntity.validLink(link) && !link.equals(vip.link())) {
+            vip = new ScoreScreenBlockEntity.VipTexts(vip.top(), vip.bottom(), vip.label(), link);
+            send();
+        }
+    }
+
+    /** Leaves the VIP TEXTS page for the other settings. */
+    private void back() {
+        commitLink();
+        textsPage = false;
+        showPage();
+    }
+
+    @Override
+    public void onClose() {
+        commitLink();
+        super.onClose();
     }
 
     private void send() {
-        BSPNetwork.CHANNEL.sendToServer(new ScoreScreenConfigPacket(origin, mode, layout, fontIndex, size, speed, title.getValue(), boardId, look, rotate, pages));
+        if (vipTop != null) {
+            vip = new ScoreScreenBlockEntity.VipTexts(vipTop.getValue(), vipBottom.getValue(), vipLabel.getValue(), vip.link());
+        }
+        BSPNetwork.CHANNEL.sendToServer(new ScoreScreenConfigPacket(origin, mode, layout, fontIndex, size, speed, title.getValue(), boardId, look, rotate, pages, vip));
     }
 
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
@@ -92,7 +166,9 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
         List<String> out = new ArrayList<>();
         out.add(ScoreScreenBlockEntity.PAGE_SCOREBOARD);
         for (BspBoards.Board b : BspBoards.boards()) {
-            out.add(b.id().toString());
+            if (ScoreScreenBlockEntity.inDefaultRotation(b.id().toString())) {
+                out.add(b.id().toString());
+            }
         }
         return out;
     }
@@ -121,9 +197,21 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
-        if (title.isFocused() && key != 256) { // let the title box take every key except Escape
-            title.keyPressed(key, scan, mods);
+        if (key == 256 && textsPage) { // Escape on the texts page goes back to the other settings
+            back();
             return true;
+        }
+        if ((key == 257 || key == 335) && textsPage && vipLink.isFocused()) { // Enter in the link box saves it
+            commitLink();
+            return true;
+        }
+        if (key != 256 && key != 258) { // a focused text box takes every key except Escape and Tab (Tab moves between the boxes)
+            for (EditBox box : textsPage ? vipBoxes() : List.of(title)) {
+                if (box.isFocused()) {
+                    box.keyPressed(key, scan, mods);
+                    return true;
+                }
+            }
         }
         return super.keyPressed(key, scan, mods);
     }
@@ -206,6 +294,12 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
         g.fill(x - 1, y - 1, x + W + 1, y + H + 1, VIO);
         g.fill(x, y, x + W, y + H, BG);
         g.drawString(font, this.getTitle(), x + 10, y + 8, VIO & 0xFFFFFF, false);
+        if (textsPage) {
+            renderTexts(g, mouseX, mouseY);
+            option(g, x + W - 70, y + H - 24, 60, Component.translatable("gui.bsp_core.screen.done"), false, mouseX, mouseY, this::onClose);
+            super.render(g, mouseX, mouseY, partialTick);
+            return;
+        }
         for (int row = 0; row < ROWS; row++) {
             g.drawString(font, Component.translatable("gui.bsp_core.screen." + LABELS[row]), x + LABEL_X, rowY(row) + 4, MUTED, false);
         }
@@ -283,8 +377,27 @@ public class ScoreScreenConfigScreen extends Screen implements ScreenFit.Fitted 
             int[] wh = ScoreScreenBlock.size(mc.level, origin, mc.level.getBlockState(origin).getValue(ScoreScreenBlock.FACING));
             small(g, Component.translatable("gui.bsp_core.screen.size_info", wh[0], wh[1]), x + 10, y + H - 19, MUTED);
         }
+        if (showsVips()) {
+            option(g, x + W - 140, y + H - 24, 66, Component.translatable("gui.bsp_core.screen.vip_texts"), false, mouseX, mouseY, () -> { textsPage = true; showPage(); });
+        }
         option(g, x + W - 70, y + H - 24, 60, Component.translatable("gui.bsp_core.screen.done"), false, mouseX, mouseY, this::onClose);
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    /** The VIP TEXTS page: four boxes, each with its name at the left and a line of help under it, and BACK. */
+    private void renderTexts(GuiGraphics g, int mouseX, int mouseY) {
+        int x = left(), y = top();
+        String[] names = {"top", "bottom", "label", "link"};
+        for (int i = 0; i < 4; i++) {
+            g.drawString(font, Component.translatable("gui.bsp_core.screen.vip." + names[i]), x + LABEL_X, rowY(i * 2) + 5, MUTED, false);
+        }
+        small(g, Component.translatable("gui.bsp_core.screen.vip.colours"), x + OPT_X, rowY(1) + 3, MUTED);
+        small(g, Component.translatable("gui.bsp_core.screen.vip.label_hint"), x + OPT_X, rowY(5) + 3, MUTED);
+        String link = vipLink.getValue().strip();
+        boolean ok = ScoreScreenBlockEntity.validLink(link), saved = link.equals(vip.link());
+        String hint = !ok ? "link_bad" : !saved ? "link_unsaved" : link.isEmpty() ? "link_none" : "link_ok";
+        small(g, Component.translatable("gui.bsp_core.screen.vip." + hint), x + OPT_X, rowY(7) + 3, ok ? MUTED : 0xFF6B6B);
+        option(g, x + W - 140, y + H - 24, 66, Component.translatable("gui.bsp_core.screen.back"), false, mouseX, mouseY, this::back);
     }
 
     private void small(GuiGraphics g, Component text, int sx, int sy, int colour) {

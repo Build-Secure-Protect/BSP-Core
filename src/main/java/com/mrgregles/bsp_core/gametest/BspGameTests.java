@@ -6390,7 +6390,7 @@ public class BspGameTests {
             screen.configure(0, 1, 2, 120, 50, "AGAIN");
             h.assertTrue(screen.boardId().equals(id.toString()) && screen.pages().size() == 3, "the old six-field configure leaves the board settings alone");
             // the settings packet carries the new fields
-            var packet = new com.mrgregles.bsp_core.network.ScoreScreenConfigPacket(h.absolutePos(pos), 4, 0, 0, 100, 40, "SPAWN", id.toString(), 2, 15, java.util.List.of("scoreboard", id.toString()));
+            var packet = new com.mrgregles.bsp_core.network.ScoreScreenConfigPacket(h.absolutePos(pos), 4, 0, 0, 100, 40, "SPAWN", id.toString(), 2, 15, java.util.List.of("scoreboard", id.toString()), com.mrgregles.bsp_core.score.ScoreScreenBlockEntity.VipTexts.NONE);
             var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
             com.mrgregles.bsp_core.network.ScoreScreenConfigPacket.encode(packet, buf);
             h.assertTrue(com.mrgregles.bsp_core.network.ScoreScreenConfigPacket.decode(buf).equals(packet), "encode and decode agree");

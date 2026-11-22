@@ -35,6 +35,7 @@ public final class ClientSetup {
             ClientOrders.register();
             ClientBounties.register();
             ClientLottery.register();
+            ClientVips.register();
             MenuScreens.register(ModMenus.SHATTER_TOTEM.get(), ShatterTotemScreen::new);
             MenuScreens.register(ModMenus.TRADE_POST.get(), TradePostScreen::new);
             MenuScreens.register(ModMenus.TRADE.get(), TradeScreen::new);

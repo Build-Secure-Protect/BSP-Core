@@ -206,6 +206,142 @@ public final class LuckPermsBridge {
         }
     }
 
+    // ------------------------------------------------------------------ members of groups (the VIP board)
+
+    /**
+     * Every player LuckPerms has stored as a member of one of {@code groups} (lower-case names) or of a group that inherits one,
+     * online or not. Only true, unexpired {@code group.<name>} nodes count, in any context. Asks LuckPerms' storage, so it
+     * completes later, off the server thread; empty at once when LuckPerms is absent. Fails when LuckPerms throws.
+     */
+    public static java.util.concurrent.CompletableFuture<Set<UUID>> membersOf(Set<String> groups) {
+        try {
+            return switch (route()) {
+                case FORGE -> forgeMembers(groups);
+                case BUKKIT -> bukkitMembers(groups);
+                default -> java.util.concurrent.CompletableFuture.completedFuture(Set.of());
+            };
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            return java.util.concurrent.CompletableFuture.failedFuture(e);
+        }
+    }
+
+    /**
+     * The names LuckPerms last saw for these players (it keeps them in lower case), "" for one it has none for. Asked one by one, so
+     * pass only players whose names are not known otherwise. Empty at once without LuckPerms or players.
+     */
+    public static java.util.concurrent.CompletableFuture<java.util.Map<UUID, String>> usernames(Set<UUID> ids) {
+        if (ids.isEmpty()) {
+            return java.util.concurrent.CompletableFuture.completedFuture(java.util.Map.of());
+        }
+        try {
+            java.util.Map<UUID, java.util.concurrent.CompletableFuture<String>> names = new java.util.HashMap<>();
+            switch (route()) {
+                case FORGE -> {
+                    net.luckperms.api.model.user.UserManager users = net.luckperms.api.LuckPermsProvider.get().getUserManager();
+                    for (UUID id : ids) {
+                        names.put(id, users.lookupUsername(id).exceptionally(e -> null));
+                    }
+                }
+                case BUKKIT -> {
+                    Object users = call(bukkitApi, "getUserManager");
+                    Method lookup = find(users.getClass(), "lookupUsername");
+                    for (UUID id : ids) {
+                        @SuppressWarnings("unchecked")
+                        var name = (java.util.concurrent.CompletableFuture<String>) lookup.invoke(users, id);
+                        names.put(id, name.exceptionally(e -> null));
+                    }
+                }
+                default -> {
+                    return java.util.concurrent.CompletableFuture.completedFuture(java.util.Map.of());
+                }
+            }
+            return namesOf(names);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            return java.util.concurrent.CompletableFuture.failedFuture(e);
+        }
+    }
+
+    private static java.util.concurrent.CompletableFuture<Set<UUID>> forgeMembers(Set<String> groups) {
+        net.luckperms.api.LuckPerms lp = net.luckperms.api.LuckPermsProvider.get();
+        java.util.Map<String, Set<String>> parents = new java.util.HashMap<>();
+        for (net.luckperms.api.model.group.Group g : lp.getGroupManager().getLoadedGroups()) {
+            Set<String> up = new TreeSet<>();
+            for (net.luckperms.api.model.group.Group p : g.getInheritedGroups(net.luckperms.api.query.QueryOptions.nonContextual())) {
+                up.add(p.getName().toLowerCase(Locale.ROOT));
+            }
+            parents.put(g.getName().toLowerCase(Locale.ROOT), up);
+        }
+        net.luckperms.api.model.user.UserManager users = lp.getUserManager();
+        List<java.util.concurrent.CompletableFuture<java.util.Map<UUID, Collection<net.luckperms.api.node.Node>>>> searches = new java.util.ArrayList<>();
+        for (String g : com.mrgregles.bsp_core.score.VipList.withHeirs(groups, parents)) {
+            searches.add(users.searchAll(net.luckperms.api.node.matcher.NodeMatcher.key("group." + g)));
+        }
+        return java.util.concurrent.CompletableFuture.allOf(searches.toArray(new java.util.concurrent.CompletableFuture[0])).thenApply(done -> {
+            Set<UUID> ids = new java.util.HashSet<>();
+            for (var search : searches) {
+                search.join().forEach((id, nodes) -> {
+                    for (net.luckperms.api.node.Node n : nodes) {
+                        if (n.getValue() && !n.hasExpired()) {
+                            ids.add(id);
+                            break;
+                        }
+                    }
+                });
+            }
+            return ids;
+        });
+    }
+
+    private static java.util.concurrent.CompletableFuture<Set<UUID>> bukkitMembers(Set<String> groups) throws ReflectiveOperationException {
+        ClassLoader loader = bukkitApi.getClass().getClassLoader();
+        Method key = loader.loadClass("net.luckperms.api.node.matcher.NodeMatcher").getMethod("key", String.class);
+        Object noContext = loader.loadClass("net.luckperms.api.query.QueryOptions").getMethod("nonContextual").invoke(null);
+        java.util.Map<String, Set<String>> parents = new java.util.HashMap<>();
+        for (Object g : (Collection<?>) call(call(bukkitApi, "getGroupManager"), "getLoadedGroups")) {
+            Set<String> up = new TreeSet<>();
+            for (Object p : (Collection<?>) find(g.getClass(), "getInheritedGroups").invoke(g, noContext)) {
+                up.add(((String) call(p, "getName")).toLowerCase(Locale.ROOT));
+            }
+            parents.put(((String) call(g, "getName")).toLowerCase(Locale.ROOT), up);
+        }
+        Object users = call(bukkitApi, "getUserManager");
+        Method searchAll = find(users.getClass(), "searchAll");
+        List<java.util.concurrent.CompletableFuture<?>> searches = new java.util.ArrayList<>();
+        for (String g : com.mrgregles.bsp_core.score.VipList.withHeirs(groups, parents)) {
+            searches.add((java.util.concurrent.CompletableFuture<?>) searchAll.invoke(users, key.invoke(null, "group." + g)));
+        }
+        return java.util.concurrent.CompletableFuture.allOf(searches.toArray(new java.util.concurrent.CompletableFuture[0])).thenApply(done -> {
+            try {
+                Set<UUID> ids = new java.util.HashSet<>();
+                for (var search : searches) {
+                    for (java.util.Map.Entry<?, ?> e : ((java.util.Map<?, ?>) search.join()).entrySet()) {
+                        for (Object n : (Collection<?>) e.getValue()) {
+                            if (Boolean.TRUE.equals(call(n, "getValue")) && !Boolean.TRUE.equals(call(n, "hasExpired"))) {
+                                ids.add((UUID) e.getKey());
+                                break;
+                            }
+                        }
+                    }
+                }
+                return ids;
+            } catch (ReflectiveOperationException e) {
+                throw new java.util.concurrent.CompletionException(e);
+            }
+        });
+    }
+
+    /** Waits for every name; a missing one becomes "". */
+    private static java.util.concurrent.CompletableFuture<java.util.Map<UUID, String>> namesOf(java.util.Map<UUID, java.util.concurrent.CompletableFuture<String>> names) {
+        return java.util.concurrent.CompletableFuture.allOf(names.values().toArray(new java.util.concurrent.CompletableFuture[0])).thenApply(done -> {
+            java.util.Map<UUID, String> out = new java.util.HashMap<>();
+            names.forEach((id, f) -> {
+                String n = f.join();
+                out.put(id, n == null ? "" : n);
+            });
+            return out;
+        });
+    }
+
     // ------------------------------------------------------------------ reflection helpers
 
     /** Calls a public no-argument method by name, looking through the class and its interfaces. */

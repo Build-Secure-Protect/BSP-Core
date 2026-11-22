@@ -2598,6 +2598,7 @@
   "gui.bsp_core.trade_post.tab.trade": "TRADE",
   "gui.bsp_core.trade_post.tab.lottery": "LOTTERY",
   "screen.bsp_core.lottery.title": "LOTTERY",
+  "screen.bsp_core.vips.title": "OUR VIPS",
   "screen.bsp_core.lottery.pot": "POT",
   "screen.bsp_core.lottery.in": "In the drum",
   "screen.bsp_core.lottery.players_in": "%s players are in",
@@ -3368,5 +3369,19 @@
   "gui.bsp_core.looks.bench_size": "One pixel here is one pixel on the totem",
   "gui.bsp_core.looks.slot": "%s, colour %s",
   "gui.bsp_core.looks.back": "BACK",
-  "gui.bsp_core.credit.admin.plots_on": "%s · %s"
+  "gui.bsp_core.credit.admin.plots_on": "%s · %s",
+  "screen.bsp_core.vips.support": "SUPPORT",
+  "screen.bsp_core.vips.none": "No VIPs yet",
+  "gui.bsp_core.screen.vip_texts": "VIP texts",
+  "gui.bsp_core.screen.back": "Back",
+  "gui.bsp_core.screen.vip.top": "Top",
+  "gui.bsp_core.screen.vip.bottom": "Bottom",
+  "gui.bsp_core.screen.vip.label": "Key label",
+  "gui.bsp_core.screen.vip.link": "Link",
+  "gui.bsp_core.screen.vip.colours": "Colours: &6 gold &c red &a green &l bold &r plain",
+  "gui.bsp_core.screen.vip.label_hint": "Shown on the key. Empty: SUPPORT",
+  "gui.bsp_core.screen.vip.link_ok": "A right-click on the key opens the link prompt",
+  "gui.bsp_core.screen.vip.link_none": "No link: the key is hidden",
+  "gui.bsp_core.screen.vip.link_bad": "Not a web address: the saved link stays",
+  "gui.bsp_core.screen.vip.link_unsaved": "Saved on Enter, Back or Done"
 }

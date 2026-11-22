@@ -4,6 +4,16 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Network protocol 21: servers and clients must both have this version (the VIPs board).
+
+### Added
+- **VIPs board for the Score Screen.** A new board, OUR VIPS, shows every VIP of the server: each one's face (with its hat layer) in a gold frame and their name under it, in rows that slide slowly sideways when they do not all fit. Above them a purple banner holds a message from the admins (or the board's title), and along the foot a second message and a gold SUPPORT key with the admin's label. A player who right-clicks the key, from up to 16 blocks away, gets Minecraft's own prompt to open the support page; an admin clicking elsewhere on the screen still gets its settings. Only the heads move.
+  - VIPs are the members of the LuckPerms groups in the new setting `[vipBoard] groups` (by default `vip`), and of any group that inherits one, online or not, sorted by name. With LuckPerms' storage shared across the network every server shows the same VIPs. The list is read when the server starts, every five minutes and shortly after a player logs in. Without LuckPerms the board is empty.
+  - The texts are set per screen: pick the board (or tick it in a rotation) and press VIP TEXTS in the Score Screen settings for the top message, the bottom message (80 characters each, two lines, `&` colour codes), the key's label (24 characters) and its link. The link is kept when Enter, BACK or DONE is pressed, and only as a plain `http://` or `https://` address; without one the key is hidden.
+  - The board joins a rotation only where an admin ticks it, so screens with the default rotation do not start showing it.
+  - Staff commands: `/bsp vips` lists the VIPs and the groups read; `/bsp vips refresh` reads them again at once.
+  - The guide book's Scores and Seasons entry has a page on the board.
+
 ## [1.21.1] - 2026-11-22
 
 Network protocol 20: servers and clients must both have this version.

@@ -197,6 +197,12 @@ A placed totem counts for its owner. A carried totem counts for whoever is carry
 
 Ties go to the player with more totems, then to the higher tier. The leaderboard screens at spawn show the standings, and on a network they cover every server. A screen can also show other boards, such as which servers players call home, and turn through its pages.
 
+**Page 4: The VIPs board**
+
+A screen may show the server's **VIPs**: the head and name of everyone with the VIP rank, sliding past between two messages from the admins.
+
+Right-click the gold key at its foot to open the server's support page. The game asks before it opens anything.
+
 ## Totem Radiation
 
 **Page 1**

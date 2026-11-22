@@ -4000,3 +4000,50 @@ An owner with a dressed totem and a working decoy a few blocks away; a second pl
 - [ ] With the LOOKS tab open (and on the bench), the frame rate stays close to the upgrade tree's.
 - [ ] On a network: `/bsp looks clear <player>` on one server takes the looks off that player's loaded totems on the other servers within a few seconds, and their saved looks do not come back.
 
+## VIPs board, part 1: the VIP list (2026-11-22, unreleased)
+Covered by GameTests `vip_groups_include_the_groups_that_inherit_them` and `the_vip_list_follows_luckperms` (LuckPerms replaced by a test hook). Needs LuckPerms; on the network, LuckPerms with shared storage.
+- [ ] With LuckPerms, give two players the group `vip` (one of them offline): `/bsp vips` lists both by name, in alphabetical order, and names the groups (`vip`).
+- [ ] `lp creategroup mvp`, `lp group mvp parent add vip`, put a third player in `mvp` only: after `/bsp vips refresh` they are listed too.
+- [ ] Remove a player from `vip` and run `/bsp vips refresh`: they are gone. Without the command they are gone within five minutes.
+- [ ] Add a player to `vip` while they are offline, then have them log in: `/bsp vips` lists them within a minute of the login.
+- [ ] Give a player `vip` with an expiry (`lp user <name> parent addtemp vip 1m`): after it runs out and a refresh, they are gone.
+- [ ] On a network: `/bsp vips` on two servers lists the same players.
+- [ ] On a Mohist server with the LuckPerms Bukkit plugin: `/bsp vips` lists the same players as on a Forge server.
+- [ ] A player who is neither an operator nor a moderator cannot run `/bsp vips`.
+- [ ] Set `[vipBoard] groups = []`: `/bsp vips` says "No VIPs found in the LuckPerms groups: (none set)".
+
+## VIPs board, part 2: the list on players' games (2026-11-22, unreleased)
+Covered by GameTests `the_vip_list_reaches_clients_whole` and `the_vips_board_joins_only_rotations_that_tick_it`. Network protocol 21: the server and every player need this version. The board's own look (banner, sliding heads, SUPPORT key) is part 4; for now it is a plain list.
+- [ ] In a Score Screen's settings, SHOW on one board: OUR VIPS is among the boards. Picked, the screen lists the VIPs with their heads, sorted by name.
+- [ ] A screen on ROTATE whose pages were never changed does not show OUR VIPS. Tick it in the rotation row: it comes round with the others.
+- [ ] Add a player to `vip` and run `/bsp vips refresh`: the screen shows them within a second, without anyone logging out.
+- [ ] Log in to a server: the board is filled at once (not empty until the next five-minute refresh).
+- [ ] Leave the server and join a single-player world: a Score Screen there shows no VIPs from the server.
+- [ ] A 1.21.1 client cannot join a server with this version (protocol mismatch message).
+
+## VIPs board, part 3: the screen's texts (2026-11-22, unreleased)
+Covered by GameTests `only_web_addresses_may_be_the_support_link` and `a_score_screen_keeps_its_vip_texts`. The rows to type the texts come in part 6 and the drawing in part 4, so for now check only that nothing is lost.
+- [ ] Change any Score Screen setting (font, heading, board): the screen works as before, and nothing about it is lost after a server restart.
+- [ ] Break and place a Score Screen, then reopen its settings: they open with the defaults and nothing errors in the log.
+- [ ] A Score Screen placed before this version loads with no VIP texts and no errors.
+
+## VIPs board, parts 4 to 6: the look, the key and the settings (2026-11-22, unreleased)
+Covered in part by GameTest `a_click_on_a_screen_finds_its_canvas_point` (where a click lands on the screen, every facing). The drawing and the prompt have not been seen in a client.
+- [ ] A 4 by 3 screen on OUR VIPS with a few VIPs: a purple banner with gold edges across the top reading OUR VIPS; the heads in gold frames with names under them, centred and still.
+- [ ] With more VIPs than fit across: two rows (on a 3-high screen) slide left slowly, the lower row half a head behind; heads are cut cleanly at the screen's sides and names fade out before the edges. SPEED 0 stops them.
+- [ ] Settings: VIP TEXTS appears beside DONE only while the screen shows OUR VIPS (Board) or has it ticked (Rotate). Type a top message with `&6` and `&l`: the banner shows it gold and bold, wrapping onto two lines and shrinking when long. BACK returns to the other settings.
+- [ ] A bottom message and a key label "Become a VIP" with a link `https://shop.buildsecureprotect.com/products/vip`: the footer shows the message at the left and a gold key reading "Become a VIP ▸" at the right. Empty label: the key reads "SUPPORT ▸". Empty link: no key, the message is centred.
+- [ ] Type `shop.buildsecureprotect.com` (no https://) in Link: the line under it turns red ("Not a web address") and, after BACK, the screen keeps its old link. A good address shows "Saved on Enter, Back or Done" until one of those is pressed; typing it does not change the screen letter by letter.
+- [ ] On the texts page Tab moves between the four boxes and Escape goes back to the other settings (saving a good link); Escape again closes.
+- [ ] With the Side look, VIP TEXTS is not offered (the Side column shows only the heads and names).
+- [ ] A villager or armour stand standing in front of the key: right-clicking it still trades with or opens it, no link prompt.
+- [ ] As a player (not an admin), right-click the key from close up and from about 12 blocks away: Minecraft's prompt asks to open the address (YES opens the browser, COPY TO CLIPBOARD, NO). Right-click elsewhere on the screen: nothing.
+- [ ] As an admin, right-click the key: the prompt, not the settings. Right-click elsewhere: the settings.
+- [ ] On ROTATE with OUR VIPS ticked: the key only answers while the VIPs page is up; the rotation's dots show under the banner.
+- [ ] A 2 by 2 screen: one row of smaller heads, the texts shrink to fit. A 1 by 1 screen: the banner and footer only, nothing overlaps.
+- [ ] Each of the three fonts (Minecraft, Uniform, Bold): the key still answers where it is drawn.
+- [ ] Every facing (north, south, east, west): the key answers where it is drawn, on a screen several panels wide.
+- [ ] With shader packs on: the heads and texts show as with them off.
+- [ ] Seen from 40 blocks away and more: the banner's gold edges, the key and the head frames do not flicker.
+- [ ] The heads are as bright as the rest of the board on screens facing north, south, east and west.
+- [ ] The guide book, Scores and Seasons, has a page "The VIPs board".

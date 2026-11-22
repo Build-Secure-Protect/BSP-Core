@@ -9,8 +9,12 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client → server: new settings for a Score Screen. Ignored unless the sender is an admin standing near it. */
-public record ScoreScreenConfigPacket(BlockPos origin, int mode, int layout, int font, int size, int speed, String title, String boardId, int look, int rotateSeconds, java.util.List<String> pages) {
+/**
+ * Client → server: new settings for a Score Screen, the VIPs board texts included. Ignored unless the sender is an admin standing near
+ * it; a support link that is not an http or https address is ignored and the screen keeps its old one.
+ */
+public record ScoreScreenConfigPacket(BlockPos origin, int mode, int layout, int font, int size, int speed, String title, String boardId, int look, int rotateSeconds, java.util.List<String> pages,
+                                      ScoreScreenBlockEntity.VipTexts vip) {
     public static void encode(ScoreScreenConfigPacket msg, FriendlyByteBuf buf) {
         buf.writeBlockPos(msg.origin);
         buf.writeVarInt(msg.mode);
@@ -26,6 +30,10 @@ public record ScoreScreenConfigPacket(BlockPos origin, int mode, int layout, int
         for (String p : msg.pages) {
             buf.writeUtf(p, ScoreScreenBlockEntity.BOARD_ID_MAX);
         }
+        buf.writeUtf(BSPNetwork.cut(msg.vip.top(), ScoreScreenBlockEntity.VIP_TEXT_MAX), ScoreScreenBlockEntity.VIP_TEXT_MAX);
+        buf.writeUtf(BSPNetwork.cut(msg.vip.bottom(), ScoreScreenBlockEntity.VIP_TEXT_MAX), ScoreScreenBlockEntity.VIP_TEXT_MAX);
+        buf.writeUtf(BSPNetwork.cut(msg.vip.label(), ScoreScreenBlockEntity.LINK_LABEL_MAX), ScoreScreenBlockEntity.LINK_LABEL_MAX);
+        buf.writeUtf(BSPNetwork.cut(msg.vip.link(), ScoreScreenBlockEntity.LINK_MAX), ScoreScreenBlockEntity.LINK_MAX);
     }
 
     public static ScoreScreenConfigPacket decode(FriendlyByteBuf buf) {
@@ -37,14 +45,16 @@ public record ScoreScreenConfigPacket(BlockPos origin, int mode, int layout, int
         for (int i = 0; i < n; i++) {
             pages.add(buf.readUtf(ScoreScreenBlockEntity.BOARD_ID_MAX));
         }
-        return new ScoreScreenConfigPacket(origin, mode, layout, font, size, speed, title, boardId, look, rotate, pages);
+        ScoreScreenBlockEntity.VipTexts vip = new ScoreScreenBlockEntity.VipTexts(buf.readUtf(ScoreScreenBlockEntity.VIP_TEXT_MAX),
+                buf.readUtf(ScoreScreenBlockEntity.VIP_TEXT_MAX), buf.readUtf(ScoreScreenBlockEntity.LINK_LABEL_MAX), buf.readUtf(ScoreScreenBlockEntity.LINK_MAX));
+        return new ScoreScreenConfigPacket(origin, mode, layout, font, size, speed, title, boardId, look, rotate, pages, vip);
     }
 
     public static void handle(ScoreScreenConfigPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
         if (player != null && Admins.isAdmin(player) && player.distanceToSqr(msg.origin.getCenter()) <= 32 * 32
                 && player.level().getBlockEntity(msg.origin) instanceof ScoreScreenBlockEntity screen) {
-            screen.configure(msg.mode, msg.layout, msg.font, msg.size, msg.speed, msg.title, msg.boardId, msg.look, msg.rotateSeconds, msg.pages);
+            screen.configure(msg.mode, msg.layout, msg.font, msg.size, msg.speed, msg.title, msg.boardId, msg.look, msg.rotateSeconds, msg.pages, msg.vip);
         }
         ctx.get().setPacketHandled(true);
     }
