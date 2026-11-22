@@ -4055,4 +4055,5 @@ Covered by GameTest `automation_centrifuge_upgrade_slot_holds_a_stack_of_nuggets
 - [ ] A Copper Tetrium Coil still goes in one at a time, and the centrifuge still charges Magnatite Ingots with it and separates Magnatite Ore as before.
 - [ ] A hopper or pipe on the Item Hatch still fills only the input slot (ore, ingots, crystals); nuggets piped in are refused.
 - [ ] Other machines' upgrade slots (Combination Forge, Illyrium Refinery, the Tetrium Crucible's yield slots) still hold one upgrade each.
+- [ ] Hover the empty upgrade slot: the tooltip reads "Copper Tetrium Coil to charge ingots, or Magnatite Nuggets to charge crystals" on one line, inside the window at GUI scale 3 on a 1280 by 720 window.
 

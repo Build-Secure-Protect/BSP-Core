@@ -15,7 +15,7 @@ Network protocol 21: servers and clients must both have this version (the VIPs b
   - The guide book's Scores and Seasons entry has a page on the board.
 
 ### Fixed
-- **The Magnetic Centrifuge takes a whole stack of Magnatite Nuggets.** Its upgrade slot held one item, like every machine's upgrade slot, so a player making Charged Resonance Crystals had to put a nugget in by hand before each crystal. The slot now holds up to 64 nuggets, by hand or by shift-click, and the centrifuge still uses one nugget for each crystal it magnetises, so a stack lasts 64 crystals. It still holds only one Copper Tetrium Coil. Pipes and hoppers still fill only the input slot, as before; the other machines' upgrade slots are unchanged.
+- **The Magnetic Centrifuge takes a whole stack of Magnatite Nuggets.** Its upgrade slot held one item, like every machine's upgrade slot, so a player making Charged Resonance Crystals had to put a nugget in by hand before each crystal. The slot now holds up to 64 nuggets, by hand or by shift-click, and the centrifuge still uses one nugget for each crystal it magnetises, so a stack lasts 64 crystals. It still holds only one Copper Tetrium Coil. Pipes and hoppers still fill only the input slot, as before; the other machines' upgrade slots are unchanged. The slot's tooltip names the nuggets as well as the coil.
 
 ## [1.21.1] - 2026-11-22
 

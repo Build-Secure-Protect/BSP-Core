@@ -679,7 +679,7 @@
   "need.bsp_core.magnatite": "Magnatite Ore, or an ingot to charge",
   "need.bsp_core.rf": "Needs %s RF per tick at the Power Port",
   "hint.bsp_core.centrifuge_in": "Magnatite Ore to separate, or a Magnatite Ingot to charge",
-  "hint.bsp_core.centrifuge_coil": "Copper Tetrium Coil (optional): lets the centrifuge charge ingots",
+  "hint.bsp_core.centrifuge_coil": "Copper Tetrium Coil to charge ingots, or Magnatite Nuggets to charge crystals",
   "hint.bsp_core.centrifuge_out": "Magnatite Nuggets, or the Charged Magnatite Ingot",
   "hint.bsp_core.centrifuge_carbon": "Carbon Dust",
   "jei.bsp_core.magnetic_centrifuge": "Magnetic Centrifuge",
