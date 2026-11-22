@@ -140,4 +140,34 @@ final class MemoryCreditStore implements CreditStore {
             t.updatedMs = now();
         }
     }
+
+    /** Each server's published plots, and when (the test's clock) it wrote them. */
+    final Map<String, List<LandPlot>> plots = new LinkedHashMap<>();
+    final Map<String, Long> plotsWritten = new LinkedHashMap<>();
+
+    @Override
+    public void replacePlots(String server, List<LandPlot> rows) {
+        plots.put(server, List.copyOf(rows));
+        plotsWritten.put(server, clock.getAsLong());
+        long cutoff = clock.getAsLong() - PLOTS_KEPT_SECONDS * 1000L;
+        plotsWritten.entrySet().removeIf(e -> {
+            boolean old = e.getValue() < cutoff;
+            if (old) {
+                plots.remove(e.getKey());
+            }
+            return old;
+        });
+    }
+
+    @Override
+    public List<LandPlot> readPlots() {
+        long cutoff = clock.getAsLong() - PLOTS_KEPT_SECONDS * 1000L;
+        List<LandPlot> out = new ArrayList<>();
+        plots.forEach((server, rows) -> {
+            if (plotsWritten.getOrDefault(server, 0L) >= cutoff) {
+                out.addAll(rows);
+            }
+        });
+        return out;
+    }
 }

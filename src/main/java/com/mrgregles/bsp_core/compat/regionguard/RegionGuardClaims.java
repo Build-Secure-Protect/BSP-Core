@@ -115,6 +115,36 @@ public final class RegionGuardClaims {
         }
     }
 
+    /** A plot for sale on this server, as the store credit lists name it: {@code name} is the plot's name, or its id when it has none. */
+    public record ForSale(String dimension, String id, String name) {}
+
+    /** GameTests only: answers {@link #forSale} in place of Region Guard; null for Region Guard's own answer. */
+    @Nullable
+    private static java.util.function.Function<net.minecraft.server.MinecraftServer, List<ForSale>> forSaleHook;
+
+    public static void useForSale(@Nullable java.util.function.Function<net.minecraft.server.MinecraftServer, List<ForSale>> hook) {
+        forSaleHook = hook;
+    }
+
+    /** Every plot for sale on this server, in every dimension (the CREDIT tab's list and the network's copy of it); empty without Region Guard. */
+    public static List<ForSale> forSale(net.minecraft.server.MinecraftServer server) {
+        if (forSaleHook != null) {
+            return forSaleHook.apply(server);
+        }
+        if (!present()) {
+            return List.of();
+        }
+        List<ForSale> out = new ArrayList<>();
+        for (ServerLevel level : server.getAllLevels()) {
+            try {
+                out.addAll(Api.forSale(level));
+            } catch (LinkageError | RuntimeException e) {
+                warn(e);
+            }
+        }
+        return out;
+    }
+
     private static boolean warnedOld;
 
     /**
@@ -353,6 +383,17 @@ public final class RegionGuardClaims {
             return out;
         }
 
+        static List<ForSale> forSale(ServerLevel level) {
+            List<ForSale> out = new ArrayList<>();
+            String dim = level.dimension().location().toString();
+            for (var l : claims().plotsForSale(level)) {
+                String name = l.name() == null || l.name().isBlank() ? l.id() : l.name().trim();
+                // cut as the network's table and a kind's plot names are, so one long name never makes two rows
+                out.add(new ForSale(dim, l.id(), name.length() > com.mrgregles.bsp_core.credit.CreditKind.PLACE_NAME_MAX ? name.substring(0, com.mrgregles.bsp_core.credit.CreditKind.PLACE_NAME_MAX) : name));
+            }
+            return out;
+        }
+
         @Nullable
         static int[] selection(ServerPlayer player) {
             var c = claims().selection(player);
@@ -379,6 +420,7 @@ public final class RegionGuardClaims {
             if (server == null) {
                 return;
             }
+            com.mrgregles.bsp_core.credit.CreditPlots.changed(server); // the network's list of plots for sale follows
             for (ServerPlayer sp : server.getPlayerList().getPlayers()) {
                 if (sp.containerMenu instanceof com.mrgregles.bsp_core.land.LandOfficeMenu) {
                     com.mrgregles.bsp_core.land.LandOfficeMenu.sync(sp, "", true);

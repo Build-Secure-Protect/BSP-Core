@@ -2,7 +2,6 @@ package com.mrgregles.bsp_core.credit;
 
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.admin.Admins;
-import com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims;
 import com.mrgregles.bsp_core.network.BSPNetwork;
 import com.mrgregles.bsp_core.network.CreditAdminActionPacket;
 import com.mrgregles.bsp_core.network.CreditAdminPacket;
@@ -38,7 +37,7 @@ public final class CreditAdmin {
             return; // a modified client: nothing is answered
         }
         switch (msg.action()) {
-            case REQUEST -> send(player, "", true);
+            case REQUEST -> request(player, answer -> BSPNetwork.sendTo(player, answer));
             case SAVE -> {
                 CreditKind kind = CreditKind.load(msg.kind());
                 // the list sizes first: a modified client could send thousands, and tidying them is not free
@@ -47,14 +46,14 @@ public final class CreditAdmin {
                 if (problem == null) {
                     BSPCore.LOGGER.info("Store credit kind {} saved by {}", kind.id, player.getGameProfile().getName());
                 }
-                send(player, problem == null ? "Saved " + kind.name.trim() + "." : problem, problem == null);
+                send(player, problem == null ? "Saved " + kind.name.trim() + "." : problem, problem == null, true);
             }
             case DELETE -> {
                 boolean ok = StoreCredit.deleteKind(player.server, msg.id());
                 if (ok) {
                     BSPCore.LOGGER.info("Store credit kind {} deleted by {}", msg.id(), player.getGameProfile().getName());
                 }
-                send(player, ok ? "Deleted. Its tickets show \"Withdrawn\" and spend nothing." : StoreCredit.storageDown() ? StoreCredit.DOWN : "No such kind.", ok);
+                send(player, ok ? "Deleted. Its tickets show \"Withdrawn\" and spend nothing." : StoreCredit.storageDown() ? StoreCredit.DOWN : "No such kind.", ok, true);
             }
             case TICKETS -> {
                 if (CreditKind.validId(msg.id())) {
@@ -79,6 +78,11 @@ public final class CreditAdmin {
 
     /** The tab's data, with {@code message} as the answer to the last action. */
     public static CreditAdminPacket data(ServerPlayer player, String message, boolean ok) {
+        return data(player, message, ok, false);
+    }
+
+    /** As {@link #data(ServerPlayer, String, boolean)}; {@code answer} when it replies to the admin's SAVE or DELETE. */
+    public static CreditAdminPacket data(ServerPlayer player, String message, boolean ok, boolean answer) {
         CreditLedger l = CreditLedger.get(player.server);
         Map<String, Integer> given = new LinkedHashMap<>();
         for (CreditTicket t : l.tickets()) {
@@ -95,36 +99,27 @@ public final class CreditAdmin {
             shops.add(new CreditAdminPacket.Shop(s.id, s.name, s.parent));
         }
         shops.sort(Comparator.comparing((CreditAdminPacket.Shop s) -> s.name().toLowerCase(Locale.ROOT)));
-        return new CreditAdminPacket(kinds, counts, shops, plotNames(player, l), message, ok);
+        return new CreditAdminPacket(kinds, counts, shops, CreditPlots.names(player.server, l.kinds()), message, ok, answer);
     }
 
-    /** Plot names this server's Land Office sells, with how many plots share each, then names saved in kinds that it does not sell. */
-    static List<CreditAdminPacket.PlotName> plotNames(ServerPlayer player, CreditLedger l) {
-        Map<String, Integer> byName = new LinkedHashMap<>();
-        Map<String, String> spelled = new LinkedHashMap<>();
-        for (RegionGuardClaims.Plot p : RegionGuardClaims.listings(player.serverLevel(), player.getUUID(), player.blockPosition(), null)) {
-            if (p.kind() == RegionGuardClaims.Plot.FOR_SALE) {
-                String name = p.name().isBlank() ? p.id() : p.name().trim();
-                String key = name.toLowerCase(Locale.ROOT);
-                spelled.putIfAbsent(key, name);
-                byName.merge(key, 1, Integer::sum);
+    /**
+     * The tab's data once the network's plots for sale are read, so the LAND OFFICE list names every server's; when they cannot be read,
+     * the last list read and a line saying so. Nothing for a player who left meanwhile. Public for the tests.
+     */
+    public static void request(ServerPlayer player, java.util.function.Consumer<CreditAdminPacket> answer) {
+        CreditPlots.read(ok -> {
+            if (!player.hasDisconnected()) {
+                answer.accept(data(player, ok ? "" : CreditPlots.UNREAD, ok));
             }
-        }
-        for (CreditKind k : l.kinds()) {
-            for (String p : k.plots) {
-                String key = p.toLowerCase(Locale.ROOT);
-                spelled.putIfAbsent(key, p);
-                byName.putIfAbsent(key, 0);
-            }
-        }
-        List<CreditAdminPacket.PlotName> out = new ArrayList<>();
-        byName.forEach((key, n) -> out.add(new CreditAdminPacket.PlotName(spelled.get(key), n)));
-        out.sort(Comparator.comparing((CreditAdminPacket.PlotName p) -> p.count() == 0).thenComparing(p -> p.name().toLowerCase(Locale.ROOT)));
-        return out;
+        });
     }
 
     public static void send(ServerPlayer player, String message, boolean ok) {
-        BSPNetwork.sendTo(player, data(player, message, ok));
+        send(player, message, ok, false);
+    }
+
+    public static void send(ServerPlayer player, String message, boolean ok, boolean answer) {
+        BSPNetwork.sendTo(player, data(player, message, ok, answer));
     }
 
     /** A kind's tickets, newest first. */

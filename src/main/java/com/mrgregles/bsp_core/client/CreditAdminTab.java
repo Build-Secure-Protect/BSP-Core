@@ -86,7 +86,9 @@ public final class CreditAdminTab {
         given.addAll(msg.given());
         shops = msg.shops();
         plots = msg.plots();
-        note(msg.message(), msg.ok());
+        if (msg.answer() || !msg.message().isEmpty()) {
+            note(msg.message(), msg.ok()); // a plain REQUEST reply never wipes the answer to a SAVE shown meanwhile
+        }
         if (msg.ok() && msg.message().startsWith("Saved") && draft != null) {
             selected = draft.id; // a new kind saved: it is chosen now
             isNew = false;
@@ -97,9 +99,12 @@ public final class CreditAdminTab {
             k = kind(selected);
             showTickets = false;
         }
-        // the server's copy replaces the draft when it is the answer to this form's save, or nothing was typed; otherwise the typing stays
-        boolean answer = waiting;
-        waiting = false;
+        // the server's copy replaces the draft when it is the answer to this form's save, or nothing was typed; otherwise the typing stays.
+        // Only a SAVE or DELETE reply answers it: a REQUEST reply (sent after a database read) may arrive meanwhile with the old kind.
+        boolean answer = waiting && msg.answer();
+        if (msg.answer()) {
+            waiting = false;
+        }
         if (!isNew && (draft == null || answer && msg.ok() || !dirty(k))) {
             draft = k == null ? null : k.copy();
             fill();
@@ -718,23 +723,30 @@ public final class CreditAdminTab {
             List<String> listed = new ArrayList<>();
             for (CreditAdminPacket.PlotName p : plots) {
                 listed.add(p.name().toLowerCase(Locale.ROOT));
-                if (q.isEmpty() || p.name().toLowerCase(Locale.ROOT).contains(q)) {
-                    rows.add(plotRow(d, p.name(), p.count()));
+                // the search finds a plot by its name or by a server it is on
+                if (q.isEmpty() || p.name().toLowerCase(Locale.ROOT).contains(q) || p.servers().stream().anyMatch(sv -> sv.toLowerCase(Locale.ROOT).contains(q))) {
+                    rows.add(plotRow(d, p.name(), p.count(), p.servers()));
                 }
             }
             for (String p : d.plots) { // names typed in this session, not saved yet
                 if (!listed.contains(p.toLowerCase(Locale.ROOT)) && (q.isEmpty() || p.toLowerCase(Locale.ROOT).contains(q))) {
-                    rows.add(plotRow(d, p, 0));
+                    rows.add(plotRow(d, p, 0, List.of()));
                 }
             }
         }
         return rows;
     }
 
-    private Row plotRow(CreditKind d, String name, int count) {
+    /** The widest the count and servers on a plot row may be, so the name keeps half the row. */
+    private static final int PLOT_EXTRA_MAX = 100;
+
+    private Row plotRow(CreditKind d, String name, int count, List<String> servers) {
         boolean on = d.plots.stream().anyMatch(p -> p.equalsIgnoreCase(name));
         String extra = count == 0 ? Component.translatable("gui.bsp_core.credit.admin.not_here").getString()
                 : Component.translatable(count == 1 ? "gui.bsp_core.credit.admin.plot" : "gui.bsp_core.credit.admin.plots", count).getString();
+        if (count > 0 && !servers.isEmpty()) { // "3 plots · hub, survival-1"
+            extra = ellipsis(Component.translatable("gui.bsp_core.credit.admin.plots_on", extra, String.join(", ", servers)).getString(), PLOT_EXTRA_MAX);
+        }
         return new Row(name, extra, on, 0, () -> {
             if (!d.plots.removeIf(p -> p.equalsIgnoreCase(name))) {
                 d.plots.add(name);

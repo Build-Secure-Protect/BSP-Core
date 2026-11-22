@@ -4,6 +4,15 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.21.1] - 2026-11-22
+
+Network protocol 20: servers and clients must both have this version.
+
+### Fixed
+- **Store credit lists plot names from the whole network.** The CREDIT tab's LAND OFFICE list offered only the plots for sale where the admin stood (this server, this dimension), so on another server only "Any plot" was there to tick. It now lists every plot for sale on every server of the network, in every dimension, each name with how many plots share it and the servers they are on ("3 plots · hub, survival-1"); the search line also finds plots by server. Each server writes its Region Guard plots for sale to a new table `land_plots` when it connects, when a claim is bought or given up, and every five minutes when its list changed. A stopped server's plots stay listed for a week. A saved name nothing sells reads "not for sale on the network"; when the other servers' plots cannot be read, the tab says so and shows the list read last. Without network storage the tab lists this server's plots in every dimension.
+- **Store credit pays for plots with names longer than 64 characters.** The tab and a kind keep the first 64 characters of a plot's name; the Land Office now matches by those too, so a ticked long name pays.
+- **The CREDIT form keeps a just-saved kind.** Pressing ↻ and then SAVE could put the old values back in the form and clear the "Saved ..." line when the refresh's reply arrived last.
+
 ## [1.21.0] - 2026-11-22
 
 Network protocol 19: servers and clients must both have this version (totem looks).

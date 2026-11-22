@@ -269,6 +269,9 @@ final class MySqlStore implements AutoCloseable {
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("credit_tickets") + " (serial CHAR(9) NOT NULL PRIMARY KEY, kind VARCHAR(32) NOT NULL, left_pieces BIGINT NOT NULL, "
                     + "first_use_ms BIGINT NOT NULL DEFAULT 0, owner CHAR(36) NULL, owner_name VARCHAR(16) NOT NULL DEFAULT '', voided TINYINT NOT NULL DEFAULT 0, "
                     + "created_ms BIGINT NOT NULL DEFAULT 0, warned INT NOT NULL DEFAULT 0, updated_ms BIGINT NOT NULL DEFAULT 0, INDEX (updated_ms), INDEX (kind))");
+            // each server's Region Guard plots for sale, replaced whole by that server, so the CREDIT tab lists the network's plots
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("land_plots") + " (server_id VARCHAR(64) NOT NULL, dimension VARCHAR(128) NOT NULL, plot_id VARCHAR(64) NOT NULL, "
+                    + "name VARCHAR(64) NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (server_id, dimension, plot_id))");
             // the steal-back rule (StealBacks): totems stolen from each player this season, and the players a kit handed a totem lately
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("totem_losses") + " (uuid CHAR(36) NOT NULL, totem_id CHAR(36) NOT NULL, season INT NOT NULL, "
                     + "lost_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (uuid, totem_id), INDEX (season))");
@@ -4205,6 +4208,62 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(2, serial);
             ps.executeUpdate();
         }
+    }
+
+    // ------------------------------------------------------------------ plots for sale on each server (the CREDIT tab)
+
+    private static String cut(String s, int max) {
+        return s == null ? "" : s.length() > max ? s.substring(0, max) : s;
+    }
+
+    /** Replaces {@code server}'s rows with {@code plots} in one transaction, then drops every server's rows older than {@code keptSeconds}. */
+    void landPlotsReplace(String server, java.util.List<com.mrgregles.bsp_core.credit.CreditStore.LandPlot> plots, long keptSeconds) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("land_plots") + " WHERE server_id = ?")) {
+                ps.setString(1, cut(server, 64));
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + t("land_plots") + " (server_id, dimension, plot_id, name) VALUES (?, ?, ?, ?)")) {
+                for (var p : plots) {
+                    ps.setString(1, cut(server, 64));
+                    ps.setString(2, cut(p.dimension(), 128));
+                    ps.setString(3, cut(p.id(), 64));
+                    ps.setString(4, cut(p.name(), 64));
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            c.commit();
+        } catch (SQLException | RuntimeException e) {
+            c.rollback(); // never a half-done replace committed when autocommit comes back on
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("land_plots") + " WHERE UNIX_TIMESTAMP(updated_at) < UNIX_TIMESTAMP() - ?")) {
+            ps.setLong(1, keptSeconds);
+            ps.executeUpdate();
+        } catch (SQLException e) { // this server's rows are in; week-old rows go at a later publish
+            com.mrgregles.bsp_core.BSPCore.LOGGER.warn("BSP-Core storage: could not drop week-old plots for sale (tried again at the next publish): {}", e.toString());
+        }
+    }
+
+    /** Every server's plots for sale written within {@code keptSeconds} (by the database's clock). */
+    java.util.List<com.mrgregles.bsp_core.credit.CreditStore.LandPlot> landPlotsRead(long keptSeconds) throws SQLException {
+        java.util.List<com.mrgregles.bsp_core.credit.CreditStore.LandPlot> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT server_id, dimension, plot_id, name FROM " + t("land_plots")
+                + " WHERE UNIX_TIMESTAMP(updated_at) >= UNIX_TIMESTAMP() - ? ORDER BY server_id, dimension, plot_id")) {
+            ps.setLong(1, keptSeconds);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new com.mrgregles.bsp_core.credit.CreditStore.LandPlot(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4)));
+                }
+            }
+        }
+        return out;
     }
 
     // ------------------------------------------------------------------ bounties (one transaction per call)

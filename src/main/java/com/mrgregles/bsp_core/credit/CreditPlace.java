@@ -25,7 +25,9 @@ public record CreditPlace(Type type, List<String> shops, String plot) {
     }
 
     public static CreditPlace plot(String name) {
-        return new CreditPlace(Type.PLOT, List.of(), name == null ? "" : name.trim());
+        String n = name == null ? "" : name.trim();
+        // cut as the CREDIT tab lists names and a kind keeps them, so a ticket ticked for a long name pays for its plots
+        return new CreditPlace(Type.PLOT, List.of(), n.length() > CreditKind.PLACE_NAME_MAX ? n.substring(0, CreditKind.PLACE_NAME_MAX) : n);
     }
 
     public static CreditPlace ground() {

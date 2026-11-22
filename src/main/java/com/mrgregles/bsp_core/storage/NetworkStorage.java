@@ -592,6 +592,7 @@ public final class NetworkStorage {
         refreshAllSlices(srv);
         com.mrgregles.bsp_core.looks.LookOwners.get(srv).pushAll(); // changes made here while the database was out of reach
         lookOwnerRead(srv, null, () -> {}); // every player's totem looks, for the totems here whose owners are elsewhere
+        com.mrgregles.bsp_core.credit.CreditPlots.publish(srv, true); // this server's plots for sale, for the CREDIT tab on every server
         long now = System.currentTimeMillis();
         for (ServerPlayer p : srv.getPlayerList().getPlayers()) {
             UUID id = p.getUUID();

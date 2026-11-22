@@ -2968,6 +2968,21 @@ GameTests (batch `store_credit`) cover the Land Office marks (a purchase in flig
 - [ ] The ticket's print lines and top highlight show clearly in every colour (white and yellow get darker lines).
 - [ ] CREDIT tab: the search and plot-name boxes show their text over the pop-over; days "365" and hours "12" fit; a long answer (stop MySQL, then SAVE) shows on two lines; TICKETS shows "Reading the tickets..." until the list arrives; a moderator sees "Store credit is for BSP-Core admins and operators."; REFRESH is the ↻ key and the heading (and "Kit: <name>" in the kit editor) has room.
 
+## Store credit: plot names from the whole network (2026-11-22, 1.21.1, protocol 20)
+
+GameTests (batch `store_credit`) cover the list: names counted across servers and dimensions without case, a plot with no name by its id, saved names nothing sells last, servers named only on a network; each server publishing its plots for sale in every dimension, again when a claim is bought or given up, an unchanged list rewritten only hourly, nothing written while the database is away; the tab answering after the read, with another server's plots and their servers, the packet's round trip, the "could not be read" line keeping the last list, a stopped server's plots kept for a week and then dropped, and without network storage this server's plots only. In game, on a network of two servers with BSP Region Guard (server A with a plot for sale named "Harbour", server B with "Harbour" and "Sanctuary"):
+
+- [ ] On server A, `/bsp admin` → CREDIT → a kind → EDIT › → LAND OFFICE: "Harbour" shows "2 plots · A, B" and "Sanctuary" shows "1 plot · B", though Sanctuary is not on A.
+- [ ] Tick "Sanctuary", SAVE, then on server B buy the Sanctuary plot at a Land Office with a ticket of that kind: the credit pays.
+- [ ] A plot for sale in the Nether (or another dimension) of server A is listed while you stand in the Overworld.
+- [ ] Put a new plot up for sale on server B (Region Guard), wait five minutes, reopen the CREDIT tab on A: it is listed. Buy a plot on B: within a few seconds a reopened tab on A counts one plot fewer.
+- [ ] Stop server B: its plots are still listed on A. A saved name nothing sells anywhere says "not for sale on the network".
+- [ ] Type a server's name in the search line: its plots are listed. Long server lists end in "..." and never run into the plot's name; a name on more than 16 servers lists 15 and then "+n".
+- [ ] Press ↻ and at once change a kind's value and SAVE: the form keeps the saved value and the green "Saved ..." line stays, also when MySQL answers slowly.
+- [ ] A plot whose name is longer than 64 characters: tick it in the tab, and a ticket of that kind pays for it at the Land Office.
+- [ ] Stop MySQL and reopen the tab: the red "Other servers' plots could not be read; try again shortly." line, with the plots read last.
+- [ ] A client of the previous version cannot join a server of this one (protocol 20).
+
 
 ## Crucible Yield Upgrade, part 1: the rules (2026-11-07)
 

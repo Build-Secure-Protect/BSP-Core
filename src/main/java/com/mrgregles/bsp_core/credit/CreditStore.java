@@ -42,4 +42,16 @@ public interface CreditStore {
     void voidTicket(String serial) throws Exception;
 
     void warned(String serial, int warned) throws Exception;
+
+    /** One plot for sale as a server published it (the table {@code land_plots}): the CREDIT tab lists every server's. */
+    record LandPlot(String server, String dimension, String id, String name) {}
+
+    /** How long a server's published plots stay listed without that server publishing again (a week, in seconds). */
+    long PLOTS_KEPT_SECONDS = 7 * 24 * 3600L;
+
+    /** Replaces {@code server}'s plots for sale with {@code plots}, and drops every server's rows older than {@link #PLOTS_KEPT_SECONDS}. */
+    void replacePlots(String server, List<LandPlot> plots) throws Exception;
+
+    /** Every server's plots for sale published within {@link #PLOTS_KEPT_SECONDS}. */
+    List<LandPlot> readPlots() throws Exception;
 }

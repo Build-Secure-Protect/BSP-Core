@@ -114,4 +114,14 @@ final class DbCredit implements CreditStore {
     public void warned(String serial, int warned) throws Exception {
         s.creditWarned(serial, warned);
     }
+
+    @Override
+    public void replacePlots(String server, List<LandPlot> plots) throws Exception {
+        s.landPlotsReplace(server, plots, PLOTS_KEPT_SECONDS);
+    }
+
+    @Override
+    public List<LandPlot> readPlots() throws Exception {
+        return s.landPlotsRead(PLOTS_KEPT_SECONDS);
+    }
 }

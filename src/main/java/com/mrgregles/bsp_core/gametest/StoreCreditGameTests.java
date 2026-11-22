@@ -1079,4 +1079,127 @@ public class StoreCreditGameTests {
             StoreCredit.deleteKind(server, id);
         }
     }
+
+    // ------------------------------------------------------------------ the CREDIT tab lists the network's plots for sale
+
+    private static com.mrgregles.bsp_core.credit.CreditStore.LandPlot landPlot(String server, String dim, String id, String name) {
+        return new com.mrgregles.bsp_core.credit.CreditStore.LandPlot(server, dim, id, name);
+    }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void credit_plot_names_cover_the_network(GameTestHelper h) {
+        CreditKind saved = new CreditKind("test_plot_names");
+        saved.plots.add("Nowhere Plot");
+        saved.plots.add("harbour"); // a saved name that is also sold: listed once, with its plots
+        var here = List.of(landPlot("hub", "minecraft:overworld", "harbour_1", "Harbour"), landPlot("hub", "minecraft:the_nether", "harbour_1", "Harbour"),
+                landPlot("hub", "minecraft:overworld", "plot_7", ""));
+        var others = List.of(landPlot("survival-2", "minecraft:overworld", "h1", "HARBOUR"), landPlot("survival-2", "minecraft:overworld", "s1", "Sanctuary"),
+                landPlot("survival-2", "minecraft:overworld", "s1", "Sanctuary"), // the same plot twice counts once
+                landPlot("hub", "minecraft:overworld", "stale", "Old Hub Plot"), // this server's rows in the read: its live list is used instead
+                landPlot("Alpha", "minecraft:overworld", "s9", "sanctuary"));
+        var names = com.mrgregles.bsp_core.credit.CreditPlots.combine(here, others, "hub", List.of(saved), true);
+        h.assertTrue(names.stream().map(com.mrgregles.bsp_core.network.CreditAdminPacket.PlotName::name).toList().equals(List.of("Harbour", "plot_7", "Sanctuary", "Nowhere Plot")),
+                "names sold anywhere first, by name, without case; a plot with no name goes by its id; saved names nothing sells last: " + names);
+        var harbour = names.get(0);
+        h.assertTrue(harbour.count() == 3 && harbour.servers().equals(List.of("hub", "survival-2")), "a name counts its plots in every dimension and server: " + harbour);
+        h.assertTrue(names.get(2).count() == 2 && names.get(2).servers().equals(List.of("Alpha", "survival-2")), "another server's plots are listed with their servers: " + names.get(2));
+        h.assertTrue(names.get(3).count() == 0 && names.get(3).servers().isEmpty(), "a saved name nothing sells has no count and no server");
+        h.assertTrue(names.stream().noneMatch(n -> n.name().equals("Old Hub Plot")), "this server's own rows in the network's copy are left out");
+        String longName = "L".repeat(CreditKind.PLACE_NAME_MAX) + " and more";
+        CreditKind cut = new CreditKind("test_plot_long");
+        cut.plots.add(longName.substring(0, CreditKind.PLACE_NAME_MAX)); // what the tab lists and a kind keeps
+        h.assertTrue(CreditPlace.plot(longName).coveredBy(cut) && !CreditPlace.plot("L".repeat(CreditKind.PLACE_NAME_MAX - 1)).coveredBy(cut),
+                "a plot with a name past 64 characters is paid for by the name as listed");
+        List<String> many = new java.util.ArrayList<>();
+        for (int n = 0; n < 20; n++) many.add("srv-" + n);
+        var wide = new com.mrgregles.bsp_core.network.CreditAdminPacket(List.of(), List.of(), List.of(),
+                List.of(new com.mrgregles.bsp_core.network.CreditAdminPacket.PlotName("Harbour", 20, many)), "", true, true);
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        com.mrgregles.bsp_core.network.CreditAdminPacket.encode(wide, buf);
+        var back = com.mrgregles.bsp_core.network.CreditAdminPacket.decode(buf);
+        List<String> sent = back.plots().get(0).servers();
+        h.assertTrue(sent.size() == com.mrgregles.bsp_core.network.CreditAdminPacket.MAX_SERVERS && sent.get(sent.size() - 1).equals("+" + (20 - sent.size() + 1))
+                && sent.get(0).equals("srv-0") && back.answer(), "more servers than fit end in how many more, and the SAVE-answer mark survives: " + sent);
+        var local = com.mrgregles.bsp_core.credit.CreditPlots.combine(here, List.of(), "local", List.of(saved), false);
+        h.assertTrue(local.size() == 3 && local.stream().allMatch(n -> n.servers().isEmpty()) && local.get(0).count() == 2, "without network storage: this server's plots, no server names: " + local);
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void credit_plots_reach_the_network(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        long[] now = {1_800_000_000_000L};
+        MemoryCreditStore db = new MemoryCreditStore(() -> now[0]);
+        List<com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.ForSale> forSale = new java.util.ArrayList<>(List.of(
+                new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.ForSale("minecraft:overworld", "harbour_1", "Harbour"),
+                new com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.ForSale("minecraft:the_end", "end_1", "End Plot")));
+        ServerPlayer admin = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        try {
+            StoreCredit.useClock(() -> now[0]);
+            com.mrgregles.bsp_core.credit.CreditSync.useStore(db);
+            com.mrgregles.bsp_core.credit.CreditPlots.reset();
+            com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.useForSale(srv -> List.copyOf(forSale));
+            String here = Bank.serverId();
+
+            com.mrgregles.bsp_core.credit.CreditPlots.publish(server, true);
+            h.assertTrue(db.plots.getOrDefault(here, List.of()).size() == 2 && db.plots.get(here).stream().anyMatch(p -> p.dimension().equals("minecraft:the_end") && p.name().equals("End Plot")),
+                    "this server publishes its plots for sale in every dimension: " + db.plots);
+            long written = db.plotsWritten.get(here);
+            now[0] += 60_000L;
+            com.mrgregles.bsp_core.credit.CreditPlots.publish(server, false);
+            h.assertTrue(db.plotsWritten.get(here) == written, "an unchanged list is not written again");
+            forSale.remove(1);
+            com.mrgregles.bsp_core.credit.CreditPlots.changed(server);
+            h.assertTrue(db.plots.get(here).size() == 1 && db.plotsWritten.get(here) > written, "a plot sold here is gone from the network's copy at once");
+            written = db.plotsWritten.get(here);
+            now[0] += 3_600_000L;
+            com.mrgregles.bsp_core.credit.CreditPlots.publish(server, false);
+            h.assertTrue(db.plotsWritten.get(here) > written, "an unchanged list is written again after an hour, so a running server's rows never age out");
+
+            db.replacePlots("test-far", List.of(landPlot("test-far", "minecraft:overworld", "s1", "Far Sanctuary"), landPlot("test-far", "minecraft:overworld", "h9", "harbour")));
+            com.mrgregles.bsp_core.network.CreditAdminPacket[] got = new com.mrgregles.bsp_core.network.CreditAdminPacket[1];
+            com.mrgregles.bsp_core.credit.CreditAdmin.request(admin, p -> got[0] = p);
+            h.assertTrue(got[0] != null && got[0].ok() && got[0].message().isEmpty() && !got[0].answer(), "the tab answers once the network is read, not as the answer to a SAVE");
+            h.assertTrue(com.mrgregles.bsp_core.credit.CreditAdmin.data(admin, "Saved x.", true, true).answer(), "a SAVE or DELETE reply is marked as the form's answer");
+            var far = got[0].plots().stream().filter(p -> p.name().equals("Far Sanctuary")).findFirst().orElse(null);
+            h.assertTrue(far != null && far.count() == 1 && far.servers().equals(List.of("test-far")), "a plot sold only on another server is offered, with its server: " + got[0].plots());
+            var harbour = got[0].plots().stream().filter(p -> p.name().equalsIgnoreCase("harbour")).findFirst().orElse(null);
+            h.assertTrue(harbour != null && harbour.count() == 2 && harbour.servers().size() == 2 && harbour.servers().contains(here), "a name sold here and there counts both: " + harbour);
+            var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            com.mrgregles.bsp_core.network.CreditAdminPacket.encode(got[0], buf);
+            var back = com.mrgregles.bsp_core.network.CreditAdminPacket.decode(buf);
+            h.assertTrue(back.plots().stream().anyMatch(p -> p.equals(far)), "the servers survive the packet's trip");
+
+            com.mrgregles.bsp_core.credit.CreditSync.useDown(true);
+            com.mrgregles.bsp_core.credit.CreditPlots.publish(server, true); // nothing is written while the database is away
+            got[0] = null;
+            com.mrgregles.bsp_core.credit.CreditAdmin.request(admin, p -> got[0] = p);
+            h.assertTrue(got[0] != null && !got[0].ok() && got[0].message().equals(com.mrgregles.bsp_core.credit.CreditPlots.UNREAD), "an unread network says so: " + (got[0] == null ? null : got[0].message()));
+            h.assertTrue(got[0].plots().stream().anyMatch(p -> p.name().equals("Far Sanctuary") && p.servers().equals(List.of("test-far"))), "and keeps the plots it read last, with their servers");
+            com.mrgregles.bsp_core.credit.CreditSync.useDown(false);
+
+            now[0] += com.mrgregles.bsp_core.credit.CreditStore.PLOTS_KEPT_SECONDS * 1000L - 3_600_000L; // test-far stopped: its rows stay for a week
+            got[0] = null;
+            com.mrgregles.bsp_core.credit.CreditAdmin.request(admin, p -> got[0] = p);
+            h.assertTrue(got[0].plots().stream().anyMatch(p -> p.name().equals("Far Sanctuary")), "a stopped server's plots stay listed from its last publish");
+            now[0] += 2 * 3_600_000L;
+            com.mrgregles.bsp_core.credit.CreditPlots.publish(server, true);
+            got[0] = null;
+            com.mrgregles.bsp_core.credit.CreditAdmin.request(admin, p -> got[0] = p);
+            h.assertTrue(got[0].plots().stream().noneMatch(p -> p.name().equals("Far Sanctuary")) && !db.plots.containsKey("test-far"),
+                    "rows not refreshed for a week drop out: " + got[0].plots());
+
+            com.mrgregles.bsp_core.credit.CreditSync.useStore(null);
+            got[0] = null;
+            com.mrgregles.bsp_core.credit.CreditAdmin.request(admin, p -> got[0] = p);
+            h.assertTrue(got[0] != null && got[0].ok() && got[0].plots().stream().anyMatch(p -> p.name().equals("Harbour") && p.count() == 1 && p.servers().isEmpty()),
+                    "without network storage the tab answers at once with this server's plots: " + got[0].plots());
+            h.succeed();
+        } finally {
+            com.mrgregles.bsp_core.credit.CreditSync.useStore(null);
+            com.mrgregles.bsp_core.credit.CreditPlots.reset();
+            com.mrgregles.bsp_core.compat.regionguard.RegionGuardClaims.useForSale(null);
+            StoreCredit.useClock(null);
+        }
+    }
 }

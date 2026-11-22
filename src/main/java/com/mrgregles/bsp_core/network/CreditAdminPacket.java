@@ -12,15 +12,17 @@ import java.util.function.Supplier;
 
 /**
  * Server → client: the admin panel's CREDIT tab (Store Credit task 10): every kind (its saved form) with how many tickets of it
- * were given, the shops (for the places list), the plot names this server's Land Office sells with how many plots share each,
- * and the answer to the last action.
+ * were given, the shops (for the places list), the plot names sold on the network (or kept in a kind) with how many plots share
+ * each and the servers they are on, and the answer to the last action. {@code answer} marks the reply to this admin's SAVE or DELETE
+ * (the form takes the saved copy only from that), not a REQUEST's or a VOID's.
  */
-public record CreditAdminPacket(List<CompoundTag> kinds, List<Integer> given, List<Shop> shops, List<PlotName> plots, String message, boolean ok) {
+public record CreditAdminPacket(List<CompoundTag> kinds, List<Integer> given, List<Shop> shops, List<PlotName> plots, String message, boolean ok, boolean answer) {
     public record Shop(String id, String name, String parent) {}
 
-    public record PlotName(String name, int count) {}
+    /** A plot name with how many plots share it and, on a network, the servers they are on (empty otherwise, or for a name nothing sells). */
+    public record PlotName(String name, int count, List<String> servers) {}
 
-    public static final int MAX_KINDS = 200, MAX_SHOPS = 500, MAX_PLOTS = 500;
+    public static final int MAX_KINDS = 200, MAX_SHOPS = 500, MAX_PLOTS = 500, MAX_SERVERS = 16;
 
     public static void encode(CreditAdminPacket m, FriendlyByteBuf buf) {
         int k = Math.min(MAX_KINDS, m.kinds.size());
@@ -41,9 +43,20 @@ public record CreditAdminPacket(List<CompoundTag> kinds, List<Integer> given, Li
         for (int i = 0; i < p; i++) {
             buf.writeUtf(cut(m.plots.get(i).name(), 64), 64);
             buf.writeVarInt(m.plots.get(i).count());
+            List<String> servers = m.plots.get(i).servers();
+            // more servers than fit: the last place says how many more ("+3")
+            int n = Math.min(MAX_SERVERS, servers.size()), shown = servers.size() > MAX_SERVERS ? MAX_SERVERS - 1 : n;
+            buf.writeVarInt(n);
+            for (int j = 0; j < shown; j++) {
+                buf.writeUtf(cut(servers.get(j), 32), 32);
+            }
+            if (shown < n) {
+                buf.writeUtf("+" + (servers.size() - shown), 32);
+            }
         }
         buf.writeUtf(cut(m.message, 256), 256);
         buf.writeBoolean(m.ok);
+        buf.writeBoolean(m.answer);
     }
 
     /** Long text is cut rather than failing the whole packet (which would disconnect the admin). */
@@ -68,9 +81,18 @@ public record CreditAdminPacket(List<CompoundTag> kinds, List<Integer> given, Li
         int p = Math.min(MAX_PLOTS, buf.readVarInt());
         List<PlotName> plots = new ArrayList<>(p);
         for (int i = 0; i < p; i++) {
-            plots.add(new PlotName(buf.readUtf(64), buf.readVarInt()));
+            String name = buf.readUtf(64);
+            int count = buf.readVarInt();
+            int n = Math.min(MAX_SERVERS, buf.readVarInt());
+            List<String> servers = new ArrayList<>(n);
+            for (int j = 0; j < n; j++) {
+                servers.add(buf.readUtf(32));
+            }
+            plots.add(new PlotName(name, count, List.copyOf(servers)));
         }
-        return new CreditAdminPacket(kinds, given, shops, plots, buf.readUtf(256), buf.readBoolean());
+        String message = buf.readUtf(256);
+        boolean ok = buf.readBoolean();
+        return new CreditAdminPacket(kinds, given, shops, plots, message, ok, buf.readBoolean());
     }
 
     public static void handle(CreditAdminPacket msg, Supplier<NetworkEvent.Context> ctx) {

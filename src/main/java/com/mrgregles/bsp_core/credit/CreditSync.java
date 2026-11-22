@@ -152,6 +152,7 @@ public final class CreditSync {
     public static void catchUp(MinecraftServer server) {
         if (server != null && on()) {
             read(server, Math.max(0, lastChange - 10_000L), NetworkStorage.migratedHere() || testStore != null, "catch up on store credit");
+            CreditPlots.publish(server, false); // plots put up for sale or taken off since (Region Guard has no event for those)
         }
     }
 

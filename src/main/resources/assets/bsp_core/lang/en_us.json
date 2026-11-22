@@ -2888,7 +2888,7 @@
   "gui.bsp_core.credit.admin.any_plot_short": "any plot",
   "gui.bsp_core.credit.admin.any_plot": "Any plot at the Land Office",
   "gui.bsp_core.credit.admin.teleports": "teleports",
-  "gui.bsp_core.credit.admin.not_here": "not on this server",
+  "gui.bsp_core.credit.admin.not_here": "not for sale on the network",
   "gui.bsp_core.credit.admin.plot": "%s plot",
   "gui.bsp_core.credit.admin.plots": "%s plots",
   "gui.bsp_core.credit.admin.via_parent": "with its shop",
@@ -2914,7 +2914,7 @@
   "gui.bsp_core.credit.admin.admins_only": "Store credit is for BSP-Core admins and operators.",
   "gui.bsp_core.credit.admin.loading": "Reading the tickets…",
   "gui.bsp_core.credit.admin.search_shops": "search shops…",
-  "gui.bsp_core.credit.admin.search_plots": "search plot names…",
+  "gui.bsp_core.credit.admin.search_plots": "search plot names or servers…",
   "gui.bsp_core.credit.admin.col_serial": "SERIAL",
   "gui.bsp_core.credit.admin.col_holder": "HOLDER",
   "gui.bsp_core.credit.admin.col_left": "LEFT",
@@ -3367,5 +3367,6 @@
   "gui.bsp_core.looks.bench_staff": "Staff can clear a painting",
   "gui.bsp_core.looks.bench_size": "One pixel here is one pixel on the totem",
   "gui.bsp_core.looks.slot": "%s, colour %s",
-  "gui.bsp_core.looks.back": "BACK"
+  "gui.bsp_core.looks.back": "BACK",
+  "gui.bsp_core.credit.admin.plots_on": "%s · %s"
 }
