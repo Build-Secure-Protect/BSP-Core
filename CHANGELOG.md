@@ -4,6 +4,8 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-11-24
+
 Network protocol 22: every player needs the new client. New blocks and items are registered, so servers and clients must both have this version.
 
 ### Added

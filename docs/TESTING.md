@@ -4177,7 +4177,7 @@ Covered by GameTests `player_reset_makes_an_online_player_new_and_keeps_other_mo
 - [ ] They had a bed: after their next death they respawn at world spawn, not at the bed.
 - [ ] With BSP-InventorySync: `/invsync restore <player> <version>` of a snapshot from before the reset puts it back and the next login does not wipe it again.
 
-## Machine tracking: tags, slots, transmitter, remote operation (2026-11-24, unreleased)
+## Machine tracking: tags, slots, transmitter, remote operation (2026-11-24, 1.24.0)
 Covered by the `tracking_*` GameTests (slots and prices, the unlock, tagging rules, names, broken machines, the reset and season rules, readings of a furnace, a BSP-Core machine and a Mekanism factory, watch lists, layouts, transmitter range and power, the per-player limit, operating refusals). Not seen in a client.
 - [ ] With the Machine Tagger, right-click a furnace: "Tagged Furnace (1 of 2)" in the action bar, and the furnace does not open. Right-click it again: "already tagged". Sneak-right-click: "Untagged Furnace".
 - [ ] Tag two machines, then a third: refused, with the price of the next slot.
@@ -4188,7 +4188,7 @@ Covered by the `tracking_*` GameTests (slots and prices, the unlock, tagging rul
 - [ ] `/bsp player reset <you>` on a test account: tags, bought slots and the unlock are gone; the Holo Grid's pages and presets stay, their machine boxes saying "Tag this machine again".
 - [ ] On the network: a machine tagged on survival-1, watched from survival-2 while an Anchor holds its chunk, updates about once a second. With its chunk unloaded: "Asleep" and the last reading.
 
-## Machine tracking: the screens, marks, popout and pin (2026-11-24, unreleased)
+## Machine tracking: the screens, marks, popout and pin (2026-11-24, 1.24.0)
 Client side; not seen in a client.
 - [ ] The tagger (a tablet) in hand, first and third person, on the ground and in an item frame: it sits right. Right-click the air: the Device Screen with TAGS, SLOTS, REMOTE. Rename a tag (pencil, type, Enter), remove one (red cross), buy a slot (click the next one; Copper coins go), unlock Remote Control (4 Diamond coins).
 - [ ] Holding the tagger: green corner brackets and the machine's name and distance over each tagged machine within 48 blocks, through a wall. Put it away: gone.
