@@ -1,0 +1,494 @@
+<meta charset="utf-8">
+<title>Holo Grid Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages, one column. Screens are drawn on canvas at GUI pixel size (427 x 240, a 1280 x 720 window at GUI scale 3), shown doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --gold:#ffd23a; --wood:#d39a5c; --bad:#ff6b5c;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --bad:#c23a2c; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --bad:#c23a2c; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1020px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:38px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; color:var(--wood); }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:84ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.view{ width:100%; aspect-ratio:1/1; max-width:100%; background:radial-gradient(ellipse at 50% 70%,#2a2a2e 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view canvas{ display:block; width:100%; height:100%; }
+canvas.gui{ width:100%; height:auto; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; touch-action:none; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; align-items:start; }
+.pair figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.pair figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.big{ display:flex; flex-direction:column; gap:12px; }
+.big figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.big figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:4px 9px; cursor:pointer; }
+.hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+ul.how{ margin:0; padding-left:18px; color:var(--muted); font-size:13px; display:flex; flex-direction:column; gap:4px; max-width:84ch; }
+ul.how b{ color:var(--fg); font-weight:600; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; }
+.t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+.t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="pill">BSP-Core · Machine Tracking · mock-ups 1 of 4 for the owner's pick</span>
+    <h1>Holo Grid</h1>
+    <p class="lede">The window a player opens from their inventory to lay out their machines and their map. Each concept below shows three moments: drawing a box and picking what goes in it, the finished page in use, and saving presets or pinning a box to the game screen. The grids are live. Drag on an empty spot to draw a box, drag a selected box to move it, drag its corner to resize it, and right-click a box to delete it. Page tabs, keys and list rows all respond to clicks.</p>
+    <ul class="how">
+      <li><b>Read-only or operable.</b> Use the switch below to stand inside a Remote Control Transmitter's range. Machine boxes then show OPERATE, and clicking one opens the machine's own screen. Outside the range they show the eye, which means read-only.</li>
+      <li><b>The map box</b> is JourneyMap's full map, the screen the J key opens, with its own toolbar. You can drag and zoom it whenever the Holo Grid is open. The map here is a stand-in drawing.</li>
+      <li><b>Real time.</b> The bars move as they would on the same server. The Nether smelter is on survival-2 in an unloaded chunk, so it shows "asleep" and its last reading.</li>
+      <li>All names, machines and numbers are examples.</li>
+    </ul>
+    <div class="ctl"><button class="hb" id="opBtn" type="button">In transmitter range: no</button><button class="hb" id="resetBtn" type="button">Start the examples over</button><span class="key">Hover a box in a finished page to see its pin key.</span></div>
+  </header>
+
+  <section>
+    <h2>A. Blueprint Sheet</h2>
+    <div class="card">
+      <div class="big"><figure><figcaption>Building: a 3 × 3 box just drawn, assign card open</figcaption><canvas class="gui" id="bA1"></canvas></figure></div>
+      <div class="pair"><figure><figcaption>The page in use (click the tabs)</figcaption><canvas class="gui" id="bA2"></canvas></figure><figure><figcaption>Presets</figcaption><canvas class="gui" id="bA3"></canvas></figure></div>
+      <p><b>The grid fills the whole window.</b> Page tabs sit along the top like folder tabs, with a + key to add a page. The keys sit on the right of that strip: BUILD (DONE while building) and PRESETS together, then a gap, then POPOUT and PIN. While building, the grid shows its corner dots and a strip at the bottom holds the COLUMNS and ROWS steppers. A new box opens a floating ASSIGN card beside it, with MACHINES, MAP and ALL TAGS chips and one row per tagged machine showing its lamp, its name and its server. Presets open as a dialog with a small picture of each page. PIN opens a dialog with a small game screen where you click the corner the box goes to.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. Side Dock</h2>
+    <div class="card">
+      <div class="big"><figure><figcaption>Building: the assign list takes over the dock</figcaption><canvas class="gui" id="bB1"></canvas></figure></div>
+      <div class="pair"><figure><figcaption>The page in use (click a page in the dock)</figcaption><canvas class="gui" id="bB2"></canvas></figure><figure><figcaption>Presets</figcaption><canvas class="gui" id="bB3"></canvas></figure></div>
+      <p><b>Every key sits in one column on the left</b>, grouped like the bank screens: the PAGES list (number, name, how many boxes), then GRID with its two steppers, then MODE with BUILD and VIEW. PRESETS, POPOUT and PIN A BOX sit apart at the bottom. Column numbers run along the top like a spreadsheet. When you draw a box, the dock turns into the assign list, with each machine's type under its name, MAP and ALL TAGS keys, and BACK and DELETE. Presets show as four large cards with a picture of the first page and smaller pictures of the rest.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. Holo Table</h2>
+    <div class="card">
+      <div class="big"><figure><figcaption>Building: pick a tile from the drawer for the new box</figcaption><canvas class="gui" id="bC1"></canvas></figure></div>
+      <div class="pair"><figure><figcaption>The page in use (click the round page keys)</figcaption><canvas class="gui" id="bC2"></canvas></figure><figure><figcaption>Pinning a box to the game screen</figcaption><canvas class="gui" id="bC3"></canvas></figure></div>
+      <p><b>A steel table with corner screws.</b> The grid sits in a sunken bezel. Nine round lit keys along the top choose the page, with + on the free ones. A lever on the left flips between BUILD and VIEW, and two knurled knobs set the columns and rows. Presets are cartridges in a rack on the right, each showing its first page on the label. SAVE, POPOUT and PIN keys sit under the rack. A drawer along the bottom holds one tile per thing you can show: the map, all tags, then each tagged machine with its icon and lamp. Click a tile to fill the new box. Pinning shows the game screen with four corner sockets and a size knob.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What every concept shares</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>Part</th><th>Behaviour</th></tr>
+      <tr><td>Grid size</td><td>Each page has its own grid, from 4 to 32 columns and 3 to 24 rows, starting at 12 by 8. Shrinking a grid trims the boxes that no longer fit.</td></tr>
+      <tr><td>Boxes</td><td>Drag across cells to draw a box. Boxes never overlap: one drawn on top of another shows red and is not kept. Drag a selected box to move it, drag its corner to resize it, and right-click it to delete it.</td></tr>
+      <tr><td>Assign list</td><td>Your tagged machines (a machine already on this page shows dimmed), the Map, and All tags.</td></tr>
+      <tr><td>Pages</td><td>Up to 9. Click to switch. "Next page", "Previous page" and "Page 1" to "Page 9" start unbound in Controls, and they also work in game to change the popout's page.</td></tr>
+      <tr><td>Presets</td><td>Up to 10, saved on the server so they follow you across the network. Each one keeps every page. Loading one asks before it replaces your pages, and a reset never removes them.</td></tr>
+      <tr><td>Pin</td><td>One box from any page goes to a corner of the game screen, small or medium. A key you set shows and hides it. It is hidden with F1 and while a screen is open.</td></tr>
+    </table></div>
+  </section>
+</div>
+<script>
+(function(){
+"use strict";
+// ===================================================================== Holo HUD kit (shared by the Machine Tracking concept pages)
+// Screens are drawn at GUI pixel size and shown doubled. 427 x 240 GUI px is a 1280 x 720 window at GUI scale 3.
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = id => document.getElementById(id);
+const HX = {bg:'#10151c', bg2:'#151b24', glass:'#0c0e12', edge:'#19d3b0', tq:'#19d3b0', tqD:'#0e7a66', tqDD:'#0a3d35', slot:'#0c0e12', slotE:'#3a3f4b',
+  dim:'#2a2f3a', line:'#232935', fg:'#e8eaf0', mute:'#9aa3b5', off:'#565c6b', inC:'#3a8bff', out:'#ff8a3a', vio:'#b58cff', bad:'#d63b2f', gold:'#ffd23a',
+  lava:'#ff7a1a', green:'#3dff6e', steel:'#c9ced8', steelD:'#8a909c', steelDD:'#4a505c'};
+const TIERS = [['Copper','#d27d46'],['Gold','#f5c542'],['Diamond','#5fe3e3'],['Netherite','#6b5a62'],['Illyrium','#c08cff']];
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16, g=n>>8&255, b=n&255; r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f)); return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1); }
+function gui(id,w,h){ const cv=el(id); cv.width=w*2; cv.height=h*2; const c=cv.getContext('2d'); c.setTransform(2,0,0,2,0,0); c.imageSmoothingEnabled=false; c.W=w; c.H=h; c.cv=cv; c.hits=[]; return c; }
+function clear(c,col){ c.setTransform(2,0,0,2,0,0); c.hits=[]; R(c,0,0,c.W,c.H,col||'#07090c'); }
+function R(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x,y,w,h); }
+function O(c,x,y,w,h,col){ R(c,x,y,w,1,col); R(c,x,y+h-1,w,1,col); R(c,x,y,1,h,col); R(c,x+w-1,y,1,h,col); }
+function dash(c,x,y,w,h,col,t){ const off=Math.floor((t||0)/120)%4; c.fillStyle=col;
+  for(let i=-off;i<w;i+=4){ const a=Math.max(0,i), b=Math.min(w,i+2); if(b>a){ c.fillRect(x+a,y,b-a,1); c.fillRect(x+w-b,y+h-1,b-a,1);} }
+  for(let i=-off;i<h;i+=4){ const a=Math.max(0,i), b=Math.min(h,i+2); if(b>a){ c.fillRect(x+w-1,y+a,1,b-a); c.fillRect(x,y+h-b,1,b-a);} } }
+// text: 8 px Silkscreen stands in for the game font; size 6 and 7 for the 0.75 small text
+function T(c,s,x,y,col,o){ o=o||{}; const sz=o.size||8; c.font=(o.bold?'700 ':'')+sz+'px '+(o.plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); c.textBaseline='top';
+  let w=c.measureText(s).width; if(o.max&&w>o.max){ while(s.length>1&&c.measureText(s+'…').width>o.max) s=s.slice(0,-1); s+='…'; w=c.measureText(s).width; }
+  const ax = o.align==='c' ? x-w/2 : o.align==='r' ? x-w : x; c.fillStyle=col; c.fillText(s,ax,y+(o.plain?0:-1)); return w; }
+function ST(c,s,x,y,col,o){ return T(c,s,x,y,col,Object.assign({size:7,plain:true},o||{})); }
+function tw(c,s,sz,plain){ c.font=(sz||8)+'px '+(plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); return c.measureText(s).width; }
+function hit(c,x,y,w,h,fn,cur){ c.hits.push({x,y,w,h,fn,cur:cur||'pointer'}); }
+
+// a raised key: light top and left, dark bottom and right, a pressed look when on
+function key(c,x,y,w,h,label,o){ o=o||{}; const on=o.on, col=o.col||HX.tq;
+  R(c,x,y,w,h,'#05070a'); R(c,x+1,y+1,w-2,h-2,on?shade(col,.28):'#1c222c');
+  R(c,x+1,y+1,w-2,1,on?shade(col,.18):'#39414f'); R(c,x+1,y+1,1,h-2,on?shade(col,.18):'#39414f');
+  R(c,x+1,y+h-2,w-2,1,on?shade(col,.5):'#0e1117'); R(c,x+w-2,y+1,1,h-2,on?shade(col,.5):'#0e1117');
+  if(on){ O(c,x,y,w,h,col); }
+  if(o.icon){ o.icon(c,x+4,y+Math.floor((h-7)/2),on?col:HX.mute); }
+  const tx = o.icon ? x+13+(w-13)/2 : x+w/2;
+  if(label) T(c,label,Math.round(tx),y+Math.floor((h-6)/2),on?col:(o.dim?HX.off:HX.fg),{align:'c',size:o.size||8}); if(o.fn) hit(c,x,y,w,h,o.fn); }
+// a round lamp with a glint
+function lamp(c,x,y,r,col,on){ c.fillStyle='#05070a'; c.beginPath(); c.arc(x,y,r+1,0,7); c.fill(); c.fillStyle=on?col:shade(col,.25); c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  if(on){ c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(x-r/2,y-r/2,1,1); c.globalAlpha=.18; c.fillStyle=col; c.beginPath(); c.arc(x,y,r+3,0,7); c.fill(); c.globalAlpha=1; } }
+// a recessed well
+function well(c,x,y,w,h,col){ R(c,x,y,w,h,col||HX.glass); R(c,x,y,w,1,'#000'); R(c,x,y,1,h,'#000'); R(c,x,y+h-1,w,1,'#2b3240'); R(c,x+w-1,y,1,h,'#2b3240'); }
+// a screw head
+function screw(c,x,y){ c.fillStyle='#4a505c'; c.beginPath(); c.arc(x,y,2.5,0,7); c.fill(); c.fillStyle='#8a909c'; c.beginPath(); c.arc(x-.4,y-.4,1.8,0,7); c.fill(); R(c,x-1.5,y-.5,3,1,'#2a2f3a'); }
+// holo frame: dark glass, turquoise corner brackets, a notch under the title
+function frame(c,x,y,w,h,o){ o=o||{}; R(c,x,y,w,h,o.bg||HX.bg); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,HX.dim);
+  const k=o.k||6, col=o.col||HX.tq; R(c,x,y,k,1,col); R(c,x,y,1,k,col); R(c,x+w-k,y,k,1,col); R(c,x+w-1,y,1,k,col); R(c,x,y+h-1,k,1,col); R(c,x,y+h-k,1,k,col); R(c,x+w-k,y+h-1,k,1,col); R(c,x+w-1,y+h-k,1,k,col); }
+function slot(c,x,y,s){ s=s||16; R(c,x,y,s,s,HX.slotE); R(c,x+1,y+1,s-1,s-1,'#2b303b'); R(c,x+1,y+1,s-2,s-2,HX.slot); }
+function bar(c,x,y,w,h,f,col,o){ o=o||{}; well(c,x,y,w,h); const seg=o.seg||0; f=Math.max(0,Math.min(1,f));
+  if(h>w){ const fh=Math.round((h-2)*f); R(c,x+1,y+h-1-fh,w-2,fh,col); R(c,x+1,y+h-1-fh,w-2,1,shade(col,1.35)); if(seg) for(let i=y+h-1-seg;i>y;i-=seg) R(c,x+1,i,w-2,1,'rgba(0,0,0,.45)'); }
+  else { const fw=Math.round((w-2)*f); R(c,x+1,y+1,fw,h-2,col); R(c,x+1,y+1,fw,1,shade(col,1.35)); if(seg) for(let i=x+seg;i<x+w-1;i+=seg) R(c,i,y+1,1,h-2,'rgba(0,0,0,.45)'); } }
+function arc(c,cx,cy,r,f,col,width){ c.lineWidth=width||3; c.strokeStyle='#05070a'; c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke(); c.lineWidth=(width||3)-1; c.strokeStyle=HX.dim; c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke();
+  c.strokeStyle=col; c.beginPath(); c.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0.001,f)); c.stroke(); }
+
+// 16 px item icons, drawn as pixel art from a palette and a shape
+const ICON_SHAPES = {
+  ingot:['................','................','................','................','....aaaaaaaa....','...abbbbbbbbc...','..abbbbbbbbbbc..','.abbbbbbbbbbbbc.','.acccccccccccc..','................','................'],
+  dust:['................','................','................','................','.......a........','......aba.......','.....abbba......','....abbbbba.....','...abbbcbbbc....','..abbbbbbbbbc...','..ccccccccccc...'],
+  ore:['aaaaaaaaaaaaaaaa','abbbaabbbbaabbba','abccbabbbbabccba','abbbaabccbaabbba','aaaabbbbbbaaaaaa','abbbbabbbbbbccba','abccbabbbaabccba','abbbbaabbabbbbba','aaaaaaaaabbbbbba','abbbbccbabbbccba','abbbbbbbaaaaaaaa'],
+  gem:['................','................','.....aaaaaa.....','....abbbbbbc....','...abbbbbbbbc...','...cbbbbbbbbc...','....cbbbbbbc....','.....cbbbbc.....','......cbbc......','.......cc.......'],
+  pellet:['................','................','.....aaaa.......','....abbbba......','....abbbbaaaa...','....cbbbabbbba..','.....cccabbbba..','........cbbbc...','.........ccc....'],
+  block:['aaaaaaaaaaaaaaaa','abbbbbbbbbbbbbbc','abaaaaaaaaaaaabc','aba..........abc','aba..dddddd..abc','aba..d....d..abc','aba..dddddd..abc','aba..........abc','abccccccccccccbc','abbbbbbbbbbbbbbc','cccccccccccccccc']
+};
+function icon(c,x,y,shape,cols){ const rows=ICON_SHAPES[shape]; const pal={a:shade(cols[0],1.3), b:cols[0], c:shade(cols[0],.6), d:cols[1]||'#19d3b0'}; const oy=y+Math.floor((16-rows.length)/2);
+  for(let r=0;r<rows.length;r++) for(let k=0;k<16;k++){ const ch=rows[r][k]; if(ch&&ch!=='.'){ c.fillStyle=pal[ch]; c.fillRect(x+k,oy+r,1,1); } } }
+const ITEMS = { ironOre:['ore',['#a08a7a']], iron:['ingot',['#d8d8d8']], osmiumOre:['ore',['#8aa6b8']], osmium:['ingot',['#9fc7da']], gold:['ingot',['#f5c542']],
+  goldOre:['ore',['#c9a24a']], copper:['ingot',['#d27d46']], coal:['gem',['#3a3a3a']], redstone:['dust',['#c0241c']], uranium:['pellet',['#6adc3a']],
+  tin:['ingot',['#c8d4dc']], quartz:['gem',['#ece6dc']], tetrium:['ingot',['#19d3b0']], coin:['gem',['#d27d46']], steel:['ingot',['#7d848f']], lead:['ingot',['#6d6f8c']],
+  dustIron:['dust',['#d8c8b8']], dustGold:['dust',['#f5d562']], machine:['block',['#5d6570','#19d3b0']] };
+function item(c,x,y,k,n){ const d=ITEMS[k]; if(d) icon(c,x,y,d[0],d[1]); if(n&&n>1){ const s=String(n); T(c,s,x+17,y+9,'#000',{align:'r',size:7}); T(c,s,x+16,y+8,HX.fg,{align:'r',size:7}); } }
+function slotItem(c,x,y,k,n){ slot(c,x,y); if(k) item(c,x,y,k,n); }
+
+// small 7x7 glyph icons for keys
+const GL = {
+  eye:(c,x,y,col)=>{ R(c,x+1,y+2,5,1,col); R(c,x,y+3,7,1,col); R(c,x+1,y+4,5,1,col); R(c,x+3,y+3,1,1,'#05070a'); },
+  hand:(c,x,y,col)=>{ R(c,x+1,y+1,1,4,col); R(c,x+3,y,1,5,col); R(c,x+5,y+1,1,4,col); R(c,x+1,y+4,5,3,col); R(c,x,y+3,1,2,col); },
+  pin:(c,x,y,col)=>{ R(c,x+2,y,3,1,col); R(c,x+1,y+1,5,3,col); R(c,x+3,y+4,1,3,col); },
+  pop:(c,x,y,col)=>{ O(c,x,y+2,5,5,col); R(c,x+3,y,4,1,col); R(c,x+6,y,1,4,col); R(c,x+4,y+2,1,1,col); R(c,x+5,y+1,1,1,col); },
+  save:(c,x,y,col)=>{ O(c,x,y,7,7,col); R(c,x+2,y+1,3,2,col); R(c,x+2,y+4,3,2,col); },
+  grid:(c,x,y,col)=>{ O(c,x,y,7,7,col); R(c,x+3,y,1,7,col); R(c,x,y+3,7,1,col); },
+  plus:(c,x,y,col)=>{ R(c,x+3,y+1,1,5,col); R(c,x+1,y+3,5,1,col); },
+  pencil:(c,x,y,col)=>{ for(let i=0;i<5;i++) R(c,x+1+i,y+5-i,2,1,col); R(c,x,y+6,1,1,col); },
+  map:(c,x,y,col)=>{ R(c,x,y+1,2,6,col); R(c,x+2,y,1,6,shade(col,.7)); R(c,x+3,y+1,2,6,col); R(c,x+5,y,2,6,shade(col,.7)); },
+  lock:(c,x,y,col)=>{ O(c,x+1,y,5,4,col); R(c,x,y+3,7,4,col); R(c,x+3,y+4,1,2,'#05070a'); },
+  bolt:(c,x,y,col)=>{ R(c,x+3,y,2,1,col); R(c,x+2,y+1,2,2,col); R(c,x+1,y+3,5,1,col); R(c,x+3,y+4,2,1,col); R(c,x+2,y+5,2,2,col); }
+};
+
+// ===================================================================== example data (made-up machines)
+const MACHINES = {
+  smelt:  {name:'Smelter line 1',   kind:'Elite Smelting Factory', mod:'Mekanism', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  crush:  {name:'Ore crushers',     kind:'Elite Crushing Factory', mod:'Mekanism', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  reactor:{name:'Big Bertha',       kind:'Fission Reactor',        mod:'Mekanism Generators', server:'survival-1', dim:'Overworld', lamp:HX.gold},
+  matrix: {name:'Main battery',     kind:'Induction Matrix',       mod:'Mekanism', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  turbine:{name:'Steam turbine',    kind:'Industrial Turbine',     mod:'Mekanism Generators', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  cruc:   {name:'Crucible',         kind:'Tetrium Crucible',       mod:'BSP-Core', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  furnace:{name:'Nether smelter',   kind:'Redstone Furnace',       mod:'Thermal', server:'survival-2', dim:'The Nether', lamp:HX.off, asleep:'asleep 2 h'},
+  chest:  {name:'Ore chest',        kind:'Sophisticated Chest',    mod:'Sophisticated Storage', server:'survival-1', dim:'Overworld', lamp:HX.tq}
+};
+const TAG_ORDER = ['smelt','crush','reactor','matrix','turbine','cruc','furnace','chest'];
+
+// ===================================================================== value noise for the JourneyMap stand-in
+function hash(x,y){ let h=(x*374761393+y*668265263)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967295; }
+function vnoise(x,y){ const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi; const s=t=>t*t*(3-2*t);
+  const a=hash(xi,yi), b=hash(xi+1,yi), cc=hash(xi,yi+1), d=hash(xi+1,yi+1); return (a+(b-a)*s(xf))+((cc+(d-cc)*s(xf))-(a+(b-a)*s(xf)))*s(yf); }
+function fbm(x,y){ return vnoise(x,y)*.55+vnoise(x*2.1,y*2.1)*.28+vnoise(x*4.3,y*4.3)*.17; }
+const MAPCACHE = {};
+function mapTile(w,h,zoom,ox,oy){ const key=w+'x'+h+'@'+zoom+':'+ox+','+oy; if(MAPCACHE[key]) return MAPCACHE[key];
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d'); const img=g.createImageData(w,h);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const wx=(x+ox)/zoom, wy=(y+oy)/zoom; const e=fbm(wx/22,wy/22); const m=vnoise(wx/9+40,wy/9); let col;
+    const river=Math.abs(fbm(wx/30+7,wy/30+3)-.5)<.018;
+    if(e<.36||river) col=[38,72,150+Math.round(e*60)]; else if(e<.39) col=[214,200,140]; else if(e>.72) col=[150,150,150]; else if(m>.62) col=[44,98,40]; else col=[92+Math.round(m*30),148+Math.round(e*40),64];
+    const sh=(fbm((wx+1)/22,(wy+1)/22)-e)*900; col=col.map(v=>Math.max(0,Math.min(255,v-sh)));
+    const i=(y*w+x)*4; img.data[i]=col[0]; img.data[i+1]=col[1]; img.data[i+2]=col[2]; img.data[i+3]=255; }
+  // a few base buildings
+  g.putImageData(img,0,0); g.fillStyle='#8a7a6a'; for(let i=0;i<6;i++){ const bx=Math.round(w*.52+((i*37)%23)*zoom/3-ox*0), by=Math.round(h*.5+((i*53)%19)*zoom/3); g.fillRect(bx,by,Math.max(2,3*zoom/2),Math.max(2,2*zoom/2)); }
+  MAPCACHE[key]=cv; return cv; }
+
+// ===================================================================== box contents (each adapts to its box's shape)
+// mode: 'ro' read-only, 'op' operable (inside a transmitter's range), 'asleep'
+function boxHead(c,x,y,w,m,mode,o){ o=o||{}; R(c,x,y,w,10,'#0d1218'); R(c,x,y+10,w,1,HX.dim);
+  lamp(c,x+5,y+5,2,m.lamp||HX.tq,mode!=='asleep');
+  const right = mode==='op' ? 'OPERATE' : mode==='asleep' ? (m.asleep||'asleep') : '';
+  const rw = right ? tw(c,right,6,true)+14 : 9;
+  ST(c,m.name,x+10,y+1.5,HX.fg,{size:7,bold:true,max:w-16-rw});
+  if(mode==='op'){ R(c,x+w-rw-1,y+1,rw,8,shade(HX.tq,.25)); O(c,x+w-rw-1,y+1,rw,8,HX.tq); GL.hand(c,x+w-rw+1,y+1.5,HX.tq); ST(c,right,x+w-4,y+1.5,HX.tq,{size:6,align:'r',bold:true}); }
+  else if(mode==='asleep'){ ST(c,right,x+w-4,y+1.5,HX.mute,{size:6,align:'r'}); GL.eye(c,x+w-rw+1,y+2,HX.off); }
+  else GL.eye(c,x+w-9,y+2,HX.mute); }
+function prog(t,period,phase){ return ((t/period)+(phase||0))%1; }
+function drawFactory(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+3, iy=y+13, iw=w-6, ih=h-16; const n=5;
+  const ins=['ironOre','ironOre','osmiumOre','goldOre','ironOre'], outs=['iron','iron','osmium','gold','iron'];
+  const wide = iw > ih*1.6;
+  if(wide){ const colW=Math.min(22,Math.floor((iw-16)/n)); for(let i=0;i<n;i++){ const cx=ix+i*colW; const f=mode==='asleep'?.4:prog(t,2600,i*.21);
+      slotItem(c,cx,iy,ins[i],[12,9,31,4,22][i]); bar(c,cx+5,iy+18,6,Math.max(8,ih-40),f,HX.tq,{seg:3}); slotItem(c,cx,iy+ih-18,f>.5?outs[i]:null,[3,1,9,0,5][i]); }
+    bar(c,ix+iw-10,iy+9,8,ih-11,.72,HX.gold,{seg:4}); GL.bolt(c,ix+iw-10,iy,HX.gold);
+  } else { const rowH=Math.min(18,Math.floor((ih-12)/n)); for(let i=0;i<n;i++){ const ry=iy+i*rowH; const f=mode==='asleep'?.4:prog(t,2600,i*.21);
+      if(rowH>=17){ slotItem(c,ix,ry,ins[i],[12,9,31,4,22][i]); bar(c,ix+19,ry+5,iw-40,6,f,HX.tq,{seg:4}); slotItem(c,ix+iw-17,ry,f>.5?outs[i]:null,[3,1,9,0,5][i]); }
+      else { item(c,ix,ry-3,ins[i]); bar(c,ix+18,ry+2,iw-20,Math.max(3,rowH-4),f,HX.tq,{seg:4}); } }
+    bar(c,ix,y+h-8,iw,5,.72,HX.gold,{seg:6}); }
+}
+function drawReactor(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18;
+  const temp=0.46+Math.sin(t/1700)*.04; const r=Math.max(10,Math.min(Math.floor(ih/2)-4, Math.floor(iw/4)));
+  const cx=ix+r+2, cy=iy+r+2; c.lineWidth=5; c.strokeStyle='#05070a'; c.beginPath(); c.arc(cx,cy,r,Math.PI*.75,Math.PI*2.25); c.stroke();
+  const grad=c.createLinearGradient(cx-r,0,cx+r,0); grad.addColorStop(0,'#3a8bff'); grad.addColorStop(.5,'#ffd23a'); grad.addColorStop(1,'#d63b2f');
+  c.lineWidth=3; c.strokeStyle=grad; c.beginPath(); c.arc(cx,cy,r,Math.PI*.75,Math.PI*.75+Math.PI*1.5*temp); c.stroke();
+  const a=Math.PI*.75+Math.PI*1.5*temp; c.strokeStyle=HX.fg; c.lineWidth=1; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*(r-4),cy+Math.sin(a)*(r-4)); c.stroke();
+  c.fillStyle=HX.steelD; c.beginPath(); c.arc(cx,cy,2.5,0,7); c.fill();
+  T(c,Math.round(600+temp*600)+' K',cx,cy+r*0.45,HX.fg,{align:'c',size:8}); ST(c,'TEMPERATURE',cx,cy+r*0.45+9,HX.mute,{size:6,align:'c'});
+  // tanks
+  const tx=cx+r+8, tw_=Math.max(6,Math.min(12,Math.floor((ix+iw-tx)/4)-4)); const th=ih-14;
+  const tanks=[['FUEL','#7ad04a',.64],['COOL','#3a8bff',.81],['HOT','#c9ced8',.33],['WASTE','#8a5a2a',.18]];
+  tanks.forEach((k,i)=>{ const bx=tx+i*(tw_+5); if(bx+tw_>ix+iw) return; bar(c,bx,iy,tw_,th,k[2]+Math.sin(t/900+i)*.01,k[1],{seg:4}); ST(c,tw_>=11?k[0]:k[0][0],bx+tw_/2,iy+th+2,HX.mute,{size:5,align:'c'}); });
+  if(ih>70){ ST(c,'Burn rate 12.4 mB/t   Damage 0 %',ix,y+h-10,HX.mute,{size:6}); }
+}
+function drawMatrix(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18; const f=.58+Math.sin(t/3000)*.02;
+  const bw=Math.min(iw, Math.max(24, iw)); bar(c,ix,iy,bw,Math.max(10,Math.min(18,ih-22)),f,HX.gold,{seg:5});
+  T(c,(f*412).toFixed(1)+' GFE',ix,iy+Math.min(18,ih-22)+4,HX.gold,{size:8}); if(ih>40){ ST(c,'IN  +184 kFE/t',ix,y+h-17,HX.tq,{size:6}); ST(c,'OUT -97 kFE/t',ix,y+h-10,HX.out,{size:6}); } }
+function drawCrucible(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18; const f=prog(t,4200);
+  const r=Math.max(8,Math.min(15,Math.floor(Math.min(iw/3,ih/2)-3))); arc(c,ix+r+2,iy+r+2,r,f,HX.tq,4); T(c,Math.round(f*100)+'%',ix+r+2,iy+r-2,HX.fg,{align:'c',size:7});
+  const sx=ix+2*r+10; if(sx+18<ix+iw){ slotItem(c,sx,iy,'ironOre',32); slotItem(c,sx+18,iy,'tetrium',7); } bar(c,ix,y+h-8,iw,5,.83,HX.lava,{seg:4}); }
+function drawTurbine(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18; const cx=ix+Math.min(iw,ih)/2, cy=iy+Math.min(iw,ih)/2, r=Math.min(iw,ih)/2-2;
+  c.fillStyle='#0a0e14'; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill(); c.strokeStyle=HX.steelD; c.lineWidth=1;
+  for(let i=0;i<6;i++){ const a=t/300+i*Math.PI/3; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); c.stroke(); }
+  ST(c,'1.2 MFE/t',ix+Math.min(iw,ih)+4,iy+2,HX.gold,{size:7}); }
+function drawGeneric(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+3, iy=y+13, iw=w-6, ih=h-16; const cols=Math.max(1,Math.floor((iw-10)/17)), rows=Math.max(1,Math.floor(ih/17));
+  const its=['ironOre','goldOre','coal','redstone','quartz','copper','tin','lead','uranium','iron','gold','osmium'];
+  for(let r=0;r<rows;r++) for(let k=0;k<cols;k++){ const i=r*cols+k; slotItem(c,ix+k*17,iy+r*17,i<its.length?its[i]:null,[64,23,48,17,9,64,30,12,4,40,8,33][i%12]); }
+  if(m.kind==='Redstone Furnace') bar(c,ix+iw-7,iy,6,ih-2,.3,HX.gold,{seg:3}); }
+function drawMap(c,x,y,w,h,o,t){ o=o||{}; const z=o.zoom||2; R(c,x,y,w,h,'#000'); const ox=o.ox||0, oy=o.oy||0;
+  const tile=mapTile(Math.max(1,Math.ceil(w)),Math.max(1,Math.ceil(h)),z,ox,oy); c.drawImage(tile,x,y);
+  // tagged machine pins
+  [[.55,.48,HX.tq],[.6,.55,HX.gold],[.5,.58,HX.tq]].forEach(p=>{ const px=Math.round(x+w*p[0]), py=Math.round(y+h*p[1]); R(c,px-2,py-2,5,5,'#05070a'); R(c,px-1,py-1,3,3,p[2]); });
+  // a waypoint diamond
+  const wx=x+Math.round(w*.25), wy=y+Math.round(h*.3); c.fillStyle='#ff5ad1'; c.beginPath(); c.moveTo(wx,wy-4); c.lineTo(wx+4,wy); c.lineTo(wx,wy+4); c.lineTo(wx-4,wy); c.fill(); if(w>120) ST(c,'Village',wx+6,wy-3,'#fff',{size:6});
+  // the player arrow
+  const ax=x+Math.round(w*.47), ay=y+Math.round(h*.52), a=t/4000; c.save(); c.translate(ax,ay); c.rotate(a); c.fillStyle='#fff'; c.beginPath(); c.moveTo(0,-5); c.lineTo(4,4); c.lineTo(0,2); c.lineTo(-4,4); c.closePath(); c.fill(); c.fillStyle='#e03a2a'; c.beginPath(); c.moveTo(0,-3.5); c.lineTo(2.5,2.5); c.lineTo(0,1); c.lineTo(-2.5,2.5); c.closePath(); c.fill(); c.restore();
+  if(o.toolbar){ // JourneyMap's own full-map toolbar, as the J screen draws it
+    const bx=x+3, by=y+3; ['D','N','T','C'].forEach((k,i)=>{ R(c,bx,by+i*12,11,11,'rgba(20,20,20,.85)'); O(c,bx,by+i*12,11,11,i===0?'#e8e8e8':'#555'); T(c,k,bx+6,by+i*12+3,i===0?'#fff':'#aaa',{align:'c',size:6}); });
+    [['+',0],['-',1]].forEach(k=>{ R(c,x+w-14,y+h-28+k[1]*12,11,11,'rgba(20,20,20,.85)'); O(c,x+w-14,y+h-28+k[1]*12,11,11,'#777'); T(c,k[0],x+w-8,y+h-26+k[1]*12,'#fff',{align:'c',size:7}); });
+    R(c,x+w/2-46,y+3,92,10,'rgba(20,20,20,.8)'); ST(c,'JourneyMap · Day · survival-1',x+w/2,y+4,'#e8e8e8',{size:6,align:'c'});
+  }
+  if(o.follow){ R(c,x+3,y+h-11,58,8,'rgba(10,14,20,.8)'); ST(c,'Follows you',x+6,y+h-11,HX.mute,{size:6}); }
+}
+function drawAllTags(c,x,y,w,h,mode,t){ R(c,x,y,w,10,'#0d1218'); R(c,x,y+10,w,1,HX.dim); ST(c,'ALL TAGS',x+4,y+1.5,HX.tq,{size:7,bold:true}); ST(c,'6 of 8',x+w-4,y+1.5,HX.mute,{size:6,align:'r'});
+  TAG_ORDER.forEach((k,i)=>{ const ry=y+13+i*10; if(ry+9>y+h) return; const m=MACHINES[k]; lamp(c,x+6,ry+4,2,m.lamp,!m.asleep); ST(c,m.name,x+11,ry,HX.fg,{size:6,max:w*.5}); const f=m.asleep?0:prog(t,3000,i*.3);
+    if(w>110) bar(c,x+w*.55,ry+2,w*.45-6,5,m.kind==='Induction Matrix'?.58:f,m.kind==='Induction Matrix'?HX.gold:HX.tq,{seg:4}); }); }
+function drawSource(c,x,y,w,h,src,mode,t,o){ if(!src) return;
+  if(src==='map') return drawMap(c,x,y,w,h,o||{toolbar:true},t);
+  if(src==='all') return drawAllTags(c,x,y,w,h,mode,t);
+  const m=MACHINES[src]; if(!m) return; const md=m.asleep?'asleep':mode;
+  const fn={smelt:drawFactory,crush:drawFactory,reactor:drawReactor,matrix:drawMatrix,cruc:drawCrucible,turbine:drawTurbine}[src]||drawGeneric; fn(c,x,y,w,h,m,md,t); }
+
+// ===================================================================== pages, cells and box drawing
+const PAGES = [
+  {name:'Main base', cols:12, rows:8, boxes:[{x:0,y:0,w:7,h:5,src:'map'},{x:7,y:0,w:5,h:3,src:'smelt'},{x:7,y:3,w:5,h:5,src:'reactor'},{x:0,y:5,w:4,h:3,src:'matrix'},{x:4,y:5,w:3,h:3,src:'cruc'}]},
+  {name:'Ore line', cols:10, rows:6, boxes:[{x:0,y:0,w:5,h:3,src:'smelt'},{x:5,y:0,w:5,h:3,src:'crush'},{x:0,y:3,w:3,h:3,src:'chest'},{x:3,y:3,w:4,h:3,src:'all'},{x:7,y:3,w:3,h:3,src:'furnace'}]},
+  {name:'Power', cols:8, rows:6, boxes:[{x:0,y:0,w:5,h:6,src:'reactor'},{x:5,y:0,w:3,h:3,src:'turbine'},{x:5,y:3,w:3,h:3,src:'matrix'}]}
+];
+function clonePage(p){ return {name:p.name, cols:p.cols, rows:p.rows, boxes:p.boxes.map(b=>Object.assign({},b))}; }
+function cellRect(area,page,b){ const cw=area.w/page.cols, ch=area.h/page.rows; const x=Math.round(area.x+b.x*cw), y=Math.round(area.y+b.y*ch);
+  return {x:x+1, y:y+1, w:Math.round(area.x+(b.x+b.w)*cw)-x-2, h:Math.round(area.y+(b.y+b.h)*ch)-y-2}; }
+function overlaps(page,b,skip){ return page.boxes.some(o=>o!==skip && b.x<o.x+o.w && o.x<b.x+b.w && b.y<o.y+o.h && o.y<b.y+b.h); }
+function gridDots(c,area,page,col){ const cw=area.w/page.cols, ch=area.h/page.rows;
+  for(let i=0;i<=page.cols;i++) R(c,Math.round(area.x+i*cw),area.y,1,area.h,'rgba(25,211,176,.07)');
+  for(let j=0;j<=page.rows;j++) R(c,area.x,Math.round(area.y+j*ch),area.w,1,'rgba(25,211,176,.07)');
+  for(let i=0;i<=page.cols;i++) for(let j=0;j<=page.rows;j++) R(c,Math.round(area.x+i*cw),Math.round(area.y+j*ch),1,1,col||'rgba(25,211,176,.55)'); }
+function srcLabel(src){ return src==='map'?'Map':src==='all'?'All tags':MACHINES[src]?MACHINES[src].name:''; }
+// one box in build mode: the frame, its size, and handles when selected
+function buildBox(c,r,b,sel,t){ R(c,r.x,r.y,r.w,r.h,'rgba(16,21,28,.92)'); O(c,r.x,r.y,r.w,r.h,sel?HX.tq:'#3d5a5a');
+  if(b.src){ c.save(); c.beginPath(); c.rect(r.x,r.y,r.w,r.h); c.clip(); c.globalAlpha=.35; drawSource(c,r.x+1,r.y+1,r.w-2,r.h-2,b.src,'ro',t,{follow:true}); c.restore(); R(c,r.x+2,r.y+r.h/2-6,r.w-4,12,'rgba(10,14,20,.85)'); ST(c,srcLabel(b.src),r.x+r.w/2,r.y+r.h/2-5,HX.fg,{size:7,align:'c',max:r.w-8,bold:true}); }
+  else { ST(c,'Empty · pick below',r.x+r.w/2,r.y+r.h/2-5,HX.mute,{size:6,align:'c',max:r.w-6}); }
+  ST(c,b.w+' × '+b.h,r.x+r.w-3,r.y+r.h-9,sel?HX.tq:HX.off,{size:6,align:'r'});
+  if(sel){ [[0,0],[.5,0],[1,0],[0,.5],[1,.5],[0,1],[.5,1],[1,1]].forEach(p=>{ const hx=Math.round(r.x+p[0]*(r.w-1))-1, hy=Math.round(r.y+p[1]*(r.h-1))-1; R(c,hx-1,hy-1,4,4,'#05070a'); R(c,hx,hy,2,2,HX.tq); }); } }
+
+// ===================================================================== interaction plumbing: every canvas keeps the hit areas of its last frame
+function wire(c,api){ const cv=c.cv; const pt=e=>{ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*c.W, y:(e.clientY-r.top)/r.height*c.H}; };
+  cv.addEventListener('pointerdown',e=>{ const p=pt(e); if(api.down&&api.down(p,e)) { cv.setPointerCapture(e.pointerId); e.preventDefault(); return; } for(let i=c.hits.length-1;i>=0;i--){ const h=c.hits[i]; if(p.x>=h.x&&p.x<h.x+h.w&&p.y>=h.y&&p.y<h.y+h.h){ h.fn(p,e); e.preventDefault(); api.redraw&&api.redraw(); return; } } });
+  cv.addEventListener('pointermove',e=>{ const p=pt(e); if(api.move) api.move(p,e); let cur='default'; for(let i=c.hits.length-1;i>=0;i--){ const h=c.hits[i]; if(p.x>=h.x&&p.x<h.x+h.w&&p.y>=h.y&&p.y<h.y+h.h){ cur=h.cur; break; } } if(api.cursor) cur=api.cursor(p)||cur; cv.style.cursor=cur; });
+  cv.addEventListener('pointerup',e=>{ if(api.up) api.up(pt(e),e); });
+  cv.addEventListener('contextmenu',e=>{ e.preventDefault(); if(api.right) { api.right(pt(e)); api.redraw&&api.redraw(); } }); }
+const LOOPS=[]; function loop(fn){ LOOPS.push(fn); }
+function startLoops(){ let last=0; const step=now=>{ if(now-last>66){ last=now; LOOPS.forEach(f=>f(now)); } if(!reduce) requestAnimationFrame(step); }; if(reduce){ LOOPS.forEach(f=>f(2400)); } else requestAnimationFrame(step);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>LOOPS.forEach(f=>f(performance.now()))); }
+// ===================================================================== Holo Grid builder: three concepts
+const GW=427, GH=240;
+let OPERATE=false; // the page switch: standing inside a Remote Control Transmitter's range with the unlock
+const PRESETS=[{name:'Main base set', pages:[0,1,2], when:'today'},{name:'Reactor watch', pages:[2], when:'2 d ago'},{name:'Ore run', pages:[1,0], when:'5 d ago'},{name:'Season 4 start', pages:[0,2,1,0], when:'3 w ago'}];
+function modeFor(src){ return OPERATE && src!=='map' && src!=='all' ? 'op' : 'ro'; }
+function miniLayout(c,x,y,w,h,page,col){ R(c,x,y,w,h,'#070a0e'); page.boxes.forEach(b=>{ const r=cellRect({x,y,w,h},page,b); R(c,r.x,r.y,r.w,r.h,b.src==='map'?'#2c5a34':shade(col,.35)); O(c,r.x,r.y,r.w,r.h,col); }); }
+
+// shared builder logic; each concept supplies its chrome
+function makeBuilder(id, chrome, init){
+  const c=gui(id,GW,GH); const S=Object.assign({pages:PAGES.map(clonePage), cur:0, mode:'build', sel:null, drag:null, assign:null, cat:'machines', hover:null, pin:{corner:1,size:0}}, init||{});
+  const page=()=>S.pages[S.cur];
+  const cellAt=(p,area)=>{ const pg=page(); return {x:Math.max(0,Math.min(pg.cols-1,Math.floor((p.x-area.x)/(area.w/pg.cols)))), y:Math.max(0,Math.min(pg.rows-1,Math.floor((p.y-area.y)/(area.h/pg.rows))))}; };
+  const inArea=(p,a)=>p.x>=a.x&&p.x<a.x+a.w&&p.y>=a.y&&p.y<a.y+a.h;
+  const boxAt=(p,a)=>{ const pg=page(); return pg.boxes.find(b=>{ const r=cellRect(a,pg,b); return p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h; }); };
+  let now=0;
+  function draw(t){ now=t; clear(c,'#07090c'); chrome.draw(c,S,t);
+    const a=chrome.area(S), pg=page();
+    if(S.mode==='build'){ gridDots(c,a,pg); pg.boxes.forEach(b=>buildBox(c,cellRect(a,pg,b),b,b===S.sel,t));
+      if(S.drag&&S.drag.kind==='draw'){ const d=S.drag, b={x:Math.min(d.x0,d.x1), y:Math.min(d.y0,d.y1), w:Math.abs(d.x1-d.x0)+1, h:Math.abs(d.y1-d.y0)+1}; const bad=overlaps(pg,b); const r=cellRect(a,pg,b);
+        R(c,r.x,r.y,r.w,r.h,bad?'rgba(214,59,47,.18)':'rgba(25,211,176,.12)'); dash(c,r.x,r.y,r.w,r.h,bad?HX.bad:HX.tq,t); S_(c,bad?'Boxes cannot overlap':b.w+' × '+b.h,r.x+r.w/2,r.y+r.h/2-4,bad?HX.bad:HX.tq); }
+    } else { pg.boxes.forEach(b=>{ const r=cellRect(a,pg,b); R(c,r.x,r.y,r.w,r.h,HX.bg); O(c,r.x-1,r.y-1,r.w+2,r.h+2,'#05070a');
+        c.save(); c.beginPath(); c.rect(r.x,r.y,r.w,r.h); c.clip(); drawSource(c,r.x,r.y,r.w,r.h,b.src,modeFor(b.src),t,b.src==='map'?{toolbar:true}:null); c.restore();
+        O(c,r.x,r.y,r.w,r.h,b===S.hover?HX.tq:HX.dim);
+        if(b===S.hover && b.src!=='map'){ const px=r.x+r.w-22, py=r.y+r.h-11; key(c,px,py,20,10,'',{icon:GL.pin,fn:()=>{ S.pinBox=b; }}); } }); }
+    if(chrome.after) chrome.after(c,S,t,a);
+  }
+  function S_(c,s,x,y,col){ R(c,x-tw(c,s,7,true)/2-3,y-1,tw(c,s,7,true)+6,10,'rgba(5,7,10,.85)'); ST(c,s,x,y,col,{size:7,align:'c'}); }
+  wire(c,{ redraw:()=>draw(now),
+    down:(p)=>{ if(S.mode!=='build'||S.assign||S.overlay) return false; const a=chrome.area(S); if(!inArea(p,a)) return false; const b=boxAt(p,a);
+      if(b){ const r=cellRect(a,page(),b); if(b===S.sel && p.x>r.x+r.w-6 && p.y>r.y+r.h-6){ S.drag={kind:'size',b}; } else if(b===S.sel){ const cl=cellAt(p,a); S.drag={kind:'move',b,dx:cl.x-b.x,dy:cl.y-b.y}; } else { S.sel=b; S.drag=null; } draw(now); return true; }
+      const cl=cellAt(p,a); S.sel=null; S.drag={kind:'draw',x0:cl.x,y0:cl.y,x1:cl.x,y1:cl.y}; draw(now); return true; },
+    move:(p)=>{ const a=chrome.area(S); if(S.mode==='view'){ const h=inArea(p,a)?boxAt(p,a):null; if(h!==S.hover){ S.hover=h; draw(now);} return; } if(!S.drag) return; const cl=cellAt(p,a), pg=page();
+      if(S.drag.kind==='draw'){ S.drag.x1=cl.x; S.drag.y1=cl.y; }
+      else if(S.drag.kind==='move'){ const b=S.drag.b, nb={x:Math.max(0,Math.min(pg.cols-b.w,cl.x-S.drag.dx)), y:Math.max(0,Math.min(pg.rows-b.h,cl.y-S.drag.dy)), w:b.w, h:b.h}; if(!overlaps(pg,nb,b)){ b.x=nb.x; b.y=nb.y; } }
+      else if(S.drag.kind==='size'){ const b=S.drag.b, nb={x:b.x,y:b.y,w:Math.max(1,cl.x-b.x+1),h:Math.max(1,cl.y-b.y+1)}; if(!overlaps(pg,nb,b)){ b.w=nb.w; b.h=nb.h; } }
+      draw(now); },
+    up:()=>{ if(S.drag&&S.drag.kind==='draw'){ const d=S.drag, pg=page(), b={x:Math.min(d.x0,d.x1), y:Math.min(d.y0,d.y1), w:Math.abs(d.x1-d.x0)+1, h:Math.abs(d.y1-d.y0)+1, src:null};
+        if(!overlaps(pg,b)){ pg.boxes.push(b); S.sel=b; S.assign=b; } } S.drag=null; draw(now); },
+    right:(p)=>{ if(S.mode!=='build') return; const a=chrome.area(S); const b=inArea(p,a)?boxAt(p,a):null; if(b){ const pg=page(); pg.boxes.splice(pg.boxes.indexOf(b),1); if(S.sel===b) S.sel=null; if(S.assign===b) S.assign=null; } },
+    cursor:(p)=>{ if(S.mode!=='build'||S.assign||S.overlay) return null; const a=chrome.area(S); if(!inArea(p,a)) return null; const b=boxAt(p,a); if(!b) return 'crosshair'; if(b===S.sel){ const r=cellRect(a,page(),b); return p.x>r.x+r.w-6&&p.y>r.y+r.h-6?'nwse-resize':'move'; } return 'pointer'; } });
+  loop(draw); return S;
+}
+const ASSIGN_ROWS = () => [['machines',TAG_ORDER],['map',['map']],['all',['all']]];
+function assignChoose(S,src){ if(S.assign){ S.assign.src=src; S.assign=null; } }
+
+// ------------------------------------------------------------------ Concept A: Blueprint Sheet (keys along the top, assign card floats by the box)
+function chromeA(){ return {
+  area:()=>({x:4,y:21,w:419,h:203}),
+  draw:(c,S,t)=>{ R(c,0,0,GW,GH,HX.bg); O(c,0,0,GW,GH,'#05070a'); frame(c,1,1,GW-2,GH-2,{bg:HX.bg});
+    T(c,'HOLO GRID',7,6,HX.tq); let x=66;
+    S.pages.forEach((p,i)=>{ const lab=(i+1)+' '+p.name.toUpperCase(); const w=Math.ceil(tw(c,lab,8))+10; const on=i===S.cur;
+      R(c,x,3,w,15,on?HX.bg2:'#0b0f14'); O(c,x,3,w,on?16:15,on?HX.tq:HX.dim); if(on) R(c,x+1,17,w-2,2,HX.bg2); T(c,lab,x+5,7,on?HX.tq:HX.mute); hit(c,x,3,w,15,()=>{ S.cur=i; S.sel=null; S.assign=null; }); x+=w+2; });
+    key(c,x,4,13,13,'',{icon:GL.plus}); x+=20;
+    const kx=GW-4; const keys=[['PIN',GL.pin,36],['POPOUT',GL.pop,50],null,['PRESETS',GL.save,52],[S.mode==='build'?'DONE':'BUILD',GL.pencil,44]];
+    let rx=kx; keys.forEach(k=>{ if(!k){ rx-=6; return; } rx-=k[2]; key(c,rx,4,k[2]-2,13,k[0],{icon:k[1],size:7,on:k[0]==='DONE'||(k[0]==='PRESETS'&&S.overlay==='presets'),fn:()=>{ if(k[0]==='BUILD'||k[0]==='DONE'){ S.mode=S.mode==='build'?'view':'build'; S.sel=null; S.assign=null; } else if(k[0]==='PRESETS') S.overlay=S.overlay==='presets'?null:'presets'; else if(k[0]==='PIN') S.overlay=S.overlay==='pin'?null:'pin'; }}); });
+    R(c,3,19,GW-6,1,HX.tq);
+    if(S.mode==='build'){ R(c,3,226,GW-6,11,'#0b0f14'); const pg=S.pages[S.cur]; ST(c,'COLUMNS',8,228,HX.mute,{size:6}); stepper(c,40,227,pg,'cols',4,32,S); ST(c,'ROWS',82,228,HX.mute,{size:6}); stepper(c,102,227,pg,'rows',3,24,S);
+      ST(c,'Drag to draw · drag a box to move · its corner to size · right-click deletes',GW-8,228,HX.off,{size:6,align:'r'}); }
+    else { R(c,3,226,GW-6,11,'#0b0f14'); ST(c,OPERATE?'In range of Transmitter "Base A" · machines can be operated':'Read-only · no Remote Control Transmitter in range',8,228,OPERATE?HX.tq:HX.mute,{size:6}); ST(c,'Page keys: [ and ]',GW-8,228,HX.off,{size:6,align:'r'}); }
+  },
+  after:(c,S,t,a)=>{ if(S.assign){ const pg=S.pages[S.cur], r=cellRect(a,pg,S.assign); const w=132, h=150; let x=r.x+r.w+4; if(x+w>GW-4) x=r.x-w-4; if(x<4) x=GW-w-6; const y=Math.max(22,Math.min(GH-h-16,r.y));
+      R(c,x+2,y+2,w,h,'rgba(0,0,0,.5)'); frame(c,x,y,w,h,{bg:'#0e131a'}); T(c,'ASSIGN',x+6,y+5,HX.tq); ST(c,S.assign.w+' × '+S.assign.h+' box',x+w-6,y+5,HX.mute,{size:6,align:'r'});
+      const cats=[['machines','MACHINES'],['map','MAP'],['all','ALL TAGS']]; let cx=x+5; cats.forEach(k=>{ const cw=Math.ceil(tw(c,k[1],6))+8; key(c,cx,y+15,cw,10,k[1],{size:6,on:S.cat===k[0],fn:()=>S.cat=k[0]}); cx+=cw+2; });
+      well(c,x+5,y+28,w-10,h-46); const list = S.cat==='machines'?TAG_ORDER:S.cat==='map'?['map']:['all'];
+      list.forEach((k,i)=>{ const ry=y+30+i*12; if(ry+11>y+h-18) return; const m=MACHINES[k]; const used=S.pages[S.cur].boxes.some(b=>b.src===k&&b!==S.assign);
+        R(c,x+6,ry,w-12,11,i%2?'#0e131a':'#111720'); if(m){ lamp(c,x+11,ry+5,2,m.lamp,!m.asleep); ST(c,m.name,x+16,ry+1.5,used?HX.off:HX.fg,{size:6,max:62}); ST(c,m.server.replace('survival','S'),x+w-9,ry+1.5,HX.mute,{size:6,align:'r'}); }
+        else { GL.map(c,x+9,ry+2,HX.tq); ST(c,k==='map'?'JourneyMap (full map)':'All tags, one list',x+18,ry+1.5,HX.fg,{size:6}); }
+        hit(c,x+6,ry,w-12,11,()=>assignChoose(S,k)); });
+      ST(c,'2 of 8 tag slots free · Machine Tagger',x+6,y+h-27,HX.off,{size:6}); key(c,x+5,y+h-15,40,11,'CLEAR',{size:7,fn:()=>{ const pg=S.pages[S.cur]; pg.boxes.splice(pg.boxes.indexOf(S.assign),1); S.assign=null; S.sel=null; }}); key(c,x+w-45,y+h-15,40,11,'CLOSE',{size:7,fn:()=>S.assign=null}); }
+    if(S.overlay==='presets') presetsA(c,S); if(S.overlay==='pin') pinA(c,S); if(S.pinBox){ S.overlay='pin'; S.pinBox=null; } }
+}; }
+function stepper(c,x,y,pg,k,lo,hi,S){ key(c,x,y,9,9,'',{fn:()=>{ pg[k]=Math.max(lo,pg[k]-1); fitBoxes(pg); }}); R(c,x+3,y+4,3,1,HX.fg); T(c,String(pg[k]),x+19,y+1,HX.tq,{align:'c',size:7}); key(c,x+29,y,9,9,'',{fn:()=>{ pg[k]=Math.min(hi,pg[k]+1); }}); R(c,x+32,y+4,3,1,HX.fg); R(c,x+33,y+3,1,3,HX.fg); }
+function fitBoxes(pg){ pg.boxes=pg.boxes.filter(b=>b.x<pg.cols&&b.y<pg.rows); pg.boxes.forEach(b=>{ b.w=Math.min(b.w,pg.cols-b.x); b.h=Math.min(b.h,pg.rows-b.y); }); }
+function presetsA(c,S){ R(c,0,0,GW,GH,'rgba(4,6,9,.6)'); const x=88,y=34,w=250,h=170; R(c,x+3,y+3,w,h,'rgba(0,0,0,.5)'); frame(c,x,y,w,h,{bg:'#0e131a'}); T(c,'PRESETS',x+8,y+7,HX.tq); ST(c,'4 of 10 saved · a preset keeps every page',x+w-8,y+8,HX.mute,{size:6,align:'r'});
+  PRESETS.forEach((p,i)=>{ const ry=y+22+i*30; well(c,x+8,ry,w-16,27,'#0b0f14'); for(let k=0;k<Math.min(4,p.pages.length);k++) miniLayout(c,x+11+k*22,ry+3,20,13,PAGES[p.pages[k]],HX.tq);
+    ST(c,p.name,x+11,ry+17,HX.fg,{size:6,bold:true}); ST(c,p.pages.length+' page'+(p.pages.length>1?'s':'')+' · '+p.when,x+104,ry+4,HX.mute,{size:6});
+    key(c,x+w-102,ry+13,30,11,'LOAD',{size:6}); key(c,x+w-70,ry+13,34,11,'SAVE OVER',{size:5}); key(c,x+w-34,ry+13,24,11,'',{icon:(c,x,y,col)=>{ R(c,x+1,y,5,1,HX.bad); R(c,x+1,y+2,5,5,HX.bad); R(c,x+2,y+3,1,3,'#05070a'); R(c,x+4,y+3,1,3,'#05070a'); }}); });
+  well(c,x+8,y+h-20,w-98,13); ST(c,'Name: Night shift',x+12,y+h-18,HX.fg,{size:6}); R(c,x+68,y+h-18,1,9,HX.tq); key(c,x+w-86,y+h-21,78,15,'SAVE CURRENT',{size:7,on:true,icon:GL.save}); }
+function pinA(c,S){ R(c,0,0,GW,GH,'rgba(4,6,9,.6)'); const x=118,y=46,w=190,h=146; R(c,x+3,y+3,w,h,'rgba(0,0,0,.5)'); frame(c,x,y,w,h,{bg:'#0e131a'}); T(c,'PIN TO SCREEN',x+8,y+7,HX.tq);
+  ST(c,'Box: Big Bertha (page 1)',x+8,y+18,HX.mute,{size:6}); const sx=x+10, sy=y+30, sw=110, sh=62; well(c,sx,sy,sw,sh,'#203018'); for(let i=0;i<sw-2;i+=3) R(c,sx+1+i,sy+sh-14+Math.round(Math.sin(i/9)*3),3,13-Math.round(Math.sin(i/9)*3),'#3a6a2a');
+  R(c,sx+sw/2-30,sy+sh-8,60,6,'rgba(0,0,0,.4)'); for(let i=0;i<9;i++) O(c,sx+sw/2-27+i*6,sy+sh-8,6,6,'#777');
+  [[0,0],[1,0],[0,1],[1,1]].forEach((p,i)=>{ const pw=S.pin.size?34:26, ph=S.pin.size?22:16; const px=p[0]?sx+sw-pw-3:sx+3, py=p[1]?sy+sh-ph-12:sy+3; const on=S.pin.corner===i;
+    R(c,px,py,pw,ph,on?'rgba(25,211,176,.3)':'rgba(16,21,28,.7)'); O(c,px,py,pw,ph,on?HX.tq:HX.dim); if(on) ST(c,'PIN',px+pw/2,py+ph/2-4,HX.tq,{size:6,align:'c'}); hit(c,px,py,pw,ph,()=>S.pin.corner=i); });
+  ST(c,'SIZE',x+130,y+32,HX.mute,{size:6}); key(c,x+130,y+42,50,12,'SMALL',{size:7,on:S.pin.size===0,fn:()=>S.pin.size=0}); key(c,x+130,y+56,50,12,'MEDIUM',{size:7,on:S.pin.size===1,fn:()=>S.pin.size=1});
+  ST(c,'Show or hide: key',x+130,y+74,HX.mute,{size:6}); key(c,x+130,y+83,50,12,'NOT SET',{size:6,dim:true});
+  ST(c,'Hidden with F1 and while a screen is open.',x+10,y+h-38,HX.off,{size:6}); key(c,x+8,y+h-20,70,13,'UNPIN',{size:7}); key(c,x+w-78,y+h-20,70,13,'PIN IT',{size:7,on:true,icon:GL.pin,fn:()=>S.overlay=null}); }
+
+// ------------------------------------------------------------------ Concept B: Side Dock (one key column on the left, the assign list docks in it)
+function chromeB(){ return {
+  area:()=>({x:110,y:16,w:313,h:220}),
+  draw:(c,S,t)=>{ R(c,0,0,GW,GH,'#090c10'); frame(c,1,1,104,GH-2,{bg:HX.bg}); frame(c,106,1,GW-107,GH-2,{bg:'#0b0f14'});
+    T(c,'HOLO GRID',8,6,HX.tq); const pg=S.pages[S.cur];
+    // column and row rulers like a sheet
+    const a={x:110,y:16,w:313,h:220}, cw=a.w/pg.cols, ch=a.h/pg.rows; for(let i=0;i<pg.cols;i++) ST(c,String(i+1),Math.round(a.x+(i+.5)*cw),5,HX.off,{size:6,align:'c'});
+    if(S.assign){ dockAssign(c,S); return; }
+    ST(c,'PAGES',8,18,HX.mute,{size:6,bold:true}); S.pages.forEach((p,i)=>{ const y=27+i*14, on=i===S.cur; R(c,5,y,96,12,on?shade(HX.tq,.22):'#0e131a'); O(c,5,y,96,12,on?HX.tq:HX.dim);
+      T(c,String(i+1),11,y+3,on?HX.tq:HX.off,{size:7}); ST(c,p.name,20,y+2,on?HX.fg:HX.mute,{size:7,max:60}); ST(c,p.boxes.length+'',97,y+2,HX.off,{size:6,align:'r'}); hit(c,5,y,96,12,()=>{ S.cur=i; S.sel=null; }); });
+    let y=27+S.pages.length*14; key(c,5,y,96,11,'+ NEW PAGE',{size:6});
+    y+=22; ST(c,'GRID',8,y,HX.mute,{size:6,bold:true}); y+=10; ST(c,'Columns',8,y+1,HX.fg,{size:6}); stepper(c,58,y,pg,'cols',4,32,S); y+=13; ST(c,'Rows',8,y+1,HX.fg,{size:6}); stepper(c,58,y,pg,'rows',3,24,S);
+    y+=20; ST(c,'MODE',8,y,HX.mute,{size:6,bold:true}); y+=10; key(c,5,y,47,13,'BUILD',{size:7,on:S.mode==='build',fn:()=>{S.mode='build';}}); key(c,54,y,47,13,'VIEW',{size:7,on:S.mode==='view',fn:()=>{S.mode='view'; S.sel=null;}});
+    // the bottom group, set apart
+    key(c,5,GH-56,96,14,'PRESETS',{icon:GL.save,size:7,on:S.overlay==='presets',fn:()=>S.overlay=S.overlay==='presets'?null:'presets'});
+    key(c,5,GH-40,96,14,'POPOUT',{icon:GL.pop,size:7}); key(c,5,GH-20,96,14,'PIN A BOX',{icon:GL.pin,size:7,on:S.overlay==='pin',fn:()=>S.overlay=S.overlay==='pin'?null:'pin'}); },
+  after:(c,S)=>{ if(S.overlay==='presets') presetsB(c,S); if(S.overlay==='pin') pinB(c,S); if(S.pinBox){ S.overlay='pin'; S.pinBox=null; } }
+}; }
+function dockAssign(c,S){ ST(c,'ASSIGN TO BOX',8,18,HX.tq,{size:6,bold:true}); ST(c,S.assign.w+' × '+S.assign.h+' at '+(S.assign.x+1)+','+(S.assign.y+1),8,26,HX.mute,{size:6});
+  let y=36; ST(c,'TAGGED MACHINES',8,y,HX.mute,{size:6}); y+=9; TAG_ORDER.forEach((k,i)=>{ const m=MACHINES[k]; const ry=y+i*16; R(c,5,ry,96,15,'#0e131a'); O(c,5,ry,96,15,HX.dim); lamp(c,11,ry+7,2,m.lamp,!m.asleep);
+    ST(c,m.name,16,ry+1,HX.fg,{size:6,max:62}); ST(c,m.kind,16,ry+8,HX.off,{size:5,max:62}); ST(c,'S'+m.server.slice(-1),97,ry+4,HX.mute,{size:6,align:'r'}); hit(c,5,ry,96,15,()=>assignChoose(S,k)); });
+  y+=TAG_ORDER.length*16+4; ST(c,'OTHER',8,y,HX.mute,{size:6}); y+=9; key(c,5,y,47,12,'MAP',{icon:GL.map,size:6,fn:()=>assignChoose(S,'map')}); key(c,54,y,47,12,'ALL TAGS',{size:6,fn:()=>assignChoose(S,'all')});
+  key(c,5,GH-20,47,14,'BACK',{size:7,fn:()=>S.assign=null}); key(c,54,GH-20,47,14,'DELETE',{size:7,col:HX.bad,fn:()=>{ const pg=S.pages[S.cur]; pg.boxes.splice(pg.boxes.indexOf(S.assign),1); S.assign=null; S.sel=null; }}); }
+function presetsB(c,S){ const x=110,y=16,w=313,h=220; R(c,x,y,w,h,'rgba(9,12,16,.94)'); T(c,'PRESETS',x+6,y+4,HX.tq); ST(c,'4 of 10',x+w-6,y+5,HX.mute,{size:6,align:'r'});
+  PRESETS.forEach((p,i)=>{ const col=i%2, row=Math.floor(i/2); const px=x+6+col*152, py=y+18+row*88; well(c,px,py,146,82,'#0b0f14');
+    miniLayout(c,px+4,py+4,70,46,PAGES[p.pages[0]],HX.tq); for(let k=1;k<p.pages.length&&k<4;k++) miniLayout(c,px+78+(k-1)%2*0,py+4+(k-1)*16,28,14,PAGES[p.pages[k]],HX.off);
+    ST(c,p.name,px+4,py+53,HX.fg,{size:7,bold:true}); ST(c,p.pages.length+(p.pages.length>1?' pages · ':' page · ')+p.when,px+4,py+62,HX.mute,{size:6}); key(c,px+110,py+4,32,12,'LOAD',{size:6}); key(c,px+110,py+18,32,12,'SAVE',{size:6}); key(c,px+110,py+66,32,12,'DELETE',{size:5,col:HX.bad}); });
+  key(c,x+6,y+h-16,140,13,'SAVE CURRENT AS NEW',{size:6,on:true,icon:GL.save}); }
+function pinB(c,S){ const x=110,y=16,w=313,h=220; R(c,x,y,w,h,'rgba(9,12,16,.94)'); T(c,'PIN A BOX',x+6,y+4,HX.tq); ST(c,'Click a box on any page, then a corner.',x+6,y+16,HX.mute,{size:6});
+  const pg=S.pages[S.cur]; const mx=x+8, my=y+28, mw=150, mh=100; R(c,mx,my,mw,mh,'#070a0e'); pg.boxes.forEach(b=>{ const r=cellRect({x:mx,y:my,w:mw,h:mh},pg,b); const on=b.src==='reactor'; R(c,r.x,r.y,r.w,r.h,on?shade(HX.tq,.3):'#121821'); O(c,r.x,r.y,r.w,r.h,on?HX.tq:HX.dim); ST(c,srcLabel(b.src),r.x+2,r.y+2,on?HX.tq:HX.mute,{size:5,max:r.w-4}); });
+  const sx=x+170, sy=y+28, sw=134, sh=76; well(c,sx,sy,sw,sh,'#1c2a16'); [[0,0],[1,0],[0,1],[1,1]].forEach((p,i)=>{ const pw=S.pin.size?36:26, ph=S.pin.size?24:17; const px=p[0]?sx+sw-pw-3:sx+3, py=p[1]?sy+sh-ph-3:sy+3, on=S.pin.corner===i;
+    c.fillStyle=on?HX.tq:'#3a3f4b'; c.beginPath(); c.arc(px+pw/2,py+ph/2,on?4:3,0,7); c.fill(); if(on){ O(c,px,py,pw,ph,HX.tq); } hit(c,px,py,pw,ph,()=>S.pin.corner=i); });
+  key(c,sx,sy+sh+6,64,12,'SMALL',{size:6,on:!S.pin.size,fn:()=>S.pin.size=0}); key(c,sx+70,sy+sh+6,64,12,'MEDIUM',{size:6,on:!!S.pin.size,fn:()=>S.pin.size=1});
+  ST(c,'Show and hide with a key (Controls).',sx,sy+sh+24,HX.off,{size:6}); key(c,x+w-70,y+h-18,64,14,'PIN IT',{size:7,on:true,icon:GL.pin,fn:()=>S.overlay=null}); }
+
+// ------------------------------------------------------------------ Concept C: Holo Table (a bezel with screws, round page buttons, a drawer of tiles, a preset rack)
+function chromeC(){ return {
+  area:()=>({x:42,y:22,w:340,h:164}),
+  draw:(c,S,t)=>{ R(c,0,0,GW,GH,'#20252e'); R(c,0,0,GW,1,'#3a414e'); R(c,0,GH-1,GW,1,'#0c0f13'); [[6,6],[GW-7,6],[6,GH-7],[GW-7,GH-7]].forEach(p=>screw(c,p[0],p[1]));
+    // round page buttons along the top
+    T(c,'PAGE',14,8,HX.mute,{size:7}); for(let i=0;i<9;i++){ const cx=54+i*16, cy=11, has=i<S.pages.length, on=i===S.cur; c.fillStyle='#05070a'; c.beginPath(); c.arc(cx,cy,7,0,7); c.fill();
+      c.fillStyle=on?HX.tq:has?'#39414f':'#1a1f27'; c.beginPath(); c.arc(cx,cy,6,0,7); c.fill(); c.fillStyle=on?'#b8fff0':has?'#4a5262':'#1a1f27'; c.fillRect(cx-3,cy-5,4,1);
+      T(c,has?String(i+1):'+',cx,cy-3,on?'#05070a':has?HX.fg:HX.off,{align:'c',size:7}); if(has) hit(c,cx-7,cy-7,14,14,()=>{ S.cur=i; S.sel=null; S.assign=null; }); }
+    T(c,S.pages[S.cur].name.toUpperCase(),206,8,HX.tq,{size:8});
+    // the table bezel around the grid
+    R(c,36,18,352,172,'#05070a'); R(c,37,19,350,170,'#2b313c'); R(c,40,21,344,166,'#0a0e13'); R(c,38,19,348,1,'#4a5262');
+    // left: mode switch as a lever, right: the preset rack and keys
+    T(c,'MODE',8,26,HX.mute,{size:6}); well(c,8,36,22,44,'#0b0f14'); const ly=S.mode==='build'?40:64; R(c,11,ly,16,12,HX.steelD); R(c,11,ly,16,2,HX.steel); R(c,11,ly+10,16,2,HX.steelDD); hit(c,8,36,22,44,()=>{ S.mode=S.mode==='build'?'view':'build'; S.sel=null; S.assign=null; });
+    ST(c,'BUILD',19,82,S.mode==='build'?HX.tq:HX.off,{size:5,align:'c'}); ST(c,'VIEW',19,88,S.mode==='view'?HX.tq:HX.off,{size:5,align:'c'});
+    T(c,'COLS',8,104,HX.mute,{size:6}); knob(c,19,122,S.pages[S.cur].cols,()=>{ const p=S.pages[S.cur]; p.cols=p.cols>=24?6:p.cols+2; fitBoxes(p); }); T(c,'ROWS',8,140,HX.mute,{size:6}); knob(c,19,158,S.pages[S.cur].rows,()=>{ const p=S.pages[S.cur]; p.rows=p.rows>=16?4:p.rows+1; fitBoxes(p); });
+    T(c,'PRESETS',392,22,HX.mute,{size:6}); PRESETS.slice(0,4).forEach((p,i)=>{ const y=32+i*24; R(c,392,y,30,21,'#05070a'); R(c,393,y+1,28,19,i===0?'#2b5a52':'#323946'); R(c,393,y+1,28,3,'#596273'); miniLayout(c,396,y+6,22,12,PAGES[p.pages[0]],i===0?HX.tq:HX.off); hit(c,392,y,30,21,()=>S.overlay='presets'); });
+    key(c,391,132,32,15,'SAVE',{size:6,fn:()=>S.overlay='presets'}); key(c,391,152,32,15,'',{icon:GL.pop}); key(c,391,172,32,15,'',{icon:GL.pin,on:S.overlay==='pin',fn:()=>S.overlay=S.overlay==='pin'?null:'pin'});
+    // the drawer of tiles
+    R(c,36,193,352,44,'#05070a'); R(c,37,194,350,42,'#151a21'); R(c,37,194,350,1,'#3a414e'); T(c,S.assign?'DRAWER · PICK ONE FOR THE NEW BOX':'DRAWER · TAGGED MACHINES',42,197,S.assign?HX.tq:HX.mute,{size:6});
+    const tiles=['map','all',...TAG_ORDER]; tiles.slice(0,7).forEach((k,i)=>{ const x=42+i*48, y=206; const m=MACHINES[k]; R(c,x,y,46,26,'#05070a'); R(c,x+1,y+1,44,24,S.assign?'#18232a':'#1c222c'); R(c,x+1,y+1,44,1,'#3a414e');
+      if(k==='map'){ c.drawImage(mapTile(16,16,1,40,20),x+3,y+3); } else if(k==='all'){ for(let j=0;j<3;j++){ R(c,x+3,y+4+j*5,16,3,HX.tqD); } } else item(c,x+3,y+3,k==='reactor'?'uranium':k==='matrix'?'gold':k==='cruc'?'tetrium':k==='furnace'?'iron':k==='chest'?'quartz':'machine');
+      ST(c,k==='map'?'Map':k==='all'?'All tags':m.name,x+21,y+3,HX.fg,{size:5,max:24}); if(m) lamp(c,x+40,y+20,1.5,m.lamp,!m.asleep); hit(c,x,y,46,26,()=>assignChoose(S,k)); });
+    key(c,380,206,8,26,'',{}); T(c,'›',384,214,HX.fg,{align:'c',size:7}); },
+  after:(c,S)=>{ if(S.overlay==='presets') presetsC(c,S); if(S.overlay==='pin') pinC(c,S); if(S.pinBox){ S.overlay='pin'; S.pinBox=null; } }
+}; }
+function knob(c,x,y,v,fn){ c.fillStyle='#05070a'; c.beginPath(); c.arc(x,y,10,0,7); c.fill(); for(let i=0;i<16;i++){ const a=i*Math.PI/8; R(c,Math.round(x+Math.cos(a)*9)-1,Math.round(y+Math.sin(a)*9)-1,2,2,'#596273'); }
+  c.fillStyle='#3a414e'; c.beginPath(); c.arc(x,y,7.5,0,7); c.fill(); c.fillStyle='#4a5262'; c.beginPath(); c.arc(x-1,y-1,5.5,0,7); c.fill(); T(c,String(v),x,y-3,HX.tq,{align:'c',size:7}); hit(c,x-10,y-10,20,20,fn); }
+function presetsC(c,S){ R(c,40,21,344,166,'rgba(6,9,12,.93)'); T(c,'PRESET RACK',48,26,HX.tq); ST(c,'Slide a cartridge out to load it',376,27,HX.mute,{size:6,align:'r'});
+  PRESETS.forEach((p,i)=>{ const x=50+i*82, y=42; R(c,x,y,74,110,'#05070a'); R(c,x+1,y+1,72,108,i===0?'#26433f':'#2b313c'); R(c,x+1,y+1,72,8,'#596273'); for(let k=0;k<5;k++) R(c,x+6+k*13,y+3,8,4,'#3a414e');
+    miniLayout(c,x+6,y+14,62,40,PAGES[p.pages[0]],i===0?HX.tq:HX.off); well(c,x+6,y+58,62,14,'#ece6d6'); ST(c,p.name,x+37,y+61,'#26201a',{size:6,align:'c',max:58,bold:true}); ST(c,p.pages.length+(p.pages.length>1?' pages':' page'),x+37,y+76,HX.mute,{size:6,align:'c'});
+    key(c,x+6,y+88,30,14,'LOAD',{size:6}); key(c,x+38,y+88,30,14,'SAVE',{size:6}); });
+  key(c,48,166,96,14,'NEW CARTRIDGE',{size:6,on:true,icon:GL.save}); key(c,330,166,46,14,'CLOSE',{size:6,fn:()=>S.overlay=null}); }
+function pinC(c,S){ R(c,40,21,344,166,'rgba(6,9,12,.93)'); T(c,'PIN TO YOUR SCREEN',48,26,HX.tq);
+  const sx=60, sy=44, sw=200, sh=112; R(c,sx-4,sy-4,sw+8,sh+8,'#05070a'); R(c,sx-3,sy-3,sw+6,sh+6,'#2b313c'); well(c,sx,sy,sw,sh,'#203a28'); for(let i=0;i<sw-2;i+=2) R(c,sx+1+i,sy+sh-24+Math.round(Math.sin(i/13)*5),2,23-Math.round(Math.sin(i/13)*5),'#3d6a2c');
+  [[0,0],[1,0],[0,1],[1,1]].forEach((p,i)=>{ const pw=S.pin.size?96:72, ph=S.pin.size?62:48; const px=p[0]?sx+sw-pw-4:sx+4, py=p[1]?sy+sh-ph-4:sy+4, on=S.pin.corner===i;
+    if(on){ R(c,px,py,pw,ph,HX.bg); c.save(); c.beginPath(); c.rect(px,py,pw,ph); c.clip(); drawReactor(c,px,py,pw,ph,MACHINES.reactor,'ro',performance.now()); c.restore(); O(c,px,py,pw,ph,HX.tq); } else { dash(c,px,py,pw,ph,'#5a6a5a',0); } hit(c,px,py,pw,ph,()=>S.pin.corner=i); });
+  T(c,'SIZE',278,46,HX.mute,{size:6}); knob(c,292,72,S.pin.size?'M':'S',()=>S.pin.size=1-S.pin.size); ST(c,'Small or medium',278,88,HX.off,{size:6}); ST(c,'Hidden with F1 and',278,104,HX.off,{size:6}); ST(c,'while a screen is open.',278,112,HX.off,{size:6});
+  key(c,278,140,46,14,'UNPIN',{size:6}); key(c,328,140,46,14,'PIN IT',{size:6,on:true,fn:()=>S.overlay=null}); }
+
+// ------------------------------------------------------------------ wire up
+const BUILDS=[];
+['A','B','C'].forEach(k=>{ const ch={A:chromeA,B:chromeB,C:chromeC}[k];
+  BUILDS.push(makeBuilder('b'+k+'1',ch(),{mode:'build', sel:null}));
+  const v=makeBuilder('b'+k+'2',ch(),{mode:'view'}); BUILDS.push(v);
+  BUILDS.push(makeBuilder('b'+k+'3',ch(),{mode:'view', overlay:k==='C'?'pin':'presets'}));
+});
+// the first frame of each build view shows a box just drawn, with the assign list open
+[0,3,6].forEach(i=>{ const S=BUILDS[i]; const pg=S.pages[0]; pg.boxes=pg.boxes.filter(b=>b.src!=='cruc'); const nb={x:4,y:5,w:3,h:3,src:null}; pg.boxes.push(nb); S.sel=nb; S.assign=nb; });
+el('opBtn').addEventListener('click',()=>{ OPERATE=!OPERATE; el('opBtn').classList.toggle('on',OPERATE); el('opBtn').textContent=OPERATE?'In transmitter range: yes':'In transmitter range: no'; });
+el('resetBtn').addEventListener('click',()=>location.reload());
+startLoops();
+})();
+</script>

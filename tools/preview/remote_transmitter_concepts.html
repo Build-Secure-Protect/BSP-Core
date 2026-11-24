@@ -1,0 +1,466 @@
+<meta charset="utf-8">
+<title>Remote Control Transmitter Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages, one column. Screens are drawn on canvas at GUI pixel size (427 x 240, a 1280 x 720 window at GUI scale 3), shown doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --gold:#ffd23a; --wood:#d39a5c; --bad:#ff6b5c;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --bad:#c23a2c; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --bad:#c23a2c; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1020px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:38px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:18px; margin:0; color:var(--tq); text-wrap:balance; }
+h3{ font-family:var(--display); font-size:14px; margin:0; color:var(--wood); }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+section{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:84ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.view{ width:100%; aspect-ratio:1/1; max-width:100%; background:radial-gradient(ellipse at 50% 70%,#2a2a2e 0%,#0c0e12 72%); cursor:grab; touch-action:none; border-radius:4px; overflow:hidden; }
+.view canvas{ display:block; width:100%; height:100%; }
+canvas.gui{ width:100%; height:auto; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; touch-action:none; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; align-items:start; }
+.pair figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.pair figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.big{ display:flex; flex-direction:column; gap:12px; }
+.big figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.big figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.grid3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+.ctl{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:4px 9px; cursor:pointer; }
+.hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.key{ font-size:12px; color:var(--muted); }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+ul.how{ margin:0; padding-left:18px; color:var(--muted); font-size:13px; display:flex; flex-direction:column; gap:4px; max-width:84ch; }
+ul.how b{ color:var(--fg); font-weight:600; }
+.scroll{ overflow-x:auto; }
+table.t{ border-collapse:collapse; width:100%; min-width:640px; font-size:13px; }
+.t th,.t td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+.t th{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="pill">BSP-Core · Machine Tracking · mock-ups 3 of 4 for the owner's pick</span>
+    <h1>Remote Control Transmitter</h1>
+    <p class="lede">The block that turns read-only Holo Grid boxes into ones you can operate. Place it near the tagged machines. While you, or anyone on your team, stand inside its range and have the Remote Control unlock, clicking a box opens that machine's own screen. The range is 16 blocks, plus 16 for each range card in its three slots (a stack each), up to 3072 blocks. It uses power while someone is operating a machine through it. Three things to pick: the block, the range card, and the screen.</p>
+    <div class="ctl"><button class="hb on" id="spinBtn" type="button">Turning: on</button><button class="hb on" id="useBtn" type="button">Someone operating: yes</button><span class="key">Click a card slot in a screen to add 16 cards. A full slot empties again.</span></div>
+  </header>
+
+  <section>
+    <h2>1. The block</h2>
+    <p class="lede">Each block has three labelled keys on the front, CARDS, POWER and TEAM, the screen's own words, which open the screen on that page. Every look shows its card slots from the outside, so you can see at a glance that it has cards.</p>
+    <div class="grid3">
+      <div class="card"><h3>A. Radio Mast</h3><div class="view" id="kA"></div>
+        <p><b>Baked model:</b> a steel base with a turquoise seam and a recessed front panel. Three card slits with green cards standing in them, a copper FE port, a mast with three steel rings, and corner bolts. <b>Renderer:</b> a small dish at the top that turns, and a red tip light that blinks while someone is operating.</p></div>
+      <div class="card"><h3>B. Dish Station</h3><div class="view" id="kB"></div>
+        <p><b>Baked model:</b> a stepped base with a round turntable, a front card drawer with three bays, and a round copper FE socket. A glass tube on the side shows the charge in gold. <b>Renderer:</b> a large dish on an arm that sweeps from side to side, with a turquoise feed horn that pulses.</p></div>
+      <div class="card"><h3>C. Signal Lantern</h3><div class="view" id="kC"></div>
+        <p><b>Baked model:</b> a lantern frame with four steel posts, an open glass drum, a capped top with the keys under the eave, and three card bays in the base. <b>Renderer:</b> a glowing turquoise orb that floats in the drum, with two rings turning around it faster while someone is operating.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. The range card</h2>
+    <p class="lede">A flat 16 × 16 item that stacks to 64. 2 copper ingots, 2 redstone, 1 quartz and 1 ender pearl make 2. Click one to see it in the screens below.</p>
+    <div class="grid3">
+      <div class="card"><h3>A. Punch Card</h3><canvas class="gui" id="card0" style="max-width:128px"></canvas><button class="hb" id="cardb0" type="button">Use in screens</button><p>Cream card stock with a copper edge, a notched corner and a pattern of punched holes.</p></div>
+      <div class="card"><h3>B. Circuit Card</h3><canvas class="gui" id="card1" style="max-width:128px"></canvas><button class="hb on" id="cardb1" type="button">Use in screens</button><p>A green circuit board with gold contacts along the bottom, a gold trace and a turquoise chip.</p></div>
+      <div class="card"><h3>C. Crystal Chip</h3><canvas class="gui" id="card2" style="max-width:128px"></canvas><button class="hb" id="cardb2" type="button">Use in screens</button><p>A pale glass slab with a glowing turquoise core, shaded on one side.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. The screen</h2>
+    <p class="lede">Every screen has the card slots, the range, the power (100,000 FE stored, 20 FE a tick plus 1 per card while someone operates through it), the team who may use it, what is happening now, and your inventory for moving cards in.</p>
+    <div class="card"><h3>A. Rack</h3><canvas class="gui" id="tA"></canvas>
+      <p>Three tall card slots on the left fill like gauges as the stacks grow. In the middle, <b>RANGE</b> shows the number of blocks, a bar to the 3072 cap and how many more cards reach it. On the right, <b>POWER</b> has a battery, the charge and the draw. <b>WHO CAN USE IT</b> lists the owner, with a crown, and each team member, with an online lamp. One line says who is operating what right now.</p></div>
+    <div class="card"><h3>B. Map Table</h3><canvas class="gui" id="tB"></canvas>
+      <p>A map of the land with the range drawn as a square around the transmitter, shown in gold. Tagged machines inside it show turquoise, and those outside it grey. A ripple runs out from the transmitter while someone is operating. On the right: range in blocks and its width, the three card slots, a power bar with the draw, and the team as a row of heads.</p></div>
+    <div class="card"><h3>C. Signal Tower</h3><canvas class="gui" id="tC"></canvas>
+      <p>A round dial in a steel plate. Rings mark the range on a stretched scale, so 16 and 3072 both read clearly. The gold power ring runs round the edge. The cards go in three cartridge bays with lamps under the dial. The team sits in a row of sockets with their heads. A NOW panel says who is operating and how much power it draws.</p></div>
+  </section>
+
+  <section>
+    <h2>What every concept shares</h2>
+    <div class="scroll"><table class="t">
+      <tr><th>Part</th><th>Behaviour</th></tr>
+      <tr><td>Range</td><td>A cube around the block: 16 blocks with no cards, plus 16 per card, up to 3072 (191 cards reach it). Tagged machines inside it are linked, and a player inside it can operate them.</td></tr>
+      <tr><td>Who</td><td>The player who placed it and their team, as long as they hold the Remote Control unlock. Allies cannot. Each player still tags their own machines.</td></tr>
+      <tr><td>Power</td><td>It stores 100,000 FE and takes it from any side. It uses 20 FE a tick plus 1 per card while someone is operating a machine through it, and nothing while idle. Without enough FE, the boxes go back to read-only.</td></tr>
+      <tr><td>Loaded</td><td>The transmitter's chunk and the machine's chunk must be loaded, for example by an Anchor. An unloaded transmitter counts as off.</td></tr>
+      <tr><td>Placing and breaking</td><td>Only where you may build, up to 4 per player per server. Anyone who may break blocks there can break it, raiders included. It drops with its cards inside it.</td></tr>
+      <tr><td>Resets</td><td>A reset leaves transmitters and their cards as they are. The Remote Control unlock is what resets.</td></tr>
+    </table></div>
+  </section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+// ===================================================================== Holo HUD kit (shared by the Machine Tracking concept pages)
+// Screens are drawn at GUI pixel size and shown doubled. 427 x 240 GUI px is a 1280 x 720 window at GUI scale 3.
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = id => document.getElementById(id);
+const HX = {bg:'#10151c', bg2:'#151b24', glass:'#0c0e12', edge:'#19d3b0', tq:'#19d3b0', tqD:'#0e7a66', tqDD:'#0a3d35', slot:'#0c0e12', slotE:'#3a3f4b',
+  dim:'#2a2f3a', line:'#232935', fg:'#e8eaf0', mute:'#9aa3b5', off:'#565c6b', inC:'#3a8bff', out:'#ff8a3a', vio:'#b58cff', bad:'#d63b2f', gold:'#ffd23a',
+  lava:'#ff7a1a', green:'#3dff6e', steel:'#c9ced8', steelD:'#8a909c', steelDD:'#4a505c'};
+const TIERS = [['Copper','#d27d46'],['Gold','#f5c542'],['Diamond','#5fe3e3'],['Netherite','#6b5a62'],['Illyrium','#c08cff']];
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16, g=n>>8&255, b=n&255; r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f)); return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1); }
+function gui(id,w,h){ const cv=el(id); cv.width=w*2; cv.height=h*2; const c=cv.getContext('2d'); c.setTransform(2,0,0,2,0,0); c.imageSmoothingEnabled=false; c.W=w; c.H=h; c.cv=cv; c.hits=[]; return c; }
+function clear(c,col){ c.setTransform(2,0,0,2,0,0); c.hits=[]; R(c,0,0,c.W,c.H,col||'#07090c'); }
+function R(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x,y,w,h); }
+function O(c,x,y,w,h,col){ R(c,x,y,w,1,col); R(c,x,y+h-1,w,1,col); R(c,x,y,1,h,col); R(c,x+w-1,y,1,h,col); }
+function dash(c,x,y,w,h,col,t){ const off=Math.floor((t||0)/120)%4; c.fillStyle=col;
+  for(let i=-off;i<w;i+=4){ const a=Math.max(0,i), b=Math.min(w,i+2); if(b>a){ c.fillRect(x+a,y,b-a,1); c.fillRect(x+w-b,y+h-1,b-a,1);} }
+  for(let i=-off;i<h;i+=4){ const a=Math.max(0,i), b=Math.min(h,i+2); if(b>a){ c.fillRect(x+w-1,y+a,1,b-a); c.fillRect(x,y+h-b,1,b-a);} } }
+// text: 8 px Silkscreen stands in for the game font; size 6 and 7 for the 0.75 small text
+function T(c,s,x,y,col,o){ o=o||{}; const sz=o.size||8; c.font=(o.bold?'700 ':'')+sz+'px '+(o.plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); c.textBaseline='top';
+  let w=c.measureText(s).width; if(o.max&&w>o.max){ while(s.length>1&&c.measureText(s+'…').width>o.max) s=s.slice(0,-1); s+='…'; w=c.measureText(s).width; }
+  const ax = o.align==='c' ? x-w/2 : o.align==='r' ? x-w : x; c.fillStyle=col; c.fillText(s,ax,y+(o.plain?0:-1)); return w; }
+function ST(c,s,x,y,col,o){ return T(c,s,x,y,col,Object.assign({size:7,plain:true},o||{})); }
+function tw(c,s,sz,plain){ c.font=(sz||8)+'px '+(plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); return c.measureText(s).width; }
+function hit(c,x,y,w,h,fn,cur){ c.hits.push({x,y,w,h,fn,cur:cur||'pointer'}); }
+
+// a raised key: light top and left, dark bottom and right, a pressed look when on
+function key(c,x,y,w,h,label,o){ o=o||{}; const on=o.on, col=o.col||HX.tq;
+  R(c,x,y,w,h,'#05070a'); R(c,x+1,y+1,w-2,h-2,on?shade(col,.28):'#1c222c');
+  R(c,x+1,y+1,w-2,1,on?shade(col,.18):'#39414f'); R(c,x+1,y+1,1,h-2,on?shade(col,.18):'#39414f');
+  R(c,x+1,y+h-2,w-2,1,on?shade(col,.5):'#0e1117'); R(c,x+w-2,y+1,1,h-2,on?shade(col,.5):'#0e1117');
+  if(on){ O(c,x,y,w,h,col); }
+  if(o.icon){ o.icon(c,x+4,y+Math.floor((h-7)/2),on?col:HX.mute); }
+  const tx = o.icon ? x+13+(w-13)/2 : x+w/2;
+  if(label) T(c,label,Math.round(tx),y+Math.floor((h-6)/2),on?col:(o.dim?HX.off:HX.fg),{align:'c',size:o.size||8}); if(o.fn) hit(c,x,y,w,h,o.fn); }
+// a round lamp with a glint
+function lamp(c,x,y,r,col,on){ c.fillStyle='#05070a'; c.beginPath(); c.arc(x,y,r+1,0,7); c.fill(); c.fillStyle=on?col:shade(col,.25); c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  if(on){ c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(x-r/2,y-r/2,1,1); c.globalAlpha=.18; c.fillStyle=col; c.beginPath(); c.arc(x,y,r+3,0,7); c.fill(); c.globalAlpha=1; } }
+// a recessed well
+function well(c,x,y,w,h,col){ R(c,x,y,w,h,col||HX.glass); R(c,x,y,w,1,'#000'); R(c,x,y,1,h,'#000'); R(c,x,y+h-1,w,1,'#2b3240'); R(c,x+w-1,y,1,h,'#2b3240'); }
+// a screw head
+function screw(c,x,y){ c.fillStyle='#4a505c'; c.beginPath(); c.arc(x,y,2.5,0,7); c.fill(); c.fillStyle='#8a909c'; c.beginPath(); c.arc(x-.4,y-.4,1.8,0,7); c.fill(); R(c,x-1.5,y-.5,3,1,'#2a2f3a'); }
+// holo frame: dark glass, turquoise corner brackets, a notch under the title
+function frame(c,x,y,w,h,o){ o=o||{}; R(c,x,y,w,h,o.bg||HX.bg); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,HX.dim);
+  const k=o.k||6, col=o.col||HX.tq; R(c,x,y,k,1,col); R(c,x,y,1,k,col); R(c,x+w-k,y,k,1,col); R(c,x+w-1,y,1,k,col); R(c,x,y+h-1,k,1,col); R(c,x,y+h-k,1,k,col); R(c,x+w-k,y+h-1,k,1,col); R(c,x+w-1,y+h-k,1,k,col); }
+function slot(c,x,y,s){ s=s||16; R(c,x,y,s,s,HX.slotE); R(c,x+1,y+1,s-1,s-1,'#2b303b'); R(c,x+1,y+1,s-2,s-2,HX.slot); }
+function bar(c,x,y,w,h,f,col,o){ o=o||{}; well(c,x,y,w,h); const seg=o.seg||0; f=Math.max(0,Math.min(1,f));
+  if(h>w){ const fh=Math.round((h-2)*f); R(c,x+1,y+h-1-fh,w-2,fh,col); R(c,x+1,y+h-1-fh,w-2,1,shade(col,1.35)); if(seg) for(let i=y+h-1-seg;i>y;i-=seg) R(c,x+1,i,w-2,1,'rgba(0,0,0,.45)'); }
+  else { const fw=Math.round((w-2)*f); R(c,x+1,y+1,fw,h-2,col); R(c,x+1,y+1,fw,1,shade(col,1.35)); if(seg) for(let i=x+seg;i<x+w-1;i+=seg) R(c,i,y+1,1,h-2,'rgba(0,0,0,.45)'); } }
+function arc(c,cx,cy,r,f,col,width){ c.lineWidth=width||3; c.strokeStyle='#05070a'; c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke(); c.lineWidth=(width||3)-1; c.strokeStyle=HX.dim; c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke();
+  c.strokeStyle=col; c.beginPath(); c.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0.001,f)); c.stroke(); }
+
+// 16 px item icons, drawn as pixel art from a palette and a shape
+const ICON_SHAPES = {
+  ingot:['................','................','................','................','....aaaaaaaa....','...abbbbbbbbc...','..abbbbbbbbbbc..','.abbbbbbbbbbbbc.','.acccccccccccc..','................','................'],
+  dust:['................','................','................','................','.......a........','......aba.......','.....abbba......','....abbbbba.....','...abbbcbbbc....','..abbbbbbbbbc...','..ccccccccccc...'],
+  ore:['aaaaaaaaaaaaaaaa','abbbaabbbbaabbba','abccbabbbbabccba','abbbaabccbaabbba','aaaabbbbbbaaaaaa','abbbbabbbbbbccba','abccbabbbaabccba','abbbbaabbabbbbba','aaaaaaaaabbbbbba','abbbbccbabbbccba','abbbbbbbaaaaaaaa'],
+  gem:['................','................','.....aaaaaa.....','....abbbbbbc....','...abbbbbbbbc...','...cbbbbbbbbc...','....cbbbbbbc....','.....cbbbbc.....','......cbbc......','.......cc.......'],
+  pellet:['................','................','.....aaaa.......','....abbbba......','....abbbbaaaa...','....cbbbabbbba..','.....cccabbbba..','........cbbbc...','.........ccc....'],
+  block:['aaaaaaaaaaaaaaaa','abbbbbbbbbbbbbbc','abaaaaaaaaaaaabc','aba..........abc','aba..dddddd..abc','aba..d....d..abc','aba..dddddd..abc','aba..........abc','abccccccccccccbc','abbbbbbbbbbbbbbc','cccccccccccccccc']
+};
+function icon(c,x,y,shape,cols){ const rows=ICON_SHAPES[shape]; const pal={a:shade(cols[0],1.3), b:cols[0], c:shade(cols[0],.6), d:cols[1]||'#19d3b0'}; const oy=y+Math.floor((16-rows.length)/2);
+  for(let r=0;r<rows.length;r++) for(let k=0;k<16;k++){ const ch=rows[r][k]; if(ch&&ch!=='.'){ c.fillStyle=pal[ch]; c.fillRect(x+k,oy+r,1,1); } } }
+const ITEMS = { ironOre:['ore',['#a08a7a']], iron:['ingot',['#d8d8d8']], osmiumOre:['ore',['#8aa6b8']], osmium:['ingot',['#9fc7da']], gold:['ingot',['#f5c542']],
+  goldOre:['ore',['#c9a24a']], copper:['ingot',['#d27d46']], coal:['gem',['#3a3a3a']], redstone:['dust',['#c0241c']], uranium:['pellet',['#6adc3a']],
+  tin:['ingot',['#c8d4dc']], quartz:['gem',['#ece6dc']], tetrium:['ingot',['#19d3b0']], coin:['gem',['#d27d46']], steel:['ingot',['#7d848f']], lead:['ingot',['#6d6f8c']],
+  dustIron:['dust',['#d8c8b8']], dustGold:['dust',['#f5d562']], machine:['block',['#5d6570','#19d3b0']] };
+function item(c,x,y,k,n){ const d=ITEMS[k]; if(d) icon(c,x,y,d[0],d[1]); if(n&&n>1){ const s=String(n); T(c,s,x+17,y+9,'#000',{align:'r',size:7}); T(c,s,x+16,y+8,HX.fg,{align:'r',size:7}); } }
+function slotItem(c,x,y,k,n){ slot(c,x,y); if(k) item(c,x,y,k,n); }
+
+// small 7x7 glyph icons for keys
+const GL = {
+  eye:(c,x,y,col)=>{ R(c,x+1,y+2,5,1,col); R(c,x,y+3,7,1,col); R(c,x+1,y+4,5,1,col); R(c,x+3,y+3,1,1,'#05070a'); },
+  hand:(c,x,y,col)=>{ R(c,x+1,y+1,1,4,col); R(c,x+3,y,1,5,col); R(c,x+5,y+1,1,4,col); R(c,x+1,y+4,5,3,col); R(c,x,y+3,1,2,col); },
+  pin:(c,x,y,col)=>{ R(c,x+2,y,3,1,col); R(c,x+1,y+1,5,3,col); R(c,x+3,y+4,1,3,col); },
+  pop:(c,x,y,col)=>{ O(c,x,y+2,5,5,col); R(c,x+3,y,4,1,col); R(c,x+6,y,1,4,col); R(c,x+4,y+2,1,1,col); R(c,x+5,y+1,1,1,col); },
+  save:(c,x,y,col)=>{ O(c,x,y,7,7,col); R(c,x+2,y+1,3,2,col); R(c,x+2,y+4,3,2,col); },
+  grid:(c,x,y,col)=>{ O(c,x,y,7,7,col); R(c,x+3,y,1,7,col); R(c,x,y+3,7,1,col); },
+  plus:(c,x,y,col)=>{ R(c,x+3,y+1,1,5,col); R(c,x+1,y+3,5,1,col); },
+  pencil:(c,x,y,col)=>{ for(let i=0;i<5;i++) R(c,x+1+i,y+5-i,2,1,col); R(c,x,y+6,1,1,col); },
+  map:(c,x,y,col)=>{ R(c,x,y+1,2,6,col); R(c,x+2,y,1,6,shade(col,.7)); R(c,x+3,y+1,2,6,col); R(c,x+5,y,2,6,shade(col,.7)); },
+  lock:(c,x,y,col)=>{ O(c,x+1,y,5,4,col); R(c,x,y+3,7,4,col); R(c,x+3,y+4,1,2,'#05070a'); },
+  bolt:(c,x,y,col)=>{ R(c,x+3,y,2,1,col); R(c,x+2,y+1,2,2,col); R(c,x+1,y+3,5,1,col); R(c,x+3,y+4,2,1,col); R(c,x+2,y+5,2,2,col); }
+};
+
+// ===================================================================== example data (made-up machines)
+const MACHINES = {
+  smelt:  {name:'Smelter line 1',   kind:'Elite Smelting Factory', mod:'Mekanism', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  crush:  {name:'Ore crushers',     kind:'Elite Crushing Factory', mod:'Mekanism', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  reactor:{name:'Big Bertha',       kind:'Fission Reactor',        mod:'Mekanism Generators', server:'survival-1', dim:'Overworld', lamp:HX.gold},
+  matrix: {name:'Main battery',     kind:'Induction Matrix',       mod:'Mekanism', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  turbine:{name:'Steam turbine',    kind:'Industrial Turbine',     mod:'Mekanism Generators', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  cruc:   {name:'Crucible',         kind:'Tetrium Crucible',       mod:'BSP-Core', server:'survival-1', dim:'Overworld', lamp:HX.tq},
+  furnace:{name:'Nether smelter',   kind:'Redstone Furnace',       mod:'Thermal', server:'survival-2', dim:'The Nether', lamp:HX.off, asleep:'asleep 2 h'},
+  chest:  {name:'Ore chest',        kind:'Sophisticated Chest',    mod:'Sophisticated Storage', server:'survival-1', dim:'Overworld', lamp:HX.tq}
+};
+const TAG_ORDER = ['smelt','crush','reactor','matrix','turbine','cruc','furnace','chest'];
+
+// ===================================================================== value noise for the JourneyMap stand-in
+function hash(x,y){ let h=(x*374761393+y*668265263)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967295; }
+function vnoise(x,y){ const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi; const s=t=>t*t*(3-2*t);
+  const a=hash(xi,yi), b=hash(xi+1,yi), cc=hash(xi,yi+1), d=hash(xi+1,yi+1); return (a+(b-a)*s(xf))+((cc+(d-cc)*s(xf))-(a+(b-a)*s(xf)))*s(yf); }
+function fbm(x,y){ return vnoise(x,y)*.55+vnoise(x*2.1,y*2.1)*.28+vnoise(x*4.3,y*4.3)*.17; }
+const MAPCACHE = {};
+function mapTile(w,h,zoom,ox,oy){ const key=w+'x'+h+'@'+zoom+':'+ox+','+oy; if(MAPCACHE[key]) return MAPCACHE[key];
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d'); const img=g.createImageData(w,h);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const wx=(x+ox)/zoom, wy=(y+oy)/zoom; const e=fbm(wx/22,wy/22); const m=vnoise(wx/9+40,wy/9); let col;
+    const river=Math.abs(fbm(wx/30+7,wy/30+3)-.5)<.018;
+    if(e<.36||river) col=[38,72,150+Math.round(e*60)]; else if(e<.39) col=[214,200,140]; else if(e>.72) col=[150,150,150]; else if(m>.62) col=[44,98,40]; else col=[92+Math.round(m*30),148+Math.round(e*40),64];
+    const sh=(fbm((wx+1)/22,(wy+1)/22)-e)*900; col=col.map(v=>Math.max(0,Math.min(255,v-sh)));
+    const i=(y*w+x)*4; img.data[i]=col[0]; img.data[i+1]=col[1]; img.data[i+2]=col[2]; img.data[i+3]=255; }
+  // a few base buildings
+  g.putImageData(img,0,0); g.fillStyle='#8a7a6a'; for(let i=0;i<6;i++){ const bx=Math.round(w*.52+((i*37)%23)*zoom/3-ox*0), by=Math.round(h*.5+((i*53)%19)*zoom/3); g.fillRect(bx,by,Math.max(2,3*zoom/2),Math.max(2,2*zoom/2)); }
+  MAPCACHE[key]=cv; return cv; }
+
+// ===================================================================== box contents (each adapts to its box's shape)
+// mode: 'ro' read-only, 'op' operable (inside a transmitter's range), 'asleep'
+function boxHead(c,x,y,w,m,mode,o){ o=o||{}; R(c,x,y,w,10,'#0d1218'); R(c,x,y+10,w,1,HX.dim);
+  lamp(c,x+5,y+5,2,m.lamp||HX.tq,mode!=='asleep');
+  const right = mode==='op' ? 'OPERATE' : mode==='asleep' ? (m.asleep||'asleep') : '';
+  const rw = right ? tw(c,right,6,true)+14 : 9;
+  ST(c,m.name,x+10,y+1.5,HX.fg,{size:7,bold:true,max:w-16-rw});
+  if(mode==='op'){ R(c,x+w-rw-1,y+1,rw,8,shade(HX.tq,.25)); O(c,x+w-rw-1,y+1,rw,8,HX.tq); GL.hand(c,x+w-rw+1,y+1.5,HX.tq); ST(c,right,x+w-4,y+1.5,HX.tq,{size:6,align:'r',bold:true}); }
+  else if(mode==='asleep'){ ST(c,right,x+w-4,y+1.5,HX.mute,{size:6,align:'r'}); GL.eye(c,x+w-rw+1,y+2,HX.off); }
+  else GL.eye(c,x+w-9,y+2,HX.mute); }
+function prog(t,period,phase){ return ((t/period)+(phase||0))%1; }
+function drawFactory(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+3, iy=y+13, iw=w-6, ih=h-16; const n=5;
+  const ins=['ironOre','ironOre','osmiumOre','goldOre','ironOre'], outs=['iron','iron','osmium','gold','iron'];
+  const wide = iw > ih*1.6;
+  if(wide){ const colW=Math.min(22,Math.floor((iw-16)/n)); for(let i=0;i<n;i++){ const cx=ix+i*colW; const f=mode==='asleep'?.4:prog(t,2600,i*.21);
+      slotItem(c,cx,iy,ins[i],[12,9,31,4,22][i]); bar(c,cx+5,iy+18,6,Math.max(8,ih-40),f,HX.tq,{seg:3}); slotItem(c,cx,iy+ih-18,f>.5?outs[i]:null,[3,1,9,0,5][i]); }
+    bar(c,ix+iw-10,iy,8,ih-2,.72,HX.gold,{seg:4}); GL.bolt(c,ix+iw-10,iy-10,HX.gold);
+  } else { const rowH=Math.min(18,Math.floor((ih-12)/n)); for(let i=0;i<n;i++){ const ry=iy+i*rowH; const f=mode==='asleep'?.4:prog(t,2600,i*.21);
+      if(rowH>=17){ slotItem(c,ix,ry,ins[i],[12,9,31,4,22][i]); bar(c,ix+19,ry+5,iw-40,6,f,HX.tq,{seg:4}); slotItem(c,ix+iw-17,ry,f>.5?outs[i]:null,[3,1,9,0,5][i]); }
+      else { item(c,ix,ry-3,ins[i]); bar(c,ix+18,ry+2,iw-20,Math.max(3,rowH-4),f,HX.tq,{seg:4}); } }
+    bar(c,ix,y+h-8,iw,5,.72,HX.gold,{seg:6}); }
+}
+function drawReactor(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18;
+  const temp=0.46+Math.sin(t/1700)*.04; const r=Math.max(10,Math.min(Math.floor(ih/2)-4, Math.floor(iw/4)));
+  const cx=ix+r+2, cy=iy+r+2; c.lineWidth=5; c.strokeStyle='#05070a'; c.beginPath(); c.arc(cx,cy,r,Math.PI*.75,Math.PI*2.25); c.stroke();
+  const grad=c.createLinearGradient(cx-r,0,cx+r,0); grad.addColorStop(0,'#3a8bff'); grad.addColorStop(.5,'#ffd23a'); grad.addColorStop(1,'#d63b2f');
+  c.lineWidth=3; c.strokeStyle=grad; c.beginPath(); c.arc(cx,cy,r,Math.PI*.75,Math.PI*.75+Math.PI*1.5*temp); c.stroke();
+  const a=Math.PI*.75+Math.PI*1.5*temp; c.strokeStyle=HX.fg; c.lineWidth=1; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*(r-4),cy+Math.sin(a)*(r-4)); c.stroke();
+  c.fillStyle=HX.steelD; c.beginPath(); c.arc(cx,cy,2.5,0,7); c.fill();
+  T(c,Math.round(600+temp*600)+' K',cx,cy+r*0.45,HX.fg,{align:'c',size:8}); ST(c,'TEMPERATURE',cx,cy+r*0.45+9,HX.mute,{size:6,align:'c'});
+  // tanks
+  const tx=cx+r+8, tw_=Math.max(6,Math.min(12,Math.floor((ix+iw-tx)/4)-4)); const th=ih-14;
+  const tanks=[['FUEL','#7ad04a',.64],['COOL','#3a8bff',.81],['HOT','#c9ced8',.33],['WASTE','#8a5a2a',.18]];
+  tanks.forEach((k,i)=>{ const bx=tx+i*(tw_+5); if(bx+tw_>ix+iw) return; bar(c,bx,iy,tw_,th,k[2]+Math.sin(t/900+i)*.01,k[1],{seg:4}); ST(c,tw_>=11?k[0]:k[0][0],bx+tw_/2,iy+th+2,HX.mute,{size:5,align:'c'}); });
+  if(ih>70){ ST(c,'Burn rate 12.4 mB/t   Damage 0 %',ix,y+h-10,HX.mute,{size:6}); }
+}
+function drawMatrix(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18; const f=.58+Math.sin(t/3000)*.02;
+  const bw=Math.min(iw, Math.max(24, iw)); bar(c,ix,iy,bw,Math.max(10,Math.min(18,ih-22)),f,HX.gold,{seg:5});
+  T(c,(f*412).toFixed(1)+' GFE',ix,iy+Math.min(18,ih-22)+4,HX.gold,{size:8}); if(ih>40){ ST(c,'IN  +184 kFE/t',ix,y+h-17,HX.tq,{size:6}); ST(c,'OUT -97 kFE/t',ix,y+h-10,HX.out,{size:6}); } }
+function drawCrucible(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18; const f=prog(t,4200);
+  const r=Math.max(8,Math.min(15,Math.floor(Math.min(iw/3,ih/2)-3))); arc(c,ix+r+2,iy+r+2,r,f,HX.tq,4); T(c,Math.round(f*100)+'%',ix+r+2,iy+r-2,HX.fg,{align:'c',size:7});
+  const sx=ix+2*r+10; if(sx+18<ix+iw){ slotItem(c,sx,iy,'ironOre',32); slotItem(c,sx+18,iy,'tetrium',7); } bar(c,ix,y+h-8,iw,5,.83,HX.lava,{seg:4}); }
+function drawTurbine(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+4, iy=y+14, iw=w-8, ih=h-18; const cx=ix+Math.min(iw,ih)/2, cy=iy+Math.min(iw,ih)/2, r=Math.min(iw,ih)/2-2;
+  c.fillStyle='#0a0e14'; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill(); c.strokeStyle=HX.steelD; c.lineWidth=1;
+  for(let i=0;i<6;i++){ const a=t/300+i*Math.PI/3; c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); c.stroke(); }
+  ST(c,'1.2 MFE/t',ix+Math.min(iw,ih)+4,iy+2,HX.gold,{size:7}); }
+function drawGeneric(c,x,y,w,h,m,mode,t){ boxHead(c,x,y,w,m,mode); const ix=x+3, iy=y+13, iw=w-6, ih=h-16; const cols=Math.max(1,Math.floor((iw-10)/17)), rows=Math.max(1,Math.floor(ih/17));
+  const its=['ironOre','goldOre','coal','redstone','quartz','copper','tin','lead','uranium','iron','gold','osmium'];
+  for(let r=0;r<rows;r++) for(let k=0;k<cols;k++){ const i=r*cols+k; slotItem(c,ix+k*17,iy+r*17,i<its.length?its[i]:null,[64,23,48,17,9,64,30,12,4,40,8,33][i%12]); }
+  if(m.kind==='Redstone Furnace') bar(c,ix+iw-7,iy,6,ih-2,.3,HX.gold,{seg:3}); }
+function drawMap(c,x,y,w,h,o,t){ o=o||{}; const z=o.zoom||2; R(c,x,y,w,h,'#000'); const ox=o.ox||0, oy=o.oy||0;
+  const tile=mapTile(Math.max(1,Math.ceil(w)),Math.max(1,Math.ceil(h)),z,ox,oy); c.drawImage(tile,x,y);
+  // tagged machine pins
+  [[.55,.48,HX.tq],[.6,.55,HX.gold],[.5,.58,HX.tq]].forEach(p=>{ const px=Math.round(x+w*p[0]), py=Math.round(y+h*p[1]); R(c,px-2,py-2,5,5,'#05070a'); R(c,px-1,py-1,3,3,p[2]); });
+  // a waypoint diamond
+  const wx=x+Math.round(w*.25), wy=y+Math.round(h*.3); c.fillStyle='#ff5ad1'; c.beginPath(); c.moveTo(wx,wy-4); c.lineTo(wx+4,wy); c.lineTo(wx,wy+4); c.lineTo(wx-4,wy); c.fill(); if(w>120) ST(c,'Village',wx+6,wy-3,'#fff',{size:6});
+  // the player arrow
+  const ax=x+Math.round(w*.47), ay=y+Math.round(h*.52), a=t/4000; c.save(); c.translate(ax,ay); c.rotate(a); c.fillStyle='#fff'; c.beginPath(); c.moveTo(0,-5); c.lineTo(4,4); c.lineTo(0,2); c.lineTo(-4,4); c.closePath(); c.fill(); c.fillStyle='#e03a2a'; c.beginPath(); c.moveTo(0,-3.5); c.lineTo(2.5,2.5); c.lineTo(0,1); c.lineTo(-2.5,2.5); c.closePath(); c.fill(); c.restore();
+  if(o.toolbar){ // JourneyMap's own full-map toolbar, as the J screen draws it
+    const bx=x+3, by=y+3; ['D','N','T','C'].forEach((k,i)=>{ R(c,bx,by+i*12,11,11,'rgba(20,20,20,.85)'); O(c,bx,by+i*12,11,11,i===0?'#e8e8e8':'#555'); T(c,k,bx+6,by+i*12+3,i===0?'#fff':'#aaa',{align:'c',size:6}); });
+    [['+',0],['-',1]].forEach(k=>{ R(c,x+w-14,y+h-28+k[1]*12,11,11,'rgba(20,20,20,.85)'); O(c,x+w-14,y+h-28+k[1]*12,11,11,'#777'); T(c,k[0],x+w-8,y+h-26+k[1]*12,'#fff',{align:'c',size:7}); });
+    R(c,x+w/2-46,y+3,92,10,'rgba(20,20,20,.8)'); ST(c,'JourneyMap · Day · survival-1',x+w/2,y+4,'#e8e8e8',{size:6,align:'c'});
+  }
+  if(o.follow){ R(c,x+3,y+h-11,58,8,'rgba(10,14,20,.8)'); ST(c,'Follows you',x+6,y+h-11,HX.mute,{size:6}); }
+}
+function drawAllTags(c,x,y,w,h,mode,t){ R(c,x,y,w,10,'#0d1218'); R(c,x,y+10,w,1,HX.dim); ST(c,'ALL TAGS',x+4,y+1.5,HX.tq,{size:7,bold:true}); ST(c,'6 of 8',x+w-4,y+1.5,HX.mute,{size:6,align:'r'});
+  TAG_ORDER.forEach((k,i)=>{ const ry=y+13+i*10; if(ry+9>y+h) return; const m=MACHINES[k]; lamp(c,x+6,ry+4,2,m.lamp,!m.asleep); ST(c,m.name,x+11,ry,HX.fg,{size:6,max:w*.5}); const f=m.asleep?0:prog(t,3000,i*.3);
+    if(w>110) bar(c,x+w*.55,ry+2,w*.45-6,5,m.kind==='Induction Matrix'?.58:f,m.kind==='Induction Matrix'?HX.gold:HX.tq,{seg:4}); }); }
+function drawSource(c,x,y,w,h,src,mode,t,o){ if(!src) return;
+  if(src==='map') return drawMap(c,x,y,w,h,o||{toolbar:true},t);
+  if(src==='all') return drawAllTags(c,x,y,w,h,mode,t);
+  const m=MACHINES[src]; if(!m) return; const md=m.asleep?'asleep':mode;
+  const fn={smelt:drawFactory,crush:drawFactory,reactor:drawReactor,matrix:drawMatrix,cruc:drawCrucible,turbine:drawTurbine}[src]||drawGeneric; fn(c,x,y,w,h,m,md,t); }
+
+// ===================================================================== pages, cells and box drawing
+const PAGES = [
+  {name:'Main base', cols:12, rows:8, boxes:[{x:0,y:0,w:7,h:5,src:'map'},{x:7,y:0,w:5,h:3,src:'smelt'},{x:7,y:3,w:5,h:5,src:'reactor'},{x:0,y:5,w:4,h:3,src:'matrix'},{x:4,y:5,w:3,h:3,src:'cruc'}]},
+  {name:'Ore line', cols:10, rows:6, boxes:[{x:0,y:0,w:5,h:3,src:'smelt'},{x:5,y:0,w:5,h:3,src:'crush'},{x:0,y:3,w:3,h:3,src:'chest'},{x:3,y:3,w:4,h:3,src:'all'},{x:7,y:3,w:3,h:3,src:'furnace'}]},
+  {name:'Power', cols:8, rows:6, boxes:[{x:0,y:0,w:5,h:6,src:'reactor'},{x:5,y:0,w:3,h:3,src:'turbine'},{x:5,y:3,w:3,h:3,src:'matrix'}]}
+];
+function clonePage(p){ return {name:p.name, cols:p.cols, rows:p.rows, boxes:p.boxes.map(b=>Object.assign({},b))}; }
+function cellRect(area,page,b){ const cw=area.w/page.cols, ch=area.h/page.rows; const x=Math.round(area.x+b.x*cw), y=Math.round(area.y+b.y*ch);
+  return {x:x+1, y:y+1, w:Math.round(area.x+(b.x+b.w)*cw)-x-2, h:Math.round(area.y+(b.y+b.h)*ch)-y-2}; }
+function overlaps(page,b,skip){ return page.boxes.some(o=>o!==skip && b.x<o.x+o.w && o.x<b.x+b.w && b.y<o.y+o.h && o.y<b.y+b.h); }
+function gridDots(c,area,page,col){ const cw=area.w/page.cols, ch=area.h/page.rows;
+  for(let i=0;i<=page.cols;i++) R(c,Math.round(area.x+i*cw),area.y,1,area.h,'rgba(25,211,176,.07)');
+  for(let j=0;j<=page.rows;j++) R(c,area.x,Math.round(area.y+j*ch),area.w,1,'rgba(25,211,176,.07)');
+  for(let i=0;i<=page.cols;i++) for(let j=0;j<=page.rows;j++) R(c,Math.round(area.x+i*cw),Math.round(area.y+j*ch),1,1,col||'rgba(25,211,176,.55)'); }
+function srcLabel(src){ return src==='map'?'Map':src==='all'?'All tags':MACHINES[src]?MACHINES[src].name:''; }
+// one box in build mode: the frame, its size, and handles when selected
+function buildBox(c,r,b,sel,t){ R(c,r.x,r.y,r.w,r.h,'rgba(16,21,28,.92)'); O(c,r.x,r.y,r.w,r.h,sel?HX.tq:'#3d5a5a');
+  if(b.src){ c.save(); c.beginPath(); c.rect(r.x,r.y,r.w,r.h); c.clip(); c.globalAlpha=.35; drawSource(c,r.x+1,r.y+1,r.w-2,r.h-2,b.src,'ro',t,{follow:true}); c.restore(); R(c,r.x+2,r.y+r.h/2-6,r.w-4,12,'rgba(10,14,20,.85)'); ST(c,srcLabel(b.src),r.x+r.w/2,r.y+r.h/2-5,HX.fg,{size:7,align:'c',max:r.w-8,bold:true}); }
+  else { ST(c,'Empty · pick below',r.x+r.w/2,r.y+r.h/2-5,HX.mute,{size:6,align:'c',max:r.w-6}); }
+  ST(c,b.w+' × '+b.h,r.x+r.w-3,r.y+r.h-9,sel?HX.tq:HX.off,{size:6,align:'r'});
+  if(sel){ [[0,0],[.5,0],[1,0],[0,.5],[1,.5],[0,1],[.5,1],[1,1]].forEach(p=>{ const hx=Math.round(r.x+p[0]*(r.w-1))-1, hy=Math.round(r.y+p[1]*(r.h-1))-1; R(c,hx-1,hy-1,4,4,'#05070a'); R(c,hx,hy,2,2,HX.tq); }); } }
+
+// ===================================================================== interaction plumbing: every canvas keeps the hit areas of its last frame
+function wire(c,api){ const cv=c.cv; const pt=e=>{ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*c.W, y:(e.clientY-r.top)/r.height*c.H}; };
+  cv.addEventListener('pointerdown',e=>{ const p=pt(e); if(api.down&&api.down(p,e)) { cv.setPointerCapture(e.pointerId); e.preventDefault(); return; } for(let i=c.hits.length-1;i>=0;i--){ const h=c.hits[i]; if(p.x>=h.x&&p.x<h.x+h.w&&p.y>=h.y&&p.y<h.y+h.h){ h.fn(p,e); e.preventDefault(); api.redraw&&api.redraw(); return; } } });
+  cv.addEventListener('pointermove',e=>{ const p=pt(e); if(api.move) api.move(p,e); let cur='default'; for(let i=c.hits.length-1;i>=0;i--){ const h=c.hits[i]; if(p.x>=h.x&&p.x<h.x+h.w&&p.y>=h.y&&p.y<h.y+h.h){ cur=h.cur; break; } } if(api.cursor) cur=api.cursor(p)||cur; cv.style.cursor=cur; });
+  cv.addEventListener('pointerup',e=>{ if(api.up) api.up(pt(e),e); });
+  cv.addEventListener('contextmenu',e=>{ e.preventDefault(); if(api.right) { api.right(pt(e)); api.redraw&&api.redraw(); } }); }
+const LOOPS=[]; function loop(fn){ LOOPS.push(fn); }
+function startLoops(){ let last=0; const step=now=>{ if(now-last>66){ last=now; LOOPS.forEach(f=>f(now)); } if(!reduce) requestAnimationFrame(step); }; if(reduce){ LOOPS.forEach(f=>f(2400)); } else requestAnimationFrame(step);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>LOOPS.forEach(f=>f(performance.now()))); }
+// ===================================================================== three.js kit: 1 unit = 1 model pixel (a block is 16)
+const MATS = {};
+function mat(name){ if(MATS[name]) return MATS[name]; const P={
+  steel:[0x8a909c,.35,.6], steelD:[0x4a505c,.45,.5], steelL:[0xc9ced8,.3,.6], dark:[0x1c222c,.6,.3], black:[0x0b0d11,.7,.2], rubber:[0x22262e,.95,0], glass:[0x0c1a1e,.1,.2],
+  tq:[0x19d3b0,.3,.1,0x19d3b0,.9], tqDim:[0x0e7a66,.5,.1,0x0a3d35,.4], green:[0x3dff6e,.3,0,0x3dff6e,1.2], gold:[0xffd23a,.3,.6,0x332800,.2], copper:[0xd27d46,.35,.7], brass:[0xc9a24a,.35,.7],
+  diamond:[0x5fe3e3,.2,.3,0x0d3a3a,.3], red:[0xd63b2f,.4,.1,0x3a0806,.5], amber:[0xff8a3a,.4,.1,0x401a00,.6], paper:[0xece6d6,.9,0], plastic:[0x3a4454,.6,.1], orange:[0xe07020,.6,.1], strap:[0x3a2a1e,.9,0],
+  hull:[0x5a6272,.55,.45], panel:[0x3e4552,.6,.3], lens:[0x7fffe6,.05,.2,0x19d3b0,1.4], white:[0xf2f2f2,.6,0], cable:[0x222a33,.8,.1] }[name] || [0xff00ff,.5,0];
+  return MATS[name]=new THREE.MeshStandardMaterial({color:P[0], roughness:P[1], metalness:P[2]*.3, emissive:P[3]||0, emissiveIntensity:P[4]||0}); }
+function bx(g,w,h,d,m,x,y,z,rot){ const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), typeof m==='string'?mat(m):m); o.position.set(x||0,y||0,z||0); if(rot) o.rotation.set(rot[0],rot[1],rot[2]); g.add(o); return o; }
+function cy(g,rt,rb,h,m,x,y,z,axis,seg){ const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20), typeof m==='string'?mat(m):m); o.position.set(x||0,y||0,z||0); if(axis==='x') o.rotation.z=Math.PI/2; if(axis==='z') o.rotation.x=Math.PI/2; g.add(o); return o; }
+function tor(g,r,t,m,x,y,z,axis,seg){ const o=new THREE.Mesh(new THREE.TorusGeometry(r,t,8,seg||24), typeof m==='string'?mat(m):m); o.position.set(x||0,y||0,z||0); if(axis==='x') o.rotation.y=Math.PI/2; if(axis==='y') o.rotation.x=Math.PI/2; g.add(o); return o; }
+function sph(g,r,m,x,y,z){ const o=new THREE.Mesh(new THREE.SphereGeometry(r,16,12), typeof m==='string'?mat(m):m); o.position.set(x||0,y||0,z||0); g.add(o); return o; }
+// a screen face fed from a small 2D canvas; draw(c,t) repaints it
+function screenFace(g,w,h,pxW,pxH,x,y,z,rot,draw){ const cv=document.createElement('canvas'); cv.width=pxW*2; cv.height=pxH*2; const c=cv.getContext('2d'); c.setTransform(2,0,0,2,0,0); c.imageSmoothingEnabled=false; c.W=pxW; c.H=pxH; c.cv=cv; c.hits=[];
+  const tex=new THREE.CanvasTexture(cv); tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.LinearFilter; const m=new THREE.MeshBasicMaterial({map:tex});
+  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m); o.position.set(x,y,z); if(rot) o.rotation.set(rot[0],rot[1],rot[2]); g.add(o); return t=>{ draw(c,t); tex.needsUpdate=true; }; }
+let spin3=!reduce; const VIEWS=[];
+function makeView(id,build,dist,cy_,ry){ const host=el(id); if(!window.THREE||!host) return; const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setPixelRatio(Math.min(devicePixelRatio,2)); host.appendChild(r.domElement);
+  const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.5,800); const amb=new THREE.AmbientLight(0xffffff,.75), sun=new THREE.DirectionalLight(0xfff2dd,.8); sun.position.set(-30,60,50); const rim=new THREE.DirectionalLight(0x88fff0,.25); rim.position.set(40,10,-40); scene.add(amb,sun,rim);
+  const g=new THREE.Group(); scene.add(g); const tick=build(g,scene); const v={host,r,scene,cam,tick,ry:ry||.6,ry0:ry||.6,rx:.18,dist,cy:cy_,drag:false,t0:0};
+  let lx=0,ly=0; host.addEventListener('pointerdown',e=>{ v.drag=true; lx=e.clientX; ly=e.clientY; host.setPointerCapture(e.pointerId); });
+  host.addEventListener('pointermove',e=>{ if(!v.drag) return; v.ry-=(e.clientX-lx)*.01; v.rx=Math.max(-.5,Math.min(1.1,v.rx+(e.clientY-ly)*.01)); lx=e.clientX; ly=e.clientY; });
+  host.addEventListener('pointerup',()=>{ v.drag=false; }); host.addEventListener('pointercancel',()=>{ v.drag=false; }); VIEWS.push(v); }
+function render3d(now){ const t=now/1000; for(const v of VIEWS){ const w=v.host.clientWidth, h=v.host.clientHeight; if(!w) continue; if(v.r.domElement.width!==Math.round(w*v.r.getPixelRatio())) v.r.setSize(w,h,false); v.cam.aspect=w/h; v.cam.updateProjectionMatrix();
+    if(spin3&&!v.drag) v.ry=v.ry0+Math.sin(t*.45)*.9;
+    v.cam.position.set(Math.sin(v.ry)*Math.cos(v.rx)*v.dist, v.cy+Math.sin(v.rx)*v.dist, Math.cos(v.ry)*Math.cos(v.rx)*v.dist); v.cam.lookAt(0,v.cy,0);
+    if(v.tick) v.tick(t); v.r.render(v.scene,v.cam); }
+  if(!reduce) requestAnimationFrame(render3d); }
+function start3d(){ if(!VIEWS.length) return; requestAnimationFrame(render3d); if(reduce) setTimeout(()=>render3d(2000),300); }
+// ===================================================================== Remote Control Transmitter: block, range card, screen
+const TW=320, TH=250;
+const TEAM=[{name:'IronFarmer', role:'owner', on:true},{name:'MesaMiner', role:'team', on:true},{name:'PrairieRose', role:'team', on:false},{name:'DocHoliday', role:'team', on:false}];
+function txState(){ return {cards:[64,64,12], fe:71400, cap:100000, using:[{who:'MesaMiner', what:'Smelter line 1'}], tab:'cards', armed:false}; }
+const nCards = st => st.cards.reduce((a,b)=>a+b,0);
+const range = st => Math.min(3072, 16+16*nCards(st));
+const feUse = st => st.using.length ? 20+nCards(st) : 0;
+function cardIcon(c,x,y,look){ // the range card item, 16 x 16
+  if(look===0){ R(c,x+1,y+3,14,10,'#e8dcc0'); R(c,x+1,y+3,14,1,'#fff4dc'); R(c,x+1,y+12,14,1,'#b8a888'); R(c,x+1,y+3,2,10,'#d27d46'); for(let i=0;i<4;i++) for(let k=0;k<2;k++) if((i+k)%2===0) R(c,x+5+i*2.5,y+6+k*3,1,2,'#3a2a1a'); R(c,x+13,y+3,2,2,'#b8a888'); }
+  else if(look===1){ R(c,x+1,y+3,14,10,'#1f6a3a'); R(c,x+1,y+3,14,1,'#2f8a4a'); for(let i=0;i<5;i++) R(c,x+2+i*2,y+11,1,2,'#ffd23a'); R(c,x+4,y+5,7,1,'#ffd23a'); R(c,x+10,y+5,1,4,'#ffd23a'); R(c,x+5,y+8,5,1,'#19d3b0'); R(c,x+12,y+5,2,2,'#19d3b0'); }
+  else { R(c,x+3,y+2,10,12,'#9fd8e0'); R(c,x+3,y+2,10,1,'#e0fbff'); R(c,x+12,y+2,1,12,'#5a8a92'); R(c,x+6,y+5,4,6,'#19d3b0'); R(c,x+7,y+6,2,4,'#b8fff0'); R(c,x+3,y+13,10,1,'#5a8a92'); } }
+let CARDLOOK=1;
+function cardSlot(c,x,y,n,fn){ slot(c,x,y,18); if(n>0){ cardIcon(c,x+1,y+1,CARDLOOK); const s=String(n); T(c,s,x+18,y+10,'#000',{align:'r',size:7}); T(c,s,x+17,y+9,HX.fg,{align:'r',size:7}); } if(fn) hit(c,x,y,18,18,fn); }
+function inventory(c,x,y){ const its=['iron','iron','coal','redstone',null,'copper','quartz','gold',null, null,'osmium','tin',null,null,'lead',null,'steel',null, 'ironOre',null,null,'dustGold',null,null,'uranium',null,null];
+  for(let r=0;r<3;r++) for(let k=0;k<9;k++){ const i=r*9+k; slotItem(c,x+k*18,y+r*18,its[i],[32,64,40,23,0,12,9,7,0, 0,30,12,0,0,4,0,16,0, 48,0,0,9,0,0,3,0,0][i]); }
+  for(let k=0;k<9;k++){ slot(c,x+k*18,y+58); if(k===0) item(c,x+1,y+59,'machine'); if(k===2){ cardIcon(c,x+k*18+1,y+59,CARDLOOK); T(c,'23',x+k*18+17,y+67,HX.fg,{align:'r',size:7}); } } }
+function feBattery(c,x,y,w,h,st,vertical){ bar(c,x,y,w,h,st.fe/st.cap,HX.gold,{seg:4}); }
+function head(c,x,y,s,name){ const h=[...name].reduce((a,ch)=>a*31+ch.charCodeAt(0),7); const skin=['#c8946a','#f0c8a0','#e0b48c','#a8704a'][h&3], hair=['#3a2210','#8a2a1a','#c9a24a','#151515'][(h>>2)&3];
+  R(c,x,y,s,s,skin); R(c,x,y,s,s*.3,hair); R(c,x+s*.15,y+s*.5,s*.15,s*.12,'#fff'); R(c,x+s*.7,y+s*.5,s*.15,s*.12,'#fff'); R(c,x+s*.4,y+s*.78,s*.2,s*.08,'#6a3a2a'); }
+function crown(c,x,y){ R(c,x,y+2,7,3,HX.gold); R(c,x,y,1,2,HX.gold); R(c,x+3,y,1,2,HX.gold); R(c,x+6,y,1,2,HX.gold); }
+function teamList(c,x,y,w,st){ TEAM.forEach((p,i)=>{ const ry=y+i*15; R(c,x,ry,w,14,i%2?'#0d1218':'#10161e'); head(c,x+2,ry+2,10,p.name); ST(c,p.name,x+15,ry+1,p.on?HX.fg:HX.mute,{size:6,max:w-30}); ST(c,p.role==='owner'?'placed it':'team member',x+15,ry+7.5,HX.off,{size:5});
+  if(p.role==='owner') crown(c,x+w-10,ry+4); else lamp(c,x+w-6,ry+7,2,HX.tq,p.on); }); }
+function status(c,x,y,st,w){ if(st.using.length){ lamp(c,x+3,y+4,2,HX.tq,true); ST(c,st.using[0].who+' is operating '+st.using[0].what,x+8,y,HX.tq,{size:6,max:w-8}); } else ST(c,'Nobody is operating a machine through it',x+3,y,HX.mute,{size:6,max:w}); }
+
+// ------------------------------------------------------------------ Concept A: Rack
+function txA(c,st,t){ clear(c); frame(c,0,0,TW,TH); T(c,'REMOTE CONTROL TRANSMITTER',8,6,HX.tq); R(c,4,17,TW-8,1,HX.tq);
+  ST(c,'RANGE CARDS',10,22,HX.mute,{size:6,bold:true}); for(let i=0;i<3;i++){ const x=10+i*24; well(c,x,32,22,62,'#0b0f14'); const n=st.cards[i]; const f=n/64; R(c,x+2,32+60-Math.round(56*f),18,Math.round(56*f),shade(HX.tq,.22)); cardSlot(c,x+2,72,n,()=>{ st.cards[i]=n>=64?0:Math.min(64,n+16); }); ST(c,'SLOT '+(i+1),x+11,34,HX.off,{size:5,align:'c'}); }
+  ST(c,'16 blocks each, a stack per slot',10,97,HX.off,{size:5});
+  // range readout
+  frame(c,88,22,118,74,{bg:'#0d1218'}); ST(c,'RANGE',94,26,HX.mute,{size:6,bold:true}); T(c,range(st)+'',94,37,HX.tq,{size:16}); ST(c,'blocks each way',94+tw(c,range(st)+'',16)+4,44,HX.mute,{size:6});
+  bar(c,94,60,106,7,range(st)/3072,HX.tq,{seg:6}); ST(c,'16',94,69,HX.off,{size:5}); ST(c,'3072',200,69,HX.off,{size:5,align:'r'}); ST(c,nCards(st)+' cards · '+Math.max(0,191-nCards(st))+' more to the top',94,80,HX.fg,{size:6});
+  // power
+  frame(c,212,22,102,74,{bg:'#0d1218',col:HX.gold}); ST(c,'POWER',218,26,HX.gold,{size:6,bold:true}); feBattery(c,218,36,10,54,st); T(c,Math.round(st.fe/1000)+'k',234,37,HX.gold,{size:8}); ST(c,'of 100k FE',234,47,HX.mute,{size:6});
+  ST(c,st.using.length?'Using '+feUse(st)+' FE/t':'Idle: 0 FE/t',234,60,st.using.length?HX.gold:HX.mute,{size:6}); ST(c,'20 + 1 per card',234,68,HX.off,{size:5}); ST(c,'while in use',234,75,HX.off,{size:5}); ST(c,'Any side',234,84,HX.off,{size:5});
+  // team, set apart
+  frame(c,212,100,102,146,{bg:'#0d1218'}); ST(c,'WHO CAN USE IT',218,104,HX.mute,{size:6,bold:true}); teamList(c,216,114,94,st);
+  status(c,10,104,st,196);
+  ST(c,'INVENTORY',10,118,HX.off,{size:5}); inventory(c,10,127); }
+
+// ------------------------------------------------------------------ Concept B: Map Table (the range drawn over the land, machines as pins)
+function txB(c,st,t){ clear(c); frame(c,0,0,TW,TH); T(c,'TRANSMITTER',8,6,HX.tq); ST(c,'Base A · survival-1',TW-8,6,HX.mute,{size:6,align:'r'}); R(c,4,17,TW-8,1,HX.tq);
+  const mx=8, my=21, mw=150, mh=118; c.drawImage(mapTile(mw,mh,1,180,120),mx,my); R(c,mx,my,mw,mh,'rgba(8,12,16,.35)');
+  const rr=Math.max(4,range(st)/3072*(mh/2-6)); const cx=mx+mw/2, cy=my+mh/2; const pulse=st.using.length?(t/30)%rr:0;
+  c.save(); c.beginPath(); c.rect(mx,my,mw,mh); c.clip(); R(c,cx-rr,cy-rr,rr*2,rr*2,'rgba(25,211,176,.14)'); O(c,Math.round(cx-rr),Math.round(cy-rr),Math.round(rr*2),Math.round(rr*2),HX.tq); if(pulse) O(c,Math.round(cx-pulse),Math.round(cy-pulse),Math.round(pulse*2),Math.round(pulse*2),'rgba(25,211,176,.4)');
+  [[-.1,-.1,'smelt'],[.12,-.05,'crush'],[.05,.15,'reactor'],[-.6,.5,'furnace'],[.3,.6,'matrix']].forEach(p=>{ const px=cx+p[0]*mw*.6, py=cy+p[1]*mh*.6; const inR=Math.abs(px-cx)<=rr&&Math.abs(py-cy)<=rr; R(c,px-2,py-2,5,5,'#05070a'); R(c,px-1,py-1,3,3,inR?HX.tq:HX.off); });
+  c.restore(); R(c,cx-2,cy-2,5,5,'#05070a'); R(c,cx-1,cy-1,3,3,HX.gold); O(c,mx,my,mw,mh,HX.dim); ST(c,'Gold: this transmitter · turquoise: linked',mx+2,my+mh+2,HX.off,{size:5});
+  // right side: range, cards, power
+  const rx=164; ST(c,'RANGE',rx,22,HX.mute,{size:6,bold:true}); T(c,range(st)+' blocks',rx,31,HX.tq,{size:8}); ST(c,'A cube around the block, '+range(st)*2+' wide',rx,41,HX.off,{size:5});
+  ST(c,'CARDS',rx,52,HX.mute,{size:6,bold:true}); for(let i=0;i<3;i++) cardSlot(c,rx+i*22,61,st.cards[i],()=>{ st.cards[i]=st.cards[i]>=64?0:Math.min(64,st.cards[i]+16); }); ST(c,nCards(st)+' of 191 useful',rx+70,66,HX.fg,{size:6});
+  ST(c,'POWER',rx,86,HX.mute,{size:6,bold:true}); bar(c,rx,95,148,7,st.fe/st.cap,HX.gold,{seg:6}); ST(c,Math.round(st.fe).toLocaleString('en-GB')+' / 100,000 FE',rx,104,HX.gold,{size:6}); ST(c,st.using.length?'−'+feUse(st)+' FE/t now':'0 FE/t, idle',rx+148,104,HX.mute,{size:6,align:'r'});
+  ST(c,'TEAM',rx,113,HX.mute,{size:6,bold:true}); TEAM.forEach((p,i)=>{ head(c,rx+i*16,127,12,p.name); if(p.role==='owner') crown(c,rx+i*16+2,122); if(!p.on) R(c,rx+i*16,127,12,12,'rgba(5,7,10,.55)'); }); ST(c,'Team members share its range',rx+66,128,HX.off,{size:5});
+  status(c,rx,146,st,150); inventory(c,8,160); }
+
+// ------------------------------------------------------------------ Concept C: Signal Tower (a round dial, cartridge bays, a power ring)
+function txC(c,st,t){ clear(c); R(c,0,0,TW,TH,'#20252e'); R(c,0,0,TW,1,'#3a414e'); [[6,6],[TW-7,6],[6,TH-7],[TW-7,TH-7]].forEach(p=>screw(c,p[0],p[1])); T(c,'TRANSMITTER',14,6,HX.tq);
+  const cx=78, cy=78, R0=56; c.fillStyle='#05070a'; c.beginPath(); c.arc(cx,cy,R0+4,0,7); c.fill(); c.fillStyle='#0a0e13'; c.beginPath(); c.arc(cx,cy,R0,0,7); c.fill();
+  // power ring
+  c.lineWidth=4; c.strokeStyle='#2a2410'; c.beginPath(); c.arc(cx,cy,R0-3,0,7); c.stroke(); c.strokeStyle=HX.gold; c.beginPath(); c.arc(cx,cy,R0-3,-Math.PI/2,-Math.PI/2+Math.PI*2*st.fe/st.cap); c.stroke();
+  // range rings, log scale to 3072
+  for(let i=1;i<=4;i++){ c.strokeStyle='rgba(25,211,176,.15)'; c.lineWidth=1; c.beginPath(); c.arc(cx,cy,(R0-10)*i/4,0,7); c.stroke(); }
+  const rr=(R0-10)*Math.log(range(st)/16+1)/Math.log(3072/16+1); c.fillStyle='rgba(25,211,176,.16)'; c.beginPath(); c.arc(cx,cy,rr,0,7); c.fill(); c.strokeStyle=HX.tq; c.lineWidth=1.5; c.beginPath(); c.arc(cx,cy,rr,0,7); c.stroke();
+  if(st.using.length){ const p=(t/1200)%1; c.strokeStyle='rgba(25,211,176,'+(1-p)*.7+')'; c.beginPath(); c.arc(cx,cy,rr*p,0,7); c.stroke(); }
+  T(c,String(range(st)),cx,cy-8,HX.tq,{align:'c',size:12}); ST(c,'blocks',cx,cy+5,HX.mute,{size:6,align:'c'}); ST(c,Math.round(st.fe/1000)+'k FE',cx,cy+R0-18,HX.gold,{size:6,align:'c'});
+  // cartridge bays
+  ST(c,'CARD BAYS',14,142,HX.mute,{size:6,bold:true}); for(let i=0;i<3;i++){ const x=14+i*44; R(c,x,150,40,22,'#05070a'); R(c,x+1,151,38,20,'#2b313c'); R(c,x+1,151,38,1,'#596273'); cardSlot(c,x+3,153,st.cards[i],()=>{ st.cards[i]=st.cards[i]>=64?0:Math.min(64,st.cards[i]+16); }); lamp(c,x+31,161,2.5,HX.tq,st.cards[i]>0); }
+  // team as heads in a row with sockets
+  const tx=152; T(c,'TEAM',tx,22,HX.mute,{size:7}); TEAM.forEach((p,i)=>{ const x=tx+i*40, y=34; R(c,x,y,36,44,'#05070a'); R(c,x+1,y+1,34,42,'#2b313c'); well(c,x+5,y+4,26,26,'#0a0e13'); head(c,x+8,y+7,20,p.name); if(p.role==='owner') crown(c,x+14,y+31); else lamp(c,x+18,y+35,2.5,HX.tq,p.on); ST(c,p.name,x+18,y+44,p.on?HX.fg:HX.mute,{size:5,align:'c',max:38}); });
+  R(c,tx,92,160,40,'#05070a'); R(c,tx+1,93,158,38,'#151a21'); ST(c,'NOW',tx+5,96,HX.mute,{size:6,bold:true}); status(c,tx+5,106,st,150); ST(c,st.using.length?'Drawing '+feUse(st)+' FE each tick':'Idle',tx+5,116,st.using.length?HX.gold:HX.off,{size:6});
+  ST(c,'Range: 16 + 16 per card, up to 3072',tx,140,HX.off,{size:6}); ST(c,'A cube around the transmitter.',tx,148,HX.off,{size:6});
+  R(c,8,170,TW-16,78,'#05070a'); R(c,9,171,TW-18,76,'#151a21'); inventory(c,TW/2-81,171); }
+
+// ------------------------------------------------------------------ three block looks (16 units = 1 block)
+function frontButtons(G,labels,y,z){ labels.forEach((l,i)=>{ const x=(i-(labels.length-1)/2)*4.6; bx(G,4,1.6,.6,'black',x,y,z); const b=bx(G,3.6,1.2,.6,'steelL',x,y,z+.25);
+  screenFace(G,3.4,1,40,12,x,y,z+.56,null,(c)=>{ R(c,0,0,40,12,'#c9ced8'); T(c,l,20,3,'#1c222c',{align:'c',size:7}); })(0); }); }
+function buildMast(g){ const G=new THREE.Group(); G.position.y=-8; g.add(G); const ups=[];
+  bx(G,16,6,16,'hull',0,3,0); bx(G,16.2,.6,16.2,'tqDim',0,5.2,0); bx(G,14,3.4,.4,'dark',0,2.6,8.05); // base, seam, recessed front panel
+  for(let i=0;i<3;i++){ bx(G,3,1,.6,'black',-4.5+i*4.5,4.6,8.2); bx(G,2.4,1.6,.3,'green',-4.5+i*4.5,5.4,8.25); } // card slits with cards sticking up
+  frontButtons(G,['CARDS','POWER','TEAM'],2,8.2);
+  cy(G,1.2,1.6,12,'steel',0,12,0); for(let i=0;i<3;i++) tor(G,3-i*.6,.35,'steelL',0,10+i*3.5,0,'y'); // mast with three rings
+  const dish=new THREE.Group(); dish.position.set(0,15,0); G.add(dish); const sp=new THREE.Mesh(new THREE.SphereGeometry(4,20,10,0,Math.PI*2,0,Math.PI/3.2),mat('steelL')); sp.material.side=THREE.DoubleSide; sp.rotation.x=Math.PI/2; dish.add(sp); cy(dish,.3,.3,3,'steelD',0,0,2,'z'); sph(dish,.6,'tq',0,0,3.4);
+  const tip=sph(G,.7,'red',0,19,0); bx(G,3,2,.3,'black',6,3,8.2); // FE port
+  cy(G,1,1,.4,'copper',6,3,8.4,'z'); [[-7.4,-7.4],[7.4,-7.4],[-7.4,7.4],[7.4,7.4]].forEach(p=>cy(G,.6,.6,.3,'steelD',p[0],6.2,p[1]));
+  return t=>{ dish.rotation.y=t*.8; tip.material.emissiveIntensity=Math.floor(t*2)%2?1.5:.1; }; }
+function buildDish(g){ const G=new THREE.Group(); G.position.y=-8; g.add(G);
+  bx(G,16,4,16,'hull',0,2,0); bx(G,12,1,12,'steelD',0,4.5,0); cy(G,5.5,6,1.2,'steel',0,5.6,0,null,28); // base, step, turntable
+  const turn=new THREE.Group(); turn.position.y=6.2; G.add(turn); bx(turn,2,6,2,'steelD',0,3,0); bx(turn,5,1.2,1.2,'steel',0,6,0);
+  const sp=new THREE.Mesh(new THREE.SphereGeometry(6,24,12,0,Math.PI*2,0,Math.PI/3),mat('steelL')); sp.material.side=THREE.DoubleSide; const dish=new THREE.Group(); dish.position.set(0,7,0); dish.rotation.x=-.6; turn.add(dish); sp.rotation.x=-Math.PI/2; sp.position.z=-5.2; dish.add(sp);
+  cy(dish,.25,.25,4.5,'steelD',0,0,1.2,'z'); const horn=cy(dish,.7,.4,1.2,'tq',0,0,3.6,'z');
+  // energy tube on the side, glowing to its charge
+  cy(G,1.3,1.3,3.4,'glass',-8.3,2,4,null,12); const fill=cy(G,1,1,2.6,new THREE.MeshStandardMaterial({color:0xffd23a,emissive:0xffd23a,emissiveIntensity:.8}),-8.3,1.6,4,null,12);
+  // FE socket and card drawer on the front
+  cy(G,1.6,1.6,.5,'black',5,2,8.1,'z'); cy(G,1,1,.6,'copper',5,2,8.2,'z'); bx(G,7,2.4,.5,'dark',-2.5,2,8.1); for(let i=0;i<3;i++){ bx(G,1.8,1.6,.4,'black',-4.6+i*2.1,2,8.35); bx(G,1.4,.5,.3,'green',-4.6+i*2.1,2.9,8.35); }
+  frontButtons(G,['CARDS','POWER','TEAM'],5.2,6.1);
+  return t=>{ turn.rotation.y=Math.sin(t*.4)*1.2; horn.material.emissiveIntensity=.8+Math.sin(t*5)*.4; fill.scale.y=.72; }; }
+function buildLantern(g){ const G=new THREE.Group(); G.position.y=-8; g.add(G);
+  bx(G,16,3,16,'hull',0,1.5,0); bx(G,14,1,14,'steelD',0,3.5,0); [[-6.5,-6.5],[6.5,-6.5],[-6.5,6.5],[6.5,6.5]].forEach(p=>bx(G,1.6,10,1.6,'steel',p[0],9,p[1])); // base and four posts
+  const glass=new THREE.Mesh(new THREE.CylinderGeometry(5.5,5.5,9,24,1,true),new THREE.MeshStandardMaterial({color:0x9fe8e0,transparent:true,opacity:.18,roughness:.1})); glass.position.y=8.5; G.add(glass);
+  bx(G,16,2,16,'hull',0,15,0); cy(G,3,3.6,1.2,'steelD',0,16.6,0); sph(G,1.2,'red',0,17.6,0); // cap
+  const core=new THREE.Group(); core.position.y=8.5; G.add(core); const orb=sph(core,2,'lens',0,0,0); const r1=tor(core,3.2,.18,'tq',0,0,0,'y'); const r2=tor(core,3.8,.15,'tqDim',0,0,0,'x');
+  // three card bays in the base, cards half in
+  for(let i=0;i<3;i++){ bx(G,3.4,1.4,.6,'black',-4.8+i*4.8,1.6,8.1); bx(G,2.8,1.2,.3,'green',-4.8+i*4.8,2.5,8.2); }
+  frontButtons(G,['CARDS','POWER','TEAM'],15,8.1);
+  bx(G,.6,3,3,'dark',8.1,1.5,0); cy(G,.9,.9,.4,'copper',8.35,1.5,0,'x');
+  return t=>{ r1.rotation.z=t; r2.rotation.y=t*.7; orb.material.emissiveIntensity=1.1+Math.sin(t*3)*.4; core.position.y=8.5+Math.sin(t*1.4)*.4; }; }
+
+// ------------------------------------------------------------------ wire up
+const TXS=[];
+[['tA',txA],['tB',txB],['tC',txC]].forEach(p=>{ const c=gui(p[0],TW,TH); const st=txState(); TXS.push(st); let now=0; const draw=t=>{ now=t; p[1](c,st,t); }; wire(c,{redraw:()=>draw(now)}); loop(draw); });
+[0,1,2].forEach(i=>{ const c=gui('card'+i,16,16); clear(c,'#0c0e12'); cardIcon(c,0,0,i); el('card'+i).addEventListener('click',()=>{ CARDLOOK=i; [0,1,2].forEach(k=>el('cardb'+k).classList.toggle('on',k===i)); }); });
+[0,1,2].forEach(i=>el('cardb'+i).addEventListener('click',()=>{ CARDLOOK=i; [0,1,2].forEach(k=>el('cardb'+k).classList.toggle('on',k===i)); }));
+el('useBtn').addEventListener('click',e=>{ const on=!TXS[0].using.length; TXS.forEach(st=>st.using=on?[{who:'MesaMiner',what:'Smelter line 1'}]:[]); e.target.textContent='Someone operating: '+(on?'yes':'no'); e.target.classList.toggle('on',on); });
+makeView('kA',buildMast,58,2,.5); makeView('kB',buildDish,58,1,.5); makeView('kC',buildLantern,58,1,.5);
+el('spinBtn').addEventListener('click',e=>{ spin3=!spin3; e.target.textContent='Turning: '+(spin3?'on':'off'); e.target.classList.toggle('on',spin3); });
+startLoops(); start3d();
+})();
+</script>
