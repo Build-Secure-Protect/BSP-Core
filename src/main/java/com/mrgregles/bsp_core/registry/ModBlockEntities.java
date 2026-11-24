@@ -138,6 +138,9 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.compass.CompassTunerBlockEntity>> COMPASS_TUNER =
             BLOCK_ENTITIES.register("compass_tuner", () -> BlockEntityType.Builder
                     .of(com.mrgregles.bsp_core.compass.CompassTunerBlockEntity::new, ModBlocks.COMPASS_TUNER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.tracking.RemoteTransmitterBlockEntity>> REMOTE_TRANSMITTER =
+            BLOCK_ENTITIES.register("remote_transmitter", () -> BlockEntityType.Builder
+                    .of(com.mrgregles.bsp_core.tracking.RemoteTransmitterBlockEntity::new, ModBlocks.REMOTE_TRANSMITTER.get()).build(null));
 
     @SuppressWarnings("DataFlowIssue")
     public static final RegistryObject<BlockEntityType<com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity>> PLASMA_EXTRACTOR =

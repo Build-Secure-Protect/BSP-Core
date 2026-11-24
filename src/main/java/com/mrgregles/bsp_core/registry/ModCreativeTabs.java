@@ -22,6 +22,9 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DEMO_TOTEM.get()); // admins only: the command or this tab
                 output.accept(ModItems.TOTEM_COMPASS.get());
                 output.accept(ModItems.COMPASS_TUNER.get());
+                output.accept(ModItems.MACHINE_TAGGER.get());
+                output.accept(ModItems.REMOTE_TRANSMITTER.get());
+                output.accept(ModItems.RANGE_CARD.get());
                 output.accept(ModItems.COIN_FACTORY.get());
                 ModItems.BLANKS.values().forEach(i -> output.accept(i.get()));
                 ModItems.COINS.values().forEach(i -> output.accept(i.get()));

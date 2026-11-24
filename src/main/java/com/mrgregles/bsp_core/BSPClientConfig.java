@@ -13,6 +13,9 @@ public final class BSPClientConfig {
     public static final ForgeConfigSpec.BooleanValue TEAM_BUTTON, KITS_BUTTON;
     /** How big the shop screens are drawn, in percent, where the window has room. */
     public static final ForgeConfigSpec.IntValue SHOP_SCREEN_PERCENT;
+    /** Machine tracking: the HOLO button, the popout's frame rate, the pinned box. */
+    public static final ForgeConfigSpec.BooleanValue HOLO_BUTTON, PIN_SHOWN;
+    public static final ForgeConfigSpec.IntValue POPOUT_FPS;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -31,6 +34,11 @@ public final class BSPClientConfig {
         b.comment("Shops").push("shop");
         SHOP_SCREEN_PERCENT = b.comment("How big the shop screens are drawn (the shop, Sell here, the Shopping Network, the Workbench and the vendor, stall and display settings), in percent of their own size.",
                 "They are never drawn bigger than the window has room for, and shrink to fit a small window whatever this says.").defineInRange("screenPercent", 130, 100, 200);
+        b.pop();
+        b.comment("Machine tracking: the Holo Grid, its popout window and the pinned box").push("tracking");
+        HOLO_BUTTON = b.comment("Draw the HOLO button above the inventory, which opens the Holo Grid. Its key binding opens it too.").define("holoButton", true);
+        POPOUT_FPS = b.comment("Frames a second the popout window is drawn at: 30 or 60. It is redrawn only when something on it changes.").defineInRange("popoutFps", 30, 30, 60);
+        PIN_SHOWN = b.comment("Show the pinned Holo Grid box on the game screen (also its key).").define("pinShown", true);
         b.pop();
         SPEC = b.build();
     }
@@ -51,6 +59,24 @@ public final class BSPClientConfig {
 
     public static boolean kitsButton() {
         return BSPConfig.getOr(KITS_BUTTON, true);
+    }
+
+    public static boolean holoButton() {
+        return BSPConfig.getOr(HOLO_BUTTON, true);
+    }
+
+    public static int popoutFps() {
+        return BSPConfig.getOr(POPOUT_FPS, 30) >= 45 ? 60 : 30;
+    }
+
+    public static boolean pinShown() {
+        return BSPConfig.getOr(PIN_SHOWN, true);
+    }
+
+    /** Sets a client setting and saves the file. */
+    public static <T> void set(ForgeConfigSpec.ConfigValue<T> value, T v) {
+        value.set(v);
+        value.save();
     }
 
     /** The shop screens' size as a factor (1.3 for 130 percent). */

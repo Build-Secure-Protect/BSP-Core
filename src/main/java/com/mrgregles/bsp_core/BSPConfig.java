@@ -237,6 +237,23 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOOKS_EXCLUSIVE_HATS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> VIP_BOARD_GROUPS;
 
+    // ------------------------------------------------------------------ machine tracking
+
+    public static final ForgeConfigSpec.IntValue TRACKING_FREE_SLOTS;
+    public static final ForgeConfigSpec.IntValue TRACKING_MAX_SLOTS;
+    public static final ForgeConfigSpec.IntValue TRACKING_SLOT_PRICE_STEP;
+    public static final ForgeConfigSpec.IntValue TRACKING_REMOTE_DIAMONDS;
+    public static final ForgeConfigSpec.IntValue TRACKING_OUTLINE_RANGE;
+    public static final ForgeConfigSpec.IntValue TRACKING_NETWORK_SECONDS;
+    public static final ForgeConfigSpec.IntValue TRACKING_MAX_MACHINE_BOXES;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_BASE_RANGE;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_RANGE_PER_CARD;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_MAX_RANGE;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_FE_BASE;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_FE_PER_CARD;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_FE_BUFFER;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_MAX_PER_PLAYER;
+
     public static final ForgeConfigSpec SPEC;
 
     static {
@@ -949,6 +966,38 @@ public final class BSPConfig {
         BUILDER.comment("The VIPs board of the Score Screen: every player in these LuckPerms groups, online or not, with their head and name.").push("vipBoard");
         VIP_BOARD_GROUPS = BUILDER.comment("LuckPerms groups whose members are VIPs. A group that inherits one of these counts too. Without LuckPerms the board is empty.")
                 .defineListAllowEmpty("groups", List.of("vip"), o -> o instanceof String);
+        BUILDER.pop();
+
+        BUILDER.comment("Machine tracking: the Machine Tagger, its tag slots and the Remote Control unlock, the Holo Grid, and the Remote Control",
+                "Transmitter. Bought slots and the unlock count only in the season they were bought in; a player reset takes them away too.").push("tracking");
+        TRACKING_FREE_SLOTS = BUILDER.comment("Tag slots every player has without paying.")
+                .defineInRange("freeSlots", 2, 0, 200);
+        TRACKING_MAX_SLOTS = BUILDER.comment("The most tag slots a player can have, free ones included.")
+                .defineInRange("maxSlots", 20, 0, 200);
+        TRACKING_SLOT_PRICE_STEP = BUILDER.comment("Copper Shatter Coins for the first bought slot; each further slot costs this many more (8, 16, 24 and so on).")
+                .defineInRange("slotPriceStep", 8, 0, 100000);
+        TRACKING_REMOTE_DIAMONDS = BUILDER.comment("Diamond Shatter Coins for the Remote Control unlock (operating machines from the Holo Grid near a transmitter).")
+                .defineInRange("remoteDiamonds", 4, 0, 100000);
+        TRACKING_OUTLINE_RANGE = BUILDER.comment("Blocks within which tagged machines glow green while the player holds the tagger.")
+                .defineInRange("outlineRange", 48, 0, 512);
+        TRACKING_NETWORK_SECONDS = BUILDER.comment("Seconds between readings of a machine on another server of the network.")
+                .defineInRange("networkSeconds", 1, 1, 5);
+        TRACKING_MAX_MACHINE_BOXES = BUILDER.comment("The most machine boxes one Holo Grid page reads at once.")
+                .defineInRange("maxMachineBoxes", 16, 1, 64);
+        TRANSMITTER_BASE_RANGE = BUILDER.comment("A Remote Control Transmitter's range with no range cards, in blocks each way (a cube around it).")
+                .defineInRange("transmitterBaseRange", 16, 0, 100000);
+        TRANSMITTER_RANGE_PER_CARD = BUILDER.comment("Blocks each range card adds.")
+                .defineInRange("transmitterRangePerCard", 16, 0, 100000);
+        TRANSMITTER_MAX_RANGE = BUILDER.comment("The largest range a transmitter reaches, however many cards it holds.")
+                .defineInRange("transmitterMaxRange", 3072, 0, 100000);
+        TRANSMITTER_FE_BASE = BUILDER.comment("FE a tick a transmitter uses while someone operates a machine through it.")
+                .defineInRange("transmitterFeBase", 20, 0, 1000000);
+        TRANSMITTER_FE_PER_CARD = BUILDER.comment("Extra FE a tick per range card while someone operates a machine through it.")
+                .defineInRange("transmitterFePerCard", 1, 0, 1000000);
+        TRANSMITTER_FE_BUFFER = BUILDER.comment("FE a transmitter stores.")
+                .defineInRange("transmitterFeBuffer", 100000, 0, Integer.MAX_VALUE);
+        TRANSMITTER_MAX_PER_PLAYER = BUILDER.comment("The most transmitters one player may have placed on this server. 0 = no limit.")
+                .defineInRange("transmittersPerPlayer", 4, 0, 1000);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

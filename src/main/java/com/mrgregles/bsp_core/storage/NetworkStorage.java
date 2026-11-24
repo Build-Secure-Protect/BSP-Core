@@ -225,6 +225,16 @@ public final class NetworkStorage {
         }
     }
 
+    /** Machine tracking's live messages between servers (watch lists and readings, {@code TrackerRelay}); false without Redis. */
+    public static boolean trackerPublish(String kind, String payload) {
+        RedisLink r = redis;
+        if (r == null) {
+            return false;
+        }
+        redisWorker().execute(() -> r.publish(kind, payload));
+        return true;
+    }
+
     /**
      * Hands a message to a listener outside the game servers (the Discord bot) on its own Redis channel, on the storage thread.
      * False when this server has no Redis link, so nothing can reach the listener.
@@ -312,6 +322,18 @@ public final class NetworkStorage {
                 case "looks" -> {
                     try {
                         lookOwnerRead(srv, UUID.fromString(payload), () -> {}); // a player's looks changed on another server
+                    } catch (IllegalArgumentException ignored) {
+                        // not a player id
+                    }
+                }
+                case "tracker_watch" -> com.mrgregles.bsp_core.tracking.TrackerRelay.onWatch(srv, payload);
+                case "tracker_snap" -> com.mrgregles.bsp_core.tracking.TrackerRelay.onSnap(srv, payload);
+                case "tracker" -> {
+                    try {
+                        UUID id = UUID.fromString(payload);
+                        if (srv.getPlayerList().getPlayer(id) != null) {
+                            trackerRead(srv, id, () -> {}); // an online player's tags or layout changed on another server
+                        }
                     } catch (IllegalArgumentException ignored) {
                         // not a player id
                     }
@@ -603,6 +625,7 @@ public final class NetworkStorage {
         async("write the factory slices' placing times", s -> s.slicesAll(slices)); // rows written before the times were kept get them now
         refreshAllSlices(srv);
         com.mrgregles.bsp_core.looks.LookOwners.get(srv).pushAll(); // changes made here while the database was out of reach
+        com.mrgregles.bsp_core.tracking.TrackerOwners.get(srv).pushAll(); // tags and layouts changed here while the database was out of reach
         lookOwnerRead(srv, null, () -> {}); // every player's totem looks, for the totems here whose owners are elsewhere
         com.mrgregles.bsp_core.credit.CreditPlots.publish(srv, true); // this server's plots for sale, for the CREDIT tab on every server
         long now = System.currentTimeMillis();
@@ -2071,6 +2094,52 @@ public final class NetworkStorage {
                     net.minecraft.nbt.CompoundTag data = lookData(r.data());
                     if (data != null || r.clearedMs() > 0) {
                         owners.arrived(srv, r.id(), data == null ? new net.minecraft.nbt.CompoundTag() : data, r.clearedMs());
+                    }
+                }
+                then.run();
+            });
+        });
+    }
+
+    // ------------------------------------------------------------------ machine tracking
+
+    /** Writes a player's machine tracking record to the network and tells the other servers; nothing without a database. */
+    public static void trackerWrite(UUID id, net.minecraft.nbt.CompoundTag record, long updatedMs, long resetMs) {
+        if (store == null) {
+            return;
+        }
+        String data = lookData(record);
+        async("write a player's machine tracking", s -> {
+            s.trackerWrite(id, data, updatedMs, resetMs);
+            publish("tracker", id.toString());
+        });
+    }
+
+    /**
+     * Reads one player's machine tracking record into this server, then runs {@code then} on the server thread (at once without a
+     * database). The record's reset stamp is the row's, which a later write never lowers.
+     */
+    public static void trackerRead(MinecraftServer srv, UUID id, Runnable then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.run();
+            return;
+        }
+        worker().execute(() -> {
+            MySqlStore.TrackerRow row = null;
+            try {
+                row = s.trackerRead(id);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read a player's machine tracking: {}", e.toString());
+            }
+            MySqlStore.TrackerRow got = row;
+            onServer(() -> {
+                if (got != null) {
+                    net.minecraft.nbt.CompoundTag data = lookData(got.data());
+                    if (data != null) {
+                        data.putLong("updated", Math.max(data.getLong("updated"), got.updatedMs()));
+                        data.putLong("reset", Math.max(data.getLong("reset"), got.resetMs()));
+                        com.mrgregles.bsp_core.tracking.TrackerOwners.get(srv).arrived(srv, id, data);
                     }
                 }
                 then.run();

@@ -4176,3 +4176,31 @@ Covered by GameTests `player_reset_makes_an_online_player_new_and_keeps_other_mo
 - [ ] A Totem Forge with their pour setting (or set): after the reset the forge is empty and nothing is handed to them there.
 - [ ] They had a bed: after their next death they respawn at world spawn, not at the bed.
 - [ ] With BSP-InventorySync: `/invsync restore <player> <version>` of a snapshot from before the reset puts it back and the next login does not wipe it again.
+
+## Machine tracking: tags, slots, transmitter, remote operation (2026-11-24, unreleased)
+Covered by the `tracking_*` GameTests (slots and prices, the unlock, tagging rules, names, broken machines, the reset and season rules, readings of a furnace, a BSP-Core machine and a Mekanism factory, watch lists, layouts, transmitter range and power, the per-player limit, operating refusals). Not seen in a client.
+- [ ] With the Machine Tagger, right-click a furnace: "Tagged Furnace (1 of 2)" in the action bar, and the furnace does not open. Right-click it again: "already tagged". Sneak-right-click: "Untagged Furnace".
+- [ ] Tag two machines, then a third: refused, with the price of the next slot.
+- [ ] In a Region Guard claim you are not a member of: tagging a machine is refused. Another player's private Mekanism machine: refused.
+- [ ] Break a tagged machine: a chat line says its tag is removed.
+- [ ] Place a Remote Control Transmitter: its screen shows range 16, the map with the range square, no cards, the charge, and your head with a crown. Put 4 range cards in through a hopper: range 80. A fifth transmitter of yours on the same server is refused.
+- [ ] Break a transmitter holding cards and FE: the dropped block keeps both when placed again.
+- [ ] `/bsp player reset <you>` on a test account: tags, bought slots and the unlock are gone; the Holo Grid's pages and presets stay, their machine boxes saying "Tag this machine again".
+- [ ] On the network: a machine tagged on survival-1, watched from survival-2 while an Anchor holds its chunk, updates about once a second. With its chunk unloaded: "Asleep" and the last reading.
+
+## Machine tracking: the screens, marks, popout and pin (2026-11-24, unreleased)
+Client side; not seen in a client.
+- [ ] The tagger (a tablet) in hand, first and third person, on the ground and in an item frame: it sits right. Right-click the air: the Device Screen with TAGS, SLOTS, REMOTE. Rename a tag (pencil, type, Enter), remove one (red cross), buy a slot (click the next one; Copper coins go), unlock Remote Control (4 Diamond coins).
+- [ ] Holding the tagger: green corner brackets and the machine's name and distance over each tagged machine within 48 blocks, through a wall. Put it away: gone.
+- [ ] Inventory: a HOLO button beside TEAM and KITS (and Region Guard's BANNED, which it steps past). It opens the Holo Grid.
+- [ ] BUILD: drag a box, pick a tile from the drawer, move it, resize it from its corner, right-click it away. Overlapping is refused (red). Turn the COLS and ROWS knobs (click a half, or scroll). Add pages with +, rename by clicking the name. Close and reopen: all kept; log in on another server: the same.
+- [ ] VIEW: a Mekanism factory box shows its process bars filling, a Fission Reactor its tanks and temperature, a chest its items, a furnace its fuel and progress. Break a watched machine: "The machine is gone", then its tag goes. Fly far away: "Asleep" with the last reading.
+- [ ] The map box: your arrow turns with you, tagged machines show green; drag it, zoom with the wheel or + and -, o centres it, J opens JourneyMap's map.
+- [ ] Presets: NEW CARTRIDGE, type a name, SAVE. Change the pages, LOAD the cartridge: asked first, then the pages come back. SAVE over one, DELETE one.
+- [ ] PIN: pick a box (hover it in VIEW, click its pin), choose a corner and size, PIN IT. In game the box shows on glass in that corner; F1 hides it; its key hides and shows it.
+- [ ] POPOUT: a window "BSP Holo Grid" opens. Drag it to another monitor and resize it very wide and very tall: the boxes stretch, then re-stack. Click its page keys. Bind "Move into the popout and back": press it, the popout takes the mouse, the game keeps showing the world (no pause menu); press it again or Esc: back. Alt-tab into it instead: Minecraft's own behaviour. Set `popoutFps` to 60 and back. Watch your GPU use with the popout open and nothing changing: about the same as without it.
+- [ ] With the unlock, standing inside your powered transmitter's range: a machine's box says OPERATE; click it: the machine's own screen opens; move items in it. Walk out of range: the screen closes with a message. Empty the transmitter's FE: it closes too. From the popout: the screen opens in the game window and focus goes back.
+- [ ] The transmitter's mast: the dish turns; the red light blinks while someone operates through it.
+- [ ] (audit) Another player who is not on your team right-clicks your transmitter: "Only its placer and their team can open this transmitter". A hopper under it takes no cards out.
+- [ ] (audit) Log in and right-click a machine with the tagger in the first second: "still loading" at most, never a lost layout or lost tags. Walk with W held and press the focus key: you stop walking. Close the popout from its own close button while it has focus and open it again: not shown as focused.
+

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TEAM and KITS buttons in the top left corner of the window, on the survival and the creative inventory, so a player with no
+ * TEAM, KITS and HOLO buttons in the top left corner of the window, on the survival and the creative inventory, so a player with no
  * key bound and no totem in reach can still open the Team screen and the kit browser. They stay clear of everything else there:
  * each frame they step past any other mod's button or widget on the screen and past the inventory panel with its tab rows, and
  * they are reported to JEI and EMI as areas their overlays leave free (see {@link #areas(Screen)}). Hidden with
@@ -36,7 +36,7 @@ public final class TeamInventoryButton {
 
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (!BSPClientConfig.teamButton() && !BSPClientConfig.kitsButton()) {
+        if (!BSPClientConfig.teamButton() && !BSPClientConfig.kitsButton() && !BSPClientConfig.holoButton()) {
             return;
         }
         if (event.getScreen() instanceof InventoryScreen inv) {
@@ -46,14 +46,18 @@ public final class TeamInventoryButton {
         }
     }
 
-    /** TEAM, then KITS beside it (the kits button has its own switch). */
+    /** TEAM, then KITS and HOLO beside it (each has its own switch). */
     private static void add(ScreenEvent.Init.Post event, AbstractContainerScreen<?> inv) {
         int slot = 0;
         if (BSPClientConfig.teamButton()) {
             event.addListener(new Corner(inv, slot++, Component.translatable("gui.bsp_core.team.key"), Component.translatable("gui.bsp_core.team.button.tip"), TeamKeys::open));
         }
         if (BSPClientConfig.kitsButton()) {
-            event.addListener(new Corner(inv, slot, Component.translatable("gui.bsp_core.kits.key"), Component.translatable("gui.bsp_core.kits.button.tip"), KitKeys::open));
+            event.addListener(new Corner(inv, slot++, Component.translatable("gui.bsp_core.kits.key"), Component.translatable("gui.bsp_core.kits.button.tip"), KitKeys::open));
+        }
+        if (BSPClientConfig.holoButton()) {
+            event.addListener(new Corner(inv, slot, Component.translatable("gui.bsp_core.tracking.holo_key"), Component.translatable("gui.bsp_core.tracking.holo_tip"),
+                    com.mrgregles.bsp_core.client.tracking.HoloGridScreen::open));
         }
     }
 

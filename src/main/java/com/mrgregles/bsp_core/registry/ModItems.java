@@ -171,6 +171,12 @@ public final class ModItems {
     public static final RegistryObject<Item> DEMO_TOTEM = ITEMS.register("demo_totem", () -> new com.mrgregles.bsp_core.demo.DemoTotemBlockItem(ModBlocks.DEMO_TOTEM.get()));
     public static final RegistryObject<Item> DECOY_POWER_BASE = ITEMS.register("decoy_power_base",
             () -> new net.minecraft.world.item.BlockItem(ModBlocks.DECOY_POWER_BASE.get(), new Item.Properties()));
+    /** Machine tracking: tags machines for the Holo Grid (vault note "Machine Tracking - Brief"). */
+    public static final RegistryObject<Item> MACHINE_TAGGER = ITEMS.register("machine_tagger", com.mrgregles.bsp_core.tracking.MachineTaggerItem::new);
+    public static final RegistryObject<Item> REMOTE_TRANSMITTER = ITEMS.register("remote_transmitter",
+            () -> new com.mrgregles.bsp_core.tracking.RemoteTransmitterBlockItem(ModBlocks.REMOTE_TRANSMITTER.get()));
+    /** Adds range to a Remote Control Transmitter; three slots of a stack each. */
+    public static final RegistryObject<Item> RANGE_CARD = ITEMS.register("range_card", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> COMPASS_TUNER = ITEMS.register("compass_tuner",
             () -> new com.mrgregles.bsp_core.compass.CompassTunerBlockItem(ModBlocks.COMPASS_TUNER.get()));
     /** What a wither skeleton's bones become when it dies in a Plasma Tank Mob Chamber, so its power (Wither) stays apart from a bone's (Growth). */

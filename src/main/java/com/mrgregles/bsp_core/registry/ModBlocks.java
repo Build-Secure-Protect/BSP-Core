@@ -43,6 +43,8 @@ public final class ModBlocks {
     public static final RegistryObject<Block> DEMO_TOTEM = BLOCKS.register("demo_totem", com.mrgregles.bsp_core.demo.DemoTotemBlock::new);
     public static final RegistryObject<Block> DECOY_POWER_BASE = BLOCKS.register("decoy_power_base", com.mrgregles.bsp_core.decoy.DecoyPowerBaseBlock::new);
     public static final RegistryObject<Block> COMPASS_TUNER = BLOCKS.register("compass_tuner", com.mrgregles.bsp_core.compass.CompassTunerBlock::new);
+    /** Machine tracking: lets its owner's team operate tagged machines from the Holo Grid within its range. */
+    public static final RegistryObject<Block> REMOTE_TRANSMITTER = BLOCKS.register("remote_transmitter", com.mrgregles.bsp_core.tracking.RemoteTransmitterBlock::new);
 
     /** X-ray's stand-in for a hidden block in a client's world: no item, never placed by a server. */
     public static final RegistryObject<Block> GHOST_BLOCK = BLOCKS.register("ghost_block", com.mrgregles.bsp_core.xray.GhostBlock::new);

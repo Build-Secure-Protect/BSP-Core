@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "bsp_core:block/remote_transmitter",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "bsp_core:block/remote_transmitter",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "bsp_core:block/remote_transmitter"
+    },
+    "facing=west": {
+      "model": "bsp_core:block/remote_transmitter",
+      "y": 90
+    }
+  }
+}

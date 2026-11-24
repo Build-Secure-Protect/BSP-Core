@@ -312,6 +312,10 @@ final class MySqlStore implements AutoCloseable {
             // totem looks: each player's dressing and hats as last checked, their saved looks (NBT, base64) and when staff last cleared them
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("look_owners") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, data MEDIUMTEXT NOT NULL, "
                     + "updated_ms BIGINT NOT NULL, cleared_ms BIGINT NOT NULL DEFAULT 0)");
+            // machine tracking: each player's tags, bought tag slots, Remote Control unlock and Holo Grid layout (NBT, base64), with the
+            // latest player reset applied to it (a copy from before it is reset again wherever it turns up)
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("tracker_owners") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, data MEDIUMTEXT NOT NULL, "
+                    + "updated_ms BIGINT NOT NULL, reset_ms BIGINT NOT NULL DEFAULT 0)");
             // the Totem Compass: when each player may next start tracking rivals (real clock, ms), whichever server they used
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("compass_waits") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, until_ms BIGINT NOT NULL)");
             // new-player protection from totem radiation: the highest RankUp rung and the most playtime minutes seen per player
@@ -3495,6 +3499,34 @@ final class MySqlStore implements AutoCloseable {
             }
         }
         return out;
+    }
+
+    /** One player's machine tracking record as the database holds it. */
+    public record TrackerRow(UUID id, String data, long updatedMs, long resetMs) {
+    }
+
+    /** Writes a player's machine tracking record unless the database holds a newer one; the reset stamp is never lowered. */
+    void trackerWrite(UUID id, String data, long updatedMs, long resetMs) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("tracker_owners") + " (uuid, data, updated_ms, reset_ms) VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE data = IF(VALUES(updated_ms) > updated_ms, VALUES(data), data), updated_ms = GREATEST(updated_ms, VALUES(updated_ms)), "
+                + "reset_ms = GREATEST(reset_ms, VALUES(reset_ms))")) {
+            ps.setString(1, id.toString());
+            ps.setString(2, data);
+            ps.setLong(3, updatedMs);
+            ps.setLong(4, resetMs);
+            ps.executeUpdate();
+        }
+    }
+
+    /** One player's machine tracking record, or null when there is none. */
+    @Nullable
+    TrackerRow trackerRead(UUID id) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT data, updated_ms, reset_ms FROM " + t("tracker_owners") + " WHERE uuid = ?")) {
+            ps.setString(1, id.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new TrackerRow(id, rs.getString(1), rs.getLong(2), rs.getLong(3)) : null;
+            }
+        }
     }
 
     /** One player's look record as the database holds it. */

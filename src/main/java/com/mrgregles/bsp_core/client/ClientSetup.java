@@ -48,6 +48,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenus.LEAD_LINED_CHEST.get(), LeadLinedChestScreen::new);
             MenuScreens.register(ModMenus.DECOY.get(), DecoyScreen::new);
             MenuScreens.register(ModMenus.COMPASS_TUNER.get(), CompassTunerScreen::new);
+            MenuScreens.register(ModMenus.REMOTE_TRANSMITTER.get(), com.mrgregles.bsp_core.client.tracking.TransmitterScreen::new);
             MenuScreens.register(ModMenus.SEASON_REWARDS.get(), SeasonRewardsScreen::new);
             MenuScreens.register(ModMenus.BATTERY_CHARGER.get(), BatteryChargerScreen::new);
             MenuScreens.register(ModMenus.WAVE_EMITTER.get(), WaveEmitterScreen::new);
@@ -137,6 +138,7 @@ public final class ClientSetup {
         event.registerBlockEntityRenderer(ModBlockEntities.DECOY_TOTEM.get(), DecoyTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DEMO_TOTEM.get(), DemoTotemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COMPASS_TUNER.get(), CompassTunerRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.REMOTE_TRANSMITTER.get(), com.mrgregles.bsp_core.client.tracking.TransmitterRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TOTEM_PROJECTOR.get(), TotemProjectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_CABLE.get(), PlasmaCableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PLASMA_REPEATER.get(), PlasmaRepeaterRenderer::new);

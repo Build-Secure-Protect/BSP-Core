@@ -1,0 +1,50 @@
+{
+  "name": "Tracking Your Machines",
+  "category": "bsp_core:machines",
+  "icon": "bsp_core:machine_tagger",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:machine_tagger",
+      "text": "$(l)Right-click$() a machine with the $(item)Machine Tagger$() to track it; $(l)sneak + right-click$() to stop. Right-click the air for your list: name each machine, remove tags, and buy more tag slots.$(br2)You can tag only machines you could open yourself. Your slots stay yours if the tagger is lost."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Holding the tagger, your tracked machines nearby show green corner marks and their names, even through walls.$(br2)You start with 2 tag slots. More cost $(item)Copper Shatter Coins$(), a little more for each one.",
+      "title": "Tags and slots"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The $(l)HOLO$() button in your inventory opens the $(item)Holo Grid$(). Flip its lever to $(l)BUILD$(), drag on the grid to draw a box, then pick a tracked machine, the map or all your tags from the drawer.$(br2)Up to 9 pages, each with its own grid. Presets keep whole sets of pages.",
+      "title": "The Holo Grid"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "In $(l)VIEW$() the boxes show your machines live: items, power, fluids, progress. A machine in an unloaded part of the world shows its last reading.$(br2)$(l)POPOUT$() opens the grid in its own window for a second screen. $(l)PIN$() puts one box in a corner of your game screen.",
+      "title": "Watching"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "To work a machine from the grid, buy $(l)Remote Control$() in the tagger (Diamond Shatter Coins) and stand inside the range of a $(item)Remote Control Transmitter$() that covers the machine. A box marked $(l)OPERATE$() then opens the machine's own screen.",
+      "title": "Remote Control"
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "bsp_core:remote_transmitter",
+      "text": "Reaches 16 blocks each way, plus 16 for every $(item)Range Card$() in its three slots, up to 3,072. It uses FE while someone works a machine through it. You and your team can use it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:machine_tagger"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:range_card"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "bsp_core:remote_transmitter"
+    }
+  ]
+}

@@ -1150,6 +1150,46 @@ Mould Shells come two at a time; every piece is built from them.
 
 **Page 6**  `[recipe] totem_core`
 
+## Tracking Your Machines
+
+**Page 1**  `[item shown] machine_tagger`
+
+**Right-click** a machine with the *Machine Tagger* to track it; **sneak + right-click** to stop. Right-click the air for your list: name each machine, remove tags, and buy more tag slots.
+
+You can tag only machines you could open yourself. Your slots stay yours if the tagger is lost.
+
+**Page 2: Tags and slots**
+
+Holding the tagger, your tracked machines nearby show green corner marks and their names, even through walls.
+
+You start with 2 tag slots. More cost *Copper Shatter Coins*, a little more for each one.
+
+**Page 3: The Holo Grid**
+
+The **HOLO** button in your inventory opens the *Holo Grid*. Flip its lever to **BUILD**, drag on the grid to draw a box, then pick a tracked machine, the map or all your tags from the drawer.
+
+Up to 9 pages, each with its own grid. Presets keep whole sets of pages.
+
+**Page 4: Watching**
+
+In **VIEW** the boxes show your machines live: items, power, fluids, progress. A machine in an unloaded part of the world shows its last reading.
+
+**POPOUT** opens the grid in its own window for a second screen. **PIN** puts one box in a corner of your game screen.
+
+**Page 5: Remote Control**
+
+To work a machine from the grid, buy **Remote Control** in the tagger (Diamond Shatter Coins) and stand inside the range of a *Remote Control Transmitter* that covers the machine. A box marked **OPERATE** then opens the machine's own screen.
+
+**Page 6**  `[item shown] remote_transmitter`
+
+Reaches 16 blocks each way, plus 16 for every *Range Card* in its three slots, up to 3,072. It uses FE while someone works a machine through it. You and your team can use it.
+
+**Page 7**  `[recipe] machine_tagger`
+
+**Page 8**  `[recipe] range_card`
+
+**Page 9**  `[recipe] remote_transmitter`
+
 ---
 
 # Shatter Coins

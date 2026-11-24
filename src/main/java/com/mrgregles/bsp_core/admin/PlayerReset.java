@@ -302,6 +302,8 @@ public final class PlayerReset {
         }
         com.mrgregles.bsp_core.totem.StealBacks.forget(server, id);
         com.mrgregles.bsp_core.compass.CompassCooldowns.get(server).clear(id);
+        // machine tracking: tags, bought slots and the Remote Control unlock go; the Holo Grid layout and presets stay
+        com.mrgregles.bsp_core.tracking.TrackerOwners.get(server).resetPlayer(server, id, row.resetMs(), origin);
         if (!playedSince) {
             voidForgePour(server, id); // the forge itself would still hand the set totem to its pourer
         }

@@ -4,6 +4,24 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+Network protocol 22: every player needs the new client. New blocks and items are registered, so servers and clients must both have this version.
+
+### Added
+- **Machine tracking: the Holo Grid, the Machine Tagger and the Remote Control Transmitter.**
+  - **Holo Grid** (HOLO button on the inventory, or its key): a steel table with up to 9 pages, each its own grid of 4 to 32 columns and 3 to 24 rows. Flip the lever to BUILD, drag to draw boxes (they never overlap), drag to move, drag a corner to resize, right-click to delete, and fill a box from the drawer: a tracked machine, the map, or all tags. In VIEW the boxes show each machine like a small copy of its own grey screen (Mekanism's processes, reactor gauges and battery, BSP-Core's machines' progress, and any mod's items, power and fluids). Presets keep whole sets of pages (up to 10). Page keys (next, previous, 1 to 9) can be bound in Controls.
+  - **Map box:** a map of the land around you with your arrow and your tagged machines; drag and zoom it; its J key opens JourneyMap's own map.
+  - **Popout:** POPOUT opens the grid in its own window for a second monitor, with page keys down its left edge. It stretches to any shape and re-stacks its boxes in a very wide or tall window, draws at 30 or 60 frames a second (`popoutFps` in the client config), and only when something changes. A key (unbound until set) moves into the popout and back without the game's pause menu.
+  - **Pinned box:** one box on see-through glass in a corner of the game screen, small or medium; a key shows and hides it.
+  - **Green marks:** while the tagger is in your hand, your tagged machines within 48 blocks show green corner brackets and their names, through walls.
+  - The tagger's screen (right-click the air) has TAGS (rename, remove), SLOTS (buy the next) and REMOTE (the unlock). The transmitter's screen shows a map with its range, its card slots, its power and the team that may use it.
+  - **Machine Tagger** (`bsp_core:machine_tagger`, a tablet): right-click a machine (any block with a block entity) to track it, sneak-right-click to stop. Only a machine the player could open themselves can be tagged: not in a claim they have no access to (Region Guard), never another player's private Mekanism machine. The tag is made before the machine's own right-click, so tagging a furnace does not open it. A broken or blown-up machine loses its tags and the owner is told. Names up to 24 characters, cleaned of formatting codes.
+  - **Tag slots:** 2 free; more for Copper Shatter Coins from the inventory, 8 for the first and 8 more for each after, up to 20 (`[tracking] freeSlots`, `maxSlots`, `slotPriceStep`). Slots belong to the player, not the tagger.
+  - **Remote Control unlock:** 4 Diamond Shatter Coins (`remoteDiamonds`), once per season.
+  - **Remote Control Transmitter** (`bsp_core:remote_transmitter`, a mast with a turning dish) and **Range Card** (`bsp_core:range_card`, 2 copper ingots, 2 redstone, 1 quartz and 1 ender pearl make 2): three card slots, a stack each; 16 blocks of range plus 16 per card, up to 3072, as a cube around the block. It stores 100,000 FE from any side and uses 20 FE a tick plus 1 per card while someone operates a machine through it. Only its placer and their team may open it or use it; pipes and hoppers can put cards in but never take them out; up to 4 per player per server. It keeps its cards and charge when broken, blown up included.
+  - **Operating a machine from afar:** with the unlock, standing inside a powered transmitter's range that also covers the machine, a box marked OPERATE opens the machine's own screen as if you had right-clicked it (claim mods still decide). The screen stays open while those hold and closes the moment one fails.
+  - **Readings:** a watched machine is read every tick on its own server and sent only when it changed: items, FE and fluids for any mod's machine, plus Mekanism's processes, progress, redstone mode, gas tanks, Fission Reactor and Induction Matrix readings, and BSP-Core's machines' progress. A machine is read only while its chunk is loaded. On a network, machines on another server are read there every `networkSeconds` and sent over Redis.
+  - **Resets:** `/bsp player reset` and the end of a season take away tags, bought slots and the unlock; the Holo Grid layout and presets stay. On a network the player's record is the new `tracker_owners` table.
+
 ## [1.23.0] - 2026-11-24
 
 Network protocol 21, unchanged: clients do not need this version. Every server of a network should have it before the first player reset.

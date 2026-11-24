@@ -53,6 +53,8 @@ public final class ModMenus {
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.compass.CompassTunerMenu>> COMPASS_TUNER = MENUS.register("compass_tuner",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.compass.CompassTunerMenu(id, inv, buf.readBlockPos())));
+    public static final RegistryObject<MenuType<com.mrgregles.bsp_core.tracking.TransmitterMenu>> REMOTE_TRANSMITTER = MENUS.register("remote_transmitter",
+            () -> IForgeMenuType.create(com.mrgregles.bsp_core.tracking.TransmitterMenu::new));
 
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.plasma.WaveEmitterMenu>> WAVE_EMITTER = MENUS.register("wave_emitter",

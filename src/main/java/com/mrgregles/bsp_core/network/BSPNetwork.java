@@ -30,8 +30,9 @@ public final class BSPNetwork {
      * 19: totem looks.
      * 20: the CREDIT tab's plot names carry the servers they are on.
      * 21: the VIPs board (VipListPacket; the Score Screen settings carry its texts and support link).
+     * 22: machine tracking (TrackerSyncPacket, TrackerSnapshotPacket, TrackerWatchPacket, TrackerActionPacket).
      */
-    private static final String PROTOCOL = "21";
+    private static final String PROTOCOL = "22";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -338,6 +339,18 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(VipListPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(VipListPacket::encode).decoder(VipListPacket::decode)
                 .consumerMainThread(VipListPacket::handle).add();
+        CHANNEL.messageBuilder(TrackerSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TrackerSyncPacket::encode).decoder(TrackerSyncPacket::decode)
+                .consumerMainThread(TrackerSyncPacket::handle).add();
+        CHANNEL.messageBuilder(TrackerSnapshotPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TrackerSnapshotPacket::encode).decoder(TrackerSnapshotPacket::decode)
+                .consumerMainThread(TrackerSnapshotPacket::handle).add();
+        CHANNEL.messageBuilder(TrackerWatchPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TrackerWatchPacket::encode).decoder(TrackerWatchPacket::decode)
+                .consumerMainThread(TrackerWatchPacket::handle).add();
+        CHANNEL.messageBuilder(TrackerActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TrackerActionPacket::encode).decoder(TrackerActionPacket::decode)
+                .consumerMainThread(TrackerActionPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

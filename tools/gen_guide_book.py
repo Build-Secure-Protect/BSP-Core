@@ -375,6 +375,15 @@ ENTRIES = [
         craft("metal_intake", "melt_tank"),
         craft("pour_head", "forge_cap"),
     ]),
+    ("machines", "machine_tracking", "Tracking Your Machines", "bsp_core:machine_tagger", 7, [
+        spot("bsp_core:machine_tagger", "$(l)Right-click$() a machine with the $(item)Machine Tagger$() to track it; $(l)sneak + right-click$() to stop. Right-click the air for your list: name each machine, remove tags, and buy more tag slots.$(br2)You can tag only machines you could open yourself. Your slots stay yours if the tagger is lost."),
+        text("Holding the tagger, your tracked machines nearby show green corner marks and their names, even through walls.$(br2)You start with 2 tag slots. More cost $(item)Copper Shatter Coins$(), a little more for each one.", "Tags and slots"),
+        text("The $(l)HOLO$() button in your inventory opens the $(item)Holo Grid$(). Flip its lever to $(l)BUILD$(), drag on the grid to draw a box, then pick a tracked machine, the map or all your tags from the drawer.$(br2)Up to 9 pages, each with its own grid. Presets keep whole sets of pages.", "The Holo Grid"),
+        text("In $(l)VIEW$() the boxes show your machines live: items, power, fluids, progress. A machine in an unloaded part of the world shows its last reading.$(br2)$(l)POPOUT$() opens the grid in its own window for a second screen. $(l)PIN$() puts one box in a corner of your game screen.", "Watching"),
+        text("To work a machine from the grid, buy $(l)Remote Control$() in the tagger (Diamond Shatter Coins) and stand inside the range of a $(item)Remote Control Transmitter$() that covers the machine. A box marked $(l)OPERATE$() then opens the machine's own screen.", "Remote Control"),
+        spot("bsp_core:remote_transmitter", "Reaches 16 blocks each way, plus 16 for every $(item)Range Card$() in its three slots, up to 3,072. It uses FE while someone works a machine through it. You and your team can use it."),
+        craft("machine_tagger"), craft("range_card"), craft("remote_transmitter"),
+    ]),
     ("machines", "totem_mould", "The Totem Mould", "bsp_core:torso_mould", 6, [
         text("Seven mould pieces and a core make one mould. Each piece looks like the totem with its own part picked out: the Base, the Foot and Arm (two of each go in, left and right), the Torso and the Head.$(br2)A piece lasts three pours, then cracks. It takes no enchantment and no repair. The $(item)Totem Core$() becomes the forged totem's orb, so every pour needs a new one."),
         craft("mould_shell", None, "Mould Shells come two at a time; every piece is built from them."), craft("base_mould"),
