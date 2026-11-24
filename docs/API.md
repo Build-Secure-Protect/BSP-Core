@@ -58,7 +58,7 @@ Two upgrades exist only for a teleport mod to read; BSP-Core sells them on the t
 
 ## Player reset (`PlayerResetEvent`)
 
-`/bsp player reset <name>` makes a player a brand-new player on the whole network, and the one command is meant to do it in every BSP mod. BSP-Core resets BSP-RankUp itself (its `AdminEdits.playerReset`, and the LuckPerms groups of RankUp's awards from the server the reset is typed on, when RankUp and LuckPerms are both installed there). Every other mod listens for the event and forgets its own records:
+(Since 1.23.0.) `/bsp player reset <name>` makes a player a brand-new player on the whole network, and the one command is meant to do it in every BSP mod. BSP-Core resets BSP-RankUp itself (its `AdminEdits.playerReset`, and the LuckPerms groups of RankUp's awards from the server the reset is typed on, when RankUp and LuckPerms are both installed there). Every other mod listens for the event and forgets its own records:
 
 - Listen by class name so no new BSP-Core jar is needed to build: `Class.forName("com.mrgregles.bsp_core.api.event.PlayerResetEvent$Forgotten")`, then `MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, type, e -> ...)` and read `getPlayer()`, `getName()`, `getResetMs()`, `isOrigin()` by reflection. Do the same for `$Cleared` (`getEntity()`).
 - `Forgotten` normally reaches each server once per reset (after a crash it can come again; compare `getResetMs()`), and a server that was down hears of it hours later. Delete shared rows (MySQL) only when `isOrigin()` is true: a late server must not delete what the player has made since the reset. Forget local copies (SavedData, caches) on every server.

@@ -4,6 +4,10 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-11-24
+
+Network protocol 21, unchanged: clients do not need this version. Every server of a network should have it before the first player reset.
+
 ### Added
 - **`/bsp player reset <name>`: a player starts over as a brand-new player, on every server.** For operators and the console. The first run lists what it takes; `/bsp player reset <name> confirm` within 30 seconds does it. The name is found online, in the bank's records or the network's, or in the profile cache, so an offline player, or one who never joined the server it is typed on, works too; a UUID works as well.
   - Their team: a member leaves, a lone leader's team is disbanded, and a leader with members first hands the lead to the member who joined earliest. If the lead cannot be handed over, nothing is changed.

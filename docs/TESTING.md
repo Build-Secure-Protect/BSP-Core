@@ -4160,7 +4160,7 @@ Covered by `a_demo_wears_a_hat_on_its_plain_body` (the hat saved and sent to cli
 - [ ] Pause single player with a totem's LOOKS tab open behind the menu (a screenshot, F1): the preview stands still, no jitter.
 - [ ] Leave the game running for a long session (the clock wraps after 14.4 hours): spins carry on without a jump.
 
-## Player reset: `/bsp player reset <name>` (2026-11-24, unreleased)
+## Player reset: `/bsp player reset <name>` (2026-11-24, 1.23.0)
 Covered by GameTests `player_reset_makes_an_online_player_new_and_keeps_other_mods_data`, `player_reset_of_an_offline_player_wipes_them_at_their_next_settle_once`, `player_reset_older_than_this_servers_record_never_touches_the_player`, `player_reset_reaching_a_server_late_spares_a_player_already_wiped_elsewhere`, `player_reset_heard_again_leaves_the_files_of_a_player_who_played_here_since`, `player_reset_of_a_dead_player_wipes_them_at_the_respawn`, `player_reset_passes_a_team_lead_on_before_the_leader_leaves` and `player_reset_confirm_wants_a_fresh_ask_for_that_player` (one server, no database). The network, BSP-RankUp, LuckPerms, Curios and BSP-InventorySync parts are untested.
 - [ ] Use a test account with totems placed on two servers, a team with another member, a market lot, a buy order, a bounty on someone, a bank balance with coins, a deposit box, a Coin Vault and some advancements.
 - [ ] `/bsp player reset <name>` on Spawn: the list of what it takes. Wait 30 s, then `... confirm`: refused, ask again. Ask again and confirm: one line saying what was done and that every server was told.
