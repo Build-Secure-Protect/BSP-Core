@@ -35,6 +35,14 @@ public class CompassCooldowns extends SavedData {
     }
 
     /** Ends {@code id}'s wait (admin tools and tests). */
+    /** Forgets every wait (a season reset). Returns how many there were. */
+    public int clearAll() {
+        int n = until.size();
+        until.clear();
+        setDirty();
+        return n;
+    }
+
     public void clear(UUID id) {
         if (until.remove(id) != null) {
             setDirty();

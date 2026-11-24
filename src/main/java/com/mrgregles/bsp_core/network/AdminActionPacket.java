@@ -77,7 +77,17 @@ public record AdminActionPacket(int action, UUID target, String dimension, Block
             }
             case RESET_TOTEMS -> say(player, "reset_done", AdminService.resetTotems(player.server, msg.target));
             case END_SEASON -> say(player, "season_done", AdminService.endSeason(player.server, by));
-            case FULL_RESET -> say(player, "full_reset_done", AdminService.fullReset(player.server, by));
+            case FULL_RESET -> {
+                // the panel's Full reset is the season reset (SR1): the panel's typed RESET and second click are its confirm
+                say(player, "season_reset_started");
+                com.mrgregles.bsp_core.admin.SeasonReset.run(player.server, by, r -> {
+                    if (r.ok()) {
+                        com.mrgregles.bsp_core.BSPCore.LOGGER.info("Season reset from the admin panel by {} done: season {} ended", by, r.endedSeason());
+                    } else if (!player.hasDisconnected()) {
+                        say(player, "season_reset_failed", r.failure());
+                    }
+                });
+            }
             case OPEN_REWARDS -> {
                 AdminService.openRewards(player);
                 return;

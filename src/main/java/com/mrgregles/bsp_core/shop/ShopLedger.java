@@ -139,6 +139,18 @@ public class ShopLedger extends SavedData {
         setDirty();
     }
 
+    /** Forgets every player's own buy and sell limits on every shop item (a season reset); the shops' own stock stays. */
+    public int forgetAllPlayers() {
+        int n = 0;
+        for (Stock s : stock.values()) {
+            n += s.buyers.size() + s.sellers.size();
+            s.buyers.clear();
+            s.sellers.clear();
+        }
+        setDirty();
+        return n;
+    }
+
     /** Forgets the player's own buy and sell limits on every shop item (an admin's player reset); returns how many there were. */
     public int forgetPlayer(UUID player) {
         int n = 0;

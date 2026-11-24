@@ -503,7 +503,7 @@ public final class PlayerReset {
     }
 
     /** Empties every Curios slot (and its cosmetic slot) when Curios is installed; read by reflection, as nothing else here needs it. */
-    private static void clearCurios(ServerPlayer player) {
+    static void clearCurios(ServerPlayer player) {
         if (!ModList.get().isLoaded("curios")) {
             return;
         }
@@ -528,7 +528,7 @@ public final class PlayerReset {
     }
 
     /** Asks BSP-InventorySync to save the wiped player now, so a crash before its next save cannot bring the old inventory back. */
-    private static void saveSynced(ServerPlayer player) {
+    static void saveSynced(ServerPlayer player) {
         if (!ModList.get().isLoaded("bsp_inventorysync")) {
             return;
         }
@@ -630,6 +630,9 @@ public final class PlayerReset {
                 }
                 if (LoginSettle.isWaiting(player.getUUID())) {
                     onSettle(player); // a login's restore: wiped before anything is handed over
+                    SeasonReset.onSettle(player); // and a season reset they have not been through yet
+                } else if (SeasonReset.due(player) && !player.isDeadOrDying()) {
+                    SeasonReset.onSettle(player); // a restore after the login settled brought back what a season reset took: again (this season's totems kept)
                 } else if (due(player) && !player.isDeadOrDying()) {
                     // a restore after the login settled (logins that do not wait for it): the old inventory came back over the wiped
                     // one; wiped again, the live totems kept (their first totem among them). An admin's restore that keeps the
@@ -693,7 +696,7 @@ public final class PlayerReset {
     }
 
     /** Voids the player's Totem Forge pour where this server has it (the forge's chunk loaded if saved). */
-    private static void voidForgePour(MinecraftServer server, UUID id) {
+    static void voidForgePour(MinecraftServer server, UUID id) {
         com.mrgregles.bsp_core.machine.TotemForgeLedger.get(server).pourOf(id).ifPresent(at -> {
             var level = server.getLevel(at.dimension());
             if (level == null) {

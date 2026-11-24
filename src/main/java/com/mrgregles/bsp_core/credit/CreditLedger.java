@@ -30,6 +30,8 @@ public class CreditLedger extends SavedData {
         public long credit;
         @Nullable
         public java.util.UUID payer;
+        /** The kinds of the tickets that paid, for a season reset's refund (a fresh ticket of each); empty for a claim paid before they were kept. */
+        public final java.util.Set<String> kinds = new java.util.LinkedHashSet<>();
     }
 
     public static CreditLedger get(MinecraftServer server) {
@@ -78,10 +80,11 @@ public class CreditLedger extends SavedData {
         setDirty();
     }
 
-    void addClaim(String key, long credit, java.util.UUID payer) {
+    void addClaim(String key, long credit, java.util.UUID payer, java.util.Collection<String> kinds) {
         ClaimCredit have = claims.computeIfAbsent(key, k -> new ClaimCredit());
         have.credit += credit;
         have.payer = payer;
+        have.kinds.addAll(kinds);
         setDirty();
     }
 
@@ -154,6 +157,9 @@ public class CreditLedger extends SavedData {
             if (share.payer != null) {
                 e.putUUID("Payer", share.payer);
             }
+            if (!share.kinds.isEmpty()) {
+                e.putString("Kinds", String.join(",", share.kinds));
+            }
             c.add(e);
         });
         tag.put("Claims", c);
@@ -179,6 +185,11 @@ public class CreditLedger extends SavedData {
             ClaimCredit share = new ClaimCredit();
             share.credit = e.getLong("Credit");
             share.payer = e.hasUUID("Payer") ? e.getUUID("Payer") : null;
+            for (String kind : e.getString("Kinds").split(",")) {
+                if (!kind.isEmpty()) {
+                    share.kinds.add(kind);
+                }
+            }
             l.claims.put(e.getString("Claim"), share);
         }
         return l;

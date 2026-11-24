@@ -4177,6 +4177,26 @@ Covered by GameTests `player_reset_makes_an_online_player_new_and_keeps_other_mo
 - [ ] They had a bed: after their next death they respawn at world spawn, not at the bed.
 - [ ] With BSP-InventorySync: `/invsync restore <player> <version>` of a snapshot from before the reset puts it back and the next login does not wipe it again.
 
+## Season reset: `/bsp season reset` (2026-11-24, 1.24.2)
+Covered by GameTests `season_reset_confirm_wants_the_code_shown_to_the_same_admin`, `season_reset_preview_changes_nothing`, `season_reset_starts_everyone_over_and_keeps_the_deposit_box_and_prizes`, `season_reset_wipe_keeps_this_seasons_totem_and_retires_an_old_one`, `season_reset_only_marks_a_player_who_never_played`, `season_reset_notice_carries_the_reset_and_season_numbers`, `prize_compartment_hands_out_and_never_takes_in`, `prize_drawer_shows_under_a_box_not_rented_and_only_gives`, `prize_group_names_are_checked_and_shown_on_the_prize_screen` and `season_reset_steps_run_as_a_loop_and_a_failing_step_ends_it` (one server, no database). The drawer and the group boxes are not seen in a client. The network (MySQL backups, the shared clear, the Redis notice), LuckPerms, Curios, BSP-InventorySync and the sister mods are untested. Back up every world and the database before trying this on a real network.
+- [ ] Set up: two test accounts with totems placed on two servers, items in their inventories and ender chests, a bank balance with banked coins, a rented Safety Deposit Box with items in it, a market lot, a buy order, an open bounty, a kit taken once (the totem kit), a RankUp rung above the first, VIP on one of them, and a bed. Put items in the first-place prize row and type `season_champion` in the group box at the end of the 1ST row (Enter: the action bar confirms it). As a moderator, the group boxes cannot be typed in.
+- [ ] `/bsp season reset` on Spawn: the list names the winners, the counts, what is kept, and a code. Nothing changes. Wait 60 s and confirm: refused. Run it again and confirm with the new code.
+- [ ] Everyone on every server is sent off with the "new season" message. The server log says how many lots, orders and bounties ended, and the database has `backup_s<N>_*` tables.
+- [ ] Log back in: inventory, armour, offhand, ender chest, Curios, XP and effects are empty; one fresh Tier I totem and the guide book arrive, then the first-join kits. The bank shows the starting pieces and no coins.
+- [ ] The Safety Deposit Box still holds its items, slots and rent time.
+- [ ] The first-place winner: a chat line says the prizes wait in the prize compartment; `/lp user <winner> info` shows `season_champion`.
+- [ ] The winner opens any Safety Deposit Box, rented or not: a gold drawer under the screen holds the prizes, edged gold; the tooltip says "Prize for place 1 in season N". Shift-click one out and drag another: both land in the inventory. Try to put an item in the drawer: refused. Close and reopen: what was taken is gone, the rest is still there. On another server, the same.
+- [ ] A winner with no prizes left: the drawer is not there and the box screen is its usual size.
+- [ ] The totem kit can be taken again, once. A kit that was owed and not delivered still arrives.
+- [ ] The market and the bounty board are empty, on every server. The Collect box is empty.
+- [ ] `/rank`: first rung, 0 points, on every server; VIP is still there (`/lp user <name> info`).
+- [ ] Region Guard on Sanctuary: bought plots are back on sale at their first price; the buildings on them are still there.
+- [ ] Teleport: no homes. After a death, they respawn at world spawn, not the bed.
+- [ ] Run `/bsp season reset` on a second server within a few seconds of the first: refused, the season was ended elsewhere.
+- [ ] Type a group in the prize screen's box and close the screen with Esc (not Enter): `/bsp season prizegroup 1` shows it.
+- [ ] Stop one server before the reset, start it afterwards: its log says a season reset was made on another server; its totems are gone and anyone joining it is wiped.
+- [ ] With BSP-InventorySync: switch servers after the wipe: nothing old comes back.
+
 ## Machine tracking: tags, slots, transmitter, remote operation (2026-11-24, 1.24.0)
 Covered by the `tracking_*` GameTests (slots and prices, the unlock, tagging rules, names, broken machines, the reset and season rules, readings of a furnace, a BSP-Core machine and a Mekanism factory, watch lists, layouts, transmitter range and power, the per-player limit, operating refusals). Not seen in a client.
 - [ ] With the Machine Tagger, right-click a furnace: "Tagged Furnace (1 of 2)" in the action bar, and the furnace does not open. Right-click it again: "already tagged". Sneak-right-click: "Untagged Furnace".

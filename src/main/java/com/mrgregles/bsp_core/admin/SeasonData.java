@@ -23,6 +23,13 @@ public class SeasonData extends SavedData {
     public String lastWinner = "";
     /** Goes up with every full reset. A player whose own number is lower has their Shatter Coins removed at login. */
     public int coinEpoch;
+    /**
+     * Goes up with every season reset ({@link SeasonReset}). A player whose own number is lower is wiped at their next login: what
+     * they carry goes, live totems of this season stay.
+     */
+    public int resetEpoch;
+    /** The LuckPerms group given to the winner of each place by a season reset ("" for none); kept for every later season. */
+    public final String[] prizeGroups = {"", "", ""};
     public int lastWinnerPoints;
     /** When an admin last changed the prizes or the holder reward interval here; on a network the newest change wins. */
     public long settingsRev;
@@ -45,6 +52,23 @@ public class SeasonData extends SavedData {
     /** Prize items owed to players who were offline when the season ended. */
     public final Map<UUID, java.util.List<net.minecraft.world.item.ItemStack>> pendingItems = new HashMap<>();
 
+    /** The longest LuckPerms group name a place can give. */
+    public static final int GROUP_MAX = 36;
+
+    /** A LuckPerms group name a place may give: letters, digits, _ . and - (starting with a letter or digit), or "" for none. */
+    public static boolean validGroup(String group) {
+        return group != null && (group.isEmpty() || group.matches("[A-Za-z0-9][A-Za-z0-9_.-]{0," + (GROUP_MAX - 1) + "}"));
+    }
+
+    /** Sets the group the winner of a place (0 to 2) is given; shared with the network. The name must be {@link #validGroup}. */
+    public static void setPrizeGroup(MinecraftServer server, int place, String group, String by) {
+        SeasonData season = get(server);
+        season.prizeGroups[place] = group;
+        season.setDirty();
+        SeasonSync.groupsEdited(server);
+        com.mrgregles.bsp_core.BSPCore.LOGGER.info("Season prizes: place {} gives LuckPerms group '{}' (set by {})", place + 1, group, by);
+    }
+
     public static SeasonData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(SeasonData::load, SeasonData::new, DATA_NAME);
     }
@@ -59,6 +83,10 @@ public class SeasonData extends SavedData {
         tag.putLong("StartMs", startMs);
         tag.putString("LastWinner", lastWinner);
         tag.putInt("CoinEpoch", coinEpoch);
+        tag.putInt("ResetEpoch", resetEpoch);
+        for (int i = 0; i < PLACES; i++) {
+            tag.putString("PrizeGroup" + i, prizeGroups[i]);
+        }
         tag.putInt("LastWinnerPoints", lastWinnerPoints);
         tag.putLong("SettingsRev", settingsRev);
         tag.putInt("HolderHours", holderHours);
@@ -83,6 +111,10 @@ public class SeasonData extends SavedData {
         data.startMs = tag.getLong("StartMs");
         data.lastWinner = tag.getString("LastWinner");
         data.coinEpoch = tag.getInt("CoinEpoch");
+        data.resetEpoch = tag.getInt("ResetEpoch");
+        for (int i = 0; i < PLACES; i++) {
+            data.prizeGroups[i] = tag.getString("PrizeGroup" + i);
+        }
         data.lastWinnerPoints = tag.getInt("LastWinnerPoints");
         data.settingsRev = tag.getLong("SettingsRev");
         data.holderHours = tag.getInt("HolderHours");

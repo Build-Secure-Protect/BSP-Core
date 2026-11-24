@@ -78,7 +78,7 @@ public final class FirstJoinHandler {
     }
 
     /** Hands over the BSP Field Guide, if Patchouli is installed. */
-    private static void giveGuideBook(ServerPlayer player) {
+    public static void giveGuideBook(ServerPlayer player) {
         var item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation("patchouli", "guide_book"));
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
             return;

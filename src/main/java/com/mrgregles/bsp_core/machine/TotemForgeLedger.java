@@ -103,6 +103,11 @@ public class TotemForgeLedger extends SavedData {
         return BSPConfig.STORAGE_SERVER_ID.get() + "|" + pos.dimension().location() + "|" + pos.pos().getX() + "," + pos.pos().getY() + "," + pos.pos().getZ();
     }
 
+    /** Every player with a pour claimed on this server. */
+    public java.util.Set<UUID> players() {
+        return java.util.Set.copyOf(pours.keySet());
+    }
+
     /** The forge on this server where the player has a pour, if any. */
     public Optional<GlobalPos> pourOf(UUID player) {
         return Optional.ofNullable(pours.get(player));

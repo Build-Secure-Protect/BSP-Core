@@ -450,6 +450,7 @@ public final class NetworkStorage {
                         }
                     }
                 }
+                case "season_reset" -> com.mrgregles.bsp_core.admin.SeasonSync.catchUp(srv); // a season reset on another server: read the season now
                 case "protection_seen" -> {
                     String[] parts = payload.split(":");
                     if (parts.length == 4) {
@@ -619,6 +620,8 @@ public final class NetworkStorage {
         }
         com.mrgregles.bsp_core.totem.StealBacks.pushLosses(srv); // losses recorded here while the database was out of reach
         playerResetsReload(); // resets made while this server was down: forgotten here (a player already in is cleared when it lands)
+        com.mrgregles.bsp_core.admin.SeasonSync.catchUp(srv); // a new season or a season reset made while this server was down: read now, before anything here writes the season back
+        com.mrgregles.bsp_core.bank.PrizeBox.uploadWaiting(srv); // season prizes this server could not write when the season ended
         List<TotemLevels> levels = TotemLedger.get(srv).levelRows();
         async("write the placed totems' levels", s -> s.totemLevelsAll(levels)); // rows written before the levels were kept get them now
         Map<UUID, Map<GlobalPos, Long>> slices = FactoryLedger.get(srv).allWithTimes();
@@ -3346,5 +3349,170 @@ public final class NetworkStorage {
         return "mysql".equalsIgnoreCase(BSPConfig.STORAGE_MODE.get())
                 ? "Network storage: storage.mode is \"mysql\" but the database is not connected. See the server log."
                 : "Network storage: off. Records are kept in this world only (storage.mode = \"local\").";
+    }
+
+    // ------------------------------------------------------------------ season reset (/bsp season reset)
+
+    /** True when Redis is configured here but not listening: a season reset is refused then (the other servers would hear of it late). */
+    public static boolean redisDown() {
+        RedisLink r = redis;
+        return enabled() && r != null && !r.listening();
+    }
+
+    /** Copies the shared tables a season reset changes ({@code MySqlStore.seasonBackup}); {@code then} hears how many, -1 on a failure (server thread). */
+    public static void seasonBackup(int season, Consumer<Integer> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(0);
+            return;
+        }
+        worker().execute(() -> {
+            int n;
+            try {
+                n = s.seasonBackup(season);
+                BSPCore.LOGGER.info("BSP-Core storage: season reset backups for season {}: {} table(s) copied (backup_s{}_*)", season, n, season);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not back up the tables before a season reset: {}", e.toString());
+                n = -1;
+            }
+            int done = n;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** The network's counts for the season reset's preview ({@code MySqlStore.seasonCounts}); null when unreachable (server thread). */
+    public static void seasonCounts(Consumer<int[]> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            int[] out;
+            try {
+                out = s.seasonCounts();
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not count for a season reset's preview: {}", e.toString());
+                out = null;
+            }
+            int[] done = out;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /**
+     * The shared part of a season reset ({@code MySqlStore.seasonClear}), only while the database is still at {@code expectSeason} and
+     * {@code expectReset}, with {@code newState} (the new season, reset number, coin epoch and start) written in the same transaction;
+     * then the other servers are told to read the market, orders and bounties again. {@code then} hears null when it landed, else why
+     * not (server thread); null at once without network storage.
+     */
+    public static void seasonClear(long startingPieces, java.util.Collection<UUID> keep, int expectSeason, int expectReset, Map<String, String> newState,
+                                   Consumer<String> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        List<UUID> kept = List.copyOf(keep);
+        Map<String, String> state = Map.copyOf(newState);
+        worker().execute(() -> {
+            String failure;
+            try {
+                int n = s.seasonClear(startingPieces, kept, expectSeason, expectReset, state);
+                BSPCore.LOGGER.info("BSP-Core storage: season reset: {} shared rows changed", n);
+                publish("market", "");
+                publish("orders", "");
+                publish("bounty", "");
+                failure = null;
+            } catch (MySqlStore.SeasonMoved e) {
+                BSPCore.LOGGER.warn("BSP-Core storage: season reset refused: {}", e.getMessage());
+                failure = e.getMessage() + ": the season was ended on another server; this server reads it within seconds";
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not clear the shared records for a season reset: {}", e.toString());
+                failure = "";
+            }
+            String done = failure;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** The database's season number and reset number ({@code -1} for one not written yet); null when unreachable (server thread). */
+    public static void seasonState(Consumer<int[]> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            int[] out;
+            try {
+                out = s.seasonState();
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the season state: {}", e.toString());
+                out = null;
+            }
+            int[] done = out;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /**
+     * Tells every server (and the proxy) a season reset was made, so each applies it at once, not at the next sync. Payload
+     * {@code <reset number>|<new season number>}; a reader of the first part alone must stop at the {@code |}.
+     */
+    public static void seasonResetPublish(int resetEpoch, int season) {
+        publish("season_reset", seasonResetPayload(resetEpoch, season));
+    }
+
+    /** The {@code season_reset} notice's payload: {@code <reset number>|<new season number>}. */
+    public static String seasonResetPayload(int resetEpoch, int season) {
+        return resetEpoch + "|" + season;
+    }
+
+    /** Puts prize stacks in a winner's compartment; {@code then} hears whether they landed (server thread). */
+    public static void prizeAdd(UUID player, List<String> items, int season, int place, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(false);
+            return;
+        }
+        worker().execute(() -> {
+            boolean ok;
+            try {
+                s.prizeAdd(player, items, season, place);
+                ok = true;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not put season prizes in the compartment of {}: {}", player, e.toString());
+                ok = false;
+            }
+            boolean done = ok;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** A winner's prize rows (id, SNBT, season, place); null when unreachable (server thread). */
+    public static void prizesRead(UUID player, Consumer<List<Object[]>> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(null);
+            return;
+        }
+        worker().execute(() -> {
+            List<Object[]> rows;
+            try {
+                rows = s.prizesRead(player);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the prize compartment of {}: {}", player, e.toString());
+                rows = null;
+            }
+            List<Object[]> done = rows;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** Writes what a winner took out of the compartment (row id to what is left, "" for nothing). */
+    public static void prizesTaken(UUID player, Map<Long, String> left) {
+        Map<Long, String> copy = new java.util.HashMap<>(left);
+        async("write what was taken from a prize compartment", s -> s.prizesTaken(player, copy));
     }
 }

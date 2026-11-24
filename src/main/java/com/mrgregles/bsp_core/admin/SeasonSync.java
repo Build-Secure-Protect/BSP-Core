@@ -39,7 +39,8 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class SeasonSync {
     public static final String K_SEASON = "season", K_START = "season_start", K_WINNER = "winner", K_WINNER_POINTS = "winner_points", K_EPOCH = "coin_epoch",
-            K_HOLDER_HOURS = "holder_hours", K_HOLDER_LAST = "holder_last", K_PRIZES = "prizes", K_REV = "settings_rev";
+            K_HOLDER_HOURS = "holder_hours", K_HOLDER_LAST = "holder_last", K_PRIZES = "prizes", K_REV = "settings_rev",
+            K_RESET_EPOCH = "reset_epoch", K_PRIZE_GROUPS = "prize_groups";
     private static int ticks;
     /** True while state read from the database is being applied, so that it is not written straight back. */
     private static boolean applying;
@@ -62,6 +63,8 @@ public final class SeasonSync {
         out.put(K_HOLDER_LAST, Long.toString(s.lastHolderMs));
         out.put(K_PRIZES, s.rewards.serializeNBT().toString());
         out.put(K_REV, Long.toString(s.settingsRev));
+        out.put(K_RESET_EPOCH, Integer.toString(s.resetEpoch));
+        out.put(K_PRIZE_GROUPS, String.join(",", s.prizeGroups));
         return out;
     }
 
@@ -70,6 +73,11 @@ public final class SeasonSync {
         if (NetworkStorage.enabled() && !applying) {
             NetworkStorage.putState(state(server), false);
         }
+    }
+
+    /** The prize groups changed on this server (an admin's command): shared as the prize rows are, the newest change winning. */
+    public static void groupsEdited(MinecraftServer server) {
+        prizesEdited(server);
     }
 
     /** The prize rows changed on this server. */
@@ -118,12 +126,24 @@ public final class SeasonSync {
             s.lastWinnerPoints = num(db, K_WINNER_POINTS, s.lastWinnerPoints);
             boolean newSeason = number > s.number;
             s.number = number;
+            int resetEpoch = num(db, K_RESET_EPOCH, s.resetEpoch);
+            boolean seasonReset = resetEpoch > s.resetEpoch;
+            if (seasonReset) {
+                s.resetEpoch = resetEpoch;
+            }
             s.lastHolderMs = big(db, K_HOLDER_LAST, s.lastHolderMs); // exactly the shared value: the automatic payout is claimed by changing it
             long rev = big(db, K_REV, 0);
             boolean prizes = false;
             if (rev > s.settingsRev || newSeason) {
                 s.settingsRev = Math.max(rev, s.settingsRev);
                 s.holderHours = num(db, K_HOLDER_HOURS, s.holderHours);
+                String groups = db.get(K_PRIZE_GROUPS);
+                if (groups != null) {
+                    String[] g = groups.split(",", -1);
+                    for (int i = 0; i < s.prizeGroups.length; i++) {
+                        s.prizeGroups[i] = i < g.length ? g[i] : "";
+                    }
+                }
                 String blob = db.get(K_PRIZES);
                 if (blob != null && !blob.equals(s.rewards.serializeNBT().toString())) {
                     try {
@@ -143,13 +163,26 @@ public final class SeasonSync {
                 BSPCore.LOGGER.info("Season {} was ended on another server: removing totems here", ended);
                 AdminService.wipeTotems(server);
                 AdminService.announceSeason(server, ended, s.lastWinner, s.lastWinnerPoints);
-                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.SeasonEvent.Ended(server, ended, false, "network"));
+                if (!seasonReset) {
+                    SeasonReset.post(new com.mrgregles.bsp_core.api.event.SeasonEvent.Ended(server, ended, false, "network", false, false));
+                }
+            }
+            if (seasonReset) {
+                BSPCore.LOGGER.info("A season reset was made on another server: clearing this server's records and sending its players off");
+                SeasonReset.applyHere(server, newSeason ? ended : s.number - 1, "network", false);
             }
             if (prizes || newSeason) {
                 AdminService.prizesChanged(); // resend to this server's clients
             }
         } finally {
             applying = false;
+        }
+    }
+
+    /** Reads the shared season state now and applies it (a season reset's Redis notice), instead of at the next sync. */
+    public static void catchUp(MinecraftServer server) {
+        if (NetworkStorage.enabled()) {
+            NetworkStorage.readState(db -> apply(server, db));
         }
     }
 
@@ -194,7 +227,7 @@ public final class SeasonSync {
             List<UUID> online = new ArrayList<>();
             server.getPlayerList().getPlayers().forEach(p -> {
                 // never a player leaving on a transfer: the totem just stored for their trip waits for the server they arrive on
-                if (LoginSettle.canReceive(p) && !com.mrgregles.bsp_core.api.BspTransfer.isTransferring(p.getUUID())) {
+                if (LoginSettle.canReceive(p) && !SeasonReset.due(p) && !com.mrgregles.bsp_core.api.BspTransfer.isTransferring(p.getUUID())) {
                     online.add(p.getUUID()); // a player waiting for their restore, or dead, collects after it or at the respawn
                 }
             });

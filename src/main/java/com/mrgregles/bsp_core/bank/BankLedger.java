@@ -43,6 +43,30 @@ public class BankLedger extends SavedData {
         return had;
     }
 
+    /**
+     * A season reset of this server's copy of the bank: every account but those in {@code keep} back to {@code startingPieces}, with no
+     * banked coins, stamps or Portable Banker unlocks, and every log emptied. The Safety Deposit Box (slots, rent, items) stays.
+     * Returns the accounts reset.
+     */
+    public int seasonReset(long startingPieces, java.util.Collection<UUID> keep) {
+        int n = 0;
+        for (var e : accounts.entrySet()) {
+            if (keep.contains(e.getKey())) {
+                continue;
+            }
+            BankAccount a = e.getValue();
+            a.pieces = startingPieces;
+            java.util.Arrays.fill(a.coins, 0);
+            a.stamps.clear();
+            a.remoteShops = false;
+            a.remoteMarket = false;
+            logs.remove(e.getKey());
+            n++;
+        }
+        setDirty();
+        return n;
+    }
+
     public boolean has(UUID id) {
         return accounts.containsKey(id);
     }

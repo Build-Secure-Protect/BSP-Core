@@ -31,8 +31,10 @@ public final class BSPNetwork {
      * 20: the CREDIT tab's plot names carry the servers they are on.
      * 21: the VIPs board (VipListPacket; the Score Screen settings carry its texts and support link).
      * 22: machine tracking (TrackerSyncPacket, TrackerSnapshotPacket, TrackerWatchPacket, TrackerActionPacket).
+     * 23: the deposit box's opening carries its prize drawer (places and seasons); the season prize screen's opening carries each
+     *     place's LuckPerms group, and {@link SeasonGroupPacket} sets one.
      */
-    private static final String PROTOCOL = "22";
+    private static final String PROTOCOL = "23";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -351,6 +353,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(TrackerActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(TrackerActionPacket::encode).decoder(TrackerActionPacket::decode)
                 .consumerMainThread(TrackerActionPacket::handle).add();
+        CHANNEL.messageBuilder(SeasonGroupPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SeasonGroupPacket::encode).decoder(SeasonGroupPacket::decode)
+                .consumerMainThread(SeasonGroupPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

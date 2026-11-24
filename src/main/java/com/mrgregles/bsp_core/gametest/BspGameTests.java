@@ -1460,9 +1460,16 @@ public class BspGameTests {
         h.assertTrue(v != null && (v.names().contains(name) || v.in() > com.mrgregles.bsp_core.lottery.LotteryPageView.MAX_NAMES && v.names().size() == com.mrgregles.bsp_core.lottery.LotteryPageView.MAX_NAMES)
                 && v.standing() == com.mrgregles.bsp_core.lottery.Lottery.Standing.IN.ordinal(),
                 "a player seen now is on the drum and in: " + (v == null ? null : v.standing() + ", " + v.in() + " in, " + v.names().size() + " names sent"));
-        List<String> sorted = new ArrayList<>(v.names());
+        // while a win shows, the page keeps the winner on the drum, at its end when they are not among the names in (a season reset
+        // empties the drum, so the last winner may no longer be in)
+        List<String> drum = new ArrayList<>(v.names());
+        int kept = !v.winner().isEmpty() && !drum.isEmpty() && drum.get(drum.size() - 1).equals(v.winner()) ? 1 : 0;
+        if (kept == 1) {
+            drum.remove(drum.size() - 1);
+        }
+        List<String> sorted = new ArrayList<>(drum);
         sorted.sort(String.CASE_INSENSITIVE_ORDER);
-        h.assertTrue(v.names().equals(sorted) && v.in() >= v.names().size() && v.wins().size() <= com.mrgregles.bsp_core.lottery.LotteryPageView.WINS
+        h.assertTrue(drum.equals(sorted) && v.in() + kept >= v.names().size() && v.wins().size() <= com.mrgregles.bsp_core.lottery.LotteryPageView.WINS
                 && v.pot() == com.mrgregles.bsp_core.market.Market.pot(server) && v.phase() >= 0 && v.phase() < com.mrgregles.bsp_core.lottery.LotteryDraw.Phase.values().length,
                 "the names are in order, the counts and the pot are right: " + v.in() + " in");
         com.mrgregles.bsp_core.lottery.LotteryPage.view(server, UUID.randomUUID(), x -> got[0] = x);
@@ -1496,7 +1503,8 @@ public class BspGameTests {
         com.mrgregles.bsp_core.lottery.LotterySummary.Summary[] got = new com.mrgregles.bsp_core.lottery.LotterySummary.Summary[1];
         com.mrgregles.bsp_core.lottery.LotterySummary.build(server, ann.getUUID(), s -> got[0] = s);
         var s = got[0];
-        h.assertTrue(s != null && s.in() >= s.names().size() && s.names().size() <= com.mrgregles.bsp_core.lottery.LotterySummary.NAMES
+        int keptWinner = s != null && !s.winner().isEmpty() && s.names().contains(s.winner()) ? 1 : 0; // a win showing keeps its winner on the drum
+        h.assertTrue(s != null && s.in() + keptWinner >= s.names().size() && s.names().size() <= com.mrgregles.bsp_core.lottery.LotterySummary.NAMES
                 && s.wins().size() <= com.mrgregles.bsp_core.lottery.LotterySummary.WINS && s.pot() == com.mrgregles.bsp_core.market.Market.pot(server),
                 "the summary has the drum, the count, at most three winners and the pot: " + (s == null ? null : s.in()));
         h.assertTrue(s.in() > com.mrgregles.bsp_core.lottery.LotterySummary.NAMES || s.names().contains(ann.getGameProfile().getName()), "a player seen now is on the board's drum");
@@ -7754,7 +7762,7 @@ public class BspGameTests {
         com.mrgregles.bsp_core.kit.Kits.delete(server, k.id);
 
         // a season prize slot does not take one
-        var menu = new com.mrgregles.bsp_core.admin.SeasonRewardsMenu(0, player.getInventory(), new net.minecraftforge.items.ItemStackHandler(com.mrgregles.bsp_core.admin.SeasonData.REWARD_SLOTS), true);
+        var menu = new com.mrgregles.bsp_core.admin.SeasonRewardsMenu(0, player.getInventory(), new net.minecraftforge.items.ItemStackHandler(com.mrgregles.bsp_core.admin.SeasonData.REWARD_SLOTS), true, new String[]{"", "", ""});
         h.assertFalse(menu.slots.get(0).mayPlace(placeholder(1)), "a prize slot refuses a placeholder");
         h.assertTrue(menu.slots.get(0).mayPlace(new ItemStack(net.minecraft.world.item.Items.DIAMOND)), "and takes a diamond");
         h.succeed();

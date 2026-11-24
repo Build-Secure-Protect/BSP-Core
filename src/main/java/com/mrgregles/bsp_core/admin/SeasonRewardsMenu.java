@@ -17,18 +17,26 @@ import net.minecraftforge.items.SlotItemHandler;
  * A fourth row holds the holder reward, which is copied to every totem holder at each payout and stays.
  */
 public class SeasonRewardsMenu extends AbstractContainerMenu {
-    public static final int WIDTH = 236, ROW_X = 46, ROW_Y = 26, ROW_GAP = 22, INV_X = 37, INV_Y = 132, HEIGHT = INV_Y + 82;
+    /** GROUP_X and GROUP_W: the LuckPerms group box at the end of each place row (owner pick P2 A). */
+    public static final int WIDTH = 312, ROW_X = 46, ROW_Y = 26, ROW_GAP = 22, GROUP_X = ROW_X + SeasonData.PER_PLACE * 18 + 6, GROUP_W = 74,
+            INV_X = 75, INV_Y = 132, HEIGHT = INV_Y + 82;
 
     private final boolean editable;
+    /** Each place's LuckPerms group as the screen opened ("" for none). */
+    public final String[] groups;
 
-    public SeasonRewardsMenu(int id, Inventory inv, boolean editable) {
-        this(id, inv, new ItemStackHandler(SeasonData.REWARD_SLOTS), editable);
+    public SeasonRewardsMenu(int id, Inventory inv, boolean editable, String[] groups) {
+        this(id, inv, new ItemStackHandler(SeasonData.REWARD_SLOTS), editable, groups);
     }
 
-    /** {@code editable} is false for moderators: they see the prizes but cannot move anything in or out. */
-    public SeasonRewardsMenu(int id, Inventory inv, IItemHandler rewards, boolean editable) {
+    /** {@code editable} is false for moderators: they see the prizes and groups but cannot change anything. */
+    public SeasonRewardsMenu(int id, Inventory inv, IItemHandler rewards, boolean editable, String[] groups) {
         super(ModMenus.SEASON_REWARDS.get(), id);
         this.editable = editable;
+        this.groups = java.util.Arrays.copyOf(groups, SeasonData.PLACES);
+        for (int i = 0; i < this.groups.length; i++) {
+            this.groups[i] = this.groups[i] == null ? "" : this.groups[i];
+        }
         for (int place = 0; place < SeasonData.ROWS; place++) {
             for (int col = 0; col < SeasonData.PER_PLACE; col++) {
                 addSlot(new SlotItemHandler(rewards, place * SeasonData.PER_PLACE + col, ROW_X + col * 18, ROW_Y + place * ROW_GAP) {

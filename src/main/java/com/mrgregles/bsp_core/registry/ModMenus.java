@@ -46,7 +46,14 @@ public final class ModMenus {
             () -> IForgeMenuType.create(com.mrgregles.bsp_core.shield.LeadLinedChestMenu::new));
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.admin.SeasonRewardsMenu>> SEASON_REWARDS = MENUS.register("season_rewards",
-            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.admin.SeasonRewardsMenu(id, inv, buf.readBoolean())));
+            () -> IForgeMenuType.create((id, inv, buf) -> {
+                boolean edit = buf.readBoolean();
+                String[] groups = new String[com.mrgregles.bsp_core.admin.SeasonData.PLACES];
+                for (int i = 0; i < groups.length; i++) {
+                    groups[i] = buf.readUtf(com.mrgregles.bsp_core.admin.SeasonData.GROUP_MAX);
+                }
+                return new com.mrgregles.bsp_core.admin.SeasonRewardsMenu(id, inv, edit, groups);
+            }));
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.decoy.DecoyMenu>> DECOY = MENUS.register("decoy_totem",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.decoy.DecoyMenu(id, inv, buf.readBlockPos())));
@@ -67,7 +74,8 @@ public final class ModMenus {
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.bank.BankMenu(id, inv, buf.readBoolean() ? buf.readBlockPos() : null)));
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.bank.DepositBoxMenu>> DEPOSIT_BOX = MENUS.register("deposit_box",
-            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.bank.DepositBoxMenu(id, inv, buf.readBlockPos(), buf.readBoolean(), buf.readVarInt())));
+            () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.bank.DepositBoxMenu(id, inv, buf.readBlockPos(), buf.readBoolean(), buf.readVarInt(),
+                    com.mrgregles.bsp_core.bank.DepositBoxMenu.Prizes.read(buf))));
 
     public static final RegistryObject<MenuType<com.mrgregles.bsp_core.shop.ShopMenu>> SHOP = MENUS.register("shop",
             () -> IForgeMenuType.create((id, inv, buf) -> new com.mrgregles.bsp_core.shop.ShopMenu(id, inv, buf.readUtf(32), buf.readBoolean() ? buf.readBlockPos() : null, buf.readBoolean(),

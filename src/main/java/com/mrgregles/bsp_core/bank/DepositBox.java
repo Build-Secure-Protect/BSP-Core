@@ -173,15 +173,22 @@ public final class DepositBox {
 
     // ------------------------------------------------------------------ opening
 
+    /** Players whose box is being read now: a second open meanwhile (a held right-click) is ignored, so two screens never show one prize. */
+    private static final java.util.Set<UUID> OPENING = new java.util.HashSet<>();
+
     /** Opens the player's box at a Safety Deposit Box block, after fetching the network's copy. */
     public static void open(ServerPlayer sp, BlockPos pos) {
         UUID id = sp.getUUID();
+        if (!OPENING.add(id)) {
+            return;
+        }
         if (!NetworkStorage.enabled()) {
             openNow(sp, pos);
             return;
         }
         NetworkStorage.bankBoxRead(id, row -> {
             if (row == null) {
+                OPENING.remove(id);
                 // unreachable: the copy here may be older than the network's (emptied on another server), so it is not opened
                 if (!sp.hasDisconnected()) {
                     sp.displayClientMessage(Component.translatable("message.bsp_core.bank.unreachable").withStyle(net.minecraft.ChatFormatting.RED), false);
@@ -202,11 +209,23 @@ public final class DepositBox {
             }
             if (!sp.hasDisconnected()) {
                 openNow(sp, pos);
+            } else {
+                OPENING.remove(id);
             }
         });
     }
 
+    /** Opens the box with the prize drawer filled (prizes read first; an unreachable compartment opens the box without its drawer). */
     private static void openNow(ServerPlayer sp, BlockPos pos) {
+        PrizeBox.load(sp.server, sp.getUUID(), entries -> {
+            OPENING.remove(sp.getUUID());
+            if (!sp.hasDisconnected()) {
+                openNow(sp, pos, DepositBoxMenu.Prizes.of(entries));
+            }
+        });
+    }
+
+    private static void openNow(ServerPlayer sp, BlockPos pos, DepositBoxMenu.Prizes prizes) {
         BankAccount a = Bank.account(sp.server, sp.getUUID());
         boolean open = state(a, System.currentTimeMillis()) == State.OPEN;
         sp.level().playSound(null, pos, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.5f, 1.4f);
@@ -218,12 +237,13 @@ public final class DepositBox {
 
             @Override
             public AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inv, Player p) {
-                return new DepositBoxMenu(id, inv, pos, open, a.boxSlots, a.box);
+                return new DepositBoxMenu(id, inv, pos, open, a.boxSlots, a.box, prizes);
             }
         }, buf -> {
             buf.writeBlockPos(pos);
             buf.writeBoolean(open);
             buf.writeVarInt(a.boxSlots);
+            prizes.write(buf);
         });
         DepositBoxMenu.sync(sp, "", null);
     }

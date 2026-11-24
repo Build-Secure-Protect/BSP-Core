@@ -135,4 +135,14 @@ public final class BspStoreCredit {
         }
         return ticket;
     }
+
+    /**
+     * A season reset gave a Land Office claim up ({@code SeasonEvent.Ended} with {@code isSeasonReset()}): the player who paid for it
+     * partly with store credit gets a fresh ticket of each kind that paid, now or at their next login. Call it on the server the
+     * claim is on, once per claim given up, with the claim's dimension id and claim id. Returns the tickets given (0 when credit paid
+     * nothing, -1 when the claim was paid before BSP-Core kept the kinds: logged for staff).
+     */
+    public static int seasonRefundClaim(MinecraftServer server, String dimension, String claimId) {
+        return com.mrgregles.bsp_core.credit.CreditLand.seasonRefund(server, dimension, claimId);
+    }
 }

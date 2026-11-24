@@ -161,6 +161,29 @@ public class KitLedger extends SavedData {
         return rows == null ? List.of() : List.copyOf(rows);
     }
 
+    /**
+     * A season reset: every player's record of every kit back to never taken, so once-only kits can be taken again and cooldowns
+     * start fresh; a row with kits still owed keeps them owed (count and time cleared), so a paid kit not yet delivered still comes.
+     * Returns how many rows changed.
+     */
+    public int seasonReset() {
+        int n = 0;
+        for (var it = redeems.entrySet().iterator(); it.hasNext(); ) {
+            List<Redeem> rows = it.next().getValue();
+            n += rows.size();
+            rows.removeIf(r -> r.owed <= 0);
+            for (Redeem r : rows) {
+                r.count = 0;
+                r.lastMs = 0;
+            }
+            if (rows.isEmpty()) {
+                it.remove();
+            }
+        }
+        setDirty();
+        return n;
+    }
+
     /** Forgets a player's rows for one kit, or for every kit when {@code kit} is null. Returns how many went. */
     int reset(UUID player, @Nullable String kit) {
         List<Redeem> rows = redeems.get(player);

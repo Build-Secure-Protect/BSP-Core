@@ -43,6 +43,14 @@ public class LotteryLedger extends SavedData {
     }
 
     /** Forgets that the player was seen (an admin's player reset); past wins stay in the history. */
+    /** Forgets every player seen (a season reset): only players seen in the new season are drawn. Wins and settings stay. */
+    public int forgetAll() {
+        int n = players.size();
+        players.clear();
+        setDirty();
+        return n;
+    }
+
     public void forget(UUID id) {
         if (players.remove(id) != null) {
             setDirty();

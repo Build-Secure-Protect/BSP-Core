@@ -163,6 +163,15 @@ public final class StealBacks extends SavedData {
         network = Map.of();
     }
 
+    /** Forgets every loss and watch on this server and the network's copy (a season reset: the shared rows go with it). */
+    public static void clearAll(MinecraftServer server) {
+        StealBacks d = get(server);
+        d.losses.clear();
+        d.watches.clear();
+        d.setDirty();
+        clearNetwork();
+    }
+
     /** Forgets this server's record for one player (an admin's player reset, and tests). */
     public static void forget(MinecraftServer server, UUID player) {
         StealBacks d = get(server);

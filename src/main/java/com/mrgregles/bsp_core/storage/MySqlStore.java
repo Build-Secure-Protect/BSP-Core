@@ -325,6 +325,9 @@ final class MySqlStore implements AutoCloseable {
             // that was down or missed the Redis notice still forgets the player, and a login anywhere clears what they carry
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("player_resets") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL, "
                     + "reset_ms BIGINT NOT NULL, by_name VARCHAR(64) NOT NULL DEFAULT '')");
+            // season prizes waiting in each winner's prize compartment of the Safety Deposit Box (take-out only): one row per stack
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("bank_prizes") + " (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, uuid CHAR(36) NOT NULL, "
+                    + "item MEDIUMTEXT NOT NULL, season INT NOT NULL DEFAULT 0, place INT NOT NULL DEFAULT 0, ms BIGINT NOT NULL DEFAULT 0, INDEX (uuid))");
             // the daily login reward: the last day each player was paid (days since 1970 on the shop clock)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("daily_rewards") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, day INT NOT NULL)");
             // the lottery: every player seen on the network, with their ranks and operator status at the time
@@ -437,10 +440,16 @@ final class MySqlStore implements AutoCloseable {
         }
     }
 
+    /**
+     * The season number, the coin epoch and the reset number only ever go up: a server that has not heard of a new season yet (or a
+     * season reset) and writes its whole season state back must not undo it. Every other key takes the value written.
+     */
+    static final String MONOTONIC_STATE = "IF(k IN ('season', 'coin_epoch', 'reset_epoch') AND CAST(v AS SIGNED) > CAST(VALUES(v) AS SIGNED), v, VALUES(v))";
+
     /** Writes the given keys; with {@code onlyIfAbsent}, keys that already exist are left alone. */
     void putState(Map<String, String> values, boolean onlyIfAbsent) throws SQLException {
         String sql = onlyIfAbsent ? "INSERT IGNORE INTO " + t("state") + " (k, v) VALUES (?, ?)"
-                : "INSERT INTO " + t("state") + " (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)";
+                : "INSERT INTO " + t("state") + " (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = " + MONOTONIC_STATE;
         try (PreparedStatement ps = conn().prepareStatement(sql)) {
             for (var e : values.entrySet()) {
                 ps.setString(1, e.getKey());
@@ -4734,5 +4743,267 @@ final class MySqlStore implements AutoCloseable {
             }
         }
         return out;
+    }
+
+    // ------------------------------------------------------------------ season reset (/bsp season reset)
+
+    /** The shared tables a season reset changes, copied first into {@code backup_s<N>_<table>}. */
+    static final String[] SEASON_RESET_TABLES = {"state", "bank_accounts", "bank_coin_stamps", "bank_log", "daily_rewards", "lottery_players", "shop_counts",
+            "compass_waits", "steal_watch", "totem_losses", "kit_redeems", "market_lots", "market_orders", "market_collect", "trade_escrow", "bounties",
+            "bounty_hunters", "score_adjust", "scores"};
+
+    /** The backup table of one table for the season that is ending. */
+    String seasonBackupName(int season, String table) {
+        return prefix + "backup_s" + season + "_" + table;
+    }
+
+    /**
+     * Copies every table of {@link #SEASON_RESET_TABLES} into its backup table for {@code season}. A backup table that is there already
+     * (an earlier attempt at this season's reset) is kept as it is: it holds the older, fuller copy (only a complete copy gets the
+     * name). Returns the backups made now.
+     */
+    int seasonBackup(int season) throws SQLException {
+        int n = 0;
+        for (String table : SEASON_RESET_TABLES) {
+            String name = seasonBackupName(season, table);
+            boolean there;
+            try (PreparedStatement ps = conn().prepareStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?")) {
+                ps.setString(1, name);
+                try (ResultSet rs = ps.executeQuery()) {
+                    there = rs.next() && rs.getInt(1) > 0;
+                }
+            }
+            if (there) {
+                continue;
+            }
+            // filled under another name and renamed once full, so a copy that failed half-way is never kept as the backup
+            String part = name + "_part";
+            try (Statement st = conn().createStatement()) {
+                st.executeUpdate("DROP TABLE IF EXISTS `" + part + "`");
+                st.executeUpdate("CREATE TABLE `" + part + "` LIKE " + t(table));
+                st.executeUpdate("INSERT INTO `" + part + "` SELECT * FROM " + t(table));
+                st.executeUpdate("RENAME TABLE `" + part + "` TO `" + name + "`");
+            }
+            n++;
+        }
+        return n;
+    }
+
+    /** What a season reset would take, network-wide: open lots, open orders, open bounties, bank accounts, kit records, prize rows. */
+    int[] seasonCounts() throws SQLException {
+        String[] queries = {"SELECT COUNT(*) FROM " + t("market_lots"), "SELECT COUNT(*) FROM " + t("market_orders"), "SELECT COUNT(*) FROM " + t("bounties"),
+                "SELECT COUNT(*) FROM " + t("bank_accounts"), "SELECT COUNT(*) FROM " + t("kit_redeems"), "SELECT COUNT(*) FROM " + t("market_collect"),
+                "SELECT COUNT(*) FROM " + t("bank_boxes")};
+        int[] out = new int[queries.length];
+        try (Statement st = conn().createStatement()) {
+            for (int i = 0; i < queries.length; i++) {
+                try (ResultSet rs = st.executeQuery(queries[i])) {
+                    out[i] = rs.next() ? rs.getInt(1) : 0;
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The shared season number and reset number ({@code -1} for a key not written yet). */
+    int[] seasonState() throws SQLException {
+        int[] out = {-1, -1};
+        try (PreparedStatement ps = conn().prepareStatement("SELECT k, v FROM " + t("state") + " WHERE k IN ('season', 'reset_epoch')")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out[rs.getString(1).equals("season") ? 0 : 1] = parseInt(rs.getString(2));
+                }
+            }
+        }
+        return out;
+    }
+
+    private static int parseInt(String v) {
+        try {
+            return Integer.parseInt(v.trim());
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
+    /** The season or the reset number in the database is not what the server starting the reset knows: someone else ended the season. */
+    public static final class SeasonMoved extends RuntimeException {
+        public SeasonMoved(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * The shared part of a season reset ({@link #clearRows}), guarded: only when the database is still at season {@code expectSeason} and reset
+     * number {@code expectReset} (locked while it runs, so two servers can never both reset the same season), and with the new season
+     * state ({@code newState}) written in the same transaction, so no server can read the cleared rows with the old season. The bank
+     * log, which can be very long, is emptied afterwards in pieces (only the rows from before the reset). Throws {@link SeasonMoved}.
+     */
+    int seasonClear(long startingPieces, java.util.Collection<UUID> keep, int expectSeason, int expectReset, Map<String, String> newState) throws SQLException {
+        long[] lastLog = {0};
+        int n = inTransaction(c -> {
+            try (PreparedStatement ps = c.prepareStatement("SELECT k, v FROM " + t("state") + " WHERE k IN ('season', 'reset_epoch') FOR UPDATE")) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        int v = parseInt(rs.getString(2));
+                        boolean season = rs.getString(1).equals("season");
+                        if (season ? v != expectSeason : v > expectReset) {
+                            throw new SeasonMoved("the network is at " + (season ? "season " + v : "reset number " + v) + ", not " + (season ? expectSeason : expectReset));
+                        }
+                    }
+                }
+            }
+            try (Statement st = c.createStatement(); ResultSet rs = st.executeQuery("SELECT COALESCE(MAX(id), 0) FROM " + t("bank_log"))) {
+                lastLog[0] = rs.next() ? rs.getLong(1) : 0;
+            }
+            int changed = clearRows(c, startingPieces, keep);
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + t("state") + " (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)")) {
+                for (var e : newState.entrySet()) {
+                    ps.setString(1, e.getKey());
+                    ps.setString(2, e.getValue());
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            return changed;
+        });
+        StringBuilder not = new StringBuilder();
+        for (UUID ignored : keep) {
+            not.append(not.length() == 0 ? "?" : ", ?");
+        }
+        String sql = "DELETE FROM " + t("bank_log") + " WHERE id <= ?" + (keep.isEmpty() ? "" : " AND uuid NOT IN (" + not + ")") + " LIMIT 5000";
+        // the reset is committed: a failure here leaves old log lines, never an undone reset
+        try {
+            int gone;
+            do {
+                try (PreparedStatement ps = conn().prepareStatement(sql)) {
+                    ps.setLong(1, lastLog[0]);
+                    int i = 2;
+                    for (UUID u : keep) {
+                        ps.setString(i++, u.toString());
+                    }
+                    gone = ps.executeUpdate();
+                    n += gone;
+                }
+            } while (gone > 0);
+        } catch (SQLException e) {
+            com.mrgregles.bsp_core.BSPCore.LOGGER.warn("BSP-Core storage: season reset done, but the old bank log lines (id {} and below) could not all be deleted: {}", lastLog[0], e.toString());
+        }
+        return n;
+    }
+
+    /**
+     * The rows of the shared part of a season reset (inside {@link #seasonClear}'s transaction), after the lots, orders and bounties were ended one by one: every bank
+     * account back to {@code startingPieces} with no banked coins, stamps or unlocks (the Safety Deposit Box, its own table, stays;
+     * so do the accounts in {@code keep}, the lottery pot and the bounty board's), daily rewards, lottery entries,
+     * players' shop limits, compass waits and steal-back records gone, every kit record back to never taken (kits still owed stay
+     * owed), the Collect boxes emptied, every open trade decided "aborted" with its escrow gone, and anything left of lots, orders
+     * and bounties listed since they were read. Returns rows changed.
+     */
+    private int clearRows(Connection c, long startingPieces, java.util.Collection<UUID> keep) throws SQLException {
+        {
+            int n = 0;
+            StringBuilder not = new StringBuilder();
+            for (int i = 0; i < keep.size(); i++) {
+                not.append(i == 0 ? "?" : ", ?");
+            }
+            String where = keep.isEmpty() ? "" : " WHERE uuid NOT IN (" + not + ")";
+            try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_accounts") + " SET pieces = ?, c0 = 0, c1 = 0, c2 = 0, c3 = 0, c4 = 0, "
+                    + "remote_shops = 0, remote_market = 0" + where)) {
+                ps.setLong(1, startingPieces);
+                int i = 2;
+                for (UUID u : keep) {
+                    ps.setString(i++, u.toString());
+                }
+                n += ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("bank_coin_stamps") + where)) {
+                int i = 1;
+                for (UUID u : keep) {
+                    ps.setString(i++, u.toString());
+                }
+                n += ps.executeUpdate();
+            }
+            java.util.List<String> attempts = new java.util.ArrayList<>();
+            try (PreparedStatement ps = c.prepareStatement("SELECT DISTINCT attempt FROM " + t("trade_escrow"))) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        attempts.add(rs.getString(1));
+                    }
+                }
+            }
+            for (String attempt : attempts) {
+                decide(c, attempt, "aborted"); // a trade still settling hears it was aborted, and finds no escrow to hand back
+            }
+            try (Statement st = c.createStatement()) {
+                for (String table : new String[] {"daily_rewards", "lottery_players", "compass_waits", "steal_watch", "totem_losses", "market_collect",
+                        "trade_escrow", "market_lots", "market_orders", "bounty_hunters", "bounties"}) {
+                    n += st.executeUpdate("DELETE FROM " + t(table));
+                }
+                n += st.executeUpdate("DELETE FROM " + t("shop_counts") + " WHERE who <> ''"); // the shops' own stock stays
+                n += st.executeUpdate("DELETE FROM " + t("kit_redeems") + " WHERE owed <= 0");
+                n += st.executeUpdate("UPDATE " + t("kit_redeems") + " SET count = 0, last_ms = 0");
+            }
+            return n;
+        }
+    }
+
+    // ------------------------------------------------------------------ season prizes (the Safety Deposit Box's prize compartment)
+
+    /** Puts prize stacks (SNBT) in a winner's compartment. */
+    void prizeAdd(UUID player, java.util.List<String> items, int season, int place) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("bank_prizes") + " (uuid, item, season, place, ms) VALUES (?, ?, ?, ?, ?)")) {
+            long now = System.currentTimeMillis();
+            for (String item : items) {
+                ps.setString(1, player.toString());
+                ps.setString(2, item);
+                ps.setInt(3, season);
+                ps.setInt(4, place);
+                ps.setLong(5, now);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /** A winner's prize rows, oldest first: id, item (SNBT), season, place. */
+    java.util.List<Object[]> prizesRead(UUID player) throws SQLException {
+        java.util.List<Object[]> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, item, season, place FROM " + t("bank_prizes") + " WHERE uuid = ? ORDER BY id")) {
+            ps.setString(1, player.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new Object[] {rs.getLong(1), rs.getString(2), rs.getInt(3), rs.getInt(4)});
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * What the winner took out of the compartment: rows emptied are deleted, rows taken from in part keep what is left. Only ever
+     * takes away (nothing can be put in), and only the winner's own rows. Returns rows changed.
+     */
+    int prizesTaken(UUID player, java.util.Map<Long, String> left) throws SQLException {
+        return inTransaction(c -> {
+            int n = 0;
+            for (var e : left.entrySet()) {
+                if (e.getValue() == null || e.getValue().isEmpty()) {
+                    try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t("bank_prizes") + " WHERE id = ? AND uuid = ?")) {
+                        ps.setLong(1, e.getKey());
+                        ps.setString(2, player.toString());
+                        n += ps.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ps = c.prepareStatement("UPDATE " + t("bank_prizes") + " SET item = ? WHERE id = ? AND uuid = ?")) {
+                        ps.setString(1, e.getValue());
+                        ps.setLong(2, e.getKey());
+                        ps.setString(3, player.toString());
+                        n += ps.executeUpdate();
+                    }
+                }
+            }
+            return n;
+        });
     }
 }

@@ -153,11 +153,19 @@ public final class CreditLand {
             return;
         }
         long credit = 0;
+        java.util.Set<String> kinds = new java.util.LinkedHashSet<>();
+        CreditLedger ledger = CreditLedger.get(player.server);
         for (CreditSpend.Receipt r : mark.receipts) {
             credit += r.credit();
+            for (CreditSpend.Part part : r.parts()) {
+                CreditTicket t = ledger.ticket(part.serial());
+                if (t != null && part.pieces() > 0) {
+                    kinds.add(t.kind);
+                }
+            }
         }
         if (credit > 0) {
-            CreditLedger.get(player.server).addClaim(claimKey(player.level().dimension().location().toString(), claimId), credit, player.getUUID());
+            ledger.addClaim(claimKey(player.level().dimension().location().toString(), claimId), credit, player.getUUID(), kinds);
             BSPCore.LOGGER.info("Store credit: claim {} of {} was paid {} pieces with credit", claimId, player.getGameProfile().getName(), credit);
         }
     }
@@ -197,6 +205,35 @@ public final class CreditLand {
                 }
             });
         });
+    }
+
+    /**
+     * A season reset gave a claim up (Region Guard, owner decision SR11): the player who paid for it partly with store credit gets a
+     * fresh ticket of each kind that paid, now if they are here or at their next login. The claim's record is forgotten either way.
+     * Returns the tickets given; 0 when credit paid nothing; -1 when the claim was paid before the kinds were kept (logged, for staff
+     * to give by hand).
+     */
+    public static int seasonRefund(MinecraftServer server, String dimension, String claimId) {
+        CreditLedger.ClaimCredit share = CreditLedger.get(server).removeClaim(claimKey(dimension, claimId));
+        if (share == null || share.credit <= 0) {
+            return 0;
+        }
+        if (share.payer == null || share.kinds.isEmpty()) {
+            BSPCore.LOGGER.warn("Store credit: season reset of claim {} ({}): {} pieces of credit paid for it, but not which ticket kind or by whom ({}); give a ticket by hand",
+                    claimId, dimension, share.credit, share.payer);
+            return -1;
+        }
+        int n = 0;
+        for (String kind : share.kinds) {
+            int given = StoreCredit.give(server, share.payer, kind, 1);
+            if (given > 0) {
+                n += given;
+            } else {
+                BSPCore.LOGGER.warn("Store credit: season reset of claim {}: the kind {} is gone, so no ticket was given to {}; give one by hand", claimId, kind, share.payer);
+            }
+        }
+        BSPCore.LOGGER.info("Store credit: season reset of claim {} ({}): {} fresh ticket(s) given to {}", claimId, dimension, n, share.payer);
+        return n;
     }
 
     private static void told(MinecraftServer server, UUID payer, long take, long refund, String claimId) {

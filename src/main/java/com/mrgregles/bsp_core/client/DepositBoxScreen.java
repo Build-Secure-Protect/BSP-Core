@@ -29,6 +29,8 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> im
     private static final int BEZEL = 0xFFCFC8B8, BEZEL_DARK = 0xFF8F877A, BEZEL_LIGHT = 0xFFECE6D8, SCREEN = 0xFF061008, SCREEN_EDGE = 0xFF0D3B22, PHOS = 0x58F29A,
             PHOS_DIM = 0x3FB97A, AMBER = 0xF2B544, RED = 0xFF6B5C, KEY = 0xFFEAE4D5, KEY_EDGE = 0xFF9A9183, KEY_TEXT = 0x2B2823, KEY_LOCKED = 0x8F877A, SLOT_BG = 0xFF0C1A10, SLOT_LOCKED = 0xFF0A120C;
     private static final int SX = 10, SY = 10, SW = 206, KX = 226, KW = 64, KH = 20, KGAP = 4;
+    private static final int DRAWER = 0xFF2A2210, DRAWER_EDGE = 0xFF8A6A1C, DRAWER_INSET = 0xFF4A3B16, DRAWER_SLOT = 0xFF1A150A;
+    private static final int[] PLACE_EDGE = {0xFFFFD23A, 0xFFC9CED8, 0xFFC87A3C};
     private static final SimpleDateFormat DATE = new SimpleDateFormat("d MMM", Locale.ROOT);
 
     private record Key(String label, boolean enabled, Runnable action) {}
@@ -41,13 +43,13 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> im
     public DepositBoxScreen(DepositBoxMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = DepositBoxMenu.WIDTH;
-        this.imageHeight = menu.open ? DepositBoxMenu.HEIGHT : DepositBoxMenu.LOCKED_HEIGHT;
+        this.imageHeight = menu.height;
         this.inventoryLabelX = DepositBoxMenu.INV_X;
-        this.inventoryLabelY = DepositBoxMenu.INV_Y - 11;
+        this.inventoryLabelY = menu.invY - 11;
     }
 
     private int screenHeight() {
-        return menu.open ? 116 : 118;
+        return menu.open ? DepositBoxMenu.SCREEN_OPEN : DepositBoxMenu.SCREEN_LOCKED;
     }
 
     private static MutableComponent tr(String key, Object... args) {
@@ -191,13 +193,14 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> im
                     }
                 }
             }
-            // the player's inventory, inset in the bezel
-            for (int i = DepositBox.SLOTS_MAX; i < menu.slots.size(); i++) {
-                Slot slot = menu.slots.get(i);
-                g.fill(x + slot.x - 1, y + slot.y - 1, x + slot.x + 17, y + slot.y + 17, KEY_EDGE);
-                g.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0xFFDAD3C3);
-            }
         }
+        // the player's inventory, inset in the bezel (a rented box, or the prize drawer)
+        for (int i = menu.open ? DepositBox.SLOTS_MAX : 0; i < menu.prizeStart; i++) {
+            Slot slot = menu.slots.get(i);
+            g.fill(x + slot.x - 1, y + slot.y - 1, x + slot.x + 17, y + slot.y + 17, KEY_EDGE);
+            g.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0xFFDAD3C3);
+        }
+        drawer(g, x, y);
         for (int gi = 0; gi < 3; gi++) {
             int ky = groupY(gi);
             for (Key k : group(gi)) {
@@ -207,12 +210,58 @@ public class DepositBoxScreen extends AbstractContainerScreen<DepositBoxMenu> im
         }
     }
 
+    /** The gold prize drawer under the screen: each prize edged in its place's colour, the rest of the last row left empty. */
+    private void drawer(GuiGraphics g, int x, int y) {
+        int n = menu.prizes.count();
+        if (n == 0) {
+            return;
+        }
+        int dy = y + menu.drawerY, dh = DepositBoxMenu.drawerHeight(menu.drawerRows);
+        g.fill(x + SX - 2, dy - 2, x + SX + SW + 2, dy + dh + 2, DRAWER_EDGE);
+        g.fill(x + SX, dy, x + SX + SW, dy + dh, DRAWER);
+        g.fill(x + SX, dy, x + SX + SW, dy + 2, DRAWER_INSET);
+        for (int i = 0; i < menu.drawerRows * DepositBoxMenu.PRIZE_COLS; i++) {
+            int sx = x + DepositBoxMenu.SLOT_X + 1 + (i % DepositBoxMenu.PRIZE_COLS) * 18, sy = dy + DepositBoxMenu.DRAWER_TITLE + (i / DepositBoxMenu.PRIZE_COLS) * 18;
+            int edge = i < n ? PLACE_EDGE[Math.max(0, Math.min(2, menu.prizes.places()[i] - 1))] : DRAWER_INSET;
+            g.fill(sx - 1, sy - 1, sx + 17, sy + 17, edge);
+            g.fill(sx, sy, sx + 16, sy + 16, DRAWER_SLOT);
+        }
+    }
+
+    @Override
+    protected void renderTooltip(GuiGraphics g, int mx, int my) {
+        if (hoveredSlot != null && hoveredSlot.hasItem() && menu.getCarried().isEmpty()) {
+            int index = menu.slots.indexOf(hoveredSlot);
+            if (menu.isPrize(index)) {
+                int i = index - menu.prizeStart;
+                List<Component> lines = new ArrayList<>(getTooltipFromContainerItem(hoveredSlot.getItem()));
+                lines.add(tr("prize_from", menu.prizes.places()[i], menu.prizes.seasons()[i]).withStyle(net.minecraft.ChatFormatting.GOLD));
+                g.renderTooltip(font, lines, hoveredSlot.getItem().getTooltipImage(), mx, my);
+                return;
+            }
+        }
+        super.renderTooltip(g, mx, my);
+    }
+
     private void key(GuiGraphics g, int x, int y, Key k, int mx, int my) {
         CashMachine.key(g, font, x, y, KW, KH, tr(k.label, labelArgs(k.label)).getString(), k.enabled, k.enabled && over(mx, my, x, y, KW, KH));
     }
 
     @Override
     protected void renderLabels(GuiGraphics g, int mx, int my) {
+        if (menu.prizes.count() > 0) {
+            int ty = menu.drawerY + 5;
+            String more = menu.prizes.more() > 0 ? tr("prizes_more", menu.prizes.more()).getString() : "";
+            int moreW = more.isEmpty() ? 0 : font.width(more) + 6;
+            CashMachine.fit(g, font, "> " + tr("prizes").getString().toUpperCase(Locale.ROOT), SX + 6, ty, SW - 12 - moreW, AMBER);
+            if (!more.isEmpty()) {
+                g.drawString(font, more, SX + SW - 6 - font.width(more), ty, PHOS_DIM, false);
+            }
+        }
+        labels(g);
+    }
+
+    private void labels(GuiGraphics g) {
         long now = System.currentTimeMillis();
         DepositBox.State st = state();
         g.drawString(font, "> " + tr("title").getString().toUpperCase(Locale.ROOT), SX + 6, SY + 6, PHOS, false);

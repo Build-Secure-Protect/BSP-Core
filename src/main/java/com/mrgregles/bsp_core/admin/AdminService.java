@@ -389,12 +389,22 @@ public final class AdminService {
         ScoreService.markDirty();
     }
 
+    /** Whether items for this online player must wait as owed: a season reset still has to wipe them, which would take the items too. */
+    public static boolean owedUntilWiped(ServerPlayer online) {
+        return online != null && SeasonReset.due(online);
+    }
+
     /** Gives items to a player wherever they are: now if they are on this server, otherwise when they next log in (on any server of a network). */
     public static void deliver(MinecraftServer server, UUID id, List<ItemStack> items, String messageKey) {
         if (items.isEmpty()) {
             return;
         }
         ServerPlayer online = server.getPlayerList().getPlayer(id);
+        if (owedUntilWiped(online)) {
+            // a season reset is still to wipe them (they are about to be sent off): anything given now would go with the wipe, so it
+            // is owed as to someone offline, and handed over after the wipe at their next login, on whichever server
+            online = null;
+        }
         if (online != null && !LoginSettle.canReceive(online)) {
             SeasonData season = SeasonData.get(server); // not settled yet, or dead: handed over at the settle or the respawn
             List<ItemStack> owed = season.pendingItems.computeIfAbsent(id, k -> new ArrayList<>());
@@ -444,10 +454,15 @@ public final class AdminService {
 
     /** Ends the season: see the class comment. Returns how many players are online to get their fresh totem at once. */
     public static int endSeason(MinecraftServer server, String by) {
-        return endSeason(server, by, false);
+        return endSeason(server, by, false, false);
     }
 
-    private static int endSeason(MinecraftServer server, String by, boolean fullReset) {
+    private static int endSeason(MinecraftServer server, String by, boolean fullReset, boolean seasonReset) {
+        return endSeason(server, by, fullReset, seasonReset, System.currentTimeMillis());
+    }
+
+    /** {@code startMs}: when the new season starts (a season reset passes the time its shared clear wrote, the same on every server). */
+    private static int endSeason(MinecraftServer server, String by, boolean fullReset, boolean seasonReset, long startMs) {
         SeasonData season = SeasonData.get(server);
         // on a network the standings are the whole network's board
         List<ScoreService.Entry> standings = NetworkStorage.enabled() ? ScoreService.board() : ScoreService.local(server);
@@ -463,7 +478,14 @@ public final class AdminService {
                     prize.add(com.mrgregles.bsp_core.credit.StoreCredit.blank(stack.copy())); // a store credit ticket is minted fresh for the winner
                 }
             }
-            deliver(server, standings.get(place).id(), prize, "message.bsp_core.season.prize");
+            // into the winner's prize compartment of the Safety Deposit Box (SR4): never the inventory, which a season reset wipes
+            UUID winner = standings.get(place).id();
+            com.mrgregles.bsp_core.bank.PrizeBox.add(server, winner, prize, season.number, place + 1);
+            if (!prize.isEmpty()) {
+                NetworkStorage.tellOrKeep(server, winner, Component.translatable("message.bsp_core.season.prize_box", place + 1, season.number)
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+            }
+            giveGroup(server, winner, season.prizeGroups[place], place + 1, season.number);
             BSPCore.LOGGER.info("Season prize for place {}: {} stacks to {}", place + 1, prize.size(), standings.get(place).name());
         }
         for (int i = 0; i < Math.min(standings.size(), SeasonData.PLACES) * SeasonData.PER_PLACE; i++) {
@@ -474,14 +496,40 @@ public final class AdminService {
         com.mrgregles.bsp_core.score.ScoreAdjust.clearAll(server); // scores set by hand belong to the season that ended
         int ended = season.number;
         season.number++;
-        season.startMs = System.currentTimeMillis();
+        season.startMs = startMs;
+        if (seasonReset) {
+            season.resetEpoch++; // every player is wiped at their next login (SeasonReset.onSettle); the other servers apply it when they read it
+        }
         season.setDirty();
         prizesChanged();
         SeasonSync.publish(server); // the other servers of a network pick the new season up and wipe their own totems
         announceSeason(server, ended, season.lastWinner, season.lastWinnerPoints);
         BSPCore.LOGGER.info("Season {} ended by {}. Winner: {} ({} points).", ended, by, season.lastWinner, season.lastWinnerPoints);
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.SeasonEvent.Ended(server, ended, fullReset, by));
+        if (!seasonReset) { // a season reset posts its own, once its records here are cleared (SeasonReset.applyHere)
+            SeasonReset.post(new com.mrgregles.bsp_core.api.event.SeasonEvent.Ended(server, ended, fullReset, by));
+        }
         return server.getPlayerList().getPlayerCount();
+    }
+
+    /**
+     * Gives the winner of a place that place's LuckPerms group (SR5), through LuckPerms' own command so it is saved, logged and pushed
+     * to every server. Nothing for an empty group or a server without LuckPerms (logged). A season reset never takes it away.
+     */
+    static void giveGroup(MinecraftServer server, UUID winner, String group, int place, int season) {
+        if (group == null || group.isBlank()) {
+            return;
+        }
+        if (!group.matches("[A-Za-z0-9_.-]+")) {
+            BSPCore.LOGGER.warn("Season {}: the prize group of place {} is not a valid group name: {}", season, place, group);
+            return;
+        }
+        if (!net.minecraftforge.fml.ModList.get().isLoaded("luckperms")) {
+            BSPCore.LOGGER.warn("Season {}: LuckPerms is not on this server, so the winner of place {} was not given the group {}; give it by hand", season, place, group);
+            return;
+        }
+        var source = server.createCommandSourceStack().withSuppressedOutput();
+        server.getCommands().performPrefixedCommand(source, "lp user " + winner + " parent add " + group);
+        BSPCore.LOGGER.info("Season {}: LuckPerms was asked to give the winner of place {} ({}) the group {} (its own log says whether the group exists)", season, place, winner, group);
     }
 
     /** Removes every Shatter Coin this server can reach: vaults, interest, factory trays and online players. Offline players lose theirs at login. */
@@ -522,7 +570,16 @@ public final class AdminService {
     public static int fullReset(MinecraftServer server, String by) {
         BSPCore.LOGGER.info("FULL RESET by {}", by);
         wipeCoins(server, SeasonData.get(server).coinEpoch + 1);
-        return endSeason(server, by, true);
+        return endSeason(server, by, true, false);
+    }
+
+    /** The season reset's end of the season ({@link SeasonReset}): a full reset that also raises the reset number. Returns the season that ended. */
+    static int seasonResetEnd(MinecraftServer server, String by, long startMs) {
+        BSPCore.LOGGER.info("SEASON RESET by {}", by);
+        int ended = SeasonData.get(server).number;
+        wipeCoins(server, SeasonData.get(server).coinEpoch + 1);
+        endSeason(server, by, true, true, startMs);
+        return ended;
     }
 
     /** Opens the season prize rows: admins can change them, moderators can only look. */
@@ -530,8 +587,13 @@ public final class AdminService {
         SeasonData season = SeasonData.get(player.server);
         boolean edit = Admins.isAdmin(player);
         net.minecraftforge.network.NetworkHooks.openScreen(player, new net.minecraft.world.SimpleMenuProvider(
-                (id, inv, p) -> new SeasonRewardsMenu(id, inv, season.rewards, edit), Component.translatable("gui.bsp_core.rewards.title", season.number)),
-                buf -> buf.writeBoolean(edit));
+                (id, inv, p) -> new SeasonRewardsMenu(id, inv, season.rewards, edit, season.prizeGroups), Component.translatable("gui.bsp_core.rewards.title", season.number)),
+                buf -> {
+                    buf.writeBoolean(edit);
+                    for (String g : season.prizeGroups) {
+                        buf.writeUtf(com.mrgregles.bsp_core.network.BSPNetwork.cut(g, SeasonData.GROUP_MAX), SeasonData.GROUP_MAX);
+                    }
+                });
     }
 
     /**
@@ -616,6 +678,7 @@ public final class AdminService {
             return;
         }
         PlayerReset.onSettle(player); // a reset still to do here wipes what they carry first, so what the settle hands over is kept
+        SeasonReset.onSettle(player); // likewise a season reset they have not been through yet
         SeasonData season = SeasonData.get(player.server);
         if (PlayerPersistent.coinEpoch(player) < season.coinEpoch) {
             stripCoins(player, season.coinEpoch); // a full reset happened while they were away

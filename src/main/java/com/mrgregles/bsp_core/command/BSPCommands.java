@@ -178,6 +178,7 @@ public final class BSPCommands {
                 .then(TeamCommands.tree())
                 .then(KitCommands.tree())
                 .then(PlayerCommands.tree())
+                .then(SeasonCommands.tree())
                 .then(CreditCommands.tree())
                 .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {

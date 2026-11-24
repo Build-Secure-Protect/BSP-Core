@@ -204,6 +204,14 @@ public final class DailyReward {
         }
 
         /** Forgets when {@code id} was last paid (an admin's player reset). */
+        /** Forgets every player's last paid day (a season reset): everyone is paid again at their next login. */
+        public int clearAll() {
+            int n = last.size();
+            last.clear();
+            setDirty();
+            return n;
+        }
+
         public void forget(UUID id) {
             if (last.remove(id) != null) {
                 setDirty();

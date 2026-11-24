@@ -2,7 +2,29 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
-## [Unreleased]
+## [1.24.2] - 2026-11-24
+
+Network protocol 23: clients need this version (the deposit box and the season prize screen open with more data).
+
+### Added
+- **Season reset: `/bsp season reset`.** Ends the season and starts every player over, on every server and in every BSP mod. The first run is a dry run: it lists what will go, with the network's counts and the winners, and shows a four-digit code; `/bsp season reset confirm <code>` within 60 s does it. It refuses while the database or Redis is not connected.
+  - **Before anything changes**, every shared table it touches is copied to `backup_s<N>_<table>` in the database (on one server, the world's BSP-Core data files to `bsp_core_season_resets/`).
+  - **Totems:** every totem removed on every server; each player gets one fresh Tier I totem at their next login.
+  - **Bank:** every account back to the starting pieces, with no banked coins, stamps, log, daily streak or Portable Banker unlocks; every Shatter Coin wiped, as a full reset does. **The Safety Deposit Box stays as it is**, with everything in it.
+  - **Market and bounties:** every lot, buy order and open bounty ended with no refund; Collect boxes emptied; open trades cancelled.
+  - **Kits:** every player's uses and cooldowns cleared, so once-only kits (the totem kit) can be taken once more; kits still owed stay owed. Shop limits, compass waits, lottery entries, steal-back records and Totem Forge pours are cleared too.
+  - **Players:** everyone is sent off the network with a "new season" message. At their next login (after BSP-InventorySync's restore) the inventory, armour, offhand, ender chest, Curios slots, XP and effects are wiped, the bed spawn is forgotten, and they get the guide book and the first-join kits again. Advancements and statistics stay.
+  - **Kept:** Safety Deposit Boxes and prize compartments, store credit, the Discord link, teams and alliances, VIP and every LuckPerms group off RankUp's ladders, placed blocks.
+  - **Other BSP mods** hear it through `SeasonEvent.Ended` with `isSeasonReset()`, `isOrigin()` and `getResetMs()` (new), posted on every server once its own records are cleared, and `SeasonEvent.Wiped` for each player at their next login (`isNewPlayer()` for one who had never played). Every server and the proxy are also told over Redis (`season_reset`, with the reset and new season numbers).
+- **Prize compartment of the Safety Deposit Box:** season prizes go straight into the winner's compartment, never the inventory, so a season reset cannot wipe them. It belongs to the player, needs no rented box, and is take-out only. While prizes wait, a gold drawer under the box's screen holds them (up to three rows of nine, each edged gold, silver or bronze for its place; the tooltip names the season and place). Drag or shift-click a prize into the inventory; nothing can be put in. A box that is not rented shows the rent notice with the drawer and the inventory under it.
+- **Winners' LuckPerms groups:** each place row on the season prize screen ends in a box for the LuckPerms group its winner is given when a season ends (Enter, clicking away or closing saves it; read-only for moderators). `/bsp season prizegroup <place> <group>` (`-` clears) does the same. No reset takes the group away.
+
+### Changed
+- **End season** puts the prizes in the winners' prize compartments instead of their inventories, and gives the places' LuckPerms groups.
+- The admin panel's **Full reset** button is now **Season reset**, and runs the season reset.
+- `/bsp season ...` is for admins (on the admin list) and the console only, not command blocks.
+- The shared season number, coin epoch and reset number only ever go up in the database, so a server that has not heard of a new season yet cannot write the old one back. A server reads the season as soon as its database connects.
+- Items given to a player who is still to be wiped by a season reset (a store credit refund, for example) wait as owed and arrive after the wipe.
 
 ## [1.24.1] - 2026-11-24
 
