@@ -60,7 +60,7 @@ public abstract class SeasonEvent extends Event {
 
         /**
          * When the season reset was made (epoch milliseconds, the new season's start on the server it was typed on), the same on every
-         * server however late it hears; 0 when this is not a season reset. Something a player gained here after it belongs to the new season.
+         * server however late it hears, even after later season ends; 0 when this is not a season reset. Something a player gained here after it belongs to the new season.
          */
         public long getResetMs() {
             return resetMs;

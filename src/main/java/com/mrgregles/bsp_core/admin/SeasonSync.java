@@ -40,7 +40,7 @@ import java.util.UUID;
 public final class SeasonSync {
     public static final String K_SEASON = "season", K_START = "season_start", K_WINNER = "winner", K_WINNER_POINTS = "winner_points", K_EPOCH = "coin_epoch",
             K_HOLDER_HOURS = "holder_hours", K_HOLDER_LAST = "holder_last", K_PRIZES = "prizes", K_REV = "settings_rev",
-            K_RESET_EPOCH = "reset_epoch", K_PRIZE_GROUPS = "prize_groups";
+            K_RESET_EPOCH = "reset_epoch", K_PRIZE_GROUPS = "prize_groups", K_RESET_MS = "reset_ms";
     private static int ticks;
     /** True while state read from the database is being applied, so that it is not written straight back. */
     private static boolean applying;
@@ -64,6 +64,7 @@ public final class SeasonSync {
         out.put(K_PRIZES, s.rewards.serializeNBT().toString());
         out.put(K_REV, Long.toString(s.settingsRev));
         out.put(K_RESET_EPOCH, Integer.toString(s.resetEpoch));
+        out.put(K_RESET_MS, Long.toString(s.resetMs));
         out.put(K_PRIZE_GROUPS, String.join(",", s.prizeGroups));
         return out;
     }
@@ -131,6 +132,7 @@ public final class SeasonSync {
             if (seasonReset) {
                 s.resetEpoch = resetEpoch;
             }
+            s.resetMs = Math.max(s.resetMs, big(db, K_RESET_MS, s.resetMs));
             s.lastHolderMs = big(db, K_HOLDER_LAST, s.lastHolderMs); // exactly the shared value: the automatic payout is claimed by changing it
             long rev = big(db, K_REV, 0);
             boolean prizes = false;

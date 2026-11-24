@@ -100,7 +100,7 @@ public class SeasonResetGameTests {
         MinecraftServer server = server(h);
         SeasonData season = SeasonData.get(server);
         int number = season.number, epoch = season.resetEpoch, winnerPoints = season.lastWinnerPoints, coinEpoch = season.coinEpoch;
-        long startMs = season.startMs;
+        long startMs = season.startMs, resetMs = season.resetMs;
         String lastWinner = season.lastWinner;
         String[] groups = season.prizeGroups.clone();
         // the test world is kept between runs and other tests count on its season and lottery drum: both are put back after
@@ -159,8 +159,8 @@ public class SeasonResetGameTests {
             h.assertTrue(events.stream().anyMatch(e -> e instanceof SeasonEvent.Ended en && en.isSeasonReset() && en.isOrigin() && en.isFullReset() && en.getEndedNumber() == number),
                     "the sister mods hear the season reset, as the origin");
             h.assertTrue(events.stream().filter(e -> e instanceof SeasonEvent.Ended).count() == 1, "once");
-            h.assertTrue(events.stream().anyMatch(e -> e instanceof SeasonEvent.Ended en && en.getResetMs() == season.startMs && en.getResetMs() > startMs),
-                    "with the time of the reset, the new season's start");
+            h.assertTrue(events.stream().anyMatch(e -> e instanceof SeasonEvent.Ended en && en.getResetMs() == season.startMs && en.getResetMs() == season.resetMs && en.getResetMs() > startMs),
+                    "with the time of the reset, the new season's start, kept as the reset time");
             // the player (a mock player is not in the player list, so nobody was sent off here): wiped at their next settle
             h.assertTrue(SeasonReset.due(p), "the wipe is due at their next settle");
             h.assertTrue(SeasonReset.onSettle(p), "the settle wipes them");
@@ -180,6 +180,7 @@ public class SeasonResetGameTests {
             season.number = number; // nor its totems a season old
             season.coinEpoch = coinEpoch;
             season.startMs = startMs;
+            season.resetMs = resetMs;
             season.lastWinner = lastWinner;
             season.lastWinnerPoints = winnerPoints;
             drum.forEach(e -> com.mrgregles.bsp_core.lottery.LotteryLedger.get(server).seen(e));

@@ -498,6 +498,7 @@ public final class AdminService {
         season.number++;
         season.startMs = startMs;
         if (seasonReset) {
+            season.resetMs = startMs;
             season.resetEpoch++; // every player is wiped at their next login (SeasonReset.onSettle); the other servers apply it when they read it
         }
         season.setDirty();

@@ -441,10 +441,10 @@ final class MySqlStore implements AutoCloseable {
     }
 
     /**
-     * The season number, the coin epoch and the reset number only ever go up: a server that has not heard of a new season yet (or a
+     * The season number, the coin epoch, the reset number and the reset time only ever go up: a server that has not heard of a new season yet (or a
      * season reset) and writes its whole season state back must not undo it. Every other key takes the value written.
      */
-    static final String MONOTONIC_STATE = "IF(k IN ('season', 'coin_epoch', 'reset_epoch') AND CAST(v AS SIGNED) > CAST(VALUES(v) AS SIGNED), v, VALUES(v))";
+    static final String MONOTONIC_STATE = "IF(k IN ('season', 'coin_epoch', 'reset_epoch', 'reset_ms') AND CAST(v AS SIGNED) > CAST(VALUES(v) AS SIGNED), v, VALUES(v))";
 
     /** Writes the given keys; with {@code onlyIfAbsent}, keys that already exist are left alone. */
     void putState(Map<String, String> values, boolean onlyIfAbsent) throws SQLException {

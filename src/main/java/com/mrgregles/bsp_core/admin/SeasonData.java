@@ -28,6 +28,8 @@ public class SeasonData extends SavedData {
      * they carry goes, live totems of this season stay.
      */
     public int resetEpoch;
+    /** When the last season reset was made (epoch ms; 0 before the first): kept apart from {@link #startMs}, which a later season end moves on. */
+    public long resetMs;
     /** The LuckPerms group given to the winner of each place by a season reset ("" for none); kept for every later season. */
     public final String[] prizeGroups = {"", "", ""};
     public int lastWinnerPoints;
@@ -84,6 +86,7 @@ public class SeasonData extends SavedData {
         tag.putString("LastWinner", lastWinner);
         tag.putInt("CoinEpoch", coinEpoch);
         tag.putInt("ResetEpoch", resetEpoch);
+        tag.putLong("ResetMs", resetMs);
         for (int i = 0; i < PLACES; i++) {
             tag.putString("PrizeGroup" + i, prizeGroups[i]);
         }
@@ -112,6 +115,7 @@ public class SeasonData extends SavedData {
         data.lastWinner = tag.getString("LastWinner");
         data.coinEpoch = tag.getInt("CoinEpoch");
         data.resetEpoch = tag.getInt("ResetEpoch");
+        data.resetMs = tag.getLong("ResetMs");
         for (int i = 0; i < PLACES; i++) {
             data.prizeGroups[i] = tag.getString("PrizeGroup" + i);
         }

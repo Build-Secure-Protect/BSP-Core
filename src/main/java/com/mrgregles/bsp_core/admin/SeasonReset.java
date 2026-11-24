@@ -255,7 +255,7 @@ public final class SeasonReset {
         long startMs = System.currentTimeMillis();
         SeasonData data = SeasonData.get(server);
         Map<String, String> newState = Map.of(SeasonSync.K_SEASON, Integer.toString(season + 1), SeasonSync.K_RESET_EPOCH, Integer.toString(resetEpoch + 1),
-                SeasonSync.K_EPOCH, Integer.toString(data.coinEpoch + 1), SeasonSync.K_START, Long.toString(startMs));
+                SeasonSync.K_EPOCH, Integer.toString(data.coinEpoch + 1), SeasonSync.K_START, Long.toString(startMs), SeasonSync.K_RESET_MS, Long.toString(startMs));
         run(steps.iterator(), then, () -> NetworkStorage.seasonClear(startingPieces(), keptAccounts(), season, resetEpoch, newState, failure -> guarded(then, () -> {
             if (failure != null) {
                 then.accept(new Report(false, failure.isEmpty() ? "the shared records could not be cleared (see the log); the lots, orders and bounties are ended, the season is not: run it again"
@@ -371,7 +371,8 @@ public final class SeasonReset {
             }
         }
         com.mrgregles.bsp_core.score.ScoreService.markDirty();
-        post(new SeasonEvent.Ended(server, endedSeason, true, by, true, origin, SeasonData.get(server).startMs));
+        SeasonData data = SeasonData.get(server);
+        post(new SeasonEvent.Ended(server, endedSeason, true, by, true, origin, data.resetMs > 0 ? data.resetMs : data.startMs));
         // SR2: everyone off the network; each is wiped when they come back
         int kicked = 0;
         for (ServerPlayer p : new ArrayList<>(server.getPlayerList().getPlayers())) {
