@@ -4,6 +4,10 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.24.1] - 2026-11-24
+
+Network protocol 22, unchanged: clients can stay on 1.24.0 and play. The new client shows the Harvest description and the totem screen's plasma figure correctly. Every server with Harvest totems needs this version.
+
 ### Changed
 - **Harvest** grows ores only while the totem can spare its draw (`harvestDraw`, after Cloaking's share); otherwise the ores wait and nothing is drawn.
 - **Harvest:** every ore waits the level's full interval (120 / 90 / 60 / 30 s) from the moment it is taken before it grows back, and ores still grow one at a time, that interval apart. The power's description reads "grow back after ... s".

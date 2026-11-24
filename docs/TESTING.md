@@ -4204,7 +4204,7 @@ Client side; not seen in a client.
 - [ ] (audit) Another player who is not on your team right-clicks your transmitter: "Only its placer and their team can open this transmitter". A hopper under it takes no cards out.
 - [ ] (audit) Log in and right-click a machine with the tagger in the first second: "still loading" at most, never a lost layout or lost tags. Walk with W held and press the focus key: you stop walking. Close the popout from its own close button while it has focus and open it again: not shown as focused.
 
-## Harvest fixes (2026-11-24, Unreleased)
+## Harvest fixes (2026-11-24, 1.24.1)
 Server side. GameTests `harvest_regrows_a_mined_ore`, `harvest_built_over_spot_draws_no_plasma`, `harvest_overlapping_totems_both_settle`, `harvest_queue_survives_a_reload`, `harvest_waits_without_plasma_to_spare`, `harvest_waits_a_full_interval`, `harvest_waits_while_someone_stands_there`.
 - [ ] A placed totem with Harvest 1 and plasma. Point an ME Annihilation Plane at a Tetrium ore 5 blocks away: the ore goes into the network, then grows back within 2 minutes, and the plane takes it again.
 - [ ] Mine a BSP ore by hand and place a stone block in the hole: the totem's plasma output stays at its full figure. Break the stone: the ore grows back, and the output drops by 25 mB/t only until it does.
