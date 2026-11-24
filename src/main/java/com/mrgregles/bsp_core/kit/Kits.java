@@ -604,6 +604,11 @@ public final class Kits {
         return out;
     }
 
+    /** Forgets every kit row of the player in this server's record only (a player reset: the network's rows are deleted with the player's others). */
+    public static int forgetHere(MinecraftServer server, UUID player) {
+        return KitLedger.get(server).reset(player, null);
+    }
+
     /** Forgets a player's rows for one kit (or every kit when null): cooldowns, once, owed. */
     public static int reset(MinecraftServer server, UUID player, @Nullable String kit) {
         int n = KitLedger.get(server).reset(player, kit);

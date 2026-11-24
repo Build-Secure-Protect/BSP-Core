@@ -417,6 +417,17 @@ public final class NetworkStorage {
                 case "credit" -> com.mrgregles.bsp_core.credit.CreditSync.heard(srv, payload);
                 case "vault_prizes" -> vaultPrizesReload(null);
                 case "protection" -> protectionSettingsReload(null);
+                case "player_reset" -> {
+                    // an admin reset a player on another server: forget them here too (the payload is uuid|ms|by|name)
+                    String[] parts = payload.split("\\|", 4);
+                    if (parts.length == 4) {
+                        try {
+                            com.mrgregles.bsp_core.admin.PlayerReset.fromNetwork(srv, new com.mrgregles.bsp_core.admin.PlayerResetRow(UUID.fromString(parts[0]), parts[3], Long.parseLong(parts[1]), parts[2]));
+                        } catch (IllegalArgumentException ignored) {
+                            // a malformed message: the catch-up read brings it
+                        }
+                    }
+                }
                 case "protection_seen" -> {
                     String[] parts = payload.split(":");
                     if (parts.length == 4) {
@@ -585,6 +596,7 @@ public final class NetworkStorage {
             return;
         }
         com.mrgregles.bsp_core.totem.StealBacks.pushLosses(srv); // losses recorded here while the database was out of reach
+        playerResetsReload(); // resets made while this server was down: forgotten here (a player already in is cleared when it lands)
         List<TotemLevels> levels = TotemLedger.get(srv).levelRows();
         async("write the placed totems' levels", s -> s.totemLevelsAll(levels)); // rows written before the levels were kept get them now
         Map<UUID, Map<GlobalPos, Long>> slices = FactoryLedger.get(srv).allWithTimes();
@@ -737,6 +749,7 @@ public final class NetworkStorage {
                 publish("online", "");
             });
             compassWaitRead(player.server, id); // a wait started on another server shows on this one's compasses
+            playerResetRead(id); // a reset this server has not heard of yet (a missed notice) lands before their settle, in most cases
             var m = market();
             if (m != null) {
                 m.refreshBox(player.getUUID());
@@ -1077,6 +1090,7 @@ public final class NetworkStorage {
             vaultPrizesReload(null);
             protectionSettingsReload(null);
             protectionSeenReload();
+            playerResetsReload();
             com.mrgregles.bsp_core.credit.CreditSync.catchUp(server);
         }
         long due = retryAtMs;
@@ -3029,6 +3043,102 @@ public final class NetworkStorage {
                     }
                 });
             }
+        });
+    }
+
+    // ------------------------------------------------------------------ player resets (/bsp player reset)
+
+    /**
+     * Deletes every database row that is the player's own ({@code MySqlStore.playerForget}), then tells the other servers their bank
+     * copy changed. {@code then} hears whether it landed (server thread); true at once without network storage.
+     */
+    public static void playerForget(UUID player, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(true);
+            return;
+        }
+        worker().execute(() -> {
+            boolean ok;
+            try {
+                int n = s.playerForget(player);
+                BSPCore.LOGGER.info("BSP-Core storage: player reset of {}: {} database rows deleted", player, n);
+                publish("bank", player.toString());
+                publish("kit", "r:" + player);
+                ok = true;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not delete the database rows of a player being reset: {}", e.toString());
+                ok = false;
+            }
+            boolean done = ok;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** Records a reset in the shared table and tells every server over Redis; {@code then} hears whether it landed (server thread). */
+    public static void playerResetWrite(com.mrgregles.bsp_core.admin.PlayerResetRow row, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        if (s == null) {
+            then.accept(true);
+            return;
+        }
+        worker().execute(() -> {
+            boolean ok;
+            try {
+                s.playerResetWrite(row);
+                publish("player_reset", row.id() + "|" + row.resetMs() + "|" + row.by().replace('|', ' ') + "|" + row.name());
+                ok = true;
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not record a player reset: {}", e.toString());
+                ok = false;
+            }
+            boolean done = ok;
+            onServer(() -> then.accept(done));
+        });
+    }
+
+    /** Reads one player's latest reset and hands it to {@code PlayerReset} on the server thread (a login; a missed notice is applied then). */
+    public static void playerResetRead(UUID player) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            com.mrgregles.bsp_core.admin.PlayerResetRow row;
+            try {
+                row = s.playerResetRead(player);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read a player's reset: {}", e.toString());
+                return;
+            }
+            if (row != null) {
+                onServer(() -> com.mrgregles.bsp_core.admin.PlayerReset.fromNetwork(srv, row));
+            }
+        });
+    }
+
+    /** Deletes a player's new-player protection rows only: run by every server a reset reaches, after its own minute's read could have raised them again. */
+    public static void protectionForget(UUID player) {
+        async("forget a reset player's protection record", s -> s.protectionForget(player));
+    }
+
+    /** Reads every reset on record and hands any this server has not applied to {@code PlayerReset} (at a connect and every few minutes). */
+    public static void playerResetsReload() {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.admin.PlayerResetRow> rows;
+            try {
+                rows = s.playerResetsRead();
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read the player resets: {}", e.toString());
+                return;
+            }
+            onServer(() -> rows.forEach(r -> com.mrgregles.bsp_core.admin.PlayerReset.fromNetwork(srv, r)));
         });
     }
 

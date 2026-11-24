@@ -4,6 +4,18 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Added
+- **`/bsp player reset <name>`: a player starts over as a brand-new player, on every server.** For operators and the console. The first run lists what it takes; `/bsp player reset <name> confirm` within 30 seconds does it. The name is found online, in the bank's records or the network's, or in the profile cache, so an offline player, or one who never joined the server it is typed on, works too; a UUID works as well.
+  - Their team: a member leaves, a lone leader's team is disbanded, and a leader with members first hands the lead to the member who joined earliest. If the lead cannot be handed over, nothing is changed.
+  - Their market lots and buy orders are cancelled with no refund and their Collect box is emptied. Bounties they placed are removed with no refund, bounties on them are refunded to whoever placed them, and they drop out of the bounties they hunt.
+  - Their bank account goes whole: pieces, coins of every tier, stamps, the log, the Safety Deposit Box and what is in it, the Shopping Network and remote market unlocks, and the daily reward streak. They are given the starting pieces again when they next join.
+  - Their Shatter Totems, carried and placed on any server, go, with every record of them, and they are given a fresh first totem and the guide book as at a first join. New-player protection forgets their rank and playtime, so it covers them again until they reach them anew. Their kit records, Totem Looks (as `/bsp looks clear`), Totem Compass wait, Totem Forge pour (a set totem in the forge is lost), steal-back records, lottery entry, shop limits, the score set by hand, and the interest and recovered coins of their Coin Vaults are cleared too.
+  - What they carry is wiped: inventory with armour and offhand, ender chest, Curios slots, XP, effects, advancements and statistics; health and food are filled and the respawn point (bed or anchor) is cleared. It happens at once if they are online, otherwise at their next login, after BSP-InventorySync has restored them and before anything is handed over, and BSP-InventorySync is asked to save the empty inventory at once. On each server where they are offline, that server's own files of them (player data, statistics, advancements) are moved into `bsp_core_player_resets/` in the world folder; nothing is deleted.
+  - BSP-RankUp's own reset runs too: every count, bonus and rank, back on the first rung of each ladder. The LuckPerms groups of RankUp's awards are removed. Staff ranks, ranks bought in the store and permission nodes stay.
+  - Kept: store credit, the Discord link and moderation records.
+  - On a network the reset is recorded in a new `player_resets` table and every server is told over Redis. A server that was down hears of it when it connects, and every server checks the table for a player as they log in. Put this version on every server before the first reset: a server that gets it later does not apply resets made before.
+- **`PlayerResetEvent` for the sister mods.** `PlayerResetEvent.Forgotten` is posted on every server a reset reaches; `isOrigin()` is true only on the server it was typed on, the one place a mod should delete records the whole network shares. `PlayerResetEvent.Cleared` is posted when what the player carries is wiped on a server. Both carry the player, their name and `getResetMs()`. A mod can listen by class name without building against this version. See `docs/API.md`.
+
 ## [1.22.0] - 2026-11-22
 
 Network protocol 21, unchanged since 1.21.2, but this version registers a new block and item (the Demo Totem), so servers and clients must both have it.

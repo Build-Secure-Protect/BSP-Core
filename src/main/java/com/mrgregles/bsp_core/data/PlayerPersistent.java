@@ -125,6 +125,11 @@ public final class PlayerPersistent {
         }
     }
 
+    /** One of BSP-Core's long keys as a saved player file holds it (the root of {@code playerdata/<uuid>.dat}), 0 when absent. */
+    public static long longInPlayerFile(CompoundTag fileRoot, String key) {
+        return fileRoot.getCompound("ForgeData").getCompound(Player.PERSISTED_NBT_TAG).getLong(key);
+    }
+
     public static boolean isTotemGranted(Player player) {
         return get(player).getBoolean(TAG_TOTEM_GRANTED);
     }

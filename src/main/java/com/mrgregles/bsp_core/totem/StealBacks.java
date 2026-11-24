@@ -163,7 +163,7 @@ public final class StealBacks extends SavedData {
         network = Map.of();
     }
 
-    /** Forgets this server's record for one player (tests). */
+    /** Forgets this server's record for one player (an admin's player reset, and tests). */
     public static void forget(MinecraftServer server, UUID player) {
         StealBacks d = get(server);
         if (d.losses.remove(player) != null | d.watches.remove(player) != null) {

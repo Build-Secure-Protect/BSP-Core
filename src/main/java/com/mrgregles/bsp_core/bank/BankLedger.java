@@ -34,6 +34,15 @@ public class BankLedger extends SavedData {
         return accounts.computeIfAbsent(id, k -> new BankAccount());
     }
 
+    /** Drops the player's account and log here (an admin's player reset); true when there was one. */
+    public boolean forget(UUID id) {
+        boolean had = accounts.remove(id) != null | logs.remove(id) != null;
+        if (had) {
+            setDirty();
+        }
+        return had;
+    }
+
     public boolean has(UUID id) {
         return accounts.containsKey(id);
     }

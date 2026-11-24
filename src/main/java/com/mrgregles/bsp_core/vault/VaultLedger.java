@@ -372,6 +372,25 @@ public class VaultLedger extends SavedData {
         return out;
     }
 
+    /**
+     * An admin's player reset: the player is owed no interest and no recovered coins any more. Their vaults and the coins in them stay
+     * (part of the world), and earn again from now. True when anything was owed.
+     */
+    public boolean forgetEarnings(UUID owner) {
+        Account a = accounts.get(owner);
+        if (a == null) {
+            return false;
+        }
+        boolean owed = a.xp > 0 || a.tetrium > 0 || a.illyrium > 0 || a.prizes > 0 || !a.recoveredStamped.isEmpty() || java.util.Arrays.stream(a.recovered).anyMatch(n -> n > 0);
+        long now = System.currentTimeMillis();
+        a.xp = a.tetrium = a.illyrium = a.prizes = 0;
+        a.recovered = new int[CoinTier.values().length];
+        a.recoveredStamped.clear();
+        a.lastMs = a.netMs = now;
+        setDirty();
+        return owed;
+    }
+
     /** Admin full reset: nobody is owed any interest or recovered coins any more. */
     public void clearEarnings() {
         long now = System.currentTimeMillis();

@@ -47,12 +47,23 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 | `TradeEvent.Completed` | a live trade at a Trade Post was made, after the pieces and items moved: `getFirst` / `getFirstName` (who asked), `getFirstGave` (copies), `getFirstPieces`, and the same for `getSecond` (who accepted) |
 | `MarketEvent.Listed` | a player listed a lot on the marketplace, after paying the listing tax: `getLotId`, `getSeller`, `getSellerName`, `getPrice` (pieces, before tax), `getItems` (copies), `getTax` |
 | `MarketEvent.Sold` | a lot was bought, after the pieces and items moved: the same, plus `getBuyer`, `getBuyerName` and `getTax` (what the buyer paid on top of the price; the seller paid the same at listing). Both go into the lottery pot, the bank account `Market.POT` |
+| `PlayerResetEvent.Forgotten` | an admin reset a player to a brand-new player (`/bsp player reset`) and the reset reached this server: on the server it was typed on at once, on the others through Redis or, for a server that was down, its next read of the `player_resets` table. Forget the player's records kept on this server; only when `isOrigin()` is true, also the records the whole network shares (your database rows). `getPlayer`, `getName`, `getResetMs` (one value for every event of one reset), `getBy`. See "Player reset" below |
+| `PlayerResetEvent.Cleared` | what the reset player carries was wiped on this server (at once if they were online and settled, else at their next login after an inventory sync mod's restore): inventory, ender chest, Curios, XP, effects, advancements, statistics and BSP-Core's persistent keys are already empty; `getEntity` is the player. Clear what your mod keeps on the player entity |
 
 Upgrade names for `BspTotems.upgrade` are the constants of `TotemUpgrades.Buff` (for example `SWIFTNESS`, `RECALL`); the enum itself may be used directly.
 
 `TRIPWIRE` (since 1.11.0) has levels 1 to 4, one per totem tier from Tier II; the level is the range bought, not the range the owner has picked with the NEXT key on its card. Every placed Shatter Totem is now a redstone source (`isSignalSource` is true); it gives 15 on every side, as weak power, while its Tripwire is set off, and 0 otherwise. The range setting is `TripRange` in the block entity and in the picked-up item's tag (absent = the highest range bought, 0 = off); the signal is `TripSignal`, in the block entity only. A Decoy Totem also reports `isSignalSource` (and gives 0), so dust cannot tell the two apart.
 
 Two upgrades exist only for a teleport mod to read; BSP-Core sells them on the tree (Home spoke, Carried prices at half XP, three levels each) and does nothing with them itself: `EXTRA_HOMES` (meant as one more home slot per level) and `SWIFT_TRAVEL` (meant as 25 % off the teleport cooldown per level). Read them with `BspTotems.highestLevel`.
+
+## Player reset (`PlayerResetEvent`)
+
+`/bsp player reset <name>` makes a player a brand-new player on the whole network, and the one command is meant to do it in every BSP mod. BSP-Core resets BSP-RankUp itself (its `AdminEdits.playerReset`, and the LuckPerms groups of RankUp's awards from the server the reset is typed on, when RankUp and LuckPerms are both installed there). Every other mod listens for the event and forgets its own records:
+
+- Listen by class name so no new BSP-Core jar is needed to build: `Class.forName("com.mrgregles.bsp_core.api.event.PlayerResetEvent$Forgotten")`, then `MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, type, e -> ...)` and read `getPlayer()`, `getName()`, `getResetMs()`, `isOrigin()` by reflection. Do the same for `$Cleared` (`getEntity()`).
+- `Forgotten` normally reaches each server once per reset (after a crash it can come again; compare `getResetMs()`), and a server that was down hears of it hours later. Delete shared rows (MySQL) only when `isOrigin()` is true: a late server must not delete what the player has made since the reset. Forget local copies (SavedData, caches) on every server.
+- A reset older than a server's own record of resets (a server that joined the network later) is never posted there.
+- `Cleared` comes on the server where the player is wiped, after BSP-InventorySync's restore and before kits and first-join items are handed over; it may come once per server for a mod that keeps per-server player files.
 
 ## Inventory sync mods (`BspTotems.isTotem(ItemStack)`, `BspTotems.giveBack`; BSP-InventorySync requests R1 and R2)
 

@@ -615,6 +615,7 @@ public final class AdminService {
             LoginSettle.afterRespawn(player);
             return;
         }
+        PlayerReset.onSettle(player); // a reset still to do here wipes what they carry first, so what the settle hands over is kept
         SeasonData season = SeasonData.get(player.server);
         if (PlayerPersistent.coinEpoch(player) < season.coinEpoch) {
             stripCoins(player, season.coinEpoch); // a full reset happened while they were away

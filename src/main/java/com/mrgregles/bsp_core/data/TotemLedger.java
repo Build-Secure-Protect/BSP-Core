@@ -160,9 +160,14 @@ public class TotemLedger extends SavedData {
 
     /** Retires every totem last seen with this player (held, dropped by them, in transit); returns how many. */
     public int forgetHeldBy(UUID player) {
+        return forgetHeldBy(player, java.util.Set.of());
+    }
+
+    /** As {@link #forgetHeldBy(UUID)}, leaving the totems in {@code keep} alone (ones the player carries now that are not to go). */
+    public int forgetHeldBy(UUID player, java.util.Set<UUID> keep) {
         int n = 0;
         for (var e : totems.entrySet()) {
-            if (player.equals(e.getValue().holder()) && e.getValue().where() != RETIRED) {
+            if (player.equals(e.getValue().holder()) && e.getValue().where() != RETIRED && !keep.contains(e.getKey())) {
                 e.setValue(retired());
                 n++;
             }

@@ -94,6 +94,15 @@ public final class BspTransfer {
         return totems.size();
     }
 
+    /**
+     * Ends a transfer under way here without handing anything back (BSP-Core's own player reset, not meant for other mods): returns the
+     * totems that were held here for it, which the caller forgets; totems stored in the database for it are the network's owed items.
+     */
+    public static List<ItemStack> forgetPlayer(UUID player) {
+        Pending p = ACTIVE.remove(player);
+        return p == null ? List.of() : p.held;
+    }
+
     /** Drops one totem from a transfer under way here (held for a cancelled teleport); returns how many stacks went. */
     public static int forgetTotem(UUID player, UUID totemId) {
         Pending p = ACTIVE.get(player);

@@ -4159,3 +4159,20 @@ Covered by `a_demo_wears_a_hat_on_its_plain_body` (the hat saved and sent to cli
 - [ ] As an admin with your own totems wearing a bought hat: open a demo, pick PLAIN and a hat, step back to the edge of reach and press SAVE. Your own totems keep their hat.
 - [ ] Pause single player with a totem's LOOKS tab open behind the menu (a screenshot, F1): the preview stands still, no jitter.
 - [ ] Leave the game running for a long session (the clock wraps after 14.4 hours): spins carry on without a jump.
+
+## Player reset: `/bsp player reset <name>` (2026-11-24, unreleased)
+Covered by GameTests `player_reset_makes_an_online_player_new_and_keeps_other_mods_data`, `player_reset_of_an_offline_player_wipes_them_at_their_next_settle_once`, `player_reset_older_than_this_servers_record_never_touches_the_player`, `player_reset_reaching_a_server_late_spares_a_player_already_wiped_elsewhere`, `player_reset_heard_again_leaves_the_files_of_a_player_who_played_here_since`, `player_reset_of_a_dead_player_wipes_them_at_the_respawn`, `player_reset_passes_a_team_lead_on_before_the_leader_leaves` and `player_reset_confirm_wants_a_fresh_ask_for_that_player` (one server, no database). The network, BSP-RankUp, LuckPerms, Curios and BSP-InventorySync parts are untested.
+- [ ] Use a test account with totems placed on two servers, a team with another member, a market lot, a buy order, a bounty on someone, a bank balance with coins, a deposit box, a Coin Vault and some advancements.
+- [ ] `/bsp player reset <name>` on Spawn: the list of what it takes. Wait 30 s, then `... confirm`: refused, ask again. Ask again and confirm: one line saying what was done and that every server was told.
+- [ ] While they are online on Moongrove: within a second their inventory, ender chest and Curios are empty, XP 0, no effects, health and food full; a fresh Tier I totem and the guide book arrive; the bank shows the starting pieces; the Team screen shows no team, and the other member leads it.
+- [ ] Their totems on both servers are gone (`/bsp totem locate` shows none), the admin panel lists none, the board shows them at 0.
+- [ ] `/rank <name>`: first rung, 0 points, on every server. `/lp user <name> info`: no award groups; their staff or VIP group is still there.
+- [ ] Their market lot and buy order are gone, the bounty they placed is gone with no refund, a bounty on them was refunded to the placer.
+- [ ] Reset a player who is offline everywhere, then let them join any server: wiped after BSP-InventorySync's restore, then the first-join totem, kits and starting pieces. Switch servers: nothing old comes back. The world folder of each server they were offline on holds their old files under `bsp_core_player_resets/<uuid>-<time>/`.
+- [ ] Stop one server, reset a player, start it again: its log says the reset was applied there. Their totems placed on it are gone.
+- [ ] Reset a player who is dead on the respawn screen: after they respawn they are wiped, then get the first totem, kits and starting pieces.
+- [ ] A team leader alone in their team: the team is disbanded.
+- [ ] Their store credit tickets and Discord link are still there.
+- [ ] A Totem Forge with their pour setting (or set): after the reset the forge is empty and nothing is handed to them there.
+- [ ] They had a bed: after their next death they respawn at world spawn, not at the bed.
+- [ ] With BSP-InventorySync: `/invsync restore <player> <version>` of a snapshot from before the reset puts it back and the next login does not wipe it again.

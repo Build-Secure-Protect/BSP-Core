@@ -952,6 +952,19 @@ public class TotemForgeBlockEntity extends MultiblockControllerBlockEntity {
         clearPour();
     }
 
+    /** A player reset: the player's pour here, set or not, is lost (no forged totem for them); true when this forge held it. */
+    public boolean voidPourOf(java.util.UUID player) {
+        if (pourer == null || !pourer.equals(player)) {
+            return false;
+        }
+        clearPour();
+        setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+        return true;
+    }
+
     /** Back to an empty forge: the pourer's claim freed, the core gone, a piece on its last pour cracked, the rest left in the hollow. */
     private void clearPour() {
         if (pourer != null && level != null && level.getServer() != null) {

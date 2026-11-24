@@ -85,6 +85,25 @@ public class CreditLedger extends SavedData {
         setDirty();
     }
 
+    /**
+     * A player reset: the claims this player paid for partly with credit no longer name them as the payer, so the credit share of
+     * a later refund (a co-owner giving the claim up) is taken back from whoever gives it up, never from the reset player's new
+     * account. Returns how many records changed.
+     */
+    public int forgetPayer(java.util.UUID player) {
+        int n = 0;
+        for (ClaimCredit c : claims.values()) {
+            if (player.equals(c.payer)) {
+                c.payer = null;
+                n++;
+            }
+        }
+        if (n > 0) {
+            setDirty();
+        }
+        return n;
+    }
+
     /** What credit paid for a claim, forgotten as it is read; null when credit paid nothing. */
     @Nullable
     ClaimCredit removeClaim(String key) {

@@ -139,6 +139,18 @@ public class ShopLedger extends SavedData {
         setDirty();
     }
 
+    /** Forgets the player's own buy and sell limits on every shop item (an admin's player reset); returns how many there were. */
+    public int forgetPlayer(UUID player) {
+        int n = 0;
+        for (Stock s : stock.values()) {
+            n += (s.buyers.remove(player) != null ? 1 : 0) + (s.sellers.remove(player) != null ? 1 : 0);
+        }
+        if (n > 0) {
+            setDirty();
+        }
+        return n;
+    }
+
     public Stock stock(String shopId, int index) {
         return stock.computeIfAbsent(shopId + ":" + index, k -> new Stock());
     }

@@ -42,6 +42,13 @@ public class LotteryLedger extends SavedData {
         setDirty();
     }
 
+    /** Forgets that the player was seen (an admin's player reset); past wins stay in the history. */
+    public void forget(UUID id) {
+        if (players.remove(id) != null) {
+            setDirty();
+        }
+    }
+
     /** Players seen at or after {@code sinceMs}. */
     public List<LotteryPlayer> since(long sinceMs) {
         List<LotteryPlayer> out = new ArrayList<>();

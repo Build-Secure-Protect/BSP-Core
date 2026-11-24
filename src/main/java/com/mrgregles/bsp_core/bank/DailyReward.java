@@ -203,6 +203,13 @@ public final class DailyReward {
             return last.getOrDefault(id, -1L);
         }
 
+        /** Forgets when {@code id} was last paid (an admin's player reset). */
+        public void forget(UUID id) {
+            if (last.remove(id) != null) {
+                setDirty();
+            }
+        }
+
         public void paid(UUID id, long day) {
             last.put(id, day);
             setDirty();

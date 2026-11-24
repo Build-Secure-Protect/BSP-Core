@@ -211,6 +211,15 @@ public final class NewPlayerProtection extends SavedData {
         return up;
     }
 
+    /** Forgets what was seen of one player (an admin's player reset): protected again until they reach the rank or the hours anew. */
+    public boolean forget(UUID player) {
+        if (seen.remove(player) == null) {
+            return false;
+        }
+        setDirty();
+        return true;
+    }
+
     public void clearSeen() {
         seen.clear();
         setDirty();

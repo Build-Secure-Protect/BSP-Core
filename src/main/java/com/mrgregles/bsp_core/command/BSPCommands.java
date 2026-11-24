@@ -30,6 +30,7 @@ import net.minecraftforge.fml.common.Mod;
  * /bsp totem reset &lt;player&gt;    forget that the player was granted, so first join grants again
  * /bsp totem locate &lt;player&gt;   list where that player's placed totems stand
  * /bsp totem owner              show the owner of the totem in your main hand
+ * /bsp player reset &lt;name&gt; [confirm]  make the player a brand-new player on every server and in every BSP mod
  * /bsp admin                    open the admin panel (admins and moderators; no Admin Rack needed)
  * /bsp score top                the top ten of the leaderboard
  * /bsp storage status           where records are kept
@@ -176,6 +177,7 @@ public final class BSPCommands {
                 .then(com.mrgregles.bsp_core.shop.ShopCommands.tree())
                 .then(TeamCommands.tree())
                 .then(KitCommands.tree())
+                .then(PlayerCommands.tree())
                 .then(CreditCommands.tree())
                 .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {

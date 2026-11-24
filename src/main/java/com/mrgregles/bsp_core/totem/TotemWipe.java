@@ -29,7 +29,7 @@ public final class TotemWipe {
     public record Result(int carried, int placed, int forgotten, int logoutRecords, boolean owedDropped, boolean granted, boolean scoreCleared) {}
 
     public static Result wipe(ServerPlayer player) {
-        Result r = clear(player.server, player.getUUID(), player);
+        Result r = clear(player.server, player.getUUID(), player, true, java.util.Set.of());
         FirstJoinHandler.grant(player, TotemLedger.get(player.server));
         BSPCore.LOGGER.info("Totem wipe for {}: {} carried, {} placed, {} records forgotten, {} logout placements, owed items {}; a fresh totem given",
                 player.getGameProfile().getName(), r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped() ? "dropped" : "none");
@@ -43,10 +43,34 @@ public final class TotemWipe {
      * Their first-join grant is cleared too, so a returning player is given a totem again as on a first join.
      */
     public static Result forget(MinecraftServer server, UUID id) {
-        Result r = clear(server, id, server.getPlayerList().getPlayer(id));
+        return forget(server, id, server.getPlayerList().getPlayer(id));
+    }
+
+    /** As {@link #forget(MinecraftServer, UUID)}; {@code here} is the player when they are online here (tests pass a mock player, not in the player list). */
+    public static Result forget(MinecraftServer server, UUID id, @javax.annotation.Nullable ServerPlayer here) {
+        Result r = clear(server, id, here, true, java.util.Set.of());
         BSPCore.LOGGER.info("Totem forget for {}: {} carried, {} placed, {} records forgotten, {} logout placements, owed items {}; nothing given",
                 id, r.carried(), r.placed(), r.forgotten(), r.logoutRecords(), r.owedDropped() ? "dropped" : "none");
         return r;
+    }
+
+    /**
+     * As {@link #forget(MinecraftServer, UUID, ServerPlayer)} in this server's own records only: the database's rows (owed items,
+     * no-totem-server spots, the first-join grant, the score set by hand) are left alone. For a player reset reaching a server other
+     * than the one it was typed on, which deleted those rows itself: a server applying it late must not delete rows the player has
+     * made since (a new first-join grant, items owed to them now).
+     */
+    public static Result forgetHere(MinecraftServer server, UUID id, @javax.annotation.Nullable ServerPlayer here) {
+        return clear(server, id, here, false, java.util.Set.of());
+    }
+
+    /**
+     * As {@link #forgetHere(MinecraftServer, UUID, ServerPlayer)}, with {@code here} null, leaving the totems in {@code keep} alive:
+     * the reset reached this server late and the player, online here, was wiped elsewhere already, so the totems they carry now are
+     * their new ones.
+     */
+    public static Result forgetHereKeeping(MinecraftServer server, UUID id, java.util.Set<UUID> keep) {
+        return clear(server, id, null, false, keep);
     }
 
     /**
@@ -119,7 +143,7 @@ public final class TotemWipe {
         }
     }
 
-    private static Result clear(MinecraftServer server, UUID id, @javax.annotation.Nullable ServerPlayer player) {
+    private static Result clear(MinecraftServer server, UUID id, @javax.annotation.Nullable ServerPlayer player, boolean network, java.util.Set<UUID> keep) {
         TotemLedger ledger = TotemLedger.get(server);
         // carried totems
         List<ItemStack> carried = player == null ? List.of() : TotemInventories.removeAll(player);
@@ -149,19 +173,27 @@ public final class TotemWipe {
                 ledger.recordRemoved(where);
             }
         }
-        int forgotten = ledger.forgetHeldBy(id);
+        int forgotten = ledger.forgetHeldBy(id, keep);
         int logoutRecords = player == null ? 0 : PlayerPersistent.takeLogoutPlaced(player).size();
         TransferLedger.get(server).remove(id);
         boolean owed = com.mrgregles.bsp_core.admin.SeasonData.get(server).pendingItems.remove(id) != null;
         if (owed) {
             com.mrgregles.bsp_core.admin.SeasonData.get(server).setDirty();
         }
-        NetworkStorage.clearPending(id);
-        NetworkStorage.clearTotemSpots(id);
+        if (network) {
+            NetworkStorage.clearPending(id);
+            NetworkStorage.clearTotemSpots(id);
+        }
         ledger.clearGranted(id);
-        NetworkStorage.clearGrant(id);
+        if (network) {
+            NetworkStorage.clearGrant(id);
+        }
         if (player != null) {
             PlayerPersistent.setTotemGranted(player, false);
+        }
+        if (!network) {
+            com.mrgregles.bsp_core.score.ScoreService.markDirty();
+            return new Result(carried.size(), placed, forgotten, logoutRecords, owed, false, false);
         }
         // a wipe starts the player over: no score set by hand rides on the fresh totem. On a network the copy here may be older than
         // a score set on another server since the last read, so the database is always asked (clearing nothing is harmless).

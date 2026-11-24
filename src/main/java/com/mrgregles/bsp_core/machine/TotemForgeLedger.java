@@ -174,6 +174,13 @@ public class TotemForgeLedger extends SavedData {
         }
     }
 
+    /** Frees the player's claim in this server's record only (a player reset reaching a server it was not typed on; the network row is the origin's to clear). */
+    public void forgetHere(UUID player) {
+        if (pours.remove(player) != null | ready.remove(player) != null) {
+            setDirty();
+        }
+    }
+
     /** An operator's clear: frees the player's claim here, wherever it points, and their network row whatever it holds. Returns the claim it freed here, if any. */
     public Optional<GlobalPos> clear(UUID player) {
         GlobalPos was = pours.remove(player);

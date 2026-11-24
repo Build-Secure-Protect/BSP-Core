@@ -317,6 +317,10 @@ final class MySqlStore implements AutoCloseable {
             // new-player protection from totem radiation: the highest RankUp rung and the most playtime minutes seen per player
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("protection_seen") + " (uuid CHAR(36) NOT NULL, season INT NOT NULL, rung INT NOT NULL, minutes BIGINT NOT NULL, "
                     + "PRIMARY KEY (uuid, season))");
+            // admin resets of a player to a brand-new player (/bsp player reset): the latest per player, read by every server, so one
+            // that was down or missed the Redis notice still forgets the player, and a login anywhere clears what they carry
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("player_resets") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, name VARCHAR(16) NOT NULL, "
+                    + "reset_ms BIGINT NOT NULL, by_name VARCHAR(64) NOT NULL DEFAULT '')");
             // the daily login reward: the last day each player was paid (days since 1970 on the shop clock)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("daily_rewards") + " (uuid CHAR(36) NOT NULL PRIMARY KEY, day INT NOT NULL)");
             // the lottery: every player seen on the network, with their ranks and operator status at the time
@@ -3404,6 +3408,90 @@ final class MySqlStore implements AutoCloseable {
             try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("protection_seen") + " WHERE season < ?")) {
                 ps.setInt(1, newest - 1); // the season before stays, for a server that has not heard of the new one yet
                 ps.executeUpdate();
+            }
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ player resets (/bsp player reset)
+
+    /** The tables whose rows are one player's own, by the column holding the player: emptied for that player by a reset. */
+    static final String[][] PLAYER_RESET_ROWS = {
+            {"bank_accounts", "uuid"}, {"bank_coin_stamps", "uuid"}, {"bank_log", "uuid"}, {"bank_boxes", "uuid"}, {"daily_rewards", "uuid"},
+            {"compass_waits", "uuid"}, {"protection_seen", "uuid"}, {"totem_losses", "uuid"}, {"steal_watch", "uuid"}, {"lottery_players", "uuid"},
+            {"shop_counts", "who"}, {"alliance_reads", "uuid"}, {"score_adjust", "uuid"}, {"grants", "uuid"}, {"pending_items", "uuid"},
+            {"totem_spots", "uuid"}, {"totem_returns", "uuid"}, {"kit_redeems", "uuid"}, {"market_collect", "uuid"}, {"scores", "uuid"},
+            {"totems", "owner_uuid"}, {"admin_totems", "owner_uuid"}, {"notices", "uuid"}};
+
+    /**
+     * Deletes every row that is the player's own (the tables of {@link #PLAYER_RESET_ROWS}) in one transaction: their bank account
+     * (its existence is the "starting pieces given" mark), coin stamps, log and deposit box, daily reward, compass wait, protection
+     * record, steal-back losses and watch, lottery entry, shop limits, alliance reads, score set by hand, first-join grant, owed items,
+     * no-totem-server spots and returns, kit records, Collect box, the score and placed-totem rows the servers write, and the lines
+     * waiting for them (the reset's own notices of cancelled lots and orders among them). Returns rows deleted.
+     */
+    int playerForget(UUID player) throws SQLException {
+        Connection c = conn();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        int n = 0;
+        try {
+            for (String[] row : PLAYER_RESET_ROWS) {
+                try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + t(row[0]) + " WHERE " + row[1] + " = ?")) {
+                    ps.setString(1, player.toString());
+                    n += ps.executeUpdate();
+                }
+            }
+            c.commit();
+            return n;
+        } catch (SQLException | RuntimeException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(auto);
+        }
+    }
+
+    /** Records a reset of the player (the latest replaces an older one). */
+    void playerResetWrite(com.mrgregles.bsp_core.admin.PlayerResetRow row) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("REPLACE INTO " + t("player_resets") + " (uuid, name, reset_ms, by_name) VALUES (?, ?, ?, ?)")) {
+            ps.setString(1, row.id().toString());
+            ps.setString(2, row.name().length() > 16 ? row.name().substring(0, 16) : row.name());
+            ps.setLong(3, row.resetMs());
+            ps.setString(4, row.by().length() > 64 ? row.by().substring(0, 64) : row.by());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Deletes one player's new-player protection rows (every season). */
+    void protectionForget(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("protection_seen") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** One player's reset on record, or null. */
+    @Nullable
+    com.mrgregles.bsp_core.admin.PlayerResetRow playerResetRead(UUID player) throws SQLException {
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, reset_ms, by_name FROM " + t("player_resets") + " WHERE uuid = ?")) {
+            ps.setString(1, player.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new com.mrgregles.bsp_core.admin.PlayerResetRow(player, rs.getString(2), rs.getLong(3), rs.getString(4)) : null;
+            }
+        }
+    }
+
+    /** Every reset on record. */
+    List<com.mrgregles.bsp_core.admin.PlayerResetRow> playerResetsRead() throws SQLException {
+        List<com.mrgregles.bsp_core.admin.PlayerResetRow> out = new ArrayList<>();
+        try (PreparedStatement ps = conn().prepareStatement("SELECT uuid, name, reset_ms, by_name FROM " + t("player_resets")); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                try {
+                    out.add(new com.mrgregles.bsp_core.admin.PlayerResetRow(UUID.fromString(rs.getString(1)), rs.getString(2), rs.getLong(3), rs.getString(4)));
+                } catch (IllegalArgumentException ignored) {
+                    // not a player id
+                }
             }
         }
         return out;
