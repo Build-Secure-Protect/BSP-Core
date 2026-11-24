@@ -4,6 +4,16 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+### Changed
+- **Harvest** grows ores only while the totem can spare its draw (`harvestDraw`, after Cloaking's share); otherwise the ores wait and nothing is drawn.
+- **Harvest:** every ore waits the level's full interval (120 / 90 / 60 / 30 s) from the moment it is taken before it grows back, and ores still grow one at a time, that interval apart. The power's description reads "grow back after ... s".
+
+### Fixed
+- **Harvest:** an ore taken by a machine (an ME Annihilation Plane, a drill or any block breaker), a piston or an explosion grows back like one mined by hand. Only a player's mining counted before.
+- **Harvest:** a spot built over keeps its ore waiting, but the totem's plasma output no longer drops while nothing can grow. Two Harvest totems covering the same ore no longer leave one of them waiting, and drawing plasma, for good.
+- **Harvest:** the ores waiting to grow back are kept when the totem's chunk unloads or the server restarts; they were lost before.
+- **Harvest:** an ore no longer grows back inside a player or mob standing in its spot; it waits until the spot is empty. The totem screen's plasma output shows Harvest's share as the server takes it.
+
 ## [1.24.0] - 2026-11-24
 
 Network protocol 22: every player needs the new client. New blocks and items are registered, so servers and clients must both have this version.

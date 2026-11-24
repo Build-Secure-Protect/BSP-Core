@@ -4204,3 +4204,11 @@ Client side; not seen in a client.
 - [ ] (audit) Another player who is not on your team right-clicks your transmitter: "Only its placer and their team can open this transmitter". A hopper under it takes no cards out.
 - [ ] (audit) Log in and right-click a machine with the tagger in the first second: "still loading" at most, never a lost layout or lost tags. Walk with W held and press the focus key: you stop walking. Close the popout from its own close button while it has focus and open it again: not shown as focused.
 
+## Harvest fixes (2026-11-24, Unreleased)
+Server side. GameTests `harvest_regrows_a_mined_ore`, `harvest_built_over_spot_draws_no_plasma`, `harvest_overlapping_totems_both_settle`, `harvest_queue_survives_a_reload`, `harvest_waits_without_plasma_to_spare`, `harvest_waits_a_full_interval`, `harvest_waits_while_someone_stands_there`.
+- [ ] A placed totem with Harvest 1 and plasma. Point an ME Annihilation Plane at a Tetrium ore 5 blocks away: the ore goes into the network, then grows back within 2 minutes, and the plane takes it again.
+- [ ] Mine a BSP ore by hand and place a stone block in the hole: the totem's plasma output stays at its full figure. Break the stone: the ore grows back, and the output drops by 25 mB/t only until it does.
+- [ ] Two totems with Harvest a few blocks apart, an ore between them: mine it; once it grows back, both totems' plasma output returns to full.
+- [ ] Mine three BSP ores near a Harvest 1 totem, then fly away until the chunk unloads (or restart the server) and come back: the ores still grow back one by one.
+- [ ] Set `effects.harvestDraw` to 200 (more than an Output 0 totem gives off), mine a BSP ore near a Harvest totem without Output: it does not grow back and the plasma output stays at its full figure. Set it back to 25: the ore grows.- [ ] Harvest 4 totem, nothing mined for a while: mine a BSP ore and time it: it grows back after 30 s, not at once. Mine two at once: the second comes 30 s after the first. The upgrade tree's Harvest line reads "grow back after 30 s, one at a time".- [ ] (audit) Stand in the spot of a mined ore when it is due: it does not grow inside you; step out: it grows within a second. With the totem screen open while an ore waits on a clear spot, the plasma line drops by 25; build over the spot: it goes back to the full figure within a second.
+

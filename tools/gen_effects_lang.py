@@ -49,7 +49,7 @@ KEYS = {
     "buff.bsp_core.siege": "Siege",
     "buff.bsp_core.siege.effect": "Press its key: Fortify does not slow your mining for %s s; recharges in %s s",
     "buff.bsp_core.harvest": "Harvest",
-    "buff.bsp_core.harvest.effect": "BSP ores mined within %s blocks grow back, one every %s s; uses %s mB/t of plasma while any wait",
+    "buff.bsp_core.harvest.effect": "BSP ores taken within %s blocks grow back after %s s, one at a time; uses %s mB/t of plasma while any wait",
     "message.bsp_core.siege.none": "You carry no Siege power",
     "message.bsp_core.siege.recharging": "Siege recharges in %s s",
     "message.bsp_core.siege.on": "Siege: full mining speed for %s s",

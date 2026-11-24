@@ -1,5 +1,6 @@
 package com.mrgregles.bsp_core.gametest;
 
+import com.mrgregles.bsp_core.BSPConfig;
 import com.mrgregles.bsp_core.BSPCore;
 import com.mrgregles.bsp_core.plasma.PlasmaExtractorBlockEntity;
 import com.mrgregles.bsp_core.plasma.PlasmaNetwork;
@@ -431,18 +432,148 @@ public class BspGameTests {
         h.succeed();
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 1200)
-    public void harvest_regrows_a_mined_ore(GameTestHelper h) {
-        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
-        h.setBlock(totem, ModBlocks.SHATTER_TOTEM.get());
-        ShatterTotemBlockEntity be = entity(h, totem, ShatterTotemBlockEntity.class);
+    private static ShatterTotemBlockEntity harvestTotem(GameTestHelper h, BlockPos at) {
+        h.setBlock(at, ModBlocks.SHATTER_TOTEM.get());
+        ShatterTotemBlockEntity be = entity(h, at, ShatterTotemBlockEntity.class);
         be.setOwner(new TotemOwner(UUID.nameUUIDFromBytes("gametest".getBytes()), "Tester"));
-        be.setUpgradeLevel(TotemUpgrades.Buff.HARVEST, 4); // 30 s between regrowths
-        Block oreBlock = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new net.minecraft.resources.ResourceLocation("bsp_core", "tetrium_ore"));
+        be.setUpgradeLevel(TotemUpgrades.Buff.HARVEST, 4); // each ore waits 30 s, 30 s between regrowths, 24 blocks
+        return be;
+    }
+
+    private static Block tetriumOre() {
+        return net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new net.minecraft.resources.ResourceLocation("bsp_core", "tetrium_ore"));
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 2800)
+    public void harvest_regrows_a_mined_ore(GameTestHelper h) {
+        // one ore mined by a player, one taken the way an ME Annihilation Plane takes it (Level.destroyBlock, no break event): both grow back
+        BlockPos totem = new BlockPos(8, 1, 8), mined = totem.offset(3, 0, 2), planed = totem.offset(-3, 0, 2);
+        ShatterTotemBlockEntity be = harvestTotem(h, totem);
+        Block oreBlock = tetriumOre();
+        h.setBlock(mined, oreBlock);
+        h.setBlock(planed, oreBlock);
+        net.minecraft.server.level.ServerPlayer player = net.minecraftforge.common.util.FakePlayerFactory.getMinecraft(h.getLevel());
+        h.assertTrue(player.gameMode.destroyBlock(h.absolutePos(mined)), "the player broke the ore");
+        h.getLevel().destroyBlock(h.absolutePos(planed), false);
+        h.assertTrue(be.harvestWaiting() == 2, "both ores recorded, got " + be.harvestWaiting());
+        h.succeedWhen(() -> {
+            h.assertBlock(mined, b -> b == oreBlock, "the mined ore grew back");
+            h.assertBlock(planed, b -> b == oreBlock, "the machine-taken ore grew back");
+            h.assertTrue(be.harvestWaiting() == 0 && be.harvestDraw() == 0, "nothing left waiting, no draw");
+        });
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 1600)
+    public void harvest_built_over_spot_draws_no_plasma(GameTestHelper h) {
+        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
+        ShatterTotemBlockEntity be = harvestTotem(h, totem);
+        Block oreBlock = tetriumOre();
         h.setBlock(ore, oreBlock);
-        be.harvestRecord(h.absolutePos(ore), oreBlock.defaultBlockState()); // what the break handler does when a player mines it
+        h.getLevel().destroyBlock(h.absolutePos(ore), false);
+        h.setBlock(ore, Blocks.STONE); // built over before it could grow
+        be.harvestRecord(h.absolutePos(ore), oreBlock.defaultBlockState()); // a second report of the same spot
+        h.assertTrue(be.harvestWaiting() == 1, "one entry per spot, got " + be.harvestWaiting());
+        h.startSequence()
+                .thenWaitUntil(() -> h.assertTrue(be.harvestDraw() == 0 && be.harvestWaiting() == 1, "the built-over spot waits without drawing plasma: draw " + be.harvestDraw() + ", waiting " + be.harvestWaiting()))
+                .thenExecute(() -> {
+                    net.minecraft.nbt.CompoundTag sent = be.getUpdateTag();
+                    h.assertTrue(!sent.contains("Harvest") && sent.contains("HarvestDraw") && sent.getInt("HarvestDraw") == 0, "clients get the server's draw (0), not the queue");
+                    h.setBlock(ore, Blocks.AIR);
+                })
+                .thenWaitUntil(() -> h.assertBlock(ore, b -> b == oreBlock, "the ore grew once the spot was clear"))
+                .thenWaitUntil(() -> h.assertTrue(be.harvestWaiting() == 0 && be.harvestDraw() == 0, "nothing left waiting"))
+                .thenSucceed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 1600)
+    public void harvest_overlapping_totems_both_settle(GameTestHelper h) {
+        // two Harvest totems cover the same ore: one grows it, the other forgets its entry instead of waiting forever
+        BlockPos ore = new BlockPos(8, 1, 8);
+        ShatterTotemBlockEntity a = harvestTotem(h, new BlockPos(4, 1, 4)), b = harvestTotem(h, new BlockPos(12, 1, 12));
+        Block oreBlock = tetriumOre();
+        h.setBlock(ore, oreBlock);
+        h.getLevel().destroyBlock(h.absolutePos(ore), false);
+        h.assertTrue(a.harvestWaiting() == 1 && b.harvestWaiting() == 1, "both totems saw it");
+        h.succeedWhen(() -> {
+            h.assertBlock(ore, x -> x == oreBlock, "the ore grew back");
+            h.assertTrue(a.harvestWaiting() == 0 && b.harvestWaiting() == 0, "both queues empty: " + a.harvestWaiting() + ", " + b.harvestWaiting());
+            h.assertTrue(a.harvestDraw() == 0 && b.harvestDraw() == 0, "neither draws plasma");
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public void harvest_waits_without_plasma_to_spare(GameTestHelper h) {
+        // all in one go on the server thread, so the raised draw is back before any other test runs
+        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
+        ShatterTotemBlockEntity be = harvestTotem(h, totem);
+        Block oreBlock = tetriumOre();
+        be.harvestRecord(h.absolutePos(ore), oreBlock.defaultBlockState(), h.getLevel().getGameTime() - 10_000); // mined long ago: due now
         h.setBlock(ore, Blocks.AIR);
-        h.succeedWhen(() -> h.assertBlock(ore, b -> b == oreBlock, "the ore grew back"));
+        int full = be.plasmaOutput() + be.harvestDraw();
+        int draw = BSPConfig.HARVEST_DRAW.get();
+        try {
+            BSPConfig.HARVEST_DRAW.set(full + 1); // more than the totem gives off
+            be.harvestTick(h.getLevel());
+            h.assertTrue(!be.harvestFed(), "the totem cannot spare the draw");
+            h.assertBlock(ore, b -> b != oreBlock, "no growth while short of plasma");
+            h.assertTrue(be.harvestWaiting() == 1, "the ore keeps waiting");
+            h.assertTrue(be.harvestDraw() == 0 && be.plasmaOutput() == full, "nothing drawn: output " + be.plasmaOutput() + " of " + full);
+        } finally {
+            BSPConfig.HARVEST_DRAW.set(draw);
+        }
+        be.harvestTick(h.getLevel());
+        h.assertBlock(ore, b -> b == oreBlock, "it grows once the plasma is there");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void harvest_waits_while_someone_stands_there(GameTestHelper h) {
+        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
+        ShatterTotemBlockEntity be = harvestTotem(h, totem);
+        Block oreBlock = tetriumOre();
+        be.harvestRecord(h.absolutePos(ore), oreBlock.defaultBlockState(), h.getLevel().getGameTime() - 10_000); // due now
+        var stand = h.spawn(net.minecraft.world.entity.EntityType.ARMOR_STAND, ore);
+        be.harvestTick(h.getLevel());
+        h.assertBlock(ore, b -> b != oreBlock, "no ore grown inside someone standing in the spot");
+        h.assertTrue(be.harvestWaiting() == 1, "it keeps waiting");
+        stand.discard();
+        be.harvestTick(h.getLevel());
+        h.assertBlock(ore, b -> b == oreBlock, "it grows once the spot is empty");
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 1600)
+    public void harvest_waits_a_full_interval(GameTestHelper h) {
+        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
+        ShatterTotemBlockEntity be = harvestTotem(h, totem);
+        Block oreBlock = tetriumOre();
+        h.setBlock(ore, oreBlock);
+        long minedAt = h.getLevel().getGameTime();
+        h.getLevel().destroyBlock(h.absolutePos(ore), false);
+        be.harvestTick(h.getLevel()); // no ore has grown yet, so only the ore's own wait holds it back
+        h.assertBlock(ore, b -> b != oreBlock, "not back the moment it was mined");
+        h.startSequence()
+                .thenWaitUntil(() -> h.assertBlock(ore, b -> b == oreBlock, "the ore grew back"))
+                .thenExecute(() -> h.assertTrue(h.getLevel().getGameTime() - minedAt >= 600, "it waited the full 30 s: " + (h.getLevel().getGameTime() - minedAt) + " ticks"))
+                .thenSucceed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void harvest_queue_survives_a_reload(GameTestHelper h) {
+        BlockPos totem = new BlockPos(8, 1, 8), ore = totem.offset(3, 0, 2);
+        ShatterTotemBlockEntity be = harvestTotem(h, totem);
+        be.harvestRecord(h.absolutePos(ore), tetriumOre().defaultBlockState(), 100);
+        be.harvestRecord(h.absolutePos(ore), tetriumOre().defaultBlockState(), 12_345); // taken again later: the wait counts from then
+        be.harvestRecord(h.absolutePos(ore), tetriumOre().defaultBlockState(), 50); // an older report changes nothing
+        h.assertTrue(be.harvestWaiting() == 1, "one entry per spot, got " + be.harvestWaiting());
+        net.minecraft.nbt.CompoundTag saved = be.saveWithoutMetadata();
+        // a block entity loaded with its chunk has no level yet when it reads its tag
+        ShatterTotemBlockEntity fresh = new ShatterTotemBlockEntity(be.getBlockPos(), be.getBlockState());
+        fresh.load(saved);
+        h.assertTrue(fresh.harvestWaiting() == 1, "the waiting ore is still there after a reload, got " + fresh.harvestWaiting());
+        long at = fresh.saveWithoutMetadata().getList("Harvest", net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(0).getLong("At");
+        h.assertTrue(at == 12_345, "it keeps the time it was mined, got " + at);
+        h.succeed();
     }
 
     // ------------------------------------------------------------------ cloaking

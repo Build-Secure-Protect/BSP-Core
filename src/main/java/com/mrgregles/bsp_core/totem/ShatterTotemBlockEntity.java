@@ -389,53 +389,105 @@ public class ShatterTotemBlockEntity extends BlockEntity implements com.mrgregle
     private int recallDelay;
     /** Intruders the Alarm has already reported, so the owner is told once per visit. */
     private final java.util.Set<UUID> alarmed = new java.util.HashSet<>();
+    /** Harvest: a BSP ore mined within reach, where it was and the game time it left. */
+    private record HarvestEntry(BlockPos pos, BlockState ore, long minedAt) {}
     /** Harvest: the BSP ores mined within reach, oldest first, waiting to grow back; and when the last one did. */
-    private final java.util.ArrayDeque<net.minecraft.util.Tuple<BlockPos, BlockState>> harvestQueue = new java.util.ArrayDeque<>();
+    private final java.util.ArrayDeque<HarvestEntry> harvestQueue = new java.util.ArrayDeque<>();
     private long harvestLast;
+    /** Whether a waiting ore could grow right now (its spot loaded and clear), as of the last once-a-second look; only then does Harvest draw plasma. */
+    private boolean harvestReady;
+    /** Server: the draw the clients were last sent. Client: the draw the server last sent (clients never hold the queue). */
+    private int harvestDrawSent, harvestDrawSynced;
     private static final int HARVEST_QUEUE_MAX = 256;
 
-    /** The break handler saw a BSP ore mined within this totem's Harvest reach. */
+    /** A BSP ore left its spot within this totem's Harvest reach ({@link HarvestWatch}). One entry per spot. */
     public void harvestRecord(BlockPos pos, BlockState ore) {
+        harvestRecord(pos, ore, level == null ? 0 : level.getGameTime());
+    }
+
+    /** As {@link #harvestRecord(BlockPos, BlockState)}, mined at a given game time (the GameTests use an old one). */
+    public void harvestRecord(BlockPos pos, BlockState ore, long minedAt) {
+        for (var it = harvestQueue.iterator(); it.hasNext(); ) {
+            var e = it.next();
+            if (e.pos().equals(pos)) {
+                if (e.minedAt() >= minedAt) {
+                    return; // already waiting there, as long as this report says
+                }
+                it.remove(); // taken again since (or another totem grew it in between): the wait counts from now
+                break;
+            }
+        }
         if (harvestQueue.size() >= HARVEST_QUEUE_MAX) {
             harvestQueue.pollFirst();
         }
-        harvestQueue.addLast(new net.minecraft.util.Tuple<>(pos.immutable(), ore));
+        harvestQueue.addLast(new HarvestEntry(pos.immutable(), ore, minedAt));
+        harvestReady = true; // the spot was just emptied
         setChanged();
     }
 
-    /** mB per tick Harvest is taking from the output: only while ores are waiting. */
-    public int harvestDraw() {
-        return harvestQueue.isEmpty() || getUpgradeLevel(TotemUpgrades.Buff.HARVEST) <= 0 || owner == null ? 0 : BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25);
+    /** How many mined ores are waiting to grow back. */
+    public int harvestWaiting() {
+        return harvestQueue.size();
     }
 
-    /** Once a second: when the level's interval has passed, the oldest waiting ore grows back if its spot is clear; otherwise it goes to the back of the queue. */
-    private void harvestTick(ServerLevel level) {
+    /** mB per tick Harvest is taking from the output: only while an ore is waiting on a clear spot (not for spots built over), and only when the totem can spare it. */
+    public int harvestDraw() {
+        if (level != null && level.isClientSide) {
+            return harvestDrawSynced;
+        }
+        return !harvestReady || harvestQueue.isEmpty() || getUpgradeLevel(TotemUpgrades.Buff.HARVEST) <= 0 || owner == null || !harvestFed() ? 0 : BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25);
+    }
+
+    /**
+     * Once a second, oldest first: a spot that already holds its ore again (another Harvest totem grew it, or someone put it back) is
+     * forgotten; a built-over or unloaded spot keeps its place and waits; the first clear spot grows its ore once a full interval of the
+     * level has passed both since it was mined and since the last ore grew, the totem can spare the plasma and nobody stands in the
+     * spot. Also notes whether any spot is clear, which is what the plasma draw follows, and tells clients when the draw changed.
+     * Public for the GameTests.
+     */
+    public void harvestTick(ServerLevel level) {
+        harvestStep(level);
+        if (harvestDraw() != harvestDrawSent) {
+            sync(); // the totem screen shows the output after Harvest's share
+        }
+    }
+
+    private void harvestStep(ServerLevel level) {
         int lvl = getUpgradeLevel(TotemUpgrades.Buff.HARVEST);
         if (lvl <= 0 || harvestQueue.isEmpty() || owner == null) {
+            harvestReady = false;
             return;
         }
         long now = level.getGameTime();
         int every = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.HARVEST_SECONDS, java.util.List.<Integer>of()), lvl, 120) * 20;
-        if (now - harvestLast < every) {
-            return;
+        boolean spaced = now - harvestLast >= every && harvestFed(); // short of plasma: clear spots wait, the scan still tidies the queue
+        boolean ready = false, changed = false;
+        for (var it = harvestQueue.iterator(); it.hasNext(); ) {
+            var e = it.next();
+            BlockPos pos = e.pos();
+            if (!level.isLoaded(pos)) {
+                continue;
+            }
+            BlockState there = level.getBlockState(pos);
+            if (there.is(e.ore().getBlock())) {
+                it.remove(); // the ore is back already
+                changed = true;
+            } else if (there.isAir() || there.canBeReplaced()) {
+                if (spaced && now - e.minedAt() >= every && level.isUnobstructed(e.ore(), pos, net.minecraft.world.phys.shapes.CollisionContext.empty())) {
+                    it.remove();
+                    level.setBlock(pos, e.ore(), 3);
+                    level.levelEvent(2001, pos, Block.getId(e.ore())); // the break particles, as the ore knits back
+                    harvestLast = now;
+                    spaced = false;
+                    changed = true;
+                } else {
+                    ready = true;
+                }
+            }
         }
-        var next = harvestQueue.pollFirst();
-        if (next == null) {
-            return;
-        }
-        BlockPos pos = next.getA();
-        if (!level.isLoaded(pos)) {
-            harvestQueue.addLast(next);
-            return;
-        }
-        BlockState there = level.getBlockState(pos);
-        if (there.isAir() || there.canBeReplaced()) {
-            level.setBlock(pos, next.getB(), 3);
-            level.levelEvent(2001, pos, Block.getId(next.getB())); // the break particles, as the ore knits back
-            harvestLast = now;
-        } else {
-            harvestQueue.addLast(next); // something stands there: wait for the spot to clear
-            harvestLast = now; // and do not spin through the queue every tick
+        harvestReady = ready;
+        if (changed) {
+            setChanged();
         }
     }
 
@@ -1271,9 +1323,18 @@ public class ShatterTotemBlockEntity extends BlockEntity implements com.mrgregle
 
     /** Wave Plasma this totem gives off, in mB per tick, by its Output level (config {@code plasma.outputPerLevel}). */
     public int plasmaOutput() {
+        return Math.max(0, plasmaBeforeHarvest() - harvestDraw()); // Cloaking and Harvest take their share first
+    }
+
+    /** The Output level's figure less what Cloaking takes: what Harvest has to draw from. */
+    private int plasmaBeforeHarvest() {
         int out = BSPConfig.levelValue(BSPConfig.getOr(BSPConfig.PLASMA_OUTPUT, java.util.List.<Integer>of()), getUpgradeLevel(TotemUpgrades.Buff.OUTPUT) + 1, 100);
-        int draw = (cloak != null ? BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50) : 0) + harvestDraw();
-        return Math.max(0, out - draw); // Cloaking and Harvest take their share first
+        return out - (cloak != null ? BSPConfig.getOr(BSPConfig.CLOAK_DRAW, 50) : 0);
+    }
+
+    /** Harvest grows ores only while the totem has its full draw to spare; otherwise the ores wait and nothing is drawn. */
+    public boolean harvestFed() {
+        return plasmaBeforeHarvest() >= BSPConfig.getOr(BSPConfig.HARVEST_DRAW, 25);
     }
 
     /** mB per tick Cloaking is taking from the output right now, 0 while not cloaked. */
@@ -1468,8 +1529,9 @@ public class ShatterTotemBlockEntity extends BlockEntity implements com.mrgregle
             net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
             for (var e : harvestQueue) {
                 CompoundTag t = new CompoundTag();
-                t.putLong("Pos", e.getA().asLong());
-                t.put("Ore", net.minecraft.nbt.NbtUtils.writeBlockState(e.getB()));
+                t.putLong("Pos", e.pos().asLong());
+                t.put("Ore", net.minecraft.nbt.NbtUtils.writeBlockState(e.ore()));
+                t.putLong("At", e.minedAt());
                 list.add(t);
             }
             tag.put("Harvest", list);
@@ -1483,13 +1545,19 @@ public class ShatterTotemBlockEntity extends BlockEntity implements com.mrgregle
         identity = new CompoundTag();
         TotemIdentity.copy(tag, identity);
         harvestQueue.clear();
-        if (tag.contains("Harvest") && level != null) {
+        // read without the level: a block entity loaded with its chunk has none yet, and the queue was lost on every reload
+        if (tag.contains("Harvest")) {
             for (net.minecraft.nbt.Tag raw : tag.getList("Harvest", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
                 CompoundTag t = (CompoundTag) raw;
-                harvestQueue.addLast(new net.minecraft.util.Tuple<>(BlockPos.of(t.getLong("Pos")), net.minecraft.nbt.NbtUtils.readBlockState(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK), t.getCompound("Ore"))));
+                BlockState ore = net.minecraft.nbt.NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), t.getCompound("Ore"));
+                if (!ore.isAir()) { // a block since removed from the game reads as air
+                    harvestQueue.addLast(new HarvestEntry(BlockPos.of(t.getLong("Pos")), ore, t.getLong("At"))); // saved before "At": 0, grows at once
+                }
             }
             harvestLast = tag.getLong("HarvestLast");
+            harvestReady = !harvestQueue.isEmpty(); // until the first look says otherwise
         }
+        harvestDrawSynced = tag.getInt("HarvestDraw"); // only in a sync to a client
         owner = TotemOwner.load(tag).orElse(null);
         look = com.mrgregles.bsp_core.looks.TotemLook.readFor(tag, owner == null ? null : owner.uuid());
         if (tag.contains("Shown")) { // only in a sync to a client
@@ -1546,6 +1614,11 @@ public class ShatterTotemBlockEntity extends BlockEntity implements com.mrgregle
         saveAdditional(tag);
         // clients get what the totem shows, never the look itself (a look hidden while its owner has no dressing stays private)
         tag.remove(com.mrgregles.bsp_core.looks.TotemLook.TAG);
+        // nor Harvest's queue (up to 256 ores): only the draw it takes now, which the totem screen subtracts
+        tag.remove("Harvest");
+        tag.remove("HarvestLast");
+        harvestDrawSent = harvestDraw();
+        tag.putInt("HarvestDraw", harvestDrawSent);
         computeShown();
         CompoundTag shown = new CompoundTag();
         if (shownBody != null) {
