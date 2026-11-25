@@ -25,7 +25,8 @@ import java.util.UUID;
  * {@code transmitterBaseRange} blocks plus {@code transmitterRangePerCard} per card, up to {@code transmitterMaxRange}, as a cube around
  * the block; an FE buffer filled from any side, drawn while someone operates a machine through it ({@code transmitterFeBase} plus
  * {@code transmitterFePerCard} per card, each tick, however many people operate through it at once). Its owner and their team may use it.
- * The cards stay in it when it is broken (the loot table copies them to the dropped item).
+ * The cards stay in it when it is broken (the loot table copies them to the dropped item), and so does the Inventory Link upgrade
+ * ({@link #inventoryLink()}): bought once by the owner, it lets operators use their own inventory in the machine screens it carries.
  */
 public class RemoteTransmitterBlockEntity extends BlockEntity {
     public static final int SLOTS = 3;
@@ -36,6 +37,8 @@ public class RemoteTransmitterBlockEntity extends BlockEntity {
     /** The game time a machine was last operated through it; it draws FE for that tick. */
     private long operatedTick = -1;
     private boolean operatedLastTick;
+    /** The Inventory Link upgrade: operators may move items between the machine and their own inventory. */
+    private boolean inventoryLink;
 
     private final ItemStackHandler cards = new ItemStackHandler(SLOTS) {
         @Override
@@ -138,6 +141,15 @@ public class RemoteTransmitterBlockEntity extends BlockEntity {
 
     public String getOwnerName() {
         return ownerName;
+    }
+
+    public boolean inventoryLink() {
+        return inventoryLink;
+    }
+
+    public void setInventoryLink(boolean on) {
+        inventoryLink = on;
+        changed();
     }
 
     public ItemStackHandler getCards() {
@@ -267,6 +279,9 @@ public class RemoteTransmitterBlockEntity extends BlockEntity {
         }
         tag.put("Cards", cards.serializeNBT());
         tag.put("Energy", energy.serializeNBT());
+        if (inventoryLink) {
+            tag.putBoolean("InventoryLink", true);
+        }
     }
 
     @Override
@@ -283,6 +298,7 @@ public class RemoteTransmitterBlockEntity extends BlockEntity {
             energy.deserializeNBT(tag.get("Energy"));
         }
         operatedLastTick = tag.getBoolean("InUse");
+        inventoryLink = tag.getBoolean("InventoryLink");
     }
 
     @Override

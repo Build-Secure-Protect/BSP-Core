@@ -33,8 +33,9 @@ public final class BSPNetwork {
      * 22: machine tracking (TrackerSyncPacket, TrackerSnapshotPacket, TrackerWatchPacket, TrackerActionPacket).
      * 23: the deposit box's opening carries its prize drawer (places and seasons); the season prize screen's opening carries each
      *     place's LuckPerms group, and {@link SeasonGroupPacket} sets one.
+     * 24: {@link RemoteLinkPacket}: a machine screen operated from the Holo Grid is locked without the transmitter's Inventory Link.
      */
-    private static final String PROTOCOL = "23";
+    private static final String PROTOCOL = "24";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
@@ -356,6 +357,9 @@ public final class BSPNetwork {
         CHANNEL.messageBuilder(SeasonGroupPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SeasonGroupPacket::encode).decoder(SeasonGroupPacket::decode)
                 .consumerMainThread(SeasonGroupPacket::handle).add();
+        CHANNEL.messageBuilder(RemoteLinkPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RemoteLinkPacket::encode).decoder(RemoteLinkPacket::decode)
+                .consumerMainThread(RemoteLinkPacket::handle).add();
     }
 
     public static void sendTo(ServerPlayer player, Object packet) {

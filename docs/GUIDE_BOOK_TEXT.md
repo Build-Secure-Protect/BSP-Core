@@ -1172,7 +1172,7 @@ Up to 9 pages, each with its own grid. Presets keep whole sets of pages.
 
 **Page 4: Watching**
 
-In **VIEW** the boxes show your machines live: items, power, fluids, progress. A machine in an unloaded part of the world shows its last reading.
+In **VIEW** each box shows its machine's own screen, live; a machine without one shows its items, power, fluids and progress. A machine in an unloaded part of the world shows its last reading.
 
 **POPOUT** opens the grid in its own window for a second screen. **PIN** puts one box in a corner of your game screen.
 
@@ -1184,11 +1184,17 @@ To work a machine from the grid, buy **Remote Control** in the tagger (Diamond S
 
 Reaches 16 blocks each way, plus 16 for every *Range Card* in its three slots, up to 3,072. It uses FE while someone works a machine through it. You and your team can use it.
 
-**Page 7**  `[recipe] machine_tagger`
+**Page 7: Inventory Link**
 
-**Page 8**  `[recipe] range_card`
+A machine screen opened through a transmitter lets you move items inside the machine and use all its buttons and switches. Your own inventory stays closed off unless the transmitter has the **Inventory Link**: its placer buys it in the transmitter's screen with *Illyrium Shatter Coins*, and it stays in the transmitter when it is mined.
 
-**Page 9**  `[recipe] remote_transmitter`
+Whatever is on your cursor when such a screen closes goes back into the machine, or drops beside it when the machine is full.
+
+**Page 8**  `[recipe] machine_tagger`
+
+**Page 9**  `[recipe] range_card`
+
+**Page 10**  `[recipe] remote_transmitter`
 
 ---
 

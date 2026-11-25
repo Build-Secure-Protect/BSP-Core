@@ -2,7 +2,24 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
-## [Unreleased]
+## [1.25.0] - 2026-11-25
+
+Network protocol 24: servers and clients both need this version.
+
+### Added
+- **Inventory Link, a Remote Control Transmitter upgrade.** A machine screen opened from the Holo Grid through a transmitter lets you move items inside the machine and use all its buttons and switches (on/off, redstone mode, side configuration), but your own inventory is covered by a lock plate and closed off: nothing moves between the machine and your inventory. With the transmitter's Inventory Link, the screen works as if you stood at the machine. The transmitter's placer buys it in the transmitter's screen, in a panel beside the inventory, for 1 Illyrium Shatter Coin (server setting `transmitterInventoryLinkIllyrium`); it covers everyone who operates through that transmitter, and it stays in the transmitter when it is mined. A screen keeps the state it opened with.
+- Anything still held on the cursor when such a screen closes goes back into the machine; if the machine is full it drops beside the machine, and the action bar says so.
+- The guide book's machine tracking entry has a page on the Inventory Link.
+
+### Changed
+- **Existing transmitters do not have the Inventory Link**: machine screens operated through them no longer reach your inventory until their placer buys it.
+- **Machine boxes show the machine's own screen**: the screen its mod opens for it (Mekanism, Thermal, Industrial Foregoing, PneumaticCraft, Tinkers', Extreme Reactors, Electrodynamics, Nuclear Science, Ballistix, Blastcraft, Assembly Line, Powah, RFTools, XNet, Deep Resonance, Flux Networks, Solar Flux, Mob Grinding Utils, Ender IO, Functional Storage, AE2 and its add-ons, Refined Storage, Railcraft, Iron Furnaces, MFFS, XyCraft, Hostile Neural Networks, Evolved Mekanism and Minecraft's own), drawn by that mod inside the box with its tabs, and fitted to the box. It is a picture: clicks on it do nothing (an operable box still opens the real screen). It shows the machine's slots, bars, settings and title as its own screen does; lists that screen fills from the network while open (a Refined Storage grid's items, an AE2 terminal) stay empty. Machines without a screen of their own, and the few whose screen cannot be drawn this way, keep BSP-Core's panel. Containers with lids (chests, barrels, shulker boxes) keep BSP-Core's panel, so watching them never opens them.
+- Coloured Refined Storage blocks are named as on their items ("Brown Grid"), in the Holo Grid and the tagger, instead of a raw name.
+- **Machine boxes move smoothly**: their bars (progress, power, fluids, gases, heat) glide from one reading to the next instead of jumping, landing on each reading's true value as the next is due. Machines on another server, read about once a second, no longer step once a second; a finished process fills again from empty. Item counts stay exact. The popout draws every frame (at its frame rate) while its page shows a machine, as it does for a map.
+
+## [1.24.3] - 2026-11-25
+
+Network protocol 23, unchanged: client-side only. Servers can stay on 1.24.2; players get the new map box with this version.
 
 ### Changed
 - **The Holo Grid's map box is JourneyMap's own full map** (the screen its J key opens), drawn by JourneyMap inside the box, in the Holo Grid, the popout and the pinned box: its map types (day, night, topo, biome, caves), shading and time of day, mobs, animals, pets and players, its own player arrow, waypoints, chunk grid, every zoom level and its buttons (options, waypoints, search, follow). Drag to pan, scroll to zoom, and JourneyMap's own keys work while the mouse is over the map. Its right-click menu and waypoint editor open inside the box; while one is open, or while typing in its chat or search box, every key goes there (Esc closes the menu, editor or chat; from the search box Esc closes the Holo Grid). The map moves smoothly with the player; the popout draws every frame while its page shows the map. All map boxes and the J screen share one view, as JourneyMap's map does. Options or the waypoint manager opened from the box come back to the Holo Grid when closed. JourneyMap's close button and J key inside the Holo Grid's box close the Holo Grid; in the popout they do nothing.

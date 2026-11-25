@@ -144,7 +144,8 @@ for facing, rot in (("north", 180), ("east", 270), ("south", 0), ("west", 90)): 
 (ASSETS / "models/item/remote_transmitter.json").write_text(json.dumps({"parent": "bsp_core:block/remote_transmitter"}, indent=2) + "\n")
 loot = {"type": "minecraft:block", "pools": [{"rolls": 1, "entries": [{"type": "minecraft:item", "name": "bsp_core:remote_transmitter", "functions": [
     {"function": "minecraft:copy_nbt", "source": "block_entity", "ops": [{"source": "Cards", "target": "BlockEntityTag.Cards", "op": "replace"},
-                                                                       {"source": "Energy", "target": "BlockEntityTag.Energy", "op": "replace"}]}]}]}]}  # no survives_explosion: a blast never destroys the cards inside
+                                                                       {"source": "Energy", "target": "BlockEntityTag.Energy", "op": "replace"},
+                                                                       {"source": "InventoryLink", "target": "BlockEntityTag.InventoryLink", "op": "replace"}]}]}]}]}  # no survives_explosion: a blast never destroys the cards inside
 (DATA / "loot_tables/blocks/remote_transmitter.json").write_text(json.dumps(loot, indent=2) + "\n")
 pick = ROOT / "data/minecraft/tags/blocks/mineable/pickaxe.json"
 tags = json.loads(pick.read_text())

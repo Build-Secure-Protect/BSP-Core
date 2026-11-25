@@ -4233,7 +4233,7 @@ Server side. GameTests `harvest_regrows_a_mined_ore`, `harvest_built_over_spot_d
 - [ ] Set `effects.harvestDraw` to 200 (more than an Output 0 totem gives off), mine a BSP ore near a Harvest totem without Output: it does not grow back and the plasma output stays at its full figure. Set it back to 25: the ore grows.- [ ] Harvest 4 totem, nothing mined for a while: mine a BSP ore and time it: it grows back after 30 s, not at once. Mine two at once: the second comes 30 s after the first. The upgrade tree's Harvest line reads "grow back after 30 s, one at a time".- [ ] (audit) Stand in the spot of a mined ore when it is due: it does not grow inside you; step out: it grows within a second. With the totem screen open while an ore waits on a clear spot, the plasma line drops by 25; build over the spot: it goes back to the full figure within a second.
 
 
-## Holo Grid: JourneyMap's own map in the map box (2026-11-25, unreleased)
+## Holo Grid: JourneyMap's own map in the map box (2026-11-25, 1.24.3)
 Client side; not seen in a client. Compare each step with JourneyMap's J screen side by side.
 - [ ] VIEW with a map box: the box shows JourneyMap's full map with its toolbar, status line and key list, as the J screen does. Walk and fly: the map and JourneyMap's player arrow move smoothly, no jumps. Mobs, animals and other players show as JourneyMap's icons.
 - [ ] Day, night, topo, biome and cave buttons change the box; night looks dark at night as on the J screen. The chunk grid button shows the grid. Zoom in with the wheel down to single blocks and out to the widest; drag to pan; the follow button (or F) brings it back to you.
@@ -4250,7 +4250,7 @@ Client side; not seen in a client. Compare each step with JourneyMap's J screen 
 - [ ] Remove JourneyMap from the instance: the box shows BSP-Core's own map with its + - o keys, no errors.
 - [ ] GUI scale 1, 2, 3 and Auto, and a Retina screen: the map fills the box exactly, the mouse hovers the right spot (the block under the mouse in the status line matches), and the buttons are clickable where drawn.
 
-## Holo Grid: JourneyMap reloading, BSP-Core's map, waypoints through JourneyMap (2026-11-25, unreleased)
+## Holo Grid: JourneyMap reloading, BSP-Core's map, waypoints through JourneyMap (2026-11-25, 1.24.3)
 With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has failed (or in an instance where JourneyMap's map screen is broken by an update). Compare with JourneyMap's J map side by side.
 - [ ] BSP-Core's map: the same land as JourneyMap's day map, in its colours and shading (once JourneyMap has saved its pictures, about a minute in a new world). Night button: JourneyMap's night map. Go into a cave: the cave layer you are in; the Nether: its layers.
 - [ ] JourneyMap's blue player marker turns with you; cows, pigs, creepers show as JourneyMap's face icons; other players as their faces with names; mobs in caves far below are not shown.
@@ -4260,3 +4260,30 @@ With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has 
 - [ ] Make or delete a waypoint on JourneyMap's J map: BSP-Core's map shows the change within a second.
 - [ ] Reloading: when JourneyMap's map fails once, the box shows BSP-Core's map with "JourneyMap is reloading…" and JourneyMap's map is back after about 5 seconds. Three failures in 5 minutes: "JourneyMap's map stopped…" until you log in again.
 - [ ] Popout and pin show BSP-Core's map the same way when JourneyMap's map is not shown.
+
+## Holo Grid: machine boxes glide between readings (2026-11-25, 1.25.0)
+- [ ] A working Mekanism machine (or furnace) in a box on the same server: its progress and power bars move smoothly, as in its own screen.
+- [ ] The same machine watched from another server: the bars glide across each second instead of jumping once a second, and reach the true value each time; a finished process starts again from empty (no sliding back). Item counts change exactly.
+- [ ] The popout with a machine box: as smooth as the Holo Grid, at the popout's frame rate (30 or 60).
+- [ ] A machine left idle for a while then started: its bars jump to the new values (no slow glide from long ago).
+
+## Holo Grid: machines' own screens in their boxes (2026-11-25, 1.25.0)
+- [ ] Tag a Mekanism machine, a Thermal machine, a furnace, an AE2 drive and a Refined Storage grid; put each in a box: each shows its mod's own screen (with Mekanism's side tabs), fitted to the box, titled as its own screen ("Crafting Grid", not a raw name).
+- [ ] A running machine: its progress arrow and bars move in the box as in its own screen; hovering or clicking the picture does nothing; an operable box still opens the real screen.
+- [ ] The same machine in the Holo Grid, the popout and a pin at once: all three show it, each at its own size, without the frame rate dropping.
+- [ ] A chest, barrel or shulker box in a box: BSP-Core's panel, and the container never opens (no lid, no sound) while watched.
+- [ ] An AE2 charger, tagged and watched: BSP-Core's panel shows, and the charger works as before.
+- [ ] Watch 20 busy Mekanism machines for a minute on a server: no lag spike, and `/spark` shows BSP-Core's reading small.
+- [ ] Close the Holo Grid on a Mekanism machine and break the machine a minute later: nothing odd (its menu was let go).
+- [ ] A dedicated server on the old BSP-Core with a new client (and the other way round): boxes show BSP-Core's panels, nothing breaks.
+
+## Remote Control: the Inventory Link (2026-11-25, 1.25.0, protocol 24)
+- [ ] Operate a furnace from the Holo Grid through a transmitter without the upgrade: the screen opens with a dark steel lock plate (turquoise corners, gold padlock, "INVENTORY LINK OFF") over your inventory. Items move between the furnace's slots; the recipe book, shift-click, number keys, Q, double-click and dropping outside do not move anything to or from your inventory.
+- [ ] Take the output onto the cursor and close the screen: it goes back into the furnace. Fill the furnace first and do the same: it drops beside the furnace and the action bar says how many.
+- [ ] Hover over the plate: no tooltips. Click it: nothing.
+- [ ] A Mekanism machine the same way: its on/off button, redstone mode and side configuration work; its upgrades tab moves nothing from your inventory.
+- [ ] Refined Storage grid and AE2 terminal operated without the upgrade: items can be taken onto the cursor and put back, but shift-click, scrolling and crafting into the inventory do nothing.
+- [ ] Open the transmitter: the INVENTORY LINK panel beside the inventory shows an off lamp and a gold "BUY 1" key with the Illyrium coin. A team member sees "OWNER ONLY". Without the coin: "Not enough Illyrium Shatter Coins". With it: the coin is taken, the lamp lights, the key reads INSTALLED.
+- [ ] After buying, operate the furnace again: no plate, items move to and from your inventory.
+- [ ] Mine the transmitter and place it again: still INSTALLED. Its range cards are still in it.
+- [ ] A client on 1.24.x joining a server with this version (and the other way round) is refused with a version mismatch, not a crash.

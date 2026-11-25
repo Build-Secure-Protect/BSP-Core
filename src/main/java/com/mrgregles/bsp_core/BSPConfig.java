@@ -253,6 +253,7 @@ public final class BSPConfig {
     public static final ForgeConfigSpec.IntValue TRANSMITTER_FE_PER_CARD;
     public static final ForgeConfigSpec.IntValue TRANSMITTER_FE_BUFFER;
     public static final ForgeConfigSpec.IntValue TRANSMITTER_MAX_PER_PLAYER;
+    public static final ForgeConfigSpec.IntValue TRANSMITTER_LINK_ILLYRIUM;
 
     public static final ForgeConfigSpec SPEC;
 
@@ -998,6 +999,9 @@ public final class BSPConfig {
                 .defineInRange("transmitterFeBuffer", 100000, 0, Integer.MAX_VALUE);
         TRANSMITTER_MAX_PER_PLAYER = BUILDER.comment("The most transmitters one player may have placed on this server. 0 = no limit.")
                 .defineInRange("transmittersPerPlayer", 4, 0, 1000);
+        TRANSMITTER_LINK_ILLYRIUM = BUILDER.comment("Illyrium Shatter Coins for a transmitter's Inventory Link upgrade, bought by its owner in its screen. Without it, a machine",
+                        "screen operated through the transmitter lets items move only inside the machine; with it, between the machine and the player's inventory too.")
+                .defineInRange("transmitterInventoryLinkIllyrium", 1, 0, 65535);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

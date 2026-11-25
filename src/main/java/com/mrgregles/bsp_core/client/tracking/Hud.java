@@ -60,6 +60,31 @@ public final class Hud {
         }
     }
 
+    /** A padlock, 9 x 11 pixels, in {@code col} with a darker side and a keyhole. */
+    public static void padlock(GuiGraphics g, int x, int y, int col) {
+        int d = darken(col, 0.55f);
+        rect(g, x + 2, y, 5, 1, col);
+        rect(g, x + 1, y + 1, 1, 4, col);
+        rect(g, x + 7, y + 1, 1, 4, col);
+        rect(g, x, y + 4, 9, 7, col);
+        rect(g, x, y + 10, 9, 1, d);
+        rect(g, x + 8, y + 4, 1, 7, d);
+        rect(g, x + 4, y + 6, 1, 3, BLACK);
+        rect(g, x + 3, y + 6, 3, 1, BLACK);
+    }
+
+    /** Turquoise corner brackets round a box, {@code k} pixels long. */
+    public static void corners(GuiGraphics g, int x, int y, int w, int h, int col, int k) {
+        rect(g, x, y, k, 1, col);
+        rect(g, x, y, 1, k, col);
+        rect(g, x + w - k, y, k, 1, col);
+        rect(g, x + w - 1, y, 1, k, col);
+        rect(g, x, y + h - 1, k, 1, col);
+        rect(g, x, y + h - k, 1, k, col);
+        rect(g, x + w - k, y + h - 1, k, 1, col);
+        rect(g, x + w - 1, y + h - k, 1, k, col);
+    }
+
     /** A filled disc. */
     public static void disc(GuiGraphics g, int cx, int cy, int r, int c) {
         for (int dy = -r; dy <= r; dy++) {
@@ -197,7 +222,13 @@ public final class Hud {
             return name;
         }
         var block = ForgeRegistries.BLOCKS.getValue(ResourceLocation.tryParse(tag.getString("block")));
-        return block == null ? tag.getString("block") : block.getName().getString();
+        return block == null ? tag.getString("block") : Hud.blockName(block);
+    }
+
+    /** A block's name as players see it on its item (some mods, such as Refined Storage's coloured blocks, name only the item). */
+    public static String blockName(net.minecraft.world.level.block.Block block) {
+        var item = block.asItem();
+        return item == net.minecraft.world.item.Items.AIR ? block.getName().getString() : new net.minecraft.world.item.ItemStack(item).getHoverName().getString();
     }
 
     /** "survival-1 · Overworld" for a tag (no coordinates, for streamers). */

@@ -39,7 +39,7 @@ public final class BSPClientConfig {
         b.pop();
         b.comment("Machine tracking: the Holo Grid, its popout window and the pinned box").push("tracking");
         HOLO_BUTTON = b.comment("Draw the HOLO button above the inventory, which opens the Holo Grid. Its key binding opens it too.").define("holoButton", true);
-        POPOUT_FPS = b.comment("Frames a second the popout window is drawn at: 30 or 60. It is redrawn only when something on it changes, and every frame while its page shows a map.").defineInRange("popoutFps", 30, 30, 60);
+        POPOUT_FPS = b.comment("Frames a second the popout window is drawn at: 30 or 60. It is redrawn only when something on it changes, and every frame while its page shows a map or a machine.").defineInRange("popoutFps", 30, 30, 60);
         PIN_SHOWN = b.comment("Show the pinned Holo Grid box on the game screen (also its key).").define("pinShown", true);
         HOLO_MAP_CONTROLS = b.comment("Show JourneyMap's own buttons (map types, day and night, mobs, waypoints, options, zoom) on the map box in the Holo Grid and the popout.",
                 "Off leaves just the map: drag to pan, scroll to zoom, and JourneyMap's keys still work. JourneyMap's own \"Disable Fullscreen Buttons\" key over the box switches this too. The pinned box never shows them.").define("mapControls", true);

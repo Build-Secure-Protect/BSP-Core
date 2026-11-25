@@ -1,5 +1,6 @@
 package com.mrgregles.bsp_core.client.tracking;
 
+import com.mrgregles.bsp_core.coin.CoinTier;
 import com.mrgregles.bsp_core.tracking.TransmitterMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,6 +16,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 import static com.mrgregles.bsp_core.client.tracking.Hud.*;
 
@@ -23,10 +25,13 @@ import static com.mrgregles.bsp_core.client.tracking.Hud.*;
  * of the land round the transmitter with its range drawn as a square (the transmitter in gold, tagged machines inside it turquoise, those
  * outside grey; a ripple runs out while someone operates through it). On the right: the range in blocks, the three range card slots,
  * the power bar with its draw, and the placer and their team as heads in sockets, a crown for the placer and an online lamp for the rest.
- * The player's inventory below.
+ * The player's inventory below, and beside it the Inventory Link panel (the owner's pick, look A): an off or lit lamp, what the upgrade
+ * does, and for the placer a gold BUY key with its Illyrium Shatter Coin price, INSTALLED once bought.
  */
 public class TransmitterScreen extends AbstractContainerScreen<TransmitterMenu> {
     private static final int MX = 8, MY = 21, MW = 150, MH = 118;
+    /** The Inventory Link panel beside the inventory, and its BUY key inside it. */
+    private static final int LX = 176, LY = 159, LW = 136, LH = 76, KX = LX + 7, KY = LY + 44, KW = LW - 14, KH = 22;
 
     public TransmitterScreen(TransmitterMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -64,6 +69,61 @@ public class TransmitterScreen extends AbstractContainerScreen<TransmitterMenu> 
         for (int c = 0; c < 9; c++) {
             slotFrame(g, x + TransmitterMenu.INV_X - 1 + c * 18, y + TransmitterMenu.INV_Y + 57);
         }
+        link(g, x + LX, y + LY, mouseX, mouseY);
+    }
+
+    private boolean linked() {
+        return menu.data(TransmitterMenu.LINK) == 1;
+    }
+
+    /** Whether the viewer placed this transmitter (only they can buy the upgrade). */
+    private boolean viewerOwns() {
+        var p = Minecraft.getInstance().player;
+        return p != null && !menu.people.isEmpty() && menu.people.get(0).owner() && menu.people.get(0).id().equals(p.getUUID());
+    }
+
+    private void link(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
+        rect(g, x, y, LW, LH, 0xFF151B24);
+        outline(g, x, y, LW, LH, BLACK);
+        outline(g, x + 1, y + 1, LW - 2, LH - 2, DIM);
+        corners(g, x, y, LW, LH, TQ, 5);
+        text(g, tr("gui.bsp_core.transmitter.link").getString(), x + 7, y + 6, TQ);
+        lamp(g, x + LW - 10, y + 10, 3, TQ, linked());
+        small(g, fitSmall(tr("gui.bsp_core.transmitter.link_what1").getString(), LW - 14), x + 7, y + 20, FG);
+        small(g, fitSmall(tr("gui.bsp_core.transmitter.link_what2").getString(), LW - 14), x + 7, y + 29, FG);
+        int kx = x + KX - LX, ky = y + KY - LY;
+        if (linked()) {
+            rect(g, kx, ky, KW, KH, 0xFF0B2B28);
+            outline(g, kx, ky, KW, KH, TQ);
+            String t = tr("gui.bsp_core.transmitter.link_installed").getString();
+            text(g, t, kx + KW / 2 - font().width(t) / 2, ky + 4, TQ);
+            String k = fitSmall(tr("gui.bsp_core.transmitter.link_kept").getString(), KW - 6);
+            small(g, k, kx + KW / 2f - smallWidth(k) / 2f, ky + 14, MUTED);
+        } else if (viewerOwns()) {
+            boolean hover = mouseX >= kx && mouseX < kx + KW && mouseY >= ky && mouseY < ky + KH;
+            key(g, kx, ky, KW, KH, "", false, hover, GOLD);
+            String t = tr("gui.bsp_core.transmitter.link_buy", menu.data(TransmitterMenu.LINK_PRICE)).getString();
+            int tw = font().width(t), sx = kx + KW / 2 - (tw + 18) / 2;
+            text(g, t, sx, ky + 7, GOLD);
+            g.renderItem(new ItemStack(CoinTier.ILLYRIUM.coin()), sx + tw + 2, ky + 3);
+        } else {
+            key(g, kx, ky, KW, KH, "", false, false, OFF);
+            String t = tr("gui.bsp_core.transmitter.link_owner_only").getString();
+            text(g, t, kx + KW / 2 - font().width(t) / 2, ky + 7, OFF);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int kx = leftPos + KX, ky = topPos + KY;
+        if (button == 0 && !linked() && viewerOwns() && mouseX >= kx && mouseX < kx + KW && mouseY >= ky && mouseY < ky + KH
+                && Minecraft.getInstance().gameMode != null) {
+            Minecraft.getInstance().gameMode.handleInventoryButtonClick(menu.containerId, TransmitterMenu.BUY_LINK);
+            Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1f));
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private static void slotFrame(GuiGraphics g, int x, int y) {

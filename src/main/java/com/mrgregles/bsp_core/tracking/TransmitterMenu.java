@@ -31,7 +31,9 @@ import java.util.UUID;
 public class TransmitterMenu extends AbstractContainerMenu {
     public static final int CARD_X = 166, CARD_Y = 61, INV_X = 8, INV_Y = 160;
     /** Synced values; a menu's values travel as 16 bits, so the charge goes in two halves. */
-    public static final int RANGE = 0, CARDS = 1, FE_LO = 2, FE_HI = 3, MAX_LO = 4, MAX_HI = 5, IN_USE = 6, FE_TICK = 7, DATA = 8;
+    public static final int RANGE = 0, CARDS = 1, FE_LO = 2, FE_HI = 3, MAX_LO = 4, MAX_HI = 5, IN_USE = 6, FE_TICK = 7, LINK = 8, LINK_PRICE = 9, DATA = 10;
+    /** The screen's buttons ({@code clickMenuButton}): buy the Inventory Link upgrade. */
+    public static final int BUY_LINK = 0;
 
     /** One person who may use the transmitter, as the screen shows them. */
     public record Person(UUID id, String name, boolean owner, boolean online) {
@@ -144,6 +146,8 @@ public class TransmitterMenu extends AbstractContainerMenu {
                     case MAX_HI -> tx.energyCapacity() >>> 16;
                     case IN_USE -> tx.inUse() ? 1 : 0;
                     case FE_TICK -> tx.fePerTick();
+                    case LINK -> tx.inventoryLink() ? 1 : 0;
+                    case LINK_PRICE -> Math.min(0xFFFF, linkPrice());
                     default -> 0;
                 };
             }
@@ -192,6 +196,41 @@ public class TransmitterMenu extends AbstractContainerMenu {
             slot.setChanged();
         }
         return original;
+    }
+
+    /** The owner buys the Inventory Link upgrade from the screen (owner decision RC1). */
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id != BUY_LINK || !(player instanceof ServerPlayer sp)) {
+            return false;
+        }
+        String why = buyLink(sp, transmitter);
+        sp.displayClientMessage(Component.translatable("message.bsp_core.transmitter." + (why == null ? "link_bought" : why))
+                .withStyle(why == null ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.RED), true);
+        return why == null;
+    }
+
+    /** Buys the Inventory Link upgrade for {@code tx} with Illyrium Shatter Coins from its owner's inventory. A refusal key, or null when bought. */
+    @org.jetbrains.annotations.Nullable
+    public static String buyLink(ServerPlayer player, RemoteTransmitterBlockEntity tx) {
+        if (tx.inventoryLink()) {
+            return "link_owned";
+        }
+        if (tx.getOwner() == null || !tx.getOwner().equals(player.getUUID())) {
+            return "link_owner_only";
+        }
+        int price = linkPrice();
+        if (price > 0 && !com.mrgregles.bsp_core.coin.CoinWallet.take(player, com.mrgregles.bsp_core.coin.CoinTier.ILLYRIUM, price)) {
+            return "no_illyrium";
+        }
+        tx.setInventoryLink(true);
+        com.mrgregles.bsp_core.BSPCore.LOGGER.info("{} bought the Inventory Link upgrade for the transmitter at {} for {} Illyrium Shatter Coins",
+                player.getGameProfile().getName(), tx.getBlockPos().toShortString(), price);
+        return null;
+    }
+
+    public static int linkPrice() {
+        return com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.TRANSMITTER_LINK_ILLYRIUM, 1);
     }
 
     @Override

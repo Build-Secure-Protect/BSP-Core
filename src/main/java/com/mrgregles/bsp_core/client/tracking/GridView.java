@@ -103,7 +103,15 @@ public final class GridView {
             small(g, fitSmall(s, p.w() - 6), p.x() + p.w() / 2f - Math.min(smallWidth(s), p.w() - 6) / 2, p.y() + p.h() / 2f - 3, MUTED);
             return;
         }
-        CompoundTag reading = ClientTracking.reading(id);
+        CompoundTag reading = ClientTracking.smoothed(id);
+        rect(g, p.x(), p.y(), p.w(), p.h(), BLACK);
+        if (RealScreens.draw(g, id, reading, p.x(), p.y(), p.w(), p.h())) {
+            // the machine's own screen, read-only (owner decision MS2); an operable box is edged turquoise, brighter under the mouse
+            if (reading.getBoolean("op")) {
+                outline(g, p.x() - 1, p.y() - 1, p.w() + 2, p.h() + 2, hover && tools ? FG : TQ);
+            }
+            return;
+        }
         ModPanels.draw(g, p.x(), p.y(), p.w(), p.h(), tag, reading, reading.getBoolean("op"), hover && tools);
     }
 
@@ -119,7 +127,7 @@ public final class GridView {
                 break;
             }
             CompoundTag t = tags.getCompound(i);
-            CompoundTag r = ClientTracking.reading(t.getString("id"));
+            CompoundTag r = ClientTracking.smoothed(t.getString("id"));
             lamp(g, x + 6, ry + 4, 2, r.getByte("st") == 0 && r.contains("block") ? TQ : OFF, true);
             small(g, fitSmall(tagName(t), w * 0.5f), x + 11, ry + 1, FG);
             if (w > 110) {

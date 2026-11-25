@@ -133,7 +133,7 @@ public final class WatchService {
             }
             CompoundTag reading = readHere(server, t, player, readThisTick);
             if (Boolean.TRUE.equals(w.operable.get(id)) && reading.getByte("st") == MachineSnapshot.OK) {
-                reading = reading.copy();
+                reading = shallow(reading);
                 reading.putBoolean("op", true); // a box the player may click to open the machine's own screen
             }
             CompoundTag last = w.sent.get(id);
@@ -141,10 +141,27 @@ public final class WatchService {
                 continue;
             }
             w.sent.put(id, reading);
-            CompoundTag out = reading.copy();
+            CompoundTag out = shallow(reading);
             out.putLong("ms", System.currentTimeMillis());
+            if (last != null && out.contains("real") && last.contains("real")
+                    && out.getCompound("real").get("nbt") == last.getCompound("real").get("nbt")) {
+                // the machine's saved data is the same tag as last sent: the client keeps its copy, so only the small parts travel
+                CompoundTag real = shallow(out.getCompound("real"));
+                real.remove("nbt");
+                real.putBoolean("keepNbt", true);
+                out.put("real", real);
+            }
             BSPNetwork.sendChecked(player, new TrackerSnapshotPacket(id, out), TrackerSnapshotPacket::encode, "a machine reading");
         }
+    }
+
+    /** A new tag holding the same parts (never changed once read), so a big machine's saved data is not copied every tick. */
+    static CompoundTag shallow(CompoundTag t) {
+        CompoundTag c = new CompoundTag();
+        for (String k : t.getAllKeys()) {
+            c.put(k, t.get(k));
+        }
+        return c;
     }
 
     /**

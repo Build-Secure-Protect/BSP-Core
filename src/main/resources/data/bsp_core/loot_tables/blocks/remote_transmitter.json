@@ -21,6 +21,11 @@
                   "source": "Energy",
                   "target": "BlockEntityTag.Energy",
                   "op": "replace"
+                },
+                {
+                  "source": "InventoryLink",
+                  "target": "BlockEntityTag.InventoryLink",
+                  "op": "replace"
                 }
               ]
             }

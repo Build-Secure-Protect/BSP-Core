@@ -38,7 +38,8 @@ import java.util.UUID;
  * box opens the machine's own screen as if they had right-clicked it (with an empty hand, through Forge's right-click event, so claim mods
  * still decide). Minecraft closes a screen when its player is too far from the block; for a screen opened this way {@link #stillValid}
  * answers instead (the mixins in {@code mixin/RemoteMenu*}), keeping it open while every condition holds, drawing the transmitter's FE each
- * tick, and closing it the moment one fails. Only on the machine's own server and world.
+ * tick, and closing it the moment one fails. Only on the machine's own server and world. Without the transmitter's Inventory Link
+ * upgrade the screen is locked to the machine's own items ({@link InventoryLink}).
  */
 @Mod.EventBusSubscriber(modid = BSPCore.MODID)
 public final class RemoteOperate {
@@ -89,8 +90,19 @@ public final class RemoteOperate {
         if (!tx.powered()) {
             return "op_no_power";
         }
+        if (player.containerMenu != player.inventoryMenu) {
+            player.closeContainer(); // whatever screen is open closes first (a locked one is settled as it closes)
+        }
         AbstractContainerMenu before = player.containerMenu;
-        if (!rightClick(player, level, pos)) {
+        boolean locked = !tx.inventoryLink();
+        var machine = level.getBlockEntity(pos);
+        var carried = machine == null ? null : InventoryLink.before(player, machine);
+        boolean used = rightClick(player, level, pos, locked ? machine : null);
+        if (locked && carried != null) {
+            // whatever the use itself handed over goes back: the screen it opens is locked to the machine's own items
+            InventoryLink.settleSince(player, machine, carried, player.containerMenu);
+        }
+        if (!used) {
             return "no_access";
         }
         if (player.containerMenu == before || player.containerMenu == player.inventoryMenu) {
@@ -98,11 +110,19 @@ public final class RemoteOperate {
         }
         tx.operate();
         SESSIONS.put(player.getUUID(), new Session(player.containerMenu, t, GlobalPos.of(level.dimension(), tx.getBlockPos()), level.getBlockEntity(pos)));
+        if (locked && machine != null) {
+            InventoryLink.lock(player.containerMenu, machine, player); // no Inventory Link: items move only inside the machine
+        }
+        // after the screen's own opening packet, so the client knows which screen to cover
+        com.mrgregles.bsp_core.network.BSPNetwork.sendTo(player, new com.mrgregles.bsp_core.network.RemoteLinkPacket(player.containerMenu.containerId, locked));
         return null;
     }
 
-    /** Right-clicks the block for the player with an empty main hand; false when a claim mod or the block refused. */
-    private static boolean rightClick(ServerPlayer player, ServerLevel level, BlockPos pos) {
+    /**
+     * Right-clicks the block for the player with an empty main hand; false when a claim mod or the block refused. What the block puts in
+     * the hand goes to the player, or, for a screen that opens locked ({@code lockedTo} its machine), back to the machine.
+     */
+    private static boolean rightClick(ServerPlayer player, ServerLevel level, BlockPos pos, @Nullable net.minecraft.world.level.block.entity.BlockEntity lockedTo) {
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
         ItemStack held = player.getMainHandItem();
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
@@ -117,7 +137,9 @@ public final class RemoteOperate {
         } finally {
             ItemStack now = player.getMainHandItem();
             player.setItemInHand(InteractionHand.MAIN_HAND, held);
-            if (!now.isEmpty() && !player.getInventory().add(now)) {
+            if (!now.isEmpty() && lockedTo != null) {
+                InventoryLink.putBack(player, lockedTo, now);
+            } else if (!now.isEmpty() && !player.getInventory().add(now)) {
                 player.drop(now, false); // the block handed something over: never lost
             }
         }
@@ -137,10 +159,12 @@ public final class RemoteOperate {
                 continue;
             }
             if (level.getBlockEntity(g.pos()) instanceof RemoteTransmitterBlockEntity tx && tx.covers(machine) && tx.covers(player.blockPosition())) {
-                if (tx.powered()) {
-                    return tx;
+                if (tx.powered() && tx.inventoryLink()) {
+                    return tx; // a powered one with the Inventory Link is the best there is
                 }
-                best = tx; // in range but without power: reported as "no power" rather than "no transmitter"
+                if (best == null || (tx.powered() && !best.powered())) {
+                    best = tx; // powered first; one in range without power is reported as "no power" rather than "no transmitter"
+                }
             }
         }
         return best;

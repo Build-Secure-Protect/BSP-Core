@@ -246,10 +246,13 @@ public final class Popout {
         return target;
     }
 
-    /** True when the shown page has a map box (JourneyMap's or BSP-Core's), which moves with the player: then every frame is drawn. */
+    /**
+     * True when the shown page has a map box (which moves with the player) or a machine box (whose bars glide between readings, owner
+     * decision MS1): then every frame is drawn, at the popout's frame rate.
+     */
     private static boolean liveMap() {
         for (GridModel.Box b : GridModel.page().boxes) {
-            if (b.src.equals("map")) {
+            if (b.src.equals("map") || b.tagId() != null) {
                 return true;
             }
         }
@@ -512,6 +515,7 @@ public final class Popout {
             close();
             MapView.clear();
             JourneyMapView.clear();
+            RealScreens.clear();
             WatchSet.reset();
         }
     }

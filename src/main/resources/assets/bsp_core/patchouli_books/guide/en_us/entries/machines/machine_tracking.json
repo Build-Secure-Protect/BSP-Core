@@ -21,7 +21,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "In $(l)VIEW$() the boxes show your machines live: items, power, fluids, progress. A machine in an unloaded part of the world shows its last reading.$(br2)$(l)POPOUT$() opens the grid in its own window for a second screen. $(l)PIN$() puts one box in a corner of your game screen.",
+      "text": "In $(l)VIEW$() each box shows its machine's own screen, live; a machine without one shows its items, power, fluids and progress. A machine in an unloaded part of the world shows its last reading.$(br2)$(l)POPOUT$() opens the grid in its own window for a second screen. $(l)PIN$() puts one box in a corner of your game screen.",
       "title": "Watching"
     },
     {
@@ -33,6 +33,11 @@
       "type": "patchouli:spotlight",
       "item": "bsp_core:remote_transmitter",
       "text": "Reaches 16 blocks each way, plus 16 for every $(item)Range Card$() in its three slots, up to 3,072. It uses FE while someone works a machine through it. You and your team can use it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A machine screen opened through a transmitter lets you move items inside the machine and use all its buttons and switches. Your own inventory stays closed off unless the transmitter has the $(l)Inventory Link$(): its placer buys it in the transmitter's screen with $(item)Illyrium Shatter Coins$(), and it stays in the transmitter when it is mined.$(br2)Whatever is on your cursor when such a screen closes goes back into the machine, or drops beside it when the machine is full.",
+      "title": "Inventory Link"
     },
     {
       "type": "patchouli:crafting",

@@ -90,6 +90,11 @@ public final class MachineSnapshot {
                 out.putString("kind", "generic");
             }
         }
+        try {
+            ScreenMirror.add(level, be, out); // the real screen's data (owner decision MS2)
+        } catch (RuntimeException | LinkageError e) {
+            // the box keeps BSP-Core's own panel
+        }
         return out;
     }
 }

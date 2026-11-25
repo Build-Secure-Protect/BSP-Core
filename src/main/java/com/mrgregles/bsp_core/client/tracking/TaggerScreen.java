@@ -246,7 +246,7 @@ public class TaggerScreen extends Screen {
 
     private static String blockName(CompoundTag t) {
         var block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(net.minecraft.resources.ResourceLocation.tryParse(t.getString("block")));
-        return block == null ? t.getString("block") : block.getName().getString();
+        return block == null ? t.getString("block") : Hud.blockName(block);
     }
 
     private static boolean in(int mx, int my, int x, int y, int w, int h) {

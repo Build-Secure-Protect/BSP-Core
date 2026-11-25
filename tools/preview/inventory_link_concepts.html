@@ -1,0 +1,303 @@
+<meta charset="utf-8">
+<title>Inventory Link Looks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the dark board of the other BSP concept pages, one column; each concept is a card with the machine screen (locked inventory) beside the transmitter screen (the upgrade). Screens are drawn at GUI pixel size, shown doubled. */
+:root{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --tq:#19d3b0; --on:#0b0d11; --gold:#ffd23a; --wood:#d39a5c; --vio:#c08cff;
+  --display:"Silkscreen","Courier New",monospace; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; color-scheme:dark; }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --vio:#7a3fc4; color-scheme:light; } }
+:root[data-theme="light"]{ --bg:#f3f1ea; --panel:#fff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --tq:#0c8f78; --on:#fff; --gold:#9a6a00; --wood:#8a5326; --vio:#7a3fc4; color-scheme:light; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); margin:0; font-size:14px; line-height:1.5; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap{ max-width:1060px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:34px; }
+h1{ font-family:var(--display); font-size:clamp(20px,3.4vw,30px); margin:0; text-wrap:balance; }
+h2{ font-family:var(--display); font-size:17px; margin:0; color:var(--tq); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:80ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; font-size:13px; color:var(--muted); max-width:86ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.pair{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; align-items:start; }
+figure{ margin:0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+figcaption{ font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+canvas.gui{ width:100%; height:auto; image-rendering:pixelated; display:block; border-radius:3px; background:#0c0e12; }
+.ctl{ display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:13px; }
+.hb{ font-family:var(--display); font-size:10px; color:var(--fg); background:var(--on); border:2px solid var(--line); padding:4px 9px; cursor:pointer; }
+.hb.on{ border-color:var(--tq); color:var(--tq); }
+button:focus-visible{ outline:2px solid var(--tq); outline-offset:2px; }
+.pill{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold); }
+ul.how{ margin:0; padding-left:18px; color:var(--muted); font-size:13px; display:flex; flex-direction:column; gap:4px; max-width:86ch; }
+ul.how b{ color:var(--fg); font-weight:600; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <span class="pill">BSP-Core · Remote Control · Inventory Link</span>
+    <h1>Inventory Link looks</h1>
+    <p class="lede">Operating a machine through a Remote Control Transmitter opens its real screen. Without the transmitter's Inventory Link upgrade, the player can move items inside the machine and use its switches, but their own inventory is closed off. Each concept below shows that locked inventory over a Mekanism Enrichment Chamber, and the matching upgrade panel in the empty space beside the transmitter's inventory. Click the buttons under each to see the upgrade bought, a team member's view, and what happens when the screen closes with an item held.</p>
+  </header>
+
+  <section id="s-a">
+    <h2>A · Lock plate</h2>
+    <div class="card">
+      <p><b>A dark steel plate is screwed over the inventory</b>, with Holo Grid turquoise corners, a gold padlock and two lines saying the inventory link is off and where to get it. In the transmitter, a <b>small panel titled INVENTORY LINK</b> with an off lamp, one line on what it does and a gold BUY key showing 1 Illyrium coin; once bought the lamp lights and the key becomes the word INSTALLED.</p>
+      <div class="pair">
+        <figure><canvas class="gui" id="ma"></canvas><figcaption>Machine screen, operated from the Holo Grid</figcaption></figure>
+        <figure><canvas class="gui" id="ta"></canvas><figcaption>Remote Control Transmitter screen</figcaption></figure>
+      </div>
+      <div class="ctl" data-for="a"></div>
+    </div>
+  </section>
+
+  <section id="s-b">
+    <h2>B · Steel shutter</h2>
+    <div class="card">
+      <p><b>A rolled-down steel shutter covers the inventory</b>: grey slats with a gold-and-black hazard edge and a hanging LOCKED tag. In the transmitter, <b>an empty upgrade socket</b> with the outline of a violet chip and an INSTALL key; once bought the chip sits in the socket and glows.</p>
+      <div class="pair">
+        <figure><canvas class="gui" id="mb"></canvas><figcaption>Machine screen, operated from the Holo Grid</figcaption></figure>
+        <figure><canvas class="gui" id="tb"></canvas><figcaption>Remote Control Transmitter screen</figcaption></figure>
+      </div>
+      <div class="ctl" data-for="b"></div>
+    </div>
+  </section>
+
+  <section id="s-c">
+    <h2>C · Frosted glass</h2>
+    <div class="card">
+      <p><b>The inventory stays visible behind frosted blue glass</b>, each slot with a small lock, and a turquoise strip across its top saying the link needs the transmitter upgrade. The player still sees what they carry but cannot touch it. In the transmitter, <b>a coin slot and a lever</b>: PAY puts the Illyrium coin in and throws the lever to LINKED.</p>
+      <div class="pair">
+        <figure><canvas class="gui" id="mc"></canvas><figcaption>Machine screen, operated from the Holo Grid</figcaption></figure>
+        <figure><canvas class="gui" id="tc"></canvas><figcaption>Remote Control Transmitter screen</figcaption></figure>
+      </div>
+      <div class="ctl" data-for="c"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Same in every concept</h2>
+    <ul class="how">
+      <li><b>Without the upgrade</b>, items move between the machine's own slots, and every button, tab and switch works (on/off, redstone mode, side configuration).</li>
+      <li><b>With it</b>, the inventory shows normally and items move both ways, as if standing at the machine.</li>
+      <li><b>An item held on the cursor</b> when the screen closes goes back into the machine; if the machine is full it drops beside the machine and the action bar says so.</li>
+      <li><b>Only the transmitter's owner</b> can buy the upgrade; team members see whether it is installed. A mined transmitter keeps it.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = id => document.getElementById(id);
+const HX = {bg:'#10151c', glass:'#0c0e12', tq:'#19d3b0', dim:'#2a2f3a', fg:'#e8eaf0', mute:'#9aa3b5', off:'#565c6b', gold:'#ffd23a', vio:'#c08cff', steel:'#c9ced8', slotE:'#3a3f4b', slot:'#0c0e12'};
+const MC = {panel:'#c6c6c6', hi:'#ffffff', lo:'#555555', slotBg:'#8b8b8b', text:'#404040'};
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16, g=n>>8&255, b=n&255; r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f)); return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1); }
+function gui(id,w,h){ const cv=el(id); cv.width=w*2; cv.height=h*2; const c=cv.getContext('2d'); c.setTransform(2,0,0,2,0,0); c.imageSmoothingEnabled=false; c.W=w; c.H=h; c.cv=cv; c.hits=[]; return c; }
+function R(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x,y,w,h); }
+function O(c,x,y,w,h,col){ R(c,x,y,w,1,col); R(c,x,y+h-1,w,1,col); R(c,x,y,1,h,col); R(c,x+w-1,y,1,h,col); }
+function T(c,s,x,y,col,o){ o=o||{}; const sz=o.size||8; c.font=(o.bold?'700 ':'')+sz+'px '+(o.plain?'"IBM Plex Sans",sans-serif':'Silkscreen,monospace'); c.textBaseline='top';
+  let w=c.measureText(s).width; if(o.max&&w>o.max){ while(s.length>1&&c.measureText(s+'…').width>o.max) s=s.slice(0,-1); s+='…'; w=c.measureText(s).width; }
+  const ax = o.align==='c' ? x-w/2 : o.align==='r' ? x-w : x; c.fillStyle=col; c.fillText(s,ax,y+(o.plain?0:-1)); return w; }
+function ST(c,s,x,y,col,o){ return T(c,s,x,y,col,Object.assign({size:7,plain:true},o||{})); }
+function hit(c,x,y,w,h,fn){ c.hits.push({x,y,w,h,fn}); }
+function key(c,x,y,w,h,label,o){ o=o||{}; const on=o.on, col=o.col||HX.tq;
+  R(c,x,y,w,h,'#05070a'); R(c,x+1,y+1,w-2,h-2,on?shade(col,.28):'#1c222c');
+  R(c,x+1,y+1,w-2,1,on?shade(col,.18):'#39414f'); R(c,x+1,y+1,1,h-2,on?shade(col,.18):'#39414f');
+  R(c,x+1,y+h-2,w-2,1,on?shade(col,.5):'#0e1117'); R(c,x+w-2,y+1,1,h-2,on?shade(col,.5):'#0e1117');
+  if(on) O(c,x,y,w,h,col);
+  if(label) T(c,label,Math.round(x+w/2-(o.coin?5:0)),y+Math.floor((h-6)/2),o.dim?HX.off:(on?col:HX.fg),{align:'c',size:o.size||8});
+  if(o.coin){ const lw=label?c.measureText(label).width:0; coin(c,Math.round(x+w/2-5+lw/2+2),y+Math.floor((h-9)/2),9); }
+  if(o.fn) hit(c,x,y,w,h,o.fn); }
+function lamp(c,x,y,r,col,on){ c.fillStyle='#05070a'; c.beginPath(); c.arc(x,y,r+1,0,7); c.fill(); c.fillStyle=on?col:shade(col,.25); c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  if(on){ c.fillStyle='rgba(255,255,255,.55)'; c.fillRect(x-r/2,y-r/2,1,1); c.globalAlpha=.2; c.fillStyle=col; c.beginPath(); c.arc(x,y,r+3,0,7); c.fill(); c.globalAlpha=1; } }
+function well(c,x,y,w,h,col){ R(c,x,y,w,h,col||HX.glass); R(c,x,y,w,1,'#000'); R(c,x,y,1,h,'#000'); R(c,x,y+h-1,w,1,'#2b3240'); R(c,x+w-1,y,1,h,'#2b3240'); }
+function screw(c,x,y){ c.fillStyle='#4a505c'; c.beginPath(); c.arc(x,y,2.5,0,7); c.fill(); c.fillStyle='#8a909c'; c.beginPath(); c.arc(x-.4,y-.4,1.8,0,7); c.fill(); R(c,x-1.5,y-.5,3,1,'#2a2f3a'); }
+function corners(c,x,y,w,h,col,k){ k=k||6; R(c,x,y,k,1,col); R(c,x,y,1,k,col); R(c,x+w-k,y,k,1,col); R(c,x+w-1,y,1,k,col); R(c,x,y+h-1,k,1,col); R(c,x,y+h-k,1,k,col); R(c,x+w-k,y+h-1,k,1,col); R(c,x+w-1,y+h-k,1,k,col); }
+// the Illyrium Shatter Coin: a violet disc with a darker rim and a light I
+function coin(c,x,y,s){ s=s||9; const r=s/2; c.fillStyle='#3a1f5c'; c.beginPath(); c.arc(x+r,y+r,r,0,7); c.fill(); c.fillStyle=HX.vio; c.beginPath(); c.arc(x+r,y+r,r-1,0,7); c.fill();
+  c.fillStyle=shade(HX.vio,.7); c.beginPath(); c.arc(x+r,y+r,r-2.2,0,7); c.fill(); R(c,x+r-.5,y+2,1,s-4,'#f3e8ff'); R(c,x+r-1.5,y+2,3,1,'#f3e8ff'); R(c,x+r-1.5,y+s-3,3,1,'#f3e8ff'); }
+// a pixel padlock, 9 x 11
+function padlock(c,x,y,col){ const d=shade(col,.55); R(c,x+2,y,5,1,col); R(c,x+1,y+1,1,4,col); R(c,x+7,y+1,1,4,col); R(c,x,y+4,9,7,col); R(c,x,y+10,9,1,d); R(c,x+8,y+4,1,7,d); R(c,x+4,y+6,1,3,'#05070a'); R(c,x+3,y+6,3,1,'#05070a'); }
+function miniLock(c,x,y,col){ R(c,x+1,y,3,1,col); R(c,x+1,y,1,2,col); R(c,x+3,y,1,2,col); R(c,x,y+2,5,3,col); }
+
+// item icons
+const SHAPES = {
+  ingot:['................','................','................','................','....aaaaaaaa....','...abbbbbbbbc...','..abbbbbbbbbbc..','.abbbbbbbbbbbbc.','.acccccccccccc..','................'],
+  dust:['................','................','................','.......a........','......aba.......','.....abbba......','....abbbbba.....','...abbbcbbbc....','..abbbbbbbbbc...','..ccccccccccc...'],
+  ore:['aaaaaaaaaaaaaaaa','abbbaabbbbaabbba','abccbabbbbabccba','abbbaabccbaabbba','aaaabbbbbbaaaaaa','abbbbabbbbbbccba','abccbabbbaabccba','abbbbaabbabbbbba','aaaaaaaaabbbbbba','abbbbccbabbbccba','abbbbbbbaaaaaaaa'],
+  gem:['................','.....aaaaaa.....','....abbbbbbc....','...abbbbbbbbc...','...cbbbbbbbbc...','....cbbbbbbc....','.....cbbbbc.....','......cbbc......','.......cc.......'],
+  pick:['..........aaaa..','........aabbbba.','.......abbcccbba','......abcc...cba','.....dd.......ca','....dd..........','...dd...........','..dd............','.dd.............','dd..............'],
+  log:['aaaaaaaaaaaaaaaa','abbbbbbbbbbbbbba','abccccccccccccba','abcbbbbbbbbbbcba','abcbccccccccbcba','abcbcbbbbbbcbcba','abcbccccccccbcba','abcbbbbbbbbbbcba','abccccccccccccba','abbbbbbbbbbbbbba','aaaaaaaaaaaaaaaa'],
+};
+function icon(c,x,y,shape,cols){ const rows=SHAPES[shape]; const pal={a:shade(cols[0],1.3), b:cols[0], c:shade(cols[0],.6), d:cols[1]||'#7a5530'}; const oy=y+Math.floor((16-rows.length)/2);
+  for(let r=0;r<rows.length;r++) for(let k=0;k<16;k++){ const ch=rows[r][k]; if(ch&&ch!=='.'){ c.fillStyle=pal[ch]; c.fillRect(x+k,oy+r,1,1); } } }
+const ITEMS = { ironOre:['ore',['#a08a7a']], iron:['ingot',['#d8d8d8']], dustIron:['dust',['#d8c8b8']], gold:['ingot',['#f5c542']], diamond:['gem',['#5fe3e3']], pick:['pick',['#5fe3e3','#7a5530']], log:['log',['#8a6a3a']], coal:['gem',['#3a3a3a']], redstone:['dust',['#c0241c']], osmium:['ingot',['#9fc7da']] };
+function item(c,x,y,k,n){ const d=ITEMS[k]; if(!d) return; icon(c,x,y,d[0],d[1]); if(n&&n>1){ const s=String(n); T(c,s,x+17,y+9,'#3e3e3e',{align:'r',size:7}); T(c,s,x+16,y+8,'#ffffff',{align:'r',size:7}); } }
+
+// ---------------------------------------------------------------- Minecraft-style panel pieces (the machine's own screen)
+function mcPanel(c,x,y,w,h){ R(c,x,y,w,h,MC.panel); R(c,x,y,w-1,1,MC.hi); R(c,x,y,1,h-1,MC.hi); R(c,x+1,y+h-1,w-1,1,MC.lo); R(c,x+w-1,y+1,1,h-1,MC.lo); O(c,x-1,y-1,w+2,h+2,'#000'); }
+function mcSlot(c,x,y){ R(c,x,y,18,18,MC.slotBg); R(c,x,y,17,1,'#373737'); R(c,x,y,1,17,'#373737'); R(c,x+1,y+17,17,1,'#ffffff'); R(c,x+17,y+1,1,17,'#ffffff'); }
+function mcTab(c,x,y,col,left){ R(c,x,y,22,22,col); O(c,x,y,22,22,'#000'); R(c,x+1,y+1,20,1,shade(col,1.4)); R(c,x+1,y+1,1,20,shade(col,1.4)); R(c,x+4,y+4,14,14,shade(col,.7)); }
+const INV = [['pick',1],['log',32],['coal',14],null,['iron',9],null,null,['diamond',3],null,
+             ['redstone',40],null,null,['gold',5],null,null,null,['osmium',12],null,
+             null,null,['ironOre',6],null,null,null,null,null,null,
+             ['pick',1],['log',64],null,null,['coal',8],null,null,null,['iron',2]];
+// the Enrichment Chamber: 176 x 166 panel at (px,py), side tabs, energy bar, input, arrow, output
+function machine(c,px,py,t){
+  mcTab(c,px-21,py+4,'#c64b3c'); mcTab(c,px-21,py+28,'#3c78c6');
+  mcTab(c,px+175,py+4,'#3cb46e'); mcTab(c,px+175,py+28,'#c6a23c');
+  mcPanel(c,px,py,176,166);
+  T(c,'Enrichment Chamber',px+88,py+6,MC.text,{align:'c',size:8,plain:true});
+  // energy bar
+  R(c,px+163,py+16,8,52,'#373737'); const ef=.72; R(c,px+164,py+17+Math.round(50*(1-ef)),6,Math.round(50*ef),'#d83a2f'); R(c,px+164,py+17+Math.round(50*(1-ef)),6,1,'#ff7a6a');
+  mcSlot(c,px+55,py+34); item(c,px+56,py+35,'ironOre',23);
+  mcSlot(c,px+115,py+34); item(c,px+116,py+35,'dustIron',12);
+  // progress arrow
+  const f=(t/2600)%1; R(c,px+80,py+39,28,8,'#8b8b8b'); R(c,px+80,py+39,Math.round(28*f),8,'#ffffff');
+  // gear icon and on/off
+  R(c,px+8,py+50,16,10,'#7a7a7a'); T(c,'ON',px+16,py+52,'#e8ffe8',{align:'c',size:7,plain:true});
+  T(c,'Inventory',px+8,py+72,MC.text,{size:8,plain:true});
+}
+function invSlots(c,px,py,withItems){
+  for(let r=0;r<3;r++) for(let k=0;k<9;k++){ const x=px+7+k*18, y=py+83+r*18; mcSlot(c,x,y); const it=withItems&&INV[r*9+k]; if(it) item(c,x+1,y+1,it[0],it[1]); }
+  for(let k=0;k<9;k++){ const x=px+7+k*18, y=py+141; mcSlot(c,x,y); const it=withItems&&INV[27+k]; if(it) item(c,x+1,y+1,it[0],it[1]); }
+}
+
+// ---------------------------------------------------------------- the three locked covers
+function coverA(c,px,py){ // steel plate
+  const x=px+5, y=py+69, w=166, h=94;
+  R(c,x,y,w,h,'#1c222c'); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,'#39414f'); corners(c,x,y,w,h,HX.tq,7);
+  for(let i=x+6;i<x+w-6;i+=6) R(c,i,y+h-8,3,1,'#2a313d');
+  screw(c,x+6,y+6); screw(c,x+w-7,y+6); screw(c,x+6,y+h-7); screw(c,x+w-7,y+h-7);
+  padlock(c,x+w/2-5,y+18,HX.gold);
+  T(c,'INVENTORY LINK OFF',x+w/2,y+38,HX.tq,{align:'c',size:8});
+  ST(c,'Your inventory is closed off here.',x+w/2,y+52,HX.fg,{align:'c'});
+  ST(c,'Ask the transmitter\'s owner for',x+w/2,y+63,HX.mute,{align:'c'});
+  ST(c,'the Inventory Link upgrade.',x+w/2,y+72,HX.mute,{align:'c'});
+}
+function coverB(c,px,py,t){ // shutter
+  const x=px+5, y=py+69, w=166, h=94;
+  for(let i=0;i<h-8;i+=5){ R(c,x,y+i,w,4,i%10?'#8a909c':'#7d838f'); R(c,x,y+i+4,w,1,'#3a3f48'); R(c,x,y+i,w,1,'#a6acb7'); }
+  // hazard edge
+  const hy=y+h-8; R(c,x,hy,w,8,'#1a1a1a'); c.save(); c.beginPath(); c.rect(x,hy,w,8); c.clip(); c.fillStyle=HX.gold;
+  for(let i=-10;i<w+10;i+=8){ c.beginPath(); c.moveTo(x+i,hy+8); c.lineTo(x+i+4,hy+8); c.lineTo(x+i+8,hy); c.lineTo(x+i+4,hy); c.closePath(); c.fill(); } c.restore();
+  O(c,x,y,w,h,'#2a2f3a'); R(c,x,y,3,h,'#4a505c'); R(c,x+w-3,y,3,h,'#4a505c');
+  // hanging tag
+  const sw = reduce ? 0 : Math.sin(t/700)*1.2; const tx=x+w/2, ty=y+20;
+  c.strokeStyle='#2a2f3a'; c.lineWidth=1; c.beginPath(); c.moveTo(tx-12,y+6); c.lineTo(tx+sw,ty); c.lineTo(tx+12,y+6); c.stroke();
+  R(c,Math.round(tx-28+sw),ty,56,30,'#f2e2a8'); O(c,Math.round(tx-28+sw),ty,56,30,'#6b5a2a'); R(c,Math.round(tx-1+sw),ty+3,2,2,'#6b5a2a');
+  padlock(c,Math.round(tx-22+sw),ty+11,'#6b5a2a'); T(c,'LOCKED',Math.round(tx+8+sw),ty+13,'#3a2f12',{align:'c',size:8});
+  ST(c,'Inventory Link upgrade needed',x+w/2,y+66,'#1f2329',{align:'c',bold:true});
+}
+function coverC(c,px,py){ // frosted glass
+  invSlots(c,px,py,true);
+  const x=px+6, y=py+80, w=164, h=82;
+  c.fillStyle='rgba(18,52,74,.74)'; c.fillRect(x,y,w,h);
+  c.globalAlpha=.10; for(let i=0;i<w;i+=3){ c.fillStyle=i%6?'#bfe6ff':'#ffffff'; c.fillRect(x+i,y,1,h); } c.globalAlpha=1;
+  for(let r=0;r<3;r++) for(let k=0;k<9;k++) miniLock(c,px+7+k*18+12,py+83+r*18+12,'#9fd8ff');
+  for(let k=0;k<9;k++) miniLock(c,px+7+k*18+12,py+141+12,'#9fd8ff');
+  O(c,x,y,w,h,'#5fb4e6');
+  R(c,px+5,py+68,166,12,'#0b2b28'); O(c,px+5,py+68,166,12,HX.tq); padlock(c,px+8,py+69,HX.tq);
+  ST(c,'Inventory link needs the transmitter upgrade',px+20,py+70.5,HX.tq,{max:148});
+}
+
+// ---------------------------------------------------------------- the game window around the machine screen
+function drawMachine(id,concept){
+  const s=state[concept]; const c=s.mc; const W=c.W, H=c.H;
+  R(c,0,0,W,H,'#0b0d12');
+  // the dim Holo Grid behind
+  c.globalAlpha=.35; for(let i=0;i<W;i+=40) R(c,i,0,1,H,'#19d3b0'); for(let j=0;j<H;j+=40) R(c,0,j,W,1,'#19d3b0'); c.globalAlpha=1;
+  R(c,0,0,W,H,'rgba(4,6,9,.55)');
+  const px=Math.round(W/2-88), py=10, t=s.t;
+  machine(c,px,py,t);
+  if(s.bought){ invSlots(c,px,py,true); }
+  else if(concept==='a'){ invSlots(c,px,py,false); coverA(c,px,py); }
+  else if(concept==='b'){ invSlots(c,px,py,false); coverB(c,px,py,t); }
+  else { coverC(c,px,py); }
+  // operated through the transmitter: a thin strip above the screen
+  ST(c,'Operated through Remote Control Transmitter (128 blocks)',W/2,1.5,HX.tq,{align:'c'});
+  // the cursor carrying items from the output
+  if(s.holding){ const mx=px+150, my=py+56; item(c,mx,my,'dustIron',12); c.fillStyle='#fff'; c.beginPath(); c.moveTo(mx-6,my-8); c.lineTo(mx-6,my+2); c.lineTo(mx-3,my-1); c.lineTo(mx,my+4); c.lineTo(mx+1,my+3); c.lineTo(mx-2,my-2); c.lineTo(mx+2,my-2); c.closePath(); c.fill(); }
+  // action bar after closing with a held stack and a full machine
+  if(s.dropped){ const msg='The machine was full: 12 Iron Dust dropped beside it'; c.font='8px "IBM Plex Sans",sans-serif'; const w=c.measureText(msg).width;
+    R(c,W/2-w/2-4,H-14,w+8,11,'rgba(0,0,0,.55)'); ST(c,msg,W/2,H-13,'#ffd23a',{align:'c',size:8}); }
+}
+
+// ---------------------------------------------------------------- the transmitter screen with the new panel beside its inventory
+function txBase(c,o){ const x=0,y=0,w=320,h=244;
+  R(c,x,y,w,h,HX.bg); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,HX.dim); corners(c,x,y,w,h,HX.tq,6);
+  T(c,'REMOTE CONTROL TRANSMITTER',x+8,y+6,HX.tq,{size:8}); ST(c,'Alex',x+w-8,y+7,HX.mute,{align:'r'});
+  R(c,x+4,y+17,w-8,1,HX.tq);
+  // map
+  const MX=8, MY=21, MW=150, MH=118; for(let j=0;j<MH;j+=6) for(let i=0;i<MW;i+=6){ const n=Math.sin(i*.13+j*.07)*Math.cos(j*.11-i*.05); R(c,MX+i,MY+j,6,6,n>.35?'#2f5a3a':n>-.1?'#3d6b3f':n>-.5?'#4d7a44':'#2b4f6b'); }
+  R(c,MX,MY,MW,MH,'rgba(8,12,16,.18)'); const cx=MX+MW/2, cy=MY+MH/2; R(c,cx-40,cy-40,81,81,'rgba(25,211,176,.14)'); O(c,cx-40,cy-40,81,81,HX.tq);
+  R(c,cx-2,cy-2,5,5,'#000'); R(c,cx-1,cy-1,3,3,HX.gold); [[20,-14],[-26,22],[33,30],[-50,-30]].forEach(([dx,dy],i)=>{ R(c,cx+dx-2,cy+dy-2,5,5,'#000'); R(c,cx+dx-1,cy+dy-1,3,3,i<3?HX.tq:'#565c6b'); });
+  O(c,MX-1,MY-1,MW+2,MH+2,HX.dim); ST(c,'gold: transmitter · turquoise: tagged machines in range',MX,MY+MH+3,HX.off,{max:MW});
+  // right column
+  const rx=164; ST(c,'RANGE',rx,22,HX.mute); T(c,'128 blocks',rx,31,HX.tq); ST(c,'a 257-block cube',rx,41,HX.off);
+  ST(c,'RANGE CARDS',rx,52,HX.mute); for(let s=0;s<3;s++){ R(c,rx+1+s*22,60,18,18,'#3a3f4b'); R(c,rx+2+s*22,61,16,16,HX.slot); }
+  ST(c,'7 cards',rx+70,66,HX.fg); ST(c,'POWER',rx,84,HX.mute); well(c,rx,93,148,7); R(c,rx+1,94,Math.round(146*.64),5,HX.gold);
+  ST(c,'64k / 100k FE',rx,102,HX.gold); ST(c,'idle',rx+148,102,HX.mute,{align:'r'}); ST(c,'TEAM',rx,113,HX.mute);
+  ['#c98a5a','#5a8ac9','#8ac95a'].forEach((col,i)=>{ const sx=rx+i*37, sy=120; R(c,sx,sy,34,34,'#000'); R(c,sx+1,sy+1,32,32,'#c9ced8'); well(c,sx+8,sy+3,18,18,'#0a0e13'); R(c,sx+9,sy+4,16,16,col); R(c,sx+11,sy+9,3,2,'#fff'); R(c,sx+20,sy+9,3,2,'#fff'); });
+  // inventory
+  for(let r=0;r<3;r++) for(let k=0;k<9;k++){ R(c,7+k*18,159+r*18,18,18,'#3a3f4b'); R(c,8+k*18,160+r*18,16,16,HX.slot); }
+  for(let k=0;k<9;k++){ R(c,7+k*18,217,18,18,'#3a3f4b'); R(c,8+k*18,218,16,16,HX.slot); }
+}
+function panelA(c,s){ const x=176, y=159, w=136, h=76;
+  R(c,x,y,w,h,'#151b24'); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,HX.dim); corners(c,x,y,w,h,HX.tq,5);
+  T(c,'INVENTORY LINK',x+7,y+6,HX.tq,{size:8}); lamp(c,x+w-10,y+9,3,HX.tq,s.bought);
+  ST(c,'Operators can move items between',x+7,y+19,HX.fg); ST(c,'the machine and their own inventory.',x+7,y+28,HX.fg);
+  if(s.bought){ R(c,x+7,y+44,w-14,22,'#0b2b28'); O(c,x+7,y+44,w-14,22,HX.tq); T(c,'INSTALLED',x+w/2,y+48,HX.tq,{align:'c',size:8}); ST(c,'kept when the transmitter is mined',x+w/2,y+57,HX.mute,{align:'c',size:6}); }
+  else if(s.viewer==='owner'){ key(c,x+7,y+44,w-14,22,'BUY  1',{col:HX.gold,coin:true,fn:()=>buy(s)}); }
+  else { key(c,x+7,y+44,w-14,22,'OWNER ONLY',{dim:true}); }
+}
+function panelB(c,s){ const x=176, y=159, w=136, h=76;
+  R(c,x,y,w,h,'#151b24'); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,HX.dim);
+  T(c,'UPGRADE SOCKET',x+7,y+6,HX.mute,{size:8});
+  // the socket
+  const sx=x+10, sy=y+20; R(c,sx-3,sy-3,34,34,'#05070a'); R(c,sx-2,sy-2,32,32,'#4a505c'); well(c,sx,sy,28,28,'#07090c'); screw(c,sx-1,sy-1); screw(c,sx+28,sy-1); screw(c,sx-1,sy+28); screw(c,sx+28,sy+28);
+  if(s.bought){ const g=reduce?1:.75+.25*Math.sin(s.t/400); c.globalAlpha=.25*g; R(c,sx-1,sy-1,30,30,HX.vio); c.globalAlpha=1;
+    R(c,sx+5,sy+5,18,18,'#3a1f5c'); R(c,sx+6,sy+6,16,16,HX.vio); R(c,sx+9,sy+9,10,10,'#2a1446'); for(let i=0;i<4;i++){ R(c,sx+3,sy+7+i*4,3,1,HX.steel); R(c,sx+22,sy+7+i*4,3,1,HX.steel); } R(c,sx+12,sy+12,4,4,'#f3e8ff'); }
+  else { c.globalAlpha=.6; for(let i=0;i<18;i+=3){ R(c,sx+5+i,sy+5,2,1,HX.vio); R(c,sx+5+i,sy+22,2,1,HX.vio); R(c,sx+5,sy+5+i,1,2,HX.vio); R(c,sx+22,sy+5+i,1,2,HX.vio); } c.globalAlpha=1; }
+  T(c,'INVENTORY LINK',x+50,y+20,s.bought?HX.vio:HX.fg,{size:8}); ST(c,s.bought?'Installed: operators use':'Lets operators use their',x+50,y+30,HX.mute); ST(c,s.bought?'their own inventory.':'own inventory remotely.',x+50,y+39,HX.mute);
+  if(!s.bought){ if(s.viewer==='owner') key(c,x+50,y+50,w-57,18,'INSTALL 1',{col:HX.vio,coin:true,size:7,fn:()=>buy(s)}); else key(c,x+50,y+50,w-57,18,'OWNER ONLY',{dim:true,size:7}); }
+}
+function panelC(c,s){ const x=176, y=159, w=136, h=76;
+  R(c,x,y,w,h,'#151b24'); O(c,x,y,w,h,'#05070a'); O(c,x+1,y+1,w-2,h-2,HX.dim); corners(c,x,y,w,h,HX.gold,5);
+  T(c,'INVENTORY LINK',x+7,y+6,HX.gold,{size:8});
+  // coin slot plate
+  const cx=x+10, cy=y+20; R(c,cx,cy,26,40,'#2b303b'); O(c,cx,cy,26,40,'#05070a'); R(c,cx+3,cy+3,20,1,'#4a505c'); R(c,cx+10,cy+8,6,16,'#05070a'); R(c,cx+11,cy+9,4,14,'#000');
+  if(!s.bought){ coin(c,cx+8,cy+27,10); } else { R(c,cx+11,cy+12,4,1,HX.vio); }
+  screw(c,cx+4,cy+36); screw(c,cx+21,cy+36);
+  // lever
+  const lx=x+48, ly=y+22; R(c,lx,ly,22,36,'#1c222c'); O(c,lx,ly,22,36,'#05070a'); R(c,lx+9,ly+4,4,28,'#05070a');
+  const up=s.bought; R(c,lx+5,up?ly+4:ly+22,12,10,'#8a909c'); R(c,lx+5,up?ly+4:ly+22,12,1,'#c9ced8'); R(c,lx+9,up?ly+14:ly+14,4,up?6:8,'#4a505c');
+  T(c,'LINKED',lx+30,ly+3,up?HX.tq:HX.off,{size:8}); lamp(c,lx+70,ly+7,3,HX.tq,up);
+  T(c,'OFF',lx+30,ly+26,up?HX.off:HX.fg,{size:8}); lamp(c,lx+70,ly+30,3,'#d63b2f',!up);
+  if(!s.bought){ if(s.viewer==='owner') key(c,x+48,y+61,w-55,12,'PAY 1',{col:HX.gold,coin:true,size:7,fn:()=>buy(s)}); else ST(c,'only the owner can pay',x+48,y+63,HX.off); }
+  else ST(c,'kept when mined',x+48,y+63,HX.mute);
+}
+function drawTx(concept){ const s=state[concept]; const c=s.tc; c.hits=[]; txBase(c,s); ({a:panelA,b:panelB,c:panelC})[concept](c,s); }
+
+// ---------------------------------------------------------------- state, controls, input
+const state={};
+function buy(s){ s.bought=true; sync(s); }
+function sync(s){ s.btns.forEach(b=>b.refresh()); }
+['a','b','c'].forEach(k=>{
+  const s=state[k]={k, bought:false, viewer:'owner', holding:false, dropped:false, t:0, mc:gui('m'+k,300,200), tc:gui('t'+k,320,244), btns:[]};
+  const host=document.querySelector('.ctl[data-for="'+k+'"]');
+  const add=(label,on,fn)=>{ const b=document.createElement('button'); b.className='hb'; b.type='button'; b.id='btn-'+k+'-'+s.btns.length; b.textContent=label; b.refresh=()=>{ b.classList.toggle('on',!!on()); b.setAttribute('aria-pressed',on()?'true':'false'); }; b.onclick=()=>{ fn(); sync(s); }; host.appendChild(b); s.btns.push(b); b.refresh(); };
+  add('Upgrade bought',()=>s.bought,()=>{ s.bought=!s.bought; });
+  add('View as team member',()=>s.viewer==='team',()=>{ s.viewer=s.viewer==='team'?'owner':'team'; });
+  add('Hold output on cursor',()=>s.holding,()=>{ s.holding=!s.holding; s.dropped=false; });
+  add('Close: machine full',()=>s.dropped,()=>{ s.dropped=!s.dropped; s.holding=false; });
+  s.tc.cv.addEventListener('click',e=>{ const r=s.tc.cv.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*320, y=(e.clientY-r.top)/r.height*244;
+    for(const h of s.tc.hits){ if(x>=h.x&&x<h.x+h.w&&y>=h.y&&y<h.y+h.h){ h.fn(); return; } } });
+  s.tc.cv.addEventListener('mousemove',e=>{ const r=s.tc.cv.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*320, y=(e.clientY-r.top)/r.height*244;
+    s.tc.cv.style.cursor=s.tc.hits.some(h=>x>=h.x&&x<h.x+h.w&&y>=h.y&&y<h.y+h.h)?'pointer':'default'; });
+});
+function frame(now){ for(const k of ['a','b','c']){ const s=state[k]; s.t=now; drawMachine('m'+k,k); drawTx(k); } }
+if(reduce){ frame(1300); } else { let last=0; const step=now=>{ if(now-last>66){ last=now; frame(now); } requestAnimationFrame(step); }; requestAnimationFrame(step); }
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>frame(performance.now()));
+})();
+</script>

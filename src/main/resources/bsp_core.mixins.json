@@ -5,12 +5,26 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "bsp_core.refmap.json",
   "mixins": [
+    "FakeMenuOpenMixin",
     "HarvestChunkMixin",
+    "InventoryLinkMenuMixin",
     "RemoteMenuPacketsMixin",
     "RemoteMenuPlayerMixin",
-    "RemoteMenuServerPlayerMixin"
+    "RemoteMenuServerPlayerMixin",
+    "compat.LinkAe2BaseMenuMixin",
+    "compat.LinkAe2StorageMenuMixin",
+    "compat.LinkEmiMixin",
+    "compat.LinkJeiMixin",
+    "compat.LinkRsFluidGridMixin",
+    "compat.LinkRsGridMixin",
+    "compat.LinkRsGridNetworkNodeMixin",
+    "compat.LinkRsPortableGridMixin"
   ],
   "client": [
-    "client.ClientResetServerDataMixin"
+    "client.ClientResetServerDataMixin",
+    "client.StandInBlockEntityMixin",
+    "client.StandInContainerEventsMixin",
+    "client.StandInQuietMixin",
+    "client.StandInScreenEventsMixin"
   ]
 }

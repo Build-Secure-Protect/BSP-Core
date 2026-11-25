@@ -3571,5 +3571,21 @@
   "gui.bsp_core.tracking.wp.saved": "Saved to JourneyMap",
   "gui.bsp_core.tracking.wp.deleted": "Deleted from JourneyMap",
   "gui.bsp_core.tracking.wp.failed": "JourneyMap did not take the change",
-  "gui.bsp_core.tracking.wp.bad_number": "X, Y and Z must be whole numbers"
+  "gui.bsp_core.tracking.wp.bad_number": "X, Y and Z must be whole numbers",
+  "message.bsp_core.transmitter.link_bought": "Inventory Link installed: machine screens opened through this transmitter now reach your inventory",
+  "message.bsp_core.transmitter.link_owned": "This transmitter already has the Inventory Link",
+  "message.bsp_core.transmitter.link_owner_only": "Only the player who placed this transmitter can buy its Inventory Link",
+  "message.bsp_core.transmitter.no_illyrium": "Not enough Illyrium Shatter Coins for the Inventory Link",
+  "message.bsp_core.tracking.link_dropped": "The machine was full: %s %s dropped beside it",
+  "gui.bsp_core.transmitter.link": "INVENTORY LINK",
+  "gui.bsp_core.transmitter.link_what1": "Lets operators use their own",
+  "gui.bsp_core.transmitter.link_what2": "inventory in machine screens.",
+  "gui.bsp_core.transmitter.link_buy": "BUY  %s",
+  "gui.bsp_core.transmitter.link_installed": "INSTALLED",
+  "gui.bsp_core.transmitter.link_kept": "kept when it is mined",
+  "gui.bsp_core.transmitter.link_owner_only": "OWNER ONLY",
+  "gui.bsp_core.tracking.link_off": "INVENTORY LINK OFF",
+  "gui.bsp_core.tracking.link_off1": "Your inventory is closed off here.",
+  "gui.bsp_core.tracking.link_off2": "Ask the transmitter's owner for",
+  "gui.bsp_core.tracking.link_off3": "the Inventory Link upgrade."
 }

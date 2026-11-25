@@ -487,6 +487,113 @@ public class TrackingGameTests {
         h.succeed();
     }
     @GameTest(template = "empty", batch = BATCH, timeoutTicks = 20)
+    public void tracking_inventory_link_is_bought_by_the_owner_and_kept_when_mined(GameTestHelper h) {
+        ServerPlayer p = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        ServerPlayer stranger = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        var tx = transmitter(h, new BlockPos(2, 1, 2), p, 0, 0);
+        h.assertTrue(!tx.inventoryLink(), "a new transmitter has no Inventory Link");
+        h.assertTrue("link_owner_only".equals(com.mrgregles.bsp_core.tracking.TransmitterMenu.buyLink(stranger, tx)), "only its placer may buy it");
+        int price = com.mrgregles.bsp_core.tracking.TransmitterMenu.linkPrice();
+        if (price > 0) {
+            h.assertTrue("no_illyrium".equals(com.mrgregles.bsp_core.tracking.TransmitterMenu.buyLink(p, tx)), "without Illyrium coins it is refused");
+            p.getInventory().add(new ItemStack(com.mrgregles.bsp_core.coin.CoinTier.ILLYRIUM.coin(), price));
+        }
+        h.assertTrue(com.mrgregles.bsp_core.tracking.TransmitterMenu.buyLink(p, tx) == null && tx.inventoryLink(), "the placer buys it");
+        h.assertTrue(p.getInventory().countItem(com.mrgregles.bsp_core.coin.CoinTier.ILLYRIUM.coin()) == 0, "the coins were taken");
+        h.assertTrue("link_owned".equals(com.mrgregles.bsp_core.tracking.TransmitterMenu.buyLink(p, tx)), "it is bought once");
+        var drops = net.minecraft.world.level.block.Block.getDrops(tx.getBlockState(), h.getLevel(), tx.getBlockPos(), tx);
+        h.assertTrue(!drops.isEmpty() && drops.get(0).getTag() != null
+                && drops.get(0).getTag().getCompound("BlockEntityTag").getBoolean("InventoryLink"), "the mined transmitter keeps it: " + drops);
+        var placed = new com.mrgregles.bsp_core.tracking.RemoteTransmitterBlockEntity(tx.getBlockPos(), tx.getBlockState());
+        placed.load(drops.get(0).getTag().getCompound("BlockEntityTag"));
+        h.assertTrue(placed.inventoryLink(), "and has it again when placed");
+        h.getLevel().setBlockAndUpdate(tx.getBlockPos(), Blocks.AIR.defaultBlockState());
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", batch = BATCH, timeoutTicks = 20)
+    public void tracking_locked_screen_keeps_items_in_the_machine(GameTestHelper h) {
+        MinecraftServer server = server(h);
+        ServerPlayer p = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
+        BlockPos furnace = h.absolutePos(new BlockPos(1, 1, 1));
+        h.getLevel().setBlockAndUpdate(furnace, Blocks.FURNACE.defaultBlockState());
+        TrackedTag t = TrackerRules.tag(p, h.getLevel(), furnace).tag();
+        TrackerRecord r = record(h, p);
+        r.remote = true;
+        r.remoteSeason = TrackerOwners.season(server);
+        TrackerOwners.get(server).put(server, p.getUUID(), r);
+        p.setPos(furnace.getX() + 0.5, furnace.getY(), furnace.getZ() + 2.5);
+        var tx = transmitter(h, new BlockPos(3, 1, 3), p, 0, 100_000);
+        p.getInventory().setItem(0, new ItemStack(net.minecraft.world.item.Items.BREAD, 5));
+        h.assertTrue(com.mrgregles.bsp_core.tracking.RemoteOperate.open(p, t.id()) == null, "the furnace's screen opened");
+        var menu = p.containerMenu;
+        h.assertTrue(com.mrgregles.bsp_core.tracking.InventoryLink.locked(menu), "without the Inventory Link the screen is locked");
+        int playerSlot = -1;
+        for (int i = 0; i < menu.slots.size(); i++) {
+            if (com.mrgregles.bsp_core.tracking.InventoryLink.playerSlot(menu.slots.get(i))) {
+                playerSlot = i;
+                break;
+            }
+        }
+        h.assertTrue(playerSlot > 0, "the furnace screen shows the player's inventory");
+        h.assertTrue(com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, 0, 0, net.minecraft.world.inventory.ClickType.PICKUP), "the machine's own slots work");
+        h.assertTrue(!com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, playerSlot, 0, net.minecraft.world.inventory.ClickType.PICKUP), "the player's slots do not");
+        h.assertTrue(!com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, 2, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE), "no shift-click out");
+        h.assertTrue(!com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, 0, 0, net.minecraft.world.inventory.ClickType.SWAP), "no hotbar swap");
+        h.assertTrue(!com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, 0, 0, net.minecraft.world.inventory.ClickType.THROW), "no dropping out");
+        h.assertTrue(!com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, -999, 0, net.minecraft.world.inventory.ClickType.PICKUP), "no dropping what is held");
+        h.assertTrue(com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(menu, -999, 0, net.minecraft.world.inventory.ClickType.QUICK_CRAFT), "a drag may start");
+        // another mod's own transfer (not a slot click) is put back: from the machine into the inventory, and the other way
+        var fbe = (net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity) h.getLevel().getBlockEntity(furnace);
+        fbe.setItem(0, new ItemStack(net.minecraft.world.item.Items.IRON_ORE, 5));
+        com.mrgregles.bsp_core.tracking.InventoryLink.afterButton(menu);
+        fbe.getItem(0).shrink(3);
+        p.getInventory().add(new ItemStack(net.minecraft.world.item.Items.IRON_ORE, 3));
+        com.mrgregles.bsp_core.tracking.InventoryLink.afterButton(menu);
+        h.assertTrue(fbe.getItem(0).getCount() == 5 && p.getInventory().countItem(net.minecraft.world.item.Items.IRON_ORE) == 0,
+                "ore handed to the inventory went back into the machine: " + fbe.getItem(0));
+        p.getInventory().getItem(0).shrink(2);
+        fbe.setItem(1, new ItemStack(net.minecraft.world.item.Items.BREAD, 2));
+        com.mrgregles.bsp_core.tracking.InventoryLink.afterButton(menu);
+        h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.BREAD) == 5 && fbe.getItem(1).isEmpty(), "bread put into the machine came back");
+        p.getInventory().setItem(7, p.getInventory().getItem(0).copy());
+        p.getInventory().setItem(0, ItemStack.EMPTY);
+        com.mrgregles.bsp_core.tracking.InventoryLink.afterButton(menu);
+        h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.BREAD) == 5 && fbe.getItem(1).isEmpty() && fbe.getItem(0).getCount() == 5,
+                "sorting one's own inventory moves nothing");
+        p.getInventory().getItem(7).shrink(1); // dropped or eaten: gone from the player only, so not a transfer
+        com.mrgregles.bsp_core.tracking.InventoryLink.afterButton(menu);
+        h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.BREAD) == 4 && fbe.getItem(1).isEmpty(),
+                "a change on one side only is left alone");
+        fbe.setItem(0, ItemStack.EMPTY);
+        com.mrgregles.bsp_core.tracking.InventoryLink.afterButton(menu);
+        // closing with an item held: back into the machine, never into the inventory
+        menu.setCarried(new ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 5));
+        p.doCloseContainer();
+        h.assertTrue(fbe.getItem(0).is(net.minecraft.world.item.Items.IRON_INGOT) && fbe.getItem(0).getCount() == 5, "the held ingots went back in: " + fbe.getItem(0));
+        h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.IRON_INGOT) == 0, "none reached the inventory");
+        // a full machine: what is held drops beside it
+        fbe.setItem(0, new ItemStack(net.minecraft.world.item.Items.DIRT, 64));
+        h.assertTrue(com.mrgregles.bsp_core.tracking.RemoteOperate.open(p, t.id()) == null, "opened again");
+        p.containerMenu.setCarried(new ItemStack(net.minecraft.world.item.Items.DIRT, 7));
+        p.doCloseContainer();
+        var dropped = h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(furnace).inflate(2));
+        h.assertTrue(dropped.stream().anyMatch(e -> e.getItem().is(net.minecraft.world.item.Items.DIRT) && e.getItem().getCount() == 7), "the full machine's held dirt dropped beside it");
+        h.assertTrue(p.getInventory().countItem(net.minecraft.world.item.Items.DIRT) == 0, "and not into the inventory");
+        dropped.forEach(e -> e.discard());
+        // with the Inventory Link: a screen like standing at the machine
+        tx.setInventoryLink(true);
+        h.assertTrue(com.mrgregles.bsp_core.tracking.RemoteOperate.open(p, t.id()) == null, "opened with the Inventory Link");
+        h.assertTrue(!com.mrgregles.bsp_core.tracking.InventoryLink.locked(p.containerMenu), "not locked");
+        h.assertTrue(com.mrgregles.bsp_core.tracking.InventoryLink.allowClick(p.containerMenu, playerSlot, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE), "the inventory works");
+        p.doCloseContainer();
+        h.getLevel().setBlockAndUpdate(tx.getBlockPos(), Blocks.AIR.defaultBlockState());
+        h.getLevel().setBlockAndUpdate(furnace, Blocks.AIR.defaultBlockState());
+        TrackerOwners.get(server).forgetForTest(p.getUUID());
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", batch = BATCH, timeoutTicks = 20)
     public void tracking_bsp_and_mekanism_machines_give_their_own_readings(GameTestHelper h) {
         MinecraftServer server = server(h);
         com.mrgregles.bsp_core.tracking.MekanismAdapter.register();
