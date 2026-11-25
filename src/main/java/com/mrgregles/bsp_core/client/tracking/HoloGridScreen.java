@@ -64,6 +64,7 @@ public class HoloGridScreen extends Screen {
     @Override
     public void removed() {
         super.removed();
+        JourneyMapView.endDrags(JourneyMapView.Host.SCREEN);
         WatchSet.updateLater(); // the grid's page is no longer watched (unless the popout shows it): once the screen has changed
     }
 
@@ -631,7 +632,11 @@ public class HoloGridScreen extends Screen {
                 return true;
             }
             if (p.box().src.equals("map")) {
-                if (!MapView.click(p.x(), p.y(), p.w(), p.h(), GridView.map(p.box()), mx, my)) {
+                if (JourneyMapView.shown(JourneyMapView.Host.SCREEN, p.box())) {
+                    JourneyMapView.mouseClicked(JourneyMapView.Host.SCREEN, p.box(), mx, my, button);
+                    drag = 4; // JourneyMap pans on the drag and acts on the release
+                    dragBox = p.box();
+                } else if (!MapView.click(GridView.map(JourneyMapView.Host.SCREEN, p.box()), mx, my, button)) {
                     drag = 4;
                     dragBox = p.box();
                 }
@@ -668,7 +673,11 @@ public class HoloGridScreen extends Screen {
                 dragBox.h = nb.h;
             }
         } else if (drag == 4 && dragBox != null) {
-            MapView.drag(GridView.map(dragBox), mx - lastMX, my - lastMY);
+            if (JourneyMapView.shown(JourneyMapView.Host.SCREEN, dragBox)) {
+                JourneyMapView.mouseDragged(JourneyMapView.Host.SCREEN, dragBox, mx, my, button, dx, dy);
+            } else {
+                MapView.drag(GridView.map(JourneyMapView.Host.SCREEN, dragBox), mx - lastMX, my - lastMY);
+            }
         }
         lastMX = mx;
         lastMY = my;
@@ -687,6 +696,8 @@ public class HoloGridScreen extends Screen {
             }
         } else if (drag == 2 || drag == 3) {
             GridModel.save();
+        } else if (drag == 4 && dragBox != null && JourneyMapView.shown(JourneyMapView.Host.SCREEN, dragBox)) {
+            JourneyMapView.mouseReleased(JourneyMapView.Host.SCREEN, dragBox, mx, my, button);
         }
         drag = 0;
         dragBox = null;
@@ -714,7 +725,9 @@ public class HoloGridScreen extends Screen {
         if (!build) {
             for (GridView.Placed p : GridView.layout(GridModel.page(), gx(), gy(), gw(), gh(), false)) {
                 if (p.contains(mx, my) && p.box().src.equals("map")) {
-                    MapView.scroll(GridView.map(p.box()), delta);
+                    if (!JourneyMapView.mouseScrolled(JourneyMapView.Host.SCREEN, p.box(), mx, my, delta)) {
+                        MapView.scroll(GridView.map(JourneyMapView.Host.SCREEN, p.box()), delta);
+                    }
                     return true;
                 }
             }
@@ -840,7 +853,65 @@ public class HoloGridScreen extends Screen {
             buffer += c;
             return true;
         }
+        if (typing == null) {
+            double[] m = mouse();
+            GridModel.Box jm = !build && overlay == 0 ? JourneyMapView.typing(JourneyMapView.Host.SCREEN) : null;
+            if (jm != null) {
+                JourneyMapView.charTyped(JourneyMapView.Host.SCREEN, jm, m[0], m[1], c, modifiers); // its chat or search box
+                return true;
+            }
+            GridModel.Box fb = !build && overlay == 0 ? GridView.mapTyping(JourneyMapView.Host.SCREEN, GridModel.page()) : null;
+            if (fb != null) {
+                MapView.charTyped(GridView.map(JourneyMapView.Host.SCREEN, fb), c); // BSP-Core's map's waypoint editor
+                return true;
+            }
+            GridView.Placed map = mapAt(m[0], m[1]);
+            if (map != null && JourneyMapView.charTyped(JourneyMapView.Host.SCREEN, map.box(), m[0], m[1], c, modifiers)) {
+                return true;
+            }
+        }
         return super.charTyped(c, modifiers);
+    }
+
+    @Override
+    public void mouseMoved(double mx, double my) {
+        GridView.Placed map = mapAt(mx, my);
+        if (map != null) {
+            JourneyMapView.mouseMoved(JourneyMapView.Host.SCREEN, map.box(), mx, my);
+        }
+    }
+
+    /** The map box drawn by JourneyMap under the mouse (VIEW, no overlay open), or null. */
+    private GridView.Placed mapAt(double mx, double my) {
+        if (build || overlay != 0) {
+            return null;
+        }
+        for (GridView.Placed p : GridView.layout(GridModel.page(), gx(), gy(), gw(), gh(), false)) {
+            if (p.contains(mx, my) && p.box().src.equals("map") && JourneyMapView.shown(JourneyMapView.Host.SCREEN, p.box())) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /** The map box drawn by BSP-Core (JourneyMap's map not shown) under the mouse (VIEW, no overlay open), or null. */
+    private GridView.Placed ownMapAt(double mx, double my) {
+        if (build || overlay != 0) {
+            return null;
+        }
+        for (GridView.Placed p : GridView.layout(GridModel.page(), gx(), gy(), gw(), gh(), false)) {
+            if (p.contains(mx, my) && p.box().src.equals("map") && !JourneyMapView.shown(JourneyMapView.Host.SCREEN, p.box())) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /** The mouse in this screen's GUI pixels. */
+    private double[] mouse() {
+        Minecraft mc = Minecraft.getInstance();
+        return new double[] {mc.mouseHandler.xpos() * width / Math.max(1, mc.getWindow().getScreenWidth()),
+                mc.mouseHandler.ypos() * height / Math.max(1, mc.getWindow().getScreenHeight())};
     }
 
     @Override
@@ -853,6 +924,21 @@ public class HoloGridScreen extends Screen {
             } else if (key == GLFW.GLFW_KEY_BACKSPACE && !buffer.isEmpty()) {
                 buffer = buffer.substring(0, buffer.length() - 1);
             }
+            return true;
+        }
+        // a JourneyMap popup in the map box, or its chat or search box being typed in: every key is for that (Esc too, but for search);
+        // only in VIEW with no overlay of the Holo Grid's own open, where the map can be seen
+        boolean mapsSeen = !build && overlay == 0;
+        GridModel.Box jm = mapsSeen ? JourneyMapView.typing(JourneyMapView.Host.SCREEN) : null;
+        if (jm != null && (key != GLFW.GLFW_KEY_ESCAPE || JourneyMapView.takesEsc(JourneyMapView.Host.SCREEN, jm))) {
+            double[] m = mouse();
+            JourneyMapView.keyPressed(JourneyMapView.Host.SCREEN, jm, m[0], m[1], key, scan, modifiers);
+            return true;
+        }
+        GridModel.Box fb = mapsSeen ? GridView.mapTyping(JourneyMapView.Host.SCREEN, GridModel.page()) : null;
+        if (fb != null) {
+            double[] m = mouse();
+            MapView.key(GridView.map(JourneyMapView.Host.SCREEN, fb), key, scan, modifiers, m[0], m[1]); // BSP-Core's map's waypoint editor or manager
             return true;
         }
         if (overlay != 0 && key == GLFW.GLFW_KEY_ESCAPE) {
@@ -870,6 +956,18 @@ public class HoloGridScreen extends Screen {
         if (TrackerKeys.pageKey(key, scan)) {
             picked = null;
             return true;
+        }
+        if (key != GLFW.GLFW_KEY_ESCAPE) {
+            // JourneyMap's own keys (map type, follow, a waypoint here, pan, zoom) for the map under the mouse
+            double[] m = mouse();
+            GridView.Placed map = mapAt(m[0], m[1]);
+            if (map != null && JourneyMapView.keyPressed(JourneyMapView.Host.SCREEN, map.box(), m[0], m[1], key, scan, modifiers)) {
+                return true;
+            }
+            GridView.Placed own = ownMapAt(m[0], m[1]);
+            if (own != null && MapView.key(GridView.map(JourneyMapView.Host.SCREEN, own.box()), key, scan, modifiers, m[0], m[1])) {
+                return true; // BSP-Core's map's keys (B, N, F, [, zoom, arrows)
+            }
         }
         if (TrackerKeys.OPEN.matches(key, scan) || Minecraft.getInstance().options.keyInventory.matches(key, scan)) {
             onClose();

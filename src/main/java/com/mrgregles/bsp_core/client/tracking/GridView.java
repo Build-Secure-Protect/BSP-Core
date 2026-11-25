@@ -25,13 +25,24 @@ public final class GridView {
         }
     }
 
-    /** The map's pan and zoom, kept per box. */
-    private static final Map<GridModel.Box, MapView.State> MAPS = new java.util.WeakHashMap<>();
+    /** BSP-Core's map's view (when JourneyMap's map is not shown), kept per box and host: the same box can be in two hosts at two sizes. */
+    @SuppressWarnings("unchecked")
+    private static final Map<GridModel.Box, MapView.State>[] MAPS = new Map[] {new java.util.WeakHashMap<>(), new java.util.WeakHashMap<>(), new java.util.WeakHashMap<>()};
 
     private GridView() {}
 
-    public static MapView.State map(GridModel.Box b) {
-        return MAPS.computeIfAbsent(b, k -> new MapView.State());
+    public static MapView.State map(JourneyMapView.Host host, GridModel.Box b) {
+        return MAPS[host.ordinal()].computeIfAbsent(b, k -> new MapView.State());
+    }
+
+    /** The map box of this page whose BSP-Core map takes every key now (its waypoint editor or manager is open), or null. */
+    public static GridModel.Box mapTyping(JourneyMapView.Host host, GridModel.Page page) {
+        for (GridModel.Box b : page.boxes) {
+            if (b.src.equals("map") && !JourneyMapView.shown(host, b) && MapView.takesKeys(map(host, b))) {
+                return b;
+            }
+        }
+        return null;
     }
 
     /** Where each box of the page goes in the rectangle; {@code flex} allows re-stacking (the popout). */
@@ -71,7 +82,10 @@ public final class GridView {
         boolean hover = p.contains(mx, my);
         if (b.src.equals("map")) {
             rect(g, p.x(), p.y(), p.w(), p.h(), BLACK);
-            MapView.draw(g, p.x(), p.y(), p.w(), p.h(), map(b), tools, mx, my);
+            // JourneyMap's own full map, drawn by JourneyMap; BSP-Core's map only without JourneyMap
+            if (!JourneyMapView.draw(g, b, p.x(), p.y(), p.w(), p.h(), tools ? mx : -1, tools ? my : -1)) {
+                MapView.draw(g, p.x(), p.y(), p.w(), p.h(), map(JourneyMapView.host(), b), tools, mx, my);
+            }
             outline(g, p.x() - 1, p.y() - 1, p.w() + 2, p.h() + 2, hover && tools ? TQ : DIM);
             return;
         }

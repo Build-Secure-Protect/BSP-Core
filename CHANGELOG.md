@@ -2,6 +2,16 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
+## [Unreleased]
+
+### Changed
+- **The Holo Grid's map box is JourneyMap's own full map** (the screen its J key opens), drawn by JourneyMap inside the box, in the Holo Grid, the popout and the pinned box: its map types (day, night, topo, biome, caves), shading and time of day, mobs, animals, pets and players, its own player arrow, waypoints, chunk grid, every zoom level and its buttons (options, waypoints, search, follow). Drag to pan, scroll to zoom, and JourneyMap's own keys work while the mouse is over the map. Its right-click menu and waypoint editor open inside the box; while one is open, or while typing in its chat or search box, every key goes there (Esc closes the menu, editor or chat; from the search box Esc closes the Holo Grid). The map moves smoothly with the player; the popout draws every frame while its page shows the map. All map boxes and the J screen share one view, as JourneyMap's map does. Options or the waypoint manager opened from the box come back to the Holo Grid when closed. JourneyMap's close button and J key inside the Holo Grid's box close the Holo Grid; in the popout they do nothing.
+- New client setting `[tracking] mapControls` (on by default): off hides JourneyMap's buttons on the map box (the map still pans, zooms and takes JourneyMap's keys). JourneyMap's own "Disable Fullscreen Buttons" key over the box switches it too. The pinned box never shows them.
+- **When JourneyMap's map fails in a box** (an error, or a JourneyMap update), BSP-Core's map stands in and JourneyMap is tried again after 5 seconds with a fresh map; after 3 failures within 5 minutes the box keeps BSP-Core's map until the next login. A line on the map says which.
+- **BSP-Core's map now looks and works like JourneyMap's**: it draws JourneyMap's own saved map pictures (day, night, and the cave layer you are in underground or in the Nether), with JourneyMap's player marker, mob face icons, waypoint and death point icons and toolbar pictures, the chunk grid, zoom from an eighth of a pixel to 32 pixels a block, smooth following, drag to pan, the status line and the block under the mouse. Its toolbar: day, night, caves, monsters, animals, players, chunk grid, waypoint manager, follow, zoom in and out (hidden with `mapControls` off). JourneyMap's keys work on it: B makes a waypoint at the mouse, N opens the waypoint manager, F follows, [ swaps day and night, = and - zoom, the arrows pan; right-click makes a waypoint there or edits the one under the mouse.
+- **Waypoints and death points on BSP-Core's map are JourneyMap's**: it shows JourneyMap's waypoints and death points, and every waypoint made, changed, switched on or off or deleted there (its editor and waypoint manager) is saved into JourneyMap's own waypoint store, so JourneyMap shows exactly the same. If JourneyMap's waypoint API cannot be reached, its waypoints are shown read-only from its waypoint file.
+- Without JourneyMap installed the box shows the simple map of the land loaded around the player, as before.
+
 ## [1.24.2] - 2026-11-24
 
 Network protocol 23: clients need this version (the deposit box and the season prize screen open with more data).

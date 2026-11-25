@@ -56,6 +56,7 @@ public final class Popout {
     private static int drawnVersion = -1, drawnPage = -1, drawnW, drawnH;
     private static double mouseX = -1, mouseY = -1, lastDragX, lastDragY;
     private static boolean dirty = true, dragging;
+    private static int dragButton;
     private static GridModel.Box dragBox;
     /** True while the popout's page is being drawn: scissor boxes use the game window's size, so they are skipped. */
     static boolean drawing;
@@ -103,12 +104,16 @@ public final class Popout {
             readFbo = 0;
             GLFW.glfwSetCursorPosCallback(w, (win, x, y) -> mouseMoved(x, y));
             GLFW.glfwSetMouseButtonCallback(w, (win, button, action, mods) -> mouseButton(button, action));
+            GLFW.glfwSetCharModsCallback(w, (win, codepoint, mods) -> typed(codepoint, mods));
             GLFW.glfwSetScrollCallback(w, (win, dx, dy) -> scrolled(dy));
-            GLFW.glfwSetKeyCallback(w, (win, key, scan, action, mods) -> key(key, scan, action));
+            GLFW.glfwSetKeyCallback(w, (win, key, scan, action, mods) -> key(key, scan, action, mods));
             GLFW.glfwSetWindowFocusCallback(w, (win, f) -> {
                 focused = f;
                 if (!f) {
                     focusedByKey = false;
+                    JourneyMapView.endDrags(JourneyMapView.Host.POPOUT); // a release outside the window may never arrive
+                    dragging = false;
+                    dragBox = null;
                 }
                 dirty = true;
             });
@@ -123,6 +128,7 @@ public final class Popout {
     }
 
     public static void close() {
+        JourneyMapView.endDrags(JourneyMapView.Host.POPOUT);
         if (window != 0L) {
             long w = window;
             window = 0L;
@@ -209,8 +215,8 @@ public final class Popout {
             dirty = true;
         }
         boolean readings = drawnVersion != ClientTracking.version() && now - lastDrawNs > 100_000_000L; // new readings: at most 10 redraws a second
-        if (dirty || readings || drawnPage != GridModel.current || drawnW != FW[0] || drawnH != FH[0] || now - lastDrawNs > 1_000_000_000L) {
-            drawPicture(mc); // also once a second, for the map and the times shown
+        if (dirty || readings || liveMap() || drawnPage != GridModel.current || drawnW != FW[0] || drawnH != FH[0] || now - lastDrawNs > 1_000_000_000L) {
+            drawPicture(mc); // every frame while JourneyMap's map is on the page; else on change, and once a second for the times shown
             lastDrawNs = now;
             dirty = false;
             drawnVersion = ClientTracking.version();
@@ -222,8 +228,43 @@ public final class Popout {
     }
 
     /** The GUI scale of the popout: 2 on a big window, else 1. */
-    private static int scale() {
+    static int scale() {
         return FW[0] >= 900 ? 2 : 1;
+    }
+
+    /** Pixels per window point of the popout (2 on a Retina screen). */
+    static double pixelRatio() {
+        if (window == 0L) {
+            return 1;
+        }
+        GLFW.glfwGetWindowSize(window, WW, WH);
+        return WW[0] > 0 ? FW[0] / (double) WW[0] : 1;
+    }
+
+    /** The popout's off-screen picture, which its page is drawn into. */
+    static com.mojang.blaze3d.pipeline.RenderTarget target() {
+        return target;
+    }
+
+    /** True when the shown page has a map box (JourneyMap's or BSP-Core's), which moves with the player: then every frame is drawn. */
+    private static boolean liveMap() {
+        for (GridModel.Box b : GridModel.page().boxes) {
+            if (b.src.equals("map")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The map box under the mouse in the popout, or null. */
+    private static GridView.Placed mapAt(double mx, double my) {
+        int s = scale(), gw = FW[0] / s, gh = FH[0] / s;
+        for (GridView.Placed p : GridView.layout(GridModel.page(), RAIL + 2, 2, gw - RAIL - 4, gh - 4, true)) {
+            if (p.contains(mx, my) && p.box().src.equals("map")) {
+                return p;
+            }
+        }
+        return null;
     }
 
     private static void drawPicture(Minecraft mc) {
@@ -314,9 +355,18 @@ public final class Popout {
         mouseY = p[1];
         int s = scale();
         if (dragging && dragBox != null) {
-            MapView.drag(GridView.map(dragBox), (mouseX - lastDragX) / s, (mouseY - lastDragY) / s);
+            if (JourneyMapView.shown(JourneyMapView.Host.POPOUT, dragBox)) {
+                JourneyMapView.mouseDragged(JourneyMapView.Host.POPOUT, dragBox, mouseX / s, mouseY / s, dragButton, (mouseX - lastDragX) / s, (mouseY - lastDragY) / s);
+            } else {
+                MapView.drag(GridView.map(JourneyMapView.Host.POPOUT, dragBox), (mouseX - lastDragX) / s, (mouseY - lastDragY) / s);
+            }
             lastDragX = mouseX;
             lastDragY = mouseY;
+        } else if (focused) {
+            GridView.Placed map = mapAt(mouseX / s, mouseY / s);
+            if (map != null) {
+                JourneyMapView.mouseMoved(JourneyMapView.Host.POPOUT, map.box(), mouseX / s, mouseY / s);
+            }
         }
         if (focused) {
             dirty = true;
@@ -325,6 +375,9 @@ public final class Popout {
 
     private static void mouseButton(int button, int action) {
         if (action == GLFW.GLFW_RELEASE) {
+            if (dragBox != null && JourneyMapView.shown(JourneyMapView.Host.POPOUT, dragBox)) {
+                JourneyMapView.mouseReleased(JourneyMapView.Host.POPOUT, dragBox, mouseX / scale(), mouseY / scale(), button);
+            }
             dragging = false;
             dragBox = null;
             return;
@@ -350,7 +403,14 @@ public final class Popout {
                 continue;
             }
             if (p.box().src.equals("map")) {
-                if (!MapView.click(p.x(), p.y(), p.w(), p.h(), GridView.map(p.box()), mx, my)) {
+                if (JourneyMapView.shown(JourneyMapView.Host.POPOUT, p.box())) {
+                    JourneyMapView.mouseClicked(JourneyMapView.Host.POPOUT, p.box(), mx, my, button);
+                    dragging = true; // JourneyMap pans on the drag and acts on the release
+                    dragBox = p.box();
+                    dragButton = button;
+                    lastDragX = mouseX;
+                    lastDragY = mouseY;
+                } else if (!MapView.click(GridView.map(JourneyMapView.Host.POPOUT, p.box()), mx, my, button)) {
                     dragging = true;
                     dragBox = p.box();
                     lastDragX = mouseX;
@@ -371,23 +431,74 @@ public final class Popout {
         int s = scale(), gw = FW[0] / s, gh = FH[0] / s;
         for (GridView.Placed p : GridView.layout(GridModel.page(), RAIL + 2, 2, gw - RAIL - 4, gh - 4, true)) {
             if (p.contains(mouseX / s, mouseY / s) && p.box().src.equals("map")) {
-                MapView.scroll(GridView.map(p.box()), dy);
+                if (!JourneyMapView.mouseScrolled(JourneyMapView.Host.POPOUT, p.box(), mouseX / s, mouseY / s, dy)) {
+                    MapView.scroll(GridView.map(JourneyMapView.Host.POPOUT, p.box()), dy);
+                }
                 dirty = true;
                 return;
             }
         }
     }
 
-    private static void key(int key, int scan, int action) {
-        if (action != GLFW.GLFW_PRESS) {
+    private static void key(int key, int scan, int action, int mods) {
+        if (action == GLFW.GLFW_RELEASE) {
             return;
         }
-        if (key == GLFW.GLFW_KEY_ESCAPE || TrackerKeys.FOCUS.matches(key, scan)) {
+        int s0 = scale();
+        GridModel.Box jm = focused ? JourneyMapView.typing(JourneyMapView.Host.POPOUT) : null;
+        if (jm != null && (key != GLFW.GLFW_KEY_ESCAPE || JourneyMapView.takesEsc(JourneyMapView.Host.POPOUT, jm))) {
+            JourneyMapView.keyPressed(JourneyMapView.Host.POPOUT, jm, mouseX / s0, mouseY / s0, key, scan, mods); // its chat or search box
+            return;
+        }
+        GridModel.Box fb = focused ? GridView.mapTyping(JourneyMapView.Host.POPOUT, GridModel.page()) : null;
+        if (fb != null) {
+            MapView.key(GridView.map(JourneyMapView.Host.POPOUT, fb), key, scan, mods, mouseX / s0, mouseY / s0); // BSP-Core's map's waypoint editor or manager
+            dirty = true;
+            return;
+        }
+        if (key == GLFW.GLFW_KEY_ESCAPE) {
+            if (action == GLFW.GLFW_PRESS) {
+                giveBack();
+            }
+            return; // never to JourneyMap: its Esc closes the map, and with it the game window's screen
+        }
+        boolean arrow = key == GLFW.GLFW_KEY_LEFT || key == GLFW.GLFW_KEY_RIGHT || key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN;
+        if (action != GLFW.GLFW_PRESS && !arrow) {
+            return; // a held key repeats only for typing (above) and panning with the arrows
+        }
+        if (action == GLFW.GLFW_PRESS && TrackerKeys.FOCUS.matches(key, scan)) {
             giveBack();
             return;
         }
-        if (TrackerKeys.pageKey(key, scan)) {
+        if (action == GLFW.GLFW_PRESS && TrackerKeys.pageKey(key, scan)) {
             dirty = true;
+            return;
+        }
+        // JourneyMap's own keys (map type, follow, waypoint, pan) go to the map under the mouse
+        int s = scale();
+        GridView.Placed p = focused ? mapAt(mouseX / s, mouseY / s) : null;
+        if (p != null && JourneyMapView.shown(JourneyMapView.Host.POPOUT, p.box())) {
+            JourneyMapView.keyPressed(JourneyMapView.Host.POPOUT, p.box(), mouseX / s, mouseY / s, key, scan, mods);
+        } else if (p != null && MapView.key(GridView.map(JourneyMapView.Host.POPOUT, p.box()), key, scan, mods, mouseX / s, mouseY / s)) {
+            dirty = true;
+        }
+    }
+
+    private static void typed(int codepoint, int mods) {
+        int s = scale();
+        if (!focused || !Character.isBmpCodePoint(codepoint)) {
+            return;
+        }
+        GridModel.Box jm = JourneyMapView.typing(JourneyMapView.Host.POPOUT);
+        GridModel.Box fb = jm == null ? GridView.mapTyping(JourneyMapView.Host.POPOUT, GridModel.page()) : null;
+        if (fb != null) {
+            MapView.charTyped(GridView.map(JourneyMapView.Host.POPOUT, fb), (char) codepoint);
+            dirty = true;
+            return;
+        }
+        GridView.Placed p = jm == null ? mapAt(mouseX / s, mouseY / s) : null;
+        if (jm != null || p != null) {
+            JourneyMapView.charTyped(JourneyMapView.Host.POPOUT, jm != null ? jm : p.box(), mouseX / s, mouseY / s, (char) codepoint, mods);
         }
     }
 
@@ -400,6 +511,7 @@ public final class Popout {
         public static void onPopoutLeave(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) {
             close();
             MapView.clear();
+            JourneyMapView.clear();
             WatchSet.reset();
         }
     }

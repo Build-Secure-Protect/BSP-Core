@@ -4232,3 +4232,31 @@ Server side. GameTests `harvest_regrows_a_mined_ore`, `harvest_built_over_spot_d
 - [ ] Mine three BSP ores near a Harvest 1 totem, then fly away until the chunk unloads (or restart the server) and come back: the ores still grow back one by one.
 - [ ] Set `effects.harvestDraw` to 200 (more than an Output 0 totem gives off), mine a BSP ore near a Harvest totem without Output: it does not grow back and the plasma output stays at its full figure. Set it back to 25: the ore grows.- [ ] Harvest 4 totem, nothing mined for a while: mine a BSP ore and time it: it grows back after 30 s, not at once. Mine two at once: the second comes 30 s after the first. The upgrade tree's Harvest line reads "grow back after 30 s, one at a time".- [ ] (audit) Stand in the spot of a mined ore when it is due: it does not grow inside you; step out: it grows within a second. With the totem screen open while an ore waits on a clear spot, the plasma line drops by 25; build over the spot: it goes back to the full figure within a second.
 
+
+## Holo Grid: JourneyMap's own map in the map box (2026-11-25, unreleased)
+Client side; not seen in a client. Compare each step with JourneyMap's J screen side by side.
+- [ ] VIEW with a map box: the box shows JourneyMap's full map with its toolbar, status line and key list, as the J screen does. Walk and fly: the map and JourneyMap's player arrow move smoothly, no jumps. Mobs, animals and other players show as JourneyMap's icons.
+- [ ] Day, night, topo, biome and cave buttons change the box; night looks dark at night as on the J screen. The chunk grid button shows the grid. Zoom in with the wheel down to single blocks and out to the widest; drag to pan; the follow button (or F) brings it back to you.
+- [ ] Over the map: B opens JourneyMap's waypoint editor inside the box (type a name with an E in it: the Holo Grid stays open; Esc closes the editor), C puts the position in JourneyMap's chat (type a message with an E: the Holo Grid stays; Esc closes the chat), right-click opens JourneyMap's menu inside the box (Esc closes it), the arrow keys pan, = and - zoom, [ changes the map type. With none of those open, Holo Grid keys (page keys, the Holo Grid key, E) do their job and Esc closes the Holo Grid.
+- [ ] A page with two map boxes of different sizes: both show the map, neither flickers or blanks; drag in one, then scroll in the other: no jump sideways.
+- [ ] JourneyMap's close button or J inside the Holo Grid's box: the Holo Grid closes. In the popout (focused): nothing happens; with a chest open in the game window, the chest stays open.
+- [ ] A chest open in the game window, the popout focused: press O over the popout's map: JourneyMap's options open in the game window and the chest closes (its items stay in it); close the options: back in the game, not a dead chest screen.
+- [ ] Hold a drag on the map and press Esc (Holo Grid) or alt-tab away (popout): open it again: the map does not slide with the mouse.
+- [ ] Options button (or O): JourneyMap's options open; close them: back in the Holo Grid, not the J screen. Same for the waypoint manager (N).
+- [ ] Open the J screen, change zoom or map type, close it: the box shows the same view.
+- [ ] Popout with a map box: the same map, moving smoothly at the popout's frame rate; with focus (the focus key) drag, zoom, the buttons and keys work. Resize the window: the map refits.
+- [ ] Pin the map box: the corner shows JourneyMap's map without buttons.
+- [ ] `config/bsp_core-client.toml`, `[tracking] mapControls = false`: the box and popout show the map without JourneyMap's buttons; clicks where a button was pan the map instead. The J screen keeps its own buttons. Back to true: buttons back.
+- [ ] Remove JourneyMap from the instance: the box shows BSP-Core's own map with its + - o keys, no errors.
+- [ ] GUI scale 1, 2, 3 and Auto, and a Retina screen: the map fills the box exactly, the mouse hovers the right spot (the block under the mouse in the status line matches), and the buttons are clickable where drawn.
+
+## Holo Grid: JourneyMap reloading, BSP-Core's map, waypoints through JourneyMap (2026-11-25, unreleased)
+With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has failed (or in an instance where JourneyMap's map screen is broken by an update). Compare with JourneyMap's J map side by side.
+- [ ] BSP-Core's map: the same land as JourneyMap's day map, in its colours and shading (once JourneyMap has saved its pictures, about a minute in a new world). Night button: JourneyMap's night map. Go into a cave: the cave layer you are in; the Nether: its layers.
+- [ ] JourneyMap's blue player marker turns with you; cows, pigs, creepers show as JourneyMap's face icons; other players as their faces with names; mobs in caves far below are not shown.
+- [ ] Toolbar: grey keys with JourneyMap's icons, each with its name on hover; monsters, animals and players hide and show; grid hides the chunk lines; zoom in down to single blocks and out to the widest; drag pans, F (or the follow key) comes back. The status line shows you, place, biome and Map Zoom; the bottom line the block under the mouse.
+- [ ] B over the map: the waypoint editor at the mouse's block (name "x, z"). Rename it (an E in the name does not close the Holo Grid), pick a colour, Save: "Saved to JourneyMap", the waypoint on the map. Open JourneyMap's own waypoint manager (N on the J map): it is there, the same name, place and colour.
+- [ ] N over BSP-Core's map: its manager lists the waypoints and death points of this dimension with distances. Click a name: the map goes there. On/Off, Edit and x (delete) each change JourneyMap's list the same way. Die: JourneyMap's death point shows in both.
+- [ ] Make or delete a waypoint on JourneyMap's J map: BSP-Core's map shows the change within a second.
+- [ ] Reloading: when JourneyMap's map fails once, the box shows BSP-Core's map with "JourneyMap is reloading…" and JourneyMap's map is back after about 5 seconds. Three failures in 5 minutes: "JourneyMap's map stopped…" until you log in again.
+- [ ] Popout and pin show BSP-Core's map the same way when JourneyMap's map is not shown.
