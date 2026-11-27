@@ -4,6 +4,21 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-11-27
+
+Network protocol 26 (unchanged): servers can take 1.28.0 without new clients, and 1.27.x clients join it (they show the WAKE key's new messages as raw text until they update). `plasma.linkWakeSeconds` and `plasma.cableCheckSeconds` are gone from the server config; Forge drops them at the next start.
+
+### Fixed
+- **A Plasma Accelerator never loads a far chunk by itself.** Once a minute it used to put a five-second ticket on each sleeping far side and load the chunk on the spot. In a world with no players and no force-loaded chunks the game stops ticking block entities, so every wake rebuilt the far base's machines without running them, left their tickers behind and unloaded them again: a load and unload of the whole 5 x 5 area every minute, with leaked tickers and chunks piling up until the hourly save. A link now delivers only while its far chunk ticks for another reason (a player near it, a totem's Anchor through a projector there), and otherwise reports it asleep.
+- The once-a-minute wake and its `plasma.linkWakeSeconds` setting are gone.
+- A Decelerator Core broken during a tick (an explosion, say) no longer loads its accelerator's chunk to drop the link; a loaded accelerator forgets the link at once, an unloaded one once its hop finds the core gone.
+- **Plasma cables never load a chunk.** Every 30 seconds, and whenever an interface, Tank Port, Tank Extractor or Decelerator Port loaded, the network followed its cables into every chunk along the run that was not loaded and loaded it on the spot, only for it to unload a few ticks later. That was a disk read and write of each of those chunks, and a load and unload of every machine in them, twice a minute. The network now remembers the run it walked, saves it with the block, and goes on through that memory where a chunk is not loaded. A projector at the end of a long run through unheld chunks keeps its plasma and its Anchor chunks, after a restart too. A change to the run is seen as soon as its chunk is loaded. A network block saved by an earlier version follows its cables into unloaded chunks once, the first time it runs, to learn the run it already fed.
+- The `plasma.cableCheckSeconds` setting is gone. A projector with Anchor that nothing has fed for 45 seconds lets its chunks go, as before at the default.
+
+### Added
+- `plasma.linkWake` (server config, off by default): whether the Worlds board's WAKE key may wake sleeping far sides. On, a press puts the wake ticket on each sleeping far chunk without loading it on the spot, at most once a minute per accelerator, and only in worlds whose machines run (a player there or Anchor chunks). Off, the key answers that waking is off. The server log says which at start.
+- `/bsp links` (operators) lists every loaded Plasma Accelerator: its world, position, owner, links, and each far side's world and chunk with whether it is held by a totem's Anchor, ticking for another reason, woken or asleep. `/bsp links held` lists every chunk BSP-Core's Anchor holds.
+
 ## [1.27.2] - 2026-11-27
 
 Network protocol 26 (unchanged): servers can take 1.27.2 without new clients, and 1.27.1 clients join it.

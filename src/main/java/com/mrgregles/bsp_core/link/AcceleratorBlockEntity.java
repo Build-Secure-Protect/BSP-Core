@@ -58,13 +58,24 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
     private int inRate, outRate;
     /** What each link did this second, for the screen and Jade. */
     private final java.util.Map<GlobalPos, Links.Report> reports = new java.util.LinkedHashMap<>();
+    /** When the WAKE key last asked the far sides to load (not saved). */
     private long lastWake = Long.MIN_VALUE;
-    private boolean wakeNow;
+    /** Far sides the WAKE key woke, with the game time (of their own world) their wake ticket runs out: for the admin listing. */
+    private final java.util.Map<GlobalPos, Long> wokenUntil = new java.util.HashMap<>();
     /** 0 formed and dark, 1 RF connected, 2 a link delivering: synced for the renderer and the block's light. */
     private int clientState;
-    /** Keeps a sleeping far side ticking for five seconds after the accelerator wakes it. */
+    /** Ticks a WAKE ticket lasts: five seconds. */
+    public static final int WAKE_TICKS = 100;
+    /** Ticks between two presses of the WAKE key that wake anything: a minute. */
+    public static final int WAKE_COOLDOWN = 1200;
+    /**
+     * Put on a sleeping far chunk only by the WAKE key (and only with {@code plasma.linkWake} on): the chunk loads in the background
+     * and ticks for five seconds. Nothing ever loads it on the spot, and no tick of the accelerator adds it.
+     */
     public static final net.minecraft.server.level.TicketType<net.minecraft.world.level.ChunkPos> WAKE =
-            net.minecraft.server.level.TicketType.create("bsp_core_link_wake", java.util.Comparator.comparingLong(net.minecraft.world.level.ChunkPos::toLong), 100);
+            net.minecraft.server.level.TicketType.create("bsp_core_link_wake", java.util.Comparator.comparingLong(net.minecraft.world.level.ChunkPos::toLong), WAKE_TICKS);
+    /** The accelerators loaded on this server right now, for {@code /bsp links}. Server thread only. */
+    private static final java.util.Set<AcceleratorBlockEntity> LOADED = new java.util.LinkedHashSet<>();
 
     public AcceleratorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ACCELERATOR.get(), pos, state);
@@ -96,8 +107,63 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
         return acceleratorMax() * 20L * 2;
     }
 
-    public static int wakeSeconds() {
-        return com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.LINK_WAKE_SECONDS, 60);
+    /** Whether the WAKE key may wake far sides ({@code plasma.linkWake}, off by default). */
+    public static boolean wakeAllowed() {
+        return com.mrgregles.bsp_core.BSPConfig.getOr(com.mrgregles.bsp_core.BSPConfig.LINK_WAKE, false);
+    }
+
+    /**
+     * Whether {@code level} runs its block entities. A world with no players and no force-loaded chunks stops ticking block
+     * entities 300 ticks after it empties ({@code ServerLevel.tick}); chunks loaded into it then build their machines but never run
+     * them, and their tickers are never cleared, so nothing may wake a far side there.
+     */
+    public static boolean runsMachines(ServerLevel level) {
+        return !level.players().isEmpty() || net.minecraftforge.common.world.ForgeChunkManager.hasForcedChunks(level);
+    }
+
+    /** Whether the far side at {@code at} is running now: its chunk ticks (checked without loading anything) and its world runs machines. */
+    public static boolean awake(ServerLevel far, BlockPos at) {
+        return far.getChunkSource().isPositionTicking(net.minecraft.world.level.ChunkPos.asLong(at)) && runsMachines(far);
+    }
+
+    /** The accelerators loaded right now, in the order they loaded. */
+    public static List<AcceleratorBlockEntity> loaded() {
+        LOADED.removeIf(BlockEntity::isRemoved);
+        return new ArrayList<>(LOADED);
+    }
+
+    static void forgetLoaded() {
+        LOADED.clear();
+    }
+
+    /** Whether the WAKE key's ticket is on the far side at {@code at} now. */
+    public boolean woken(GlobalPos at, ServerLevel far) {
+        Long until = wokenUntil.get(at);
+        return until != null && far.getGameTime() < until;
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level instanceof ServerLevel && !isRemoved()) { // onLoad can come late, after the chunk already went
+            LOADED.add(this);
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        if (level instanceof ServerLevel) {
+            LOADED.remove(this);
+        }
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        if (level instanceof ServerLevel) {
+            LOADED.remove(this);
+        }
     }
 
     public static double loss() {
@@ -239,9 +305,46 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
 
     // ---- the hop, once a second
 
-    /** The next tick wakes every sleeping far side at once (the WAKE key). */
-    public void wakeNow() {
-        wakeNow = true;
+    /** What a press of the WAKE key did. */
+    public record Wake(Result result, int woken, int idleWorlds) {
+        public enum Result { OFF, TOO_SOON, ASKED }
+    }
+
+    /**
+     * The WAKE key. With {@code plasma.linkWake} on and a minute since the last press, puts the WAKE ticket on every sleeping far
+     * chunk whose world runs machines; the chunk loads in the background and the next hops deliver once it ticks. Nothing is loaded
+     * here, and a far side in a world that runs no machines is left asleep.
+     */
+    public Wake wakeNow() {
+        if (!(level instanceof ServerLevel sl)) {
+            return new Wake(Wake.Result.OFF, 0, 0);
+        }
+        if (!wakeAllowed()) {
+            return new Wake(Wake.Result.OFF, 0, 0);
+        }
+        long now = sl.getGameTime();
+        if (lastWake != Long.MIN_VALUE && now - lastWake < WAKE_COOLDOWN) {
+            return new Wake(Wake.Result.TOO_SOON, 0, 0);
+        }
+        int woken = 0, idle = 0;
+        for (GlobalPos at : links) {
+            ServerLevel far = sl.getServer().getLevel(at.dimension());
+            if (far == null || awake(far, at.pos())) {
+                continue;
+            }
+            if (!runsMachines(far)) {
+                idle++;
+                continue;
+            }
+            net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(at.pos());
+            far.getChunkSource().addRegionTicket(WAKE, chunk, 2, chunk);
+            wokenUntil.put(at, far.getGameTime() + WAKE_TICKS);
+            woken++;
+        }
+        if (woken > 0) {
+            lastWake = now; // a press that woke nothing leaves the next press free
+        }
+        return new Wake(Wake.Result.ASKED, woken, idle);
     }
 
     /** Undoes link {@code index}: the far core's card comes out and drops there; a core that is gone is simply forgotten. */
@@ -283,7 +386,7 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
     }
 
     private void hop(ServerLevel sl) {
-        long now = sl.getGameTime();
+        wokenUntil.keySet().retainAll(links);
         if (windowFeeds > 0) {
             access = window;
             com.mrgregles.bsp_core.plasma.Anchor picked = com.mrgregles.bsp_core.plasma.Anchor.pick(windowAnchors, windowLevels, window.editors, anchorTotem);
@@ -300,7 +403,6 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
         inAcc = 0;
         receivedThisSecond = 0;
         outRate = 0;
-        boolean wake = wakeNow || (wakeSeconds() > 0 && (lastWake == Long.MIN_VALUE || now - lastWake >= wakeSeconds() * 20L));
         reports.clear();
         List<DeceleratorBlockEntity> live = new ArrayList<>();
         List<GlobalPos> liveAt = new ArrayList<>();
@@ -310,15 +412,11 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
                 reports.put(at, new Links.Report(Links.State.NO_WORLD, 0));
                 continue;
             }
-            // a far side is awake only while its chunk ticks: a chunk still in memory with nothing keeping it does not run its core
-            if (!far.isLoaded(at.pos()) || !far.getChunkSource().isPositionTicking(net.minecraft.world.level.ChunkPos.asLong(at.pos()))) {
-                if (!wake) {
-                    reports.put(at, new Links.Report(Links.State.ASLEEP, 0));
-                    continue;
-                }
-                net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(at.pos());
-                far.getChunkSource().addRegionTicket(WAKE, chunk, 2, chunk);
-                far.getChunk(at.pos());
+            // a far side is awake only while its chunk ticks in a world that runs machines. This never loads it: the check reads
+            // only chunks already in memory, and the block entity is read only once the chunk ticks
+            if (!awake(far, at.pos())) {
+                reports.put(at, new Links.Report(Links.State.ASLEEP, 0));
+                continue;
             }
             if (!(far.getBlockEntity(at.pos()) instanceof DeceleratorBlockEntity core) || !here().equals(core.accelerator())) {
                 links.remove(at); // gone, or re-linked elsewhere: forget it
@@ -335,10 +433,6 @@ public class AcceleratorBlockEntity extends BlockEntity implements com.mrgregles
                 live.add(core);
                 liveAt.add(at);
             }
-        }
-        if (wake) {
-            lastWake = now;
-            wakeNow = false;
         }
         Links.State idle = !formed ? Links.State.UNFORMED_HERE : !energy.hasSecond() ? Links.State.NO_RF_HERE : Links.State.IDLE;
         long available = formed ? Math.min(store.stored(), acceleratorMax() * 20L) : 0;

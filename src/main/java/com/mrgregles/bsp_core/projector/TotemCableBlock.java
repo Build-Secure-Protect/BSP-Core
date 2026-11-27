@@ -189,9 +189,16 @@ public class TotemCableBlock extends Block implements net.minecraft.world.level.
         return state.setValue(SIDES[dir.get3DDataValue()], joins(level, pos, dir));
     }
 
+    @Override
+    public void onPlace(BlockState state, net.minecraft.world.level.Level level, BlockPos pos, BlockState old, boolean moving) {
+        super.onPlace(state, level, pos, old, moving);
+        com.mrgregles.bsp_core.plasma.RunChanges.bump(level, pos); // the run changed here (RunChanges)
+    }
+
     /** Breaking a cable empties the cables around it at once; anything further along drains by itself when no report arrives. */
     @Override
     public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos, BlockState newState, boolean moving) {
+        com.mrgregles.bsp_core.plasma.RunChanges.bump(level, pos); // the run changed here (RunChanges)
         if (!state.is(newState.getBlock()) && !level.isClientSide) {
             for (Direction d : Direction.values()) {
                 if (level.getBlockEntity(pos.relative(d)) instanceof PlasmaCableBlockEntity cable) {

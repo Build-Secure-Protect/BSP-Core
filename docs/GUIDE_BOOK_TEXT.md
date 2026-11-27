@@ -826,9 +826,9 @@ Once the plasma arrives it is ordinary plasma: an Overworld totem's **Overclock*
 
 **Page 11: Sleeping and waking**
 
-A far side whose chunk is not loaded sleeps, and its share goes to the other links. Once a minute the accelerator loads it for a moment and delivers, so a projector there relights its own chunk loading by itself; after that the projector keeps the chunk and the link runs on its own.
+A far side sleeps while its chunk is not loaded, and its share goes to the other links. It runs while a player is near it, or while a Projector with Anchor behind it holds its chunk; then the link runs on its own.
 
-Right-click the intake empty-handed for the **Worlds board**: a column per world, every link as a pip with its state, UNLINK for the one you pick and WAKE to load every sleeping far side at once.
+Right-click the intake empty-handed for the **Worlds board**: a column per world, every link as a pip with its state, UNLINK for the one you pick and WAKE, which asks every sleeping far side to load for a moment where the server allows it.
 
 ## Powers in Detail
 

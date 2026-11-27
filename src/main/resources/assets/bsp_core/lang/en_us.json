@@ -1817,12 +1817,12 @@
   "gui.bsp_core.accelerator.rate": "%s mB/t",
   "gui.bsp_core.accelerator.carries": "Carries %s",
   "gui.bsp_core.accelerator.carries_none": "Carries no powers yet",
-  "gui.bsp_core.accelerator.hint": "Click a link, then UNLINK takes its card out at the far end. WAKE loads every sleeping far side for a moment.",
+  "gui.bsp_core.accelerator.hint": "Click a link, then UNLINK takes its card out at the far end. WAKE asks every sleeping far side to load for a moment, where this server allows it.",
   "gui.bsp_core.accelerator.unlink": "UNLINK",
   "gui.bsp_core.accelerator.wake": "WAKE",
   "gui.bsp_core.accelerator.done": "DONE",
   "jei.bsp_core.info.accelerator": "The Plasma Accelerator sends Wave Plasma to another world on this server. Build it as a ring: an Accelerator Intake at the bottom middle, seven Accelerator Frames round it standing up, the middle empty. Run a plasma cable into the intake and RF into any frame. Right-click the intake with a blank Link Card to write it, then right-click a Decelerator Core anywhere with the card. One link to start; each Link Expander on the intake adds one, two at most. The plasma arrives with every power it carried; the accelerator burns 1,000 RF/t while sending.",
-  "jei.bsp_core.info.decelerator": "The Plasma Decelerator receives what an Accelerator sends. A Decelerator Core with a Decelerator Port directly behind it; RF into the core, cables out of the port's free faces. Right-click the core with a written Link Card. It burns 100 RF/t while receiving. A far side whose chunk is not loaded sleeps; the accelerator wakes it for a moment once a minute, so a Projector with Anchor behind it keeps its own chunks.",
+  "jei.bsp_core.info.decelerator": "The Plasma Decelerator receives what an Accelerator sends. A Decelerator Core with a Decelerator Port directly behind it; RF into the core, cables out of the port's free faces. Right-click the core with a written Link Card. It burns 100 RF/t while receiving. A far side sleeps while its chunk is not loaded; it runs while a player is near it or a Projector with Anchor behind it holds its chunk.",
   "message.bsp_core.shatter_totem.destroyed": "Shatter Totem destroyed for good (creative mode).",
   "message.bsp_core.shatter_totem.back": "Your Shatter Totem is back with you. It stood at %s while you were away.",
   "message.bsp_core.shatter_totem.stands_at": "Your Shatter Totem stands at %s, where you logged out.",
@@ -3609,5 +3609,11 @@
   "gui.bsp_core.config.delete_confirm": "This also deletes the %s sections under it. Click Delete again to go ahead.",
   "gui.bsp_core.config.delete_confirm_key": "Delete all",
   "gui.bsp_core.kit.note.stale": "Changed elsewhere: CLOSE and open it again",
-  "message.bsp_core.kit.nested_item": "A kit cannot hold a store credit ticket or an InventorySync placeholder inside another item"
+  "message.bsp_core.kit.nested_item": "A kit cannot hold a store credit ticket or an InventorySync placeholder inside another item",
+  "message.bsp_core.link_wake_off": "Waking far sides is off on this server. A far side runs while its chunk is loaded: a player near it, or a Projector with Anchor.",
+  "message.bsp_core.link_wake_soon": "The far sides were asked to wake less than a minute ago.",
+  "message.bsp_core.link_wake_asked": "Asked %s sleeping far side(s) to load for five seconds.",
+  "message.bsp_core.link_wake_idle": "Asked %s sleeping far side(s) to load for five seconds. Left asleep, with nothing running in their world: %s.",
+  "message.bsp_core.link_wake_idle_only": "Left asleep, with nothing running in their world: %s. A far side there runs while a player is near it or a Projector with Anchor holds its chunk.",
+  "message.bsp_core.link_wake_none": "No far side is asleep."
 }

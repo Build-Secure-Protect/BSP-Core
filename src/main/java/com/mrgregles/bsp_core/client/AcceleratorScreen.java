@@ -25,8 +25,8 @@ import java.util.Locale;
 /**
  * The Plasma Accelerator's screen, the Worlds board: a column for every world in play, the accelerator as a gold pip in its own
  * column, each link as a pip in the column of its world with a line drawn to it from the accelerator, lit while plasma passes and
- * grey and dashed while the link sleeps. Click a link to select it; UNLINK takes its card out at the far end, WAKE loads every
- * sleeping far side for a moment. The server refreshes the board once a second.
+ * grey and dashed while the link sleeps. Click a link to select it; UNLINK takes its card out at the far end, WAKE asks every
+ * sleeping far side to load for a moment where the server allows it (plasma.linkWake). The server refreshes the board once a second.
  */
 public class AcceleratorScreen extends Screen implements ScreenFit.Fitted {
     private static final int W = 360, H = 206, TOP_ROW = 46, PIP = 8;

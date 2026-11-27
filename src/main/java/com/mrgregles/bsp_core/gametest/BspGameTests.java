@@ -4300,45 +4300,270 @@ public class BspGameTests {
         });
     }
 
+    /** A level-33 hold for one chunk in a test: loaded, not ticking, and not loading the chunks beside it. */
+    private static final net.minecraft.server.level.TicketType<net.minecraft.world.level.ChunkPos> TEST_HOLD =
+            net.minecraft.server.level.TicketType.create("bsp_core_test_hold", java.util.Comparator.comparingLong(net.minecraft.world.level.ChunkPos::toLong));
+
     /**
-     * A far side that nothing keeps ticking sleeps; {@code wakeNow()} puts the WAKE ticket on it, and while the ticket holds the core
-     * ticks, forms, receives and the link delivers.
-     *
-     * <p>Two things used to make this test pass or fail with the batch order (how far the game clock had run before it):
-     * <ul>
-     * <li>A block entity placed by {@code setBlock} into a chunk that is not properly loaded gets no ticker. So the core is placed in a
-     * force-loaded chunk, and the chunk is let go only once the core has formed, which proves it ticks.</li>
-     * <li>A block entity ticks only once its chunk's entities have loaded, which happens off the server thread in real time. The WAKE
-     * ticket lasts 100 ticks: five seconds on a real server, well under a second on the GameTest server, which runs ticks flat out. A
-     * far chunk that had to come back from disk could miss the whole ticket. So the sleeping chunk is kept in memory (loaded but not
-     * ticking, which the link still reports as asleep) and woken once its entities are loaded: the test proves the wake, not the disk.</li>
-     * </ul>
+     * A plasma run never loads a chunk. In the Nether, far from anything: an interface in a force-loaded chunk (standing in for a
+     * totem's), 67 cables east through two chunks it keeps loaded, one chunk nothing holds, and a chunk held loaded but not ticking
+     * (standing in for a projector's Anchor) with the last cables and a Projector Base. Walked once while everything is loaded, the
+     * middle chunk is let go; for more than the 600 ticks the old full cable check took, it is never loaded again and the base stays
+     * on the run (walked through the run memory). Rebuilt from a tag without its run memory (a block saved before the memory existed),
+     * the interface walks once with loading and finds the base; the chunk goes again. Rebuilt from its saved tag, as after a restart, it
+     * finds the base without loading the chunk; cutting the cable beside the base (in its loaded chunk) takes the base off the run.
+     * With that cable back, a cable in the chunk nobody holds is taken out between two walks (loaded, changed and let go again, as if
+     * no network had been running): the next walk, which never sees the chunk loaded, does not walk it from memory and the base goes.
      */
-    @GameTest(template = EMPTY, timeoutTicks = 1200)
-    public void accelerator_wakes_a_sleeping_far_side_and_delivers(GameTestHelper h) {
+    @GameTest(template = EMPTY, timeoutTicks = 4000)
+    public void a_plasma_run_through_an_unloaded_chunk_is_walked_from_memory_and_never_loads_it(GameTestHelper h) {
+        var server = server(h);
+        ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
+        BlockPos iface = new BlockPos(6002, 100, 6008), base = new BlockPos(6070, 100, 6008), cut = base.west();
+        int cz = iface.getZ() >> 4, home = iface.getX() >> 4, gap = 378, end = base.getX() >> 4; // chunks 375, 378, 379
+        var endChunk = new net.minecraft.world.level.ChunkPos(end, cz);
+        nether.setChunkForced(home, cz, true);
+        nether.setChunkForced(gap, cz, true); // the run is built and walked with everything loaded, as a player would build it
+        nether.getChunkSource().addRegionTicket(TEST_HOLD, endChunk, 0, endChunk);
+        nether.setBlock(iface, ModBlocks.PLASMA_INTERFACE.get().defaultBlockState(), 3);
+        for (int x = iface.getX() + 1; x < base.getX(); x++) {
+            nether.setBlock(new BlockPos(x, 100, 6008), cable(TotemCableBlock.Kind.CHARGED_ILLYRIUM).defaultBlockState(), 3);
+        }
+        nether.setBlock(base, ModBlocks.PROJECTOR_BASE.get().defaultBlockState(), 3);
+        java.util.function.Supplier<com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity> be = () ->
+                nether.getBlockEntity(iface) instanceof com.mrgregles.bsp_core.plasma.PlasmaInterfaceBlockEntity i ? i : null;
+        java.util.function.BooleanSupplier onRun = () -> be.get() != null && be.get().network().view(nether).blocks().stream()
+                .anyMatch(e -> e.kind() == com.mrgregles.bsp_core.network.InterfaceViewPacket.RECEIVER && e.pos().equals(base));
+        Runnable cleanUp = () -> {
+            nether.setChunkForced(gap, cz, true);
+            for (int x = iface.getX(); x <= base.getX(); x++) {
+                nether.setBlock(new BlockPos(x, 100, 6008), Blocks.AIR.defaultBlockState(), 3);
+            }
+            nether.setChunkForced(gap, cz, false);
+            nether.setChunkForced(home, cz, false);
+            nether.getChunkSource().removeRegionTicket(TEST_HOLD, endChunk, 0, endChunk);
+        };
+        boolean[] watching = {false}, loadedAgain = {false};
+        h.onEachTick(() -> {
+            if (watching[0] && nether.getChunkSource().getChunkNow(gap, cz) != null) {
+                loadedAgain[0] = true;
+            }
+        });
+        Runnable hidden = () -> {
+            nether.setBlock(cut, cable(TotemCableBlock.Kind.CHARGED_ILLYRIUM).defaultBlockState(), 3);
+            pollThen(h, 100, onRun, () -> pollThen(h, 40, () -> nether.getGameTime() % 20 == 5, () -> {
+                nether.setChunkForced(gap, cz, true);
+                nether.setBlock(new BlockPos(6055, 100, 6008), Blocks.AIR.defaultBlockState(), 3);
+                nether.setChunkForced(gap, cz, false);
+                h.runAfterDelay(5, () -> {
+                    if (nether.getChunkSource().getChunkNow(gap, cz) != null) {
+                        cleanUp.run();
+                        h.fail("the changed chunk goes again well before the next walk");
+                    }
+                    loadedAgain[0] = false;
+                    watching[0] = true;
+                    pollThen(h, 60, () -> !onRun.getAsBoolean(), () -> {
+                        boolean again = loadedAgain[0];
+                        watching[0] = false;
+                        cleanUp.run();
+                        h.assertFalse(again, "the walk that drops the base never loads the changed chunk");
+                        h.succeed();
+                    }, () -> {
+                        cleanUp.run();
+                        h.fail("a run changed where no walk saw it is not walked from memory");
+                    });
+                });
+            }, () -> {
+                cleanUp.run();
+                h.fail("the game time reaches the middle of a second");
+            }), () -> {
+                cleanUp.run();
+                h.fail("the cable put back beside the base brings the base back on the run");
+            });
+        };
+        Runnable cutIt = () -> {
+            // beside the base, in its loaded chunk, far enough in that the neighbour shape updates (which read one block past the
+            // cable that changes) stay in it
+            nether.setBlock(cut, Blocks.AIR.defaultBlockState(), 3);
+            pollThen(h, 100, () -> !onRun.getAsBoolean(), () -> {
+                boolean again = loadedAgain[0];
+                watching[0] = false;
+                if (again) {
+                    cleanUp.run();
+                    h.fail("the chunk nothing holds is never loaded by the run");
+                }
+                hidden.run();
+            }, () -> {
+                cleanUp.run();
+                h.fail("a cable cut in a loaded chunk past the unloaded one takes the base off the run");
+            });
+        };
+        Runnable restart = () -> {
+            var tag = be.get().saveWithoutMetadata();
+            nether.setBlock(iface, Blocks.AIR.defaultBlockState(), 3);
+            nether.setBlock(iface, ModBlocks.PLASMA_INTERFACE.get().defaultBlockState(), 3);
+            be.get().load(tag); // as the block comes back from disk
+            pollThen(h, 100, onRun, cutIt, () -> {
+                cleanUp.run();
+                h.fail("rebuilt from its saved tag, the interface finds the base through the remembered run");
+            });
+        };
+        Runnable legacy = () -> {
+            var tag = be.get().saveWithoutMetadata();
+            tag.remove("Run"); // as a block saved before the run memory existed
+            nether.setBlock(iface, Blocks.AIR.defaultBlockState(), 3);
+            nether.setBlock(iface, ModBlocks.PLASMA_INTERFACE.get().defaultBlockState(), 3);
+            be.get().load(tag);
+            pollThen(h, 100, () -> onRun.getAsBoolean() && be.get().network().remembered() >= 68, () -> pollThen(h, 700,
+                    () -> nether.getChunkSource().getChunkNow(gap, cz) == null, () -> {
+                        loadedAgain[0] = false; // the one loading walk may load it; from here on nothing does
+                        restart.run();
+                    }, () -> {
+                        cleanUp.run();
+                        h.fail("after the one loading walk the chunk nothing holds goes again");
+                    }), () -> {
+                cleanUp.run();
+                h.fail("a block saved before the run memory walks once with loading and finds the base: " + be.get().network().remembered());
+            });
+        };
+        Runnable watch = () -> {
+            watching[0] = true;
+            h.runAfterDelay(700, () -> {
+                if (loadedAgain[0] || !onRun.getAsBoolean()) {
+                    boolean again = loadedAgain[0];
+                    cleanUp.run();
+                    h.assertFalse(again, "the chunk nothing holds is never loaded by the run (the old full check loaded it within 600 ticks)");
+                    h.fail("the base stays on the run through the remembered chunk");
+                }
+                legacy.run();
+            });
+        };
+        Runnable letGo = () -> {
+            h.assertTrue(be.get().network().remembered() >= 68, "the walk remembers the interface and the run: " + be.get().network().remembered());
+            nether.setChunkForced(gap, cz, false);
+            pollThen(h, 700, () -> nether.getChunkSource().getChunkNow(gap, cz) == null, watch, () -> {
+                cleanUp.run();
+                h.fail("the middle chunk unloads once nothing holds it");
+            });
+        };
+        pollThen(h, 600, onRun, letGo, () -> {
+            cleanUp.run();
+            h.fail("with everything loaded the interface finds the base 68 blocks away");
+        });
+    }
+
+    /**
+     * A far side that nothing keeps ticking sleeps, and the accelerator never loads it: its chunk stays unloaded through more than a
+     * minute of hops (the old once-a-minute wake fired at the first hop and again 1200 ticks later), no WAKE ticket is put on it, and
+     * {@code /bsp links} lists the accelerator with the far chunk asleep.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 3600)
+    public void accelerator_never_loads_a_sleeping_far_side(GameTestHelper h) {
+        var server = server(h);
+        var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
+        ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
+        BlockPos far = new BlockPos(-4200, 100, 4200); // a spot no other test uses: tests in a batch run side by side in one Nether
+        int cx = far.getX() >> 4, cz = far.getZ() >> 4;
+        nether.setChunkForced(cx, cz, true); // placed in a loaded, ticking chunk, as a player would place it
+        var core = linkedDecelerator(h, nether, far, a);
+        net.minecraft.core.GlobalPos coreAt = core.here();
+        Runnable cleanUp = () -> {
+            nether.setChunkForced(cx, cz, true);
+            nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
+            nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
+            nether.setChunkForced(cx, cz, false);
+        };
+        boolean[] watching = {false}, loadedAgain = {false};
+        h.onEachTick(() -> {
+            if (watching[0] && nether.getChunkSource().getChunkNow(cx, cz) != null) {
+                loadedAgain[0] = true;
+            }
+        });
+        Runnable watch = () -> {
+            watching[0] = true;
+            h.runAfterDelay(1300, () -> {
+                watching[0] = false;
+                String state = a.report(coreAt).state().toString(), far1 = com.mrgregles.bsp_core.link.LinkCommands.farState(server, a, coreAt);
+                List<String> lines = com.mrgregles.bsp_core.link.LinkCommands.lines(server);
+                BlockPos ap = a.getBlockPos();
+                boolean listed = lines.stream().anyMatch(l -> l.contains(ap.getX() + " " + ap.getY() + " " + ap.getZ()))
+                        && lines.stream().anyMatch(l -> l.contains("minecraft:the_nether chunk [" + cx + ", " + cz + "]") && l.contains("asleep (not loaded)"));
+                cleanUp.run();
+                h.assertFalse(loadedAgain[0], "a sleeping far chunk is never loaded by the accelerator");
+                h.assertTrue(state.equals("ASLEEP"), "the link reports its far side asleep: " + state);
+                h.assertTrue(far1.equals("asleep (not loaded)"), "the listing says the far chunk sleeps unloaded: " + far1);
+                h.assertTrue(listed, "/bsp links lists the accelerator and its Nether far side: " + lines);
+                h.succeed();
+            });
+        };
+        Runnable sleep = () -> {
+            nether.setChunkForced(cx, cz, false); // the core ticks; now nothing keeps its chunk loaded
+            // vanilla drops unloaded chunks only while the tick has time to spare, so a busy batch may take a while
+            pollThen(h, 1500, () -> nether.getChunkSource().getChunkNow(cx, cz) == null
+                            && a.report(coreAt).state() == com.mrgregles.bsp_core.link.Links.State.ASLEEP, watch, () -> {
+                String state = a.report(coreAt).state().toString();
+                cleanUp.run();
+                h.fail("a far side whose chunk nothing keeps unloads and sleeps: " + state);
+            });
+        };
+        pollThen(h, 300, core::isFormed, sleep, () -> {
+            cleanUp.run();
+            h.fail("the Nether core forms in its force-loaded chunk");
+        });
+    }
+
+    /**
+     * The WAKE key with {@code plasma.linkWake}: off (the default) it wakes nothing; on, it puts the WAKE ticket on a sleeping far
+     * chunk whose world runs machines (here a force-loaded chunk elsewhere in the Nether), the core there ticks and receives and the
+     * link delivers; a second press within the minute wakes nothing.
+     *
+     * <p>A block entity ticks only once its chunk's entities have loaded, which happens off the server thread in real time, and the
+     * WAKE ticket lasts 100 ticks: well under a second on the GameTest server, which runs ticks flat out. So the sleeping chunk is kept
+     * in memory (loaded but not ticking, which the link still reports as asleep) and woken once its entities are loaded: the test
+     * proves the wake, not the disk.
+     */
+    @GameTest(template = EMPTY, timeoutTicks = 1400)
+    public void accelerator_wake_key_wakes_only_where_allowed(GameTestHelper h) {
         var server = server(h);
         var a = fedAccelerator(h, new BlockPos(1, 1, 3), null);
         ServerLevel nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
         BlockPos far = new BlockPos(2000, 100, 2000);
-        int cx = far.getX() >> 4, cz = far.getZ() >> 4;
+        int cx = far.getX() >> 4, cz = far.getZ() >> 4, rx = cx + 20, rz = cz + 20;
         long chunk = net.minecraft.world.level.ChunkPos.asLong(far);
-        nether.setChunkForced(cx, cz, true); // placed in a loaded, ticking chunk, as a player would place it
+        nether.setChunkForced(cx, cz, true);
         var core = linkedDecelerator(h, nether, far, a);
         Runnable cleanUp = () -> {
+            com.mrgregles.bsp_core.BSPConfig.LINK_WAKE.set(false);
+            nether.setChunkForced(rx, rz, false);
             nether.setChunkForced(cx, cz, false);
             nether.setBlock(far, Blocks.AIR.defaultBlockState(), 3);
             nether.setBlock(far.south(), Blocks.AIR.defaultBlockState(), 3);
         };
         Runnable wake = () -> {
             long before = core.store().stored(); // it formed and received while forced; the wake must bring more
-            a.wakeNow();
+            com.mrgregles.bsp_core.BSPConfig.LINK_WAKE.set(false); // the config file autosaves: never trust what a killed run left in it
+            var off = a.wakeNow();
+            if (off.result() != com.mrgregles.bsp_core.link.AcceleratorBlockEntity.Wake.Result.OFF) {
+                cleanUp.run();
+                h.fail("with plasma.linkWake off the WAKE key wakes nothing: " + off);
+                return;
+            }
+            com.mrgregles.bsp_core.BSPConfig.LINK_WAKE.set(true);
+            nether.setChunkForced(rx, rz, true); // something holds a chunk in the Nether, so its machines run
+            var on = a.wakeNow();
+            if (on.result() != com.mrgregles.bsp_core.link.AcceleratorBlockEntity.Wake.Result.ASKED || on.woken() != 1) {
+                cleanUp.run();
+                h.fail("with plasma.linkWake on the WAKE key asks the one sleeping far side to load: " + on);
+                return;
+            }
             pollThen(h, 160, () -> {
-                nether.getChunk(far);
-                var woken = (com.mrgregles.bsp_core.link.DeceleratorBlockEntity) nether.getBlockEntity(far);
+                var woken = nether.getBlockEntity(far) instanceof com.mrgregles.bsp_core.link.DeceleratorBlockEntity d ? d : null;
                 return woken != null && woken.isFormed() && woken.store().stored() > before && nether.getChunkSource().isPositionTicking(chunk)
                         && a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.DELIVERING;
             }, () -> {
+                var again = a.wakeNow();
                 cleanUp.run();
+                h.assertTrue(again.result() == com.mrgregles.bsp_core.link.AcceleratorBlockEntity.Wake.Result.TOO_SOON, "a second press within the minute wakes nothing: " + again);
                 h.succeed();
             }, () -> {
                 var woken = nether.getBlockEntity(far) instanceof com.mrgregles.bsp_core.link.DeceleratorBlockEntity d ? d : null;
@@ -4351,7 +4576,7 @@ public class BspGameTests {
         Runnable sleep = () -> {
             nether.setChunkForced(cx, cz, false); // the core ticks; now nothing keeps its chunk ticking
             pollThen(h, 700, () -> {
-                nether.getChunk(far); // in memory but not ticking: asleep, with no trip to the disk when it wakes
+                nether.getChunk(far); // test only: kept in memory but not ticking, so the wake needs no trip to the disk
                 return a.report(core.here()).state() == com.mrgregles.bsp_core.link.Links.State.ASLEEP && nether.areEntitiesLoaded(chunk);
             }, wake, () -> {
                 String state = a.report(core.here()).state().toString();
@@ -4359,7 +4584,6 @@ public class BspGameTests {
                 h.fail("a far side that nothing keeps ticking falls asleep: " + state);
             });
         };
-        // each step is checked every tick within the test's timeout: a test late in a big batch may wait 250 ticks or more before its chunk ticks
         pollThen(h, 300, core::isFormed, sleep, () -> {
             cleanUp.run();
             h.fail("the Nether core forms in its force-loaded chunk");

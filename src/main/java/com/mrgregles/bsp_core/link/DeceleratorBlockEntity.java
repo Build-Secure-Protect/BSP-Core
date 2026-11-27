@@ -233,12 +233,20 @@ public class DeceleratorBlockEntity extends BlockEntity {
         return Links.Plug.LINKED;
     }
 
-    /** Takes the card out and tells the accelerator (if it can be reached) to forget this core. The card, or empty. */
+    /** Takes the card out and tells the accelerator (if it can be reached) to forget this core. The card, or empty. A player's own action. */
     public ItemStack unplug() {
+        return unplug(true);
+    }
+
+    /**
+     * As {@link #unplug()}; with {@code load} false the accelerator's chunk is never loaded for it (a core broken during a tick, by an
+     * explosion say). An accelerator that is not loaded then keeps the link until its hop finds the core gone.
+     */
+    public ItemStack unplug(boolean load) {
         if (!isLinked()) {
             return ItemStack.EMPTY;
         }
-        AcceleratorBlockEntity intake = acceleratorEntity(true);
+        AcceleratorBlockEntity intake = acceleratorEntity(load);
         if (intake != null) {
             intake.removeLink(here());
         }

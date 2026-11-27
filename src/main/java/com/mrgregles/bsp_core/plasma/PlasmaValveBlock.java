@@ -83,6 +83,19 @@ public class PlasmaValveBlock extends Block implements EntityBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    // a run changed here: a network's memory of this chunk is no longer trusted until it walks it again (RunChanges)
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState old, boolean moving) {
+        super.onPlace(state, level, pos, old, moving);
+        RunChanges.bump(level, pos);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
+        RunChanges.bump(level, pos);
+        super.onRemove(state, level, pos, newState, moving);
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
         return switch (state.getValue(AXIS)) {

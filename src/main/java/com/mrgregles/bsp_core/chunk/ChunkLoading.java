@@ -66,6 +66,35 @@ public final class ChunkLoading {
 
     private ChunkLoading() {}
 
+    /** What BSP-Core asks Forge to hold right now, by the totem or projector it is held for. Server thread only; read, never change. */
+    public static Map<GlobalPos, Set<Long>> held() {
+        return java.util.Collections.unmodifiableMap(APPLIED);
+    }
+
+    /**
+     * The totem or projector whose Anchor makes {@code chunk} of {@code dimension} tick: the one holding the chunk itself, else one
+     * holding a chunk beside it (a held chunk ticks the eight around it too). Null when BSP-Core holds nothing there.
+     */
+    @Nullable
+    public static GlobalPos holder(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, long chunk, boolean besideToo) {
+        int x = ChunkPos.getX(chunk), z = ChunkPos.getZ(chunk);
+        GlobalPos beside = null;
+        for (Map.Entry<GlobalPos, Set<Long>> e : APPLIED.entrySet()) {
+            if (!e.getKey().dimension().equals(dimension)) {
+                continue;
+            }
+            for (long c : e.getValue()) {
+                if (c == chunk) {
+                    return e.getKey();
+                }
+                if (besideToo && beside == null && Math.abs(ChunkPos.getX(c) - x) <= 1 && Math.abs(ChunkPos.getZ(c) - z) <= 1) {
+                    beside = e.getKey();
+                }
+            }
+        }
+        return beside;
+    }
+
     /** Called once at mod setup. Tickets Forge saved with the world are dropped as it loads; the ledger puts back the ones that still apply. */
     public static void init() {
         ForgeChunkManager.setForcedChunkLoadingCallback(BSPCore.MODID, (level, helper) -> {
@@ -474,11 +503,13 @@ public final class ChunkLoading {
 
     /** When each projector was last reported as fed, in overworld game time. Not saved: after a restart every projector gets a fresh allowance of time. */
     private static final Map<GlobalPos, Long> FED = new HashMap<>();
+    /** How long a projector may go unreported before its hold is switched off: 45 s, well past the second its feed comes in. */
+    private static final long HOLD_UNFED_TICKS = 45 * 20L;
 
     /**
      * Called once a second by a projector that is being fed chunk loading from {@code totem} and has
      * the RF to run, and with null by one that has lost its signal or its RF. A projector nobody has reported for
-     * longer than a full cable check is switched off by {@link #onServerTick}.
+     * longer than {@link #HOLD_UNFED_TICKS} is switched off by {@link #onServerTick}.
      */
     public static void projector(ServerLevel level, BlockPos blockPos, @Nullable GlobalPos totem) {
         ChunkLedger ledger = ChunkLedger.get(level.getServer());
@@ -687,7 +718,7 @@ public final class ChunkLoading {
         }
         prune(server); // a totem ledger check or a wipe may have forgotten a totem since
         ChunkLedger ledger = ChunkLedger.get(server);
-        long limit = (BSPConfig.getOr(BSPConfig.CABLE_CHECK_SECONDS, 30) + 15) * 20L;
+        long limit = HOLD_UNFED_TICKS;
         boolean changed = false;
         for (Map.Entry<GlobalPos, ChunkLedger.Projector> e : ledger.projectors.entrySet()) {
             long fed = FED.computeIfAbsent(e.getKey(), k -> now);

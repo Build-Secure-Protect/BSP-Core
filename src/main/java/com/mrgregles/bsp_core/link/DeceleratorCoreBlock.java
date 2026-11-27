@@ -119,7 +119,7 @@ public class DeceleratorCoreBlock extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
         if (!state.is(newState.getBlock()) && !level.isClientSide && level.getBlockEntity(pos) instanceof DeceleratorBlockEntity core) {
-            ItemStack card = core.unplug();
+            ItemStack card = core.unplug(false); // may run inside a tick (an explosion): never load the accelerator's chunk here
             if (!card.isEmpty()) {
                 popResource(level, pos, card);
             }

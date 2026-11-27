@@ -180,6 +180,7 @@ public final class BSPCommands {
                 .then(PlayerCommands.tree())
                 .then(SeasonCommands.tree())
                 .then(CreditCommands.tree())
+                .then(com.mrgregles.bsp_core.link.LinkCommands.tree())
                 .then(Commands.literal("storage").requires(src -> src.hasPermission(2))
                         .then(Commands.literal("status").executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(com.mrgregles.bsp_core.storage.NetworkStorage.status()), false);

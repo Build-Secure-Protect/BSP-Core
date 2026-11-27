@@ -65,6 +65,7 @@ public class PlasmaInterfaceBlockEntity extends BlockEntity {
             tag.putLong("Master", master.asLong());
         }
         tag.putBoolean("Lit", lit);
+        network.save(tag); // the run memory, so a restart walks runs through unloaded chunks without loading them
     }
 
     @Override
@@ -72,6 +73,7 @@ public class PlasmaInterfaceBlockEntity extends BlockEntity {
         super.load(tag);
         master = tag.contains("Master") ? BlockPos.of(tag.getLong("Master")) : null;
         lit = tag.getBoolean("Lit");
+        network.load(tag);
     }
 
     @Override

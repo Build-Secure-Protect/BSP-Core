@@ -744,7 +744,7 @@ Setup from the owner's screenshot: one totem, one extractor, one interface, two 
 - [ ] Second totem: with two placed totems owned by one player, the one placed later shows "Not your main totem", loads only its own chunk, and refuses Anchor 2 and Survey with a message. Have the first one stolen: the other becomes the main totem and its full allowance returns.
 - [ ] Admin panel, Settings: the "Chunks: load always / owner online" button switches. With "owner online", the owner logging out unloads their chunks and logging in loads them again.
 - [ ] Config: `chunks.enabled = false` stops all loading and the tab says so; `chunks.maxPerPlayer = 2` limits a player to 2 chunks in total.
-- [ ] Long cable run: put a projector several chunks from the totem receiving Anchor, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Cutting the cable while nobody is near (or with `projector.cableCheckSeconds` lowered to 5) stops the projector within one check.
+- [ ] Long cable run: put a projector several chunks from the totem receiving Anchor, pick the projector's chunk, and leave the area so the cable's chunks unload. On return, a machine beside the projector has kept working. Restart the server while nobody is near: the projector keeps its chunk. Cutting the cable next to the projector stops the projector within a few seconds.
 - [ ] Restart the server with nobody near that projector: it is still loaded and projecting after the restart.
 - [ ] Guide book: The Shatter Totem has a Chunk Loading entry and a Wave Plasma and Projectors entry.
 
@@ -1008,7 +1008,7 @@ Setup: creative, a totem with Output and Overclock on an extractor, an interface
 - [ ] Right-click the intake empty-handed: "taking N mB/t" shows the run's pressure, "sending N mB/t" matches it once the far side has RF, "RF x / 200,000" falls while sending. Right-click the core: "N mB/t arriving, RF x / 200,000" falls while receiving.
 - [ ] Cut the RF to the core: within a second the intake sends nothing (its line says sending 0) and the core's RF stops falling. Restore it: sending resumes. Cut the RF to the intake: the same from the other side.
 - [ ] Link a second Decelerator (fit a Link Expander): the intake's sending figure splits between them. Cut RF to one: the other gets the whole flow.
-- [ ] Leave the Nether chunk (walk far away or go to the Overworld with nothing keeping it loaded): within a minute the intake sends a second's worth (`linkWakeSeconds` 60), then sleeps again. Lower `linkWakeSeconds` to 5 in the server config to watch it.
+- [ ] Leave the Nether chunk (walk far away or go to the Overworld with nothing keeping it loaded): the link sleeps and stays asleep; the accelerator never loads the far chunk (`linkWakeSeconds` is gone since 1.28.0, see "Accelerator links never reload far chunks").
 - [ ] A stranger (second account) cannot write a Link Card at an intake that has been fed by your totem: red "Only the users of the totem...". A friend with Machines access on the totem can.
 - [ ] Leave and rejoin: the intake's and the core's buffers, RF and anchor totem survive.
 
@@ -1019,7 +1019,7 @@ Setup: the part 3 setup, plus in the Nether a cable from the Decelerator Port's 
 - [ ] Cables snap onto the Accelerator Intake and the Decelerator Port on any face (the pipe arms appear).
 - [ ] The core's line reads "N mB/t arriving, N mB/t sent on". The base fills, the projector's screen offers the totem's powers (Anchor and the rest); pick Anchor: the projector's chunk loading screen shows the Overworld totem's allowance and the projector's chunk goes in. Leave the Nether and look at the chunk from the Overworld side (Jade on the totem, or a hopper clock in the Nether chunk): it stays loaded.
 - [ ] The injector in the Nether speeds its machine, with the Overclock bonus from the Overworld totem (Jade: "Injecting N mB/t: xN speed").
-- [ ] Cut the Overworld cable: within a few seconds the base runs dry, the projector stops and the Nether chunks unload (unless something else keeps them). Reconnect: the accelerator wakes the far side within a minute and the projector relights its chunk.
+- [ ] Cut the Overworld cable: within a few seconds the base runs dry, the projector stops and the Nether chunks unload (unless something else keeps them). Reconnect: the link stays asleep until the Nether chunk is loaded again (walk there, or press WAKE with `plasma.linkWake` on while something else runs in the Nether); then the projector relights its chunk.
 - [ ] A Decelerator Port's cable into another Accelerator Intake (Nether to End) chains: the End decelerator receives, each hop burning its own RF.
 
 ## Plasma Accelerator, part 5: the Worlds board and Jade (2026-10-16)
@@ -1030,7 +1030,7 @@ Setup: the part 4 setup with two or three Decelerators linked, in two worlds if 
 - [ ] The status line reads "Taking N mB/t, sending N mB/t, RF x / 200,000" and updates every second; top right "N of M links" (red "Ring unfinished" if a frame is missing); the foot lists the powers the plasma carries ("Carries Overclock III, Anchor II") in gold or "Carries no powers yet".
 - [ ] Nothing on the board runs past the frame with three links in one column or with a long world name (a mining dimension); long lines shrink.
 - [ ] Hover a link pip: a tooltip with the world, the coordinates and the state. Click it: it turns gold and UNLINK lights. UNLINK: the pip goes within a second and the card drops beside that Decelerator Core (go and look). ESC and DONE close the board.
-- [ ] WAKE with a link asleep: within a second the line lights for a few seconds and the far side's base fills; then it sleeps again.
+- [ ] WAKE with a link asleep: with `plasma.linkWake` off (the default) the action bar says waking is off; with it on, see "Accelerator links never reload far chunks".
 - [ ] A second account without Machines access on the totem can open the board but UNLINK and WAKE do nothing for them.
 - [ ] Jade on the intake: "Links 2 of 3: taking N mB/t, sending N mB/t" and "RF x / 200,000"; on an unfinished ring "Ring unfinished: N frame(s) missing" (or "the middle must be empty"). On a frame: "Part of a Plasma Accelerator" or "Not part of a ring yet". On a core: "Linked to Overworld 12, 64, -30: N mB/t arriving, N mB/t sent on" and the RF line, or "No Link Card in it", or "No Decelerator Port behind it". On a port: "Sending N mB/t into its cables", "Nothing to send" or "No Decelerator Core in front of it".
 
@@ -4362,3 +4362,18 @@ With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has 
 
 ## Shops: ready after connecting (2026-11-27, 1.27.2)
 - [ ] With MySQL, restart a server and watch Server Utilities' SHOPS tab on it (or a debug call to `BspShops.ready`): it answers false until the server has read the network's shops, then true, and the shop list is complete from the first true.
+
+## Accelerator links never reload far chunks (2026-11-27, 1.28.0)
+Setup: a dedicated test server with BSP-Mod Fixes 0.20.0 or later (its `chunkWatchAreas` tracer) and AllTheLeaks. A formed, fed Plasma Accelerator in the Overworld with two links: one to a Decelerator far out in a modded dimension (the_other, or any world nobody visits), one to a Decelerator inside a Compact Machine room. Then everybody leaves both far worlds; nobody stays near either core.
+- [ ] Server log at start: `BSP-Core links: an accelerator never loads a far chunk by itself; the WAKE key is off (plasma.linkWake)`.
+- [ ] `/bsp links` (operator) lists the accelerator: its world, position, chunk, owner (the feeding totem's owner), "formed", "2/3 link(s)", and under it both far sides with their world and chunk, each "asleep (not loaded)" once nobody is there. With a player standing at a far core it reads "ticking, not held by BSP-Core"; with a Projector with Anchor there, "held by the Anchor of the totem/projector at ...".
+- [ ] `/bsp links held` lists every chunk BSP-Core's Anchor holds, by totem and projector. Use it on BSP-Moongrove to see whether any of the_other's chunks that stay loaded from start are BSP-Core's.
+- [ ] With nobody near either far side, run BSP-Mod Fixes' chunk watch over both far areas for 10 minutes: no repeating load/unload pairs, and no `bsp_core_link_wake` tickets.
+- [ ] After 30 minutes or more and a `save-all`: AllTheLeaks' cleared-ticker count and leaked `LevelChunk` count near zero for those worlds.
+- [ ] Walk to the far core (or let a Projector with Anchor hold its chunk): within a second or two the link delivers again ("N mB/t" on the Worlds board, the core's base fills); walk away and it sleeps again. The link still does its job whenever the far side is loaded normally.
+- [ ] A far side held by a Projector with Anchor in another world: put the Decelerator Core in one of the projector's chunks (or a chunk right beside one), feed it, everybody leaves that world. `/bsp links` shows the far side "held by the Anchor of the projector at ..." and the link delivers. Restart the server: it is held and delivering again within a few seconds, with nobody there.
+- [ ] The same with the core two or more chunks away from every chunk the projector holds: the link sleeps once nobody is near, and the projector lets its chunks go about 45 s after its base runs dry. Walking there starts it again.
+- [ ] Press WAKE on the Worlds board with a link asleep and `plasma.linkWake` off: the action bar says waking is off, and nothing loads.
+- [ ] Set `plasma.linkWake = true` and restart: the start line says the key is on. With a player in the far world (or a chunk there held by a totem's Anchor), WAKE says it asked 1 far side to load; `/bsp links` shows it "woken by the WAKE key" for about five seconds, the link delivers, then it sleeps again. Press it again within a minute: "less than a minute ago". With nobody in that world and no Anchor chunks there, WAKE says the far side stays asleep and nothing loads.
+
+GameTests: `accelerator_never_loads_a_sleeping_far_side`, `accelerator_wake_key_wakes_only_where_allowed`.

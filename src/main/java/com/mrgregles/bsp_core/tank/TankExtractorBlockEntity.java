@@ -250,6 +250,7 @@ public class TankExtractorBlockEntity extends BlockEntity implements PlasmaNetwo
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
+        network.save(tag); // the run memory
     }
 
     @Override
@@ -257,5 +258,6 @@ public class TankExtractorBlockEntity extends BlockEntity implements PlasmaNetwo
         super.load(tag);
         pool = Math.floorMod(tag.getByte("Pool"), POOLS);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        network.load(tag);
     }
 }

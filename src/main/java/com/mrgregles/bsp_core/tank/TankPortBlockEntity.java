@@ -214,6 +214,19 @@ public class TankPortBlockEntity extends TankPartBlockEntity implements PlasmaRe
         out = tag.getInt("Out");
     }
 
+    // the run memory is saved with the block, not in write(), so it never goes out in the update packet
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        network.save(tag);
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        network.load(tag);
+    }
+
     // ---- items: the chamber's loot store, out only
 
     /** The master's loot store as hoppers and pipes see it from this port: they may take, never put in. */

@@ -77,6 +77,9 @@ public class PlasmaValveBlockEntity extends BlockEntity {
     public void set(int limit, boolean redstone) {
         this.limit = Math.max(0, Math.min(maxLimit(), limit));
         this.redstone = redstone;
+        if (level != null) {
+            RunChanges.bump(level, worldPosition); // its cap changed: the run changed here
+        }
         sync();
     }
 

@@ -137,11 +137,12 @@ public final class BSPConfig {
             VAULT_ILLYRIUM_PER_PERIOD, VAULT_INTRUDER_BREAK_SECONDS, VAULT_INTEREST_UNIT, VAULT_MAX_BLOCKS, VAULT_ILLYRIUM_VALUE_PER_INGOT, STORAGE_NOTICE_SECONDS,
             CENT_SEPARATE_TICKS, CENT_CHARGE_TICKS, CENT_CHARGE_TICKS_FULL, CENT_RF_SEPARATING, CENT_RF_CHARGING, CENT_MAGNETISE_TICKS, CENT_MAGNETISE_TICKS_FULL,
             DECOY_RF, DECOY_MAX, DECOY_REPAIR_INGOTS, DECOY_EFFECT_SECONDS, DECOY_WARP_DISTANCE,
-            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CABLE_CHECK_SECONDS, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX, INTERFACE_SIDE_MAX, TANK_PER_BLOCK, TANK_MAX;
+            PROJECTOR_NEED, PROJECTOR_TANK, EXTRACTOR_TANK, PROJECTOR_CHANNELS, INTERFACE_MAX, CHARGER_TANK, BATTERY_FEED, EMITTER_DRAW, PROJECTOR_USE, VALVE_MAX, INTERFACE_SIDE_MAX, TANK_PER_BLOCK, TANK_MAX;
     /** Plasma Injector: the speed curve (mB/t points and the factor at each), and whether other mods' machines may be ticked extra. */
     public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> INJECTOR_RATES;
     /** Plasma between worlds: the Accelerator's links and the worlds a link may not touch. */
-    public static final ForgeConfigSpec.IntValue ACCELERATOR_LINKS, LINK_EXPANDER_MAX, ACCELERATOR_MAX, ACCELERATOR_RF, DECELERATOR_RF, LINK_RF_CAPACITY, LINK_WAKE_SECONDS;
+    public static final ForgeConfigSpec.IntValue ACCELERATOR_LINKS, LINK_EXPANDER_MAX, ACCELERATOR_MAX, ACCELERATOR_RF, DECELERATOR_RF, LINK_RF_CAPACITY;
+    public static final ForgeConfigSpec.BooleanValue LINK_WAKE;
     public static final ForgeConfigSpec.DoubleValue LINK_LOSS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LINK_DIMENSION_BLACKLIST;
     public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> INJECTOR_FACTORS;
@@ -605,9 +606,6 @@ public final class BSPConfig {
         PROJECTOR_CHANNELS = BUILDER.comment("How many powers a Projector receives at once. A fitted Channel Expander adds one.").defineInRange("channels", 2, 1, 7);
         REPEATER_PRESSURE = BUILDER.comment("Share of the plasma that passes each Plasma Repeater (0.9 = a tenth is lost at every repeater). Power levels also drop one per repeater when two or more are received.")
                 .defineInRange("repeaterPressure", 0.9, 0.1, 1.0);
-        CABLE_CHECK_SECONDS = BUILDER.comment("How often, in seconds, an interface follows its cables all the way to the projectors, loading the chunks along the run for a moment to confirm it.",
-                        "In between it only looks at chunks that are already loaded and trusts the last full check for the rest. Lower is quicker to notice a cut cable far away; higher is lighter on the server.")
-                .defineInRange("cableCheckSeconds", 30, 5, 600);
         CHARGER_TANK = BUILDER.comment("mB a Battery Charger holds while waiting to pour into the item in it.").defineInRange("chargerTank", 4000, 100, 1_000_000);
         BATTERY_FEED = BUILDER.comment("mB per tick a Plasma Battery on an extractor stack gives, split between the stack like a totem's output.").defineInRange("batteryFeed", 100, 1, 100_000);
         EMITTER_DRAW = BUILDER.comment("mB per tick a Wave Emitter draws from its Power Cell while switched on in the offhand.").defineInRange("emitterDraw", 20, 0, 100_000);
@@ -637,8 +635,9 @@ public final class BSPConfig {
         ACCELERATOR_RF = BUILDER.comment("RF per tick a Plasma Accelerator burns while any link is delivering.").defineInRange("acceleratorRfPerTick", 1000, 0, 1_000_000);
         DECELERATOR_RF = BUILDER.comment("RF per tick a Plasma Decelerator burns while receiving.").defineInRange("deceleratorRfPerTick", 100, 0, 1_000_000);
         LINK_RF_CAPACITY = BUILDER.comment("RF an Accelerator Intake or a Decelerator Core holds.").defineInRange("linkRfCapacity", 200_000, 1000, Integer.MAX_VALUE);
-        LINK_WAKE_SECONDS = BUILDER.comment("How often, in seconds, an accelerator loads a sleeping far side (an unloaded chunk) for a moment and delivers, so a projector there can relight its own chunk loading. 0 never wakes it.")
-                .defineInRange("linkWakeSeconds", 60, 0, 86_400);
+        LINK_WAKE = BUILDER.comment("Whether the WAKE key on an Accelerator's Worlds board may wake sleeping far sides. An accelerator never loads a far chunk by itself: a far side runs only while its chunk ticks for another reason (a player near it, a totem's Anchor).",
+                        "On: a press asks each sleeping far chunk to load in the background for five seconds, at most once a minute per accelerator, and only in a world whose machines are running (a player in it, or chunks held by a totem's Anchor), so a projector there can take up its Anchor again. Off (the default): the key only says waking is off.")
+                .define("linkWake", false);
         LINK_LOSS = BUILDER.comment("Share of the plasma lost on every hop through a link (0 = none).").defineInRange("linkLoss", 0.0, 0.0, 0.99);
         LINK_DIMENSION_BLACKLIST = BUILDER.comment("Worlds a plasma link may not start or end in (dimension ids, e.g. \"minecraft:the_end\").")
                 .defineListAllowEmpty(List.of("linkDimensionBlacklist"), List::of, o -> o instanceof String);

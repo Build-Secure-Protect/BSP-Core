@@ -123,11 +123,13 @@ public class DeceleratorPortBlockEntity extends LinkPartBlockEntity implements P
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("Out", out);
+        network.save(tag); // the run memory
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         out = tag.getInt("Out");
+        network.load(tag);
     }
 }

@@ -8,7 +8,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client to server: refresh an accelerator's screen ({@code VIEW}), wake every sleeping far side ({@code WAKE}), or undo link {@code index} ({@code UNLINK}). The server answers with a view. */
+/** Client to server: refresh an accelerator's screen ({@code VIEW}), ask the sleeping far sides to wake ({@code WAKE}, where the server allows it), or undo link {@code index} ({@code UNLINK}). The server answers with a view. */
 public record LinkActionPacket(BlockPos pos, int action, int index) {
     public static final int VIEW = 0, WAKE = 1, UNLINK = 2;
 
@@ -32,7 +32,15 @@ public record LinkActionPacket(BlockPos pos, int action, int index) {
                 return;
             }
             if (msg.action == WAKE && intake.mayLink(player)) {
-                intake.wakeNow();
+                AcceleratorBlockEntity.Wake w = intake.wakeNow();
+                player.displayClientMessage(switch (w.result()) {
+                    case OFF -> net.minecraft.network.chat.Component.translatable("message.bsp_core.link_wake_off");
+                    case TOO_SOON -> net.minecraft.network.chat.Component.translatable("message.bsp_core.link_wake_soon");
+                    case ASKED -> w.woken() == 0 && w.idleWorlds() == 0 ? net.minecraft.network.chat.Component.translatable("message.bsp_core.link_wake_none")
+                            : w.woken() == 0 ? net.minecraft.network.chat.Component.translatable("message.bsp_core.link_wake_idle_only", w.idleWorlds())
+                            : w.idleWorlds() > 0 ? net.minecraft.network.chat.Component.translatable("message.bsp_core.link_wake_idle", w.woken(), w.idleWorlds())
+                            : net.minecraft.network.chat.Component.translatable("message.bsp_core.link_wake_asked", w.woken());
+                }, true);
             } else if (msg.action == UNLINK && intake.mayLink(player)) {
                 intake.unlink(msg.index);
             }

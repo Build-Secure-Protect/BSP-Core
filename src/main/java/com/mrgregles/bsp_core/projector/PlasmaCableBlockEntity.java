@@ -87,6 +87,9 @@ public class PlasmaCableBlockEntity extends BlockEntity {
     }
 
     private void sync() {
+        if (level != null) {
+            com.mrgregles.bsp_core.plasma.RunChanges.bump(level, worldPosition); // an end changed: the run changed here
+        }
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
