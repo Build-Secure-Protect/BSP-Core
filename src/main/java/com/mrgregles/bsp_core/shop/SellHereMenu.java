@@ -284,10 +284,10 @@ public class SellHereMenu extends AbstractContainerMenu {
         }
     }
 
-    /** True when this box's shop is off now: closing it hands every item back. */
+    /** True when this box's shop is off now, or gone: closing it hands every item back. */
     public boolean closedForChanges(MinecraftServer server) {
         Shop shop = Shops.ledger(server).shop(shopId);
-        return shop != null && Shops.off(server, shop);
+        return shop == null || Shops.off(server, shop);
     }
 
     @Override

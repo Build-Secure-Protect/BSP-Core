@@ -266,6 +266,19 @@ BspKits.status(player, "vip_toolkit").ifPresent(s -> { if (!s.ready()) log(s.sta
 
 **Ranks.** A kit's ranks are LuckPerms group names, read through `compat/LuckPermsBridge` (the Forge edition directly, the Bukkit plugin on Mohist by reflection); with BSP-RankUp loaded the admin's rank picker and the players' cards use `RankUpApi.ladder(server)` read by name, so RankUp needs no change for kits. A `KIT` reward kind on RankUp's side would call `BspKits.give(server, uuid, kitId)`.
 
+**For staff tools** (since the release after 1.26.0, `BspKits.VERSION` 1). Read on the server thread.
+- `details(server)` and `detail(server, id)` (id in any case) answer `Detail`: `id`, `name`, `description`, `icon` (as set; an `ItemRow` with `item` "" when none, and the browser then shows the first item), `items` (`ItemRow`: registry id, count, NBT as SNBT, "" for none), `enabled`, `inBrowser`, `once`, `cooldownSeconds`, `price`, `ranks`, `servers`, `conditions`, `grant` (`NONE`, `NETWORK`, `SERVERS`), `grantServers`, `created` and `edited` (epoch ms), `taken`, `lastTakenBy`, `lastTakenMs`, and `missing` (saved items this server cannot resolve, left out of `items`). An answer is a snapshot.
+- `edited` is the kit's **edit stamp**: every save moves it on (never back, never the same twice); a hand-out does not. A kit saved before stamps reads 0. With `storage.mode = "mysql"` it is the `kits.edited_ms` column. A database read that started before a save or delete on this server never undoes it here; the next read brings the network's record.
+- `choices(server)` answers `Choices`: `ranks` (RankUp's ladder in order when `ranksFromLadder`, else LuckPerms' group names; empty without LuckPerms), `servers` (the network's server ids, `thisServer` first), `conditions` (`Condition`: key and the editor's sentence), `grants`, `maxItems`.
+- `KitEvent.Changed` (`getKitId`, `getKitName`, `isDeleted`, `isHeard`) is posted for each kit saved or deleted on this server (the KITS tab, a command, a staff call) and each edit or delete read from another server (`isHeard`). A re-read with the same stamp, and a kit being taken, post nothing.
+
+```java
+@SubscribeEvent
+public static void onKit(KitEvent.Changed e) {
+    BspKits.detail(e.getServer(), e.getKitId()).ifPresentOrElse(panel::update, () -> panel.remove(e.getKitId()));
+}
+```
+
 ## Boards on the Score Screen (`BspBoards`, BSP-Teleport request R8)
 
 Client side. Register once, at client setup or when the mod's data first arrives:
@@ -432,7 +445,7 @@ A Shatter Coin pressed by a Coin Factory carries the string tag `PressTeam`: the
 }
 ```
 
-**Shop keys** (all but `id` optional; a missing key takes the value a new shop has): `id` (`[a-z0-9_]{1,32}`), `name`, `kind` (`shop`, `sub`, `rotating`, `offer`), `parent` (a sub-shop's parent, in the file or on the server; parents may not go round in a loop or more than 16 deep), `remote`, `buyOnly`, `enabled` (the shop's on/off switch; absent is on, so a file written before the switch imports on; only a top shop's counts, its sections follow it), `style` (`cash_machine`, `passbook`, `market_board`), `columns` (0 automatic, or 4 to 7), `rows` (2 or 3), `hours` (`{"mode": "always"}`, `{"mode": "real", "open": "09:00", "close": "21:00"}`, `{"mode": "game", "open": 0, "close": 12000}`), `displaySlots`, `intervalHours`, `rotateAt` (a day or weekday time), `noRepeat`, `broadcast`, `offerPercent`, `offerEnd` (`2026-12-31T23:59` in `shop.timeZone`, or empty), `requires`, `pages` (lists of up to 21 cards), `note` (ignored).
+**Shop keys** (all but `id` optional; a missing key takes the value a new shop has): `id` (`[a-z0-9_]{1,32}`), `name`, `kind` (`shop`, `sub`, `rotating`, `offer`), `parent` (a sub-shop's parent, in the file or on the server; parents may not go round in a loop or more than 16 deep), `remote`, `buyOnly`, `enabled` (the shop's on/off switch; absent: a shop already on the server keeps its own, a new one is on; only a top shop's counts, its sections follow it), `style` (`cash_machine`, `passbook`, `market_board`), `columns` (0 automatic, or 4 to 7), `rows` (2 or 3), `hours` (`{"mode": "always"}`, `{"mode": "real", "open": "09:00", "close": "21:00"}`, `{"mode": "game", "open": 0, "close": 12000}`), `displaySlots`, `intervalHours`, `rotateAt` (a day or weekday time), `noRepeat`, `broadcast`, `offerPercent`, `offerEnd` (`2026-12-31T23:59` in `shop.timeZone`, or empty), `requires`, `pages` (lists of up to 21 cards), `note` (ignored).
 
 **Card keys**: `item` (registry id), `count` (lot size, 1 to the stack size), `nbt` (SNBT), `buy` and `sell` (-1 or absent for off), `currency` (`pieces`, `copper`, `gold`, `diamond`, `netherite`, `illyrium`; a `sell` in coins needs `allowCoinPayouts`), `stockGlobal`, `stockPlayer`, `sellGlobal`, `sellPlayer` (lots, -1 none), `restockMinutes` (the old form of `stockRefill: {"after": N}`), `stockRefill`, `stockPlayerRefill`, `sellRefill`, `sellPlayerRefill`, `instant`, `hidden`, `section` (a sub-shop's id: the card opens it and `item` is its picture), `match` (`exact` or `item`), `weight` (0 to 100), `lore` (up to three lines of 60 characters), `requires`, `note` (ignored).
 
@@ -461,7 +474,13 @@ Version 1 is in BSP-Core **1.26.0** (network protocol 25). Check that `BspShops`
 - A card's `note` goes in as one string with a new line between lines. It comes out as a list.
 - Opening hours and requirements have calls of their own (`setHours`, `setRequires`, `setItemRequires`). `set` and `setItem` take every other field.
 - `draws` holds only the draw on show: BSP-Core keeps no history of draws.
-- A report row has no `v`: the bank log keeps an item's id, not its data. Coins are five counts a row (`coinsIn`, `coinsOut`), not one `currency`.
+- A report row has no `v`: the bank log keeps an item's id, not its data. Coins are five counts a row (`coinsIn`, `coinsOut`), not one `currency`. The report gives `total`, `shops` (one line a shop) and `items` (one line a shop and item), with `rows` the count of trades.
+- `opensAt` is empty while the shop is open, and while it is off (it will not open until switched on).
+- `Peek.v`, `Venue.pin` and a card's `v` and `nbt` are `""` when there is none, not left out.
+- A section card takes `section` as well as `hidden` and requires (empty turns it into an item card).
+- A section whose parent is gone may be given `parent` `""` (it becomes a top shop, off). Any other section never moves to the top level.
+- A note's empty lines are dropped, so line positions are not kept.
+- `cycleLeft` counts every card the draw can pick, section cards included.
 
 **Reads (version 1).**
 - `boolean ready(server)`: true when this server can answer for every shop now. A server alone is always ready; a network server only while its database is connected, because its copy of the shops is then the network's, read again at every change and every five minutes.
@@ -580,7 +599,11 @@ The calls:
 **Known limits of the changes.**
 - **The stamp check is made on the server that takes the call.** It is checked against that server's copy, which takes a moment to hear of another server's save. Send a shop's changes to one server.
 - **A move under another parent answers only the new parent's stamp,** in `parent` and `parentEdited`. The old parent's page changed too: read it again before changing it. Its `ShopEvent.Changed` tells of it.
-- **A section whose parent is gone is off.** This can happen while another server's delete is being heard. It has no switch of its own until it is given no parent.
+- **A section whose parent is gone is off.** This can happen while another server's delete is being heard, or for a section left behind by a delete before 1.26.0. It has no switch of its own until it is given no parent (`set` `parent` `""`).
+- **Taking a section card off a page** (a delete or a move) restarts the counts of the cards after it on that page, as removing a card in the Workbench does.
+- **A database read never undoes a change made here:** a read that started before this server saved or deleted a shop leaves that shop as this server has it, and the next read brings the network's record.
+- **`all` is not a shop id** (`bad_id`): it names every shop in the export and the report.
+- **Item data** (`nbt`, a picture's SNBT) may nest at most 64 deep (`bad_item`); the import file keeps the same limit.
 
 **Copy (version 1).** `copy(server, id, newId, name, by)` copies a top shop and every section under it. Nothing is changed, so it names no stamp.
 - **New ids:** the copy is `newId` named `name` (cleaned, 1 to 64 characters). Each section becomes `<newId>_1`, `<newId>_2`… in tree order, parents before their sections. Ids already taken are skipped, and `newId` is cut so that each id fits 32 characters.

@@ -266,15 +266,25 @@ public final class Kits {
             kit.lastTakenBy = old.lastTakenBy;
             kit.lastTakenMs = old.lastTakenMs;
         }
+        kit.edited = nextStamp(old == null ? kit.edited : Math.max(old.edited, kit.edited));
+        KitSync.changedHere(kit.id);
         ledger.put(kit);
         KitSync.written(kit);
+        KitSync.changed(server, kit, false, false);
         return Outcome.done("saved", kit.name);
+    }
+
+    /** A new edit stamp after {@code previous}: now, or one past it when the clock has not moved on (two saves in one millisecond). */
+    static long nextStamp(long previous) {
+        return Math.max(System.currentTimeMillis(), previous + 1);
     }
 
     public static Outcome delete(MinecraftServer server, String id) {
         Kit k = KitLedger.get(server).remove(id);
         if (k != null) {
+            KitSync.changedHere(id);
             KitSync.removed(id);
+            KitSync.changed(server, k, true, false);
         }
         return k == null ? Outcome.fail("no_kit", id) : Outcome.done("deleted", k.name);
     }

@@ -2,6 +2,30 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
+## [Unreleased]
+
+### Added
+- **The kit api for staff tools** (BSP-Server Utilities' web panel), `BspKits.VERSION` 1, part 1:
+  - every kit carries an edit stamp, moved on by every save; kits saved before read 0;
+  - `BspKits.details` and `detail`: a kit whole, with its items and icon as text (item id, count, NBT), the first-join servers, the stamp, when it was made and how often it was taken;
+  - `BspKits.choices`: the ranks (RankUp's ladder or LuckPerms' groups), the network's server ids, the conditions with their sentences, the grant kinds and the item limit;
+  - `KitEvent.Changed` for each kit saved or deleted here, and each edit or delete read from another server.
+- With `storage.mode = "mysql"`, the `kits` table gains an `edited_ms` column at start.
+
+### Changed
+- **The Workbench asks before deleting a shop with sections**: the first click on Delete names how many sections go with it and the key reads "Delete all"; a second click deletes.
+- **Importing a file without `"enabled"` keeps an existing shop's switch** (a new shop is on). Re-importing a price file over shops switched off for changes no longer opens them.
+- A section whose parent is gone (a shop deleted before the switch, or a delete still being heard on another server) is off. The Workbench's Settings line reads "off: parent gone"; clear its Parent shop to make it a top shop, then switch it on.
+- `all` is no shop id: it names every shop in `/bsp shop export` and `/bsp shop report`.
+
+### Fixed
+- **On a network, a shop or kit read from the database just before it was changed here could put the older record back** on this server until the next read; and a full read could drop a kit made here a moment before. The five-minute shop catch-up now takes the network's record again (1.26.0's fix could leave a server on its own copy).
+- An item's data nested very deep is refused in the shop api and the import file (Minecraft refuses to read it back, which could lose the shop file and disconnect players).
+- Shop names, notes and reasons lose invisible characters (zero-width and direction overrides) and wide spaces as well.
+- Removing a card at a negative place answers "no card" instead of an error.
+- A "Sell here" box of a shop that is deleted closes and hands its items back.
+- The venue list forgets stalls, posts and displays whose block is gone when it is read, and venue checks wait for the next tick.
+
 ## [1.26.0] - 2026-11-27
 
 **Network protocol 25** (raised from 24): the Workbench's shop list carries each shop's parent and switch, so servers and clients both need this version.

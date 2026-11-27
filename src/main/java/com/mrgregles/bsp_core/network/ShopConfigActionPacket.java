@@ -125,8 +125,8 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                             }
                         }
                         case "enabled" -> {
-                            if (Shops.top(server, shop) != shop) {
-                                return "not_top"; // a section follows its top shop
+                            if (Shops.top(server, shop) != shop || !shop.parent.isEmpty()) {
+                                return "not_top"; // a section follows its top shop; one whose parent is gone has its parent cleared first
                             }
                             shop.enabled = Boolean.parseBoolean(v);
                         }

@@ -114,7 +114,7 @@ public class VenueRegister extends SavedData {
      */
     public static void later(@Nullable net.minecraft.world.level.Level level, Runnable then) {
         if (level instanceof ServerLevel sl && !sl.isClientSide) {
-            sl.getServer().execute(then);
+            defer(sl.getServer(), then);
         }
     }
 
@@ -129,7 +129,7 @@ public class VenueRegister extends SavedData {
         }
         BlockPos pos = be.getBlockPos();
         Class<?> type = be.getClass();
-        sl.getServer().execute(() -> {
+        defer(sl.getServer(), () -> {
             if (sl.isLoaded(pos) && !type.isInstance(sl.getBlockEntity(pos))) {
                 forget(sl, pos);
             }
@@ -145,6 +145,34 @@ public class VenueRegister extends SavedData {
         }
         var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(it.stack.getItem());
         return key == null ? "" : key.toString();
+    }
+
+    /** Runs {@code r} on the server thread from the queue, never at once (on the server thread {@code execute} would run it there and then). */
+    private static void defer(MinecraftServer server, Runnable r) {
+        server.tell(new net.minecraft.server.TickTask(server.getTickCount(), r));
+    }
+
+    /**
+     * This server's venues, each checked where its chunk is loaded: one whose block no longer holds a
+     * venue (broken while its chunk was being unloaded, the region reset) is forgotten. Server thread.
+     */
+    public static List<Venue> current(MinecraftServer server) {
+        VenueRegister r = get(server);
+        for (Venue v : List.copyOf(r.venues.values())) {
+            ServerLevel level = null;
+            for (ServerLevel l : server.getAllLevels()) {
+                if (l.dimension().location().toString().equals(v.dim())) {
+                    level = l;
+                }
+            }
+            if (level == null) { // its dimension is gone
+                r.venues.remove(key(v.dim(), v.pos()));
+                r.changed(server, v.shop());
+            } else if (level.isLoaded(v.pos()) && !(level.getBlockEntity(v.pos()) instanceof Assignable || level.getBlockEntity(v.pos()) instanceof StallDisplayBlockEntity)) {
+                forget(level, v.pos());
+            }
+        }
+        return r.all();
     }
 
     @Override

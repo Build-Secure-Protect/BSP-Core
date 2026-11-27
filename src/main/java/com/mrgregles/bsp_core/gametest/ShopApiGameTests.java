@@ -624,4 +624,72 @@ public class ShopApiGameTests {
             return 0;
         }
     }
+
+    @GameTest(template = EMPTY)
+    public void odd_input_is_refused_without_touching_the_shop(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        String tag = tag();
+        String id = "odd_" + tag;
+        try {
+            BspShops.create(server, id, "Odd", "shop", "Ann");
+            Shop s = Shops.ledger(server).shop(id);
+            s.add(card(Items.APPLE, 1, 1, -1));
+            Shops.save(server, s);
+            long st = s.edited;
+            h.assertTrue(BspShops.removeItem(server, id, -1, st, "Ann").key().equals("no_item") && BspShops.moveItem(server, id, 0, -3, st, "Ann").key().equals("no_item")
+                    && BspShops.refill(server, id, Integer.MIN_VALUE, st, "Ann").key().equals("no_item") && s.all().size() == 1, "negative places are no card, never a crash");
+            String deep = "{a:".repeat(520) + "1" + "}".repeat(520);
+            h.assertTrue(BspShops.addItem(server, id, "minecraft:apple", deep, 1, 0, st, "Ann").key().equals("bad_item")
+                    && BspShops.addItem(server, id, "minecraft:apple", "{a:" + "[".repeat(2000) + "]".repeat(2000) + "}", 1, 0, st, "Ann").key().equals("bad_item")
+                    && BspShops.addItem(server, id, "minecraft:apple", null, 1, 0, st, "Ann").key().equals("bad_item") && s.all().size() == 1, "data nested too deep, or none at all, is refused");
+            h.assertTrue(BspShops.addItem(server, id, "minecraft:apple", "{a:".repeat(60) + "1" + "}".repeat(60), 1, 0, st, "Ann").ok(), "data nested 60 deep is fine");
+            st = s.edited;
+            h.assertTrue(BspShops.set(server, id, "name", "\u202e\u200b\u3000 ", st, "Ann").key().equals("bad_value")
+                    && com.mrgregles.bsp_core.shop.ShopRules.clean("Gold\u202e\u3000Shop").equals("Gold Shop"), "a name of only invisible or wide spaces is no name; overrides become spaces");
+            h.assertTrue(BspShops.create(server, "all", "All", "shop", "Ann").key().equals("bad_id") && Shops.create(server, "all", "All", Shop.Kind.SHOP) == null
+                    && BspShops.copy(server, id, "all", "All", "Ann").key().equals("bad_id"), "\"all\" is no shop id: it names every shop");
+            h.assertTrue(BspShops.setRequires(server, id, new BspShops.Needs("", 0, false, null), st, "Ann").ok(), "a null reason is no reason");
+            // a section whose parent is gone: off, not copied, and may be made a top shop through the api
+            Shop orphan = ShopTestKit.on(server, "odd_o_" + tag, "Orphan", Shop.Kind.SUB);
+            orphan.parent = "gone_" + tag;
+            Shops.save(server, orphan);
+            h.assertTrue(Shops.off(server, orphan) && BspShops.copy(server, orphan.id, "odd_c_" + tag, "C", "Ann").key().equals("not_top"), "an orphan is off and not copied");
+            h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "enabled", "true", 0, 0), orphan.id).equals("not_top"),
+                    "nor switched on in the Workbench");
+            var top = BspShops.set(server, orphan.id, "parent", "", orphan.edited, "Ann");
+            h.assertTrue(top.ok() && orphan.parent.isEmpty() && Shops.off(server, orphan) && BspShops.setEnabled(server, orphan.id, true, orphan.edited, "Ann").ok() && !Shops.off(server, orphan),
+                    "given no parent it is a top shop, off, with a switch");
+        } finally {
+            for (String d : List.of(id, "odd_o_" + tag, "odd_c_" + tag)) {
+                Shops.delete(server, d);
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public void a_local_change_is_never_undone_by_an_older_read_and_imports_keep_the_switch(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        String tag = tag();
+        String id = "mark_" + tag, file = "mark_" + tag;
+        try {
+            long before = Shops.localChangeMark();
+            Shop s = ShopTestKit.on(server, id, "Mark", Shop.Kind.SHOP);
+            h.assertTrue(Shops.changedHereSince(id, before) && !Shops.changedHereSince(id, Shops.localChangeMark()) && !Shops.changedHereSince("never_" + tag, before),
+                    "a save here is newer than a read made before it, and older than one made after");
+            Shops.setEnabled(server, s, false);
+            var root = com.google.gson.JsonParser.parseString(BspShops.export(server, id)).getAsJsonObject();
+            root.getAsJsonArray("shops").get(0).getAsJsonObject().remove("enabled");
+            java.nio.file.Files.createDirectories(com.mrgregles.bsp_core.shop.ShopImport.folder());
+            java.nio.file.Files.writeString(com.mrgregles.bsp_core.shop.ShopImport.file(file), root.toString());
+            var r = com.mrgregles.bsp_core.shop.ShopImport.run(server, file, false);
+            h.assertTrue(r.ok() && !Shops.ledger(server).shop(id).enabled, "a file without the switch keeps an existing shop off: " + r.errors());
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            Shops.delete(server, id);
+            ShopSwitchGameTests.deleteImport(file);
+        }
+        h.succeed();
+    }
 }

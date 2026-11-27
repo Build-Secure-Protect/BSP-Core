@@ -68,6 +68,12 @@ public final class Kit {
     public final List<String> grantServers = new ArrayList<>();
     public boolean enabled = true;
     public final long createdMs;
+    /**
+     * The edit stamp: epoch ms of the last save, moved on by every save (never back, never the same twice). Staff calls through
+     * {@code BspKits} name the stamp they read and are refused when it moved. The taken counts are not edits and leave it. 0 for a
+     * kit saved before stamps.
+     */
+    public long edited;
     /** How many times it was handed out, and the last player it went to (kept for the admin's list). */
     public int taken;
     public String lastTakenBy = "";
@@ -154,6 +160,7 @@ public final class Kit {
         k.grant = grant;
         k.grantServers.addAll(grantServers);
         k.enabled = enabled;
+        k.edited = edited;
         k.taken = taken;
         k.lastTakenBy = lastTakenBy;
         k.lastTakenMs = lastTakenMs;
@@ -185,6 +192,7 @@ public final class Kit {
         t.put("GrantServers", strings(grantServers));
         t.putBoolean("Enabled", enabled);
         t.putLong("Created", createdMs);
+        t.putLong("Edited", edited);
         t.putInt("Taken", taken);
         t.putString("LastBy", lastTakenBy);
         t.putLong("LastMs", lastTakenMs);
@@ -215,6 +223,7 @@ public final class Kit {
         k.grant = Grant.of(t.getString("Grant"));
         k.grantServers.addAll(strings(t.getList("GrantServers", Tag.TAG_STRING)));
         k.enabled = !t.contains("Enabled") || t.getBoolean("Enabled");
+        k.edited = t.getLong("Edited");
         k.taken = t.getInt("Taken");
         k.lastTakenBy = t.getString("LastBy");
         k.lastTakenMs = t.getLong("LastMs");

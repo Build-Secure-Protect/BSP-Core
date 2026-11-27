@@ -87,4 +87,30 @@ public abstract class KitEvent extends Event {
             return how;
         }
     }
+
+    /**
+     * A kit record changed or was deleted (since BSP-Core's kit api, {@code BspKits.VERSION} 1): after a save or a delete on this
+     * server (the admin panel's KITS tab, a command, a staff call through {@code BspKits}), and when this server reads another
+     * server's edit or delete. A re-read that brings no edit (the same stamp) posts nothing, and neither does a kit being taken.
+     * Read the kit again with {@code BspKits.detail}.
+     */
+    public static final class Changed extends KitEvent {
+        private final boolean deleted, heard;
+
+        public Changed(MinecraftServer server, String kitId, String kitName, boolean deleted, boolean heard) {
+            super(server, kitId, kitName);
+            this.deleted = deleted;
+            this.heard = heard;
+        }
+
+        /** The kit is gone (its players' records with it). */
+        public boolean isDeleted() {
+            return deleted;
+        }
+
+        /** The change was made on another server and read here. */
+        public boolean isHeard() {
+            return heard;
+        }
+    }
 }

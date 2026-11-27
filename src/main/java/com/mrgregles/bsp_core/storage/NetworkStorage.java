@@ -2413,6 +2413,7 @@ public final class NetworkStorage {
         if (s == null || srv == null) {
             return;
         }
+        long asked = com.mrgregles.bsp_core.shop.Shops.localChangeMark(); // a shop saved or deleted here after this keeps what this server did
         worker().execute(() -> {
             Map<String, String> rows;
             try {
@@ -2428,8 +2429,8 @@ public final class NetworkStorage {
                     try {
                         var shop = com.mrgregles.bsp_core.shop.Shop.load(net.minecraft.nbt.TagParser.parseTag(e.getValue()));
                         var had = ledger.shop(shop.id);
-                        if (had != null && shop.edited < had.edited) {
-                            continue; // read before a newer save here reached the database (stamps only grow): never put the older record back
+                        if (com.mrgregles.bsp_core.shop.Shops.changedHereSince(shop.id, asked)) {
+                            continue; // read before this server's own save or delete of it reached the database: the next read brings the network's record
                         }
                         ledger.put(shop);
                         if (had == null || had.edited != shop.edited) {
@@ -2442,7 +2443,7 @@ public final class NetworkStorage {
                 for (String c : changed) {
                     com.mrgregles.bsp_core.shop.Shops.changed(srv, c, false, true); // a shop turned off on another server closes here too
                 }
-                if (id != null && rows.isEmpty() && ledger.shop(id) != null) {
+                if (id != null && rows.isEmpty() && ledger.shop(id) != null && !com.mrgregles.bsp_core.shop.Shops.changedHereSince(id, asked)) {
                     ledger.remove(id);
                     com.mrgregles.bsp_core.shop.Shops.changed(srv, id, true, true);
                 }
@@ -3065,6 +3066,7 @@ public final class NetworkStorage {
         if (s == null || srv == null) {
             return;
         }
+        long asked = com.mrgregles.bsp_core.kit.KitSync.mark(); // a kit saved or deleted here after this keeps what this server did
         worker().execute(() -> {
             List<com.mrgregles.bsp_core.kit.Kit> kits;
             try {
@@ -3077,7 +3079,7 @@ public final class NetworkStorage {
                 return;
             }
             boolean prune = pruneFull && migratedHere; // before /bsp storage migrate, kits only this server has are kept for it to copy up
-            onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune));
+            onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune, asked));
         });
     }
 

@@ -207,8 +207,8 @@ public final class ShopImport {
     private static Shop readShop(JsonObject o, int n, Set<String> ids, ShopLedger ledger, boolean coinPayouts, Set<String> seen, List<String> errors, List<String> warnings) {
         String id = str(o, "id", "");
         String where = "Shop " + n + (id.isEmpty() ? "" : " (" + id + ")");
-        if (!id.matches("[a-z0-9_]{1,32}")) {
-            errors.add(where + ": \"id\" must be 1 to 32 of a-z, 0-9 and _.");
+        if (!id.matches("[a-z0-9_]{1,32}") || id.equals("all")) {
+            errors.add(where + ": \"id\" must be 1 to 32 of a-z, 0-9 and _, and not \"all\" (which names every shop).");
             return null;
         }
         if (!seen.add(id)) {
@@ -243,7 +243,10 @@ public final class ShopImport {
         }
         s.remote = bool(o, "remote", false, where, errors);
         s.buyOnly = bool(o, "buyOnly", false, where, errors);
-        s.enabled = bool(o, "enabled", true, where, errors); // a file from before the switch imports as on
+        // the file's switch; without one, a shop already here keeps its own (a price file imported over a shop being worked on
+        // must not open it) and a new one is on, as every shop from before the switch is
+        Shop here = ledger.shop(id);
+        s.enabled = bool(o, "enabled", here == null || here.enabled, where, errors);
         s.style = str(o, "style", "cash_machine").toLowerCase(Locale.ROOT);
         if (!STYLES.contains(s.style)) {
             errors.add(where + ": \"style\" must be cash_machine, passbook or market_board.");
@@ -354,11 +357,11 @@ public final class ShopImport {
             errors.add(at + ": \"count\" must be 1 to " + item.getMaxStackSize(it.stack) + " for " + itemId + ".");
         }
         if (o.has("nbt")) {
-            try {
-                CompoundTag tag = TagParser.parseTag(o.get("nbt").getAsString());
+            CompoundTag tag = o.get("nbt").isJsonPrimitive() ? ShopRules.itemData(o.get("nbt").getAsString()) : null;
+            if (tag == null) {
+                errors.add(at + ": \"nbt\" is not readable SNBT of up to " + ShopRules.SNBT_MAX + " characters nesting at most " + ShopRules.NBT_DEPTH + " deep.");
+            } else {
                 it.stack.setTag(tag.isEmpty() ? null : tag);
-            } catch (Exception ex) {
-                errors.add(at + ": \"nbt\" is not readable: " + ex.getMessage());
             }
         }
         if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(it.stack)) {

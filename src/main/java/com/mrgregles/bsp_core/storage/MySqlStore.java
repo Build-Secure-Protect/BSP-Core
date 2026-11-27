@@ -263,6 +263,13 @@ final class MySqlStore implements AutoCloseable {
                     throw e;
                 }
             }
+            try { // the kit's edit stamp (the kit api), added to a kits table made before it
+                st.executeUpdate("ALTER TABLE " + t("kits") + " ADD COLUMN edited_ms BIGINT NOT NULL DEFAULT 0");
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) {
+                    throw e;
+                }
+            }
             // store credit: each kind as its saved form, and each ticket with what is left on it (Store Credit task 3)
             st.executeUpdate("CREATE TABLE IF NOT EXISTS " + t("credit_kinds") + " (id VARCHAR(32) NOT NULL PRIMARY KEY, data TEXT NOT NULL, "
                     + "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
@@ -2789,8 +2796,8 @@ final class MySqlStore implements AutoCloseable {
     }
 
     void kitWrite(com.mrgregles.bsp_core.kit.Kit k) throws SQLException {
-        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kits") + " (id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms, conditions) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), conditions = VALUES(conditions), description = VALUES(description), icon = VALUES(icon), in_browser = VALUES(in_browser), "
+        try (PreparedStatement ps = conn().prepareStatement("INSERT INTO " + t("kits") + " (id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms, conditions, edited_ms) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), conditions = VALUES(conditions), edited_ms = VALUES(edited_ms), description = VALUES(description), icon = VALUES(icon), in_browser = VALUES(in_browser), "
                 + "once = VALUES(once), cooldown = VALUES(cooldown), price = VALUES(price), ranks = VALUES(ranks), servers = VALUES(servers), grant_kind = VALUES(grant_kind), grant_servers = VALUES(grant_servers), "
                 + "enabled = VALUES(enabled), taken = GREATEST(taken, VALUES(taken)), last_by = IF(VALUES(last_ms) >= last_ms, VALUES(last_by), last_by), last_ms = GREATEST(last_ms, VALUES(last_ms))")) {
             ps.setString(1, k.id);
@@ -2811,6 +2818,7 @@ final class MySqlStore implements AutoCloseable {
             ps.setString(16, k.lastTakenBy);
             ps.setLong(17, k.lastTakenMs);
             ps.setString(18, com.mrgregles.bsp_core.kit.Kit.joined(k.conditions));
+            ps.setLong(19, k.edited);
             ps.executeUpdate();
         }
         try (PreparedStatement ps = conn().prepareStatement("DELETE FROM " + t("kit_items") + " WHERE kit = ?")) {
@@ -2853,7 +2861,7 @@ final class MySqlStore implements AutoCloseable {
     /** One kit by id, or every kit, with its items; items this server cannot resolve are dropped and counted. */
     List<com.mrgregles.bsp_core.kit.Kit> kitRead(@Nullable String id) throws SQLException {
         List<com.mrgregles.bsp_core.kit.Kit> out = new ArrayList<>();
-        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms, conditions FROM " + t("kits")
+        try (PreparedStatement ps = conn().prepareStatement("SELECT id, name, description, icon, in_browser, once, cooldown, price, ranks, servers, grant_kind, grant_servers, enabled, created_ms, taken, last_by, last_ms, conditions, edited_ms FROM " + t("kits")
                 + (id == null ? " ORDER BY created_ms" : " WHERE id = ?"))) {
             if (id != null) {
                 ps.setString(1, id);
@@ -2883,6 +2891,7 @@ final class MySqlStore implements AutoCloseable {
                     k.lastTakenBy = rs.getString(16);
                     k.lastTakenMs = rs.getLong(17);
                     k.conditions.addAll(com.mrgregles.bsp_core.kit.Kit.split(rs.getString(18)));
+                    k.edited = rs.getLong(19);
                     out.add(k);
                 }
             }

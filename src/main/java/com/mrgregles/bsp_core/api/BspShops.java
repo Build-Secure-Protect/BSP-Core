@@ -157,7 +157,7 @@ public final class BspShops {
             if (s.noRepeat) {
                 int left = 0;
                 for (int i = 0; i < all.size(); i++) {
-                    if (!all.get(i).hidden && all.get(i).weight > 0 && all.get(i).section.isEmpty() && !d.used.contains(i)) {
+                    if (!all.get(i).hidden && all.get(i).weight > 0 && !d.used.contains(i)) { // as the draw counts them, section cards too
                         left++;
                     }
                 }
@@ -197,7 +197,7 @@ public final class BspShops {
      */
     public static List<Venue> venues(MinecraftServer server) {
         List<Venue> out = new ArrayList<>();
-        for (var v : com.mrgregles.bsp_core.shop.VenueRegister.get(server).all()) {
+        for (var v : com.mrgregles.bsp_core.shop.VenueRegister.current(server)) {
             out.add(new Venue(v.kind(), v.dim(), v.pos().getX(), v.pos().getY(), v.pos().getZ(), v.shop(), v.hours() == null ? null : Hours.of(v.hours()), v.pin()));
         }
         return out;
@@ -333,7 +333,7 @@ public final class BspShops {
      */
     public static Answer create(MinecraftServer server, String id, String name, String kind, String by) {
         id = id.toLowerCase(Locale.ROOT);
-        if (!id.matches(ShopRules.ID)) {
+        if (!id.matches(ShopRules.ID) || id.equals("all")) { // "all" names every shop to export and report
             return Answer.no("bad_id", null);
         }
         if (Shops.ledger(server).shop(id) != null) {
@@ -357,7 +357,7 @@ public final class BspShops {
      */
     public static Answer createSection(MinecraftServer server, String id, String name, String parent, String pictureItem, String pictureNbt, long parentEdited, String by) {
         id = id.toLowerCase(Locale.ROOT);
-        if (!id.matches(ShopRules.ID)) {
+        if (!id.matches(ShopRules.ID) || id.equals("all")) {
             return Answer.no("bad_id", null);
         }
         if (Shops.ledger(server).shop(id) != null) {
@@ -407,11 +407,11 @@ public final class BspShops {
         if (from == null) {
             return Answer.no("no_shop", null);
         }
-        if (Shops.top(server, from) != from) {
+        if (Shops.top(server, from) != from || !from.parent.isEmpty()) { // a section, or one whose parent is gone
             return Answer.no("not_top", from);
         }
         newId = newId.toLowerCase(Locale.ROOT);
-        if (!newId.matches(ShopRules.ID)) {
+        if (!newId.matches(ShopRules.ID) || newId.equals("all")) {
             return Answer.no("bad_id", from);
         }
         if (Shops.ledger(server).shop(newId) != null) {
@@ -500,8 +500,8 @@ public final class BspShops {
                     s.kind = k;
                 }
                 case "parent" -> {
-                    if (v.isEmpty() && !s.parent.isEmpty()) {
-                        return Answer.no("bad_value", s); // a section stays a section
+                    if (v.isEmpty() && !s.parent.isEmpty() && Shops.ledger(server).shop(s.parent) != null) {
+                        return Answer.no("bad_value", s); // a section stays a section (one whose parent is gone may become a top shop, off)
                     }
                     movedFrom = s.parent.isEmpty() ? null : Shops.ledger(server).shop(s.parent);
                     String key = Shops.setParent(server, s, v);
@@ -534,7 +534,7 @@ public final class BspShops {
                 }
                 case "offerPercent" -> s.offerPercent = range(Integer.parseInt(v), 0, 99, true);
                 case "offerEnd" -> {
-                    long end = Long.parseLong(v), now = System.currentTimeMillis();
+                    long end = Long.parseLong(v), now = Shops.now();
                     if (end != 0 && (end <= now || end > now + ShopRules.OFFER_YEARS_MS)) {
                         return Answer.no("bad_value", s);
                     }
@@ -774,6 +774,9 @@ public final class BspShops {
         if (s == null) {
             return why[0];
         }
+        if (s.item(i) == null || action == com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.MOVE_ITEM && s.item(j) == null) {
+            return Answer.no("no_item", s);
+        }
         String key = com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(action, "", "", i, j), s.id);
         if (!key.equals("saved") && !key.equals("refilled")) {
             return Answer.no(key, s);
@@ -820,6 +823,9 @@ public final class BspShops {
     /** A stack of {@code item} with {@code snbt} (empty for none, at most 4,096 characters), or null when the item or the data is not one. */
     @Nullable
     static net.minecraft.world.item.ItemStack stack(String item, String snbt) {
+        if (item == null || snbt == null) {
+            return null;
+        }
         var key = net.minecraft.resources.ResourceLocation.tryParse(item.trim());
         var it = key == null ? null : ForgeRegistries.ITEMS.getValue(key);
         if (it == null || it == net.minecraft.world.item.Items.AIR || !ForgeRegistries.ITEMS.containsKey(key) || snbt.length() > ShopRules.SNBT_MAX) {
@@ -827,11 +833,11 @@ public final class BspShops {
         }
         var stack = new net.minecraft.world.item.ItemStack(it);
         if (!snbt.isBlank()) {
-            try {
-                stack.setTag(net.minecraft.nbt.TagParser.parseTag(snbt));
-            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            net.minecraft.nbt.CompoundTag tag = ShopRules.itemData(snbt);
+            if (tag == null) {
                 return null;
             }
+            stack.setTag(tag.isEmpty() ? null : tag);
         }
         return stack;
     }
@@ -850,7 +856,7 @@ public final class BspShops {
             }
         }
         return new Summary(s.id, s.name, s.kind.name().toLowerCase(Locale.ROOT), s.parent, !off, s.remote, s.buyOnly, s.style,
-                s.columns, s.rows(), all.size(), Hours.of(s.hours), open, open ? "" : opensAt(s.hours), Needs.of(s.requires), s.offerPercent, s.offerEndMs,
+                s.columns, s.rows(), all.size(), Hours.of(s.hours), open, open || off ? "" : opensAt(s.hours), Needs.of(s.requires), s.offerPercent, s.offerEndMs,
                 s.displaySlots, Math.max(1, s.intervalMs / 3_600_000L), s.rotateAt.fixedTime() ? s.rotateAt.text() : "none", s.noRepeat, s.broadcast,
                 s.kind == Shop.Kind.ROTATING ? Shops.nextChange(server, s, now) : 0, s.edited, peek);
     }

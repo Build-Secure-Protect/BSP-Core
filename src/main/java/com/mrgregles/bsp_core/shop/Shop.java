@@ -98,6 +98,9 @@ public final class Shop {
     }
 
     public boolean remove(int index) {
+        if (index < 0) {
+            return false;
+        }
         for (List<ShopItem> page : pages) {
             if (index < page.size()) {
                 page.remove(index);

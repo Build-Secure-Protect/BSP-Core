@@ -55,7 +55,7 @@ public final class Shops {
     @Nullable
     public static Shop create(MinecraftServer server, String id, String name, Shop.Kind kind, Consumer<Shop> before) {
         id = id.toLowerCase(Locale.ROOT);
-        if (!id.matches("[a-z0-9_]{1,32}") || ledger(server).shop(id) != null) {
+        if (!id.matches("[a-z0-9_]{1,32}") || id.equals("all") || ledger(server).shop(id) != null) { // "all" names every shop to export and report
             return null;
         }
         Shop s = new Shop(id);
@@ -260,9 +260,29 @@ public final class Shops {
     /** Writes a shop locally and, on a network, to the database (which tells the other servers). */
     public static void save(MinecraftServer server, Shop shop) {
         touch(shop);
+        changedHere(shop.id);
         ledger(server).put(shop);
         NetworkStorage.shopWrite(shop.id, shop.name, shop.save().toString());
         changed(server, shop.id, false, false);
+    }
+
+    /** A count that moves on with every shop saved or deleted on this server, and the mark each shop was last changed at here. */
+    private static final java.util.concurrent.atomic.AtomicLong LOCAL_MARK = new java.util.concurrent.atomic.AtomicLong();
+    private static final Map<String, Long> CHANGED_HERE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** The mark now: a read of the database started now is older than any save or delete made here after it. */
+    public static long localChangeMark() {
+        return LOCAL_MARK.get();
+    }
+
+    /** True when shop {@code id} was saved or deleted on this server after {@code mark}: a database read made before then must not undo it. */
+    public static boolean changedHereSince(String id, long mark) {
+        Long at = CHANGED_HERE.get(id);
+        return at != null && at > mark;
+    }
+
+    private static void changedHere(String id) {
+        CHANGED_HERE.put(id, LOCAL_MARK.incrementAndGet());
     }
 
     /** Marks the record changed: its edit stamp moves on (never back, whatever the clocks of the servers say) and is returned. */
@@ -281,6 +301,7 @@ public final class Shops {
         List<String> ids = tree(server, id);
         for (int i = ids.size() - 1; i >= 0; i--) { // sections before their parents: a server hearing the deletes one by one never holds a section without its top
             String gone = ids.get(i);
+            changedHere(gone);
             ledger(server).remove(gone);
             NetworkStorage.shopDelete(gone);
             changed(server, gone, true, false);

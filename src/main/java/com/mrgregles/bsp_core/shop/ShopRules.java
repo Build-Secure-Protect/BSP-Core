@@ -21,14 +21,60 @@ public final class ShopRules {
      * {@code text} with every control character (C0 and C1), line or paragraph separator and
      * section sign (Minecraft's colour codes) made a space, runs of spaces made one, and trimmed.
      */
-    public static String clean(String text) {
+    public static String clean(@Nullable String text) {
+        if (text == null) {
+            return "";
+        }
         StringBuilder b = new StringBuilder(text.length());
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            boolean bad = c < 0x20 || c >= 0x7F && c <= 0x9F || c == ' ' || c == ' ' || c == '§';
+            // control characters, line and paragraph separators, colour codes, every kind of space, and the invisible format
+            // characters (zero-width, the bidirectional overrides that would let a name show something else)
+            int type = Character.getType(c);
+            boolean bad = c < 0x20 || c >= 0x7F && c <= 0x9F || c == '\u00A7' || Character.isSpaceChar(c) || type == Character.FORMAT
+                    || type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR;
             b.append(bad ? ' ' : c);
         }
         return b.toString().replaceAll(" {2,}", " ").trim();
+    }
+
+    /** The deepest an item's data may nest: Minecraft refuses to read data deeper than 512, which would lose the shop file and drop players. */
+    public static final int NBT_DEPTH = 64;
+
+    /** True when {@code tag} nests no deeper than {@link #NBT_DEPTH}. */
+    public static boolean shallow(net.minecraft.nbt.Tag tag) {
+        return depth(tag, 0) <= NBT_DEPTH;
+    }
+
+    private static int depth(net.minecraft.nbt.Tag tag, int at) {
+        if (at > NBT_DEPTH) {
+            return at;
+        }
+        int most = at;
+        if (tag instanceof net.minecraft.nbt.CompoundTag c) {
+            for (String k : c.getAllKeys()) {
+                most = Math.max(most, depth(c.get(k), at + 1));
+            }
+        } else if (tag instanceof net.minecraft.nbt.CollectionTag<?> l) {
+            for (net.minecraft.nbt.Tag t : l) {
+                most = Math.max(most, depth(t, at + 1));
+            }
+        }
+        return most;
+    }
+
+    /** {@code snbt} read as an item's data, or null when it is not readable, too deep, or longer than {@link #SNBT_MAX}. */
+    @Nullable
+    public static net.minecraft.nbt.CompoundTag itemData(String snbt) {
+        if (snbt.length() > SNBT_MAX) {
+            return null;
+        }
+        try {
+            net.minecraft.nbt.CompoundTag tag = net.minecraft.nbt.TagParser.parseTag(snbt);
+            return shallow(tag) ? tag : null;
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException | RuntimeException | StackOverflowError e) {
+            return null;
+        }
     }
 
     /** A shop's name cleaned, or null when it is empty or longer than {@link Shop#NAME_MAX} after cleaning. */

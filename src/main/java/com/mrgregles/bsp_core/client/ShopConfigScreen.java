@@ -143,6 +143,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
 
     private void setView(View v) {
         view = v;
+        confirmDelete = "";
         fieldName = "";
         field.setVisible(false);
         search.setVisible(v == View.BROWSER);
@@ -202,7 +203,18 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                 bottom.add(new Key("next", (browserPage + 1) * 28 < found.size(), () -> browserPage++));
                 bottom.add(new Key("back", true, () -> setView(View.PAGE)));
             }
-            case SETTINGS -> bottom.add(new Key("delete", ed && has, () -> { send(Action.DELETE, "", "", 0, 0); setView(View.LIST); }));
+            case SETTINGS -> bottom.add(new Key(has && menu.shop.id.equals(confirmDelete) ? "delete_confirm_key" : "delete", ed && has, () -> {
+                int under = sectionsUnder(menu.shop.id);
+                if (under > 0 && !menu.shop.id.equals(confirmDelete)) { // a delete takes every section under it: a second click says yes
+                    confirmDelete = menu.shop.id;
+                    message = tr("delete_confirm", under);
+                    messageColour = RED;
+                    return;
+                }
+                confirmDelete = "";
+                send(Action.DELETE, "", "", 0, 0);
+                setView(View.LIST);
+            }));
             case STYLE -> { }
         }
     }
@@ -365,7 +377,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             }
             switch (r.field()) {
                 case "enabled" -> {
-                    if (top(s) == null) { // a top shop: the switch (a section follows its top shop and does not toggle)
+                    if (top(s) == null && s.parent.isEmpty()) { // a top shop: the switch (a section follows its top shop and does not toggle)
                         send(Action.SET, "enabled", String.valueOf(!on(s)), 0, 0);
                     }
                 }
@@ -388,6 +400,26 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             }
             return;
         }
+    }
+
+    /** The shop whose Delete key has been clicked once, waiting for the second click (a delete takes its sections with it); empty for none. */
+    private String confirmDelete = "";
+
+    /** How many shops hang under {@code id} in the list the server sent (its sections and theirs). */
+    private int sectionsUnder(String id) {
+        int n = 0;
+        java.util.Deque<String> todo = new java.util.ArrayDeque<>(List.of(id));
+        java.util.Set<String> seen = new java.util.HashSet<>(List.of(id));
+        while (!todo.isEmpty()) {
+            String at = todo.poll();
+            for (ShopConfigMenu.Summary e : menu.list) {
+                if (e.parent().equals(at) && seen.add(e.id())) {
+                    n++;
+                    todo.add(e.id());
+                }
+            }
+        }
+        return n;
     }
 
     /** Where the last Settings line ends (screen y), so a long message there is fitted to the one line left; 0 outside Settings. */
@@ -457,7 +489,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         ShopConfigMenu.Summary top = top(s);
         boolean on = on(s);
         String state = tr(on ? "enabled_on" : "enabled_off").getString();
-        out.add(new SetRow(21, "enabled", top == null ? state : tr("enabled_follows", state, top.name()).getString(), on ? PHOS : RED));
+        String value = top != null ? tr("enabled_follows", state, top.name()).getString() : s.parent.isEmpty() ? state : tr("enabled_orphan").getString();
+        out.add(new SetRow(21, "enabled", value, on ? PHOS : RED));
         int y = 21 + SET_STEP;
         for (List<String[]> group : List.of(shopGroup, kindGroup, hourGroup)) {
             if (group.isEmpty()) {

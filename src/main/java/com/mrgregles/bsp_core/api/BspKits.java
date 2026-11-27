@@ -18,7 +18,8 @@ import java.util.function.Consumer;
  * Kits for other mods: read the kits, ask what one is to a player, redeem one for them under every
  * rule, or give one as a reward (no price, rank, cooldown, once or server rule: it is owed and
  * delivered when it fits). {@code KitEvent.Given} says when a kit landed. Admins make kits in the
- * admin panel's KITS tab; nothing here edits one.
+ * admin panel's KITS tab. Staff tools read a kit whole with {@link #detail} and are told of every
+ * change by {@code KitEvent.Changed} (since {@link #VERSION} 1).
  */
 public final class BspKits {
     private BspKits() {}
@@ -37,6 +38,89 @@ public final class BspKits {
         public boolean ready() {
             return "READY".equals(state);
         }
+    }
+
+    /**
+     * The kit api's version for staff tools (BSP-Server Utilities' web panel): 1 is {@link #details}, {@link #detail},
+     * {@link #choices}, the edit stamp and {@code KitEvent.Changed}. Read it to tell what this BSP-Core answers.
+     */
+    public static final int VERSION = 1;
+
+    /** One stack as text: the registry id, the count and its NBT as SNBT ("" for none). */
+    public record ItemRow(String item, int count, String nbt) {}
+
+    /**
+     * A kit whole, for staff tools. {@code icon} is the icon as set ({@code item} "" when none: the browser then shows the first
+     * item). {@code grant} is {@code NONE}, {@code NETWORK} or {@code SERVERS}; {@code grantServers} the servers that hand it out at
+     * first login for {@code SERVERS} (empty: every server). {@code created} and {@code edited} are epoch ms; {@code edited} is the
+     * edit stamp a change names (0 for a kit not saved since stamps). {@code taken}, {@code lastTakenBy} and {@code lastTakenMs}
+     * count every hand-out on the network. {@code missing} is how many saved items this server could not resolve (a mod not
+     * loaded here); they are not in {@code items}.
+     */
+    public record Detail(String id, String name, String description, ItemRow icon, List<ItemRow> items, boolean enabled, boolean inBrowser,
+                         boolean once, long cooldownSeconds, long price, List<String> ranks, List<String> servers, List<String> conditions,
+                         String grant, List<String> grantServers, long created, long edited, int taken, String lastTakenBy, long lastTakenMs,
+                         int missing) {}
+
+    /** A condition a kit can ask for: its key (saved on the kit) and the editor's sentence for it. */
+    public record Condition(String key, String label) {}
+
+    /**
+     * What a staff tool can pick from. {@code ranks} are RankUp's ladder in order when BSP-RankUp has one
+     * ({@code ranksFromLadder}), else LuckPerms' group names (empty without LuckPerms: any name may be typed). {@code servers} are
+     * the server ids the network has seen, this one ({@code thisServer}) first. {@code grants} are the grant kinds, and
+     * {@code maxItems} how many stacks a kit may hold.
+     */
+    public record Choices(List<String> ranks, boolean ranksFromLadder, List<String> servers, String thisServer, List<Condition> conditions,
+                          List<String> grants, int maxItems) {}
+
+    static ItemRow row(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return new ItemRow("", 0, "");
+        }
+        Kit.ItemRow r = Kit.rowOf(stack);
+        return new ItemRow(r.item(), r.count(), r.nbt());
+    }
+
+    private static Detail detailOf(Kit k) {
+        List<ItemRow> items = new ArrayList<>(k.items.size());
+        for (ItemStack s : k.items) {
+            items.add(row(s));
+        }
+        return new Detail(k.id, k.name, k.description, row(k.icon), List.copyOf(items), k.enabled, k.inBrowser, k.once, k.cooldownSeconds,
+                k.price, List.copyOf(k.ranks), List.copyOf(k.servers), List.copyOf(k.conditions), k.grant.name(), List.copyOf(k.grantServers),
+                k.createdMs, k.edited, k.taken, k.lastTakenBy, k.lastTakenMs, k.missing);
+    }
+
+    /** Every kit whole, in the order they were made (server thread). */
+    public static List<Detail> details(MinecraftServer server) {
+        List<Detail> out = new ArrayList<>();
+        for (Kit k : Kits.all(server)) {
+            out.add(detailOf(k));
+        }
+        return out;
+    }
+
+    /** One kit whole, by id (server thread). */
+    public static Optional<Detail> detail(MinecraftServer server, String id) {
+        Kit k = Kits.kit(server, id == null ? "" : id.toLowerCase(java.util.Locale.ROOT));
+        return k == null ? Optional.empty() : Optional.of(detailOf(k));
+    }
+
+    /** The lists a kit's fields are picked from (server thread). */
+    public static Choices choices(MinecraftServer server) {
+        Kits.RankNames ranks = Kits.rankNames();
+        List<Condition> conditions = new ArrayList<>();
+        net.minecraft.locale.Language lang = net.minecraft.locale.Language.getInstance();
+        for (com.mrgregles.bsp_core.kit.KitCondition c : com.mrgregles.bsp_core.kit.KitCondition.values()) {
+            conditions.add(new Condition(c.key, lang.getOrDefault("gui.bsp_core.kit.cond." + c.key)));
+        }
+        List<String> grants = new ArrayList<>();
+        for (Kit.Grant g : Kit.Grant.values()) {
+            grants.add(g.name());
+        }
+        return new Choices(List.copyOf(ranks.names()), ranks.ladder(), List.copyOf(com.mrgregles.bsp_core.kit.KitAdmin.knownServers(server)),
+                Kits.serverId(), List.copyOf(conditions), List.copyOf(grants), Kits.maxItems());
     }
 
     private static Info view(Kit k) {
