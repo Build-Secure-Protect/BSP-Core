@@ -11,6 +11,9 @@ Network protocol 26 (unchanged): servers can take 1.27.2 without new clients, an
 ### Added
 - **The kit api, part 4** (BSP-Server Utilities request SU-BC13), `BspKits.VERSION` 3: `BspKits.ready` (this server answers for every kit now), `Choices.kitsOn` (kits are switched on on this server) and `Detail.owed` (how many players the kit waits for; `delete` answers the same count). A staff tool checks `VERSION >= 3` before using them.
 
+### Fixed
+- `BspShops.ready` waits, after a server connects to the network's database, until the network's shops have been read, as `BspKits.ready` does.
+
 ## [1.27.1] - 2026-11-27
 
 **Network protocol 26** (raised from 25): the admin panel's KITS tab sends the kit's edit stamp with SAVE, so servers and clients both need this version.

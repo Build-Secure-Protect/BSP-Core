@@ -107,11 +107,12 @@ public final class BspShops {
     }
 
     /**
-     * True when this server can answer for every shop now: alone, always; on a network, while its database is connected
-     * (its copy of the shops is then the network's, read again at every change and every five minutes).
+     * True when this server can answer for every shop now: alone, always; on a network, while its database is connected and
+     * once its first full read of the shops since connecting has landed (its copy is then the network's, read again at every
+     * change and every five minutes).
      */
     public static boolean ready(MinecraftServer server) {
-        return !NetworkStorage.down();
+        return !NetworkStorage.down() && NetworkStorage.shopsRead();
     }
 
     /** The time zone fixed times are read in ({@code shop.timeZone}, or the server's own), as an id ("Europe/London"). */

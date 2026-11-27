@@ -499,7 +499,7 @@ Version 1 is in BSP-Core **1.26.0** (network protocol 25). Check that `BspShops`
 - `cycleLeft` counts every card the draw can pick, section cards included.
 
 **Reads (version 1).**
-- `boolean ready(server)`: true when this server can answer for every shop now. A server alone is always ready; a network server only while its database is connected, because its copy of the shops is then the network's, read again at every change and every five minutes.
+- `boolean ready(server)`: true when this server can answer for every shop now. A server alone is always ready; a network server only while its database is connected and once its first full read of the shops since connecting has landed (since 1.27.2; before, it could answer true for a moment before that read), because its copy of the shops is then the network's, read again at every change and every five minutes.
 - `String timeZone()`: the zone that fixed times are read in (`shop.timeZone`, or the server's own), as an id ("Europe/London").
 - `List<Summary> list(server)`: every shop and section, sorted by id.
 - `Detail read(server, id)`: one shop or section whole, or null when there is none.

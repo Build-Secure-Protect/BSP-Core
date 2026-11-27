@@ -534,6 +534,14 @@ public final class NetworkStorage {
     /** False from a (re)connect until the first full read of the network's kits has landed here (BspKits.ready). */
     private static volatile boolean kitsRead;
 
+    /** False from a (re)connect until the first full read of the network's shops has landed here (BspShops.ready). */
+    private static volatile boolean shopsRead;
+
+    /** True when this server's shops are the network's: alone, always; on a network, once the first full read since connecting landed. */
+    public static boolean shopsRead() {
+        return store == null || shopsRead;
+    }
+
     /** True when this server's kits are the network's: alone, always; on a network, once the first full read since connecting landed. */
     public static boolean kitsRead() {
         return store == null || kitsRead;
@@ -541,6 +549,7 @@ public final class NetworkStorage {
 
     private static void connect() {
         kitsRead = false;
+        shopsRead = false;
         {
             MySqlStore s = null;
             try {
@@ -618,6 +627,7 @@ public final class NetworkStorage {
                 orders = null;
                 bounties = null;
                 kitsRead = false;
+                shopsRead = false;
                 retryAtMs = System.currentTimeMillis() + RETRY_MS;
                 BSPCore.LOGGER.error("BSP-Core storage: storage.mode is \"mysql\" but the database could not be used ({}). Trying again in {} s; until it connects, "
                         + "the bank, the market, first-join totems and kits wait (nothing the network keeps is decided on this server's local copy).", e.toString(), RETRY_MS / 1000);
@@ -733,6 +743,7 @@ public final class NetworkStorage {
         orders = null;
         bounties = null;
         kitsRead = false;
+        shopsRead = false;
         com.mrgregles.bsp_core.trade.Trades.hub().disconnect();
         server = null;
     }
@@ -2457,6 +2468,9 @@ public final class NetworkStorage {
                 if (id != null && rows.isEmpty() && ledger.shop(id) != null && !com.mrgregles.bsp_core.shop.Shops.changedHereSince(id, asked)) {
                     ledger.remove(id);
                     com.mrgregles.bsp_core.shop.Shops.changed(srv, id, true, true);
+                }
+                if (id == null) {
+                    shopsRead = true;
                 }
             });
         });

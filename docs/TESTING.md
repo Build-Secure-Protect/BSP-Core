@@ -4359,3 +4359,6 @@ With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has 
 - [ ] Give a kit to two offline players: Server Utilities' KITS tab (or a debug call to `BspKits.detail`) shows it owed to 2. Delete it: the answer says 2.
 - [ ] Set `kit.enabled = false` on a test server and restart it: `BspKits.choices(server).kitsOn()` is false there. Give a kit to a player online there: it is recorded as owed, not delivered; they get it on a server with kits on.
 - [ ] With MySQL, stop the database: `BspKits.ready` is false on that server until it reconnects and has read the kits again.
+
+## Shops: ready after connecting (2026-11-27, 1.27.2)
+- [ ] With MySQL, restart a server and watch Server Utilities' SHOPS tab on it (or a debug call to `BspShops.ready`): it answers false until the server has read the network's shops, then true, and the shop list is complete from the first true.

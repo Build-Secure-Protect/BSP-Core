@@ -144,6 +144,7 @@ public class KitApiGameTests {
         BspKits.Choices c = BspKits.choices(server);
         h.assertTrue(BspKits.VERSION == 3, "version 3");
         h.assertTrue(BspKits.ready(server), "alone, this server answers for every kit");
+        h.assertTrue(com.mrgregles.bsp_core.storage.NetworkStorage.kitsRead() && com.mrgregles.bsp_core.storage.NetworkStorage.shopsRead() && com.mrgregles.bsp_core.api.BspShops.ready(server), "alone, kits and shops count as read and both apis are ready");
         h.assertTrue(c.kitsOn() == Kits.enabled(), "the kits switch as this server has it: " + c.kitsOn());
         h.assertTrue(c.grants().equals(List.of("NONE", "NETWORK", "SERVERS")), "the grant kinds: " + c.grants());
         h.assertTrue(c.maxItems() == Kits.maxItems() && c.maxItems() >= 1 && c.maxItems() <= 36, "the item limit: " + c.maxItems());
