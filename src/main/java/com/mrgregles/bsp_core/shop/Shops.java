@@ -45,18 +45,211 @@ public final class Shops {
         return ShopLedger.get(server);
     }
 
-    /** Creates a shop with a slug id; null if the id is taken or not a slug. */
+    /** Creates a shop with a slug id, made off (players never see a half-made shop); null if the id is taken or not a slug. */
     @Nullable
     public static Shop create(MinecraftServer server, String id, String name, Shop.Kind kind) {
+        return create(server, id, name, kind, s -> {});
+    }
+
+    /** As {@link #create(MinecraftServer, String, String, Shop.Kind)}, with {@code before} setting the new record up before its one save. */
+    @Nullable
+    public static Shop create(MinecraftServer server, String id, String name, Shop.Kind kind, Consumer<Shop> before) {
         id = id.toLowerCase(Locale.ROOT);
         if (!id.matches("[a-z0-9_]{1,32}") || ledger(server).shop(id) != null) {
             return null;
         }
         Shop s = new Shop(id);
+        name = ShopRules.clean(name); // control characters and colour codes become spaces
+        name = name.isEmpty() ? id.replace('_', ' ') : name;
         s.name = name.length() > Shop.NAME_MAX ? name.substring(0, Shop.NAME_MAX) : name;
         s.kind = kind;
+        s.enabled = false;
+        before.accept(s);
         save(server, s);
         return s;
+    }
+
+    /** The top of a shop's tree: the last parent found, or the shop itself (a section whose parent is gone counts as a top shop). */
+    public static Shop top(MinecraftServer server, Shop shop) {
+        List<Shop> up = parents(server, shop);
+        return up.isEmpty() ? shop : up.get(up.size() - 1);
+    }
+
+    /**
+     * Turns a top shop on or off and saves it (its sections follow; players in it have the screen
+     * closed). Answers "saved", or "not_top" for a section, which has no switch of its own.
+     */
+    public static String setEnabled(MinecraftServer server, Shop shop, boolean on) {
+        if (top(server, shop) != shop || !shop.parent.isEmpty()) { // a section, or one whose parent is gone: give it no parent first
+            return "not_top";
+        }
+        shop.enabled = on;
+        save(server, shop);
+        return "saved";
+    }
+
+    /** True when the shop is off: its top shop's switch is off. Players never reach it; staff still edit and TEST it. */
+    public static boolean off(MinecraftServer server, Shop shop) {
+        Shop top = top(server, shop);
+        return !top.enabled || !top.parent.isEmpty(); // a section whose parent is gone (a delete half heard) is off, never an open top shop
+    }
+
+    /**
+     * Every shop in {@code id}'s tree: the shop first, then every shop whose parents lead to it (at
+     * most {@link #MAX_DEPTH} deep), parents before their sections.
+     */
+    public static List<String> tree(MinecraftServer server, String id) {
+        List<String> out = new ArrayList<>();
+        if (ledger(server).shop(id) == null) {
+            return out;
+        }
+        out.add(id);
+        for (int at = 0; at < out.size() && out.size() <= 4096; at++) {
+            String parent = out.get(at);
+            for (Shop s : ledger(server).all().values()) {
+                if (s.parent.equals(parent) && !out.contains(s.id)) {
+                    out.add(s.id);
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Copies a top shop and every section under it under new ids: the top takes {@code newId} and
+     * {@code name}, each section {@code <newId>_1}, {@code _2}... in tree order (parents before their
+     * sections), skipping ids already taken, the new id cut so the whole fits 32 characters. Parents
+     * and the section cards inside the copy are rewritten to the new ids; every setting and card is
+     * copied; counts and draws are not (the copy starts full). The copy is made off. Returns each
+     * old id to its new one, the top first; the caller has checked the ids and that {@code id} is a
+     * top shop.
+     */
+    public static java.util.LinkedHashMap<String, String> copy(MinecraftServer server, Shop top, String newId, String name) {
+        List<String> ids = tree(server, top.id);
+        java.util.LinkedHashMap<String, String> map = new java.util.LinkedHashMap<>();
+        map.put(top.id, newId);
+        int n = 1;
+        for (String old : ids.subList(1, ids.size())) {
+            String made;
+            do {
+                String tail = "_" + n++;
+                made = (newId.length() > 32 - tail.length() ? newId.substring(0, 32 - tail.length()) : newId) + tail;
+            } while (ledger(server).shop(made) != null || map.containsValue(made));
+            map.put(old, made);
+        }
+        long now = now();
+        for (var e : map.entrySet()) {
+            Shop from = ledger(server).shop(e.getKey());
+            net.minecraft.nbt.CompoundTag t = from.save();
+            t.putString("Id", e.getValue());
+            Shop c = Shop.load(t);
+            if (from == top) {
+                c.name = name;
+                c.enabled = false;
+            } else {
+                c.parent = map.getOrDefault(from.parent, from.parent);
+            }
+            for (ShopItem it : c.all()) {
+                if (!it.section.isEmpty() && map.containsKey(it.section)) {
+                    it.section = map.get(it.section);
+                }
+            }
+            c.rotateSince = c.rotateAt.fixedTime() ? now : 0; // a fresh draw at the next change time
+            c.edited = 0;
+            save(server, c);
+        }
+        return map;
+    }
+
+    /** How many levels of sections hang under {@code shop} (0 for none). */
+    public static int height(MinecraftServer server, Shop shop) {
+        int most = 0;
+        for (String id : tree(server, shop.id)) {
+            Shop s = ledger(server).shop(id);
+            if (s != null && s != shop) {
+                int d = 0;
+                for (Shop p : parents(server, s)) {
+                    d++;
+                    if (p == shop) {
+                        break;
+                    }
+                }
+                most = Math.max(most, d);
+            }
+        }
+        return most;
+    }
+
+    /**
+     * Moves a shop under {@code parent} (empty: to the top level), with its section card: the card
+     * leaves the old parent's page and goes to the end of the new parent's, its picture and switches
+     * kept (a chest picture when there was none), and each parent touched is saved. A shop made a top
+     * shop starts off, as a new shop does. Answers "saved", "no_parent" (not a shop) or
+     * "parent_loop" (under itself, or the tree more than {@link #MAX_DEPTH} deep); the caller saves
+     * {@code shop}.
+     */
+    public static String setParent(MinecraftServer server, Shop shop, String parent) {
+        parent = parent.trim().toLowerCase(Locale.ROOT);
+        if (parent.equals(shop.parent)) {
+            return "saved";
+        }
+        Shop to = parent.isEmpty() ? null : ledger(server).shop(parent);
+        if (!parent.isEmpty() && to == null) {
+            return "no_parent";
+        }
+        if (loops(shop.id, parent, id -> {
+            Shop s = ledger(server).shop(id);
+            return s == null ? null : s.parent;
+        }) || to != null && parents(server, to).size() + 1 + height(server, shop) > MAX_DEPTH) {
+            return "parent_loop";
+        }
+        ShopItem card = null;
+        Shop from = shop.parent.isEmpty() ? null : ledger(server).shop(shop.parent);
+        if (from != null) {
+            for (ShopItem it : from.all()) {
+                if (it.section.equals(shop.id)) {
+                    card = it;
+                    break;
+                }
+            }
+            if (dropSectionCards(server, from, List.of(shop.id))) {
+                save(server, from);
+            }
+        }
+        if (parent.isEmpty()) {
+            shop.enabled = false;
+        }
+        shop.parent = parent;
+        if (to != null && to.all().stream().noneMatch(it -> it.section.equals(shop.id))) {
+            if (card == null) {
+                card = new ShopItem();
+                card.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHEST);
+                card.section = shop.id;
+            }
+            to.add(card);
+            save(server, to);
+        }
+        return "saved";
+    }
+
+    /**
+     * Removes every card on {@code shop}'s pages that opens one of {@code sections}, as the
+     * Workbench's remove does (the cards after it move up a place and start their counts again);
+     * true when one went. The caller saves the shop.
+     */
+    public static boolean dropSectionCards(MinecraftServer server, Shop shop, java.util.Collection<String> sections) {
+        boolean dropped = false;
+        for (int i = shop.all().size() - 1; i >= 0; i--) {
+            ShopItem it = shop.item(i);
+            if (it != null && !it.section.isEmpty() && sections.contains(it.section)) {
+                List<ShopItem> before = shop.all();
+                shop.remove(i);
+                resetCounts(server, shop, i, before.size());
+                cardsMoved(server, shop, before);
+                dropped = true;
+            }
+        }
+        return dropped;
     }
 
     /** {@code text} cut from the front to at most {@code max} characters, with "…" where it was cut (a long path of section names). */
@@ -69,6 +262,7 @@ public final class Shops {
         touch(shop);
         ledger(server).put(shop);
         NetworkStorage.shopWrite(shop.id, shop.name, shop.save().toString());
+        changed(server, shop.id, false, false);
     }
 
     /** Marks the record changed: its edit stamp moves on (never back, whatever the clocks of the servers say) and is returned. */
@@ -77,10 +271,35 @@ public final class Shops {
         return shop.edited;
     }
 
-    /** Deletes a shop here and on the network, with its counts. */
-    public static void delete(MinecraftServer server, String id) {
-        ledger(server).remove(id);
-        NetworkStorage.shopDelete(id);
+    /**
+     * Deletes a shop here and on the network with every section under it and their counts, and
+     * takes its section card off its parent's page; returns the ids deleted (the shop first), empty
+     * when there is no such shop.
+     */
+    public static List<String> delete(MinecraftServer server, String id) {
+        Shop shop = ledger(server).shop(id);
+        List<String> ids = tree(server, id);
+        for (int i = ids.size() - 1; i >= 0; i--) { // sections before their parents: a server hearing the deletes one by one never holds a section without its top
+            String gone = ids.get(i);
+            ledger(server).remove(gone);
+            NetworkStorage.shopDelete(gone);
+            changed(server, gone, true, false);
+        }
+        Shop parent = shop == null || shop.parent.isEmpty() ? null : ledger(server).shop(shop.parent);
+        if (parent != null && dropSectionCards(server, parent, ids)) {
+            save(server, parent);
+        }
+        return ids;
+    }
+
+    /**
+     * After a shop record changed or went, here or read from another server ({@code heard}): a player
+     * in a shop that is now off has the screen closed (a trade being paid still finishes), and
+     * {@link com.mrgregles.bsp_core.api.event.ShopEvent.Changed} is posted.
+     */
+    public static void changed(MinecraftServer server, String id, boolean deleted, boolean heard) {
+        ShopOpener.closeOff(server);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new com.mrgregles.bsp_core.api.event.ShopEvent.Changed(server, id, deleted, heard));
     }
 
     /** The price of one lot now, with a live special offer applied. */
@@ -899,7 +1118,7 @@ public final class Shops {
         }
         d.announcedAt = d.drawnAt;
         ledger(server).setDirty();
-        if (!shop.broadcast || d.shown.isEmpty()) {
+        if (!shop.broadcast || d.shown.isEmpty() || off(server, shop)) { // an off shop keeps its schedule but tells no one
             return;
         }
         Component line = announcement(shop, d, d.drawnAt);
@@ -1169,6 +1388,10 @@ public final class Shops {
      */
     public static void buy(MinecraftServer server, Player player, Shop shop, int index, int lots, boolean test, Consumer<Outcome> then) {
         long now = now();
+        if (!test && off(server, shop)) {
+            then.accept(Outcome.fail("closed_for_changes"));
+            return;
+        }
         ShopItem item = shop.item(index);
         if (item == null || !item.buyable() || item.hidden) {
             then.accept(Outcome.fail("not_for_sale"));
@@ -1307,6 +1530,10 @@ public final class Shops {
      */
     public static void sell(MinecraftServer server, Player player, Shop shop, int index, int lots, boolean test, Consumer<Outcome> then) {
         long now = now();
+        if (!test && off(server, shop)) {
+            then.accept(Outcome.fail("closed_for_changes"));
+            return;
+        }
         ShopItem item = shop.item(index);
         if (item == null || shop.buyOnly || !item.sellable()) {
             then.accept(Outcome.fail("not_bought"));
@@ -1459,6 +1686,10 @@ public final class Shops {
      * total, with {@code sold_all_capped} when a limit kept some back.
      */
     public static void sellAll(MinecraftServer server, Player player, Shop shop, boolean test, Consumer<Outcome> then) {
+        if (!test && off(server, shop)) {
+            then.accept(Outcome.fail("closed_for_changes"));
+            return;
+        }
         List<Integer> indexes = new ArrayList<>();
         List<ShopItem> all = shop.all();
         List<Integer> shown = shop.kind == Shop.Kind.ROTATING ? visible(server, shop, now()) : null;
@@ -1534,7 +1765,7 @@ public final class Shops {
                 }
             } else if (!hiddenFromSome(server, shop, i)) {
                 Shop sub = ledger(server).shop(it.section);
-                if (sub != null) {
+                if (sub != null && !off(server, sub)) { // a section in a switched-off tree shows nothing
                     sections.add(sub);
                 }
             }

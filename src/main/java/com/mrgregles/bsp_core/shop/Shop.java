@@ -30,6 +30,11 @@ public final class Shop {
     /** Reachable through the Portable Banker's Shopping Network. */
     public boolean remote;
     public boolean buyOnly;
+    /**
+     * On or off. Only a top shop's switch counts: its sections follow it ({@link Shops#off}). An off
+     * shop never opens for players and shows nothing at its stalls; staff still edit and TEST it.
+     */
+    public boolean enabled = true;
     public String style = "cash_machine";
     public final List<List<ShopItem>> pages = new ArrayList<>();
     /** Rotating: how many of the pool show, and how often a new draw happens. */
@@ -150,6 +155,7 @@ public final class Shop {
         t.putString("Parent", parent);
         t.putBoolean("Remote", remote);
         t.putBoolean("BuyOnly", buyOnly);
+        t.putBoolean("Enabled", enabled);
         t.putString("Style", style);
         ListTag pl = new ListTag();
         for (List<ShopItem> page : pages) {
@@ -187,6 +193,7 @@ public final class Shop {
         s.parent = t.getString("Parent");
         s.remote = t.getBoolean("Remote");
         s.buyOnly = t.getBoolean("BuyOnly");
+        s.enabled = !t.contains("Enabled") || t.getBoolean("Enabled"); // every shop saved before the switch is on
         s.style = t.contains("Style") ? t.getString("Style") : "cash_machine";
         s.pages.clear();
         for (Tag p : t.getList("Pages", Tag.TAG_COMPOUND)) {

@@ -35,7 +35,7 @@ public final class ShopItem {
     public void setNote(String text) {
         note.clear();
         for (String line : text.split("\\|")) {
-            String t = line.strip();
+            String t = ShopRules.clean(line); // no control characters or colour codes in what players read
             if (t.isEmpty() || note.size() >= NOTE_LINES) {
                 continue;
             }

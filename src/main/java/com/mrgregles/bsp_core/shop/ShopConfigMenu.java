@@ -17,7 +17,8 @@ import java.util.List;
  * moderators: they see everything and change nothing.
  */
 public class ShopConfigMenu extends AbstractContainerMenu {
-    public record Summary(String id, String name, Shop.Kind kind, int items, boolean remote) {}
+    /** One shop in the Workbench's list: its parent (empty for a top shop) and whether it is on now (a section: its top shop's switch). */
+    public record Summary(String id, String name, Shop.Kind kind, int items, boolean remote, String parent, boolean on) {}
 
     public final boolean editable;
     public final List<Summary> list = new ArrayList<>();

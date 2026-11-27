@@ -2,6 +2,42 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
+## [1.26.0] - 2026-11-27
+
+**Network protocol 25** (raised from 24): the Workbench's shop list carries each shop's parent and switch, so servers and clients both need this version.
+
+### Added
+- **A shop can be switched off** while staff change it (BSP-Server Utilities request SU-BC8): `/bsp shop set <id> enabled on|off`. Only a top shop has the switch; its sections follow it. An off shop never opens for a player from a Market Stall, Vendor Post, Stall Display, the Shopping Network, a section card or `/bsp shop open` (Easy NPC): the player sees "This shop is closed for changes". It is left off the Shopping Network; its stalls' open and stock lamps go dark, the counter shows nothing and the block beneath is unpowered; a Vendor Post closes; a Stall Display shows nothing; every buy and sell is refused; a "Sell here" box hands everything back; a section card that opens a section of an off shop is hidden; a rotating shop keeps its schedule but announces nothing. Players inside a shop when it turns off (here or on another server) have the screen closed with the message. Staff still edit it and open it with the Workbench's TEST.
+- The import and export files carry the switch as `enabled` (a file without it imports on).
+- **The Workbench's switch**: Settings opens with its own line, **Open to players**, "on" in green or "off" in red, toggled with a click. A section shows "off, follows Spring Sale" (its top shop) and does not toggle. The shop list has an **On** column: yes, a red "off", or a dash for a section.
+- **`BspShops`, a shop api for other mods** (BSP-Server Utilities request SU-BC5, its staff web panel), `VERSION` 1. It answers on the server thread:
+  - `list`: every shop and section, with its settings, card count, whether it is open now and when it opens, and its first four item cards.
+  - `read`: one shop whole, with every card field, each card's count left for everyone, and a rotating shop's cards on show, cycle and next change.
+  - `export`: the import file as a string.
+  - `ready` and `timeZone`.
+- `ShopEvent.Changed` is posted for every shop saved or deleted here, and for every change read from another server.
+- `BspShops` changes shops as an admin would, with no player or open screen (SU-BC6, SU-BC8):
+  - `create` (made off) and `createSection` (its section card on the parent's page in the same step, with a picture item and its data);
+  - `delete` (with its sections);
+  - `set` for every Workbench setting, with the special offer's end as a time;
+  - `setHours`, `setRequires` (command-only until now) and `setEnabled`.
+  - Each change names the shop's stamp as it was read, and is refused (`stale`) if the shop changed since. Each answers the new stamp, and logs the staff member's name.
+- **`/bsp shop copy <id> <newId> <name>`** and `BspShops.copy` (SU-BC7): a top shop and every section under it, under new ids (`<newId>_1`, `_2`… for the sections). Parents and section cards point into the copy; every setting and card is copied, counts and draws are not. The copy is made off.
+- **A register of each server's Market Stalls, Vendor Posts and Stall Displays** (SU-BC9): where each stands, the shop it sells, its own hours and a display's pin. It is kept up to date as they are placed, assigned, changed and broken, and as their chunks load (a stall from before is learned the first time its chunk loads). `BspShops.venues` reads it, and `ShopEvent.VenuesChanged` tells of each change.
+- `BspShops.report` (SU-BC10): `/bsp shop report`'s figures for a shop and its sections (or every shop) over the last N days, handed back without writing a CSV: per shop and per card, items bought and sold, pieces in and out and coins per tier, and the top sellers.
+- `BspShops` card changes, with the Workbench's rules: `addItem` (by item id with its data, as SNBT, at a place), `setItem` (every card field, the note as lines), `setItemRequires`, `moveItem`, `removeItem`, `refill`.
+
+### Changed
+- **A new shop starts off**, whether made with `/bsp shop create` or in the Workbench, so players never see a half-made shop: switch it on when it is ready. Every shop saved before this version is on. A section moved to the top level in the Workbench starts off too.
+- **A shop moved under another parent takes its section card along** (the Workbench's parent field): the card leaves the old parent's page and goes to the end of the new one's, as it was; a shop that had none gets a chest card. Moving a section to the top level takes its card off the old page.
+- Shop names, card notes and requirement reasons are cleaned everywhere (Workbench, commands, import, api): control characters, line separators and § colour codes become spaces. A requirement's permission node is letters, digits and `. _ - *` only, and hours played go up to 100,000; the import file and `/bsp shop ... requires` refuse others.
+- **A coin price is at most 10,000 coins**, in the Workbench (also when a card's currency changes), `/bsp shop add`, the import file and the api; a piece price at most 10^12.
+- **Deleting a shop deletes every section under it** and takes its section card off its parent's page (the Workbench and `/bsp shop delete`), instead of leaving the sections behind.
+
+### Fixed
+- `/bsp shop create`'s reply named the shop id where its last placeholder was empty.
+- On a network, the five-minute catch-up no longer puts back an older copy of a shop that was changed on this server a moment before. That could undo the change until the next catch-up.
+
 ## [1.25.0] - 2026-11-25
 
 Network protocol 24: servers and clients both need this version.

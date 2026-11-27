@@ -35,7 +35,7 @@ public final class BSPNetwork {
      *     place's LuckPerms group, and {@link SeasonGroupPacket} sets one.
      * 24: {@link RemoteLinkPacket}: a machine screen operated from the Holo Grid is locked without the transmitter's Inventory Link.
      */
-    private static final String PROTOCOL = "24";
+    private static final String PROTOCOL = "25";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

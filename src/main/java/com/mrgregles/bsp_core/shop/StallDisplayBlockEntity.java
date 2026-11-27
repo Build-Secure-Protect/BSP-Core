@@ -108,7 +108,7 @@ public class StallDisplayBlockEntity extends BlockEntity {
     @Nullable
     public Shop shopIfOpen(ServerLevel level) {
         Shop shop = shop(level);
-        return shop != null && shop.hours.isOpen(level) ? shop : null;
+        return shop != null && !Shops.off(level.getServer(), shop) && shop.hours.isOpen(level) ? shop : null;
     }
 
     private void clearPin() {
@@ -267,5 +267,39 @@ public class StallDisplayBlockEntity extends BlockEntity {
     @Override
     public AABB getRenderBoundingBox() {
         return new AABB(worldPosition).expandTowards(0, height() + scale(), 0).inflate(scale());
+    }
+
+    // ------------------------------------------------------------------ the venue register (SU-BC9)
+
+    private boolean unloading;
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        VenueRegister.later(level, this::noteVenue); // learned as its chunk loads, once the chunk is in place
+    }
+
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        noteVenue();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        unloading = true;
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        VenueRegister.removed(this, unloading);
+    }
+
+    private void noteVenue() {
+        if (level instanceof net.minecraft.server.level.ServerLevel sl && !isRemoved() && sl.isLoaded(worldPosition) && sl.getBlockEntity(worldPosition) == this) {
+            VenueRegister.note(sl, new VenueRegister.Venue("display", VenueRegister.dim(sl), worldPosition, shopId, null, VenueRegister.pinItem(sl.getServer(), shopId, pinShop, pinned)));
+        }
     }
 }

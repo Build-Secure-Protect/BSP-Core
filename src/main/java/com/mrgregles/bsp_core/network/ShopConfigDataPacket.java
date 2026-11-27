@@ -23,6 +23,8 @@ public record ShopConfigDataPacket(List<ShopConfigMenu.Summary> list, @Nullable 
             buf.writeEnum(s.kind());
             buf.writeVarInt(s.items());
             buf.writeBoolean(s.remote());
+            buf.writeUtf(s.parent(), 32);
+            buf.writeBoolean(s.on());
         }
         buf.writeNbt(m.shop == null ? new CompoundTag() : m.shop);
         buf.writeVarIntArray(m.stockLeft);
@@ -38,7 +40,7 @@ public record ShopConfigDataPacket(List<ShopConfigMenu.Summary> list, @Nullable 
         int n = buf.readVarInt();
         List<ShopConfigMenu.Summary> list = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            list.add(new ShopConfigMenu.Summary(buf.readUtf(32), buf.readUtf(64), buf.readEnum(Shop.Kind.class), buf.readVarInt(), buf.readBoolean()));
+            list.add(new ShopConfigMenu.Summary(buf.readUtf(32), buf.readUtf(64), buf.readEnum(Shop.Kind.class), buf.readVarInt(), buf.readBoolean(), buf.readUtf(32), buf.readBoolean()));
         }
         CompoundTag shop = buf.readNbt();
         int[] stockLeft = buf.readVarIntArray(), sellLeft = buf.readVarIntArray();

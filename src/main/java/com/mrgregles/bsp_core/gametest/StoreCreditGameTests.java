@@ -688,9 +688,9 @@ public class StoreCreditGameTests {
             return;
         }
         String tag = Long.toHexString(System.nanoTime());
-        var market = com.mrgregles.bsp_core.shop.Shops.create(server, "credit_market_" + tag, "Credit Market", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var blocks = com.mrgregles.bsp_core.shop.Shops.create(server, "credit_blocks_" + tag, "Credit Blocks", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
-        var other = com.mrgregles.bsp_core.shop.Shops.create(server, "credit_other_" + tag, "Other Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var market = ShopTestKit.on(server, "credit_market_" + tag, "Credit Market", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var blocks = ShopTestKit.on(server, "credit_blocks_" + tag, "Credit Blocks", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var other = ShopTestKit.on(server, "credit_other_" + tag, "Other Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         ServerPlayer p = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
         try {
             blocks.parent = market.id;
@@ -736,7 +736,7 @@ public class StoreCreditGameTests {
             h.succeed();
             return;
         }
-        var donors = com.mrgregles.bsp_core.shop.Shops.create(server, "credit_donor_" + Long.toHexString(System.nanoTime()), "Donor Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var donors = ShopTestKit.on(server, "credit_donor_" + Long.toHexString(System.nanoTime()), "Donor Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         try {
             spendKind(server, "test_shop_ticket", 3_000, 0, k -> k.teleports = true);
             ServerPlayer admin = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
@@ -938,7 +938,7 @@ public class StoreCreditGameTests {
     @GameTest(template = EMPTY, batch = BATCH)
     public void credit_strip_tells_the_screens(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "credit_strip_" + Long.toHexString(System.nanoTime()), "Strip Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "credit_strip_" + Long.toHexString(System.nanoTime()), "Strip Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         ServerPlayer p = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
         try {
             spendKind(server, "test_strip_week", 700, 7L * 24 * 3_600_000L, k -> {
@@ -1029,7 +1029,7 @@ public class StoreCreditGameTests {
     public void credit_admin_tab_answers_admins_only(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
         ServerPlayer player = MockPlayers.serverPlayer(h, GameType.SURVIVAL), admin = MockPlayers.serverPlayer(h, GameType.SURVIVAL);
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "credit_tab_" + Long.toHexString(System.nanoTime()), "Tab Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "credit_tab_" + Long.toHexString(System.nanoTime()), "Tab Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         String id = "test_tab_" + Long.toHexString(System.nanoTime()); // the test world keeps tickets of kinds deleted in earlier runs
         try {
             CreditKind k = new CreditKind(id);

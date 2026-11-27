@@ -42,7 +42,7 @@ public final class ShopImport {
 
     public static final int FORMAT = 1;
     private static final Set<String> SHOP_KEYS = Set.of("id", "name", "kind", "parent", "remote", "buyOnly", "style", "columns", "rows", "displaySlots", "intervalHours",
-            "rotateAt", "noRepeat", "broadcast", "offerPercent", "offerEnd", "hours", "pages", "requires", "note");
+            "rotateAt", "noRepeat", "broadcast", "offerPercent", "offerEnd", "hours", "pages", "requires", "note", "enabled");
     private static final Set<String> CARD_KEYS = Set.of("item", "count", "nbt", "buy", "sell", "currency", "stockGlobal", "stockPlayer", "restockMinutes", "stockRefill",
             "stockPlayerRefill", "sellGlobal", "sellPlayer", "sellRefill", "sellPlayerRefill", "instant", "hidden", "section", "match", "weight", "lore", "requires", "note");
     private static final List<String> CURRENCIES = List.of("pieces", "copper", "gold", "diamond", "netherite", "illyrium");
@@ -223,7 +223,10 @@ public final class ShopImport {
         int before = errors.size();
         Shop s = new Shop(id);
         s.pages.clear();
-        s.name = str(o, "name", id.replace('_', ' '));
+        s.name = ShopRules.clean(str(o, "name", id.replace('_', ' '))); // control characters and colour codes become spaces
+        if (s.name.isEmpty()) {
+            s.name = id.replace('_', ' ');
+        }
         if (s.name.length() > Shop.NAME_MAX) {
             errors.add(where + ": \"name\" is " + s.name.length() + " characters; a shop's name holds " + Shop.NAME_MAX + ".");
         }
@@ -240,6 +243,7 @@ public final class ShopImport {
         }
         s.remote = bool(o, "remote", false, where, errors);
         s.buyOnly = bool(o, "buyOnly", false, where, errors);
+        s.enabled = bool(o, "enabled", true, where, errors); // a file from before the switch imports as on
         s.style = str(o, "style", "cash_machine").toLowerCase(Locale.ROOT);
         if (!STYLES.contains(s.style)) {
             errors.add(where + ": \"style\" must be cash_machine, passbook or market_board.");
@@ -378,6 +382,9 @@ public final class ShopImport {
         if (!CURRENCIES.contains(currency)) {
             errors.add(at + ": \"currency\" must be one of " + String.join(", ", CURRENCIES) + ".");
         }
+        if (CURRENCIES.contains(currency) && ShopRules.prices(it) != null) {
+            errors.add(at + ": a price is -1 (off) or 0 to " + ShopRules.PRICE_MAX + " pieces, or up to " + ShopRules.COINS_MAX + " coins.");
+        }
         if (it.sell >= 0 && it.currency >= 0 && !coinPayouts) {
             errors.add(at + ": a sell price in " + currency + " coins pays out coins made outside the Coin Factory; use pieces, or put \"allowCoinPayouts\": true at the top.");
         }
@@ -444,9 +451,14 @@ public final class ShopImport {
         if (hours < 0) {
             errors.add(at + ": \"playtimeHours\" cannot be below 0.");
         }
-        String node = str(r, "permission", "").trim(), reason = str(r, "reason", "").trim();
+        String node = str(r, "permission", "").trim(), reason = ShopRules.clean(str(r, "reason", ""));
         if (node.length() > Requirement.NODE_MAX || reason.length() > Requirement.REASON_MAX) {
             errors.add(at + ": a requirement's \"permission\" holds up to " + Requirement.NODE_MAX + " characters and its \"reason\" up to " + Requirement.REASON_MAX + ".");
+        } else if (!ShopRules.node(node)) {
+            errors.add(at + ": a requirement's \"permission\" is letters, digits and . _ - * only.");
+        }
+        if (hours > ShopRules.PLAYTIME_MAX) {
+            errors.add(at + ": \"playtimeHours\" goes up to " + ShopRules.PLAYTIME_MAX + ".");
         }
         return new Requirement(node, Math.max(0, hours), when.equals("hide"), reason);
     }

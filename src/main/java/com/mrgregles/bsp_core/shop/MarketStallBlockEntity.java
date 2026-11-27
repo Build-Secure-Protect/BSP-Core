@@ -77,9 +77,10 @@ public class MarketStallBlockEntity extends BlockEntity implements Assignable {
         if (state.getValue(MarketStallBlock.BROKEN) != broken) {
             MarketStallBlock.setBoth(level, pos, s -> s.setValue(MarketStallBlock.BROKEN, broken));
         }
-        boolean open = shop != null && shop.effectiveHours(be.hours).isOpen(level);
-        boolean stocked = shop != null && Shops.anyStock(level.getServer(), shop);
-        ItemStack first = shop == null ? ItemStack.EMPTY : Shops.firstItem(level.getServer(), shop);
+        boolean on = shop != null && !Shops.off(level.getServer(), shop); // an off shop: lamps dark, nothing on the counter
+        boolean open = on && shop.effectiveHours(be.hours).isOpen(level);
+        boolean stocked = on && Shops.anyStock(level.getServer(), shop);
+        ItemStack first = on ? Shops.firstItem(level.getServer(), shop) : ItemStack.EMPTY;
         String name = shop == null ? "" : shop.name;
         boolean openChanged = be.open != open;
         if (openChanged || be.stocked != stocked || !ItemStack.matches(be.shown, first) || !be.shopName.equals(name)) {
@@ -130,5 +131,39 @@ public class MarketStallBlockEntity extends BlockEntity implements Assignable {
     @Override
     public AABB getRenderBoundingBox() {
         return new AABB(worldPosition).expandTowards(0, 2, 0).inflate(0.5);
+    }
+
+    // ------------------------------------------------------------------ the venue register (SU-BC9)
+
+    private boolean unloading;
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        VenueRegister.later(level, this::noteVenue); // learned as its chunk loads, once the chunk is in place
+    }
+
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        noteVenue();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        unloading = true;
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        VenueRegister.removed(this, unloading);
+    }
+
+    private void noteVenue() {
+        if (level instanceof net.minecraft.server.level.ServerLevel sl && !isRemoved() && sl.isLoaded(worldPosition) && sl.getBlockEntity(worldPosition) == this) {
+            VenueRegister.note(sl, new VenueRegister.Venue("stall", VenueRegister.dim(sl), worldPosition, shopId, VenueRegister.own(hours), ""));
+        }
     }
 }

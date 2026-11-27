@@ -86,15 +86,30 @@ public final class ShopReport {
         then.accept(out);
     }
 
-    /** The figures from the rows, for one shop (its id; older rows by its name) or all ({@code shop} null). */
+    /** The figures from the rows, for one shop (its id; older rows by its name) or all ({@code shop} null), with the CSV written. */
     public static Report build(MinecraftServer server, List<Row> rows, int days, boolean capped, @Nullable Shop shop) {
+        return build(server, rows, days, capped, shop == null ? null : List.of(shop), shop, true);
+    }
+
+    /**
+     * The figures from the rows for these shops (their ids; older rows by their names) or all
+     * ({@code shops} null); the CSV is written only with {@code csv}, named after {@code fileShop}.
+     */
+    public static Report build(MinecraftServer server, List<Row> rows, int days, boolean capped, @Nullable List<Shop> only, @Nullable Shop fileShop, boolean csv) {
+        java.util.Set<String> ids = new java.util.HashSet<>(), names = new java.util.HashSet<>();
+        if (only != null) {
+            only.forEach(s -> {
+                ids.add(s.id);
+                names.add(s.name);
+            });
+        }
         Map<String, Line> byShop = new LinkedHashMap<>(), byItem = new LinkedHashMap<>();
         Map<String, Long> sold = new HashMap<>();
         Line total = new Line("", "all shops", "");
         int counted = 0;
         for (Row r : rows) {
             BankTransaction tx = r.tx();
-            if (shop != null && !(tx.shopId().equals(shop.id) || tx.shopId().isEmpty() && tx.with().equals(shop.name))) {
+            if (only != null && !(ids.contains(tx.shopId()) || tx.shopId().isEmpty() && names.contains(tx.with()))) {
                 continue;
             }
             counted++;
@@ -117,7 +132,7 @@ public final class ShopReport {
         items.sort(Comparator.comparingLong((Line l) -> l.out + l.in).reversed());
         List<Map.Entry<String, Long>> sellers = new ArrayList<>(sold.entrySet());
         sellers.sort(Map.Entry.<String, Long>comparingByValue().reversed());
-        String file = csv(days, shop, items, total);
+        String file = csv ? csv(days, fileShop, items, total) : "";
         return new Report(days, capped, shops, items, sellers.subList(0, Math.min(10, sellers.size())), total, counted, file);
     }
 

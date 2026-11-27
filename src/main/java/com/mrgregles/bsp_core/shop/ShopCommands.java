@@ -71,17 +71,19 @@ public final class ShopCommands {
                                 ctx.getSource().sendFailure(tr("bad_id"));
                                 return 0;
                             }
-                            ctx.getSource().sendSuccess(() -> tr("created", s.id, s.name), true);
+                            ctx.getSource().sendSuccess(() -> tr("created", s.id, s.name, s.id, s.id), true);
                             return 1;
                         }))))
+                .then(Commands.literal("copy").requires(ShopCommands::admin).then(Commands.argument("id", StringArgumentType.word()).then(Commands.argument("newId", StringArgumentType.word())
+                        .then(Commands.argument("name", StringArgumentType.greedyString()).executes(ShopCommands::copy)))))
                 .then(Commands.literal("delete").requires(ShopCommands::admin).then(Commands.argument("id", StringArgumentType.word()).executes(ctx -> {
                     String id = StringArgumentType.getString(ctx, "id");
                     if (Shops.ledger(ctx.getSource().getServer()).shop(id) == null) {
                         ctx.getSource().sendFailure(tr("no_shop", id));
                         return 0;
                     }
-                    Shops.delete(ctx.getSource().getServer(), id);
-                    ctx.getSource().sendSuccess(() -> tr("deleted", id), true);
+                    int gone = Shops.delete(ctx.getSource().getServer(), id).size();
+                    ctx.getSource().sendSuccess(() -> gone > 1 ? tr("deleted_tree", id, gone - 1) : tr("deleted", id), true);
                     return 1;
                 })))
                 .then(Commands.literal("add").requires(ShopCommands::admin).then(Commands.argument("id", StringArgumentType.word()).then(Commands.argument("buy", LongArgumentType.longArg(-1)).then(Commands.argument("sell", LongArgumentType.longArg(-1))
@@ -105,6 +107,7 @@ public final class ShopCommands {
                 .then(Commands.literal("export").requires(ShopCommands::admin).then(Commands.argument("which", StringArgumentType.word()).then(Commands.argument("file", StringArgumentType.word())
                         .executes(ctx -> exportFile(ctx, false)).then(Commands.literal("overwrite").executes(ctx -> exportFile(ctx, true))))))
                 .then(Commands.literal("set").requires(ShopCommands::admin).then(Commands.argument("id", StringArgumentType.word())
+                        .then(Commands.literal("enabled").then(Commands.literal("on").executes(ctx -> enabled(ctx, true))).then(Commands.literal("off").executes(ctx -> enabled(ctx, false))))
                         .then(Commands.literal("remote").then(Commands.literal("on").executes(ctx -> flag(ctx, "remote", true))).then(Commands.literal("off").executes(ctx -> flag(ctx, "remote", false))))
                         .then(Commands.literal("buyonly").then(Commands.literal("on").executes(ctx -> flag(ctx, "buyonly", true))).then(Commands.literal("off").executes(ctx -> flag(ctx, "buyonly", false))))
                         .then(Commands.literal("norepeat").then(Commands.literal("on").executes(ctx -> flag(ctx, "norepeat", true))).then(Commands.literal("off").executes(ctx -> flag(ctx, "norepeat", false))))
@@ -168,6 +171,10 @@ public final class ShopCommands {
         item.stack = held.copy();
         item.buy = LongArgumentType.getLong(ctx, "buy");
         item.sell = LongArgumentType.getLong(ctx, "sell");
+        if (ShopRules.prices(item) != null) {
+            ctx.getSource().sendFailure(tr("bad_price"));
+            return 0;
+        }
         int index = s.add(item);
         Shops.save(ctx.getSource().getServer(), s);
         ctx.getSource().sendSuccess(() -> tr("added", held.getCount() + " " + held.getHoverName().getString(), s.id, index), true);
@@ -427,6 +434,38 @@ public final class ShopCommands {
         item.weight = IntegerArgumentType.getInteger(ctx, "weight");
         Shops.save(ctx.getSource().getServer(), s);
         ctx.getSource().sendSuccess(() -> tr("weight_set", item.weight), true);
+        return 1;
+    }
+
+    /** {@code /bsp shop copy <id> <newId> <name>}: the shop and its sections under new ids, made off. */
+    private static int copy(CommandContext<CommandSourceStack> ctx) {
+        String id = StringArgumentType.getString(ctx, "id"), newId = StringArgumentType.getString(ctx, "newId");
+        var a = com.mrgregles.bsp_core.api.BspShops.copy(ctx.getSource().getServer(), id, newId, StringArgumentType.getString(ctx, "name"), ctx.getSource().getTextName());
+        if (!a.ok()) {
+            ctx.getSource().sendFailure(switch (a.key()) {
+                case "no_shop" -> tr("no_shop", id);
+                case "not_top" -> tr("copy_not_top");
+                case "taken", "bad_id" -> tr("bad_id");
+                default -> tr("copy_bad_name");
+            });
+            return 0;
+        }
+        ctx.getSource().sendSuccess(() -> tr("copied", id, a.shop(), a.ids().size() - 1), true);
+        return 1;
+    }
+
+    /** {@code /bsp shop set <id> enabled on|off}: a top shop's switch (its sections follow it). */
+    private static int enabled(CommandContext<CommandSourceStack> ctx, boolean on) {
+        Shop s = shop(ctx);
+        if (s == null) {
+            return 0;
+        }
+        String key = Shops.setEnabled(ctx.getSource().getServer(), s, on);
+        if (!key.equals("saved")) {
+            ctx.getSource().sendFailure(tr(key));
+            return 0;
+        }
+        ctx.getSource().sendSuccess(() -> tr(on ? "enabled_on" : "enabled_off", s.name), true);
         return 1;
     }
 

@@ -5,6 +5,7 @@ import com.mrgregles.bsp_core.shop.Shop;
 import com.mrgregles.bsp_core.shop.ShopConfigMenu;
 import com.mrgregles.bsp_core.shop.ShopItem;
 import com.mrgregles.bsp_core.shop.ShopOpener;
+import com.mrgregles.bsp_core.shop.ShopRules;
 import com.mrgregles.bsp_core.shop.Shops;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -104,10 +105,11 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                 try {
                     switch (msg.a) {
                         case "name" -> {
-                            if (v.trim().length() > Shop.NAME_MAX) {
+                            if (ShopRules.clean(v).length() > Shop.NAME_MAX) {
                                 return "too_long";
                             }
-                            shop.name = v.isBlank() ? shop.name : v.trim();
+                            String name = ShopRules.name(v); // control characters and colour codes become spaces
+                            shop.name = name == null ? shop.name : name;
                         }
                         case "kind" -> {
                             Shop.Kind kind = Shop.Kind.valueOf(v.toUpperCase(Locale.ROOT));
@@ -117,14 +119,16 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                             shop.kind = kind;
                         }
                         case "parent" -> {
-                            String parent = v.trim().toLowerCase(Locale.ROOT);
-                            if (Shops.loops(shop.id, parent, id -> {
-                                Shop s = Shops.ledger(server).shop(id);
-                                return s == null ? null : s.parent;
-                            })) {
-                                return "parent_loop";
+                            String key = Shops.setParent(server, shop, v); // its section card moves with it; a section made a top shop starts off
+                            if (!key.equals("saved")) {
+                                return key;
                             }
-                            shop.parent = parent;
+                        }
+                        case "enabled" -> {
+                            if (Shops.top(server, shop) != shop) {
+                                return "not_top"; // a section follows its top shop
+                            }
+                            shop.enabled = Boolean.parseBoolean(v);
                         }
                         case "remote" -> shop.remote = Boolean.parseBoolean(v);
                         case "buyonly" -> shop.buyOnly = Boolean.parseBoolean(v);
@@ -183,6 +187,8 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                     return "no_item";
                 }
                 String v = msg.b;
+                long buyWas = it.buy, sellWas = it.sell;
+                int currencyWas = it.currency;
                 if (msg.a.endsWith("refill") || msg.a.equals("restock")) {
                     var rule = com.mrgregles.bsp_core.shop.Refill.parse(v);
                     if (rule != null && rule.kind() == com.mrgregles.bsp_core.shop.Refill.Kind.ROTATION && shop.kind != Shop.Kind.ROTATING) {
@@ -215,6 +221,12 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
                     }
                 } catch (NumberFormatException e) {
                     return "bad_value";
+                }
+                if (PRICED.contains(msg.a) && ShopRules.prices(it) != null) { // never a coin price over 10,000 coins (also when the currency changes): a typo must not pay out billions
+                    it.buy = buyWas;
+                    it.sell = sellWas;
+                    it.currency = currencyWas;
+                    return "bad_price";
                 }
                 if (COUNTING.contains(msg.a)) { // a limit, a refill rule, the lot size or the match rule: the card's counts start again (a price or a note leaves them)
                     Shops.resetCounts(server, shop, msg.i, msg.i);
@@ -256,6 +268,9 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
         return "saved";
     }
 
+    /** The card fields the price cap is checked on: a price, or the currency it is paid in (a card from before the cap still takes its other changes). */
+    private static final java.util.Set<String> PRICED = java.util.Set.of("buy", "sell", "currency");
+
     /** The card fields whose change starts the card's counts again: what is counted, how much, and when it refills. */
     private static final java.util.Set<String> COUNTING = java.util.Set.of("stockglobal", "stockplayer", "restock", "stockrefill", "stockplayerrefill",
             "sellglobal", "sellplayer", "sellrefill", "sellplayerrefill", "count", "match");
@@ -270,7 +285,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
     }
 
     /** Puts a new item at {@code index} (shifting the rest, whose counts start again) or at the end when the index is past the end. */
-    private static void place(MinecraftServer server, Shop shop, ShopItem it, int index) {
+    public static void place(MinecraftServer server, Shop shop, ShopItem it, int index) {
         List<ShopItem> before = shop.all(), all = new ArrayList<>(before);
         int at = Math.max(0, Math.min(index, all.size()));
         all.add(at, it);
@@ -288,7 +303,7 @@ public record ShopConfigActionPacket(Action action, String a, String b, int i, i
         var ledger = Shops.ledger(player.server);
         List<ShopConfigMenu.Summary> list = new ArrayList<>();
         for (Shop s : ledger.all().values()) {
-            list.add(new ShopConfigMenu.Summary(s.id, s.name, s.kind, s.all().size(), s.remote));
+            list.add(new ShopConfigMenu.Summary(s.id, s.name, s.kind, s.all().size(), s.remote, s.parent, !Shops.off(player.server, s)));
         }
         Shop s = ledger.shop(selected);
         menu.shop = s;

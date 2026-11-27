@@ -430,7 +430,12 @@ public final class NetworkStorage {
                 }
                 case "shop" -> {
                     if (payload.startsWith("-")) {
-                        com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(payload.substring(1));
+                        String gone = payload.substring(1);
+                        boolean had = com.mrgregles.bsp_core.shop.ShopLedger.get(srv).shop(gone) != null;
+                        com.mrgregles.bsp_core.shop.ShopLedger.get(srv).remove(gone);
+                        if (had) {
+                            com.mrgregles.bsp_core.shop.Shops.changed(srv, gone, true, true);
+                        }
                     } else {
                         shopReload(payload);
                     }
@@ -2418,15 +2423,28 @@ public final class NetworkStorage {
             }
             onServer(() -> {
                 var ledger = com.mrgregles.bsp_core.shop.ShopLedger.get(srv);
+                List<String> changed = new java.util.ArrayList<>(); // only the records that moved on: the five-minute catch-up reads every shop
                 for (var e : rows.entrySet()) {
                     try {
-                        ledger.put(com.mrgregles.bsp_core.shop.Shop.load(net.minecraft.nbt.TagParser.parseTag(e.getValue())));
+                        var shop = com.mrgregles.bsp_core.shop.Shop.load(net.minecraft.nbt.TagParser.parseTag(e.getValue()));
+                        var had = ledger.shop(shop.id);
+                        if (had != null && shop.edited < had.edited) {
+                            continue; // read before a newer save here reached the database (stamps only grow): never put the older record back
+                        }
+                        ledger.put(shop);
+                        if (had == null || had.edited != shop.edited) {
+                            changed.add(shop.id);
+                        }
                     } catch (Exception ex) {
                         BSPCore.LOGGER.error("BSP-Core storage: shop {} is unreadable: {}", e.getKey(), ex.toString());
                     }
                 }
-                if (id != null && rows.isEmpty()) {
+                for (String c : changed) {
+                    com.mrgregles.bsp_core.shop.Shops.changed(srv, c, false, true); // a shop turned off on another server closes here too
+                }
+                if (id != null && rows.isEmpty() && ledger.shop(id) != null) {
                     ledger.remove(id);
+                    com.mrgregles.bsp_core.shop.Shops.changed(srv, id, true, true);
                 }
             });
         });

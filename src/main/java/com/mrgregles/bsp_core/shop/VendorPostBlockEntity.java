@@ -52,7 +52,7 @@ public class VendorPostBlockEntity extends BlockEntity implements Assignable {
             return;
         }
         Shop shop = be.assigned() ? Shops.ledger(level.getServer()).shop(be.shopId) : null;
-        boolean open = shop != null && shop.effectiveHours(be.hours).isOpen(level);
+        boolean open = shop != null && !Shops.off(level.getServer(), shop) && shop.effectiveHours(be.hours).isOpen(level);
         if (state.getValue(VendorPostBlock.OPEN) != open) {
             level.setBlock(pos, state.setValue(VendorPostBlock.OPEN, open), 3);
             level.updateNeighborsAt(pos.below(), state.getBlock());
@@ -102,5 +102,39 @@ public class VendorPostBlockEntity extends BlockEntity implements Assignable {
     @Override
     public AABB getRenderBoundingBox() {
         return new AABB(worldPosition).expandTowards(0, 2.5, 0).inflate(0.5);
+    }
+
+    // ------------------------------------------------------------------ the venue register (SU-BC9)
+
+    private boolean unloading;
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        VenueRegister.later(level, this::noteVenue); // learned as its chunk loads, once the chunk is in place
+    }
+
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        noteVenue();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        unloading = true;
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        VenueRegister.removed(this, unloading);
+    }
+
+    private void noteVenue() {
+        if (level instanceof net.minecraft.server.level.ServerLevel sl && !isRemoved() && sl.isLoaded(worldPosition) && sl.getBlockEntity(worldPosition) == this) {
+            VenueRegister.note(sl, new VenueRegister.Venue("post", VenueRegister.dim(sl), worldPosition, shopId, VenueRegister.own(hours), ""));
+        }
     }
 }

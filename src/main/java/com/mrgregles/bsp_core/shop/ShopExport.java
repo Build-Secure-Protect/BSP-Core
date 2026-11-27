@@ -60,7 +60,7 @@ public final class ShopExport {
     }
 
     /** "all", or one shop with its sub-sections (in the ledger's order, parents first). */
-    static List<Shop> shops(ShopLedger ledger, String which) {
+    public static List<Shop> shops(ShopLedger ledger, String which) {
         List<Shop> out = new ArrayList<>();
         if (which.equalsIgnoreCase("all")) {
             out.addAll(ledger.all().values());
@@ -104,6 +104,7 @@ public final class ShopExport {
         o.addProperty("parent", s.parent);
         o.addProperty("remote", s.remote);
         o.addProperty("buyOnly", s.buyOnly);
+        o.addProperty("enabled", s.enabled);
         o.addProperty("style", s.style);
         o.addProperty("columns", s.columns);
         o.addProperty("rows", s.rows);

@@ -1622,8 +1622,8 @@ public class BspGameTests {
         UUID id = player.getUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Gus", g -> {});
         com.mrgregles.bsp_core.bank.Bank.give(server, id, 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "smith_" + Long.toHexString(System.nanoTime()), "Spawn Smith", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        h.assertTrue(shop != null && com.mrgregles.bsp_core.shop.Shops.create(server, shop.id, "again", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP) == null, "ids are unique");
+        var shop = ShopTestKit.on(server, "smith_" + Long.toHexString(System.nanoTime()), "Spawn Smith", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        h.assertTrue(shop != null && ShopTestKit.on(server, shop.id, "again", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP) == null, "ids are unique");
         var item = new com.mrgregles.bsp_core.shop.ShopItem();
         item.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 4);
         item.buy = 120;
@@ -1677,7 +1677,7 @@ public class BspGameTests {
         UUID id = player.getUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Hal", g -> {});
         com.mrgregles.bsp_core.bank.Bank.give(server, id, 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "quarry_" + Long.toHexString(System.nanoTime()), "Quarry", com.mrgregles.bsp_core.shop.Shop.Kind.OFFER);
+        var shop = ShopTestKit.on(server, "quarry_" + Long.toHexString(System.nanoTime()), "Quarry", com.mrgregles.bsp_core.shop.Shop.Kind.OFFER);
         shop.offerPercent = 25;
         var item = new com.mrgregles.bsp_core.shop.ShopItem();
         item.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16);
@@ -1715,7 +1715,7 @@ public class BspGameTests {
     @GameTest(template = EMPTY)
     public void shop_rotation_draws_and_open_hours_follow_both_clocks(GameTestHelper h) {
         var server = server(h);
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "night_" + Long.toHexString(System.nanoTime()), "Night Market", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, "night_" + Long.toHexString(System.nanoTime()), "Night Market", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 3;
         for (int i = 0; i < 10; i++) {
             var it = new com.mrgregles.bsp_core.shop.ShopItem();
@@ -1744,7 +1744,7 @@ public class BspGameTests {
     public void sell_here_quotes_full_lots_the_shop_buys(GameTestHelper h) {
         var server = server(h);
         var player = h.makeMockPlayer();
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "pantry_" + Long.toHexString(System.nanoTime()), "Pantry", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "pantry_" + Long.toHexString(System.nanoTime()), "Pantry", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var bread = new com.mrgregles.bsp_core.shop.ShopItem();
         bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4);
         bread.buy = 12;
@@ -1774,7 +1774,7 @@ public class BspGameTests {
         UUID id = player.getUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Ida", g -> {});
         com.mrgregles.bsp_core.bank.Bank.give(server, id, 100_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "daily_" + Long.toHexString(System.nanoTime()), "Daily", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "daily_" + Long.toHexString(System.nanoTime()), "Daily", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var lantern = new com.mrgregles.bsp_core.shop.ShopItem();
         lantern.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LANTERN, 1);
         lantern.buy = 10;
@@ -1842,7 +1842,7 @@ public class BspGameTests {
             com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
         }
         String id = "challenge_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Challenge", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, id, "Challenge", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var cobble = new com.mrgregles.bsp_core.shop.ShopItem();
         cobble.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16);
         cobble.buy = 100;
@@ -1886,7 +1886,7 @@ public class BspGameTests {
                 && com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(A, "sellglobal", "1", ci, 0), id).equals("saved") && shop.item(ci).sellGlobal == 1,
                 "a shop-wide rule cannot be same; the limits are set by value");
         // a card the shop only buys counts as out for stalls once its shop-wide sell room is used up
-        var stall = com.mrgregles.bsp_core.shop.Shops.create(server, "stall_" + Long.toHexString(System.nanoTime()), "Buyer", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var stall = ShopTestKit.on(server, "stall_" + Long.toHexString(System.nanoTime()), "Buyer", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var wanted = new com.mrgregles.bsp_core.shop.ShopItem();
         wanted.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 16);
         wanted.sell = 20;
@@ -1905,7 +1905,7 @@ public class BspGameTests {
         var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
         UUID id = player.getUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Kit", g -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "bakery_" + Long.toHexString(System.nanoTime()), "Bakery", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "bakery_" + Long.toHexString(System.nanoTime()), "Bakery", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var bread = new com.mrgregles.bsp_core.shop.ShopItem();
         bread.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 4);
         bread.sell = 3;
@@ -1945,7 +1945,7 @@ public class BspGameTests {
         var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
         UUID id = player.getUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Rae", g -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "weekly_" + Long.toHexString(System.nanoTime()), "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, "weekly_" + Long.toHexString(System.nanoTime()), "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 1;
         shop.intervalMs = 3_600_000L;
         var kinds = List.of(net.minecraft.world.item.Items.PAPER, net.minecraft.world.item.Items.BOOK, net.minecraft.world.item.Items.FEATHER);
@@ -2030,7 +2030,7 @@ public class BspGameTests {
             com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
         }
         String id = "net_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Net Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, id, "Net Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var iron = new com.mrgregles.bsp_core.shop.ShopItem();
         iron.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 1);
         iron.buy = 10;
@@ -2152,7 +2152,7 @@ public class BspGameTests {
         var server = server(h);
         var iron = net.minecraft.world.item.Items.IRON_INGOT;
         String id = "left_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Left Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, id, "Left Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var card = new com.mrgregles.bsp_core.shop.ShopItem();
         card.stack = new net.minecraft.world.item.ItemStack(iron, 1);
         card.buy = 10;
@@ -2228,7 +2228,7 @@ public class BspGameTests {
         var server = server(h);
         var iron = net.minecraft.world.item.Items.IRON_INGOT;
         String id = "box_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Box Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, id, "Box Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var card = new com.mrgregles.bsp_core.shop.ShopItem();
         card.stack = new net.minecraft.world.item.ItemStack(iron, 1);
         card.sell = 3;
@@ -2273,7 +2273,7 @@ public class BspGameTests {
     public void a_trade_notice_reads_one_card_and_a_lock_failure_is_tried_once_more(GameTestHelper h) {
         var server = server(h);
         String id = "notice_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Notice", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, id, "Notice", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 2;
         shop.intervalMs = 3_600_000L;
         for (var k : List.of(net.minecraft.world.item.Items.PAPER, net.minecraft.world.item.Items.BOOK)) {
@@ -2347,7 +2347,7 @@ public class BspGameTests {
     public void a_rotating_shop_has_one_draw_for_the_network(GameTestHelper h) {
         var server = server(h);
         String id = "netrot_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Net Rotation", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, id, "Net Rotation", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 2;
         shop.intervalMs = 3_600_000L;
         for (int i = 0; i < 6; i++) {
@@ -2401,7 +2401,7 @@ public class BspGameTests {
     public void a_rotating_draw_follows_its_cards_and_starts_again_once_after_an_import(GameTestHelper h) {
         var server = server(h);
         String id = "follow_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Follow", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, id, "Follow", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 2;
         shop.intervalMs = 3_600_000L;
         shop.noRepeat = true;
@@ -2477,7 +2477,7 @@ public class BspGameTests {
     public void a_rotating_draw_reads_a_copy_of_the_shop_and_waits_when_nothing_can_be_drawn(GameTestHelper h) {
         var server = server(h);
         String id = "copy_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Copy", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, id, "Copy", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 2;
         shop.intervalMs = 3_600_000L;
         for (var k : List.of(net.minecraft.world.item.Items.PAPER, net.minecraft.world.item.Items.BOOK, net.minecraft.world.item.Items.FEATHER, net.minecraft.world.item.Items.STRING)) {
@@ -2534,7 +2534,7 @@ public class BspGameTests {
     public void a_rotating_shop_changes_at_its_fixed_time_without_repeats_by_weight_and_says_so(GameTestHelper h) {
         var server = server(h);
         String id = "weekly_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Challenge", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var shop = ShopTestKit.on(server, id, "Challenge", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         shop.displaySlots = 2;
         shop.rotateAt = com.mrgregles.bsp_core.shop.Refill.parse("monday 00:00");
         shop.noRepeat = true;
@@ -2579,7 +2579,7 @@ public class BspGameTests {
             cycle.addAll(second);
             h.assertTrue(cycle.equals(java.util.Set.of(0, 1, 2, 3)) && third.size() == 2 && new java.util.HashSet<>(third).size() == 2 && !third.contains(4), "the first cycle showed all four; a new one begins: " + third);
             // switching an interval shop to a fixed time: the draw on show waits for the next fixed time
-            var timed = com.mrgregles.bsp_core.shop.Shops.create(server, "timed_" + Long.toHexString(System.nanoTime()), "Timed", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+            var timed = ShopTestKit.on(server, "timed_" + Long.toHexString(System.nanoTime()), "Timed", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
             timed.intervalMs = 3_600_000L;
             for (var k : kinds) {
                 var it = new com.mrgregles.bsp_core.shop.ShopItem();
@@ -2651,7 +2651,7 @@ public class BspGameTests {
         var server = server(h);
         var player = h.makeMockPlayer();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, player.getUUID(), "Uma", g -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "used_" + Long.toHexString(System.nanoTime()), "Used Goods", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "used_" + Long.toHexString(System.nanoTime()), "Used Goods", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         java.util.function.BiFunction<net.minecraft.world.item.ItemStack, Long, Integer> card = (stack, sell) -> {
             var it = new com.mrgregles.bsp_core.shop.ShopItem();
             it.stack = stack;
@@ -2726,7 +2726,7 @@ public class BspGameTests {
     public void a_section_card_carries_its_sections_name_to_the_screen(GameTestHelper h) {
         var server = server(h);
         String tag = Long.toHexString(System.nanoTime());
-        var sub = com.mrgregles.bsp_core.shop.Shops.create(server, "woods_" + tag, "Woods and Planks", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var sub = ShopTestKit.on(server, "woods_" + tag, "Woods and Planks", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         h.assertTrue(com.mrgregles.bsp_core.shop.ShopOpener.sectionName(server, sub.id).equals("Woods and Planks"), "a section card is named after its section");
         h.assertTrue(com.mrgregles.bsp_core.shop.ShopOpener.sectionName(server, "").isEmpty(), "a card that opens nothing has no section name");
         h.assertTrue(com.mrgregles.bsp_core.shop.ShopOpener.sectionName(server, "gone_" + tag).isEmpty(), "nor one whose section is gone");
@@ -2747,7 +2747,7 @@ public class BspGameTests {
         com.mrgregles.bsp_core.bank.Bank.ensure(server, player.getUUID(), "Noa", g -> {});
         com.mrgregles.bsp_core.bank.Bank.give(server, player.getUUID(), 1_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
         String id = "noted_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Noted", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, id, "Noted", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var it = new com.mrgregles.bsp_core.shop.ShopItem();
         it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LANTERN);
         it.buy = 5;
@@ -2780,7 +2780,7 @@ public class BspGameTests {
         var server = server(h);
         UUID who = UUID.randomUUID();
         String id = "edits_" + Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, id, "Edits", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, id, "Edits", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var coal = new com.mrgregles.bsp_core.shop.ShopItem();
         coal.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL);
         coal.buy = 5;
@@ -2987,7 +2987,7 @@ public class BspGameTests {
         var server = server(h);
         var ledger = com.mrgregles.bsp_core.shop.Shops.ledger(server);
         String tag = Long.toHexString(System.nanoTime()), top = "exp_" + tag, sub = "exps_" + tag, rot = "expr_" + tag, file = "gametest_exp_" + tag;
-        var a = com.mrgregles.bsp_core.shop.Shops.create(server, top, "Builder's Yard", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var a = ShopTestKit.on(server, top, "Builder's Yard", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         a.remote = true;
         a.style = "passbook";
         a.columns = 5;
@@ -3023,14 +3023,14 @@ public class BspGameTests {
         coin.sell = 1;
         coin.currency = 0;
         a.add(coin);
-        var b = com.mrgregles.bsp_core.shop.Shops.create(server, sub, "Woods", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var b = ShopTestKit.on(server, sub, "Woods", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
         b.parent = top;
         b.hours = new com.mrgregles.bsp_core.shop.OpenHours(com.mrgregles.bsp_core.shop.OpenHours.Mode.GAME, 0, 12000);
         var plank = new com.mrgregles.bsp_core.shop.ShopItem();
         plank.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BIRCH_PLANKS, 64);
         plank.buy = 200;
         b.add(plank);
-        var c = com.mrgregles.bsp_core.shop.Shops.create(server, rot, "Weekend", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var c = ShopTestKit.on(server, rot, "Weekend", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         c.parent = top;
         c.displaySlots = 3;
         c.intervalMs = 48 * 3_600_000L;
@@ -3103,7 +3103,7 @@ public class BspGameTests {
             com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
         }
         String tag = Long.toHexString(System.nanoTime());
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "req_" + tag, "Advanced", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "req_" + tag, "Advanced", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         shop.remote = true;
         java.util.function.BiFunction<net.minecraft.world.item.Item, com.mrgregles.bsp_core.shop.Requirement, Integer> card = (item, req) -> {
             var it = new com.mrgregles.bsp_core.shop.ShopItem();
@@ -3175,10 +3175,10 @@ public class BspGameTests {
             com.mrgregles.bsp_core.bank.Bank.give(server, p.getUUID(), 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
         }
         String tag = Long.toHexString(System.nanoTime());
-        var top = com.mrgregles.bsp_core.shop.Shops.create(server, "tree_" + tag, "Hall", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var mid = com.mrgregles.bsp_core.shop.Shops.create(server, "treemid_" + tag, "Gold Wing", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
-        var deep = com.mrgregles.bsp_core.shop.Shops.create(server, "treedeep_" + tag, "Vault", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
-        var stall = com.mrgregles.bsp_core.shop.Shops.create(server, "treestall_" + tag, "Stall", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var top = ShopTestKit.on(server, "tree_" + tag, "Hall", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var mid = ShopTestKit.on(server, "treemid_" + tag, "Gold Wing", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var deep = ShopTestKit.on(server, "treedeep_" + tag, "Vault", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var stall = ShopTestKit.on(server, "treestall_" + tag, "Stall", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         mid.parent = top.id;
         deep.parent = mid.id;
         java.util.function.BiFunction<com.mrgregles.bsp_core.shop.Shop, net.minecraft.world.item.Item, Integer> card = (s, item) -> {
@@ -3255,9 +3255,9 @@ public class BspGameTests {
         var server = server(h);
         var player = h.makeMockPlayer();
         String tag = Long.toHexString(System.nanoTime());
-        var a = com.mrgregles.bsp_core.shop.Shops.create(server, "loopa_" + tag, "A", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var b = com.mrgregles.bsp_core.shop.Shops.create(server, "loopb_" + tag, "B", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
-        var rot = com.mrgregles.bsp_core.shop.Shops.create(server, "looprot_" + tag, "Rot", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var a = ShopTestKit.on(server, "loopa_" + tag, "A", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var b = ShopTestKit.on(server, "loopb_" + tag, "B", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var rot = ShopTestKit.on(server, "looprot_" + tag, "Rot", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         java.util.function.Function<String[], String> set = f -> com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null,
                 new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, f[1], f[2], 0, 0), f[0]);
         String file = "loop_test_" + tag;
@@ -3310,10 +3310,10 @@ public class BspGameTests {
         var server = server(h);
         var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
         String tag = Long.toHexString(System.nanoTime());
-        var big = com.mrgregles.bsp_core.shop.Shops.create(server, "pagecost_" + tag, "Big", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var sub = com.mrgregles.bsp_core.shop.Shops.create(server, "pagecostsub_" + tag, "Sub", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
-        var other = com.mrgregles.bsp_core.shop.Shops.create(server, "pagecostout_" + tag, "Elsewhere", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var weekly = com.mrgregles.bsp_core.shop.Shops.create(server, "pagecostrot_" + tag, "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var big = ShopTestKit.on(server, "pagecost_" + tag, "Big", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var sub = ShopTestKit.on(server, "pagecostsub_" + tag, "Sub", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var other = ShopTestKit.on(server, "pagecostout_" + tag, "Elsewhere", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var weekly = ShopTestKit.on(server, "pagecostrot_" + tag, "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         sub.parent = big.id;
         weekly.parent = big.id;
         weekly.displaySlots = 1;
@@ -3389,9 +3389,9 @@ public class BspGameTests {
         var server = server(h);
         var player = com.mrgregles.bsp_core.gametest.MockPlayers.serverPlayer(h, net.minecraft.world.level.GameType.SURVIVAL);
         String tag = Long.toHexString(System.nanoTime());
-        var top = com.mrgregles.bsp_core.shop.Shops.create(server, "srch_" + tag, "Decor", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var woods = com.mrgregles.bsp_core.shop.Shops.create(server, "srchw_" + tag, "Woods", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
-        var weekly = com.mrgregles.bsp_core.shop.Shops.create(server, "srchr_" + tag, "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
+        var top = ShopTestKit.on(server, "srch_" + tag, "Decor", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var woods = ShopTestKit.on(server, "srchw_" + tag, "Woods", com.mrgregles.bsp_core.shop.Shop.Kind.SUB);
+        var weekly = ShopTestKit.on(server, "srchr_" + tag, "Weekly", com.mrgregles.bsp_core.shop.Shop.Kind.ROTATING);
         woods.parent = top.id;
         weekly.parent = top.id;
         weekly.displaySlots = 1;
@@ -3458,7 +3458,7 @@ public class BspGameTests {
         com.mrgregles.bsp_core.bank.Bank.ensure(server, ann.getUUID(), "Ann" + tag.substring(0, 4), g -> {});
         com.mrgregles.bsp_core.bank.Bank.ensure(server, bob.getUUID(), "Bob" + tag.substring(0, 4), g -> {});
         com.mrgregles.bsp_core.bank.Bank.give(server, ann.getUUID(), 1_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "rep_" + tag, "Report Shop " + tag, com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "rep_" + tag, "Report Shop " + tag, com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var iron = new com.mrgregles.bsp_core.shop.ShopItem();
         iron.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT);
         iron.buy = 10;
@@ -3546,7 +3546,7 @@ public class BspGameTests {
     @GameTest(template = EMPTY, timeoutTicks = 1200)
     public void vendor_post_powers_the_block_beneath_while_open(GameTestHelper h) {
         var server = server(h);
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "post_" + Long.toHexString(System.nanoTime()), "Post Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "post_" + Long.toHexString(System.nanoTime()), "Post Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         BlockPos lamp = new BlockPos(3, 1, 3), post = lamp.above();
         h.setBlock(lamp, Blocks.REDSTONE_LAMP);
         h.setBlock(post, com.mrgregles.bsp_core.registry.ModBlocks.VENDOR_POST.get().defaultBlockState());
@@ -3571,8 +3571,8 @@ public class BspGameTests {
         var server = server(h);
         UUID id = UUID.randomUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Ivy", g -> {});
-        var local = com.mrgregles.bsp_core.shop.Shops.create(server, "loc_" + Long.toHexString(System.nanoTime()), "Local", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
-        var remote = com.mrgregles.bsp_core.shop.Shops.create(server, "rem_" + Long.toHexString(System.nanoTime()), "Remote", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var local = ShopTestKit.on(server, "loc_" + Long.toHexString(System.nanoTime()), "Local", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var remote = ShopTestKit.on(server, "rem_" + Long.toHexString(System.nanoTime()), "Remote", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         remote.remote = true;
         com.mrgregles.bsp_core.shop.Shops.save(server, remote);
         var list = com.mrgregles.bsp_core.shop.ShopListMenu.remote(server, h.getLevel());
@@ -3586,7 +3586,7 @@ public class BspGameTests {
     @GameTest(template = EMPTY)
     public void shop_hours_close_it_on_the_network_and_yield_to_a_post(GameTestHelper h) {
         var server = server(h);
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "hrs_" + Long.toHexString(System.nanoTime()), "Hours", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "hrs_" + Long.toHexString(System.nanoTime()), "Hours", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         shop.remote = true;
         h.assertTrue(com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursmode", "GAME", 0, 0), shop.id).equals("saved"), "mode set");
         com.mrgregles.bsp_core.network.ShopConfigActionPacket.apply(server, null, new com.mrgregles.bsp_core.network.ShopConfigActionPacket(com.mrgregles.bsp_core.network.ShopConfigActionPacket.Action.SET, "hoursopen", "20000", 0, 0), shop.id);
@@ -3605,7 +3605,7 @@ public class BspGameTests {
     @GameTest(template = EMPTY, timeoutTicks = 400)
     public void stall_display_floats_the_linked_shops_wares_while_open(GameTestHelper h) {
         var server = server(h);
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "disp_" + Long.toHexString(System.nanoTime()), "Display Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "disp_" + Long.toHexString(System.nanoTime()), "Display Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var it = new com.mrgregles.bsp_core.shop.ShopItem();
         it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLDEN_APPLE, 1);
         it.buy = 5;
@@ -3643,7 +3643,7 @@ public class BspGameTests {
     public void stall_display_shows_the_items_of_a_shop_made_only_of_sections(GameTestHelper h) {
         var server = server(h);
         String tag = Long.toHexString(System.nanoTime());
-        java.util.function.BiFunction<String, com.mrgregles.bsp_core.shop.Shop.Kind, com.mrgregles.bsp_core.shop.Shop> make = (id, kind) -> com.mrgregles.bsp_core.shop.Shops.create(server, "dt" + tag + id, "Tree " + id, kind);
+        java.util.function.BiFunction<String, com.mrgregles.bsp_core.shop.Shop.Kind, com.mrgregles.bsp_core.shop.Shop> make = (id, kind) -> ShopTestKit.on(server, "dt" + tag + id, "Tree " + id, kind);
         java.util.function.BiFunction<net.minecraft.world.item.Item, String, com.mrgregles.bsp_core.shop.ShopItem> card = (item, section) -> {
             var c = new com.mrgregles.bsp_core.shop.ShopItem();
             c.stack = new net.minecraft.world.item.ItemStack(item);
@@ -3722,7 +3722,7 @@ public class BspGameTests {
     @GameTest(template = EMPTY, timeoutTicks = 1100)
     public void market_stall_is_broken_until_assigned_then_lights_lamps_and_powers_below(GameTestHelper h) {
         var server = server(h);
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "stall_" + Long.toHexString(System.nanoTime()), "Stall Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "stall_" + Long.toHexString(System.nanoTime()), "Stall Shop", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var it = new com.mrgregles.bsp_core.shop.ShopItem();
         it.stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.APPLE, 1);
         it.buy = 5;
@@ -4173,6 +4173,7 @@ public class BspGameTests {
 
     /** A fed, formed accelerator: Output 3 totem on an extractor at {@code start}, interface and an Illyrium cable east of it, the intake east of that facing east (the ring stands north to south). */
     private static com.mrgregles.bsp_core.link.AcceleratorBlockEntity fedAccelerator(GameTestHelper h, BlockPos start, ShatterTotemBlockEntity[] totemOut) {
+        roof(h);
         ShatterTotemBlockEntity totem = totemOnExtractor(h, start, 3);
         if (totemOut != null) {
             totemOut[0] = totem;
@@ -4187,6 +4188,19 @@ public class BspGameTests {
         var a = entity(h, intake, com.mrgregles.bsp_core.link.AcceleratorBlockEntity.class);
         a.energy().fill(com.mrgregles.bsp_core.link.LinkEnergy.capacity());
         return a;
+    }
+
+    /**
+     * A barrier roof over the test's ground (x and z 0 to 15, at y 8). The GameTest world is generated terrain, and where the batch
+     * puts a test, its cleared space can open into an underground water pocket above it: the water falls in and washes a cable away
+     * (it broke the accelerator's feed whenever one more test moved the grid). The roof keeps the build dry.
+     */
+    private static void roof(GameTestHelper h) {
+        for (int x = 0; x <= 15; x++) {
+            for (int z = 0; z <= 15; z++) {
+                h.setBlock(new BlockPos(x, 8, z), Blocks.BARRIER);
+            }
+        }
     }
 
     /** A decelerator (core facing north, port behind it) in {@code level} at {@code pos}, with a full RF pool and a card for {@code a}. */
@@ -7735,7 +7749,7 @@ public class BspGameTests {
         UUID id = player.getUUID();
         com.mrgregles.bsp_core.bank.Bank.ensure(server, id, "Ivy", g -> {});
         com.mrgregles.bsp_core.bank.Bank.give(server, id, 10_000, com.mrgregles.bsp_core.bank.BankTransaction.Type.ADMIN, "test", "", r -> {});
-        var shop = com.mrgregles.bsp_core.shop.Shops.create(server, "ph_" + Long.toHexString(System.nanoTime()), "Placeholders", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
+        var shop = ShopTestKit.on(server, "ph_" + Long.toHexString(System.nanoTime()), "Placeholders", com.mrgregles.bsp_core.shop.Shop.Kind.SHOP);
         var card = new com.mrgregles.bsp_core.shop.ShopItem();
         card.stack = placeholder(1);
         card.buy = 10;

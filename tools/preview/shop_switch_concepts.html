@@ -1,0 +1,307 @@
+<title>Shop On/Off Switch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Oswald:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of three concepts; each draws the real shop Workbench (360 x 232 GUI pixels, scaled 3x) with the Spring Sale shop open. */
+:root{ --bg:#f3f1ea; --panel:#ffffff; --line:#d9d4c7; --fg:#1a1b20; --muted:#5f6472; --acc:#0c8f78; --board:#e7e3d8;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --label:"Oswald",system-ui,sans-serif; color-scheme:light; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e8eaf0; --muted:#9aa3b5; --acc:#19d3b0; --board:#0b0d11; color-scheme:dark; }
+body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:14px; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding-block:28px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:28px; }
+h1{ font-size:clamp(22px,3.4vw,32px); margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h2{ font-size:18px; margin:0; color:var(--acc); text-wrap:balance; }
+.lede{ color:var(--muted); margin:0; max-width:78ch; }
+section{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.card p{ margin:0; color:var(--muted); max-width:82ch; }
+.card p b{ color:var(--fg); font-weight:600; }
+.ctl{ display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; font-size:13px; }
+.ctl .lab{ font:600 11px var(--label); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:4px; }
+.tb{ font:600 11px var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--fg); background:var(--board); border:1px solid var(--line); padding:6px 10px; cursor:pointer; border-radius:3px; }
+.tb.on{ border-color:var(--acc); color:var(--acc); }
+.tb:focus-visible{ outline:2px solid var(--acc); outline-offset:2px; }
+.stage{ background:var(--board); border-radius:4px; padding:10px; display:flex; justify-content:center; min-width:0; }
+.stage canvas{ width:100%; max-width:900px; height:auto; image-rendering:pixelated; display:block; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Shop On/Off Switch</h1>
+    <p class="lede">Where the shop Workbench turns a shop on and off (BSP-Server Utilities request SU-BC8). An off shop never opens for players and its stalls go dark; staff still edit it and open it with Test shop. Only a top shop has the switch: a section follows its top shop. Each look is drawn at the Workbench's real size with the Spring Sale shop open. Use the buttons to see the shop on, off, or a section of it, and the Settings screen or the shop list.</p>
+  </header>
+
+  <div class="card">
+    <div class="ctl" role="group" aria-label="State">
+      <span class="lab">Shop</span>
+      <button class="tb" id="st0" data-s="0">On</button>
+      <button class="tb on" id="st1" data-s="1">Off</button>
+      <button class="tb" id="st2" data-s="2">A section of it (shop off)</button>
+    </div>
+    <div class="ctl" role="group" aria-label="Screen">
+      <span class="lab">Screen</span>
+      <button class="tb on" id="vw0" data-v="0">Settings</button>
+      <button class="tb" id="vw1" data-v="1">Shop list</button>
+    </div>
+  </div>
+
+  <section>
+    <h2>A. A lit key in the key column</h2>
+    <div class="card">
+      <p>A key of its own sits in the middle of the key column on every screen, in its own group with a gap above and below. It glows green and reads <b>Shop is on</b> while players can open the shop; it turns plain and reads <b>Shop is off</b> when it is off. Click it to switch. For a section it is locked and reads <b>Follows top</b>. The heading adds a red <b>OFF</b> tag while the shop is off, and the shop list gets an <b>On</b> column.</p>
+      <div class="stage"><canvas id="a" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. The first line of Settings</h2>
+    <div class="card">
+      <p>The Settings screen opens with a group of its own: <b>Open to players ... on</b> in green, or <b>off</b> in red. It toggles with a click like every other on/off line. A section shows <b>follows Spring Sale</b> and does not toggle. The shop list gets an <b>On</b> column (yes, a red <b>off</b>, or a dash for a section). Nothing changes on the other screens.</p>
+      <div class="stage"><canvas id="b" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. A strip across the top of the screen</h2>
+    <div class="card">
+      <p>While the shop is off, a red strip under the heading reads <b>CLOSED FOR CHANGES</b>, with a small <b>Open it</b> button at its right. It shows on every screen (page, settings, style), so nobody forgets a shop left off. While on, a thin green strip reads <b>OPEN TO PLAYERS</b>, with a <b>Close it</b> button. A section's strip names its top shop, and its button is locked. In the shop list each name starts with a lamp: green on, red off, hollow for a section.</p>
+      <div class="stage"><canvas id="c" width="1080" height="696"></canvas></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const S = 3, W = 360, H = 232;
+  const C = { BEZEL:'#cfc8b8', BEZEL_DARK:'#8f877a', BEZEL_LIGHT:'#ece6d8', SCREEN:'#061008', EDGE:'#0d3b22', PHOS:'#58f29a', DIM:'#3fb97a', AMBER:'#f2b544', RED:'#ff6b5c',
+    KEY:'#eae4d5', KEY_EDGE:'#9a9183', KEY_TEXT:'#2b2823', KEY_LOCKED:'#8f877a', CARD:'#0a1a10', CARD_SEL:'#0f2d1c', CARD_EMPTY:'#07100a', OUT_EDGE:'#1f6b43' };
+  const SX=10, SY=10, SW=206, SH=176, PX=222, PW=66, KX=292, KW=58, KH=18, KGAP=3, CX=SX+6, CY=SY+22, CGAP=1;
+  const NARROW = { 'i':2, 'l':3, 't':4, 'f':5, 'k':5, ' ':4, ',':2, '.':2, ':':2, '!':2, "'":2, 'I':4, '*':5, '|':2, '(':5, ')':5, '·':2 };
+  function mcWidth(s){ let w = 0; for (const ch of s) w += NARROW[ch] ?? 6; return w; }
+  let state = 0;
+
+  function text(g, s, x, y, colour, scale){
+    scale = scale || 1;
+    const target = mcWidth(s) * scale;
+    g.save();
+    g.font = (10 * S * scale) + 'px VT323, "Courier New", monospace';
+    g.textBaseline = 'top';
+    const m = g.measureText(s).width || 1;
+    g.translate(x * S, (y - 1.5 * scale) * S);
+    g.scale(target * S / m, 1);
+    g.fillStyle = colour;
+    g.fillText(s, 0, 0);
+    g.restore();
+    return target;
+  }
+  function small(g, s, x, y, colour, maxW){ const sc = Math.min(0.75, (maxW || 999) / Math.max(1, mcWidth(s))); return text(g, s, x, y, colour, sc); }
+  function fill(g, x0, y0, x1, y1, c){ g.fillStyle = c; g.fillRect(x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S); }
+
+  function icon(g, x, y, spec){
+    const [base, light, dark, kind] = spec;
+    let seed = 0; for (const ch of base + kind) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      let c = base;
+      if (kind === 'casing') { c = (px === 0 || py === 0 || px === 15 || py === 15) ? dark : (px < 3 || py < 3 || px > 12 || py > 12) ? light : (rnd() < .15 ? dark : base); if ((px === 4 || px === 11) && (py === 4 || py === 11)) c = light; }
+      else if (kind === 'frame') { c = (px < 2 || py < 2 || px > 13 || py > 13 || px === py || px === 15 - py) ? light : dark; }
+      else { c = rnd() < .18 ? dark : rnd() < .12 ? light : base; }
+      g.fillStyle = c; g.fillRect((x + px) * S, (y + py) * S, S, S);
+    }
+  }
+  const ICONS = { steel:['#7d8590','#aab2bc','#4b5159','casing'], frame:['#6b4a2b','#b7894f','#3a2615','frame'], brass:['#b98a34','#e7c06a','#6d4f17','casing'], fluix:['#5b3fa8','#9f7cf0','#2c1d5e','noise'],
+    plate:['#9aa0a6','#c9ced3','#62676c','casing'], cell:['#3e7d4f','#7fd39a','#20402a','noise'] };
+  const CARDS = ['steel','frame','brass','fluix','plate','cell'];
+
+  function key(g, x, y, label, enabled, lit){
+    fill(g, x, y, x + KW, y + KH, C.KEY_EDGE);
+    fill(g, x, y, x + KW, y + KH - 2, lit ? '#fff6d8' : C.KEY);
+    const w = Math.min(mcWidth(label), KW - 4), sc = w / mcWidth(label);
+    text(g, label, x + (KW - w) / 2, y + 5, enabled ? C.KEY_TEXT : C.KEY_LOCKED, sc);
+  }
+
+  function frame(g, keysTop, keysBottom){
+    fill(g, 0, 0, W, H, C.BEZEL_DARK); fill(g, 2, 2, W - 2, H - 2, C.BEZEL); fill(g, 2, 2, W - 2, 4, C.BEZEL_LIGHT);
+    fill(g, SX - 2, SY - 2, SX + SW + 2, SY + SH + 2, C.EDGE); fill(g, SX, SY, SX + SW, SY + SH, C.SCREEN);
+    fill(g, PX - 2, SY - 2, PX + PW + 2, SY + SH + 2, C.EDGE); fill(g, PX, SY, PX + PW, SY + SH, C.SCREEN);
+    let ky = SY; keysTop.forEach(([l, e, lit]) => { key(g, KX, ky, l, e, lit); ky += KH + KGAP; });
+    ky = SY + SH - KH; for (let i = keysBottom.length - 1; i >= 0; i--) { const k = keysBottom[i]; if (k === null) { ky -= 8; continue; } key(g, KX, ky, k[0], k[1], k[2]); ky -= KH + KGAP; }
+    fill(g, SX - 2, SY + SH + 6, W - SX + 2, H - 6, C.EDGE); fill(g, SX, SY + SH + 8, W - SX, H - 8, C.SCREEN);
+    text(g, 'admin: changes save at once / bsp-spawn', SX + 6, SY + SH + 12, C.DIM);
+  }
+  function scan(g){ for (let ly = SY; ly < SY + SH; ly += 3) { g.fillStyle = 'rgba(0,0,0,0.08)'; g.fillRect(SX * S, ly * S, (PX + PW - SX) * S, S); } }
+
+  function page(g){
+    text(g, '> CHALLENGE', SX + 6, SY + 6, C.PHOS);
+    const r = 'page 1 / 1'; text(g, r, SX + SW - 6 - mcWidth(r), SY + 6, C.DIM);
+    fill(g, SX + 4, SY + 16, SX + SW - 4, SY + 17, C.EDGE);
+    const cols = 4, cw = Math.floor((SW - 12 - (cols - 1) * CGAP) / cols), ch = 36;
+    for (let k = 0; k < 12; k++) {
+      const cx = CX + (k % cols) * (cw + CGAP), cy = CY + Math.floor(k / cols) * (ch + CGAP), has = k < CARDS.length;
+      fill(g, cx, cy, cx + cw, cy + ch, k === 0 ? C.CARD_SEL : has ? C.CARD : C.CARD_EMPTY);
+      fill(g, cx, cy, cx + cw, cy + 1, has ? C.DIM : C.OUT_EDGE); fill(g, cx, cy + ch - 1, cx + cw, cy + ch, has ? C.DIM : C.OUT_EDGE);
+      if (has) icon(g, cx + Math.floor(cw / 2) - 8, cy + 3, ICONS[CARDS[k]]);
+    }
+    small(g, '6 cards. Click a card to edit it, an empty slot to add there.', SX + 6, SY + SH - 10, C.DIM, SW - 12);
+  }
+
+  // the field at the foot of the side panel, open when a row is being edited
+  function field(g, x, y, w, value, hint){
+    fill(g, x, y - 1, x + w, y, C.DIM);
+    fill(g, x, y + 1, x + w, y + 11, '#000000'); fill(g, x, y + 1, x + w, y + 2, '#a0a0a0');
+    small(g, value + '_', x + 2, y + 3, '#e0e0e0', w - 4);
+    if (hint) { let yy = y + 13; hint.forEach(h => { small(g, h, x, yy, C.DIM, w); yy += 6; }); }
+  }
+
+  function rows(g, list, x, y0, step, w, editing){
+    let y = y0;
+    list.forEach(r => {
+      if (r.head) { small(g, r.head, x, y + 1, C.PHOS, w); fill(g, x, y + 8, x + w, y + 9, C.EDGE); y += 11; return; }
+      small(g, r.label, x, y, editing === r.key ? C.AMBER : C.DIM, w);
+      small(g, r.value, x, y + 6, r.colour || C.PHOS, w);
+      if (r.extra) { const ew = mcWidth(r.extra) * 0.75; small(g, r.extra, x + w - Math.min(ew, w / 2), y + 6, r.extraColour || C.AMBER, w / 2); }
+      y += step;
+    });
+    return y;
+  }
+
+  let view = 0;
+  state = 1;
+  const KEY_ON = '#58f29a', KEY_ON_EDGE = '#2e8b57';
+  function keyOn(g, x, y, label){
+    fill(g, x, y, x + KW, y + KH, KEY_ON_EDGE);
+    fill(g, x, y, x + KW, y + KH - 2, KEY_ON);
+    const w = Math.min(mcWidth(label), KW - 4), sc = w / mcWidth(label);
+    text(g, label, x + (KW - w) / 2, y + 5, C.KEY_TEXT, sc);
+  }
+  const isSection = () => state === 2, isOn = () => state === 0;
+  const NAME = () => isSection() ? 'SPRING POTIONS' : 'SPRING SALE';
+  function heading(g, tag){
+    const h = '> SHOP WORKBENCH: ' + NAME();
+    const w = text(g, h, SX + 6, SY + 6, C.PHOS, Math.min(1, (SW - 40) / mcWidth(h)));
+    if (tag) { fill(g, SX + 8 + w, SY + 4, SX + 8 + w + 16, SY + 13, C.RED); small(g, 'OFF', SX + 10 + w, SY + 6, C.SCREEN); }
+    fill(g, SX + 4, SY + 16, SX + SW - 4, SY + 17, C.EDGE);
+  }
+  function setLine(g, y, label, value, colour){
+    small(g, label, SX + 8, y, C.DIM, 110);
+    const vw = Math.min(mcWidth(value) * 0.75, 90);
+    small(g, value, SX + SW - 8 - vw, y, colour || C.PHOS, 90);
+  }
+  function settingsRows(g, y, first){
+    const groups = [];
+    if (first) groups.push(first);
+    groups.push(isSection()
+      ? [['Name', 'Spring Potions'], ['Kind', 'sub'], ['Parent shop', 'spring_sale'], ['Shopping Network', 'off'], ['Buy only', 'off']]
+      : [['Name', 'Spring Sale'], ['Kind', 'shop'], ['Parent shop', '-'], ['Shopping Network', 'on'], ['Buy only', 'off']]);
+    groups.push([['Hours', 'always'], ['Opens', '00:00'], ['Closes', '00:00'], ['Id', isSection() ? 'spring_potions' : 'spring_sale']]);
+    groups.forEach((grp, gi) => {
+      if (gi > 0) { fill(g, SX + 8, y, SX + SW - 8, y + 1, C.EDGE); y += 4; }
+      grp.forEach(r => { setLine(g, y, r[0], r[1], r[2]); y += 9; });
+    });
+    small(g, 'Click a line to change it; on and off lines toggle.', SX + 6, SY + SH - 10, C.DIM, SW - 12);
+  }
+  const LIST = [['Spawn General', 'shop', '24', 'yes', 'on'], ['Spring Sale', 'shop', '9', 'yes', 'S'], ['Spring Potions', 'sub', '6', '-', 'sec'], ['Challenge', 'rotating', '18', 'yes', 'on'], ['Weekly Offer', 'offer', '5', 'yes', 'on'], ['Builders', 'shop', '31', 'yes', 'on']];
+  function listState(r){ return r[4] === 'S' ? (state === 0 ? 'on' : 'off') : r[4]; }
+  function list(g, opts){
+    const sel = isSection() ? 2 : 1;
+    const COL = opts.onCol ? [SX + 6, SX + 92, SX + 128, SX + 152, SX + 178] : [SX + 6, SX + 104, SX + 146, SX + 174];
+    const heads = opts.onCol ? ['Name', 'Kind', 'Cards', 'Net', 'On'] : ['Name', 'Kind', 'Cards', 'Network'];
+    heads.forEach((hd, c) => small(g, hd, COL[c], SY + 22, C.AMBER, 40));
+    fill(g, SX + 4, SY + 31, SX + SW - 4, SY + 32, C.EDGE);
+    LIST.forEach((r, i) => {
+      const y = SY + 34 + i * 11, cur = i === sel, col = cur ? C.PHOS : C.DIM, st = listState(r);
+      let nx = COL[0];
+      if (opts.lamp) {
+        const lc = st === 'on' ? C.PHOS : st === 'off' ? C.RED : null;
+        if (lc) fill(g, nx + 1, y + 1, nx + 6, y + 6, lc); else { fill(g, nx + 1, y + 1, nx + 6, y + 6, C.DIM); fill(g, nx + 2, y + 2, nx + 5, y + 5, C.SCREEN); }
+        nx += 9;
+      }
+      text(g, (cur ? '> ' : '  ') + r[0], nx, y, col, Math.min(1, (COL[1] - nx - 4) / mcWidth((cur ? '> ' : '  ') + r[0])));
+      small(g, r[1], COL[1], y + 1, col, COL[2] - COL[1] - 2);
+      small(g, r[2], COL[2], y + 1, col);
+      small(g, r[3], COL[3], y + 1, col);
+      if (opts.onCol) small(g, st === 'on' ? 'yes' : st === 'off' ? 'off' : '-', COL[4], y + 1, st === 'off' ? C.RED : col);
+    });
+    small(g, 'Type a new id below to make a shop.', SX + 8, SY + SH - 46, C.DIM, SW - 16);
+    text(g, 'Id:', SX + 8, SY + SH - 30, C.AMBER);
+    fill(g, SX + 26, SY + SH - 33, SX + SW - 8, SY + SH - 21, '#000000'); fill(g, SX + 26, SY + SH - 33, SX + SW - 8, SY + SH - 32, '#a0a0a0');
+  }
+  const TOP = (v) => [['Shops', true, v === 1], ['Page', true], ['Settings', true, v === 0], ['Style', true]];
+  const BOTTOM = (v) => v === 0 ? [['Delete shop', true]] : [['New shop', false], ['Previous', false], ['Next', false]];
+  function side(g){
+    small(g, 'CARD', PX + 3, SY + 6, C.PHOS);
+    fill(g, PX + 2, SY + 16, PX + PW - 2, SY + 17, C.EDGE);
+    small(g, 'Click a card on', PX + 3, SY + 22, C.DIM, PW - 6); small(g, 'the page to edit', PX + 3, SY + 29, C.DIM, PW - 6); small(g, 'it here.', PX + 3, SY + 36, C.DIM, PW - 6);
+  }
+
+  function drawA(g){
+    frame(g, TOP(view), BOTTOM(view));
+    // the switch: its own group in the middle of the column
+    const ky = SY + 4 * (KH + KGAP) + 10;
+    if (isSection()) key(g, KX, ky, 'Follows top', false);
+    else if (isOn()) keyOn(g, KX, ky, 'Shop is on');
+    else key(g, KX, ky, 'Shop is off', true);
+    small(g, isSection() ? 'its top shop' : isOn() ? 'players can' : 'closed for', KX + 2, ky + KH + 3, C.KEY_LOCKED, KW - 4);
+    small(g, isSection() ? 'switches it' : isOn() ? 'open it' : 'changes', KX + 2, ky + KH + 9, C.KEY_LOCKED, KW - 4);
+    heading(g, state !== 0); // a section of an off shop is off too
+    if (view === 0) settingsRows(g, SY + 21, null); else list(g, {onCol: true});
+    side(g);
+    scan(g);
+  }
+
+  function drawB(g){
+    frame(g, TOP(view), BOTTOM(view));
+    heading(g, false);
+    if (view === 0) {
+      const v = isSection() ? ['Open to players', 'off (follows Spring Sale)', C.RED] : isOn() ? ['Open to players', 'on', C.PHOS] : ['Open to players', 'off', C.RED];
+      settingsRows(g, SY + 21, [v]);
+    } else list(g, {onCol: true});
+    side(g);
+    scan(g);
+    if (view === 0 && state === 1) tipBox(g, SX + 96, SY + 34, ['Off: players cannot open it;', 'its stalls go dark. Staff', 'still edit and Test it.', 'Click to turn it on.']);
+  }
+
+  function drawC(g){
+    frame(g, TOP(view), BOTTOM(view));
+    heading(g, false);
+    let y0 = SY + 21;
+    if (view === 0) {
+      const off = state !== 0;
+      const h = off ? 14 : 9;
+      fill(g, SX + 4, SY + 18, SX + SW - 4, SY + 18 + h, off ? '#5a1410' : '#0f2d1c');
+      fill(g, SX + 4, SY + 18 + h - 1, SX + SW - 4, SY + 18 + h, off ? C.RED : C.DIM);
+      const msg = isSection() ? (off ? 'SPRING SALE IS CLOSED FOR CHANGES' : 'FOLLOWS SPRING SALE: OPEN TO PLAYERS') : off ? 'CLOSED FOR CHANGES' : 'OPEN TO PLAYERS';
+      small(g, msg, SX + 8, SY + 18 + (off ? 4 : 2), off ? '#ffd2cc' : C.PHOS, 140);
+      const bl = off ? 'Open it' : 'Close it', bw = 34, bx = SX + SW - 8 - bw, by = SY + 18 + (off ? 2 : 1), bh = off ? 10 : 7;
+      fill(g, bx, by, bx + bw, by + bh, isSection() ? C.KEY_LOCKED : C.KEY); fill(g, bx, by + bh - 1, bx + bw, by + bh, C.KEY_EDGE);
+      small(g, bl, bx + (bw - mcWidth(bl) * 0.6) / 2, by + (off ? 3 : 1.5), isSection() ? '#5b554c' : C.KEY_TEXT, bw - 4);
+      y0 = SY + 18 + h + 4;
+      settingsRows(g, y0, null);
+    } else list(g, {lamp: true});
+    side(g);
+    scan(g);
+  }
+
+  function tipBox(g, x, y, lines){
+    const w = Math.max(...lines.map(l => mcWidth(l))) * 0.75 + 6, h = lines.length * 7 + 4;
+    fill(g, x, y, x + w, y + h, 'rgba(16,0,16,0.94)');
+    g.fillStyle = 'rgba(80,0,255,0.6)'; g.fillRect(x * S, y * S, w * S, S); g.fillRect(x * S, (y + h - 1) * S, w * S, S); g.fillRect(x * S, y * S, S, h * S); g.fillRect((x + w - 1) * S, y * S, S, h * S);
+    lines.forEach((l, i) => small(g, l, x + 3, y + 3 + i * 7, i === lines.length - 1 ? '#aaaaaa' : '#ffffff'));
+  }
+
+  function drawAll(){
+    for (const [id, fn] of [['a', drawA], ['b', drawB], ['c', drawC]]) {
+      const cv = document.getElementById(id), g = cv.getContext('2d');
+      g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height); fn(g);
+    }
+  }
+  document.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => {
+    state = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); drawAll();
+  }));
+  document.querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => {
+    view = +b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); drawAll();
+  }));
+  drawAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>

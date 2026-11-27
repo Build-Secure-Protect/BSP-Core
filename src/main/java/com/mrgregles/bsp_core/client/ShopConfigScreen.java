@@ -43,7 +43,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
     /** The item browser's cell step: seven 26-pixel cells a row, inside the screen. */
     private static final int BCELL = 27;
     /** Shop list columns: name, kind, cards, network. */
-    private static final int[] COL = {SX + 6, SX + 104, SX + 146, SX + 174};
+    private static final int[] COL = {SX + 6, SX + 92, SX + 128, SX + 152, SX + 180};
 
     private enum View { LIST, PAGE, BROWSER, SETTINGS, STYLE }
 
@@ -364,6 +364,11 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                 continue;
             }
             switch (r.field()) {
+                case "enabled" -> {
+                    if (top(s) == null) { // a top shop: the switch (a section follows its top shop and does not toggle)
+                        send(Action.SET, "enabled", String.valueOf(!on(s)), 0, 0);
+                    }
+                }
                 case "name" -> edit("name", s.name);
                 case "kind" -> send(Action.SET, "kind", Shop.Kind.values()[(s.kind.ordinal() + 1) % Shop.Kind.values().length].name(), 0, 0);
                 case "parent" -> edit("parent", s.parent);
@@ -385,8 +390,48 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         }
     }
 
-    /** A Settings line (y from the screen's top), or a rule between groups (no field). */
-    private record SetRow(int y, String field, String value) {}
+    /** Where the last Settings line ends (screen y), so a long message there is fitted to the one line left; 0 outside Settings. */
+    private int settingsEnd;
+
+    /** A Settings line (y from the screen's top), or a rule between groups (no field); {@code colour} 0 for the usual. */
+    private record SetRow(int y, String field, String value, int colour) {
+        SetRow(int y, String field, String value) {
+            this(y, field, value, 0);
+        }
+    }
+
+    /** The shop's line in the list the server sent, or null. */
+    @javax.annotation.Nullable
+    private ShopConfigMenu.Summary summary(String id) {
+        for (ShopConfigMenu.Summary e : menu.list) {
+            if (e.id().equals(id)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    /** Whether the shop is on now, as the server worked it out (a section: its top shop's switch). */
+    private boolean on(Shop s) {
+        ShopConfigMenu.Summary e = summary(s.id);
+        return e == null ? s.enabled : e.on();
+    }
+
+    /** A section's top shop (walked up the list's parents), or null for a top shop. */
+    @javax.annotation.Nullable
+    private ShopConfigMenu.Summary top(Shop s) {
+        ShopConfigMenu.Summary at = null;
+        String parent = s.parent;
+        for (int step = 0; step < com.mrgregles.bsp_core.shop.Shops.MAX_DEPTH && !parent.isEmpty(); step++) {
+            ShopConfigMenu.Summary up = summary(parent);
+            if (up == null) {
+                break;
+            }
+            at = up;
+            parent = up.parent();
+        }
+        return at;
+    }
 
     /**
      * The Settings view: the shop's own lines, then the lines its kind has (a rotating shop's
@@ -408,15 +453,18 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         List<String[]> hourGroup = List.of(new String[]{"hoursmode", s.hours.mode().name().toLowerCase(Locale.ROOT)}, new String[]{"hoursopen", hm(s.hours.openMin(), s.hours.mode())},
                 new String[]{"hoursclose", hm(s.hours.closeMin(), s.hours.mode())}, new String[]{"id", s.id});
         List<SetRow> out = new ArrayList<>();
-        int y = 21;
+        // the switch first, in a group of its own: on in green, off in red; a section names the top shop it follows
+        ShopConfigMenu.Summary top = top(s);
+        boolean on = on(s);
+        String state = tr(on ? "enabled_on" : "enabled_off").getString();
+        out.add(new SetRow(21, "enabled", top == null ? state : tr("enabled_follows", state, top.name()).getString(), on ? PHOS : RED));
+        int y = 21 + SET_STEP;
         for (List<String[]> group : List.of(shopGroup, kindGroup, hourGroup)) {
             if (group.isEmpty()) {
                 continue;
             }
-            if (!out.isEmpty()) {
-                out.add(new SetRow(y, "", ""));
-                y += 3;
-            }
+            out.add(new SetRow(y, "", ""));
+            y += 2;
             for (String[] r : group) {
                 out.add(new SetRow(y, r[0], r[1]));
                 y += SET_STEP;
@@ -531,8 +579,12 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
     }
 
     private void line(GuiGraphics g, int x, int y, String label, String value, int w) {
+        line(g, x, y, label, value, w, PHOS);
+    }
+
+    private void line(GuiGraphics g, int x, int y, String label, String value, int w, int colour) {
         g.drawString(font, label, x, y, PHOS_DIM, false);
-        g.drawString(font, font.plainSubstrByWidth(value, w - font.width(label) - 6), x + w - font.width(font.plainSubstrByWidth(value, w - font.width(label) - 6)), y, PHOS, false);
+        g.drawString(font, font.plainSubstrByWidth(value, w - font.width(label) - 6), x + w - font.width(font.plainSubstrByWidth(value, w - font.width(label) - 6)), y, colour, false);
     }
 
     @Override
@@ -550,7 +602,7 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                 if (menu.list.isEmpty()) { // on the first row, under the column headings
                     g.drawString(font, tr("no_shops"), COL[0], LIST_Y, PHOS_DIM, false);
                 }
-                String[] heads = {"col_name", "col_kind", "col_cards", "col_net"};
+                String[] heads = {"col_name", "col_kind", "col_cards", "col_net", "col_on"};
                 for (int c = 0; c < heads.length; c++) {
                     CashMachine.fit(g, font, tr(heads[c]).getString(), COL[c], SY + 22, (c + 1 < COL.length ? COL[c + 1] : SX + SW - 6) - COL[c] - 4, AMBER);
                 }
@@ -560,9 +612,12 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
                     boolean cur = s != null && s.id.equals(e.id());
                     int ry = LIST_Y + (i - listPage * LIST_ROWS) * 11, colour = cur ? PHOS : PHOS_DIM;
                     g.drawString(font, font.plainSubstrByWidth((cur ? "> " : "  ") + e.name(), COL[1] - COL[0] - 4), COL[0], ry, colour, false);
-                    g.drawString(font, e.kind().name().toLowerCase(Locale.ROOT), COL[1], ry, colour, false);
+                    CashMachine.fit(g, font, e.kind().name().toLowerCase(Locale.ROOT), COL[1], ry, COL[2] - COL[1] - 3, colour);
                     g.drawString(font, String.valueOf(e.items()), COL[2], ry, colour, false);
                     g.drawString(font, e.remote() ? tr("col_net_on").getString() : "-", COL[3], ry, colour, false);
+                    // on: yes; off: a red "off"; a section follows its top shop: a dash
+                    boolean section = !e.parent().isEmpty() && summary(e.parent()) != null; // a section whose parent is gone counts as a top shop, as on the server
+                    g.drawString(font, section ? "-" : e.on() ? tr("col_net_on").getString() : tr("enabled_off").getString(), COL[4], ry, section || e.on() ? colour : RED, false);
                 }
                 if (menu.editable) {
                     if (msgH == 0) { // a message takes the hint's place, above the id box, so it never covers the box
@@ -595,14 +650,19 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
             }
             case SETTINGS -> {
                 if (s != null) {
+                    int end = SY;
+                    settingsEnd = 0;
                     for (SetRow r : settingsRows(s)) {
                         if (r.field().isEmpty()) {
                             g.fill(SX + 8, SY + r.y(), SX + SW - 8, SY + r.y() + 1, SCREEN_EDGE);
                         } else {
-                            line(g, SX + 8, SY + r.y(), tr("f_" + r.field()).getString(), r.value(), SW - 16);
+                            line(g, SX + 8, SY + r.y(), tr("f_" + r.field()).getString(), r.value(), SW - 16, r.colour() == 0 ? PHOS : r.colour());
+                            end = SY + r.y() + SET_STEP;
+                            settingsEnd = end;
                         }
                     }
-                    if (msgH == 0) { // a message (after every save) takes the hint's place, so neither climbs onto the last lines
+                    // a message (after every save) takes the hint's place, so neither climbs onto the last lines; the hint shows only where it fits
+                    if (msgH == 0 && end <= bottom - CashMachine.height(font, tr("settings_hint"), SW - 12)) {
                         CashMachine.wrapUp(g, font, tr("settings_hint"), SX + 6, bottom, SW - 12, PHOS_DIM);
                     }
                 }
@@ -626,6 +686,8 @@ public class ShopConfigScreen extends AbstractContainerScreen<ShopConfigMenu> im
         g.disableScissor();
         if (msgH > 0 && view == View.LIST && menu.editable) { // in the list, just above the id box
             CashMachine.wrapUp(g, font, message, SX + 8, SY + SH - 38, SW - 16, messageColour);
+        } else if (msgH > 0 && view == View.SETTINGS && settingsEnd > SY + SH - 4 - msgH) { // a long list leaves one line: the message is fitted to it
+            CashMachine.fit(g, font, message.getString(), SX + 6, SY + SH - 4 - CashMachine.LINE, SW - 12, messageColour);
         } else if (msgH > 0) {
             CashMachine.wrap(g, font, message, SX + 6, SY + SH - 4 - msgH, SW - 12, messageColour);
         }

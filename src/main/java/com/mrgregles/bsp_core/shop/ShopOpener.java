@@ -32,6 +32,10 @@ public final class ShopOpener {
     }
 
     public static void open(ServerPlayer player, Shop shop, @Nullable BlockPos at, boolean remote, @Nullable OpenHours hours, boolean test) {
+        if (!test && Shops.off(player.server, shop)) { // off while staff change it: never opened for players, wherever they reach it; TEST still shows it
+            player.displayClientMessage(closedMessage(), true);
+            return;
+        }
         Requirement.Lock lock = Shops.shopLock(player.server, shop, player);
         if (lock != null && lock.hide() && !test) { // a shop hidden from them (by its own requirement or a parent's): not opened, wherever they reach it; the Workbench's TEST still shows it
             player.displayClientMessage(Component.translatable("message.bsp_core.shop.not_open_to_you").withStyle(net.minecraft.ChatFormatting.RED), true);
@@ -68,6 +72,38 @@ public final class ShopOpener {
         }
     }
 
+    /** True for a section card that opens a shop which is off (one in another, switched-off tree): players do not see it. */
+    static boolean opensOff(net.minecraft.server.MinecraftServer server, @Nullable ShopItem it) {
+        Shop opens = it == null || it.section.isEmpty() ? null : Shops.ledger(server).shop(it.section);
+        return opens != null && Shops.off(server, opens);
+    }
+
+    /** "This shop is closed for changes.", shown where a player reaches an off shop. */
+    public static Component closedMessage() {
+        return Component.translatable("message.bsp_core.shop.closed_for_changes").withStyle(net.minecraft.ChatFormatting.GRAY);
+    }
+
+    /** Closes the shop screen of every player in a shop that is off or gone (not staff in TEST), with the message. */
+    public static void closeOff(net.minecraft.server.MinecraftServer server) {
+        closeOff(server, server.getPlayerList().getPlayers());
+    }
+
+    /** As {@link #closeOff(net.minecraft.server.MinecraftServer)}, for these players (a GameTest's mock players are on no list). */
+    public static void closeOff(net.minecraft.server.MinecraftServer server, java.util.Collection<ServerPlayer> players) {
+        for (ServerPlayer p : players) {
+            if (p.containerMenu instanceof ShopMenu menu && !menu.test) {
+                Shop s = Shops.ledger(server).shop(menu.shopId);
+                if (s == null || Shops.off(server, s)) { // off, or gone
+                    p.closeContainer();
+                    p.displayClientMessage(closedMessage(), true);
+                }
+            } else if (p.containerMenu instanceof SellHereMenu sell && sell.closedForChanges(server)) {
+                p.closeContainer(); // hands everything back (an off shop buys nothing)
+                p.displayClientMessage(closedMessage(), true);
+            }
+        }
+    }
+
     /** Sends the open page again to everyone looking at this shop (its counts changed on another server). */
     public static void resyncOpen(net.minecraft.server.MinecraftServer server, String shopId) {
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
@@ -85,6 +121,11 @@ public final class ShopOpener {
             player.closeContainer();
             return;
         }
+        if (!menu.test && Shops.off(server, shop)) {
+            player.closeContainer();
+            player.displayClientMessage(closedMessage(), true);
+            return;
+        }
         long now = Shops.now();
         boolean open = menu.hours == null || menu.hours.isOpen(player.level());
         List<Integer> shown = new ArrayList<>(open ? Shops.visible(server, shop, now) : List.of());
@@ -98,7 +139,7 @@ public final class ShopOpener {
         }
         shown.removeIf(i -> { // cards hidden from this player by their requirements are not on their page at all (in TEST they show, locked)
             Requirement.Lock l = locks.get(i);
-            return l != null && l.hide() && !menu.test;
+            return l != null && l.hide() && !menu.test || !menu.test && opensOff(server, shop.item(i));
         });
         List<ShopItem> shownItems = new ArrayList<>();
         for (int i : shown) {

@@ -4287,3 +4287,41 @@ With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has 
 - [ ] After buying, operate the furnace again: no plate, items move to and from your inventory.
 - [ ] Mine the transmitter and place it again: still INSTALLED. Its range cards are still in it.
 - [ ] A client on 1.24.x joining a server with this version (and the other way round) is refused with a version mismatch, not a crash.
+
+## Shops: the on/off switch and delete with sections (2026-11-26, 1.26.0, SU-BC8)
+- [ ] `/bsp shop create sw_test Switch Test`: the reply says the shop is off. Add a card, assign a Market Stall, a Vendor Post and a Stall Display to it, and flag it for the Shopping Network (`/bsp shop set sw_test remote on`).
+- [ ] As a player (no staff rights): clicking the stall, the post or the display, `/bsp shop open sw_test <player>`, and the Portable Banker's Shopping Network all show "This shop is closed for changes" or leave it out. The stall's lamps are dark with nothing on the counter; the block under the stall and post is unpowered; the display is empty.
+- [ ] As staff: `/bsp shop edit sw_test` and the Workbench's TEST open it.
+- [ ] `/bsp shop set sw_test enabled on`: within a second or two the lamps light, the counter shows the first card, the display floats a card, and the player can open and buy. `/bsp shop set <a section> enabled off` is refused: only a top shop has the switch.
+- [ ] With the player inside the shop, `/bsp shop set sw_test enabled off`: their screen closes with the message. With a "Sell here" box open, the items go back to their inventory unsold.
+- [ ] On a network: switch the shop off on one server while a player is in it on another: their screen closes there too, and the other server's stalls go dark.
+- [ ] A rotating shop with broadcast on, switched off: its cards still change at the change time but no chat line is sent.
+- [ ] Make a section under sw_test with a section card for it, then `/bsp shop delete sw_test`: the reply counts the sections deleted, and `/bsp shop list` shows neither. Delete a section in the Workbench: its card leaves the parent's page.
+- [ ] `/bsp shop export sw_test sw` writes `"enabled"`; import a file without `"enabled"`: the shop is on.
+
+## Shops: moving a section, cleaned names (2026-11-26, 1.26.0, SU-BC6)
+- [ ] In the Workbench, give a section another parent: its section card leaves the old parent's page and is at the end of the new parent's page with the same picture. Give a top shop a parent: a chest card for it appears on the parent's page.
+- [ ] Set a section's parent to nothing in the Workbench: its card leaves the parent's page and it is off (it opens only with TEST).
+- [ ] Type a shop name with a § colour code in the Workbench: it saves with a space in place of the code, and the shop screen title shows no colour.
+- [ ] `/bsp shop set <id> requires permission bsp/shop`: refused. `/bsp shop item <id> 0 note Hi §cthere`: the tooltip shows "Hi cthere" with no colour.
+
+## Shops: the coin price cap (2026-11-26, 1.26.0, SU-BC6)
+- [ ] In the Workbench, set a card's currency to gold and its buy price to 10001: refused with "A price is up to 1,000,000,000,000 pieces, or up to 10,000 coins." 10000 saves.
+- [ ] Set a card's buy price to 50000 in pieces, then its currency to gold: refused, and the card stays in pieces.
+
+## Shops: copy (2026-11-26, 1.26.0, SU-BC7)
+- [ ] `/bsp shop copy <a shop with sections> spring2 Spring Sale`: the reply counts the sections. `/bsp shop list` shows `spring2`, `spring2_1`, `spring2_2`… The copy opens only with TEST until `/bsp shop set spring2 enabled on`.
+- [ ] In the copy, click each section card: it opens the copy's section, never the original's. Buy out a card in the original: the copy's card is still full.
+- [ ] `/bsp shop copy <a section> x X`: refused ("That is a section: copy its top shop.").
+
+## Shops: the venue register (2026-11-26, 1.26.0, SU-BC9)
+- [ ] With Server Utilities' panel (once SU-165 is built) or a debug call to `BspShops.venues`: a stall, a post and a display placed and assigned on this server are listed with their position, shop, own hours and pin; one broken is gone; a stall placed before this version shows up after its chunk is loaded once.
+- [ ] Restart the server: the list is the same (it is saved with the world).
+
+## Shops: the Workbench's switch (2026-11-27, 1.26.0, protocol 25)
+- [ ] `/bsp shop edit <a new shop>` then Settings: the first line reads "Open to players  off" in red, with a rule under it. Click it: "on" in green, and the shop opens for players. Click again: off, and a player inside has the screen closed.
+- [ ] Open a section's Settings: "off, follows <top shop>" (or "on, follows …"); clicking it changes nothing.
+- [ ] A rotating shop's Settings: every line fits on the screen (the hint at the foot hides when there is no room); after a change, the one-line message at the foot does not cover the last line.
+- [ ] Shops list: the On column shows yes, a red "off", or a dash for sections; "rotating" fits its column.
+- [ ] As a moderator: the line shows, and clicking it changes nothing ("Moderators may look but not change.").
+- [ ] A 1.25.0 client joining this server (and the other way round) is refused with a version mismatch, not a crash.

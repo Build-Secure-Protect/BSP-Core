@@ -95,8 +95,8 @@ public record Requirement(String permission, int playtimeHours, boolean hide, St
                 }
             }
         }
-        Requirement r = new Requirement(permission, Math.max(0, hours), hide, reason);
-        return r.any() && reason.length() <= REASON_MAX && permission.length() <= NODE_MAX ? r : null;
+        Requirement r = ShopRules.requirement(permission, Math.max(0, hours), hide, reason); // the node's letters, the hours and the cleaned reason checked as everywhere
+        return r != null && r.any() ? r : null;
     }
 
     /** The command form back ("permission bsp.shop.gold playtime 10 hide reason Gold rank"), or "none". */

@@ -169,7 +169,7 @@ public class SellHereMenu extends AbstractContainerMenu {
         int lots = 0;
         boolean held = false;
         Map<Integer, long[]> perCard = new java.util.LinkedHashMap<>(); // index -> {items, pieces}: one bank line a card, for the shop report
-        if (shop != null && (hours == null || hours.isOpen(player.level()))) {
+        if (shop != null && !Shops.off(player.server, shop) && (hours == null || hours.isOpen(player.level()))) {
             Map<Integer, Integer> room = new HashMap<>();
             List<Integer> shown = shown(player.server, shop, now);
             for (int i = 0; i < GRID; i++) {
@@ -221,7 +221,7 @@ public class SellHereMenu extends AbstractContainerMenu {
 
     private void sellThroughInventory(ServerPlayer player, Shop shop, long now, Runnable done) {
         Map<Integer, Integer> wanted = new java.util.LinkedHashMap<>();
-        boolean open = hours == null || hours.isOpen(player.level());
+        boolean open = !Shops.off(player.server, shop) && (hours == null || hours.isOpen(player.level()));
         List<Integer> shown = shown(player.server, shop, now);
         for (int i = 0; i < GRID; i++) {
             ItemStack s = grid.getStackInSlot(i);
@@ -282,6 +282,12 @@ public class SellHereMenu extends AbstractContainerMenu {
                 grid.setStackInSlot(i, ItemStack.EMPTY);
             }
         }
+    }
+
+    /** True when this box's shop is off now: closing it hands every item back. */
+    public boolean closedForChanges(MinecraftServer server) {
+        Shop shop = Shops.ledger(server).shop(shopId);
+        return shop != null && Shops.off(server, shop);
     }
 
     @Override

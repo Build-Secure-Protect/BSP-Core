@@ -47,7 +47,7 @@ public class ShopListMenu extends AbstractContainerMenu {
         List<Entry> out = new ArrayList<>();
         for (Shop s : Shops.ledger(server).all().values()) {
             Requirement.Lock lock = viewer == null ? null : Shops.shopLock(server, s, viewer);
-            if (s.remote && s.kind != Shop.Kind.SUB && (lock == null || !lock.hide())) {
+            if (s.remote && s.kind != Shop.Kind.SUB && !Shops.off(server, s) && (lock == null || !lock.hide())) { // an off shop is not on the network
                 out.add(new Entry(s.id, s.name, s.kind, s.all().size(), s.hours.isOpen(level)));
             }
         }

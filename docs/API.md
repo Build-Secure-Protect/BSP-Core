@@ -32,6 +32,8 @@ Package `com.mrgregles.bsp_core.api.event`, posted on `MinecraftForge.EVENT_BUS`
 | `RecallEvent.CrossServer` | the owner clicked a Recall offer for a totem on another server (`/bsp recall <server>`); `getTargetServer()` is that server's `storage.serverId`; a teleport mod moves them there and calls `setHandled()`; BSP-Core lands them near the totem on arrival |
 | `SeasonEvent.Ended` | a season ended on this server; `getEndedNumber`, `isFullReset` (coins wiped too), `getBy`, `isSeasonReset` (a season reset: every player starts over in every BSP mod; implies `isFullReset`), `isOrigin` (typed on this server), `getResetMs` (when the season reset was made, the same on every server, even one that hears of it after a later season end; 0 when not a season reset). On a network each server fires its own when it picks the new season up. See "Season reset" below |
 | `SeasonEvent.Wiped` | a player was wiped for a season reset on this server, at their first login since it, after BSP-InventorySync's restore; `getPlayer`, `getEndedNumber`, `isNewPlayer` (they had never played: nothing taken, only marked; posted for them too, so every player is heard of) |
+| `ShopEvent.VenuesChanged` | one of this server's Market Stalls, Vendor Posts or Stall Displays was placed, assigned, changed, broken or learned as its chunk loaded; `getShopId` (null when unassigned). See "Shops (`BspShops`)" |
+| `ShopEvent.Changed` | a shop record was saved or deleted here, or another server's change was read here; `getShopId`, `isDeleted`, `isHeard`. See "Shops (`BspShops`)" |
 | `TeamEvent.Created` | a team was made; `getLeader`, `getTeamId`, `getTeamName` |
 | `TeamEvent.Joined` | a player accepted an invite; `getPlayer` |
 | `TeamEvent.Left` | a player is out: `getReason()` is `LEFT`, `KICKED` or `DISBANDED`; `getPlayer` |
@@ -430,7 +432,7 @@ A Shatter Coin pressed by a Coin Factory carries the string tag `PressTeam`: the
 }
 ```
 
-**Shop keys** (all but `id` optional; a missing key takes the value a new shop has): `id` (`[a-z0-9_]{1,32}`), `name`, `kind` (`shop`, `sub`, `rotating`, `offer`), `parent` (a sub-shop's parent, in the file or on the server; parents may not go round in a loop or more than 16 deep), `remote`, `buyOnly`, `style` (`cash_machine`, `passbook`, `market_board`), `columns` (0 automatic, or 4 to 7), `rows` (2 or 3), `hours` (`{"mode": "always"}`, `{"mode": "real", "open": "09:00", "close": "21:00"}`, `{"mode": "game", "open": 0, "close": 12000}`), `displaySlots`, `intervalHours`, `rotateAt` (a day or weekday time), `noRepeat`, `broadcast`, `offerPercent`, `offerEnd` (`2026-12-31T23:59` in `shop.timeZone`, or empty), `requires`, `pages` (lists of up to 21 cards), `note` (ignored).
+**Shop keys** (all but `id` optional; a missing key takes the value a new shop has): `id` (`[a-z0-9_]{1,32}`), `name`, `kind` (`shop`, `sub`, `rotating`, `offer`), `parent` (a sub-shop's parent, in the file or on the server; parents may not go round in a loop or more than 16 deep), `remote`, `buyOnly`, `enabled` (the shop's on/off switch; absent is on, so a file written before the switch imports on; only a top shop's counts, its sections follow it), `style` (`cash_machine`, `passbook`, `market_board`), `columns` (0 automatic, or 4 to 7), `rows` (2 or 3), `hours` (`{"mode": "always"}`, `{"mode": "real", "open": "09:00", "close": "21:00"}`, `{"mode": "game", "open": 0, "close": 12000}`), `displaySlots`, `intervalHours`, `rotateAt` (a day or weekday time), `noRepeat`, `broadcast`, `offerPercent`, `offerEnd` (`2026-12-31T23:59` in `shop.timeZone`, or empty), `requires`, `pages` (lists of up to 21 cards), `note` (ignored).
 
 **Card keys**: `item` (registry id), `count` (lot size, 1 to the stack size), `nbt` (SNBT), `buy` and `sell` (-1 or absent for off), `currency` (`pieces`, `copper`, `gold`, `diamond`, `netherite`, `illyrium`; a `sell` in coins needs `allowCoinPayouts`), `stockGlobal`, `stockPlayer`, `sellGlobal`, `sellPlayer` (lots, -1 none), `restockMinutes` (the old form of `stockRefill: {"after": N}`), `stockRefill`, `stockPlayerRefill`, `sellRefill`, `sellPlayerRefill`, `instant`, `hidden`, `section` (a sub-shop's id: the card opens it and `item` is its picture), `match` (`exact` or `item`), `weight` (0 to 100), `lore` (up to three lines of 60 characters), `requires`, `note` (ignored).
 
@@ -441,6 +443,191 @@ A Shatter Coin pressed by a Coin Factory carries the string tag `PressTeam`: the
 A key this version does not know is a warning, not an error, so a file written for a later version still imports.
 
 `/bsp shop export <id|all> <file> [overwrite]` writes the same format with every key (rules as objects; `"never"`, `"same"` and `"rotation"` as text; `rotateAt` only when set; `allowCoinPayouts: true` when a card pays out coins). One shop is written with its sub-sections (shops whose parent chain leads to it). Counts and draws are never written. An existing file is kept unless `overwrite` is given.
+
+## Shops (`BspShops`, BSP-Server Utilities requests SU-BC5 to SU-BC10)
+
+For the staff web panel's SHOPS tab. A shop is one record for the network, so **any one server answers for every shop**; a server's Market Stalls, Vendor Posts and Stall Displays are blocks, so each server answers only for its own. Field names follow the panel's (Server Utilities' `docs/API.md`, "Shops"). **Server thread only**: from another thread, hand the call to the server with `server.execute(...)`. No argument may be null unless marked.
+
+Gate on `BspShops.VERSION` (an `int`, raised as the api grows):
+
+| `VERSION` | What it has |
+|---|---|
+| 1 | `list`, `read`, `export`, `ready`, `timeZone`, `ShopEvent.Changed`; the shop changes `create`, `createSection`, `delete`, `set`, `setHours`, `setRequires`, `setEnabled`; the card changes `addItem`, `setItem`, `setItemRequires`, `moveItem`, `removeItem`, `refill`; `copy`; `venues`, `venuesChangedAt`, `ShopEvent.VenuesChanged`; `report` |
+
+Version 1 is in BSP-Core **1.26.0** (network protocol 25). Check that `BspShops` exists, then read `VERSION`.
+
+**Where it differs from the panel's data** (Server Utilities' `docs/API.md`, "Shops"):
+- A section's picture is an item id with SNBT (`createSection(..., pictureItem, pictureNbt, ...)`), not a `v`: turn a potion's `v` into `{Potion:"<v>"}`.
+- A card's `note` goes in as one string with a new line between lines. It comes out as a list.
+- Opening hours and requirements have calls of their own (`setHours`, `setRequires`, `setItemRequires`). `set` and `setItem` take every other field.
+- `draws` holds only the draw on show: BSP-Core keeps no history of draws.
+- A report row has no `v`: the bank log keeps an item's id, not its data. Coins are five counts a row (`coinsIn`, `coinsOut`), not one `currency`.
+
+**Reads (version 1).**
+- `boolean ready(server)`: true when this server can answer for every shop now. A server alone is always ready; a network server only while its database is connected, because its copy of the shops is then the network's, read again at every change and every five minutes.
+- `String timeZone()`: the zone that fixed times are read in (`shop.timeZone`, or the server's own), as an id ("Europe/London").
+- `List<Summary> list(server)`: every shop and section, sorted by id.
+- `Detail read(server, id)`: one shop or section whole, or null when there is none.
+- `String export(server, id)`: the shop and every section under it in the import file's format 1 (below), pretty printed, as `/bsp shop export` writes it but without writing a file. It answers null for a missing shop and for `all`. `/bsp shop import` reads it back.
+
+**`Summary`** fields:
+- `id`, `name`
+- `kind`: `shop`, `sub`, `rotating` or `offer`
+- `parent`: empty for a top shop
+- `enabled`: the top shop's switch, which a section follows
+- `remote`, `buyOnly`, `style`, `columns` (0 automatic, or 4 to 7), `rows`
+- `cards`: every card, section cards included
+- `hours`: `Hours(mode, open, close)`. `mode` is `ALWAYS`, `REAL` (minutes of the server's clock, 0 to 1,439) or `GAME` (ticks of the Minecraft day, 0 to 23,999); a window may wrap past midnight.
+- `openNow`: false while the shop is off or outside its own hours. A stall or post may keep hours of its own.
+- `opensAt`: when it opens next, in words ("09:00", or "06:00 (game)", where tick 0 is 06:00); empty when open now or always open.
+- `requires`: `Needs(permission, playtimeHours, hide, reason)`. The permission is empty and the hours 0 when none.
+- `offerPercent`; `offerEnd` (epoch ms, 0 for none)
+- `displaySlots`, `intervalHours`
+- `rotateAt`: "none", or a fixed change time ("day 06:00", "monday 00:00")
+- `noRepeat`, `broadcast`
+- `nextChange`: epoch ms, for a rotating shop; 0 otherwise
+- `edited`: the record's stamp, which only grows. Every change through this api will name the stamp it was read at.
+- `peek`: the first four item cards on show that are not hidden, each a `Peek(item, v)`: the registry id and, for a potion or a tipped arrow, the potion's id in `v` (empty otherwise).
+
+**`Detail`** fields:
+- `shop`: the `Summary`
+- `cards`: every card as a `Card`
+- `onShow`: a rotating shop's card places on show now
+- `cycleLeft`: with no repeats, how many cards are still to show in this cycle; -1 without no repeats
+- `draws`: a list holding the draw on show, each a `Draw(at, cards)`. BSP-Core keeps only the current draw, so this list holds at most one.
+
+A shop that does not rotate answers empty, -1 and empty for the last three.
+
+**`Card`** fields:
+- `i`: its place from 0, across the pages
+- `item`, `v`; `nbt`: the item's data as SNBT, as the import file's `nbt`, empty for none
+- `count`: the lot size
+- `buy`, `sell`: -1 when that side is off
+- `currency`: -1 for pieces, 0 to 4 for copper, gold, diamond, netherite, illyrium coins
+- `stockGlobal`, `stockPlayer`, `sellGlobal`, `sellPlayer`: in lots, -1 for none
+- `stockRefill`, `stockPlayerRefill`, `sellRefill`, `sellPlayerRefill`: text, one of `never`, `same` (per player only: follows the shop-wide rule), `rotation`, `90m`, `12h`, `2d`, `day 06:00`, `monday 00:00`
+- `instant`, `hidden`
+- `section`: the section a section card opens, empty for an item card. A section card's item is only its picture.
+- `match`: `exact` or `item`
+- `weight`
+- `note`: up to three lines
+- `requires`: a `Needs`
+- `stockLeft`, `sellLeft`: what is left now for everyone; -1 for no limit, and for section cards
+
+The records are copies: changing them changes nothing. Listing or reading a rotating shop whose draw is due makes the draw, as a player opening it would.
+
+**Shop changes (version 1).**
+
+Every change names the `edited` stamp it was read at: the shop's own, or for `createSection` the parent's. `create` and `copy` change no existing shop and name none. A shop changed since then (in game, or by another caller) is refused with `stale`, and nothing is changed; the answer's `edited` is then the stamp it has now. Every change takes `by`, the staff member's name, which goes into BSP-Core's log ("BSP-Core shops: <by> <what> <id>").
+
+Each call answers `Answer(ok, key, shop, edited, parent, parentEdited, deleted, index, ids)`:
+- `key`: `created`, `saved` or `deleted` when `ok`. Otherwise one of `stale`, `no_shop`, `bad_id`, `taken`, `bad_field`, `bad_value`, `bad_item`, `bad_price`, `no_item`, `no_parent`, `parent_loop`, `not_top`, `rotation_cards`, `rotation_only`.
+- `edited`: the shop's new stamp (0 after a delete).
+- `parent`, `parentEdited`: a parent whose page changed too (a section card put on or taken off), with its new stamp; empty and 0 otherwise.
+- `deleted`: the shops a delete took, the shop first.
+- `index`: where a card added or moved now stands; -1 otherwise.
+- `ids`: for a copy, each old id mapped to its new one, the top first; empty otherwise.
+
+The calls:
+- `create(server, id, name, kind, by)`: a top shop, **made off**. `kind` is `shop`, `rotating` or `offer`. The id is `[a-z0-9_]{1,32}` and new (`taken` otherwise).
+- `createSection(server, id, name, parent, pictureItem, pictureNbt, parentEdited, by)`: a section under `parent`, whose stamp is checked. Its section card goes to the end of the parent's page in the same step, with the picture `pictureItem` (a registry id) and `pictureNbt` (SNBT, empty for none, at most 4,096 characters; `bad_item` otherwise). The section takes the parent's network flag and style.
+- `delete(server, id, edited, by)`: the shop with every section under it, and its section card on its parent's page.
+- `setEnabled(server, id, on, edited, by)`: a top shop's switch; `not_top` for a section.
+- `set(server, id, field, value, edited, by)`, with `value` as text:
+  - `name`: cleaned, then 1 to 64 characters
+  - `kind`: `shop`, `rotating`, `offer`, or `sub` (only for a section). `rotation_cards` while leaving rotating with a card that refills each rotation.
+  - `parent`: a shop id. Never a loop, and the tree never more than 16 deep (`parent_loop`); `no_parent` when there is no such shop. The section card moves with it: off the old parent's page and onto the end of the new one's, as it was, or a new chest card when there was none. A section never moves to the top level (`bad_value`). A top shop given a parent keeps its kind and follows its new top shop's switch.
+  - `remote`, `buyOnly`, `noRepeat`, `broadcast`: `true` or `false`
+  - `style`: `cash_machine`, `passbook` or `market_board`
+  - `columns`: 0, or 4 to 7
+  - `rows`: 2 or 3
+  - `displaySlots`: 1 to 54
+  - `intervalHours`: 1 to 8,760
+  - `rotateAt`: `none`, `day HH:MM` or `<weekday> HH:MM`
+  - `offerPercent`: 0 to 99
+  - `offerEnd`: epoch ms within the next ten years, or 0 for none
+- `setHours(server, id, Hours, edited, by)`: `ALWAYS`, `REAL` (minutes 0 to 1,439) or `GAME` (ticks 0 to 23,999).
+- `setRequires(server, id, Needs, edited, by)`, for the whole shop and everything under it:
+  - a permission node: letters, digits and `. _ - *`, up to 128 characters
+  - hours played: 0 to 100,000
+  - `hide`
+  - a reason: up to 64 characters, cleaned
+  - An empty node with 0 hours clears it.
+
+**Card changes (version 1).** These follow the Workbench's rules, with the same stamp check and `by`. A card is named by its place `index` (from 0, across the pages); `no_item` when there is none.
+- `addItem(server, id, item, snbt, count, at, edited, by)`: a card of `item` (a registry id) with `snbt` (its data, empty for none, at most 4,096 characters; `bad_item` otherwise).
+  - The lot is `count`, 1 to 64, kept to the item's stack.
+  - It goes at place `at`; past the end, it goes at the end. The cards after it move up a place and their counts start again.
+  - It is made with both sides off until `buy` or `sell` is set.
+- `setItem(server, id, index, field, value, edited, by)`, with fields by the panel's names (`BspShops.CARD_FIELDS`) and `value` as text:
+  - `count`: 1 to 64, kept to the stack
+  - `buy`, `sell`: -1 (off), or 0 to 10^12 pieces. **A coin price is at most 10,000 coins** (`bad_price`), also when `currency` changes. The Workbench, `/bsp shop add` and the import file keep the same cap.
+  - `currency`: -1 (pieces) to 4 (illyrium)
+  - `stockGlobal`, `stockPlayer`, `sellGlobal`, `sellPlayer`: -1 (none), or 0 to 10^9 lots
+  - the four refill rules, as `Card`'s text. `same` is only for the per-player two, and `rotation` only in a rotating shop (`rotation_only`).
+  - `instant`, `hidden`: `true` or `false`
+  - `section`: a shop id to open, or empty
+  - `match`: `exact` or `item`
+  - `weight`: 0 to 100
+  - `note`: up to three lines of up to 60 characters, separated by new lines. A `|` in a line becomes a space, and the lines are cleaned. Empty clears it.
+- A change to a limit, a refill rule, the lot size or the match rule starts the card's counts again; a price or a note leaves them.
+- A section card takes only `hidden` and `section` (and `setItemRequires`): `bad_field` otherwise. An empty `section` makes it an item card again.
+- `setItemRequires(server, id, index, Needs, edited, by)`: as `setRequires`, for one card.
+- `moveItem(server, id, from, to, edited, by)`: every card between the two places starts its counts again.
+- `removeItem(server, id, index, edited, by)`: the cards after it move up a place and start their counts again.
+- `refill(server, id, index, edited, by)`: every count of the card, everyone's and each player's, fills again now. The record is not changed, so its stamp stays.
+
+**Known limits of the changes.**
+- **The stamp check is made on the server that takes the call.** It is checked against that server's copy, which takes a moment to hear of another server's save. Send a shop's changes to one server.
+- **A move under another parent answers only the new parent's stamp,** in `parent` and `parentEdited`. The old parent's page changed too: read it again before changing it. Its `ShopEvent.Changed` tells of it.
+- **A section whose parent is gone is off.** This can happen while another server's delete is being heard. It has no switch of its own until it is given no parent.
+
+**Copy (version 1).** `copy(server, id, newId, name, by)` copies a top shop and every section under it. Nothing is changed, so it names no stamp.
+- **New ids:** the copy is `newId` named `name` (cleaned, 1 to 64 characters). Each section becomes `<newId>_1`, `<newId>_2`… in tree order, parents before their sections. Ids already taken are skipped, and `newId` is cut so that each id fits 32 characters.
+- **What is rewritten:** parents, and section cards that point inside the copy, now point at the new ids. A section card that opens a shop outside the copy keeps its target.
+- **What is copied:** every setting and every card. Counts and draws are not copied, so the copy starts full and draws afresh.
+- **The copy is made off.**
+- **Refusals,** which make nothing: `no_shop`; `not_top` (a section: copy its top shop); `bad_id`; `taken` (the new id); `bad_value` (the name).
+- `/bsp shop copy <id> <newId> <name>` does the same in game.
+
+**Venues (version 1).** `venues(server)` lists this server's own Market Stalls, Vendor Posts and Stall Displays. Each server answers only for its own, so ask each. Each entry is a `Venue`:
+- `kind`: `stall`, `post` or `display`
+- `dim` (as `minecraft:overworld`), `x`, `y`, `z`
+- `shop`: the shop it sells; empty when unassigned
+- `hours`: its own opening hours, or null when the shop's own hours count
+- `pin`: a display's pinned item id; empty for none
+
+The register is kept up to date as venues are placed, assigned, changed and broken, and as their chunks load. A venue from before this version is learned the first time its chunk loads; until then it is missing. It is saved with the overworld.
+
+A display's `pin` is noted when the display changes, not when cards move in its shop. A venue moved from one shop to another posts the event for both shops.
+
+`venuesChangedAt(server)` gives when this server's venues last changed, in epoch ms (0 when not since start). `ShopEvent.VenuesChanged` (`getShopId`: the shop the venue sells or sold, or null) is posted on each change, and only on that server.
+
+**The report (version 1).** `report(server, days, shopId, then)` adds up the shop trades of the last `days` days, as `/bsp shop report` does, but writes no CSV. It covers the shop and every section under it, or every shop when `shopId` is null.
+- `days` is kept within the bank log's keeping time, `bank.logDays`. The answer's `capped` is true when that span is shorter than asked.
+- `then` runs on the server thread: at once on a server alone, and a moment later on a network, where the trades come from MySQL.
+
+It answers `Report(ok, days, capped, rows, total, shops, items, sellers)`:
+- `ok`: false when the trades could not be read (on a network: the database not connected or not answering). This server's rows are never given in the network's place.
+- `rows`: how many trades were counted.
+- `total`: one line for every trade.
+- `shops`: one line a shop, busiest first.
+- `items`: one line a card's item, busiest first.
+- `sellers`: the ten players paid most, each `Seller(name, pieces)`.
+
+Each line is a `ReportRow`:
+- `shop`: empty for rows from before trades named their shop; then `shopName` is the name they carried
+- `shopName`
+- `item`: a registry id; empty on a shop line
+- `bought`, `sold`: items players bought and sold
+- `piecesIn`: their purchases; `piecesOut`: their sales
+- `coinsIn`, `coinsOut`: five counts, copper to illyrium
+
+An unknown shop answers an empty report with `ok` true.
+
+**Cleaning.** Names, notes and reasons are cleaned the same way everywhere: the Workbench, the commands, the import file and this api. Control characters (C0 and C1), line and paragraph separators and `§` colour codes become spaces, runs of spaces become one, and the ends are trimmed. A permission node with any other character is refused everywhere (in the import file it is an error).
+
+**Change event.** `ShopEvent.Changed` (`getShopId`, `isDeleted`, `isHeard`) is posted for each shop record saved or deleted on this server (Workbench, commands, an import, this api). It is also posted when this server reads another server's change (`isHeard` true): its Redis notice, or the five-minute catch-up finding a newer record. A delete with sections posts one for each shop gone. A parent whose section card left posts its own. Counts bought and sold are not shop changes and post nothing.
 
 ## Shop report and the bank log
 
