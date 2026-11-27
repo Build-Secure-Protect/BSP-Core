@@ -111,4 +111,28 @@ public class KitApiPlayerGameTests {
         }
         h.succeed();
     }
+
+    @GameTest(template = EMPTY, batch = BATCH)
+    public void kit_api_detail_counts_the_players_a_kit_is_owed_to(GameTestHelper h) {
+        MinecraftServer server = server(h);
+        String id = made(h, "owedcount", "Owed count");
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        try {
+            h.assertTrue(BspKits.detail(server, id).orElseThrow().owed() == 0, "nobody is owed a new kit");
+            BspKits.give(server, a, id, BY);
+            BspKits.give(server, a, id, BY);
+            BspKits.give(server, b, id, BY);
+            h.assertTrue(BspKits.detail(server, id).orElseThrow().owed() == 2, "two players are owed it (one of them twice): " + BspKits.detail(server, id).orElseThrow().owed());
+            h.assertTrue(BspKits.details(server).stream().filter(d -> d.id().equals(id)).allMatch(d -> d.owed() == 2), "the list counts the same");
+            BspKits.reset(server, a, id, BY);
+            h.assertTrue(BspKits.detail(server, id).orElseThrow().owed() == 1, "a reset takes one off");
+            long at = BspKits.detail(server, id).orElseThrow().edited();
+            h.assertTrue(BspKits.delete(server, id, at, BY).owed() == 1, "the delete answers the same count");
+        } finally {
+            Kits.reset(server, a, null);
+            Kits.reset(server, b, null);
+            Kits.delete(server, id);
+        }
+        h.succeed();
+    }
 }

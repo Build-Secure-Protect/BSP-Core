@@ -4,6 +4,13 @@ All notable changes to BSP-Core. Format follows Keep a Changelog; versions follo
 
 ## [Unreleased]
 
+## [1.27.2] - 2026-11-27
+
+Network protocol 26 (unchanged): servers can take 1.27.2 without new clients, and 1.27.1 clients join it.
+
+### Added
+- **The kit api, part 4** (BSP-Server Utilities request SU-BC13), `BspKits.VERSION` 3: `BspKits.ready` (this server answers for every kit now), `Choices.kitsOn` (kits are switched on on this server) and `Detail.owed` (how many players the kit waits for; `delete` answers the same count). A staff tool checks `VERSION >= 3` before using them.
+
 ## [1.27.1] - 2026-11-27
 
 **Network protocol 26** (raised from 25): the admin panel's KITS tab sends the kit's edit stamp with SAVE, so servers and clients both need this version.

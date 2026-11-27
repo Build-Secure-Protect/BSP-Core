@@ -46,10 +46,19 @@ public final class BspKits {
      * The kit api's version for staff tools (BSP-Server Utilities' web panel): 1 (BSP-Core 1.27.0) is {@link #details},
      * {@link #detail}, {@link #choices}, the edit stamp and {@code KitEvent.Changed}; 2 (BSP-Core 1.27.1) adds the changes ({@link #create},
      * {@link #copy}, {@link #set}, {@link #setItems}, {@link #setIcon}, {@link #setEnabled}, {@link #delete}) and the player side
-     * ({@link #records}, {@link #reset}, {@link #give(MinecraftServer, UUID, String, String)}). Read it to tell what this BSP-Core
-     * answers before calling a newer method.
+     * ({@link #records}, {@link #reset}, {@link #give(MinecraftServer, UUID, String, String)}); 3 (BSP-Core 1.27.2) adds {@link #ready},
+     * {@code Choices.kitsOn} and {@code Detail.owed}. Read it to tell what this BSP-Core answers before calling a newer method.
      */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
+
+    /**
+     * True when this server can answer for every kit now (since {@link #VERSION} 3): alone, always; on a network, while its database
+     * is connected and once its first full read of the kits since connecting has landed (its copy is then the network's, read
+     * again at every change and every five minutes).
+     */
+    public static boolean ready(MinecraftServer server) {
+        return !com.mrgregles.bsp_core.storage.NetworkStorage.down() && com.mrgregles.bsp_core.storage.NetworkStorage.kitsRead();
+    }
 
     /** One stack as text: the registry id, the count and its NBT as SNBT ("" for none). */
     public record ItemRow(String item, int count, String nbt) {}
@@ -60,12 +69,14 @@ public final class BspKits {
      * first login for {@code SERVERS} (empty: every server). {@code created} and {@code edited} are epoch ms; {@code edited} is the
      * edit stamp a change names (0 for a kit not saved since stamps). {@code taken}, {@code lastTakenBy} and {@code lastTakenMs}
      * count every hand-out on the network. {@code missing} is how many saved items this server could not resolve (a mod not
-     * loaded here); they are not in {@code items}.
+     * loaded here); they are not in {@code items}. {@code owed} (since {@link #VERSION} 3) is how many players this server's records
+     * have the kit waiting for (a gift or grant not yet delivered); on a network the records of players who never logged in here
+     * since are read at their login, so it can count fewer.
      */
     public record Detail(String id, String name, String description, ItemRow icon, List<ItemRow> items, boolean enabled, boolean inBrowser,
                          boolean once, long cooldownSeconds, long price, List<String> ranks, List<String> servers, List<String> conditions,
                          String grant, List<String> grantServers, long created, long edited, int taken, String lastTakenBy, long lastTakenMs,
-                         int missing) {}
+                         int missing, int owed) {}
 
     /** A condition a kit can ask for: its key (saved on the kit) and the editor's sentence for it. */
     public record Condition(String key, String label) {}
@@ -74,10 +85,12 @@ public final class BspKits {
      * What a staff tool can pick from. {@code ranks} are RankUp's ladder in order when BSP-RankUp has one
      * ({@code ranksFromLadder}), else LuckPerms' group names (empty without LuckPerms: any name may be typed). {@code servers} are
      * the server ids the network has seen, this one ({@code thisServer}) first. {@code grants} are the grant kinds, and
-     * {@code maxItems} how many stacks a kit may hold.
+     * {@code maxItems} how many stacks a kit may hold. {@code kitsOn} (since {@link #VERSION} 3) is false when kits are switched off
+     * on this server ({@code kit.enabled} in its config): nobody redeems, receives a first-login grant or is delivered a kit here (a
+     * gift is still recorded as owed and waits until kits are on, or for another server), though staff may still change them.
      */
     public record Choices(List<String> ranks, boolean ranksFromLadder, List<String> servers, String thisServer, List<Condition> conditions,
-                          List<String> grants, int maxItems) {}
+                          List<String> grants, int maxItems, boolean kitsOn) {}
 
     static ItemRow row(ItemStack stack) {
         if (stack.isEmpty()) {
@@ -87,21 +100,39 @@ public final class BspKits {
         return new ItemRow(r.item(), r.count(), r.nbt());
     }
 
-    private static Detail detailOf(Kit k) {
+    /** How many players this server's records have each kit owed to, by kit id. */
+    private static java.util.Map<String, Integer> owedCounts(MinecraftServer server) {
+        java.util.Map<String, Integer> out = new java.util.HashMap<>();
+        for (List<KitLedger.Redeem> rows : KitLedger.get(server).allRedeems().values()) {
+            java.util.Set<String> kits = new java.util.HashSet<>();
+            for (KitLedger.Redeem r : rows) {
+                if (r.owed > 0) {
+                    kits.add(r.kit);
+                }
+            }
+            for (String id : kits) {
+                out.merge(id, 1, Integer::sum);
+            }
+        }
+        return out;
+    }
+
+    private static Detail detailOf(Kit k, java.util.Map<String, Integer> owed) {
         List<ItemRow> items = new ArrayList<>(k.items.size());
         for (ItemStack s : k.items) {
             items.add(row(s));
         }
         return new Detail(k.id, k.name, k.description, row(k.icon), List.copyOf(items), k.enabled, k.inBrowser, k.once, k.cooldownSeconds,
                 k.price, List.copyOf(k.ranks), List.copyOf(k.servers), List.copyOf(k.conditions), k.grant.name(), List.copyOf(k.grantServers),
-                k.createdMs, k.edited, k.taken, k.lastTakenBy, k.lastTakenMs, k.missing);
+                k.createdMs, k.edited, k.taken, k.lastTakenBy, k.lastTakenMs, k.missing, owed.getOrDefault(k.id, 0));
     }
 
     /** Every kit whole, in the order they were made (server thread). */
     public static List<Detail> details(MinecraftServer server) {
         List<Detail> out = new ArrayList<>();
+        java.util.Map<String, Integer> owed = owedCounts(server);
         for (Kit k : Kits.all(server)) {
-            out.add(detailOf(k));
+            out.add(detailOf(k, owed));
         }
         return out;
     }
@@ -109,7 +140,7 @@ public final class BspKits {
     /** One kit whole, by id (server thread). */
     public static Optional<Detail> detail(MinecraftServer server, String id) {
         Kit k = Kits.kit(server, id == null ? "" : id.toLowerCase(java.util.Locale.ROOT));
-        return k == null ? Optional.empty() : Optional.of(detailOf(k));
+        return k == null ? Optional.empty() : Optional.of(detailOf(k, owedCounts(server)));
     }
 
     /** The lists a kit's fields are picked from (server thread). */
@@ -125,7 +156,7 @@ public final class BspKits {
             grants.add(g.name());
         }
         return new Choices(List.copyOf(ranks.names()), ranks.ladder(), List.copyOf(com.mrgregles.bsp_core.kit.KitAdmin.knownServers(server)),
-                Kits.serverId(), List.copyOf(conditions), List.copyOf(grants), Kits.maxItems());
+                Kits.serverId(), List.copyOf(conditions), List.copyOf(grants), Kits.maxItems(), Kits.enabled());
     }
 
     // ------------------------------------------------------------------ changes, for staff tools (VERSION 1)
@@ -345,12 +376,7 @@ public final class BspKits {
         if (k == null) {
             return why[0];
         }
-        int owed = 0;
-        for (List<KitLedger.Redeem> rows : KitLedger.get(server).allRedeems().values()) {
-            if (rows.stream().anyMatch(r -> r.kit.equals(k.id) && r.owed > 0)) {
-                owed++;
-            }
-        }
+        int owed = owedCounts(server).getOrDefault(k.id, 0);
         if (!Kits.delete(server, k.id).ok()) {
             return Answer.no("no_kit", null);
         }
@@ -602,8 +628,8 @@ public final class BspKits {
 
     /**
      * Gives kit {@code id} to the player as an admin gift (as the KITS tab's GIVE TO and {@code /bsp kit give}): no price, rank,
-     * cooldown, once, condition or server rule, the kit's switch ignored. It is owed, and delivered at once when they are online here
-     * and it fits; otherwise it waits for their next login or their TAKE IT. {@code key} is {@code given}; {@code owed} is how many of
+     * cooldown, once, condition or server rule, the kit's switch ignored. It is owed, and delivered at once when they are online here,
+     * kits are on here and it fits; otherwise it waits for their next login on a server with kits on, or their TAKE IT. {@code key} is {@code given}; {@code owed} is how many of
      * this kit wait for them afterwards (0 when it was delivered now). The staff member's name goes to BSP-Core's log.
      */
     public static Answer give(MinecraftServer server, UUID player, String id, String by) {

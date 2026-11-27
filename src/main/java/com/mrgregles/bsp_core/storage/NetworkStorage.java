@@ -531,7 +531,16 @@ public final class NetworkStorage {
     private static final long RETRY_MS = 30_000L;
 
     /** Connects to the database (the storage thread): at the start, and again every 30 s while it fails. */
+    /** False from a (re)connect until the first full read of the network's kits has landed here (BspKits.ready). */
+    private static volatile boolean kitsRead;
+
+    /** True when this server's kits are the network's: alone, always; on a network, once the first full read since connecting landed. */
+    public static boolean kitsRead() {
+        return store == null || kitsRead;
+    }
+
     private static void connect() {
+        kitsRead = false;
         {
             MySqlStore s = null;
             try {
@@ -608,6 +617,7 @@ public final class NetworkStorage {
                 market = null;
                 orders = null;
                 bounties = null;
+                kitsRead = false;
                 retryAtMs = System.currentTimeMillis() + RETRY_MS;
                 BSPCore.LOGGER.error("BSP-Core storage: storage.mode is \"mysql\" but the database could not be used ({}). Trying again in {} s; until it connects, "
                         + "the bank, the market, first-join totems and kits wait (nothing the network keeps is decided on this server's local copy).", e.toString(), RETRY_MS / 1000);
@@ -722,6 +732,7 @@ public final class NetworkStorage {
         market = null;
         orders = null;
         bounties = null;
+        kitsRead = false;
         com.mrgregles.bsp_core.trade.Trades.hub().disconnect();
         server = null;
     }
@@ -3107,7 +3118,12 @@ public final class NetworkStorage {
                 return;
             }
             boolean prune = pruneFull && migratedHere; // before /bsp storage migrate, kits only this server has are kept for it to copy up
-            onServer(() -> com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune, asked));
+            onServer(() -> {
+                com.mrgregles.bsp_core.kit.KitSync.apply(srv, kits, id, prune, asked);
+                if (id == null) {
+                    kitsRead = true;
+                }
+            });
         });
     }
 
