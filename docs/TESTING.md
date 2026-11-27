@@ -4326,12 +4326,12 @@ With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has 
 - [ ] As a moderator: the line shows, and clicking it changes nothing ("Moderators may look but not change.").
 - [ ] A 1.25.0 client joining this server (and the other way round) is refused with a version mismatch, not a crash.
 
-## Kits: the kit api, part 1 (2026-11-27, unreleased)
+## Kits: the kit api, part 1 (2026-11-27, 1.27.0)
 - [ ] Make, change and delete a kit in `/bsp admin`, KITS: each saves and deletes as before, and players' kit browsers show the change.
 - [ ] With MySQL: start the server once and check the `kits` table has an `edited_ms` column. Save a kit on one server: its `edited_ms` is the save time, and the other server's copy of the kit matches.
 - [ ] Restart a server: kits saved before this version are still there with every item.
 
-## Shops: checks from the second audit (2026-11-27, Unreleased)
+## Shops: checks from the second audit (2026-11-27, 1.27.0)
 - [ ] Workbench, Settings of a shop with sections: Delete shop reads "Delete all" after one click and the message names the sections; a second click deletes them all. A shop without sections deletes at the first click.
 - [ ] Switch a spawn shop off, then `/bsp shop import` its price file (no `"enabled"` key): it stays off.
 - [ ] A section whose parent was deleted before 1.26.0: its Settings line reads "off: parent gone"; set Parent shop to nothing, then Open to players turns it on.

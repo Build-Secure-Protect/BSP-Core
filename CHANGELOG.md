@@ -2,7 +2,9 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
-## [Unreleased]
+## [1.27.0] - 2026-11-27
+
+Network protocol 25, unchanged: 1.26.0 clients join a 1.27.0 server. Put 1.27.0 on every server together (shops and kits are shared records).
 
 ### Added
 - **The kit api for staff tools** (BSP-Server Utilities' web panel), `BspKits.VERSION` 1, part 1:
