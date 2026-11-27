@@ -32,6 +32,7 @@ KEYS = {
     M + "gone_free": "You left before the kit arrived",
     M + "pending": "%s is already on its way",
     M + "nested_totem": "A kit cannot hold a Shatter Totem inside another item: put it in a slot of its own",
+    M + "nested_item": "A kit cannot hold a store credit ticket or an InventorySync placeholder inside another item",
     "gui.bsp_core.naughty": "NAUGHTY NAUGHTY",
     M + "gone": "You left before the kit arrived; the price was refunded",
     M + "given": "You received the kit %s",
@@ -114,6 +115,7 @@ KEYS = {
     "gui.bsp_core.kit.note.id_taken": "A kit with that id exists; pick another name",
     "gui.bsp_core.kit.note.bad": "Nothing to save",
     "gui.bsp_core.kit.note.read_only": "Moderators cannot change kits",
+    "gui.bsp_core.kit.note.stale": "Changed elsewhere: CLOSE and open it again",
     "gui.bsp_core.kit.unsaved": "unsaved",
     "gui.bsp_core.kit.new_name": "New kit",
     # the players' kit browser

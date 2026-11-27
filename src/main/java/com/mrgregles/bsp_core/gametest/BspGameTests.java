@@ -6779,6 +6779,8 @@ public class BspGameTests {
             h.assertTrue(saved != null && saved.ranks.equals(java.util.List.of("vip")) && saved.items.get(0).getCount() == 2, "with its items and the rank lower-cased");
             h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.save(fresh.save(), true)).equals("id_taken"), "saving it as new again is refused");
             fresh.name = "Panel B2";
+            h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.save(fresh.save(), false)).equals("stale"), "an edit carrying the stamp from before the save is refused");
+            fresh.edited = saved.edited; // the editor takes the new stamp from the panel's answer
             h.assertTrue(com.mrgregles.bsp_core.kit.KitAdmin.apply(admin, com.mrgregles.bsp_core.network.KitEditPacket.save(fresh.save(), false)).equals("saved")
                     && com.mrgregles.bsp_core.kit.Kits.kit(server, fresh.id).name.equals("Panel B2"), "an edit of an existing kit saves");
             var badTag = new com.mrgregles.bsp_core.kit.Kit("Bad Id!", "x", 0).save();

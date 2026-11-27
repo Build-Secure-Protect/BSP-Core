@@ -2,6 +2,20 @@
 
 All notable changes to BSP-Core. Format follows Keep a Changelog; versions follow SemVer.
 
+## [Unreleased]
+
+## [1.27.1] - 2026-11-27
+
+**Network protocol 26** (raised from 25): the admin panel's KITS tab sends the kit's edit stamp with SAVE, so servers and clients both need this version.
+
+### Added
+- **The kit api for staff tools, part 2**: `BspKits.create` (a kit made off and empty), `copy`, `set` (every KITS tab setting), `setItems` (items as id, count and NBT), `setIcon`, `setEnabled` and `delete` (it answers how many players were owed the kit). Each change names the kit's edit stamp as it was read, is refused if the kit changed since, and logs the staff member's name. A kit holding items from a mod this server does not have can only be deleted from here.
+- `BspKits.VERSION` is 2 (1 in 1.27.0): a staff tool reads it to tell whether a server has the calls below.
+- **The kit api, part 3**: `BspKits.records` (a player's kit records, read fresh from the database on a network), `reset` (as `/bsp kit reset`) and `give` with the staff member's name (an admin gift, as GIVE TO), each logged.
+
+### Changed
+- The admin panel's KITS tab refuses a SAVE over a kit changed or deleted since the admin opened it (from a staff tool, another admin or another server), with the note "Changed elsewhere: CLOSE and open it again"; nothing is overwritten.
+
 ## [1.27.0] - 2026-11-27
 
 Network protocol 25, unchanged: 1.26.0 clients join a 1.27.0 server. Put 1.27.0 on every server together (shops and kits are shared records).

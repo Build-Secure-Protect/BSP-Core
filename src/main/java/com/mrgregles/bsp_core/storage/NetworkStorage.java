@@ -3027,6 +3027,34 @@ public final class NetworkStorage {
         });
     }
 
+    /**
+     * For staff tools: reads the player's kit records from the database into the local copy, then calls {@code then} on the server
+     * thread with true. Without network storage, or when the read fails (logged), it calls back with false at once or after the
+     * failure and the local copy stands. Owed kits are not delivered from here.
+     */
+    public static void kitRedeemsFresh(UUID player, Consumer<Boolean> then) {
+        MySqlStore s = store;
+        MinecraftServer srv = server;
+        if (s == null || srv == null) {
+            then.accept(false);
+            return;
+        }
+        worker().execute(() -> {
+            List<com.mrgregles.bsp_core.kit.KitLedger.Redeem> rows;
+            try {
+                rows = s.kitRedeemsRead(player);
+            } catch (SQLException | RuntimeException e) {
+                BSPCore.LOGGER.error("BSP-Core storage: could not read kit records: {}", e.toString());
+                onServer(() -> then.accept(false));
+                return;
+            }
+            onServer(() -> {
+                com.mrgregles.bsp_core.kit.KitSync.applyRows(srv, player, rows, false);
+                then.accept(true);
+            });
+        });
+    }
+
     /** Reads a player's kit rows and puts them in place of the local ones, on the server thread; {@code then} runs after, and at once without network storage. */
     public static void kitRedeemsReload(UUID player, @Nullable Runnable then) {
         MySqlStore s = store;

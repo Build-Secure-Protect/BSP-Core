@@ -223,6 +223,11 @@ public final class Kits {
             if (!s.is(ModItems.SHATTER_TOTEM.get()) && s.hasTag() && s.getTag().toString().contains("bsp_core:shatter_totem")) {
                 return Outcome.fail("nested_totem").message();
             }
+            // a store credit ticket or an InventorySync placeholder inside another item is never made fresh for each taker
+            if (s.hasTag() && !s.is(ModItems.STORE_CREDIT.get()) && (s.getTag().toString().contains("bsp_core:store_credit")
+                    || !com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(s) && s.getTag().toString().contains(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.TAG))) {
+                return Outcome.fail("nested_item").message();
+            }
         }
         if (kit.cooldownSeconds < 0 || kit.price < 0) {
             return Outcome.fail("negative").message();

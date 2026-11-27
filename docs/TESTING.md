@@ -4335,3 +4335,22 @@ With JourneyMap installed, BSP-Core's map shows only while JourneyMap's map has 
 - [ ] Workbench, Settings of a shop with sections: Delete shop reads "Delete all" after one click and the message names the sections; a second click deletes them all. A shop without sections deletes at the first click.
 - [ ] Switch a spawn shop off, then `/bsp shop import` its price file (no `"enabled"` key): it stays off.
 - [ ] A section whose parent was deleted before 1.26.0: its Settings line reads "off: parent gone"; set Parent shop to nothing, then Open to players turns it on.
+
+## Kits: the kit api, part 2 (2026-11-27, 1.27.1)
+- [ ] With Server Utilities' panel (once it uses these calls) or a debug call: make a kit, give it items and an icon, set its price and ranks, and turn it on. `/bsp admin`, KITS shows each change, and a player's kit browser shows the kit once it is on.
+- [ ] Change the kit in the KITS tab, then send a change from the panel with the stamp it read before: it is refused as stale, and the kit keeps the KITS tab's change.
+- [ ] Copy a kit: the copy is off, has the same items and settings, and shows taken 0.
+- [ ] Give a kit to an offline player, then delete it from the panel: the answer counts one owed, and the player gets nothing at their next login.
+- [ ] The server log has one "BSP-Core kits:" line per change, with the staff member's name.
+
+## Kits: the kit api, part 3 (2026-11-27, 1.27.1)
+- [ ] From the panel (or a debug call), give a kit to a player who is online here: it lands in their inventory and the answer says 0 owed. Give it to an offline player: the answer says 1 owed, and they get it at their next login.
+- [ ] Read a player's records on a network after they redeemed a kit on another server: the row is there with its count and time.
+- [ ] Reset one kit for a player: they can redeem a once-only kit again. Reset every kit: their browser shows no cooldowns. The log has one line for each, with the staff member's name.
+
+## Kits: the KITS tab's stamp (2026-11-27, 1.27.1, protocol 26)
+- [ ] Open a kit in `/bsp admin`, KITS, change its price and SAVE: "Saved". Change it again and SAVE without closing: "Saved" again.
+- [ ] Open a kit as admin A. Admin B (or the panel) changes the same kit and saves. Admin A presses SAVE: the note "Changed elsewhere: CLOSE and open it again" in red, and B's change stands. CLOSE, open it again: B's change shows, and A's SAVE works.
+- [ ] Open a kit, delete it from another admin's panel, then SAVE in the first: refused with the same note; the kit is not made again.
+- [ ] The note fits on one line above the keys, clear of the key row and the editor's fields.
+- [ ] A 1.27.0 client joining this server (and the other way round) is refused with a version mismatch, not a crash.

@@ -34,8 +34,10 @@ public final class BSPNetwork {
      * 23: the deposit box's opening carries its prize drawer (places and seasons); the season prize screen's opening carries each
      *     place's LuckPerms group, and {@link SeasonGroupPacket} sets one.
      * 24: {@link RemoteLinkPacket}: a machine screen operated from the Holo Grid is locked without the transmitter's Inventory Link.
+     * 25: the Workbench's shop list carries each shop's parent and switch.
+     * 26: the admin panel's KITS tab sends back the kit's edit stamp with SAVE, and a save over a newer kit is refused.
      */
-    private static final String PROTOCOL = "25";
+    private static final String PROTOCOL = "26";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BSPCore.MODID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

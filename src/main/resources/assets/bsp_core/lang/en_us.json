@@ -3607,5 +3607,7 @@
   "gui.bsp_core.config.col_on": "On",
   "gui.bsp_core.config.enabled_orphan": "off: parent gone",
   "gui.bsp_core.config.delete_confirm": "This also deletes the %s sections under it. Click Delete again to go ahead.",
-  "gui.bsp_core.config.delete_confirm_key": "Delete all"
+  "gui.bsp_core.config.delete_confirm_key": "Delete all",
+  "gui.bsp_core.kit.note.stale": "Changed elsewhere: CLOSE and open it again",
+  "message.bsp_core.kit.nested_item": "A kit cannot hold a store credit ticket or an InventorySync placeholder inside another item"
 }

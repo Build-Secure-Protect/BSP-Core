@@ -67,8 +67,13 @@ public final class KitAdmin {
                     return "bad";
                 }
                 Kit kit = Kit.load(msg.kit());
-                if (msg.isNew() && Kits.kit(server, kit.id) != null) {
+                Kit now = Kits.kit(server, kit.id);
+                if (msg.isNew() && now != null) {
                     return "id_taken";
+                }
+                if (!msg.isNew() && (now == null || now.edited != kit.edited)) {
+                    // changed (or deleted) elsewhere since this admin opened it: a staff tool, another admin, another server
+                    return "stale";
                 }
                 if (com.mrgregles.bsp_core.compat.InventorySyncPlaceholders.is(kit.icon) || kit.items.stream().anyMatch(com.mrgregles.bsp_core.compat.InventorySyncPlaceholders::is)) {
                     // every redeem would hand out a copy of the item inside the placeholder

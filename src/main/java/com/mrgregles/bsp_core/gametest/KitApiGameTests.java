@@ -142,7 +142,7 @@ public class KitApiGameTests {
     public void kit_api_choices_list_what_a_kit_is_picked_from(GameTestHelper h) {
         MinecraftServer server = server(h);
         BspKits.Choices c = BspKits.choices(server);
-        h.assertTrue(BspKits.VERSION == 1, "version 1");
+        h.assertTrue(BspKits.VERSION == 2, "version 2");
         h.assertTrue(c.grants().equals(List.of("NONE", "NETWORK", "SERVERS")), "the grant kinds: " + c.grants());
         h.assertTrue(c.maxItems() == Kits.maxItems() && c.maxItems() >= 1 && c.maxItems() <= 36, "the item limit: " + c.maxItems());
         h.assertTrue(!c.servers().isEmpty() && c.servers().get(0).equals(c.thisServer()) && c.thisServer().equals(Kits.serverId()), "this server first: " + c.servers());

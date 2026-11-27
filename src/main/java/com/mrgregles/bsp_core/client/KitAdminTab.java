@@ -83,6 +83,12 @@ public final class KitAdminTab {
     private List<KitAdminPacket.Online> online = List.of();
     private String note = "";
     private long noteUntil;
+    /** The draft a SAVE was sent from, until the server answers (a few seconds at most), and a TEST to send once it saved. */
+    @Nullable
+    private Kit pendingSave;
+    private long pendingSince;
+    @Nullable
+    private String testAfterSave;
 
     // the list
     @Nullable
@@ -129,15 +135,28 @@ public final class KitAdminTab {
         ladder = msg.ladder();
         online = msg.online();
         if (!msg.note().isEmpty()) {
+            Kit sent = pendingSave;
+            String test = testAfterSave;
+            pendingSave = null;
+            testAfterSave = null;
             note = msg.note();
             noteUntil = System.currentTimeMillis() + NOTE_MS;
             if (note.equals("saved") || note.equals("deleted")) {
                 if (note.equals("deleted")) {
                     selected = null;
                 }
-                if (editing && note.equals("saved") && draft != null) {
+                // only the draft this SAVE was sent from takes the new stamp: one opened again since was built from the older list
+                if (editing && note.equals("saved") && draft != null && draft == sent) {
                     isNew = false;
                     selected = draft.id;
+                    for (Kit k : kits) {
+                        if (k.id.equals(draft.id)) {
+                            draft.edited = k.edited; // the next SAVE names the stamp this one made
+                        }
+                    }
+                    if (test != null && test.equals(draft.id)) {
+                        host.send(KitEditPacket.of(KitEditPacket.Action.TEST, test)); // TEST ON ME hands out what was just saved
+                    }
                 }
                 if (note.equals("deleted")) {
                     closeEditor();
@@ -295,7 +314,13 @@ public final class KitAdminTab {
     }
 
     private void save() {
+        long now = System.currentTimeMillis();
+        if (pendingSave != null && now - pendingSince < 5_000) {
+            return; // one SAVE at a time: a second click would carry the stamp from before the first
+        }
         Kit d = readDraft();
+        pendingSave = draft;
+        pendingSince = now;
         host.send(KitEditPacket.save(d.save(), isNew));
     }
 
@@ -552,7 +577,7 @@ public final class KitAdminTab {
         }
         if (!note.isEmpty() && System.currentTimeMillis() < noteUntil) {
             Component n = tr("note." + note);
-            small(g, n, x + W - 10 - smallWidth(n), y + (editing ? editKeyY() : KEY_Y) - 10, note.equals("refused") || note.equals("id_taken") || note.equals("read_only") ? 0xFF8F86 : OK);
+            small(g, n, x + W - 10 - smallWidth(n), y + (editing ? editKeyY() : KEY_Y) - 10, note.equals("refused") || note.equals("id_taken") || note.equals("read_only") || note.equals("stale") ? 0xFF8F86 : OK);
         }
     }
 
@@ -864,8 +889,8 @@ public final class KitAdminTab {
         int ky = y + editKeyY();
         key(g, x + SLOT_X, ky, 62, KEY_H, tr("k.save"), edit, VIO, mx, my, this::save);
         key(g, x + SLOT_X + 66, ky, 70, KEY_H, tr("k.test"), edit && !isNew, TQ, mx, my, () -> {
+            testAfterSave = d.id; // sent when the SAVE comes back saved; a refused SAVE keeps its note and tests nothing
             save();
-            host.send(KitEditPacket.of(KitEditPacket.Action.TEST, d.id));
         });
         key(g, x + SLOT_X + 140, ky, 62, KEY_H, tr(arming("delete") ? "k.sure" : "k.delete"), edit && !isNew, BAD, mx, my, () -> {
             if (confirmed("delete")) {
